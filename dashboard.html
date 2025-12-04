@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Competition Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0a0a0b;
+      color: #e4e4e7;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+    }
+    .dashboard {
+      max-width: 1400px;
+      width: 100%;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 50px;
+    }
+    .header h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+    .header p {
+      font-size: 1rem;
+      color: #71717a;
+    }
+    .actions {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 40px;
+      justify-content: center;
+    }
+    .btn {
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s;
+    }
+    .btn-primary {
+      background: #3b82f6;
+      color: #fff;
+    }
+    .btn-primary:hover {
+      background: #2563eb;
+    }
+    .competitions-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+      gap: 24px;
+      margin-bottom: 40px;
+    }
+    .comp-card {
+      background: #18181b;
+      border: 2px solid #27272a;
+      border-radius: 12px;
+      padding: 24px;
+      transition: all 0.15s;
+    }
+    .comp-card:hover {
+      border-color: #3b82f6;
+    }
+    .comp-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      margin-bottom: 20px;
+    }
+    .comp-id {
+      font-size: 0.75rem;
+      color: #71717a;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+    .comp-name {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+    .comp-date {
+      font-size: 0.85rem;
+      color: #a1a1aa;
+    }
+    .comp-status {
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .status-configured {
+      background: #22c55e;
+      color: #000;
+    }
+    .status-draft {
+      background: #71717a;
+      color: #fff;
+    }
+    .comp-details {
+      margin-bottom: 20px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #27272a;
+    }
+    .comp-teams {
+      font-size: 0.85rem;
+      color: #e4e4e7;
+      margin-bottom: 8px;
+    }
+    .comp-venue {
+      font-size: 0.8rem;
+      color: #a1a1aa;
+    }
+    .comp-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .comp-btn {
+      padding: 10px;
+      background: #27272a;
+      border: 1px solid #3f3f46;
+      border-radius: 6px;
+      color: #e4e4e7;
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-decoration: none;
+      text-align: center;
+      display: block;
+    }
+    .comp-btn:hover {
+      background: #3f3f46;
+      border-color: #52525b;
+    }
+    .comp-btn-primary {
+      background: #3b82f6;
+      border-color: #3b82f6;
+      color: #fff;
+    }
+    .comp-btn-primary:hover {
+      background: #2563eb;
+      border-color: #2563eb;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 80px 40px;
+      background: #18181b;
+      border: 2px dashed #27272a;
+      border-radius: 12px;
+    }
+    .empty-state h2 {
+      font-size: 1.2rem;
+      margin-bottom: 10px;
+    }
+    .empty-state p {
+      color: #71717a;
+      margin-bottom: 24px;
+    }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .modal.show {
+      display: flex;
+    }
+    .modal-content {
+      background: #18181b;
+      border: 1px solid #27272a;
+      border-radius: 12px;
+      padding: 32px;
+      max-width: 500px;
+      width: 90%;
+    }
+    .modal-header {
+      margin-bottom: 24px;
+    }
+    .modal-header h2 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .modal-header p {
+      font-size: 0.85rem;
+      color: #71717a;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    .form-label {
+      display: block;
+      font-size: 0.8rem;
+      color: #a1a1aa;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+    .form-input {
+      width: 100%;
+      padding: 10px 12px;
+      background: #27272a;
+      border: 1px solid #3f3f46;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 0.9rem;
+    }
+    .form-input:focus {
+      outline: none;
+      border-color: #3b82f6;
+    }
+    .form-row {
+      display: flex;
+      gap: 12px;
+    }
+    .form-row .form-group {
+      flex: 1;
+    }
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 28px;
+    }
+    .modal-actions .btn {
+      flex: 1;
+    }
+    .btn-secondary {
+      background: #27272a;
+      color: #e4e4e7;
+    }
+    .btn-secondary:hover {
+      background: #3f3f46;
+    }
+    .btn-danger {
+      background: #dc2626;
+      color: #fff;
+    }
+    .btn-danger:hover {
+      background: #b91c1c;
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <div class="header">
+      <h1>🤸 Gymnastics Graphics Dashboard</h1>
+      <p>Manage multiple competitions simultaneously</p>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" onclick="openCreateModal()">+ Create New Competition</button>
+    </div>
+
+    <div class="competitions-grid" id="competitionsGrid">
+      <!-- Competition cards will be inserted here -->
+    </div>
+
+    <div class="empty-state" id="emptyState" style="display: none;">
+      <h2>No Competitions Yet</h2>
+      <p>Create your first competition to get started</p>
+      <button class="btn btn-primary" onclick="openCreateModal()">+ Create Competition</button>
+    </div>
+  </div>
+
+  <!-- Create/Edit Competition Modal -->
+  <div class="modal" id="compModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalTitle">Create Competition</h2>
+        <p>Configure competition details</p>
+      </div>
+      <form id="compForm">
+        <div class="form-group">
+          <label class="form-label">Competition ID (no spaces, lowercase)</label>
+          <input type="text" class="form-input" id="compId" placeholder="e.g., court1, meet-a, ncaa-finals" required pattern="[a-z0-9-]+" title="Only lowercase letters, numbers, and hyphens">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Event Name</label>
+          <input type="text" class="form-input" id="eventName" placeholder="e.g., Big Ten Dual Meet" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Meet Date</label>
+          <input type="text" class="form-input" id="meetDate" placeholder="e.g., January 15, 2025" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Venue</label>
+            <input type="text" class="form-input" id="venue" placeholder="e.g., Crisler Center" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Location</label>
+            <input type="text" class="form-input" id="location" placeholder="e.g., Ann Arbor, MI" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Team 1 Name</label>
+          <input type="text" class="form-input" id="team1Name" placeholder="e.g., Michigan" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Team 2 Name</label>
+          <input type="text" class="form-input" id="team2Name" placeholder="e.g., Ohio State" required>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+          <button type="button" class="btn btn-danger" id="deleteBtn" onclick="deleteCompetition()" style="display: none;">Delete</button>
+          <button type="submit" class="btn btn-primary">Save Competition</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCh0aZUvKl6Qvqsva3hvOgJJlleP1OwcTY",
+      authDomain: "gymnastics-graphics.firebaseapp.com",
+      databaseURL: "https://gymnastics-graphics-default-rtdb.firebaseio.com",
+      projectId: "gymnastics-graphics",
+      storageBucket: "gymnastics-graphics.firebasestorage.app",
+      messagingSenderId: "702072609550",
+      appId: "1:702072609550:web:ac74a811186d3ff45b955f"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let competitions = {};
+    let editingCompId = null;
+
+    // Load competitions from Firebase
+    db.ref('competitions').on('value', (snapshot) => {
+      competitions = snapshot.val() || {};
+      renderCompetitions();
+    });
+
+    function renderCompetitions() {
+      const grid = document.getElementById('competitionsGrid');
+      const emptyState = document.getElementById('emptyState');
+
+      const compIds = Object.keys(competitions);
+
+      if (compIds.length === 0) {
+        grid.style.display = 'none';
+        emptyState.style.display = 'block';
+        return;
+      }
+
+      grid.style.display = 'grid';
+      emptyState.style.display = 'none';
+
+      grid.innerHTML = compIds.map(compId => {
+        const comp = competitions[compId].config || {};
+        const hasConfig = comp.eventName && comp.team1Name && comp.team2Name;
+
+        return `
+          <div class="comp-card">
+            <div class="comp-header">
+              <div>
+                <div class="comp-id">${compId}</div>
+                <div class="comp-name">${comp.eventName || 'Untitled Competition'}</div>
+                <div class="comp-date">${comp.meetDate || 'Date not set'}</div>
+              </div>
+              <div class="comp-status ${hasConfig ? 'status-configured' : 'status-draft'}">
+                ${hasConfig ? 'Configured' : 'Draft'}
+              </div>
+            </div>
+            <div class="comp-details">
+              <div class="comp-teams">${comp.team1Name || 'Team 1'} vs ${comp.team2Name || 'Team 2'}</div>
+              <div class="comp-venue">${comp.venue || 'Venue not set'} • ${comp.location || 'Location not set'}</div>
+            </div>
+            <div class="comp-actions">
+              <a href="controller.html?comp=${compId}" class="comp-btn comp-btn-primary" target="_blank">Open Controller</a>
+              <a href="output.html?comp=${compId}" class="comp-btn" target="_blank">Open Output</a>
+              <a href="index.html?comp=${compId}" class="comp-btn" target="_blank">URL Generator</a>
+              <button class="comp-btn" onclick="openEditModal('${compId}')">Edit Config</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function openCreateModal() {
+      editingCompId = null;
+      document.getElementById('modalTitle').textContent = 'Create Competition';
+      document.getElementById('deleteBtn').style.display = 'none';
+      document.getElementById('compForm').reset();
+      document.getElementById('compId').disabled = false;
+      document.getElementById('compModal').classList.add('show');
+    }
+
+    function openEditModal(compId) {
+      editingCompId = compId;
+      const comp = competitions[compId].config || {};
+
+      document.getElementById('modalTitle').textContent = 'Edit Competition';
+      document.getElementById('deleteBtn').style.display = 'block';
+      document.getElementById('compId').value = compId;
+      document.getElementById('compId').disabled = true;
+      document.getElementById('eventName').value = comp.eventName || '';
+      document.getElementById('meetDate').value = comp.meetDate || '';
+      document.getElementById('venue').value = comp.venue || '';
+      document.getElementById('location').value = comp.location || '';
+      document.getElementById('team1Name').value = comp.team1Name || '';
+      document.getElementById('team2Name').value = comp.team2Name || '';
+
+      document.getElementById('compModal').classList.add('show');
+    }
+
+    function closeModal() {
+      document.getElementById('compModal').classList.remove('show');
+      editingCompId = null;
+    }
+
+    document.getElementById('compForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const compId = document.getElementById('compId').value.toLowerCase().trim();
+      const config = {
+        eventName: document.getElementById('eventName').value,
+        meetDate: document.getElementById('meetDate').value,
+        venue: document.getElementById('venue').value,
+        location: document.getElementById('location').value,
+        team1Name: document.getElementById('team1Name').value,
+        team2Name: document.getElementById('team2Name').value,
+        // Set defaults for other fields
+        hosts: 'Host Name',
+        team1Logo: 'https://via.placeholder.com/200/00274C/FFCB05?text=T1',
+        team1Ave: '0.000',
+        team1High: '0.000',
+        team1Con: '0%',
+        team1Coaches: 'Coach Name',
+        team2Logo: 'https://via.placeholder.com/200/BB0000/FFFFFF?text=T2',
+        team2Ave: '0.000',
+        team2High: '0.000',
+        team2Con: '0%',
+        team2Coaches: 'Coach Name'
+      };
+
+      db.ref(`competitions/${compId}/config`).set(config)
+        .then(() => {
+          closeModal();
+        })
+        .catch((error) => {
+          alert('Error saving competition: ' + error.message);
+        });
+    });
+
+    function deleteCompetition() {
+      if (!editingCompId) return;
+
+      if (confirm(`Are you sure you want to delete competition "${editingCompId}"? This cannot be undone.`)) {
+        db.ref(`competitions/${editingCompId}`).remove()
+          .then(() => {
+            closeModal();
+          })
+          .catch((error) => {
+            alert('Error deleting competition: ' + error.message);
+          });
+      }
+    }
+
+    // Close modal when clicking outside
+    document.getElementById('compModal').addEventListener('click', (e) => {
+      if (e.target.id === 'compModal') {
+        closeModal();
+      }
+    });
+
+    console.log('Dashboard ready!');
+  </script>
+</body>
+</html>

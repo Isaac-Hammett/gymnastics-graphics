@@ -290,6 +290,15 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
   <script>
+    // Get competition ID from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const competitionId = urlParams.get('comp');
+
+    if (!competitionId) {
+      console.error('No competition ID specified in URL');
+      document.body.innerHTML = '<div style="color: red; font-size: 48px; text-align: center; padding: 100px;">ERROR: No competition ID specified. Please access via dashboard.</div>';
+    }
+
     const firebaseConfig = {
       apiKey: "AIzaSyCh0aZUvKl6Qvqsva3hvOgJJlleP1OwcTY",
       authDomain: "gymnastics-graphics.firebaseapp.com",
@@ -438,7 +447,7 @@
     };
 
     // Listen for graphic changes
-    db.ref('currentGraphic').on('value', (snapshot) => {
+    db.ref(`competitions/${competitionId}/currentGraphic`).on('value', (snapshot) => {
       const state = snapshot.val();
       if (!state) {
         output.innerHTML = '';
@@ -455,7 +464,7 @@
       output.innerHTML = renderers[graphic](data);
     });
 
-    console.log('Output panel ready - listening for graphics...');
+    console.log(`Output panel ready - listening for graphics on competition: ${competitionId}`);
   </script>
 </body>
 </html>
