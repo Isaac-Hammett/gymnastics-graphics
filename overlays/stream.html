@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1920, height=1080">
+  <title>Stream</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .stream-title {
+      font-size: 48px;
+      font-weight: 800;
+      color: #000;
+      margin-bottom: 50px;
+    }
+    .stream-logo {
+      width: 320px;
+      height: 320px;
+      object-fit: contain;
+      margin-bottom: 50px;
+    }
+    .stream-event-name {
+      font-size: 54px;
+      font-weight: 800;
+      color: #000;
+    }
+    .stream-date {
+      font-size: 42px;
+      font-weight: 700;
+      color: #000;
+      margin-top: 10px;
+    }
+    .stream-branding {
+      margin-top: 30px;
+      font-size: 36px;
+      font-weight: 600;
+      color: #000;
+    }
+    .stream-branding span {
+      color: #22d3ee;
+    }
+  </style>
+</head>
+<body>
+  <div class="stream-title" id="title">STREAM STARTING SOON</div>
+  <img id="logo" class="stream-logo" src="" alt="Team">
+  <div class="stream-event-name" id="eventName"></div>
+  <div class="stream-date" id="meetDate"></div>
+  <div class="stream-branding"><span>V</span>irtius</div>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    document.getElementById('title').textContent = params.get('title') || 'STREAM STARTING SOON';
+    document.getElementById('logo').src = params.get('logo') || '';
+    document.getElementById('eventName').textContent = params.get('eventName') || '';
+    document.getElementById('meetDate').textContent = params.get('meetDate') || '';
+  </script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1920, height=1080">
+  <title>Event Frame</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: transparent;
+    }
+    .frame {
+      position: absolute;
+      top: 50px;
+      left: 70px;
+      right: 70px;
+      bottom: 50px;
+      display: flex;
+      flex-direction: column;
+    }
+    .frame-header {
+      background: #d4d4d8;
+      padding: 18px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .frame-title {
+      font-size: 42px;
+      font-weight: 800;
+      color: #000;
+    }
+    .frame-logo {
+      width: 80px;
+      height: 80px;
+      object-fit: contain;
+    }
+    .frame-content {
+      flex: 1;
+      background: #000;
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <div class="frame-header">
+      <div class="frame-title" id="title"></div>
+      <img id="logo" class="frame-logo" src="" alt="Team">
+    </div>
+    <div class="frame-content">
+      <!-- Lineup/Scoreboard composited in OBS -->
+    </div>
+  </div>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    document.getElementById('title').textContent = params.get('title') || 'EVENT';
+    document.getElementById('logo').src = params.get('logo') || '';
+  </script>
+</body>
+</html>

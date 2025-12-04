@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Graphics Controller</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0a0a0b;
+      color: #e4e4e7;
+      min-height: 100vh;
+    }
+    .app {
+      display: flex;
+      height: 100vh;
+    }
+
+    /* Config Panel */
+    .config-panel {
+      width: 320px;
+      background: #18181b;
+      border-right: 1px solid #27272a;
+      padding: 20px;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+    .config-header {
+      margin-bottom: 20px;
+    }
+    .config-header h1 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+    .config-header p {
+      font-size: 0.75rem;
+      color: #71717a;
+    }
+    .config-section {
+      margin-bottom: 24px;
+    }
+    .config-title {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #a1a1aa;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+    .config-group { margin-bottom: 12px; }
+    .config-label {
+      font-size: 0.7rem;
+      color: #71717a;
+      margin-bottom: 4px;
+      display: block;
+    }
+    .config-input {
+      width: 100%;
+      padding: 8px 10px;
+      background: #27272a;
+      border: 1px solid #3f3f46;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 0.8rem;
+    }
+    .config-input:focus { outline: none; border-color: #3b82f6; }
+    .config-row {
+      display: flex;
+      gap: 6px;
+    }
+    .config-row .config-input { flex: 1; }
+
+    /* Main Controller */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Status Bar */
+    .status-bar {
+      padding: 12px 24px;
+      background: #18181b;
+      border-bottom: 1px solid #27272a;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8rem;
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #22c55e;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    .current-graphic {
+      flex: 1;
+      text-align: center;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    .current-graphic span {
+      color: #3b82f6;
+    }
+
+    /* Control Grid */
+    .control-area {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+    }
+    .section {
+      margin-bottom: 32px;
+    }
+    .section-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #71717a;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+    .button-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 10px;
+    }
+    .graphic-btn {
+      padding: 16px 12px;
+      background: #27272a;
+      border: 2px solid #3f3f46;
+      border-radius: 10px;
+      color: #e4e4e7;
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: center;
+    }
+    .graphic-btn:hover {
+      background: #3f3f46;
+      border-color: #52525b;
+    }
+    .graphic-btn.active {
+      background: #1d4ed8;
+      border-color: #3b82f6;
+      color: #fff;
+    }
+    .graphic-btn .number {
+      display: block;
+      font-size: 0.65rem;
+      color: #71717a;
+      margin-bottom: 4px;
+    }
+    .graphic-btn.active .number {
+      color: #93c5fd;
+    }
+
+    /* Clear Button */
+    .clear-section {
+      padding: 20px 24px;
+      background: #18181b;
+      border-top: 1px solid #27272a;
+    }
+    .clear-btn {
+      width: 100%;
+      padding: 16px;
+      background: #dc2626;
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .clear-btn:hover {
+      background: #b91c1c;
+    }
+
+    /* Preview */
+    .preview-section {
+      padding: 20px;
+      background: #111;
+      border-top: 1px solid #27272a;
+    }
+    .preview-label {
+      font-size: 0.7rem;
+      color: #71717a;
+      margin-bottom: 8px;
+    }
+    .preview-box {
+      width: 100%;
+      aspect-ratio: 16/9;
+      background: #000;
+      border-radius: 8px;
+      overflow: hidden;
+      position: relative;
+    }
+    .preview-box.transparent-bg {
+      background: repeating-conic-gradient(#222 0% 25%, #1a1a1a 0% 50%) 50% / 10px 10px;
+    }
+    .preview-box iframe {
+      width: 1920px;
+      height: 1080px;
+      transform-origin: top left;
+      border: none;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #22c55e;
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      opacity: 0;
+      transition: all 0.2s;
+      z-index: 1000;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Config Panel -->
+    <div class="config-panel">
+      <div class="config-header">
+        <h1>⚙️ Meet Setup</h1>
+        <p>Configure before going live</p>
+      </div>
+
+      <div class="config-section">
+        <div class="config-title">Event Info</div>
+        <div class="config-group">
+          <label class="config-label">Event Name</label>
+          <input type="text" class="config-input" id="eventName" value="Big Ten Dual Meet">
+        </div>
+        <div class="config-group">
+          <label class="config-label">Meet Date</label>
+          <input type="text" class="config-input" id="meetDate" value="January 15, 2025">
+        </div>
+        <div class="config-group">
+          <label class="config-label">Venue</label>
+          <input type="text" class="config-input" id="venue" value="Crisler Center">
+        </div>
+        <div class="config-group">
+          <label class="config-label">Location</label>
+          <input type="text" class="config-input" id="location" value="Ann Arbor, MI">
+        </div>
+        <div class="config-group">
+          <label class="config-label">Hosts (one per line)</label>
+          <textarea class="config-input" id="hosts" rows="2">John Smith
+Sarah Johnson</textarea>
+        </div>
+      </div>
+
+      <div class="config-section">
+        <div class="config-title">Team 1</div>
+        <div class="config-group">
+          <label class="config-label">Name</label>
+          <input type="text" class="config-input" id="team1Name" value="Michigan">
+        </div>
+        <div class="config-group">
+          <label class="config-label">Logo URL</label>
+          <input type="text" class="config-input" id="team1Logo" placeholder="https://...">
+        </div>
+        <div class="config-group">
+          <label class="config-label">AVE / HIGH / CON</label>
+          <div class="config-row">
+            <input type="text" class="config-input" id="team1Ave" value="406.850">
+            <input type="text" class="config-input" id="team1High" value="409.200">
+            <input type="text" class="config-input" id="team1Con" value="94.2%">
+          </div>
+        </div>
+        <div class="config-group">
+          <label class="config-label">Coaches</label>
+          <textarea class="config-input" id="team1Coaches" rows="3">Kurt Golder
+Brian Coddington
+Tyler Balthazor</textarea>
+        </div>
+      </div>
+
+      <div class="config-section">
+        <div class="config-title">Team 2</div>
+        <div class="config-group">
+          <label class="config-label">Name</label>
+          <input type="text" class="config-input" id="team2Name" value="Ohio State">
+        </div>
+        <div class="config-group">
+          <label class="config-label">Logo URL</label>
+          <input type="text" class="config-input" id="team2Logo" placeholder="https://...">
+        </div>
+        <div class="config-group">
+          <label class="config-label">AVE / HIGH / CON</label>
+          <div class="config-row">
+            <input type="text" class="config-input" id="team2Ave" value="403.450">
+            <input type="text" class="config-input" id="team2High" value="406.100">
+            <input type="text" class="config-input" id="team2Con" value="92.8%">
+          </div>
+        </div>
+        <div class="config-group">
+          <label class="config-label">Coaches</label>
+          <textarea class="config-input" id="team2Coaches" rows="3">Rustam Sharipov
+Sergio Santana
+James Moore</textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Controller -->
+    <div class="main">
+      <div class="status-bar">
+        <div class="status-indicator">
+          <div class="status-dot"></div>
+          <span>Connected</span>
+        </div>
+        <div class="current-graphic">
+          Current: <span id="currentGraphicName">None</span>
+        </div>
+      </div>
+
+      <div class="control-area">
+        <div class="section">
+          <div class="section-title">Pre-Meet Graphics</div>
+          <div class="button-grid">
+            <button class="graphic-btn" data-graphic="logos">
+              <span class="number">1</span>Team Logos
+            </button>
+            <button class="graphic-btn" data-graphic="event-bar">
+              <span class="number">2</span>Event Info
+            </button>
+            <button class="graphic-btn" data-graphic="hosts">
+              <span class="number">3</span>Hosts
+            </button>
+            <button class="graphic-btn" data-graphic="team1-stats">
+              <span class="number">4</span>Team 1 Stats
+            </button>
+            <button class="graphic-btn" data-graphic="team1-coaches">
+              <span class="number">5</span>Team 1 Coaches
+            </button>
+            <button class="graphic-btn" data-graphic="team2-stats">
+              <span class="number">6</span>Team 2 Stats
+            </button>
+            <button class="graphic-btn" data-graphic="team2-coaches">
+              <span class="number">7</span>Team 2 Coaches
+            </button>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Event Frames</div>
+          <div class="button-grid">
+            <button class="graphic-btn" data-graphic="floor" data-title="FLOOR EXERCISE">
+              <span class="number">8</span>Floor
+            </button>
+            <button class="graphic-btn" data-graphic="pommel" data-title="POMMEL HORSE">
+              <span class="number">9</span>Pommel Horse
+            </button>
+            <button class="graphic-btn" data-graphic="rings" data-title="STILL RINGS">
+              <span class="number">10</span>Still Rings
+            </button>
+            <button class="graphic-btn" data-graphic="vault" data-title="VAULT">
+              <span class="number">11</span>Vault
+            </button>
+            <button class="graphic-btn" data-graphic="pbars" data-title="PARALLEL BARS">
+              <span class="number">12</span>Parallel Bars
+            </button>
+            <button class="graphic-btn" data-graphic="hbar" data-title="HORIZONTAL BAR">
+              <span class="number">13</span>High Bar
+            </button>
+            <button class="graphic-btn" data-graphic="allaround" data-title="ALL AROUND">
+              <span class="number">14</span>All Around
+            </button>
+            <button class="graphic-btn" data-graphic="final" data-title="FINAL SCORES">
+              <span class="number">15</span>Final Scores
+            </button>
+            <button class="graphic-btn" data-graphic="order" data-title="COMPETITION ORDER">
+              <span class="number">16</span>Comp Order
+            </button>
+            <button class="graphic-btn" data-graphic="lineups" data-title="NEXT EVENT LINEUPS">
+              <span class="number">17</span>Lineups
+            </button>
+            <button class="graphic-btn" data-graphic="summary" data-title="EVENT SUMMARY">
+              <span class="number">18</span>Summary
+            </button>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Stream</div>
+          <div class="button-grid">
+            <button class="graphic-btn" data-graphic="stream-starting">
+              <span class="number">19</span>Starting Soon
+            </button>
+            <button class="graphic-btn" data-graphic="stream-thanks">
+              <span class="number">20</span>Thanks
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="clear-section">
+        <button class="clear-btn" id="clearBtn">⛔ CLEAR GRAPHIC</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCh0aZUvKl6Qvqsva3hvOgJJlleP1OwcTY",
+      authDomain: "gymnastics-graphics.firebaseapp.com",
+      databaseURL: "https://gymnastics-graphics-default-rtdb.firebaseio.com",
+      projectId: "gymnastics-graphics",
+      storageBucket: "gymnastics-graphics.firebasestorage.app",
+      messagingSenderId: "702072609550",
+      appId: "1:702072609550:web:ac74a811186d3ff45b955f"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const eventFrames = ['floor', 'pommel', 'rings', 'vault', 'pbars', 'hbar', 'allaround', 'final', 'order', 'lineups', 'summary'];
+
+    const graphicNames = {
+      'clear': 'None',
+      'logos': 'Team Logos',
+      'event-bar': 'Event Info',
+      'hosts': 'Hosts',
+      'team1-stats': 'Team 1 Stats',
+      'team1-coaches': 'Team 1 Coaches',
+      'team2-stats': 'Team 2 Stats',
+      'team2-coaches': 'Team 2 Coaches',
+      'floor': 'Floor Exercise',
+      'pommel': 'Pommel Horse',
+      'rings': 'Still Rings',
+      'vault': 'Vault',
+      'pbars': 'Parallel Bars',
+      'hbar': 'High Bar',
+      'allaround': 'All Around',
+      'final': 'Final Scores',
+      'order': 'Competition Order',
+      'lineups': 'Lineups',
+      'summary': 'Event Summary',
+      'stream-starting': 'Stream Starting',
+      'stream-thanks': 'Thanks for Watching',
+      'event-frame': 'Event Frame'
+    };
+
+    function getConfigData() {
+      return {
+        eventName: document.getElementById('eventName').value,
+        meetDate: document.getElementById('meetDate').value,
+        venue: document.getElementById('venue').value,
+        location: document.getElementById('location').value,
+        hosts: document.getElementById('hosts').value,
+        team1Name: document.getElementById('team1Name').value,
+        team1Logo: document.getElementById('team1Logo').value || 'https://via.placeholder.com/200/00274C/FFCB05?text=T1',
+        team1Ave: document.getElementById('team1Ave').value,
+        team1High: document.getElementById('team1High').value,
+        team1Con: document.getElementById('team1Con').value,
+        team1Coaches: document.getElementById('team1Coaches').value,
+        team2Name: document.getElementById('team2Name').value,
+        team2Logo: document.getElementById('team2Logo').value || 'https://via.placeholder.com/200/BB0000/FFFFFF?text=T2',
+        team2Ave: document.getElementById('team2Ave').value,
+        team2High: document.getElementById('team2High').value,
+        team2Con: document.getElementById('team2Con').value,
+        team2Coaches: document.getElementById('team2Coaches').value,
+      };
+    }
+
+    function sendGraphic(graphicId, frameTitle = null) {
+      const data = getConfigData();
+      
+      if (frameTitle) {
+        data.frameTitle = frameTitle;
+      }
+
+      let graphicType = graphicId;
+      if (eventFrames.includes(graphicId)) {
+        graphicType = 'event-frame';
+      }
+
+      db.ref('currentGraphic').set({
+        graphic: graphicType,
+        data: data,
+        timestamp: Date.now()
+      });
+
+      // Update UI
+      document.querySelectorAll('.graphic-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelector(`[data-graphic="${graphicId}"]`)?.classList.add('active');
+      document.getElementById('currentGraphicName').textContent = graphicNames[graphicId] || graphicId;
+      
+      showToast(`Showing: ${graphicNames[graphicId] || graphicId}`);
+    }
+
+    function clearGraphic() {
+      db.ref('currentGraphic').set({
+        graphic: 'clear',
+        data: {},
+        timestamp: Date.now()
+      });
+
+      document.querySelectorAll('.graphic-btn').forEach(btn => btn.classList.remove('active'));
+      document.getElementById('currentGraphicName').textContent = 'None';
+      showToast('Graphic cleared');
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // Button click handlers
+    document.querySelectorAll('.graphic-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const graphicId = btn.dataset.graphic;
+        const frameTitle = btn.dataset.title || null;
+        sendGraphic(graphicId, frameTitle);
+      });
+    });
+
+    document.getElementById('clearBtn').addEventListener('click', clearGraphic);
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      
+      if (e.key === 'Escape' || e.key === ' ') {
+        e.preventDefault();
+        clearGraphic();
+      }
+      
+      // Number keys 1-9, 0 for 10
+      const num = e.key === '0' ? 10 : parseInt(e.key);
+      if (num >= 1 && num <= 20) {
+        const btn = document.querySelector(`.graphic-btn .number`)?.parentElement;
+        const buttons = document.querySelectorAll('.graphic-btn');
+        if (buttons[num - 1]) {
+          buttons[num - 1].click();
+        }
+      }
+    });
+
+    // Listen for state changes (sync with other controllers)
+    db.ref('currentGraphic').on('value', (snapshot) => {
+      const state = snapshot.val();
+      if (!state) return;
+      
+      document.querySelectorAll('.graphic-btn').forEach(btn => btn.classList.remove('active'));
+      
+      if (state.graphic === 'clear') {
+        document.getElementById('currentGraphicName').textContent = 'None';
+      } else {
+        // Find and highlight the active button
+        const graphicId = state.data?.frameTitle ? 
+          Object.keys(graphicNames).find(k => graphicNames[k] === state.data.frameTitle?.replace('_', ' ')) :
+          state.graphic;
+        document.querySelector(`[data-graphic="${graphicId}"]`)?.classList.add('active');
+      }
+    });
+
+    console.log('Controller ready!');
+    console.log('Keyboard shortcuts: 1-9 for graphics, Space/Esc to clear');
+  </script>
+</body>
+</html>

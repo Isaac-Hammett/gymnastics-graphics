@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1920, height=1080">
+  <title>Team Stats</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: transparent;
+    }
+    .stats-card {
+      position: absolute;
+      bottom: 120px;
+      left: 100px;
+    }
+    .stats-header {
+      background: #d4d4d8;
+      padding: 14px 30px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      min-width: 480px;
+    }
+    .stats-team-name {
+      font-size: 32px;
+      font-weight: 800;
+      color: #000;
+      flex: 1;
+    }
+    .stats-logo {
+      width: 70px;
+      height: 70px;
+      object-fit: contain;
+    }
+    .stats-con {
+      font-size: 20px;
+      font-weight: 600;
+      color: #000;
+      opacity: 0.7;
+    }
+    .stats-content {
+      background: #000;
+      padding: 16px 30px;
+      display: flex;
+      gap: 60px;
+    }
+    .stat-item {
+      color: #fff;
+    }
+    .stat-label {
+      font-size: 20px;
+      font-weight: 500;
+      opacity: 0.7;
+    }
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <div class="stats-card">
+    <div class="stats-header">
+      <div class="stats-team-name" id="teamName"></div>
+      <img id="logo" class="stats-logo" src="" alt="Team">
+      <div class="stats-con"><span id="con"></span> CON</div>
+    </div>
+    <div class="stats-content">
+      <div class="stat-item">
+        <div class="stat-label">AVE</div>
+        <div class="stat-value" id="ave"></div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">HIGH</div>
+        <div class="stat-value" id="high"></div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    document.getElementById('teamName').textContent = params.get('teamName') || '';
+    document.getElementById('logo').src = params.get('logo') || '';
+    document.getElementById('ave').textContent = params.get('ave') || '';
+    document.getElementById('high').textContent = params.get('high') || '';
+    document.getElementById('con').textContent = params.get('con') || '';
+  </script>
+</body>
+</html>
