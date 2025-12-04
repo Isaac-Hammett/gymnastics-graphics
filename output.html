@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1920, height=1080">
+  <title>Graphics Output</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: transparent;
+    }
+    #output {
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+
+    /* Animations */
+    .graphic-container {
+      animation: fadeIn 0.3s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Team Logos */
+    .graphic-logos {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 200px;
+      background: #fff;
+    }
+    .graphic-logos .team-logo {
+      width: 300px;
+      height: 300px;
+      object-fit: contain;
+      background: #f4f4f5;
+      border-radius: 24px;
+      padding: 30px;
+    }
+
+    /* Event Info Bar */
+    .graphic-event-bar {
+      position: absolute;
+      bottom: 80px;
+      left: 100px;
+      display: flex;
+      align-items: stretch;
+    }
+    .event-bar-logo {
+      width: 120px;
+      height: 120px;
+      background: #e4e4e7;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .event-bar-logo img {
+      width: 90px;
+      height: 90px;
+      object-fit: contain;
+    }
+    .event-bar-content {
+      display: flex;
+      flex-direction: column;
+    }
+    .event-bar-venue {
+      background: #d4d4d8;
+      padding: 12px 36px;
+      font-size: 28px;
+      font-weight: 700;
+      color: #000;
+    }
+    .event-bar-details {
+      background: #000;
+      padding: 12px 36px;
+      color: #fff;
+    }
+    .event-bar-name {
+      font-size: 24px;
+      font-weight: 700;
+    }
+    .event-bar-location {
+      font-size: 20px;
+      font-weight: 500;
+      opacity: 0.9;
+    }
+
+    /* Hosts Card */
+    .graphic-hosts {
+      position: absolute;
+      bottom: 120px;
+      left: 100px;
+    }
+    .hosts-header {
+      background: #d4d4d8;
+      padding: 16px 36px;
+      min-width: 400px;
+    }
+    .hosts-title {
+      font-size: 36px;
+      font-weight: 800;
+      color: #000;
+    }
+    .hosts-content {
+      background: #000;
+      padding: 20px 36px;
+      min-width: 400px;
+    }
+    .hosts-name {
+      font-size: 26px;
+      font-weight: 600;
+      color: #fff;
+      line-height: 1.5;
+    }
+
+    /* Team Stats Card */
+    .graphic-team-stats {
+      position: absolute;
+      bottom: 120px;
+      left: 100px;
+    }
+    .stats-header {
+      background: #d4d4d8;
+      padding: 14px 30px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      min-width: 480px;
+    }
+    .stats-team-name {
+      font-size: 32px;
+      font-weight: 800;
+      color: #000;
+      flex: 1;
+    }
+    .stats-logo {
+      width: 70px;
+      height: 70px;
+      object-fit: contain;
+    }
+    .stats-con {
+      font-size: 20px;
+      font-weight: 600;
+      color: #000;
+      opacity: 0.7;
+    }
+    .stats-content {
+      background: #000;
+      padding: 16px 30px;
+      display: flex;
+      gap: 60px;
+    }
+    .stat-item { color: #fff; }
+    .stat-label {
+      font-size: 20px;
+      font-weight: 500;
+      opacity: 0.7;
+    }
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+    }
+
+    /* Coaches Card */
+    .graphic-coaches {
+      position: absolute;
+      bottom: 120px;
+      left: 100px;
+    }
+    .coaches-header {
+      background: #d4d4d8;
+      padding: 16px 30px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-width: 420px;
+    }
+    .coaches-title {
+      font-size: 36px;
+      font-weight: 800;
+      color: #000;
+    }
+    .coaches-logo {
+      width: 70px;
+      height: 70px;
+      object-fit: contain;
+    }
+    .coaches-content {
+      background: #000;
+      padding: 20px 30px;
+      min-width: 420px;
+    }
+    .coach-name {
+      font-size: 24px;
+      font-weight: 500;
+      color: #fff;
+      line-height: 1.6;
+    }
+
+    /* Event Frame */
+    .graphic-event-frame {
+      position: absolute;
+      top: 50px;
+      left: 70px;
+      right: 70px;
+      bottom: 50px;
+      display: flex;
+      flex-direction: column;
+    }
+    .frame-header {
+      background: #d4d4d8;
+      padding: 18px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .frame-title {
+      font-size: 42px;
+      font-weight: 800;
+      color: #000;
+    }
+    .frame-logo {
+      width: 80px;
+      height: 80px;
+      object-fit: contain;
+    }
+    .frame-content {
+      flex: 1;
+      background: #000;
+    }
+
+    /* Stream Graphics */
+    .graphic-stream {
+      width: 100%;
+      height: 100%;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .stream-title {
+      font-size: 48px;
+      font-weight: 800;
+      color: #000;
+      margin-bottom: 50px;
+    }
+    .stream-logo {
+      width: 320px;
+      height: 320px;
+      object-fit: contain;
+      margin-bottom: 50px;
+    }
+    .stream-event-name {
+      font-size: 54px;
+      font-weight: 800;
+      color: #000;
+    }
+    .stream-date {
+      font-size: 42px;
+      font-weight: 700;
+      color: #000;
+      margin-top: 10px;
+    }
+    .stream-branding {
+      margin-top: 30px;
+      font-size: 36px;
+      font-weight: 600;
+      color: #000;
+    }
+    .stream-branding span {
+      color: #22d3ee;
+    }
+  </style>
+</head>
+<body>
+  <div id="output"></div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCh0aZUvKl6Qvqsva3hvOgJJlleP1OwcTY",
+      authDomain: "gymnastics-graphics.firebaseapp.com",
+      databaseURL: "https://gymnastics-graphics-default-rtdb.firebaseio.com",
+      projectId: "gymnastics-graphics",
+      storageBucket: "gymnastics-graphics.firebasestorage.app",
+      messagingSenderId: "702072609550",
+      appId: "1:702072609550:web:ac74a811186d3ff45b955f"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const output = document.getElementById('output');
+
+    // Graphic renderers
+    const renderers = {
+      clear: () => '',
+
+      logos: (data) => `
+        <div class="graphic-container graphic-logos">
+          <img class="team-logo" src="${data.team1Logo}" alt="Team 1">
+          <img class="team-logo" src="${data.team2Logo}" alt="Team 2">
+        </div>
+      `,
+
+      'event-bar': (data) => `
+        <div class="graphic-container graphic-event-bar">
+          <div class="event-bar-logo">
+            <img src="${data.team1Logo}" alt="Team">
+          </div>
+          <div class="event-bar-content">
+            <div class="event-bar-venue">${data.venue}</div>
+            <div class="event-bar-details">
+              <div class="event-bar-name">${data.eventName}</div>
+              <div class="event-bar-location">${data.location}</div>
+            </div>
+          </div>
+        </div>
+      `,
+
+      hosts: (data) => `
+        <div class="graphic-container graphic-hosts">
+          <div class="hosts-header">
+            <div class="hosts-title">HOSTS</div>
+          </div>
+          <div class="hosts-content">
+            ${data.hosts.split('\n').map(h => `<div class="hosts-name">${h}</div>`).join('')}
+          </div>
+        </div>
+      `,
+
+      'team1-stats': (data) => `
+        <div class="graphic-container graphic-team-stats">
+          <div class="stats-header">
+            <div class="stats-team-name">${data.team1Name}</div>
+            <img class="stats-logo" src="${data.team1Logo}" alt="Team">
+            <div class="stats-con">${data.team1Con} CON</div>
+          </div>
+          <div class="stats-content">
+            <div class="stat-item">
+              <div class="stat-label">AVE</div>
+              <div class="stat-value">${data.team1Ave}</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">HIGH</div>
+              <div class="stat-value">${data.team1High}</div>
+            </div>
+          </div>
+        </div>
+      `,
+
+      'team1-coaches': (data) => `
+        <div class="graphic-container graphic-coaches">
+          <div class="coaches-header">
+            <div class="coaches-title">COACHES</div>
+            <img class="coaches-logo" src="${data.team1Logo}" alt="Team">
+          </div>
+          <div class="coaches-content">
+            ${data.team1Coaches.split('\n').map(c => `<div class="coach-name">${c}</div>`).join('')}
+          </div>
+        </div>
+      `,
+
+      'team2-stats': (data) => `
+        <div class="graphic-container graphic-team-stats">
+          <div class="stats-header">
+            <div class="stats-team-name">${data.team2Name}</div>
+            <img class="stats-logo" src="${data.team2Logo}" alt="Team">
+            <div class="stats-con">${data.team2Con} CON</div>
+          </div>
+          <div class="stats-content">
+            <div class="stat-item">
+              <div class="stat-label">AVE</div>
+              <div class="stat-value">${data.team2Ave}</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">HIGH</div>
+              <div class="stat-value">${data.team2High}</div>
+            </div>
+          </div>
+        </div>
+      `,
+
+      'team2-coaches': (data) => `
+        <div class="graphic-container graphic-coaches">
+          <div class="coaches-header">
+            <div class="coaches-title">COACHES</div>
+            <img class="coaches-logo" src="${data.team2Logo}" alt="Team">
+          </div>
+          <div class="coaches-content">
+            ${data.team2Coaches.split('\n').map(c => `<div class="coach-name">${c}</div>`).join('')}
+          </div>
+        </div>
+      `,
+
+      'event-frame': (data) => `
+        <div class="graphic-container graphic-event-frame">
+          <div class="frame-header">
+            <div class="frame-title">${data.frameTitle}</div>
+            <img class="frame-logo" src="${data.team1Logo}" alt="Team">
+          </div>
+          <div class="frame-content"></div>
+        </div>
+      `,
+
+      'stream-starting': (data) => `
+        <div class="graphic-container graphic-stream">
+          <div class="stream-title">STREAM STARTING SOON</div>
+          <img class="stream-logo" src="${data.team1Logo}" alt="Team">
+          <div class="stream-event-name">${data.eventName}</div>
+          <div class="stream-date">${data.meetDate}</div>
+          <div class="stream-branding"><span>V</span>irtius</div>
+        </div>
+      `,
+
+      'stream-thanks': (data) => `
+        <div class="graphic-container graphic-stream">
+          <div class="stream-title">THANKS FOR WATCHING</div>
+          <img class="stream-logo" src="${data.team1Logo}" alt="Team">
+          <div class="stream-event-name">${data.eventName}</div>
+          <div class="stream-date">${data.meetDate}</div>
+          <div class="stream-branding"><span>V</span>irtius</div>
+        </div>
+      `
+    };
+
+    // Listen for graphic changes
+    db.ref('currentGraphic').on('value', (snapshot) => {
+      const state = snapshot.val();
+      if (!state) {
+        output.innerHTML = '';
+        return;
+      }
+
+      const { graphic, data } = state;
+      
+      if (graphic === 'clear' || !renderers[graphic]) {
+        output.innerHTML = '';
+        return;
+      }
+
+      output.innerHTML = renderers[graphic](data);
+    });
+
+    console.log('Output panel ready - listening for graphics...');
+  </script>
+</body>
+</html>

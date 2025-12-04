@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gymnastics Graphics Generator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0a0a0b;
+      color: #e4e4e7;
+      min-height: 100vh;
+    }
+    .app {
+      display: flex;
+      height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 300px;
+      background: #18181b;
+      border-right: 1px solid #27272a;
+      padding: 20px;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+    .sidebar h1 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: #fff;
+    }
+    .sidebar-subtitle {
+      font-size: 0.75rem;
+      color: #71717a;
+      margin-bottom: 24px;
+    }
+    .section-title {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #a1a1aa;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin: 20px 0 10px;
+    }
+    .graphic-btn {
+      width: 100%;
+      padding: 10px 12px;
+      background: transparent;
+      border: 1px solid #27272a;
+      border-radius: 8px;
+      color: #e4e4e7;
+      font-size: 0.8rem;
+      text-align: left;
+      cursor: pointer;
+      margin-bottom: 6px;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .graphic-btn:hover { background: #27272a; }
+    .graphic-btn.active { background: #3b82f6; border-color: #3b82f6; color: #fff; }
+    .graphic-btn span {
+      opacity: 0.5;
+      font-size: 0.7rem;
+      width: 20px;
+    }
+
+    /* Main */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .toolbar {
+      padding: 16px 24px;
+      background: #18181b;
+      border-bottom: 1px solid #27272a;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .toolbar h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      flex: 1;
+    }
+    .btn {
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s;
+    }
+    .btn-primary { background: #3b82f6; color: #fff; }
+    .btn-primary:hover { background: #2563eb; }
+    .btn-secondary { background: #27272a; color: #e4e4e7; }
+    .btn-secondary:hover { background: #3f3f46; }
+    .btn-success { background: #22c55e; color: #fff; }
+    .btn-success:hover { background: #16a34a; }
+
+    /* Preview */
+    .preview-container {
+      flex: 1;
+      padding: 24px;
+      overflow: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #111;
+    }
+    .preview-wrapper {
+      position: relative;
+      width: 960px;
+      height: 540px;
+      background: #000;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+    }
+    .preview-wrapper.transparent-bg {
+      background: repeating-conic-gradient(#222 0% 25%, #1a1a1a 0% 50%) 50% / 20px 20px;
+    }
+    .preview-wrapper iframe {
+      width: 1920px;
+      height: 1080px;
+      transform: scale(0.5);
+      transform-origin: top left;
+      border: none;
+    }
+
+    /* Config Panel */
+    .config-panel {
+      width: 340px;
+      background: #18181b;
+      border-left: 1px solid #27272a;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    .config-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: #fff;
+    }
+    .config-group { margin-bottom: 16px; }
+    .config-label {
+      font-size: 0.75rem;
+      color: #a1a1aa;
+      margin-bottom: 6px;
+      display: block;
+    }
+    .config-input {
+      width: 100%;
+      padding: 10px 12px;
+      background: #27272a;
+      border: 1px solid #3f3f46;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 0.85rem;
+    }
+    .config-input:focus { outline: none; border-color: #3b82f6; }
+    .config-input::placeholder { color: #71717a; }
+    .config-row {
+      display: flex;
+      gap: 8px;
+    }
+    .config-row .config-input { flex: 1; }
+
+    /* URL Output */
+    .url-section {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #27272a;
+    }
+    .url-box {
+      background: #0a0a0b;
+      border: 1px solid #27272a;
+      border-radius: 6px;
+      padding: 12px;
+      font-family: monospace;
+      font-size: 0.65rem;
+      color: #a1a1aa;
+      word-break: break-all;
+      max-height: 100px;
+      overflow-y: auto;
+      margin-bottom: 12px;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #22c55e;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.2s;
+      pointer-events: none;
+      z-index: 1000;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    /* Tabs */
+    .config-tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 16px;
+    }
+    .config-tab {
+      flex: 1;
+      padding: 8px;
+      background: #27272a;
+      border: none;
+      border-radius: 6px;
+      color: #a1a1aa;
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .config-tab.active { background: #3b82f6; color: #fff; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* All URLs section */
+    .all-urls {
+      margin-top: 20px;
+    }
+    .url-item {
+      background: #0a0a0b;
+      border: 1px solid #27272a;
+      border-radius: 6px;
+      padding: 10px;
+      margin-bottom: 8px;
+    }
+    .url-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .url-item-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #e4e4e7;
+    }
+    .url-item-copy {
+      padding: 4px 8px;
+      font-size: 0.65rem;
+      background: #3b82f6;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .url-item-url {
+      font-family: monospace;
+      font-size: 0.6rem;
+      color: #71717a;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <h1>🤸 Graphics Generator</h1>
+      <p class="sidebar-subtitle">OBS Overlay System</p>
+
+      <div class="section-title">Pre-Meet</div>
+      <button class="graphic-btn active" data-graphic="logos"><span>1</span>Team Logos</button>
+      <button class="graphic-btn" data-graphic="event-bar"><span>2</span>Event Info Bar</button>
+      <button class="graphic-btn" data-graphic="hosts"><span>3</span>Hosts</button>
+      <button class="graphic-btn" data-graphic="team1-stats"><span>4</span>Team 1 Stats</button>
+      <button class="graphic-btn" data-graphic="team1-coaches"><span>5</span>Team 1 Coaches</button>
+      <button class="graphic-btn" data-graphic="team2-stats"><span>6</span>Team 2 Stats</button>
+      <button class="graphic-btn" data-graphic="team2-coaches"><span>7</span>Team 2 Coaches</button>
+
+      <div class="section-title">Event Frames</div>
+      <button class="graphic-btn" data-graphic="floor"><span>8</span>Floor Exercise</button>
+      <button class="graphic-btn" data-graphic="pommel"><span>9</span>Pommel Horse</button>
+      <button class="graphic-btn" data-graphic="rings"><span>10</span>Still Rings</button>
+      <button class="graphic-btn" data-graphic="vault"><span>11</span>Vault</button>
+      <button class="graphic-btn" data-graphic="pbars"><span>12</span>Parallel Bars</button>
+      <button class="graphic-btn" data-graphic="hbar"><span>13</span>Horizontal Bar</button>
+      <button class="graphic-btn" data-graphic="allaround"><span>14</span>All Around</button>
+      <button class="graphic-btn" data-graphic="final"><span>15</span>Final Scores</button>
+      <button class="graphic-btn" data-graphic="order"><span>16</span>Competition Order</button>
+      <button class="graphic-btn" data-graphic="lineups"><span>17</span>Next Event Lineups</button>
+      <button class="graphic-btn" data-graphic="summary"><span>18</span>Event Summary</button>
+
+      <div class="section-title">Stream</div>
+      <button class="graphic-btn" data-graphic="starting"><span>19</span>Stream Starting</button>
+      <button class="graphic-btn" data-graphic="thanks"><span>20</span>Thanks for Watching</button>
+    </div>
+
+    <!-- Main Preview -->
+    <div class="main">
+      <div class="toolbar">
+        <h2 id="currentTitle">Team Logos</h2>
+        <button class="btn btn-secondary" onclick="openInNewTab()">↗ Open Full Size</button>
+        <button class="btn btn-primary" onclick="copyCurrentURL()">Copy URL</button>
+      </div>
+      <div class="preview-container">
+        <div class="preview-wrapper" id="previewWrapper">
+          <iframe id="previewFrame"></iframe>
+        </div>
+      </div>
+    </div>
+
+    <!-- Config Panel -->
+    <div class="config-panel">
+      <div class="config-tabs">
+        <button class="config-tab active" data-tab="meet">Meet Info</button>
+        <button class="config-tab" data-tab="team1">Team 1</button>
+        <button class="config-tab" data-tab="team2">Team 2</button>
+        <button class="config-tab" data-tab="urls">All URLs</button>
+      </div>
+
+      <!-- Meet Info Tab -->
+      <div class="tab-content active" id="tab-meet">
+        <div class="config-group">
+          <label class="config-label">Event Name</label>
+          <input type="text" class="config-input" id="eventName" value="Big Ten Dual Meet" oninput="updatePreview()">
+        </div>
+        <div class="config-group">
+          <label class="config-label">Meet Date</label>
+          <input type="text" class="config-input" id="meetDate" value="January 15, 2025" oninput="updatePreview()">
+        </div>
+        <div class="config-group">
+          <label class="config-label">Venue</label>
+          <input type="text" class="config-input" id="venue" value="Crisler Center" oninput="updatePreview()">
+        </div>
+        <div class="config-group">
+          <label class="config-label">Location</label>
+          <input type="text" class="config-input" id="location" value="Ann Arbor, MI" oninput="updatePreview()">
+        </div>
+        <div class="config-group">
+          <label class="config-label">Hosts (one per line)</label>
+          <textarea class="config-input" id="hosts" rows="2" oninput="updatePreview()">John Smith
+Sarah Johnson</textarea>
+        </div>
+      </div>
+
+      <!-- Team 1 Tab -->
+      <div class="tab-content" id="tab-team1">
+        <div class="config-group">
+          <label class="config-label">Team Name</label>
+          <input type="text" class="config-input" id="team1Name" value="Michigan" oninput="updatePreview()">
+        </div>
+        <div class="config-group">
+          <label class="config-label">Logo URL</label>
+          <input type="text" class="config-input" id="team1Logo" placeholder="https://example.com/logo.png" oninput="updatePreview()">
+        </div>
+        <div class="config-group">
+          <label class="config-label">Stats: AVE / HIGH / CON</label>
+          <div class="config-row">
+            <input type="text" class="config-input" id="team1Ave" value="406.850" oninput="updatePreview()">
+            <input type="text" class="config-input" id="team1High" value="409.200" oninput="updatePreview()">
+            <input type="text" class="config-input" id="team1Con" value="94.2%" oninput="updatePreview()">
+          </div>
+        </div>
+        <div class="config-group">
+          <label class="config-label">Coaches (one per line)</label>
+          <textarea class="config-input" id="team1Coaches" rows="4" oninput="updatePreview()">Kurt Golder
+Brian Coddington
+Tyler Balthazor</textarea>
+        </div>
+      </div>
+
+      <!-- Team 2 Tab -->
+      <div class="tab-content" id="tab-team2">
+        <div class="config-group">
+          <label class="config-label">Team Name</label>
+          <input type="text" class="config-input" id="team2Name" value="Ohio State" oninput="updatePreview()">
+        </div>
+        <div class="config-group">
+          <label class="config-label">Logo URL</label>
+          <input type="text" class="config-input" id="team2Logo" placeholder="https://example.com/logo.png" oninput="updatePreview()">
+        </div>
+        <div class="config-group">
+          <label class="config-label">Stats: AVE / HIGH / CON</label>
+          <div class="config-row">
+            <input type="text" class="config-input" id="team2Ave" value="403.450" oninput="updatePreview()">
+            <input type="text" class="config-input" id="team2High" value="406.100" oninput="updatePreview()">
+            <input type="text" class="config-input" id="team2Con" value="92.8%" oninput="updatePreview()">
+          </div>
+        </div>
+        <div class="config-group">
+          <label class="config-label">Coaches (one per line)</label>
+          <textarea class="config-input" id="team2Coaches" rows="4" oninput="updatePreview()">Rustam Sharipov
+Sergio Santana
+James Moore</textarea>
+        </div>
+      </div>
+
+      <!-- All URLs Tab -->
+      <div class="tab-content" id="tab-urls">
+        <p style="font-size: 0.75rem; color: #71717a; margin-bottom: 16px;">Copy these URLs into OBS as Browser Sources (1920x1080)</p>
+        <div class="all-urls" id="allUrls"></div>
+        <button class="btn btn-success" style="width: 100%; margin-top: 12px;" onclick="copyAllURLs()">📋 Copy All URLs</button>
+      </div>
+
+      <!-- Current URL -->
+      <div class="url-section">
+        <div class="config-label">Current Graphic URL</div>
+        <div class="url-box" id="currentUrl">Loading...</div>
+        <button class="btn btn-primary" style="width: 100%;" onclick="copyCurrentURL()">Copy URL for OBS</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">Copied to clipboard!</div>
+
+  <script>
+    let currentGraphic = 'logos';
+    const baseUrl = window.location.origin + window.location.pathname.replace('index.html', '');
+
+    const graphicTitles = {
+      logos: 'Team Logos',
+      'event-bar': 'Event Info Bar',
+      hosts: 'Hosts',
+      'team1-stats': 'Team 1 Stats',
+      'team1-coaches': 'Team 1 Coaches',
+      'team2-stats': 'Team 2 Stats',
+      'team2-coaches': 'Team 2 Coaches',
+      floor: 'Floor Exercise',
+      pommel: 'Pommel Horse',
+      rings: 'Still Rings',
+      vault: 'Vault',
+      pbars: 'Parallel Bars',
+      hbar: 'Horizontal Bar',
+      allaround: 'All Around',
+      final: 'Final Scores',
+      order: 'Competition Order',
+      lineups: 'Next Event Lineups',
+      summary: 'Event Summary',
+      starting: 'Stream Starting Soon',
+      thanks: 'Thanks for Watching'
+    };
+
+    const eventTitles = {
+      floor: 'FLOOR EXERCISE',
+      pommel: 'POMMEL HORSE',
+      rings: 'STILL RINGS',
+      vault: 'VAULT',
+      pbars: 'PARALLEL BARS',
+      hbar: 'HORIZONTAL BAR',
+      allaround: 'ALL AROUND',
+      final: 'FINAL SCORES',
+      order: 'COMPETITION ORDER',
+      lineups: 'NEXT EVENT LINEUPS',
+      summary: 'EVENT SUMMARY'
+    };
+
+    const transparentGraphics = ['event-bar', 'hosts', 'team1-stats', 'team1-coaches', 'team2-stats', 'team2-coaches', 
+                                  'floor', 'pommel', 'rings', 'vault', 'pbars', 'hbar', 'allaround', 'final', 'order', 'lineups', 'summary'];
+
+    function getValue(id) {
+      return document.getElementById(id).value;
+    }
+
+    function encodeParam(value) {
+      return encodeURIComponent(value);
+    }
+
+    function generateURL(graphic) {
+      const team1Logo = getValue('team1Logo') || 'https://via.placeholder.com/200/00274C/FFCB05?text=T1';
+      const team2Logo = getValue('team2Logo') || 'https://via.placeholder.com/200/BB0000/FFFFFF?text=T2';
+
+      switch(graphic) {
+        case 'logos':
+          return `${baseUrl}overlays/logos.html?team1Logo=${encodeParam(team1Logo)}&team2Logo=${encodeParam(team2Logo)}`;
+        
+        case 'event-bar':
+          return `${baseUrl}overlays/event-bar.html?team1Logo=${encodeParam(team1Logo)}&venue=${encodeParam(getValue('venue'))}&eventName=${encodeParam(getValue('eventName'))}&location=${encodeParam(getValue('location'))}`;
+        
+        case 'hosts':
+          const hosts = getValue('hosts').split('\n').join('|');
+          return `${baseUrl}overlays/hosts.html?hosts=${encodeParam(hosts)}`;
+        
+        case 'team1-stats':
+          return `${baseUrl}overlays/team-stats.html?teamName=${encodeParam(getValue('team1Name'))}&logo=${encodeParam(team1Logo)}&ave=${encodeParam(getValue('team1Ave'))}&high=${encodeParam(getValue('team1High'))}&con=${encodeParam(getValue('team1Con'))}`;
+        
+        case 'team1-coaches':
+          const team1Coaches = getValue('team1Coaches').split('\n').join('|');
+          return `${baseUrl}overlays/coaches.html?logo=${encodeParam(team1Logo)}&coaches=${encodeParam(team1Coaches)}`;
+        
+        case 'team2-stats':
+          return `${baseUrl}overlays/team-stats.html?teamName=${encodeParam(getValue('team2Name'))}&logo=${encodeParam(team2Logo)}&ave=${encodeParam(getValue('team2Ave'))}&high=${encodeParam(getValue('team2High'))}&con=${encodeParam(getValue('team2Con'))}`;
+        
+        case 'team2-coaches':
+          const team2Coaches = getValue('team2Coaches').split('\n').join('|');
+          return `${baseUrl}overlays/coaches.html?logo=${encodeParam(team2Logo)}&coaches=${encodeParam(team2Coaches)}`;
+        
+        case 'floor':
+        case 'pommel':
+        case 'rings':
+        case 'vault':
+        case 'pbars':
+        case 'hbar':
+        case 'allaround':
+        case 'final':
+        case 'order':
+        case 'lineups':
+        case 'summary':
+          return `${baseUrl}overlays/event-frame.html?title=${encodeParam(eventTitles[graphic])}&logo=${encodeParam(team1Logo)}`;
+        
+        case 'starting':
+          return `${baseUrl}overlays/stream.html?title=STREAM%20STARTING%20SOON&logo=${encodeParam(team1Logo)}&eventName=${encodeParam(getValue('eventName'))}&meetDate=${encodeParam(getValue('meetDate'))}`;
+        
+        case 'thanks':
+          return `${baseUrl}overlays/stream.html?title=THANKS%20FOR%20WATCHING&logo=${encodeParam(team1Logo)}&eventName=${encodeParam(getValue('eventName'))}&meetDate=${encodeParam(getValue('meetDate'))}`;
+        
+        default:
+          return '';
+      }
+    }
+
+    function updatePreview() {
+      const url = generateURL(currentGraphic);
+      document.getElementById('previewFrame').src = url;
+      document.getElementById('currentUrl').textContent = url;
+      
+      const isTransparent = transparentGraphics.includes(currentGraphic);
+      document.getElementById('previewWrapper').classList.toggle('transparent-bg', isTransparent);
+      
+      updateAllURLs();
+    }
+
+    function updateAllURLs() {
+      const container = document.getElementById('allUrls');
+      container.innerHTML = '';
+      
+      Object.keys(graphicTitles).forEach(graphic => {
+        const url = generateURL(graphic);
+        const item = document.createElement('div');
+        item.className = 'url-item';
+        item.innerHTML = `
+          <div class="url-item-header">
+            <span class="url-item-title">${graphicTitles[graphic]}</span>
+            <button class="url-item-copy" onclick="copyURL('${graphic}')">Copy</button>
+          </div>
+          <div class="url-item-url">${url}</div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function copyURL(graphic) {
+      const url = generateURL(graphic);
+      navigator.clipboard.writeText(url);
+      showToast('Copied: ' + graphicTitles[graphic]);
+    }
+
+    function copyCurrentURL() {
+      const url = generateURL(currentGraphic);
+      navigator.clipboard.writeText(url);
+      showToast('URL copied to clipboard!');
+    }
+
+    function copyAllURLs() {
+      const allUrls = Object.keys(graphicTitles).map(g => `${graphicTitles[g]}:\n${generateURL(g)}`).join('\n\n');
+      navigator.clipboard.writeText(allUrls);
+      showToast('All URLs copied!');
+    }
+
+    function openInNewTab() {
+      window.open(generateURL(currentGraphic), '_blank');
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // Graphic selection
+    document.querySelectorAll('.graphic-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.graphic-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentGraphic = btn.dataset.graphic;
+        document.getElementById('currentTitle').textContent = graphicTitles[currentGraphic];
+        updatePreview();
+      });
+    });
+
+    // Tab switching
+    document.querySelectorAll('.config-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.config-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+      });
+    });
+
+    // Initial render
+    updatePreview();
+  </script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1920, height=1080">
+  <title>Coaches</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: transparent;
+    }
+    .coaches-card {
+      position: absolute;
+      bottom: 120px;
+      left: 100px;
+    }
+    .coaches-header {
+      background: #d4d4d8;
+      padding: 16px 30px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-width: 420px;
+    }
+    .coaches-title {
+      font-size: 36px;
+      font-weight: 800;
+      color: #000;
+    }
+    .coaches-logo {
+      width: 70px;
+      height: 70px;
+      object-fit: contain;
+    }
+    .coaches-content {
+      background: #000;
+      padding: 20px 30px;
+      min-width: 420px;
+    }
+    .coach-name {
+      font-size: 24px;
+      font-weight: 500;
+      color: #fff;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="coaches-card">
+    <div class="coaches-header">
+      <div class="coaches-title">COACHES</div>
+      <img id="logo" class="coaches-logo" src="" alt="Team">
+    </div>
+    <div class="coaches-content" id="coachesList">
+    </div>
+  </div>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    document.getElementById('logo').src = params.get('logo') || '';
+    const coaches = params.get('coaches') || '';
+    const coachesList = document.getElementById('coachesList');
+    coaches.split('|').forEach(coach => {
+      if (coach.trim()) {
+        const div = document.createElement('div');
+        div.className = 'coach-name';
+        div.textContent = coach.trim();
+        coachesList.appendChild(div);
+      }
+    });
+  </script>
+</body>
+</html>
