@@ -341,6 +341,9 @@ James Moore</textarea>
           <div class="status-dot"></div>
           <span>Connected</span>
         </div>
+        <div style="flex: 1; text-align: center; font-size: 0.75rem; color: #71717a;">
+          Competition: <strong style="color: #3b82f6;" id="compDisplay"></strong>
+        </div>
         <div class="current-graphic">
           Current: <span id="currentGraphicName">None</span>
         </div>
@@ -437,6 +440,15 @@ James Moore</textarea>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
   <script>
+    // Get competition ID from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const competitionId = urlParams.get('comp');
+
+    if (!competitionId) {
+      alert('No competition ID specified. Please access this page from the dashboard.');
+      window.location.href = 'dashboard.html';
+    }
+
     const firebaseConfig = {
       apiKey: "AIzaSyCh0aZUvKl6Qvqsva3hvOgJJlleP1OwcTY",
       authDomain: "gymnastics-graphics.firebaseapp.com",
@@ -511,7 +523,7 @@ James Moore</textarea>
         graphicType = 'event-frame';
       }
 
-      db.ref('currentGraphic').set({
+      db.ref(`competitions/${competitionId}/currentGraphic`).set({
         graphic: graphicType,
         data: data,
         timestamp: Date.now()
@@ -526,7 +538,7 @@ James Moore</textarea>
     }
 
     function clearGraphic() {
-      db.ref('currentGraphic').set({
+      db.ref(`competitions/${competitionId}/currentGraphic`).set({
         graphic: 'clear',
         data: {},
         timestamp: Date.now()
@@ -575,8 +587,32 @@ James Moore</textarea>
       }
     });
 
+    // Load config from Firebase
+    db.ref(`competitions/${competitionId}/config`).once('value', (snapshot) => {
+      const config = snapshot.val();
+      if (config) {
+        document.getElementById('eventName').value = config.eventName || '';
+        document.getElementById('meetDate').value = config.meetDate || '';
+        document.getElementById('venue').value = config.venue || '';
+        document.getElementById('location').value = config.location || '';
+        document.getElementById('hosts').value = config.hosts || '';
+        document.getElementById('team1Name').value = config.team1Name || '';
+        document.getElementById('team1Logo').value = config.team1Logo || '';
+        document.getElementById('team1Ave').value = config.team1Ave || '';
+        document.getElementById('team1High').value = config.team1High || '';
+        document.getElementById('team1Con').value = config.team1Con || '';
+        document.getElementById('team1Coaches').value = config.team1Coaches || '';
+        document.getElementById('team2Name').value = config.team2Name || '';
+        document.getElementById('team2Logo').value = config.team2Logo || '';
+        document.getElementById('team2Ave').value = config.team2Ave || '';
+        document.getElementById('team2High').value = config.team2High || '';
+        document.getElementById('team2Con').value = config.team2Con || '';
+        document.getElementById('team2Coaches').value = config.team2Coaches || '';
+      }
+    });
+
     // Listen for state changes (sync with other controllers)
-    db.ref('currentGraphic').on('value', (snapshot) => {
+    db.ref(`competitions/${competitionId}/currentGraphic`).on('value', (snapshot) => {
       const state = snapshot.val();
       if (!state) return;
       
@@ -593,7 +629,10 @@ James Moore</textarea>
       }
     });
 
-    console.log('Controller ready!');
+    // Display competition ID
+    document.getElementById('compDisplay').textContent = competitionId.toUpperCase();
+
+    console.log(`Controller ready for competition: ${competitionId}`);
     console.log('Keyboard shortcuts: 1-9 for graphics, Space/Esc to clear');
   </script>
 </body>

@@ -278,7 +278,7 @@
     <!-- Sidebar -->
     <div class="sidebar">
       <h1>🤸 Graphics Generator</h1>
-      <p class="sidebar-subtitle">OBS Overlay System</p>
+      <p class="sidebar-subtitle" id="sidebarSubtitle">OBS Overlay System</p>
 
       <div class="section-title">Pre-Meet</div>
       <button class="graphic-btn active" data-graphic="logos"><span>1</span>Team Logos</button>
@@ -426,6 +426,10 @@ James Moore</textarea>
   <div class="toast" id="toast">Copied to clipboard!</div>
 
   <script>
+    // Get competition ID from URL (optional for this page)
+    const urlParams = new URLSearchParams(window.location.search);
+    const competitionId = urlParams.get('comp');
+
     let currentGraphic = 'logos';
     const baseUrl = window.location.origin + window.location.pathname.replace('index.html', '');
 
@@ -609,6 +613,65 @@ James Moore</textarea>
         document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
       });
     });
+
+    // Load config from Firebase if competition ID is provided
+    if (competitionId) {
+      // Add Firebase
+      const script1 = document.createElement('script');
+      script1.src = 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js';
+      document.head.appendChild(script1);
+
+      script1.onload = () => {
+        const script2 = document.createElement('script');
+        script2.src = 'https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js';
+        document.head.appendChild(script2);
+
+        script2.onload = () => {
+          const firebaseConfig = {
+            apiKey: "AIzaSyCh0aZUvKl6Qvqsva3hvOgJJlleP1OwcTY",
+            authDomain: "gymnastics-graphics.firebaseapp.com",
+            databaseURL: "https://gymnastics-graphics-default-rtdb.firebaseio.com",
+            projectId: "gymnastics-graphics",
+            storageBucket: "gymnastics-graphics.firebasestorage.app",
+            messagingSenderId: "702072609550",
+            appId: "1:702072609550:web:ac74a811186d3ff45b955f"
+          };
+
+          firebase.initializeApp(firebaseConfig);
+          const db = firebase.database();
+
+          // Load competition config
+          db.ref(`competitions/${competitionId}/config`).once('value', (snapshot) => {
+            const config = snapshot.val();
+            if (config) {
+              document.getElementById('eventName').value = config.eventName || '';
+              document.getElementById('meetDate').value = config.meetDate || '';
+              document.getElementById('venue').value = config.venue || '';
+              document.getElementById('location').value = config.location || '';
+              document.getElementById('hosts').value = config.hosts || '';
+              document.getElementById('team1Name').value = config.team1Name || '';
+              document.getElementById('team1Logo').value = config.team1Logo || '';
+              document.getElementById('team1Ave').value = config.team1Ave || '';
+              document.getElementById('team1High').value = config.team1High || '';
+              document.getElementById('team1Con').value = config.team1Con || '';
+              document.getElementById('team1Coaches').value = config.team1Coaches || '';
+              document.getElementById('team2Name').value = config.team2Name || '';
+              document.getElementById('team2Logo').value = config.team2Logo || '';
+              document.getElementById('team2Ave').value = config.team2Ave || '';
+              document.getElementById('team2High').value = config.team2High || '';
+              document.getElementById('team2Con').value = config.team2Con || '';
+              document.getElementById('team2Coaches').value = config.team2Coaches || '';
+              updatePreview();
+            }
+          });
+        };
+      };
+
+      // Update subtitle
+      document.getElementById('sidebarSubtitle').textContent = `Competition: ${competitionId.toUpperCase()}`;
+      document.getElementById('sidebarSubtitle').style.color = '#3b82f6';
+      document.getElementById('sidebarSubtitle').style.fontWeight = '600';
+    }
 
     // Initial render
     updatePreview();
