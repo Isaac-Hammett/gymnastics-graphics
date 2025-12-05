@@ -560,8 +560,8 @@ James Moore</textarea>
       }
     });
 
-    // Load config from Firebase
-    db.ref(`competitions/${competitionId}/config`).once('value', (snapshot) => {
+    // Load and listen for config changes from Firebase
+    db.ref(`competitions/${competitionId}/config`).on('value', (snapshot) => {
       const config = snapshot.val();
       if (config) {
         document.getElementById('eventName').value = config.eventName || '';
