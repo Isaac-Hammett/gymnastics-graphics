@@ -296,6 +296,20 @@
           <input type="text" class="form-input" id="compId" placeholder="e.g., court1, meet-a, ncaa-finals" required pattern="[a-z0-9-]+" title="Only lowercase letters, numbers, and hyphens">
         </div>
         <div class="form-group">
+          <label class="form-label">Competition Type</label>
+          <select class="form-input" id="compType" required onchange="updateTeamFields()">
+            <option value="">Select type...</option>
+            <option value="mens-dual">Men's Dual Meet (2 teams)</option>
+            <option value="mens-tri">Men's Tri Meet (3 teams)</option>
+            <option value="mens-quad">Men's Quad Meet (4 teams)</option>
+            <option value="mens-5">Men's 5-Team Meet</option>
+            <option value="mens-6">Men's 6-Team Meet</option>
+            <option value="womens-dual">Women's Dual Meet (2 teams)</option>
+            <option value="womens-tri">Women's Tri Meet (3 teams)</option>
+            <option value="womens-quad">Women's Quad Meet (4 teams)</option>
+          </select>
+        </div>
+        <div class="form-group">
           <label class="form-label">Event Name</label>
           <input type="text" class="form-input" id="eventName" placeholder="e.g., Big Ten Dual Meet" required>
         </div>
@@ -313,13 +327,31 @@
             <input type="text" class="form-input" id="location" placeholder="e.g., Ann Arbor, MI" required>
           </div>
         </div>
-        <div class="form-group">
-          <label class="form-label">Team 1 Name</label>
-          <input type="text" class="form-input" id="team1Name" placeholder="e.g., Michigan" required>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Team 2 Name</label>
-          <input type="text" class="form-input" id="team2Name" placeholder="e.g., Ohio State" required>
+        <div id="teamsContainer">
+          <div class="form-group">
+            <label class="form-label">Team 1 Name</label>
+            <input type="text" class="form-input" id="team1Name" placeholder="e.g., Michigan" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Team 2 Name</label>
+            <input type="text" class="form-input" id="team2Name" placeholder="e.g., Ohio State" required>
+          </div>
+          <div class="form-group" id="team3Group" style="display: none;">
+            <label class="form-label">Team 3 Name</label>
+            <input type="text" class="form-input" id="team3Name" placeholder="e.g., Penn State">
+          </div>
+          <div class="form-group" id="team4Group" style="display: none;">
+            <label class="form-label">Team 4 Name</label>
+            <input type="text" class="form-input" id="team4Name" placeholder="e.g., Nebraska">
+          </div>
+          <div class="form-group" id="team5Group" style="display: none;">
+            <label class="form-label">Team 5 Name</label>
+            <input type="text" class="form-input" id="team5Name" placeholder="e.g., Stanford">
+          </div>
+          <div class="form-group" id="team6Group" style="display: none;">
+            <label class="form-label">Team 6 Name</label>
+            <input type="text" class="form-input" id="team6Name" placeholder="e.g., Oklahoma">
+          </div>
         </div>
         <div class="modal-actions">
           <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
@@ -349,6 +381,34 @@
     let competitions = {};
     let editingCompId = null;
 
+    // Update team fields based on competition type
+    function updateTeamFields() {
+      const compType = document.getElementById('compType').value;
+      const teamCounts = {
+        'mens-dual': 2, 'womens-dual': 2,
+        'mens-tri': 3, 'womens-tri': 3,
+        'mens-quad': 4, 'womens-quad': 4,
+        'mens-5': 5,
+        'mens-6': 6
+      };
+
+      const teamCount = teamCounts[compType] || 2;
+
+      // Show/hide team fields
+      for (let i = 3; i <= 6; i++) {
+        const group = document.getElementById(`team${i}Group`);
+        const input = document.getElementById(`team${i}Name`);
+        if (i <= teamCount) {
+          group.style.display = 'block';
+          input.required = true;
+        } else {
+          group.style.display = 'none';
+          input.required = false;
+          input.value = '';
+        }
+      }
+    }
+
     // Load competitions from Firebase
     db.ref('competitions').on('value', (snapshot) => {
       competitions = snapshot.val() || {};
@@ -374,11 +434,25 @@
         const comp = competitions[compId].config || {};
         const hasConfig = comp.eventName && comp.team1Name && comp.team2Name;
 
+        const typeLabels = {
+          'mens-dual': "Men's Dual",
+          'mens-tri': "Men's Tri",
+          'mens-quad': "Men's Quad",
+          'mens-5': "Men's 5-Team",
+          'mens-6': "Men's 6-Team",
+          'womens-dual': "Women's Dual",
+          'womens-tri': "Women's Tri",
+          'womens-quad': "Women's Quad"
+        };
+
+        const teams = [comp.team1Name, comp.team2Name, comp.team3Name, comp.team4Name, comp.team5Name, comp.team6Name].filter(Boolean);
+        const teamsDisplay = teams.join(' vs ') || 'Teams not set';
+
         return `
           <div class="comp-card">
             <div class="comp-header">
               <div>
-                <div class="comp-id">${compId}</div>
+                <div class="comp-id">${compId} • ${typeLabels[comp.compType] || 'Type not set'}</div>
                 <div class="comp-name">${comp.eventName || 'Untitled Competition'}</div>
                 <div class="comp-date">${comp.meetDate || 'Date not set'}</div>
               </div>
@@ -387,7 +461,7 @@
               </div>
             </div>
             <div class="comp-details">
-              <div class="comp-teams">${comp.team1Name || 'Team 1'} vs ${comp.team2Name || 'Team 2'}</div>
+              <div class="comp-teams">${teamsDisplay}</div>
               <div class="comp-venue">${comp.venue || 'Venue not set'} • ${comp.location || 'Location not set'}</div>
             </div>
             <div class="comp-actions">
@@ -407,6 +481,7 @@
       document.getElementById('deleteBtn').style.display = 'none';
       document.getElementById('compForm').reset();
       document.getElementById('compId').disabled = false;
+      updateTeamFields(); // Reset team fields
       document.getElementById('compModal').classList.add('show');
     }
 
@@ -418,13 +493,19 @@
       document.getElementById('deleteBtn').style.display = 'block';
       document.getElementById('compId').value = compId;
       document.getElementById('compId').disabled = true;
+      document.getElementById('compType').value = comp.compType || 'mens-dual';
       document.getElementById('eventName').value = comp.eventName || '';
       document.getElementById('meetDate').value = comp.meetDate || '';
       document.getElementById('venue').value = comp.venue || '';
       document.getElementById('location').value = comp.location || '';
       document.getElementById('team1Name').value = comp.team1Name || '';
       document.getElementById('team2Name').value = comp.team2Name || '';
+      document.getElementById('team3Name').value = comp.team3Name || '';
+      document.getElementById('team4Name').value = comp.team4Name || '';
+      document.getElementById('team5Name').value = comp.team5Name || '';
+      document.getElementById('team6Name').value = comp.team6Name || '';
 
+      updateTeamFields(); // Show correct team fields
       document.getElementById('compModal').classList.add('show');
     }
 
@@ -438,12 +519,17 @@
 
       const compId = document.getElementById('compId').value.toLowerCase().trim();
       const config = {
+        compType: document.getElementById('compType').value,
         eventName: document.getElementById('eventName').value,
         meetDate: document.getElementById('meetDate').value,
         venue: document.getElementById('venue').value,
         location: document.getElementById('location').value,
         team1Name: document.getElementById('team1Name').value,
         team2Name: document.getElementById('team2Name').value,
+        team3Name: document.getElementById('team3Name').value || '',
+        team4Name: document.getElementById('team4Name').value || '',
+        team5Name: document.getElementById('team5Name').value || '',
+        team6Name: document.getElementById('team6Name').value || '',
         // Set defaults for other fields
         hosts: 'Host Name',
         team1Logo: 'https://via.placeholder.com/200/00274C/FFCB05?text=T1',
