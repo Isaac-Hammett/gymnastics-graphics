@@ -718,6 +718,55 @@ James Moore</textarea>
               updatePreview();
             }
           });
+
+          // Save function that updates Firebase
+          window.saveConfigToFirebase = function() {
+            db.ref(`competitions/${competitionId}/config`).once('value', (snapshot) => {
+              const existingConfig = snapshot.val() || {};
+
+              // Update with current form values
+              const updatedConfig = {
+                ...existingConfig,
+                eventName: getValue('eventName'),
+                meetDate: getValue('meetDate'),
+                venue: getValue('venue'),
+                location: getValue('location'),
+                hosts: getValue('hosts'),
+                team1Name: getValue('team1Name'),
+                team1Logo: getValue('team1Logo'),
+                team1Ave: getValue('team1Ave'),
+                team1High: getValue('team1High'),
+                team1Con: getValue('team1Con'),
+                team1Coaches: getValue('team1Coaches'),
+                team2Name: getValue('team2Name'),
+                team2Logo: getValue('team2Logo'),
+                team2Ave: getValue('team2Ave'),
+                team2High: getValue('team2High'),
+                team2Con: getValue('team2Con'),
+                team2Coaches: getValue('team2Coaches')
+              };
+
+              // Save to Firebase
+              db.ref(`competitions/${competitionId}/config`).update(updatedConfig)
+                .then(() => {
+                  showToast('Saved!');
+                })
+                .catch((error) => {
+                  console.error('Error saving:', error);
+                });
+            });
+          };
+
+          // Auto-save on input change (debounced)
+          let saveTimeout;
+          document.querySelectorAll('.config-input').forEach(input => {
+            input.addEventListener('input', () => {
+              clearTimeout(saveTimeout);
+              saveTimeout = setTimeout(() => {
+                window.saveConfigToFirebase();
+              }, 1000); // Save 1 second after user stops typing
+            });
+          });
         };
       };
 
