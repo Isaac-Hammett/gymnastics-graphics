@@ -469,6 +469,8 @@
               <a href="output.html?comp=${compId}" class="comp-btn" target="_blank">Open Output</a>
               <a href="index.html?comp=${compId}" class="comp-btn" target="_blank">URL Generator</a>
               <button class="comp-btn" onclick="openEditModal('${compId}')">Edit Config</button>
+              <button class="comp-btn" onclick="duplicateCompetition('${compId}')">Duplicate</button>
+              <button class="comp-btn" onclick="deleteCompetitionConfirm('${compId}')" style="color: #ef4444;">Delete</button>
             </div>
           </div>
         `;
@@ -565,6 +567,61 @@
             alert('Error deleting competition: ' + error.message);
           });
       }
+    }
+
+    function deleteCompetitionConfirm(compId) {
+      if (confirm(`Are you sure you want to delete "${compId}"?\n\nThis will permanently delete:\n- All configuration\n- Current graphic state\n- All data for this competition\n\nThis cannot be undone.`)) {
+        db.ref(`competitions/${compId}`).remove()
+          .then(() => {
+            // Success - Firebase listener will update UI automatically
+          })
+          .catch((error) => {
+            alert('Error deleting competition: ' + error.message);
+          });
+      }
+    }
+
+    function duplicateCompetition(sourceCompId) {
+      const newCompId = prompt(`Duplicate "${sourceCompId}" as:\n\nEnter new competition ID (lowercase, no spaces):`, sourceCompId + '-copy');
+
+      if (!newCompId) return; // User cancelled
+
+      // Validate competition ID
+      if (!/^[a-z0-9-]+$/.test(newCompId)) {
+        alert('Competition ID can only contain lowercase letters, numbers, and hyphens.');
+        return;
+      }
+
+      // Check if ID already exists
+      if (competitions[newCompId]) {
+        alert(`Competition "${newCompId}" already exists. Please choose a different ID.`);
+        return;
+      }
+
+      // Get source competition data
+      db.ref(`competitions/${sourceCompId}/config`).once('value', (snapshot) => {
+        const sourceConfig = snapshot.val();
+
+        if (!sourceConfig) {
+          alert('Error: Source competition has no configuration.');
+          return;
+        }
+
+        // Create duplicate with new ID
+        const duplicateConfig = {
+          ...sourceConfig,
+          // Optionally modify some fields for the duplicate
+          eventName: sourceConfig.eventName ? sourceConfig.eventName + ' (Copy)' : 'Copy'
+        };
+
+        db.ref(`competitions/${newCompId}/config`).set(duplicateConfig)
+          .then(() => {
+            alert(`Competition duplicated successfully as "${newCompId}"!`);
+          })
+          .catch((error) => {
+            alert('Error duplicating competition: ' + error.message);
+          });
+      });
     }
 
     // Close modal when clicking outside
