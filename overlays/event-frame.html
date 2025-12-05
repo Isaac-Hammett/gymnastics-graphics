@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=1920, height=1080">
   <title>Event Frame</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;800;900&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -14,32 +14,49 @@
       overflow: hidden;
       background: transparent;
     }
+
     .frame {
       position: absolute;
-      top: 50px;
-      left: 70px;
-      right: 70px;
-      bottom: 50px;
+      top: 60px;
+      left: 80px;
+      right: 80px;
+      bottom: 60px;
       display: flex;
       flex-direction: column;
+      animation: fadeIn 0.5s ease-out;
     }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
     .frame-header {
-      background: #d4d4d8;
-      padding: 18px 40px;
+      background: #BFBFBF;
+      padding: 18px 50px;
       display: flex;
       align-items: center;
       justify-content: space-between;
     }
+
     .frame-title {
-      font-size: 42px;
-      font-weight: 800;
+      font-size: 56px;
+      font-weight: 900;
       color: #000;
+      text-transform: uppercase;
+      letter-spacing: -1px;
     }
+
     .frame-logo {
-      width: 80px;
-      height: 80px;
+      width: 90px;
+      height: 90px;
       object-fit: contain;
     }
+
     .frame-content {
       flex: 1;
       background: #000;
@@ -49,7 +66,7 @@
 <body>
   <div class="frame">
     <div class="frame-header">
-      <div class="frame-title" id="title"></div>
+      <div class="frame-title" id="title">EVENT</div>
       <img id="logo" class="frame-logo" src="" alt="Team">
     </div>
     <div class="frame-content">
@@ -58,7 +75,7 @@
   </div>
   <script>
     const params = new URLSearchParams(window.location.search);
-    document.getElementById('title').textContent = params.get('title') || 'EVENT';
+    document.getElementById('title').textContent = (params.get('title') || 'EVENT').toUpperCase();
     document.getElementById('logo').src = params.get('logo') || '';
   </script>
 </body>

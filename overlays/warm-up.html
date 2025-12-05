@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=1920, height=1080">
-  <title>Event Info Bar</title>
+  <title>Warm Up</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;800;900&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -15,7 +15,7 @@
       background: transparent;
     }
 
-    .event-bar {
+    .warm-up {
       position: absolute;
       bottom: 120px;
       left: 100px;
@@ -55,37 +55,28 @@
       flex-direction: column;
     }
 
-    .venue-row {
+    .teams-row {
       background: #BFBFBF;
       padding: 10px 40px;
-      min-width: 600px;
+      min-width: 450px;
     }
 
-    .venue-text {
-      font-size: 36px;
+    .teams-text {
+      font-size: 30px;
       font-weight: 900;
       color: #000;
       text-transform: uppercase;
       letter-spacing: -0.5px;
     }
 
-    .details-row {
+    .status-row {
       background: #000;
       padding: 10px 40px;
     }
 
-    .teams-text {
+    .status-text {
       font-size: 28px;
       font-weight: 800;
-      color: #fff;
-      text-transform: uppercase;
-      letter-spacing: -0.5px;
-      line-height: 1.2;
-    }
-
-    .location-text {
-      font-size: 24px;
-      font-weight: 700;
       color: #fff;
       text-transform: uppercase;
       letter-spacing: -0.5px;
@@ -93,24 +84,22 @@
   </style>
 </head>
 <body>
-  <div class="event-bar">
+  <div class="warm-up">
     <div class="logo-section">
       <img id="logo" src="" alt="Team">
     </div>
     <div class="content-section">
-      <div class="venue-row">
-        <div class="venue-text" id="venue">VENUE NAME</div>
-      </div>
-      <div class="details-row">
+      <div class="teams-row">
         <div class="teams-text" id="teams">TEAM 1 VS TEAM 2</div>
-        <div class="location-text" id="location">CITY, STATE</div>
+      </div>
+      <div class="status-row">
+        <div class="status-text">WARM UP</div>
       </div>
     </div>
   </div>
   <script>
     const params = new URLSearchParams(window.location.search);
     document.getElementById('logo').src = params.get('team1Logo') || params.get('logo') || '';
-    document.getElementById('venue').textContent = (params.get('venue') || 'VENUE NAME').toUpperCase();
 
     // Handle teams - either from eventName or construct from team names
     const eventName = params.get('eventName');
@@ -122,8 +111,6 @@
     } else if (team1 && team2) {
       document.getElementById('teams').textContent = `${team1.toUpperCase()} VS ${team2.toUpperCase()}`;
     }
-
-    document.getElementById('location').textContent = (params.get('location') || 'CITY, STATE').toUpperCase();
   </script>
 </body>
 </html>
