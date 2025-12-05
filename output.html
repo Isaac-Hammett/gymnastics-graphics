@@ -51,22 +51,33 @@
     /* Event Info Bar */
     .graphic-event-bar {
       position: absolute;
-      bottom: 80px;
+      bottom: 120px;
       left: 100px;
       display: flex;
-      align-items: stretch;
+      flex-direction: row;
+      animation: slideIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-100px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
     }
     .event-bar-logo {
-      width: 120px;
-      height: 120px;
-      background: #e4e4e7;
+      width: 100px;
+      background: #BFBFBF;
       display: flex;
       align-items: center;
       justify-content: center;
+      padding: 15px;
     }
     .event-bar-logo img {
-      width: 90px;
-      height: 90px;
+      width: 70px;
+      height: 70px;
       object-fit: contain;
     }
     .event-bar-content {
@@ -74,25 +85,33 @@
       flex-direction: column;
     }
     .event-bar-venue {
-      background: #d4d4d8;
-      padding: 12px 36px;
-      font-size: 28px;
-      font-weight: 700;
+      background: #BFBFBF;
+      padding: 10px 40px;
+      min-width: 600px;
+      font-size: 36px;
+      font-weight: 900;
       color: #000;
+      text-transform: uppercase;
+      letter-spacing: -0.5px;
     }
     .event-bar-details {
       background: #000;
-      padding: 12px 36px;
-      color: #fff;
+      padding: 10px 40px;
     }
     .event-bar-name {
-      font-size: 24px;
-      font-weight: 700;
+      font-size: 28px;
+      font-weight: 800;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: -0.5px;
+      line-height: 1.2;
     }
     .event-bar-location {
-      font-size: 20px;
-      font-weight: 500;
-      opacity: 0.9;
+      font-size: 24px;
+      font-weight: 700;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: -0.5px;
     }
 
     /* Hosts Card */
