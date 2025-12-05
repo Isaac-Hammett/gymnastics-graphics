@@ -379,40 +379,8 @@ James Moore</textarea>
 
         <div class="section">
           <div class="section-title">Event Frames</div>
-          <div class="button-grid">
-            <button class="graphic-btn" data-graphic="floor" data-title="FLOOR EXERCISE">
-              <span class="number">8</span>Floor
-            </button>
-            <button class="graphic-btn" data-graphic="pommel" data-title="POMMEL HORSE">
-              <span class="number">9</span>Pommel Horse
-            </button>
-            <button class="graphic-btn" data-graphic="rings" data-title="STILL RINGS">
-              <span class="number">10</span>Still Rings
-            </button>
-            <button class="graphic-btn" data-graphic="vault" data-title="VAULT">
-              <span class="number">11</span>Vault
-            </button>
-            <button class="graphic-btn" data-graphic="pbars" data-title="PARALLEL BARS">
-              <span class="number">12</span>Parallel Bars
-            </button>
-            <button class="graphic-btn" data-graphic="hbar" data-title="HORIZONTAL BAR">
-              <span class="number">13</span>High Bar
-            </button>
-            <button class="graphic-btn" data-graphic="allaround" data-title="ALL AROUND">
-              <span class="number">14</span>All Around
-            </button>
-            <button class="graphic-btn" data-graphic="final" data-title="FINAL SCORES">
-              <span class="number">15</span>Final Scores
-            </button>
-            <button class="graphic-btn" data-graphic="order" data-title="COMPETITION ORDER">
-              <span class="number">16</span>Comp Order
-            </button>
-            <button class="graphic-btn" data-graphic="lineups" data-title="NEXT EVENT LINEUPS">
-              <span class="number">17</span>Lineups
-            </button>
-            <button class="graphic-btn" data-graphic="summary" data-title="EVENT SUMMARY">
-              <span class="number">18</span>Summary
-            </button>
+          <div class="button-grid" id="eventFramesGrid">
+            <!-- Buttons will be dynamically inserted based on competition type -->
           </div>
         </div>
 
@@ -556,14 +524,19 @@ James Moore</textarea>
       setTimeout(() => toast.classList.remove('show'), 2000);
     }
 
-    // Button click handlers
-    document.querySelectorAll('.graphic-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const graphicId = btn.dataset.graphic;
-        const frameTitle = btn.dataset.title || null;
-        sendGraphic(graphicId, frameTitle);
+    // Function to attach button handlers
+    function attachButtonHandlers() {
+      document.querySelectorAll('.graphic-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const graphicId = btn.dataset.graphic;
+          const frameTitle = btn.dataset.title || null;
+          sendGraphic(graphicId, frameTitle);
+        });
       });
-    });
+    }
+
+    // Initial button handlers (will be reattached after dynamic load)
+    attachButtonHandlers();
 
     document.getElementById('clearBtn').addEventListener('click', clearGraphic);
 
@@ -608,8 +581,89 @@ James Moore</textarea>
         document.getElementById('team2High').value = config.team2High || '';
         document.getElementById('team2Con').value = config.team2Con || '';
         document.getElementById('team2Coaches').value = config.team2Coaches || '';
+
+        // Load appropriate event frames based on competition type
+        loadEventFrames(config.compType || 'mens-dual');
       }
     });
+
+    // Function to load event frames based on competition type
+    function loadEventFrames(compType) {
+      const isMens = compType.startsWith('mens');
+      const grid = document.getElementById('eventFramesGrid');
+
+      let buttonsHTML = '';
+
+      if (isMens) {
+        // Men's apparatus (6 events)
+        buttonsHTML = `
+          <button class="graphic-btn" data-graphic="floor" data-title="FLOOR EXERCISE">
+            <span class="number">8</span>Floor
+          </button>
+          <button class="graphic-btn" data-graphic="pommel" data-title="POMMEL HORSE">
+            <span class="number">9</span>Pommel Horse
+          </button>
+          <button class="graphic-btn" data-graphic="rings" data-title="STILL RINGS">
+            <span class="number">10</span>Still Rings
+          </button>
+          <button class="graphic-btn" data-graphic="vault" data-title="VAULT">
+            <span class="number">11</span>Vault
+          </button>
+          <button class="graphic-btn" data-graphic="pbars" data-title="PARALLEL BARS">
+            <span class="number">12</span>Parallel Bars
+          </button>
+          <button class="graphic-btn" data-graphic="hbar" data-title="HORIZONTAL BAR">
+            <span class="number">13</span>High Bar
+          </button>
+          <button class="graphic-btn" data-graphic="allaround" data-title="ALL AROUND">
+            <span class="number">14</span>All Around
+          </button>
+          <button class="graphic-btn" data-graphic="final" data-title="FINAL SCORES">
+            <span class="number">15</span>Final Scores
+          </button>
+        `;
+      } else {
+        // Women's apparatus (4 events)
+        buttonsHTML = `
+          <button class="graphic-btn" data-graphic="vault" data-title="VAULT">
+            <span class="number">8</span>Vault
+          </button>
+          <button class="graphic-btn" data-graphic="ubars" data-title="UNEVEN BARS">
+            <span class="number">9</span>Uneven Bars
+          </button>
+          <button class="graphic-btn" data-graphic="beam" data-title="BALANCE BEAM">
+            <span class="number">10</span>Balance Beam
+          </button>
+          <button class="graphic-btn" data-graphic="floor" data-title="FLOOR EXERCISE">
+            <span class="number">11</span>Floor
+          </button>
+          <button class="graphic-btn" data-graphic="allaround" data-title="ALL AROUND">
+            <span class="number">12</span>All Around
+          </button>
+          <button class="graphic-btn" data-graphic="final" data-title="FINAL SCORES">
+            <span class="number">13</span>Final Scores
+          </button>
+        `;
+      }
+
+      // Common event frames
+      buttonsHTML += `
+        <button class="graphic-btn" data-graphic="order" data-title="COMPETITION ORDER">
+          <span class="number">${isMens ? '16' : '14'}</span>Comp Order
+        </button>
+        <button class="graphic-btn" data-graphic="lineups" data-title="NEXT EVENT LINEUPS">
+          <span class="number">${isMens ? '17' : '15'}</span>Lineups
+        </button>
+        <button class="graphic-btn" data-graphic="summary" data-title="EVENT SUMMARY">
+          <span class="number">${isMens ? '18' : '16'}</span>Summary
+        </button>
+      `;
+
+      grid.innerHTML = buttonsHTML;
+
+      // Reattach click handlers
+      attachButtonHandlers();
+    }
 
     // Listen for state changes (sync with other controllers)
     db.ref(`competitions/${competitionId}/currentGraphic`).on('value', (snapshot) => {
