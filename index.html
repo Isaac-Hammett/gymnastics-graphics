@@ -290,17 +290,9 @@
       <button class="graphic-btn" data-graphic="team2-coaches"><span>7</span>Team 2 Coaches</button>
 
       <div class="section-title">Event Frames</div>
-      <button class="graphic-btn" data-graphic="floor"><span>8</span>Floor Exercise</button>
-      <button class="graphic-btn" data-graphic="pommel"><span>9</span>Pommel Horse</button>
-      <button class="graphic-btn" data-graphic="rings"><span>10</span>Still Rings</button>
-      <button class="graphic-btn" data-graphic="vault"><span>11</span>Vault</button>
-      <button class="graphic-btn" data-graphic="pbars"><span>12</span>Parallel Bars</button>
-      <button class="graphic-btn" data-graphic="hbar"><span>13</span>Horizontal Bar</button>
-      <button class="graphic-btn" data-graphic="allaround"><span>14</span>All Around</button>
-      <button class="graphic-btn" data-graphic="final"><span>15</span>Final Scores</button>
-      <button class="graphic-btn" data-graphic="order"><span>16</span>Competition Order</button>
-      <button class="graphic-btn" data-graphic="lineups"><span>17</span>Next Event Lineups</button>
-      <button class="graphic-btn" data-graphic="summary"><span>18</span>Event Summary</button>
+      <div id="eventFrameButtons">
+        <!-- Buttons will be dynamically inserted based on competition type -->
+      </div>
 
       <div class="section-title">Stream</div>
       <button class="graphic-btn" data-graphic="starting"><span>19</span>Stream Starting</button>
@@ -447,6 +439,8 @@ James Moore</textarea>
       vault: 'Vault',
       pbars: 'Parallel Bars',
       hbar: 'Horizontal Bar',
+      ubars: 'Uneven Bars',
+      beam: 'Balance Beam',
       allaround: 'All Around',
       final: 'Final Scores',
       order: 'Competition Order',
@@ -463,6 +457,8 @@ James Moore</textarea>
       vault: 'VAULT',
       pbars: 'PARALLEL BARS',
       hbar: 'HORIZONTAL BAR',
+      ubars: 'UNEVEN BARS',
+      beam: 'BALANCE BEAM',
       allaround: 'ALL AROUND',
       final: 'FINAL SCORES',
       order: 'COMPETITION ORDER',
@@ -470,8 +466,8 @@ James Moore</textarea>
       summary: 'EVENT SUMMARY'
     };
 
-    const transparentGraphics = ['event-bar', 'hosts', 'team1-stats', 'team1-coaches', 'team2-stats', 'team2-coaches', 
-                                  'floor', 'pommel', 'rings', 'vault', 'pbars', 'hbar', 'allaround', 'final', 'order', 'lineups', 'summary'];
+    const transparentGraphics = ['event-bar', 'hosts', 'team1-stats', 'team1-coaches', 'team2-stats', 'team2-coaches',
+                                  'floor', 'pommel', 'rings', 'vault', 'pbars', 'hbar', 'ubars', 'beam', 'allaround', 'final', 'order', 'lineups', 'summary'];
 
     function getValue(id) {
       return document.getElementById(id).value;
@@ -593,8 +589,8 @@ James Moore</textarea>
       setTimeout(() => toast.classList.remove('show'), 2000);
     }
 
-    // Graphic selection
-    document.querySelectorAll('.graphic-btn').forEach(btn => {
+    // Attach handlers to non-dynamic buttons (logos, hosts, stats, etc.)
+    document.querySelectorAll('.graphic-btn:not(#eventFrameButtons .graphic-btn)').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.graphic-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
@@ -613,6 +609,60 @@ James Moore</textarea>
         document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
       });
     });
+
+    // Function to load event frame buttons based on competition type
+    function loadEventFrameButtons(compType = 'mens-dual') {
+      const isMens = compType.startsWith('mens');
+      const container = document.getElementById('eventFrameButtons');
+
+      let buttonsHTML = '';
+
+      if (isMens) {
+        // Men's apparatus
+        buttonsHTML = `
+          <button class="graphic-btn" data-graphic="floor"><span>8</span>Floor Exercise</button>
+          <button class="graphic-btn" data-graphic="pommel"><span>9</span>Pommel Horse</button>
+          <button class="graphic-btn" data-graphic="rings"><span>10</span>Still Rings</button>
+          <button class="graphic-btn" data-graphic="vault"><span>11</span>Vault</button>
+          <button class="graphic-btn" data-graphic="pbars"><span>12</span>Parallel Bars</button>
+          <button class="graphic-btn" data-graphic="hbar"><span>13</span>Horizontal Bar</button>
+          <button class="graphic-btn" data-graphic="allaround"><span>14</span>All Around</button>
+          <button class="graphic-btn" data-graphic="final"><span>15</span>Final Scores</button>
+          <button class="graphic-btn" data-graphic="order"><span>16</span>Competition Order</button>
+          <button class="graphic-btn" data-graphic="lineups"><span>17</span>Next Event Lineups</button>
+          <button class="graphic-btn" data-graphic="summary"><span>18</span>Event Summary</button>
+        `;
+      } else {
+        // Women's apparatus
+        buttonsHTML = `
+          <button class="graphic-btn" data-graphic="vault"><span>8</span>Vault</button>
+          <button class="graphic-btn" data-graphic="ubars"><span>9</span>Uneven Bars</button>
+          <button class="graphic-btn" data-graphic="beam"><span>10</span>Balance Beam</button>
+          <button class="graphic-btn" data-graphic="floor"><span>11</span>Floor Exercise</button>
+          <button class="graphic-btn" data-graphic="allaround"><span>12</span>All Around</button>
+          <button class="graphic-btn" data-graphic="final"><span>13</span>Final Scores</button>
+          <button class="graphic-btn" data-graphic="order"><span>14</span>Competition Order</button>
+          <button class="graphic-btn" data-graphic="lineups"><span>15</span>Next Event Lineups</button>
+          <button class="graphic-btn" data-graphic="summary"><span>16</span>Event Summary</button>
+        `;
+      }
+
+      container.innerHTML = buttonsHTML;
+
+      // Reattach click handlers
+      document.querySelectorAll('.graphic-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.graphic-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          currentGraphic = btn.dataset.graphic;
+          document.getElementById('currentTitle').textContent = graphicTitles[currentGraphic];
+          updatePreview();
+        });
+      });
+    }
+
+    // Initial load with men's apparatus (default)
+    loadEventFrameButtons('mens-dual');
 
     // Load config from Firebase if competition ID is provided
     if (competitionId) {
@@ -661,6 +711,10 @@ James Moore</textarea>
               document.getElementById('team2High').value = config.team2High || '';
               document.getElementById('team2Con').value = config.team2Con || '';
               document.getElementById('team2Coaches').value = config.team2Coaches || '';
+
+              // Load correct apparatus buttons
+              loadEventFrameButtons(config.compType || 'mens-dual');
+
               updatePreview();
             }
           });
