@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=1920, height=1080">
   <title>Stream</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;800;900&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -18,38 +18,61 @@
       align-items: center;
       justify-content: center;
       text-align: center;
+      animation: fadeIn 0.8s ease-out;
     }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
     .stream-title {
-      font-size: 48px;
-      font-weight: 800;
+      font-size: 64px;
+      font-weight: 900;
       color: #000;
-      margin-bottom: 50px;
+      margin-bottom: 60px;
+      text-transform: uppercase;
+      letter-spacing: -1px;
     }
+
     .stream-logo {
-      width: 320px;
-      height: 320px;
+      width: 360px;
+      height: 360px;
       object-fit: contain;
-      margin-bottom: 50px;
+      margin-bottom: 60px;
     }
+
     .stream-event-name {
-      font-size: 54px;
+      font-size: 64px;
+      font-weight: 900;
+      color: #000;
+      text-transform: uppercase;
+      letter-spacing: -1px;
+      margin-bottom: 10px;
+    }
+
+    .stream-date {
+      font-size: 52px;
       font-weight: 800;
       color: #000;
+      text-transform: uppercase;
+      letter-spacing: -0.5px;
     }
-    .stream-date {
-      font-size: 42px;
-      font-weight: 700;
-      color: #000;
-      margin-top: 10px;
-    }
+
     .stream-branding {
-      margin-top: 30px;
-      font-size: 36px;
-      font-weight: 600;
-      color: #000;
+      margin-top: 50px;
+      font-size: 48px;
+      font-weight: 700;
+      color: #666;
     }
+
     .stream-branding span {
-      color: #22d3ee;
+      color: #3b82f6;
+      font-weight: 900;
     }
   </style>
 </head>
@@ -61,10 +84,10 @@
   <div class="stream-branding"><span>V</span>irtius</div>
   <script>
     const params = new URLSearchParams(window.location.search);
-    document.getElementById('title').textContent = params.get('title') || 'STREAM STARTING SOON';
+    document.getElementById('title').textContent = (params.get('title') || 'STREAM STARTING SOON').toUpperCase();
     document.getElementById('logo').src = params.get('logo') || '';
-    document.getElementById('eventName').textContent = params.get('eventName') || '';
-    document.getElementById('meetDate').textContent = params.get('meetDate') || '';
+    document.getElementById('eventName').textContent = (params.get('eventName') || '').toUpperCase();
+    document.getElementById('meetDate').textContent = (params.get('meetDate') || '').toUpperCase();
   </script>
 </body>
 </html>
