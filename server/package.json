@@ -1,0 +1,21 @@
+{
+  "name": "show-controller-server",
+  "version": "1.0.0",
+  "description": "OBS Show Controller Server for Gymnastics Graphics",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "obs-websocket-js": "^5.0.7",
+    "socket.io": "^4.8.1"
+  }
+}

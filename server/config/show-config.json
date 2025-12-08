@@ -1,0 +1,265 @@
+{
+  "showName": "CGA All Stars 2025",
+  "segments": [
+    {
+      "id": "intro",
+      "name": "Show Intro",
+      "type": "video",
+      "obsScene": "Intro Video",
+      "duration": 45,
+      "autoAdvance": true,
+      "notes": "Intro video plays automatically"
+    },
+    {
+      "id": "welcome",
+      "name": "Welcome & Host Intro",
+      "type": "live",
+      "obsScene": "Talent Camera",
+      "duration": null,
+      "autoAdvance": false,
+      "notes": "Welcome viewers, introduce the show and sponsors"
+    },
+    {
+      "id": "event-intro",
+      "name": "Event Introduction",
+      "type": "graphic",
+      "obsScene": "Graphics",
+      "graphic": "event-bar",
+      "graphicData": {},
+      "duration": 8,
+      "autoAdvance": true
+    },
+    {
+      "id": "team1-intro",
+      "name": "Team 1 Introduction",
+      "type": "graphic",
+      "obsScene": "Graphics",
+      "graphic": "team1-stats",
+      "graphicData": {},
+      "duration": 10,
+      "autoAdvance": true
+    },
+    {
+      "id": "team2-intro",
+      "name": "Team 2 Introduction",
+      "type": "graphic",
+      "obsScene": "Graphics",
+      "graphic": "team2-stats",
+      "graphicData": {},
+      "duration": 10,
+      "autoAdvance": true
+    },
+    {
+      "id": "rotation1-intro",
+      "name": "Rotation 1 Intro",
+      "type": "graphic",
+      "obsScene": "Graphics",
+      "graphic": "event-frame",
+      "graphicData": {
+        "frameTitle": "FLOOR EXERCISE"
+      },
+      "duration": 5,
+      "autoAdvance": true
+    },
+    {
+      "id": "rotation1-floor",
+      "name": "Floor Exercise - Rotation 1",
+      "type": "live",
+      "obsScene": "Competition Camera",
+      "duration": null,
+      "autoAdvance": false,
+      "notes": "Floor exercise routines"
+    },
+    {
+      "id": "rotation1-pommel",
+      "name": "Pommel Horse - Rotation 1",
+      "type": "graphic",
+      "obsScene": "Graphics",
+      "graphic": "event-frame",
+      "graphicData": {
+        "frameTitle": "POMMEL HORSE"
+      },
+      "duration": 5,
+      "autoAdvance": true
+    },
+    {
+      "id": "rotation1-pommel-live",
+      "name": "Pommel Horse Live",
+      "type": "live",
+      "obsScene": "Competition Camera",
+      "duration": null,
+      "autoAdvance": false,
+      "notes": "Pommel horse routines"
+    },
+    {
+      "id": "rotation1-rings",
+      "name": "Still Rings - Rotation 1",
+      "type": "graphic",
+      "obsScene": "Graphics",
+      "graphic": "event-frame",
+      "graphicData": {
+        "frameTitle": "STILL RINGS"
+      },
+      "duration": 5,
+      "autoAdvance": true
+    },
+    {
+      "id": "rotation1-rings-live",
+      "name": "Still Rings Live",
+      "type": "live",
+      "obsScene": "Competition Camera",
+      "duration": null,
+      "autoAdvance": false,
+      "notes": "Still rings routines"
+    },
+    {
+      "id": "halftime",
+      "name": "Halftime Break",
+      "type": "live",
+      "obsScene": "BRB",
+      "duration": 300,
+      "autoAdvance": false,
+      "notes": "5 minute break"
+    },
+    {
+      "id": "rotation2-vault",
+      "name": "Vault - Rotation 2",
+      "type": "graphic",
+      "obsScene": "Graphics",
+      "graphic": "event-frame",
+      "graphicData": {
+        "frameTitle": "VAULT"
+      },
+      "duration": 5,
+      "autoAdvance": true
+    },
+    {
+      "id": "rotation2-vault-live",
+      "name": "Vault Live",
+      "type": "live",
+      "obsScene": "Competition Camera",
+      "duration": null,
+      "autoAdvance": false,
+      "notes": "Vault routines"
+    },
+    {
+      "id": "rotation2-pbars",
+      "name": "Parallel Bars - Rotation 2",
+      "type": "graphic",
+      "obsScene": "Graphics",
+      "graphic": "event-frame",
+      "graphicData": {
+        "frameTitle": "PARALLEL BARS"
+      },
+      "duration": 5,
+      "autoAdvance": true
+    },
+    {
+      "id": "rotation2-pbars-live",
+      "name": "Parallel Bars Live",
+      "type": "live",
+      "obsScene": "Competition Camera",
+      "duration": null,
+      "autoAdvance": false,
+      "notes": "Parallel bars routines"
+    },
+    {
+      "id": "rotation2-hbar",
+      "name": "High Bar - Rotation 2",
+      "type": "graphic",
+      "obsScene": "Graphics",
+      "graphic": "event-frame",
+      "graphicData": {
+        "frameTitle": "HORIZONTAL BAR"
+      },
+      "duration": 5,
+      "autoAdvance": true
+    },
+    {
+      "id": "rotation2-hbar-live",
+      "name": "High Bar Live",
+      "type": "live",
+      "obsScene": "Competition Camera",
+      "duration": null,
+      "autoAdvance": false,
+      "notes": "High bar routines"
+    },
+    {
+      "id": "final-scores",
+      "name": "Final Scores",
+      "type": "graphic",
+      "obsScene": "Graphics",
+      "graphic": "event-frame",
+      "graphicData": {
+        "frameTitle": "FINAL SCORES"
+      },
+      "duration": 15,
+      "autoAdvance": true
+    },
+    {
+      "id": "closing",
+      "name": "Closing Remarks",
+      "type": "live",
+      "obsScene": "Talent Camera",
+      "duration": null,
+      "autoAdvance": false,
+      "notes": "Thank viewers, sponsors, recap highlights"
+    },
+    {
+      "id": "outro",
+      "name": "Thanks for Watching",
+      "type": "graphic",
+      "obsScene": "Graphics",
+      "graphic": "stream-thanks",
+      "graphicData": {},
+      "duration": 10,
+      "autoAdvance": false
+    }
+  ],
+  "sponsors": {
+    "floor": "DGS",
+    "pommelHorse": "Flipfest",
+    "rings": "Turngymnastics",
+    "vault": "Score Cat",
+    "pBars": "Sideline Scout",
+    "highBar": "Speeth"
+  },
+  "quickActions": [
+    {
+      "id": "talent-camera",
+      "name": "Talent Camera",
+      "obsScene": "Talent Camera",
+      "icon": "video-camera"
+    },
+    {
+      "id": "competition-camera",
+      "name": "Competition",
+      "obsScene": "Competition Camera",
+      "icon": "play"
+    },
+    {
+      "id": "scores",
+      "name": "Scores",
+      "obsScene": "Scoreboard",
+      "icon": "chart-bar"
+    },
+    {
+      "id": "replay",
+      "name": "Replay",
+      "obsScene": "Replay",
+      "icon": "arrow-path"
+    },
+    {
+      "id": "brb",
+      "name": "BRB",
+      "obsScene": "BRB",
+      "icon": "pause"
+    },
+    {
+      "id": "sponsor",
+      "name": "Sponsor",
+      "obsScene": "Sponsor",
+      "icon": "currency-dollar"
+    }
+  ]
+}

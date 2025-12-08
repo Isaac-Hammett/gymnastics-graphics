@@ -1,0 +1,15 @@
+{
+  "name": "gymnastics-graphics",
+  "version": "1.0.0",
+  "description": "Gymnastics Graphics System with Show Controller",
+  "scripts": {
+    "server": "cd server && npm start",
+    "server:dev": "cd server && npm run dev",
+    "client": "cd show-controller && npm run dev",
+    "build": "cd show-controller && npm run build",
+    "start": "npm run server"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
