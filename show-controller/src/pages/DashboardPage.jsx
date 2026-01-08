@@ -8,6 +8,9 @@ export default function DashboardPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingCompId, setEditingCompId] = useState(null);
   const [formData, setFormData] = useState(getDefaultFormData());
+  const [virtiusSessionId, setVirtiusSessionId] = useState('');
+  const [virtiusFetching, setVirtiusFetching] = useState(false);
+  const [virtiusError, setVirtiusError] = useState(null);
 
   const competitionList = Object.keys(competitions);
 
@@ -32,9 +35,68 @@ export default function DashboardPage() {
     };
   }
 
+  // Format date from YYYY-MM-DD to readable format
+  function formatDate(dateStr) {
+    if (!dateStr) return '';
+    const date = new Date(dateStr + 'T00:00:00');
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric', month: 'long', day: 'numeric'
+    });
+  }
+
+  // Infer competition type from sex and team count
+  function inferCompType(sex, teamCount) {
+    const prefix = sex === 'women' ? 'womens' : 'mens';
+    const suffix = teamCount === 2 ? 'dual' :
+                   teamCount === 3 ? 'tri' :
+                   teamCount === 4 ? 'quad' :
+                   teamCount === 5 ? '5-team' : '6-team';
+    return `${prefix}-${suffix}`;
+  }
+
+  async function fetchFromVirtius() {
+    if (!virtiusSessionId.trim()) return;
+    setVirtiusFetching(true);
+    setVirtiusError(null);
+
+    try {
+      const response = await fetch(`/api/virtius/${virtiusSessionId.trim()}`);
+      if (!response.ok) throw new Error('Session not found');
+      const data = await response.json();
+
+      const meet = data.meet;
+      const teams = meet.teams || [];
+
+      // Sort teams by team_order if available
+      const sortedTeams = [...teams].sort((a, b) => (a.team_order || 0) - (b.team_order || 0));
+
+      setFormData(prev => ({
+        ...prev,
+        eventName: meet.name || prev.eventName,
+        meetDate: formatDate(meet.meet_date) || prev.meetDate,
+        venue: meet.location?.split(',')[0]?.trim() || prev.venue,
+        location: meet.location?.split(',').slice(1).join(',').trim() || prev.location,
+        compType: inferCompType(meet.sex, sortedTeams.length),
+        team1Name: sortedTeams[0]?.name || prev.team1Name,
+        team2Name: sortedTeams[1]?.name || prev.team2Name,
+        team3Name: sortedTeams[2]?.name || prev.team3Name,
+        team4Name: sortedTeams[3]?.name || prev.team4Name,
+        team5Name: sortedTeams[4]?.name || prev.team5Name,
+        team6Name: sortedTeams[5]?.name || prev.team6Name,
+        virtiusSessionId: virtiusSessionId.trim(),
+      }));
+    } catch (error) {
+      setVirtiusError('Could not fetch Virtius session. Check the session ID and try again.');
+    } finally {
+      setVirtiusFetching(false);
+    }
+  }
+
   function openCreateModal() {
     setEditingCompId(null);
     setFormData(getDefaultFormData());
+    setVirtiusSessionId('');
+    setVirtiusError(null);
     setShowModal(true);
   }
 
@@ -58,7 +120,10 @@ export default function DashboardPage() {
       team5Logo: config.team5Logo || '',
       team6Name: config.team6Name || '',
       team6Logo: config.team6Logo || '',
+      virtiusSessionId: config.virtiusSessionId || '',
     });
+    setVirtiusSessionId(config.virtiusSessionId || '');
+    setVirtiusError(null);
     setShowModal(true);
   }
 
@@ -72,6 +137,7 @@ export default function DashboardPage() {
       meetDate: formData.meetDate,
       venue: formData.venue,
       location: formData.location,
+      virtiusSessionId: formData.virtiusSessionId || '',
       team1Name: formData.team1Name,
       team2Name: formData.team2Name,
       team3Name: formData.team3Name,
@@ -289,6 +355,31 @@ export default function DashboardPage() {
             <p className="text-sm text-zinc-500 mb-6">Configure competition details</p>
 
             <form onSubmit={handleSubmit}>
+              {/* Virtius Import Section */}
+              <div className="mb-6 p-4 bg-zinc-800/50 border border-zinc-700 rounded-lg">
+                <div className="text-xs text-zinc-400 mb-2">Import from Virtius (optional)</div>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={virtiusSessionId}
+                    onChange={(e) => setVirtiusSessionId(e.target.value)}
+                    placeholder="Session ID, e.g., EeUcxrjyBD"
+                    className="flex-1 px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={fetchFromVirtius}
+                    disabled={virtiusFetching || !virtiusSessionId.trim()}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-700 disabled:text-zinc-500 text-white text-sm font-medium rounded-lg transition-colors"
+                  >
+                    {virtiusFetching ? 'Fetching...' : 'Fetch'}
+                  </button>
+                </div>
+                {virtiusError && (
+                  <div className="mt-2 text-xs text-red-400">{virtiusError}</div>
+                )}
+              </div>
+
               <FormGroup label="Competition ID (no spaces, lowercase)">
                 <input
                   type="text"

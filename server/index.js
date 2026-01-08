@@ -545,6 +545,21 @@ app.post('/api/import-csv', upload.single('csv'), (req, res) => {
   }
 });
 
+// Virtius API proxy (avoids CORS issues)
+app.get('/api/virtius/:sessionId', async (req, res) => {
+  try {
+    const response = await fetch(`https://api.virti.us/session/${req.params.sessionId}/json`);
+    if (!response.ok) {
+      return res.status(404).json({ error: 'Virtius session not found' });
+    }
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    console.error('Virtius API error:', error.message);
+    res.status(500).json({ error: 'Failed to fetch Virtius session' });
+  }
+});
+
 // Get CSV template
 app.get('/api/csv-template', (req, res) => {
   const template = `id,name,type,obsScene,duration,autoAdvance,graphic,graphicData,videoFile,notes
