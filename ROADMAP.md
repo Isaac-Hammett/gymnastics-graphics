@@ -2,6 +2,34 @@
 
 ## Completed Features
 
+### React App Consolidation
+**Status:** Implemented
+
+Consolidated the graphics system from scattered static HTML files into a unified React application.
+
+**What was consolidated:**
+- `index-hub.html` → HubPage.jsx (navigation hub)
+- `dashboard.html` → DashboardPage.jsx (competition management)
+- `controller.html` → ControllerPage.jsx (graphics control)
+- `index.html` → UrlGeneratorPage.jsx (OBS URL generator)
+
+**What remains as static HTML:**
+- `output.html` - OBS requires exact 1920x1080 viewport, must load instantly
+- `overlays/*.html` - OBS browser sources with URL params, simple and fast-loading
+
+**Benefits:**
+- Single codebase with shared components and hooks
+- React Router for proper client-side navigation
+- Shared Firebase hooks eliminate duplicate code
+- Consistent styling with Tailwind CSS
+- Better developer experience
+
+**Deployment:**
+- Netlify serves the React SPA with fallback routing
+- Static files (output.html, overlays/) bypass SPA routing
+
+---
+
 ### Virtius API Integration - Competition Setup
 **Status:** Implemented
 
@@ -19,6 +47,41 @@ The Dashboard now supports importing competition details from the Virtius scorin
 ---
 
 ## Future Enhancements
+
+### Railway Deployment - OBS Scene Control
+**Priority:** High
+**Status:** Ready to Deploy
+
+Deploy the Node.js server to Railway to enable live OBS scene control from the Producer and Talent views.
+
+**Current State:**
+- Server code exists in `server/` directory
+- Socket.IO integration for OBS WebSocket communication
+- Works locally but not deployed
+
+**What this enables:**
+- Producer view can change OBS scenes in real-time
+- Talent view can trigger scene transitions
+- CSV timesheet playback controls OBS automatically
+- Web graphics sync with OBS scene changes
+
+**Why Railway is needed:**
+- The show controller (Producer/Talent views) uses Socket.IO to communicate with OBS
+- Socket.IO requires a persistent WebSocket connection to a Node.js server
+- Netlify only serves static files; it cannot run the Socket.IO server
+- Railway provides always-on Node.js hosting with WebSocket support
+
+**Without Railway deployed:**
+- Web graphics (Firebase-based) work fine on Netlify
+- OBS scene control buttons do nothing (no server to relay commands)
+- CSV timesheet playback won't trigger OBS changes
+
+**Deployment files ready:**
+- `server/Procfile` - Railway process definition
+- `server/railway.json` - Railway configuration
+- `server/.env.example` - Environment variables template
+
+---
 
 ### Virtius API Integration - Live Data
 **Priority:** High
