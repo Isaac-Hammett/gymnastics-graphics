@@ -1,0 +1,27 @@
+id,name,type,obsScene,duration,autoAdvance,graphic,graphicData,videoFile,notes
+intro,Show Intro,video,Video Scene,0:45,true,,,/Videos/intro.mp4,Opening video with music and branding
+welcome,Welcome & Host Intro,live,Talent Camera,,,,,,Welcome viewers and introduce the event. Mention sponsors.
+event-info,Event Information,graphic,Graphics,8,true,event-bar,,,Event info bar with venue and teams
+team1-stats,Team 1 Statistics,graphic,Graphics,10,true,team1-stats,,,Team 1 AVE/HIGH stats
+team1-coaches,Team 1 Coaching Staff,graphic,Graphics,8,true,team1-coaches,,,Team 1 coaches
+team2-stats,Team 2 Statistics,graphic,Graphics,10,true,team2-stats,,,Team 2 AVE/HIGH stats
+team2-coaches,Team 2 Coaching Staff,graphic,Graphics,8,true,team2-coaches,,,Team 2 coaches
+r1-floor-intro,Rotation 1: Floor Exercise,graphic,Graphics,5,true,event-frame,frameTitle=FLOOR EXERCISE,,
+r1-floor,Floor Exercise Routines,live,Competition Camera,,,,,,Floor exercise competition
+r1-pommel-intro,Rotation 1: Pommel Horse,graphic,Graphics,5,true,event-frame,frameTitle=POMMEL HORSE,,
+r1-pommel,Pommel Horse Routines,live,Competition Camera,,,,,,Pommel horse competition
+r1-rings-intro,Rotation 1: Still Rings,graphic,Graphics,5,true,event-frame,frameTitle=STILL RINGS,,
+r1-rings,Still Rings Routines,live,Competition Camera,,,,,,Still rings competition
+halftime-video,Halftime Sponsors,video,Video Scene,1:30,true,,,/Videos/sponsors.mp4,Sponsor video reel
+halftime,Halftime Break,live,BRB,5:00,false,,,,5 minute break - BRB screen
+r2-vault-intro,Rotation 2: Vault,graphic,Graphics,5,true,event-frame,frameTitle=VAULT,,
+r2-vault,Vault Routines,live,Competition Camera,,,,,,Vault competition
+r2-pbars-intro,Rotation 2: Parallel Bars,graphic,Graphics,5,true,event-frame,frameTitle=PARALLEL BARS,,
+r2-pbars,Parallel Bars Routines,live,Competition Camera,,,,,,Parallel bars competition
+r2-hbar-intro,Rotation 2: High Bar,graphic,Graphics,5,true,event-frame,frameTitle=HORIZONTAL BAR,,
+r2-hbar,High Bar Routines,live,Competition Camera,,,,,,High bar competition
+scores-intro,Final Scores,graphic,Graphics,5,true,event-frame,frameTitle=FINAL SCORES,,
+scores,Score Reveal,live,Scoreboard,,,,,,Show final team scores
+interview,Winner Interview,live,Talent Camera,,,,,,Interview winning team captain
+closing,Closing Remarks,live,Talent Camera,,,,,,Thank viewers and sponsors. Recap highlights.
+outro,Thanks for Watching,video,Video Scene,0:15,false,,,/Videos/outro.mp4,End card video

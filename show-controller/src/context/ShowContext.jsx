@@ -28,7 +28,7 @@ export function ShowProvider({ children }) {
   useEffect(() => {
     const socketUrl = import.meta.env.PROD
       ? window.location.origin
-      : 'http://localhost:3001';
+      : 'http://localhost:3003';
 
     const newSocket = io(socketUrl, {
       transports: ['websocket', 'polling']

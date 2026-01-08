@@ -3,12 +3,17 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import OBSWebSocket from 'obs-websocket-js';
 import cors from 'cors';
-import { readFileSync, watchFile } from 'fs';
+import { readFileSync, writeFileSync, watchFile } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import dotenv from 'dotenv';
+import multer from 'multer';
+import { parse } from 'csv-parse/sync';
 
 dotenv.config();
+
+// Configure multer for file uploads
+const upload = multer({ storage: multer.memoryStorage() });
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -25,7 +30,7 @@ const io = new Server(httpServer, {
 const obs = new OBSWebSocket();
 
 // Configuration
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3003;
 const OBS_WEBSOCKET_URL = process.env.OBS_WEBSOCKET_URL || 'ws://localhost:4455';
 const OBS_WEBSOCKET_PASSWORD = process.env.OBS_WEBSOCKET_PASSWORD || '';
 
@@ -98,10 +103,17 @@ function broadcastState() {
 }
 
 // Connect to OBS
+let obsReconnectTimer = null;
+let obsConnecting = false;
+
 async function connectToOBS() {
+  if (obsConnecting) return; // Prevent multiple simultaneous connection attempts
+  obsConnecting = true;
+
   try {
     await obs.connect(OBS_WEBSOCKET_URL, OBS_WEBSOCKET_PASSWORD || undefined);
     showState.obsConnected = true;
+    obsConnecting = false;
     console.log('Connected to OBS WebSocket');
 
     // Get initial scene
@@ -127,9 +139,11 @@ async function connectToOBS() {
   } catch (error) {
     console.error('Failed to connect to OBS:', error.message);
     showState.obsConnected = false;
+    obsConnecting = false;
 
-    // Retry connection after 5 seconds
-    setTimeout(connectToOBS, 5000);
+    // Retry connection after 30 seconds (longer delay to avoid spam)
+    if (obsReconnectTimer) clearTimeout(obsReconnectTimer);
+    obsReconnectTimer = setTimeout(connectToOBS, 30000);
   }
 }
 
@@ -151,10 +165,13 @@ obs.on('RecordStateChanged', ({ outputActive }) => {
 });
 
 obs.on('ConnectionClosed', () => {
-  console.log('OBS connection closed, attempting reconnect...');
+  console.log('OBS connection closed');
   showState.obsConnected = false;
+  obsConnecting = false;
   broadcastState();
-  setTimeout(connectToOBS, 5000);
+  // Attempt reconnect after 30 seconds
+  if (obsReconnectTimer) clearTimeout(obsReconnectTimer);
+  obsReconnectTimer = setTimeout(connectToOBS, 30000);
 });
 
 // Switch OBS scene
@@ -187,6 +204,85 @@ async function getSceneList() {
   }
 }
 
+// Default media source name in OBS (user should create this)
+const VIDEO_SOURCE_NAME = process.env.OBS_VIDEO_SOURCE || 'Video Player';
+
+// Set video file for media source
+async function setVideoFile(filePath, sourceName = VIDEO_SOURCE_NAME) {
+  if (!showState.obsConnected) {
+    console.error('Cannot set video: OBS not connected');
+    return false;
+  }
+
+  try {
+    // Get current settings first
+    const { inputSettings } = await obs.call('GetInputSettings', { inputName: sourceName });
+
+    // Update with new file path
+    await obs.call('SetInputSettings', {
+      inputName: sourceName,
+      inputSettings: {
+        ...inputSettings,
+        local_file: filePath,
+        is_local_file: true
+      }
+    });
+
+    // Restart the media source to play from beginning
+    await obs.call('TriggerMediaInputAction', {
+      inputName: sourceName,
+      mediaAction: 'OBS_WEBSOCKET_MEDIA_INPUT_ACTION_RESTART'
+    });
+
+    console.log(`Set video file: ${filePath}`);
+    return true;
+  } catch (error) {
+    console.error(`Failed to set video file:`, error.message);
+    return false;
+  }
+}
+
+// Play/pause/stop media source
+async function controlMedia(action, sourceName = VIDEO_SOURCE_NAME) {
+  if (!showState.obsConnected) return false;
+
+  const actionMap = {
+    'play': 'OBS_WEBSOCKET_MEDIA_INPUT_ACTION_PLAY',
+    'pause': 'OBS_WEBSOCKET_MEDIA_INPUT_ACTION_PAUSE',
+    'stop': 'OBS_WEBSOCKET_MEDIA_INPUT_ACTION_STOP',
+    'restart': 'OBS_WEBSOCKET_MEDIA_INPUT_ACTION_RESTART'
+  };
+
+  try {
+    await obs.call('TriggerMediaInputAction', {
+      inputName: sourceName,
+      mediaAction: actionMap[action] || action
+    });
+    console.log(`Media action: ${action}`);
+    return true;
+  } catch (error) {
+    console.error(`Failed to control media:`, error.message);
+    return false;
+  }
+}
+
+// Get media source status (for progress tracking)
+async function getMediaStatus(sourceName = VIDEO_SOURCE_NAME) {
+  if (!showState.obsConnected) return null;
+
+  try {
+    const status = await obs.call('GetMediaInputStatus', { inputName: sourceName });
+    return {
+      state: status.mediaState,
+      duration: status.mediaDuration,
+      cursor: status.mediaCursor // current position in ms
+    };
+  } catch (error) {
+    console.error(`Failed to get media status:`, error.message);
+    return null;
+  }
+}
+
 // Advance to next segment
 async function advanceSegment(clientId = null) {
   if (showState.talentLocked && clientId) {
@@ -210,6 +306,11 @@ async function advanceSegment(clientId = null) {
   // Switch OBS scene if specified
   if (showState.currentSegment?.obsScene) {
     await switchScene(showState.currentSegment.obsScene);
+  }
+
+  // Set video file if specified (for video segments)
+  if (showState.currentSegment?.videoFile) {
+    await setVideoFile(showState.currentSegment.videoFile);
   }
 
   // Trigger graphic if specified
@@ -268,6 +369,11 @@ async function jumpToSegment(segmentId) {
 
   if (showState.currentSegment?.obsScene) {
     await switchScene(showState.currentSegment.obsScene);
+  }
+
+  // Set video file if specified
+  if (showState.currentSegment?.videoFile) {
+    await setVideoFile(showState.currentSegment.videoFile);
   }
 
   if (showState.currentSegment?.graphic) {
@@ -330,8 +436,136 @@ app.get('/api/config', (req, res) => {
   res.json(showConfig);
 });
 
-// Serve React app for all other routes
-app.get('*', (req, res) => {
+// CSV Upload endpoint
+app.post('/api/import-csv', upload.single('csv'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No CSV file uploaded' });
+    }
+
+    const csvContent = req.file.buffer.toString('utf-8');
+    const records = parse(csvContent, {
+      columns: true,
+      skip_empty_lines: true,
+      trim: true
+    });
+
+    if (records.length === 0) {
+      return res.status(400).json({ error: 'CSV file is empty' });
+    }
+
+    // Get show name from query param or first row or default
+    const showName = req.body.showName || req.query.showName || 'Imported Show';
+
+    // Convert CSV records to segments
+    const segments = records.map((row, index) => {
+      // Generate ID from name if not provided
+      const id = row.id || row.name?.toLowerCase().replace(/[^a-z0-9]+/g, '-') || `segment-${index}`;
+
+      // Parse duration (can be "mm:ss" format or just seconds)
+      let duration = null;
+      if (row.duration) {
+        if (row.duration.includes(':')) {
+          const [mins, secs] = row.duration.split(':').map(Number);
+          duration = mins * 60 + secs;
+        } else {
+          duration = parseInt(row.duration) || null;
+        }
+      }
+
+      // Parse autoAdvance (various true/false formats)
+      const autoAdvance = ['true', 'yes', '1', 'auto'].includes(
+        (row.autoAdvance || row.auto_advance || row.auto || '').toLowerCase()
+      );
+
+      // Build segment object
+      const segment = {
+        id,
+        name: row.name || row.segment_name || row.title || `Segment ${index + 1}`,
+        type: row.type || 'live',
+        obsScene: row.obsScene || row.obs_scene || row.scene || null,
+        duration,
+        autoAdvance,
+        notes: row.notes || row.description || null,
+        videoFile: row.videoFile || row.video_file || row.video || null
+      };
+
+      // Add graphic if specified
+      if (row.graphic) {
+        segment.graphic = row.graphic;
+
+        // Parse graphicData if provided as JSON string
+        if (row.graphicData || row.graphic_data) {
+          try {
+            segment.graphicData = JSON.parse(row.graphicData || row.graphic_data);
+          } catch (e) {
+            // If not valid JSON, try to parse as key=value pairs
+            const data = {};
+            const dataStr = row.graphicData || row.graphic_data;
+            if (dataStr.includes('=')) {
+              dataStr.split(';').forEach(pair => {
+                const [key, value] = pair.split('=');
+                if (key && value) data[key.trim()] = value.trim();
+              });
+              segment.graphicData = data;
+            }
+          }
+        }
+      }
+
+      return segment;
+    });
+
+    // Build the show config
+    const newConfig = {
+      showName,
+      segments,
+      sponsors: showConfig?.sponsors || {},
+      quickActions: showConfig?.quickActions || []
+    };
+
+    // Save to file
+    const configPath = join(__dirname, 'config', 'show-config.json');
+    writeFileSync(configPath, JSON.stringify(newConfig, null, 2));
+
+    // Reload config (the file watcher will also trigger this)
+    loadShowConfig();
+    broadcastState();
+
+    res.json({
+      success: true,
+      message: `Imported ${segments.length} segments`,
+      segments: segments.length,
+      showName
+    });
+
+  } catch (error) {
+    console.error('CSV import error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get CSV template
+app.get('/api/csv-template', (req, res) => {
+  const template = `id,name,type,obsScene,duration,autoAdvance,graphic,graphicData,videoFile,notes
+intro,Show Intro,video,Video Scene,0:45,true,,,/path/to/videos/intro.mp4,Intro video plays automatically
+welcome,Welcome & Host Intro,live,Talent Camera,,,,,,Welcome viewers and introduce sponsors
+event-intro,Event Introduction,graphic,Graphics,8,true,event-bar,,,
+team1-stats,Team 1 Stats,graphic,Graphics,10,true,team1-stats,,,
+rotation1-floor,Floor Exercise Intro,graphic,Graphics,5,true,event-frame,frameTitle=FLOOR EXERCISE,,
+rotation1-floor-live,Floor Exercise,live,Competition Camera,,,,,,Floor exercise routines
+halftime-video,Halftime Video,video,Video Scene,2:00,true,,,/path/to/videos/halftime.mp4,Plays sponsor video
+halftime,Halftime Break,live,BRB,5:00,false,,,,5 minute break
+closing,Closing Remarks,live,Talent Camera,,,,,,Thank viewers and recap
+outro,Thanks for Watching,video,Video Scene,0:15,false,,,/path/to/videos/outro.mp4,End card video`;
+
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', 'attachment; filename="show-template.csv"');
+  res.send(template);
+});
+
+// Serve React app for all other routes (Express 5 syntax)
+app.get('/{*path}', (req, res) => {
   res.sendFile(join(__dirname, '..', 'show-controller', 'dist', 'index.html'));
 });
 

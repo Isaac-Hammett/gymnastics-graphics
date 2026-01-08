@@ -20,11 +20,20 @@ export default function TalentView() {
       {/* Header */}
       <header className="bg-zinc-900 border-b border-zinc-800 px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-bold text-white">
-              {showConfig?.showName || 'Show Controller'}
-            </h1>
-            <div className="text-sm text-zinc-500">Talent View</div>
+          <div className="flex items-center gap-4">
+            <a
+              href="/index-hub.html"
+              className="flex items-center gap-2 px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-400 text-xs hover:bg-zinc-700 hover:text-zinc-300 transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+              Hub
+            </a>
+            <div>
+              <h1 className="text-lg font-bold text-white">
+                {showConfig?.showName || 'Show Controller'}
+              </h1>
+              <div className="text-sm text-zinc-500">Talent View</div>
+            </div>
           </div>
           <ConnectionStatus />
         </div>

@@ -68,6 +68,25 @@
       font-size: 0.8rem;
     }
     .config-input:focus { outline: none; border-color: #3b82f6; }
+    .hub-link {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: #27272a;
+      border: 1px solid #3f3f46;
+      border-radius: 6px;
+      color: #e4e4e7;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.15s;
+      margin-bottom: 16px;
+    }
+    .hub-link:hover {
+      background: #3f3f46;
+      border-color: #52525b;
+    }
     .config-row {
       display: flex;
       gap: 6px;
@@ -251,6 +270,10 @@
   <div class="app">
     <!-- Config Panel -->
     <div class="config-panel">
+      <a href="index-hub.html" class="hub-link">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        Back to Hub
+      </a>
       <div class="config-header">
         <h1>⚙️ Meet Setup</h1>
         <p>Configure before going live</p>

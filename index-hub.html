@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gymnastics Graphics Hub</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0a0a0b;
+      color: #e4e4e7;
+      min-height: 100vh;
+      padding: 40px;
+    }
+    .hub {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 50px;
+    }
+    .header h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+    .header p {
+      font-size: 1rem;
+      color: #71717a;
+    }
+
+    /* Section */
+    .section {
+      margin-bottom: 40px;
+    }
+    .section-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #a1a1aa;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #27272a;
+    }
+
+    /* Cards Grid */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    .card {
+      background: #18181b;
+      border: 2px solid #27272a;
+      border-radius: 12px;
+      padding: 24px;
+      transition: all 0.15s;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+    .card:hover {
+      border-color: #3b82f6;
+      transform: translateY(-2px);
+    }
+    .card-icon {
+      font-size: 2rem;
+      margin-bottom: 12px;
+    }
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+    .card-desc {
+      font-size: 0.85rem;
+      color: #71717a;
+      line-height: 1.5;
+    }
+    .card-badge {
+      display: inline-block;
+      margin-top: 12px;
+      padding: 4px 10px;
+      background: #27272a;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      color: #a1a1aa;
+      text-transform: uppercase;
+    }
+    .card-badge.primary {
+      background: #3b82f6;
+      color: #fff;
+    }
+    .card-badge.green {
+      background: #22c55e;
+      color: #000;
+    }
+
+    /* Competition Selector */
+    .comp-selector {
+      background: #18181b;
+      border: 2px solid #27272a;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 30px;
+    }
+    .comp-selector-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #a1a1aa;
+      margin-bottom: 12px;
+    }
+    .comp-select {
+      width: 100%;
+      max-width: 400px;
+      padding: 12px 16px;
+      background: #27272a;
+      border: 1px solid #3f3f46;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    .comp-select:focus {
+      outline: none;
+      border-color: #3b82f6;
+    }
+    .comp-info {
+      margin-top: 12px;
+      font-size: 0.85rem;
+      color: #71717a;
+    }
+    .comp-info strong {
+      color: #3b82f6;
+    }
+
+    /* Competition-specific cards */
+    .comp-cards {
+      display: none;
+    }
+    .comp-cards.show {
+      display: grid;
+    }
+
+    /* Quick Links */
+    .quick-links {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+    .quick-link {
+      padding: 8px 16px;
+      background: #27272a;
+      border: 1px solid #3f3f46;
+      border-radius: 6px;
+      color: #e4e4e7;
+      font-size: 0.8rem;
+      text-decoration: none;
+      transition: all 0.15s;
+    }
+    .quick-link:hover {
+      background: #3f3f46;
+      border-color: #52525b;
+    }
+    .quick-link.primary {
+      background: #3b82f6;
+      border-color: #3b82f6;
+      color: #fff;
+    }
+    .quick-link.primary:hover {
+      background: #2563eb;
+    }
+  </style>
+</head>
+<body>
+  <div class="hub">
+    <div class="header">
+      <h1>Gymnastics Graphics Hub</h1>
+      <p>Central hub for all graphics tools and components</p>
+    </div>
+
+    <!-- Competition Selector -->
+    <div class="comp-selector">
+      <div class="comp-selector-title">Select a Competition</div>
+      <select class="comp-select" id="compSelect">
+        <option value="">Choose a competition...</option>
+      </select>
+      <div class="comp-info" id="compInfo"></div>
+      <div class="quick-links" id="quickLinks" style="display: none;">
+        <a href="#" class="quick-link primary" id="quickController">Open Controller</a>
+        <a href="#" class="quick-link" id="quickOutput">Open Output</a>
+        <a href="#" class="quick-link" id="quickShowController">Show Controller</a>
+      </div>
+    </div>
+
+    <!-- Management Tools -->
+    <div class="section">
+      <div class="section-title">Management Tools</div>
+      <div class="cards-grid">
+        <a href="dashboard.html" class="card">
+          <div class="card-icon">📊</div>
+          <div class="card-title">Dashboard</div>
+          <div class="card-desc">Create and manage competitions. Configure team names, logos, and meet details.</div>
+          <span class="card-badge primary">Start Here</span>
+        </a>
+        <a href="index.html" class="card">
+          <div class="card-icon">🔗</div>
+          <div class="card-title">URL Generator</div>
+          <div class="card-desc">Generate overlay URLs with custom parameters for OBS browser sources.</div>
+        </a>
+      </div>
+    </div>
+
+    <!-- Competition Tools (shown when competition selected) -->
+    <div class="section" id="compToolsSection" style="display: none;">
+      <div class="section-title">Competition Tools <span id="compToolsName"></span></div>
+      <div class="cards-grid comp-cards show" id="compCards">
+        <a href="#" class="card" id="cardController">
+          <div class="card-icon">🎮</div>
+          <div class="card-title">Graphics Controller</div>
+          <div class="card-desc">Trigger graphics live during the event. Configure team stats and trigger overlays.</div>
+          <span class="card-badge green">Live Control</span>
+        </a>
+        <a href="#" class="card" id="cardOutput">
+          <div class="card-icon">📺</div>
+          <div class="card-title">Graphics Output</div>
+          <div class="card-desc">The actual graphics display. Add this as a browser source in OBS.</div>
+          <span class="card-badge">1920x1080</span>
+        </a>
+        <a href="#" class="card" id="cardShowController">
+          <div class="card-icon">🎬</div>
+          <div class="card-title">Show Controller</div>
+          <div class="card-desc">Advanced show management with Producer/Talent views for scripted shows.</div>
+        </a>
+        <a href="#" class="card" id="cardProducer">
+          <div class="card-icon">🎛️</div>
+          <div class="card-title">Producer View</div>
+          <div class="card-desc">Control the show flow, trigger scenes, and manage graphics from one panel.</div>
+        </a>
+        <a href="#" class="card" id="cardTalent">
+          <div class="card-icon">🎤</div>
+          <div class="card-title">Talent View</div>
+          <div class="card-desc">Simplified view for on-air talent showing current segment and notes.</div>
+        </a>
+      </div>
+    </div>
+
+    <!-- Overlay Templates -->
+    <div class="section">
+      <div class="section-title">Overlay Templates</div>
+      <div class="cards-grid">
+        <a href="overlays/logos.html" class="card" target="_blank">
+          <div class="card-icon">🏆</div>
+          <div class="card-title">Team Logos</div>
+          <div class="card-desc">Display team logos. Supports 2-6 teams with automatic layout adjustment.</div>
+        </a>
+        <a href="overlays/team-stats.html" class="card" target="_blank">
+          <div class="card-icon">📈</div>
+          <div class="card-title">Team Stats</div>
+          <div class="card-desc">Show team statistics including average, high score, and consistency.</div>
+        </a>
+        <a href="overlays/coaches.html" class="card" target="_blank">
+          <div class="card-icon">👥</div>
+          <div class="card-title">Coaches</div>
+          <div class="card-desc">Display coaching staff with team logo.</div>
+        </a>
+        <a href="overlays/hosts.html" class="card" target="_blank">
+          <div class="card-icon">🎙️</div>
+          <div class="card-title">Hosts</div>
+          <div class="card-desc">Show broadcast hosts and commentators.</div>
+        </a>
+        <a href="overlays/event-bar.html" class="card" target="_blank">
+          <div class="card-icon">📍</div>
+          <div class="card-title">Event Bar</div>
+          <div class="card-desc">Lower-third event info bar with venue and location.</div>
+        </a>
+        <a href="overlays/event-frame.html" class="card" target="_blank">
+          <div class="card-icon">🖼️</div>
+          <div class="card-title">Event Frame</div>
+          <div class="card-desc">Full-screen event title frame for transitions.</div>
+        </a>
+        <a href="overlays/stream.html" class="card" target="_blank">
+          <div class="card-icon">📡</div>
+          <div class="card-title">Stream Cards</div>
+          <div class="card-desc">Starting soon and thanks for watching screens.</div>
+        </a>
+      </div>
+    </div>
+
+    <!-- Show Controller App -->
+    <div class="section">
+      <div class="section-title">Show Controller App</div>
+      <div class="cards-grid">
+        <a href="show-controller/dist/index.html" class="card" id="cardShowControllerStandalone">
+          <div class="card-icon">🎬</div>
+          <div class="card-title">Show Controller (Built)</div>
+          <div class="card-desc">Production build of the show controller React app.</div>
+        </a>
+        <a href="http://localhost:5175/" class="card" target="_blank">
+          <div class="card-icon">⚡</div>
+          <div class="card-title">Show Controller (Dev)</div>
+          <div class="card-desc">Development server - requires `npm run dev` in show-controller folder.</div>
+          <span class="card-badge">localhost:5175</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCh0aZUvKl6Qvqsva3hvOgJJlleP1OwcTY",
+      authDomain: "gymnastics-graphics.firebaseapp.com",
+      databaseURL: "https://gymnastics-graphics-default-rtdb.firebaseio.com",
+      projectId: "gymnastics-graphics",
+      storageBucket: "gymnastics-graphics.firebasestorage.app",
+      messagingSenderId: "702072609550",
+      appId: "1:702072609550:web:ac74a811186d3ff45b955f"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let competitions = {};
+
+    // Load competitions
+    db.ref('competitions').on('value', (snapshot) => {
+      competitions = snapshot.val() || {};
+      const select = document.getElementById('compSelect');
+
+      // Clear existing options except the first
+      select.innerHTML = '<option value="">Choose a competition...</option>';
+
+      Object.keys(competitions).forEach(compId => {
+        const config = competitions[compId].config || {};
+        const option = document.createElement('option');
+        option.value = compId;
+        option.textContent = `${compId} - ${config.eventName || 'Untitled'}`;
+        select.appendChild(option);
+      });
+    });
+
+    // Handle competition selection
+    document.getElementById('compSelect').addEventListener('change', (e) => {
+      const compId = e.target.value;
+      const compInfo = document.getElementById('compInfo');
+      const quickLinks = document.getElementById('quickLinks');
+      const compToolsSection = document.getElementById('compToolsSection');
+      const compToolsName = document.getElementById('compToolsName');
+
+      if (!compId) {
+        compInfo.innerHTML = '';
+        quickLinks.style.display = 'none';
+        compToolsSection.style.display = 'none';
+        return;
+      }
+
+      const config = competitions[compId]?.config || {};
+      const teams = [config.team1Name, config.team2Name, config.team3Name, config.team4Name, config.team5Name, config.team6Name].filter(Boolean);
+
+      compInfo.innerHTML = `
+        <strong>${config.eventName || 'Untitled'}</strong> - ${config.meetDate || 'No date'}<br>
+        ${teams.join(' vs ')} at ${config.venue || 'TBD'}
+      `;
+
+      // Update quick links
+      document.getElementById('quickController').href = `controller.html?comp=${compId}`;
+      document.getElementById('quickOutput').href = `output.html?comp=${compId}`;
+      document.getElementById('quickShowController').href = `http://localhost:5175/producer`;
+      quickLinks.style.display = 'flex';
+
+      // Update competition tools cards
+      document.getElementById('cardController').href = `controller.html?comp=${compId}`;
+      document.getElementById('cardOutput').href = `output.html?comp=${compId}`;
+      document.getElementById('cardShowController').href = `http://localhost:5175/`;
+      document.getElementById('cardProducer').href = `http://localhost:5175/producer`;
+      document.getElementById('cardTalent').href = `http://localhost:5175/talent`;
+
+      compToolsName.textContent = `- ${compId}`;
+      compToolsSection.style.display = 'block';
+    });
+
+    console.log('Hub ready!');
+  </script>
+</body>
+</html>
