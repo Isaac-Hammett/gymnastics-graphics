@@ -55,11 +55,15 @@ export default function GraphicsControl({ competitionId }) {
     const unsubscribe = onValue(compsRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        setCompetitions(Object.keys(data));
-        // Auto-select first competition if none selected
-        if (!compId && Object.keys(data).length > 0) {
-          setCompId(Object.keys(data)[0]);
-        }
+        const compIds = Object.keys(data);
+        setCompetitions(compIds);
+        // Auto-select first competition only on initial load (when competitionId prop wasn't provided)
+        setCompId((current) => {
+          if (!current && compIds.length > 0) {
+            return compIds[0];
+          }
+          return current;
+        });
       }
     });
 
