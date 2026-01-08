@@ -1,4 +1,21 @@
+# Build configuration for React app
+[build]
+  command = "cd show-controller && npm install && npm run build && cp -r ../output.html ../overlays dist/"
+  publish = "show-controller/dist"
+
+# Preserve static files that should not go through SPA routing
 [[redirects]]
-  from = "/"
-  to = "/dashboard.html"
+  from = "/output.html"
+  to = "/output.html"
+  status = 200
+
+[[redirects]]
+  from = "/overlays/*"
+  to = "/overlays/:splat"
+  status = 200
+
+# SPA fallback - all other routes go to React app
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
   status = 200
