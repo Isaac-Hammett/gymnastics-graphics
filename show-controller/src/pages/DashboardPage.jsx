@@ -35,6 +35,16 @@ export default function DashboardPage() {
     };
   }
 
+  // Generate a random competition ID
+  function generateCompId() {
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < 8; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  }
+
   // Format date from YYYY-MM-DD to readable format
   function formatDate(dateStr) {
     if (!dateStr) return '';
@@ -94,7 +104,7 @@ export default function DashboardPage() {
 
   function openCreateModal() {
     setEditingCompId(null);
-    setFormData(getDefaultFormData());
+    setFormData({ ...getDefaultFormData(), compId: generateCompId() });
     setVirtiusSessionId('');
     setVirtiusError(null);
     setShowModal(true);
