@@ -40,6 +40,28 @@
       margin-bottom: 40px;
       justify-content: center;
     }
+    .hub-link {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      padding: 10px 16px;
+      background: #27272a;
+      border: 1px solid #3f3f46;
+      border-radius: 8px;
+      color: #e4e4e7;
+      font-size: 0.85rem;
+      font-weight: 500;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.15s;
+      z-index: 100;
+    }
+    .hub-link:hover {
+      background: #3f3f46;
+      border-color: #52525b;
+    }
     .btn {
       padding: 12px 24px;
       border-radius: 8px;
@@ -262,6 +284,10 @@
   </style>
 </head>
 <body>
+  <a href="index-hub.html" class="hub-link">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+    Back to Hub
+  </a>
   <div class="dashboard">
     <div class="header">
       <h1>🤸 Gymnastics Graphics Dashboard</h1>
@@ -340,17 +366,33 @@
             <label class="form-label">Team 3 Name</label>
             <input type="text" class="form-input" id="team3Name" placeholder="e.g., Penn State">
           </div>
+          <div class="form-group" id="team3LogoGroup" style="display: none;">
+            <label class="form-label">Team 3 Logo URL</label>
+            <input type="text" class="form-input" id="team3Logo" placeholder="https://example.com/logo.png">
+          </div>
           <div class="form-group" id="team4Group" style="display: none;">
             <label class="form-label">Team 4 Name</label>
             <input type="text" class="form-input" id="team4Name" placeholder="e.g., Nebraska">
+          </div>
+          <div class="form-group" id="team4LogoGroup" style="display: none;">
+            <label class="form-label">Team 4 Logo URL</label>
+            <input type="text" class="form-input" id="team4Logo" placeholder="https://example.com/logo.png">
           </div>
           <div class="form-group" id="team5Group" style="display: none;">
             <label class="form-label">Team 5 Name</label>
             <input type="text" class="form-input" id="team5Name" placeholder="e.g., Stanford">
           </div>
+          <div class="form-group" id="team5LogoGroup" style="display: none;">
+            <label class="form-label">Team 5 Logo URL</label>
+            <input type="text" class="form-input" id="team5Logo" placeholder="https://example.com/logo.png">
+          </div>
           <div class="form-group" id="team6Group" style="display: none;">
             <label class="form-label">Team 6 Name</label>
             <input type="text" class="form-input" id="team6Name" placeholder="e.g., Oklahoma">
+          </div>
+          <div class="form-group" id="team6LogoGroup" style="display: none;">
+            <label class="form-label">Team 6 Logo URL</label>
+            <input type="text" class="form-input" id="team6Logo" placeholder="https://example.com/logo.png">
           </div>
         </div>
         <div class="modal-actions">
@@ -394,17 +436,22 @@
 
       const teamCount = teamCounts[compType] || 2;
 
-      // Show/hide team fields
+      // Show/hide team fields (both name and logo)
       for (let i = 3; i <= 6; i++) {
-        const group = document.getElementById(`team${i}Group`);
-        const input = document.getElementById(`team${i}Name`);
+        const nameGroup = document.getElementById(`team${i}Group`);
+        const logoGroup = document.getElementById(`team${i}LogoGroup`);
+        const nameInput = document.getElementById(`team${i}Name`);
+        const logoInput = document.getElementById(`team${i}Logo`);
         if (i <= teamCount) {
-          group.style.display = 'block';
-          input.required = true;
+          nameGroup.style.display = 'block';
+          logoGroup.style.display = 'block';
+          nameInput.required = true;
         } else {
-          group.style.display = 'none';
-          input.required = false;
-          input.value = '';
+          nameGroup.style.display = 'none';
+          logoGroup.style.display = 'none';
+          nameInput.required = false;
+          nameInput.value = '';
+          if (logoInput) logoInput.value = '';
         }
       }
     }
@@ -506,6 +553,10 @@
       document.getElementById('team4Name').value = comp.team4Name || '';
       document.getElementById('team5Name').value = comp.team5Name || '';
       document.getElementById('team6Name').value = comp.team6Name || '';
+      document.getElementById('team3Logo').value = comp.team3Logo || '';
+      document.getElementById('team4Logo').value = comp.team4Logo || '';
+      document.getElementById('team5Logo').value = comp.team5Logo || '';
+      document.getElementById('team6Logo').value = comp.team6Logo || '';
 
       updateTeamFields(); // Show correct team fields
       document.getElementById('compModal').classList.add('show');
@@ -543,7 +594,31 @@
         team2Ave: '0.000',
         team2High: '0.000',
         team2Con: '0%',
-        team2Coaches: 'Coach Name'
+        team2Coaches: 'Coach Name',
+        // Team 3
+        team3Logo: document.getElementById('team3Logo').value || 'https://via.placeholder.com/200/006400/FFFFFF?text=T3',
+        team3Ave: '0.000',
+        team3High: '0.000',
+        team3Con: '0%',
+        team3Coaches: 'Coach Name',
+        // Team 4
+        team4Logo: document.getElementById('team4Logo').value || 'https://via.placeholder.com/200/800080/FFFFFF?text=T4',
+        team4Ave: '0.000',
+        team4High: '0.000',
+        team4Con: '0%',
+        team4Coaches: 'Coach Name',
+        // Team 5
+        team5Logo: document.getElementById('team5Logo').value || 'https://via.placeholder.com/200/FF6600/FFFFFF?text=T5',
+        team5Ave: '0.000',
+        team5High: '0.000',
+        team5Con: '0%',
+        team5Coaches: 'Coach Name',
+        // Team 6
+        team6Logo: document.getElementById('team6Logo').value || 'https://via.placeholder.com/200/000080/FFFFFF?text=T6',
+        team6Ave: '0.000',
+        team6High: '0.000',
+        team6Con: '0%',
+        team6Coaches: 'Coach Name'
       };
 
       db.ref(`competitions/${compId}/config`).set(config)

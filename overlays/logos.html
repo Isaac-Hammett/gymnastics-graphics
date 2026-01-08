@@ -20,27 +20,67 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      gap: 200px;
+      gap: 100px;
+    }
+    /* Grid layout for 5-6 teams */
+    .container.grid-layout {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      gap: 60px;
+      padding: 100px;
+      place-items: center;
     }
     .team-logo {
-      width: 300px;
-      height: 300px;
+      width: 250px;
+      height: 250px;
       object-fit: contain;
       background: #f4f4f5;
       border-radius: 24px;
-      padding: 30px;
+      padding: 25px;
+    }
+    .grid-layout .team-logo {
+      width: 200px;
+      height: 200px;
+      padding: 20px;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <img id="logo1" class="team-logo" src="" alt="Team 1">
-    <img id="logo2" class="team-logo" src="" alt="Team 2">
+  <div class="container" id="logosContainer">
+    <!-- Logos will be dynamically inserted -->
   </div>
   <script>
     const params = new URLSearchParams(window.location.search);
-    document.getElementById('logo1').src = params.get('team1Logo') || '';
-    document.getElementById('logo2').src = params.get('team2Logo') || '';
+    const container = document.getElementById('logosContainer');
+
+    // Collect all logos from URL params
+    const logos = [];
+    for (let i = 1; i <= 6; i++) {
+      const logo = params.get(`team${i}Logo`);
+      if (logo && logo.trim()) {
+        logos.push(logo);
+      }
+    }
+
+    // Apply grid layout for 5+ teams
+    if (logos.length >= 5) {
+      container.classList.add('grid-layout');
+    }
+
+    // Adjust gap for 3-4 teams
+    if (logos.length === 3 || logos.length === 4) {
+      container.style.gap = '80px';
+    }
+
+    // Create logo elements
+    logos.forEach((logo, index) => {
+      const img = document.createElement('img');
+      img.className = 'team-logo';
+      img.src = logo;
+      img.alt = `Team ${index + 1}`;
+      container.appendChild(img);
+    });
   </script>
 </body>
 </html>

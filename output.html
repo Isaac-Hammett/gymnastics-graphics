@@ -29,23 +29,37 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* Team Logos */
+    /* Team Logos - Row Layout (2-4 teams) */
     .graphic-logos {
       width: 100%;
       height: 100%;
       display: flex;
       justify-content: center;
       align-items: center;
-      gap: 200px;
+      gap: 100px;
       background: transparent;
     }
     .graphic-logos .team-logo {
-      width: 300px;
-      height: 300px;
+      width: 250px;
+      height: 250px;
       object-fit: contain;
       background: #f4f4f5;
       border-radius: 24px;
-      padding: 30px;
+      padding: 25px;
+    }
+    /* Team Logos - Grid Layout (5-6 teams) */
+    .graphic-logos-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      gap: 60px;
+      padding: 100px;
+      place-items: center;
+    }
+    .graphic-logos-grid .team-logo {
+      width: 200px;
+      height: 200px;
+      padding: 20px;
     }
 
     /* Event Info Bar */
@@ -337,12 +351,26 @@
     const renderers = {
       clear: () => '',
 
-      logos: (data) => `
-        <div class="graphic-container graphic-logos">
-          <img class="team-logo" src="${data.team1Logo}" alt="Team 1">
-          <img class="team-logo" src="${data.team2Logo}" alt="Team 2">
-        </div>
-      `,
+      logos: (data) => {
+        // Collect all team logos that exist (filter out empty/placeholder)
+        const logos = [];
+        for (let i = 1; i <= 6; i++) {
+          const logo = data[`team${i}Logo`];
+          if (logo && logo.trim() && !logo.includes('placeholder')) {
+            logos.push(logo);
+          }
+        }
+
+        // Use grid layout for 5+ teams, row for 2-4
+        const isGrid = logos.length >= 5;
+        const containerClass = isGrid ? 'graphic-logos graphic-logos-grid' : 'graphic-logos';
+
+        const logosHtml = logos.map((logo, i) =>
+          `<img class="team-logo" src="${logo}" alt="Team ${i + 1}">`
+        ).join('');
+
+        return `<div class="graphic-container ${containerClass}">${logosHtml}</div>`;
+      },
 
       'event-bar': (data) => `
         <div class="graphic-container graphic-event-bar">
@@ -430,6 +458,134 @@
           </div>
           <div class="coaches-content">
             ${data.team2Coaches.split('\n').map(c => `<div class="coach-name">${c}</div>`).join('')}
+          </div>
+        </div>
+      `,
+
+      'team3-stats': (data) => `
+        <div class="graphic-container graphic-team-stats">
+          <div class="stats-header">
+            <div class="stats-team-name">${data.team3Name}</div>
+            <img class="stats-logo" src="${data.team3Logo}" alt="Team">
+            <div class="stats-con">${data.team3Con} CON</div>
+          </div>
+          <div class="stats-content">
+            <div class="stat-item">
+              <div class="stat-label">AVE</div>
+              <div class="stat-value">${data.team3Ave}</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">HIGH</div>
+              <div class="stat-value">${data.team3High}</div>
+            </div>
+          </div>
+        </div>
+      `,
+
+      'team3-coaches': (data) => `
+        <div class="graphic-container graphic-coaches">
+          <div class="coaches-header">
+            <div class="coaches-title">COACHES</div>
+            <img class="coaches-logo" src="${data.team3Logo}" alt="Team">
+          </div>
+          <div class="coaches-content">
+            ${data.team3Coaches.split('\n').map(c => `<div class="coach-name">${c}</div>`).join('')}
+          </div>
+        </div>
+      `,
+
+      'team4-stats': (data) => `
+        <div class="graphic-container graphic-team-stats">
+          <div class="stats-header">
+            <div class="stats-team-name">${data.team4Name}</div>
+            <img class="stats-logo" src="${data.team4Logo}" alt="Team">
+            <div class="stats-con">${data.team4Con} CON</div>
+          </div>
+          <div class="stats-content">
+            <div class="stat-item">
+              <div class="stat-label">AVE</div>
+              <div class="stat-value">${data.team4Ave}</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">HIGH</div>
+              <div class="stat-value">${data.team4High}</div>
+            </div>
+          </div>
+        </div>
+      `,
+
+      'team4-coaches': (data) => `
+        <div class="graphic-container graphic-coaches">
+          <div class="coaches-header">
+            <div class="coaches-title">COACHES</div>
+            <img class="coaches-logo" src="${data.team4Logo}" alt="Team">
+          </div>
+          <div class="coaches-content">
+            ${data.team4Coaches.split('\n').map(c => `<div class="coach-name">${c}</div>`).join('')}
+          </div>
+        </div>
+      `,
+
+      'team5-stats': (data) => `
+        <div class="graphic-container graphic-team-stats">
+          <div class="stats-header">
+            <div class="stats-team-name">${data.team5Name}</div>
+            <img class="stats-logo" src="${data.team5Logo}" alt="Team">
+            <div class="stats-con">${data.team5Con} CON</div>
+          </div>
+          <div class="stats-content">
+            <div class="stat-item">
+              <div class="stat-label">AVE</div>
+              <div class="stat-value">${data.team5Ave}</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">HIGH</div>
+              <div class="stat-value">${data.team5High}</div>
+            </div>
+          </div>
+        </div>
+      `,
+
+      'team5-coaches': (data) => `
+        <div class="graphic-container graphic-coaches">
+          <div class="coaches-header">
+            <div class="coaches-title">COACHES</div>
+            <img class="coaches-logo" src="${data.team5Logo}" alt="Team">
+          </div>
+          <div class="coaches-content">
+            ${data.team5Coaches.split('\n').map(c => `<div class="coach-name">${c}</div>`).join('')}
+          </div>
+        </div>
+      `,
+
+      'team6-stats': (data) => `
+        <div class="graphic-container graphic-team-stats">
+          <div class="stats-header">
+            <div class="stats-team-name">${data.team6Name}</div>
+            <img class="stats-logo" src="${data.team6Logo}" alt="Team">
+            <div class="stats-con">${data.team6Con} CON</div>
+          </div>
+          <div class="stats-content">
+            <div class="stat-item">
+              <div class="stat-label">AVE</div>
+              <div class="stat-value">${data.team6Ave}</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">HIGH</div>
+              <div class="stat-value">${data.team6High}</div>
+            </div>
+          </div>
+        </div>
+      `,
+
+      'team6-coaches': (data) => `
+        <div class="graphic-container graphic-coaches">
+          <div class="coaches-header">
+            <div class="coaches-title">COACHES</div>
+            <img class="coaches-logo" src="${data.team6Logo}" alt="Team">
+          </div>
+          <div class="coaches-content">
+            ${data.team6Coaches.split('\n').map(c => `<div class="coach-name">${c}</div>`).join('')}
           </div>
         </div>
       `,
