@@ -50,18 +50,22 @@ export default function GraphicsControl({ competitionId }) {
   const [competitions, setCompetitions] = useState([]);
   const [copied, setCopied] = useState(false);
 
-  // Load available competitions
+  // Load available competitions with their names
   useEffect(() => {
     const compsRef = ref(db, 'competitions');
     const unsubscribe = onValue(compsRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        const compIds = Object.keys(data);
-        setCompetitions(compIds);
+        // Store full competition data including config for names
+        const compList = Object.entries(data).map(([id, comp]) => ({
+          id,
+          name: comp.config?.eventName || id
+        }));
+        setCompetitions(compList);
         // Auto-select first competition only on initial load (when competitionId prop wasn't provided)
         setCompId((current) => {
-          if (!current && compIds.length > 0) {
-            return compIds[0];
+          if (!current && compList.length > 0) {
+            return compList[0].id;
           }
           return current;
         });
@@ -213,8 +217,10 @@ export default function GraphicsControl({ competitionId }) {
           className="w-full px-3 py-2 bg-zinc-700 border border-zinc-600 rounded-lg text-white text-sm"
         >
           <option value="">Select competition...</option>
-          {competitions.map((id) => (
-            <option key={id} value={id}>{id}</option>
+          {competitions.map((comp) => (
+            <option key={comp.id} value={comp.id}>
+              {comp.name} ({comp.id})
+            </option>
           ))}
         </select>
       </div>
