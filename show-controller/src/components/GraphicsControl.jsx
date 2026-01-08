@@ -44,6 +44,7 @@ const teamCounts = {
 
 export default function GraphicsControl({ competitionId }) {
   const [currentGraphic, setCurrentGraphic] = useState(null);
+  const [currentGraphicId, setCurrentGraphicId] = useState(null); // Track the specific button ID (e.g., 'floor', 'pommel')
   const [config, setConfig] = useState(null);
   const [compId, setCompId] = useState(competitionId || '');
   const [competitions, setCompetitions] = useState([]);
@@ -89,7 +90,14 @@ export default function GraphicsControl({ competitionId }) {
     const graphicRef = ref(db, `competitions/${compId}/currentGraphic`);
     const unsubscribe = onValue(graphicRef, (snapshot) => {
       const data = snapshot.val();
-      setCurrentGraphic(data?.graphic === 'clear' ? null : data?.graphic);
+      if (data?.graphic === 'clear') {
+        setCurrentGraphic(null);
+        setCurrentGraphicId(null);
+      } else {
+        setCurrentGraphic(data?.graphic);
+        // For event-frame, extract the specific event from graphicId or frameTitle
+        setCurrentGraphicId(data?.graphicId || null);
+      }
     });
 
     return () => unsubscribe();
@@ -156,6 +164,7 @@ export default function GraphicsControl({ competitionId }) {
 
     set(ref(db, `competitions/${compId}/currentGraphic`), {
       graphic: graphicType,
+      graphicId: graphicId, // Store the specific button ID for highlighting
       data: data,
       timestamp: Date.now()
     });
@@ -260,8 +269,7 @@ export default function GraphicsControl({ competitionId }) {
                       key={btn.id}
                       onClick={() => sendGraphic(btn.id, btn.title)}
                       className={`px-2 py-2 rounded text-xs font-medium transition-colors ${
-                        currentGraphic === btn.id ||
-                        (eventFrames.includes(btn.id) && currentGraphic === 'event-frame')
+                        currentGraphicId === btn.id
                           ? 'bg-blue-600 text-white'
                           : 'bg-zinc-700 hover:bg-zinc-600 text-zinc-300'
                       }`}
