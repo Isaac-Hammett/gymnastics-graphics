@@ -1,6 +1,44 @@
 # Gymnastics Graphics - Roadmap
 
+## Completed Features
+
+### Virtius API Integration - Competition Setup
+**Status:** Implemented
+
+The Dashboard now supports importing competition details from the Virtius scoring system.
+
+**How it works:**
+1. In Dashboard > Create Competition, enter a Virtius Session ID
+2. Click "Fetch" to auto-populate: event name, date, venue, location, teams, and competition type
+3. The session ID is saved with the competition for future use
+
+**API Endpoint:** `https://api.virti.us/session/{sessionId}/json`
+
+**Server proxy:** `/api/virtius/:sessionId` (avoids CORS issues)
+
+---
+
 ## Future Enhancements
+
+### Virtius API Integration - Live Data
+**Priority:** High
+**Status:** Planned
+
+Extend the existing Virtius integration to support live data during competition:
+
+**Planned Features:**
+- Real-time score updates via polling or WebSocket
+- Live leaderboard data for graphics
+- Automatic lineup data for event summary graphics
+- Score ticker overlays
+
+**Data Available from API:**
+- `meet.teams[].final_score` - Team totals
+- `meet.teams[].events[].event_score` - Event scores
+- `meet.teams[].events[].gymnasts[]` - Individual scores with e_score, final_score
+- `meet.event_results[]` - Rankings per event
+
+---
 
 ### Event Summary Graphics Generation
 **Priority:** High
@@ -40,11 +78,11 @@ This enables:
 
 ---
 
-### Virtius Integration
+### Virtius Browser Graphics Integration
 **Priority:** Medium
 **Status:** Planned
 
-Virtius provides browser-based graphics that could be integrated:
+Virtius provides browser-based graphics that could be embedded:
 
 **Leaderboards** (URL parameter controlled):
 - Format: `https://virti.us/session?s={sessionId}&leaderboard={event}&theme=dark`
@@ -58,7 +96,7 @@ Virtius provides browser-based graphics that could be integrated:
 - Best kept as OBS browser source (manually controlled)
 - Could potentially be controlled via postMessage API if Virtius supports it
 
-**Session ID**: Each competition has a unique session ID (e.g., `bcLqSq4o3I`)
+**Note:** Session ID is now stored with each competition via the Dashboard import feature
 
 ---
 
