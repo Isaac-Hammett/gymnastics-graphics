@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ArrowUpTrayIcon, DocumentArrowDownIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/solid';
 
 export default function ImportView() {
@@ -71,13 +72,13 @@ export default function ImportView() {
 
   return (
     <div className="min-h-screen bg-zinc-950 p-8 relative">
-      <a
-        href="/index-hub.html"
+      <Link
+        to="/"
         className="absolute top-5 left-5 flex items-center gap-2 px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-300 text-sm hover:bg-zinc-700 transition-colors"
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
         Back to Hub
-      </a>
+      </Link>
       <div className="max-w-2xl mx-auto">
         <h1 className="text-2xl font-bold text-white mb-2">Import Show Plan</h1>
         <p className="text-zinc-400 mb-8">Upload a CSV file to create your run of show</p>
@@ -182,12 +183,12 @@ export default function ImportView() {
               <p className="text-green-300 text-sm mt-1">
                 Imported {result.segments} segments for "{result.showName}"
               </p>
-              <a
-                href="/producer"
+              <Link
+                to="/producer"
                 className="inline-block mt-3 text-sm text-green-400 hover:text-green-300 underline"
               >
                 Go to Producer View
-              </a>
+              </Link>
             </div>
           </div>
         )}
@@ -255,18 +256,18 @@ export default function ImportView() {
 
         {/* Navigation */}
         <div className="mt-8 flex gap-4">
-          <a
-            href="/"
+          <Link
+            to="/"
             className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg transition-colors"
           >
             Back to Home
-          </a>
-          <a
-            href="/producer"
+          </Link>
+          <Link
+            to="/producer"
             className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg transition-colors"
           >
             Producer View
-          </a>
+          </Link>
         </div>
       </div>
     </div>
