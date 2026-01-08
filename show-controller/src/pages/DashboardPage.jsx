@@ -60,7 +60,7 @@ export default function DashboardPage() {
     setVirtiusError(null);
 
     try {
-      const response = await fetch(`/api/virtius/${virtiusSessionId.trim()}`);
+      const response = await fetch(`https://api.virti.us/session/${virtiusSessionId.trim()}/json`);
       if (!response.ok) throw new Error('Session not found');
       const data = await response.json();
 
