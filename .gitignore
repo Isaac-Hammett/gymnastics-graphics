@@ -22,3 +22,8 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+
+# Event-specific files (OBS scene collections, show CSVs, recordings)
+*_SceneCollection.json
+*_ShowController.csv
+*_recording_session.json
