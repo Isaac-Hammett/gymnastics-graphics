@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { db, ref, set, onValue } from '../lib/firebase';
-import { PhotoIcon, XMarkIcon, ClipboardDocumentIcon, CheckIcon } from '@heroicons/react/24/solid';
+import { PhotoIcon, XMarkIcon, ClipboardDocumentIcon, CheckIcon, Cog6ToothIcon } from '@heroicons/react/24/solid';
 
 const graphicButtons = [
   { id: 'logos', label: 'Team Logos', section: 'Pre-Meet' },
@@ -225,9 +226,9 @@ export default function GraphicsControl({ competitionId }) {
         </select>
       </div>
 
-      {/* Copy Output URL */}
+      {/* Copy Output URL & URL Generator */}
       {compId && (
-        <div className="mb-4">
+        <div className="mb-4 space-y-2">
           <button
             onClick={copyOutputUrl}
             className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -248,6 +249,13 @@ export default function GraphicsControl({ competitionId }) {
               </>
             )}
           </button>
+          <Link
+            to={`/url-generator?comp=${compId}`}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded-lg text-sm font-medium transition-colors"
+          >
+            <Cog6ToothIcon className="w-4 h-4" />
+            URL Generator
+          </Link>
         </div>
       )}
 
