@@ -2063,6 +2063,31 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    // Firebase headshots cache - loaded once at startup
+    let firebaseHeadshots = {};
+    let headshotsLoaded = false;
+
+    // Load headshots from Firebase teamsDatabase
+    function loadFirebaseHeadshots() {
+      db.ref('teamsDatabase/headshots').on('value', (snapshot) => {
+        const data = snapshot.val() || {};
+        firebaseHeadshots = {};
+        // Convert Firebase structure to simple name -> url map
+        for (const [key, value] of Object.entries(data)) {
+          if (value && value.url) {
+            // Store with normalized name as key
+            const normalizedName = value.name ? value.name.toLowerCase().trim().replace(/\s+/g, ' ') : key;
+            firebaseHeadshots[normalizedName] = value.url;
+          }
+        }
+        headshotsLoaded = true;
+        console.log(`Loaded ${Object.keys(firebaseHeadshots).length} headshots from Firebase`);
+      });
+    }
+
+    // Initialize headshots loading
+    loadFirebaseHeadshots();
+
     const output = document.getElementById('output');
 
     // Fetch leaderboard data from Virtius API and render custom table
@@ -2458,25 +2483,33 @@
       'valeria arraiz': 'https://media.virti.us/upload/images/athlete/CXnHDBhbLTupvDgyQyIwm',
     };
 
-    // Look up athlete headshot - checks library first, then falls back to API headshot
+    // Look up athlete headshot - checks Firebase first, then static library, then API headshot
     function getAthleteHeadshot(firstName, lastName, apiHeadshot) {
       if (!firstName && !lastName) return apiHeadshot || '';
 
       // Build full name for lookup
       const fullName = `${firstName || ''} ${lastName || ''}`.toLowerCase().trim();
 
-      // Check library first
+      // Try normalized match (remove special chars)
+      const normalized = fullName.replace(/[^a-z\s]/g, '').replace(/\s+/g, ' ').trim();
+
+      // 1. Check Firebase headshots first (primary source)
+      if (firebaseHeadshots[fullName]) {
+        return firebaseHeadshots[fullName];
+      }
+      if (firebaseHeadshots[normalized]) {
+        return firebaseHeadshots[normalized];
+      }
+
+      // 2. Check static library as fallback
       if (ATHLETE_HEADSHOTS[fullName]) {
         return ATHLETE_HEADSHOTS[fullName];
       }
-
-      // Try normalized match (remove special chars)
-      const normalized = fullName.replace(/[^a-z\s]/g, '').replace(/\s+/g, ' ').trim();
       if (ATHLETE_HEADSHOTS[normalized]) {
         return ATHLETE_HEADSHOTS[normalized];
       }
 
-      // Fall back to API headshot
+      // 3. Fall back to API headshot
       return apiHeadshot || '';
     }
 
