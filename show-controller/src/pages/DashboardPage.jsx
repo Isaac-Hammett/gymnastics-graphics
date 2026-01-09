@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCompetitions } from '../hooks/useCompetitions';
 import { competitionTypes, teamCounts, typeLabels } from '../lib/graphicButtons';
-import { getTeamLogo, hasTeamLogo } from '../lib/teamLogos';
+import { getTeamLogo, hasTeamLogo } from '../lib/teamsDatabase';
 import { ExclamationTriangleIcon, CheckCircleIcon } from '@heroicons/react/24/solid';
 
 export default function DashboardPage() {
