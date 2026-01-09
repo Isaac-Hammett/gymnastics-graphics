@@ -1052,6 +1052,262 @@
        END EVENT SUMMARY THEMES
        ========================================== */
 
+    /* ==========================================
+       LAYOUT OPTIONS - Different structural layouts
+       ========================================== */
+
+    /* Layout 1: Broadcast Table - Clean ESPN-style unified table */
+    .layout-broadcast-table {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      background: #0a0a0a;
+    }
+    .layout-broadcast-table .broadcast-header {
+      display: flex;
+      align-items: stretch;
+      background: linear-gradient(180deg, #1a1a1a 0%, #0d0d0d 100%);
+      border-bottom: 4px solid #c41e3a;
+    }
+    .layout-broadcast-table .broadcast-team-banner {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      padding: 20px 32px;
+      gap: 20px;
+    }
+    .layout-broadcast-table .broadcast-team-banner.home {
+      background: linear-gradient(90deg, rgba(196,30,58,0.15) 0%, transparent 100%);
+    }
+    .layout-broadcast-table .broadcast-team-banner.away {
+      flex-direction: row-reverse;
+      background: linear-gradient(270deg, rgba(196,30,58,0.15) 0%, transparent 100%);
+    }
+    .layout-broadcast-table .broadcast-team-logo {
+      width: 72px;
+      height: 72px;
+      object-fit: contain;
+    }
+    .layout-broadcast-table .broadcast-team-info {
+      display: flex;
+      flex-direction: column;
+    }
+    .layout-broadcast-table .broadcast-team-banner.away .broadcast-team-info {
+      align-items: flex-end;
+    }
+    .layout-broadcast-table .broadcast-team-name {
+      font-size: 28px;
+      font-weight: 800;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .layout-broadcast-table .broadcast-team-total {
+      font-size: 42px;
+      font-weight: 900;
+      color: #c41e3a;
+    }
+    .layout-broadcast-table .broadcast-center-badge {
+      width: 120px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #c41e3a;
+      padding: 12px;
+    }
+    .layout-broadcast-table .broadcast-event-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.7);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .layout-broadcast-table .broadcast-rotation {
+      font-size: 36px;
+      font-weight: 900;
+      color: #fff;
+    }
+    .layout-broadcast-table .broadcast-table-container {
+      flex: 1;
+      overflow: hidden;
+      padding: 0;
+    }
+    .layout-broadcast-table .broadcast-matchup-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .layout-broadcast-table .broadcast-table-header {
+      background: #1a1a1a;
+    }
+    .layout-broadcast-table .broadcast-table-header th {
+      padding: 12px 16px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border-bottom: 2px solid #333;
+    }
+    .layout-broadcast-table .broadcast-table-header th.home-side {
+      text-align: left;
+      width: 45%;
+    }
+    .layout-broadcast-table .broadcast-table-header th.vs-col {
+      text-align: center;
+      width: 10%;
+      color: #c41e3a;
+    }
+    .layout-broadcast-table .broadcast-table-header th.away-side {
+      text-align: right;
+      width: 45%;
+    }
+    .layout-broadcast-table .broadcast-matchup-row {
+      border-bottom: 1px solid #222;
+    }
+    .layout-broadcast-table .broadcast-matchup-row:nth-child(even) {
+      background: #111;
+    }
+    .layout-broadcast-table .broadcast-matchup-row:nth-child(odd) {
+      background: #0d0d0d;
+    }
+    .layout-broadcast-table .broadcast-athlete-cell {
+      padding: 14px 20px;
+      vertical-align: middle;
+    }
+    .layout-broadcast-table .broadcast-athlete-cell.home-side {
+      text-align: left;
+    }
+    .layout-broadcast-table .broadcast-athlete-cell.away-side {
+      text-align: right;
+    }
+    .layout-broadcast-table .broadcast-athlete-inner {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .layout-broadcast-table .broadcast-athlete-cell.away-side .broadcast-athlete-inner {
+      flex-direction: row-reverse;
+      justify-content: flex-start;
+    }
+    .layout-broadcast-table .broadcast-athlete-order {
+      width: 28px;
+      height: 28px;
+      border-radius: 4px;
+      background: #333;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .layout-broadcast-table .broadcast-athlete-photo {
+      width: 48px;
+      height: 48px;
+      border-radius: 6px;
+      object-fit: cover;
+      object-position: top;
+      background: #333;
+      flex-shrink: 0;
+    }
+    .layout-broadcast-table .broadcast-athlete-details {
+      display: flex;
+      flex-direction: column;
+    }
+    .layout-broadcast-table .broadcast-athlete-cell.away-side .broadcast-athlete-details {
+      align-items: flex-end;
+    }
+    .layout-broadcast-table .broadcast-athlete-name {
+      font-size: 18px;
+      font-weight: 600;
+      color: #fff;
+    }
+    .layout-broadcast-table .broadcast-athlete-score {
+      font-size: 24px;
+      font-weight: 800;
+      color: #c41e3a;
+    }
+    .layout-broadcast-table .broadcast-athlete-start {
+      font-size: 12px;
+      color: #666;
+      margin-top: 2px;
+    }
+    .layout-broadcast-table .broadcast-vs-cell {
+      text-align: center;
+      vertical-align: middle;
+      padding: 14px 8px;
+    }
+    .layout-broadcast-table .broadcast-diff-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 700;
+      min-width: 70px;
+    }
+    .layout-broadcast-table .broadcast-diff-badge.home-wins {
+      background: rgba(196,30,58,0.2);
+      color: #ff4d6a;
+    }
+    .layout-broadcast-table .broadcast-diff-badge.away-wins {
+      background: rgba(196,30,58,0.2);
+      color: #ff4d6a;
+    }
+    .layout-broadcast-table .broadcast-diff-badge.tie {
+      background: #333;
+      color: #888;
+    }
+    .layout-broadcast-table .broadcast-footer {
+      display: flex;
+      background: #c41e3a;
+      border-top: 4px solid #8b0000;
+    }
+    .layout-broadcast-table .broadcast-footer-team {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      padding: 16px 32px;
+      gap: 16px;
+    }
+    .layout-broadcast-table .broadcast-footer-team.away {
+      flex-direction: row-reverse;
+    }
+    .layout-broadcast-table .broadcast-footer-event {
+      font-size: 14px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.8);
+      text-transform: uppercase;
+    }
+    .layout-broadcast-table .broadcast-footer-total {
+      font-size: 32px;
+      font-weight: 900;
+      color: #fff;
+      margin-left: auto;
+    }
+    .layout-broadcast-table .broadcast-footer-team.away .broadcast-footer-total {
+      margin-left: 0;
+      margin-right: auto;
+    }
+    .layout-broadcast-table .broadcast-footer-center {
+      width: 120px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #8b0000;
+    }
+    .layout-broadcast-table .broadcast-footer-diff {
+      font-size: 20px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    /* ==========================================
+       END LAYOUT OPTIONS
+       ========================================== */
+
     /* Quad Meet Layout - 4 team columns */
     .event-summary-quad {
       display: grid;
@@ -1682,7 +1938,7 @@
     }
 
     // Fetch event summary data from Virtius API and render rotation view
-    async function fetchAndRenderEventSummary(sessionId, rotation, numTeams, competitionFormat) {
+    async function fetchAndRenderEventSummary(sessionId, rotation, numTeams, competitionFormat, layout = 'default') {
       const contentEl = document.getElementById('event-summary-content');
       if (!contentEl) return;
 
@@ -1724,9 +1980,14 @@
           };
         });
 
-        // Render based on meet type
+        // Render based on meet type and layout
         if (isDual) {
-          renderDualMeetSummary(contentEl, rotationData, rotation);
+          // Check if using a specific layout
+          if (layout === 'broadcast-table') {
+            renderBroadcastTableLayout(contentEl, rotationData, rotation);
+          } else {
+            renderDualMeetSummary(contentEl, rotationData, rotation);
+          }
         } else {
           renderMultiTeamSummary(contentEl, rotationData, rotation, actualNumTeams);
         }
@@ -1927,7 +2188,7 @@
     };
 
     // Fetch event summary by apparatus (both teams on same event)
-    async function fetchAndRenderEventSummaryByApparatus(sessionId, apparatus, numTeams, competitionFormat) {
+    async function fetchAndRenderEventSummaryByApparatus(sessionId, apparatus, numTeams, competitionFormat, layout = 'default') {
       const contentEl = document.getElementById('event-summary-content');
       if (!contentEl) return;
 
@@ -1972,9 +2233,13 @@
           };
         });
 
-        // Render based on meet type
+        // Render based on meet type and layout
         if (isDual) {
-          renderDualMeetSummaryApparatus(contentEl, apparatusData, eventDisplayName, eventShortCode);
+          if (layout === 'broadcast-table') {
+            renderBroadcastTableLayoutApparatus(contentEl, apparatusData, eventDisplayName, eventShortCode);
+          } else {
+            renderDualMeetSummaryApparatus(contentEl, apparatusData, eventDisplayName, eventShortCode);
+          }
         } else {
           renderMultiTeamSummaryApparatus(contentEl, apparatusData, eventDisplayName, eventShortCode, actualNumTeams);
         }
@@ -2106,6 +2371,260 @@
       });
 
       contentEl.innerHTML = `<div class="event-summary-quad">${columnsHtml}</div>`;
+    }
+
+    // ==========================================
+    // LAYOUT: Broadcast Table
+    // Clean ESPN-style horizontal table layout
+    // ==========================================
+
+    function renderBroadcastTableLayout(contentEl, rotationData, rotation) {
+      const team1 = rotationData[0];
+      const team2 = rotationData[1];
+      const maxAthletes = Math.max(team1.gymnasts.length, team2.gymnasts.length);
+
+      // Build header with team banners
+      const headerHtml = `
+        <div class="broadcast-header">
+          <div class="broadcast-team-banner home">
+            ${team1.team.logo ? `<img class="broadcast-team-logo" src="${team1.team.logo}" alt="">` : ''}
+            <div class="broadcast-team-info">
+              <div class="broadcast-team-name">${team1.team.name || team1.team.tricode}</div>
+              <div class="broadcast-team-total">${team1.totalScore > 0 ? team1.totalScore.toFixed(3) : '0.000'}</div>
+            </div>
+          </div>
+          <div class="broadcast-center-badge">
+            <div class="broadcast-event-label">ROTATION</div>
+            <div class="broadcast-rotation">${rotation}</div>
+          </div>
+          <div class="broadcast-team-banner away">
+            ${team2.team.logo ? `<img class="broadcast-team-logo" src="${team2.team.logo}" alt="">` : ''}
+            <div class="broadcast-team-info">
+              <div class="broadcast-team-name">${team2.team.name || team2.team.tricode}</div>
+              <div class="broadcast-team-total">${team2.totalScore > 0 ? team2.totalScore.toFixed(3) : '0.000'}</div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Build matchup table rows
+      let tableRows = '';
+      for (let i = 0; i < maxAthletes; i++) {
+        const g1 = team1.gymnasts[i];
+        const g2 = team2.gymnasts[i];
+
+        const score1 = g1 ? parseFloat(g1.final_score) || 0 : 0;
+        const score2 = g2 ? parseFloat(g2.final_score) || 0 : 0;
+        const start1 = g1?.scores?.[0]?.start ? parseFloat(g1.scores[0].start) : 0;
+        const start2 = g2?.scores?.[0]?.start ? parseFloat(g2.scores[0].start) : 0;
+        const name1 = g1 ? `${g1.first_name?.charAt(0) || ''}. ${g1.last_name || ''}` : '';
+        const name2 = g2 ? `${g2.first_name?.charAt(0) || ''}. ${g2.last_name || ''}` : '';
+        const photo1 = g1 ? getAthleteHeadshot(g1.first_name, g1.last_name, g1.headshot) : '';
+        const photo2 = g2 ? getAthleteHeadshot(g2.first_name, g2.last_name, g2.headshot) : '';
+
+        const diff = score1 - score2;
+        let diffBadgeClass = 'tie';
+        let diffText = '--';
+        if (score1 > 0 || score2 > 0) {
+          diffText = diff > 0 ? `+${diff.toFixed(3)}` : diff.toFixed(3);
+          if (diff > 0.001) diffBadgeClass = 'home-wins';
+          else if (diff < -0.001) diffBadgeClass = 'away-wins';
+        }
+
+        tableRows += `
+          <tr class="broadcast-matchup-row">
+            <td class="broadcast-athlete-cell home-side">
+              ${g1 ? `
+                <div class="broadcast-athlete-inner">
+                  <div class="broadcast-athlete-order">${i + 1}</div>
+                  ${photo1 ? `<img class="broadcast-athlete-photo" src="${photo1}" alt="">` : '<div class="broadcast-athlete-photo"></div>'}
+                  <div class="broadcast-athlete-details">
+                    <div class="broadcast-athlete-name">${name1}</div>
+                    ${start1 > 0 ? `<div class="broadcast-athlete-start">SV: ${start1.toFixed(1)}</div>` : ''}
+                  </div>
+                  <div class="broadcast-athlete-score">${score1 > 0 ? score1.toFixed(3) : 'On Eval'}</div>
+                </div>
+              ` : ''}
+            </td>
+            <td class="broadcast-vs-cell">
+              <div class="broadcast-diff-badge ${diffBadgeClass}">${diffText}</div>
+            </td>
+            <td class="broadcast-athlete-cell away-side">
+              ${g2 ? `
+                <div class="broadcast-athlete-inner">
+                  <div class="broadcast-athlete-order">${i + 1}</div>
+                  ${photo2 ? `<img class="broadcast-athlete-photo" src="${photo2}" alt="">` : '<div class="broadcast-athlete-photo"></div>'}
+                  <div class="broadcast-athlete-details">
+                    <div class="broadcast-athlete-name">${name2}</div>
+                    ${start2 > 0 ? `<div class="broadcast-athlete-start">SV: ${start2.toFixed(1)}</div>` : ''}
+                  </div>
+                  <div class="broadcast-athlete-score">${score2 > 0 ? score2.toFixed(3) : 'On Eval'}</div>
+                </div>
+              ` : ''}
+            </td>
+          </tr>
+        `;
+      }
+
+      // Calculate event total difference
+      const eventDiff = team1.eventScore - team2.eventScore;
+      const eventDiffText = eventDiff > 0 ? `+${eventDiff.toFixed(3)}` : eventDiff.toFixed(3);
+
+      // Build footer
+      const footerHtml = `
+        <div class="broadcast-footer">
+          <div class="broadcast-footer-team home">
+            <div class="broadcast-footer-event">${team1.eventShortCode} TOTAL</div>
+            <div class="broadcast-footer-total">${team1.eventScore > 0 ? team1.eventScore.toFixed(3) : '—'}</div>
+          </div>
+          <div class="broadcast-footer-center">
+            <div class="broadcast-footer-diff">${eventDiffText}</div>
+          </div>
+          <div class="broadcast-footer-team away">
+            <div class="broadcast-footer-event">${team2.eventShortCode} TOTAL</div>
+            <div class="broadcast-footer-total">${team2.eventScore > 0 ? team2.eventScore.toFixed(3) : '—'}</div>
+          </div>
+        </div>
+      `;
+
+      contentEl.innerHTML = `
+        <div class="layout-broadcast-table">
+          ${headerHtml}
+          <div class="broadcast-table-container">
+            <table class="broadcast-matchup-table">
+              <tbody>
+                ${tableRows}
+              </tbody>
+            </table>
+          </div>
+          ${footerHtml}
+        </div>
+      `;
+    }
+
+    // Broadcast Table Layout for Apparatus mode (same event for both teams)
+    function renderBroadcastTableLayoutApparatus(contentEl, apparatusData, eventDisplayName, eventShortCode) {
+      const team1 = apparatusData[0];
+      const team2 = apparatusData[1];
+      const maxAthletes = Math.max(team1.gymnasts.length, team2.gymnasts.length);
+
+      // Build header with team banners
+      const headerHtml = `
+        <div class="broadcast-header">
+          <div class="broadcast-team-banner home">
+            ${team1.team.logo ? `<img class="broadcast-team-logo" src="${team1.team.logo}" alt="">` : ''}
+            <div class="broadcast-team-info">
+              <div class="broadcast-team-name">${team1.team.name || team1.team.tricode}</div>
+              <div class="broadcast-team-total">${team1.totalScore > 0 ? team1.totalScore.toFixed(3) : '0.000'}</div>
+            </div>
+          </div>
+          <div class="broadcast-center-badge">
+            <div class="broadcast-event-label">${eventDisplayName}</div>
+            <div class="broadcast-rotation">${eventShortCode}</div>
+          </div>
+          <div class="broadcast-team-banner away">
+            ${team2.team.logo ? `<img class="broadcast-team-logo" src="${team2.team.logo}" alt="">` : ''}
+            <div class="broadcast-team-info">
+              <div class="broadcast-team-name">${team2.team.name || team2.team.tricode}</div>
+              <div class="broadcast-team-total">${team2.totalScore > 0 ? team2.totalScore.toFixed(3) : '0.000'}</div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Build matchup table rows
+      let tableRows = '';
+      for (let i = 0; i < maxAthletes; i++) {
+        const g1 = team1.gymnasts[i];
+        const g2 = team2.gymnasts[i];
+
+        const score1 = g1 ? parseFloat(g1.final_score) || 0 : 0;
+        const score2 = g2 ? parseFloat(g2.final_score) || 0 : 0;
+        const start1 = g1?.scores?.[0]?.start ? parseFloat(g1.scores[0].start) : 0;
+        const start2 = g2?.scores?.[0]?.start ? parseFloat(g2.scores[0].start) : 0;
+        const name1 = g1 ? `${g1.first_name?.charAt(0) || ''}. ${g1.last_name || ''}` : '';
+        const name2 = g2 ? `${g2.first_name?.charAt(0) || ''}. ${g2.last_name || ''}` : '';
+        const photo1 = g1 ? getAthleteHeadshot(g1.first_name, g1.last_name, g1.headshot) : '';
+        const photo2 = g2 ? getAthleteHeadshot(g2.first_name, g2.last_name, g2.headshot) : '';
+
+        const diff = score1 - score2;
+        let diffBadgeClass = 'tie';
+        let diffText = '--';
+        if (score1 > 0 || score2 > 0) {
+          diffText = diff > 0 ? `+${diff.toFixed(3)}` : diff.toFixed(3);
+          if (diff > 0.001) diffBadgeClass = 'home-wins';
+          else if (diff < -0.001) diffBadgeClass = 'away-wins';
+        }
+
+        tableRows += `
+          <tr class="broadcast-matchup-row">
+            <td class="broadcast-athlete-cell home-side">
+              ${g1 ? `
+                <div class="broadcast-athlete-inner">
+                  <div class="broadcast-athlete-order">${i + 1}</div>
+                  ${photo1 ? `<img class="broadcast-athlete-photo" src="${photo1}" alt="">` : '<div class="broadcast-athlete-photo"></div>'}
+                  <div class="broadcast-athlete-details">
+                    <div class="broadcast-athlete-name">${name1}</div>
+                    ${start1 > 0 ? `<div class="broadcast-athlete-start">SV: ${start1.toFixed(1)}</div>` : ''}
+                  </div>
+                  <div class="broadcast-athlete-score">${score1 > 0 ? score1.toFixed(3) : 'On Eval'}</div>
+                </div>
+              ` : ''}
+            </td>
+            <td class="broadcast-vs-cell">
+              <div class="broadcast-diff-badge ${diffBadgeClass}">${diffText}</div>
+            </td>
+            <td class="broadcast-athlete-cell away-side">
+              ${g2 ? `
+                <div class="broadcast-athlete-inner">
+                  <div class="broadcast-athlete-order">${i + 1}</div>
+                  ${photo2 ? `<img class="broadcast-athlete-photo" src="${photo2}" alt="">` : '<div class="broadcast-athlete-photo"></div>'}
+                  <div class="broadcast-athlete-details">
+                    <div class="broadcast-athlete-name">${name2}</div>
+                    ${start2 > 0 ? `<div class="broadcast-athlete-start">SV: ${start2.toFixed(1)}</div>` : ''}
+                  </div>
+                  <div class="broadcast-athlete-score">${score2 > 0 ? score2.toFixed(3) : 'On Eval'}</div>
+                </div>
+              ` : ''}
+            </td>
+          </tr>
+        `;
+      }
+
+      // Calculate event total difference
+      const eventDiff = team1.eventScore - team2.eventScore;
+      const eventDiffText = eventDiff > 0 ? `+${eventDiff.toFixed(3)}` : eventDiff.toFixed(3);
+
+      // Build footer
+      const footerHtml = `
+        <div class="broadcast-footer">
+          <div class="broadcast-footer-team home">
+            <div class="broadcast-footer-event">${eventShortCode} TOTAL</div>
+            <div class="broadcast-footer-total">${team1.eventScore > 0 ? team1.eventScore.toFixed(3) : '—'}</div>
+          </div>
+          <div class="broadcast-footer-center">
+            <div class="broadcast-footer-diff">${eventDiffText}</div>
+          </div>
+          <div class="broadcast-footer-team away">
+            <div class="broadcast-footer-event">${eventShortCode} TOTAL</div>
+            <div class="broadcast-footer-total">${team2.eventScore > 0 ? team2.eventScore.toFixed(3) : '—'}</div>
+          </div>
+        </div>
+      `;
+
+      contentEl.innerHTML = `
+        <div class="layout-broadcast-table">
+          ${headerHtml}
+          <div class="broadcast-table-container">
+            <table class="broadcast-matchup-table">
+              <tbody>
+                ${tableRows}
+              </tbody>
+            </table>
+          </div>
+          ${footerHtml}
+        </div>
+      `;
     }
 
     // Graphic renderers
@@ -2399,11 +2918,15 @@
           return '<div style="color: red; padding: 100px; font-size: 36px;">No Virtius Session ID configured for this competition</div>';
         }
 
+        // Determine if this is a layout theme (starts with 'layout-') or a color theme
+        const isLayoutTheme = theme.startsWith('layout-');
+        const layout = isLayoutTheme ? theme.replace('layout-', '') : 'default';
+
         // Fetch and render after initial paint
         if (mode === 'apparatus') {
-          setTimeout(() => fetchAndRenderEventSummaryByApparatus(sessionId, apparatus, numTeams, competitionFormat), 100);
+          setTimeout(() => fetchAndRenderEventSummaryByApparatus(sessionId, apparatus, numTeams, competitionFormat, layout), 100);
         } else {
-          setTimeout(() => fetchAndRenderEventSummary(sessionId, rotation, numTeams, competitionFormat), 100);
+          setTimeout(() => fetchAndRenderEventSummary(sessionId, rotation, numTeams, competitionFormat, layout), 100);
         }
 
         const logoHtml = hostLogo && hostLogo.trim() && !hostLogo.includes('placeholder')
@@ -2415,8 +2938,20 @@
           : `Loading rotation ${rotation}...`;
 
         // Build theme class and CSS variables for team colors
-        const themeClass = theme !== 'default' ? `theme-${theme}` : '';
+        // Only apply color theme class if not using a layout theme
+        const themeClass = (!isLayoutTheme && theme !== 'default') ? `theme-${theme}` : '';
         const teamColorVars = `--home-primary: ${team1Colors.primary}; --home-secondary: ${team1Colors.secondary}; --home-bg: ${team1Colors.bg}; --away-primary: ${team2Colors.primary}; --away-secondary: ${team2Colors.secondary};`;
+
+        // For layout themes, don't show the standard header
+        if (isLayoutTheme) {
+          return `
+            <div class="graphic-container graphic-event-summary" style="${teamColorVars}">
+              <div class="event-summary-content" id="event-summary-content" style="flex: 1;">
+                <div class="event-summary-loading">${loadingText}</div>
+              </div>
+            </div>
+          `;
+        }
 
         return `
           <div class="graphic-container graphic-event-summary ${themeClass}" style="${teamColorVars}">
