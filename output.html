@@ -1531,26 +1531,30 @@
       flex: 1;
       background: #18181b;
     }
-    /* Title bar at top */
+    /* Title bar at top - prominent header like reference */
     .layout-default-v2 .title-bar {
       display: flex;
       align-items: center;
-      justify-content: center;
-      padding: 12px 24px;
-      background: #3f3f46;
-      gap: 24px;
+      justify-content: space-between;
+      padding: 16px 40px;
+      background: #d4d4d8;
+      min-height: 80px;
     }
     .layout-default-v2 .title-bar .title-logo {
-      width: 48px;
-      height: 48px;
+      width: 72px;
+      height: 72px;
       object-fit: contain;
     }
     .layout-default-v2 .title-bar .title-text {
-      font-size: 24px;
-      font-weight: 700;
-      color: #fff;
+      font-size: 42px;
+      font-weight: 800;
+      color: #000;
       text-transform: uppercase;
-      letter-spacing: 2px;
+      letter-spacing: 1px;
+    }
+    .layout-default-v2 .title-bar .title-logo-placeholder {
+      width: 72px;
+      height: 72px;
     }
     /* Main content area */
     .layout-default-v2 .main-content {
@@ -3398,12 +3402,12 @@
 
       const maxAthletes = Math.max(team1.gymnasts.length, team2.gymnasts.length);
 
-      // Build title bar
+      // Build title bar with logos on far left and far right
       const titleHtml = `
         <div class="title-bar">
-          ${team1.team.logo ? `<img class="title-logo" src="${team1.team.logo}" alt="">` : ''}
+          ${team1.team.logo ? `<img class="title-logo" src="${team1.team.logo}" alt="">` : '<div class="title-logo-placeholder"></div>'}
           <div class="title-text">Event Summary</div>
-          ${team2.team.logo ? `<img class="title-logo" src="${team2.team.logo}" alt="">` : ''}
+          ${team2.team.logo ? `<img class="title-logo" src="${team2.team.logo}" alt="">` : '<div class="title-logo-placeholder"></div>'}
         </div>
       `;
 
@@ -3539,12 +3543,12 @@
 
       const maxAthletes = Math.max(team1.gymnasts.length, team2.gymnasts.length);
 
-      // Build title bar
+      // Build title bar with logos on far left and far right
       const titleHtml = `
         <div class="title-bar">
-          ${team1.team.logo ? `<img class="title-logo" src="${team1.team.logo}" alt="">` : ''}
+          ${team1.team.logo ? `<img class="title-logo" src="${team1.team.logo}" alt="">` : '<div class="title-logo-placeholder"></div>'}
           <div class="title-text">Event Summary</div>
-          ${team2.team.logo ? `<img class="title-logo" src="${team2.team.logo}" alt="">` : ''}
+          ${team2.team.logo ? `<img class="title-logo" src="${team2.team.logo}" alt="">` : '<div class="title-logo-placeholder"></div>'}
         </div>
       `;
 
