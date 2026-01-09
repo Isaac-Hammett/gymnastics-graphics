@@ -58,6 +58,7 @@ const teamCounts = {
 const summaryThemes = [
   // LAYOUTS - Different structural designs
   { id: 'layout-broadcast-table', label: '🎴 Hero Cards', isLayout: true },
+  { id: 'layout-classic-broadcast', label: '📺 Classic Broadcast', isLayout: true },
   // COLOR THEMES - Same structure, different colors
   { id: 'default', label: 'Default (Original)' },
   { id: 'espn', label: 'ESPN Colors' },
@@ -72,6 +73,16 @@ const summaryThemes = [
   { id: 'gradient', label: 'Gradient' },
 ];
 
+// Map Virtius event names to display names
+const eventDisplayNames = {
+  'FLOOR': 'Floor Exercise',
+  'HORSE': 'Pommel Horse',
+  'RINGS': 'Still Rings',
+  'VAULT': 'Vault',
+  'PBARS': 'Parallel Bars',
+  'BAR': 'High Bar',
+};
+
 export default function GraphicsControl({ competitionId }) {
   const [currentGraphic, setCurrentGraphic] = useState(null);
   const [currentGraphicId, setCurrentGraphicId] = useState(null); // Track the specific button ID (e.g., 'floor', 'pommel')
@@ -80,6 +91,8 @@ export default function GraphicsControl({ competitionId }) {
   const [competitions, setCompetitions] = useState([]);
   const [copied, setCopied] = useState(false);
   const [summaryTheme, setSummaryTheme] = useState('default');
+  const [liveAthletes, setLiveAthletes] = useState([]); // Athletes currently competing (type: 0, no score yet)
+  const [isPolling, setIsPolling] = useState(false);
 
   // Load available competitions with their names
   useEffect(() => {
@@ -137,6 +150,62 @@ export default function GraphicsControl({ competitionId }) {
 
     return () => unsubscribe();
   }, [compId]);
+
+  // Poll Virtius API for live athletes when polling is enabled
+  useEffect(() => {
+    if (!isPolling || !config?.virtiusSessionId) {
+      setLiveAthletes([]);
+      return;
+    }
+
+    const fetchLiveAthletes = async () => {
+      try {
+        const response = await fetch(`https://api.virti.us/session/${config.virtiusSessionId}/json`);
+        const data = await response.json();
+
+        if (!data.meet?.teams) return;
+
+        // Find athletes who are "on air" - type: 0 with no score, first in lineup order for their event
+        const athletes = [];
+
+        for (const team of data.meet.teams) {
+          if (!team.events) continue;
+
+          for (const event of team.events) {
+            if (!event.gymnasts) continue;
+
+            // Find the first gymnast in this event who hasn't competed yet (type: 0, no final_score)
+            for (const gymnast of event.gymnasts) {
+              if (gymnast.type === 0 && !gymnast.final_score) {
+                athletes.push({
+                  id: gymnast.gymnast_id,
+                  name: gymnast.full_name,
+                  team: team.name,
+                  teamTricode: team.tricode,
+                  event: event.event_name,
+                  eventDisplay: eventDisplayNames[event.event_name] || event.event_name,
+                  order: gymnast.order,
+                });
+                break; // Only the first one per event per team
+              }
+            }
+          }
+        }
+
+        setLiveAthletes(athletes);
+      } catch (error) {
+        console.error('Error fetching Virtius data:', error);
+      }
+    };
+
+    // Fetch immediately
+    fetchLiveAthletes();
+
+    // Poll every 10 seconds
+    const interval = setInterval(fetchLiveAthletes, 10000);
+
+    return () => clearInterval(interval);
+  }, [isPolling, config?.virtiusSessionId]);
 
   const sendGraphic = (graphicId, frameTitle = null, leaderboardEvent = null) => {
     if (!compId || !config) return;
@@ -273,6 +342,34 @@ export default function GraphicsControl({ competitionId }) {
     set(ref(db, `competitions/${compId}/currentGraphic`), {
       graphic: 'clear',
       data: {},
+      timestamp: Date.now()
+    });
+  };
+
+  // Send "Now Competing" graphic for a specific athlete
+  const sendNowCompeting = (athlete) => {
+    if (!compId || !config) return;
+
+    // Find the team logo based on the athlete's team
+    let athleteLogo = config.team1Logo || '';
+    for (let i = 1; i <= 6; i++) {
+      if (config[`team${i}Name`] === athlete.team ||
+          config[`team${i}Tricode`]?.toUpperCase() === athlete.teamTricode?.toUpperCase()) {
+        athleteLogo = config[`team${i}Logo`] || '';
+        break;
+      }
+    }
+
+    set(ref(db, `competitions/${compId}/currentGraphic`), {
+      graphic: 'now-competing',
+      graphicId: `now-competing-${athlete.id}`,
+      data: {
+        athleteName: athlete.name,
+        athleteTeam: athlete.team,
+        athleteEvent: athlete.eventDisplay,
+        athleteLogo: athleteLogo,
+        team1Logo: config.team1Logo || '',
+      },
       timestamp: Date.now()
     });
   };
@@ -459,6 +556,58 @@ export default function GraphicsControl({ competitionId }) {
                   );
                 })}
               </div>
+            </div>
+          )}
+
+          {/* Now Competing Section - Live athletes from Virtius */}
+          {config.virtiusSessionId && (
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-xs text-zinc-500 uppercase">Now Competing</div>
+                <button
+                  onClick={() => setIsPolling(!isPolling)}
+                  className={`text-xs px-2 py-1 rounded font-medium transition-colors ${
+                    isPolling
+                      ? 'bg-green-600 text-white'
+                      : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'
+                  }`}
+                >
+                  {isPolling ? 'Live' : 'Start Polling'}
+                </button>
+              </div>
+              {isPolling ? (
+                liveAthletes.length > 0 ? (
+                  <div className="space-y-1.5">
+                    {liveAthletes.map((athlete) => (
+                      <button
+                        key={athlete.id}
+                        onClick={() => sendNowCompeting(athlete)}
+                        className={`w-full text-left px-3 py-2 rounded text-xs transition-colors ${
+                          currentGraphicId === `now-competing-${athlete.id}`
+                            ? 'bg-green-600 text-white'
+                            : 'bg-zinc-700 hover:bg-zinc-600 text-zinc-300'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="font-semibold">{athlete.name}</span>
+                            <span className="text-zinc-400 ml-2">({athlete.teamTricode || athlete.team})</span>
+                          </div>
+                          <span className="text-zinc-400">{athlete.eventDisplay}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-xs text-zinc-500 text-center py-3 bg-zinc-700/50 rounded">
+                    No athletes currently competing
+                  </div>
+                )
+              ) : (
+                <div className="text-xs text-zinc-500 text-center py-3 bg-zinc-700/50 rounded">
+                  Click "Start Polling" to fetch live athletes
+                </div>
+              )}
             </div>
           )}
 

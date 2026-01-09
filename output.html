@@ -1248,6 +1248,282 @@
       color: #666;
     }
 
+    /* Layout 2: Classic Broadcast - Exact replica of default layout */
+    .layout-classic-broadcast {
+      display: flex;
+      flex: 1;
+      background: #27272a;
+    }
+    .layout-classic-broadcast .team-column {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .layout-classic-broadcast .team-header {
+      display: flex;
+      align-items: center;
+      padding: 16px 24px;
+      background: #27272a;
+      gap: 16px;
+    }
+    .layout-classic-broadcast .team-header.left {
+      justify-content: flex-start;
+    }
+    .layout-classic-broadcast .team-header.right {
+      justify-content: flex-end;
+      flex-direction: row-reverse;
+    }
+    .layout-classic-broadcast .team-logo {
+      width: 56px;
+      height: 56px;
+      object-fit: contain;
+    }
+    .layout-classic-broadcast .team-name {
+      font-size: 28px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .layout-classic-broadcast .team-total {
+      font-size: 32px;
+      font-weight: 800;
+      color: #fff;
+      margin-left: auto;
+    }
+    .layout-classic-broadcast .team-header.right .team-total {
+      margin-left: 0;
+      margin-right: auto;
+    }
+    .layout-classic-broadcast .athlete-list {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #18181b;
+    }
+    .layout-classic-broadcast .athlete-row {
+      display: flex;
+      align-items: center;
+      padding: 8px 20px;
+      min-height: 72px;
+      background: #27272a;
+    }
+    /* Left side layout */
+    .layout-classic-broadcast .team-column.left .athlete-row {
+      gap: 12px;
+    }
+    .layout-classic-broadcast .team-column.left .athlete-order {
+      order: 1;
+    }
+    .layout-classic-broadcast .team-column.left .athlete-photo {
+      order: 2;
+    }
+    .layout-classic-broadcast .team-column.left .athlete-name {
+      order: 3;
+    }
+    .layout-classic-broadcast .team-column.left .athlete-score-block {
+      order: 4;
+      align-items: flex-end;
+    }
+    /* Right side - reverse order for RTL layout */
+    .layout-classic-broadcast .team-column.right .athlete-row {
+      flex-direction: row-reverse;
+      gap: 12px;
+    }
+    .layout-classic-broadcast .team-column.right .athlete-name {
+      text-align: right;
+    }
+    .layout-classic-broadcast .team-column.right .athlete-score-block {
+      align-items: flex-start;
+    }
+    .layout-classic-broadcast .athlete-order {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #52525b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .layout-classic-broadcast .athlete-order.anchor {
+      background: #eab308;
+      color: #000;
+    }
+    .layout-classic-broadcast .athlete-photo {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      object-fit: cover;
+      object-position: top;
+      background: #3f3f46;
+      flex-shrink: 0;
+    }
+    .layout-classic-broadcast .athlete-name {
+      flex: 1;
+      font-size: 22px;
+      font-weight: 600;
+      color: #fff;
+      white-space: nowrap;
+    }
+    .layout-classic-broadcast .athlete-score-block {
+      display: flex;
+      flex-direction: column;
+      min-width: 90px;
+    }
+    .layout-classic-broadcast .athlete-score {
+      font-size: 26px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .layout-classic-broadcast .athlete-start {
+      font-size: 14px;
+      color: #a1a1aa;
+    }
+    /* Center divider with rotation info and score diff bars */
+    .layout-classic-broadcast .center-divider {
+      width: 140px;
+      background: #18181b;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .layout-classic-broadcast .center-header {
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 88px;
+      background: #27272a;
+    }
+    .layout-classic-broadcast .rotation-badge {
+      font-size: 32px;
+      font-weight: 800;
+      color: #fff;
+    }
+    .layout-classic-broadcast .diff-row {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 72px;
+      padding: 8px 12px;
+      width: 100%;
+      background: #27272a;
+    }
+    .layout-classic-broadcast .diff-value {
+      font-size: 18px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+    .layout-classic-broadcast .diff-bar {
+      width: 100%;
+      height: 8px;
+      background: #3f3f46;
+      border-radius: 4px;
+      position: relative;
+      overflow: hidden;
+    }
+    .layout-classic-broadcast .diff-bar-fill {
+      position: absolute;
+      top: 0;
+      height: 100%;
+      border-radius: 4px;
+    }
+    .layout-classic-broadcast .diff-bar-fill.left {
+      right: 50%;
+      background: linear-gradient(to left, #eab308, #dc2626);
+    }
+    .layout-classic-broadcast .diff-bar-fill.right {
+      left: 50%;
+      background: linear-gradient(to right, #eab308, #dc2626);
+    }
+    .layout-classic-broadcast .diff-bar-fill.tie {
+      left: 50%;
+      width: 4px !important;
+      transform: translateX(-50%);
+      background: #a1a1aa;
+    }
+    /* Footer with event totals and icons */
+    .layout-classic-broadcast .summary-footer {
+      display: flex;
+      background: #18181b;
+      border-top: 2px solid #3f3f46;
+      min-height: 80px;
+    }
+    .layout-classic-broadcast .footer-team {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      padding: 16px 24px;
+      gap: 16px;
+    }
+    .layout-classic-broadcast .footer-team.right {
+      flex-direction: row-reverse;
+    }
+    .layout-classic-broadcast .event-abbr {
+      font-size: 24px;
+      font-weight: 800;
+      color: #a1a1aa;
+    }
+    .layout-classic-broadcast .event-icon {
+      width: 40px;
+      height: 40px;
+      opacity: 0.6;
+    }
+    .layout-classic-broadcast .event-label {
+      font-size: 20px;
+      font-weight: 600;
+      color: #a1a1aa;
+    }
+    .layout-classic-broadcast .event-total {
+      font-size: 32px;
+      font-weight: 800;
+      color: #fff;
+      margin-left: auto;
+    }
+    .layout-classic-broadcast .footer-team.right .event-total {
+      margin-left: 0;
+      margin-right: auto;
+    }
+    .layout-classic-broadcast .footer-center {
+      width: 140px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+    .layout-classic-broadcast .footer-diff {
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .layout-classic-broadcast .footer-diff-bar {
+      width: 80%;
+      height: 6px;
+      background: #3f3f46;
+      border-radius: 3px;
+      position: relative;
+      overflow: hidden;
+    }
+    .layout-classic-broadcast .footer-diff-fill {
+      position: absolute;
+      top: 0;
+      height: 100%;
+      border-radius: 3px;
+    }
+    .layout-classic-broadcast .footer-diff-fill.left {
+      right: 50%;
+      background: linear-gradient(to left, #eab308, #dc2626);
+    }
+    .layout-classic-broadcast .footer-diff-fill.right {
+      left: 50%;
+      background: linear-gradient(to right, #eab308, #dc2626);
+    }
+
     /* ==========================================
        END LAYOUT OPTIONS
        ========================================== */
@@ -1406,6 +1682,88 @@
     }
     .stream-branding span {
       color: #22d3ee;
+    }
+
+    /* Now Competing Graphic */
+    .graphic-now-competing {
+      position: absolute;
+      bottom: 120px;
+      left: 100px;
+      display: flex;
+      flex-direction: row;
+      animation: slideIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .now-competing-status {
+      background: #22c55e;
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .now-competing-status-dot {
+      width: 14px;
+      height: 14px;
+      background: #fff;
+      border-radius: 50%;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(0.85); }
+    }
+    .now-competing-status-text {
+      font-size: 18px;
+      font-weight: 800;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .now-competing-logo {
+      width: 100px;
+      background: #d4d4d8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 15px;
+    }
+    .now-competing-logo img {
+      width: 70px;
+      height: 70px;
+      object-fit: contain;
+    }
+    .now-competing-content {
+      display: flex;
+      flex-direction: column;
+    }
+    .now-competing-event {
+      background: #d4d4d8;
+      padding: 10px 40px;
+      min-width: 500px;
+      font-size: 24px;
+      font-weight: 700;
+      color: #000;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .now-competing-details {
+      background: #000;
+      padding: 14px 40px;
+    }
+    .now-competing-name {
+      font-size: 36px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.5px;
+      line-height: 1.2;
+    }
+    .now-competing-team {
+      font-size: 22px;
+      font-weight: 600;
+      color: #a1a1aa;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 4px;
     }
   </style>
 </head>
@@ -1929,6 +2287,8 @@
           // Check if using a specific layout
           if (layout === 'broadcast-table') {
             renderBroadcastTableLayout(contentEl, rotationData, rotation);
+          } else if (layout === 'classic-broadcast') {
+            renderClassicBroadcastLayout(contentEl, rotationData, rotation);
           } else {
             renderDualMeetSummary(contentEl, rotationData, rotation);
           }
@@ -2181,6 +2541,8 @@
         if (isDual) {
           if (layout === 'broadcast-table') {
             renderBroadcastTableLayoutApparatus(contentEl, apparatusData, eventDisplayName, eventShortCode);
+          } else if (layout === 'classic-broadcast') {
+            renderClassicBroadcastLayoutApparatus(contentEl, apparatusData, eventDisplayName, eventShortCode);
           } else {
             renderDualMeetSummaryApparatus(contentEl, apparatusData, eventDisplayName, eventShortCode);
           }
@@ -2555,6 +2917,208 @@
       `;
     }
 
+    // ==========================================
+    // Layout 2: Classic Broadcast
+    // Exact replica of default dual meet layout
+    // ==========================================
+
+    function renderClassicBroadcastLayout(contentEl, rotationData, rotation) {
+      const team1 = rotationData[0];
+      const team2 = rotationData[1];
+
+      const maxAthletes = Math.max(team1.gymnasts.length, team2.gymnasts.length);
+
+      // Build left team column
+      const leftColumn = buildClassicBroadcastColumn(team1, 'left', maxAthletes);
+      const rightColumn = buildClassicBroadcastColumn(team2, 'right', maxAthletes);
+
+      // Build center divider with visual diff bars
+      let centerHtml = `<div class="center-divider"><div class="center-header"><div class="rotation-badge">R${rotation}</div></div>`;
+      for (let i = 0; i < maxAthletes; i++) {
+        const score1 = team1.gymnasts[i] ? parseFloat(team1.gymnasts[i].final_score) || 0 : 0;
+        const score2 = team2.gymnasts[i] ? parseFloat(team2.gymnasts[i].final_score) || 0 : 0;
+        const diff = score1 - score2;
+        const diffStr = (score1 === 0 && score2 === 0) ? '--' : diff.toFixed(3);
+
+        const barWidth = Math.min(Math.abs(diff) * 25, 50);
+        let barClass = 'tie';
+        if (diff > 0.001) barClass = 'left';
+        else if (diff < -0.001) barClass = 'right';
+
+        centerHtml += `
+          <div class="diff-row">
+            <div class="diff-value">${diffStr}</div>
+            <div class="diff-bar">
+              <div class="diff-bar-fill ${barClass}" style="width: ${barWidth}%;"></div>
+            </div>
+          </div>
+        `;
+      }
+      centerHtml += '</div>';
+
+      // Calculate event total difference
+      const eventDiff = team1.eventScore - team2.eventScore;
+      const eventDiffStr = eventDiff.toFixed(3);
+      const eventBarWidth = Math.min(Math.abs(eventDiff) * 5, 50);
+      let eventBarClass = 'tie';
+      if (eventDiff > 0.001) eventBarClass = 'left';
+      else if (eventDiff < -0.001) eventBarClass = 'right';
+
+      // Build footer with event totals and icons
+      const footerHtml = `
+        <div class="summary-footer">
+          <div class="footer-team left">
+            <div class="event-abbr">${team1.eventShortCode}</div>
+            ${EVENT_ICONS[team1.eventShortCode] || ''}
+            <div class="event-label">Event Total</div>
+            <div class="event-total">${team1.eventScore > 0 ? team1.eventScore.toFixed(3) : '—'}</div>
+          </div>
+          <div class="footer-center">
+            <div class="footer-diff">${eventDiffStr}</div>
+            <div class="footer-diff-bar">
+              <div class="footer-diff-fill ${eventBarClass}" style="width: ${eventBarWidth}%;"></div>
+            </div>
+          </div>
+          <div class="footer-team right">
+            <div class="event-abbr">${team2.eventShortCode}</div>
+            ${EVENT_ICONS[team2.eventShortCode] || ''}
+            <div class="event-label">Event Total</div>
+            <div class="event-total">${team2.eventScore > 0 ? team2.eventScore.toFixed(3) : '—'}</div>
+          </div>
+        </div>
+      `;
+
+      contentEl.innerHTML = `
+        <div class="layout-classic-broadcast">
+          ${leftColumn}
+          ${centerHtml}
+          ${rightColumn}
+        </div>
+        ${footerHtml}
+      `;
+    }
+
+    // Build a team column for classic broadcast layout
+    function buildClassicBroadcastColumn(teamData, side, maxAthletes) {
+      const { team, gymnasts, totalScore, eventShortCode } = teamData;
+
+      let athletesHtml = '';
+      for (let i = 0; i < maxAthletes; i++) {
+        const g = gymnasts[i];
+        if (g) {
+          const score = parseFloat(g.final_score) || 0;
+          const startValue = g.scores && g.scores.length > 0 ? parseFloat(g.scores[0].start) || 0 : 0;
+          const name = `${g.first_name?.charAt(0) || ''}. ${g.last_name || ''}`;
+          const photoUrl = getAthleteHeadshot(g.first_name, g.last_name, g.headshot);
+          const isAnchor = i === 5;
+
+          athletesHtml += `
+            <div class="athlete-row">
+              <div class="athlete-order${isAnchor ? ' anchor' : ''}">${i + 1}</div>
+              ${photoUrl ? `<img class="athlete-photo" src="${photoUrl}" alt="">` : '<div class="athlete-photo" style="background: #52525b;"></div>'}
+              <div class="athlete-name">${name}</div>
+              <div class="athlete-score-block">
+                <div class="athlete-score">${score > 0 ? score.toFixed(3) : 'On Eval'}</div>
+                ${startValue > 0 ? `<div class="athlete-start">${startValue.toFixed(1)}</div>` : ''}
+              </div>
+            </div>
+          `;
+        } else {
+          athletesHtml += `<div class="athlete-row" style="min-height: 72px;"></div>`;
+        }
+      }
+
+      return `
+        <div class="team-column ${side}">
+          <div class="team-header ${side}">
+            ${team.logo ? `<img class="team-logo" src="${team.logo}" alt="">` : ''}
+            <div class="team-name">${team.name || team.tricode}</div>
+            <div class="team-total">${totalScore > 0 ? totalScore.toFixed(3) : '0.000'}</div>
+          </div>
+          <div class="athlete-list">
+            ${athletesHtml}
+          </div>
+        </div>
+      `;
+    }
+
+    // Classic Broadcast Layout for Apparatus mode (same event for both teams)
+    function renderClassicBroadcastLayoutApparatus(contentEl, apparatusData, eventDisplayName, eventShortCode) {
+      const team1 = apparatusData[0];
+      const team2 = apparatusData[1];
+
+      const maxAthletes = Math.max(team1.gymnasts.length, team2.gymnasts.length);
+
+      // Build left team column
+      const leftColumn = buildClassicBroadcastColumn(team1, 'left', maxAthletes);
+      const rightColumn = buildClassicBroadcastColumn(team2, 'right', maxAthletes);
+
+      // Build center divider with event name and visual diff bars
+      let centerHtml = `<div class="center-divider"><div class="center-header"><div class="rotation-badge">${eventShortCode}</div></div>`;
+      for (let i = 0; i < maxAthletes; i++) {
+        const score1 = team1.gymnasts[i] ? parseFloat(team1.gymnasts[i].final_score) || 0 : 0;
+        const score2 = team2.gymnasts[i] ? parseFloat(team2.gymnasts[i].final_score) || 0 : 0;
+        const diff = score1 - score2;
+        const diffStr = (score1 === 0 && score2 === 0) ? '--' : diff.toFixed(3);
+
+        const barWidth = Math.min(Math.abs(diff) * 25, 50);
+        let barClass = 'tie';
+        if (diff > 0.001) barClass = 'left';
+        else if (diff < -0.001) barClass = 'right';
+
+        centerHtml += `
+          <div class="diff-row">
+            <div class="diff-value">${diffStr}</div>
+            <div class="diff-bar">
+              <div class="diff-bar-fill ${barClass}" style="width: ${barWidth}%;"></div>
+            </div>
+          </div>
+        `;
+      }
+      centerHtml += '</div>';
+
+      // Calculate event total difference
+      const eventDiff = team1.eventScore - team2.eventScore;
+      const eventDiffStr = eventDiff.toFixed(3);
+      const eventBarWidth = Math.min(Math.abs(eventDiff) * 5, 50);
+      let eventBarClass = 'tie';
+      if (eventDiff > 0.001) eventBarClass = 'left';
+      else if (eventDiff < -0.001) eventBarClass = 'right';
+
+      // Build footer with event totals and icons (same event for both teams)
+      const footerHtml = `
+        <div class="summary-footer">
+          <div class="footer-team left">
+            <div class="event-abbr">${eventShortCode}</div>
+            ${EVENT_ICONS[eventShortCode] || ''}
+            <div class="event-label">Event Total</div>
+            <div class="event-total">${team1.eventScore > 0 ? team1.eventScore.toFixed(3) : '—'}</div>
+          </div>
+          <div class="footer-center">
+            <div class="footer-diff">${eventDiffStr}</div>
+            <div class="footer-diff-bar">
+              <div class="footer-diff-fill ${eventBarClass}" style="width: ${eventBarWidth}%;"></div>
+            </div>
+          </div>
+          <div class="footer-team right">
+            <div class="event-abbr">${eventShortCode}</div>
+            ${EVENT_ICONS[eventShortCode] || ''}
+            <div class="event-label">Event Total</div>
+            <div class="event-total">${team2.eventScore > 0 ? team2.eventScore.toFixed(3) : '—'}</div>
+          </div>
+        </div>
+      `;
+
+      contentEl.innerHTML = `
+        <div class="layout-classic-broadcast">
+          ${leftColumn}
+          ${centerHtml}
+          ${rightColumn}
+        </div>
+        ${footerHtml}
+      `;
+    }
+
     // Graphic renderers
     const renderers = {
       clear: () => '',
@@ -2825,6 +3389,25 @@
           <div class="stream-event-name">${data.eventName}</div>
           <div class="stream-date">${data.meetDate}</div>
           <div class="stream-branding"><span>V</span>irtius</div>
+        </div>
+      `,
+
+      'now-competing': (data) => `
+        <div class="graphic-container graphic-now-competing">
+          <div class="now-competing-status">
+            <div class="now-competing-status-dot"></div>
+            <div class="now-competing-status-text">Live</div>
+          </div>
+          <div class="now-competing-logo">
+            <img src="${data.athleteLogo || data.team1Logo}" alt="Team">
+          </div>
+          <div class="now-competing-content">
+            <div class="now-competing-event">${data.athleteEvent || 'Floor Exercise'}</div>
+            <div class="now-competing-details">
+              <div class="now-competing-name">${data.athleteName || 'Athlete Name'}</div>
+              <div class="now-competing-team">${data.athleteTeam || 'Team'}</div>
+            </div>
+          </div>
         </div>
       `,
 
