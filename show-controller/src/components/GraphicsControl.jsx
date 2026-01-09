@@ -52,6 +52,21 @@ const teamCounts = {
   'mens-6': 6
 };
 
+// Available themes for Event Summary
+const summaryThemes = [
+  { id: 'default', label: 'Default' },
+  { id: 'espn', label: 'ESPN' },
+  { id: 'nbc', label: 'NBC Olympics' },
+  { id: 'btn', label: 'Big Ten' },
+  { id: 'pac12', label: 'Pac-12' },
+  { id: 'virtius', label: 'Virtius' },
+  { id: 'neon', label: 'Neon' },
+  { id: 'classic', label: 'Classic' },
+  { id: 'light', label: 'Light' },
+  { id: 'home', label: 'Team Colors' },
+  { id: 'gradient', label: 'Gradient' },
+];
+
 export default function GraphicsControl({ competitionId }) {
   const [currentGraphic, setCurrentGraphic] = useState(null);
   const [currentGraphicId, setCurrentGraphicId] = useState(null); // Track the specific button ID (e.g., 'floor', 'pommel')
@@ -59,6 +74,7 @@ export default function GraphicsControl({ competitionId }) {
   const [compId, setCompId] = useState(competitionId || '');
   const [competitions, setCompetitions] = useState([]);
   const [copied, setCopied] = useState(false);
+  const [summaryTheme, setSummaryTheme] = useState('default');
 
   // Load available competitions with their names
   useEffect(() => {
@@ -217,7 +233,10 @@ export default function GraphicsControl({ competitionId }) {
         summaryRotation: value,
         summaryNumTeams: maxTeams,
         summaryFormat: isDual ? 'alternating' : 'olympic',
+        summaryTheme: summaryTheme,
         team1Logo: config.team1Logo || '',
+        team1Name: config.team1Name || '',
+        team2Name: config.team2Name || '',
       };
     } else {
       // Apparatus mode: show both teams' scores for the same event (head-to-head view)
@@ -228,7 +247,10 @@ export default function GraphicsControl({ competitionId }) {
         summaryApparatus: value, // e.g., 'fx', 'ph', 'sr', 'vt', 'pb', 'hb'
         summaryNumTeams: maxTeams,
         summaryFormat: 'head-to-head', // Always head-to-head for apparatus mode
+        summaryTheme: summaryTheme,
         team1Logo: config.team1Logo || '',
+        team1Name: config.team1Name || '',
+        team2Name: config.team2Name || '',
       };
     }
 
@@ -373,7 +395,18 @@ export default function GraphicsControl({ competitionId }) {
           {/* Event Summary Section - Rotation and Apparatus buttons */}
           {config.virtiusSessionId && (
             <div className="mb-4">
-              <div className="text-xs text-zinc-500 uppercase mb-2">Event Summary</div>
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-xs text-zinc-500 uppercase">Event Summary</div>
+                <select
+                  value={summaryTheme}
+                  onChange={(e) => setSummaryTheme(e.target.value)}
+                  className="text-xs bg-zinc-700 text-zinc-300 border border-zinc-600 rounded px-2 py-1 focus:outline-none focus:border-blue-500"
+                >
+                  {summaryThemes.map((theme) => (
+                    <option key={theme.id} value={theme.id}>{theme.label}</option>
+                  ))}
+                </select>
+              </div>
               {/* Rotation buttons (R1-R6) - shows each team on their event for that rotation */}
               <div className="text-xs text-zinc-600 mb-1">By Rotation (Alternating)</div>
               <div className="grid grid-cols-6 gap-1.5 mb-2">

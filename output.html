@@ -522,98 +522,50 @@
       overflow: hidden;
     }
 
-    /* Dual Meet Layout - Virtius Style */
+    /* Dual Meet Layout - 2 teams with center divider */
     .event-summary-dual {
       display: flex;
       flex: 1;
-      background: #1a1a1c;
     }
-    .event-summary-dual .team-panel {
+    .event-summary-dual .team-column {
       flex: 1;
       display: flex;
       flex-direction: column;
-      border-left: 1px solid #333;
     }
-    .event-summary-dual .team-panel:first-child {
-      border-left: none;
-    }
-
-    /* Team header with logo in corner */
-    .event-summary-dual .panel-header {
+    .event-summary-dual .team-header {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      padding: 12px 24px;
-      background: #1a1a1c;
-      border-bottom: 1px solid #333;
-      min-height: 60px;
+      padding: 16px 24px;
+      background: #27272a;
+      gap: 16px;
     }
-    .event-summary-dual .panel-header.left {
-      flex-direction: row;
+    .event-summary-dual .team-header.left {
+      justify-content: flex-start;
     }
-    .event-summary-dual .panel-header.right {
+    .event-summary-dual .team-header.right {
+      justify-content: flex-end;
       flex-direction: row-reverse;
     }
-    .event-summary-dual .corner-logo {
-      width: 48px;
-      height: 48px;
+    .event-summary-dual .team-logo {
+      width: 56px;
+      height: 56px;
       object-fit: contain;
     }
-    .event-summary-dual .header-spacer {
-      flex: 1;
+    .event-summary-dual .team-name {
+      font-size: 28px;
+      font-weight: 700;
+      color: #fff;
     }
-    .event-summary-dual .header-center {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .event-summary-dual .rotation-label {
-      font-size: 18px;
-      font-weight: 500;
-      color: #888;
-    }
-
-    /* Event row with icon and team badge */
-    .event-summary-dual .event-row {
-      display: flex;
-      align-items: center;
-      padding: 10px 24px;
-      background: #222;
-      border-bottom: 1px solid #333;
-      gap: 12px;
-    }
-    .event-summary-dual .event-row.left {
-      flex-direction: row;
-    }
-    .event-summary-dual .event-row.right {
-      flex-direction: row-reverse;
-    }
-    .event-summary-dual .event-icon-svg {
-      width: 28px;
-      height: 28px;
-      color: #888;
-      flex-shrink: 0;
-    }
-    .event-summary-dual .event-name-text {
-      font-size: 18px;
-      font-weight: 500;
-      color: #ccc;
-    }
-    .event-summary-dual .team-badge {
-      padding: 6px 24px;
-      border-radius: 4px;
-      font-size: 16px;
-      font-weight: 600;
-      font-style: italic;
+    .event-summary-dual .team-total {
+      font-size: 32px;
+      font-weight: 800;
       color: #fff;
       margin-left: auto;
     }
-    .event-summary-dual .event-row.right .team-badge {
+    .event-summary-dual .team-header.right .team-total {
       margin-left: 0;
       margin-right: auto;
     }
-
-    /* Athlete list */
     .event-summary-dual .athlete-list {
       flex: 1;
       display: flex;
@@ -622,108 +574,483 @@
     .event-summary-dual .athlete-row {
       display: flex;
       align-items: center;
-      padding: 10px 20px;
-      background: #1a1a1c;
-      border-bottom: 1px solid #2a2a2c;
-      gap: 14px;
+      padding: 8px 20px;
+      min-height: 72px;
     }
-    .event-summary-dual .athlete-row.left {
-      flex-direction: row;
+    .event-summary-dual .athlete-row:nth-child(odd) {
+      background: #18181b;
     }
-    .event-summary-dual .athlete-row.right {
-      flex-direction: row-reverse;
+    .event-summary-dual .athlete-row:nth-child(even) {
+      background: #27272a;
     }
     .event-summary-dual .athlete-order {
-      width: 32px;
-      height: 32px;
+      width: 36px;
+      height: 36px;
       border-radius: 50%;
-      background: #3a3a3c;
+      background: #52525b;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 14px;
-      font-weight: 600;
+      font-size: 16px;
+      font-weight: 700;
       color: #fff;
       flex-shrink: 0;
     }
-    .event-summary-dual .athlete-name-block {
+    .event-summary-dual .athlete-photo {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      object-fit: cover;
+      object-position: top;
+      background: #3f3f46;
+      flex-shrink: 0;
+    }
+    .event-summary-dual .athlete-name {
       flex: 1;
+      font-size: 22px;
+      font-weight: 600;
+      color: #fff;
+      white-space: nowrap;
+    }
+    .event-summary-dual .athlete-score-block {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      min-width: 90px;
+    }
+    .event-summary-dual .athlete-score {
+      font-size: 26px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .event-summary-dual .athlete-start {
+      font-size: 14px;
+      color: #a1a1aa;
+    }
+    /* Left side layout */
+    .event-summary-dual .team-column.left .athlete-row {
+      gap: 12px;
+    }
+    .event-summary-dual .team-column.left .athlete-order {
+      order: 1;
+    }
+    .event-summary-dual .team-column.left .athlete-photo {
+      order: 2;
+    }
+    .event-summary-dual .team-column.left .athlete-name {
+      order: 3;
+    }
+    .event-summary-dual .team-column.left .athlete-score-block {
+      order: 4;
+      align-items: flex-end;
+    }
+    /* Right side - reverse order for RTL layout */
+    .event-summary-dual .team-column.right .athlete-row {
+      flex-direction: row-reverse;
+      gap: 12px;
+    }
+    .event-summary-dual .team-column.right .athlete-name {
+      text-align: right;
+    }
+    .event-summary-dual .team-column.right .athlete-score-block {
+      align-items: flex-start;
+    }
+
+    /* Center divider with rotation info and score diff bars */
+    .event-summary-dual .center-divider {
+      width: 140px;
+      background: #27272a;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .event-summary-dual .center-header {
+      padding: 16px;
       display: flex;
       align-items: center;
+      justify-content: center;
+      height: 88px;
+    }
+    .event-summary-dual .rotation-badge {
+      font-size: 32px;
+      font-weight: 800;
+      color: #fff;
+    }
+    .event-summary-dual .diff-row {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 72px;
+      padding: 8px 12px;
+      width: 100%;
+    }
+    .event-summary-dual .diff-row:nth-child(odd) {
+      background: #18181b;
+    }
+    .event-summary-dual .diff-row:nth-child(even) {
+      background: #27272a;
+    }
+    .event-summary-dual .diff-value {
+      font-size: 18px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+    .event-summary-dual .diff-bar {
+      width: 100%;
+      height: 8px;
+      background: #3f3f46;
+      border-radius: 4px;
       position: relative;
       overflow: hidden;
     }
-    .event-summary-dual .athlete-name {
-      font-size: 18px;
-      font-weight: 500;
-      color: #fff;
-      position: relative;
-      z-index: 1;
-      padding: 6px 16px 6px 8px;
-    }
-    .event-summary-dual .athlete-row.right .athlete-name {
-      padding: 6px 8px 6px 16px;
-    }
-    .event-summary-dual .name-gradient {
+    .event-summary-dual .diff-bar-fill {
       position: absolute;
       top: 0;
-      bottom: 0;
-      width: 200px;
-      z-index: 0;
-    }
-    .event-summary-dual .athlete-row.left .name-gradient {
-      right: 0;
+      height: 100%;
       border-radius: 4px;
     }
-    .event-summary-dual .athlete-row.right .name-gradient {
-      left: 0;
-      border-radius: 4px;
+    .event-summary-dual .diff-bar-fill.left {
+      right: 50%;
+      background: linear-gradient(to left, #eab308, #dc2626);
     }
-    .event-summary-dual .athlete-row.right .athlete-name-block {
-      justify-content: flex-end;
+    .event-summary-dual .diff-bar-fill.right {
+      left: 50%;
+      background: linear-gradient(to right, #eab308, #dc2626);
     }
-    .event-summary-dual .athlete-score {
-      font-size: 18px;
-      font-weight: 500;
-      color: #888;
-      min-width: 60px;
+    .event-summary-dual .diff-bar-fill.tie {
+      left: 50%;
+      width: 4px !important;
+      transform: translateX(-50%);
+      background: #a1a1aa;
     }
-    .event-summary-dual .athlete-row.left .athlete-score {
-      text-align: right;
-    }
-    .event-summary-dual .athlete-row.right .athlete-score {
-      text-align: left;
+    .event-summary-dual .diff-indicator {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #fff;
+      border: 2px solid #27272a;
     }
 
-    /* Footer with event totals */
-    .event-summary-dual .panel-footer {
+    /* Footer with event totals and icons */
+    .event-summary-footer {
+      display: flex;
+      background: #18181b;
+      border-top: 2px solid #3f3f46;
+      min-height: 80px;
+    }
+    .event-summary-footer .footer-team {
+      flex: 1;
       display: flex;
       align-items: center;
-      padding: 12px 20px;
-      background: #1a1a1c;
-      border-top: 1px solid #333;
-      gap: 14px;
+      padding: 16px 24px;
+      gap: 16px;
     }
-    .event-summary-dual .panel-footer.left {
-      flex-direction: row;
-    }
-    .event-summary-dual .panel-footer.right {
+    .event-summary-footer .footer-team.right {
       flex-direction: row-reverse;
     }
-    .event-summary-dual .footer-label {
-      font-size: 16px;
-      font-weight: 500;
-      color: #666;
-      flex: 1;
+    .event-summary-footer .event-abbr {
+      font-size: 24px;
+      font-weight: 800;
+      color: #a1a1aa;
     }
-    .event-summary-dual .panel-footer.right .footer-label {
-      text-align: right;
+    .event-summary-footer .event-icon {
+      width: 40px;
+      height: 40px;
+      opacity: 0.6;
     }
-    .event-summary-dual .footer-total {
-      font-size: 18px;
-      font-weight: 500;
-      color: #888;
+    .event-summary-footer .event-label {
+      font-size: 20px;
+      font-weight: 600;
+      color: #a1a1aa;
     }
+    .event-summary-footer .event-total {
+      font-size: 32px;
+      font-weight: 800;
+      color: #fff;
+      margin-left: auto;
+    }
+    .event-summary-footer .footer-team.right .event-total {
+      margin-left: 0;
+      margin-right: auto;
+    }
+    .event-summary-footer .footer-center {
+      width: 140px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+    .event-summary-footer .footer-diff {
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .event-summary-footer .footer-diff-bar {
+      width: 80%;
+      height: 6px;
+      background: #3f3f46;
+      border-radius: 3px;
+      position: relative;
+      overflow: hidden;
+    }
+    .event-summary-footer .footer-diff-fill {
+      position: absolute;
+      top: 0;
+      height: 100%;
+      border-radius: 3px;
+    }
+    .event-summary-footer .footer-diff-fill.left {
+      right: 50%;
+      background: linear-gradient(to left, #eab308, #dc2626);
+    }
+    .event-summary-footer .footer-diff-fill.right {
+      left: 50%;
+      background: linear-gradient(to right, #eab308, #dc2626);
+    }
+
+    /* ==========================================
+       EVENT SUMMARY THEMES
+       ========================================== */
+
+    /* Theme 1: ESPN - Bold red/black sports broadcast style */
+    .theme-espn .event-summary-dual {
+      background: linear-gradient(180deg, #1a1a1a 0%, #0d0d0d 100%);
+    }
+    .theme-espn .team-header {
+      background: linear-gradient(90deg, #c41e3a 0%, #8b0000 100%);
+      border-bottom: 3px solid #ffd700;
+    }
+    .theme-espn .team-header.right {
+      background: linear-gradient(90deg, #8b0000 0%, #c41e3a 100%);
+    }
+    .theme-espn .team-name {
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .theme-espn .athlete-row:nth-child(odd) { background: #1a1a1a; }
+    .theme-espn .athlete-row:nth-child(even) { background: #242424; }
+    .theme-espn .center-divider { background: #c41e3a; }
+    .theme-espn .rotation-badge { color: #ffd700; }
+    .theme-espn .diff-bar { background: #333; }
+    .theme-espn .diff-bar-fill.left { background: linear-gradient(to left, #ffd700, #c41e3a); }
+    .theme-espn .diff-bar-fill.right { background: linear-gradient(to right, #ffd700, #c41e3a); }
+    .theme-espn .event-summary-footer { background: #c41e3a; border-top: 3px solid #ffd700; }
+    .theme-espn .event-summary-footer .event-total { color: #ffd700; }
+
+    /* Theme 2: NBC Olympics - Gold/white elegant style */
+    .theme-nbc .event-summary-dual {
+      background: linear-gradient(180deg, #0a1628 0%, #051020 100%);
+    }
+    .theme-nbc .team-header {
+      background: linear-gradient(90deg, #b8860b 0%, #daa520 50%, #b8860b 100%);
+      border-bottom: 2px solid #fff;
+    }
+    .theme-nbc .team-name { color: #0a1628; font-weight: 800; }
+    .theme-nbc .team-total { color: #0a1628; }
+    .theme-nbc .athlete-row:nth-child(odd) { background: #0a1628; }
+    .theme-nbc .athlete-row:nth-child(even) { background: #0f1f38; }
+    .theme-nbc .athlete-score { color: #daa520; }
+    .theme-nbc .center-divider { background: linear-gradient(180deg, #daa520 0%, #b8860b 100%); }
+    .theme-nbc .rotation-badge { color: #0a1628; font-weight: 900; }
+    .theme-nbc .diff-value { color: #0a1628; }
+    .theme-nbc .diff-bar { background: rgba(10,22,40,0.5); }
+    .theme-nbc .diff-bar-fill.left { background: linear-gradient(to left, #fff, #daa520); }
+    .theme-nbc .diff-bar-fill.right { background: linear-gradient(to right, #fff, #daa520); }
+    .theme-nbc .event-summary-footer { background: linear-gradient(90deg, #b8860b, #daa520, #b8860b); border-top: none; }
+    .theme-nbc .event-summary-footer * { color: #0a1628; }
+
+    /* Theme 3: Big Ten Network - Clean navy/white */
+    .theme-btn .event-summary-dual {
+      background: #041e42;
+    }
+    .theme-btn .team-header {
+      background: #fff;
+      border-bottom: 4px solid #041e42;
+    }
+    .theme-btn .team-name { color: #041e42; }
+    .theme-btn .team-total { color: #041e42; }
+    .theme-btn .athlete-row:nth-child(odd) { background: #041e42; }
+    .theme-btn .athlete-row:nth-child(even) { background: #0a2d5c; }
+    .theme-btn .athlete-order { background: #fff; color: #041e42; }
+    .theme-btn .center-divider { background: #fff; }
+    .theme-btn .rotation-badge { color: #041e42; }
+    .theme-btn .diff-value { color: #041e42; }
+    .theme-btn .diff-bar { background: #ccc; }
+    .theme-btn .diff-bar-fill.left { background: linear-gradient(to left, #041e42, #0a2d5c); }
+    .theme-btn .diff-bar-fill.right { background: linear-gradient(to right, #041e42, #0a2d5c); }
+    .theme-btn .event-summary-footer { background: #fff; border-top: 4px solid #041e42; }
+    .theme-btn .event-summary-footer * { color: #041e42; }
+
+    /* Theme 4: Pac-12 Network - Gradient purple/blue */
+    .theme-pac12 .event-summary-dual {
+      background: linear-gradient(135deg, #1a0a2e 0%, #0f1a3d 100%);
+    }
+    .theme-pac12 .team-header {
+      background: linear-gradient(90deg, #4a148c 0%, #1565c0 100%);
+      border-bottom: 2px solid #00e5ff;
+    }
+    .theme-pac12 .team-header.right {
+      background: linear-gradient(90deg, #1565c0 0%, #4a148c 100%);
+    }
+    .theme-pac12 .athlete-row:nth-child(odd) { background: rgba(74,20,140,0.3); }
+    .theme-pac12 .athlete-row:nth-child(even) { background: rgba(21,101,192,0.3); }
+    .theme-pac12 .athlete-score { color: #00e5ff; }
+    .theme-pac12 .center-divider { background: linear-gradient(180deg, #4a148c 0%, #1565c0 100%); }
+    .theme-pac12 .diff-bar-fill.left { background: linear-gradient(to left, #00e5ff, #4a148c); }
+    .theme-pac12 .diff-bar-fill.right { background: linear-gradient(to right, #00e5ff, #1565c0); }
+    .theme-pac12 .event-summary-footer { background: linear-gradient(90deg, #4a148c, #1565c0); border-top: 2px solid #00e5ff; }
+
+    /* Theme 5: Virtius Dark - Sleek dark with subtle grays */
+    .theme-virtius .event-summary-dual {
+      background: #121214;
+    }
+    .theme-virtius .team-header {
+      background: #1e1e21;
+      border-bottom: 1px solid #333;
+    }
+    .theme-virtius .team-name { font-weight: 500; color: #e0e0e0; }
+    .theme-virtius .team-total { color: #888; font-weight: 600; }
+    .theme-virtius .athlete-row { border-bottom: 1px solid #222; }
+    .theme-virtius .athlete-row:nth-child(odd) { background: #121214; }
+    .theme-virtius .athlete-row:nth-child(even) { background: #18181b; }
+    .theme-virtius .athlete-order { background: #333; }
+    .theme-virtius .athlete-name { color: #ccc; font-weight: 500; }
+    .theme-virtius .athlete-score { color: #888; }
+    .theme-virtius .center-divider { background: #1e1e21; border-left: 1px solid #333; border-right: 1px solid #333; }
+    .theme-virtius .rotation-badge { color: #666; font-weight: 600; }
+    .theme-virtius .diff-value { color: #666; }
+    .theme-virtius .diff-bar { background: #2a2a2d; height: 4px; }
+    .theme-virtius .diff-bar-fill.left { background: #666; }
+    .theme-virtius .diff-bar-fill.right { background: #666; }
+    .theme-virtius .event-summary-footer { background: #1e1e21; border-top: 1px solid #333; }
+    .theme-virtius .event-summary-footer .event-total { color: #888; }
+
+    /* Theme 6: Neon Cyber - Futuristic neon accents */
+    .theme-neon .event-summary-dual {
+      background: #0a0a0f;
+    }
+    .theme-neon .team-header {
+      background: linear-gradient(90deg, rgba(0,255,136,0.15) 0%, transparent 50%);
+      border-bottom: 2px solid #00ff88;
+      border-left: 3px solid #00ff88;
+    }
+    .theme-neon .team-header.right {
+      background: linear-gradient(90deg, transparent 50%, rgba(255,0,136,0.15) 100%);
+      border-bottom: 2px solid #ff0088;
+      border-left: none;
+      border-right: 3px solid #ff0088;
+    }
+    .theme-neon .team-column.left .team-name { color: #00ff88; }
+    .theme-neon .team-column.right .team-name { color: #ff0088; }
+    .theme-neon .team-total { color: #fff; text-shadow: 0 0 10px currentColor; }
+    .theme-neon .athlete-row:nth-child(odd) { background: #0a0a0f; }
+    .theme-neon .athlete-row:nth-child(even) { background: #0f0f18; }
+    .theme-neon .team-column.left .athlete-score { color: #00ff88; }
+    .theme-neon .team-column.right .athlete-score { color: #ff0088; }
+    .theme-neon .center-divider { background: #0f0f18; }
+    .theme-neon .rotation-badge { color: #fff; text-shadow: 0 0 15px #00ff88, 0 0 30px #ff0088; }
+    .theme-neon .diff-bar { background: #1a1a2e; }
+    .theme-neon .diff-bar-fill.left { background: linear-gradient(to left, #00ff88, #00cc6a); box-shadow: 0 0 10px #00ff88; }
+    .theme-neon .diff-bar-fill.right { background: linear-gradient(to right, #ff0088, #cc006a); box-shadow: 0 0 10px #ff0088; }
+    .theme-neon .event-summary-footer { background: #0a0a0f; border-top: 1px solid #333; }
+
+    /* Theme 7: Classic Broadcast - Traditional TV sports look */
+    .theme-classic .event-summary-dual {
+      background: linear-gradient(180deg, #2c3e50 0%, #1a252f 100%);
+    }
+    .theme-classic .team-header {
+      background: linear-gradient(180deg, #34495e 0%, #2c3e50 100%);
+      border-bottom: 3px solid #e74c3c;
+    }
+    .theme-classic .team-name { font-family: 'Arial Black', sans-serif; text-transform: uppercase; }
+    .theme-classic .athlete-row:nth-child(odd) { background: #2c3e50; }
+    .theme-classic .athlete-row:nth-child(even) { background: #34495e; }
+    .theme-classic .athlete-order { background: #e74c3c; }
+    .theme-classic .center-divider { background: #e74c3c; }
+    .theme-classic .rotation-badge { color: #fff; font-family: 'Arial Black', sans-serif; }
+    .theme-classic .diff-bar-fill.left { background: #f39c12; }
+    .theme-classic .diff-bar-fill.right { background: #f39c12; }
+    .theme-classic .event-summary-footer { background: linear-gradient(180deg, #34495e 0%, #2c3e50 100%); border-top: 3px solid #e74c3c; }
+
+    /* Theme 8: Minimal Light - Clean white/gray for daytime */
+    .theme-light .event-summary-dual {
+      background: #f5f5f5;
+    }
+    .theme-light .team-header {
+      background: #fff;
+      border-bottom: 2px solid #ddd;
+    }
+    .theme-light .team-name { color: #333; }
+    .theme-light .team-total { color: #333; }
+    .theme-light .team-logo { filter: none; }
+    .theme-light .athlete-row:nth-child(odd) { background: #fff; }
+    .theme-light .athlete-row:nth-child(even) { background: #f9f9f9; }
+    .theme-light .athlete-name { color: #333; }
+    .theme-light .athlete-score { color: #0066cc; }
+    .theme-light .athlete-order { background: #333; color: #fff; }
+    .theme-light .center-divider { background: #e0e0e0; }
+    .theme-light .rotation-badge { color: #333; }
+    .theme-light .diff-value { color: #333; }
+    .theme-light .diff-bar { background: #ccc; }
+    .theme-light .diff-bar-fill.left { background: linear-gradient(to left, #0066cc, #004499); }
+    .theme-light .diff-bar-fill.right { background: linear-gradient(to right, #0066cc, #004499); }
+    .theme-light .event-summary-footer { background: #fff; border-top: 2px solid #ddd; }
+    .theme-light .event-summary-footer * { color: #333; }
+    .theme-light .event-summary-footer .event-total { color: #0066cc; }
+
+    /* Theme 9: Team Colors (Home) - Uses team's primary color */
+    .theme-home .event-summary-dual {
+      background: var(--home-bg, #18181b);
+    }
+    .theme-home .team-header {
+      background: var(--home-primary, #00274c);
+      border-bottom: 3px solid var(--home-secondary, #ffcb05);
+    }
+    .theme-home .team-header.right {
+      background: var(--away-primary, #bb0000);
+      border-bottom-color: var(--away-secondary, #fff);
+    }
+    .theme-home .athlete-row:nth-child(odd) { background: rgba(0,0,0,0.3); }
+    .theme-home .athlete-row:nth-child(even) { background: rgba(0,0,0,0.15); }
+    .theme-home .team-column.left .athlete-score { color: var(--home-secondary, #ffcb05); }
+    .theme-home .team-column.right .athlete-score { color: var(--away-secondary, #fff); }
+    .theme-home .center-divider { background: #27272a; }
+    .theme-home .diff-bar-fill.left { background: var(--home-primary, #00274c); }
+    .theme-home .diff-bar-fill.right { background: var(--away-primary, #bb0000); }
+    .theme-home .event-summary-footer { background: var(--home-primary, #00274c); border-top: 3px solid var(--home-secondary, #ffcb05); }
+
+    /* Theme 10: Gradient Split - Each side uses team gradient */
+    .theme-gradient .event-summary-dual {
+      background: linear-gradient(90deg, var(--home-primary, #00274c) 0%, #18181b 40%, #18181b 60%, var(--away-primary, #bb0000) 100%);
+    }
+    .theme-gradient .team-header {
+      background: linear-gradient(180deg, var(--home-primary, #00274c) 0%, rgba(0,39,76,0.7) 100%);
+    }
+    .theme-gradient .team-header.right {
+      background: linear-gradient(180deg, var(--away-primary, #bb0000) 0%, rgba(187,0,0,0.7) 100%);
+    }
+    .theme-gradient .team-column.left { background: linear-gradient(180deg, rgba(0,39,76,0.3) 0%, transparent 100%); }
+    .theme-gradient .team-column.right { background: linear-gradient(180deg, rgba(187,0,0,0.3) 0%, transparent 100%); }
+    .theme-gradient .athlete-row { background: transparent !important; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .theme-gradient .team-column.left .athlete-score { color: var(--home-secondary, #ffcb05); }
+    .theme-gradient .team-column.right .athlete-score { color: var(--away-secondary, #fff); }
+    .theme-gradient .center-divider { background: rgba(255,255,255,0.05); }
+    .theme-gradient .diff-bar-fill.left { background: var(--home-secondary, #ffcb05); }
+    .theme-gradient .diff-bar-fill.right { background: var(--away-secondary, #fff); }
+    .theme-gradient .event-summary-footer {
+      background: linear-gradient(90deg, var(--home-primary, #00274c) 0%, #27272a 40%, #27272a 60%, var(--away-primary, #bb0000) 100%);
+      border-top: none;
+    }
+
+    /* ==========================================
+       END EVENT SUMMARY THEMES
+       ========================================== */
 
     /* Quad Meet Layout - 4 team columns */
     .event-summary-quad {
@@ -1109,6 +1436,57 @@
       'BAR': 'HB'
     };
 
+    // Team colors database for dynamic themes
+    const TEAM_COLORS = {
+      'michigan': { primary: '#00274c', secondary: '#ffcb05', bg: '#001a33' },
+      'ohio state': { primary: '#bb0000', secondary: '#ffffff', bg: '#660000' },
+      'penn state': { primary: '#041e42', secondary: '#ffffff', bg: '#021024' },
+      'illinois': { primary: '#e84a27', secondary: '#13294b', bg: '#8a2c17' },
+      'minnesota': { primary: '#7a0019', secondary: '#ffcc33', bg: '#4d0010' },
+      'iowa': { primary: '#ffcd00', secondary: '#000000', bg: '#9e7f00' },
+      'nebraska': { primary: '#d00000', secondary: '#ffffff', bg: '#800000' },
+      'california': { primary: '#003262', secondary: '#fdb515', bg: '#001a33' },
+      'cal': { primary: '#003262', secondary: '#fdb515', bg: '#001a33' },
+      'stanford': { primary: '#8c1515', secondary: '#ffffff', bg: '#4d0c0c' },
+      'ucla': { primary: '#2774ae', secondary: '#ffd100', bg: '#164570' },
+      'oklahoma': { primary: '#841617', secondary: '#ffffff', bg: '#4a0c0c' },
+      'navy': { primary: '#00205b', secondary: '#c4a400', bg: '#001030' },
+      'army': { primary: '#c1a875', secondary: '#000000', bg: '#8a7850' },
+      'air force': { primary: '#003087', secondary: '#8a8d8f', bg: '#001a45' },
+      'william & mary': { primary: '#115740', secondary: '#b29a5b', bg: '#0a3326' },
+      'springfield': { primary: '#8b0000', secondary: '#c0a000', bg: '#4d0000' },
+      'temple': { primary: '#9d2235', secondary: '#ffffff', bg: '#5a1420' },
+      'arizona state': { primary: '#8c1d40', secondary: '#ffc627', bg: '#4d1024' },
+      'default': { primary: '#3b82f6', secondary: '#ffffff', bg: '#1e3a5f' }
+    };
+
+    // Get team colors by name (case insensitive partial match)
+    function getTeamColors(teamName) {
+      if (!teamName) return TEAM_COLORS.default;
+      const lowerName = teamName.toLowerCase();
+      for (const [name, colors] of Object.entries(TEAM_COLORS)) {
+        if (name !== 'default' && lowerName.includes(name)) {
+          return colors;
+        }
+      }
+      return TEAM_COLORS.default;
+    }
+
+    // Available themes for event summary
+    const EVENT_SUMMARY_THEMES = {
+      'default': 'Default (Dark)',
+      'espn': 'ESPN (Red/Gold)',
+      'nbc': 'NBC Olympics (Gold)',
+      'btn': 'Big Ten Network (Navy)',
+      'pac12': 'Pac-12 (Purple/Blue)',
+      'virtius': 'Virtius (Minimal Dark)',
+      'neon': 'Neon Cyber (Green/Pink)',
+      'classic': 'Classic Broadcast',
+      'light': 'Minimal Light',
+      'home': 'Team Colors (Home)',
+      'gradient': 'Team Gradient Split'
+    };
+
     // Athlete headshot library - maps lowercase athlete name to Virtius media URL
     // This allows us to use our own curated headshots instead of API defaults
     const ATHLETE_HEADSHOTS = {
@@ -1369,108 +1747,126 @@
       'HB': `<svg class="event-icon" viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="10" width="20" height="2" rx="1"/><rect x="4" y="10" width="2" height="10" rx="0.5"/><rect x="18" y="10" width="2" height="10" rx="0.5"/></svg>`,
     };
 
-    // Get team primary color for gradient (falls back to default if not found)
-    function getTeamColor(teamName) {
-      const teamColors = {
-        'California': '#C4972B',
-        'Cal': '#C4972B',
-        'Stanford': '#8C1515',
-        'UCLA': '#2774AE',
-        'Michigan': '#00274C',
-        'Ohio State': '#BB0000',
-        'Penn State': '#041E42',
-        'Illinois': '#E84A27',
-        'Minnesota': '#7A0019',
-        'Iowa': '#FFCD00',
-        'Nebraska': '#D00000',
-        'Oklahoma': '#841617',
-        'Navy': '#00205B',
-        'Army': '#C1A875',
-        'Air Force': '#003087',
-        'William & Mary': '#115740',
-        'default': '#6B7280'
-      };
-      // Check for partial match
-      for (const [name, color] of Object.entries(teamColors)) {
-        if (teamName && teamName.toLowerCase().includes(name.toLowerCase())) {
-          return color;
-        }
-      }
-      return teamColors.default;
-    }
-
-    // Render dual meet layout - Virtius style
+    // Render dual meet layout (2 teams side-by-side with center divider)
     function renderDualMeetSummary(contentEl, rotationData, rotation) {
       const team1 = rotationData[0];
       const team2 = rotationData[1];
 
-      // Build both panels
-      const leftPanel = buildTeamPanel(team1, 'left', `Rotation ${rotation}`);
-      const rightPanel = buildTeamPanel(team2, 'right', `Rotation ${rotation}`);
+      // Calculate score differences for each lineup position
+      const maxAthletes = Math.max(team1.gymnasts.length, team2.gymnasts.length);
+
+      // Build left team column
+      const leftColumn = buildTeamColumn(team1, 'left', maxAthletes);
+      const rightColumn = buildTeamColumn(team2, 'right', maxAthletes);
+
+      // Build center divider with visual diff bars
+      let centerHtml = `<div class="center-divider"><div class="center-header"><div class="rotation-badge">R${rotation}</div></div>`;
+      for (let i = 0; i < maxAthletes; i++) {
+        const score1 = team1.gymnasts[i] ? parseFloat(team1.gymnasts[i].final_score) || 0 : 0;
+        const score2 = team2.gymnasts[i] ? parseFloat(team2.gymnasts[i].final_score) || 0 : 0;
+        const diff = score1 - score2;
+        const diffStr = (score1 === 0 && score2 === 0) ? '--' : diff.toFixed(3);
+
+        // Calculate bar width (max diff around 2.0 points maps to 50% width)
+        const barWidth = Math.min(Math.abs(diff) * 25, 50);
+        let barClass = 'tie';
+        if (diff > 0.001) barClass = 'left';
+        else if (diff < -0.001) barClass = 'right';
+
+        centerHtml += `
+          <div class="diff-row">
+            <div class="diff-value">${diffStr}</div>
+            <div class="diff-bar">
+              <div class="diff-bar-fill ${barClass}" style="width: ${barWidth}%;"></div>
+            </div>
+          </div>
+        `;
+      }
+      centerHtml += '</div>';
+
+      // Calculate event total difference
+      const eventDiff = team1.eventScore - team2.eventScore;
+      const eventDiffStr = eventDiff.toFixed(3);
+      const eventBarWidth = Math.min(Math.abs(eventDiff) * 5, 50);
+      let eventBarClass = 'tie';
+      if (eventDiff > 0.001) eventBarClass = 'left';
+      else if (eventDiff < -0.001) eventBarClass = 'right';
+
+      // Build footer with event totals and icons
+      const footerHtml = `
+        <div class="event-summary-footer">
+          <div class="footer-team left">
+            <div class="event-abbr">${team1.eventShortCode}</div>
+            ${EVENT_ICONS[team1.eventShortCode] || ''}
+            <div class="event-label">Event Total</div>
+            <div class="event-total">${team1.eventScore > 0 ? team1.eventScore.toFixed(3) : '—'}</div>
+          </div>
+          <div class="footer-center">
+            <div class="footer-diff">${eventDiffStr}</div>
+            <div class="footer-diff-bar">
+              <div class="footer-diff-fill ${eventBarClass}" style="width: ${eventBarWidth}%;"></div>
+            </div>
+          </div>
+          <div class="footer-team right">
+            <div class="event-abbr">${team2.eventShortCode}</div>
+            ${EVENT_ICONS[team2.eventShortCode] || ''}
+            <div class="event-label">Event Total</div>
+            <div class="event-total">${team2.eventScore > 0 ? team2.eventScore.toFixed(3) : '—'}</div>
+          </div>
+        </div>
+      `;
 
       contentEl.innerHTML = `
         <div class="event-summary-dual">
-          ${leftPanel}
-          ${rightPanel}
+          ${leftColumn}
+          ${centerHtml}
+          ${rightColumn}
         </div>
+        ${footerHtml}
       `;
     }
 
-    // Build a team panel for Virtius-style dual meet layout
-    function buildTeamPanel(teamData, side, rotationLabel) {
-      const { team, gymnasts, eventScore, eventDisplayName, eventShortCode } = teamData;
-      const logoUrl = team.logo || '';
-      const teamName = team.name || team.tricode || 'Team';
-      const teamColor = getTeamColor(teamName);
+    // Build a team column for dual meet layout
+    function buildTeamColumn(teamData, side, maxAthletes) {
+      const { team, gymnasts, totalScore, eventShortCode } = teamData;
 
-      // Build athlete rows
       let athletesHtml = '';
-      gymnasts.forEach((g, i) => {
-        const score = parseFloat(g.final_score) || 0;
-        const name = `${g.first_name?.charAt(0) || ''}. ${g.last_name || ''}`;
-        const scoreDisplay = score > 0 ? score.toFixed(3) : '--';
+      for (let i = 0; i < maxAthletes; i++) {
+        const g = gymnasts[i];
+        if (g) {
+          const score = parseFloat(g.final_score) || 0;
+          // Get start value from scores array
+          const startValue = g.scores && g.scores.length > 0 ? parseFloat(g.scores[0].start) || 0 : 0;
+          const name = `${g.first_name?.charAt(0) || ''}. ${g.last_name || ''}`;
+          // Look up headshot from library first, fall back to API headshot
+          const photoUrl = getAthleteHeadshot(g.first_name, g.last_name, g.headshot);
 
-        // Gradient direction based on side
-        const gradientDir = side === 'left' ? 'to left' : 'to right';
-        const gradient = `linear-gradient(${gradientDir}, ${teamColor}99, transparent)`;
-
-        athletesHtml += `
-          <div class="athlete-row ${side}">
-            <div class="athlete-order">${i + 1}</div>
-            <div class="athlete-name-block">
-              <div class="name-gradient" style="background: ${gradient};"></div>
-              <span class="athlete-name">${name}</span>
+          athletesHtml += `
+            <div class="athlete-row">
+              <div class="athlete-order">${i + 1}</div>
+              ${photoUrl ? `<img class="athlete-photo" src="${photoUrl}" alt="">` : '<div class="athlete-photo" style="background: #52525b;"></div>'}
+              <div class="athlete-name">${name}</div>
+              <div class="athlete-score-block">
+                <div class="athlete-score">${score > 0 ? score.toFixed(3) : 'On Eval'}</div>
+                ${startValue > 0 ? `<div class="athlete-start">${startValue.toFixed(1)}</div>` : ''}
+              </div>
             </div>
-            <div class="athlete-score">${scoreDisplay}</div>
-          </div>
-        `;
-      });
+          `;
+        } else {
+          athletesHtml += `<div class="athlete-row" style="min-height: 72px;"></div>`;
+        }
+      }
 
-      // Get event icon
-      const eventIcon = EVENT_ICONS[eventShortCode] ?
-        EVENT_ICONS[eventShortCode].replace('class="event-icon"', 'class="event-icon-svg"') : '';
-
-      // Team badge gradient
-      const badgeGradient = `linear-gradient(to right, ${teamColor}, ${teamColor}99)`;
-
+      const logoUrl = team.logo || '';
       return `
-        <div class="team-panel">
-          <div class="panel-header ${side}">
-            ${logoUrl ? `<img class="corner-logo" src="${logoUrl}" alt="">` : '<div class="corner-logo"></div>'}
-            <div class="header-spacer"></div>
-            <div class="rotation-label">${rotationLabel}</div>
-          </div>
-          <div class="event-row ${side}">
-            ${eventIcon}
-            <span class="event-name-text">${eventDisplayName}</span>
-            <div class="team-badge" style="background: ${badgeGradient};">${teamName}</div>
+        <div class="team-column ${side}">
+          <div class="team-header ${side}">
+            ${logoUrl ? `<img class="team-logo" src="${logoUrl}" alt="">` : ''}
+            <div class="team-name">${team.name || team.tricode}</div>
+            <div class="team-total">${totalScore > 0 ? totalScore.toFixed(3) : ''}</div>
           </div>
           <div class="athlete-list">
             ${athletesHtml}
-          </div>
-          <div class="panel-footer ${side}">
-            <span class="footer-label">Event Total</span>
-            <span class="footer-total">${eventScore > 0 ? eventScore.toFixed(3) : '--'}</span>
           </div>
         </div>
       `;
@@ -1589,20 +1985,82 @@
       }
     }
 
-    // Render dual meet apparatus layout (2 teams side-by-side, same event) - Virtius style
+    // Render dual meet apparatus layout (2 teams side-by-side, same event)
     function renderDualMeetSummaryApparatus(contentEl, apparatusData, eventDisplayName, eventShortCode) {
       const team1 = apparatusData[0];
       const team2 = apparatusData[1];
 
-      // Use buildTeamPanel with event name label instead of rotation
-      const leftPanel = buildTeamPanel({...team1, eventDisplayName, eventShortCode}, 'left', eventDisplayName);
-      const rightPanel = buildTeamPanel({...team2, eventDisplayName, eventShortCode}, 'right', eventDisplayName);
+      // Calculate score differences for each lineup position
+      const maxAthletes = Math.max(team1.gymnasts.length, team2.gymnasts.length);
+
+      // Build left team column
+      const leftColumn = buildTeamColumn(team1, 'left', maxAthletes);
+      const rightColumn = buildTeamColumn(team2, 'right', maxAthletes);
+
+      // Build center divider with event name and visual diff bars
+      let centerHtml = `<div class="center-divider"><div class="center-header"><div class="rotation-badge">${eventShortCode}</div></div>`;
+      for (let i = 0; i < maxAthletes; i++) {
+        const score1 = team1.gymnasts[i] ? parseFloat(team1.gymnasts[i].final_score) || 0 : 0;
+        const score2 = team2.gymnasts[i] ? parseFloat(team2.gymnasts[i].final_score) || 0 : 0;
+        const diff = score1 - score2;
+        const diffStr = (score1 === 0 && score2 === 0) ? '--' : diff.toFixed(3);
+
+        // Calculate bar width (max diff around 2.0 points maps to 50% width)
+        const barWidth = Math.min(Math.abs(diff) * 25, 50);
+        let barClass = 'tie';
+        if (diff > 0.001) barClass = 'left';
+        else if (diff < -0.001) barClass = 'right';
+
+        centerHtml += `
+          <div class="diff-row">
+            <div class="diff-value">${diffStr}</div>
+            <div class="diff-bar">
+              <div class="diff-bar-fill ${barClass}" style="width: ${barWidth}%;"></div>
+            </div>
+          </div>
+        `;
+      }
+      centerHtml += '</div>';
+
+      // Calculate event total difference
+      const eventDiff = team1.eventScore - team2.eventScore;
+      const eventDiffStr = eventDiff.toFixed(3);
+      const eventBarWidth = Math.min(Math.abs(eventDiff) * 5, 50);
+      let eventBarClass = 'tie';
+      if (eventDiff > 0.001) eventBarClass = 'left';
+      else if (eventDiff < -0.001) eventBarClass = 'right';
+
+      // Build footer with event totals and icons (same event for both teams)
+      const footerHtml = `
+        <div class="event-summary-footer">
+          <div class="footer-team left">
+            <div class="event-abbr">${eventShortCode}</div>
+            ${EVENT_ICONS[eventShortCode] || ''}
+            <div class="event-label">Event Total</div>
+            <div class="event-total">${team1.eventScore > 0 ? team1.eventScore.toFixed(3) : '—'}</div>
+          </div>
+          <div class="footer-center">
+            <div class="footer-diff">${eventDiffStr}</div>
+            <div class="footer-diff-bar">
+              <div class="footer-diff-fill ${eventBarClass}" style="width: ${eventBarWidth}%;"></div>
+            </div>
+          </div>
+          <div class="footer-team right">
+            <div class="event-abbr">${eventShortCode}</div>
+            ${EVENT_ICONS[eventShortCode] || ''}
+            <div class="event-label">Event Total</div>
+            <div class="event-total">${team2.eventScore > 0 ? team2.eventScore.toFixed(3) : '—'}</div>
+          </div>
+        </div>
+      `;
 
       contentEl.innerHTML = `
         <div class="event-summary-dual">
-          ${leftPanel}
-          ${rightPanel}
+          ${leftColumn}
+          ${centerHtml}
+          ${rightColumn}
         </div>
+        ${footerHtml}
       `;
     }
 
@@ -1931,6 +2389,11 @@
         const numTeams = data.summaryNumTeams || 2;
         const competitionFormat = data.summaryFormat || 'head-to-head';
         const hostLogo = data.team1Logo || '';
+        const theme = data.summaryTheme || 'default';
+
+        // Get team colors for dynamic themes
+        const team1Colors = getTeamColors(data.team1Name);
+        const team2Colors = getTeamColors(data.team2Name);
 
         if (!sessionId) {
           return '<div style="color: red; padding: 100px; font-size: 36px;">No Virtius Session ID configured for this competition</div>';
@@ -1951,8 +2414,12 @@
           ? `Loading ${apparatus.toUpperCase()}...`
           : `Loading rotation ${rotation}...`;
 
+        // Build theme class and CSS variables for team colors
+        const themeClass = theme !== 'default' ? `theme-${theme}` : '';
+        const teamColorVars = `--home-primary: ${team1Colors.primary}; --home-secondary: ${team1Colors.secondary}; --home-bg: ${team1Colors.bg}; --away-primary: ${team2Colors.primary}; --away-secondary: ${team2Colors.secondary};`;
+
         return `
-          <div class="graphic-container graphic-event-summary">
+          <div class="graphic-container graphic-event-summary ${themeClass}" style="${teamColorVars}">
             <div class="event-summary-header">
               <div class="event-summary-title">EVENT SUMMARY</div>
               ${logoHtml}
