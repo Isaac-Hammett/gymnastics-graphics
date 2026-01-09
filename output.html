@@ -1531,30 +1531,30 @@
       flex: 1;
       background: #18181b;
     }
-    /* Title bar at top - prominent header like reference */
+    /* Title bar at top - EVENT SUMMARY on left, logos on right */
     .layout-default-v2 .title-bar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 16px 40px;
+      padding: 18px 40px;
       background: #d4d4d8;
       min-height: 80px;
-    }
-    .layout-default-v2 .title-bar .title-logo {
-      width: 72px;
-      height: 72px;
-      object-fit: contain;
     }
     .layout-default-v2 .title-bar .title-text {
       font-size: 42px;
       font-weight: 800;
       color: #000;
-      text-transform: uppercase;
-      letter-spacing: 1px;
+      font-style: italic;
     }
-    .layout-default-v2 .title-bar .title-logo-placeholder {
+    .layout-default-v2 .title-bar .title-logos {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .layout-default-v2 .title-bar .title-logo {
       width: 72px;
       height: 72px;
+      object-fit: contain;
     }
     /* Main content area */
     .layout-default-v2 .main-content {
@@ -1582,8 +1582,8 @@
       flex-direction: row-reverse;
     }
     .layout-default-v2 .team-logo {
-      width: 56px;
-      height: 56px;
+      width: 64px;
+      height: 64px;
       object-fit: contain;
       flex-shrink: 0;
     }
@@ -1613,10 +1613,11 @@
     .layout-default-v2 .athlete-row {
       display: flex;
       align-items: center;
-      padding: 8px 20px;
-      height: 88px;
+      padding: 12px 20px;
+      flex: 1;
+      min-height: 100px;
       background: #27272a;
-      gap: 12px;
+      gap: 16px;
     }
     /* Left side layout - score then D-score */
     .layout-default-v2 .team-column.left .athlete-row {
@@ -1726,7 +1727,8 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      height: 88px;
+      flex: 1;
+      min-height: 100px;
       background: #27272a;
       padding: 8px 12px;
     }
@@ -3446,12 +3448,14 @@
 
       const maxAthletes = Math.max(team1.gymnasts.length, team2.gymnasts.length);
 
-      // Build title bar with logos on far left and far right
+      // Build title bar - EVENT SUMMARY on left, logos on right
       const titleHtml = `
         <div class="title-bar">
-          ${team1.team.logo ? `<img class="title-logo" src="${team1.team.logo}" alt="">` : '<div class="title-logo-placeholder"></div>'}
           <div class="title-text">Event Summary</div>
-          ${team2.team.logo ? `<img class="title-logo" src="${team2.team.logo}" alt="">` : '<div class="title-logo-placeholder"></div>'}
+          <div class="title-logos">
+            ${team1.team.logo ? `<img class="title-logo" src="${team1.team.logo}" alt="">` : ''}
+            ${team2.team.logo ? `<img class="title-logo" src="${team2.team.logo}" alt="">` : ''}
+          </div>
         </div>
       `;
 
@@ -3587,12 +3591,14 @@
 
       const maxAthletes = Math.max(team1.gymnasts.length, team2.gymnasts.length);
 
-      // Build title bar with logos on far left and far right
+      // Build title bar - EVENT SUMMARY on left, logos on right
       const titleHtml = `
         <div class="title-bar">
-          ${team1.team.logo ? `<img class="title-logo" src="${team1.team.logo}" alt="">` : '<div class="title-logo-placeholder"></div>'}
           <div class="title-text">Event Summary</div>
-          ${team2.team.logo ? `<img class="title-logo" src="${team2.team.logo}" alt="">` : '<div class="title-logo-placeholder"></div>'}
+          <div class="title-logos">
+            ${team1.team.logo ? `<img class="title-logo" src="${team1.team.logo}" alt="">` : ''}
+            ${team2.team.logo ? `<img class="title-logo" src="${team2.team.logo}" alt="">` : ''}
+          </div>
         </div>
       `;
 
