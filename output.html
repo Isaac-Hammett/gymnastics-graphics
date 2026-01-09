@@ -1056,252 +1056,251 @@
        LAYOUT OPTIONS - Different structural layouts
        ========================================== */
 
-    /* Layout 1: Broadcast Table - Clean ESPN-style unified table */
+    /* Layout 1: Hero Cards - Large photos with bold scores */
     .layout-broadcast-table {
       display: flex;
       flex-direction: column;
       flex: 1;
-      background: #0a0a0a;
+      background: linear-gradient(135deg, #0f0f12 0%, #1a1a22 50%, #0f0f12 100%);
+      padding: 24px;
+      gap: 20px;
     }
-    .layout-broadcast-table .broadcast-header {
+    /* Top scoreboard bar */
+    .layout-broadcast-table .hero-scoreboard {
       display: flex;
-      align-items: stretch;
-      background: linear-gradient(180deg, #1a1a1a 0%, #0d0d0d 100%);
-      border-bottom: 4px solid #c41e3a;
+      align-items: center;
+      background: linear-gradient(90deg, #18181b 0%, #27272a 50%, #18181b 100%);
+      border-radius: 16px;
+      padding: 16px 32px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
     }
-    .layout-broadcast-table .broadcast-team-banner {
+    .layout-broadcast-table .hero-team-score {
       flex: 1;
       display: flex;
       align-items: center;
-      padding: 20px 32px;
       gap: 20px;
     }
-    .layout-broadcast-table .broadcast-team-banner.home {
-      background: linear-gradient(90deg, rgba(196,30,58,0.15) 0%, transparent 100%);
-    }
-    .layout-broadcast-table .broadcast-team-banner.away {
+    .layout-broadcast-table .hero-team-score.away {
       flex-direction: row-reverse;
-      background: linear-gradient(270deg, rgba(196,30,58,0.15) 0%, transparent 100%);
     }
-    .layout-broadcast-table .broadcast-team-logo {
-      width: 72px;
-      height: 72px;
+    .layout-broadcast-table .hero-team-logo {
+      width: 64px;
+      height: 64px;
       object-fit: contain;
     }
-    .layout-broadcast-table .broadcast-team-info {
+    .layout-broadcast-table .hero-team-info {
       display: flex;
       flex-direction: column;
     }
-    .layout-broadcast-table .broadcast-team-banner.away .broadcast-team-info {
+    .layout-broadcast-table .hero-team-score.away .hero-team-info {
       align-items: flex-end;
     }
-    .layout-broadcast-table .broadcast-team-name {
-      font-size: 28px;
+    .layout-broadcast-table .hero-team-name {
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .layout-broadcast-table .hero-team-total {
+      font-size: 48px;
+      font-weight: 900;
+      color: #fff;
+      line-height: 1;
+    }
+    .layout-broadcast-table .hero-center-vs {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 32px;
+    }
+    .layout-broadcast-table .hero-rotation-badge {
+      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+      padding: 8px 24px;
+      border-radius: 20px;
+      font-size: 14px;
       font-weight: 800;
       color: #fff;
       text-transform: uppercase;
       letter-spacing: 1px;
     }
-    .layout-broadcast-table .broadcast-team-total {
-      font-size: 42px;
+    .layout-broadcast-table .hero-vs-text {
+      font-size: 24px;
       font-weight: 900;
-      color: #c41e3a;
+      color: #52525b;
+      margin-top: 4px;
     }
-    .layout-broadcast-table .broadcast-center-badge {
-      width: 120px;
+    /* Athlete cards grid */
+    .layout-broadcast-table .hero-cards-container {
+      flex: 1;
+      display: flex;
+      gap: 24px;
+      overflow: hidden;
+    }
+    .layout-broadcast-table .hero-team-column {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .layout-broadcast-table .hero-athlete-card {
+      display: flex;
+      align-items: center;
+      background: linear-gradient(135deg, #1f1f23 0%, #27272a 100%);
+      border-radius: 16px;
+      padding: 12px 16px;
+      gap: 16px;
+      flex: 1;
+      min-height: 0;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+      position: relative;
+      overflow: hidden;
+    }
+    .layout-broadcast-table .hero-athlete-card.away {
+      flex-direction: row-reverse;
+    }
+    .layout-broadcast-table .hero-athlete-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    }
+    .layout-broadcast-table .hero-athlete-card.away::before {
+      background: linear-gradient(90deg, #ef4444, #f97316);
+    }
+    .layout-broadcast-table .hero-athlete-photo {
+      width: 80px;
+      height: 80px;
+      border-radius: 12px;
+      object-fit: cover;
+      object-position: top;
+      background: linear-gradient(135deg, #3f3f46 0%, #52525b 100%);
+      flex-shrink: 0;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+    .layout-broadcast-table .hero-athlete-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-width: 0;
+    }
+    .layout-broadcast-table .hero-athlete-card.away .hero-athlete-info {
+      align-items: flex-end;
+    }
+    .layout-broadcast-table .hero-athlete-order {
+      font-size: 11px;
+      font-weight: 700;
+      color: #71717a;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 2px;
+    }
+    .layout-broadcast-table .hero-athlete-name {
+      font-size: 22px;
+      font-weight: 800;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .layout-broadcast-table .hero-athlete-start {
+      font-size: 12px;
+      color: #71717a;
+      margin-top: 2px;
+    }
+    .layout-broadcast-table .hero-score-block {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      background: #c41e3a;
-      padding: 12px;
+      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+      border-radius: 12px;
+      padding: 8px 16px;
+      min-width: 90px;
     }
-    .layout-broadcast-table .broadcast-event-label {
-      font-size: 12px;
+    .layout-broadcast-table .hero-athlete-card.away .hero-score-block {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    }
+    .layout-broadcast-table .hero-athlete-score {
+      font-size: 28px;
+      font-weight: 900;
+      color: #fff;
+      line-height: 1;
+    }
+    .layout-broadcast-table .hero-score-label {
+      font-size: 9px;
       font-weight: 600;
       color: rgba(255,255,255,0.7);
       text-transform: uppercase;
-      letter-spacing: 1px;
+      letter-spacing: 0.5px;
     }
-    .layout-broadcast-table .broadcast-rotation {
-      font-size: 36px;
-      font-weight: 900;
-      color: #fff;
-    }
-    .layout-broadcast-table .broadcast-table-container {
-      flex: 1;
-      overflow: hidden;
-      padding: 0;
-    }
-    .layout-broadcast-table .broadcast-matchup-table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    .layout-broadcast-table .broadcast-table-header {
-      background: #1a1a1a;
-    }
-    .layout-broadcast-table .broadcast-table-header th {
-      padding: 12px 16px;
-      font-size: 11px;
-      font-weight: 700;
-      color: #888;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      border-bottom: 2px solid #333;
-    }
-    .layout-broadcast-table .broadcast-table-header th.home-side {
-      text-align: left;
-      width: 45%;
-    }
-    .layout-broadcast-table .broadcast-table-header th.vs-col {
-      text-align: center;
-      width: 10%;
-      color: #c41e3a;
-    }
-    .layout-broadcast-table .broadcast-table-header th.away-side {
-      text-align: right;
-      width: 45%;
-    }
-    .layout-broadcast-table .broadcast-matchup-row {
-      border-bottom: 1px solid #222;
-    }
-    .layout-broadcast-table .broadcast-matchup-row:nth-child(even) {
-      background: #111;
-    }
-    .layout-broadcast-table .broadcast-matchup-row:nth-child(odd) {
-      background: #0d0d0d;
-    }
-    .layout-broadcast-table .broadcast-athlete-cell {
-      padding: 14px 20px;
-      vertical-align: middle;
-    }
-    .layout-broadcast-table .broadcast-athlete-cell.home-side {
-      text-align: left;
-    }
-    .layout-broadcast-table .broadcast-athlete-cell.away-side {
-      text-align: right;
-    }
-    .layout-broadcast-table .broadcast-athlete-inner {
+    /* Event totals footer */
+    .layout-broadcast-table .hero-footer {
       display: flex;
       align-items: center;
-      gap: 14px;
+      background: linear-gradient(90deg, #18181b 0%, #27272a 50%, #18181b 100%);
+      border-radius: 12px;
+      padding: 12px 24px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
     }
-    .layout-broadcast-table .broadcast-athlete-cell.away-side .broadcast-athlete-inner {
-      flex-direction: row-reverse;
-      justify-content: flex-start;
-    }
-    .layout-broadcast-table .broadcast-athlete-order {
-      width: 28px;
-      height: 28px;
-      border-radius: 4px;
-      background: #333;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      font-weight: 700;
-      color: #fff;
-      flex-shrink: 0;
-    }
-    .layout-broadcast-table .broadcast-athlete-photo {
-      width: 48px;
-      height: 48px;
-      border-radius: 6px;
-      object-fit: cover;
-      object-position: top;
-      background: #333;
-      flex-shrink: 0;
-    }
-    .layout-broadcast-table .broadcast-athlete-details {
-      display: flex;
-      flex-direction: column;
-    }
-    .layout-broadcast-table .broadcast-athlete-cell.away-side .broadcast-athlete-details {
-      align-items: flex-end;
-    }
-    .layout-broadcast-table .broadcast-athlete-name {
-      font-size: 18px;
-      font-weight: 600;
-      color: #fff;
-    }
-    .layout-broadcast-table .broadcast-athlete-score {
-      font-size: 24px;
-      font-weight: 800;
-      color: #c41e3a;
-    }
-    .layout-broadcast-table .broadcast-athlete-start {
-      font-size: 12px;
-      color: #666;
-      margin-top: 2px;
-    }
-    .layout-broadcast-table .broadcast-vs-cell {
-      text-align: center;
-      vertical-align: middle;
-      padding: 14px 8px;
-    }
-    .layout-broadcast-table .broadcast-diff-badge {
-      display: inline-block;
-      padding: 6px 12px;
-      border-radius: 4px;
-      font-size: 14px;
-      font-weight: 700;
-      min-width: 70px;
-    }
-    .layout-broadcast-table .broadcast-diff-badge.home-wins {
-      background: rgba(196,30,58,0.2);
-      color: #ff4d6a;
-    }
-    .layout-broadcast-table .broadcast-diff-badge.away-wins {
-      background: rgba(196,30,58,0.2);
-      color: #ff4d6a;
-    }
-    .layout-broadcast-table .broadcast-diff-badge.tie {
-      background: #333;
-      color: #888;
-    }
-    .layout-broadcast-table .broadcast-footer {
-      display: flex;
-      background: #c41e3a;
-      border-top: 4px solid #8b0000;
-    }
-    .layout-broadcast-table .broadcast-footer-team {
+    .layout-broadcast-table .hero-footer-team {
       flex: 1;
       display: flex;
       align-items: center;
-      padding: 16px 32px;
       gap: 16px;
     }
-    .layout-broadcast-table .broadcast-footer-team.away {
+    .layout-broadcast-table .hero-footer-team.away {
       flex-direction: row-reverse;
     }
-    .layout-broadcast-table .broadcast-footer-event {
-      font-size: 14px;
-      font-weight: 700;
-      color: rgba(255,255,255,0.8);
+    .layout-broadcast-table .hero-footer-event {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .layout-broadcast-table .hero-footer-event-code {
+      font-size: 18px;
+      font-weight: 900;
+      color: #3b82f6;
+    }
+    .layout-broadcast-table .hero-footer-team.away .hero-footer-event-code {
+      color: #ef4444;
+    }
+    .layout-broadcast-table .hero-footer-event-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #71717a;
       text-transform: uppercase;
     }
-    .layout-broadcast-table .broadcast-footer-total {
-      font-size: 32px;
+    .layout-broadcast-table .hero-footer-total {
+      font-size: 36px;
       font-weight: 900;
       color: #fff;
       margin-left: auto;
     }
-    .layout-broadcast-table .broadcast-footer-team.away .broadcast-footer-total {
+    .layout-broadcast-table .hero-footer-team.away .hero-footer-total {
       margin-left: 0;
       margin-right: auto;
     }
-    .layout-broadcast-table .broadcast-footer-center {
-      width: 120px;
+    .layout-broadcast-table .hero-footer-center {
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      background: #8b0000;
+      padding: 0 24px;
     }
-    .layout-broadcast-table .broadcast-footer-diff {
+    .layout-broadcast-table .hero-footer-diff {
       font-size: 20px;
       font-weight: 800;
-      color: #fff;
+      color: #a1a1aa;
+    }
+    .layout-broadcast-table .hero-footer-diff.positive {
+      color: #3b82f6;
+    }
+    .layout-broadcast-table .hero-footer-diff.negative {
+      color: #ef4444;
     }
 
     /* ==========================================
@@ -2374,8 +2373,8 @@
     }
 
     // ==========================================
-    // LAYOUT: Broadcast Table
-    // Clean ESPN-style horizontal table layout
+    // LAYOUT: Hero Cards
+    // Large athlete photos with bold colored score blocks
     // ==========================================
 
     function renderBroadcastTableLayout(contentEl, rotationData, rotation) {
@@ -2383,244 +2382,242 @@
       const team2 = rotationData[1];
       const maxAthletes = Math.max(team1.gymnasts.length, team2.gymnasts.length);
 
-      // Build header with team banners
-      const headerHtml = `
-        <div class="broadcast-header">
-          <div class="broadcast-team-banner home">
-            ${team1.team.logo ? `<img class="broadcast-team-logo" src="${team1.team.logo}" alt="">` : ''}
-            <div class="broadcast-team-info">
-              <div class="broadcast-team-name">${team1.team.name || team1.team.tricode}</div>
-              <div class="broadcast-team-total">${team1.totalScore > 0 ? team1.totalScore.toFixed(3) : '0.000'}</div>
+      // Build top scoreboard bar
+      const scoreboardHtml = `
+        <div class="hero-scoreboard">
+          <div class="hero-team-score home">
+            ${team1.team.logo ? `<img class="hero-team-logo" src="${team1.team.logo}" alt="">` : ''}
+            <div class="hero-team-info">
+              <div class="hero-team-name">${team1.team.name || team1.team.tricode}</div>
+              <div class="hero-team-total">${team1.totalScore > 0 ? team1.totalScore.toFixed(3) : '0.000'}</div>
             </div>
           </div>
-          <div class="broadcast-center-badge">
-            <div class="broadcast-event-label">ROTATION</div>
-            <div class="broadcast-rotation">${rotation}</div>
+          <div class="hero-center-vs">
+            <div class="hero-rotation-badge">Rotation ${rotation}</div>
+            <div class="hero-vs-text">VS</div>
           </div>
-          <div class="broadcast-team-banner away">
-            ${team2.team.logo ? `<img class="broadcast-team-logo" src="${team2.team.logo}" alt="">` : ''}
-            <div class="broadcast-team-info">
-              <div class="broadcast-team-name">${team2.team.name || team2.team.tricode}</div>
-              <div class="broadcast-team-total">${team2.totalScore > 0 ? team2.totalScore.toFixed(3) : '0.000'}</div>
+          <div class="hero-team-score away">
+            ${team2.team.logo ? `<img class="hero-team-logo" src="${team2.team.logo}" alt="">` : ''}
+            <div class="hero-team-info">
+              <div class="hero-team-name">${team2.team.name || team2.team.tricode}</div>
+              <div class="hero-team-total">${team2.totalScore > 0 ? team2.totalScore.toFixed(3) : '0.000'}</div>
             </div>
           </div>
         </div>
       `;
 
-      // Build matchup table rows
-      let tableRows = '';
+      // Build athlete cards for home team
+      let homeCardsHtml = '';
       for (let i = 0; i < maxAthletes; i++) {
-        const g1 = team1.gymnasts[i];
-        const g2 = team2.gymnasts[i];
+        const g = team1.gymnasts[i];
+        if (g) {
+          const score = parseFloat(g.final_score) || 0;
+          const start = g.scores?.[0]?.start ? parseFloat(g.scores[0].start) : 0;
+          const name = `${g.first_name || ''} ${g.last_name || ''}`;
+          const photo = getAthleteHeadshot(g.first_name, g.last_name, g.headshot);
 
-        const score1 = g1 ? parseFloat(g1.final_score) || 0 : 0;
-        const score2 = g2 ? parseFloat(g2.final_score) || 0 : 0;
-        const start1 = g1?.scores?.[0]?.start ? parseFloat(g1.scores[0].start) : 0;
-        const start2 = g2?.scores?.[0]?.start ? parseFloat(g2.scores[0].start) : 0;
-        const name1 = g1 ? `${g1.first_name?.charAt(0) || ''}. ${g1.last_name || ''}` : '';
-        const name2 = g2 ? `${g2.first_name?.charAt(0) || ''}. ${g2.last_name || ''}` : '';
-        const photo1 = g1 ? getAthleteHeadshot(g1.first_name, g1.last_name, g1.headshot) : '';
-        const photo2 = g2 ? getAthleteHeadshot(g2.first_name, g2.last_name, g2.headshot) : '';
-
-        const diff = score1 - score2;
-        let diffBadgeClass = 'tie';
-        let diffText = '--';
-        if (score1 > 0 || score2 > 0) {
-          diffText = diff > 0 ? `+${diff.toFixed(3)}` : diff.toFixed(3);
-          if (diff > 0.001) diffBadgeClass = 'home-wins';
-          else if (diff < -0.001) diffBadgeClass = 'away-wins';
+          homeCardsHtml += `
+            <div class="hero-athlete-card home">
+              ${photo ? `<img class="hero-athlete-photo" src="${photo}" alt="">` : '<div class="hero-athlete-photo"></div>'}
+              <div class="hero-athlete-info">
+                <div class="hero-athlete-order">#${i + 1} • ${team1.eventShortCode}</div>
+                <div class="hero-athlete-name">${name}</div>
+                ${start > 0 ? `<div class="hero-athlete-start">Start: ${start.toFixed(1)}</div>` : ''}
+              </div>
+              <div class="hero-score-block">
+                <div class="hero-athlete-score">${score > 0 ? score.toFixed(3) : '—'}</div>
+                <div class="hero-score-label">Score</div>
+              </div>
+            </div>
+          `;
         }
+      }
 
-        tableRows += `
-          <tr class="broadcast-matchup-row">
-            <td class="broadcast-athlete-cell home-side">
-              ${g1 ? `
-                <div class="broadcast-athlete-inner">
-                  <div class="broadcast-athlete-order">${i + 1}</div>
-                  ${photo1 ? `<img class="broadcast-athlete-photo" src="${photo1}" alt="">` : '<div class="broadcast-athlete-photo"></div>'}
-                  <div class="broadcast-athlete-details">
-                    <div class="broadcast-athlete-name">${name1}</div>
-                    ${start1 > 0 ? `<div class="broadcast-athlete-start">SV: ${start1.toFixed(1)}</div>` : ''}
-                  </div>
-                  <div class="broadcast-athlete-score">${score1 > 0 ? score1.toFixed(3) : 'On Eval'}</div>
-                </div>
-              ` : ''}
-            </td>
-            <td class="broadcast-vs-cell">
-              <div class="broadcast-diff-badge ${diffBadgeClass}">${diffText}</div>
-            </td>
-            <td class="broadcast-athlete-cell away-side">
-              ${g2 ? `
-                <div class="broadcast-athlete-inner">
-                  <div class="broadcast-athlete-order">${i + 1}</div>
-                  ${photo2 ? `<img class="broadcast-athlete-photo" src="${photo2}" alt="">` : '<div class="broadcast-athlete-photo"></div>'}
-                  <div class="broadcast-athlete-details">
-                    <div class="broadcast-athlete-name">${name2}</div>
-                    ${start2 > 0 ? `<div class="broadcast-athlete-start">SV: ${start2.toFixed(1)}</div>` : ''}
-                  </div>
-                  <div class="broadcast-athlete-score">${score2 > 0 ? score2.toFixed(3) : 'On Eval'}</div>
-                </div>
-              ` : ''}
-            </td>
-          </tr>
-        `;
+      // Build athlete cards for away team
+      let awayCardsHtml = '';
+      for (let i = 0; i < maxAthletes; i++) {
+        const g = team2.gymnasts[i];
+        if (g) {
+          const score = parseFloat(g.final_score) || 0;
+          const start = g.scores?.[0]?.start ? parseFloat(g.scores[0].start) : 0;
+          const name = `${g.first_name || ''} ${g.last_name || ''}`;
+          const photo = getAthleteHeadshot(g.first_name, g.last_name, g.headshot);
+
+          awayCardsHtml += `
+            <div class="hero-athlete-card away">
+              ${photo ? `<img class="hero-athlete-photo" src="${photo}" alt="">` : '<div class="hero-athlete-photo"></div>'}
+              <div class="hero-athlete-info">
+                <div class="hero-athlete-order">#${i + 1} • ${team2.eventShortCode}</div>
+                <div class="hero-athlete-name">${name}</div>
+                ${start > 0 ? `<div class="hero-athlete-start">Start: ${start.toFixed(1)}</div>` : ''}
+              </div>
+              <div class="hero-score-block">
+                <div class="hero-athlete-score">${score > 0 ? score.toFixed(3) : '—'}</div>
+                <div class="hero-score-label">Score</div>
+              </div>
+            </div>
+          `;
+        }
       }
 
       // Calculate event total difference
       const eventDiff = team1.eventScore - team2.eventScore;
       const eventDiffText = eventDiff > 0 ? `+${eventDiff.toFixed(3)}` : eventDiff.toFixed(3);
+      const diffClass = eventDiff > 0.001 ? 'positive' : eventDiff < -0.001 ? 'negative' : '';
 
-      // Build footer
+      // Build footer with event totals
       const footerHtml = `
-        <div class="broadcast-footer">
-          <div class="broadcast-footer-team home">
-            <div class="broadcast-footer-event">${team1.eventShortCode} TOTAL</div>
-            <div class="broadcast-footer-total">${team1.eventScore > 0 ? team1.eventScore.toFixed(3) : '—'}</div>
+        <div class="hero-footer">
+          <div class="hero-footer-team home">
+            <div class="hero-footer-event">
+              <div class="hero-footer-event-code">${team1.eventShortCode}</div>
+              <div class="hero-footer-event-label">Event Total</div>
+            </div>
+            <div class="hero-footer-total">${team1.eventScore > 0 ? team1.eventScore.toFixed(3) : '—'}</div>
           </div>
-          <div class="broadcast-footer-center">
-            <div class="broadcast-footer-diff">${eventDiffText}</div>
+          <div class="hero-footer-center">
+            <div class="hero-footer-diff ${diffClass}">${eventDiffText}</div>
           </div>
-          <div class="broadcast-footer-team away">
-            <div class="broadcast-footer-event">${team2.eventShortCode} TOTAL</div>
-            <div class="broadcast-footer-total">${team2.eventScore > 0 ? team2.eventScore.toFixed(3) : '—'}</div>
+          <div class="hero-footer-team away">
+            <div class="hero-footer-event">
+              <div class="hero-footer-event-code">${team2.eventShortCode}</div>
+              <div class="hero-footer-event-label">Event Total</div>
+            </div>
+            <div class="hero-footer-total">${team2.eventScore > 0 ? team2.eventScore.toFixed(3) : '—'}</div>
           </div>
         </div>
       `;
 
       contentEl.innerHTML = `
         <div class="layout-broadcast-table">
-          ${headerHtml}
-          <div class="broadcast-table-container">
-            <table class="broadcast-matchup-table">
-              <tbody>
-                ${tableRows}
-              </tbody>
-            </table>
+          ${scoreboardHtml}
+          <div class="hero-cards-container">
+            <div class="hero-team-column">${homeCardsHtml}</div>
+            <div class="hero-team-column">${awayCardsHtml}</div>
           </div>
           ${footerHtml}
         </div>
       `;
     }
 
-    // Broadcast Table Layout for Apparatus mode (same event for both teams)
+    // Hero Cards Layout for Apparatus mode (same event for both teams)
     function renderBroadcastTableLayoutApparatus(contentEl, apparatusData, eventDisplayName, eventShortCode) {
       const team1 = apparatusData[0];
       const team2 = apparatusData[1];
       const maxAthletes = Math.max(team1.gymnasts.length, team2.gymnasts.length);
 
-      // Build header with team banners
-      const headerHtml = `
-        <div class="broadcast-header">
-          <div class="broadcast-team-banner home">
-            ${team1.team.logo ? `<img class="broadcast-team-logo" src="${team1.team.logo}" alt="">` : ''}
-            <div class="broadcast-team-info">
-              <div class="broadcast-team-name">${team1.team.name || team1.team.tricode}</div>
-              <div class="broadcast-team-total">${team1.totalScore > 0 ? team1.totalScore.toFixed(3) : '0.000'}</div>
+      // Build top scoreboard bar
+      const scoreboardHtml = `
+        <div class="hero-scoreboard">
+          <div class="hero-team-score home">
+            ${team1.team.logo ? `<img class="hero-team-logo" src="${team1.team.logo}" alt="">` : ''}
+            <div class="hero-team-info">
+              <div class="hero-team-name">${team1.team.name || team1.team.tricode}</div>
+              <div class="hero-team-total">${team1.totalScore > 0 ? team1.totalScore.toFixed(3) : '0.000'}</div>
             </div>
           </div>
-          <div class="broadcast-center-badge">
-            <div class="broadcast-event-label">${eventDisplayName}</div>
-            <div class="broadcast-rotation">${eventShortCode}</div>
+          <div class="hero-center-vs">
+            <div class="hero-rotation-badge">${eventDisplayName}</div>
+            <div class="hero-vs-text">${eventShortCode}</div>
           </div>
-          <div class="broadcast-team-banner away">
-            ${team2.team.logo ? `<img class="broadcast-team-logo" src="${team2.team.logo}" alt="">` : ''}
-            <div class="broadcast-team-info">
-              <div class="broadcast-team-name">${team2.team.name || team2.team.tricode}</div>
-              <div class="broadcast-team-total">${team2.totalScore > 0 ? team2.totalScore.toFixed(3) : '0.000'}</div>
+          <div class="hero-team-score away">
+            ${team2.team.logo ? `<img class="hero-team-logo" src="${team2.team.logo}" alt="">` : ''}
+            <div class="hero-team-info">
+              <div class="hero-team-name">${team2.team.name || team2.team.tricode}</div>
+              <div class="hero-team-total">${team2.totalScore > 0 ? team2.totalScore.toFixed(3) : '0.000'}</div>
             </div>
           </div>
         </div>
       `;
 
-      // Build matchup table rows
-      let tableRows = '';
+      // Build athlete cards for home team
+      let homeCardsHtml = '';
       for (let i = 0; i < maxAthletes; i++) {
-        const g1 = team1.gymnasts[i];
-        const g2 = team2.gymnasts[i];
+        const g = team1.gymnasts[i];
+        if (g) {
+          const score = parseFloat(g.final_score) || 0;
+          const start = g.scores?.[0]?.start ? parseFloat(g.scores[0].start) : 0;
+          const name = `${g.first_name || ''} ${g.last_name || ''}`;
+          const photo = getAthleteHeadshot(g.first_name, g.last_name, g.headshot);
 
-        const score1 = g1 ? parseFloat(g1.final_score) || 0 : 0;
-        const score2 = g2 ? parseFloat(g2.final_score) || 0 : 0;
-        const start1 = g1?.scores?.[0]?.start ? parseFloat(g1.scores[0].start) : 0;
-        const start2 = g2?.scores?.[0]?.start ? parseFloat(g2.scores[0].start) : 0;
-        const name1 = g1 ? `${g1.first_name?.charAt(0) || ''}. ${g1.last_name || ''}` : '';
-        const name2 = g2 ? `${g2.first_name?.charAt(0) || ''}. ${g2.last_name || ''}` : '';
-        const photo1 = g1 ? getAthleteHeadshot(g1.first_name, g1.last_name, g1.headshot) : '';
-        const photo2 = g2 ? getAthleteHeadshot(g2.first_name, g2.last_name, g2.headshot) : '';
-
-        const diff = score1 - score2;
-        let diffBadgeClass = 'tie';
-        let diffText = '--';
-        if (score1 > 0 || score2 > 0) {
-          diffText = diff > 0 ? `+${diff.toFixed(3)}` : diff.toFixed(3);
-          if (diff > 0.001) diffBadgeClass = 'home-wins';
-          else if (diff < -0.001) diffBadgeClass = 'away-wins';
+          homeCardsHtml += `
+            <div class="hero-athlete-card home">
+              ${photo ? `<img class="hero-athlete-photo" src="${photo}" alt="">` : '<div class="hero-athlete-photo"></div>'}
+              <div class="hero-athlete-info">
+                <div class="hero-athlete-order">#${i + 1} • ${eventShortCode}</div>
+                <div class="hero-athlete-name">${name}</div>
+                ${start > 0 ? `<div class="hero-athlete-start">Start: ${start.toFixed(1)}</div>` : ''}
+              </div>
+              <div class="hero-score-block">
+                <div class="hero-athlete-score">${score > 0 ? score.toFixed(3) : '—'}</div>
+                <div class="hero-score-label">Score</div>
+              </div>
+            </div>
+          `;
         }
+      }
 
-        tableRows += `
-          <tr class="broadcast-matchup-row">
-            <td class="broadcast-athlete-cell home-side">
-              ${g1 ? `
-                <div class="broadcast-athlete-inner">
-                  <div class="broadcast-athlete-order">${i + 1}</div>
-                  ${photo1 ? `<img class="broadcast-athlete-photo" src="${photo1}" alt="">` : '<div class="broadcast-athlete-photo"></div>'}
-                  <div class="broadcast-athlete-details">
-                    <div class="broadcast-athlete-name">${name1}</div>
-                    ${start1 > 0 ? `<div class="broadcast-athlete-start">SV: ${start1.toFixed(1)}</div>` : ''}
-                  </div>
-                  <div class="broadcast-athlete-score">${score1 > 0 ? score1.toFixed(3) : 'On Eval'}</div>
-                </div>
-              ` : ''}
-            </td>
-            <td class="broadcast-vs-cell">
-              <div class="broadcast-diff-badge ${diffBadgeClass}">${diffText}</div>
-            </td>
-            <td class="broadcast-athlete-cell away-side">
-              ${g2 ? `
-                <div class="broadcast-athlete-inner">
-                  <div class="broadcast-athlete-order">${i + 1}</div>
-                  ${photo2 ? `<img class="broadcast-athlete-photo" src="${photo2}" alt="">` : '<div class="broadcast-athlete-photo"></div>'}
-                  <div class="broadcast-athlete-details">
-                    <div class="broadcast-athlete-name">${name2}</div>
-                    ${start2 > 0 ? `<div class="broadcast-athlete-start">SV: ${start2.toFixed(1)}</div>` : ''}
-                  </div>
-                  <div class="broadcast-athlete-score">${score2 > 0 ? score2.toFixed(3) : 'On Eval'}</div>
-                </div>
-              ` : ''}
-            </td>
-          </tr>
-        `;
+      // Build athlete cards for away team
+      let awayCardsHtml = '';
+      for (let i = 0; i < maxAthletes; i++) {
+        const g = team2.gymnasts[i];
+        if (g) {
+          const score = parseFloat(g.final_score) || 0;
+          const start = g.scores?.[0]?.start ? parseFloat(g.scores[0].start) : 0;
+          const name = `${g.first_name || ''} ${g.last_name || ''}`;
+          const photo = getAthleteHeadshot(g.first_name, g.last_name, g.headshot);
+
+          awayCardsHtml += `
+            <div class="hero-athlete-card away">
+              ${photo ? `<img class="hero-athlete-photo" src="${photo}" alt="">` : '<div class="hero-athlete-photo"></div>'}
+              <div class="hero-athlete-info">
+                <div class="hero-athlete-order">#${i + 1} • ${eventShortCode}</div>
+                <div class="hero-athlete-name">${name}</div>
+                ${start > 0 ? `<div class="hero-athlete-start">Start: ${start.toFixed(1)}</div>` : ''}
+              </div>
+              <div class="hero-score-block">
+                <div class="hero-athlete-score">${score > 0 ? score.toFixed(3) : '—'}</div>
+                <div class="hero-score-label">Score</div>
+              </div>
+            </div>
+          `;
+        }
       }
 
       // Calculate event total difference
       const eventDiff = team1.eventScore - team2.eventScore;
       const eventDiffText = eventDiff > 0 ? `+${eventDiff.toFixed(3)}` : eventDiff.toFixed(3);
+      const diffClass = eventDiff > 0.001 ? 'positive' : eventDiff < -0.001 ? 'negative' : '';
 
-      // Build footer
+      // Build footer with event totals
       const footerHtml = `
-        <div class="broadcast-footer">
-          <div class="broadcast-footer-team home">
-            <div class="broadcast-footer-event">${eventShortCode} TOTAL</div>
-            <div class="broadcast-footer-total">${team1.eventScore > 0 ? team1.eventScore.toFixed(3) : '—'}</div>
+        <div class="hero-footer">
+          <div class="hero-footer-team home">
+            <div class="hero-footer-event">
+              <div class="hero-footer-event-code">${eventShortCode}</div>
+              <div class="hero-footer-event-label">Event Total</div>
+            </div>
+            <div class="hero-footer-total">${team1.eventScore > 0 ? team1.eventScore.toFixed(3) : '—'}</div>
           </div>
-          <div class="broadcast-footer-center">
-            <div class="broadcast-footer-diff">${eventDiffText}</div>
+          <div class="hero-footer-center">
+            <div class="hero-footer-diff ${diffClass}">${eventDiffText}</div>
           </div>
-          <div class="broadcast-footer-team away">
-            <div class="broadcast-footer-event">${eventShortCode} TOTAL</div>
-            <div class="broadcast-footer-total">${team2.eventScore > 0 ? team2.eventScore.toFixed(3) : '—'}</div>
+          <div class="hero-footer-team away">
+            <div class="hero-footer-event">
+              <div class="hero-footer-event-code">${eventShortCode}</div>
+              <div class="hero-footer-event-label">Event Total</div>
+            </div>
+            <div class="hero-footer-total">${team2.eventScore > 0 ? team2.eventScore.toFixed(3) : '—'}</div>
           </div>
         </div>
       `;
 
       contentEl.innerHTML = `
         <div class="layout-broadcast-table">
-          ${headerHtml}
-          <div class="broadcast-table-container">
-            <table class="broadcast-matchup-table">
-              <tbody>
-                ${tableRows}
-              </tbody>
-            </table>
+          ${scoreboardHtml}
+          <div class="hero-cards-container">
+            <div class="hero-team-column">${homeCardsHtml}</div>
+            <div class="hero-team-column">${awayCardsHtml}</div>
           </div>
           ${footerHtml}
         </div>

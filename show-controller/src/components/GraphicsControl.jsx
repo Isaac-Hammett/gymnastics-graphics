@@ -57,7 +57,7 @@ const teamCounts = {
 // Color themes just change colors of the default layout
 const summaryThemes = [
   // LAYOUTS - Different structural designs
-  { id: 'layout-broadcast-table', label: '📺 Broadcast Table', isLayout: true },
+  { id: 'layout-broadcast-table', label: '🎴 Hero Cards', isLayout: true },
   // COLOR THEMES - Same structure, different colors
   { id: 'default', label: 'Default (Original)' },
   { id: 'espn', label: 'ESPN Colors' },
