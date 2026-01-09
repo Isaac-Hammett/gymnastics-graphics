@@ -2517,6 +2517,9 @@
         return ATHLETE_HEADSHOTS[normalized];
       }
 
+      // Debug: log when no headshot found
+      console.log(`No headshot found for: "${fullName}" (normalized: "${normalized}")`);
+
       // 3. Fall back to API headshot
       return apiHeadshot || '';
     }
