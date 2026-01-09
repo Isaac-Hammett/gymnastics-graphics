@@ -2075,13 +2075,21 @@
         // Convert Firebase structure to simple name -> url map
         for (const [key, value] of Object.entries(data)) {
           if (value && value.url) {
-            // Store with normalized name as key
-            const normalizedName = value.name ? value.name.toLowerCase().trim().replace(/\s+/g, ' ') : key;
-            firebaseHeadshots[normalizedName] = value.url;
+            // Store by Firebase key (normalized)
+            const normalizedKey = key.toLowerCase().trim().replace(/\s+/g, ' ').replace(/_/g, ' ');
+            firebaseHeadshots[normalizedKey] = value.url;
+
+            // Also store by name field if different
+            if (value.name) {
+              const normalizedName = value.name.toLowerCase().trim().replace(/\s+/g, ' ');
+              if (normalizedName !== normalizedKey) {
+                firebaseHeadshots[normalizedName] = value.url;
+              }
+            }
           }
         }
         headshotsLoaded = true;
-        console.log(`Loaded ${Object.keys(firebaseHeadshots).length} headshots from Firebase`);
+        console.log(`Loaded ${Object.keys(firebaseHeadshots).length} headshot entries from Firebase`);
       });
     }
 
