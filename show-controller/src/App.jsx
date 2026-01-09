@@ -6,6 +6,7 @@ import HubPage from './pages/HubPage';
 import DashboardPage from './pages/DashboardPage';
 import ControllerPage from './pages/ControllerPage';
 import UrlGeneratorPage from './pages/UrlGeneratorPage';
+import MediaManagerPage from './pages/MediaManagerPage';
 
 // Existing views (for show controller functionality)
 import TalentView from './views/TalentView';
@@ -21,6 +22,7 @@ function App() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/controller" element={<ControllerPage />} />
         <Route path="/url-generator" element={<UrlGeneratorPage />} />
+        <Route path="/media-manager" element={<MediaManagerPage />} />
 
         {/* Show controller routes (need ShowProvider) */}
         <Route
