@@ -1656,11 +1656,11 @@
       color: #000;
     }
     .layout-default-v2 .athlete-photo {
-      width: 72px;
-      height: 72px;
+      width: 88px;
+      height: 88px;
       border-radius: 8px;
       object-fit: contain;
-      background: #3f3f46;
+      background: transparent;
       flex-shrink: 0;
     }
     .layout-default-v2 .athlete-info {
@@ -3497,18 +3497,14 @@
 
       const maxAthletes = Math.max(team1.gymnasts.length, team2.gymnasts.length);
 
-      // Get team logos from Firebase or API
+      // Get home team logo from Firebase or API (only show home team in title bar)
       const team1Logo = getTeamLogoUrl(team1.team.name, team1.team.logo);
-      const team2Logo = getTeamLogoUrl(team2.team.name, team2.team.logo);
 
-      // Build title bar - EVENT SUMMARY on left, logos on right
+      // Build title bar - EVENT SUMMARY on left, home team logo on right
       const titleHtml = `
         <div class="title-bar">
           <div class="title-text">Event Summary</div>
-          <div class="title-logos">
-            ${team1Logo ? `<img class="title-logo" src="${team1Logo}" alt="">` : ''}
-            ${team2Logo ? `<img class="title-logo" src="${team2Logo}" alt="">` : ''}
-          </div>
+          ${team1Logo ? `<img class="title-logo" src="${team1Logo}" alt="">` : ''}
         </div>
       `;
 
@@ -3645,18 +3641,14 @@
 
       const maxAthletes = Math.max(team1.gymnasts.length, team2.gymnasts.length);
 
-      // Get team logos from Firebase or API
+      // Get home team logo from Firebase or API (only show home team in title bar)
       const team1Logo = getTeamLogoUrl(team1.team.name, team1.team.logo);
-      const team2Logo = getTeamLogoUrl(team2.team.name, team2.team.logo);
 
-      // Build title bar - EVENT SUMMARY on left, logos on right
+      // Build title bar - EVENT SUMMARY on left, home team logo on right
       const titleHtml = `
         <div class="title-bar">
           <div class="title-text">Event Summary</div>
-          <div class="title-logos">
-            ${team1Logo ? `<img class="title-logo" src="${team1Logo}" alt="">` : ''}
-            ${team2Logo ? `<img class="title-logo" src="${team2Logo}" alt="">` : ''}
-          </div>
+          ${team1Logo ? `<img class="title-logo" src="${team1Logo}" alt="">` : ''}
         </div>
       `;
 
