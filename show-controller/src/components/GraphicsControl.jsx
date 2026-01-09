@@ -29,11 +29,20 @@ const graphicButtons = [
   { id: 'final', label: 'Final Scores', title: 'FINAL SCORES', section: 'Events' },
   { id: 'stream-starting', label: 'Starting Soon', section: 'Stream' },
   { id: 'stream-thanks', label: 'Thanks', section: 'Stream' },
+  // Virtius Leaderboards
+  { id: 'leaderboard-fx', label: 'FX Leaders', section: 'Leaderboards', leaderboardEvent: 'fx' },
+  { id: 'leaderboard-ph', label: 'PH Leaders', section: 'Leaderboards', leaderboardEvent: 'ph' },
+  { id: 'leaderboard-sr', label: 'SR Leaders', section: 'Leaderboards', leaderboardEvent: 'sr' },
+  { id: 'leaderboard-vt', label: 'VT Leaders', section: 'Leaderboards', leaderboardEvent: 'vt' },
+  { id: 'leaderboard-pb', label: 'PB Leaders', section: 'Leaderboards', leaderboardEvent: 'pb' },
+  { id: 'leaderboard-hb', label: 'HB Leaders', section: 'Leaderboards', leaderboardEvent: 'hb' },
+  { id: 'leaderboard-aa', label: 'AA Leaders', section: 'Leaderboards', leaderboardEvent: 'aa' },
 ];
 
 const eventFrames = ['floor', 'pommel', 'rings', 'vault', 'pbars', 'hbar', 'allaround', 'final'];
 
 const OUTPUT_BASE_URL = 'https://virtiusgraphicsenginev001.netlify.app/output.html';
+const LOCAL_OUTPUT_URL = 'http://localhost:8080/output.html';
 
 const teamCounts = {
   'mens-dual': 2, 'womens-dual': 2,
@@ -108,7 +117,7 @@ export default function GraphicsControl({ competitionId }) {
     return () => unsubscribe();
   }, [compId]);
 
-  const sendGraphic = (graphicId, frameTitle = null) => {
+  const sendGraphic = (graphicId, frameTitle = null, leaderboardEvent = null) => {
     if (!compId || !config) return;
 
     const data = {
@@ -117,6 +126,7 @@ export default function GraphicsControl({ competitionId }) {
       venue: config.venue || '',
       location: config.location || '',
       hosts: config.hosts || '',
+      virtiusSessionId: config.virtiusSessionId || '',
       // Team 1
       team1Name: config.team1Name || '',
       team1Logo: config.team1Logo || '',
@@ -165,11 +175,66 @@ export default function GraphicsControl({ competitionId }) {
       data.frameTitle = frameTitle;
     }
 
-    const graphicType = eventFrames.includes(graphicId) ? 'event-frame' : graphicId;
+    if (leaderboardEvent) {
+      data.leaderboardEvent = leaderboardEvent;
+    }
+
+    // Determine graphic type
+    let graphicType = graphicId;
+    if (eventFrames.includes(graphicId)) {
+      graphicType = 'event-frame';
+    } else if (graphicId.startsWith('leaderboard-')) {
+      graphicType = 'virtius-leaderboard';
+    }
 
     set(ref(db, `competitions/${compId}/currentGraphic`), {
       graphic: graphicType,
       graphicId: graphicId, // Store the specific button ID for highlighting
+      data: data,
+      timestamp: Date.now()
+    });
+  };
+
+  // Send event summary graphic - can be rotation-based (R1-R6) or apparatus-based (FX, PH, etc.)
+  const sendEventSummary = (mode, value) => {
+    if (!compId || !config) return;
+
+    const maxTeams = teamCounts[config.compType] || 2;
+
+    // Dual meets use alternating format for rotation-based view
+    // (home team on one event, away team on adjacent event, swapping each rotation)
+    const isDual = config.compType?.includes('dual');
+
+    let graphicId, data;
+
+    if (mode === 'rotation') {
+      // Rotation mode: for dual meets, use alternating format (teams on different events)
+      // R1: Home=FX, Away=PH | R2: swap | R3: Home=SR, Away=VT | etc.
+      graphicId = `summary-r${value}`;
+      data = {
+        virtiusSessionId: config.virtiusSessionId || '',
+        summaryMode: 'rotation',
+        summaryRotation: value,
+        summaryNumTeams: maxTeams,
+        summaryFormat: isDual ? 'alternating' : 'olympic',
+        team1Logo: config.team1Logo || '',
+      };
+    } else {
+      // Apparatus mode: show both teams' scores for the same event (head-to-head view)
+      graphicId = `summary-${value}`;
+      data = {
+        virtiusSessionId: config.virtiusSessionId || '',
+        summaryMode: 'apparatus',
+        summaryApparatus: value, // e.g., 'fx', 'ph', 'sr', 'vt', 'pb', 'hb'
+        summaryNumTeams: maxTeams,
+        summaryFormat: 'head-to-head', // Always head-to-head for apparatus mode
+        team1Logo: config.team1Logo || '',
+      };
+    }
+
+    set(ref(db, `competitions/${compId}/currentGraphic`), {
+      graphic: 'event-summary',
+      graphicId: graphicId,
       data: data,
       timestamp: Date.now()
     });
@@ -185,9 +250,10 @@ export default function GraphicsControl({ competitionId }) {
     });
   };
 
-  const sections = ['Pre-Meet', 'Events', 'Stream'];
+  const sections = ['Pre-Meet', 'Events', 'Leaderboards', 'Stream'];
 
   const outputUrl = compId ? `${OUTPUT_BASE_URL}?comp=${compId}` : '';
+  const localOutputUrl = compId ? `${LOCAL_OUTPUT_URL}?comp=${compId}` : '';
 
   const copyOutputUrl = () => {
     if (!outputUrl) return;
@@ -249,6 +315,14 @@ export default function GraphicsControl({ competitionId }) {
               </>
             )}
           </button>
+          <a
+            href={localOutputUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-amber-700 hover:bg-amber-600 text-zinc-100 rounded-lg text-sm font-medium transition-colors"
+          >
+            Local Output
+          </a>
           <Link
             to={`/url-generator?comp=${compId}`}
             className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded-lg text-sm font-medium transition-colors"
@@ -281,7 +355,7 @@ export default function GraphicsControl({ competitionId }) {
                   {sectionButtons.map((btn) => (
                     <button
                       key={btn.id}
-                      onClick={() => sendGraphic(btn.id, btn.title)}
+                      onClick={() => sendGraphic(btn.id, btn.title, btn.leaderboardEvent)}
                       className={`px-2 py-2 rounded text-xs font-medium transition-colors ${
                         currentGraphicId === btn.id
                           ? 'bg-blue-600 text-white'
@@ -295,6 +369,60 @@ export default function GraphicsControl({ competitionId }) {
               </div>
             );
           })}
+
+          {/* Event Summary Section - Rotation and Apparatus buttons */}
+          {config.virtiusSessionId && (
+            <div className="mb-4">
+              <div className="text-xs text-zinc-500 uppercase mb-2">Event Summary</div>
+              {/* Rotation buttons (R1-R6) - shows each team on their event for that rotation */}
+              <div className="text-xs text-zinc-600 mb-1">By Rotation (Alternating)</div>
+              <div className="grid grid-cols-6 gap-1.5 mb-2">
+                {[1, 2, 3, 4, 5, 6].map((rotation) => {
+                  const graphicId = `summary-r${rotation}`;
+                  return (
+                    <button
+                      key={rotation}
+                      onClick={() => sendEventSummary('rotation', rotation)}
+                      className={`px-2 py-2 rounded text-xs font-medium transition-colors ${
+                        currentGraphicId === graphicId
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-zinc-700 hover:bg-zinc-600 text-zinc-300'
+                      }`}
+                    >
+                      R{rotation}
+                    </button>
+                  );
+                })}
+              </div>
+              {/* Apparatus buttons (FX, PH, SR, VT, PB, HB) - shows both teams' scores for same event */}
+              <div className="text-xs text-zinc-600 mb-1">By Apparatus</div>
+              <div className="grid grid-cols-6 gap-1.5">
+                {[
+                  { id: 'fx', label: 'FX' },
+                  { id: 'ph', label: 'PH' },
+                  { id: 'sr', label: 'SR' },
+                  { id: 'vt', label: 'VT' },
+                  { id: 'pb', label: 'PB' },
+                  { id: 'hb', label: 'HB' },
+                ].map((apparatus) => {
+                  const graphicId = `summary-${apparatus.id}`;
+                  return (
+                    <button
+                      key={apparatus.id}
+                      onClick={() => sendEventSummary('apparatus', apparatus.id)}
+                      className={`px-2 py-2 rounded text-xs font-medium transition-colors ${
+                        currentGraphicId === graphicId
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-zinc-700 hover:bg-zinc-600 text-zinc-300'
+                      }`}
+                    >
+                      {apparatus.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Clear Button */}
           <button

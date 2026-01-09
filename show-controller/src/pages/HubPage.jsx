@@ -83,6 +83,12 @@ export default function HubPage() {
             badgeColor="primary"
           />
           <Card
+            to="/media-manager"
+            icon="🖼️"
+            title="Media Manager"
+            description="Manage team logos and athlete headshots. Track what media assets are available."
+          />
+          <Card
             to="/url-generator"
             icon="🔗"
             title="URL Generator"

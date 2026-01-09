@@ -42,7 +42,28 @@ The Dashboard now supports importing competition details from the Virtius scorin
 
 **API Endpoint:** `https://api.virti.us/session/{sessionId}/json`
 
-**Server proxy:** `/api/virtius/:sessionId` (avoids CORS issues)
+---
+
+### Virtius Leaderboard Graphics
+**Status:** Implemented
+
+Embedded Virtius leaderboards as a new graphic type, controlled via the GraphicsControl panel.
+
+**How it works:**
+1. Competition must have a Virtius Session ID configured (via Dashboard)
+2. In Producer View > Web Graphics, click any leaderboard button (FX, PH, SR, VT, PB, HB, AA)
+3. The output.html renders an iframe with the Virtius leaderboard
+
+**Leaderboard URL format:** `https://virti.us/session?s={sessionId}&leaderboard={event}&theme=dark`
+
+**Available leaderboards:**
+- `fx` - Floor Exercise
+- `ph` - Pommel Horse
+- `sr` - Still Rings
+- `vt` - Vault
+- `pb` - Parallel Bars
+- `hb` - High Bar
+- `aa` - All Around
 
 ---
 
@@ -141,25 +162,24 @@ This enables:
 
 ---
 
-### Virtius Browser Graphics Integration
+### Virtius Scoreboard/Lineup Integration
 **Priority:** Medium
 **Status:** Planned
 
-Virtius provides browser-based graphics that could be embedded:
+Virtius provides a scoreboard/lineup view that requires keyboard interaction:
 
-**Leaderboards** (URL parameter controlled):
-- Format: `https://virti.us/session?s={sessionId}&leaderboard={event}&theme=dark`
-- Events: `fx`, `ph`, `sr`, `vt`, `pb`, `hb`, `aa`
-- Could be added as a graphic type in output.html via iframe
-- Timesheet example: `graphic=virtius-leaderboard, graphicData=event=ph`
+**Scoreboard URL:** `https://virti.us/session?s={sessionId}&scoreboard&theme=dark`
 
-**Producer Mode** (interactive, no URL params):
-- Format: `https://virti.us/session?s={sessionId}&producer`
-- Used for lineup displays
-- Best kept as OBS browser source (manually controlled)
-- Could potentially be controlled via postMessage API if Virtius supports it
+**Interaction required:**
+- Press keys 1-6 to select rotation/event
+- Cannot be controlled via URL parameters alone
+- Current rotation shows event summary (scores after event)
+- Next rotation shows upcoming lineup
 
-**Note:** Session ID is now stored with each competition via the Dashboard import feature
+**Possible approaches:**
+1. Keep as separate OBS browser source (manual control)
+2. Embed iframe and use postMessage API (if Virtius supports it)
+3. Build our own event summary graphics using Virtius API data
 
 ---
 

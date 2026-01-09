@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCompetitions } from '../hooks/useCompetitions';
 import { competitionTypes, teamCounts, typeLabels } from '../lib/graphicButtons';
+import { getTeamLogo, hasTeamLogo } from '../lib/teamLogos';
+import { ExclamationTriangleIcon, CheckCircleIcon } from '@heroicons/react/24/solid';
 
 export default function DashboardPage() {
   const { competitions, loading, createCompetition, updateCompetition, deleteCompetition, duplicateCompetition } = useCompetitions();
@@ -23,17 +25,26 @@ export default function DashboardPage() {
       venue: '',
       location: '',
       team1Name: '',
+      team1Logo: '',
+      team1Tricode: '',
       team2Name: '',
+      team2Logo: '',
+      team2Tricode: '',
       team3Name: '',
       team3Logo: '',
+      team3Tricode: '',
       team4Name: '',
       team4Logo: '',
+      team4Tricode: '',
       team5Name: '',
       team5Logo: '',
+      team5Tricode: '',
       team6Name: '',
       team6Logo: '',
+      team6Tricode: '',
     };
   }
+
 
   // Generate a random competition ID
   function generateCompId() {
@@ -88,11 +99,23 @@ export default function DashboardPage() {
         location: meet.location?.split(',').slice(1).join(',').trim() || prev.location,
         compType: inferCompType(meet.sex, sortedTeams.length),
         team1Name: sortedTeams[0]?.name || prev.team1Name,
+        team1Logo: getTeamLogo(sortedTeams[0]?.name) || prev.team1Logo,
+        team1Tricode: sortedTeams[0]?.tricode || prev.team1Tricode,
         team2Name: sortedTeams[1]?.name || prev.team2Name,
+        team2Logo: getTeamLogo(sortedTeams[1]?.name) || prev.team2Logo,
+        team2Tricode: sortedTeams[1]?.tricode || prev.team2Tricode,
         team3Name: sortedTeams[2]?.name || prev.team3Name,
+        team3Logo: getTeamLogo(sortedTeams[2]?.name) || prev.team3Logo,
+        team3Tricode: sortedTeams[2]?.tricode || prev.team3Tricode,
         team4Name: sortedTeams[3]?.name || prev.team4Name,
+        team4Logo: getTeamLogo(sortedTeams[3]?.name) || prev.team4Logo,
+        team4Tricode: sortedTeams[3]?.tricode || prev.team4Tricode,
         team5Name: sortedTeams[4]?.name || prev.team5Name,
+        team5Logo: getTeamLogo(sortedTeams[4]?.name) || prev.team5Logo,
+        team5Tricode: sortedTeams[4]?.tricode || prev.team5Tricode,
         team6Name: sortedTeams[5]?.name || prev.team6Name,
+        team6Logo: getTeamLogo(sortedTeams[5]?.name) || prev.team6Logo,
+        team6Tricode: sortedTeams[5]?.tricode || prev.team6Tricode,
         virtiusSessionId: virtiusSessionId.trim(),
       }));
     } catch (error) {
@@ -121,15 +144,23 @@ export default function DashboardPage() {
       venue: config.venue || '',
       location: config.location || '',
       team1Name: config.team1Name || '',
+      team1Logo: config.team1Logo || '',
+      team1Tricode: config.team1Tricode || '',
       team2Name: config.team2Name || '',
+      team2Logo: config.team2Logo || '',
+      team2Tricode: config.team2Tricode || '',
       team3Name: config.team3Name || '',
       team3Logo: config.team3Logo || '',
+      team3Tricode: config.team3Tricode || '',
       team4Name: config.team4Name || '',
       team4Logo: config.team4Logo || '',
+      team4Tricode: config.team4Tricode || '',
       team5Name: config.team5Name || '',
       team5Logo: config.team5Logo || '',
+      team5Tricode: config.team5Tricode || '',
       team6Name: config.team6Name || '',
       team6Logo: config.team6Logo || '',
+      team6Tricode: config.team6Tricode || '',
       virtiusSessionId: config.virtiusSessionId || '',
     });
     setVirtiusSessionId(config.virtiusSessionId || '');
@@ -149,23 +180,29 @@ export default function DashboardPage() {
       location: formData.location,
       virtiusSessionId: formData.virtiusSessionId || '',
       team1Name: formData.team1Name,
+      team1Logo: formData.team1Logo || 'https://via.placeholder.com/200/00274C/FFCB05?text=T1',
+      team1Tricode: formData.team1Tricode || '',
       team2Name: formData.team2Name,
+      team2Logo: formData.team2Logo || 'https://via.placeholder.com/200/BB0000/FFFFFF?text=T2',
+      team2Tricode: formData.team2Tricode || '',
       team3Name: formData.team3Name,
       team3Logo: formData.team3Logo || 'https://via.placeholder.com/200/006400/FFFFFF?text=T3',
+      team3Tricode: formData.team3Tricode || '',
       team4Name: formData.team4Name,
       team4Logo: formData.team4Logo || 'https://via.placeholder.com/200/800080/FFFFFF?text=T4',
+      team4Tricode: formData.team4Tricode || '',
       team5Name: formData.team5Name,
       team5Logo: formData.team5Logo || 'https://via.placeholder.com/200/FF6600/FFFFFF?text=T5',
+      team5Tricode: formData.team5Tricode || '',
       team6Name: formData.team6Name,
       team6Logo: formData.team6Logo || 'https://via.placeholder.com/200/000080/FFFFFF?text=T6',
-      // Defaults
+      team6Tricode: formData.team6Tricode || '',
+      // Defaults for stats
       hosts: 'Host Name',
-      team1Logo: 'https://via.placeholder.com/200/00274C/FFCB05?text=T1',
       team1Ave: '0.000',
       team1High: '0.000',
       team1Con: '0%',
       team1Coaches: 'Coach Name',
-      team2Logo: 'https://via.placeholder.com/200/BB0000/FFFFFF?text=T2',
       team2Ave: '0.000',
       team2High: '0.000',
       team2Con: '0%',
@@ -462,122 +499,66 @@ export default function DashboardPage() {
                 </FormGroup>
               </div>
 
-              <FormGroup label="Team 1 Name">
-                <input
-                  type="text"
-                  value={formData.team1Name}
-                  onChange={(e) => setFormData({ ...formData, team1Name: e.target.value })}
-                  placeholder="e.g., Michigan"
-                  required
-                  className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
-                />
-              </FormGroup>
+              <TeamLogoInput
+                teamNum={1}
+                teamName={formData.team1Name}
+                teamLogo={formData.team1Logo}
+                onNameChange={(val) => setFormData({ ...formData, team1Name: val })}
+                onLogoChange={(val) => setFormData({ ...formData, team1Logo: val })}
+                required
+              />
 
-              <FormGroup label="Team 2 Name">
-                <input
-                  type="text"
-                  value={formData.team2Name}
-                  onChange={(e) => setFormData({ ...formData, team2Name: e.target.value })}
-                  placeholder="e.g., Ohio State"
-                  required
-                  className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
-                />
-              </FormGroup>
+              <TeamLogoInput
+                teamNum={2}
+                teamName={formData.team2Name}
+                teamLogo={formData.team2Logo}
+                onNameChange={(val) => setFormData({ ...formData, team2Name: val })}
+                onLogoChange={(val) => setFormData({ ...formData, team2Logo: val })}
+                required
+              />
 
               {teamCount >= 3 && (
-                <>
-                  <FormGroup label="Team 3 Name">
-                    <input
-                      type="text"
-                      value={formData.team3Name}
-                      onChange={(e) => setFormData({ ...formData, team3Name: e.target.value })}
-                      placeholder="e.g., Penn State"
-                      required
-                      className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
-                    />
-                  </FormGroup>
-                  <FormGroup label="Team 3 Logo URL">
-                    <input
-                      type="text"
-                      value={formData.team3Logo}
-                      onChange={(e) => setFormData({ ...formData, team3Logo: e.target.value })}
-                      placeholder="https://example.com/logo.png"
-                      className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
-                    />
-                  </FormGroup>
-                </>
+                <TeamLogoInput
+                  teamNum={3}
+                  teamName={formData.team3Name}
+                  teamLogo={formData.team3Logo}
+                  onNameChange={(val) => setFormData({ ...formData, team3Name: val })}
+                  onLogoChange={(val) => setFormData({ ...formData, team3Logo: val })}
+                  required
+                />
               )}
 
               {teamCount >= 4 && (
-                <>
-                  <FormGroup label="Team 4 Name">
-                    <input
-                      type="text"
-                      value={formData.team4Name}
-                      onChange={(e) => setFormData({ ...formData, team4Name: e.target.value })}
-                      placeholder="e.g., Nebraska"
-                      required
-                      className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
-                    />
-                  </FormGroup>
-                  <FormGroup label="Team 4 Logo URL">
-                    <input
-                      type="text"
-                      value={formData.team4Logo}
-                      onChange={(e) => setFormData({ ...formData, team4Logo: e.target.value })}
-                      placeholder="https://example.com/logo.png"
-                      className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
-                    />
-                  </FormGroup>
-                </>
+                <TeamLogoInput
+                  teamNum={4}
+                  teamName={formData.team4Name}
+                  teamLogo={formData.team4Logo}
+                  onNameChange={(val) => setFormData({ ...formData, team4Name: val })}
+                  onLogoChange={(val) => setFormData({ ...formData, team4Logo: val })}
+                  required
+                />
               )}
 
               {teamCount >= 5 && (
-                <>
-                  <FormGroup label="Team 5 Name">
-                    <input
-                      type="text"
-                      value={formData.team5Name}
-                      onChange={(e) => setFormData({ ...formData, team5Name: e.target.value })}
-                      placeholder="e.g., Stanford"
-                      required
-                      className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
-                    />
-                  </FormGroup>
-                  <FormGroup label="Team 5 Logo URL">
-                    <input
-                      type="text"
-                      value={formData.team5Logo}
-                      onChange={(e) => setFormData({ ...formData, team5Logo: e.target.value })}
-                      placeholder="https://example.com/logo.png"
-                      className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
-                    />
-                  </FormGroup>
-                </>
+                <TeamLogoInput
+                  teamNum={5}
+                  teamName={formData.team5Name}
+                  teamLogo={formData.team5Logo}
+                  onNameChange={(val) => setFormData({ ...formData, team5Name: val })}
+                  onLogoChange={(val) => setFormData({ ...formData, team5Logo: val })}
+                  required
+                />
               )}
 
               {teamCount >= 6 && (
-                <>
-                  <FormGroup label="Team 6 Name">
-                    <input
-                      type="text"
-                      value={formData.team6Name}
-                      onChange={(e) => setFormData({ ...formData, team6Name: e.target.value })}
-                      placeholder="e.g., Oklahoma"
-                      required
-                      className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
-                    />
-                  </FormGroup>
-                  <FormGroup label="Team 6 Logo URL">
-                    <input
-                      type="text"
-                      value={formData.team6Logo}
-                      onChange={(e) => setFormData({ ...formData, team6Logo: e.target.value })}
-                      placeholder="https://example.com/logo.png"
-                      className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
-                    />
-                  </FormGroup>
-                </>
+                <TeamLogoInput
+                  teamNum={6}
+                  teamName={formData.team6Name}
+                  teamLogo={formData.team6Logo}
+                  onNameChange={(val) => setFormData({ ...formData, team6Name: val })}
+                  onLogoChange={(val) => setFormData({ ...formData, team6Logo: val })}
+                  required
+                />
               )}
 
               <div className="flex gap-3 mt-6">
@@ -617,6 +598,69 @@ function FormGroup({ label, children }) {
     <div className="mb-4">
       <label className="block text-xs text-zinc-400 mb-1.5">{label}</label>
       {children}
+    </div>
+  );
+}
+
+function TeamLogoInput({ teamNum, teamName, teamLogo, onNameChange, onLogoChange, required }) {
+  const hasLogoInLibrary = teamName && hasTeamLogo(teamName);
+  const hasLogoUrl = !!teamLogo;
+  const logoStatus = hasLogoUrl ? 'has-url' : hasLogoInLibrary ? 'in-library' : teamName ? 'missing' : 'no-name';
+
+  return (
+    <div className="mb-4 p-3 bg-zinc-800/30 rounded-lg border border-zinc-800">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs text-zinc-400">Team {teamNum}</span>
+        {logoStatus === 'has-url' && (
+          <span className="flex items-center gap-1 text-xs text-green-400">
+            <CheckCircleIcon className="w-3 h-3" /> Logo set
+          </span>
+        )}
+        {logoStatus === 'in-library' && (
+          <span className="flex items-center gap-1 text-xs text-blue-400">
+            <CheckCircleIcon className="w-3 h-3" /> In library
+          </span>
+        )}
+        {logoStatus === 'missing' && (
+          <Link
+            to="/media-manager"
+            className="flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300"
+          >
+            <ExclamationTriangleIcon className="w-3 h-3" /> Add logo
+          </Link>
+        )}
+      </div>
+      <div className="flex gap-2">
+        {/* Logo preview */}
+        <div className="w-12 h-12 bg-zinc-700 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
+          {(teamLogo || (teamName && getTeamLogo(teamName))) ? (
+            <img
+              src={teamLogo || getTeamLogo(teamName)}
+              alt={teamName || 'Team logo'}
+              className="w-10 h-10 object-contain"
+            />
+          ) : (
+            <span className="text-zinc-500 text-lg">?</span>
+          )}
+        </div>
+        <div className="flex-1 space-y-2">
+          <input
+            type="text"
+            value={teamName}
+            onChange={(e) => onNameChange(e.target.value)}
+            placeholder={`Team ${teamNum} name`}
+            required={required}
+            className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+          />
+          <input
+            type="text"
+            value={teamLogo}
+            onChange={(e) => onLogoChange(e.target.value)}
+            placeholder="Logo URL (auto-filled if in library)"
+            className="w-full px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-white text-xs focus:outline-none focus:border-blue-500"
+          />
+        </div>
+      </div>
     </div>
   );
 }
