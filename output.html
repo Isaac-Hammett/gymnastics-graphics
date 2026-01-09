@@ -1738,91 +1738,31 @@
       width: 4px !important;
       background: #a1a1aa;
     }
-    /* Footer */
-    .layout-default-v2 .summary-footer {
-      display: flex;
-      background: #27272a;
+    /* Footer overrides for Default V2 layout - larger text */
+    .layout-default-v2-footer {
       border-top: 2px solid #3f3f46;
     }
-    .layout-default-v2 .footer-team {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      padding: 16px 28px;
-      gap: 16px;
-    }
-    .layout-default-v2 .footer-team.left {
-      justify-content: flex-start;
-    }
-    .layout-default-v2 .footer-team.right {
-      justify-content: flex-end;
-      flex-direction: row-reverse;
-    }
-    .layout-default-v2 .event-abbr {
+    .layout-default-v2-footer .event-abbr {
       font-size: 28px;
       font-weight: 800;
-      color: #fff;
     }
-    .layout-default-v2 .event-icon {
+    .layout-default-v2-footer .event-icon {
       width: 32px;
       height: 32px;
-      color: #a1a1aa;
     }
-    .layout-default-v2 .event-label {
+    .layout-default-v2-footer .event-label {
       font-size: 18px;
-      color: #a1a1aa;
     }
-    .layout-default-v2 .event-total {
+    .layout-default-v2-footer .event-total {
       font-size: 36px;
       font-weight: 800;
-      color: #fff;
-      margin-left: auto;
     }
-    .layout-default-v2 .footer-team.right .event-total {
-      margin-left: 0;
-      margin-right: auto;
-    }
-    .layout-default-v2 .footer-center {
+    .layout-default-v2-footer .footer-center {
       width: 160px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
     }
-    .layout-default-v2 .footer-diff {
+    .layout-default-v2-footer .footer-diff {
       font-size: 24px;
       font-weight: 700;
-      color: #fff;
-      margin-bottom: 8px;
-    }
-    .layout-default-v2 .footer-diff-bar {
-      width: 100%;
-      height: 10px;
-      background: #3f3f46;
-      border-radius: 5px;
-      position: relative;
-      overflow: hidden;
-    }
-    .layout-default-v2 .footer-diff-fill {
-      position: absolute;
-      top: 0;
-      height: 100%;
-      border-radius: 5px;
-    }
-    .layout-default-v2 .footer-diff-fill.left {
-      right: 50%;
-      background: linear-gradient(to left, #22c55e, #16a34a);
-    }
-    .layout-default-v2 .footer-diff-fill.right {
-      left: 50%;
-      background: linear-gradient(to right, #ef4444, #dc2626);
-    }
-    .layout-default-v2 .footer-diff-fill.tie {
-      left: 50%;
-      transform: translateX(-50%);
-      width: 4px !important;
-      background: #a1a1aa;
     }
 
     /* ==========================================
@@ -3473,7 +3413,7 @@
 
       // Build footer with event totals and icons
       const footerHtml = `
-        <div class="summary-footer">
+        <div class="event-summary-footer layout-default-v2-footer">
           <div class="footer-team left">
             <div class="event-abbr">${team1.eventShortCode}</div>
             ${EVENT_ICONS[team1.eventShortCode] || ''}
@@ -3596,7 +3536,7 @@
 
       // Build footer with event totals and icons (same event for both teams)
       const footerHtml = `
-        <div class="summary-footer">
+        <div class="event-summary-footer layout-default-v2-footer">
           <div class="footer-team left">
             <div class="event-abbr">${eventShortCode}</div>
             ${EVENT_ICONS[eventShortCode] || ''}
