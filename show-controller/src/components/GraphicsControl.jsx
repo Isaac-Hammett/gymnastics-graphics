@@ -59,6 +59,7 @@ const summaryThemes = [
   // LAYOUTS - Different structural designs
   { id: 'layout-broadcast-table', label: '🎴 Hero Cards', isLayout: true },
   { id: 'layout-classic-broadcast', label: '📺 Classic Broadcast', isLayout: true },
+  { id: 'layout-default-v2', label: '✨ Default Original V2', isLayout: true },
   // COLOR THEMES - Same structure, different colors
   { id: 'default', label: 'Default (Original)' },
   { id: 'espn', label: 'ESPN Colors' },
