@@ -53,9 +53,14 @@ const teamCounts = {
 };
 
 // Available themes for Event Summary
+// Layout themes (start with 'layout-') change the entire structure
+// Color themes just change colors of the default layout
 const summaryThemes = [
-  { id: 'default', label: 'Default' },
-  { id: 'espn', label: 'ESPN' },
+  // LAYOUTS - Different structural designs
+  { id: 'layout-broadcast-table', label: '📺 Broadcast Table', isLayout: true },
+  // COLOR THEMES - Same structure, different colors
+  { id: 'default', label: 'Default (Original)' },
+  { id: 'espn', label: 'ESPN Colors' },
   { id: 'nbc', label: 'NBC Olympics' },
   { id: 'btn', label: 'Big Ten' },
   { id: 'pac12', label: 'Pac-12' },
