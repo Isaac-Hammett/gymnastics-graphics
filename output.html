@@ -2097,6 +2097,56 @@
     // Initialize headshots loading
     loadFirebaseHeadshots();
 
+    // Firebase team logos cache - loaded once at startup
+    let firebaseTeamLogos = {};
+
+    // Load team logos from Firebase teamsDatabase
+    function loadFirebaseTeamLogos() {
+      db.ref('teamsDatabase/teams').on('value', (snapshot) => {
+        const data = snapshot.val() || {};
+        firebaseTeamLogos = {};
+        for (const [key, value] of Object.entries(data)) {
+          if (value && value.logo) {
+            // Store by team key (e.g., 'army-mens')
+            firebaseTeamLogos[key] = value.logo;
+            // Also store by school name variations
+            if (value.school) {
+              const school = value.school.toLowerCase().trim();
+              firebaseTeamLogos[school] = value.logo;
+              firebaseTeamLogos[`${school} men's`] = value.logo;
+              firebaseTeamLogos[`${school} women's`] = value.logo;
+            }
+            if (value.displayName) {
+              firebaseTeamLogos[value.displayName.toLowerCase().trim()] = value.logo;
+            }
+          }
+        }
+        console.log(`Loaded ${Object.keys(firebaseTeamLogos).length} team logo entries from Firebase`);
+      });
+    }
+
+    // Get team logo - checks Firebase first, then falls back to API logo
+    function getTeamLogoUrl(teamName, apiLogo) {
+      if (apiLogo) return apiLogo;
+      if (!teamName) return '';
+
+      const normalized = teamName.toLowerCase().trim();
+      if (firebaseTeamLogos[normalized]) return firebaseTeamLogos[normalized];
+
+      // Try without "Men's" or "Women's" suffix
+      const withoutGender = normalized
+        .replace(/ men'?s?$/i, '')
+        .replace(/ women'?s?$/i, '');
+      if (firebaseTeamLogos[withoutGender]) return firebaseTeamLogos[withoutGender];
+      if (firebaseTeamLogos[`${withoutGender}-mens`]) return firebaseTeamLogos[`${withoutGender}-mens`];
+      if (firebaseTeamLogos[`${withoutGender}-womens`]) return firebaseTeamLogos[`${withoutGender}-womens`];
+
+      return '';
+    }
+
+    // Initialize team logos loading
+    loadFirebaseTeamLogos();
+
     const output = document.getElementById('output');
 
     // Fetch leaderboard data from Virtius API and render custom table
@@ -3447,13 +3497,17 @@
 
       const maxAthletes = Math.max(team1.gymnasts.length, team2.gymnasts.length);
 
+      // Get team logos from Firebase or API
+      const team1Logo = getTeamLogoUrl(team1.team.name, team1.team.logo);
+      const team2Logo = getTeamLogoUrl(team2.team.name, team2.team.logo);
+
       // Build title bar - EVENT SUMMARY on left, logos on right
       const titleHtml = `
         <div class="title-bar">
           <div class="title-text">Event Summary</div>
           <div class="title-logos">
-            ${team1.team.logo ? `<img class="title-logo" src="${team1.team.logo}" alt="">` : ''}
-            ${team2.team.logo ? `<img class="title-logo" src="${team2.team.logo}" alt="">` : ''}
+            ${team1Logo ? `<img class="title-logo" src="${team1Logo}" alt="">` : ''}
+            ${team2Logo ? `<img class="title-logo" src="${team2Logo}" alt="">` : ''}
           </div>
         </div>
       `;
@@ -3569,10 +3623,11 @@
         }
       }
 
+      const logoUrl = getTeamLogoUrl(team.name, team.logo);
       return `
         <div class="team-column ${side}">
           <div class="team-header ${side}">
-            ${team.logo ? `<img class="team-logo" src="${team.logo}" alt="">` : ''}
+            ${logoUrl ? `<img class="team-logo" src="${logoUrl}" alt="">` : ''}
             <div class="team-name">${team.name || team.tricode}</div>
             <div class="team-total">${totalScore > 0 ? totalScore.toFixed(3) : '0.000'}</div>
           </div>
@@ -3590,13 +3645,17 @@
 
       const maxAthletes = Math.max(team1.gymnasts.length, team2.gymnasts.length);
 
+      // Get team logos from Firebase or API
+      const team1Logo = getTeamLogoUrl(team1.team.name, team1.team.logo);
+      const team2Logo = getTeamLogoUrl(team2.team.name, team2.team.logo);
+
       // Build title bar - EVENT SUMMARY on left, logos on right
       const titleHtml = `
         <div class="title-bar">
           <div class="title-text">Event Summary</div>
           <div class="title-logos">
-            ${team1.team.logo ? `<img class="title-logo" src="${team1.team.logo}" alt="">` : ''}
-            ${team2.team.logo ? `<img class="title-logo" src="${team2.team.logo}" alt="">` : ''}
+            ${team1Logo ? `<img class="title-logo" src="${team1Logo}" alt="">` : ''}
+            ${team2Logo ? `<img class="title-logo" src="${team2Logo}" alt="">` : ''}
           </div>
         </div>
       `;
