@@ -626,6 +626,63 @@ const athleteHeadshots = {
 };
 
 // ============================================
+// TEAM NAME ALIASES
+// Maps common variations to the canonical school key (without -mens/-womens)
+// ============================================
+const schoolAliases = {
+  // Cal / California / UC Berkeley
+  'california': 'cal',
+  'uc berkeley': 'cal',
+  'berkeley': 'cal',
+  'golden bears': 'cal',
+  // Navy
+  'naval academy': 'navy',
+  'us navy': 'navy',
+  'usna': 'navy',
+  // Stanford
+  'stanford university': 'stanford',
+  'cardinal': 'stanford',
+  // Penn State
+  'penn state': 'penn-state',
+  'pennsylvania state': 'penn-state',
+  'psu': 'penn-state',
+  'nittany lions': 'penn-state',
+  // William & Mary
+  'william & mary': 'william-mary',
+  'william and mary': 'william-mary',
+  'w&m': 'william-mary',
+  // George Washington
+  'george washington': 'george-washington',
+  'gw': 'george-washington',
+  'gwu': 'george-washington',
+  // Fisk
+  'fisk university': 'fisk',
+  // Centenary
+  'centenary college': 'centenary',
+  // Wilberforce
+  'wilberforce university': 'wilberforce',
+  // Greenville
+  'greenville university': 'greenville',
+  // Springfield
+  'springfield college': 'springfield',
+  // Illinois
+  'university of illinois': 'illinois',
+  'fighting illini': 'illinois',
+  // Michigan
+  'university of michigan': 'michigan',
+  'wolverines': 'michigan',
+  // Army
+  'west point': 'army',
+  'us army': 'army',
+  'black knights': 'army',
+  // Maryland
+  'university of maryland': 'maryland',
+  'terrapins': 'maryland',
+  // Simpson
+  'simpson college': 'simpson',
+};
+
+// ============================================
 // HELPER FUNCTIONS
 // ============================================
 
@@ -638,7 +695,71 @@ function normalizeName(name) {
 }
 
 /**
- * Get a team by its key
+ * Normalize a team/school name for flexible matching
+ * Removes common suffixes like "university", "college", etc.
+ */
+function normalizeSchoolName(name) {
+  if (!name) return '';
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, ' ')
+    .replace(/\buniversity\b/gi, '')
+    .replace(/\bcollege\b/gi, '')
+    .replace(/\bof\b/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Resolve a team name to a canonical school key
+ * Handles aliases, variations, and common naming patterns
+ * @param {string} input - e.g., 'California', 'Cal', 'Navy Men's', 'navy-mens'
+ * @returns {string|null} Canonical school key (e.g., 'cal', 'navy') or null
+ */
+function resolveSchoolKey(input) {
+  if (!input) return null;
+
+  const normalized = normalizeName(input);
+
+  // Check if it's already a full team key (e.g., 'cal-mens', 'navy-womens')
+  if (teams[normalized]) {
+    // Extract school from team key (remove -mens/-womens)
+    return normalized.replace(/-mens$/, '').replace(/-womens$/, '');
+  }
+
+  // Remove -mens/-womens suffix if present
+  const withoutGender = normalized.replace(/-mens$/, '').replace(/-womens$/, '').replace(/ men'?s?$/i, '').replace(/ women'?s?$/i, '');
+
+  // Check if it's a direct school match
+  if (teams[`${withoutGender}-mens`] || teams[`${withoutGender}-womens`]) {
+    return withoutGender;
+  }
+
+  // Check aliases
+  if (schoolAliases[withoutGender]) {
+    return schoolAliases[withoutGender];
+  }
+
+  // Try normalized version (remove "university", "college", etc.)
+  const superNormalized = normalizeSchoolName(withoutGender);
+  if (schoolAliases[superNormalized]) {
+    return schoolAliases[superNormalized];
+  }
+
+  // Check if super-normalized matches any school name in teams
+  for (const [teamKey, team] of Object.entries(teams)) {
+    const schoolNormalized = normalizeSchoolName(team.school);
+    if (schoolNormalized === superNormalized || team.school.toLowerCase() === withoutGender) {
+      return teamKey.replace(/-mens$/, '').replace(/-womens$/, '');
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Get a team by its key (exact match only)
  * @param {string} teamKey - e.g., 'navy-mens', 'fisk-womens'
  * @returns {object|null} Team data or null if not found
  */
@@ -649,22 +770,110 @@ export function getTeam(teamKey) {
 }
 
 /**
- * Get team logo URL
- * @param {string} teamKey - e.g., 'navy-mens', 'fisk-womens'
+ * Get team logo URL with flexible matching
+ * Accepts various formats: 'California', 'Cal', 'cal-mens', 'Navy Men's', etc.
+ * @param {string} teamName - Team name in any common format
  * @returns {string} Logo URL or empty string
  */
-export function getTeamLogo(teamKey) {
-  const team = getTeam(teamKey);
-  return team?.logo || '';
+export function getTeamLogo(teamName) {
+  if (!teamName) return '';
+
+  // First try exact team key match
+  const exactMatch = getTeam(teamName);
+  if (exactMatch) return exactMatch.logo;
+
+  // Resolve to school key and get logo from either mens or womens team
+  const schoolKey = resolveSchoolKey(teamName);
+  if (schoolKey) {
+    // Try mens first, then womens (they should have the same logo)
+    const mensTeam = teams[`${schoolKey}-mens`];
+    if (mensTeam) return mensTeam.logo;
+
+    const womensTeam = teams[`${schoolKey}-womens`];
+    if (womensTeam) return womensTeam.logo;
+  }
+
+  return '';
 }
 
 /**
- * Check if team has a logo
- * @param {string} teamKey
+ * Check if team has a logo (with flexible matching)
+ * @param {string} teamName - Team name in any common format
  * @returns {boolean}
  */
-export function hasTeamLogo(teamKey) {
-  return !!getTeamLogo(teamKey);
+export function hasTeamLogo(teamName) {
+  return !!getTeamLogo(teamName);
+}
+
+/**
+ * Get team roster with flexible matching
+ * Accepts various formats: 'California', 'Cal', 'cal-mens', 'Navy Men's', etc.
+ * @param {string} teamName - Team name in any common format
+ * @param {string} [gender] - Optional: 'mens' or 'womens' to specify gender
+ * @returns {string[]} Array of athlete names
+ */
+export function getTeamRosterFlexible(teamName, gender = null) {
+  if (!teamName) return [];
+
+  // First try exact team key match
+  const exactMatch = getTeam(teamName);
+  if (exactMatch) return exactMatch.roster || [];
+
+  // Resolve to school key
+  const schoolKey = resolveSchoolKey(teamName);
+  if (!schoolKey) return [];
+
+  // Determine gender from input or use provided gender
+  const normalized = normalizeName(teamName);
+  let targetGender = gender;
+  if (!targetGender) {
+    if (normalized.includes('women') || normalized.includes('womens')) {
+      targetGender = 'womens';
+    } else if (normalized.includes('men') || normalized.includes('mens')) {
+      targetGender = 'mens';
+    }
+  }
+
+  // Try to get roster from specific gender team first
+  if (targetGender) {
+    const team = teams[`${schoolKey}-${targetGender}`];
+    if (team?.roster?.length > 0) return team.roster;
+  }
+
+  // Try mens first, then womens (return whichever has a roster)
+  const mensTeam = teams[`${schoolKey}-mens`];
+  if (mensTeam?.roster?.length > 0) return mensTeam.roster;
+
+  const womensTeam = teams[`${schoolKey}-womens`];
+  if (womensTeam?.roster?.length > 0) return womensTeam.roster;
+
+  return [];
+}
+
+/**
+ * Check if team has a roster (with flexible matching)
+ * @param {string} teamName - Team name in any common format
+ * @param {string} [gender] - Optional: 'mens' or 'womens'
+ * @returns {boolean}
+ */
+export function hasTeamRoster(teamName, gender = null) {
+  return getTeamRosterFlexible(teamName, gender).length > 0;
+}
+
+/**
+ * Get roster stats with flexible matching
+ * @param {string} teamName - Team name in any common format
+ * @param {string} [gender] - Optional: 'mens' or 'womens'
+ * @returns {{total: number, withHeadshots: number, percentage: number}}
+ */
+export function getTeamRosterStatsFlexible(teamName, gender = null) {
+  const roster = getTeamRosterFlexible(teamName, gender);
+  const withHeadshots = roster.filter(name => hasAthleteHeadshot(name)).length;
+  return {
+    total: roster.length,
+    withHeadshots,
+    percentage: roster.length > 0 ? Math.round((withHeadshots / roster.length) * 100) : 0,
+  };
 }
 
 /**

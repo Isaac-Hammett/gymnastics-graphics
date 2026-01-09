@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCompetitions } from '../hooks/useCompetitions';
 import { competitionTypes, teamCounts, typeLabels } from '../lib/graphicButtons';
-import { getTeamLogo, hasTeamLogo } from '../lib/teamsDatabase';
+import { getTeamLogo, hasTeamLogo, hasTeamRoster, getTeamRosterStatsFlexible } from '../lib/teamsDatabase';
 import { ExclamationTriangleIcon, CheckCircleIcon } from '@heroicons/react/24/solid';
 
 export default function DashboardPage() {
@@ -505,6 +505,7 @@ export default function DashboardPage() {
                 teamLogo={formData.team1Logo}
                 onNameChange={(val) => setFormData({ ...formData, team1Name: val })}
                 onLogoChange={(val) => setFormData({ ...formData, team1Logo: val })}
+                compType={formData.compType}
                 required
               />
 
@@ -514,6 +515,7 @@ export default function DashboardPage() {
                 teamLogo={formData.team2Logo}
                 onNameChange={(val) => setFormData({ ...formData, team2Name: val })}
                 onLogoChange={(val) => setFormData({ ...formData, team2Logo: val })}
+                compType={formData.compType}
                 required
               />
 
@@ -524,6 +526,7 @@ export default function DashboardPage() {
                   teamLogo={formData.team3Logo}
                   onNameChange={(val) => setFormData({ ...formData, team3Name: val })}
                   onLogoChange={(val) => setFormData({ ...formData, team3Logo: val })}
+                  compType={formData.compType}
                   required
                 />
               )}
@@ -535,6 +538,7 @@ export default function DashboardPage() {
                   teamLogo={formData.team4Logo}
                   onNameChange={(val) => setFormData({ ...formData, team4Name: val })}
                   onLogoChange={(val) => setFormData({ ...formData, team4Logo: val })}
+                  compType={formData.compType}
                   required
                 />
               )}
@@ -546,6 +550,7 @@ export default function DashboardPage() {
                   teamLogo={formData.team5Logo}
                   onNameChange={(val) => setFormData({ ...formData, team5Name: val })}
                   onLogoChange={(val) => setFormData({ ...formData, team5Logo: val })}
+                  compType={formData.compType}
                   required
                 />
               )}
@@ -557,6 +562,7 @@ export default function DashboardPage() {
                   teamLogo={formData.team6Logo}
                   onNameChange={(val) => setFormData({ ...formData, team6Name: val })}
                   onLogoChange={(val) => setFormData({ ...formData, team6Logo: val })}
+                  compType={formData.compType}
                   required
                 />
               )}
@@ -602,33 +608,55 @@ function FormGroup({ label, children }) {
   );
 }
 
-function TeamLogoInput({ teamNum, teamName, teamLogo, onNameChange, onLogoChange, required }) {
+function TeamLogoInput({ teamNum, teamName, teamLogo, onNameChange, onLogoChange, required, compType }) {
   const hasLogoInLibrary = teamName && hasTeamLogo(teamName);
   const hasLogoUrl = !!teamLogo;
   const logoStatus = hasLogoUrl ? 'has-url' : hasLogoInLibrary ? 'in-library' : teamName ? 'missing' : 'no-name';
+
+  // Determine gender from competition type for roster lookup
+  const gender = compType?.includes('womens') ? 'womens' : compType?.includes('mens') ? 'mens' : null;
+  const hasRoster = teamName && hasTeamRoster(teamName, gender);
+  const rosterStats = teamName ? getTeamRosterStatsFlexible(teamName, gender) : null;
 
   return (
     <div className="mb-4 p-3 bg-zinc-800/30 rounded-lg border border-zinc-800">
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs text-zinc-400">Team {teamNum}</span>
-        {logoStatus === 'has-url' && (
-          <span className="flex items-center gap-1 text-xs text-green-400">
-            <CheckCircleIcon className="w-3 h-3" /> Logo set
-          </span>
-        )}
-        {logoStatus === 'in-library' && (
-          <span className="flex items-center gap-1 text-xs text-blue-400">
-            <CheckCircleIcon className="w-3 h-3" /> In library
-          </span>
-        )}
-        {logoStatus === 'missing' && (
-          <Link
-            to="/media-manager"
-            className="flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300"
-          >
-            <ExclamationTriangleIcon className="w-3 h-3" /> Add logo
-          </Link>
-        )}
+        <div className="flex items-center gap-3">
+          {/* Logo status */}
+          {logoStatus === 'has-url' && (
+            <span className="flex items-center gap-1 text-xs text-green-400">
+              <CheckCircleIcon className="w-3 h-3" /> Logo set
+            </span>
+          )}
+          {logoStatus === 'in-library' && (
+            <span className="flex items-center gap-1 text-xs text-blue-400">
+              <CheckCircleIcon className="w-3 h-3" /> In library
+            </span>
+          )}
+          {logoStatus === 'missing' && (
+            <Link
+              to="/media-manager"
+              className="flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300"
+            >
+              <ExclamationTriangleIcon className="w-3 h-3" /> Add logo
+            </Link>
+          )}
+          {/* Roster status */}
+          {hasRoster && rosterStats && (
+            <span className="flex items-center gap-1 text-xs text-green-400">
+              <CheckCircleIcon className="w-3 h-3" /> {rosterStats.total} athletes ({rosterStats.withHeadshots} photos)
+            </span>
+          )}
+          {teamName && !hasRoster && (
+            <Link
+              to="/media-manager"
+              className="flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300"
+            >
+              <ExclamationTriangleIcon className="w-3 h-3" /> No roster
+            </Link>
+          )}
+        </div>
       </div>
       <div className="flex gap-2">
         {/* Logo preview */}
