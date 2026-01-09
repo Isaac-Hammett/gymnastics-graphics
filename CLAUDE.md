@@ -1,5 +1,14 @@
 # Claude Code Memory - Gymnastics Graphics
 
+## Git Workflow - IMPORTANT
+
+**Always work on `dev` branch** - Push to `dev` for development work. Only merge to `main` when ready for production deployment.
+
+- `dev` branch: Active development (push freely)
+- `main` branch: Production only (triggers Netlify deploy, costs 15 credits each)
+
+To deploy to production: `git checkout main && git merge dev && git push && git checkout dev`
+
 ## Competition Formats
 
 ### Alternating Format (Default for Dual Meets - used in "By Rotation" view)
