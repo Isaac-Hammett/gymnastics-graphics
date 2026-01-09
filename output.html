@@ -1527,8 +1527,35 @@
     /* Layout 3: Default Original V2 - Improved default with larger text and inline D-score */
     .layout-default-v2 {
       display: flex;
+      flex-direction: column;
       flex: 1;
       background: #18181b;
+    }
+    /* Title bar at top */
+    .layout-default-v2 .title-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 24px;
+      background: #3f3f46;
+      gap: 24px;
+    }
+    .layout-default-v2 .title-bar .title-logo {
+      width: 48px;
+      height: 48px;
+      object-fit: contain;
+    }
+    .layout-default-v2 .title-bar .title-text {
+      font-size: 24px;
+      font-weight: 700;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+    /* Main content area */
+    .layout-default-v2 .main-content {
+      display: flex;
+      flex: 1;
     }
     .layout-default-v2 .team-column {
       flex: 1;
@@ -1538,10 +1565,10 @@
     .layout-default-v2 .team-header {
       display: flex;
       align-items: center;
-      padding: 20px 28px;
+      padding: 16px 24px;
       background: #27272a;
-      gap: 20px;
-      min-height: 100px;
+      gap: 16px;
+      height: 88px;
     }
     .layout-default-v2 .team-header.left {
       justify-content: flex-start;
@@ -1551,18 +1578,18 @@
       flex-direction: row-reverse;
     }
     .layout-default-v2 .team-logo {
-      width: 72px;
-      height: 72px;
+      width: 56px;
+      height: 56px;
       object-fit: contain;
       flex-shrink: 0;
     }
     .layout-default-v2 .team-name {
-      font-size: 36px;
+      font-size: 32px;
       font-weight: 700;
       color: #fff;
     }
     .layout-default-v2 .team-total {
-      font-size: 42px;
+      font-size: 36px;
       font-weight: 800;
       color: #fff;
       margin-left: auto;
@@ -1582,47 +1609,39 @@
     .layout-default-v2 .athlete-row {
       display: flex;
       align-items: center;
-      padding: 12px 24px;
-      min-height: 88px;
+      padding: 8px 20px;
+      height: 88px;
       background: #27272a;
+      gap: 12px;
     }
-    /* Left side layout */
+    /* Left side layout - score then D-score */
     .layout-default-v2 .team-column.left .athlete-row {
-      gap: 16px;
-    }
-    .layout-default-v2 .team-column.left .athlete-order {
-      order: 1;
-    }
-    .layout-default-v2 .team-column.left .athlete-photo {
-      order: 2;
-    }
-    .layout-default-v2 .team-column.left .athlete-info {
-      order: 3;
+      flex-direction: row;
     }
     .layout-default-v2 .team-column.left .athlete-score-block {
-      order: 4;
-      align-items: flex-end;
+      flex-direction: row;
+      justify-content: flex-end;
     }
-    /* Right side - reverse order for RTL layout */
+    /* Right side - reverse order, D-score then score */
     .layout-default-v2 .team-column.right .athlete-row {
       flex-direction: row-reverse;
-      gap: 16px;
     }
     .layout-default-v2 .team-column.right .athlete-info {
       text-align: right;
     }
     .layout-default-v2 .team-column.right .athlete-score-block {
-      align-items: flex-start;
+      flex-direction: row-reverse;
+      justify-content: flex-start;
     }
     .layout-default-v2 .athlete-order {
-      width: 44px;
-      height: 44px;
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
       background: #52525b;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 20px;
+      font-size: 18px;
       font-weight: 700;
       color: #fff;
       flex-shrink: 0;
@@ -1632,8 +1651,8 @@
       color: #000;
     }
     .layout-default-v2 .athlete-photo {
-      width: 64px;
-      height: 64px;
+      width: 56px;
+      height: 56px;
       border-radius: 50%;
       object-fit: cover;
       object-position: top;
@@ -1657,10 +1676,9 @@
     }
     .layout-default-v2 .athlete-score-block {
       display: flex;
-      flex-direction: row;
       align-items: baseline;
-      gap: 12px;
-      min-width: 180px;
+      gap: 8px;
+      min-width: 160px;
     }
     .layout-default-v2 .athlete-score {
       font-size: 36px;
@@ -1668,52 +1686,57 @@
       color: #fff;
     }
     .layout-default-v2 .athlete-start {
-      font-size: 22px;
+      font-size: 20px;
       font-weight: 500;
       color: #a1a1aa;
+      margin-bottom: -4px;
     }
     /* Center divider */
     .layout-default-v2 .center-divider {
-      width: 160px;
-      background: #27272a;
+      width: 140px;
       display: flex;
       flex-direction: column;
-      align-items: center;
+      background: #18181b;
     }
     .layout-default-v2 .center-header {
-      padding: 20px;
       display: flex;
       align-items: center;
       justify-content: center;
-      height: 100px;
+      height: 88px;
+      background: #27272a;
     }
     .layout-default-v2 .rotation-badge {
-      font-size: 40px;
+      font-size: 36px;
       font-weight: 800;
       color: #fff;
     }
-    .layout-default-v2 .diff-row {
+    .layout-default-v2 .diff-list {
       flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 4px 0;
+    }
+    .layout-default-v2 .diff-row {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 8px 12px;
-      min-height: 88px;
+      height: 88px;
       background: #27272a;
-      margin: 2px 0;
+      padding: 8px 12px;
     }
     .layout-default-v2 .diff-value {
-      font-size: 20px;
+      font-size: 18px;
       font-weight: 600;
       color: #a1a1aa;
       margin-bottom: 6px;
     }
     .layout-default-v2 .diff-bar {
       width: 100%;
-      height: 8px;
+      height: 6px;
       background: #3f3f46;
-      border-radius: 4px;
+      border-radius: 3px;
       position: relative;
       overflow: hidden;
     }
@@ -1721,7 +1744,7 @@
       position: absolute;
       top: 0;
       height: 100%;
-      border-radius: 4px;
+      border-radius: 3px;
       transition: width 0.3s ease;
     }
     .layout-default-v2 .diff-bar-fill.left {
@@ -3375,12 +3398,21 @@
 
       const maxAthletes = Math.max(team1.gymnasts.length, team2.gymnasts.length);
 
+      // Build title bar
+      const titleHtml = `
+        <div class="title-bar">
+          ${team1.team.logo ? `<img class="title-logo" src="${team1.team.logo}" alt="">` : ''}
+          <div class="title-text">Event Summary</div>
+          ${team2.team.logo ? `<img class="title-logo" src="${team2.team.logo}" alt="">` : ''}
+        </div>
+      `;
+
       // Build left team column
       const leftColumn = buildDefaultV2Column(team1, 'left', maxAthletes);
       const rightColumn = buildDefaultV2Column(team2, 'right', maxAthletes);
 
-      // Build center divider with visual diff bars
-      let centerHtml = `<div class="center-divider"><div class="center-header"><div class="rotation-badge">R${rotation}</div></div>`;
+      // Build center divider with visual diff bars (wrapped in diff-list for alignment)
+      let diffRowsHtml = '';
       for (let i = 0; i < maxAthletes; i++) {
         const score1 = team1.gymnasts[i] ? parseFloat(team1.gymnasts[i].final_score) || 0 : 0;
         const score2 = team2.gymnasts[i] ? parseFloat(team2.gymnasts[i].final_score) || 0 : 0;
@@ -3392,7 +3424,7 @@
         if (diff > 0.001) barClass = 'left';
         else if (diff < -0.001) barClass = 'right';
 
-        centerHtml += `
+        diffRowsHtml += `
           <div class="diff-row">
             <div class="diff-value">${diffStr}</div>
             <div class="diff-bar">
@@ -3401,7 +3433,13 @@
           </div>
         `;
       }
-      centerHtml += '</div>';
+
+      const centerHtml = `
+        <div class="center-divider">
+          <div class="center-header"><div class="rotation-badge">R${rotation}</div></div>
+          <div class="diff-list">${diffRowsHtml}</div>
+        </div>
+      `;
 
       // Calculate event total difference
       const eventDiff = team1.eventScore - team2.eventScore;
@@ -3437,9 +3475,12 @@
 
       contentEl.innerHTML = `
         <div class="layout-default-v2">
-          ${leftColumn}
-          ${centerHtml}
-          ${rightColumn}
+          ${titleHtml}
+          <div class="main-content">
+            ${leftColumn}
+            ${centerHtml}
+            ${rightColumn}
+          </div>
         </div>
         ${footerHtml}
       `;
@@ -3473,7 +3514,7 @@
             </div>
           `;
         } else {
-          athletesHtml += `<div class="athlete-row" style="min-height: 88px;"></div>`;
+          athletesHtml += `<div class="athlete-row"></div>`;
         }
       }
 
@@ -3498,12 +3539,21 @@
 
       const maxAthletes = Math.max(team1.gymnasts.length, team2.gymnasts.length);
 
+      // Build title bar
+      const titleHtml = `
+        <div class="title-bar">
+          ${team1.team.logo ? `<img class="title-logo" src="${team1.team.logo}" alt="">` : ''}
+          <div class="title-text">Event Summary</div>
+          ${team2.team.logo ? `<img class="title-logo" src="${team2.team.logo}" alt="">` : ''}
+        </div>
+      `;
+
       // Build left team column
       const leftColumn = buildDefaultV2Column(team1, 'left', maxAthletes);
       const rightColumn = buildDefaultV2Column(team2, 'right', maxAthletes);
 
-      // Build center divider with event name and visual diff bars
-      let centerHtml = `<div class="center-divider"><div class="center-header"><div class="rotation-badge">${eventShortCode}</div></div>`;
+      // Build center divider with event name and visual diff bars (wrapped in diff-list for alignment)
+      let diffRowsHtml = '';
       for (let i = 0; i < maxAthletes; i++) {
         const score1 = team1.gymnasts[i] ? parseFloat(team1.gymnasts[i].final_score) || 0 : 0;
         const score2 = team2.gymnasts[i] ? parseFloat(team2.gymnasts[i].final_score) || 0 : 0;
@@ -3515,7 +3565,7 @@
         if (diff > 0.001) barClass = 'left';
         else if (diff < -0.001) barClass = 'right';
 
-        centerHtml += `
+        diffRowsHtml += `
           <div class="diff-row">
             <div class="diff-value">${diffStr}</div>
             <div class="diff-bar">
@@ -3524,7 +3574,13 @@
           </div>
         `;
       }
-      centerHtml += '</div>';
+
+      const centerHtml = `
+        <div class="center-divider">
+          <div class="center-header"><div class="rotation-badge">${eventShortCode}</div></div>
+          <div class="diff-list">${diffRowsHtml}</div>
+        </div>
+      `;
 
       // Calculate event total difference
       const eventDiff = team1.eventScore - team2.eventScore;
@@ -3560,9 +3616,12 @@
 
       contentEl.innerHTML = `
         <div class="layout-default-v2">
-          ${leftColumn}
-          ${centerHtml}
-          ${rightColumn}
+          ${titleHtml}
+          <div class="main-content">
+            ${leftColumn}
+            ${centerHtml}
+            ${rightColumn}
+          </div>
         </div>
         ${footerHtml}
       `;
