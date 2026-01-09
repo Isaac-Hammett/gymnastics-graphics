@@ -1114,6 +1114,173 @@
       'BAR': 'HB'
     };
 
+    // Athlete headshot library - maps lowercase athlete name to Virtius media URL
+    // This allows us to use our own curated headshots instead of API defaults
+    const ATHLETE_HEADSHOTS = {
+      // Navy
+      'aaron stein': 'https://media.virti.us/upload/images/athlete/bVREzuzMfJF5Pi3INKuss',
+      'aaron zorgo': 'https://media.virti.us/upload/images/athlete/RNYnjPd8T8bVwuAqicvdA',
+      'benjamin thurlow lam': 'https://media.virti.us/upload/images/athlete/ThZW7XIbg2YbyXJ2EnD7H',
+      'benjamin venters': 'https://media.virti.us/upload/images/athlete/r-oKniK7q45of_qtKATRp',
+      'boone washburn': 'https://media.virti.us/upload/images/athlete/ZQ3tK20Awuf-PB6Xr2tlo',
+      'brian solomon': 'https://media.virti.us/upload/images/athlete/zxKpzPO1WD1wuCTqu7yPR',
+      'cody phillips': 'https://media.virti.us/upload/images/athlete/CBgJfcoBg99i_6dyApgPK',
+      'colby prince': 'https://media.virti.us/upload/images/athlete/G7njrXwnxJ-EEKmGfPNFE',
+      'daniel gurevich': 'https://media.virti.us/upload/images/athlete/kkZkc2xI9W89c57kITtbt',
+      'danilo viciana': 'https://media.virti.us/upload/images/athlete/cSSPoHA9GXaHtV75aV61n',
+      'garrett lawless': 'https://media.virti.us/upload/images/athlete/YbATup9pdxGJULqPmjenU',
+      'jonah soltz': 'https://media.virti.us/upload/images/athlete/7Wp4vRjGrChEPu8Mwd_sq',
+      'julian galvez': 'https://media.virti.us/upload/images/athlete/5Fmj6ulMKyhrDvUwIKBvm',
+      'justin lozano': 'https://media.virti.us/upload/images/athlete/X8uS5pYTvziEg7UctRMTL',
+      'kody tokunaga': 'https://media.virti.us/upload/images/athlete/7T-wvjPMsWIpiGClmVOgS',
+      'matthew petros': 'https://media.virti.us/upload/images/athlete/Cf_PyziTQlB1O82sDBiww',
+      'matthew zeigler': 'https://media.virti.us/upload/images/athlete/a3culpWPBE-_iMG44An6d',
+      'mckinley michel': 'https://media.virti.us/upload/images/athlete/Zzm1XxWflm3d6afQPPZFg',
+      'michael romo': 'https://media.virti.us/upload/images/athlete/m9Ujh6AViDf4uUUIFKaPQ',
+      'payton guillory': 'https://media.virti.us/upload/images/athlete/Ic6oFPMimFW7FMuJtNxMw',
+      'saran alexander': 'https://media.virti.us/upload/images/athlete/TrNnHtfYrH5BozHozZzvL',
+      'sean armstrong': 'https://media.virti.us/upload/images/athlete/SCrZqcbmFrPnJqOSu77bG',
+      // Cal (California)
+      'brendan strom': 'https://media.virti.us/upload/images/athlete/1cVXy-T-5mgwnNav4VJ6k',
+      'carter kim': 'https://media.virti.us/upload/images/athlete/COfO8fbGgFA_ZBnE37ndJ',
+      'davide comparin': 'https://media.virti.us/upload/images/athlete/R8Y1dfHBDHeiszcSGw3Wd',
+      'evan wenstad': 'https://media.virti.us/upload/images/athlete/ZmxVIe-6MFDVd1U9wXCdK',
+      'finley chin': 'https://media.virti.us/upload/images/athlete/f3STeUMwZ0TVWsu5w6J2b',
+      'harry kim': 'https://media.virti.us/upload/images/athlete/hIqN7d97gKOnCC2G_5fk5',
+      'jasper smith-gordon': 'https://media.virti.us/upload/images/athlete/ceZUXMm4uDBQSSqVh9zXZ',
+      'jaxon mitchell': 'https://media.virti.us/upload/images/athlete/P29GhcR9nqOqN3aVASjaE',
+      'jd ehinger': 'https://media.virti.us/upload/images/athlete/kz5pENbBzHno2zd0CllHl',
+      'kaien orion': 'https://media.virti.us/upload/images/athlete/wXur_UvfSugKysN6D8Olm',
+      'khalen curry': 'https://media.virti.us/upload/images/athlete/nMiYTGBmoDQibJ6cGExHv',
+      'liam deweese': 'https://media.virti.us/upload/images/athlete/n9jC3XkZoWTj3D6da3s3M',
+      'matteo bardana': 'https://media.virti.us/upload/images/athlete/SmVMJA7m8A6AcYGsi51oD',
+      'nathan underhill': 'https://media.virti.us/upload/images/athlete/gLKC-_s0WAuZGXo8LRTzV',
+      'sam cirlincione': 'https://media.virti.us/upload/images/athlete/HkzVaqzoshqzieNTnBev7',
+      'theodor roald gadderud': 'https://media.virti.us/upload/images/athlete/eMTETdroQg1Nl73PIhR8n',
+      'trigg dudley': 'https://media.virti.us/upload/images/athlete/L7dfIQiIDF2ao7T8n4Mm5',
+      'troy nuesca': 'https://media.virti.us/upload/images/athlete/iX_ld2SgoQNEyCPNg_ASM',
+      'tucker yasunaga': 'https://media.virti.us/upload/images/athlete/EYAEZe97glrJFWqyiReUm',
+      'will horenziak': 'https://media.virti.us/upload/images/athlete/3XEFbFASgcKc2x720zZfJ',
+      // Stanford
+      'arun chhetri': 'https://media.virti.us/upload/images/athlete/j_v4sIFnfBzHUwleTC68X',
+      'asher hong': 'https://media.virti.us/upload/images/athlete/aH7Kk874GhAh590PuEVFK',
+      'cooper kim': 'https://media.virti.us/upload/images/athlete/0IBtstDrlJxbpErwM_UNp',
+      'david shamah': 'https://media.virti.us/upload/images/athlete/QvYoTeG65O4dMEUdjNuBw',
+      'deano roberts': 'https://media.virti.us/upload/images/athlete/PYQP_A7cjIs43SZv3i6qb',
+      'divier ramos-delgado': 'https://media.virti.us/upload/images/athlete/vJXpAVVkqcDWWnPcbC190',
+      'jowy nieves': 'https://media.virti.us/upload/images/athlete/IEXuMRTPVcettEEuebjfV',
+      'junnosuke iwai': 'https://media.virti.us/upload/images/athlete/W9sFpRcn6HvjjByDVYpp-',
+      'kai uemura': 'https://media.virti.us/upload/images/athlete/n83H-u8_JtPWdGLwlQuzz',
+      'kiran mandava': 'https://media.virti.us/upload/images/athlete/yOzUdi_gNYlXjYSer5KfA',
+      'marcus kushner': 'https://media.virti.us/upload/images/athlete/fAbKKbZZNJccKh9F8nzWj',
+      'marcus pietarinen': 'https://media.virti.us/upload/images/athlete/lOtiWvRbryKEPMpQ14sqK',
+      'michael scheiner': 'https://media.virti.us/upload/images/athlete/h59SVg975ou4-i5__6rlH',
+      'nick kuebler': 'https://media.virti.us/upload/images/athlete/NohCBsw4JRhcakpVG7BBV',
+      'reece landsperger': 'https://media.virti.us/upload/images/athlete/DoN-UgHC2qrI4nbeZg1F6',
+      'toma murakawa': 'https://media.virti.us/upload/images/athlete/q-quTVY2a-8bzzI4jnIyd',
+      'wade nelson': 'https://media.virti.us/upload/images/athlete/q4wfg5mr_FnE4YrjNwUI6',
+      'xander hong': 'https://media.virti.us/upload/images/athlete/quAXgfD40w-f5mLDzqrGQ',
+      'zachary green': 'https://media.virti.us/upload/images/athlete/coBnRbQygRwoK6epO36LC',
+      // Fisk University (Women's)
+      'aiyana thomas': 'https://media.virti.us/upload/images/athlete/QCIWQjesQnaUAKhnE-tnL',
+      'aliyah reed-hammon': 'https://media.virti.us/upload/images/athlete/M83B6Hrx3nKLNX9e7PSf6',
+      'allie berkley': 'https://media.virti.us/upload/images/athlete/1FM5JNidhdVPTWlCIEYTM',
+      'ciniah rosby': 'https://media.virti.us/upload/images/athlete/u46EN0dgCtUgN3sAOoiVy',
+      'hadassah diggs': 'https://media.virti.us/upload/images/athlete/i72U-MXljHxgEw8A8r5iy',
+      'jordynn cromartie': 'https://media.virti.us/upload/images/athlete/S2DO-FlczUy33MMzfU3uq',
+      'kennedi johnson': 'https://media.virti.us/upload/images/athlete/6u82DqwshCFIWiAYtBnbd',
+      'liberty mora': 'https://media.virti.us/upload/images/athlete/oyGyeVtmmPQQW0lCFD_w8',
+      'makia rosado': 'https://media.virti.us/upload/images/athlete/_6WhV5x-9sKeK3lEIlwjr',
+      'sophia pratt': 'https://media.virti.us/upload/images/athlete/X7rB2_ZgSFDXfs0eW8UFr',
+      'zanna brewer': 'https://media.virti.us/upload/images/athlete/v0oBQIJ7H0TkxBS55xK47',
+      'zyia coleman': 'https://media.virti.us/upload/images/athlete/kXS5CGn6ch1iQYC3YRFT5',
+      // Centenary College (Women's)
+      'amy foret': 'https://media.virti.us/upload/images/athlete/YSWTModYqlsFZK3WdnrzK',
+      'anna ichiba': 'https://media.virti.us/upload/images/athlete/Fvt_cH77bWufJ6juvuLZR',
+      'brooke murdock': 'https://media.virti.us/upload/images/athlete/TwDo2-r9291i3bb5oVzVC',
+      'cecilia paredes': 'https://media.virti.us/upload/images/athlete/GiglP2tBIueo166zWsS7d',
+      'chloe gilbert': 'https://media.virti.us/upload/images/athlete/MmdqdhRFTWjiOnBSBi61B',
+      'claire flores': 'https://media.virti.us/upload/images/athlete/YQeKZjm_C3LHO6Ne7G287',
+      'erin pinder': 'https://media.virti.us/upload/images/athlete/s3wYoVHXVoLMulUc15Xyd',
+      'hayden cagle': 'https://media.virti.us/upload/images/athlete/4SPIOiKHVs07SAZwDWbXQ',
+      'lelia dunlavy': 'https://media.virti.us/upload/images/athlete/KugvvPNIFcWhwFQjE04cP',
+      'mallory stephens': 'https://media.virti.us/upload/images/athlete/xSsPI3ZZ2wp14L-g0oQbK',
+      'molly english': 'https://media.virti.us/upload/images/athlete/WxKykVl1ufwVxRVCw6iGO',
+      'nyah washington': 'https://media.virti.us/upload/images/athlete/BRnuNCn2gSFlC2WDDwP1D',
+      'olivia montgomery': 'https://media.virti.us/upload/images/athlete/FzXmVWGhGkfm7OtLm55q1',
+      'olivia stratmann': 'https://media.virti.us/upload/images/athlete/Ub9lMyNwtBW8TPnx4nrbv',
+      'olivia williams': 'https://media.virti.us/upload/images/athlete/qGG7TVOvXqk5K5sUxGGHN',
+      'peyton burford': 'https://media.virti.us/upload/images/athlete/vnemcpLN8OwerOEuAPacV',
+      'riley navarro': 'https://media.virti.us/upload/images/athlete/dEyNMURLSl7Rw-SIO1hwt',
+      'skyla cruz': 'https://media.virti.us/upload/images/athlete/ChsX3x1OD2yJiwnpV8kts',
+      // Wilberforce (Women's)
+      'carli finkley': 'https://media.virti.us/upload/images/athlete/jRQJcUOc-91YvL4TF9Gpp',
+      'danielle johnson': 'https://media.virti.us/upload/images/athlete/M2kvQSaF6z4Yp6VeoqurV',
+      'diamond cook': 'https://media.virti.us/upload/images/athlete/dh8QK5ckClYJSNysBpEBe',
+      'emily herrera': 'https://media.virti.us/upload/images/athlete/yciQBEg0HXty3ugDhlwHK',
+      'hannah gouldbourne': 'https://media.virti.us/upload/images/athlete/LtoKResa_Bc0u0ZXB_mJx',
+      'jaidyn bryant': 'https://media.virti.us/upload/images/athlete/EOLLc780NzbKv6loHhCuX',
+      'kaleigh garner': 'https://media.virti.us/upload/images/athlete/rjSs6Hu8q7ympHQ2ZQ1Ng',
+      'mackenzie butler': 'https://media.virti.us/upload/images/athlete/V2CeS42mKVR7It524CAWR',
+      'madison kelly': 'https://media.virti.us/upload/images/athlete/plCiU8VPx_qLs3YnMVgIx',
+      'makiyah davis': 'https://media.virti.us/upload/images/athlete/1Di7Al76uWLhA2sCCar-A',
+      'mikayla clements': 'https://media.virti.us/upload/images/athlete/1O41JjAQjiNnR7Uhqq4Oo',
+      'myca kelly': 'https://media.virti.us/upload/images/athlete/2W1DlvcyZZHA5rbdwyGLf',
+      'myna caines': 'https://media.virti.us/upload/images/athlete/iKFe8UAfJuPWUgwJCDA7g',
+      "n'diah brown": 'https://media.virti.us/upload/images/athlete/rf6EYRlhPtyVIaZxx4fhI',
+      'nishayla riley': 'https://media.virti.us/upload/images/athlete/87iqde2o7Ht-wZFtMhrc_',
+      'promise jean-marie': 'https://media.virti.us/upload/images/athlete/OWZun71ChfPJeV8bIAhX4',
+      'sadara mayhorn': 'https://media.virti.us/upload/images/athlete/1pSuBF5AyDypHc4yRc00q',
+      'saniah smith': 'https://media.virti.us/upload/images/athlete/GdDVF4oxa-aNTcjolceBC',
+      'sydney smith': 'https://media.virti.us/upload/images/athlete/UoRyzVz2LksoEoTj8iSIC',
+      // Greenville (Women's)
+      'alessia russo': 'https://media.virti.us/upload/images/athlete/smkg4wf_S-ihWRpjgSDFX',
+      'alexis stonebraker': 'https://media.virti.us/upload/images/athlete/JF-_Ra50E-f_HcveHgbDS',
+      'amara nelson': 'https://media.virti.us/upload/images/athlete/1tGFjzE1os0N5y7g7gQe7',
+      'aubrey kenimer': 'https://media.virti.us/upload/images/athlete/7eLgaVnOWsM19QDXn9DIc',
+      'christianna cutler': 'https://media.virti.us/upload/images/athlete/UeBdwZMa1LOlYrkDNisQH',
+      'ellery gilmer': 'https://media.virti.us/upload/images/athlete/TKHPU0R_3rjvgi_xwm6X5',
+      'elli schnieders': 'https://media.virti.us/upload/images/athlete/-OcZrBQdnQA4jiSKVarAx',
+      'emma brannon': 'https://media.virti.us/upload/images/athlete/qxlRn2xGi20UwMTOZfwwk',
+      'faye jones': 'https://media.virti.us/upload/images/athlete/bLP-Hntcp9yXOhtAo60NJ',
+      'isabella feltman': 'https://media.virti.us/upload/images/athlete/3VoKov015ClGqzt9HL4-T',
+      'izabella yanis': 'https://media.virti.us/upload/images/athlete/5Y-yKeMM1M1ivbJLU1tW7',
+      'laila manley': 'https://media.virti.us/upload/images/athlete/-E8-v9NHgPXuhOSWPGZAb',
+      'madison carter': 'https://media.virti.us/upload/images/athlete/SGQWkwNtuLvlWIin7dfCM',
+      'madison ford': 'https://media.virti.us/upload/images/athlete/kPVDaeF31R4iso9-ZlJt1',
+      'matilda brougham': 'https://media.virti.us/upload/images/athlete/9MnxatWgy46cgqdPDMY3L',
+      'maycee mcknight': 'https://media.virti.us/upload/images/athlete/cR2UZ1w6XfaF4eyYieq7G',
+      'naima murray': 'https://media.virti.us/upload/images/athlete/ToXEjbKMGSBAjdolhdcvE',
+      'olivia tocco': 'https://media.virti.us/upload/images/athlete/KnlNsoKjFdGlJCo6g44-1',
+      'reagan rodriguez': 'https://media.virti.us/upload/images/athlete/pSF0sqJQ7c4Dyjp_UaVgl',
+      'reese clapper': 'https://media.virti.us/upload/images/athlete/xOxDOKLTx5B2F_Z5OxG_X',
+      'roya zehtab': 'https://media.virti.us/upload/images/athlete/7maWXHWLsZvg9X6rcrSYS',
+      'taylor templin': 'https://media.virti.us/upload/images/athlete/MAu3yL7pFaNCiAYWH2-Mo',
+      'valeria arraiz': 'https://media.virti.us/upload/images/athlete/CXnHDBhbLTupvDgyQyIwm',
+    };
+
+    // Look up athlete headshot - checks library first, then falls back to API headshot
+    function getAthleteHeadshot(firstName, lastName, apiHeadshot) {
+      if (!firstName && !lastName) return apiHeadshot || '';
+
+      // Build full name for lookup
+      const fullName = `${firstName || ''} ${lastName || ''}`.toLowerCase().trim();
+
+      // Check library first
+      if (ATHLETE_HEADSHOTS[fullName]) {
+        return ATHLETE_HEADSHOTS[fullName];
+      }
+
+      // Try normalized match (remove special chars)
+      const normalized = fullName.replace(/[^a-z\s]/g, '').replace(/\s+/g, ' ').trim();
+      if (ATHLETE_HEADSHOTS[normalized]) {
+        return ATHLETE_HEADSHOTS[normalized];
+      }
+
+      // Fall back to API headshot
+      return apiHeadshot || '';
+    }
+
     // Calculate which event a team is on for a given rotation
     // - Head-to-head: Both teams compete on the SAME apparatus (Floor, then PH, etc.)
     // - Alternating: Teams start on different events and swap every rotation
@@ -1262,7 +1429,8 @@
           const score = parseFloat(g.final_score) || 0;
           const diff = g.scores && g.scores.length > 0 ? parseFloat(g.scores[0].start) || 0 : 0;
           const name = `${g.first_name?.charAt(0) || ''}. ${g.last_name || ''}`;
-          const photoUrl = g.headshot || '';
+          // Look up headshot from library first, fall back to API headshot
+          const photoUrl = getAthleteHeadshot(g.first_name, g.last_name, g.headshot);
 
           athletesHtml += `
             <div class="athlete-row">
