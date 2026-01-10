@@ -6,6 +6,7 @@ import { PhotoIcon, XMarkIcon, ClipboardDocumentIcon, CheckIcon, Cog6ToothIcon }
 const graphicButtons = [
   { id: 'logos', label: 'Team Logos', section: 'Pre-Meet' },
   { id: 'event-bar', label: 'Event Info', section: 'Pre-Meet' },
+  { id: 'warm-up', label: 'Warm Up', section: 'Pre-Meet' },
   { id: 'hosts', label: 'Hosts', section: 'Pre-Meet' },
   { id: 'team1-stats', label: 'Team 1 Stats', section: 'Pre-Meet', team: 1 },
   { id: 'team1-coaches', label: 'Team 1 Coaches', section: 'Pre-Meet', team: 1 },
