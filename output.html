@@ -1582,8 +1582,8 @@
       flex-direction: row-reverse;
     }
     .layout-default-v2 .team-logo {
-      width: 64px;
-      height: 64px;
+      width: 72px;
+      height: 72px;
       object-fit: contain;
       flex-shrink: 0;
     }
@@ -2100,6 +2100,23 @@
     // Firebase team logos cache - loaded once at startup
     let firebaseTeamLogos = {};
 
+    // Common university name aliases
+    const universityAliases = {
+      'california': 'cal',
+      'uc berkeley': 'cal',
+      'berkeley': 'cal',
+      'penn state': 'penn-state',
+      'pennsylvania state': 'penn-state',
+      'michigan': 'michigan',
+      'ohio state': 'ohio-state',
+      'stanford': 'stanford',
+      'oklahoma': 'oklahoma',
+      'minnesota': 'minnesota',
+      'illinois': 'illinois',
+      'nebraska': 'nebraska',
+      'iowa': 'iowa',
+    };
+
     // Load team logos from Firebase teamsDatabase
     function loadFirebaseTeamLogos() {
       db.ref('teamsDatabase/teams').on('value', (snapshot) => {
@@ -2121,13 +2138,26 @@
             }
           }
         }
+        // Add aliases that map to existing team logos
+        for (const [alias, schoolKey] of Object.entries(universityAliases)) {
+          if (firebaseTeamLogos[`${schoolKey}-mens`]) {
+            firebaseTeamLogos[alias] = firebaseTeamLogos[`${schoolKey}-mens`];
+            firebaseTeamLogos[`${alias} men's`] = firebaseTeamLogos[`${schoolKey}-mens`];
+          }
+          if (firebaseTeamLogos[`${schoolKey}-womens`]) {
+            if (!firebaseTeamLogos[alias]) firebaseTeamLogos[alias] = firebaseTeamLogos[`${schoolKey}-womens`];
+            firebaseTeamLogos[`${alias} women's`] = firebaseTeamLogos[`${schoolKey}-womens`];
+          }
+        }
         console.log(`Loaded ${Object.keys(firebaseTeamLogos).length} team logo entries from Firebase`);
       });
     }
 
     // Get team logo - checks Firebase first, then falls back to API logo
+    // Skips placeholder URLs (via.placeholder.com)
     function getTeamLogoUrl(teamName, apiLogo) {
-      if (apiLogo) return apiLogo;
+      // Use API logo if it exists and isn't a placeholder
+      if (apiLogo && !apiLogo.includes('via.placeholder.com')) return apiLogo;
       if (!teamName) return '';
 
       const normalized = teamName.toLowerCase().trim();
@@ -2141,6 +2171,20 @@
       if (firebaseTeamLogos[`${withoutGender}-mens`]) return firebaseTeamLogos[`${withoutGender}-mens`];
       if (firebaseTeamLogos[`${withoutGender}-womens`]) return firebaseTeamLogos[`${withoutGender}-womens`];
 
+      // Try with spaces replaced by dashes
+      const dashed = withoutGender.replace(/ /g, '-');
+      if (firebaseTeamLogos[dashed]) return firebaseTeamLogos[dashed];
+      if (firebaseTeamLogos[`${dashed}-mens`]) return firebaseTeamLogos[`${dashed}-mens`];
+      if (firebaseTeamLogos[`${dashed}-womens`]) return firebaseTeamLogos[`${dashed}-womens`];
+
+      // Search through all keys for partial matches
+      for (const [key, logoUrl] of Object.entries(firebaseTeamLogos)) {
+        if (key.includes(withoutGender) || withoutGender.includes(key.replace(/-mens$/, '').replace(/-womens$/, ''))) {
+          return logoUrl;
+        }
+      }
+
+      console.log(`No logo found for team: "${teamName}" (normalized: "${normalized}", withoutGender: "${withoutGender}")`);
       return '';
     }
 
@@ -2787,7 +2831,7 @@
         }
       }
 
-      const logoUrl = team.logo || '';
+      const logoUrl = getTeamLogoUrl(team.name, team.logo);
       return `
         <div class="team-column ${side}">
           <div class="team-header ${side}">
@@ -2808,7 +2852,7 @@
 
       rotationData.forEach(teamData => {
         const { team, eventDisplayName, eventShortCode, gymnasts, eventScore } = teamData;
-        const logoUrl = team.logo || '';
+        const logoUrl = getTeamLogoUrl(team.name, team.logo);
 
         let athletesHtml = '';
         gymnasts.forEach((g, i) => {
@@ -3008,7 +3052,7 @@
 
       apparatusData.forEach(teamData => {
         const { team, gymnasts, eventScore } = teamData;
-        const logoUrl = team.logo || '';
+        const logoUrl = getTeamLogoUrl(team.name, team.logo);
 
         let athletesHtml = '';
         gymnasts.forEach((g, i) => {
@@ -3058,10 +3102,12 @@
       const gridRows = 6;
 
       // Build top scoreboard bar
+      const team1Logo = getTeamLogoUrl(team1.team.name, team1.team.logo);
+      const team2Logo = getTeamLogoUrl(team2.team.name, team2.team.logo);
       const scoreboardHtml = `
         <div class="hero-scoreboard">
           <div class="hero-team-score home">
-            ${team1.team.logo ? `<img class="hero-team-logo" src="${team1.team.logo}" alt="">` : ''}
+            ${team1Logo ? `<img class="hero-team-logo" src="${team1Logo}" alt="">` : ''}
             <div class="hero-team-info">
               <div class="hero-team-name">${team1.team.name || team1.team.tricode}</div>
               <div class="hero-team-total">${team1.totalScore > 0 ? team1.totalScore.toFixed(3) : '0.000'}</div>
@@ -3072,7 +3118,7 @@
             <div class="hero-vs-text">VS</div>
           </div>
           <div class="hero-team-score away">
-            ${team2.team.logo ? `<img class="hero-team-logo" src="${team2.team.logo}" alt="">` : ''}
+            ${team2Logo ? `<img class="hero-team-logo" src="${team2Logo}" alt="">` : ''}
             <div class="hero-team-info">
               <div class="hero-team-name">${team2.team.name || team2.team.tricode}</div>
               <div class="hero-team-total">${team2.totalScore > 0 ? team2.totalScore.toFixed(3) : '0.000'}</div>
@@ -3176,10 +3222,12 @@
       const gridRows = 6;
 
       // Build top scoreboard bar
+      const team1Logo = getTeamLogoUrl(team1.team.name, team1.team.logo);
+      const team2Logo = getTeamLogoUrl(team2.team.name, team2.team.logo);
       const scoreboardHtml = `
         <div class="hero-scoreboard">
           <div class="hero-team-score home">
-            ${team1.team.logo ? `<img class="hero-team-logo" src="${team1.team.logo}" alt="">` : ''}
+            ${team1Logo ? `<img class="hero-team-logo" src="${team1Logo}" alt="">` : ''}
             <div class="hero-team-info">
               <div class="hero-team-name">${team1.team.name || team1.team.tricode}</div>
               <div class="hero-team-total">${team1.totalScore > 0 ? team1.totalScore.toFixed(3) : '0.000'}</div>
@@ -3190,7 +3238,7 @@
             <div class="hero-vs-text">${eventShortCode}</div>
           </div>
           <div class="hero-team-score away">
-            ${team2.team.logo ? `<img class="hero-team-logo" src="${team2.team.logo}" alt="">` : ''}
+            ${team2Logo ? `<img class="hero-team-logo" src="${team2Logo}" alt="">` : ''}
             <div class="hero-team-info">
               <div class="hero-team-name">${team2.team.name || team2.team.tricode}</div>
               <div class="hero-team-total">${team2.totalScore > 0 ? team2.totalScore.toFixed(3) : '0.000'}</div>
@@ -3395,10 +3443,11 @@
         }
       }
 
+      const logoUrl = getTeamLogoUrl(team.name, team.logo);
       return `
         <div class="team-column ${side}">
           <div class="team-header ${side}">
-            ${team.logo ? `<img class="team-logo" src="${team.logo}" alt="">` : ''}
+            ${logoUrl ? `<img class="team-logo" src="${logoUrl}" alt="">` : ''}
             <div class="team-name">${team.name || team.tricode}</div>
             <div class="team-total">${totalScore > 0 ? totalScore.toFixed(3) : '0.000'}</div>
           </div>
@@ -3759,7 +3808,7 @@
       'event-bar': (data) => `
         <div class="graphic-container graphic-event-bar">
           <div class="event-bar-logo">
-            <img src="${data.team1Logo}" alt="Team">
+            <img src="${getTeamLogoUrl(data.team1Name, data.team1Logo)}" alt="Team">
           </div>
           <div class="event-bar-content">
             <div class="event-bar-venue">${data.venue}</div>
@@ -3786,7 +3835,7 @@
         <div class="graphic-container graphic-team-stats">
           <div class="stats-header">
             <div class="stats-team-name">${data.team1Name}</div>
-            <img class="stats-logo" src="${data.team1Logo}" alt="Team">
+            <img class="stats-logo" src="${getTeamLogoUrl(data.team1Name, data.team1Logo)}" alt="Team">
             <div class="stats-con">${data.team1Con} CON</div>
           </div>
           <div class="stats-content">
@@ -3806,7 +3855,7 @@
         <div class="graphic-container graphic-coaches">
           <div class="coaches-header">
             <div class="coaches-title">COACHES</div>
-            <img class="coaches-logo" src="${data.team1Logo}" alt="Team">
+            <img class="coaches-logo" src="${getTeamLogoUrl(data.team1Name, data.team1Logo)}" alt="Team">
           </div>
           <div class="coaches-content">
             ${data.team1Coaches.split('\n').map(c => `<div class="coach-name">${c}</div>`).join('')}
@@ -3818,7 +3867,7 @@
         <div class="graphic-container graphic-team-stats">
           <div class="stats-header">
             <div class="stats-team-name">${data.team2Name}</div>
-            <img class="stats-logo" src="${data.team2Logo}" alt="Team">
+            <img class="stats-logo" src="${getTeamLogoUrl(data.team2Name, data.team2Logo)}" alt="Team">
             <div class="stats-con">${data.team2Con} CON</div>
           </div>
           <div class="stats-content">
@@ -3838,7 +3887,7 @@
         <div class="graphic-container graphic-coaches">
           <div class="coaches-header">
             <div class="coaches-title">COACHES</div>
-            <img class="coaches-logo" src="${data.team2Logo}" alt="Team">
+            <img class="coaches-logo" src="${getTeamLogoUrl(data.team2Name, data.team2Logo)}" alt="Team">
           </div>
           <div class="coaches-content">
             ${data.team2Coaches.split('\n').map(c => `<div class="coach-name">${c}</div>`).join('')}
@@ -3850,7 +3899,7 @@
         <div class="graphic-container graphic-team-stats">
           <div class="stats-header">
             <div class="stats-team-name">${data.team3Name}</div>
-            <img class="stats-logo" src="${data.team3Logo}" alt="Team">
+            <img class="stats-logo" src="${getTeamLogoUrl(data.team3Name, data.team3Logo)}" alt="Team">
             <div class="stats-con">${data.team3Con} CON</div>
           </div>
           <div class="stats-content">
@@ -3870,7 +3919,7 @@
         <div class="graphic-container graphic-coaches">
           <div class="coaches-header">
             <div class="coaches-title">COACHES</div>
-            <img class="coaches-logo" src="${data.team3Logo}" alt="Team">
+            <img class="coaches-logo" src="${getTeamLogoUrl(data.team3Name, data.team3Logo)}" alt="Team">
           </div>
           <div class="coaches-content">
             ${data.team3Coaches.split('\n').map(c => `<div class="coach-name">${c}</div>`).join('')}
@@ -3882,7 +3931,7 @@
         <div class="graphic-container graphic-team-stats">
           <div class="stats-header">
             <div class="stats-team-name">${data.team4Name}</div>
-            <img class="stats-logo" src="${data.team4Logo}" alt="Team">
+            <img class="stats-logo" src="${getTeamLogoUrl(data.team4Name, data.team4Logo)}" alt="Team">
             <div class="stats-con">${data.team4Con} CON</div>
           </div>
           <div class="stats-content">
@@ -3902,7 +3951,7 @@
         <div class="graphic-container graphic-coaches">
           <div class="coaches-header">
             <div class="coaches-title">COACHES</div>
-            <img class="coaches-logo" src="${data.team4Logo}" alt="Team">
+            <img class="coaches-logo" src="${getTeamLogoUrl(data.team4Name, data.team4Logo)}" alt="Team">
           </div>
           <div class="coaches-content">
             ${data.team4Coaches.split('\n').map(c => `<div class="coach-name">${c}</div>`).join('')}
@@ -3914,7 +3963,7 @@
         <div class="graphic-container graphic-team-stats">
           <div class="stats-header">
             <div class="stats-team-name">${data.team5Name}</div>
-            <img class="stats-logo" src="${data.team5Logo}" alt="Team">
+            <img class="stats-logo" src="${getTeamLogoUrl(data.team5Name, data.team5Logo)}" alt="Team">
             <div class="stats-con">${data.team5Con} CON</div>
           </div>
           <div class="stats-content">
@@ -3934,7 +3983,7 @@
         <div class="graphic-container graphic-coaches">
           <div class="coaches-header">
             <div class="coaches-title">COACHES</div>
-            <img class="coaches-logo" src="${data.team5Logo}" alt="Team">
+            <img class="coaches-logo" src="${getTeamLogoUrl(data.team5Name, data.team5Logo)}" alt="Team">
           </div>
           <div class="coaches-content">
             ${data.team5Coaches.split('\n').map(c => `<div class="coach-name">${c}</div>`).join('')}
@@ -3946,7 +3995,7 @@
         <div class="graphic-container graphic-team-stats">
           <div class="stats-header">
             <div class="stats-team-name">${data.team6Name}</div>
-            <img class="stats-logo" src="${data.team6Logo}" alt="Team">
+            <img class="stats-logo" src="${getTeamLogoUrl(data.team6Name, data.team6Logo)}" alt="Team">
             <div class="stats-con">${data.team6Con} CON</div>
           </div>
           <div class="stats-content">
@@ -3966,7 +4015,7 @@
         <div class="graphic-container graphic-coaches">
           <div class="coaches-header">
             <div class="coaches-title">COACHES</div>
-            <img class="coaches-logo" src="${data.team6Logo}" alt="Team">
+            <img class="coaches-logo" src="${getTeamLogoUrl(data.team6Name, data.team6Logo)}" alt="Team">
           </div>
           <div class="coaches-content">
             ${data.team6Coaches.split('\n').map(c => `<div class="coach-name">${c}</div>`).join('')}
@@ -3978,7 +4027,7 @@
         <div class="graphic-container graphic-event-frame">
           <div class="frame-header">
             <div class="frame-title">${data.frameTitle}</div>
-            <img class="frame-logo" src="${data.team1Logo}" alt="Team">
+            <img class="frame-logo" src="${getTeamLogoUrl(data.team1Name, data.team1Logo)}" alt="Team">
           </div>
           <div class="frame-content"></div>
         </div>
@@ -3987,7 +4036,7 @@
       'stream-starting': (data) => `
         <div class="graphic-container graphic-stream">
           <div class="stream-title">STREAM STARTING SOON</div>
-          <img class="stream-logo" src="${data.team1Logo}" alt="Team">
+          <img class="stream-logo" src="${getTeamLogoUrl(data.team1Name, data.team1Logo)}" alt="Team">
           <div class="stream-event-name">${data.eventName}</div>
           <div class="stream-date">${data.meetDate}</div>
           <div class="stream-branding"><span>V</span>irtius</div>
@@ -3997,7 +4046,7 @@
       'stream-thanks': (data) => `
         <div class="graphic-container graphic-stream">
           <div class="stream-title">THANKS FOR WATCHING</div>
-          <img class="stream-logo" src="${data.team1Logo}" alt="Team">
+          <img class="stream-logo" src="${getTeamLogoUrl(data.team1Name, data.team1Logo)}" alt="Team">
           <div class="stream-event-name">${data.eventName}</div>
           <div class="stream-date">${data.meetDate}</div>
           <div class="stream-branding"><span>V</span>irtius</div>
@@ -4011,7 +4060,7 @@
             <div class="now-competing-status-text">Live</div>
           </div>
           <div class="now-competing-logo">
-            <img src="${data.athleteLogo || data.team1Logo}" alt="Team">
+            <img src="${data.athleteLogo || getTeamLogoUrl(data.team1Name, data.team1Logo)}" alt="Team">
           </div>
           <div class="now-competing-content">
             <div class="now-competing-event">${data.athleteEvent || 'Floor Exercise'}</div>
@@ -4030,7 +4079,7 @@
         const apparatus = data.summaryApparatus || 'fx';
         const numTeams = data.summaryNumTeams || 2;
         const competitionFormat = data.summaryFormat || 'head-to-head';
-        const hostLogo = data.team1Logo || '';
+        const hostLogo = getTeamLogoUrl(data.team1Name, data.team1Logo);
         const theme = data.summaryTheme || 'default';
 
         // Get team colors for dynamic themes
@@ -4132,8 +4181,9 @@
         setTimeout(() => fetchAndRenderLeaderboard(sessionId, apiEventName, shortCode), 100);
 
         // Only show logo if it exists and is valid
-        const logoHtml = data.team1Logo && data.team1Logo.trim() && !data.team1Logo.includes('placeholder')
-          ? `<img class="frame-logo" src="${data.team1Logo}" alt="">`
+        const resolvedLogo = getTeamLogoUrl(data.team1Name, data.team1Logo);
+        const logoHtml = resolvedLogo
+          ? `<img class="frame-logo" src="${resolvedLogo}" alt="">`
           : '';
 
         return `

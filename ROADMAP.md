@@ -69,6 +69,30 @@ Embedded Virtius leaderboards as a new graphic type, controlled via the Graphics
 
 ## Future Enhancements
 
+### RTN Scoring Stats Integration
+**Priority:** Medium
+**Status:** Planned
+
+Road to Nationals API provides team scoring statistics (averages, highs, RQS) but the data format needs investigation.
+
+**Current state:**
+- RTN dashboard API has a `test` field with `ave`, `high`, and `rqs` values
+- These appear to be per-event scores (e.g., 52.650) rather than team totals
+- Need to verify what these values represent and find team total averages/highs
+
+**Goal:** Auto-populate team stats (AVE, HIGH) from RTN when fetching team data.
+
+**What works now:**
+- Coaches auto-sync from RTN to config
+- Team rosters and rankings available
+
+**TODO:**
+- Investigate RTN API for correct team total statistics
+- May need to calculate averages from meet scores in `meets` array
+- Consider using Virtius API for more accurate live/current stats
+
+---
+
 ### Railway Deployment - OBS Scene Control
 **Priority:** High
 **Status:** Ready to Deploy

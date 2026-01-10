@@ -1,5 +1,191 @@
 import { useEffect, useState, useCallback } from 'react';
 import { db, ref, onValue, set, update, remove, get } from '../lib/firebase';
+import { getTeamDashboard } from '../lib/roadToNationals';
+
+// Normalize name for headshot lookup (lowercase, trim, collapse spaces)
+function normalizeName(name) {
+  if (!name) return '';
+  return name.toLowerCase().trim().replace(/\s+/g, ' ');
+}
+
+/**
+ * Fetch all headshots from Firebase teamsDatabase
+ * Returns a map of normalized name -> headshot URL
+ */
+async function getFirebaseHeadshots() {
+  try {
+    const headshotsRef = ref(db, 'teamsDatabase/headshots');
+    const snapshot = await get(headshotsRef);
+    const headshotsData = snapshot.val() || {};
+
+    // Build a map of normalized name -> URL for quick lookup
+    const headshotMap = {};
+    for (const [key, data] of Object.entries(headshotsData)) {
+      if (data?.url && data?.name) {
+        headshotMap[normalizeName(data.name)] = data.url;
+      }
+    }
+    return headshotMap;
+  } catch (err) {
+    console.error('Failed to fetch Firebase headshots:', err);
+    return {};
+  }
+}
+
+/**
+ * Parse Virtius roster HTML to extract RTN IDs and headshot URLs
+ * @param {string} html - Raw HTML from Virtius roster table
+ * @returns {Array<{rtnId: string, headshotUrl: string, name: string}>}
+ */
+export function parseVirtiusRosterHtml(html) {
+  const results = [];
+
+  // Match each row: find athlete name, headshot URL, and RTN ID
+  // Pattern: img src for headshot, then name in a div, then rtnId in an input
+  const rowRegex = /<tr[^>]*role="row"[^>]*>([\s\S]*?)<\/tr>/gi;
+  const imgRegex = /src="(https:\/\/media\.virti\.us\/upload\/images\/athlete\/[^"]+)"/i;
+  const nameRegex = /alt="([^"]+)\s+Profile"/i;
+  const rtnIdRegex = /<input[^>]*readonly[^>]*value="(\d+)"/i;
+
+  let match;
+  while ((match = rowRegex.exec(html)) !== null) {
+    const rowHtml = match[1];
+
+    const imgMatch = rowHtml.match(imgRegex);
+    const nameMatch = rowHtml.match(nameRegex);
+    const rtnIdMatch = rowHtml.match(rtnIdRegex);
+
+    if (imgMatch && rtnIdMatch) {
+      results.push({
+        headshotUrl: imgMatch[1],
+        name: nameMatch ? nameMatch[1] : 'Unknown',
+        rtnId: rtnIdMatch[1],
+      });
+    }
+  }
+
+  return results;
+}
+
+/**
+ * Fetch RTN dashboard data for all teams in a competition config
+ * Returns an object with team1, team2, etc. keys containing RTN data
+ * Also merges headshots from Firebase teamsDatabase if available
+ */
+async function enrichTeamsWithRTN(config, gender = 'womens') {
+  const teamData = {};
+  const teamNames = [
+    config.team1Name,
+    config.team2Name,
+    config.team3Name,
+    config.team4Name,
+    config.team5Name,
+    config.team6Name,
+  ].filter(Boolean); // Remove empty team names
+
+  // Fetch RTN team dashboards and Firebase headshots in parallel
+  const [rtnResults, firebaseHeadshots] = await Promise.all([
+    Promise.allSettled(teamNames.map(name => getTeamDashboard(name, gender))),
+    getFirebaseHeadshots()
+  ]);
+
+  rtnResults.forEach((result, index) => {
+    const teamKey = `team${index + 1}`;
+    if (result.status === 'fulfilled' && result.value) {
+      const dashboard = result.value;
+
+      // Extract and normalize the data we care about
+      teamData[teamKey] = {
+        rtnId: dashboard.id || null,
+        fetchedAt: new Date().toISOString(),
+
+        // Coaching staff (filtered to coaches only)
+        coaches: (dashboard.staff || [])
+          .filter(s => s.position?.toLowerCase().includes('coach'))
+          .map(s => ({
+            id: s.id,
+            firstName: s.first_name?.trim() || '',
+            lastName: s.last_name?.trim() || '',
+            fullName: `${s.first_name?.trim() || ''} ${s.last_name?.trim() || ''}`.trim(),
+            position: s.position,
+            imageUrl: s.image_url ? `https://www.roadtonationals.com/images/staff/${s.image_url}` : null,
+          }))
+          .sort((a, b) => {
+            if (a.position?.toLowerCase().includes('head')) return -1;
+            if (b.position?.toLowerCase().includes('head')) return 1;
+            return 0;
+          }),
+
+        // Rankings
+        rankings: dashboard.ranks ? (gender === 'womens' ? {
+          vault: dashboard.ranks.vault ? parseInt(dashboard.ranks.vault) : null,
+          bars: dashboard.ranks.bars ? parseInt(dashboard.ranks.bars) : null,
+          beam: dashboard.ranks.beam ? parseInt(dashboard.ranks.beam) : null,
+          floor: dashboard.ranks.floor ? parseInt(dashboard.ranks.floor) : null,
+          team: dashboard.ranks.team ? parseInt(dashboard.ranks.team) : null,
+        } : {
+          floor: dashboard.ranks.floor ? parseInt(dashboard.ranks.floor) : null,
+          pommel: dashboard.ranks.phorse ? parseInt(dashboard.ranks.phorse) : null,
+          rings: dashboard.ranks.rings ? parseInt(dashboard.ranks.rings) : null,
+          vault: dashboard.ranks.vault ? parseInt(dashboard.ranks.vault) : null,
+          pBars: dashboard.ranks.pbars ? parseInt(dashboard.ranks.pbars) : null,
+          hBar: dashboard.ranks.highbar ? parseInt(dashboard.ranks.highbar) : null,
+          team: dashboard.ranks.team ? parseInt(dashboard.ranks.team) : null,
+        }) : null,
+
+        // Team scoring stats (from RTN 'test' field)
+        stats: dashboard.test ? {
+          average: dashboard.test.ave || null,
+          high: dashboard.test.high || null,
+          rqs: dashboard.test.rqs || null, // Ranking Qualifying Score
+        } : null,
+
+        // Roster - merge with Firebase headshots by matching athlete names
+        roster: (dashboard.roster || []).map(r => {
+          const fullName = `${r.fname?.trim() || ''} ${r.lname?.trim() || ''}`.trim();
+          const normalizedName = normalizeName(fullName);
+          const headshotUrl = firebaseHeadshots[normalizedName] || null;
+
+          return {
+            id: r.id,
+            firstName: r.fname?.trim() || '',
+            lastName: r.lname?.trim() || '',
+            fullName,
+            hometown: r.hometown || '',
+            year: r.school_year ? parseInt(r.school_year) : null,
+            headshotUrl, // Merged from Firebase teamsDatabase
+          };
+        }),
+
+        // Social links
+        links: (() => {
+          const links = {};
+          for (const link of (dashboard.links || [])) {
+            const type = link.tax_value?.toLowerCase() || '';
+            if (type.includes('facebook')) links.facebook = link.link;
+            else if (type.includes('twitter')) links.twitter = link.link;
+            else if (type.includes('instagram')) links.instagram = link.link;
+            else if (type.includes('official')) links.officialSite = link.link;
+          }
+          return links;
+        })(),
+
+        // Schedule
+        schedule: (dashboard.meets || []).map(m => ({
+          meetId: m.meet_id,
+          date: m.meet_date,
+          opponent: m.opponent,
+          description: m.meet_desc || '',
+          home: m.home === 'H',
+          away: m.home === 'A',
+          score: m.team_score ? parseFloat(m.team_score) : null,
+        })),
+      };
+    }
+  });
+
+  return teamData;
+}
 
 export function useCompetitions() {
   const [competitions, setCompetitions] = useState({});
@@ -20,19 +206,113 @@ export function useCompetitions() {
     return () => unsubscribe();
   }, []);
 
-  const createCompetition = useCallback(async (compId, config) => {
+  const createCompetition = useCallback(async (compId, config, options = {}) => {
     try {
       await set(ref(db, `competitions/${compId}/config`), config);
+
+      // Optionally enrich with RTN data
+      if (options.enrichWithRTN !== false) {
+        const gender = config.compType?.startsWith('womens') ? 'womens' : 'mens';
+        const teamData = await enrichTeamsWithRTN(config, gender);
+        if (Object.keys(teamData).length > 0) {
+          await set(ref(db, `competitions/${compId}/teamData`), teamData);
+
+          // Also sync coaches to config as newline-separated strings for graphics
+          const configUpdates = {};
+          for (const teamKey of Object.keys(teamData)) {
+            const coaches = teamData[teamKey]?.coaches;
+            if (coaches && Array.isArray(coaches) && coaches.length > 0) {
+              const coachesString = coaches.map(c => c.fullName).join('\n');
+              configUpdates[`${teamKey}Coaches`] = coachesString;
+            }
+          }
+
+          if (Object.keys(configUpdates).length > 0) {
+            await update(ref(db, `competitions/${compId}/config`), configUpdates);
+          }
+        }
+      }
+
       return { success: true };
     } catch (err) {
       return { success: false, error: err.message };
     }
   }, []);
 
-  const updateCompetition = useCallback(async (compId, config) => {
+  const updateCompetition = useCallback(async (compId, config, options = {}) => {
     try {
       await update(ref(db, `competitions/${compId}/config`), config);
+
+      // Optionally refresh RTN data (useful when team names change)
+      if (options.refreshRTN) {
+        const gender = config.compType?.startsWith('womens') ? 'womens' : 'mens';
+        const teamData = await enrichTeamsWithRTN(config, gender);
+        if (Object.keys(teamData).length > 0) {
+          await set(ref(db, `competitions/${compId}/teamData`), teamData);
+
+          // Also sync coaches to config as newline-separated strings for graphics
+          const configUpdates = {};
+          for (const teamKey of Object.keys(teamData)) {
+            const coaches = teamData[teamKey]?.coaches;
+            if (coaches && Array.isArray(coaches) && coaches.length > 0) {
+              const coachesString = coaches.map(c => c.fullName).join('\n');
+              configUpdates[`${teamKey}Coaches`] = coachesString;
+            }
+          }
+
+          if (Object.keys(configUpdates).length > 0) {
+            await update(ref(db, `competitions/${compId}/config`), configUpdates);
+          }
+        }
+      }
+
       return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  }, []);
+
+  // Manually refresh RTN team data for a competition
+  // Also syncs coaches to config for graphics to use
+  const refreshTeamData = useCallback(async (compId) => {
+    try {
+      const configRef = ref(db, `competitions/${compId}/config`);
+      const snapshot = await get(configRef);
+      const config = snapshot.val();
+
+      if (!config) {
+        return { success: false, error: 'Competition not found' };
+      }
+
+      const gender = config.compType?.startsWith('womens') ? 'womens' : 'mens';
+      const teamData = await enrichTeamsWithRTN(config, gender);
+
+      if (Object.keys(teamData).length > 0) {
+        // Save rich teamData to Firebase
+        try {
+          await set(ref(db, `competitions/${compId}/teamData`), teamData);
+        } catch (err) {
+          console.error('[refreshTeamData] Failed to save teamData:', err);
+        }
+
+        // Sync coaches to config for graphics
+        const configUpdates = {};
+        for (const teamKey of Object.keys(teamData)) {
+          const coaches = teamData[teamKey]?.coaches;
+          if (coaches && Array.isArray(coaches) && coaches.length > 0) {
+            configUpdates[`${teamKey}Coaches`] = coaches.map(c => c.fullName).join('\n');
+          }
+          // Note: Stats (AVE, HIGH) are entered manually - RTN data format needs investigation
+        }
+
+        if (Object.keys(configUpdates).length > 0) {
+          await update(ref(db, `competitions/${compId}/config`), configUpdates);
+        }
+
+        return { success: true, teamsEnriched: Object.keys(teamData).length };
+      }
+
+      return { success: true, teamsEnriched: 0 };
     } catch (err) {
       return { success: false, error: err.message };
     }
@@ -69,6 +349,47 @@ export function useCompetitions() {
     }
   }, []);
 
+  /**
+   * Add headshots to a team's roster by matching RTN IDs
+   * @param {string} compId - Competition ID
+   * @param {string} teamKey - Team key (e.g., 'team1', 'team2')
+   * @param {Array<{rtnId: string, headshotUrl: string}>} headshots - Array of RTN ID to headshot URL mappings
+   * @returns {Promise<{success: boolean, matched: number, error?: string}>}
+   */
+  const addTeamHeadshots = useCallback(async (compId, teamKey, headshots) => {
+    try {
+      const rosterRef = ref(db, `competitions/${compId}/teamData/${teamKey}/roster`);
+      const snapshot = await get(rosterRef);
+      const roster = snapshot.val();
+
+      if (!roster || !Array.isArray(roster)) {
+        return { success: false, error: 'No roster found for this team' };
+      }
+
+      // Create a map of RTN ID to headshot URL for quick lookup
+      const headshotMap = new Map();
+      for (const { rtnId, headshotUrl } of headshots) {
+        headshotMap.set(String(rtnId), headshotUrl);
+      }
+
+      // Update roster with headshots
+      let matched = 0;
+      const updatedRoster = roster.map(athlete => {
+        const headshotUrl = headshotMap.get(String(athlete.id));
+        if (headshotUrl) {
+          matched++;
+          return { ...athlete, headshotUrl };
+        }
+        return athlete;
+      });
+
+      await set(rosterRef, updatedRoster);
+      return { success: true, matched };
+    } catch (err) {
+      return { success: false, matched: 0, error: err.message };
+    }
+  }, []);
+
   return {
     competitions,
     loading,
@@ -77,11 +398,14 @@ export function useCompetitions() {
     updateCompetition,
     deleteCompetition,
     duplicateCompetition,
+    refreshTeamData,
+    addTeamHeadshots,
   };
 }
 
 export function useCompetition(compId) {
   const [config, setConfig] = useState(null);
+  const [teamData, setTeamData] = useState(null);
   const [currentGraphic, setCurrentGraphic] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -93,6 +417,7 @@ export function useCompetition(compId) {
     }
 
     const configRef = ref(db, `competitions/${compId}/config`);
+    const teamDataRef = ref(db, `competitions/${compId}/teamData`);
     const graphicRef = ref(db, `competitions/${compId}/currentGraphic`);
 
     const unsubConfig = onValue(configRef, (snapshot) => {
@@ -103,12 +428,17 @@ export function useCompetition(compId) {
       setLoading(false);
     });
 
+    const unsubTeamData = onValue(teamDataRef, (snapshot) => {
+      setTeamData(snapshot.val());
+    });
+
     const unsubGraphic = onValue(graphicRef, (snapshot) => {
       setCurrentGraphic(snapshot.val());
     });
 
     return () => {
       unsubConfig();
+      unsubTeamData();
       unsubGraphic();
     };
   }, [compId]);
@@ -143,6 +473,7 @@ export function useCompetition(compId) {
 
   return {
     config,
+    teamData,
     currentGraphic,
     loading,
     error,
