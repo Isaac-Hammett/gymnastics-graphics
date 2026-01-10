@@ -1947,6 +1947,56 @@
       color: #22d3ee;
     }
 
+    /* Warm Up Graphic */
+    .graphic-warm-up {
+      position: absolute;
+      bottom: 120px;
+      left: 100px;
+      display: flex;
+      flex-direction: row;
+      animation: slideIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .warm-up-logo-section {
+      width: 100px;
+      background: #BFBFBF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 15px;
+    }
+    .warm-up-logo-section img {
+      width: 70px;
+      height: 70px;
+      object-fit: contain;
+    }
+    .warm-up-content-section {
+      display: flex;
+      flex-direction: column;
+    }
+    .warm-up-teams-row {
+      background: #BFBFBF;
+      padding: 10px 40px;
+      min-width: 450px;
+    }
+    .warm-up-teams-text {
+      font-size: 30px;
+      font-weight: 900;
+      color: #000;
+      text-transform: uppercase;
+      letter-spacing: -0.5px;
+    }
+    .warm-up-status-row {
+      background: #000;
+      padding: 10px 40px;
+    }
+    .warm-up-status-text {
+      font-size: 28px;
+      font-weight: 800;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: -0.5px;
+    }
+
     /* Now Competing Graphic */
     .graphic-now-competing {
       position: absolute;
@@ -2062,24 +2112,92 @@
     let firebaseHeadshots = {};
     let headshotsLoaded = false;
 
+    /**
+     * UNIFIED NAME NORMALIZATION - used for both saving and looking up headshots
+     * This function must match the normalization in:
+     * - show-controller/src/lib/nameNormalization.js
+     * - show-controller/src/hooks/useCompetitions.js
+     * - show-controller/src/hooks/useTeamsDatabase.js
+     *
+     * Process:
+     * 1. Convert accents to ASCII equivalents (ö → oe, é → e, etc.)
+     * 2. Lowercase everything
+     * 3. Replace hyphens/underscores with spaces
+     * 4. Remove apostrophes
+     * 5. Collapse multiple spaces and trim
+     */
+    function normalizeAccentsUnified(str) {
+      if (!str) return '';
+      return str
+        // German/Swedish umlauts - convert to two-letter equivalents
+        .replace(/ö/g, 'oe').replace(/Ö/g, 'oe')
+        .replace(/ä/g, 'ae').replace(/Ä/g, 'ae')
+        .replace(/ü/g, 'ue').replace(/Ü/g, 'ue')
+        .replace(/ß/g, 'ss')
+        // French/Spanish/Portuguese accents - convert to base letter
+        .replace(/[éèêë]/g, 'e').replace(/[ÉÈÊË]/g, 'e')
+        .replace(/[áàâãå]/g, 'a').replace(/[ÁÀÂÃÅ]/g, 'a')
+        .replace(/[íìîï]/g, 'i').replace(/[ÍÌÎÏ]/g, 'i')
+        .replace(/[óòôõø]/g, 'o').replace(/[ÓÒÔÕØ]/g, 'o')
+        .replace(/[úùûü]/g, 'u').replace(/[ÚÙÛÜ]/g, 'u')
+        .replace(/ñ/g, 'n').replace(/Ñ/g, 'n')
+        .replace(/ç/g, 'c').replace(/Ç/g, 'c')
+        .replace(/ÿ/g, 'y').replace(/Ÿ/g, 'y')
+        // Ligatures
+        .replace(/æ/g, 'ae').replace(/Æ/g, 'ae')
+        .replace(/œ/g, 'oe').replace(/Œ/g, 'oe');
+    }
+
+    // Remove common name suffixes (Jr., Sr., III, etc.)
+    function removeSuffixesUnified(name) {
+      if (!name) return '';
+      return name
+        .replace(/,?\s*(jr\.?|junior|sr\.?|senior|[iv]+|[1-5](?:st|nd|rd|th))$/i, '')
+        .trim();
+    }
+
+    function normalizeNameUnified(name) {
+      if (!name) return '';
+      return normalizeAccentsUnified(removeSuffixesUnified(name))
+        .toLowerCase()
+        .replace(/[-_]/g, ' ')      // Hyphens and underscores to spaces
+        .replace(/[''`]/g, '')      // Remove apostrophes (curly and straight)
+        .replace(/\s+/g, ' ')       // Collapse multiple spaces
+        .trim();
+    }
+
     // Load headshots from Firebase teamsDatabase
     function loadFirebaseHeadshots() {
       db.ref('teamsDatabase/headshots').on('value', (snapshot) => {
         const data = snapshot.val() || {};
         firebaseHeadshots = {};
+
         // Convert Firebase structure to simple name -> url map
+        // Store multiple keys for each headshot to maximize matching
         for (const [key, value] of Object.entries(data)) {
           if (value && value.url) {
-            // Store by Firebase key (normalized)
-            const normalizedKey = key.toLowerCase().trim().replace(/\s+/g, ' ').replace(/_/g, ' ');
+            // 1. Store by Firebase key (underscores → spaces)
+            const keyWithSpaces = key.toLowerCase().trim().replace(/_/g, ' ').replace(/\s+/g, ' ');
+            firebaseHeadshots[keyWithSpaces] = value.url;
+
+            // 2. Store by fully normalized key (handles accents, hyphens, etc.)
+            const normalizedKey = normalizeNameUnified(key);
             firebaseHeadshots[normalizedKey] = value.url;
 
-            // Also store by name field if different
+            // 3. Store by name field (original stored name)
             if (value.name) {
-              const normalizedName = value.name.toLowerCase().trim().replace(/\s+/g, ' ');
-              if (normalizedName !== normalizedKey) {
-                firebaseHeadshots[normalizedName] = value.url;
-              }
+              const nameNormalized = normalizeNameUnified(value.name);
+              firebaseHeadshots[nameNormalized] = value.url;
+
+              // Also store just lowercased version (in case accents are already normalized)
+              const nameLower = value.name.toLowerCase().trim().replace(/\s+/g, ' ');
+              firebaseHeadshots[nameLower] = value.url;
+            }
+
+            // 4. Store stripped version (only letters and spaces - handles unknown chars)
+            const strippedKey = normalizedKey.replace(/[^a-z\s]/g, '').replace(/\s+/g, ' ').trim();
+            if (strippedKey && strippedKey.length > 2) {
+              firebaseHeadshots[strippedKey] = value.url;
             }
           }
         }
@@ -2090,6 +2208,28 @@
 
     // Initialize headshots loading
     loadFirebaseHeadshots();
+
+    // Wait for headshots to be loaded (used by graphics that need headshots)
+    // Timeout after 5 seconds to avoid hanging forever if Firebase fails
+    function waitForHeadshots(maxWaitMs = 5000) {
+      return new Promise((resolve) => {
+        if (headshotsLoaded) {
+          resolve(true);
+          return;
+        }
+        const startTime = Date.now();
+        const checkInterval = setInterval(() => {
+          if (headshotsLoaded) {
+            clearInterval(checkInterval);
+            resolve(true);
+          } else if (Date.now() - startTime > maxWaitMs) {
+            clearInterval(checkInterval);
+            console.warn('Timeout waiting for headshots to load from Firebase');
+            resolve(false);
+          }
+        }, 50);
+      });
+    }
 
     // Firebase team logos cache - loaded once at startup
     let firebaseTeamLogos = {};
@@ -2581,36 +2721,92 @@
     };
 
     // Look up athlete headshot - checks Firebase first, then static library, then API headshot
+    // Uses unified normalization (normalizeNameUnified) defined above
+    // Handles 3+ part names (e.g., "Benjamin Thurlow Lam")
     function getAthleteHeadshot(firstName, lastName, apiHeadshot) {
       if (!firstName && !lastName) return apiHeadshot || '';
 
       // Build full name for lookup
-      const fullName = `${firstName || ''} ${lastName || ''}`.toLowerCase().trim();
+      const rawFullName = `${firstName || ''} ${lastName || ''}`.trim();
+      const normalized = normalizeNameUnified(rawFullName);
+      const stripped = normalized.replace(/[^a-z\s]/g, '').replace(/\s+/g, ' ').trim();
 
-      // Try normalized match (remove special chars)
-      const normalized = fullName.replace(/[^a-z\s]/g, '').replace(/\s+/g, ' ').trim();
+      // Generate multiple lookup keys to maximize matching
+      const lookupKeys = [
+        // 1. Original lowercase (exact match)
+        rawFullName.toLowerCase().replace(/\s+/g, ' ').trim(),
+        // 2. Fully normalized (unified normalization)
+        normalized,
+        // 3. Stripped (only letters and spaces)
+        stripped,
+      ];
 
-      // 1. Check Firebase headshots first (primary source)
-      if (firebaseHeadshots[fullName]) {
-        return firebaseHeadshots[fullName];
+      // 4. Handle 3+ part names (e.g., "Benjamin Thurlow Lam")
+      const parts = normalized.split(' ').filter(Boolean);
+      if (parts.length >= 3) {
+        // First + Last only (skip middle name)
+        lookupKeys.push(`${parts[0]} ${parts[parts.length - 1]}`);
+        // First + Middle initial + Last
+        lookupKeys.push(`${parts[0]} ${parts[1][0]} ${parts[parts.length - 1]}`);
+        // For 4+ parts, try first two + last
+        if (parts.length >= 4) {
+          lookupKeys.push(`${parts[0]} ${parts[1]} ${parts[parts.length - 1]}`);
+        }
       }
-      if (firebaseHeadshots[normalized]) {
-        return firebaseHeadshots[normalized];
+
+      // 5. Handle case where firstName contains multiple parts
+      const firstParts = (firstName || '').trim().split(/\s+/).filter(Boolean);
+      if (firstParts.length >= 2 && lastName) {
+        // Just first part of firstName + lastName
+        lookupKeys.push(`${normalizeNameUnified(firstParts[0])} ${normalizeNameUnified(lastName)}`);
+        // First part + initial + lastName
+        lookupKeys.push(`${normalizeNameUnified(firstParts[0])} ${firstParts[1][0].toLowerCase()} ${normalizeNameUnified(lastName)}`);
       }
 
-      // 2. Check static library as fallback
-      if (ATHLETE_HEADSHOTS[fullName]) {
-        return ATHLETE_HEADSHOTS[fullName];
-      }
-      if (ATHLETE_HEADSHOTS[normalized]) {
-        return ATHLETE_HEADSHOTS[normalized];
+      // Remove duplicates and empty strings
+      const uniqueKeys = [...new Set(lookupKeys.filter(Boolean))];
+
+      // Try each key against Firebase headshots
+      for (const key of uniqueKeys) {
+        if (firebaseHeadshots[key]) {
+          return firebaseHeadshots[key];
+        }
       }
 
-      // Debug: log when no headshot found
-      console.log(`No headshot found for: "${fullName}" (normalized: "${normalized}")`);
+      // Try each key against static library
+      for (const key of uniqueKeys) {
+        if (ATHLETE_HEADSHOTS[key]) {
+          return ATHLETE_HEADSHOTS[key];
+        }
+      }
 
-      // 3. Fall back to API headshot
+      // Debug: log when no headshot found (only if not found after all attempts)
+      console.log(`No headshot found for: "${rawFullName}" (tried keys: ${uniqueKeys.join(', ')})`);
+
+      // Fall back to API headshot
       return apiHeadshot || '';
+    }
+
+    // Handle image load errors gracefully - hide broken images
+    // Called via onerror="handleImageError(this)"
+    function handleImageError(img) {
+      // Hide the broken image and show placeholder styling instead
+      img.style.display = 'none';
+      // Create a placeholder div to replace it
+      const placeholder = document.createElement('div');
+      placeholder.className = img.className;
+      placeholder.style.background = '#52525b';
+      placeholder.style.minWidth = img.width ? img.width + 'px' : '60px';
+      placeholder.style.minHeight = img.height ? img.height + 'px' : '60px';
+      img.parentNode.insertBefore(placeholder, img);
+    }
+
+    // Generate athlete photo HTML with error handling
+    function renderAthletePhoto(photoUrl, className = 'athlete-photo') {
+      if (photoUrl) {
+        return `<img class="${className}" src="${photoUrl}" alt="" referrerpolicy="no-referrer" onerror="handleImageError(this)">`;
+      }
+      return `<div class="${className}" style="background: #52525b;"></div>`;
     }
 
     // Calculate which event a team is on for a given rotation
@@ -2644,6 +2840,9 @@
     async function fetchAndRenderEventSummary(sessionId, rotation, numTeams, competitionFormat, layout = 'default') {
       const contentEl = document.getElementById('event-summary-content');
       if (!contentEl) return;
+
+      // Wait for headshots to be loaded before rendering
+      await waitForHeadshots();
 
       try {
         const response = await fetch(`https://api.virti.us/session/${sessionId}/json`);
@@ -2812,7 +3011,7 @@
           athletesHtml += `
             <div class="athlete-row">
               <div class="athlete-order">${i + 1}</div>
-              ${photoUrl ? `<img class="athlete-photo" src="${photoUrl}" alt="" referrerpolicy="no-referrer">` : '<div class="athlete-photo" style="background: #52525b;"></div>'}
+              ${renderAthletePhoto(photoUrl)}
               <div class="athlete-name">${name}</div>
               <div class="athlete-score-block">
                 <div class="athlete-score">${score > 0 ? score.toFixed(3) : 'On Eval'}</div>
@@ -2898,6 +3097,9 @@
     async function fetchAndRenderEventSummaryByApparatus(sessionId, apparatus, numTeams, competitionFormat, layout = 'default') {
       const contentEl = document.getElementById('event-summary-content');
       if (!contentEl) return;
+
+      // Wait for headshots to be loaded before rendering
+      await waitForHeadshots();
 
       try {
         const response = await fetch(`https://api.virti.us/session/${sessionId}/json`);
@@ -3132,7 +3334,7 @@
 
           homeCardsHtml += `
             <div class="hero-athlete-card home">
-              ${photo ? `<img class="hero-athlete-photo" src="${photo}" alt="" referrerpolicy="no-referrer">` : '<div class="hero-athlete-photo"></div>'}
+              ${renderAthletePhoto(photo, 'hero-athlete-photo')}
               <div class="hero-athlete-info">
                 <div class="hero-athlete-name">${name}</div>
               </div>
@@ -3156,7 +3358,7 @@
 
           awayCardsHtml += `
             <div class="hero-athlete-card away">
-              ${photo ? `<img class="hero-athlete-photo" src="${photo}" alt="" referrerpolicy="no-referrer">` : '<div class="hero-athlete-photo"></div>'}
+              ${renderAthletePhoto(photo, 'hero-athlete-photo')}
               <div class="hero-athlete-info">
                 <div class="hero-athlete-name">${name}</div>
               </div>
@@ -3252,7 +3454,7 @@
 
           homeCardsHtml += `
             <div class="hero-athlete-card home">
-              ${photo ? `<img class="hero-athlete-photo" src="${photo}" alt="" referrerpolicy="no-referrer">` : '<div class="hero-athlete-photo"></div>'}
+              ${renderAthletePhoto(photo, 'hero-athlete-photo')}
               <div class="hero-athlete-info">
                 <div class="hero-athlete-name">${name}</div>
               </div>
@@ -3275,7 +3477,7 @@
 
           awayCardsHtml += `
             <div class="hero-athlete-card away">
-              ${photo ? `<img class="hero-athlete-photo" src="${photo}" alt="" referrerpolicy="no-referrer">` : '<div class="hero-athlete-photo"></div>'}
+              ${renderAthletePhoto(photo, 'hero-athlete-photo')}
               <div class="hero-athlete-info">
                 <div class="hero-athlete-name">${name}</div>
               </div>
@@ -3424,7 +3626,7 @@
           athletesHtml += `
             <div class="athlete-row">
               <div class="athlete-order${isAnchor ? ' anchor' : ''}">${i + 1}</div>
-              ${photoUrl ? `<img class="athlete-photo" src="${photoUrl}" alt="" referrerpolicy="no-referrer">` : '<div class="athlete-photo" style="background: #52525b;"></div>'}
+              ${renderAthletePhoto(photoUrl)}
               <div class="athlete-name">${name}</div>
               <div class="athlete-score-block">
                 <div class="athlete-score">${score > 0 ? score.toFixed(3) : 'On Eval'}</div>
@@ -3647,7 +3849,7 @@
           athletesHtml += `
             <div class="athlete-row">
               <div class="athlete-order${isAnchor ? ' anchor' : ''}">${i + 1}</div>
-              ${photoUrl ? `<img class="athlete-photo" src="${photoUrl}" alt="" referrerpolicy="no-referrer">` : '<div class="athlete-photo" style="background: #52525b;"></div>'}
+              ${renderAthletePhoto(photoUrl)}
               <div class="athlete-info">
                 <div class="athlete-name">${name}</div>
               </div>
@@ -4040,6 +4242,27 @@
           <div class="stream-branding"><span>V</span>irtius</div>
         </div>
       `,
+
+      'warm-up': (data) => {
+        const teamsText = data.eventName || (data.team1Name && data.team2Name
+          ? `${data.team1Name.toUpperCase()} VS ${data.team2Name.toUpperCase()}`
+          : 'WARM UP');
+        return `
+          <div class="graphic-container graphic-warm-up">
+            <div class="warm-up-logo-section">
+              <img src="${getTeamLogoUrl(data.team1Name, data.team1Logo)}" alt="Team">
+            </div>
+            <div class="warm-up-content-section">
+              <div class="warm-up-teams-row">
+                <div class="warm-up-teams-text">${teamsText}</div>
+              </div>
+              <div class="warm-up-status-row">
+                <div class="warm-up-status-text">WARM UP</div>
+              </div>
+            </div>
+          </div>
+        `;
+      },
 
       'now-competing': (data) => `
         <div class="graphic-container graphic-now-competing">

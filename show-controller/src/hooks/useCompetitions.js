@@ -1,16 +1,12 @@
 import { useEffect, useState, useCallback } from 'react';
 import { db, ref, onValue, set, update, remove, get } from '../lib/firebase';
 import { getTeamDashboard } from '../lib/roadToNationals';
-
-// Normalize name for headshot lookup (lowercase, trim, collapse spaces)
-function normalizeName(name) {
-  if (!name) return '';
-  return name.toLowerCase().trim().replace(/\s+/g, ' ');
-}
+import { normalizeName, getLookupKeys } from '../lib/nameNormalization';
 
 /**
  * Fetch all headshots from Firebase teamsDatabase
- * Returns a map of normalized name -> headshot URL
+ * Returns a map with multiple keys per headshot for flexible matching
+ * Keys include: normalized name, stripped version, Firebase key variant
  */
 async function getFirebaseHeadshots() {
   try {
@@ -18,11 +14,30 @@ async function getFirebaseHeadshots() {
     const snapshot = await get(headshotsRef);
     const headshotsData = snapshot.val() || {};
 
-    // Build a map of normalized name -> URL for quick lookup
+    // Build a map with multiple keys per headshot for flexible matching
     const headshotMap = {};
     for (const [key, data] of Object.entries(headshotsData)) {
-      if (data?.url && data?.name) {
-        headshotMap[normalizeName(data.name)] = data.url;
+      if (data?.url) {
+        // Store by Firebase key (underscores → spaces)
+        const keyWithSpaces = key.toLowerCase().trim().replace(/_/g, ' ').replace(/\s+/g, ' ');
+        headshotMap[keyWithSpaces] = data.url;
+
+        // Store by fully normalized key
+        const normalizedKey = normalizeName(key);
+        headshotMap[normalizedKey] = data.url;
+
+        // Store by name field if available
+        if (data.name) {
+          headshotMap[normalizeName(data.name)] = data.url;
+          // Also store just lowercased version
+          headshotMap[data.name.toLowerCase().trim().replace(/\s+/g, ' ')] = data.url;
+        }
+
+        // Store stripped version (only letters and spaces)
+        const strippedKey = normalizedKey.replace(/[^a-z\s]/g, '').replace(/\s+/g, ' ').trim();
+        if (strippedKey && strippedKey.length > 2) {
+          headshotMap[strippedKey] = data.url;
+        }
       }
     }
     return headshotMap;
@@ -30,6 +45,26 @@ async function getFirebaseHeadshots() {
     console.error('Failed to fetch Firebase headshots:', err);
     return {};
   }
+}
+
+/**
+ * Look up a headshot URL from the headshot map using multiple lookup keys
+ * Handles accents, hyphens, apostrophes, and other edge cases
+ */
+function lookupHeadshot(headshotMap, firstName, lastName) {
+  if (!firstName && !lastName) return null;
+
+  // Get all possible lookup keys for this name
+  const keys = getLookupKeys(firstName, lastName);
+
+  // Try each key until we find a match
+  for (const key of keys) {
+    if (headshotMap[key]) {
+      return headshotMap[key];
+    }
+  }
+
+  return null;
 }
 
 /**
@@ -141,19 +176,21 @@ async function enrichTeamsWithRTN(config, gender = 'womens') {
         } : null,
 
         // Roster - merge with Firebase headshots by matching athlete names
+        // Uses lookupHeadshot which tries multiple normalized keys for flexible matching
         roster: (dashboard.roster || []).map(r => {
-          const fullName = `${r.fname?.trim() || ''} ${r.lname?.trim() || ''}`.trim();
-          const normalizedName = normalizeName(fullName);
-          const headshotUrl = firebaseHeadshots[normalizedName] || null;
+          const firstName = r.fname?.trim() || '';
+          const lastName = r.lname?.trim() || '';
+          const fullName = `${firstName} ${lastName}`.trim();
+          const headshotUrl = lookupHeadshot(firebaseHeadshots, firstName, lastName);
 
           return {
             id: r.id,
-            firstName: r.fname?.trim() || '',
-            lastName: r.lname?.trim() || '',
+            firstName,
+            lastName,
             fullName,
             hometown: r.hometown || '',
             year: r.school_year ? parseInt(r.school_year) : null,
-            headshotUrl, // Merged from Firebase teamsDatabase
+            headshotUrl, // Merged from Firebase teamsDatabase using flexible matching
           };
         }),
 

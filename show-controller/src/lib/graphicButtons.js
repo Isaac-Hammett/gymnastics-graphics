@@ -4,11 +4,12 @@ export const graphicButtons = {
   preMeet: [
     { id: 'logos', label: 'Team Logos', number: 1 },
     { id: 'event-bar', label: 'Event Info', number: 2 },
-    { id: 'hosts', label: 'Hosts', number: 3 },
-    { id: 'team1-stats', label: 'Team 1 Stats', number: 4 },
-    { id: 'team1-coaches', label: 'Team 1 Coaches', number: 5 },
-    { id: 'team2-stats', label: 'Team 2 Stats', number: 6 },
-    { id: 'team2-coaches', label: 'Team 2 Coaches', number: 7 },
+    { id: 'warm-up', label: 'Warm Up', number: 3 },
+    { id: 'hosts', label: 'Hosts', number: 4 },
+    { id: 'team1-stats', label: 'Team 1 Stats', number: 5 },
+    { id: 'team1-coaches', label: 'Team 1 Coaches', number: 6 },
+    { id: 'team2-stats', label: 'Team 2 Stats', number: 7 },
+    { id: 'team2-coaches', label: 'Team 2 Coaches', number: 8 },
   ],
   mensApparatus: [
     { id: 'floor', label: 'Floor Exercise', title: 'FLOOR EXERCISE', number: 8 },
@@ -44,6 +45,7 @@ export const graphicNames = {
   'clear': 'None',
   'logos': 'Team Logos',
   'event-bar': 'Event Info',
+  'warm-up': 'Warm Up',
   'hosts': 'Hosts',
   'team1-stats': 'Team 1 Stats',
   'team1-coaches': 'Team 1 Coaches',
@@ -102,7 +104,7 @@ export const typeLabels = {
 
 export const eventFrameIds = ['floor', 'pommel', 'rings', 'vault', 'pbars', 'hbar', 'ubars', 'beam', 'allaround', 'final', 'order', 'lineups', 'summary'];
 
-export const transparentGraphics = ['event-bar', 'hosts', 'team1-stats', 'team1-coaches', 'team2-stats', 'team2-coaches', ...eventFrameIds];
+export const transparentGraphics = ['event-bar', 'warm-up', 'hosts', 'team1-stats', 'team1-coaches', 'team2-stats', 'team2-coaches', ...eventFrameIds];
 
 export function getApparatusButtons(compType) {
   const isMens = compType?.startsWith('mens');

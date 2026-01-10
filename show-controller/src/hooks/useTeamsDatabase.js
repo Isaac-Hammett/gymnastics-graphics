@@ -1,5 +1,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import { db, ref, onValue, set, update, get } from '../lib/firebase';
+import {
+  normalizeName,
+  getSafeFirebaseKey,
+  getLookupKeys,
+} from '../lib/nameNormalization';
 
 /**
  * Firebase-backed teams database hook
@@ -20,13 +25,10 @@ import { db, ref, onValue, set, update, get } from '../lib/firebase';
  *       teamKey: "army-mens"  (optional, for reference)
  *   aliases/
  *     {alias}: {schoolKey}  (e.g., 'california': 'cal')
+ *
+ * Name normalization is handled by the shared nameNormalization.js utility
+ * to ensure consistent matching across all components.
  */
-
-// Normalize name for lookup (lowercase, trim, collapse spaces)
-function normalizeName(name) {
-  if (!name) return '';
-  return name.toLowerCase().trim().replace(/\s+/g, ' ');
-}
 
 /**
  * Hook to access and manage the teams database in Firebase
@@ -143,14 +145,15 @@ export function useTeamsDatabase() {
 
   /**
    * Save a single athlete headshot
+   * Uses unified normalization from nameNormalization.js
    */
   const saveHeadshot = useCallback(async (athleteName, headshotUrl, teamKey = null) => {
     try {
       const normalized = normalizeName(athleteName);
-      // Firebase keys can't contain . # $ [ ] so we encode them
-      const safeKey = normalized.replace(/[.#$[\]]/g, '_');
+      // Firebase keys can't contain . # $ [ ] / so we encode them
+      const safeKey = getSafeFirebaseKey(normalized);
       await set(ref(db, `teamsDatabase/headshots/${safeKey}`), {
-        name: athleteName,
+        name: athleteName,  // Store original name for display
         url: headshotUrl,
         teamKey: teamKey,
         updatedAt: new Date().toISOString(),
@@ -163,15 +166,16 @@ export function useTeamsDatabase() {
 
   /**
    * Save multiple headshots at once (batch operation)
+   * Uses unified normalization from nameNormalization.js
    */
   const saveHeadshots = useCallback(async (headshotsArray, teamKey = null) => {
     try {
       const updates = {};
       for (const { name, headshotUrl } of headshotsArray) {
         const normalized = normalizeName(name);
-        const safeKey = normalized.replace(/[.#$[\]]/g, '_');
+        const safeKey = getSafeFirebaseKey(normalized);
         updates[`teamsDatabase/headshots/${safeKey}`] = {
-          name: name,
+          name: name,  // Store original name for display
           url: headshotUrl,
           teamKey: teamKey,
           updatedAt: new Date().toISOString(),
@@ -261,13 +265,33 @@ export function useTeamsDatabase() {
   }, [teams, aliases]);
 
   /**
-   * Get athlete headshot URL
+   * Get athlete headshot URL using flexible lookup
+   * Tries multiple normalized keys to handle accents, hyphens, etc.
    */
   const getHeadshot = useCallback((athleteName) => {
     if (!athleteName) return '';
-    const normalized = normalizeName(athleteName);
-    const safeKey = normalized.replace(/[.#$[\]]/g, '_');
-    return headshots[safeKey]?.url || '';
+
+    // Split name into first/last if possible for getLookupKeys
+    const parts = athleteName.trim().split(/\s+/);
+    const firstName = parts[0] || '';
+    const lastName = parts.slice(1).join(' ') || '';
+
+    // Get all possible lookup keys
+    const keys = getLookupKeys(firstName, lastName);
+
+    // Try each key until we find a match
+    for (const key of keys) {
+      const safeKey = getSafeFirebaseKey(key);
+      if (headshots[safeKey]?.url) {
+        return headshots[safeKey].url;
+      }
+      // Also try the key directly (in case it's stored without safe encoding)
+      if (headshots[key]?.url) {
+        return headshots[key].url;
+      }
+    }
+
+    return '';
   }, [headshots]);
 
   /**
