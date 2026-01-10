@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCompetitions } from '../hooks/useCompetitions';
 import { competitionTypes, teamCounts, typeLabels } from '../lib/graphicButtons';
-import { getTeamLogo, hasTeamLogo, hasTeamRoster, getTeamRosterStatsFlexible } from '../lib/teamsDatabase';
-import { ExclamationTriangleIcon, CheckCircleIcon } from '@heroicons/react/24/solid';
+import { getTeamLogo, hasTeamLogo } from '../lib/teamsDatabase';
+import { useTeamsDatabase } from '../hooks/useTeamsDatabase';
+import { useHeadCoach } from '../hooks/useRoadToNationals';
+import { ExclamationTriangleIcon, CheckCircleIcon, UserIcon } from '@heroicons/react/24/solid';
 
 export default function DashboardPage() {
   const { competitions, loading, createCompetition, updateCompetition, deleteCompetition, duplicateCompetition } = useCompetitions();
@@ -615,8 +617,16 @@ function TeamLogoInput({ teamNum, teamName, teamLogo, onNameChange, onLogoChange
 
   // Determine gender from competition type for roster lookup
   const gender = compType?.includes('womens') ? 'womens' : compType?.includes('mens') ? 'mens' : null;
+
+  // Use Firebase teamsDatabase for roster data (with flexible name matching)
+  const { hasTeamRoster, getTeamRosterStatsFlexible } = useTeamsDatabase();
+
+  // Use flexible matching to find roster (handles "Penn State", "penn-state-mens", etc.)
   const hasRoster = teamName && hasTeamRoster(teamName, gender);
   const rosterStats = teamName ? getTeamRosterStatsFlexible(teamName, gender) : null;
+
+  // Fetch head coach from Road to Nationals
+  const { coach, loading: coachLoading } = useHeadCoach(teamName, gender || 'mens');
 
   return (
     <div className="mb-4 p-3 bg-zinc-800/30 rounded-lg border border-zinc-800">
@@ -687,6 +697,19 @@ function TeamLogoInput({ teamNum, teamName, teamLogo, onNameChange, onLogoChange
             placeholder="Logo URL (auto-filled if in library)"
             className="w-full px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-white text-xs focus:outline-none focus:border-blue-500"
           />
+          {/* Head Coach from Road to Nationals */}
+          {teamName && (
+            <div className="flex items-center gap-1.5 text-xs text-zinc-400">
+              <UserIcon className="w-3 h-3" />
+              {coachLoading ? (
+                <span className="text-zinc-500">Loading coach...</span>
+              ) : coach ? (
+                <span className="text-zinc-300">HC: {coach.fullName}</span>
+              ) : (
+                <span className="text-zinc-500">Coach not found in RTN</span>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

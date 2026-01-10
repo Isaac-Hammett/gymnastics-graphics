@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { useCompetition } from '../hooks/useCompetitions';
+import { useCompetition, useCompetitions } from '../hooks/useCompetitions';
 import { graphicButtons, getApparatusButtons, transparentGraphics } from '../lib/graphicButtons';
 
 const graphicTitles = {
@@ -49,6 +49,10 @@ export default function UrlGeneratorPage() {
   const compId = searchParams.get('comp');
 
   const { config } = useCompetition(compId);
+  const { updateCompetition, refreshTeamData } = useCompetitions();
+  const [hasChanges, setHasChanges] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const [currentGraphic, setCurrentGraphic] = useState('logos');
   const [activeTab, setActiveTab] = useState('meet');
@@ -74,6 +78,7 @@ export default function UrlGeneratorPage() {
   });
 
   // Load config from Firebase if competition is selected
+  // Coaches are now auto-synced to config when RTN data is fetched
   useEffect(() => {
     if (config) {
       setFormData({
@@ -95,8 +100,54 @@ export default function UrlGeneratorPage() {
         team2Con: config.team2Con || '',
         team2Coaches: config.team2Coaches || '',
       });
+      setHasChanges(false);
     }
   }, [config]);
+
+  // Update form data and track changes
+  const updateFormData = (updates) => {
+    setFormData(prev => ({ ...prev, ...updates }));
+    setHasChanges(true);
+  };
+
+  // Save changes to Firebase
+  const saveToFirebase = async () => {
+    if (!compId) {
+      showToast('No competition selected!');
+      return;
+    }
+    setSaving(true);
+    try {
+      await updateCompetition(compId, formData);
+      setHasChanges(false);
+      showToast('Saved to competition!');
+    } catch (error) {
+      console.error('Error saving:', error);
+      showToast('Error saving changes');
+    }
+    setSaving(false);
+  };
+
+  // Fetch fresh team data from RTN
+  const handleRefreshTeamData = async () => {
+    if (!compId) {
+      showToast('No competition selected!');
+      return;
+    }
+    setRefreshing(true);
+    try {
+      const result = await refreshTeamData(compId);
+      if (result.success) {
+        showToast(`Refreshed ${result.teamsEnriched} team(s) from RTN!`);
+      } else {
+        showToast('Error: ' + (result.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error refreshing team data:', error);
+      showToast('Error refreshing team data');
+    }
+    setRefreshing(false);
+  };
 
   const baseUrl = window.location.origin + '/';
 
@@ -286,37 +337,55 @@ export default function UrlGeneratorPage() {
 
         {activeTab === 'meet' && (
           <div>
-            <ConfigInput label="Event Name" value={formData.eventName} onChange={(v) => setFormData({ ...formData, eventName: v })} />
-            <ConfigInput label="Meet Date" value={formData.meetDate} onChange={(v) => setFormData({ ...formData, meetDate: v })} />
-            <ConfigInput label="Venue" value={formData.venue} onChange={(v) => setFormData({ ...formData, venue: v })} />
-            <ConfigInput label="Location" value={formData.location} onChange={(v) => setFormData({ ...formData, location: v })} />
-            <ConfigTextarea label="Hosts (one per line)" value={formData.hosts} onChange={(v) => setFormData({ ...formData, hosts: v })} />
+            <ConfigInput label="Event Name" value={formData.eventName} onChange={(v) => updateFormData({ eventName: v })} />
+            <ConfigInput label="Meet Date" value={formData.meetDate} onChange={(v) => updateFormData({ meetDate: v })} />
+            <ConfigInput label="Venue" value={formData.venue} onChange={(v) => updateFormData({ venue: v })} />
+            <ConfigInput label="Location" value={formData.location} onChange={(v) => updateFormData({ location: v })} />
+            <ConfigTextarea label="Hosts (one per line)" value={formData.hosts} onChange={(v) => updateFormData({ hosts: v })} />
           </div>
         )}
 
         {activeTab === 'team1' && (
           <div>
-            <ConfigInput label="Team Name" value={formData.team1Name} onChange={(v) => setFormData({ ...formData, team1Name: v })} />
-            <ConfigInput label="Logo URL" value={formData.team1Logo} onChange={(v) => setFormData({ ...formData, team1Logo: v })} placeholder="https://..." />
+            <ConfigInput label="Team Name" value={formData.team1Name} onChange={(v) => updateFormData({ team1Name: v })} />
+            <ConfigInput label="Logo URL" value={formData.team1Logo} onChange={(v) => updateFormData({ team1Logo: v })} placeholder="https://..." />
             <div className="grid grid-cols-3 gap-2">
-              <ConfigInput label="AVE" value={formData.team1Ave} onChange={(v) => setFormData({ ...formData, team1Ave: v })} />
-              <ConfigInput label="HIGH" value={formData.team1High} onChange={(v) => setFormData({ ...formData, team1High: v })} />
-              <ConfigInput label="CON" value={formData.team1Con} onChange={(v) => setFormData({ ...formData, team1Con: v })} />
+              <ConfigInput label="AVE" value={formData.team1Ave} onChange={(v) => updateFormData({ team1Ave: v })} />
+              <ConfigInput label="HIGH" value={formData.team1High} onChange={(v) => updateFormData({ team1High: v })} />
+              <ConfigInput label="CON" value={formData.team1Con} onChange={(v) => updateFormData({ team1Con: v })} />
             </div>
-            <ConfigTextarea label="Coaches (one per line)" value={formData.team1Coaches} onChange={(v) => setFormData({ ...formData, team1Coaches: v })} rows={4} />
+            <ConfigTextarea label="Coaches (one per line)" value={formData.team1Coaches} onChange={(v) => updateFormData({ team1Coaches: v })} rows={4} />
+            {compId && (
+              <button
+                onClick={handleRefreshTeamData}
+                disabled={refreshing}
+                className="w-full px-3 py-2 text-xs bg-zinc-700 text-zinc-300 rounded-lg hover:bg-zinc-600 transition-colors disabled:opacity-50"
+              >
+                {refreshing ? 'Fetching...' : 'Fetch Team Data from RTN'}
+              </button>
+            )}
           </div>
         )}
 
         {activeTab === 'team2' && (
           <div>
-            <ConfigInput label="Team Name" value={formData.team2Name} onChange={(v) => setFormData({ ...formData, team2Name: v })} />
-            <ConfigInput label="Logo URL" value={formData.team2Logo} onChange={(v) => setFormData({ ...formData, team2Logo: v })} placeholder="https://..." />
+            <ConfigInput label="Team Name" value={formData.team2Name} onChange={(v) => updateFormData({ team2Name: v })} />
+            <ConfigInput label="Logo URL" value={formData.team2Logo} onChange={(v) => updateFormData({ team2Logo: v })} placeholder="https://..." />
             <div className="grid grid-cols-3 gap-2">
-              <ConfigInput label="AVE" value={formData.team2Ave} onChange={(v) => setFormData({ ...formData, team2Ave: v })} />
-              <ConfigInput label="HIGH" value={formData.team2High} onChange={(v) => setFormData({ ...formData, team2High: v })} />
-              <ConfigInput label="CON" value={formData.team2Con} onChange={(v) => setFormData({ ...formData, team2Con: v })} />
+              <ConfigInput label="AVE" value={formData.team2Ave} onChange={(v) => updateFormData({ team2Ave: v })} />
+              <ConfigInput label="HIGH" value={formData.team2High} onChange={(v) => updateFormData({ team2High: v })} />
+              <ConfigInput label="CON" value={formData.team2Con} onChange={(v) => updateFormData({ team2Con: v })} />
             </div>
-            <ConfigTextarea label="Coaches (one per line)" value={formData.team2Coaches} onChange={(v) => setFormData({ ...formData, team2Coaches: v })} rows={4} />
+            <ConfigTextarea label="Coaches (one per line)" value={formData.team2Coaches} onChange={(v) => updateFormData({ team2Coaches: v })} rows={4} />
+            {compId && (
+              <button
+                onClick={handleRefreshTeamData}
+                disabled={refreshing}
+                className="w-full px-3 py-2 text-xs bg-zinc-700 text-zinc-300 rounded-lg hover:bg-zinc-600 transition-colors disabled:opacity-50"
+              >
+                {refreshing ? 'Fetching...' : 'Fetch Team Data from RTN'}
+              </button>
+            )}
           </div>
         )}
 
@@ -345,6 +414,26 @@ export default function UrlGeneratorPage() {
             >
               Copy All URLs
             </button>
+          </div>
+        )}
+
+        {/* Save to Competition Button */}
+        {compId && (
+          <div className="mt-4 pt-4 border-t border-zinc-800">
+            <button
+              onClick={saveToFirebase}
+              disabled={saving || !hasChanges}
+              className={`w-full px-4 py-3 text-sm font-semibold rounded-lg transition-colors ${
+                hasChanges
+                  ? 'bg-green-600 text-white hover:bg-green-500'
+                  : 'bg-zinc-700 text-zinc-400 cursor-not-allowed'
+              }`}
+            >
+              {saving ? 'Saving...' : hasChanges ? 'Save to Competition' : 'No Changes'}
+            </button>
+            {hasChanges && (
+              <p className="text-xs text-yellow-500 mt-2 text-center">Unsaved changes</p>
+            )}
           </div>
         )}
 
