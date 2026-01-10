@@ -8,7 +8,8 @@ import { useHeadCoach } from '../hooks/useRoadToNationals';
 import { ExclamationTriangleIcon, CheckCircleIcon, UserIcon } from '@heroicons/react/24/solid';
 
 export default function DashboardPage() {
-  const { competitions, loading, createCompetition, updateCompetition, deleteCompetition, duplicateCompetition } = useCompetitions();
+  const { competitions, loading, createCompetition, updateCompetition, deleteCompetition, duplicateCompetition, refreshTeamData } = useCompetitions();
+  const [refreshing, setRefreshing] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingCompId, setEditingCompId] = useState(null);
   const [formData, setFormData] = useState(getDefaultFormData());
@@ -265,6 +266,17 @@ export default function DashboardPage() {
     if (window.confirm(`Are you sure you want to delete "${compId}"?\n\nThis will permanently delete:\n- All configuration\n- Current graphic state\n- All data for this competition\n\nThis cannot be undone.`)) {
       await deleteCompetition(compId);
     }
+  }
+
+  async function handleRefreshTeamData() {
+    if (!editingCompId) return;
+    setRefreshing(true);
+    try {
+      await refreshTeamData(editingCompId);
+    } catch (err) {
+      console.error('Failed to refresh team data:', err);
+    }
+    setRefreshing(false);
   }
 
   const teamCount = teamCounts[formData.compType] || 2;
@@ -567,6 +579,24 @@ export default function DashboardPage() {
                   compType={formData.compType}
                   required
                 />
+              )}
+
+              {/* Refresh Team Data button - only show when editing */}
+              {editingCompId && (
+                <div className="mb-4 p-4 bg-zinc-800/50 border border-zinc-700 rounded-lg">
+                  <div className="text-xs text-zinc-400 mb-2">Sync Headshots from Media Manager</div>
+                  <p className="text-xs text-zinc-500 mb-3">
+                    Re-fetch rosters from RTN and merge latest headshots from Firebase. Use this after adding new headshots in Media Manager.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleRefreshTeamData}
+                    disabled={refreshing}
+                    className="px-4 py-2 bg-green-600 hover:bg-green-500 disabled:bg-zinc-700 disabled:text-zinc-500 text-white text-sm font-medium rounded-lg transition-colors"
+                  >
+                    {refreshing ? 'Refreshing...' : 'Refresh Team Data'}
+                  </button>
+                </div>
               )}
 
               <div className="flex gap-3 mt-6">
