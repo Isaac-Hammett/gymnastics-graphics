@@ -2044,6 +2044,192 @@
       color: #fff;
     }
 
+    /* ==========================================
+       Layout: Default Original V4 (Multi-Team)
+       Based on V3 with team rankings and totals
+       ========================================== */
+    .event-summary-quad-v4 {
+      display: grid;
+      flex: 1;
+      gap: 2px;
+      background: #3f3f46;
+      height: 100%;
+    }
+    .event-summary-quad-v4.teams-2 { grid-template-columns: repeat(2, 1fr); }
+    .event-summary-quad-v4.teams-3 { grid-template-columns: repeat(3, 1fr); }
+    .event-summary-quad-v4.teams-4 { grid-template-columns: repeat(4, 1fr); }
+    .event-summary-quad-v4.teams-5 { grid-template-columns: repeat(5, 1fr); }
+    .event-summary-quad-v4.teams-6 { grid-template-columns: repeat(6, 1fr); }
+
+    .event-summary-quad-v4 .team-column {
+      background: #18181b;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .event-summary-quad-v4 .team-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px 12px 14px;
+      background: #27272a;
+      border-bottom: 2px solid #3f3f46;
+      flex-shrink: 0;
+    }
+
+    .event-summary-quad-v4 .team-rank {
+      font-size: 13px;
+      font-weight: 700;
+      color: #a1a1aa;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+    }
+
+    .event-summary-quad-v4 .team-rank.rank-1 {
+      color: #fbbf24;
+    }
+
+    .event-summary-quad-v4 .team-rank.rank-2 {
+      color: #94a3b8;
+    }
+
+    .event-summary-quad-v4 .team-rank.rank-3 {
+      color: #cd7f32;
+    }
+
+    .event-summary-quad-v4 .team-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .event-summary-quad-v4 .team-logo {
+      width: 36px;
+      height: 36px;
+      object-fit: contain;
+    }
+
+    .event-summary-quad-v4 .team-name {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .event-summary-quad-v4 .team-total {
+      font-size: 28px;
+      font-weight: 800;
+      color: #22c55e;
+      line-height: 1;
+    }
+
+    .event-summary-quad-v4 .event-label {
+      font-size: 12px;
+      color: #71717a;
+      margin-top: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .event-summary-quad-v4 .athlete-list {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .event-summary-quad-v4 .athlete-row {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      min-height: 0;
+      border-bottom: 1px solid #27272a;
+    }
+
+    .event-summary-quad-v4 .athlete-row:nth-child(odd) {
+      background: #18181b;
+    }
+
+    .event-summary-quad-v4 .athlete-row:nth-child(even) {
+      background: #0f0f10;
+    }
+
+    .event-summary-quad-v4 .athlete-row.empty {
+      background: #141416;
+    }
+
+    .event-summary-quad-v4 .athlete-order {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #52525b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      margin-right: 10px;
+      flex-shrink: 0;
+    }
+
+    .event-summary-quad-v4 .athlete-row.empty .athlete-order {
+      background: #3f3f46;
+      color: #71717a;
+    }
+
+    .event-summary-quad-v4 .athlete-name {
+      flex: 1;
+      font-size: 16px;
+      font-weight: 600;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .event-summary-quad-v4 .athlete-row.empty .athlete-name {
+      color: #52525b;
+    }
+
+    .event-summary-quad-v4 .athlete-score {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      min-width: 65px;
+      text-align: right;
+    }
+
+    .event-summary-quad-v4 .athlete-row.empty .athlete-score {
+      color: #3f3f46;
+    }
+
+    .event-summary-quad-v4 .team-footer {
+      padding: 12px 14px;
+      background: #27272a;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 2px solid #3f3f46;
+      flex-shrink: 0;
+    }
+
+    .event-summary-quad-v4 .footer-label {
+      font-size: 14px;
+      color: #a1a1aa;
+      font-weight: 500;
+    }
+
+    .event-summary-quad-v4 .footer-total {
+      font-size: 24px;
+      font-weight: 800;
+      color: #fff;
+    }
+
     .event-summary-loading {
       color: #fff;
       font-size: 36px;
@@ -3355,6 +3541,9 @@
           } else if (layout === 'default-v3') {
             // V3 works for both dual and multi-team
             renderMultiTeamSummaryV3(contentEl, rotationData, rotation, actualNumTeams);
+          } else if (layout === 'default-v4') {
+            // V4: V3 with team rankings and totals
+            renderMultiTeamSummaryV4(contentEl, rotationData, rotation, actualNumTeams);
           } else {
             renderDualMeetSummary(contentEl, rotationData, rotation);
           }
@@ -3362,6 +3551,8 @@
           // Multi-team meet (3+ teams)
           if (layout === 'default-v3') {
             renderMultiTeamSummaryV3(contentEl, rotationData, rotation, actualNumTeams);
+          } else if (layout === 'default-v4') {
+            renderMultiTeamSummaryV4(contentEl, rotationData, rotation, actualNumTeams);
           } else {
             renderMultiTeamSummary(contentEl, rotationData, rotation, actualNumTeams);
           }
@@ -3683,6 +3874,181 @@
       contentEl.innerHTML = `<div class="event-summary-quad-v3 teams-${numTeams}">${columnsHtml}</div>`;
     }
 
+    // V4 Layout: Based on V3 with team rankings and totals in header
+    // Key features:
+    // - Team ranking displayed at top of header (1st, 2nd, 3rd with colored badges)
+    // - Team total score prominently displayed below logo/name
+    // - Event name shown below total as subtle label
+    // - All columns have same number of rows (max across all teams, capped at 10)
+    function renderMultiTeamSummaryV4(contentEl, rotationData, rotation, numTeams) {
+      // Find max athletes across all teams (cap at 10)
+      const maxAthletes = Math.min(
+        Math.max(...rotationData.map(t => t.gymnasts.length)),
+        10
+      );
+
+      // Calculate rankings based on total score
+      const teamsWithRanks = rotationData.map(t => ({
+        ...t,
+        totalScore: t.totalScore || 0
+      }));
+
+      // Sort by total score descending to determine ranks
+      const sortedByScore = [...teamsWithRanks].sort((a, b) => b.totalScore - a.totalScore);
+      const rankMap = new Map();
+      sortedByScore.forEach((t, idx) => {
+        rankMap.set(t.team.name || t.team.tricode, idx + 1);
+      });
+
+      let columnsHtml = '';
+
+      rotationData.forEach(teamData => {
+        const { team, eventDisplayName, gymnasts, eventScore, totalScore } = teamData;
+        const logoUrl = getTeamLogoUrl(team.name, team.logo);
+        const teamName = team.name || team.tricode;
+        const rank = rankMap.get(teamName) || 0;
+
+        // Rank display with ordinal suffix
+        const rankSuffix = rank === 1 ? 'st' : rank === 2 ? 'nd' : rank === 3 ? 'rd' : 'th';
+        const rankText = totalScore > 0 ? `${rank}${rankSuffix} Place` : '—';
+        const rankClass = rank <= 3 && totalScore > 0 ? `rank-${rank}` : '';
+
+        // Build athlete rows - pad to maxAthletes for symmetry
+        let athletesHtml = '';
+        for (let i = 0; i < maxAthletes; i++) {
+          const g = gymnasts[i];
+          if (g) {
+            const score = parseFloat(g.final_score) || 0;
+            const name = `${g.first_name?.charAt(0) || ''}. ${g.last_name || ''}`;
+            athletesHtml += `
+              <div class="athlete-row">
+                <div class="athlete-order">${i + 1}</div>
+                <div class="athlete-name">${name}</div>
+                <div class="athlete-score">${score > 0 ? score.toFixed(3) : '—'}</div>
+              </div>
+            `;
+          } else {
+            // Empty placeholder row for symmetry
+            athletesHtml += `
+              <div class="athlete-row empty">
+                <div class="athlete-order">${i + 1}</div>
+                <div class="athlete-name">—</div>
+                <div class="athlete-score"></div>
+              </div>
+            `;
+          }
+        }
+
+        columnsHtml += `
+          <div class="team-column">
+            <div class="team-header">
+              <div class="team-rank ${rankClass}">${rankText}</div>
+              <div class="team-info">
+                ${logoUrl ? `<img class="team-logo" src="${logoUrl}" alt="">` : ''}
+                <div class="team-name">${teamName}</div>
+              </div>
+              <div class="team-total">${totalScore > 0 ? totalScore.toFixed(3) : '—'}</div>
+              <div class="event-label">${eventDisplayName}</div>
+            </div>
+            <div class="athlete-list">
+              ${athletesHtml}
+            </div>
+            <div class="team-footer">
+              <div class="footer-label">Event Total</div>
+              <div class="footer-total">${eventScore > 0 ? eventScore.toFixed(3) : '—'}</div>
+            </div>
+          </div>
+        `;
+      });
+
+      contentEl.innerHTML = `<div class="event-summary-quad-v4 teams-${numTeams}">${columnsHtml}</div>`;
+    }
+
+    // Render multi-team apparatus layout V4 (all teams on same event, with rankings)
+    function renderMultiTeamSummaryApparatusV4(contentEl, apparatusData, eventDisplayName, eventShortCode, numTeams) {
+      // Find max athletes across all teams (cap at 10)
+      const maxAthletes = Math.min(
+        Math.max(...apparatusData.map(t => t.gymnasts.length)),
+        10
+      );
+
+      // Calculate rankings based on total score
+      const teamsWithRanks = apparatusData.map(t => ({
+        ...t,
+        totalScore: t.totalScore || 0
+      }));
+
+      // Sort by total score descending to determine ranks
+      const sortedByScore = [...teamsWithRanks].sort((a, b) => b.totalScore - a.totalScore);
+      const rankMap = new Map();
+      sortedByScore.forEach((t, idx) => {
+        rankMap.set(t.team.name || t.team.tricode, idx + 1);
+      });
+
+      let columnsHtml = '';
+
+      apparatusData.forEach(teamData => {
+        const { team, gymnasts, eventScore, totalScore } = teamData;
+        const logoUrl = getTeamLogoUrl(team.name, team.logo);
+        const teamName = team.name || team.tricode;
+        const rank = rankMap.get(teamName) || 0;
+
+        // Rank display with ordinal suffix
+        const rankSuffix = rank === 1 ? 'st' : rank === 2 ? 'nd' : rank === 3 ? 'rd' : 'th';
+        const rankText = totalScore > 0 ? `${rank}${rankSuffix} Place` : '—';
+        const rankClass = rank <= 3 && totalScore > 0 ? `rank-${rank}` : '';
+
+        // Build athlete rows - pad to maxAthletes for symmetry
+        let athletesHtml = '';
+        for (let i = 0; i < maxAthletes; i++) {
+          const g = gymnasts[i];
+          if (g) {
+            const score = parseFloat(g.final_score) || 0;
+            const name = `${g.first_name?.charAt(0) || ''}. ${g.last_name || ''}`;
+            athletesHtml += `
+              <div class="athlete-row">
+                <div class="athlete-order">${i + 1}</div>
+                <div class="athlete-name">${name}</div>
+                <div class="athlete-score">${score > 0 ? score.toFixed(3) : '—'}</div>
+              </div>
+            `;
+          } else {
+            // Empty placeholder row for symmetry
+            athletesHtml += `
+              <div class="athlete-row empty">
+                <div class="athlete-order">${i + 1}</div>
+                <div class="athlete-name">—</div>
+                <div class="athlete-score"></div>
+              </div>
+            `;
+          }
+        }
+
+        columnsHtml += `
+          <div class="team-column">
+            <div class="team-header">
+              <div class="team-rank ${rankClass}">${rankText}</div>
+              <div class="team-info">
+                ${logoUrl ? `<img class="team-logo" src="${logoUrl}" alt="">` : ''}
+                <div class="team-name">${teamName}</div>
+              </div>
+              <div class="team-total">${totalScore > 0 ? totalScore.toFixed(3) : '—'}</div>
+              <div class="event-label">${eventDisplayName}</div>
+            </div>
+            <div class="athlete-list">
+              ${athletesHtml}
+            </div>
+            <div class="team-footer">
+              <div class="footer-label">Event Total</div>
+              <div class="footer-total">${eventScore > 0 ? eventScore.toFixed(3) : '—'}</div>
+            </div>
+          </div>
+        `;
+      });
+
+      contentEl.innerHTML = `<div class="event-summary-quad-v4 teams-${numTeams}">${columnsHtml}</div>`;
+    }
+
     // Map apparatus short codes to API event names
     // Supports both short codes (fx, ub) and button IDs (floor, ubars)
     const APPARATUS_TO_EVENT = {
@@ -3766,6 +4132,9 @@
           } else if (layout === 'default-v3') {
             // V3 works for both dual and multi-team
             renderMultiTeamSummaryApparatusV3(contentEl, apparatusData, eventDisplayName, eventShortCode, actualNumTeams);
+          } else if (layout === 'default-v4') {
+            // V4: V3 with team rankings and totals
+            renderMultiTeamSummaryApparatusV4(contentEl, apparatusData, eventDisplayName, eventShortCode, actualNumTeams);
           } else {
             renderDualMeetSummaryApparatus(contentEl, apparatusData, eventDisplayName, eventShortCode);
           }
@@ -3773,6 +4142,8 @@
           // Multi-team meet (3+ teams)
           if (layout === 'default-v3') {
             renderMultiTeamSummaryApparatusV3(contentEl, apparatusData, eventDisplayName, eventShortCode, actualNumTeams);
+          } else if (layout === 'default-v4') {
+            renderMultiTeamSummaryApparatusV4(contentEl, apparatusData, eventDisplayName, eventShortCode, actualNumTeams);
           } else {
             renderMultiTeamSummaryApparatus(contentEl, apparatusData, eventDisplayName, eventShortCode, actualNumTeams);
           }
