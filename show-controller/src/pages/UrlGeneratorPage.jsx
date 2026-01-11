@@ -1,14 +1,53 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useCompetition, useCompetitions } from '../hooks/useCompetitions';
-import { graphicButtons, getApparatusButtons, getPreMeetButtons, transparentGraphics, isTransparentGraphic } from '../lib/graphicButtons';
+import { graphicButtons, getApparatusButtons, getPreMeetButtons, getLeaderboardButtons, getEventSummaryRotationButtons, getEventSummaryApparatusButtons, transparentGraphics, isTransparentGraphic } from '../lib/graphicButtons';
 import { getTeamCount, getGenderFromCompType } from '../lib/competitionUtils';
 import { generateGraphicURL, copyToClipboard } from '../lib/urlBuilder';
+
+// Available themes for Event Summary (same as GraphicsControl.jsx)
+const summaryThemes = [
+  // LAYOUTS - Different structural designs
+  { id: 'layout-broadcast-table', label: 'Hero Cards' },
+  { id: 'layout-classic-broadcast', label: 'Classic Broadcast' },
+  { id: 'layout-default-v2', label: 'Default V2' },
+  { id: 'layout-default-v3', label: 'V3 Full Height' },
+  { id: 'layout-default-v4', label: 'V4 Rankings' },
+  { id: 'layout-default-v5', label: 'V5 Compact' },
+  { id: 'layout-default-v6', label: 'V6 Cards' },
+  { id: 'layout-default-v7', label: 'V7 Progress Bars' },
+  { id: 'layout-default-v8', label: 'V8 Light Minimal' },
+  { id: 'layout-default-v9', label: 'V9 Bold Blue' },
+  { id: 'layout-default-v10', label: 'V10 Score Focus' },
+  { id: 'layout-default-v11', label: 'V11 Blue Accent' },
+  { id: 'layout-default-v12', label: 'V12 Gradient Rows' },
+  { id: 'layout-default-v13', label: 'V13 Split Header' },
+  { id: 'layout-default-v14', label: 'V14 Big Footer' },
+  { id: 'layout-default-v15', label: 'V15 Orange Badges' },
+  { id: 'layout-default-v16', label: 'V16 Purple Theme' },
+  { id: 'layout-default-v17', label: 'V17 Green Scores' },
+  { id: 'layout-default-v18', label: 'V18 Team Colors' },
+  { id: 'layout-default-v19', label: 'V19 Dense Compact' },
+  { id: 'layout-default-v20', label: 'V20 Combined Best' },
+  // COLOR THEMES - Same structure, different colors
+  { id: 'default', label: 'Default (Original)' },
+  { id: 'espn', label: 'ESPN Colors' },
+  { id: 'nbc', label: 'NBC Olympics' },
+  { id: 'btn', label: 'Big Ten' },
+  { id: 'pac12', label: 'Pac-12' },
+  { id: 'virtius', label: 'Virtius' },
+  { id: 'neon', label: 'Neon' },
+  { id: 'classic', label: 'Classic' },
+  { id: 'light', label: 'Light' },
+  { id: 'home', label: 'Team Colors' },
+  { id: 'gradient', label: 'Gradient' },
+];
 
 // Base graphic titles (team-specific ones are generated dynamically)
 const baseGraphicTitles = {
   logos: 'Team Logos',
   'event-bar': 'Event Info Bar',
+  'warm-up': 'Warm Up',
   hosts: 'Hosts',
   floor: 'Floor Exercise',
   pommel: 'Pommel Horse',
@@ -25,6 +64,38 @@ const baseGraphicTitles = {
   summary: 'Event Summary',
   starting: 'Stream Starting Soon',
   thanks: 'Thanks for Watching',
+  // Frame Overlays
+  'frame-quad': 'Quad View',
+  'frame-tri-center': 'Tri Center',
+  'frame-tri-wide': 'Tri Wide',
+  'frame-team-header': 'Team Header',
+  'frame-single': 'Single',
+  // Leaderboards
+  'leaderboard-fx': 'Floor Leaderboard',
+  'leaderboard-ph': 'Pommel Horse Leaderboard',
+  'leaderboard-sr': 'Still Rings Leaderboard',
+  'leaderboard-vt': 'Vault Leaderboard',
+  'leaderboard-pb': 'Parallel Bars Leaderboard',
+  'leaderboard-hb': 'High Bar Leaderboard',
+  'leaderboard-ub': 'Uneven Bars Leaderboard',
+  'leaderboard-bb': 'Balance Beam Leaderboard',
+  'leaderboard-aa': 'All-Around Leaderboard',
+  // Event Summary Rotations
+  'summary-r1': 'Event Summary - Rotation 1',
+  'summary-r2': 'Event Summary - Rotation 2',
+  'summary-r3': 'Event Summary - Rotation 3',
+  'summary-r4': 'Event Summary - Rotation 4',
+  'summary-r5': 'Event Summary - Rotation 5',
+  'summary-r6': 'Event Summary - Rotation 6',
+  // Event Summary Apparatus
+  'summary-fx': 'Event Summary - Floor',
+  'summary-ph': 'Event Summary - Pommel Horse',
+  'summary-sr': 'Event Summary - Still Rings',
+  'summary-vt': 'Event Summary - Vault',
+  'summary-pb': 'Event Summary - Parallel Bars',
+  'summary-hb': 'Event Summary - High Bar',
+  'summary-ub': 'Event Summary - Uneven Bars',
+  'summary-bb': 'Event Summary - Balance Beam',
 };
 
 // Generate team-specific graphic titles dynamically
@@ -50,6 +121,7 @@ export default function UrlGeneratorPage() {
   const [currentGraphic, setCurrentGraphic] = useState('logos');
   const [activeTab, setActiveTab] = useState('meet');
   const [toast, setToast] = useState('');
+  const [summaryTheme, setSummaryTheme] = useState('layout-default-v4');
 
   // Get team count from competition type (supports 2-6 teams)
   const teamCount = useMemo(() => getTeamCount(config?.compType), [config?.compType]);
@@ -174,13 +246,6 @@ export default function UrlGeneratorPage() {
   // Get dynamic graphic titles based on team count
   const graphicTitles = useMemo(() => getGraphicTitles(teamCount), [teamCount]);
 
-  // Generate URL using the centralized URL builder
-  const generateURL = (graphic) => {
-    return generateGraphicURL(graphic, formData, teamCount);
-  };
-
-  const currentUrl = useMemo(() => generateURL(currentGraphic), [currentGraphic, formData, teamCount]);
-
   const showToast = (message) => {
     setToast(message);
     setTimeout(() => setToast(''), 2000);
@@ -215,6 +280,33 @@ export default function UrlGeneratorPage() {
   }, [formData, teamCount]);
 
   const preMeetButtons = useMemo(() => getPreMeetButtons(teamCount, teamNames), [teamCount, teamNames]);
+
+  // Generate frame overlay buttons
+  const frameOverlayButtons = graphicButtons.frameOverlays;
+
+  // Generate leaderboard buttons (gender-aware)
+  const leaderboardButtons = useMemo(() => getLeaderboardButtons(config?.compType), [config?.compType]);
+
+  // Generate event summary buttons (gender-aware)
+  const summaryRotationButtons = useMemo(() => getEventSummaryRotationButtons(config?.compType), [config?.compType]);
+  const summaryApparatusButtons = useMemo(() => getEventSummaryApparatusButtons(config?.compType), [config?.compType]);
+
+  // Generate URL with options for new graphic types
+  const generateURLWithOptions = (graphic) => {
+    return generateGraphicURL(graphic, formData, teamCount, undefined, {
+      compType: config?.compType,
+      virtiusSessionId: config?.virtiusSessionId,
+      compId: compId,
+      summaryTheme: summaryTheme,
+    });
+  };
+
+  // Override generateURL to use options
+  const generateURL = (graphic) => {
+    return generateURLWithOptions(graphic);
+  };
+
+  const currentUrl = useMemo(() => generateURL(currentGraphic), [currentGraphic, formData, teamCount, config?.compType, config?.virtiusSessionId, summaryTheme]);
 
   return (
     <div className="h-screen bg-zinc-950 flex">
@@ -259,6 +351,77 @@ export default function UrlGeneratorPage() {
               onClick={() => setCurrentGraphic(btn.id)}
             />
           ))}
+        </GraphicSection>
+
+        <GraphicSection title="Frame Overlays">
+          {frameOverlayButtons.map((btn) => (
+            <GraphicSidebarButton
+              key={btn.id}
+              id={btn.id}
+              label={btn.label}
+              number={btn.number}
+              active={currentGraphic === btn.id}
+              onClick={() => setCurrentGraphic(btn.id)}
+            />
+          ))}
+        </GraphicSection>
+
+        <GraphicSection title="Leaderboards">
+          {leaderboardButtons.map((btn) => (
+            <GraphicSidebarButton
+              key={btn.id}
+              id={btn.id}
+              label={btn.label}
+              active={currentGraphic === btn.id}
+              onClick={() => setCurrentGraphic(btn.id)}
+            />
+          ))}
+        </GraphicSection>
+
+        <GraphicSection title="Event Summary">
+          <div className="mb-3">
+            <select
+              value={summaryTheme}
+              onChange={(e) => setSummaryTheme(e.target.value)}
+              className="w-full text-xs bg-zinc-800 text-zinc-300 border border-zinc-700 rounded px-2 py-1.5 focus:outline-none focus:border-blue-500"
+            >
+              {summaryThemes.map((theme) => (
+                <option key={theme.id} value={theme.id}>{theme.label}</option>
+              ))}
+            </select>
+          </div>
+          <div className="text-xs text-zinc-600 mb-1">By Rotation (Alternating)</div>
+          <div className="grid grid-cols-4 gap-1 mb-2">
+            {summaryRotationButtons.map((btn) => (
+              <button
+                key={btn.id}
+                onClick={() => setCurrentGraphic(btn.id)}
+                className={`px-2 py-1.5 rounded text-xs font-medium transition-colors ${
+                  currentGraphic === btn.id
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700'
+                }`}
+              >
+                {btn.label}
+              </button>
+            ))}
+          </div>
+          <div className="text-xs text-zinc-600 mb-1">By Apparatus</div>
+          <div className="grid grid-cols-4 gap-1">
+            {summaryApparatusButtons.map((btn) => (
+              <button
+                key={btn.id}
+                onClick={() => setCurrentGraphic(btn.id)}
+                className={`px-2 py-1.5 rounded text-xs font-medium transition-colors ${
+                  currentGraphic === btn.id
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700'
+                }`}
+              >
+                {btn.label}
+              </button>
+            ))}
+          </div>
         </GraphicSection>
 
         <GraphicSection title="Stream">
