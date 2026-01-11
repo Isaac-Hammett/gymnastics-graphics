@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1920, height=1080">
+  <title>Quad View Frame</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: transparent;
+    }
+    .frame-container {
+      position: absolute;
+      top: 10px;
+      left: 40px;
+      right: 40px;
+      bottom: 50px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 0;
+    }
+    .frame-panel {
+      border: 2px solid white;
+    }
+    .virtius-watermark {
+      position: absolute;
+      bottom: 15px;
+      right: 50px;
+      font-family: 'Arial', sans-serif;
+      font-size: 24px;
+      font-weight: bold;
+      color: #6b7280;
+    }
+    .virtius-watermark .v {
+      color: #60a5fa;
+    }
+  </style>
+</head>
+<body>
+  <div class="frame-container">
+    <div class="frame-panel"></div>
+    <div class="frame-panel"></div>
+    <div class="frame-panel"></div>
+    <div class="frame-panel"></div>
+  </div>
+  <div class="virtius-watermark"><span class="v">V</span>irtius</div>
+</body>
+</html>

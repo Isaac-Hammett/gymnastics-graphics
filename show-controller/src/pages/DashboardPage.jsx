@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCompetitions } from '../hooks/useCompetitions';
 import { competitionTypes, teamCounts, typeLabels } from '../lib/graphicButtons';
-import { getTeamLogo, hasTeamLogo } from '../lib/teamsDatabase';
 import { useTeamsDatabase } from '../hooks/useTeamsDatabase';
 import { useHeadCoach } from '../hooks/useRoadToNationals';
+import { getGenderFromCompType, buildTeamKey } from '../lib/competitionUtils';
 import { ExclamationTriangleIcon, CheckCircleIcon, UserIcon } from '@heroicons/react/24/solid';
 
 export default function DashboardPage() {
   const { competitions, loading, createCompetition, updateCompetition, deleteCompetition, duplicateCompetition, refreshTeamData } = useCompetitions();
+  const { getTeamLogo } = useTeamsDatabase();
   const [refreshing, setRefreshing] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingCompId, setEditingCompId] = useState(null);
@@ -23,6 +24,7 @@ export default function DashboardPage() {
     return {
       compId: '',
       compType: '',
+      gender: '', // Explicit gender field: 'mens' or 'womens'
       eventName: '',
       meetDate: '',
       venue: '',
@@ -94,30 +96,35 @@ export default function DashboardPage() {
       // Sort teams by team_order if available
       const sortedTeams = [...teams].sort((a, b) => (a.team_order || 0) - (b.team_order || 0));
 
+      // Infer competition type and extract gender for proper team lookups
+      const compType = inferCompType(meet.sex, sortedTeams.length);
+      const gender = meet.sex === 'women' ? 'womens' : 'mens';
+
       setFormData(prev => ({
         ...prev,
         eventName: meet.name || prev.eventName,
         meetDate: formatDate(meet.meet_date) || prev.meetDate,
         venue: meet.location?.split(',')[0]?.trim() || prev.venue,
         location: meet.location?.split(',').slice(1).join(',').trim() || prev.location,
-        compType: inferCompType(meet.sex, sortedTeams.length),
+        compType,
+        gender, // Set explicit gender from Virtius data
         team1Name: sortedTeams[0]?.name || prev.team1Name,
-        team1Logo: getTeamLogo(sortedTeams[0]?.name) || prev.team1Logo,
+        team1Logo: getTeamLogo(sortedTeams[0]?.name, gender) || prev.team1Logo,
         team1Tricode: sortedTeams[0]?.tricode || prev.team1Tricode,
         team2Name: sortedTeams[1]?.name || prev.team2Name,
-        team2Logo: getTeamLogo(sortedTeams[1]?.name) || prev.team2Logo,
+        team2Logo: getTeamLogo(sortedTeams[1]?.name, gender) || prev.team2Logo,
         team2Tricode: sortedTeams[1]?.tricode || prev.team2Tricode,
         team3Name: sortedTeams[2]?.name || prev.team3Name,
-        team3Logo: getTeamLogo(sortedTeams[2]?.name) || prev.team3Logo,
+        team3Logo: getTeamLogo(sortedTeams[2]?.name, gender) || prev.team3Logo,
         team3Tricode: sortedTeams[2]?.tricode || prev.team3Tricode,
         team4Name: sortedTeams[3]?.name || prev.team4Name,
-        team4Logo: getTeamLogo(sortedTeams[3]?.name) || prev.team4Logo,
+        team4Logo: getTeamLogo(sortedTeams[3]?.name, gender) || prev.team4Logo,
         team4Tricode: sortedTeams[3]?.tricode || prev.team4Tricode,
         team5Name: sortedTeams[4]?.name || prev.team5Name,
-        team5Logo: getTeamLogo(sortedTeams[4]?.name) || prev.team5Logo,
+        team5Logo: getTeamLogo(sortedTeams[4]?.name, gender) || prev.team5Logo,
         team5Tricode: sortedTeams[4]?.tricode || prev.team5Tricode,
         team6Name: sortedTeams[5]?.name || prev.team6Name,
-        team6Logo: getTeamLogo(sortedTeams[5]?.name) || prev.team6Logo,
+        team6Logo: getTeamLogo(sortedTeams[5]?.name, gender) || prev.team6Logo,
         team6Tricode: sortedTeams[5]?.tricode || prev.team6Tricode,
         virtiusSessionId: virtiusSessionId.trim(),
       }));
@@ -139,9 +146,12 @@ export default function DashboardPage() {
   function openEditModal(compId) {
     const config = competitions[compId]?.config || {};
     setEditingCompId(compId);
+    // Extract gender from config or infer from compType for backward compatibility
+    const gender = config.gender || getGenderFromCompType(config.compType) || 'mens';
     setFormData({
       compId,
       compType: config.compType || 'mens-dual',
+      gender,
       eventName: config.eventName || '',
       meetDate: config.meetDate || '',
       venue: config.venue || '',
@@ -175,8 +185,13 @@ export default function DashboardPage() {
     e.preventDefault();
     const compId = formData.compId.toLowerCase().trim();
 
+    // Use the explicit gender field from the form
+    const gender = formData.gender || getGenderFromCompType(formData.compType) || 'mens';
+
     const config = {
       compType: formData.compType,
+      // Store explicit gender for downstream access
+      gender: gender,
       eventName: formData.eventName,
       meetDate: formData.meetDate,
       venue: formData.venue,
@@ -185,21 +200,27 @@ export default function DashboardPage() {
       team1Name: formData.team1Name,
       team1Logo: formData.team1Logo || 'https://via.placeholder.com/200/00274C/FFCB05?text=T1',
       team1Tricode: formData.team1Tricode || '',
+      team1Key: formData.team1Name ? buildTeamKey(formData.team1Name, gender) : '',
       team2Name: formData.team2Name,
       team2Logo: formData.team2Logo || 'https://via.placeholder.com/200/BB0000/FFFFFF?text=T2',
       team2Tricode: formData.team2Tricode || '',
+      team2Key: formData.team2Name ? buildTeamKey(formData.team2Name, gender) : '',
       team3Name: formData.team3Name,
       team3Logo: formData.team3Logo || 'https://via.placeholder.com/200/006400/FFFFFF?text=T3',
       team3Tricode: formData.team3Tricode || '',
+      team3Key: formData.team3Name ? buildTeamKey(formData.team3Name, gender) : '',
       team4Name: formData.team4Name,
       team4Logo: formData.team4Logo || 'https://via.placeholder.com/200/800080/FFFFFF?text=T4',
       team4Tricode: formData.team4Tricode || '',
+      team4Key: formData.team4Name ? buildTeamKey(formData.team4Name, gender) : '',
       team5Name: formData.team5Name,
       team5Logo: formData.team5Logo || 'https://via.placeholder.com/200/FF6600/FFFFFF?text=T5',
       team5Tricode: formData.team5Tricode || '',
+      team5Key: formData.team5Name ? buildTeamKey(formData.team5Name, gender) : '',
       team6Name: formData.team6Name,
       team6Logo: formData.team6Logo || 'https://via.placeholder.com/200/000080/FFFFFF?text=T6',
       team6Tricode: formData.team6Tricode || '',
+      team6Key: formData.team6Name ? buildTeamKey(formData.team6Name, gender) : '',
       // Defaults for stats
       hosts: 'Host Name',
       team1Ave: '0.000',
@@ -454,19 +475,39 @@ export default function DashboardPage() {
                 />
               </FormGroup>
 
-              <FormGroup label="Competition Type">
-                <select
-                  value={formData.compType}
-                  onChange={(e) => setFormData({ ...formData, compType: e.target.value })}
-                  required
-                  className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
-                >
-                  <option value="">Select type...</option>
-                  {competitionTypes.map((type) => (
-                    <option key={type.value} value={type.value}>{type.label}</option>
-                  ))}
-                </select>
-              </FormGroup>
+              <div className="grid grid-cols-2 gap-3">
+                <FormGroup label="Competition Type">
+                  <select
+                    value={formData.compType}
+                    onChange={(e) => {
+                      const newCompType = e.target.value;
+                      // Auto-set gender based on competition type selection
+                      const inferredGender = getGenderFromCompType(newCompType);
+                      setFormData({ ...formData, compType: newCompType, gender: inferredGender || formData.gender });
+                    }}
+                    required
+                    className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="">Select type...</option>
+                    {competitionTypes.map((type) => (
+                      <option key={type.value} value={type.value}>{type.label}</option>
+                    ))}
+                  </select>
+                </FormGroup>
+
+                <FormGroup label="Gender (for team lookups)">
+                  <select
+                    value={formData.gender}
+                    onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                    required
+                    className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="">Select gender...</option>
+                    <option value="womens">Women's</option>
+                    <option value="mens">Men's</option>
+                  </select>
+                </FormGroup>
+              </div>
 
               <FormGroup label="Event Name">
                 <input
@@ -519,7 +560,7 @@ export default function DashboardPage() {
                 teamLogo={formData.team1Logo}
                 onNameChange={(val) => setFormData({ ...formData, team1Name: val })}
                 onLogoChange={(val) => setFormData({ ...formData, team1Logo: val })}
-                compType={formData.compType}
+                gender={formData.gender}
                 required
               />
 
@@ -529,7 +570,7 @@ export default function DashboardPage() {
                 teamLogo={formData.team2Logo}
                 onNameChange={(val) => setFormData({ ...formData, team2Name: val })}
                 onLogoChange={(val) => setFormData({ ...formData, team2Logo: val })}
-                compType={formData.compType}
+                gender={formData.gender}
                 required
               />
 
@@ -540,7 +581,7 @@ export default function DashboardPage() {
                   teamLogo={formData.team3Logo}
                   onNameChange={(val) => setFormData({ ...formData, team3Name: val })}
                   onLogoChange={(val) => setFormData({ ...formData, team3Logo: val })}
-                  compType={formData.compType}
+                  gender={formData.gender}
                   required
                 />
               )}
@@ -552,7 +593,7 @@ export default function DashboardPage() {
                   teamLogo={formData.team4Logo}
                   onNameChange={(val) => setFormData({ ...formData, team4Name: val })}
                   onLogoChange={(val) => setFormData({ ...formData, team4Logo: val })}
-                  compType={formData.compType}
+                  gender={formData.gender}
                   required
                 />
               )}
@@ -564,7 +605,7 @@ export default function DashboardPage() {
                   teamLogo={formData.team5Logo}
                   onNameChange={(val) => setFormData({ ...formData, team5Name: val })}
                   onLogoChange={(val) => setFormData({ ...formData, team5Logo: val })}
-                  compType={formData.compType}
+                  gender={formData.gender}
                   required
                 />
               )}
@@ -576,7 +617,7 @@ export default function DashboardPage() {
                   teamLogo={formData.team6Logo}
                   onNameChange={(val) => setFormData({ ...formData, team6Name: val })}
                   onLogoChange={(val) => setFormData({ ...formData, team6Logo: val })}
-                  compType={formData.compType}
+                  gender={formData.gender}
                   required
                 />
               )}
@@ -640,28 +681,43 @@ function FormGroup({ label, children }) {
   );
 }
 
-function TeamLogoInput({ teamNum, teamName, teamLogo, onNameChange, onLogoChange, required, compType }) {
-  const hasLogoInLibrary = teamName && hasTeamLogo(teamName);
-  const hasLogoUrl = !!teamLogo;
-  const logoStatus = hasLogoUrl ? 'has-url' : hasLogoInLibrary ? 'in-library' : teamName ? 'missing' : 'no-name';
-
-  // Determine gender from competition type for roster lookup
-  const gender = compType?.includes('womens') ? 'womens' : compType?.includes('mens') ? 'mens' : null;
+function TeamLogoInput({ teamNum, teamName, teamLogo, onNameChange, onLogoChange, required, gender }) {
+  // Use explicit gender prop (passed from form's gender field)
+  const effectiveGender = gender || 'mens';
 
   // Use Firebase teamsDatabase for roster data (with flexible name matching)
-  const { hasTeamRoster, getTeamRosterStatsFlexible } = useTeamsDatabase();
+  const { hasTeamRoster, getTeamRosterStatsFlexible, getTeamLogo } = useTeamsDatabase();
+
+  const hasLogoFromFirebase = teamName && getTeamLogo(teamName, effectiveGender);
+  const hasLogoUrl = !!teamLogo;
+  const logoStatus = hasLogoUrl ? 'has-url' : hasLogoFromFirebase ? 'in-library' : teamName ? 'missing' : 'no-name';
 
   // Use flexible matching to find roster (handles "Penn State", "penn-state-mens", etc.)
-  const hasRoster = teamName && hasTeamRoster(teamName, gender);
-  const rosterStats = teamName ? getTeamRosterStatsFlexible(teamName, gender) : null;
+  const hasRoster = teamName && hasTeamRoster(teamName, effectiveGender);
+  const rosterStats = teamName ? getTeamRosterStatsFlexible(teamName, effectiveGender) : null;
 
-  // Fetch head coach from Road to Nationals
-  const { coach, loading: coachLoading } = useHeadCoach(teamName, gender || 'mens');
+  // Fetch head coach from Road to Nationals using explicit gender
+  const { coach, loading: coachLoading } = useHeadCoach(teamName, effectiveGender);
+
+  // Build the team key that will be used
+  const teamKey = teamName ? buildTeamKey(teamName, effectiveGender) : null;
 
   return (
     <div className="mb-4 p-3 bg-zinc-800/30 rounded-lg border border-zinc-800">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-xs text-zinc-400">Team {teamNum}</span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-zinc-400">Team {teamNum}</span>
+          {/* Gender indicator badge */}
+          {effectiveGender && (
+            <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+              effectiveGender === 'womens'
+                ? 'bg-pink-500/20 text-pink-400 border border-pink-500/30'
+                : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+            }`}>
+              {effectiveGender === 'womens' ? "W" : "M"}
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-3">
           {/* Logo status */}
           {logoStatus === 'has-url' && (
@@ -699,11 +755,11 @@ function TeamLogoInput({ teamNum, teamName, teamLogo, onNameChange, onLogoChange
         </div>
       </div>
       <div className="flex gap-2">
-        {/* Logo preview */}
+        {/* Logo preview - use explicit gender for lookup */}
         <div className="w-12 h-12 bg-zinc-700 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
-          {(teamLogo || (teamName && getTeamLogo(teamName))) ? (
+          {(teamLogo || (teamName && getTeamLogo(teamName, effectiveGender))) ? (
             <img
-              src={teamLogo || getTeamLogo(teamName)}
+              src={teamLogo || getTeamLogo(teamName, effectiveGender)}
               alt={teamName || 'Team logo'}
               className="w-10 h-10 object-contain"
             />

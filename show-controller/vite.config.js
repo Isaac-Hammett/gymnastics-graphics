@@ -13,6 +13,12 @@ export default defineConfig({
       },
       '/api': {
         target: 'http://localhost:3003'
+      },
+      '/overlays': {
+        target: 'http://localhost:3003'
+      },
+      '/output.html': {
+        target: 'http://localhost:3003'
       }
     }
   }

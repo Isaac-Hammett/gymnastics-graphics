@@ -1890,6 +1890,160 @@
       color: #fff;
     }
 
+    /* ==========================================
+       Layout: Default Original V3 (Multi-Team)
+       Full-height symmetric rows, no headshots
+       ========================================== */
+    .event-summary-quad-v3 {
+      display: grid;
+      flex: 1;
+      gap: 2px;
+      background: #3f3f46;
+      height: 100%;
+    }
+    .event-summary-quad-v3.teams-2 { grid-template-columns: repeat(2, 1fr); }
+    .event-summary-quad-v3.teams-3 { grid-template-columns: repeat(3, 1fr); }
+    .event-summary-quad-v3.teams-4 { grid-template-columns: repeat(4, 1fr); }
+    .event-summary-quad-v3.teams-5 { grid-template-columns: repeat(5, 1fr); }
+    .event-summary-quad-v3.teams-6 { grid-template-columns: repeat(6, 1fr); }
+
+    .event-summary-quad-v3 .team-column {
+      background: #18181b;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .event-summary-quad-v3 .team-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px 12px;
+      background: #27272a;
+      border-bottom: 2px solid #3f3f46;
+      flex-shrink: 0;
+    }
+
+    .event-summary-quad-v3 .event-name {
+      font-size: 14px;
+      color: #a1a1aa;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .event-summary-quad-v3 .team-name {
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .event-summary-quad-v3 .team-logo {
+      width: 32px;
+      height: 32px;
+      object-fit: contain;
+    }
+
+    .event-summary-quad-v3 .athlete-list {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .event-summary-quad-v3 .athlete-row {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      min-height: 0;
+      border-bottom: 1px solid #27272a;
+    }
+
+    .event-summary-quad-v3 .athlete-row:nth-child(odd) {
+      background: #18181b;
+    }
+
+    .event-summary-quad-v3 .athlete-row:nth-child(even) {
+      background: #0f0f10;
+    }
+
+    .event-summary-quad-v3 .athlete-row.empty {
+      background: #141416;
+    }
+
+    .event-summary-quad-v3 .athlete-order {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #52525b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      margin-right: 12px;
+      flex-shrink: 0;
+    }
+
+    .event-summary-quad-v3 .athlete-row.empty .athlete-order {
+      background: #3f3f46;
+      color: #71717a;
+    }
+
+    .event-summary-quad-v3 .athlete-name {
+      flex: 1;
+      font-size: 18px;
+      font-weight: 600;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .event-summary-quad-v3 .athlete-row.empty .athlete-name {
+      color: #52525b;
+    }
+
+    .event-summary-quad-v3 .athlete-score {
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+      min-width: 70px;
+      text-align: right;
+    }
+
+    .event-summary-quad-v3 .athlete-row.empty .athlete-score {
+      color: #3f3f46;
+    }
+
+    .event-summary-quad-v3 .team-footer {
+      padding: 14px 16px;
+      background: #27272a;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 2px solid #3f3f46;
+      flex-shrink: 0;
+    }
+
+    .event-summary-quad-v3 .footer-label {
+      font-size: 15px;
+      color: #a1a1aa;
+      font-weight: 500;
+    }
+
+    .event-summary-quad-v3 .footer-total {
+      font-size: 26px;
+      font-weight: 800;
+      color: #fff;
+    }
+
     .event-summary-loading {
       color: #fff;
       font-size: 36px;
@@ -2077,6 +2231,104 @@
       text-transform: uppercase;
       letter-spacing: 0.5px;
       margin-top: 4px;
+    }
+
+    /* Frame Overlays for OBS */
+    .graphic-frame-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 1920px;
+      height: 1080px;
+      background: transparent;
+    }
+    .frame-overlay-container {
+      position: absolute;
+      top: 10px;
+      left: 40px;
+      right: 40px;
+      bottom: 50px;
+    }
+    .frame-panel {
+      border: 2px solid white;
+      background: transparent;
+    }
+    /* Quad View - 2x2 grid */
+    .frame-quad .frame-overlay-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 0;
+    }
+    /* Tri View Center - 2 top, 1 centered bottom */
+    .frame-tri-center .frame-overlay-container {
+      display: flex;
+      flex-direction: column;
+    }
+    .frame-tri-center .top-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      flex: 1;
+    }
+    .frame-tri-center .bottom-row {
+      display: flex;
+      justify-content: center;
+      flex: 1;
+    }
+    .frame-tri-center .bottom-row .frame-panel {
+      width: 50%;
+    }
+    /* Tri View Wide - 2 top, 1 full-width bottom */
+    .frame-tri-wide .frame-overlay-container {
+      display: grid;
+      grid-template-rows: 1fr 1fr;
+    }
+    .frame-tri-wide .top-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+    /* Single Frame */
+    .frame-single .frame-overlay-container {
+      display: flex;
+    }
+    .frame-single .frame-panel {
+      width: 100%;
+      height: 100%;
+    }
+    /* Team Header Frame */
+    .frame-team-header .header-row {
+      position: absolute;
+      top: 30px;
+      left: 40px;
+      right: 40px;
+      height: 140px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+    }
+    .frame-team-header .team-logo {
+      height: 120px;
+      width: auto;
+      max-width: 200px;
+      object-fit: contain;
+    }
+    .frame-team-header .frame-overlay-container {
+      top: 200px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+    /* Virtius watermark for frame overlays */
+    .frame-watermark {
+      position: absolute;
+      bottom: 15px;
+      right: 50px;
+      font-family: 'Arial', sans-serif;
+      font-size: 24px;
+      font-weight: bold;
+      color: #6b7280;
+    }
+    .frame-watermark .v {
+      color: #60a5fa;
     }
   </style>
 </head>
@@ -2328,7 +2580,8 @@
     const output = document.getElementById('output');
 
     // Fetch leaderboard data from Virtius API and render custom table
-    async function fetchAndRenderLeaderboard(sessionId, eventName, shortCode) {
+    // gender parameter controls column visibility (women don't have Exec/SB)
+    async function fetchAndRenderLeaderboard(sessionId, eventName, shortCode, gender = 'mens') {
       const contentEl = document.getElementById('leaderboard-content');
       if (!contentEl) return;
 
@@ -2413,9 +2666,13 @@
         // Calculate diff from leader (scores are strings in API)
         const topScore = parseFloat(gymnasts[0]?.final_score) || 0;
 
-        // Build table HTML - columns: #, Name, Team, Apparatus, Score, Diff., Exec., SB
+        // Build table HTML - columns vary by gender
+        // Men's: #, Name, Team, Apparatus, Score, Diff., Exec., SB
+        // Women's: #, Name, Team, Apparatus, Score, Diff. (no Exec or SB)
+        const isWomens = gender === 'womens';
+
         let tableHtml = `
-          <table class="leaderboard-table">
+          <table class="leaderboard-table${isWomens ? ' leaderboard-womens' : ''}">
             <thead>
               <tr>
                 <th class="col-rank">#</th>
@@ -2424,8 +2681,8 @@
                 <th class="col-apparatus">Apparatus</th>
                 <th class="col-score">Score</th>
                 <th class="col-diff">Diff.</th>
-                <th class="col-exec">Exec.</th>
-                <th class="col-sb">SB</th>
+                ${isWomens ? '' : '<th class="col-exec">Exec.</th>'}
+                ${isWomens ? '' : '<th class="col-sb">SB</th>'}
               </tr>
             </thead>
             <tbody>
@@ -2490,8 +2747,8 @@
               <td class="col-apparatus"><span class="apparatus-badge">${shortCode}</span></td>
               <td class="col-score">${score.toFixed(3)}</td>
               <td class="col-diff">${dScoreStr}</td>
-              <td class="col-exec">${eScoreStr}</td>
-              <td class="col-sb">${stickHtml}</td>
+              ${isWomens ? '' : `<td class="col-exec">${eScoreStr}</td>`}
+              ${isWomens ? '' : `<td class="col-sb">${stickHtml}</td>`}
             </tr>
           `;
         });
@@ -2507,13 +2764,24 @@
 
     // Men's gymnastics events in Olympic order
     const MENS_EVENTS_ORDER = ['FLOOR', 'HORSE', 'RINGS', 'VAULT', 'PBARS', 'BAR'];
+    // Women's gymnastics events in Olympic order
+    const WOMENS_EVENTS_ORDER = ['VAULT', 'BARS', 'BEAM', 'FLOOR'];
+
+    // Helper to get events order by gender
+    function getEventsOrder(gender) {
+      return gender === 'womens' ? WOMENS_EVENTS_ORDER : MENS_EVENTS_ORDER;
+    }
+
     const EVENT_DISPLAY_NAMES = {
       'FLOOR': 'Floor Exercise',
       'HORSE': 'Pommel Horse',
       'RINGS': 'Still Rings',
       'VAULT': 'Vault',
       'PBARS': 'Parallel Bars',
-      'BAR': 'High Bar'
+      'BAR': 'High Bar',
+      // Women's events
+      'BARS': 'Uneven Bars',
+      'BEAM': 'Balance Beam'
     };
     const EVENT_SHORT_CODES = {
       'FLOOR': 'FX',
@@ -2521,7 +2789,10 @@
       'RINGS': 'SR',
       'VAULT': 'VT',
       'PBARS': 'PB',
-      'BAR': 'HB'
+      'BAR': 'HB',
+      // Women's events
+      'BARS': 'UB',
+      'BEAM': 'BB'
     };
 
     // Team colors database for dynamic themes
@@ -2809,35 +3080,206 @@
       return `<div class="${className}" style="background: #52525b;"></div>`;
     }
 
+    // ============================================================================
+    // ROTATION SCHEDULE TEMPLATES
+    // ============================================================================
+    // Standard NCAA rotation patterns for different meet types.
+    // schedule[rotation][eventId] = teamOrder (0-indexed) or array for head-to-head
+    // null = no team on that event
+
+    const ROTATION_SCHEDULES = {
+      // Women's meets (4 events: vault=0, bars=1, beam=2, floor=3)
+      'womens-dual-headtohead': {
+        rotationCount: 4,
+        eventOrder: ['VAULT', 'BARS', 'BEAM', 'FLOOR'],
+        schedule: {
+          1: { VAULT: [0, 1], BARS: null, BEAM: null, FLOOR: null },
+          2: { VAULT: null, BARS: [0, 1], BEAM: null, FLOOR: null },
+          3: { VAULT: null, BARS: null, BEAM: [0, 1], FLOOR: null },
+          4: { VAULT: null, BARS: null, BEAM: null, FLOOR: [0, 1] },
+        },
+      },
+      'womens-dual-alternating': {
+        rotationCount: 4,
+        eventOrder: ['VAULT', 'BARS', 'BEAM', 'FLOOR'],
+        schedule: {
+          1: { VAULT: 0, BARS: 1, BEAM: null, FLOOR: null },
+          2: { VAULT: 1, BARS: 0, BEAM: null, FLOOR: null },
+          3: { VAULT: null, BARS: null, BEAM: 0, FLOOR: 1 },
+          4: { VAULT: null, BARS: null, BEAM: 1, FLOOR: 0 },
+        },
+      },
+      'womens-tri': {
+        rotationCount: 4,
+        eventOrder: ['VAULT', 'BARS', 'BEAM', 'FLOOR'],
+        schedule: {
+          1: { VAULT: 0, BARS: 1, BEAM: 2, FLOOR: null },
+          2: { VAULT: null, BARS: 0, BEAM: 1, FLOOR: 2 },
+          3: { VAULT: 2, BARS: null, BEAM: 0, FLOOR: 1 },
+          4: { VAULT: 1, BARS: 2, BEAM: null, FLOOR: 0 },
+        },
+      },
+      'womens-quad': {
+        rotationCount: 4,
+        eventOrder: ['VAULT', 'BARS', 'BEAM', 'FLOOR'],
+        schedule: {
+          1: { VAULT: 0, BARS: 1, BEAM: 2, FLOOR: 3 },
+          2: { VAULT: 1, BARS: 2, BEAM: 3, FLOOR: 0 },
+          3: { VAULT: 2, BARS: 3, BEAM: 0, FLOOR: 1 },
+          4: { VAULT: 3, BARS: 0, BEAM: 1, FLOOR: 2 },
+        },
+      },
+
+      // Men's meets (6 events: floor=0, pommel=1, rings=2, vault=3, pBars=4, hBar=5)
+      'mens-dual-headtohead': {
+        rotationCount: 6,
+        eventOrder: ['FLOOR', 'HORSE', 'RINGS', 'VAULT', 'PBARS', 'BAR'],
+        schedule: {
+          1: { FLOOR: [0, 1], HORSE: null, RINGS: null, VAULT: null, PBARS: null, BAR: null },
+          2: { FLOOR: null, HORSE: [0, 1], RINGS: null, VAULT: null, PBARS: null, BAR: null },
+          3: { FLOOR: null, HORSE: null, RINGS: [0, 1], VAULT: null, PBARS: null, BAR: null },
+          4: { FLOOR: null, HORSE: null, RINGS: null, VAULT: [0, 1], PBARS: null, BAR: null },
+          5: { FLOOR: null, HORSE: null, RINGS: null, VAULT: null, PBARS: [0, 1], BAR: null },
+          6: { FLOOR: null, HORSE: null, RINGS: null, VAULT: null, PBARS: null, BAR: [0, 1] },
+        },
+      },
+      'mens-dual-alternating': {
+        rotationCount: 6,
+        eventOrder: ['FLOOR', 'HORSE', 'RINGS', 'VAULT', 'PBARS', 'BAR'],
+        schedule: {
+          1: { FLOOR: 0, HORSE: 1, RINGS: null, VAULT: null, PBARS: null, BAR: null },
+          2: { FLOOR: 1, HORSE: 0, RINGS: null, VAULT: null, PBARS: null, BAR: null },
+          3: { FLOOR: null, HORSE: null, RINGS: 0, VAULT: 1, PBARS: null, BAR: null },
+          4: { FLOOR: null, HORSE: null, RINGS: 1, VAULT: 0, PBARS: null, BAR: null },
+          5: { FLOOR: null, HORSE: null, RINGS: null, VAULT: null, PBARS: 0, BAR: 1 },
+          6: { FLOOR: null, HORSE: null, RINGS: null, VAULT: null, PBARS: 1, BAR: 0 },
+        },
+      },
+      'mens-tri': {
+        rotationCount: 6,
+        eventOrder: ['FLOOR', 'HORSE', 'RINGS', 'VAULT', 'PBARS', 'BAR'],
+        schedule: {
+          1: { FLOOR: 0, HORSE: null, RINGS: 1, VAULT: null, PBARS: 2, BAR: null },
+          2: { FLOOR: null, HORSE: 0, RINGS: null, VAULT: 1, PBARS: null, BAR: 2 },
+          3: { FLOOR: 2, HORSE: null, RINGS: 0, VAULT: null, PBARS: 1, BAR: null },
+          4: { FLOOR: null, HORSE: 2, RINGS: null, VAULT: 0, PBARS: null, BAR: 1 },
+          5: { FLOOR: 1, HORSE: null, RINGS: 2, VAULT: null, PBARS: 0, BAR: null },
+          6: { FLOOR: null, HORSE: 1, RINGS: null, VAULT: 2, PBARS: null, BAR: 0 },
+        },
+      },
+      'mens-quad': {
+        rotationCount: 6,
+        eventOrder: ['FLOOR', 'HORSE', 'RINGS', 'VAULT', 'PBARS', 'BAR'],
+        schedule: {
+          1: { FLOOR: 0, HORSE: 1, RINGS: 2, VAULT: 3, PBARS: null, BAR: null },
+          2: { FLOOR: null, HORSE: 0, RINGS: 1, VAULT: 2, PBARS: 3, BAR: null },
+          3: { FLOOR: null, HORSE: null, RINGS: 0, VAULT: 1, PBARS: 2, BAR: 3 },
+          4: { FLOOR: 3, HORSE: null, RINGS: null, VAULT: 0, PBARS: 1, BAR: 2 },
+          5: { FLOOR: 2, HORSE: 3, RINGS: null, VAULT: null, PBARS: 0, BAR: 1 },
+          6: { FLOOR: 1, HORSE: 2, RINGS: 3, VAULT: null, PBARS: null, BAR: 0 },
+        },
+      },
+    };
+
+    // Get the schedule key based on competition parameters
+    function getScheduleKey(numTeams, competitionFormat, gender = 'mens') {
+      const genderPrefix = gender === 'womens' ? 'womens' : 'mens';
+
+      if (numTeams === 2) {
+        // Dual meet - check format
+        if (competitionFormat === 'head-to-head') {
+          return `${genderPrefix}-dual-headtohead`;
+        } else if (competitionFormat === 'alternating') {
+          return `${genderPrefix}-dual-alternating`;
+        }
+        return `${genderPrefix}-dual-headtohead`; // default
+      } else if (numTeams === 3) {
+        return `${genderPrefix}-tri`;
+      } else if (numTeams >= 4) {
+        return `${genderPrefix}-quad`;
+      }
+      return `${genderPrefix}-dual-headtohead`; // fallback
+    }
+
+    // Get all events active in a rotation with their team assignments
+    // Returns array of { eventName, teamOrders: number[] }
+    function getEventsInRotation(rotation, numTeams, competitionFormat, gender = 'mens') {
+      const scheduleKey = getScheduleKey(numTeams, competitionFormat, gender);
+      const schedule = ROTATION_SCHEDULES[scheduleKey];
+
+      if (!schedule || !schedule.schedule[rotation]) {
+        // Fallback: all events with no specific assignment
+        const events = gender === 'womens'
+          ? ['VAULT', 'BARS', 'BEAM', 'FLOOR']
+          : ['FLOOR', 'HORSE', 'RINGS', 'VAULT', 'PBARS', 'BAR'];
+        return events.map(e => ({ eventName: e, teamOrders: [0] }));
+      }
+
+      const rotationSchedule = schedule.schedule[rotation];
+      const events = [];
+
+      for (const [eventName, teamValue] of Object.entries(rotationSchedule)) {
+        if (teamValue !== null) {
+          const teamOrders = Array.isArray(teamValue) ? teamValue : [teamValue];
+          events.push({ eventName, teamOrders });
+        }
+      }
+
+      // Sort by event order
+      const eventOrder = schedule.eventOrder || [];
+      events.sort((a, b) => eventOrder.indexOf(a.eventName) - eventOrder.indexOf(b.eventName));
+
+      return events;
+    }
+
     // Calculate which event a team is on for a given rotation
+    // Returns the event name (API format like 'FLOOR', 'HORSE', etc.)
     // - Head-to-head: Both teams compete on the SAME apparatus (Floor, then PH, etc.)
     // - Alternating: Teams start on different events and swap every rotation
-    //   R1: Home=FX, Away=PH | R2: Home=PH, Away=FX | R3: Home=SR, Away=VT | R4: Home=VT, Away=SR | R5: Home=PB, Away=HB | R6: Home=HB, Away=PB
-    function getTeamEventForRotation(teamOrder, rotation, numTeams, competitionFormat) {
-      // teamOrder is 0-indexed (0 = home, 1 = away), rotation is 1-indexed (1-6)
+    // - Multi-team (tri/quad): Different teams on different events each rotation
+    function getTeamEventForRotation(teamOrder, rotation, numTeams, competitionFormat, gender = 'mens') {
+      // teamOrder is 0-indexed (0 = home/team1, 1 = away/team2, etc.), rotation is 1-indexed
+      const scheduleKey = getScheduleKey(numTeams, competitionFormat, gender);
+      const schedule = ROTATION_SCHEDULES[scheduleKey];
 
-      if (competitionFormat === 'head-to-head') {
-        // Head-to-head: Both teams on same event, progressing through Olympic order
-        return (rotation - 1) % 6;
+      if (!schedule || !schedule.schedule[rotation]) {
+        // Fallback to legacy behavior for men's events
+        if (competitionFormat === 'head-to-head') {
+          return MENS_EVENTS_ORDER[(rotation - 1) % 6];
+        }
+        // Alternating fallback
+        const pairIndex = Math.floor((rotation - 1) / 2);
+        const isSecondInPair = (rotation - 1) % 2 === 1;
+        const baseEvent = pairIndex * 2;
+        const eventIndex = teamOrder === 0
+          ? (isSecondInPair ? baseEvent + 1 : baseEvent)
+          : (isSecondInPair ? baseEvent : baseEvent + 1);
+        return MENS_EVENTS_ORDER[eventIndex];
       }
 
-      // Alternating format: Teams on adjacent events, swapping each rotation
-      // Rotation pairs: 1-2 (FX/PH), 3-4 (SR/VT), 5-6 (PB/HB)
-      const pairIndex = Math.floor((rotation - 1) / 2); // 0, 0, 1, 1, 2, 2
-      const isSecondInPair = (rotation - 1) % 2 === 1; // false, true, false, true, false, true
-      const baseEvent = pairIndex * 2; // 0, 0, 2, 2, 4, 4
+      // Look up which event this team is on from the schedule
+      const rotationSchedule = schedule.schedule[rotation];
 
-      if (teamOrder === 0) {
-        // Home team: starts on first event of pair, swaps to second
-        return isSecondInPair ? baseEvent + 1 : baseEvent;
-      } else {
-        // Away team: starts on second event of pair, swaps to first
-        return isSecondInPair ? baseEvent : baseEvent + 1;
+      for (const [eventName, teamValue] of Object.entries(rotationSchedule)) {
+        if (teamValue !== null) {
+          if (Array.isArray(teamValue)) {
+            // Head-to-head: array of team orders
+            if (teamValue.includes(teamOrder)) {
+              return eventName;
+            }
+          } else if (teamValue === teamOrder) {
+            // Single team on this event
+            return eventName;
+          }
+        }
       }
+
+      // Team has a bye this rotation (no event)
+      return null;
     }
 
     // Fetch event summary data from Virtius API and render rotation view
-    async function fetchAndRenderEventSummary(sessionId, rotation, numTeams, competitionFormat, layout = 'default') {
+    async function fetchAndRenderEventSummary(sessionId, rotation, numTeams, competitionFormat, layout = 'default', gender = 'mens') {
       const contentEl = document.getElementById('event-summary-content');
       if (!contentEl) return;
 
@@ -2863,9 +3305,9 @@
         const actualNumTeams = Math.min(sortedTeams.length, numTeams || sortedTeams.length);
 
         // Build rotation data for each team
+        // getTeamEventForRotation now returns the event name directly (e.g., 'FLOOR', 'VAULT', 'BARS')
         const rotationData = sortedTeams.slice(0, actualNumTeams).map((team, idx) => {
-          const eventIndex = getTeamEventForRotation(idx, rotation, actualNumTeams, competitionFormat);
-          const eventName = MENS_EVENTS_ORDER[eventIndex];
+          const eventName = getTeamEventForRotation(idx, rotation, actualNumTeams, competitionFormat, gender);
           const teamEvent = team.events?.find(e => e.event_name === eventName);
           const gymnasts = teamEvent?.gymnasts?.sort((a, b) => (a.order || 0) - (b.order || 0)) || [];
           const eventScore = parseFloat(teamEvent?.event_score) || 0;
@@ -2891,11 +3333,19 @@
             renderClassicBroadcastLayout(contentEl, rotationData, rotation);
           } else if (layout === 'default-v2') {
             renderDefaultV2Layout(contentEl, rotationData, rotation);
+          } else if (layout === 'default-v3') {
+            // V3 works for both dual and multi-team
+            renderMultiTeamSummaryV3(contentEl, rotationData, rotation, actualNumTeams);
           } else {
             renderDualMeetSummary(contentEl, rotationData, rotation);
           }
         } else {
-          renderMultiTeamSummary(contentEl, rotationData, rotation, actualNumTeams);
+          // Multi-team meet (3+ teams)
+          if (layout === 'default-v3') {
+            renderMultiTeamSummaryV3(contentEl, rotationData, rotation, actualNumTeams);
+          } else {
+            renderMultiTeamSummary(contentEl, rotationData, rotation, actualNumTeams);
+          }
         }
 
       } catch (error) {
@@ -3083,18 +3533,153 @@
       contentEl.innerHTML = `<div class="event-summary-quad">${columnsHtml}</div>`;
     }
 
+    // Render multi-team layout V3 (full-height symmetric rows)
+    // Key features:
+    // - All columns have same number of rows (max across all teams, capped at 10)
+    // - Rows stretch to fill available height equally
+    // - Empty rows are styled consistently
+    // - No headshots, clean text-only design
+    function renderMultiTeamSummaryV3(contentEl, rotationData, rotation, numTeams) {
+      // Find max athletes across all teams (cap at 10)
+      const maxAthletes = Math.min(
+        Math.max(...rotationData.map(t => t.gymnasts.length)),
+        10
+      );
+
+      let columnsHtml = '';
+
+      rotationData.forEach(teamData => {
+        const { team, eventDisplayName, gymnasts, eventScore } = teamData;
+        const logoUrl = getTeamLogoUrl(team.name, team.logo);
+
+        // Build athlete rows - pad to maxAthletes for symmetry
+        let athletesHtml = '';
+        for (let i = 0; i < maxAthletes; i++) {
+          const g = gymnasts[i];
+          if (g) {
+            const score = parseFloat(g.final_score) || 0;
+            const name = `${g.first_name?.charAt(0) || ''}. ${g.last_name || ''}`;
+            athletesHtml += `
+              <div class="athlete-row">
+                <div class="athlete-order">${i + 1}</div>
+                <div class="athlete-name">${name}</div>
+                <div class="athlete-score">${score > 0 ? score.toFixed(3) : '—'}</div>
+              </div>
+            `;
+          } else {
+            // Empty placeholder row for symmetry
+            athletesHtml += `
+              <div class="athlete-row empty">
+                <div class="athlete-order">${i + 1}</div>
+                <div class="athlete-name">—</div>
+                <div class="athlete-score"></div>
+              </div>
+            `;
+          }
+        }
+
+        columnsHtml += `
+          <div class="team-column">
+            <div class="team-header">
+              <div class="event-name">${eventDisplayName}</div>
+              <div class="team-name">
+                ${team.name || team.tricode}
+                ${logoUrl ? `<img class="team-logo" src="${logoUrl}" alt="">` : ''}
+              </div>
+            </div>
+            <div class="athlete-list">
+              ${athletesHtml}
+            </div>
+            <div class="team-footer">
+              <div class="footer-label">Event Total</div>
+              <div class="footer-total">${eventScore > 0 ? eventScore.toFixed(3) : '—'}</div>
+            </div>
+          </div>
+        `;
+      });
+
+      contentEl.innerHTML = `<div class="event-summary-quad-v3 teams-${numTeams}">${columnsHtml}</div>`;
+    }
+
+    // Render multi-team apparatus layout V3 (all teams on same event, full-height)
+    function renderMultiTeamSummaryApparatusV3(contentEl, apparatusData, eventDisplayName, eventShortCode, numTeams) {
+      // Find max athletes across all teams (cap at 10)
+      const maxAthletes = Math.min(
+        Math.max(...apparatusData.map(t => t.gymnasts.length)),
+        10
+      );
+
+      let columnsHtml = '';
+
+      apparatusData.forEach(teamData => {
+        const { team, gymnasts, eventScore } = teamData;
+        const logoUrl = getTeamLogoUrl(team.name, team.logo);
+
+        // Build athlete rows - pad to maxAthletes for symmetry
+        let athletesHtml = '';
+        for (let i = 0; i < maxAthletes; i++) {
+          const g = gymnasts[i];
+          if (g) {
+            const score = parseFloat(g.final_score) || 0;
+            const name = `${g.first_name?.charAt(0) || ''}. ${g.last_name || ''}`;
+            athletesHtml += `
+              <div class="athlete-row">
+                <div class="athlete-order">${i + 1}</div>
+                <div class="athlete-name">${name}</div>
+                <div class="athlete-score">${score > 0 ? score.toFixed(3) : '—'}</div>
+              </div>
+            `;
+          } else {
+            // Empty placeholder row for symmetry
+            athletesHtml += `
+              <div class="athlete-row empty">
+                <div class="athlete-order">${i + 1}</div>
+                <div class="athlete-name">—</div>
+                <div class="athlete-score"></div>
+              </div>
+            `;
+          }
+        }
+
+        columnsHtml += `
+          <div class="team-column">
+            <div class="team-header">
+              <div class="event-name">${eventDisplayName}</div>
+              <div class="team-name">
+                ${team.name || team.tricode}
+                ${logoUrl ? `<img class="team-logo" src="${logoUrl}" alt="">` : ''}
+              </div>
+            </div>
+            <div class="athlete-list">
+              ${athletesHtml}
+            </div>
+            <div class="team-footer">
+              <div class="footer-label">Event Total</div>
+              <div class="footer-total">${eventScore > 0 ? eventScore.toFixed(3) : '—'}</div>
+            </div>
+          </div>
+        `;
+      });
+
+      contentEl.innerHTML = `<div class="event-summary-quad-v3 teams-${numTeams}">${columnsHtml}</div>`;
+    }
+
     // Map apparatus short codes to API event names
     const APPARATUS_TO_EVENT = {
+      // Men's events
       'fx': 'FLOOR',
       'ph': 'HORSE',
       'sr': 'RINGS',
       'vt': 'VAULT',
       'pb': 'PBARS',
-      'hb': 'BAR'
+      'hb': 'BAR',
+      // Women's events
+      'ub': 'BARS',
+      'bb': 'BEAM'
     };
 
     // Fetch event summary by apparatus (both teams on same event)
-    async function fetchAndRenderEventSummaryByApparatus(sessionId, apparatus, numTeams, competitionFormat, layout = 'default') {
+    async function fetchAndRenderEventSummaryByApparatus(sessionId, apparatus, numTeams, competitionFormat, layout = 'default', gender = 'mens') {
       const contentEl = document.getElementById('event-summary-content');
       if (!contentEl) return;
 
@@ -3150,11 +3735,19 @@
             renderClassicBroadcastLayoutApparatus(contentEl, apparatusData, eventDisplayName, eventShortCode);
           } else if (layout === 'default-v2') {
             renderDefaultV2LayoutApparatus(contentEl, apparatusData, eventDisplayName, eventShortCode);
+          } else if (layout === 'default-v3') {
+            // V3 works for both dual and multi-team
+            renderMultiTeamSummaryApparatusV3(contentEl, apparatusData, eventDisplayName, eventShortCode, actualNumTeams);
           } else {
             renderDualMeetSummaryApparatus(contentEl, apparatusData, eventDisplayName, eventShortCode);
           }
         } else {
-          renderMultiTeamSummaryApparatus(contentEl, apparatusData, eventDisplayName, eventShortCode, actualNumTeams);
+          // Multi-team meet (3+ teams)
+          if (layout === 'default-v3') {
+            renderMultiTeamSummaryApparatusV3(contentEl, apparatusData, eventDisplayName, eventShortCode, actualNumTeams);
+          } else {
+            renderMultiTeamSummaryApparatus(contentEl, apparatusData, eventDisplayName, eventShortCode, actualNumTeams);
+          }
         }
 
       } catch (error) {
@@ -4243,6 +4836,81 @@
         </div>
       `,
 
+      // Frame Overlays for OBS
+      'frame-quad': () => `
+        <div class="graphic-frame-overlay frame-quad">
+          <div class="frame-overlay-container">
+            <div class="frame-panel"></div>
+            <div class="frame-panel"></div>
+            <div class="frame-panel"></div>
+            <div class="frame-panel"></div>
+          </div>
+          <div class="frame-watermark"><span class="v">V</span>irtius</div>
+        </div>
+      `,
+
+      'frame-tri-center': () => `
+        <div class="graphic-frame-overlay frame-tri-center">
+          <div class="frame-overlay-container">
+            <div class="top-row">
+              <div class="frame-panel"></div>
+              <div class="frame-panel"></div>
+            </div>
+            <div class="bottom-row">
+              <div class="frame-panel"></div>
+            </div>
+          </div>
+          <div class="frame-watermark"><span class="v">V</span>irtius</div>
+        </div>
+      `,
+
+      'frame-tri-wide': () => `
+        <div class="graphic-frame-overlay frame-tri-wide">
+          <div class="frame-overlay-container">
+            <div class="top-row">
+              <div class="frame-panel"></div>
+              <div class="frame-panel"></div>
+            </div>
+            <div class="frame-panel"></div>
+          </div>
+          <div class="frame-watermark"><span class="v">V</span>irtius</div>
+        </div>
+      `,
+
+      'frame-single': () => `
+        <div class="graphic-frame-overlay frame-single">
+          <div class="frame-overlay-container">
+            <div class="frame-panel"></div>
+          </div>
+          <div class="frame-watermark"><span class="v">V</span>irtius</div>
+        </div>
+      `,
+
+      'frame-team-header': (data) => {
+        // Collect all team logos that exist
+        const logos = [];
+        for (let i = 1; i <= 6; i++) {
+          const logo = data[`team${i}Logo`];
+          if (logo && logo.trim() && !logo.includes('placeholder')) {
+            logos.push(logo);
+          }
+        }
+        const logosHtml = logos.map((logo, i) =>
+          `<img class="team-logo" src="${logo}" alt="Team ${i + 1}">`
+        ).join('');
+
+        return `
+          <div class="graphic-frame-overlay frame-team-header">
+            <div class="header-row">${logosHtml}</div>
+            <div class="frame-overlay-container">
+              <div class="frame-panel"></div>
+              <div class="frame-panel"></div>
+            </div>
+            <div class="frame-watermark"><span class="v">V</span>irtius</div>
+          </div>
+        `;
+      },
+
       'warm-up': (data) => {
         const teamsText = data.eventName || (data.team1Name && data.team2Name
           ? `${data.team1Name.toUpperCase()} VS ${data.team2Name.toUpperCase()}`
@@ -4290,6 +4958,7 @@
         const apparatus = data.summaryApparatus || 'fx';
         const numTeams = data.summaryNumTeams || 2;
         const competitionFormat = data.summaryFormat || 'head-to-head';
+        const gender = data.summaryGender || 'mens'; // Gender for correct event order
         const hostLogo = getTeamLogoUrl(data.team1Name, data.team1Logo);
         const theme = data.summaryTheme || 'default';
 
@@ -4307,9 +4976,9 @@
 
         // Fetch and render after initial paint
         if (mode === 'apparatus') {
-          setTimeout(() => fetchAndRenderEventSummaryByApparatus(sessionId, apparatus, numTeams, competitionFormat, layout), 100);
+          setTimeout(() => fetchAndRenderEventSummaryByApparatus(sessionId, apparatus, numTeams, competitionFormat, layout, gender), 100);
         } else {
-          setTimeout(() => fetchAndRenderEventSummary(sessionId, rotation, numTeams, competitionFormat, layout), 100);
+          setTimeout(() => fetchAndRenderEventSummary(sessionId, rotation, numTeams, competitionFormat, layout, gender), 100);
         }
 
         const logoHtml = hostLogo && hostLogo.trim() && !hostLogo.includes('placeholder')
@@ -4357,39 +5026,56 @@
         }
 
         // Map event codes to display titles and API event names
+        // Includes both men's and women's events
         const eventTitles = {
+          // Men's events
           'fx': 'FLOOR EXERCISE',
           'ph': 'POMMEL HORSE',
           'sr': 'STILL RINGS',
           'vt': 'VAULT',
           'pb': 'PARALLEL BARS',
           'hb': 'HORIZONTAL BAR',
+          // Women's events
+          'ub': 'UNEVEN BARS',
+          'bb': 'BALANCE BEAM',
+          // All-around
           'aa': 'ALL AROUND'
         };
         const eventApiNames = {
+          // Men's events
           'fx': 'FLOOR',
           'ph': 'HORSE',
           'sr': 'RINGS',
           'vt': 'VAULT',
           'pb': 'PBARS',
           'hb': 'BAR',
+          // Women's events
+          'ub': 'BARS',
+          'bb': 'BEAM',
+          // All-around
           'aa': 'All Around'
         };
         const eventShortCodes = {
+          // Men's events
           'fx': 'FX',
           'ph': 'PH',
           'sr': 'SR',
           'vt': 'VT',
           'pb': 'PB',
           'hb': 'HB',
+          // Women's events
+          'ub': 'UB',
+          'bb': 'BB',
+          // All-around
           'aa': 'AA'
         };
         const title = eventTitles[event] || event.toUpperCase();
         const apiEventName = eventApiNames[event] || event;
         const shortCode = eventShortCodes[event] || event.toUpperCase();
+        const gender = data.leaderboardGender || 'mens'; // Women don't have Exec/SB columns
 
         // Return loading state initially, then fetch and update
-        setTimeout(() => fetchAndRenderLeaderboard(sessionId, apiEventName, shortCode), 100);
+        setTimeout(() => fetchAndRenderLeaderboard(sessionId, apiEventName, shortCode, gender), 100);
 
         // Only show logo if it exists and is valid
         const resolvedLogo = getTeamLogoUrl(data.team1Name, data.team1Logo);

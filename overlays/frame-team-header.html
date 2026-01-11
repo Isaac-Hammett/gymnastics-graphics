@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1920, height=1080">
+  <title>Team Header Frame</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: transparent;
+    }
+    .header-row {
+      position: absolute;
+      top: 30px;
+      left: 40px;
+      right: 40px;
+      height: 140px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+    }
+    .team-logo {
+      height: 120px;
+      width: auto;
+      max-width: 200px;
+      object-fit: contain;
+    }
+    .frame-container {
+      position: absolute;
+      top: 200px;
+      left: 40px;
+      right: 40px;
+      bottom: 50px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+    }
+    .frame-panel {
+      border: 2px solid white;
+    }
+    .frame-panel:first-child {
+      border-right: 1px solid white;
+    }
+    .frame-panel:last-child {
+      border-left: 1px solid white;
+    }
+    .virtius-watermark {
+      position: absolute;
+      bottom: 15px;
+      right: 50px;
+      font-family: 'Arial', sans-serif;
+      font-size: 24px;
+      font-weight: bold;
+      color: #6b7280;
+    }
+    .virtius-watermark .v {
+      color: #60a5fa;
+    }
+  </style>
+</head>
+<body>
+  <div class="header-row" id="logoHeader">
+    <!-- Logos will be dynamically inserted -->
+  </div>
+  <div class="frame-container">
+    <div class="frame-panel"></div>
+    <div class="frame-panel"></div>
+  </div>
+  <div class="virtius-watermark"><span class="v">V</span>irtius</div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const header = document.getElementById('logoHeader');
+
+    // Collect all logos from URL params
+    const logos = [];
+    for (let i = 1; i <= 6; i++) {
+      const logo = params.get(`team${i}Logo`);
+      if (logo && logo.trim()) {
+        logos.push(logo);
+      }
+    }
+
+    // Create logo elements
+    logos.forEach((logo, index) => {
+      const img = document.createElement('img');
+      img.className = 'team-logo';
+      img.src = logo;
+      img.alt = `Team ${index + 1}`;
+      header.appendChild(img);
+    });
+  </script>
+</body>
+</html>

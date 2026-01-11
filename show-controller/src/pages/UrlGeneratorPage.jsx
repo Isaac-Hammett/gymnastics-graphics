@@ -1,16 +1,15 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useCompetition, useCompetitions } from '../hooks/useCompetitions';
-import { graphicButtons, getApparatusButtons, transparentGraphics } from '../lib/graphicButtons';
+import { graphicButtons, getApparatusButtons, getPreMeetButtons, transparentGraphics, isTransparentGraphic } from '../lib/graphicButtons';
+import { getTeamCount, getGenderFromCompType } from '../lib/competitionUtils';
+import { generateGraphicURL, copyToClipboard } from '../lib/urlBuilder';
 
-const graphicTitles = {
+// Base graphic titles (team-specific ones are generated dynamically)
+const baseGraphicTitles = {
   logos: 'Team Logos',
   'event-bar': 'Event Info Bar',
   hosts: 'Hosts',
-  'team1-stats': 'Team 1 Stats',
-  'team1-coaches': 'Team 1 Coaches',
-  'team2-stats': 'Team 2 Stats',
-  'team2-coaches': 'Team 2 Coaches',
   floor: 'Floor Exercise',
   pommel: 'Pommel Horse',
   rings: 'Still Rings',
@@ -28,21 +27,15 @@ const graphicTitles = {
   thanks: 'Thanks for Watching',
 };
 
-const eventTitles = {
-  floor: 'FLOOR EXERCISE',
-  pommel: 'POMMEL HORSE',
-  rings: 'STILL RINGS',
-  vault: 'VAULT',
-  pbars: 'PARALLEL BARS',
-  hbar: 'HORIZONTAL BAR',
-  ubars: 'UNEVEN BARS',
-  beam: 'BALANCE BEAM',
-  allaround: 'ALL AROUND',
-  final: 'FINAL SCORES',
-  order: 'COMPETITION ORDER',
-  lineups: 'NEXT EVENT LINEUPS',
-  summary: 'EVENT SUMMARY',
-};
+// Generate team-specific graphic titles dynamically
+function getGraphicTitles(teamCount) {
+  const titles = { ...baseGraphicTitles };
+  for (let i = 1; i <= teamCount; i++) {
+    titles[`team${i}-stats`] = `Team ${i} Stats`;
+    titles[`team${i}-coaches`] = `Team ${i} Coaches`;
+  }
+  return titles;
+}
 
 export default function UrlGeneratorPage() {
   const [searchParams] = useSearchParams();
@@ -57,49 +50,78 @@ export default function UrlGeneratorPage() {
   const [currentGraphic, setCurrentGraphic] = useState('logos');
   const [activeTab, setActiveTab] = useState('meet');
   const [toast, setToast] = useState('');
+
+  // Get team count from competition type (supports 2-6 teams)
+  const teamCount = useMemo(() => getTeamCount(config?.compType), [config?.compType]);
+
+  // Initialize form data with support for up to 6 teams
   const [formData, setFormData] = useState({
     eventName: 'Big Ten Dual Meet',
     meetDate: 'January 15, 2025',
     venue: 'Crisler Center',
     location: 'Ann Arbor, MI',
     hosts: 'John Smith\nSarah Johnson',
+    // Team 1
     team1Name: 'Michigan',
     team1Logo: '',
     team1Ave: '406.850',
     team1High: '409.200',
-    team1Con: '94.2%',
     team1Coaches: 'Kurt Golder\nBrian Coddington\nTyler Balthazor',
+    // Team 2
     team2Name: 'Ohio State',
     team2Logo: '',
     team2Ave: '403.450',
     team2High: '406.100',
-    team2Con: '92.8%',
     team2Coaches: 'Rustam Sharipov\nSergio Santana\nJames Moore',
+    // Team 3 (for tri/quad meets)
+    team3Name: '',
+    team3Logo: '',
+    team3Ave: '',
+    team3High: '',
+    team3Coaches: '',
+    // Team 4 (for quad meets)
+    team4Name: '',
+    team4Logo: '',
+    team4Ave: '',
+    team4High: '',
+    team4Coaches: '',
+    // Team 5
+    team5Name: '',
+    team5Logo: '',
+    team5Ave: '',
+    team5High: '',
+    team5Coaches: '',
+    // Team 6
+    team6Name: '',
+    team6Logo: '',
+    team6Ave: '',
+    team6High: '',
+    team6Coaches: '',
   });
 
   // Load config from Firebase if competition is selected
   // Coaches are now auto-synced to config when RTN data is fetched
   useEffect(() => {
     if (config) {
-      setFormData({
+      // Build form data dynamically for all teams (up to 6)
+      const newFormData = {
         eventName: config.eventName || '',
         meetDate: config.meetDate || '',
         venue: config.venue || '',
         location: config.location || '',
         hosts: config.hosts || '',
-        team1Name: config.team1Name || '',
-        team1Logo: config.team1Logo || '',
-        team1Ave: config.team1Ave || '',
-        team1High: config.team1High || '',
-        team1Con: config.team1Con || '',
-        team1Coaches: config.team1Coaches || '',
-        team2Name: config.team2Name || '',
-        team2Logo: config.team2Logo || '',
-        team2Ave: config.team2Ave || '',
-        team2High: config.team2High || '',
-        team2Con: config.team2Con || '',
-        team2Coaches: config.team2Coaches || '',
-      });
+      };
+
+      // Load all team data (1-6)
+      for (let i = 1; i <= 6; i++) {
+        newFormData[`team${i}Name`] = config[`team${i}Name`] || '';
+        newFormData[`team${i}Logo`] = config[`team${i}Logo`] || '';
+        newFormData[`team${i}Ave`] = config[`team${i}Ave`] || '';
+        newFormData[`team${i}High`] = config[`team${i}High`] || '';
+        newFormData[`team${i}Coaches`] = config[`team${i}Coaches`] || '';
+      }
+
+      setFormData(newFormData);
       setHasChanges(false);
     }
   }, [config]);
@@ -149,74 +171,50 @@ export default function UrlGeneratorPage() {
     setRefreshing(false);
   };
 
-  const baseUrl = window.location.origin + '/';
+  // Get dynamic graphic titles based on team count
+  const graphicTitles = useMemo(() => getGraphicTitles(teamCount), [teamCount]);
 
+  // Generate URL using the centralized URL builder
   const generateURL = (graphic) => {
-    const team1Logo = formData.team1Logo || 'https://via.placeholder.com/200/00274C/FFCB05?text=T1';
-    const team2Logo = formData.team2Logo || 'https://via.placeholder.com/200/BB0000/FFFFFF?text=T2';
-    const encode = encodeURIComponent;
-
-    switch (graphic) {
-      case 'logos':
-        return `${baseUrl}overlays/logos.html?team1Logo=${encode(team1Logo)}&team2Logo=${encode(team2Logo)}`;
-      case 'event-bar':
-        return `${baseUrl}overlays/event-bar.html?team1Logo=${encode(team1Logo)}&venue=${encode(formData.venue)}&eventName=${encode(formData.eventName)}&location=${encode(formData.location)}`;
-      case 'hosts':
-        return `${baseUrl}overlays/hosts.html?hosts=${encode(formData.hosts.split('\n').join('|'))}`;
-      case 'team1-stats':
-        return `${baseUrl}overlays/team-stats.html?teamName=${encode(formData.team1Name)}&logo=${encode(team1Logo)}&ave=${encode(formData.team1Ave)}&high=${encode(formData.team1High)}&con=${encode(formData.team1Con)}`;
-      case 'team1-coaches':
-        return `${baseUrl}overlays/coaches.html?logo=${encode(team1Logo)}&coaches=${encode(formData.team1Coaches.split('\n').join('|'))}`;
-      case 'team2-stats':
-        return `${baseUrl}overlays/team-stats.html?teamName=${encode(formData.team2Name)}&logo=${encode(team2Logo)}&ave=${encode(formData.team2Ave)}&high=${encode(formData.team2High)}&con=${encode(formData.team2Con)}`;
-      case 'team2-coaches':
-        return `${baseUrl}overlays/coaches.html?logo=${encode(team2Logo)}&coaches=${encode(formData.team2Coaches.split('\n').join('|'))}`;
-      case 'floor':
-      case 'pommel':
-      case 'rings':
-      case 'vault':
-      case 'pbars':
-      case 'hbar':
-      case 'ubars':
-      case 'beam':
-      case 'allaround':
-      case 'final':
-      case 'order':
-      case 'lineups':
-      case 'summary':
-        return `${baseUrl}overlays/event-frame.html?title=${encode(eventTitles[graphic])}&logo=${encode(team1Logo)}`;
-      case 'starting':
-        return `${baseUrl}overlays/stream.html?title=STREAM%20STARTING%20SOON&logo=${encode(team1Logo)}&eventName=${encode(formData.eventName)}&meetDate=${encode(formData.meetDate)}`;
-      case 'thanks':
-        return `${baseUrl}overlays/stream.html?title=THANKS%20FOR%20WATCHING&logo=${encode(team1Logo)}&eventName=${encode(formData.eventName)}&meetDate=${encode(formData.meetDate)}`;
-      default:
-        return '';
-    }
+    return generateGraphicURL(graphic, formData, teamCount);
   };
 
-  const currentUrl = useMemo(() => generateURL(currentGraphic), [currentGraphic, formData]);
+  const currentUrl = useMemo(() => generateURL(currentGraphic), [currentGraphic, formData, teamCount]);
 
   const showToast = (message) => {
     setToast(message);
     setTimeout(() => setToast(''), 2000);
   };
 
-  const copyUrl = (graphic) => {
-    navigator.clipboard.writeText(generateURL(graphic));
-    showToast(`Copied: ${graphicTitles[graphic]}`);
+  const copyUrl = async (graphic) => {
+    const success = await copyToClipboard(generateURL(graphic));
+    showToast(success ? `Copied: ${graphicTitles[graphic]}` : 'Failed to copy');
   };
 
-  const copyAllUrls = () => {
+  const copyAllUrls = async () => {
     const allUrls = Object.keys(graphicTitles)
       .map((g) => `${graphicTitles[g]}:\n${generateURL(g)}`)
       .join('\n\n');
-    navigator.clipboard.writeText(allUrls);
-    showToast('All URLs copied!');
+    const success = await copyToClipboard(allUrls);
+    showToast(success ? 'All URLs copied!' : 'Failed to copy');
   };
 
-  const isTransparent = transparentGraphics.includes(currentGraphic);
+  const isTransparent = isTransparentGraphic(currentGraphic);
 
   const apparatusButtons = getApparatusButtons(config?.compType || 'mens-dual');
+
+  // Generate dynamic pre-meet buttons based on team count and names
+  const teamNames = useMemo(() => {
+    const names = {};
+    for (let i = 1; i <= teamCount; i++) {
+      if (formData[`team${i}Name`]) {
+        names[i] = formData[`team${i}Name`];
+      }
+    }
+    return names;
+  }, [formData, teamCount]);
+
+  const preMeetButtons = useMemo(() => getPreMeetButtons(teamCount, teamNames), [teamCount, teamNames]);
 
   return (
     <div className="h-screen bg-zinc-950 flex">
@@ -240,7 +238,7 @@ export default function UrlGeneratorPage() {
         </p>
 
         <GraphicSection title="Pre-Meet">
-          {graphicButtons.preMeet.map((btn) => (
+          {preMeetButtons.map((btn) => (
             <GraphicSidebarButton
               key={btn.id}
               {...btn}
@@ -319,21 +317,50 @@ export default function UrlGeneratorPage() {
 
       {/* Config Panel */}
       <div className="w-80 bg-zinc-900 border-l border-zinc-800 p-5 overflow-y-auto flex-shrink-0">
-        <div className="flex gap-1 mb-4">
-          {['meet', 'team1', 'team2', 'urls'].map((tab) => (
+        {/* Dynamic tabs based on team count */}
+        <div className="flex flex-wrap gap-1 mb-4">
+          <button
+            onClick={() => setActiveTab('meet')}
+            className={`px-3 py-2 text-xs font-medium rounded-lg transition-colors ${
+              activeTab === 'meet'
+                ? 'bg-blue-600 text-white'
+                : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+            }`}
+          >
+            Meet
+          </button>
+          {/* Generate team tabs dynamically based on teamCount */}
+          {Array.from({ length: teamCount }, (_, i) => i + 1).map((num) => (
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-colors ${
-                activeTab === tab
+              key={`team${num}`}
+              onClick={() => setActiveTab(`team${num}`)}
+              className={`px-3 py-2 text-xs font-medium rounded-lg transition-colors ${
+                activeTab === `team${num}`
                   ? 'bg-blue-600 text-white'
                   : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
               }`}
             >
-              {tab === 'meet' ? 'Meet Info' : tab === 'team1' ? 'Team 1' : tab === 'team2' ? 'Team 2' : 'All URLs'}
+              T{num}
             </button>
           ))}
+          <button
+            onClick={() => setActiveTab('urls')}
+            className={`px-3 py-2 text-xs font-medium rounded-lg transition-colors ${
+              activeTab === 'urls'
+                ? 'bg-blue-600 text-white'
+                : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+            }`}
+          >
+            URLs
+          </button>
         </div>
+
+        {/* Competition type indicator */}
+        {config?.compType && (
+          <div className="mb-4 px-2 py-1.5 bg-zinc-800 rounded text-xs text-zinc-400">
+            {config.compType.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())} ({teamCount} teams)
+          </div>
+        )}
 
         {activeTab === 'meet' && (
           <div>
@@ -345,49 +372,52 @@ export default function UrlGeneratorPage() {
           </div>
         )}
 
-        {activeTab === 'team1' && (
-          <div>
-            <ConfigInput label="Team Name" value={formData.team1Name} onChange={(v) => updateFormData({ team1Name: v })} />
-            <ConfigInput label="Logo URL" value={formData.team1Logo} onChange={(v) => updateFormData({ team1Logo: v })} placeholder="https://..." />
-            <div className="grid grid-cols-3 gap-2">
-              <ConfigInput label="AVE" value={formData.team1Ave} onChange={(v) => updateFormData({ team1Ave: v })} />
-              <ConfigInput label="HIGH" value={formData.team1High} onChange={(v) => updateFormData({ team1High: v })} />
-              <ConfigInput label="CON" value={formData.team1Con} onChange={(v) => updateFormData({ team1Con: v })} />
+        {/* Dynamic team tabs - render for each team in the competition */}
+        {Array.from({ length: teamCount }, (_, i) => i + 1).map((num) => (
+          activeTab === `team${num}` && (
+            <div key={`team${num}-content`}>
+              <h3 className="text-sm font-semibold text-zinc-300 mb-3">Team {num}</h3>
+              <ConfigInput
+                label="Team Name"
+                value={formData[`team${num}Name`]}
+                onChange={(v) => updateFormData({ [`team${num}Name`]: v })}
+              />
+              <ConfigInput
+                label="Logo URL"
+                value={formData[`team${num}Logo`]}
+                onChange={(v) => updateFormData({ [`team${num}Logo`]: v })}
+                placeholder="https://..."
+              />
+              <div className="grid grid-cols-2 gap-2">
+                <ConfigInput
+                  label="AVE"
+                  value={formData[`team${num}Ave`]}
+                  onChange={(v) => updateFormData({ [`team${num}Ave`]: v })}
+                />
+                <ConfigInput
+                  label="HIGH"
+                  value={formData[`team${num}High`]}
+                  onChange={(v) => updateFormData({ [`team${num}High`]: v })}
+                />
+              </div>
+              <ConfigTextarea
+                label="Coaches (one per line)"
+                value={formData[`team${num}Coaches`]}
+                onChange={(v) => updateFormData({ [`team${num}Coaches`]: v })}
+                rows={3}
+              />
+              {compId && num <= 2 && (
+                <button
+                  onClick={handleRefreshTeamData}
+                  disabled={refreshing}
+                  className="w-full px-3 py-2 text-xs bg-zinc-700 text-zinc-300 rounded-lg hover:bg-zinc-600 transition-colors disabled:opacity-50"
+                >
+                  {refreshing ? 'Fetching...' : 'Fetch Team Data from RTN'}
+                </button>
+              )}
             </div>
-            <ConfigTextarea label="Coaches (one per line)" value={formData.team1Coaches} onChange={(v) => updateFormData({ team1Coaches: v })} rows={4} />
-            {compId && (
-              <button
-                onClick={handleRefreshTeamData}
-                disabled={refreshing}
-                className="w-full px-3 py-2 text-xs bg-zinc-700 text-zinc-300 rounded-lg hover:bg-zinc-600 transition-colors disabled:opacity-50"
-              >
-                {refreshing ? 'Fetching...' : 'Fetch Team Data from RTN'}
-              </button>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'team2' && (
-          <div>
-            <ConfigInput label="Team Name" value={formData.team2Name} onChange={(v) => updateFormData({ team2Name: v })} />
-            <ConfigInput label="Logo URL" value={formData.team2Logo} onChange={(v) => updateFormData({ team2Logo: v })} placeholder="https://..." />
-            <div className="grid grid-cols-3 gap-2">
-              <ConfigInput label="AVE" value={formData.team2Ave} onChange={(v) => updateFormData({ team2Ave: v })} />
-              <ConfigInput label="HIGH" value={formData.team2High} onChange={(v) => updateFormData({ team2High: v })} />
-              <ConfigInput label="CON" value={formData.team2Con} onChange={(v) => updateFormData({ team2Con: v })} />
-            </div>
-            <ConfigTextarea label="Coaches (one per line)" value={formData.team2Coaches} onChange={(v) => updateFormData({ team2Coaches: v })} rows={4} />
-            {compId && (
-              <button
-                onClick={handleRefreshTeamData}
-                disabled={refreshing}
-                className="w-full px-3 py-2 text-xs bg-zinc-700 text-zinc-300 rounded-lg hover:bg-zinc-600 transition-colors disabled:opacity-50"
-              >
-                {refreshing ? 'Fetching...' : 'Fetch Team Data from RTN'}
-              </button>
-            )}
-          </div>
-        )}
+          )
+        ))}
 
         {activeTab === 'urls' && (
           <div>
