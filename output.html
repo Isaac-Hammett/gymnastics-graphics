@@ -3684,17 +3684,26 @@
     }
 
     // Map apparatus short codes to API event names
+    // Supports both short codes (fx, ub) and button IDs (floor, ubars)
     const APPARATUS_TO_EVENT = {
       // Men's events
       'fx': 'FLOOR',
+      'floor': 'FLOOR',
       'ph': 'HORSE',
+      'pommel': 'HORSE',
       'sr': 'RINGS',
+      'rings': 'RINGS',
       'vt': 'VAULT',
+      'vault': 'VAULT',
       'pb': 'PBARS',
+      'pbars': 'PBARS',
       'hb': 'BAR',
+      'hbar': 'BAR',
       // Women's events
       'ub': 'BARS',
-      'bb': 'BEAM'
+      'ubars': 'BARS',
+      'bb': 'BEAM',
+      'beam': 'BEAM'
     };
 
     // Fetch event summary by apparatus (both teams on same event)
