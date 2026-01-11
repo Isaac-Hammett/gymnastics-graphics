@@ -1,15 +1,39 @@
 // Graphics button definitions shared across the app
 
-export const graphicButtons = {
-  preMeet: [
+/**
+ * Generate pre-meet buttons dynamically based on team count
+ * @param {number} teamCount - Number of teams in the competition
+ * @param {Object} teamNames - Optional object mapping team numbers to names (e.g., { 1: 'Michigan', 2: 'Ohio State' })
+ * @returns {Array} Array of button definitions
+ */
+export function getPreMeetButtons(teamCount = 2, teamNames = {}) {
+  const buttons = [
     { id: 'logos', label: 'Team Logos', number: 1 },
     { id: 'event-bar', label: 'Event Info', number: 2 },
     { id: 'warm-up', label: 'Warm Up', number: 3 },
     { id: 'hosts', label: 'Hosts', number: 4 },
-    { id: 'team1-stats', label: 'Team 1 Stats', number: 5 },
-    { id: 'team1-coaches', label: 'Team 1 Coaches', number: 6 },
-    { id: 'team2-stats', label: 'Team 2 Stats', number: 7 },
-    { id: 'team2-coaches', label: 'Team 2 Coaches', number: 8 },
+  ];
+
+  // Add team stats and coaches for each team
+  let buttonNum = 5;
+  for (let i = 1; i <= teamCount; i++) {
+    const teamLabel = teamNames[i] || `Team ${i}`;
+    buttons.push({ id: `team${i}-stats`, label: `${teamLabel} Stats`, number: buttonNum++, team: i });
+    buttons.push({ id: `team${i}-coaches`, label: `${teamLabel} Coaches`, number: buttonNum++, team: i });
+  }
+
+  return buttons;
+}
+
+// Static pre-meet buttons (for backwards compatibility, defaults to 2 teams)
+export const graphicButtons = {
+  preMeet: getPreMeetButtons(2),
+  frameOverlays: [
+    { id: 'frame-quad', label: 'Quad View', number: 21 },
+    { id: 'frame-tri-center', label: 'Tri Center', number: 22 },
+    { id: 'frame-tri-wide', label: 'Tri Wide', number: 23 },
+    { id: 'frame-team-header', label: 'Team Header', number: 24 },
+    { id: 'frame-single', label: 'Single', number: 25 },
   ],
   mensApparatus: [
     { id: 'floor', label: 'Floor Exercise', title: 'FLOOR EXERCISE', number: 8 },
@@ -66,7 +90,12 @@ export const graphicNames = {
   'summary': 'Event Summary',
   'stream-starting': 'Stream Starting',
   'stream-thanks': 'Thanks for Watching',
-  'event-frame': 'Event Frame'
+  'event-frame': 'Event Frame',
+  'frame-quad': 'Quad View',
+  'frame-tri-center': 'Tri Center',
+  'frame-tri-wide': 'Tri Wide',
+  'frame-team-header': 'Team Header',
+  'frame-single': 'Single Frame'
 };
 
 export const teamCounts = {
@@ -104,7 +133,25 @@ export const typeLabels = {
 
 export const eventFrameIds = ['floor', 'pommel', 'rings', 'vault', 'pbars', 'hbar', 'ubars', 'beam', 'allaround', 'final', 'order', 'lineups', 'summary'];
 
-export const transparentGraphics = ['event-bar', 'warm-up', 'hosts', 'team1-stats', 'team1-coaches', 'team2-stats', 'team2-coaches', ...eventFrameIds];
+// Base transparent graphics (without team-specific ones)
+const baseTransparentGraphics = ['event-bar', 'warm-up', 'hosts', ...eventFrameIds];
+
+// Generate transparent graphics list for all possible teams (up to 6)
+const teamTransparentGraphics = [];
+for (let i = 1; i <= 6; i++) {
+  teamTransparentGraphics.push(`team${i}-stats`, `team${i}-coaches`);
+}
+
+export const transparentGraphics = [...baseTransparentGraphics, ...teamTransparentGraphics];
+
+/**
+ * Check if a graphic should have transparent background
+ * @param {string} graphicId - The graphic ID to check
+ * @returns {boolean} True if the graphic should be transparent
+ */
+export function isTransparentGraphic(graphicId) {
+  return transparentGraphics.includes(graphicId) || /^team\d+-(stats|coaches)$/.test(graphicId);
+}
 
 export function getApparatusButtons(compType) {
   const isMens = compType?.startsWith('mens');
@@ -113,4 +160,25 @@ export function getApparatusButtons(compType) {
 
 export function isMensCompetition(compType) {
   return compType?.startsWith('mens');
+}
+
+/**
+ * Get the number of rotations for a competition type
+ * Men's has 6 rotations, Women's has 4 rotations
+ * @param {string} compType - Competition type (e.g., 'womens-quad', 'mens-dual')
+ * @returns {number} Number of rotations
+ */
+export function getRotationCount(compType) {
+  const isMens = compType?.startsWith('mens');
+  return isMens ? 6 : 4;
+}
+
+/**
+ * Get the number of events for a competition type
+ * Alias for getRotationCount for semantic clarity
+ * @param {string} compType
+ * @returns {number}
+ */
+export function getEventCount(compType) {
+  return getRotationCount(compType);
 }

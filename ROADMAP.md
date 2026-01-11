@@ -207,6 +207,132 @@ Virtius provides a scoreboard/lineup view that requires keyboard interaction:
 
 ---
 
+### Individual Athlete Graphics
+**Priority:** High
+**Status:** Planned
+
+Add graphics for individual athletes during competition, showing stats and context for commentary.
+
+**Data to display:**
+- Athlete name and headshot
+- Event-specific stats (average score, high score on this apparatus)
+- Last competition stats (when they last competed, their score)
+- Season highlights
+
+**Use cases:**
+- Before an athlete competes: "Up next on rings..."
+- During downtime: "Athletes to watch" segment
+- Key matchups: Compare two athletes head-to-head
+
+**Data sources:**
+- RTN roster data (already fetched)
+- Firebase headshots database
+- Virtius API for live/historical scores
+
+---
+
+### Producer-Camera Operator Sync
+**Priority:** High
+**Status:** Planned
+
+Enable real-time communication between the producer and on-the-ground camera operators to coordinate transitions.
+
+**Problem:**
+- Camera operators currently watch Virtius on their phone to know when a routine ends
+- There's a delay between score posting and knowing it's safe to move the camera
+- No direct communication channel from producer to camera
+
+**Solution:**
+- Two-way sync between Producer view and Camera Operator view
+- Producer can signal "OK to move" when routine is complete and graphics are ready
+- Camera operator can signal "ready" or "moving" back to producer
+- Visual/audio cue on camera operator's device (phone/tablet)
+
+**Features:**
+- Producer view: "Signal Camera" button per apparatus/position
+- Camera Operator view: Simple mobile-friendly interface showing current status
+- Status indicators: "HOLD" (athlete performing), "CLEAR" (safe to move)
+- Optional: Audio beep on camera operator device when cleared
+- Bi-directional: Camera can signal back when in position
+
+**Technical approach:**
+- Use existing Firebase real-time database for instant sync
+- New `/cameraSync/{compId}` path for camera status
+- Mobile-optimized Camera Operator page in React app
+- Could integrate with OBS scene changes (auto-clear when score shows)
+
+---
+
+### Talent Graphic Claim System
+**Priority:** High
+**Status:** Planned
+
+Allow commentators to "claim" upcoming graphics so they don't talk over each other.
+
+**Problem:**
+- Multiple commentators see the same upcoming graphic
+- Both start talking about it at the same time
+- No coordination system for who covers what
+
+**Solution:**
+- Talent view shows upcoming/queued graphics
+- Commentator can click to "claim" a graphic (e.g., "I'll cover Team 1 Coaches")
+- Other commentators see the claim in real-time
+- Visual indicator shows who claimed what
+
+**Features:**
+- Upcoming graphics queue visible in Talent view
+- "Claim" button next to each queued graphic
+- Claimed graphics show commentator name/color
+- Optional: Auto-release claim after graphic is shown
+- Optional: Producer can see all claims and override
+
+**UI Concept:**
+```
+UPCOMING GRAPHICS
+┌────────────────────────────────────────┐
+│ Team 1 Coaches    [CLAIMED: Sarah] ✓   │
+│ Team 2 Stats      [CLAIM]              │
+│ Event Summary     [CLAIM]              │
+└────────────────────────────────────────┘
+```
+
+**Technical approach:**
+- Firebase path: `/competitions/{compId}/graphicClaims`
+- Store: `{ graphicId: { claimedBy: "Sarah", claimedAt: timestamp } }`
+- Real-time sync across all Talent views
+- Auto-clear claims when graphic is shown or after timeout
+
+---
+
+### AI-Powered Talent Assistance
+**Priority:** Medium
+**Status:** Concept
+
+Use AI to assist talent/commentators during the stream with contextual suggestions.
+
+**Features:**
+- Stream state awareness: "We're in rotation 3, just finished pommel horse"
+- Suggest talking points during downtime (2+ min gaps)
+- "Athletes to watch" recommendations based on upcoming lineups
+- Historical context: "Springfield has won the last 3 meets on this apparatus"
+- Key storylines to mention
+
+**Implementation ideas:**
+- LLM integration with competition context
+- Feed current stream state (rotation, event, scores) to AI
+- Generate suggested talking points for talent
+- Could display suggestions in Talent view
+
+**Data to feed AI:**
+- Competition config and team data
+- Current rotation/event state
+- Score data from Virtius
+- Historical data from RTN
+- Timesheet/rundown position
+
+---
+
 ## Current System Notes
 
 ### Competition Types

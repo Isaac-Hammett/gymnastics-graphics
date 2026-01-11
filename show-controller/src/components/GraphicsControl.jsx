@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { db, ref, set, onValue } from '../lib/firebase';
 import { PhotoIcon, XMarkIcon, ClipboardDocumentIcon, CheckIcon, Cog6ToothIcon } from '@heroicons/react/24/solid';
+import useEventConfig from '../hooks/useEventConfig';
 
-const graphicButtons = [
+// Base graphic buttons (non-event-specific)
+const baseGraphicButtons = [
   { id: 'logos', label: 'Team Logos', section: 'Pre-Meet' },
   { id: 'event-bar', label: 'Event Info', section: 'Pre-Meet' },
   { id: 'hosts', label: 'Hosts', section: 'Pre-Meet' },
@@ -19,30 +21,57 @@ const graphicButtons = [
   { id: 'team5-coaches', label: 'Team 5 Coaches', section: 'Pre-Meet', team: 5 },
   { id: 'team6-stats', label: 'Team 6 Stats', section: 'Pre-Meet', team: 6 },
   { id: 'team6-coaches', label: 'Team 6 Coaches', section: 'Pre-Meet', team: 6 },
-  { id: 'floor', label: 'Floor', title: 'FLOOR EXERCISE', section: 'Events' },
-  { id: 'pommel', label: 'Pommel Horse', title: 'POMMEL HORSE', section: 'Events' },
-  { id: 'rings', label: 'Still Rings', title: 'STILL RINGS', section: 'Events' },
-  { id: 'vault', label: 'Vault', title: 'VAULT', section: 'Events' },
-  { id: 'pbars', label: 'Parallel Bars', title: 'PARALLEL BARS', section: 'Events' },
-  { id: 'hbar', label: 'High Bar', title: 'HORIZONTAL BAR', section: 'Events' },
-  { id: 'allaround', label: 'All Around', title: 'ALL AROUND', section: 'Events' },
-  { id: 'final', label: 'Final Scores', title: 'FINAL SCORES', section: 'Events' },
   { id: 'stream-starting', label: 'Starting Soon', section: 'Stream' },
   { id: 'stream-thanks', label: 'Thanks', section: 'Stream' },
-  // Virtius Leaderboards
-  { id: 'leaderboard-fx', label: 'FX Leaders', section: 'Leaderboards', leaderboardEvent: 'fx' },
-  { id: 'leaderboard-ph', label: 'PH Leaders', section: 'Leaderboards', leaderboardEvent: 'ph' },
-  { id: 'leaderboard-sr', label: 'SR Leaders', section: 'Leaderboards', leaderboardEvent: 'sr' },
-  { id: 'leaderboard-vt', label: 'VT Leaders', section: 'Leaderboards', leaderboardEvent: 'vt' },
-  { id: 'leaderboard-pb', label: 'PB Leaders', section: 'Leaderboards', leaderboardEvent: 'pb' },
-  { id: 'leaderboard-hb', label: 'HB Leaders', section: 'Leaderboards', leaderboardEvent: 'hb' },
-  { id: 'leaderboard-aa', label: 'AA Leaders', section: 'Leaderboards', leaderboardEvent: 'aa' },
+  // Frame Overlays for OBS
+  { id: 'frame-quad', label: 'Quad View', section: 'Frame Overlays' },
+  { id: 'frame-tri-center', label: 'Tri Center', section: 'Frame Overlays' },
+  { id: 'frame-tri-wide', label: 'Tri Wide', section: 'Frame Overlays' },
+  { id: 'frame-team-header', label: 'Team Header', section: 'Frame Overlays' },
+  { id: 'frame-single', label: 'Single', section: 'Frame Overlays' },
 ];
 
-const eventFrames = ['floor', 'pommel', 'rings', 'vault', 'pbars', 'hbar', 'allaround', 'final'];
+// Event button mapping for different genders (uses eventConfig IDs)
+// These map internal event IDs to display-friendly button configs
+const eventButtonConfig = {
+  floor: { id: 'floor', label: 'Floor', title: 'FLOOR EXERCISE' },
+  pommel: { id: 'pommel', label: 'Pommel Horse', title: 'POMMEL HORSE' },
+  rings: { id: 'rings', label: 'Still Rings', title: 'STILL RINGS' },
+  vault: { id: 'vault', label: 'Vault', title: 'VAULT' },
+  pBars: { id: 'pbars', label: 'Parallel Bars', title: 'PARALLEL BARS' },
+  hBar: { id: 'hbar', label: 'High Bar', title: 'HORIZONTAL BAR' },
+  bars: { id: 'ubars', label: 'Uneven Bars', title: 'UNEVEN BARS' },
+  beam: { id: 'beam', label: 'Balance Beam', title: 'BALANCE BEAM' },
+};
+
+// Common event buttons that appear for all genders
+const commonEventButtons = [
+  { id: 'allaround', label: 'All Around', title: 'ALL AROUND' },
+  { id: 'final', label: 'Final Scores', title: 'FINAL SCORES' },
+];
+
+// Leaderboard button mapping (uses short names for display)
+const leaderboardButtonConfig = {
+  floor: { id: 'leaderboard-fx', label: 'FX Leaders', leaderboardEvent: 'fx' },
+  pommel: { id: 'leaderboard-ph', label: 'PH Leaders', leaderboardEvent: 'ph' },
+  rings: { id: 'leaderboard-sr', label: 'SR Leaders', leaderboardEvent: 'sr' },
+  vault: { id: 'leaderboard-vt', label: 'VT Leaders', leaderboardEvent: 'vt' },
+  pBars: { id: 'leaderboard-pb', label: 'PB Leaders', leaderboardEvent: 'pb' },
+  hBar: { id: 'leaderboard-hb', label: 'HB Leaders', leaderboardEvent: 'hb' },
+  bars: { id: 'leaderboard-ub', label: 'UB Leaders', leaderboardEvent: 'ub' },
+  beam: { id: 'leaderboard-bb', label: 'BB Leaders', leaderboardEvent: 'bb' },
+};
+
+// AA leaderboard is always available
+const commonLeaderboardButtons = [
+  { id: 'leaderboard-aa', label: 'AA Leaders', leaderboardEvent: 'aa' },
+];
+
+// All possible event frame IDs (for both genders)
+const eventFrames = ['floor', 'pommel', 'rings', 'vault', 'pbars', 'hbar', 'ubars', 'beam', 'allaround', 'final'];
 
 const OUTPUT_BASE_URL = 'https://virtiusgraphicsenginev001.netlify.app/output.html';
-const LOCAL_OUTPUT_URL = 'http://localhost:8080/output.html';
+const LOCAL_OUTPUT_URL = 'http://localhost:3003/output.html';
 
 const teamCounts = {
   'mens-dual': 2, 'womens-dual': 2,
@@ -60,6 +89,7 @@ const summaryThemes = [
   { id: 'layout-broadcast-table', label: '🎴 Hero Cards', isLayout: true },
   { id: 'layout-classic-broadcast', label: '📺 Classic Broadcast', isLayout: true },
   { id: 'layout-default-v2', label: '✨ Default Original V2', isLayout: true },
+  { id: 'layout-default-v3', label: '📊 Default Original V3', isLayout: true },
   // COLOR THEMES - Same structure, different colors
   { id: 'default', label: 'Default (Original)' },
   { id: 'espn', label: 'ESPN Colors' },
@@ -94,6 +124,40 @@ export default function GraphicsControl({ competitionId }) {
   const [summaryTheme, setSummaryTheme] = useState('default');
   const [liveAthletes, setLiveAthletes] = useState([]); // Athletes currently competing (type: 0, no score yet)
   const [isPolling, setIsPolling] = useState(false);
+
+  // Get gender-specific event configuration
+  const { events, eventIds, rotationCount, gender } = useEventConfig(config?.compType);
+
+  // Build dynamic graphic buttons based on competition gender
+  const graphicButtons = useMemo(() => {
+    // Build event buttons from gender-specific events
+    const eventButtons = eventIds
+      .map(eventId => eventButtonConfig[eventId])
+      .filter(Boolean)
+      .map(btn => ({ ...btn, section: 'Events' }));
+
+    // Build leaderboard buttons from gender-specific events
+    const leaderboardButtons = eventIds
+      .map(eventId => leaderboardButtonConfig[eventId])
+      .filter(Boolean)
+      .map(btn => ({ ...btn, section: 'Leaderboards' }));
+
+    return [
+      ...baseGraphicButtons,
+      ...eventButtons,
+      ...commonEventButtons.map(btn => ({ ...btn, section: 'Events' })),
+      ...leaderboardButtons,
+      ...commonLeaderboardButtons.map(btn => ({ ...btn, section: 'Leaderboards' })),
+    ];
+  }, [eventIds]);
+
+  // Build apparatus buttons for Event Summary (gender-specific)
+  const apparatusButtons = useMemo(() => {
+    return events.map(event => ({
+      id: event.shortName.toLowerCase(),
+      label: event.shortName,
+    }));
+  }, [events]);
 
   // Load available competitions with their names
   useEffect(() => {
@@ -268,6 +332,7 @@ export default function GraphicsControl({ competitionId }) {
 
     if (leaderboardEvent) {
       data.leaderboardEvent = leaderboardEvent;
+      data.leaderboardGender = gender; // Pass gender for column visibility (women don't have Exec/SB)
     }
 
     // Determine graphic type
@@ -286,7 +351,7 @@ export default function GraphicsControl({ competitionId }) {
     });
   };
 
-  // Send event summary graphic - can be rotation-based (R1-R6) or apparatus-based (FX, PH, etc.)
+  // Send event summary graphic - can be rotation-based (R1-R4/R1-R6) or apparatus-based (gender-specific events)
   const sendEventSummary = (mode, value) => {
     if (!compId || !config) return;
 
@@ -300,15 +365,18 @@ export default function GraphicsControl({ competitionId }) {
 
     if (mode === 'rotation') {
       // Rotation mode: for dual meets, use alternating format (teams on different events)
-      // R1: Home=FX, Away=PH | R2: swap | R3: Home=SR, Away=VT | etc.
+      // Men's: R1: Home=FX, Away=PH | R2: swap | R3: Home=SR, Away=VT | etc.
+      // Women's: R1: Home=VT, Away=UB | R2: swap | R3: Home=BB, Away=FX | R4: swap
+      // For multi-team meets (tri, quad), each team is on a different event per rotation
       graphicId = `summary-r${value}`;
       data = {
         virtiusSessionId: config.virtiusSessionId || '',
         summaryMode: 'rotation',
         summaryRotation: value,
         summaryNumTeams: maxTeams,
-        summaryFormat: isDual ? 'alternating' : 'olympic',
+        summaryFormat: isDual ? 'alternating' : 'rotation', // 'alternating' for dual, 'rotation' for multi-team
         summaryTheme: summaryTheme,
+        summaryGender: gender, // Gender for determining correct events
         team1Logo: config.team1Logo || '',
         team1Name: config.team1Name || '',
         team2Name: config.team2Name || '',
@@ -319,10 +387,11 @@ export default function GraphicsControl({ competitionId }) {
       data = {
         virtiusSessionId: config.virtiusSessionId || '',
         summaryMode: 'apparatus',
-        summaryApparatus: value, // e.g., 'fx', 'ph', 'sr', 'vt', 'pb', 'hb'
+        summaryApparatus: value, // e.g., 'fx', 'ph', 'sr', 'vt', 'pb', 'hb', 'ub', 'bb'
         summaryNumTeams: maxTeams,
         summaryFormat: 'head-to-head', // Always head-to-head for apparatus mode
         summaryTheme: summaryTheme,
+        summaryGender: gender, // Gender for determining correct events
         team1Logo: config.team1Logo || '',
         team1Name: config.team1Name || '',
         team2Name: config.team2Name || '',
@@ -375,7 +444,7 @@ export default function GraphicsControl({ competitionId }) {
     });
   };
 
-  const sections = ['Pre-Meet', 'Events', 'Leaderboards', 'Stream'];
+  const sections = ['Pre-Meet', 'Events', 'Frame Overlays', 'Leaderboards', 'Stream'];
 
   const outputUrl = compId ? `${OUTPUT_BASE_URL}?comp=${compId}` : '';
   const localOutputUrl = compId ? `${LOCAL_OUTPUT_URL}?comp=${compId}` : '';
@@ -510,10 +579,10 @@ export default function GraphicsControl({ competitionId }) {
                   ))}
                 </select>
               </div>
-              {/* Rotation buttons (R1-R6) - shows each team on their event for that rotation */}
+              {/* Rotation buttons - dynamic based on gender (R1-R6 for mens, R1-R4 for womens) */}
               <div className="text-xs text-zinc-600 mb-1">By Rotation (Alternating)</div>
-              <div className="grid grid-cols-6 gap-1.5 mb-2">
-                {[1, 2, 3, 4, 5, 6].map((rotation) => {
+              <div className={`grid gap-1.5 mb-2 ${rotationCount === 4 ? 'grid-cols-4' : 'grid-cols-6'}`}>
+                {Array.from({ length: rotationCount }, (_, i) => i + 1).map((rotation) => {
                   const graphicId = `summary-r${rotation}`;
                   return (
                     <button
@@ -530,17 +599,10 @@ export default function GraphicsControl({ competitionId }) {
                   );
                 })}
               </div>
-              {/* Apparatus buttons (FX, PH, SR, VT, PB, HB) - shows both teams' scores for same event */}
+              {/* Apparatus buttons - dynamic based on gender */}
               <div className="text-xs text-zinc-600 mb-1">By Apparatus</div>
-              <div className="grid grid-cols-6 gap-1.5">
-                {[
-                  { id: 'fx', label: 'FX' },
-                  { id: 'ph', label: 'PH' },
-                  { id: 'sr', label: 'SR' },
-                  { id: 'vt', label: 'VT' },
-                  { id: 'pb', label: 'PB' },
-                  { id: 'hb', label: 'HB' },
-                ].map((apparatus) => {
+              <div className={`grid gap-1.5 ${apparatusButtons.length === 4 ? 'grid-cols-4' : 'grid-cols-6'}`}>
+                {apparatusButtons.map((apparatus) => {
                   const graphicId = `summary-${apparatus.id}`;
                   return (
                     <button

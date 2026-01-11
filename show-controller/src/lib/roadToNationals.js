@@ -595,7 +595,8 @@ export async function clearTeamCache(gender = 'all') {
 export async function getHeadCoachCached(teamName, gender = 'mens') {
   try {
     const data = await getCachedTeams(gender);
-    return findCoachInData(teamName, data.teams);
+    const coach = findCoachInData(teamName, data.teams);
+    return coach;
   } catch (error) {
     console.error('Error fetching head coach:', error);
     return null;

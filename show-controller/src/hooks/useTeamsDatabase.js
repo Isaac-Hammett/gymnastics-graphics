@@ -86,14 +86,18 @@ export function useTeamsDatabase() {
   // ============================================
   // TEAM OPERATIONS
   // ============================================
+  // IMPORTANT: Team keys use hyphens (e.g., "army-mens") and should NOT be
+  // run through normalizeName() which converts hyphens to spaces.
+  // Team keys are stored as-is in Firebase.
 
   /**
    * Add or update a team
+   * @param {string} teamKey - Team key with hyphens (e.g., "army-mens")
    */
   const saveTeam = useCallback(async (teamKey, teamData) => {
     try {
-      const normalized = normalizeName(teamKey);
-      await set(ref(db, `teamsDatabase/teams/${normalized}`), {
+      // Use teamKey directly - do NOT normalize (hyphens are intentional)
+      await set(ref(db, `teamsDatabase/teams/${teamKey}`), {
         displayName: teamData.displayName,
         school: teamData.school,
         gender: teamData.gender,
@@ -109,11 +113,12 @@ export function useTeamsDatabase() {
 
   /**
    * Update team logo
+   * @param {string} teamKey - Team key with hyphens (e.g., "army-mens")
    */
   const updateTeamLogo = useCallback(async (teamKey, logoUrl) => {
     try {
-      const normalized = normalizeName(teamKey);
-      await update(ref(db, `teamsDatabase/teams/${normalized}`), {
+      // Use teamKey directly - do NOT normalize
+      await update(ref(db, `teamsDatabase/teams/${teamKey}`), {
         logo: logoUrl,
         updatedAt: new Date().toISOString(),
       });
@@ -125,11 +130,12 @@ export function useTeamsDatabase() {
 
   /**
    * Update team roster (array of athlete names)
+   * @param {string} teamKey - Team key with hyphens (e.g., "army-mens")
    */
   const updateTeamRoster = useCallback(async (teamKey, roster) => {
     try {
-      const normalized = normalizeName(teamKey);
-      await update(ref(db, `teamsDatabase/teams/${normalized}`), {
+      // Use teamKey directly - do NOT normalize
+      await update(ref(db, `teamsDatabase/teams/${teamKey}`), {
         roster: roster,
         updatedAt: new Date().toISOString(),
       });
@@ -193,14 +199,15 @@ export function useTeamsDatabase() {
 
   /**
    * Import a full roster with headshots from parsed Virtius data
+   * Note: Team key is used as-is (not normalized) since Firebase stores
+   * team keys with hyphens (e.g., "army-mens")
    */
   const importRoster = useCallback(async (teamKey, athletes) => {
     try {
-      const normalized = normalizeName(teamKey);
-
+      // Team key is used directly - do NOT normalize (hyphens are intentional)
       // 1. Update team roster with athlete names
       const rosterNames = athletes.map(a => a.name);
-      await update(ref(db, `teamsDatabase/teams/${normalized}`), {
+      await update(ref(db, `teamsDatabase/teams/${teamKey}`), {
         roster: rosterNames,
         updatedAt: new Date().toISOString(),
       });
@@ -224,16 +231,21 @@ export function useTeamsDatabase() {
 
   /**
    * Get team by key
+   * Note: Team keys should NOT be normalized - they use hyphens (e.g., "army-mens")
+   * and are stored as-is in Firebase
    */
   const getTeam = useCallback((teamKey) => {
-    const normalized = normalizeName(teamKey);
-    return teams[normalized] || null;
+    if (!teamKey) return null;
+    // Direct lookup - team keys are stored with hyphens, not normalized
+    return teams[teamKey] || null;
   }, [teams]);
 
   /**
    * Get team logo with flexible matching
+   * @param {string} teamName - Team name in any format
+   * @param {'womens' | 'mens' | null} preferredGender - Preferred gender for fallback lookup
    */
-  const getTeamLogo = useCallback((teamName) => {
+  const getTeamLogo = useCallback((teamName, preferredGender = null) => {
     if (!teamName) return '';
 
     const normalized = normalizeName(teamName);
@@ -248,18 +260,26 @@ export function useTeamsDatabase() {
       .replace(/ men'?s?$/i, '')
       .replace(/ women'?s?$/i, '');
 
+    // Determine lookup order based on preferredGender
+    const genderOrder = preferredGender === 'womens'
+      ? ['womens', 'mens']
+      : ['mens', 'womens'];
+
     // Check aliases
     const aliasKey = aliases[withoutGender];
     if (aliasKey) {
-      const mensTeam = teams[`${aliasKey}-mens`];
-      if (mensTeam?.logo) return mensTeam.logo;
-      const womensTeam = teams[`${aliasKey}-womens`];
-      if (womensTeam?.logo) return womensTeam.logo;
+      for (const gender of genderOrder) {
+        const team = teams[`${aliasKey}-${gender}`];
+        if (team?.logo) return team.logo;
+      }
     }
 
-    // Try direct school match
-    if (teams[`${withoutGender}-mens`]?.logo) return teams[`${withoutGender}-mens`].logo;
-    if (teams[`${withoutGender}-womens`]?.logo) return teams[`${withoutGender}-womens`].logo;
+    // Try direct school match with gender preference
+    for (const gender of genderOrder) {
+      if (teams[`${withoutGender}-${gender}`]?.logo) {
+        return teams[`${withoutGender}-${gender}`].logo;
+      }
+    }
 
     return '';
   }, [teams, aliases]);
@@ -267,25 +287,42 @@ export function useTeamsDatabase() {
   /**
    * Get athlete headshot URL using flexible lookup
    * Tries multiple normalized keys to handle accents, hyphens, etc.
+   *
+   * Lookup order (optimized for speed):
+   * 1. Safe Firebase key (most likely match - this is how we save)
+   * 2. Normalized name (fallback for legacy data)
+   * 3. Extended keys for edge cases (accents, middle names, etc.)
    */
   const getHeadshot = useCallback((athleteName) => {
     if (!athleteName) return '';
 
-    // Split name into first/last if possible for getLookupKeys
+    // Primary lookup: normalize name and convert to safe Firebase key
+    // This matches how saveHeadshot() stores the data
+    const normalized = normalizeName(athleteName);
+    const safeKey = getSafeFirebaseKey(normalized);
+
+    // Try safe key first (this is how we save headshots)
+    if (headshots[safeKey]?.url) {
+      return headshots[safeKey].url;
+    }
+
+    // Fallback: try normalized name without safe key transformation
+    // (handles legacy data or data imported differently)
+    if (headshots[normalized]?.url) {
+      return headshots[normalized].url;
+    }
+
+    // Extended fallback: use getLookupKeys for edge cases (accents, middle names, etc.)
     const parts = athleteName.trim().split(/\s+/);
     const firstName = parts[0] || '';
     const lastName = parts.slice(1).join(' ') || '';
-
-    // Get all possible lookup keys
     const keys = getLookupKeys(firstName, lastName);
 
-    // Try each key until we find a match
     for (const key of keys) {
-      const safeKey = getSafeFirebaseKey(key);
-      if (headshots[safeKey]?.url) {
-        return headshots[safeKey].url;
+      const keySafe = getSafeFirebaseKey(key);
+      if (headshots[keySafe]?.url) {
+        return headshots[keySafe].url;
       }
-      // Also try the key directly (in case it's stored without safe encoding)
       if (headshots[key]?.url) {
         return headshots[key].url;
       }
@@ -508,6 +545,123 @@ export function useTeamsDatabase() {
     }
   }, [saveTeam, saveHeadshots]);
 
+  // ============================================
+  // DIAGNOSTICS
+  // ============================================
+
+  /**
+   * Run data integrity diagnostics
+   * Checks for common issues like orphaned headshots, missing data, etc.
+   * @returns {Object} Diagnostic results with issues found
+   */
+  const runDiagnostics = useCallback(() => {
+    const issues = [];
+    const stats = {
+      totalTeams: Object.keys(teams).length,
+      totalHeadshots: Object.keys(headshots).length,
+      teamsWithRosters: 0,
+      teamsWithLogos: 0,
+      totalRosterEntries: 0,
+      headshotsMatched: 0,
+      headshotsOrphaned: 0,
+    };
+
+    // Check each team
+    for (const [teamKey, team] of Object.entries(teams)) {
+      if (team.logo) stats.teamsWithLogos++;
+      if (team.roster?.length > 0) {
+        stats.teamsWithRosters++;
+        stats.totalRosterEntries += team.roster.length;
+
+        // Check each roster entry for headshot
+        for (const name of team.roster) {
+          const headshotUrl = getHeadshot(name);
+          if (!headshotUrl) {
+            issues.push({
+              type: 'missing_headshot',
+              severity: 'warning',
+              teamKey,
+              athleteName: name,
+              message: `No headshot found for "${name}" on ${team.displayName || teamKey}`,
+            });
+          } else {
+            stats.headshotsMatched++;
+          }
+        }
+      }
+
+      // Check for missing required fields
+      if (!team.displayName) {
+        issues.push({
+          type: 'missing_field',
+          severity: 'error',
+          teamKey,
+          field: 'displayName',
+          message: `Team "${teamKey}" is missing displayName`,
+        });
+      }
+      if (!team.school) {
+        issues.push({
+          type: 'missing_field',
+          severity: 'error',
+          teamKey,
+          field: 'school',
+          message: `Team "${teamKey}" is missing school name`,
+        });
+      }
+      if (!team.gender) {
+        issues.push({
+          type: 'missing_field',
+          severity: 'error',
+          teamKey,
+          field: 'gender',
+          message: `Team "${teamKey}" is missing gender`,
+        });
+      }
+    }
+
+    // Check for headshots with invalid teamKey references
+    for (const [key, headshot] of Object.entries(headshots)) {
+      if (headshot.teamKey && !teams[headshot.teamKey]) {
+        issues.push({
+          type: 'orphaned_headshot',
+          severity: 'warning',
+          headshotKey: key,
+          athleteName: headshot.name,
+          referencedTeam: headshot.teamKey,
+          message: `Headshot for "${headshot.name}" references non-existent team "${headshot.teamKey}"`,
+        });
+        stats.headshotsOrphaned++;
+      }
+    }
+
+    // Calculate unmatched headshots (headshots not in any roster)
+    const rosterNames = new Set();
+    for (const team of Object.values(teams)) {
+      if (team.roster) {
+        for (const name of team.roster) {
+          const normalized = normalizeName(name);
+          const safeKey = getSafeFirebaseKey(normalized);
+          rosterNames.add(normalized);
+          rosterNames.add(safeKey);
+        }
+      }
+    }
+
+    return {
+      stats,
+      issues,
+      summary: {
+        totalIssues: issues.length,
+        errors: issues.filter(i => i.severity === 'error').length,
+        warnings: issues.filter(i => i.severity === 'warning').length,
+        missingHeadshots: issues.filter(i => i.type === 'missing_headshot').length,
+        orphanedHeadshots: issues.filter(i => i.type === 'orphaned_headshot').length,
+        missingFields: issues.filter(i => i.type === 'missing_field').length,
+      },
+    };
+  }, [teams, headshots, getHeadshot]);
+
   return {
     // State
     teams,
@@ -544,6 +698,9 @@ export function useTeamsDatabase() {
 
     // Migration
     migrateFromStatic,
+
+    // Diagnostics
+    runDiagnostics,
   };
 }
 
