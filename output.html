@@ -2046,14 +2046,89 @@
 
     /* ==========================================
        Layout: Default Original V4 (Multi-Team)
-       Based on V3 with team rankings and totals
+       Virtius-style horizontal standings bar + columns
        ========================================== */
+    .event-summary-v4-wrapper {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      background: #18181b;
+    }
+
+    /* Top standings bar - horizontal row of all teams */
+    .event-summary-v4-standings {
+      display: flex;
+      background: #f5f5f4;
+      flex-shrink: 0;
+      border-bottom: 1px solid #d4d4d4;
+    }
+
+    .event-summary-v4-standings .team-card {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      padding: 8px 16px;
+      gap: 12px;
+      border-right: 1px solid #d4d4d4;
+    }
+
+    .event-summary-v4-standings .team-card:last-child {
+      border-right: none;
+    }
+
+    .event-summary-v4-standings .rank-badge {
+      font-size: 11px;
+      font-weight: 700;
+      color: #fff;
+      background: #71717a;
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    .event-summary-v4-standings .rank-badge.rank-1 {
+      background: #ca8a04;
+    }
+
+    .event-summary-v4-standings .rank-badge.rank-2 {
+      background: #64748b;
+    }
+
+    .event-summary-v4-standings .rank-badge.rank-3 {
+      background: #b45309;
+    }
+
+    .event-summary-v4-standings .team-logo {
+      width: 28px;
+      height: 28px;
+      object-fit: contain;
+    }
+
+    .event-summary-v4-standings .team-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: #18181b;
+      flex: 1;
+    }
+
+    .event-summary-v4-standings .team-score {
+      font-size: 18px;
+      font-weight: 800;
+      color: #18181b;
+    }
+
+    .event-summary-v4-standings .event-name {
+      font-size: 12px;
+      color: #71717a;
+      text-transform: uppercase;
+    }
+
+    /* Columns grid below standings bar */
     .event-summary-quad-v4 {
       display: grid;
       flex: 1;
       gap: 2px;
       background: #3f3f46;
-      height: 100%;
     }
     .event-summary-quad-v4.teams-2 { grid-template-columns: repeat(2, 1fr); }
     .event-summary-quad-v4.teams-3 { grid-template-columns: repeat(3, 1fr); }
@@ -2069,83 +2144,19 @@
       overflow: hidden;
     }
 
-    .event-summary-quad-v4 .team-header {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 10px 14px;
+    /* Minimal column header - just event name */
+    .event-summary-quad-v4 .column-header {
+      padding: 8px 14px;
       background: #27272a;
       border-bottom: 2px solid #3f3f46;
+      text-align: center;
       flex-shrink: 0;
     }
 
-    /* Line 1: Rank + Logo + Team Name */
-    .event-summary-quad-v4 .header-line1 {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      margin-bottom: 4px;
-    }
-
-    .event-summary-quad-v4 .team-rank {
-      font-size: 11px;
-      font-weight: 700;
-      color: #18181b;
-      background: #a1a1aa;
-      padding: 2px 6px;
-      border-radius: 3px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .event-summary-quad-v4 .team-rank.rank-1 {
-      background: #fbbf24;
-      color: #18181b;
-    }
-
-    .event-summary-quad-v4 .team-rank.rank-2 {
-      background: #94a3b8;
-      color: #18181b;
-    }
-
-    .event-summary-quad-v4 .team-rank.rank-3 {
-      background: #cd7f32;
-      color: #18181b;
-    }
-
-    .event-summary-quad-v4 .team-logo {
-      width: 28px;
-      height: 28px;
-      object-fit: contain;
-    }
-
-    .event-summary-quad-v4 .team-name {
-      font-size: 16px;
-      font-weight: 700;
-      color: #fff;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    /* Line 2: Total Score + Event Label */
-    .event-summary-quad-v4 .header-line2 {
-      display: flex;
-      align-items: baseline;
-      justify-content: center;
-      gap: 10px;
-    }
-
-    .event-summary-quad-v4 .team-total {
-      font-size: 22px;
-      font-weight: 800;
-      color: #fff;
-    }
-
-    .event-summary-quad-v4 .event-label {
-      font-size: 12px;
-      color: #71717a;
+    .event-summary-quad-v4 .column-event {
+      font-size: 13px;
+      font-weight: 600;
+      color: #a1a1aa;
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
@@ -3890,11 +3901,10 @@
       contentEl.innerHTML = `<div class="event-summary-quad-v3 teams-${numTeams}">${columnsHtml}</div>`;
     }
 
-    // V4 Layout: Based on V3 with team rankings and totals in header
+    // V4 Layout: Virtius-style horizontal standings bar + columns below
     // Key features:
-    // - Team ranking displayed at top of header (1st, 2nd, 3rd with colored badges)
-    // - Team total score prominently displayed below logo/name
-    // - Event name shown below total as subtle label
+    // - Horizontal standings bar at top (like Virtius) with rank, logo, team, score, event
+    // - Clean columns below with just event header and athlete rows
     // - All columns have same number of rows (max across all teams, capped at 10)
     function renderMultiTeamSummaryV4(contentEl, rotationData, rotation, numTeams) {
       // Find max athletes across all teams (cap at 10)
@@ -3904,30 +3914,37 @@
       );
 
       // Calculate rankings based on total score
-      const teamsWithRanks = rotationData.map(t => ({
-        ...t,
-        totalScore: t.totalScore || 0
-      }));
-
-      // Sort by total score descending to determine ranks
-      const sortedByScore = [...teamsWithRanks].sort((a, b) => b.totalScore - a.totalScore);
+      const sortedByScore = [...rotationData].sort((a, b) => (b.totalScore || 0) - (a.totalScore || 0));
       const rankMap = new Map();
       sortedByScore.forEach((t, idx) => {
         rankMap.set(t.team.name || t.team.tricode, idx + 1);
       });
 
-      let columnsHtml = '';
-
-      rotationData.forEach(teamData => {
-        const { team, eventDisplayName, gymnasts, eventScore, totalScore } = teamData;
+      // Build standings bar (sorted by rank for display)
+      let standingsHtml = '';
+      sortedByScore.forEach(teamData => {
+        const { team, eventDisplayName, totalScore } = teamData;
         const logoUrl = getTeamLogoUrl(team.name, team.logo);
         const teamName = team.name || team.tricode;
         const rank = rankMap.get(teamName) || 0;
-
-        // Rank display with ordinal suffix
-        const rankSuffix = rank === 1 ? 'st' : rank === 2 ? 'nd' : rank === 3 ? 'rd' : 'th';
-        const rankText = totalScore > 0 ? `${rank}${rankSuffix} Place` : '—';
+        const rankSuffix = rank === 1 ? 'ST' : rank === 2 ? 'ND' : rank === 3 ? 'RD' : 'TH';
         const rankClass = rank <= 3 && totalScore > 0 ? `rank-${rank}` : '';
+
+        standingsHtml += `
+          <div class="team-card">
+            <div class="rank-badge ${rankClass}">${rank}${rankSuffix}</div>
+            ${logoUrl ? `<img class="team-logo" src="${logoUrl}" alt="">` : ''}
+            <div class="team-name">${teamName}</div>
+            <div class="team-score">${totalScore > 0 ? totalScore.toFixed(3) : '—'}</div>
+            <div class="event-name">${eventDisplayName}</div>
+          </div>
+        `;
+      });
+
+      // Build columns (in original team order)
+      let columnsHtml = '';
+      rotationData.forEach(teamData => {
+        const { team, eventDisplayName, gymnasts, eventScore } = teamData;
 
         // Build athlete rows - pad to maxAthletes for symmetry
         let athletesHtml = '';
@@ -3944,7 +3961,6 @@
               </div>
             `;
           } else {
-            // Empty placeholder row for symmetry
             athletesHtml += `
               <div class="athlete-row empty">
                 <div class="athlete-order">${i + 1}</div>
@@ -3957,16 +3973,8 @@
 
         columnsHtml += `
           <div class="team-column">
-            <div class="team-header">
-              <div class="header-line1">
-                <div class="team-rank ${rankClass}">${rank}${rankSuffix}</div>
-                ${logoUrl ? `<img class="team-logo" src="${logoUrl}" alt="">` : ''}
-                <div class="team-name">${teamName}</div>
-              </div>
-              <div class="header-line2">
-                <div class="team-total">${totalScore > 0 ? totalScore.toFixed(3) : '—'}</div>
-                <div class="event-label">${eventDisplayName}</div>
-              </div>
+            <div class="column-header">
+              <div class="column-event">${eventDisplayName}</div>
             </div>
             <div class="athlete-list">
               ${athletesHtml}
@@ -3979,10 +3987,15 @@
         `;
       });
 
-      contentEl.innerHTML = `<div class="event-summary-quad-v4 teams-${numTeams}">${columnsHtml}</div>`;
+      contentEl.innerHTML = `
+        <div class="event-summary-v4-wrapper">
+          <div class="event-summary-v4-standings">${standingsHtml}</div>
+          <div class="event-summary-quad-v4 teams-${numTeams}">${columnsHtml}</div>
+        </div>
+      `;
     }
 
-    // Render multi-team apparatus layout V4 (all teams on same event, with rankings)
+    // Render multi-team apparatus layout V4 (all teams on same event, with Virtius-style standings bar)
     function renderMultiTeamSummaryApparatusV4(contentEl, apparatusData, eventDisplayName, eventShortCode, numTeams) {
       // Find max athletes across all teams (cap at 10)
       const maxAthletes = Math.min(
@@ -3991,30 +4004,37 @@
       );
 
       // Calculate rankings based on total score
-      const teamsWithRanks = apparatusData.map(t => ({
-        ...t,
-        totalScore: t.totalScore || 0
-      }));
-
-      // Sort by total score descending to determine ranks
-      const sortedByScore = [...teamsWithRanks].sort((a, b) => b.totalScore - a.totalScore);
+      const sortedByScore = [...apparatusData].sort((a, b) => (b.totalScore || 0) - (a.totalScore || 0));
       const rankMap = new Map();
       sortedByScore.forEach((t, idx) => {
         rankMap.set(t.team.name || t.team.tricode, idx + 1);
       });
 
-      let columnsHtml = '';
-
-      apparatusData.forEach(teamData => {
-        const { team, gymnasts, eventScore, totalScore } = teamData;
+      // Build standings bar (sorted by rank for display)
+      let standingsHtml = '';
+      sortedByScore.forEach(teamData => {
+        const { team, totalScore } = teamData;
         const logoUrl = getTeamLogoUrl(team.name, team.logo);
         const teamName = team.name || team.tricode;
         const rank = rankMap.get(teamName) || 0;
-
-        // Rank display with ordinal suffix
-        const rankSuffix = rank === 1 ? 'st' : rank === 2 ? 'nd' : rank === 3 ? 'rd' : 'th';
-        const rankText = totalScore > 0 ? `${rank}${rankSuffix} Place` : '—';
+        const rankSuffix = rank === 1 ? 'ST' : rank === 2 ? 'ND' : rank === 3 ? 'RD' : 'TH';
         const rankClass = rank <= 3 && totalScore > 0 ? `rank-${rank}` : '';
+
+        standingsHtml += `
+          <div class="team-card">
+            <div class="rank-badge ${rankClass}">${rank}${rankSuffix}</div>
+            ${logoUrl ? `<img class="team-logo" src="${logoUrl}" alt="">` : ''}
+            <div class="team-name">${teamName}</div>
+            <div class="team-score">${totalScore > 0 ? totalScore.toFixed(3) : '—'}</div>
+            <div class="event-name">${eventDisplayName}</div>
+          </div>
+        `;
+      });
+
+      // Build columns (in original team order)
+      let columnsHtml = '';
+      apparatusData.forEach(teamData => {
+        const { team, gymnasts, eventScore } = teamData;
 
         // Build athlete rows - pad to maxAthletes for symmetry
         let athletesHtml = '';
@@ -4031,7 +4051,6 @@
               </div>
             `;
           } else {
-            // Empty placeholder row for symmetry
             athletesHtml += `
               <div class="athlete-row empty">
                 <div class="athlete-order">${i + 1}</div>
@@ -4044,16 +4063,8 @@
 
         columnsHtml += `
           <div class="team-column">
-            <div class="team-header">
-              <div class="header-line1">
-                <div class="team-rank ${rankClass}">${rank}${rankSuffix}</div>
-                ${logoUrl ? `<img class="team-logo" src="${logoUrl}" alt="">` : ''}
-                <div class="team-name">${teamName}</div>
-              </div>
-              <div class="header-line2">
-                <div class="team-total">${totalScore > 0 ? totalScore.toFixed(3) : '—'}</div>
-                <div class="event-label">${eventDisplayName}</div>
-              </div>
+            <div class="column-header">
+              <div class="column-event">${eventDisplayName}</div>
             </div>
             <div class="athlete-list">
               ${athletesHtml}
@@ -4066,7 +4077,12 @@
         `;
       });
 
-      contentEl.innerHTML = `<div class="event-summary-quad-v4 teams-${numTeams}">${columnsHtml}</div>`;
+      contentEl.innerHTML = `
+        <div class="event-summary-v4-wrapper">
+          <div class="event-summary-v4-standings">${standingsHtml}</div>
+          <div class="event-summary-quad-v4 teams-${numTeams}">${columnsHtml}</div>
+        </div>
+      `;
     }
 
     // Map apparatus short codes to API event names
