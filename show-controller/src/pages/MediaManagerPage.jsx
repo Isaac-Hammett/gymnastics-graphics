@@ -24,8 +24,6 @@ export default function MediaManagerPage() {
     loading,
     error,
     getAllTeamKeys,
-    getAllSchools,
-    getTeamsBySchool,
     getTeamRosterWithHeadshots,
     getTeamRosterStats,
     importRoster,
@@ -58,10 +56,17 @@ export default function MediaManagerPage() {
   const [singleAthleteHeadshot, setSingleAthleteHeadshot] = useState('');
   const [singleAthleteTeam, setSingleAthleteTeam] = useState('');
 
-  // Get all teams grouped by school
-  const teamsBySchool = getTeamsBySchool();
+  // Teams Database gender filter
+  const [teamsGenderFilter, setTeamsGenderFilter] = useState('womens');
+
+  // Get all team keys
   const allTeamKeys = getAllTeamKeys();
-  const schools = getAllSchools();
+
+  // Get teams filtered by gender
+  const filteredTeams = allTeamKeys
+    .filter(key => teams[key]?.gender === teamsGenderFilter)
+    .map(key => ({ key, ...teams[key] }))
+    .sort((a, b) => a.school?.localeCompare(b.school) || 0);
 
   // Stats
   const totalTeams = allTeamKeys.length;
@@ -208,7 +213,7 @@ export default function MediaManagerPage() {
               </div>
               <div>
                 <div className="text-2xl font-bold text-white">{totalTeams}</div>
-                <div className="text-zinc-400 text-sm">Teams ({schools.length} schools)</div>
+                <div className="text-zinc-400 text-sm">Total Teams</div>
               </div>
             </div>
           </div>
@@ -269,73 +274,128 @@ export default function MediaManagerPage() {
           {lookupTeam && <TeamInfoDisplay teamName={lookupTeam} gender={lookupGender} />}
         </div>
 
-        {/* Teams by School */}
+        {/* Teams Database */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-6">
           <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
             <PhotoIcon className="w-5 h-5 text-blue-500" />
             Teams Database
           </h2>
           <p className="text-zinc-400 text-sm mb-4">
-            Each school has a Men's and Women's team entry. Click a team to view its roster.
+            View team data status including logos, rosters, and athlete headshots.
           </p>
 
-          <div className="space-y-4">
-            {schools.map((school) => {
-              const schoolTeams = teamsBySchool[school];
-              const mensTeam = schoolTeams.find(t => t.gender === 'mens');
-              const womensTeam = schoolTeams.find(t => t.gender === 'womens');
+          {/* Gender Toggle */}
+          <div className="flex gap-2 mb-6">
+            <button
+              onClick={() => setTeamsGenderFilter('womens')}
+              className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors ${
+                teamsGenderFilter === 'womens'
+                  ? 'bg-pink-600 text-white'
+                  : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+              }`}
+            >
+              Women's Teams
+            </button>
+            <button
+              onClick={() => setTeamsGenderFilter('mens')}
+              className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors ${
+                teamsGenderFilter === 'mens'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+              }`}
+            >
+              Men's Teams
+            </button>
+          </div>
 
-              return (
-                <div key={school} className="bg-zinc-800/50 rounded-lg p-4">
-                  <div className="flex items-center gap-3 mb-3">
-                    {/* Logo */}
-                    <div className="w-12 h-12 bg-zinc-700 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
-                      {mensTeam?.logo ? (
-                        <img src={mensTeam.logo} alt={school} className="w-10 h-10 object-contain" />
-                      ) : (
-                        <PhotoIcon className="w-6 h-6 text-zinc-500" />
-                      )}
-                    </div>
-                    <div>
-                      <h3 className="text-white font-semibold">{school}</h3>
-                      <p className="text-xs text-zinc-500">
-                        {mensTeam?.logo ? 'Logo available' : 'No logo'}
-                      </p>
-                    </div>
-                  </div>
+          {/* Teams List */}
+          <div className="space-y-3">
+            {filteredTeams.length === 0 ? (
+              <p className="text-zinc-500 text-center py-8">No {teamsGenderFilter === 'womens' ? "women's" : "men's"} teams found</p>
+            ) : (
+              filteredTeams.map((team) => {
+                const stats = getTeamRosterStats(team.key);
+                const hasLogo = !!team.logo;
+                const hasRoster = stats.total > 0;
+                const headshotPercentage = stats.percentage;
 
-                  <div className="grid grid-cols-2 gap-2">
-                    {/* Men's Team */}
-                    {mensTeam && (
-                      <TeamCard
-                        team={mensTeam}
-                        isExpanded={expandedTeam === mensTeam.key}
-                        onToggle={() => setExpandedTeam(expandedTeam === mensTeam.key ? null : mensTeam.key)}
-                        getTeamRosterStats={getTeamRosterStats}
+                return (
+                  <div key={team.key} className="bg-zinc-800/50 rounded-lg overflow-hidden">
+                    <button
+                      onClick={() => setExpandedTeam(expandedTeam === team.key ? null : team.key)}
+                      className="w-full p-4 flex items-center gap-4 hover:bg-zinc-800/80 transition-colors"
+                    >
+                      {/* Team Logo */}
+                      <div className="w-12 h-12 bg-zinc-700 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
+                        {hasLogo ? (
+                          <img src={team.logo} alt={team.school} className="w-10 h-10 object-contain" />
+                        ) : (
+                          <PhotoIcon className="w-6 h-6 text-zinc-500" />
+                        )}
+                      </div>
+
+                      {/* Team Name */}
+                      <div className="flex-1 text-left">
+                        <h3 className="text-white font-semibold">{team.displayName || team.school}</h3>
+                        <p className="text-xs text-zinc-500">{team.key}</p>
+                      </div>
+
+                      {/* Status Indicators */}
+                      <div className="flex items-center gap-3">
+                        {/* Logo Status */}
+                        <div className="flex items-center gap-1" title={hasLogo ? 'Logo available' : 'No logo'}>
+                          <PhotoIcon className={`w-4 h-4 ${hasLogo ? 'text-green-500' : 'text-zinc-600'}`} />
+                          {hasLogo ? (
+                            <CheckCircleIcon className="w-4 h-4 text-green-500" />
+                          ) : (
+                            <XCircleIcon className="w-4 h-4 text-zinc-600" />
+                          )}
+                        </div>
+
+                        {/* Roster Status */}
+                        <div className="flex items-center gap-1" title={hasRoster ? `Roster: ${stats.total} athletes` : 'No roster'}>
+                          <UserGroupIcon className={`w-4 h-4 ${hasRoster ? 'text-green-500' : 'text-zinc-600'}`} />
+                          {hasRoster ? (
+                            <CheckCircleIcon className="w-4 h-4 text-green-500" />
+                          ) : (
+                            <XCircleIcon className="w-4 h-4 text-zinc-600" />
+                          )}
+                        </div>
+
+                        {/* Headshot Status */}
+                        <div
+                          className={`px-2 py-1 rounded text-xs font-medium ${
+                            !hasRoster ? 'bg-zinc-700 text-zinc-500' :
+                            headshotPercentage === 100 ? 'bg-green-600/20 text-green-400' :
+                            headshotPercentage >= 50 ? 'bg-yellow-600/20 text-yellow-400' :
+                            'bg-red-600/20 text-red-400'
+                          }`}
+                          title={`Headshots: ${stats.withHeadshots}/${stats.total}`}
+                        >
+                          {hasRoster ? `${stats.withHeadshots}/${stats.total}` : '--'}
+                        </div>
+
+                        {/* Expand Arrow */}
+                        {expandedTeam === team.key ? (
+                          <ChevronDownIcon className="w-5 h-5 text-zinc-400" />
+                        ) : (
+                          <ChevronRightIcon className="w-5 h-5 text-zinc-400" />
+                        )}
+                      </div>
+                    </button>
+
+                    {/* Expanded Roster */}
+                    {expandedTeam === team.key && (
+                      <RosterView
+                        teamKey={team.key}
+                        teams={teams}
+                        getTeamRosterWithHeadshots={getTeamRosterWithHeadshots}
                       />
                     )}
-                    {/* Women's Team */}
-                    {womensTeam && (
-                      <TeamCard
-                        team={womensTeam}
-                        isExpanded={expandedTeam === womensTeam.key}
-                        onToggle={() => setExpandedTeam(expandedTeam === womensTeam.key ? null : womensTeam.key)}
-                        getTeamRosterStats={getTeamRosterStats}
-                      />
-                    )}
                   </div>
-
-                  {/* Expanded Roster */}
-                  {(expandedTeam === mensTeam?.key || expandedTeam === womensTeam?.key) && (
-                    <RosterView
-                      teamKey={expandedTeam}
-                      teams={teams}
-                      getTeamRosterWithHeadshots={getTeamRosterWithHeadshots}
-                    />
-                  )}
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </div>
 
@@ -528,80 +588,39 @@ export default function MediaManagerPage() {
   );
 }
 
-function TeamCard({ team, isExpanded, onToggle, getTeamRosterStats }) {
-  const stats = getTeamRosterStats(team.key);
-  const hasRoster = stats.total > 0;
-
-  return (
-    <button
-      onClick={onToggle}
-      className={`flex items-center justify-between p-2 rounded-lg text-left transition-colors ${
-        isExpanded ? 'bg-blue-600/20 border border-blue-500/50' : 'bg-zinc-700/50 hover:bg-zinc-700'
-      }`}
-    >
-      <div className="flex items-center gap-2">
-        <span className="text-sm font-medium text-white">
-          {team.gender === 'mens' ? "Men's" : "Women's"}
-        </span>
-        {hasRoster && (
-          <span className={`text-xs ${
-            stats.percentage === 100 ? 'text-green-400' :
-            stats.percentage >= 50 ? 'text-yellow-400' : 'text-zinc-500'
-          }`}>
-            ({stats.withHeadshots}/{stats.total})
-          </span>
-        )}
-      </div>
-      <div className="flex items-center gap-1">
-        {hasRoster ? (
-          <CheckCircleIcon className="w-4 h-4 text-green-500" />
-        ) : (
-          <XCircleIcon className="w-4 h-4 text-zinc-600" />
-        )}
-        {isExpanded ? (
-          <ChevronDownIcon className="w-4 h-4 text-zinc-400" />
-        ) : (
-          <ChevronRightIcon className="w-4 h-4 text-zinc-400" />
-        )}
-      </div>
-    </button>
-  );
-}
-
 function RosterView({ teamKey, teams, getTeamRosterWithHeadshots }) {
   const roster = getTeamRosterWithHeadshots(teamKey);
   const team = teams[teamKey];
 
   if (!roster || roster.length === 0) {
     return (
-      <div className="mt-3 p-3 bg-zinc-800/30 rounded-lg text-center">
+      <div className="p-4 border-t border-zinc-700 text-center">
         <p className="text-zinc-500 text-sm">No roster defined for {team?.displayName || teamKey}</p>
-        <p className="text-xs text-zinc-600 mt-1">Use "Import from Virtius" above to add athletes</p>
+        <p className="text-xs text-zinc-600 mt-1">Use "Import from Virtius" below to add athletes</p>
       </div>
     );
   }
 
   return (
-    <div className="mt-3 p-3 bg-zinc-800/30 rounded-lg">
-      <h4 className="text-sm font-medium text-zinc-300 mb-2">{team?.displayName || teamKey} Roster</h4>
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto">
+    <div className="p-4 border-t border-zinc-700">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2 max-h-64 overflow-y-auto">
         {roster.map((athlete, idx) => (
           <div
             key={idx}
-            className="flex items-center gap-2 p-2 bg-zinc-800/50 rounded"
+            className="flex items-center gap-2 p-2 bg-zinc-700/50 rounded"
           >
-            <div className="w-8 h-8 bg-zinc-700 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
+            <div className="w-8 h-8 bg-zinc-600 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
               {athlete.hasHeadshot ? (
                 <img src={athlete.headshotUrl} alt={athlete.name} className="w-8 h-8 object-cover" />
               ) : (
                 <UserGroupIcon className="w-4 h-4 text-zinc-500" />
               )}
             </div>
-            <span className="text-xs text-zinc-300 truncate">{athlete.name}</span>
+            <span className="text-xs text-zinc-300 truncate flex-1">{athlete.name}</span>
             {athlete.hasHeadshot ? (
-              <CheckCircleIcon className="w-3 h-3 text-green-500 flex-shrink-0 ml-auto" />
+              <CheckCircleIcon className="w-3 h-3 text-green-500 flex-shrink-0" />
             ) : (
-              <XCircleIcon className="w-3 h-3 text-red-500 flex-shrink-0 ml-auto" />
+              <XCircleIcon className="w-3 h-3 text-red-500 flex-shrink-0" />
             )}
           </div>
         ))}

@@ -421,6 +421,8 @@ function clearAutoAdvance() {
 app.use(cors());
 app.use(express.json());
 app.use(express.static(join(__dirname, '..', 'show-controller', 'dist')));
+// Serve graphics output files from project root (output.html, overlays/)
+app.use(express.static(join(__dirname, '..')));
 
 // REST API endpoints
 app.get('/api/status', (req, res) => {

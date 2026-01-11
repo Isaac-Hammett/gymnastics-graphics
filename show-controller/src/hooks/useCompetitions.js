@@ -249,7 +249,8 @@ export function useCompetitions() {
 
       // Optionally enrich with RTN data
       if (options.enrichWithRTN !== false) {
-        const gender = config.compType?.startsWith('womens') ? 'womens' : 'mens';
+        // Use explicit gender field if available, otherwise extract from compType (backward compatibility)
+        const gender = config.gender || (config.compType?.startsWith('womens') ? 'womens' : 'mens');
         const teamData = await enrichTeamsWithRTN(config, gender);
         if (Object.keys(teamData).length > 0) {
           await set(ref(db, `competitions/${compId}/teamData`), teamData);
@@ -282,7 +283,8 @@ export function useCompetitions() {
 
       // Optionally refresh RTN data (useful when team names change)
       if (options.refreshRTN) {
-        const gender = config.compType?.startsWith('womens') ? 'womens' : 'mens';
+        // Use explicit gender field if available, otherwise extract from compType (backward compatibility)
+        const gender = config.gender || (config.compType?.startsWith('womens') ? 'womens' : 'mens');
         const teamData = await enrichTeamsWithRTN(config, gender);
         if (Object.keys(teamData).length > 0) {
           await set(ref(db, `competitions/${compId}/teamData`), teamData);
@@ -321,7 +323,8 @@ export function useCompetitions() {
         return { success: false, error: 'Competition not found' };
       }
 
-      const gender = config.compType?.startsWith('womens') ? 'womens' : 'mens';
+      // Use explicit gender field if available, otherwise extract from compType (backward compatibility)
+      const gender = config.gender || (config.compType?.startsWith('womens') ? 'womens' : 'mens');
       const teamData = await enrichTeamsWithRTN(config, gender);
 
       if (Object.keys(teamData).length > 0) {
