@@ -107,15 +107,22 @@ export const ROTATION_TEMPLATES = {
   /**
    * Women's Quad Meet
    * 4 teams, 4 apparatus - perfect rotation (all events active each rotation)
+   * Teams progress FORWARD through Olympic order each rotation.
+   *
+   * Team paths:
+   * - Team1: Vault → Bars → Beam → Floor
+   * - Team2: Bars → Beam → Floor → Vault
+   * - Team3: Beam → Floor → Vault → Bars
+   * - Team4: Floor → Vault → Bars → Beam
    */
   'womens-quad': {
     rotationCount: 4,
     format: 'rotation',
     schedule: {
       1: { vault: 'team1', bars: 'team2', beam: 'team3', floor: 'team4' },
-      2: { vault: 'team2', bars: 'team3', beam: 'team4', floor: 'team1' },
+      2: { vault: 'team4', bars: 'team1', beam: 'team2', floor: 'team3' },
       3: { vault: 'team3', bars: 'team4', beam: 'team1', floor: 'team2' },
-      4: { vault: 'team4', bars: 'team1', beam: 'team2', floor: 'team3' },
+      4: { vault: 'team2', bars: 'team3', beam: 'team4', floor: 'team1' },
     },
   },
 

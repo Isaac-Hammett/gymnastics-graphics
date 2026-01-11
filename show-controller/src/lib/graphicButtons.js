@@ -136,13 +136,16 @@ export const eventFrameIds = ['floor', 'pommel', 'rings', 'vault', 'pbars', 'hba
 // Base transparent graphics (without team-specific ones)
 const baseTransparentGraphics = ['event-bar', 'warm-up', 'hosts', ...eventFrameIds];
 
+// Frame overlays are transparent (used as OBS overlays)
+const frameOverlayIds = ['frame-quad', 'frame-tri-center', 'frame-tri-wide', 'frame-team-header', 'frame-single'];
+
 // Generate transparent graphics list for all possible teams (up to 6)
 const teamTransparentGraphics = [];
 for (let i = 1; i <= 6; i++) {
   teamTransparentGraphics.push(`team${i}-stats`, `team${i}-coaches`);
 }
 
-export const transparentGraphics = [...baseTransparentGraphics, ...teamTransparentGraphics];
+export const transparentGraphics = [...baseTransparentGraphics, ...frameOverlayIds, ...teamTransparentGraphics];
 
 /**
  * Check if a graphic should have transparent background
@@ -150,12 +153,94 @@ export const transparentGraphics = [...baseTransparentGraphics, ...teamTranspare
  * @returns {boolean} True if the graphic should be transparent
  */
 export function isTransparentGraphic(graphicId) {
-  return transparentGraphics.includes(graphicId) || /^team\d+-(stats|coaches)$/.test(graphicId);
+  return transparentGraphics.includes(graphicId) ||
+         /^team\d+-(stats|coaches)$/.test(graphicId) ||
+         /^frame-/.test(graphicId);
 }
 
 export function getApparatusButtons(compType) {
   const isMens = compType?.startsWith('mens');
   return isMens ? graphicButtons.mensApparatus : graphicButtons.womensApparatus;
+}
+
+/**
+ * Get leaderboard buttons for a competition type (gender-aware)
+ * @param {string} compType - Competition type (e.g., 'womens-quad', 'mens-dual')
+ * @returns {Array} Array of leaderboard button definitions
+ */
+export function getLeaderboardButtons(compType) {
+  const isMens = compType?.startsWith('mens');
+
+  const mensLeaderboards = [
+    { id: 'leaderboard-fx', label: 'FX Leaders', event: 'floor' },
+    { id: 'leaderboard-ph', label: 'PH Leaders', event: 'pommel' },
+    { id: 'leaderboard-sr', label: 'SR Leaders', event: 'rings' },
+    { id: 'leaderboard-vt', label: 'VT Leaders', event: 'vault' },
+    { id: 'leaderboard-pb', label: 'PB Leaders', event: 'pBars' },
+    { id: 'leaderboard-hb', label: 'HB Leaders', event: 'hBar' },
+  ];
+
+  const womensLeaderboards = [
+    { id: 'leaderboard-vt', label: 'VT Leaders', event: 'vault' },
+    { id: 'leaderboard-ub', label: 'UB Leaders', event: 'bars' },
+    { id: 'leaderboard-bb', label: 'BB Leaders', event: 'beam' },
+    { id: 'leaderboard-fx', label: 'FX Leaders', event: 'floor' },
+  ];
+
+  const eventLeaderboards = isMens ? mensLeaderboards : womensLeaderboards;
+
+  // Add AA Leaders (always available)
+  return [
+    ...eventLeaderboards,
+    { id: 'leaderboard-aa', label: 'AA Leaders', event: 'all-around' },
+  ];
+}
+
+/**
+ * Get event summary rotation buttons for a competition type
+ * @param {string} compType - Competition type (e.g., 'womens-quad', 'mens-dual')
+ * @returns {Array} Array of rotation button definitions (R1-R4 for women, R1-R6 for men)
+ */
+export function getEventSummaryRotationButtons(compType) {
+  const rotationCount = getRotationCount(compType);
+  const buttons = [];
+
+  for (let i = 1; i <= rotationCount; i++) {
+    buttons.push({
+      id: `summary-r${i}`,
+      label: `R${i}`,
+      rotation: i,
+    });
+  }
+
+  return buttons;
+}
+
+/**
+ * Get event summary apparatus buttons for a competition type (gender-aware)
+ * @param {string} compType - Competition type (e.g., 'womens-quad', 'mens-dual')
+ * @returns {Array} Array of apparatus button definitions
+ */
+export function getEventSummaryApparatusButtons(compType) {
+  const isMens = compType?.startsWith('mens');
+
+  const mensApparatus = [
+    { id: 'summary-fx', label: 'FX', apparatus: 'fx' },
+    { id: 'summary-ph', label: 'PH', apparatus: 'ph' },
+    { id: 'summary-sr', label: 'SR', apparatus: 'sr' },
+    { id: 'summary-vt', label: 'VT', apparatus: 'vt' },
+    { id: 'summary-pb', label: 'PB', apparatus: 'pb' },
+    { id: 'summary-hb', label: 'HB', apparatus: 'hb' },
+  ];
+
+  const womensApparatus = [
+    { id: 'summary-vt', label: 'VT', apparatus: 'vt' },
+    { id: 'summary-ub', label: 'UB', apparatus: 'ub' },
+    { id: 'summary-bb', label: 'BB', apparatus: 'bb' },
+    { id: 'summary-fx', label: 'FX', apparatus: 'fx' },
+  ];
+
+  return isMens ? mensApparatus : womensApparatus;
 }
 
 export function isMensCompetition(compType) {

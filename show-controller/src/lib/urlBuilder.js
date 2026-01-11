@@ -207,20 +207,144 @@ export function buildStreamURL({ type, logo, eventName, meetDate, baseUrl }) {
 }
 
 /**
+ * Build URL for Frame Overlay graphics
+ * @param {Object} options
+ * @param {string} options.frameType - Frame type (quad, tri-center, tri-wide, team-header, single)
+ * @param {Object} options.teams - Team data keyed by team number
+ * @param {number} options.teamCount - Number of teams
+ * @param {string} [options.baseUrl] - Override base URL
+ * @returns {string} Complete URL
+ */
+export function buildFrameOverlayURL({ frameType, teams, teamCount, baseUrl }) {
+  const base = baseUrl || getBaseURL();
+  const params = new URLSearchParams();
+
+  // Add team logos for frame overlays
+  for (let i = 1; i <= teamCount; i++) {
+    const logo = teams[`team${i}Logo`];
+    if (logo) {
+      params.set(`team${i}Logo`, logo);
+    }
+  }
+
+  return `${base}/overlays/frame-${frameType}.html?${params.toString()}`;
+}
+
+/**
+ * Build URL for Leaderboard graphic
+ * @param {Object} options
+ * @param {string} options.event - Event ID (floor, vault, etc. or 'all-around')
+ * @param {string} options.virtiusSessionId - Virtius session ID for live data
+ * @param {string} options.gender - Gender ('mens' or 'womens') for column visibility
+ * @param {Object} options.teams - Team data keyed by team number
+ * @param {number} options.teamCount - Number of teams
+ * @param {string} [options.baseUrl] - Override base URL
+ * @returns {string} Complete URL
+ */
+export function buildLeaderboardURL({ event, virtiusSessionId, gender, teams, teamCount, compId, baseUrl }) {
+  const base = baseUrl || getBaseURL();
+  const params = new URLSearchParams();
+
+  // Competition ID is required for leaderboards (needs live Virtius data)
+  if (compId) params.set('comp', compId);
+  // Use leaderboardEvent to match output.html renderer expectation
+  if (event) params.set('leaderboardEvent', event);
+  if (virtiusSessionId) params.set('virtiusSessionId', virtiusSessionId);
+  if (gender) params.set('leaderboardGender', gender);
+
+  // Add team data for display
+  for (let i = 1; i <= teamCount; i++) {
+    const name = teams[`team${i}Name`];
+    const logo = teams[`team${i}Logo`];
+    if (name) params.set(`team${i}Name`, name);
+    if (logo) params.set(`team${i}Logo`, logo);
+  }
+
+  return `${base}/output.html?graphic=virtius-leaderboard&${params.toString()}`;
+}
+
+/**
+ * Build URL for Event Summary graphic
+ * @param {Object} options
+ * @param {string} options.mode - 'rotation' or 'apparatus'
+ * @param {number} [options.rotation] - Rotation number (1-6) if mode is 'rotation'
+ * @param {string} [options.apparatus] - Apparatus ID (fx, ph, etc.) if mode is 'apparatus'
+ * @param {string} options.virtiusSessionId - Virtius session ID for live data
+ * @param {string} options.compType - Competition type for format determination
+ * @param {string} options.gender - Gender ('mens' or 'womens')
+ * @param {Object} options.teams - Team data keyed by team number
+ * @param {number} options.teamCount - Number of teams
+ * @param {string} [options.theme] - Summary theme ID
+ * @param {string} [options.baseUrl] - Override base URL
+ * @returns {string} Complete URL
+ */
+export function buildEventSummaryURL({ mode, rotation, apparatus, virtiusSessionId, compType, gender, teams, teamCount, theme, compId, baseUrl }) {
+  const base = baseUrl || getBaseURL();
+  const params = new URLSearchParams();
+
+  // Competition ID is required for event summary (needs live Virtius data)
+  if (compId) params.set('comp', compId);
+  params.set('graphic', 'event-summary');
+
+  // Use virtiusSessionId to match output.html renderer expectation
+  if (virtiusSessionId) params.set('virtiusSessionId', virtiusSessionId);
+  if (theme) params.set('summaryTheme', theme);
+  if (gender) params.set('summaryGender', gender);
+
+  // Determine format based on competition type
+  const isDual = compType?.includes('dual');
+
+  if (mode === 'rotation') {
+    params.set('summaryMode', 'rotation');
+    params.set('summaryRotation', rotation);
+    params.set('summaryFormat', isDual ? 'alternating' : 'rotation');
+  } else if (mode === 'apparatus') {
+    params.set('summaryMode', 'apparatus');
+    params.set('summaryApparatus', apparatus);
+    params.set('summaryFormat', 'head-to-head');
+  }
+
+  params.set('summaryNumTeams', teamCount);
+
+  // Add team data
+  for (let i = 1; i <= teamCount; i++) {
+    const name = teams[`team${i}Name`];
+    const logo = teams[`team${i}Logo`];
+    if (name) params.set(`team${i}Name`, name);
+    if (logo) params.set(`team${i}Logo`, logo);
+  }
+
+  return `${base}/output.html?${params.toString()}`;
+}
+
+/**
  * Generate URL for any graphic based on ID
  * @param {string} graphicId - Graphic identifier
  * @param {Object} formData - Form data with team info, event details, etc.
  * @param {number} teamCount - Number of teams in competition
  * @param {string} [baseUrl] - Override base URL
+ * @param {Object} [options] - Additional options (compType, virtiusSessionId, etc.)
  * @returns {string} Complete URL or empty string if unknown graphic
  */
-export function generateGraphicURL(graphicId, formData, teamCount, baseUrl) {
+export function generateGraphicURL(graphicId, formData, teamCount, baseUrl, options = {}) {
   const base = baseUrl || getBaseURL();
+  const { compType, virtiusSessionId, compId, summaryTheme } = options;
 
   // Helper to get team logo with placeholder fallback
   const getTeamLogo = (teamNum) => {
     const colors = ['00274C/FFCB05', 'BB0000/FFFFFF', '003087/FFFFFF', '228B22/FFFFFF', '800080/FFFFFF', 'FF8C00/FFFFFF'];
     return formData[`team${teamNum}Logo`] || `https://via.placeholder.com/200/${colors[(teamNum - 1) % colors.length]}?text=T${teamNum}`;
+  };
+
+  // Helper to get all team data
+  const getTeamsData = () => {
+    const teams = { ...formData };
+    for (let i = 1; i <= teamCount; i++) {
+      if (!teams[`team${i}Logo`]) {
+        teams[`team${i}Logo`] = getTeamLogo(i);
+      }
+    }
+    return teams;
   };
 
   // Handle dynamic team stats/coaches graphics
@@ -242,6 +366,71 @@ export function generateGraphicURL(graphicId, formData, teamCount, baseUrl) {
     return buildCoachesURL({
       logo: getTeamLogo(num),
       coaches: formData[`team${num}Coaches`],
+      baseUrl: base,
+    });
+  }
+
+  // Handle frame overlay graphics
+  const frameMatch = graphicId.match(/^frame-(quad|tri-center|tri-wide|team-header|single)$/);
+  if (frameMatch) {
+    return buildFrameOverlayURL({
+      frameType: frameMatch[1],
+      teams: getTeamsData(),
+      teamCount,
+      baseUrl: base,
+    });
+  }
+
+  // Handle leaderboard graphics
+  const leaderboardMatch = graphicId.match(/^leaderboard-(.+)$/);
+  if (leaderboardMatch) {
+    // eventCode is already the short code (fx, ph, sr, vt, pb, hb, ub, bb, aa)
+    const eventCode = leaderboardMatch[1];
+    const gender = compType?.startsWith('mens') ? 'mens' : 'womens';
+    return buildLeaderboardURL({
+      event: eventCode, // Pass short code directly - renderer expects fx, ph, etc.
+      virtiusSessionId,
+      gender,
+      teams: getTeamsData(),
+      teamCount,
+      compId,
+      baseUrl: base,
+    });
+  }
+
+  // Handle event summary graphics
+  const summaryRotationMatch = graphicId.match(/^summary-r(\d+)$/);
+  if (summaryRotationMatch) {
+    const rotation = parseInt(summaryRotationMatch[1]);
+    const gender = compType?.startsWith('mens') ? 'mens' : 'womens';
+    return buildEventSummaryURL({
+      mode: 'rotation',
+      rotation,
+      virtiusSessionId,
+      compType,
+      gender,
+      teams: getTeamsData(),
+      teamCount,
+      theme: summaryTheme,
+      compId,
+      baseUrl: base,
+    });
+  }
+
+  const summaryApparatusMatch = graphicId.match(/^summary-(fx|ph|sr|vt|pb|hb|ub|bb)$/);
+  if (summaryApparatusMatch) {
+    const apparatus = summaryApparatusMatch[1];
+    const gender = compType?.startsWith('mens') ? 'mens' : 'womens';
+    return buildEventSummaryURL({
+      mode: 'apparatus',
+      apparatus,
+      virtiusSessionId,
+      compType,
+      gender,
+      teams: getTeamsData(),
+      teamCount,
+      theme: summaryTheme,
+      compId,
       baseUrl: base,
     });
   }
@@ -272,6 +461,14 @@ export function generateGraphicURL(graphicId, formData, teamCount, baseUrl) {
         location: formData.location,
         baseUrl: base,
       });
+
+    case 'warm-up':
+      // Warm-up graphic uses event-bar.html with warm-up title
+      const warmUpParams = new URLSearchParams();
+      warmUpParams.set('title', 'WARM UP');
+      warmUpParams.set('team1Logo', getTeamLogo(1));
+      if (formData.venue) warmUpParams.set('venue', formData.venue);
+      return `${base}/overlays/warm-up.html?${warmUpParams.toString()}`;
 
     case 'hosts':
       return buildHostsURL({
@@ -372,6 +569,9 @@ export default {
   buildCoachesURL,
   buildEventFrameURL,
   buildStreamURL,
+  buildFrameOverlayURL,
+  buildLeaderboardURL,
+  buildEventSummaryURL,
   generateGraphicURL,
   copyToClipboard,
   getGraphicPath,
