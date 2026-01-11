@@ -91,6 +91,7 @@ const summaryThemes = [
   { id: 'layout-classic-broadcast', label: '📺 Classic Broadcast', isLayout: true },
   { id: 'layout-default-v2', label: '✨ Default Original V2', isLayout: true },
   { id: 'layout-default-v3', label: '📊 Default Original V3', isLayout: true },
+  { id: 'layout-default-v4', label: '🏆 V4 Rankings + Totals', isLayout: true },
   // COLOR THEMES - Same structure, different colors
   { id: 'default', label: 'Default (Original)' },
   { id: 'espn', label: 'ESPN Colors' },
