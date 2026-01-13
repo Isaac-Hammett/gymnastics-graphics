@@ -103,7 +103,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Emit 'cameraStatusChanged' on status transitions"
     ],
     "verification": "node -e \"require('./server/lib/cameraHealth.js')\" exits 0",
-    "passes": false
+    "passes": true
   },
   {
     "id": "P2-02",
