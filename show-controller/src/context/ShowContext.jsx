@@ -30,6 +30,24 @@ export function ShowProvider({ children }) {
   const [cameraRuntimeState, setCameraRuntimeState] = useState([]);
   const [activeFallbacks, setActiveFallbacks] = useState([]);
 
+  // Timesheet state
+  const [timesheetState, setTimesheetState] = useState({
+    state: 'stopped',
+    isRunning: false,
+    isPaused: false,
+    currentSegmentIndex: -1,
+    currentSegment: null,
+    nextSegment: null,
+    segmentElapsedMs: 0,
+    segmentRemainingMs: 0,
+    segmentProgress: 0,
+    showElapsedMs: 0,
+    isHoldSegment: false,
+    canAdvanceHold: false,
+    holdRemainingMs: 0
+  });
+  const [overrideLog, setOverrideLog] = useState([]);
+
   useEffect(() => {
     // Use VITE_SOCKET_SERVER env var if set, otherwise fall back to origin (prod) or localhost (dev)
     const socketUrl = import.meta.env.VITE_SOCKET_SERVER
@@ -138,6 +156,123 @@ export function ShowProvider({ children }) {
       console.log(`Camera ${cameraId} mismatch: expected ${expected}, got ${current}`);
     });
 
+    // Timesheet events
+    newSocket.on('timesheetState', (state) => {
+      console.log('Timesheet state:', state);
+      setTimesheetState(state);
+    });
+
+    newSocket.on('timesheetTick', (tickData) => {
+      setTimesheetState(prev => ({
+        ...prev,
+        segmentElapsedMs: tickData.segmentElapsedMs,
+        segmentRemainingMs: tickData.segmentRemainingMs,
+        segmentProgress: tickData.segmentProgress,
+        showElapsedMs: tickData.showElapsedMs,
+        isHoldSegment: tickData.isHoldSegment,
+        canAdvanceHold: tickData.canAdvanceHold,
+        holdRemainingMs: tickData.holdRemainingMs
+      }));
+    });
+
+    newSocket.on('timesheetSegmentActivated', ({ segment, index, previousSegment }) => {
+      console.log(`Timesheet segment activated: ${segment?.name} (index ${index})`);
+      setTimesheetState(prev => ({
+        ...prev,
+        currentSegment: segment,
+        currentSegmentIndex: index,
+        segmentElapsedMs: 0,
+        segmentRemainingMs: segment?.duration || 0,
+        segmentProgress: 0
+      }));
+    });
+
+    newSocket.on('timesheetSegmentCompleted', ({ segment, index, endReason }) => {
+      console.log(`Timesheet segment completed: ${segment?.name} (${endReason})`);
+    });
+
+    newSocket.on('timesheetShowStarted', () => {
+      console.log('Timesheet show started');
+      setTimesheetState(prev => ({
+        ...prev,
+        state: 'running',
+        isRunning: true,
+        isPaused: false
+      }));
+    });
+
+    newSocket.on('timesheetShowStopped', () => {
+      console.log('Timesheet show stopped');
+      setTimesheetState(prev => ({
+        ...prev,
+        state: 'stopped',
+        isRunning: false,
+        isPaused: false
+      }));
+    });
+
+    newSocket.on('timesheetStateChanged', ({ state: engineState }) => {
+      console.log(`Timesheet state changed: ${engineState}`);
+      setTimesheetState(prev => ({
+        ...prev,
+        state: engineState,
+        isRunning: engineState === 'running',
+        isPaused: engineState === 'paused'
+      }));
+    });
+
+    newSocket.on('timesheetHoldStarted', ({ segment, minDuration, maxDuration }) => {
+      console.log(`Timesheet hold started: min ${minDuration}ms, max ${maxDuration}ms`);
+      setTimesheetState(prev => ({
+        ...prev,
+        isHoldSegment: true,
+        canAdvanceHold: false
+      }));
+    });
+
+    newSocket.on('timesheetHoldMaxReached', ({ segment }) => {
+      console.log(`Timesheet hold max reached: ${segment?.name}`);
+    });
+
+    newSocket.on('timesheetAutoAdvancing', ({ fromSegment, toSegment }) => {
+      console.log(`Timesheet auto-advancing: ${fromSegment?.name} -> ${toSegment?.name}`);
+    });
+
+    newSocket.on('timesheetOverrideRecorded', (override) => {
+      console.log('Timesheet override recorded:', override);
+      setOverrideLog(prev => [...prev, override]);
+    });
+
+    newSocket.on('timesheetSceneChanged', ({ sceneName }) => {
+      console.log(`Timesheet scene changed: ${sceneName}`);
+    });
+
+    newSocket.on('timesheetSceneOverridden', ({ sceneName, triggeredBy }) => {
+      console.log(`Timesheet scene overridden: ${sceneName} by ${triggeredBy}`);
+    });
+
+    newSocket.on('timesheetCameraOverridden', ({ cameraId, sceneName, triggeredBy }) => {
+      console.log(`Timesheet camera overridden: ${cameraId} (${sceneName}) by ${triggeredBy}`);
+    });
+
+    newSocket.on('timesheetGraphicTriggered', ({ graphic, segment }) => {
+      console.log(`Timesheet graphic triggered: ${graphic}`);
+    });
+
+    newSocket.on('timesheetVideoStarted', ({ videoPath, segment }) => {
+      console.log(`Timesheet video started: ${videoPath}`);
+    });
+
+    newSocket.on('timesheetBreakStarted', ({ segment }) => {
+      console.log(`Timesheet break started: ${segment?.name}`);
+    });
+
+    newSocket.on('timesheetError', ({ message, type }) => {
+      console.error(`Timesheet error (${type}): ${message}`);
+      setError(message);
+      setTimeout(() => setError(null), 3000);
+    });
+
     setSocket(newSocket);
 
     return () => {
@@ -210,6 +345,43 @@ export function ShowProvider({ children }) {
     socket?.emit('overrideCamera', { cameraId, triggeredBy });
   }, [socket]);
 
+  // Timesheet control functions
+  const startTimesheetShow = useCallback(() => {
+    socket?.emit('startTimesheetShow');
+  }, [socket]);
+
+  const stopTimesheetShow = useCallback(() => {
+    socket?.emit('stopTimesheetShow');
+  }, [socket]);
+
+  const advanceTimesheetSegment = useCallback((advancedBy = 'producer') => {
+    socket?.emit('advanceSegment', { advancedBy });
+  }, [socket]);
+
+  const previousTimesheetSegment = useCallback((triggeredBy = 'producer') => {
+    socket?.emit('previousSegment', { triggeredBy });
+  }, [socket]);
+
+  const goToTimesheetSegment = useCallback((segmentId, triggeredBy = 'producer') => {
+    socket?.emit('goToSegment', { segmentId, triggeredBy });
+  }, [socket]);
+
+  const overrideTimesheetScene = useCallback((sceneName, triggeredBy = 'producer') => {
+    socket?.emit('timesheetOverrideScene', { sceneName, triggeredBy });
+  }, [socket]);
+
+  const overrideTimesheetCamera = useCallback((cameraId, triggeredBy = 'producer') => {
+    socket?.emit('overrideCamera', { cameraId, triggeredBy });
+  }, [socket]);
+
+  const getTimesheetOverrides = useCallback(() => {
+    return overrideLog;
+  }, [overrideLog]);
+
+  const clearOverrideLog = useCallback(() => {
+    setOverrideLog([]);
+  }, []);
+
   const value = {
     socket,
     connected,
@@ -237,7 +409,20 @@ export function ShowProvider({ children }) {
     verifyCamera,
     clearFallback,
     resetVerifications,
-    overrideCamera
+    overrideCamera,
+    // Timesheet state
+    timesheetState,
+    overrideLog,
+    // Timesheet control functions
+    startTimesheetShow,
+    stopTimesheetShow,
+    advanceTimesheetSegment,
+    previousTimesheetSegment,
+    goToTimesheetSegment,
+    overrideTimesheetScene,
+    overrideTimesheetCamera,
+    getTimesheetOverrides,
+    clearOverrideLog
   };
 
   return (

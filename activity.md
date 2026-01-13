@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** Phase 7 - Context & Hooks (In Progress)
-**Last Task:** P7-01 - Extend ShowContext with camera state
-**Next Task:** P7-02 - Extend ShowContext with timesheet state
+**Last Task:** P7-02 - Extend ShowContext with timesheet state
+**Next Task:** P7-03 - Create useCameraHealth hook
 
 ---
 
@@ -548,6 +548,43 @@ Extended `show-controller/src/context/ShowContext.jsx` with camera state managem
 - All new state and functions exposed via context value
 - Verification: `npm run build` succeeds, console logs show camera state updates on connection
 
+### P7-02: Extend ShowContext with timesheet state
+Extended `show-controller/src/context/ShowContext.jsx` with timesheet state management:
+- Added state variables:
+  - `timesheetState` - Object containing: state, isRunning, isPaused, currentSegmentIndex, currentSegment, nextSegment, segmentElapsedMs, segmentRemainingMs, segmentProgress, showElapsedMs, isHoldSegment, canAdvanceHold, holdRemainingMs
+  - `overrideLog` - Array of producer override actions
+- Subscribed to socket events:
+  - `timesheetState` - Full timesheet state on connection
+  - `timesheetTick` - Updates elapsed/remaining time and progress on each tick
+  - `timesheetSegmentActivated` - Updates currentSegment and resets progress
+  - `timesheetSegmentCompleted` - Logs segment completion
+  - `timesheetShowStarted` - Updates state to running
+  - `timesheetShowStopped` - Updates state to stopped
+  - `timesheetStateChanged` - Updates engine state (running/paused/stopped)
+  - `timesheetHoldStarted` - Updates hold segment state
+  - `timesheetHoldMaxReached` - Logs when hold exceeds maxDuration
+  - `timesheetAutoAdvancing` - Logs auto-advance events
+  - `timesheetOverrideRecorded` - Appends override to overrideLog
+  - `timesheetSceneChanged` - Logs scene changes
+  - `timesheetSceneOverridden` - Logs manual scene overrides
+  - `timesheetCameraOverridden` - Logs camera override events
+  - `timesheetGraphicTriggered` - Logs graphic triggers
+  - `timesheetVideoStarted` - Logs video playback starts
+  - `timesheetBreakStarted` - Logs break segment starts
+  - `timesheetError` - Displays timesheet errors
+- Added control functions:
+  - `startTimesheetShow()` - Start the timesheet show
+  - `stopTimesheetShow()` - Stop the timesheet show
+  - `advanceTimesheetSegment(advancedBy)` - Advance to next segment
+  - `previousTimesheetSegment(triggeredBy)` - Go to previous segment
+  - `goToTimesheetSegment(segmentId, triggeredBy)` - Jump to specific segment
+  - `overrideTimesheetScene(sceneName, triggeredBy)` - Override OBS scene
+  - `overrideTimesheetCamera(cameraId, triggeredBy)` - Override to camera scene
+  - `getTimesheetOverrides()` - Get override log
+  - `clearOverrideLog()` - Clear override log
+- All new state and functions exposed via context value
+- Verification: `npm run build` succeeds, console logs show timesheet state updates
+
 ---
 
 ## Task Completion Log
@@ -578,7 +615,7 @@ Extended `show-controller/src/context/ShowContext.jsx` with camera state managem
 | P6-02 | Create OverrideLog component | ✅ done | 2026-01-13 |
 | P6-03 | Update QuickActions for camera runtime | ✅ done | 2026-01-13 |
 | P7-01 | Extend ShowContext with camera state | ✅ done | 2026-01-13 |
-| P7-02 | Extend ShowContext with timesheet state | pending | |
+| P7-02 | Extend ShowContext with timesheet state | ✅ done | 2026-01-13 |
 | P7-03 | Create useCameraHealth hook | pending | |
 | P7-04 | Create useCameraRuntime hook | pending | |
 | P7-05 | Create useTimesheet hook | pending | |
