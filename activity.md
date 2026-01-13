@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** Phase 7 - Context & Hooks (In Progress)
-**Last Task:** P7-03 - Create useCameraHealth hook
-**Next Task:** P7-04 - Create useCameraRuntime hook
+**Last Task:** P7-04 - Create useCameraRuntime hook
+**Next Task:** P7-05 - Create useTimesheet hook
 
 ---
 
@@ -597,6 +597,26 @@ Created `show-controller/src/hooks/useCameraHealth.js` with camera health helper
 - `statusCounts` - Memoized object with counts by status { healthy, degraded, reconnecting, offline, unknown }
 - Verification: `npm run build` succeeds without errors
 
+### P7-04: Create useCameraRuntime hook
+Created `show-controller/src/hooks/useCameraRuntime.js` with camera runtime state helpers:
+- Uses `useShow()` context to access `cameraRuntimeState` array and control functions
+- `getCameraForApparatus(apparatus)` - Returns camera covering a specific apparatus
+- `getAllCamerasForApparatus(apparatus)` - Returns all cameras covering an apparatus
+- `getMismatches()` - Returns array of cameras with apparatus mismatches (expected != current)
+- `getUnverified()` - Returns array of unverified cameras
+- `getVerified()` - Returns array of verified cameras
+- `hasMismatch(cameraId)` - Check if a specific camera has apparatus mismatch
+- `isVerified(cameraId)` - Check if a specific camera is verified
+- `getCameraState(cameraId)` - Get runtime state for a specific camera
+- `reassign(cameraId, apparatus[], assignedBy)` - Reassign apparatus to a camera
+- `verify(cameraId, verifiedBy)` - Mark camera as verified
+- `resetVerifications()` - Reset all camera verifications
+- `mismatches` - Memoized array of cameras with mismatches
+- `unverifiedCameras` - Memoized array of unverified cameras
+- `verifiedCameras` - Memoized array of verified cameras
+- `statusCounts` - Memoized counts { total, verified, unverified, mismatches }
+- Verification: `npm run build` succeeds without errors
+
 ---
 
 ## Task Completion Log
@@ -629,7 +649,7 @@ Created `show-controller/src/hooks/useCameraHealth.js` with camera health helper
 | P7-01 | Extend ShowContext with camera state | ✅ done | 2026-01-13 |
 | P7-02 | Extend ShowContext with timesheet state | ✅ done | 2026-01-13 |
 | P7-03 | Create useCameraHealth hook | ✅ done | 2026-01-13 |
-| P7-04 | Create useCameraRuntime hook | pending | |
+| P7-04 | Create useCameraRuntime hook | ✅ done | 2026-01-13 |
 | P7-05 | Create useTimesheet hook | pending | |
 | INT-01 | End-to-end server test | pending | |
 | INT-02 | End-to-end client test | pending | |
