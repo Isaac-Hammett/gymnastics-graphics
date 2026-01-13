@@ -1,9 +1,9 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** Phase 5 - Camera UI (In Progress)
-**Last Task:** P5-02 - Create CameraRuntimePanel component
-**Next Task:** P5-03 - Integrate camera panel with ProducerView
+**Phase:** Phase 5 - Camera UI (Complete)
+**Last Task:** P5-03 - Integrate camera panel with ProducerView
+**Next Task:** P6-01 - Create TimesheetPanel component
 
 ---
 
@@ -440,6 +440,27 @@ Created `show-controller/src/components/CameraRuntimePanel.jsx` with real-time c
 - Integrated CameraRuntimePanel into ProducerView.jsx right column
 - Verification: Screenshot at `screenshots/camera-panel.png` shows 4 camera cards in producer view
 
+### P5-03: Integrate camera panel with ProducerView
+Extended `show-controller/src/views/ProducerView.jsx` with full camera integration:
+- Added camera state management:
+  - `cameraHealth`, `cameraRuntimeState`, `cameraMismatches` state variables
+  - Socket subscriptions for `cameraHealth` and `cameraRuntimeState` events
+  - REST API fetch for initial camera state on mount
+  - Helper functions: `switchToCamera()`, `getCameraHealth()`, `getCameraName()`
+- Added Camera Mismatch Alert Banner:
+  - Yellow warning banner displayed at top of page when any cameras have apparatus mismatches
+  - Shows affected camera names with expected apparatus
+  - Always visible without expanding the camera panel
+- Added Quick Camera Switch buttons (visible when show is running):
+  - Grid of 4 camera buttons with health status indicator dots
+  - Each button shows camera name and current apparatus assignments
+  - Buttons are disabled for offline cameras
+  - Yellow border highlights cameras with mismatches
+  - Tooltip shows full camera info including health status and mismatch warnings
+  - Clicking a button emits `overrideCamera` socket event to switch OBS scene
+- CameraRuntimePanel remains in right column as collapsible panel
+- Verification: Screenshot at `screenshots/producer-with-cameras.png` shows integrated view
+
 ---
 
 ## Task Completion Log
@@ -465,7 +486,7 @@ Created `show-controller/src/components/CameraRuntimePanel.jsx` with real-time c
 | P4-06 | Integrate timesheet engine with server | ✅ done | 2026-01-13 |
 | P5-01 | Create CameraSetupPage component | ✅ done | 2026-01-13 |
 | P5-02 | Create CameraRuntimePanel component | ✅ done | 2026-01-13 |
-| P5-03 | Integrate camera panel with ProducerView | pending | |
+| P5-03 | Integrate camera panel with ProducerView | ✅ done | 2026-01-13 |
 | P6-01 | Create TimesheetPanel component | pending | |
 | P6-02 | Create OverrideLog component | pending | |
 | P6-03 | Update QuickActions for camera runtime | pending | |
@@ -486,6 +507,7 @@ Created `show-controller/src/components/CameraRuntimePanel.jsx` with real-time c
 |------------|------|-----|-------|
 | camera-setup.png | P5-01 | /camera-setup | Shows 4 cameras with scene preview (19 scenes) |
 | camera-panel.png | P5-02 | /producer | Shows 4 camera cards with health status, verify/reassign buttons |
+| producer-with-cameras.png | P5-03 | /producer | Shows camera panel integrated, quick camera buttons (when show running), mismatch alert banner |
 
 ---
 
