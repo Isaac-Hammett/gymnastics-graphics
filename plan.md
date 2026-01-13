@@ -73,7 +73,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Update existing segments to use cameraId references"
     ],
     "verification": "node -e \"const s=require('./server/lib/showConfigSchema.js'); const c=require('./server/config/show-config.json'); console.log(s.validateShowConfig(c))\" shows valid:true",
-    "passes": false
+    "passes": true
   },
   {
     "id": "P1-03",
@@ -531,7 +531,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 
 | Phase | Tasks | Passed | Status |
 |-------|-------|--------|--------|
-| Phase 1: Data Model | 3 | 1 | In progress |
+| Phase 1: Data Model | 3 | 2 | In progress |
 | Phase 2: Camera Health | 5 | 0 | Not started |
 | Phase 3: Scene Generator | 3 | 0 | Not started |
 | Phase 4: Timesheet Engine | 6 | 0 | Not started |
@@ -539,7 +539,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 | Phase 6: Timesheet UI | 3 | 0 | Not started |
 | Phase 7: Context & Hooks | 5 | 0 | Not started |
 | Integration | 3 | 0 | Not started |
-| **Total** | **31** | **1** | **3%** |
+| **Total** | **31** | **2** | **6%** |
 
 ---
 
