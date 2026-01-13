@@ -1,9 +1,9 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** Integration Tests (In Progress)
-**Last Task:** INT-02 - End-to-end client test
-**Next Task:** INT-03 - Full show flow test
+**Phase:** Integration Tests (Complete)
+**Last Task:** INT-03 - Full show flow test
+**Next Task:** All tasks complete! 🎉
 
 ---
 
@@ -659,6 +659,22 @@ Completed end-to-end client integration testing using Playwright test-helper.js:
   - `INT-02-producer.png` - ProducerView with all panels visible
 - Verification: `node test-helper.js check http://localhost:5173` exits 0
 
+### INT-03: Full show flow test
+Completed full show flow integration testing with automated test script:
+- Created `test-show-flow.js` - comprehensive automated test script using socket.io-client and Playwright
+- Test covers all 6 steps from the task specification:
+  1. **Load test show config with cameras**: Verified 4 cameras and 21 segments in config
+  2. **Start show via socket event**: Connected to server via WebSocket, emitted `startTimesheetShow`
+  3. **Verify segment advances**: Tested `advanceSegment` and `previousSegment` events
+  4. **Test camera quick-switch**: Tested `overrideCamera` event with Camera 1
+  5. **Test override logging**: Verified override log captures advance, previous, and camera override actions
+  6. **Stop show and verify history**: Confirmed show stops and segment history is recorded
+- Test results: 17/17 tests passed
+- All API endpoints verified: `/api/config`, `/api/cameras/health`, `/api/cameras/runtime`, `/api/timesheet/state`, `/api/timesheet/overrides`, `/api/timesheet/history`
+- Socket events tested: `startTimesheetShow`, `advanceSegment`, `previousSegment`, `overrideCamera`, `stopTimesheetShow`
+- Screenshot saved: `INT-03-show-flow.png` - ProducerView during active show flow
+- Verification: `node test-show-flow.js` exits 0 with all tests passing
+
 ### P7-05: Create useTimesheet hook
 Created `show-controller/src/hooks/useTimesheet.js` with timesheet state helpers:
 - Uses `useShow()` context to access `timesheetState`, `overrideLog`, and control functions
@@ -725,7 +741,7 @@ Created `show-controller/src/hooks/useTimesheet.js` with timesheet state helpers
 | P7-05 | Create useTimesheet hook | ✅ done | 2026-01-13 |
 | INT-01 | End-to-end server test | ✅ done | 2026-01-13 |
 | INT-02 | End-to-end client test | ✅ done | 2026-01-13 |
-| INT-03 | Full show flow test | pending | |
+| INT-03 | Full show flow test | ✅ done | 2026-01-13 |
 
 ---
 
@@ -741,6 +757,7 @@ Created `show-controller/src/hooks/useTimesheet.js` with timesheet state helpers
 | quick-actions.png | P6-03 | /talent | Shows QuickActions with apparatus camera buttons (visible when show running) |
 | INT-02-camera-setup.png | INT-02 | /camera-setup | Shows CameraSetupPage with 4 cameras, scene preview (19 scenes) |
 | INT-02-producer.png | INT-02 | /producer | Shows ProducerView with timesheet panel, override log, camera status |
+| INT-03-show-flow.png | INT-03 | /producer | ProducerView during active show - shows running timesheet, segment info, camera status |
 
 ---
 
