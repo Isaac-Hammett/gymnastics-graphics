@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** Phase 4 - Timesheet Engine (In Progress)
-**Last Task:** P4-04 - Implement manual controls and overrides
-**Next Task:** P4-05 - Add timesheet socket events
+**Last Task:** P4-05 - Add timesheet socket events
+**Next Task:** P4-06 - Integrate timesheet engine with server
 
 ---
 
@@ -334,6 +334,46 @@ Extended `server/lib/timesheetEngine.js` with manual control methods:
 - Error events emitted for edge cases (at first/last segment, invalid camera, OBS not connected)
 - Verification: Test script confirms all controls work correctly
 
+### P4-05: Add timesheet socket events
+Added socket event handlers and broadcasts for timesheet engine in `server/index.js`:
+
+**Socket Listeners (client → server):**
+- `startTimesheetShow` - Start show via timesheet engine
+- `stopTimesheetShow` - Stop show via timesheet engine
+- `advanceSegment` - Advance to next segment
+- `previousSegment` - Go to previous segment
+- `goToSegment` - Jump to specific segment by ID
+- `timesheetOverrideScene` - Override scene (producer only)
+- `overrideCamera` - Override camera (producer only)
+- `getTimesheetState` - Request current timesheet state
+- `getTimesheetOverrides` - Request override history
+- `getTimesheetHistory` - Request segment history
+
+**Socket Broadcasts (server → clients):**
+- `timesheetTick` - Broadcast on each tick (1s) with elapsed/remaining time
+- `timesheetSegmentActivated` - Broadcast when segment becomes active
+- `timesheetSegmentCompleted` - Broadcast when segment finishes
+- `timesheetShowStarted` - Broadcast when show begins
+- `timesheetShowStopped` - Broadcast when show ends
+- `timesheetStateChanged` - Broadcast on engine state changes
+- `timesheetHoldStarted` - Broadcast when hold segment starts
+- `timesheetHoldMaxReached` - Broadcast when hold exceeds maxDuration
+- `timesheetAutoAdvancing` - Broadcast before auto-advancing
+- `timesheetOverrideRecorded` - Broadcast when override is logged
+- `timesheetSceneChanged` - Broadcast on scene changes
+- `timesheetSceneOverridden` - Broadcast when scene is manually overridden
+- `timesheetCameraOverridden` - Broadcast when camera is manually overridden
+- `timesheetGraphicTriggered` - Broadcast when graphic is triggered
+- `timesheetVideoStarted` - Broadcast when video starts
+- `timesheetBreakStarted` - Broadcast when break segment starts
+- `timesheetError` - Broadcast on timesheet errors
+- `timesheetState` - Sent on client connection and state changes
+
+**On Client Connection:**
+- Initial `timesheetState` sent immediately (line 1099-1101)
+
+Verification: Server starts and logs show "Timesheet engine initialized"
+
 ---
 
 ## Task Completion Log
@@ -355,7 +395,7 @@ Extended `server/lib/timesheetEngine.js` with manual control methods:
 | P4-02 | Implement segment activation logic | ✅ done | 2026-01-13 |
 | P4-03 | Implement auto-advance and hold logic | ✅ done | 2026-01-13 |
 | P4-04 | Implement manual controls and overrides | ✅ done | 2026-01-13 |
-| P4-05 | Add timesheet socket events | pending | |
+| P4-05 | Add timesheet socket events | ✅ done | 2026-01-13 |
 | P4-06 | Integrate timesheet engine with server | pending | |
 | P5-01 | Create CameraSetupPage component | pending | |
 | P5-02 | Create CameraRuntimePanel component | pending | |
