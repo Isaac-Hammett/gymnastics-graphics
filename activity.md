@@ -1,9 +1,9 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** Phase 7 - Context & Hooks (In Progress)
-**Last Task:** P7-05 - Create useTimesheet hook
-**Next Task:** INT-01 - End-to-end server test
+**Phase:** Integration Tests (In Progress)
+**Last Task:** INT-01 - End-to-end server test
+**Next Task:** INT-02 - End-to-end client test
 
 ---
 
@@ -617,6 +617,24 @@ Created `show-controller/src/hooks/useCameraRuntime.js` with camera runtime stat
 - `statusCounts` - Memoized counts { total, verified, unverified, mismatches }
 - Verification: `npm run build` succeeds without errors
 
+### INT-01: End-to-end server test
+Completed end-to-end server integration testing:
+- Updated `test-helper.js` to use correct port (3003) and include all new endpoints
+- Verified all 11 API endpoints respond with 200 OK:
+  - Core: `/api/status`, `/api/scenes`, `/api/config`, `/api/config/validate`
+  - Camera endpoints (P2-04): `/api/cameras/health`, `/api/cameras/runtime`, `/api/cameras/fallbacks`
+  - Scene generation (P3-03): `/api/scenes/preview`
+  - Timesheet (P4-06): `/api/timesheet/state`, `/api/timesheet/overrides`, `/api/timesheet/history`
+- Verified socket events are registered:
+  - 26+ socket listeners for client commands (reassignApparatus, verifyCamera, startTimesheetShow, etc.)
+  - 40+ socket broadcast events (cameraHealth, timesheetTick, timesheetSegmentActivated, etc.)
+- OBS connection handled gracefully (returns `obsConnected: false` when unavailable)
+- Config validation on startup confirmed (server logs "with 21 segments (validated)")
+- Camera modules initialize with 4 cameras
+- Timesheet engine initializes correctly
+- Health check command: `node test-helper.js health` shows all endpoints OK
+- Verification: All endpoints return valid JSON responses
+
 ### P7-05: Create useTimesheet hook
 Created `show-controller/src/hooks/useTimesheet.js` with timesheet state helpers:
 - Uses `useShow()` context to access `timesheetState`, `overrideLog`, and control functions
@@ -681,7 +699,7 @@ Created `show-controller/src/hooks/useTimesheet.js` with timesheet state helpers
 | P7-03 | Create useCameraHealth hook | ✅ done | 2026-01-13 |
 | P7-04 | Create useCameraRuntime hook | ✅ done | 2026-01-13 |
 | P7-05 | Create useTimesheet hook | ✅ done | 2026-01-13 |
-| INT-01 | End-to-end server test | pending | |
+| INT-01 | End-to-end server test | ✅ done | 2026-01-13 |
 | INT-02 | End-to-end client test | pending | |
 | INT-03 | Full show flow test | pending | |
 
