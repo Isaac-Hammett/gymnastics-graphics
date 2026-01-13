@@ -9,6 +9,7 @@ import { dirname, join } from 'path';
 import dotenv from 'dotenv';
 import multer from 'multer';
 import { parse } from 'csv-parse/sync';
+import { validateShowConfig } from './lib/showConfigSchema.js';
 
 dotenv.config();
 
@@ -59,17 +60,34 @@ let showState = {
 let showConfig = null;
 
 // Load show configuration
-function loadShowConfig() {
+function loadShowConfig(exitOnInvalid = false) {
   try {
     const configPath = join(__dirname, 'config', 'show-config.json');
     const configData = readFileSync(configPath, 'utf-8');
-    showConfig = JSON.parse(configData);
+    const parsedConfig = JSON.parse(configData);
+
+    // Validate the configuration against schema
+    const validation = validateShowConfig(parsedConfig);
+    if (!validation.valid) {
+      console.error('Show config validation failed:');
+      validation.errors.forEach(err => console.error(`  - ${err}`));
+      if (exitOnInvalid) {
+        console.error('Exiting due to invalid configuration');
+        process.exit(1);
+      }
+      return false;
+    }
+
+    showConfig = parsedConfig;
     showState.showProgress.total = showConfig.segments.length;
     updateCurrentSegment();
-    console.log(`Loaded show config: ${showConfig.showName} with ${showConfig.segments.length} segments`);
+    console.log(`Loaded show config: ${showConfig.showName} with ${showConfig.segments.length} segments (validated)`);
     return true;
   } catch (error) {
     console.error('Error loading show config:', error.message);
+    if (exitOnInvalid) {
+      process.exit(1);
+    }
     return false;
   }
 }
@@ -438,6 +456,15 @@ app.get('/api/config', (req, res) => {
   res.json(showConfig);
 });
 
+// Config validation endpoint
+app.get('/api/config/validate', (req, res) => {
+  if (!showConfig) {
+    return res.json({ valid: false, errors: ['No configuration loaded'] });
+  }
+  const validation = validateShowConfig(showConfig);
+  res.json(validation);
+});
+
 // CSV Upload endpoint
 app.post('/api/import-csv', upload.single('csv'), (req, res) => {
   try {
@@ -781,8 +808,8 @@ httpServer.listen(PORT, () => {
   console.log(`Talent View: http://localhost:${PORT}/talent`);
   console.log(`Producer View: http://localhost:${PORT}/producer`);
 
-  // Load show config
-  loadShowConfig();
+  // Load and validate show config (exit if invalid on startup)
+  loadShowConfig(true);
 
   // Connect to OBS
   connectToOBS();
