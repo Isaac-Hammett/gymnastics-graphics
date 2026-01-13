@@ -1,9 +1,9 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** Phase 7 - Context & Hooks (Not Started)
-**Last Task:** P6-03 - Update QuickActions for camera runtime
-**Next Task:** P7-01 - Extend ShowContext with camera state
+**Phase:** Phase 7 - Context & Hooks (In Progress)
+**Last Task:** P7-01 - Extend ShowContext with camera state
+**Next Task:** P7-02 - Extend ShowContext with timesheet state
 
 ---
 
@@ -524,6 +524,30 @@ Updated `show-controller/src/components/QuickActions.jsx` with apparatus-based c
 - Build verification: `npm run build` succeeds with no errors
 - Verification: Screenshot at `screenshots/quick-actions.png` shows TalentView (QuickActions visible when show running)
 
+### P7-01: Extend ShowContext with camera state
+Extended `show-controller/src/context/ShowContext.jsx` with camera state management:
+- Added state variables: `cameraHealth`, `cameraRuntimeState`, `activeFallbacks`
+- Subscribed to socket events:
+  - `cameraHealth` - Updates camera health array on each poll
+  - `cameraRuntimeState` - Updates runtime state on changes
+  - `cameraStatusChanged` - Updates individual camera status on transitions
+  - `activeFallbacks` - Initial fallbacks state on connection
+  - `fallbackActivated` - Adds new fallback to active list
+  - `fallbackCleared` - Removes cleared fallback from list
+  - `fallbackUnavailable` - Logs when no fallback available
+  - `fallbackChainExhausted` - Logs when fallback chain exhausted
+  - `apparatusReassigned` - Updates camera's currentApparatus in runtime state
+  - `cameraVerified` - Updates camera's verified status in runtime state
+  - `mismatchDetected` - Logs apparatus mismatch warnings
+- Added control functions:
+  - `reassignApparatus(cameraId, apparatus, assignedBy)` - Reassign apparatus to camera
+  - `verifyCamera(cameraId, verifiedBy)` - Mark camera as verified
+  - `clearFallback(cameraId)` - Clear fallback for camera
+  - `resetVerifications()` - Reset all camera verifications
+  - `overrideCamera(cameraId, triggeredBy)` - Switch to camera's scene
+- All new state and functions exposed via context value
+- Verification: `npm run build` succeeds, console logs show camera state updates on connection
+
 ---
 
 ## Task Completion Log
@@ -553,7 +577,7 @@ Updated `show-controller/src/components/QuickActions.jsx` with apparatus-based c
 | P6-01 | Create TimesheetPanel component | ✅ done | 2026-01-13 |
 | P6-02 | Create OverrideLog component | ✅ done | 2026-01-13 |
 | P6-03 | Update QuickActions for camera runtime | ✅ done | 2026-01-13 |
-| P7-01 | Extend ShowContext with camera state | pending | |
+| P7-01 | Extend ShowContext with camera state | ✅ done | 2026-01-13 |
 | P7-02 | Extend ShowContext with timesheet state | pending | |
 | P7-03 | Create useCameraHealth hook | pending | |
 | P7-04 | Create useCameraRuntime hook | pending | |
