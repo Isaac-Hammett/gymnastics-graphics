@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** Phase 7 - Context & Hooks (In Progress)
-**Last Task:** P7-02 - Extend ShowContext with timesheet state
-**Next Task:** P7-03 - Create useCameraHealth hook
+**Last Task:** P7-03 - Create useCameraHealth hook
+**Next Task:** P7-04 - Create useCameraRuntime hook
 
 ---
 
@@ -585,6 +585,18 @@ Extended `show-controller/src/context/ShowContext.jsx` with timesheet state mana
 - All new state and functions exposed via context value
 - Verification: `npm run build` succeeds, console logs show timesheet state updates
 
+### P7-03: Create useCameraHealth hook
+Created `show-controller/src/hooks/useCameraHealth.js` with camera health helpers:
+- Uses `useShow()` context to access `cameraHealth` array
+- `isHealthy(cameraId)` - Returns true if camera status is 'healthy'
+- `getCameraStatus(cameraId)` - Returns camera status string or null if not found
+- `getCameraHealth(cameraId)` - Returns full health data object for a camera
+- `getCamerasByStatus(status)` - Returns array of cameras with specified status
+- `healthyCameras` - Memoized array of healthy cameras
+- `unhealthyCameras` - Memoized array of unhealthy cameras
+- `statusCounts` - Memoized object with counts by status { healthy, degraded, reconnecting, offline, unknown }
+- Verification: `npm run build` succeeds without errors
+
 ---
 
 ## Task Completion Log
@@ -616,7 +628,7 @@ Extended `show-controller/src/context/ShowContext.jsx` with timesheet state mana
 | P6-03 | Update QuickActions for camera runtime | ✅ done | 2026-01-13 |
 | P7-01 | Extend ShowContext with camera state | ✅ done | 2026-01-13 |
 | P7-02 | Extend ShowContext with timesheet state | ✅ done | 2026-01-13 |
-| P7-03 | Create useCameraHealth hook | pending | |
+| P7-03 | Create useCameraHealth hook | ✅ done | 2026-01-13 |
 | P7-04 | Create useCameraRuntime hook | pending | |
 | P7-05 | Create useTimesheet hook | pending | |
 | INT-01 | End-to-end server test | pending | |
