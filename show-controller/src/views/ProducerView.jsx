@@ -8,6 +8,7 @@ import ConnectionStatus from '../components/ConnectionStatus';
 import GraphicsControl from '../components/GraphicsControl';
 import CameraRuntimePanel from '../components/CameraRuntimePanel';
 import TimesheetPanel from '../components/TimesheetPanel';
+import OverrideLog from '../components/OverrideLog';
 import {
   PlayIcon,
   BackwardIcon,
@@ -394,6 +395,9 @@ export default function ProducerView() {
           <div className="space-y-4">
             {/* Timesheet Panel */}
             <TimesheetPanel collapsed={false} />
+
+            {/* Override Log */}
+            <OverrideLog collapsed={true} defaultVisible={5} />
 
             {/* Camera Runtime Panel */}
             <CameraRuntimePanel collapsed={false} />

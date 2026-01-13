@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** Phase 6 - Timesheet UI (In Progress)
-**Last Task:** P6-01 - Create TimesheetPanel component
-**Next Task:** P6-02 - Create OverrideLog component
+**Last Task:** P6-02 - Create OverrideLog component
+**Next Task:** P6-03 - Update QuickActions for camera runtime
 
 ---
 
@@ -488,6 +488,25 @@ Created `show-controller/src/components/TimesheetPanel.jsx` with full timesheet 
 - Integrated TimesheetPanel into ProducerView.jsx right column (above Camera Status)
 - Verification: Screenshot at `screenshots/timesheet-panel.png` shows panel with "Show not started" state and Up Next preview
 
+### P6-02: Create OverrideLog component
+Created `show-controller/src/components/OverrideLog.jsx` with real-time override logging:
+- Collapsible panel header showing "Override Log" with count badge (total overrides)
+- Real-time log of producer overrides from timesheet engine
+- Each override entry shows:
+  - Override type icon (Next, Previous, Jump, Scene, Camera)
+  - Color-coded by type (blue=advance, purple=previous, orange=jump, green=scene, cyan=camera)
+  - Timestamp in HH:MM:SS format
+  - Details showing from/to segments, scene name, or camera info
+  - Triggered by user identifier
+- Collapsible panel (show last 5 by default via `defaultVisible` prop)
+- "Show all / Show less" toggle when more than 5 overrides exist
+- Export button downloads JSON file with all overrides for post-show analysis
+- Summary stats at bottom showing counts by override type
+- Socket event subscriptions: `timesheetOverrideRecorded`, `timesheetState`
+- REST API fallback for initial state fetch via `/api/timesheet/overrides`
+- Integrated OverrideLog into ProducerView.jsx right column (below Timesheet, above Camera Status)
+- Verification: Screenshot at `screenshots/override-log.png` shows panel in collapsed state in producer view
+
 ---
 
 ## Task Completion Log
@@ -515,7 +534,7 @@ Created `show-controller/src/components/TimesheetPanel.jsx` with full timesheet 
 | P5-02 | Create CameraRuntimePanel component | ✅ done | 2026-01-13 |
 | P5-03 | Integrate camera panel with ProducerView | ✅ done | 2026-01-13 |
 | P6-01 | Create TimesheetPanel component | ✅ done | 2026-01-13 |
-| P6-02 | Create OverrideLog component | pending | |
+| P6-02 | Create OverrideLog component | ✅ done | 2026-01-13 |
 | P6-03 | Update QuickActions for camera runtime | pending | |
 | P7-01 | Extend ShowContext with camera state | pending | |
 | P7-02 | Extend ShowContext with timesheet state | pending | |
@@ -536,6 +555,7 @@ Created `show-controller/src/components/TimesheetPanel.jsx` with full timesheet 
 | camera-panel.png | P5-02 | /producer | Shows 4 camera cards with health status, verify/reassign buttons |
 | producer-with-cameras.png | P5-03 | /producer | Shows camera panel integrated, quick camera buttons (when show running), mismatch alert banner |
 | timesheet-panel.png | P6-01 | /producer | Shows timesheet panel with current/next segment, time display, controls, segment list |
+| override-log.png | P6-02 | /producer | Shows override log panel in collapsed state with count badge |
 
 ---
 
