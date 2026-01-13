@@ -1,9 +1,9 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** Phase 1 - Data Model (Complete)
-**Last Task:** P1-03 - Integrate schema validation on server startup
-**Next Task:** P2-01 - Create Nimble stats polling module
+**Phase:** Phase 2 - Camera Health (In Progress)
+**Last Task:** P2-01 - Create Nimble stats polling module
+**Next Task:** P2-02 - Create camera runtime state manager
 
 ---
 
@@ -53,6 +53,20 @@ Integrated schema validation into `server/index.js`:
 - Added `GET /api/config/validate` endpoint returning `{valid: boolean, errors: []}`
 - Verification: endpoint returns `{valid:true,errors:[]}`, server logs "(validated)"
 
+### P2-01: Create Nimble stats polling module
+Created `server/lib/cameraHealth.js` with CameraHealthMonitor class:
+- Extends EventEmitter for real-time event broadcasting
+- `fetchNimbleStats()` polls Nimble Streamer stats API at `/manage/srt_receiver_stats`
+- `evaluateHealth()` determines status based on bitrate and packet loss thresholds
+- `pollHealth()` runs at configurable interval (default 2000ms)
+- Health statuses: `healthy`, `degraded`, `reconnecting`, `offline`, `unknown`
+- Emits `cameraHealth` event with all camera statuses on each poll
+- Emits `cameraStatusChanged` event when a camera's status transitions
+- Helper methods: `getAllHealth()`, `getCameraHealth(id)`, `isHealthy(id)`
+- `getHealthyCameras()` and `getUnhealthyCameras()` for filtering
+- `updateConfig()` for hot-reload support
+- Verification: `node -e "import('./server/lib/cameraHealth.js')"` exits 0
+
 ---
 
 ## Task Completion Log
@@ -62,7 +76,7 @@ Integrated schema validation into `server/index.js`:
 | P1-01 | Create show config schema validator | ✅ done | 2026-01-13 |
 | P1-02 | Extend show-config.json with camera schema | ✅ done | 2026-01-13 |
 | P1-03 | Integrate schema validation on server startup | ✅ done | 2026-01-13 |
-| P2-01 | Create Nimble stats polling module | pending | |
+| P2-01 | Create Nimble stats polling module | ✅ done | 2026-01-13 |
 | P2-02 | Create camera runtime state manager | pending | |
 | P2-03 | Create camera fallback manager | pending | |
 | P2-04 | Add camera health API endpoints | pending | |
