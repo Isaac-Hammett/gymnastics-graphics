@@ -1,9 +1,9 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** Phase 3 - Scene Generator (Complete)
-**Last Task:** P3-03 - Add scene generation API endpoints
-**Next Task:** P4-01 - Create timesheet engine core
+**Phase:** Phase 4 - Timesheet Engine (In Progress)
+**Last Task:** P4-01 - Create timesheet engine core
+**Next Task:** P4-02 - Implement segment activation logic
 
 ---
 
@@ -225,6 +225,33 @@ New API endpoints:
 
 Verification: `GET /api/scenes/preview` returns 19 scenes for 4-camera config (matching expected count)
 
+### P4-01: Create timesheet engine core
+Created `server/lib/timesheetEngine.js` with TimesheetEngine class:
+- Extends EventEmitter for real-time event broadcasting
+- Defines segment types: static, live, multi, hold, break, video, graphic
+- Defines engine states: stopped, running, paused
+- Core state tracking:
+  - `_state` - Current engine state (stopped/running/paused)
+  - `_isRunning` - Boolean flag for running status
+  - `_currentSegmentIndex` - Current segment index (-1 if not started)
+  - `_currentSegment` - Current segment object
+  - `_segmentStartTime` - When current segment started
+  - `_history` - Array of completed segment records
+  - `_overrides` - Array of producer override actions
+- `start()` - Begins show from first segment, starts tick timer
+- `stop()` - Halts show, records final segment to history
+- `pause()` / `resume()` - Pause/resume show without losing state
+- `_tick()` - 1-second interval handler, emits tick event with elapsed/remaining time
+- `_activateSegment(index)` - Internal method to switch to a segment
+- `_recordHistory(endReason)` - Records segment completion in history
+- `_recordOverride(type, details)` - Records producer actions
+- Getters for: `segmentElapsedMs`, `segmentRemainingMs`, `segmentProgress`, `showElapsedMs`
+- `getState()` - Returns full timesheet state for clients
+- `getOverrides()` / `getHistory()` - Return override and history logs
+- `updateConfig()` - Hot-reload support preserving position by segment ID
+- Events emitted: tick, segmentActivated, segmentCompleted, showStarted, showStopped, holdMaxReached, overrideRecorded, stateChanged
+- Verification: `node -e "import('./server/lib/timesheetEngine.js')"` exits 0
+
 ---
 
 ## Task Completion Log
@@ -242,7 +269,7 @@ Verification: `GET /api/scenes/preview` returns 19 scenes for 4-camera config (m
 | P3-01 | Create OBS scene generator module | ✅ done | 2026-01-13 |
 | P3-02 | Implement generateAllScenes orchestration | ✅ done | 2026-01-13 |
 | P3-03 | Add scene generation API endpoints | ✅ done | 2026-01-13 |
-| P4-01 | Create timesheet engine core | pending | |
+| P4-01 | Create timesheet engine core | ✅ done | 2026-01-13 |
 | P4-02 | Implement segment activation logic | pending | |
 | P4-03 | Implement auto-advance and hold logic | pending | |
 | P4-04 | Implement manual controls and overrides | pending | |
