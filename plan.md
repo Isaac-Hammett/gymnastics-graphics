@@ -463,7 +463,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Actions: reassign(cameraId, apparatus[]), verify(cameraId)"
     ],
     "verification": "Hook imports without error",
-    "passes": false
+    "passes": true
   },
   {
     "id": "P7-05",
@@ -537,9 +537,9 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 | Phase 4: Timesheet Engine | 6 | 6 | Complete |
 | Phase 5: Camera UI | 3 | 3 | Complete |
 | Phase 6: Timesheet UI | 3 | 3 | Complete |
-| Phase 7: Context & Hooks | 5 | 3 | In Progress |
+| Phase 7: Context & Hooks | 5 | 4 | In Progress |
 | Integration | 3 | 0 | Not started |
-| **Total** | **31** | **26** | **84%** |
+| **Total** | **31** | **27** | **87%** |
 
 ---
 
