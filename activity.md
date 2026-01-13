@@ -1,9 +1,9 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** Phase 1 - Data Model
-**Last Task:** P1-02 - Extend show-config.json with camera schema
-**Next Task:** P1-03 - Integrate schema validation on server startup
+**Phase:** Phase 1 - Data Model (Complete)
+**Last Task:** P1-03 - Integrate schema validation on server startup
+**Next Task:** P2-01 - Create Nimble stats polling module
 
 ---
 
@@ -44,6 +44,15 @@ Extended `server/config/show-config.json` with full camera management configurat
 - Changed halftime segment type from "live" to "break"
 - Schema validation passes: `{ valid: true, errors: [] }`
 
+### P1-03: Integrate schema validation on server startup
+Integrated schema validation into `server/index.js`:
+- Imported `validateShowConfig` from `./lib/showConfigSchema.js`
+- Updated `loadShowConfig()` to validate config and log errors
+- Added `exitOnInvalid` parameter - server exits on invalid config at startup
+- Hot-reload re-validates on config file changes (does not exit, logs warnings)
+- Added `GET /api/config/validate` endpoint returning `{valid: boolean, errors: []}`
+- Verification: endpoint returns `{valid:true,errors:[]}`, server logs "(validated)"
+
 ---
 
 ## Task Completion Log
@@ -52,7 +61,7 @@ Extended `server/config/show-config.json` with full camera management configurat
 |---------|-------------|--------|------|
 | P1-01 | Create show config schema validator | ✅ done | 2026-01-13 |
 | P1-02 | Extend show-config.json with camera schema | ✅ done | 2026-01-13 |
-| P1-03 | Integrate schema validation on server startup | pending | |
+| P1-03 | Integrate schema validation on server startup | ✅ done | 2026-01-13 |
 | P2-01 | Create Nimble stats polling module | pending | |
 | P2-02 | Create camera runtime state manager | pending | |
 | P2-03 | Create camera fallback manager | pending | |
