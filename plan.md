@@ -219,7 +219,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Add DELETE /api/scenes/generated endpoint"
     ],
     "verification": "curl -X POST http://localhost:3001/api/scenes/generate returns report",
-    "passes": false
+    "passes": true
   },
   {
     "id": "P4-01",
@@ -533,13 +533,13 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 |-------|-------|--------|--------|
 | Phase 1: Data Model | 3 | 3 | Complete |
 | Phase 2: Camera Health | 5 | 5 | Complete |
-| Phase 3: Scene Generator | 3 | 2 | In progress |
+| Phase 3: Scene Generator | 3 | 3 | Complete |
 | Phase 4: Timesheet Engine | 6 | 0 | Not started |
 | Phase 5: Camera UI | 3 | 0 | Not started |
 | Phase 6: Timesheet UI | 3 | 0 | Not started |
 | Phase 7: Context & Hooks | 5 | 0 | Not started |
 | Integration | 3 | 0 | Not started |
-| **Total** | **31** | **10** | **32%** |
+| **Total** | **31** | **11** | **35%** |
 
 ---
 

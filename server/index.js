@@ -13,6 +13,7 @@ import { validateShowConfig } from './lib/showConfigSchema.js';
 import { CameraHealthMonitor } from './lib/cameraHealth.js';
 import { CameraRuntimeState } from './lib/cameraRuntimeState.js';
 import { CameraFallbackManager } from './lib/cameraFallback.js';
+import { OBSSceneGenerator } from './lib/obsSceneGenerator.js';
 
 dotenv.config();
 
@@ -66,6 +67,9 @@ let showConfig = null;
 let cameraHealthMonitor = null;
 let cameraRuntimeState = null;
 let cameraFallbackManager = null;
+
+// OBS Scene Generator
+let obsSceneGenerator = null;
 
 // Load show configuration
 function loadShowConfig(exitOnInvalid = false) {
@@ -187,6 +191,12 @@ function initializeCameraModules() {
   console.log(`Camera modules initialized with ${showConfig.cameras.length} cameras`);
 }
 
+// Initialize OBS scene generator
+function initializeSceneGenerator() {
+  obsSceneGenerator = new OBSSceneGenerator(obs, showConfig);
+  console.log('OBS scene generator initialized');
+}
+
 // Watch for config changes (hot reload)
 watchFile(join(__dirname, 'config', 'show-config.json'), () => {
   console.log('Show config changed, reloading...');
@@ -200,6 +210,10 @@ watchFile(join(__dirname, 'config', 'show-config.json'), () => {
   }
   if (cameraFallbackManager) {
     cameraFallbackManager.updateConfig({ cameras: showConfig.cameras });
+  }
+  // Update scene generator with new config
+  if (obsSceneGenerator) {
+    obsSceneGenerator.updateConfig(showConfig);
   }
   broadcastState();
 });
@@ -651,6 +665,148 @@ app.post('/api/cameras/:id/clear-fallback', (req, res) => {
   res.json(result);
 });
 
+// ============================================
+// OBS Scene Generation API Endpoints
+// ============================================
+
+// POST /api/scenes/generate - Generate OBS scenes from camera config
+app.post('/api/scenes/generate', async (req, res) => {
+  if (!obsSceneGenerator) {
+    return res.status(503).json({ error: 'Scene generator not initialized' });
+  }
+  if (!showState.obsConnected) {
+    return res.status(503).json({ error: 'OBS not connected' });
+  }
+
+  try {
+    const { types } = req.body || {};
+
+    // If types are specified, generate only those scene types
+    // Otherwise generate all scenes
+    let results;
+    if (types && Array.isArray(types) && types.length > 0) {
+      // Generate scenes filtered by types
+      // For filtered generation, we need to manually call each type
+      results = {
+        created: [],
+        skipped: [],
+        failed: [],
+        summary: { created: 0, skipped: 0, failed: 0, total: 0 }
+      };
+
+      const graphicsUrl = obsSceneGenerator.buildGraphicsUrl();
+      const cameras = obsSceneGenerator.cameras;
+
+      // Helper to categorize results
+      const categorize = (result) => {
+        if (result.status === 'created') results.created.push(result);
+        else if (result.status === 'skipped') results.skipped.push(result);
+        else results.failed.push(result);
+      };
+
+      if (types.includes('static')) {
+        for (const name of ['Starting Soon', 'BRB', 'Thanks for Watching']) {
+          const result = await obsSceneGenerator.createStaticScene(name, graphicsUrl);
+          categorize(result);
+        }
+      }
+
+      if (types.includes('single')) {
+        for (const camera of cameras) {
+          const result = await obsSceneGenerator.createSingleCameraScene(camera, graphicsUrl);
+          categorize(result);
+        }
+      }
+
+      if (types.includes('dual') && cameras.length >= 2) {
+        const combos = getCombinations(cameras, 2);
+        for (const [cam1, cam2] of combos) {
+          const result = await obsSceneGenerator.createDualCameraScene(cam1, cam2, graphicsUrl);
+          categorize(result);
+        }
+      }
+
+      if (types.includes('triple') && cameras.length >= 3) {
+        const combos = getCombinations(cameras, 3);
+        for (const [cam1, cam2, cam3] of combos) {
+          const result = await obsSceneGenerator.createTriCameraScene(cam1, cam2, cam3, graphicsUrl);
+          categorize(result);
+        }
+      }
+
+      if (types.includes('quad') && cameras.length >= 4) {
+        const combos = getCombinations(cameras, 4);
+        for (const cams of combos) {
+          const result = await obsSceneGenerator.createQuadCameraScene(cams, graphicsUrl);
+          categorize(result);
+        }
+      }
+
+      if (types.includes('graphics')) {
+        const result = await obsSceneGenerator.createGraphicsFullscreenScene(graphicsUrl);
+        categorize(result);
+      }
+
+      results.summary.created = results.created.length;
+      results.summary.skipped = results.skipped.length;
+      results.summary.failed = results.failed.length;
+      results.summary.total = results.summary.created + results.summary.skipped + results.summary.failed;
+    } else {
+      // Generate all scenes
+      results = await obsSceneGenerator.generateAllScenes();
+    }
+
+    res.json(results);
+  } catch (error) {
+    console.error('Scene generation error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Helper function for combinations (used in filtered generation)
+function getCombinations(arr, size) {
+  if (size === 0) return [[]];
+  if (arr.length === 0) return [];
+  const [first, ...rest] = arr;
+  const withFirst = getCombinations(rest, size - 1).map(combo => [first, ...combo]);
+  const withoutFirst = getCombinations(rest, size);
+  return [...withFirst, ...withoutFirst];
+}
+
+// GET /api/scenes/preview - Preview what scenes would be generated
+app.get('/api/scenes/preview', (req, res) => {
+  if (!obsSceneGenerator) {
+    return res.status(503).json({ error: 'Scene generator not initialized' });
+  }
+
+  try {
+    const types = req.query.types ? req.query.types.split(',') : undefined;
+    const preview = obsSceneGenerator.previewScenes({ types });
+    res.json(preview);
+  } catch (error) {
+    console.error('Scene preview error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /api/scenes/generated - Delete all generated scenes
+app.delete('/api/scenes/generated', async (req, res) => {
+  if (!obsSceneGenerator) {
+    return res.status(503).json({ error: 'Scene generator not initialized' });
+  }
+  if (!showState.obsConnected) {
+    return res.status(503).json({ error: 'OBS not connected' });
+  }
+
+  try {
+    const results = await obsSceneGenerator.deleteGeneratedScenes();
+    res.json(results);
+  } catch (error) {
+    console.error('Scene deletion error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // CSV Upload endpoint
 app.post('/api/import-csv', upload.single('csv'), (req, res) => {
   try {
@@ -1070,6 +1226,9 @@ httpServer.listen(PORT, () => {
 
   // Initialize camera management modules
   initializeCameraModules();
+
+  // Initialize OBS scene generator
+  initializeSceneGenerator();
 
   // Connect to OBS
   connectToOBS();
