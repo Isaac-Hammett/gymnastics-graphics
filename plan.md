@@ -121,7 +121,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Emit events: apparatusReassigned, cameraVerified, mismatchDetected"
     ],
     "verification": "node -e \"require('./server/lib/cameraRuntimeState.js')\" exits 0",
-    "passes": false
+    "passes": true
   },
   {
     "id": "P2-03",
@@ -532,14 +532,14 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 | Phase | Tasks | Passed | Status |
 |-------|-------|--------|--------|
 | Phase 1: Data Model | 3 | 3 | Complete |
-| Phase 2: Camera Health | 5 | 0 | Not started |
+| Phase 2: Camera Health | 5 | 2 | In Progress |
 | Phase 3: Scene Generator | 3 | 0 | Not started |
 | Phase 4: Timesheet Engine | 6 | 0 | Not started |
 | Phase 5: Camera UI | 3 | 0 | Not started |
 | Phase 6: Timesheet UI | 3 | 0 | Not started |
 | Phase 7: Context & Hooks | 5 | 0 | Not started |
 | Integration | 3 | 0 | Not started |
-| **Total** | **31** | **3** | **10%** |
+| **Total** | **31** | **5** | **16%** |
 
 ---
 
