@@ -1,9 +1,9 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** Phase 2 - Camera Health (Complete)
-**Last Task:** P2-05 - Add camera health socket events
-**Next Task:** P3-01 - Create OBS scene generator module
+**Phase:** Phase 3 - Scene Generator (In Progress)
+**Last Task:** P3-01 - Create OBS scene generator module
+**Next Task:** P3-02 - Implement generateAllScenes orchestration
 
 ---
 
@@ -154,6 +154,33 @@ Added socket events to `server/index.js` for real-time camera management:
 
 Verification: Server starts and logs show socket events registered and camera status changes broadcast
 
+### P3-01: Create OBS scene generator module
+Created `server/lib/obsSceneGenerator.js` with OBSSceneGenerator class:
+- Extends EventEmitter for event-based architecture
+- Defines transform presets for all layouts (1920x1080 canvas):
+  - `fullscreen` - Full canvas (0,0 1920x1080)
+  - `dualLeft/dualRight` - Side by side (960x1080 each)
+  - `quadTopLeft/TopRight/BottomLeft/BottomRight` - 4-up grid (960x540 each)
+  - `tripleMain` - Large left (1280x1080)
+  - `tripleTopRight/BottomRight` - Small right column (640x540 each)
+- `createSingleCameraScene(camera, graphicsUrl)` - Creates single camera fullscreen scene
+- `createDualCameraScene(cam1, cam2, graphicsUrl)` - Creates side-by-side dual view
+- `createTriCameraScene(cam1, cam2, cam3, graphicsUrl)` - Creates triple layout (1 large + 2 small)
+- `createQuadCameraScene(cameras, graphicsUrl)` - Creates 4-up quad view
+- `createStaticScene(name, graphicsUrl)` - Creates static scenes (Starting Soon, BRB, Thanks)
+- `createGraphicsFullscreenScene(graphicsUrl)` - Creates browser-only graphics scene
+- `addGraphicsOverlay(sceneName, graphicsUrl)` - Adds graphics overlay browser source to any scene
+- `buildGraphicsUrl()` - Builds full URL with query params from config
+- `sceneExists(sceneName)` - Checks if scene already exists (idempotent)
+- `createCameraInput(camera)` - Creates ffmpeg_source SRT input for camera
+- `addSourceToScene(sceneName, sourceName, transform)` - Adds source with transform
+- `previewScenes(options)` - Returns what scenes would be created without creating them
+- `getCombinations(arr, size)` - Helper to generate all n-choose-k combinations
+- `updateConfig(config)` - Hot-reload support
+- `getGeneratedScenes()` - Returns list of scenes created by this module
+- Emits events: `sceneCreated`, `generationComplete`, `scenesDeleted`
+- Verification: `node -e "import('./server/lib/obsSceneGenerator.js')"` exits 0
+
 ---
 
 ## Task Completion Log
@@ -168,7 +195,7 @@ Verification: Server starts and logs show socket events registered and camera st
 | P2-03 | Create camera fallback manager | ✅ done | 2026-01-13 |
 | P2-04 | Add camera health API endpoints | ✅ done | 2026-01-13 |
 | P2-05 | Add camera health socket events | ✅ done | 2026-01-13 |
-| P3-01 | Create OBS scene generator module | pending | |
+| P3-01 | Create OBS scene generator module | ✅ done | 2026-01-13 |
 | P3-02 | Implement generateAllScenes orchestration | pending | |
 | P3-03 | Add scene generation API endpoints | pending | |
 | P4-01 | Create timesheet engine core | pending | |
