@@ -1,9 +1,9 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** Phase 3 - Scene Generator (In Progress)
-**Last Task:** P3-02 - Implement generateAllScenes orchestration
-**Next Task:** P3-03 - Add scene generation API endpoints
+**Phase:** Phase 3 - Scene Generator (Complete)
+**Last Task:** P3-03 - Add scene generation API endpoints
+**Next Task:** P4-01 - Create timesheet engine core
 
 ---
 
@@ -204,6 +204,27 @@ Created unit test `server/lib/obsSceneGenerator.test.js` to verify correct scene
   - 6 cameras: 60 scenes
 - All tests pass: `node server/lib/obsSceneGenerator.test.js` exits 0
 
+### P3-03: Add scene generation API endpoints
+Added OBS scene generation API endpoints to `server/index.js`:
+- Imported `OBSSceneGenerator` from `./lib/obsSceneGenerator.js`
+- Added `obsSceneGenerator` module variable and `initializeSceneGenerator()` function
+- Updated config hot-reload to also update scene generator
+
+New API endpoints:
+- `POST /api/scenes/generate` - Generate OBS scenes from camera config
+  - Accepts optional `types[]` in body to filter scene types (single, dual, triple, quad, static, graphics)
+  - Returns generation report: `{created: [], skipped: [], failed: [], summary: {}}`
+  - Requires OBS connection (returns 503 if not connected)
+- `GET /api/scenes/preview` - Preview what scenes would be generated
+  - Accepts optional `types` query param (comma-separated) to filter
+  - Returns scene names grouped by type with totals
+  - Works without OBS connection
+- `DELETE /api/scenes/generated` - Delete all generated scenes
+  - Returns deletion report: `{deleted: [], failed: []}`
+  - Requires OBS connection
+
+Verification: `GET /api/scenes/preview` returns 19 scenes for 4-camera config (matching expected count)
+
 ---
 
 ## Task Completion Log
@@ -220,7 +241,7 @@ Created unit test `server/lib/obsSceneGenerator.test.js` to verify correct scene
 | P2-05 | Add camera health socket events | ✅ done | 2026-01-13 |
 | P3-01 | Create OBS scene generator module | ✅ done | 2026-01-13 |
 | P3-02 | Implement generateAllScenes orchestration | ✅ done | 2026-01-13 |
-| P3-03 | Add scene generation API endpoints | pending | |
+| P3-03 | Add scene generation API endpoints | ✅ done | 2026-01-13 |
 | P4-01 | Create timesheet engine core | pending | |
 | P4-02 | Implement segment activation logic | pending | |
 | P4-03 | Implement auto-advance and hold logic | pending | |
