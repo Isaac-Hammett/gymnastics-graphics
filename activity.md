@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** Phase 5 - Camera UI (In Progress)
-**Last Task:** P5-01 - Create CameraSetupPage component
-**Next Task:** P5-02 - Create CameraRuntimePanel component
+**Last Task:** P5-02 - Create CameraRuntimePanel component
+**Next Task:** P5-03 - Integrate camera panel with ProducerView
 
 ---
 
@@ -421,6 +421,25 @@ Created `show-controller/src/pages/CameraSetupPage.jsx` with full camera configu
 - Added route `/camera-setup` to `App.jsx`
 - Verification: Screenshot at `screenshots/camera-setup.png` shows 4 cameras with 19 scenes preview
 
+### P5-02: Create CameraRuntimePanel component
+Created `show-controller/src/components/CameraRuntimePanel.jsx` with real-time camera health monitoring:
+- Collapsible panel header showing "Camera Status" with offline/mismatch badges
+- Grid of camera cards (2 columns) with real-time health status
+- Health indicator colors: green (healthy), yellow (degraded), orange (reconnecting), red (offline), gray (unknown)
+- Each card shows:
+  - Camera name and health status with bitrate display
+  - Verified vs unverified indicator (checkmark vs warning icon)
+  - Current apparatus assignments with color coding (blue=expected, yellow=mismatch)
+  - Apparatus mismatch warnings showing expected apparatus
+  - Active fallback indicator when fallback is active
+- Verify button to mark camera as producer-verified
+- Reassign dropdown to change apparatus assignments with multi-select toggle buttons
+- Click card to quick-switch to camera's OBS scene (disabled for offline cameras)
+- Socket event subscriptions: `cameraHealth`, `cameraRuntimeState`, `activeFallbacks`, `cameraStatusChanged`
+- REST API fallback for initial state fetch
+- Integrated CameraRuntimePanel into ProducerView.jsx right column
+- Verification: Screenshot at `screenshots/camera-panel.png` shows 4 camera cards in producer view
+
 ---
 
 ## Task Completion Log
@@ -445,7 +464,7 @@ Created `show-controller/src/pages/CameraSetupPage.jsx` with full camera configu
 | P4-05 | Add timesheet socket events | ✅ done | 2026-01-13 |
 | P4-06 | Integrate timesheet engine with server | ✅ done | 2026-01-13 |
 | P5-01 | Create CameraSetupPage component | ✅ done | 2026-01-13 |
-| P5-02 | Create CameraRuntimePanel component | pending | |
+| P5-02 | Create CameraRuntimePanel component | ✅ done | 2026-01-13 |
 | P5-03 | Integrate camera panel with ProducerView | pending | |
 | P6-01 | Create TimesheetPanel component | pending | |
 | P6-02 | Create OverrideLog component | pending | |
@@ -466,6 +485,7 @@ Created `show-controller/src/pages/CameraSetupPage.jsx` with full camera configu
 | Screenshot | Task | URL | Notes |
 |------------|------|-----|-------|
 | camera-setup.png | P5-01 | /camera-setup | Shows 4 cameras with scene preview (19 scenes) |
+| camera-panel.png | P5-02 | /producer | Shows 4 camera cards with health status, verify/reassign buttons |
 
 ---
 
