@@ -1,9 +1,9 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** Phase 2 - Camera Health (In Progress)
-**Last Task:** P2-04 - Add camera health API endpoints
-**Next Task:** P2-05 - Add camera health socket events
+**Phase:** Phase 2 - Camera Health (Complete)
+**Last Task:** P2-05 - Add camera health socket events
+**Next Task:** P3-01 - Create OBS scene generator module
 
 ---
 
@@ -125,6 +125,35 @@ New API endpoints:
 
 Verification: All endpoints tested with node fetch and return correct JSON responses
 
+### P2-05: Add camera health socket events
+Added socket events to `server/index.js` for real-time camera management:
+
+**Socket Listeners (client → server):**
+- `reassignApparatus` - Reassign apparatus to a camera (`{cameraId, apparatus[], assignedBy?}`)
+- `verifyCamera` - Mark a camera as verified (`{cameraId, verifiedBy?}`)
+- `clearFallback` - Clear fallback for a camera (`{cameraId}`)
+- `resetVerifications` - Reset all camera verifications
+
+**Socket Broadcasts (server → clients):**
+- `cameraHealth` - Broadcast on each health poll interval with all camera statuses
+- `cameraRuntimeState` - Broadcast when runtime state changes
+- `cameraStatusChanged` - Broadcast when a camera's status transitions
+- `apparatusReassigned` - Broadcast when apparatus is reassigned
+- `cameraVerified` - Broadcast when a camera is verified
+- `mismatchDetected` - Broadcast when apparatus mismatch detected
+- `fallbackActivated` - Broadcast when fallback is activated
+- `fallbackCleared` - Broadcast when fallback is cleared
+- `fallbackUnavailable` - Broadcast when no fallback is available
+- `fallbackChainExhausted` - Broadcast when fallback chain is exhausted
+- `activeFallbacks` - Sent on client connection with current fallbacks
+
+**On Client Connection:**
+- Initial `cameraHealth` state sent immediately
+- Initial `cameraRuntimeState` sent immediately
+- Initial `activeFallbacks` sent immediately
+
+Verification: Server starts and logs show socket events registered and camera status changes broadcast
+
 ---
 
 ## Task Completion Log
@@ -138,7 +167,7 @@ Verification: All endpoints tested with node fetch and return correct JSON respo
 | P2-02 | Create camera runtime state manager | ✅ done | 2026-01-13 |
 | P2-03 | Create camera fallback manager | ✅ done | 2026-01-13 |
 | P2-04 | Add camera health API endpoints | ✅ done | 2026-01-13 |
-| P2-05 | Add camera health socket events | pending | |
+| P2-05 | Add camera health socket events | ✅ done | 2026-01-13 |
 | P3-01 | Create OBS scene generator module | pending | |
 | P3-02 | Implement generateAllScenes orchestration | pending | |
 | P3-03 | Add scene generation API endpoints | pending | |
