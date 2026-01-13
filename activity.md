@@ -1,9 +1,9 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** Phase 4 - Timesheet Engine (In Progress)
-**Last Task:** P4-05 - Add timesheet socket events
-**Next Task:** P4-06 - Integrate timesheet engine with server
+**Phase:** Phase 5 - Camera UI (Starting)
+**Last Task:** P4-06 - Integrate timesheet engine with server
+**Next Task:** P5-01 - Create CameraSetupPage component
 
 ---
 
@@ -374,6 +374,24 @@ Added socket event handlers and broadcasts for timesheet engine in `server/index
 
 Verification: Server starts and logs show "Timesheet engine initialized"
 
+### P4-06: Integrate timesheet engine with server
+Verified timesheet engine integration in `server/index.js`:
+- TimesheetEngine imported at line 17
+- `initializeTimesheetEngine()` function creates engine with showConfig, obs, and io at startup (lines 204-298)
+- All timesheet events properly wired to broadcast to clients via socket.io
+- Hot-reload support: config changes update timesheet engine via `updateConfig()`
+- Added REST API endpoints:
+  - `GET /api/timesheet/state` - Returns full timesheet state including segment info, elapsed time, progress
+  - `GET /api/timesheet/overrides` - Returns override history array
+  - `GET /api/timesheet/history` - Returns segment history array
+  - `POST /api/timesheet/start` - Start the timesheet show
+  - `POST /api/timesheet/stop` - Stop the timesheet show
+  - `POST /api/timesheet/advance` - Advance to next segment
+  - `POST /api/timesheet/previous` - Go to previous segment
+  - `POST /api/timesheet/jump` - Jump to specific segment by ID
+- Timesheet engine runs parallel to existing segment logic, allowing both systems to coexist
+- Verification: `curl http://localhost:3003/api/timesheet/state` returns current timesheet state JSON
+
 ---
 
 ## Task Completion Log
@@ -396,7 +414,7 @@ Verification: Server starts and logs show "Timesheet engine initialized"
 | P4-03 | Implement auto-advance and hold logic | ✅ done | 2026-01-13 |
 | P4-04 | Implement manual controls and overrides | ✅ done | 2026-01-13 |
 | P4-05 | Add timesheet socket events | ✅ done | 2026-01-13 |
-| P4-06 | Integrate timesheet engine with server | pending | |
+| P4-06 | Integrate timesheet engine with server | ✅ done | 2026-01-13 |
 | P5-01 | Create CameraSetupPage component | pending | |
 | P5-02 | Create CameraRuntimePanel component | pending | |
 | P5-03 | Integrate camera panel with ProducerView | pending | |
