@@ -391,7 +391,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Export button for post-show analysis"
     ],
     "verification": "node ralph-wigg/test-helper.js screenshot http://localhost:5173/producer override-log",
-    "passes": false
+    "passes": true
   },
   {
     "id": "P6-03",
@@ -536,10 +536,10 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 | Phase 3: Scene Generator | 3 | 3 | Complete |
 | Phase 4: Timesheet Engine | 6 | 6 | Complete |
 | Phase 5: Camera UI | 3 | 3 | Complete |
-| Phase 6: Timesheet UI | 3 | 1 | In progress |
+| Phase 6: Timesheet UI | 3 | 2 | In progress |
 | Phase 7: Context & Hooks | 5 | 0 | Not started |
 | Integration | 3 | 0 | Not started |
-| **Total** | **31** | **21** | **68%** |
+| **Total** | **31** | **22** | **71%** |
 
 ---
 
