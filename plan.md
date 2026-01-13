@@ -448,7 +448,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Helper: getCameraStatus(cameraId)"
     ],
     "verification": "node -e \"require('./show-controller/src/hooks/useCameraHealth.js')\" (build succeeds)",
-    "passes": false
+    "passes": true
   },
   {
     "id": "P7-04",
@@ -537,9 +537,9 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 | Phase 4: Timesheet Engine | 6 | 6 | Complete |
 | Phase 5: Camera UI | 3 | 3 | Complete |
 | Phase 6: Timesheet UI | 3 | 3 | Complete |
-| Phase 7: Context & Hooks | 5 | 2 | In Progress |
+| Phase 7: Context & Hooks | 5 | 3 | In Progress |
 | Integration | 3 | 0 | Not started |
-| **Total** | **31** | **25** | **81%** |
+| **Total** | **31** | **26** | **84%** |
 
 ---
 
