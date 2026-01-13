@@ -26,6 +26,13 @@ const ENGINE_STATE = {
   PAUSED: 'paused'
 };
 
+// Transition types
+const TRANSITION_TYPES = {
+  CUT: 'cut',
+  FADE: 'fade',
+  STINGER: 'stinger'
+};
+
 /**
  * TimesheetEngine - Drives show flow based on segment timing
  *
@@ -46,6 +53,7 @@ class TimesheetEngine extends EventEmitter {
    * @param {Object} options.showConfig - Show configuration with segments
    * @param {Object} options.obs - OBS WebSocket controller (optional)
    * @param {Object} options.firebase - Firebase controller for graphics (optional)
+   * @param {Object} options.io - Socket.io server for broadcasting (optional)
    */
   constructor(options = {}) {
     super();
@@ -53,6 +61,7 @@ class TimesheetEngine extends EventEmitter {
     this.showConfig = options.showConfig || { segments: [] };
     this.obs = options.obs || null;
     this.firebase = options.firebase || null;
+    this.io = options.io || null;
 
     // Core state
     this._state = ENGINE_STATE.STOPPED;
@@ -73,6 +82,9 @@ class TimesheetEngine extends EventEmitter {
     // Show timing
     this._showStartTime = null;
     this._showElapsedMs = 0;
+
+    // Track last transition for context
+    this._lastTransitionType = null;
   }
 
   /**
@@ -195,7 +207,7 @@ class TimesheetEngine extends EventEmitter {
   /**
    * Start the show from the first segment
    */
-  start() {
+  async start() {
     if (this._isRunning) {
       return;
     }
@@ -215,7 +227,7 @@ class TimesheetEngine extends EventEmitter {
     this._startTick();
 
     // Activate first segment
-    this._activateSegment(0);
+    await this._activateSegment(0, 'start');
 
     this.emit('showStarted', {
       timestamp: Date.now(),
@@ -371,18 +383,20 @@ class TimesheetEngine extends EventEmitter {
   /**
    * Activate a segment by index
    * @param {number} index - Segment index to activate
+   * @param {string} reason - Why this segment was activated (auto, manual, jump)
    * @private
    */
-  _activateSegment(index) {
+  async _activateSegment(index, reason = 'manual') {
     if (index < 0 || index >= this.segments.length) {
       return false;
     }
 
     // Record previous segment in history
     if (this._currentSegment) {
-      this._recordHistory('advanced');
+      this._recordHistory(reason === 'auto' ? 'auto_advanced' : 'advanced');
     }
 
+    const previousSegment = this._currentSegment;
     const segment = this.segments[index];
 
     this._currentSegmentIndex = index;
@@ -390,16 +404,324 @@ class TimesheetEngine extends EventEmitter {
     this._segmentStartTime = Date.now();
     this._segmentElapsedMs = 0;
 
+    // Determine transition type based on segment types
+    const transition = this._getTransition(previousSegment, segment);
+    this._lastTransitionType = transition.type;
+
+    // Apply transition and switch scene
+    await this._applyTransitionAndSwitchScene(segment, transition);
+
+    // Handle segment-type specific actions
+    await this._handleSegmentTypeActions(segment);
+
+    // Apply audio overrides if defined
+    await this._applyAudioOverrides(segment);
+
     this.emit('segmentActivated', {
       timestamp: Date.now(),
       segmentIndex: index,
       segment: { ...segment },
       previousSegmentIndex: this._history.length > 0
         ? this._history[this._history.length - 1].segmentIndex
-        : -1
+        : -1,
+      transition: transition,
+      reason
     });
 
     return true;
+  }
+
+  /**
+   * Get the appropriate transition for segment change
+   * @param {Object|null} fromSegment - Previous segment
+   * @param {Object} toSegment - Next segment
+   * @returns {Object} Transition config {type, durationMs}
+   * @private
+   */
+  _getTransition(fromSegment, toSegment) {
+    const transitions = this.showConfig.transitions || {};
+
+    // Check for segment-specific transition
+    if (toSegment.transition) {
+      return {
+        type: toSegment.transition.type || TRANSITION_TYPES.CUT,
+        durationMs: toSegment.transition.durationMs || 0
+      };
+    }
+
+    // Going to break
+    if (toSegment.type === SEGMENT_TYPES.BREAK && transitions.toBreak) {
+      return transitions.toBreak;
+    }
+
+    // Coming from break
+    if (fromSegment?.type === SEGMENT_TYPES.BREAK && transitions.fromBreak) {
+      return transitions.fromBreak;
+    }
+
+    // Default transition
+    return transitions.default || { type: TRANSITION_TYPES.CUT, durationMs: 0 };
+  }
+
+  /**
+   * Apply transition and switch OBS scene
+   * @param {Object} segment - Segment to switch to
+   * @param {Object} transition - Transition config
+   * @private
+   */
+  async _applyTransitionAndSwitchScene(segment, transition) {
+    if (!this.obs || !segment.obsScene) {
+      return;
+    }
+
+    try {
+      if (transition.type === TRANSITION_TYPES.FADE && transition.durationMs > 0) {
+        // Use SetCurrentSceneTransitionDuration and then switch
+        await this.obs.call('SetCurrentSceneTransitionDuration', {
+          transitionDuration: transition.durationMs
+        });
+        await this.obs.call('SetCurrentSceneTransition', {
+          transitionName: 'Fade'
+        });
+      } else if (transition.type === TRANSITION_TYPES.STINGER) {
+        // Use stinger transition if configured
+        await this.obs.call('SetCurrentSceneTransition', {
+          transitionName: transition.transitionName || 'Stinger'
+        });
+      } else {
+        // Cut transition (instant)
+        await this.obs.call('SetCurrentSceneTransition', {
+          transitionName: 'Cut'
+        });
+      }
+
+      // Switch to the scene
+      await this.obs.call('SetCurrentProgramScene', {
+        sceneName: segment.obsScene
+      });
+
+      this.emit('sceneChanged', {
+        sceneName: segment.obsScene,
+        transition: transition,
+        segmentId: segment.id
+      });
+    } catch (error) {
+      this.emit('error', {
+        type: 'obs_scene_switch',
+        message: `Failed to switch to scene ${segment.obsScene}: ${error.message}`,
+        segmentId: segment.id
+      });
+    }
+  }
+
+  /**
+   * Handle segment-type specific actions
+   * @param {Object} segment - Current segment
+   * @private
+   */
+  async _handleSegmentTypeActions(segment) {
+    switch (segment.type) {
+      case SEGMENT_TYPES.STATIC:
+        // Static scene, nothing special to do
+        break;
+
+      case SEGMENT_TYPES.LIVE:
+      case SEGMENT_TYPES.MULTI:
+        // Live camera feed - trigger any associated graphics
+        if (segment.graphic) {
+          await this._triggerGraphic(segment);
+        }
+        break;
+
+      case SEGMENT_TYPES.HOLD:
+        // Hold segment - emit hold started event
+        this.emit('holdStarted', {
+          segmentId: segment.id,
+          minDuration: segment.minDuration || 0,
+          maxDuration: segment.maxDuration || null
+        });
+        break;
+
+      case SEGMENT_TYPES.BREAK:
+        // Break segment - could trigger break graphics
+        if (segment.graphic) {
+          await this._triggerGraphic(segment);
+        }
+        this.emit('breakStarted', {
+          segmentId: segment.id,
+          duration: segment.duration || null
+        });
+        break;
+
+      case SEGMENT_TYPES.VIDEO:
+        // Video segment - set video file and play
+        if (segment.videoFile && this.obs) {
+          await this._playVideo(segment);
+        }
+        break;
+
+      case SEGMENT_TYPES.GRAPHIC:
+        // Graphics segment - trigger the graphic
+        await this._triggerGraphic(segment);
+        break;
+
+      default:
+        // Unknown segment type, try to trigger graphic if present
+        if (segment.graphic) {
+          await this._triggerGraphic(segment);
+        }
+    }
+  }
+
+  /**
+   * Trigger a graphic via Firebase or socket.io
+   * @param {Object} segment - Segment with graphic configuration
+   * @private
+   */
+  async _triggerGraphic(segment) {
+    if (!segment.graphic) return;
+
+    const graphicData = {
+      graphic: segment.graphic,
+      data: segment.graphicData || {},
+      segmentId: segment.id,
+      timestamp: Date.now()
+    };
+
+    // Try Firebase first if available
+    if (this.firebase) {
+      try {
+        await this.firebase.database().ref('graphics/current').set(graphicData);
+      } catch (error) {
+        this.emit('error', {
+          type: 'firebase_graphic',
+          message: `Failed to trigger graphic via Firebase: ${error.message}`,
+          segmentId: segment.id
+        });
+      }
+    }
+
+    // Also broadcast via socket.io
+    if (this.io) {
+      this.io.emit('triggerGraphic', graphicData);
+    }
+
+    // Emit event for any listeners
+    this.emit('graphicTriggered', graphicData);
+  }
+
+  /**
+   * Play a video segment via OBS media source
+   * @param {Object} segment - Segment with video configuration
+   * @private
+   */
+  async _playVideo(segment) {
+    if (!this.obs || !segment.videoFile) return;
+
+    const sourceName = segment.videoSource || 'Video Player';
+
+    try {
+      // Get current settings
+      const { inputSettings } = await this.obs.call('GetInputSettings', {
+        inputName: sourceName
+      });
+
+      // Update with new file path
+      await this.obs.call('SetInputSettings', {
+        inputName: sourceName,
+        inputSettings: {
+          ...inputSettings,
+          local_file: segment.videoFile,
+          is_local_file: true
+        }
+      });
+
+      // Restart the media source to play from beginning
+      await this.obs.call('TriggerMediaInputAction', {
+        inputName: sourceName,
+        mediaAction: 'OBS_WEBSOCKET_MEDIA_INPUT_ACTION_RESTART'
+      });
+
+      this.emit('videoStarted', {
+        segmentId: segment.id,
+        videoFile: segment.videoFile,
+        sourceName
+      });
+    } catch (error) {
+      this.emit('error', {
+        type: 'obs_video',
+        message: `Failed to play video ${segment.videoFile}: ${error.message}`,
+        segmentId: segment.id
+      });
+    }
+  }
+
+  /**
+   * Apply audio overrides for a segment
+   * @param {Object} segment - Current segment
+   * @private
+   */
+  async _applyAudioOverrides(segment) {
+    if (!this.obs || !segment.audio) return;
+
+    const audioConfig = this.showConfig.audioConfig || {};
+
+    try {
+      // Apply venue audio volume
+      if (segment.audio.venueVolume !== undefined && audioConfig.venue?.sourceName) {
+        await this.obs.call('SetInputVolume', {
+          inputName: audioConfig.venue.sourceName,
+          inputVolumeDb: this._volumeToDb(segment.audio.venueVolume)
+        });
+      }
+
+      // Apply commentary audio volume
+      if (segment.audio.commentaryVolume !== undefined && audioConfig.commentary?.sourceName) {
+        await this.obs.call('SetInputVolume', {
+          inputName: audioConfig.commentary.sourceName,
+          inputVolumeDb: this._volumeToDb(segment.audio.commentaryVolume)
+        });
+      }
+
+      // Apply mute states
+      if (segment.audio.muteVenue !== undefined && audioConfig.venue?.sourceName) {
+        await this.obs.call('SetInputMute', {
+          inputName: audioConfig.venue.sourceName,
+          inputMuted: segment.audio.muteVenue
+        });
+      }
+
+      if (segment.audio.muteCommentary !== undefined && audioConfig.commentary?.sourceName) {
+        await this.obs.call('SetInputMute', {
+          inputName: audioConfig.commentary.sourceName,
+          inputMuted: segment.audio.muteCommentary
+        });
+      }
+
+      this.emit('audioChanged', {
+        segmentId: segment.id,
+        audio: segment.audio
+      });
+    } catch (error) {
+      this.emit('error', {
+        type: 'obs_audio',
+        message: `Failed to apply audio overrides: ${error.message}`,
+        segmentId: segment.id
+      });
+    }
+  }
+
+  /**
+   * Convert volume (0-1) to decibels
+   * @param {number} volume - Volume from 0 to 1
+   * @returns {number} Volume in decibels
+   * @private
+   */
+  _volumeToDb(volume) {
+    if (volume <= 0) return -100; // Essentially silent
+    if (volume >= 1) return 0;    // Full volume
+    // Convert linear to dB: 20 * log10(volume)
+    return 20 * Math.log10(volume);
   }
 
   /**
@@ -531,5 +853,5 @@ class TimesheetEngine extends EventEmitter {
 }
 
 // Export
-export { TimesheetEngine, SEGMENT_TYPES, ENGINE_STATE };
+export { TimesheetEngine, SEGMENT_TYPES, ENGINE_STATE, TRANSITION_TYPES };
 export default TimesheetEngine;
