@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** Phase 7 - Context & Hooks (In Progress)
-**Last Task:** P7-04 - Create useCameraRuntime hook
-**Next Task:** P7-05 - Create useTimesheet hook
+**Last Task:** P7-05 - Create useTimesheet hook
+**Next Task:** INT-01 - End-to-end server test
 
 ---
 
@@ -617,6 +617,36 @@ Created `show-controller/src/hooks/useCameraRuntime.js` with camera runtime stat
 - `statusCounts` - Memoized counts { total, verified, unverified, mismatches }
 - Verification: `npm run build` succeeds without errors
 
+### P7-05: Create useTimesheet hook
+Created `show-controller/src/hooks/useTimesheet.js` with timesheet state helpers:
+- Uses `useShow()` context to access `timesheetState`, `overrideLog`, and control functions
+- State values:
+  - `currentSegment` - Current segment object
+  - `nextSegment` - Next segment preview object
+  - `progress` - Progress through current segment (0-1)
+  - `elapsed` / `remaining` - Time in milliseconds
+  - `elapsedFormatted` / `remainingFormatted` - Time as MM:SS string
+  - `showElapsed` / `showElapsedFormatted` - Total show time
+  - `isRunning` / `isPaused` - Show state flags
+  - `isHoldSegment` / `canAdvanceHold` / `holdRemainingMs` - Hold segment state
+  - `currentIndex` / `totalSegments` - Segment position
+  - `isFirstSegment` / `isLastSegment` - Boundary checks
+  - `engineState` - Engine state string ('stopped', 'running', 'paused')
+  - `segments` - All segments from config
+  - `overrideLog` / `overrideCount` - Producer override history
+- Actions:
+  - `start()` - Start the timesheet show
+  - `stop()` - Stop the timesheet show
+  - `advance(advancedBy)` - Advance to next segment
+  - `previous(triggeredBy)` - Go to previous segment
+  - `jumpTo(segmentId, triggeredBy)` - Jump to specific segment by ID
+  - `overrideScene(sceneName, triggeredBy)` - Override OBS scene
+  - `overrideCamera(cameraId, triggeredBy)` - Override to camera's scene
+  - `clearOverrideLog()` - Clear override history
+- Helpers:
+  - `formatTime(ms)` - Format milliseconds as MM:SS
+- Verification: `npm run build` succeeds without errors
+
 ---
 
 ## Task Completion Log
@@ -650,7 +680,7 @@ Created `show-controller/src/hooks/useCameraRuntime.js` with camera runtime stat
 | P7-02 | Extend ShowContext with timesheet state | ✅ done | 2026-01-13 |
 | P7-03 | Create useCameraHealth hook | ✅ done | 2026-01-13 |
 | P7-04 | Create useCameraRuntime hook | ✅ done | 2026-01-13 |
-| P7-05 | Create useTimesheet hook | pending | |
+| P7-05 | Create useTimesheet hook | ✅ done | 2026-01-13 |
 | INT-01 | End-to-end server test | pending | |
 | INT-02 | End-to-end client test | pending | |
 | INT-03 | Full show flow test | pending | |
