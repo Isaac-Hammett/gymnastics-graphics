@@ -360,7 +360,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Show mismatch alerts without expanding panel"
     ],
     "verification": "node ralph-wigg/test-helper.js screenshot http://localhost:5173/producer producer-with-cameras",
-    "passes": false
+    "passes": true
   },
   {
     "id": "P6-01",
@@ -535,11 +535,11 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 | Phase 2: Camera Health | 5 | 5 | Complete |
 | Phase 3: Scene Generator | 3 | 3 | Complete |
 | Phase 4: Timesheet Engine | 6 | 6 | Complete |
-| Phase 5: Camera UI | 3 | 2 | In Progress |
+| Phase 5: Camera UI | 3 | 3 | Complete |
 | Phase 6: Timesheet UI | 3 | 0 | Not started |
 | Phase 7: Context & Hooks | 5 | 0 | Not started |
 | Integration | 3 | 0 | Not started |
-| **Total** | **31** | **19** | **61%** |
+| **Total** | **31** | **20** | **65%** |
 
 ---
 

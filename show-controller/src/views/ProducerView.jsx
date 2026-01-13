@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useShow } from '../context/ShowContext';
 import CurrentSegment from '../components/CurrentSegment';
@@ -16,11 +16,23 @@ import {
   LockOpenIcon,
   ArrowPathIcon,
   StopIcon,
-  UsersIcon
+  UsersIcon,
+  VideoCameraIcon,
+  ExclamationTriangleIcon
 } from '@heroicons/react/24/solid';
+
+// Health status colors for quick camera buttons
+const HEALTH_COLORS = {
+  healthy: 'bg-green-500',
+  degraded: 'bg-yellow-500',
+  reconnecting: 'bg-orange-500',
+  offline: 'bg-red-500',
+  unknown: 'bg-zinc-500'
+};
 
 export default function ProducerView() {
   const {
+    socket,
     state,
     advance,
     previous,
@@ -46,6 +58,14 @@ export default function ProducerView() {
   } = state;
 
   const [scenes, setScenes] = useState([]);
+  const [cameraHealth, setCameraHealth] = useState([]);
+  const [cameraRuntimeState, setCameraRuntimeState] = useState([]);
+  const [cameraMismatches, setCameraMismatches] = useState([]);
+
+  // Server URL for REST API calls
+  const serverUrl = import.meta.env.PROD
+    ? (import.meta.env.VITE_SOCKET_SERVER || '')
+    : 'http://localhost:3003';
 
   useEffect(() => {
     identify('producer', 'Producer');
@@ -55,7 +75,70 @@ export default function ProducerView() {
       .then(res => res.json())
       .then(setScenes)
       .catch(console.error);
-  }, [identify]);
+
+    // Fetch initial camera state
+    async function fetchCameraState() {
+      try {
+        const [healthRes, runtimeRes] = await Promise.all([
+          fetch(`${serverUrl}/api/cameras/health`),
+          fetch(`${serverUrl}/api/cameras/runtime`)
+        ]);
+
+        if (healthRes.ok) {
+          setCameraHealth(await healthRes.json());
+        }
+        if (runtimeRes.ok) {
+          const runtime = await runtimeRes.json();
+          setCameraRuntimeState(runtime);
+          setCameraMismatches(runtime.filter(c => c.hasMismatch));
+        }
+      } catch (err) {
+        console.error('Failed to fetch camera state:', err);
+      }
+    }
+    fetchCameraState();
+  }, [identify, serverUrl]);
+
+  // Subscribe to camera socket events
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleCameraHealth = (health) => {
+      setCameraHealth(health);
+    };
+
+    const handleCameraRuntimeState = (state) => {
+      setCameraRuntimeState(state);
+      setCameraMismatches(state.filter(c => c.hasMismatch));
+    };
+
+    socket.on('cameraHealth', handleCameraHealth);
+    socket.on('cameraRuntimeState', handleCameraRuntimeState);
+
+    return () => {
+      socket.off('cameraHealth', handleCameraHealth);
+      socket.off('cameraRuntimeState', handleCameraRuntimeState);
+    };
+  }, [socket]);
+
+  // Quick camera switch function
+  const switchToCamera = useCallback((cameraId) => {
+    if (socket) {
+      socket.emit('overrideCamera', { cameraId });
+    }
+  }, [socket]);
+
+  // Get camera health status by ID
+  const getCameraHealth = useCallback((cameraId) => {
+    const health = cameraHealth.find(c => c.cameraId === cameraId);
+    return health?.status || 'unknown';
+  }, [cameraHealth]);
+
+  // Get camera name by ID
+  const getCameraName = useCallback((cameraId) => {
+    const health = cameraHealth.find(c => c.cameraId === cameraId);
+    return health?.cameraName || cameraId;
+  }, [cameraHealth]);
 
   // Common OBS scenes for quick access
   const sceneOverrides = [
@@ -97,6 +180,27 @@ export default function ProducerView() {
       {error && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50">
           {error}
+        </div>
+      )}
+
+      {/* Camera Mismatch Alert Banner - shown without expanding panel */}
+      {cameraMismatches.length > 0 && (
+        <div className="bg-yellow-500/10 border-b border-yellow-500/30 px-4 py-2">
+          <div className="max-w-6xl mx-auto flex items-center gap-3">
+            <ExclamationTriangleIcon className="w-5 h-5 text-yellow-400 flex-shrink-0" />
+            <div className="flex-1">
+              <span className="text-yellow-400 font-medium">Camera Mismatch Alert: </span>
+              <span className="text-yellow-300/80">
+                {cameraMismatches.map((cam, idx) => (
+                  <span key={cam.id}>
+                    {idx > 0 && ', '}
+                    {getCameraName(cam.id)} (expected: {cam.expectedApparatus?.join(', ') || 'none'})
+                  </span>
+                ))}
+              </span>
+            </div>
+            <span className="text-xs text-yellow-400/60">{cameraMismatches.length} camera{cameraMismatches.length !== 1 ? 's' : ''}</span>
+          </div>
         </div>
       )}
 
@@ -200,6 +304,48 @@ export default function ProducerView() {
                     </button>
                   </div>
                 </div>
+
+                {/* Quick Camera Buttons - wired to runtime state */}
+                {cameraHealth.length > 0 && (
+                  <div className="bg-zinc-800 rounded-xl p-4">
+                    <div className="flex items-center gap-2 text-sm text-zinc-400 uppercase tracking-wide mb-3">
+                      <VideoCameraIcon className="w-4 h-4" />
+                      Quick Camera Switch
+                    </div>
+
+                    <div className="grid grid-cols-4 gap-2">
+                      {cameraHealth.map((cam) => {
+                        const runtime = cameraRuntimeState.find(r => r.id === cam.cameraId);
+                        const isOnline = cam.status !== 'offline' && cam.status !== 'unknown';
+                        const hasMismatch = runtime?.hasMismatch;
+                        const apparatus = runtime?.currentApparatus || [];
+
+                        return (
+                          <button
+                            key={cam.cameraId}
+                            onClick={() => switchToCamera(cam.cameraId)}
+                            disabled={!isOnline}
+                            className={`relative px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                              !isOnline
+                                ? 'bg-zinc-800 text-zinc-600 cursor-not-allowed opacity-60'
+                                : hasMismatch
+                                ? 'bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30 border border-yellow-500/50'
+                                : 'bg-zinc-700 hover:bg-zinc-600 text-zinc-300'
+                            }`}
+                            title={`${cam.cameraName}: ${cam.status}${apparatus.length > 0 ? ` (${apparatus.join(', ')})` : ''}${hasMismatch ? ' - MISMATCH' : ''}`}
+                          >
+                            {/* Health indicator dot */}
+                            <span className={`absolute top-1 right-1 w-2 h-2 rounded-full ${HEALTH_COLORS[cam.status]}`} />
+                            <div className="truncate">{cam.cameraName || cam.cameraId}</div>
+                            {apparatus.length > 0 && (
+                              <div className="text-xs opacity-70 truncate">{apparatus.join(', ')}</div>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {/* Scene Override */}
                 <div className="bg-zinc-800 rounded-xl p-4">
