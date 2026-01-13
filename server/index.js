@@ -10,6 +10,9 @@ import dotenv from 'dotenv';
 import multer from 'multer';
 import { parse } from 'csv-parse/sync';
 import { validateShowConfig } from './lib/showConfigSchema.js';
+import { CameraHealthMonitor } from './lib/cameraHealth.js';
+import { CameraRuntimeState } from './lib/cameraRuntimeState.js';
+import { CameraFallbackManager } from './lib/cameraFallback.js';
 
 dotenv.config();
 
@@ -59,6 +62,11 @@ let showState = {
 // Show Configuration
 let showConfig = null;
 
+// Camera Management Modules
+let cameraHealthMonitor = null;
+let cameraRuntimeState = null;
+let cameraFallbackManager = null;
+
 // Load show configuration
 function loadShowConfig(exitOnInvalid = false) {
   try {
@@ -92,10 +100,67 @@ function loadShowConfig(exitOnInvalid = false) {
   }
 }
 
+// Initialize camera management modules
+function initializeCameraModules() {
+  if (!showConfig || !showConfig.cameras) {
+    console.log('No cameras configured, skipping camera module initialization');
+    return;
+  }
+
+  // Initialize health monitor
+  if (cameraHealthMonitor) {
+    cameraHealthMonitor.stop();
+  }
+  cameraHealthMonitor = new CameraHealthMonitor({
+    cameras: showConfig.cameras,
+    nimbleServer: showConfig.nimbleServer || {}
+  });
+
+  // Initialize runtime state
+  cameraRuntimeState = new CameraRuntimeState({
+    cameras: showConfig.cameras
+  });
+
+  // Initialize fallback manager
+  cameraFallbackManager = new CameraFallbackManager({
+    cameras: showConfig.cameras,
+    cameraHealthMonitor,
+    cameraRuntimeState,
+    switchScene
+  });
+
+  // Attach event handlers BEFORE starting (to catch initial poll errors)
+  // Log events (for debugging)
+  cameraHealthMonitor.on('cameraStatusChanged', (change) => {
+    console.log(`Camera ${change.cameraName} status: ${change.previousStatus} -> ${change.newStatus}`);
+  });
+
+  // Handle errors from health monitor (e.g., Nimble server not available)
+  cameraHealthMonitor.on('error', (error) => {
+    // Log but don't crash - Nimble server may not be running
+    console.warn(`Camera health monitor error: ${error.message}`);
+  });
+
+  // Start health monitoring (after event handlers are attached)
+  cameraHealthMonitor.start();
+
+  console.log(`Camera modules initialized with ${showConfig.cameras.length} cameras`);
+}
+
 // Watch for config changes (hot reload)
 watchFile(join(__dirname, 'config', 'show-config.json'), () => {
   console.log('Show config changed, reloading...');
   loadShowConfig();
+  // Update camera modules with new config
+  if (cameraHealthMonitor) {
+    cameraHealthMonitor.updateConfig(showConfig);
+  }
+  if (cameraRuntimeState) {
+    cameraRuntimeState.updateConfig(showConfig);
+  }
+  if (cameraFallbackManager) {
+    cameraFallbackManager.updateConfig({ cameras: showConfig.cameras });
+  }
   broadcastState();
 });
 
@@ -465,6 +530,87 @@ app.get('/api/config/validate', (req, res) => {
   res.json(validation);
 });
 
+// ============================================
+// Camera Health API Endpoints
+// ============================================
+
+// GET /api/cameras/health - Get health status for all cameras
+app.get('/api/cameras/health', (req, res) => {
+  if (!cameraHealthMonitor) {
+    return res.status(503).json({ error: 'Camera health monitoring not initialized' });
+  }
+  res.json(cameraHealthMonitor.getAllHealth());
+});
+
+// GET /api/cameras/:id/health - Get health status for a specific camera
+app.get('/api/cameras/:id/health', (req, res) => {
+  if (!cameraHealthMonitor) {
+    return res.status(503).json({ error: 'Camera health monitoring not initialized' });
+  }
+  const health = cameraHealthMonitor.getCameraHealth(req.params.id);
+  if (!health) {
+    return res.status(404).json({ error: 'Camera not found', cameraId: req.params.id });
+  }
+  res.json(health);
+});
+
+// GET /api/cameras/runtime - Get runtime state for all cameras
+app.get('/api/cameras/runtime', (req, res) => {
+  if (!cameraRuntimeState) {
+    return res.status(503).json({ error: 'Camera runtime state not initialized' });
+  }
+  res.json(cameraRuntimeState.getAllState());
+});
+
+// POST /api/cameras/:id/reassign - Reassign apparatus to a camera
+app.post('/api/cameras/:id/reassign', (req, res) => {
+  if (!cameraRuntimeState) {
+    return res.status(503).json({ error: 'Camera runtime state not initialized' });
+  }
+  const { apparatus, assignedBy } = req.body;
+  if (!apparatus || !Array.isArray(apparatus)) {
+    return res.status(400).json({ error: 'apparatus must be an array of apparatus codes' });
+  }
+  const result = cameraRuntimeState.reassignApparatus(req.params.id, apparatus, assignedBy);
+  if (!result) {
+    return res.status(404).json({ error: 'Camera not found', cameraId: req.params.id });
+  }
+  res.json(result);
+});
+
+// POST /api/cameras/:id/verify - Verify a camera
+app.post('/api/cameras/:id/verify', (req, res) => {
+  if (!cameraRuntimeState) {
+    return res.status(503).json({ error: 'Camera runtime state not initialized' });
+  }
+  const { verifiedBy } = req.body || {};
+  const result = cameraRuntimeState.verifyCamera(req.params.id, verifiedBy);
+  if (!result) {
+    return res.status(404).json({ error: 'Camera not found', cameraId: req.params.id });
+  }
+  res.json(result);
+});
+
+// GET /api/cameras/fallbacks - Get active fallbacks
+app.get('/api/cameras/fallbacks', (req, res) => {
+  if (!cameraFallbackManager) {
+    return res.status(503).json({ error: 'Camera fallback manager not initialized' });
+  }
+  res.json(cameraFallbackManager.getActiveFallbacks());
+});
+
+// POST /api/cameras/:id/clear-fallback - Clear fallback for a camera
+app.post('/api/cameras/:id/clear-fallback', (req, res) => {
+  if (!cameraFallbackManager) {
+    return res.status(503).json({ error: 'Camera fallback manager not initialized' });
+  }
+  const result = cameraFallbackManager.clearFallback(req.params.id);
+  if (!result.success) {
+    return res.status(404).json({ error: result.error, cameraId: req.params.id });
+  }
+  res.json(result);
+});
+
 // CSV Upload endpoint
 app.post('/api/import-csv', upload.single('csv'), (req, res) => {
   try {
@@ -810,6 +956,9 @@ httpServer.listen(PORT, () => {
 
   // Load and validate show config (exit if invalid on startup)
   loadShowConfig(true);
+
+  // Initialize camera management modules
+  initializeCameraModules();
 
   // Connect to OBS
   connectToOBS();
