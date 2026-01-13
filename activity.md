@@ -1,9 +1,9 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** Phase 6 - Timesheet UI (In Progress)
-**Last Task:** P6-02 - Create OverrideLog component
-**Next Task:** P6-03 - Update QuickActions for camera runtime
+**Phase:** Phase 7 - Context & Hooks (Not Started)
+**Last Task:** P6-03 - Update QuickActions for camera runtime
+**Next Task:** P7-01 - Extend ShowContext with camera state
 
 ---
 
@@ -507,6 +507,23 @@ Created `show-controller/src/components/OverrideLog.jsx` with real-time override
 - Integrated OverrideLog into ProducerView.jsx right column (below Timesheet, above Camera Status)
 - Verification: Screenshot at `screenshots/override-log.png` shows panel in collapsed state in producer view
 
+### P6-03: Update QuickActions for camera runtime
+Updated `show-controller/src/components/QuickActions.jsx` with apparatus-based camera switching:
+- Added apparatus camera buttons section (FX, PH, SR, VT, PB, HB) in Olympic order
+- Each apparatus button switches to the camera covering that apparatus based on runtime state
+- Fetches camera health and runtime state from REST API on mount
+- Subscribes to `cameraHealth` and `cameraRuntimeState` socket events for real-time updates
+- `getCameraForApparatus(apparatus)` finds camera with apparatus in `currentApparatus` array
+- Buttons disabled for offline cameras or when no camera covers the apparatus
+- Visual indicator for current camera (blue background with ring)
+- Health status indicator dot (green/yellow/orange/red/gray) on each button
+- Yellow border and warning icon for cameras with apparatus mismatch
+- Tooltip shows camera name, health status, and mismatch warning
+- Compact button design showing apparatus code and abbreviated camera name
+- Original Quick Actions section preserved below apparatus cameras
+- Build verification: `npm run build` succeeds with no errors
+- Verification: Screenshot at `screenshots/quick-actions.png` shows TalentView (QuickActions visible when show running)
+
 ---
 
 ## Task Completion Log
@@ -535,7 +552,7 @@ Created `show-controller/src/components/OverrideLog.jsx` with real-time override
 | P5-03 | Integrate camera panel with ProducerView | ✅ done | 2026-01-13 |
 | P6-01 | Create TimesheetPanel component | ✅ done | 2026-01-13 |
 | P6-02 | Create OverrideLog component | ✅ done | 2026-01-13 |
-| P6-03 | Update QuickActions for camera runtime | pending | |
+| P6-03 | Update QuickActions for camera runtime | ✅ done | 2026-01-13 |
 | P7-01 | Extend ShowContext with camera state | pending | |
 | P7-02 | Extend ShowContext with timesheet state | pending | |
 | P7-03 | Create useCameraHealth hook | pending | |
@@ -556,6 +573,7 @@ Created `show-controller/src/components/OverrideLog.jsx` with real-time override
 | producer-with-cameras.png | P5-03 | /producer | Shows camera panel integrated, quick camera buttons (when show running), mismatch alert banner |
 | timesheet-panel.png | P6-01 | /producer | Shows timesheet panel with current/next segment, time display, controls, segment list |
 | override-log.png | P6-02 | /producer | Shows override log panel in collapsed state with count badge |
+| quick-actions.png | P6-03 | /talent | Shows QuickActions with apparatus camera buttons (visible when show running) |
 
 ---
 
