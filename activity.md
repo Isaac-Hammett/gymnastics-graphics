@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** Phase 2 - Camera Health (In Progress)
-**Last Task:** P2-01 - Create Nimble stats polling module
-**Next Task:** P2-02 - Create camera runtime state manager
+**Last Task:** P2-02 - Create camera runtime state manager
+**Next Task:** P2-03 - Create camera fallback manager
 
 ---
 
@@ -67,6 +67,27 @@ Created `server/lib/cameraHealth.js` with CameraHealthMonitor class:
 - `updateConfig()` for hot-reload support
 - Verification: `node -e "import('./server/lib/cameraHealth.js')"` exits 0
 
+### P2-02: Create camera runtime state manager
+Created `server/lib/cameraRuntimeState.js` with CameraRuntimeState class:
+- Extends EventEmitter for real-time event broadcasting
+- Initializes runtime state from config cameras at construction
+- Tracks `expectedApparatus` (from config) vs `currentApparatus` (runtime) per camera
+- Tracks `verified` boolean with timestamp and verifiedBy fields
+- `reassignApparatus(cameraId, apparatus[], assignedBy)` - updates currentApparatus, resets verification
+- `verifyCamera(cameraId, verifiedBy)` - marks camera as producer-verified
+- `unverifyCamera(cameraId)` - removes verification status
+- `resetAllVerifications()` - clears all verifications (e.g., after break)
+- `getCameraForApparatus(apparatus)` - returns camera currently covering an apparatus
+- `getAllCamerasForApparatus(apparatus)` - returns all cameras covering an apparatus
+- `getMismatches()` - returns cameras where currentApparatus != expectedApparatus
+- `getUnverified()` and `getVerified()` - filter cameras by verification status
+- `hasMismatch(cameraId)` and `isVerified(cameraId)` - check individual camera status
+- `setNote(cameraId, note)` - allows producer to add notes
+- `updateConfig()` - hot-reload support preserving runtime state
+- `resetToConfig()` - reset all runtime state to match config
+- Emits events: `apparatusReassigned`, `cameraVerified`, `mismatchDetected`, `stateChanged`
+- Verification: `node -e "import('./server/lib/cameraRuntimeState.js')"` exits 0
+
 ---
 
 ## Task Completion Log
@@ -77,7 +98,7 @@ Created `server/lib/cameraHealth.js` with CameraHealthMonitor class:
 | P1-02 | Extend show-config.json with camera schema | ✅ done | 2026-01-13 |
 | P1-03 | Integrate schema validation on server startup | ✅ done | 2026-01-13 |
 | P2-01 | Create Nimble stats polling module | ✅ done | 2026-01-13 |
-| P2-02 | Create camera runtime state manager | pending | |
+| P2-02 | Create camera runtime state manager | ✅ done | 2026-01-13 |
 | P2-03 | Create camera fallback manager | pending | |
 | P2-04 | Add camera health API endpoints | pending | |
 | P2-05 | Add camera health socket events | pending | |
