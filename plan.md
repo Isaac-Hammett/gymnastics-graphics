@@ -491,7 +491,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Verify config validation on startup"
     ],
     "verification": "node ralph-wigg/test-helper.js health shows all endpoints OK",
-    "passes": false
+    "passes": true
   },
   {
     "id": "INT-02",
@@ -538,8 +538,8 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 | Phase 5: Camera UI | 3 | 3 | Complete |
 | Phase 6: Timesheet UI | 3 | 3 | Complete |
 | Phase 7: Context & Hooks | 5 | 5 | Complete |
-| Integration | 3 | 0 | Not started |
-| **Total** | **31** | **28** | **90%** |
+| Integration | 3 | 1 | In Progress |
+| **Total** | **31** | **29** | **94%** |
 
 ---
 
