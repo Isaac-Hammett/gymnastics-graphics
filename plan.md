@@ -314,7 +314,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Add /api/timesheet/overrides endpoint"
     ],
     "verification": "curl http://localhost:3001/api/timesheet/state returns current state",
-    "passes": false
+    "passes": true
   },
   {
     "id": "P5-01",
@@ -534,12 +534,12 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 | Phase 1: Data Model | 3 | 3 | Complete |
 | Phase 2: Camera Health | 5 | 5 | Complete |
 | Phase 3: Scene Generator | 3 | 3 | Complete |
-| Phase 4: Timesheet Engine | 6 | 4 | In progress |
+| Phase 4: Timesheet Engine | 6 | 6 | Complete |
 | Phase 5: Camera UI | 3 | 0 | Not started |
 | Phase 6: Timesheet UI | 3 | 0 | Not started |
 | Phase 7: Context & Hooks | 5 | 0 | Not started |
 | Integration | 3 | 0 | Not started |
-| **Total** | **31** | **15** | **48%** |
+| **Total** | **31** | **17** | **55%** |
 
 ---
 
