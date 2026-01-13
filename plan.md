@@ -205,7 +205,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Return results: {created: [], skipped: [], failed: []}"
     ],
     "verification": "Unit test or manual test shows correct scene count for n cameras",
-    "passes": false
+    "passes": true
   },
   {
     "id": "P3-03",
@@ -533,13 +533,13 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 |-------|-------|--------|--------|
 | Phase 1: Data Model | 3 | 3 | Complete |
 | Phase 2: Camera Health | 5 | 5 | Complete |
-| Phase 3: Scene Generator | 3 | 1 | In progress |
+| Phase 3: Scene Generator | 3 | 2 | In progress |
 | Phase 4: Timesheet Engine | 6 | 0 | Not started |
 | Phase 5: Camera UI | 3 | 0 | Not started |
 | Phase 6: Timesheet UI | 3 | 0 | Not started |
 | Phase 7: Context & Hooks | 5 | 0 | Not started |
 | Integration | 3 | 0 | Not started |
-| **Total** | **31** | **9** | **29%** |
+| **Total** | **31** | **10** | **32%** |
 
 ---
 
