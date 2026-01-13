@@ -85,6 +85,9 @@ class TimesheetEngine extends EventEmitter {
 
     // Track last transition for context
     this._lastTransitionType = null;
+
+    // Track if holdMaxReached has been emitted for current segment
+    this._holdMaxReachedEmitted = false;
   }
 
   /**
@@ -364,10 +367,11 @@ class TimesheetEngine extends EventEmitter {
       showElapsedMs: this.showElapsedMs
     });
 
-    // Check for hold segment max duration
+    // Check for hold segment max duration warning
     if (this._currentSegment?.type === SEGMENT_TYPES.HOLD) {
       const maxDurationMs = (this._currentSegment.maxDuration || 0) * 1000;
-      if (maxDurationMs > 0 && elapsedMs >= maxDurationMs) {
+      if (maxDurationMs > 0 && elapsedMs >= maxDurationMs && !this._holdMaxReachedEmitted) {
+        this._holdMaxReachedEmitted = true;
         this.emit('holdMaxReached', {
           segmentId: this._currentSegment.id,
           elapsedMs,
@@ -376,8 +380,91 @@ class TimesheetEngine extends EventEmitter {
       }
     }
 
-    // Check for auto-advance (handled in P4-03)
-    // This is intentionally left for the next task
+    // Check for auto-advance
+    this._checkAutoAdvance(elapsedMs);
+  }
+
+  /**
+   * Check if segment should auto-advance and trigger if appropriate
+   * @param {number} elapsedMs - Current elapsed time in milliseconds
+   * @private
+   */
+  _checkAutoAdvance(elapsedMs) {
+    // No current segment or no more segments
+    if (!this._currentSegment) return;
+    const nextIndex = this._currentSegmentIndex + 1;
+    if (nextIndex >= this.segments.length) return;
+
+    // Hold segments NEVER auto-advance - producer must decide
+    if (this._currentSegment.type === SEGMENT_TYPES.HOLD) {
+      return;
+    }
+
+    // Check autoAdvance flag on segment (default true for timed segments)
+    const autoAdvance = this._currentSegment.autoAdvance !== false;
+    if (!autoAdvance) {
+      return;
+    }
+
+    // Must have a duration to auto-advance
+    const durationMs = (this._currentSegment.duration || 0) * 1000;
+    if (durationMs <= 0) {
+      return;
+    }
+
+    // Check if elapsed time has reached or exceeded duration
+    if (elapsedMs >= durationMs) {
+      this._autoAdvance();
+    }
+  }
+
+  /**
+   * Auto-advance to the next segment
+   * @private
+   */
+  async _autoAdvance() {
+    const nextIndex = this._currentSegmentIndex + 1;
+
+    // Emit event before advancing
+    this.emit('autoAdvancing', {
+      fromSegmentId: this._currentSegment?.id,
+      fromSegmentIndex: this._currentSegmentIndex,
+      toSegmentIndex: nextIndex,
+      timestamp: Date.now()
+    });
+
+    // Activate next segment
+    await this._activateSegment(nextIndex, 'auto');
+  }
+
+  /**
+   * Check if hold segment has met minimum duration requirement
+   * @returns {boolean} True if hold can be advanced
+   */
+  canAdvanceHold() {
+    if (!this._currentSegment || this._currentSegment.type !== SEGMENT_TYPES.HOLD) {
+      return true; // Not a hold segment, can always advance
+    }
+
+    const minDurationMs = (this._currentSegment.minDuration || 0) * 1000;
+    const elapsedMs = this.segmentElapsedMs;
+
+    return elapsedMs >= minDurationMs;
+  }
+
+  /**
+   * Get remaining time before hold can be advanced
+   * @returns {number} Milliseconds remaining before minDuration is met (0 if already met)
+   */
+  getHoldRemainingMs() {
+    if (!this._currentSegment || this._currentSegment.type !== SEGMENT_TYPES.HOLD) {
+      return 0;
+    }
+
+    const minDurationMs = (this._currentSegment.minDuration || 0) * 1000;
+    const elapsedMs = this.segmentElapsedMs;
+
+    return Math.max(0, minDurationMs - elapsedMs);
   }
 
   /**
@@ -403,6 +490,7 @@ class TimesheetEngine extends EventEmitter {
     this._currentSegment = segment;
     this._segmentStartTime = Date.now();
     this._segmentElapsedMs = 0;
+    this._holdMaxReachedEmitted = false;
 
     // Determine transition type based on segment types
     const transition = this._getTransition(previousSegment, segment);
@@ -779,6 +867,8 @@ class TimesheetEngine extends EventEmitter {
    * @returns {Object} Current timesheet state
    */
   getState() {
+    const isHold = this._currentSegment?.type === SEGMENT_TYPES.HOLD;
+
     return {
       state: this._state,
       isRunning: this._isRunning,
@@ -793,7 +883,11 @@ class TimesheetEngine extends EventEmitter {
       showStartTime: this._showStartTime,
       segmentCount: this.segments.length,
       historyCount: this._history.length,
-      overrideCount: this._overrides.length
+      overrideCount: this._overrides.length,
+      // Hold segment state
+      isHoldSegment: isHold,
+      canAdvanceHold: this.canAdvanceHold(),
+      holdRemainingMs: isHold ? this.getHoldRemainingMs() : 0
     };
   }
 
