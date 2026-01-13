@@ -1,5 +1,74 @@
 {
   "showName": "CGA All Stars 2025",
+  "cameras": [
+    {
+      "id": "cam-1",
+      "name": "Camera 1 - Floor/Vault",
+      "srtPort": 9001,
+      "srtUrl": "srt://nimble.local:9001",
+      "expectedApparatus": ["FX", "VT"],
+      "fallbackCameraId": "cam-2"
+    },
+    {
+      "id": "cam-2",
+      "name": "Camera 2 - Pommel/PBars",
+      "srtPort": 9002,
+      "srtUrl": "srt://nimble.local:9002",
+      "expectedApparatus": ["PH", "PB"],
+      "fallbackCameraId": "cam-1"
+    },
+    {
+      "id": "cam-3",
+      "name": "Camera 3 - Rings/HBar",
+      "srtPort": 9003,
+      "srtUrl": "srt://nimble.local:9003",
+      "expectedApparatus": ["SR", "HB"],
+      "fallbackCameraId": "cam-2"
+    },
+    {
+      "id": "cam-talent",
+      "name": "Talent Camera",
+      "srtPort": 9004,
+      "srtUrl": "srt://nimble.local:9004",
+      "expectedApparatus": []
+    }
+  ],
+  "nimbleServer": {
+    "host": "nimble.local",
+    "statsPort": 8086,
+    "pollIntervalMs": 2000
+  },
+  "audioConfig": {
+    "venue": {
+      "sourceName": "Venue Audio",
+      "defaultVolume": 0.8
+    },
+    "commentary": {
+      "sourceName": "Commentary Mix",
+      "defaultVolume": 1.0
+    }
+  },
+  "graphicsOverlay": {
+    "url": "http://localhost:5173/graphics",
+    "queryParams": {
+      "theme": "cga",
+      "showLowerThird": true
+    }
+  },
+  "transitions": {
+    "default": {
+      "type": "cut",
+      "durationMs": 0
+    },
+    "toBreak": {
+      "type": "fade",
+      "durationMs": 500
+    },
+    "fromBreak": {
+      "type": "fade",
+      "durationMs": 500
+    }
+  },
   "segments": [
     {
       "id": "intro",
@@ -15,6 +84,7 @@
       "name": "Welcome & Host Intro",
       "type": "live",
       "obsScene": "Talent Camera",
+      "cameraId": "cam-talent",
       "duration": null,
       "autoAdvance": false,
       "notes": "Welcome viewers, introduce the show and sponsors"
@@ -65,7 +135,9 @@
       "id": "rotation1-floor",
       "name": "Floor Exercise - Rotation 1",
       "type": "live",
-      "obsScene": "Competition Camera",
+      "obsScene": "Single - Camera 1",
+      "cameraId": "cam-1",
+      "intendedApparatus": ["FX"],
       "duration": null,
       "autoAdvance": false,
       "notes": "Floor exercise routines"
@@ -86,7 +158,9 @@
       "id": "rotation1-pommel-live",
       "name": "Pommel Horse Live",
       "type": "live",
-      "obsScene": "Competition Camera",
+      "obsScene": "Single - Camera 2",
+      "cameraId": "cam-2",
+      "intendedApparatus": ["PH"],
       "duration": null,
       "autoAdvance": false,
       "notes": "Pommel horse routines"
@@ -107,7 +181,9 @@
       "id": "rotation1-rings-live",
       "name": "Still Rings Live",
       "type": "live",
-      "obsScene": "Competition Camera",
+      "obsScene": "Single - Camera 3",
+      "cameraId": "cam-3",
+      "intendedApparatus": ["SR"],
       "duration": null,
       "autoAdvance": false,
       "notes": "Still rings routines"
@@ -115,7 +191,7 @@
     {
       "id": "halftime",
       "name": "Halftime Break",
-      "type": "live",
+      "type": "break",
       "obsScene": "BRB",
       "duration": 300,
       "autoAdvance": false,
@@ -137,7 +213,9 @@
       "id": "rotation2-vault-live",
       "name": "Vault Live",
       "type": "live",
-      "obsScene": "Competition Camera",
+      "obsScene": "Single - Camera 1",
+      "cameraId": "cam-1",
+      "intendedApparatus": ["VT"],
       "duration": null,
       "autoAdvance": false,
       "notes": "Vault routines"
@@ -158,7 +236,9 @@
       "id": "rotation2-pbars-live",
       "name": "Parallel Bars Live",
       "type": "live",
-      "obsScene": "Competition Camera",
+      "obsScene": "Single - Camera 2",
+      "cameraId": "cam-2",
+      "intendedApparatus": ["PB"],
       "duration": null,
       "autoAdvance": false,
       "notes": "Parallel bars routines"
@@ -179,7 +259,9 @@
       "id": "rotation2-hbar-live",
       "name": "High Bar Live",
       "type": "live",
-      "obsScene": "Competition Camera",
+      "obsScene": "Single - Camera 3",
+      "cameraId": "cam-3",
+      "intendedApparatus": ["HB"],
       "duration": null,
       "autoAdvance": false,
       "notes": "High bar routines"
@@ -201,6 +283,7 @@
       "name": "Closing Remarks",
       "type": "live",
       "obsScene": "Talent Camera",
+      "cameraId": "cam-talent",
       "duration": null,
       "autoAdvance": false,
       "notes": "Thank viewers, sponsors, recap highlights"

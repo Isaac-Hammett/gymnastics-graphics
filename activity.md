@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** Phase 1 - Data Model
-**Last Task:** P1-01 - Create show config schema validator
-**Next Task:** P1-02 - Extend show-config.json with camera schema
+**Last Task:** P1-02 - Extend show-config.json with camera schema
+**Next Task:** P1-03 - Integrate schema validation on server startup
 
 ---
 
@@ -33,6 +33,17 @@ node ralph-wigg/test-helper.js health
 
 **Next task:** P1-01 - Create JSON schema validation module (`server/lib/showConfigSchema.js`)
 
+### P1-02: Extend show-config.json with camera schema
+Extended `server/config/show-config.json` with full camera management configuration:
+- Added 4 cameras (cam-1, cam-2, cam-3, cam-talent) with SRT ports, URLs, and apparatus assignments
+- Added `nimbleServer` config (host, statsPort, pollIntervalMs)
+- Added `audioConfig` (venue and commentary audio sources)
+- Added `graphicsOverlay` with URL and queryParams
+- Added `transitions` config (default, toBreak, fromBreak)
+- Updated live segments with `cameraId` and `intendedApparatus` references
+- Changed halftime segment type from "live" to "break"
+- Schema validation passes: `{ valid: true, errors: [] }`
+
 ---
 
 ## Task Completion Log
@@ -40,7 +51,7 @@ node ralph-wigg/test-helper.js health
 | Task ID | Description | Status | Date |
 |---------|-------------|--------|------|
 | P1-01 | Create show config schema validator | ✅ done | 2026-01-13 |
-| P1-02 | Extend show-config.json with camera schema | pending | |
+| P1-02 | Extend show-config.json with camera schema | ✅ done | 2026-01-13 |
 | P1-03 | Integrate schema validation on server startup | pending | |
 | P2-01 | Create Nimble stats polling module | pending | |
 | P2-02 | Create camera runtime state manager | pending | |
