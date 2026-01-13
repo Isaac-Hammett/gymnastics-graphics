@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** Phase 4 - Timesheet Engine (In Progress)
-**Last Task:** P4-03 - Implement auto-advance and hold logic
-**Next Task:** P4-04 - Implement manual controls and overrides
+**Last Task:** P4-04 - Implement manual controls and overrides
+**Next Task:** P4-05 - Add timesheet socket events
 
 ---
 
@@ -310,6 +310,30 @@ Extended `_tick()` method in `server/lib/timesheetEngine.js` with auto-advance a
   - `canAdvanceHold()` respects minDuration
   - `holdMaxReached` event emits when hold exceeds maxDuration
 
+### P4-04: Implement manual controls and overrides
+Extended `server/lib/timesheetEngine.js` with manual control methods:
+- `advance(advancedBy)` - Advance to next segment manually
+  - Checks if running and if not at last segment
+  - For hold segments, checks `canAdvanceHold()` to respect minDuration
+  - Records override with from/to segment info
+- `previous(triggeredBy)` - Go back to previous segment
+  - Checks if running and if not at first segment
+  - Records override with from/to segment info
+- `goToSegment(segmentId, triggeredBy)` - Jump to specific segment by ID
+  - Validates segment exists in config
+  - Records override with jump details
+- `overrideScene(sceneName, triggeredBy)` - Manual scene switch
+  - Does NOT change current segment, only OBS scene
+  - Uses cut transition for instant switch
+  - Records override and emits `sceneOverridden` event
+- `overrideCamera(cameraId, triggeredBy)` - Switch to camera's scene
+  - Looks up camera in config
+  - Generates scene name as `Single - {camera.name}` or uses `camera.sceneName`
+  - Records override and emits `cameraOverridden` event
+- All manual actions recorded via `_recordOverride()` with timestamp, type, and context
+- Error events emitted for edge cases (at first/last segment, invalid camera, OBS not connected)
+- Verification: Test script confirms all controls work correctly
+
 ---
 
 ## Task Completion Log
@@ -330,7 +354,7 @@ Extended `_tick()` method in `server/lib/timesheetEngine.js` with auto-advance a
 | P4-01 | Create timesheet engine core | ✅ done | 2026-01-13 |
 | P4-02 | Implement segment activation logic | ✅ done | 2026-01-13 |
 | P4-03 | Implement auto-advance and hold logic | ✅ done | 2026-01-13 |
-| P4-04 | Implement manual controls and overrides | pending | |
+| P4-04 | Implement manual controls and overrides | ✅ done | 2026-01-13 |
 | P4-05 | Add timesheet socket events | pending | |
 | P4-06 | Integrate timesheet engine with server | pending | |
 | P5-01 | Create CameraSetupPage component | pending | |
