@@ -1,9 +1,9 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** Phase 5 - Camera UI (Starting)
-**Last Task:** P4-06 - Integrate timesheet engine with server
-**Next Task:** P5-01 - Create CameraSetupPage component
+**Phase:** Phase 5 - Camera UI (In Progress)
+**Last Task:** P5-01 - Create CameraSetupPage component
+**Next Task:** P5-02 - Create CameraRuntimePanel component
 
 ---
 
@@ -392,6 +392,35 @@ Verified timesheet engine integration in `server/index.js`:
 - Timesheet engine runs parallel to existing segment logic, allowing both systems to coexist
 - Verification: `curl http://localhost:3003/api/timesheet/state` returns current timesheet state JSON
 
+### P5-01: Create CameraSetupPage component
+Created `show-controller/src/pages/CameraSetupPage.jsx` with full camera configuration UI:
+- Header with "Camera Setup" title, show name display, Reload and Save Changes buttons
+- Scene Generation Preview panel showing:
+  - Total camera count and scene count to be generated
+  - Breakdown by scene type (Static, Single, Dual, Triple, Quad, Graphics)
+  - Uses `/api/scenes/preview` endpoint for accurate counts
+- Camera cards for each configured camera displaying:
+  - Camera name (editable input)
+  - Camera ID (read-only)
+  - SRT port (editable number input, auto-generates SRT URL)
+  - SRT URL (read-only, auto-generated from port)
+  - Expected Apparatus toggle buttons (FX, PH, SR, VT, PB, HB)
+  - Fallback camera dropdown (select from other cameras)
+  - Delete button to remove camera
+- Add Camera button to dynamically add new cameras
+- Empty state UI when no cameras configured
+- Server integration:
+  - `GET /api/config` - Fetch current camera configuration
+  - `PUT /api/config/cameras` - Save updated camera array
+  - `GET /api/scenes/preview` - Get scene generation preview
+- Added `PUT /api/config/cameras` endpoint to `server/index.js`:
+  - Validates cameras array
+  - Saves to show-config.json
+  - Re-validates config with schema
+  - Reinitializes camera modules and scene generator
+- Added route `/camera-setup` to `App.jsx`
+- Verification: Screenshot at `screenshots/camera-setup.png` shows 4 cameras with 19 scenes preview
+
 ---
 
 ## Task Completion Log
@@ -415,7 +444,7 @@ Verified timesheet engine integration in `server/index.js`:
 | P4-04 | Implement manual controls and overrides | ✅ done | 2026-01-13 |
 | P4-05 | Add timesheet socket events | ✅ done | 2026-01-13 |
 | P4-06 | Integrate timesheet engine with server | ✅ done | 2026-01-13 |
-| P5-01 | Create CameraSetupPage component | pending | |
+| P5-01 | Create CameraSetupPage component | ✅ done | 2026-01-13 |
 | P5-02 | Create CameraRuntimePanel component | pending | |
 | P5-03 | Integrate camera panel with ProducerView | pending | |
 | P6-01 | Create TimesheetPanel component | pending | |
@@ -436,7 +465,7 @@ Verified timesheet engine integration in `server/index.js`:
 
 | Screenshot | Task | URL | Notes |
 |------------|------|-----|-------|
-| | | | |
+| camera-setup.png | P5-01 | /camera-setup | Shows 4 cameras with scene preview (19 scenes) |
 
 ---
 

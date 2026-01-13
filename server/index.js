@@ -14,6 +14,7 @@ import { CameraHealthMonitor } from './lib/cameraHealth.js';
 import { CameraRuntimeState } from './lib/cameraRuntimeState.js';
 import { CameraFallbackManager } from './lib/cameraFallback.js';
 import { OBSSceneGenerator } from './lib/obsSceneGenerator.js';
+import { TimesheetEngine } from './lib/timesheetEngine.js';
 
 dotenv.config();
 
@@ -70,6 +71,9 @@ let cameraFallbackManager = null;
 
 // OBS Scene Generator
 let obsSceneGenerator = null;
+
+// Timesheet Engine
+let timesheetEngine = null;
 
 // Load show configuration
 function loadShowConfig(exitOnInvalid = false) {
@@ -197,6 +201,102 @@ function initializeSceneGenerator() {
   console.log('OBS scene generator initialized');
 }
 
+// Initialize timesheet engine
+function initializeTimesheetEngine() {
+  timesheetEngine = new TimesheetEngine({
+    showConfig,
+    obs,
+    io
+  });
+
+  // Wire up timesheet events to broadcast to all clients
+  timesheetEngine.on('tick', (data) => {
+    io.emit('timesheetTick', data);
+  });
+
+  timesheetEngine.on('segmentActivated', (data) => {
+    console.log(`Timesheet: Segment activated - ${data.segment.name} (${data.reason})`);
+    io.emit('timesheetSegmentActivated', data);
+    io.emit('timesheetState', timesheetEngine.getState());
+  });
+
+  timesheetEngine.on('segmentCompleted', (data) => {
+    console.log(`Timesheet: Segment completed - ${data.segmentId} (${data.endReason})`);
+    io.emit('timesheetSegmentCompleted', data);
+  });
+
+  timesheetEngine.on('showStarted', (data) => {
+    console.log('Timesheet: Show started');
+    io.emit('timesheetShowStarted', data);
+    io.emit('timesheetState', timesheetEngine.getState());
+  });
+
+  timesheetEngine.on('showStopped', (data) => {
+    console.log('Timesheet: Show stopped');
+    io.emit('timesheetShowStopped', data);
+    io.emit('timesheetState', timesheetEngine.getState());
+  });
+
+  timesheetEngine.on('stateChanged', (data) => {
+    io.emit('timesheetStateChanged', data);
+    io.emit('timesheetState', timesheetEngine.getState());
+  });
+
+  timesheetEngine.on('holdStarted', (data) => {
+    console.log(`Timesheet: Hold started - ${data.segmentId}`);
+    io.emit('timesheetHoldStarted', data);
+  });
+
+  timesheetEngine.on('holdMaxReached', (data) => {
+    console.log(`Timesheet: Hold max reached - ${data.segmentId}`);
+    io.emit('timesheetHoldMaxReached', data);
+  });
+
+  timesheetEngine.on('autoAdvancing', (data) => {
+    console.log(`Timesheet: Auto-advancing from ${data.fromSegmentId} to segment ${data.toSegmentIndex}`);
+    io.emit('timesheetAutoAdvancing', data);
+  });
+
+  timesheetEngine.on('overrideRecorded', (data) => {
+    console.log(`Timesheet: Override recorded - ${data.type}`);
+    io.emit('timesheetOverrideRecorded', data);
+  });
+
+  timesheetEngine.on('sceneChanged', (data) => {
+    io.emit('timesheetSceneChanged', data);
+  });
+
+  timesheetEngine.on('sceneOverridden', (data) => {
+    console.log(`Timesheet: Scene overridden to ${data.sceneName}`);
+    io.emit('timesheetSceneOverridden', data);
+  });
+
+  timesheetEngine.on('cameraOverridden', (data) => {
+    console.log(`Timesheet: Camera overridden to ${data.cameraName}`);
+    io.emit('timesheetCameraOverridden', data);
+  });
+
+  timesheetEngine.on('graphicTriggered', (data) => {
+    io.emit('timesheetGraphicTriggered', data);
+  });
+
+  timesheetEngine.on('videoStarted', (data) => {
+    io.emit('timesheetVideoStarted', data);
+  });
+
+  timesheetEngine.on('breakStarted', (data) => {
+    console.log(`Timesheet: Break started - ${data.segmentId}`);
+    io.emit('timesheetBreakStarted', data);
+  });
+
+  timesheetEngine.on('error', (data) => {
+    console.error(`Timesheet error: ${data.message}`);
+    io.emit('timesheetError', data);
+  });
+
+  console.log('Timesheet engine initialized');
+}
+
 // Watch for config changes (hot reload)
 watchFile(join(__dirname, 'config', 'show-config.json'), () => {
   console.log('Show config changed, reloading...');
@@ -214,6 +314,10 @@ watchFile(join(__dirname, 'config', 'show-config.json'), () => {
   // Update scene generator with new config
   if (obsSceneGenerator) {
     obsSceneGenerator.updateConfig(showConfig);
+  }
+  // Update timesheet engine with new config
+  if (timesheetEngine) {
+    timesheetEngine.updateConfig(showConfig);
   }
   broadcastState();
 });
@@ -584,6 +688,46 @@ app.get('/api/config/validate', (req, res) => {
   res.json(validation);
 });
 
+// Update cameras configuration
+app.put('/api/config/cameras', (req, res) => {
+  const { cameras } = req.body;
+  if (!cameras || !Array.isArray(cameras)) {
+    return res.status(400).json({ error: 'cameras must be an array' });
+  }
+
+  try {
+    // Update showConfig with new cameras
+    showConfig.cameras = cameras;
+
+    // Save to file
+    const configPath = join(__dirname, 'config', 'show-config.json');
+    writeFileSync(configPath, JSON.stringify(showConfig, null, 2));
+
+    // Re-validate the config
+    const validation = validateShowConfig(showConfig);
+    if (!validation.valid) {
+      return res.status(400).json({
+        error: 'Invalid configuration',
+        errors: validation.errors
+      });
+    }
+
+    // Reinitialize camera modules with new config
+    initializeCameraModules();
+
+    // Update scene generator
+    if (obsSceneGenerator) {
+      obsSceneGenerator.updateConfig(showConfig);
+    }
+
+    console.log(`Camera config updated: ${cameras.length} cameras`);
+    res.json({ success: true, cameras: cameras.length });
+  } catch (error) {
+    console.error('Failed to save camera config:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ============================================
 // Camera Health API Endpoints
 // ============================================
@@ -807,6 +951,98 @@ app.delete('/api/scenes/generated', async (req, res) => {
   }
 });
 
+// ============================================
+// Timesheet Engine API Endpoints
+// ============================================
+
+// GET /api/timesheet/state - Get current timesheet state
+app.get('/api/timesheet/state', (req, res) => {
+  if (!timesheetEngine) {
+    return res.status(503).json({ error: 'Timesheet engine not initialized' });
+  }
+  res.json(timesheetEngine.getState());
+});
+
+// GET /api/timesheet/overrides - Get timesheet override history
+app.get('/api/timesheet/overrides', (req, res) => {
+  if (!timesheetEngine) {
+    return res.status(503).json({ error: 'Timesheet engine not initialized' });
+  }
+  res.json(timesheetEngine.getOverrides());
+});
+
+// GET /api/timesheet/history - Get segment history
+app.get('/api/timesheet/history', (req, res) => {
+  if (!timesheetEngine) {
+    return res.status(503).json({ error: 'Timesheet engine not initialized' });
+  }
+  res.json(timesheetEngine.getHistory());
+});
+
+// POST /api/timesheet/start - Start the timesheet show
+app.post('/api/timesheet/start', async (req, res) => {
+  if (!timesheetEngine) {
+    return res.status(503).json({ error: 'Timesheet engine not initialized' });
+  }
+  try {
+    await timesheetEngine.start();
+    res.json({ success: true, state: timesheetEngine.getState() });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/timesheet/stop - Stop the timesheet show
+app.post('/api/timesheet/stop', (req, res) => {
+  if (!timesheetEngine) {
+    return res.status(503).json({ error: 'Timesheet engine not initialized' });
+  }
+  timesheetEngine.stop();
+  res.json({ success: true, state: timesheetEngine.getState() });
+});
+
+// POST /api/timesheet/advance - Advance to next segment
+app.post('/api/timesheet/advance', async (req, res) => {
+  if (!timesheetEngine) {
+    return res.status(503).json({ error: 'Timesheet engine not initialized' });
+  }
+  const { advancedBy } = req.body || {};
+  const success = await timesheetEngine.advance(advancedBy || 'api');
+  if (!success) {
+    return res.status(400).json({ error: 'Cannot advance segment', state: timesheetEngine.getState() });
+  }
+  res.json({ success: true, state: timesheetEngine.getState() });
+});
+
+// POST /api/timesheet/previous - Go to previous segment
+app.post('/api/timesheet/previous', async (req, res) => {
+  if (!timesheetEngine) {
+    return res.status(503).json({ error: 'Timesheet engine not initialized' });
+  }
+  const { triggeredBy } = req.body || {};
+  const success = await timesheetEngine.previous(triggeredBy || 'api');
+  if (!success) {
+    return res.status(400).json({ error: 'Cannot go to previous segment', state: timesheetEngine.getState() });
+  }
+  res.json({ success: true, state: timesheetEngine.getState() });
+});
+
+// POST /api/timesheet/jump - Jump to specific segment
+app.post('/api/timesheet/jump', async (req, res) => {
+  if (!timesheetEngine) {
+    return res.status(503).json({ error: 'Timesheet engine not initialized' });
+  }
+  const { segmentId, triggeredBy } = req.body || {};
+  if (!segmentId) {
+    return res.status(400).json({ error: 'segmentId is required' });
+  }
+  const success = await timesheetEngine.goToSegment(segmentId, triggeredBy || 'api');
+  if (!success) {
+    return res.status(400).json({ error: `Cannot jump to segment: ${segmentId}`, state: timesheetEngine.getState() });
+  }
+  res.json({ success: true, state: timesheetEngine.getState() });
+});
+
 // CSV Upload endpoint
 app.post('/api/import-csv', upload.single('csv'), (req, res) => {
   try {
@@ -991,6 +1227,11 @@ io.on('connection', (socket) => {
     socket.emit('activeFallbacks', cameraFallbackManager.getActiveFallbacks());
   }
 
+  // Send initial timesheet state if available
+  if (timesheetEngine) {
+    socket.emit('timesheetState', timesheetEngine.getState());
+  }
+
   broadcastState();
 
   // Client identifies themselves
@@ -1152,6 +1393,144 @@ io.on('connection', (socket) => {
     console.log('Socket: All camera verifications reset');
   });
 
+  // ============================================
+  // Timesheet Engine Socket Events
+  // ============================================
+
+  // Start show via timesheet engine
+  socket.on('startTimesheetShow', async () => {
+    if (!timesheetEngine) {
+      socket.emit('error', { message: 'Timesheet engine not initialized' });
+      return;
+    }
+    await timesheetEngine.start();
+    console.log('Socket: Timesheet show started');
+  });
+
+  // Stop show via timesheet engine
+  socket.on('stopTimesheetShow', () => {
+    if (!timesheetEngine) {
+      socket.emit('error', { message: 'Timesheet engine not initialized' });
+      return;
+    }
+    timesheetEngine.stop();
+    console.log('Socket: Timesheet show stopped');
+  });
+
+  // Advance to next segment via timesheet engine
+  socket.on('advanceSegment', async () => {
+    if (!timesheetEngine) {
+      socket.emit('error', { message: 'Timesheet engine not initialized' });
+      return;
+    }
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    const advancedBy = client?.name || socket.id;
+    const success = await timesheetEngine.advance(advancedBy);
+    if (!success) {
+      socket.emit('error', { message: 'Cannot advance segment' });
+    }
+    console.log(`Socket: Segment advanced by ${advancedBy}`);
+  });
+
+  // Go to previous segment via timesheet engine
+  socket.on('previousSegment', async () => {
+    if (!timesheetEngine) {
+      socket.emit('error', { message: 'Timesheet engine not initialized' });
+      return;
+    }
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    const triggeredBy = client?.name || socket.id;
+    const success = await timesheetEngine.previous(triggeredBy);
+    if (!success) {
+      socket.emit('error', { message: 'Cannot go to previous segment' });
+    }
+    console.log(`Socket: Previous segment triggered by ${triggeredBy}`);
+  });
+
+  // Jump to specific segment via timesheet engine
+  socket.on('goToSegment', async ({ segmentId }) => {
+    if (!timesheetEngine) {
+      socket.emit('error', { message: 'Timesheet engine not initialized' });
+      return;
+    }
+    if (!segmentId) {
+      socket.emit('error', { message: 'segmentId is required' });
+      return;
+    }
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    const triggeredBy = client?.name || socket.id;
+    const success = await timesheetEngine.goToSegment(segmentId, triggeredBy);
+    if (!success) {
+      socket.emit('error', { message: `Cannot jump to segment: ${segmentId}` });
+    }
+    console.log(`Socket: Jump to segment ${segmentId} by ${triggeredBy}`);
+  });
+
+  // Override scene via timesheet engine (producer only)
+  socket.on('timesheetOverrideScene', async ({ sceneName }) => {
+    if (!timesheetEngine) {
+      socket.emit('error', { message: 'Timesheet engine not initialized' });
+      return;
+    }
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can override scenes' });
+      return;
+    }
+    const triggeredBy = client?.name || socket.id;
+    const success = await timesheetEngine.overrideScene(sceneName, triggeredBy);
+    if (!success) {
+      socket.emit('error', { message: `Failed to override scene: ${sceneName}` });
+    }
+    console.log(`Socket: Scene overridden to ${sceneName} by ${triggeredBy}`);
+  });
+
+  // Override camera via timesheet engine (producer only)
+  socket.on('overrideCamera', async ({ cameraId }) => {
+    if (!timesheetEngine) {
+      socket.emit('error', { message: 'Timesheet engine not initialized' });
+      return;
+    }
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can override cameras' });
+      return;
+    }
+    const triggeredBy = client?.name || socket.id;
+    const success = await timesheetEngine.overrideCamera(cameraId, triggeredBy);
+    if (!success) {
+      socket.emit('error', { message: `Failed to override camera: ${cameraId}` });
+    }
+    console.log(`Socket: Camera overridden to ${cameraId} by ${triggeredBy}`);
+  });
+
+  // Get current timesheet state
+  socket.on('getTimesheetState', () => {
+    if (!timesheetEngine) {
+      socket.emit('error', { message: 'Timesheet engine not initialized' });
+      return;
+    }
+    socket.emit('timesheetState', timesheetEngine.getState());
+  });
+
+  // Get timesheet overrides history
+  socket.on('getTimesheetOverrides', () => {
+    if (!timesheetEngine) {
+      socket.emit('error', { message: 'Timesheet engine not initialized' });
+      return;
+    }
+    socket.emit('timesheetOverrides', timesheetEngine.getOverrides());
+  });
+
+  // Get timesheet segment history
+  socket.on('getTimesheetHistory', () => {
+    if (!timesheetEngine) {
+      socket.emit('error', { message: 'Timesheet engine not initialized' });
+      return;
+    }
+    socket.emit('timesheetHistory', timesheetEngine.getHistory());
+  });
+
   // Start the show
   socket.on('startShow', async () => {
     showState.isPlaying = true;
@@ -1229,6 +1608,9 @@ httpServer.listen(PORT, () => {
 
   // Initialize OBS scene generator
   initializeSceneGenerator();
+
+  // Initialize timesheet engine
+  initializeTimesheetEngine();
 
   // Connect to OBS
   connectToOBS();
