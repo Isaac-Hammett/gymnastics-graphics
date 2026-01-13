@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** Phase 2 - Camera Health (In Progress)
-**Last Task:** P2-03 - Create camera fallback manager
-**Next Task:** P2-04 - Add camera health API endpoints
+**Last Task:** P2-04 - Add camera health API endpoints
+**Next Task:** P2-05 - Add camera health socket events
 
 ---
 
@@ -107,6 +107,24 @@ Created `server/lib/cameraFallback.js` with CameraFallbackManager class:
 - Emits events: `fallbackActivated`, `fallbackCleared`, `fallbackUnavailable`, `fallbackChainExhausted`
 - Verification: `node -e "import('./server/lib/cameraFallback.js')"` exits 0
 
+### P2-04: Add camera health API endpoints
+Added camera management API endpoints to `server/index.js`:
+- Imported and initialized camera modules (CameraHealthMonitor, CameraRuntimeState, CameraFallbackManager)
+- Added `initializeCameraModules()` function called at server startup
+- Added error handler for CameraHealthMonitor to prevent crashes when Nimble server is unavailable
+- Hot-reload support: camera modules update when show-config.json changes
+
+New API endpoints:
+- `GET /api/cameras/health` - Returns health status for all cameras
+- `GET /api/cameras/:id/health` - Returns health status for a specific camera
+- `GET /api/cameras/runtime` - Returns runtime state for all cameras
+- `POST /api/cameras/:id/reassign` - Reassign apparatus to a camera (body: `{apparatus: string[], assignedBy?: string}`)
+- `POST /api/cameras/:id/verify` - Mark a camera as verified (body: `{verifiedBy?: string}`)
+- `GET /api/cameras/fallbacks` - Returns array of active fallbacks
+- `POST /api/cameras/:id/clear-fallback` - Clear fallback for a specific camera
+
+Verification: All endpoints tested with node fetch and return correct JSON responses
+
 ---
 
 ## Task Completion Log
@@ -119,7 +137,7 @@ Created `server/lib/cameraFallback.js` with CameraFallbackManager class:
 | P2-01 | Create Nimble stats polling module | ✅ done | 2026-01-13 |
 | P2-02 | Create camera runtime state manager | ✅ done | 2026-01-13 |
 | P2-03 | Create camera fallback manager | ✅ done | 2026-01-13 |
-| P2-04 | Add camera health API endpoints | pending | |
+| P2-04 | Add camera health API endpoints | ✅ done | 2026-01-13 |
 | P2-05 | Add camera health socket events | pending | |
 | P3-01 | Create OBS scene generator module | pending | |
 | P3-02 | Implement generateAllScenes orchestration | pending | |
