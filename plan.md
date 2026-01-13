@@ -170,7 +170,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Broadcast 'cameraStatusChanged' on transitions"
     ],
     "verification": "Server logs show socket events registered",
-    "passes": false
+    "passes": true
   },
   {
     "id": "P3-01",
@@ -532,14 +532,14 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 | Phase | Tasks | Passed | Status |
 |-------|-------|--------|--------|
 | Phase 1: Data Model | 3 | 3 | Complete |
-| Phase 2: Camera Health | 5 | 4 | In Progress |
+| Phase 2: Camera Health | 5 | 5 | Complete |
 | Phase 3: Scene Generator | 3 | 0 | Not started |
 | Phase 4: Timesheet Engine | 6 | 0 | Not started |
 | Phase 5: Camera UI | 3 | 0 | Not started |
 | Phase 6: Timesheet UI | 3 | 0 | Not started |
 | Phase 7: Context & Hooks | 5 | 0 | Not started |
 | Integration | 3 | 0 | Not started |
-| **Total** | **31** | **7** | **23%** |
+| **Total** | **31** | **8** | **26%** |
 
 ---
 

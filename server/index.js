@@ -130,15 +130,55 @@ function initializeCameraModules() {
   });
 
   // Attach event handlers BEFORE starting (to catch initial poll errors)
-  // Log events (for debugging)
+  // Broadcast camera health on each poll
+  cameraHealthMonitor.on('cameraHealth', (healthData) => {
+    io.emit('cameraHealth', healthData);
+  });
+
+  // Broadcast status changes to all clients
   cameraHealthMonitor.on('cameraStatusChanged', (change) => {
     console.log(`Camera ${change.cameraName} status: ${change.previousStatus} -> ${change.newStatus}`);
+    io.emit('cameraStatusChanged', change);
   });
 
   // Handle errors from health monitor (e.g., Nimble server not available)
   cameraHealthMonitor.on('error', (error) => {
     // Log but don't crash - Nimble server may not be running
     console.warn(`Camera health monitor error: ${error.message}`);
+  });
+
+  // Broadcast runtime state changes to all clients
+  cameraRuntimeState.on('stateChanged', (state) => {
+    io.emit('cameraRuntimeState', state);
+  });
+
+  cameraRuntimeState.on('apparatusReassigned', (data) => {
+    io.emit('apparatusReassigned', data);
+  });
+
+  cameraRuntimeState.on('cameraVerified', (data) => {
+    io.emit('cameraVerified', data);
+  });
+
+  cameraRuntimeState.on('mismatchDetected', (data) => {
+    io.emit('mismatchDetected', data);
+  });
+
+  // Broadcast fallback events to all clients
+  cameraFallbackManager.on('fallbackActivated', (data) => {
+    io.emit('fallbackActivated', data);
+  });
+
+  cameraFallbackManager.on('fallbackCleared', (data) => {
+    io.emit('fallbackCleared', data);
+  });
+
+  cameraFallbackManager.on('fallbackUnavailable', (data) => {
+    io.emit('fallbackUnavailable', data);
+  });
+
+  cameraFallbackManager.on('fallbackChainExhausted', (data) => {
+    io.emit('fallbackChainExhausted', data);
   });
 
   // Start health monitoring (after event handlers are attached)
@@ -784,6 +824,17 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Send initial camera state if available
+  if (cameraHealthMonitor) {
+    socket.emit('cameraHealth', cameraHealthMonitor.getAllHealth());
+  }
+  if (cameraRuntimeState) {
+    socket.emit('cameraRuntimeState', cameraRuntimeState.getAllState());
+  }
+  if (cameraFallbackManager) {
+    socket.emit('activeFallbacks', cameraFallbackManager.getActiveFallbacks());
+  }
+
   broadcastState();
 
   // Client identifies themselves
@@ -883,6 +934,66 @@ io.on('connection', (socket) => {
   socket.on('clearGraphic', () => {
     io.emit('clearGraphic');
     console.log('Cleared graphic');
+  });
+
+  // ============================================
+  // Camera Management Socket Events
+  // ============================================
+
+  // Reassign apparatus to a camera
+  socket.on('reassignApparatus', ({ cameraId, apparatus, assignedBy }) => {
+    if (!cameraRuntimeState) {
+      socket.emit('error', { message: 'Camera runtime state not initialized' });
+      return;
+    }
+    if (!apparatus || !Array.isArray(apparatus)) {
+      socket.emit('error', { message: 'apparatus must be an array of apparatus codes' });
+      return;
+    }
+    const result = cameraRuntimeState.reassignApparatus(cameraId, apparatus, assignedBy || socket.id);
+    if (!result) {
+      socket.emit('error', { message: `Camera not found: ${cameraId}` });
+      return;
+    }
+    console.log(`Socket: Apparatus reassigned for camera ${cameraId} to [${apparatus.join(', ')}]`);
+  });
+
+  // Verify a camera
+  socket.on('verifyCamera', ({ cameraId, verifiedBy }) => {
+    if (!cameraRuntimeState) {
+      socket.emit('error', { message: 'Camera runtime state not initialized' });
+      return;
+    }
+    const result = cameraRuntimeState.verifyCamera(cameraId, verifiedBy || socket.id);
+    if (!result) {
+      socket.emit('error', { message: `Camera not found: ${cameraId}` });
+      return;
+    }
+    console.log(`Socket: Camera ${cameraId} verified by ${verifiedBy || socket.id}`);
+  });
+
+  // Clear fallback for a camera
+  socket.on('clearFallback', ({ cameraId }) => {
+    if (!cameraFallbackManager) {
+      socket.emit('error', { message: 'Camera fallback manager not initialized' });
+      return;
+    }
+    const result = cameraFallbackManager.clearFallback(cameraId);
+    if (!result.success) {
+      socket.emit('error', { message: result.error });
+      return;
+    }
+    console.log(`Socket: Fallback cleared for camera ${cameraId}`);
+  });
+
+  // Reset all camera verifications
+  socket.on('resetVerifications', () => {
+    if (!cameraRuntimeState) {
+      socket.emit('error', { message: 'Camera runtime state not initialized' });
+      return;
+    }
+    cameraRuntimeState.resetAllVerifications();
+    console.log('Socket: All camera verifications reset');
   });
 
   // Start the show
