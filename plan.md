@@ -138,7 +138,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Emit fallbackActivated, fallbackCleared, fallbackUnavailable events"
     ],
     "verification": "node -e \"require('./server/lib/cameraFallback.js')\" exits 0",
-    "passes": false
+    "passes": true
   },
   {
     "id": "P2-04",
