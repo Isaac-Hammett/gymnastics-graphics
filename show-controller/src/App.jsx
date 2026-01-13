@@ -7,6 +7,7 @@ import DashboardPage from './pages/DashboardPage';
 import ControllerPage from './pages/ControllerPage';
 import UrlGeneratorPage from './pages/UrlGeneratorPage';
 import MediaManagerPage from './pages/MediaManagerPage';
+import CameraSetupPage from './pages/CameraSetupPage';
 
 // Existing views (for show controller functionality)
 import TalentView from './views/TalentView';
@@ -23,6 +24,7 @@ function App() {
         <Route path="/controller" element={<ControllerPage />} />
         <Route path="/url-generator" element={<UrlGeneratorPage />} />
         <Route path="/media-manager" element={<MediaManagerPage />} />
+        <Route path="/camera-setup" element={<CameraSetupPage />} />
 
         {/* Show controller routes (need ShowProvider) */}
         <Route
