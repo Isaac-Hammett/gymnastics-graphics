@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** Integration Tests (In Progress)
-**Last Task:** INT-01 - End-to-end server test
-**Next Task:** INT-02 - End-to-end client test
+**Last Task:** INT-02 - End-to-end client test
+**Next Task:** INT-03 - Full show flow test
 
 ---
 
@@ -635,6 +635,30 @@ Completed end-to-end server integration testing:
 - Health check command: `node test-helper.js health` shows all endpoints OK
 - Verification: All endpoints return valid JSON responses
 
+### INT-02: End-to-end client test
+Completed end-to-end client integration testing using Playwright test-helper.js:
+- Started client dev server on http://localhost:5173
+- Navigated to CameraSetupPage (`/camera-setup`):
+  - Page loads successfully (HTTP 200, no console errors)
+  - Shows 4 cameras configured with proper apparatus assignments
+  - Scene Generation Preview shows 19 scenes (3 static + 4 single + 6 dual + 4 triple + 1 quad + 1 graphics)
+  - All form controls (name, port, apparatus toggles, fallback dropdown) render correctly
+- Navigated to ProducerView (`/producer`):
+  - Page loads successfully (HTTP 200, no console errors)
+  - Timesheet panel displays with "Show not started" state and "Up Next: Show Intro"
+  - Override Log panel displays (collapsible)
+  - Camera Status panel shows 4 cameras with health indicators (offline - expected without Nimble)
+  - Web Graphics section, OBS Status, Connected Clients, Show Progress all render
+- Console logs verified:
+  - Vite HMR connection successful
+  - React DevTools info message (normal)
+  - WebSocket warning for external address (expected in dev)
+  - No JavaScript errors or React errors
+- Screenshots saved:
+  - `INT-02-camera-setup.png` - CameraSetupPage with 4 cameras and scene preview
+  - `INT-02-producer.png` - ProducerView with all panels visible
+- Verification: `node test-helper.js check http://localhost:5173` exits 0
+
 ### P7-05: Create useTimesheet hook
 Created `show-controller/src/hooks/useTimesheet.js` with timesheet state helpers:
 - Uses `useShow()` context to access `timesheetState`, `overrideLog`, and control functions
@@ -700,7 +724,7 @@ Created `show-controller/src/hooks/useTimesheet.js` with timesheet state helpers
 | P7-04 | Create useCameraRuntime hook | ✅ done | 2026-01-13 |
 | P7-05 | Create useTimesheet hook | ✅ done | 2026-01-13 |
 | INT-01 | End-to-end server test | ✅ done | 2026-01-13 |
-| INT-02 | End-to-end client test | pending | |
+| INT-02 | End-to-end client test | ✅ done | 2026-01-13 |
 | INT-03 | Full show flow test | pending | |
 
 ---
@@ -715,6 +739,8 @@ Created `show-controller/src/hooks/useTimesheet.js` with timesheet state helpers
 | timesheet-panel.png | P6-01 | /producer | Shows timesheet panel with current/next segment, time display, controls, segment list |
 | override-log.png | P6-02 | /producer | Shows override log panel in collapsed state with count badge |
 | quick-actions.png | P6-03 | /talent | Shows QuickActions with apparatus camera buttons (visible when show running) |
+| INT-02-camera-setup.png | INT-02 | /camera-setup | Shows CameraSetupPage with 4 cameras, scene preview (19 scenes) |
+| INT-02-producer.png | INT-02 | /producer | Shows ProducerView with timesheet panel, override log, camera status |
 
 ---
 

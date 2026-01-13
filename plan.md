@@ -505,7 +505,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Check for console errors"
     ],
     "verification": "node ralph-wigg/test-helper.js check http://localhost:5173 exits 0",
-    "passes": false
+    "passes": true
   },
   {
     "id": "INT-03",
@@ -538,8 +538,8 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 | Phase 5: Camera UI | 3 | 3 | Complete |
 | Phase 6: Timesheet UI | 3 | 3 | Complete |
 | Phase 7: Context & Hooks | 5 | 5 | Complete |
-| Integration | 3 | 1 | In Progress |
-| **Total** | **31** | **29** | **94%** |
+| Integration | 3 | 2 | In Progress |
+| **Total** | **31** | **30** | **97%** |
 
 ---
 
