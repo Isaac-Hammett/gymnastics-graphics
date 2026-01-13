@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** Phase 4 - Timesheet Engine (In Progress)
-**Last Task:** P4-01 - Create timesheet engine core
-**Next Task:** P4-02 - Implement segment activation logic
+**Last Task:** P4-02 - Implement segment activation logic
+**Next Task:** P4-03 - Implement auto-advance and hold logic
 
 ---
 
@@ -252,6 +252,45 @@ Created `server/lib/timesheetEngine.js` with TimesheetEngine class:
 - Events emitted: tick, segmentActivated, segmentCompleted, showStarted, showStopped, holdMaxReached, overrideRecorded, stateChanged
 - Verification: `node -e "import('./server/lib/timesheetEngine.js')"` exits 0
 
+### P4-02: Implement segment activation logic
+Extended `_activateSegment()` method in `server/lib/timesheetEngine.js` with full activation logic:
+- Made `_activateSegment(index, reason)` async to support OBS calls
+- Added `TRANSITION_TYPES` constant (cut, fade, stinger)
+- Added `_getTransition(fromSegment, toSegment)` to determine appropriate transition:
+  - Supports segment-specific transitions via `segment.transition`
+  - Uses `toBreak` transition when going to break segments
+  - Uses `fromBreak` transition when coming from break segments
+  - Falls back to default transition from config
+- Added `_applyTransitionAndSwitchScene(segment, transition)`:
+  - Sets OBS transition type (Cut/Fade/Stinger) via `SetCurrentSceneTransition`
+  - Sets fade duration via `SetCurrentSceneTransitionDuration`
+  - Switches to segment's OBS scene via `SetCurrentProgramScene`
+  - Emits `sceneChanged` event on success
+- Added `_handleSegmentTypeActions(segment)` for type-specific behavior:
+  - `static`: No special action
+  - `live`/`multi`: Triggers associated graphics if present
+  - `hold`: Emits `holdStarted` event with min/max duration
+  - `break`: Triggers graphics if present, emits `breakStarted` event
+  - `video`: Plays video file via `_playVideo()`
+  - `graphic`: Triggers the graphic via `_triggerGraphic()`
+- Added `_triggerGraphic(segment)` to trigger graphics:
+  - Writes to Firebase `graphics/current` if firebase available
+  - Broadcasts via socket.io if io available
+  - Emits `graphicTriggered` event
+- Added `_playVideo(segment)` to play video segments:
+  - Sets video file path on OBS media source
+  - Restarts playback from beginning
+  - Emits `videoStarted` event
+- Added `_applyAudioOverrides(segment)` for audio control:
+  - Supports `venueVolume` and `commentaryVolume` (0-1)
+  - Supports `muteVenue` and `muteCommentary` booleans
+  - Uses `_volumeToDb()` to convert linear volume to decibels
+  - Emits `audioChanged` event
+- Updated constructor to accept `io` option for socket.io broadcasting
+- Updated `start()` to be async and await `_activateSegment()`
+- Exported `TRANSITION_TYPES` constant
+- Verification: Test script confirms OBS calls and events fire correctly
+
 ---
 
 ## Task Completion Log
@@ -270,7 +309,7 @@ Created `server/lib/timesheetEngine.js` with TimesheetEngine class:
 | P3-02 | Implement generateAllScenes orchestration | ✅ done | 2026-01-13 |
 | P3-03 | Add scene generation API endpoints | ✅ done | 2026-01-13 |
 | P4-01 | Create timesheet engine core | ✅ done | 2026-01-13 |
-| P4-02 | Implement segment activation logic | pending | |
+| P4-02 | Implement segment activation logic | ✅ done | 2026-01-13 |
 | P4-03 | Implement auto-advance and hold logic | pending | |
 | P4-04 | Implement manual controls and overrides | pending | |
 | P4-05 | Add timesheet socket events | pending | |
