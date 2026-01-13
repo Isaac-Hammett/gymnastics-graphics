@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** Phase 4 - Timesheet Engine (In Progress)
-**Last Task:** P4-02 - Implement segment activation logic
-**Next Task:** P4-03 - Implement auto-advance and hold logic
+**Last Task:** P4-03 - Implement auto-advance and hold logic
+**Next Task:** P4-04 - Implement manual controls and overrides
 
 ---
 
@@ -291,6 +291,25 @@ Extended `_activateSegment()` method in `server/lib/timesheetEngine.js` with ful
 - Exported `TRANSITION_TYPES` constant
 - Verification: Test script confirms OBS calls and events fire correctly
 
+### P4-03: Implement auto-advance and hold logic
+Extended `_tick()` method in `server/lib/timesheetEngine.js` with auto-advance and hold segment logic:
+- Added `_checkAutoAdvance(elapsedMs)` method to check if segment should auto-advance
+- Auto-advance triggers when `elapsed >= duration` for timed segments
+- Respects `autoAdvance` flag on segment (default true for timed segments)
+- Hold segments NEVER auto-advance - producer must manually advance
+- Added `_autoAdvance()` method to advance to next segment with 'auto' reason
+- Emits `autoAdvancing` event before auto-advancing with from/to segment info
+- Added `canAdvanceHold()` method to check if hold segment has met minDuration
+- Added `getHoldRemainingMs()` method to get time until hold can be advanced
+- Added `_holdMaxReachedEmitted` flag to prevent duplicate holdMaxReached events
+- Reset `_holdMaxReachedEmitted` flag when activating new segment
+- Updated `getState()` to include hold-related state (`isHoldSegment`, `canAdvanceHold`, `holdRemainingMs`)
+- Verification: Test script confirms:
+  - Timed segments auto-advance when elapsed >= duration
+  - Hold segments do NOT auto-advance
+  - `canAdvanceHold()` respects minDuration
+  - `holdMaxReached` event emits when hold exceeds maxDuration
+
 ---
 
 ## Task Completion Log
@@ -310,7 +329,7 @@ Extended `_activateSegment()` method in `server/lib/timesheetEngine.js` with ful
 | P3-03 | Add scene generation API endpoints | ✅ done | 2026-01-13 |
 | P4-01 | Create timesheet engine core | ✅ done | 2026-01-13 |
 | P4-02 | Implement segment activation logic | ✅ done | 2026-01-13 |
-| P4-03 | Implement auto-advance and hold logic | pending | |
+| P4-03 | Implement auto-advance and hold logic | ✅ done | 2026-01-13 |
 | P4-04 | Implement manual controls and overrides | pending | |
 | P4-05 | Add timesheet socket events | pending | |
 | P4-06 | Integrate timesheet engine with server | pending | |
