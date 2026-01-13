@@ -6,6 +6,7 @@ import NextSegment from '../components/NextSegment';
 import RunOfShow from '../components/RunOfShow';
 import ConnectionStatus from '../components/ConnectionStatus';
 import GraphicsControl from '../components/GraphicsControl';
+import CameraRuntimePanel from '../components/CameraRuntimePanel';
 import {
   PlayIcon,
   BackwardIcon,
@@ -244,6 +245,9 @@ export default function ProducerView() {
 
           {/* Right Column - Status */}
           <div className="space-y-4">
+            {/* Camera Runtime Panel */}
+            <CameraRuntimePanel collapsed={false} />
+
             {/* Web Graphics Control */}
             <GraphicsControl />
 
