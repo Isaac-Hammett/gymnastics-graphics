@@ -944,6 +944,242 @@ class TimesheetEngine extends EventEmitter {
   getSegment(segmentId) {
     return this.segments.find(s => s.id === segmentId) || null;
   }
+
+  // ============================================================
+  // MANUAL CONTROLS AND OVERRIDES
+  // ============================================================
+
+  /**
+   * Advance to the next segment (manual)
+   * @param {string} [advancedBy] - Who triggered the advance (for logging)
+   * @returns {boolean} True if advanced successfully
+   */
+  async advance(advancedBy) {
+    if (!this._isRunning) {
+      return false;
+    }
+
+    const nextIndex = this._currentSegmentIndex + 1;
+    if (nextIndex >= this.segments.length) {
+      this.emit('error', {
+        type: 'advance_failed',
+        message: 'Cannot advance: already at last segment'
+      });
+      return false;
+    }
+
+    // For hold segments, check minDuration
+    if (this._currentSegment?.type === SEGMENT_TYPES.HOLD && !this.canAdvanceHold()) {
+      this.emit('error', {
+        type: 'advance_blocked',
+        message: `Cannot advance: hold segment requires ${this.getHoldRemainingMs()}ms more`,
+        holdRemainingMs: this.getHoldRemainingMs()
+      });
+      return false;
+    }
+
+    // Record the override
+    this._recordOverride('advance', {
+      advancedBy,
+      fromSegmentId: this._currentSegment?.id,
+      fromSegmentIndex: this._currentSegmentIndex,
+      toSegmentIndex: nextIndex,
+      toSegmentId: this.segments[nextIndex]?.id
+    });
+
+    // Activate next segment
+    await this._activateSegment(nextIndex, 'manual');
+    return true;
+  }
+
+  /**
+   * Go to the previous segment (manual)
+   * @param {string} [triggeredBy] - Who triggered the previous (for logging)
+   * @returns {boolean} True if went back successfully
+   */
+  async previous(triggeredBy) {
+    if (!this._isRunning) {
+      return false;
+    }
+
+    const prevIndex = this._currentSegmentIndex - 1;
+    if (prevIndex < 0) {
+      this.emit('error', {
+        type: 'previous_failed',
+        message: 'Cannot go previous: already at first segment'
+      });
+      return false;
+    }
+
+    // Record the override
+    this._recordOverride('previous', {
+      triggeredBy,
+      fromSegmentId: this._currentSegment?.id,
+      fromSegmentIndex: this._currentSegmentIndex,
+      toSegmentIndex: prevIndex,
+      toSegmentId: this.segments[prevIndex]?.id
+    });
+
+    // Activate previous segment
+    await this._activateSegment(prevIndex, 'manual');
+    return true;
+  }
+
+  /**
+   * Jump to a specific segment by ID
+   * @param {string} segmentId - Segment ID to jump to
+   * @param {string} [triggeredBy] - Who triggered the jump (for logging)
+   * @returns {boolean} True if jumped successfully
+   */
+  async goToSegment(segmentId, triggeredBy) {
+    if (!this._isRunning) {
+      return false;
+    }
+
+    const targetIndex = this.findSegmentIndex(segmentId);
+    if (targetIndex < 0) {
+      this.emit('error', {
+        type: 'jump_failed',
+        message: `Cannot jump: segment '${segmentId}' not found`
+      });
+      return false;
+    }
+
+    if (targetIndex === this._currentSegmentIndex) {
+      // Already at this segment, nothing to do
+      return true;
+    }
+
+    // Record the override
+    this._recordOverride('jump', {
+      triggeredBy,
+      fromSegmentId: this._currentSegment?.id,
+      fromSegmentIndex: this._currentSegmentIndex,
+      toSegmentIndex: targetIndex,
+      toSegmentId: segmentId
+    });
+
+    // Activate target segment
+    await this._activateSegment(targetIndex, 'jump');
+    return true;
+  }
+
+  /**
+   * Override to a specific OBS scene (outside of normal flow)
+   * This does NOT change the current segment, only the displayed scene
+   * @param {string} sceneName - OBS scene name to switch to
+   * @param {string} [triggeredBy] - Who triggered the override (for logging)
+   * @returns {boolean} True if scene switch succeeded
+   */
+  async overrideScene(sceneName, triggeredBy) {
+    if (!this.obs) {
+      this.emit('error', {
+        type: 'override_scene_failed',
+        message: 'Cannot override scene: OBS not connected'
+      });
+      return false;
+    }
+
+    try {
+      // Switch to the scene using cut transition
+      await this.obs.call('SetCurrentSceneTransition', {
+        transitionName: 'Cut'
+      });
+      await this.obs.call('SetCurrentProgramScene', {
+        sceneName: sceneName
+      });
+
+      // Record the override
+      this._recordOverride('scene_override', {
+        triggeredBy,
+        sceneName,
+        currentSegmentId: this._currentSegment?.id,
+        currentSegmentScene: this._currentSegment?.obsScene
+      });
+
+      this.emit('sceneOverridden', {
+        sceneName,
+        segmentId: this._currentSegment?.id,
+        timestamp: Date.now()
+      });
+
+      return true;
+    } catch (error) {
+      this.emit('error', {
+        type: 'override_scene_failed',
+        message: `Failed to switch to scene '${sceneName}': ${error.message}`
+      });
+      return false;
+    }
+  }
+
+  /**
+   * Override to a specific camera's scene
+   * Looks up the camera and switches to its single-camera scene
+   * @param {string} cameraId - Camera ID to switch to
+   * @param {string} [triggeredBy] - Who triggered the override (for logging)
+   * @returns {boolean} True if camera switch succeeded
+   */
+  async overrideCamera(cameraId, triggeredBy) {
+    if (!this.obs) {
+      this.emit('error', {
+        type: 'override_camera_failed',
+        message: 'Cannot override camera: OBS not connected'
+      });
+      return false;
+    }
+
+    // Find the camera in config
+    const cameras = this.showConfig.cameras || [];
+    const camera = cameras.find(c => c.id === cameraId);
+
+    if (!camera) {
+      this.emit('error', {
+        type: 'override_camera_failed',
+        message: `Cannot override camera: camera '${cameraId}' not found`
+      });
+      return false;
+    }
+
+    // Determine scene name - use camera's scene or generate standard name
+    const sceneName = camera.sceneName || `Single - ${camera.name}`;
+
+    try {
+      // Switch to the camera's scene using cut transition
+      await this.obs.call('SetCurrentSceneTransition', {
+        transitionName: 'Cut'
+      });
+      await this.obs.call('SetCurrentProgramScene', {
+        sceneName: sceneName
+      });
+
+      // Record the override
+      this._recordOverride('camera_override', {
+        triggeredBy,
+        cameraId,
+        cameraName: camera.name,
+        sceneName,
+        currentSegmentId: this._currentSegment?.id,
+        currentSegmentScene: this._currentSegment?.obsScene
+      });
+
+      this.emit('cameraOverridden', {
+        cameraId,
+        cameraName: camera.name,
+        sceneName,
+        segmentId: this._currentSegment?.id,
+        timestamp: Date.now()
+      });
+
+      return true;
+    } catch (error) {
+      this.emit('error', {
+        type: 'override_camera_failed',
+        message: `Failed to switch to camera '${cameraId}': ${error.message}`
+      });
+      return false;
+    }
+  }
 }
 
 // Export

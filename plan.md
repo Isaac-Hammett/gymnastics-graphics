@@ -282,7 +282,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Implement getOverrides() to retrieve history"
     ],
     "verification": "Manual test: advance/previous/jump all work",
-    "passes": false
+    "passes": true
   },
   {
     "id": "P4-05",
