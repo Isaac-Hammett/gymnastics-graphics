@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** Phase 2 - Camera Health (In Progress)
-**Last Task:** P2-02 - Create camera runtime state manager
-**Next Task:** P2-03 - Create camera fallback manager
+**Last Task:** P2-03 - Create camera fallback manager
+**Next Task:** P2-04 - Add camera health API endpoints
 
 ---
 
@@ -88,6 +88,25 @@ Created `server/lib/cameraRuntimeState.js` with CameraRuntimeState class:
 - Emits events: `apparatusReassigned`, `cameraVerified`, `mismatchDetected`, `stateChanged`
 - Verification: `node -e "import('./server/lib/cameraRuntimeState.js')"` exits 0
 
+### P2-03: Create camera fallback manager
+Created `server/lib/cameraFallback.js` with CameraFallbackManager class:
+- Extends EventEmitter for real-time event broadcasting
+- `handleCameraFailure(cameraId, currentSegment)` - main entry point for handling camera failures
+- `findBestFallback()` implements priority-based fallback selection:
+  - Priority 1: Configured fallback (camera.fallbackCameraId)
+  - Priority 2: Camera covering same apparatus
+  - Priority 3: Any verified healthy camera
+  - Priority 4: Any healthy camera
+- `switchToFallback(originalCameraId, fallbackCameraId, reason)` - activates fallback and switches OBS scene
+- `clearFallback(cameraId)` - clears fallback when camera recovers
+- `clearAllFallbacks()` - clears all active fallbacks
+- Tracks active fallbacks in Map with depth tracking (max 2 levels)
+- Cooldown mechanism (5 seconds) to prevent rapid fallback switching
+- Falls back to BRB scene if no fallback available (never shows dead feed)
+- Helper methods: `getActiveFallbacks()`, `getFallbackFor()`, `hasFallback()`, `isUsedAsFallback()`
+- Emits events: `fallbackActivated`, `fallbackCleared`, `fallbackUnavailable`, `fallbackChainExhausted`
+- Verification: `node -e "import('./server/lib/cameraFallback.js')"` exits 0
+
 ---
 
 ## Task Completion Log
@@ -99,7 +118,7 @@ Created `server/lib/cameraRuntimeState.js` with CameraRuntimeState class:
 | P1-03 | Integrate schema validation on server startup | ✅ done | 2026-01-13 |
 | P2-01 | Create Nimble stats polling module | ✅ done | 2026-01-13 |
 | P2-02 | Create camera runtime state manager | ✅ done | 2026-01-13 |
-| P2-03 | Create camera fallback manager | pending | |
+| P2-03 | Create camera fallback manager | ✅ done | 2026-01-13 |
 | P2-04 | Add camera health API endpoints | pending | |
 | P2-05 | Add camera health socket events | pending | |
 | P3-01 | Create OBS scene generator module | pending | |
