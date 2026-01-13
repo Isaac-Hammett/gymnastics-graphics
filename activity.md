@@ -1,9 +1,9 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** Phase 5 - Camera UI (Complete)
-**Last Task:** P5-03 - Integrate camera panel with ProducerView
-**Next Task:** P6-01 - Create TimesheetPanel component
+**Phase:** Phase 6 - Timesheet UI (In Progress)
+**Last Task:** P6-01 - Create TimesheetPanel component
+**Next Task:** P6-02 - Create OverrideLog component
 
 ---
 
@@ -461,6 +461,33 @@ Extended `show-controller/src/views/ProducerView.jsx` with full camera integrati
 - CameraRuntimePanel remains in right column as collapsible panel
 - Verification: Screenshot at `screenshots/producer-with-cameras.png` shows integrated view
 
+### P6-01: Create TimesheetPanel component
+Created `show-controller/src/components/TimesheetPanel.jsx` with full timesheet UI:
+- Collapsible panel header showing "Timesheet" with Live/Paused status badges
+- Current segment display with type-specific coloring and icons:
+  - Live/Multi: red theme
+  - Video: purple theme
+  - Graphic: blue theme
+  - Hold: yellow theme
+  - Break: orange theme
+- Elapsed/Remaining time display in grid layout with large mono font
+- Progress bar for timed segments with color changes (blue → yellow → red as time runs out)
+- Hold segment warning showing wait time or "ready to advance" state
+- Next segment preview with duration and auto-advance indicator
+- Control buttons:
+  - Start Show button (when stopped)
+  - Previous/Next/Stop buttons (when running)
+  - Next button disabled during hold minDuration
+- Collapsible segment list with jump-to functionality:
+  - Numbered segments with type icons
+  - Current segment highlighted in blue
+  - Past segments dimmed
+  - Click to jump to any segment
+- Socket event subscriptions: `timesheetState`, `timesheetTick`, `timesheetSegmentActivated`, `timesheetStateChanged`
+- REST API fallback for initial state fetch via `/api/timesheet/state`
+- Integrated TimesheetPanel into ProducerView.jsx right column (above Camera Status)
+- Verification: Screenshot at `screenshots/timesheet-panel.png` shows panel with "Show not started" state and Up Next preview
+
 ---
 
 ## Task Completion Log
@@ -487,7 +514,7 @@ Extended `show-controller/src/views/ProducerView.jsx` with full camera integrati
 | P5-01 | Create CameraSetupPage component | ✅ done | 2026-01-13 |
 | P5-02 | Create CameraRuntimePanel component | ✅ done | 2026-01-13 |
 | P5-03 | Integrate camera panel with ProducerView | ✅ done | 2026-01-13 |
-| P6-01 | Create TimesheetPanel component | pending | |
+| P6-01 | Create TimesheetPanel component | ✅ done | 2026-01-13 |
 | P6-02 | Create OverrideLog component | pending | |
 | P6-03 | Update QuickActions for camera runtime | pending | |
 | P7-01 | Extend ShowContext with camera state | pending | |
@@ -508,6 +535,7 @@ Extended `show-controller/src/views/ProducerView.jsx` with full camera integrati
 | camera-setup.png | P5-01 | /camera-setup | Shows 4 cameras with scene preview (19 scenes) |
 | camera-panel.png | P5-02 | /producer | Shows 4 camera cards with health status, verify/reassign buttons |
 | producer-with-cameras.png | P5-03 | /producer | Shows camera panel integrated, quick camera buttons (when show running), mismatch alert banner |
+| timesheet-panel.png | P6-01 | /producer | Shows timesheet panel with current/next segment, time display, controls, segment list |
 
 ---
 
