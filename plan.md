@@ -1,9 +1,11 @@
 # Show Control System - Implementation Plan
 
 ## Overview
-Extend the gymnastics-graphics show controller with camera health monitoring, automatic OBS scene generation, timesheet-driven show flow, and producer override tracking.
+Extend the gymnastics-graphics show controller with camera health monitoring, automatic OBS scene generation, timesheet-driven show flow, producer override tracking, **and competition-bound architecture with dynamic VM routing**.
 
-**Reference:** `PRD-ShowControlSystem-2026-01-13.md`
+**Reference:**
+- `PRD-ShowControlSystem-2026-01-13.md` (Phases 1-7, Integration)
+- `docs/PRD-CompetitionBoundArchitecture-2026-01-13.md` (Phases 8-13)
 
 ---
 
@@ -521,6 +523,390 @@ Screenshots saved to: `ralph-wigg/screenshots/`
     ],
     "verification": "Manual walkthrough completes without errors",
     "passes": true
+  },
+
+  {
+    "id": "P8-01",
+    "category": "phase8-apparatus-config",
+    "description": "Create server-side apparatus config module",
+    "steps": [
+      "Create server/lib/apparatusConfig.js",
+      "Import MENS_APPARATUS and WOMENS_APPARATUS from showConfigSchema.js",
+      "Define APPARATUS_DETAILS with names and order by gender",
+      "Implement getApparatusForGender(gender) returning sorted array",
+      "Implement getApparatusCodes(gender) returning code array",
+      "Implement getApparatusName(code) returning full name",
+      "Implement isValidApparatus(gender, code) for validation",
+      "Implement validateApparatusCodes(gender, codes[]) returning {valid, invalidCodes}",
+      "Export all functions and re-export MENS_APPARATUS, WOMENS_APPARATUS"
+    ],
+    "verification": "node -e \"const a=require('./server/lib/apparatusConfig.js'); console.log(a.getApparatusForGender('womens'))\" shows 4 apparatus",
+    "passes": true
+  },
+  {
+    "id": "P8-02",
+    "category": "phase8-apparatus-config",
+    "description": "Create client-side useApparatus hook",
+    "steps": [
+      "Create show-controller/src/hooks/useApparatus.js",
+      "Import useMemo from react",
+      "Import EVENTS and EVENT_ORDER from lib/eventConfig",
+      "Implement useApparatus(gender) hook",
+      "Return apparatus array with code, name, eventId, order",
+      "Return apparatusCodes array",
+      "Return getApparatusName(code) helper",
+      "Return isValid(code) helper",
+      "Memoize all returns based on gender",
+      "Default to 'womens' if gender is null/undefined"
+    ],
+    "verification": "Build succeeds and hook can be imported",
+    "passes": false
+  },
+  {
+    "id": "P8-03",
+    "category": "phase8-apparatus-config",
+    "description": "Add apparatus API endpoint",
+    "steps": [
+      "Import apparatusConfig in server/index.js",
+      "Add GET /api/apparatus/:gender endpoint",
+      "Return { gender, apparatus: [...] } with full apparatus data",
+      "Handle invalid gender gracefully (default to womens)"
+    ],
+    "verification": "curl http://localhost:3001/api/apparatus/womens returns 4 apparatus",
+    "passes": false
+  },
+
+  {
+    "id": "P9-01",
+    "category": "phase9-firebase-production",
+    "description": "Create production config service",
+    "steps": [
+      "Create server/lib/productionConfigService.js",
+      "Initialize Firebase Admin SDK connection",
+      "Implement getProductionConfig(competitionId)",
+      "Implement getCameras(competitionId) - convert object to array",
+      "Implement saveCameras(competitionId, cameras) - convert array to object",
+      "Implement getRundown(competitionId)",
+      "Implement saveRundown(competitionId, rundown) with lastModified timestamp",
+      "Implement getSettings(competitionId)",
+      "Implement saveSettings(competitionId, settings)",
+      "Implement appendOverride(competitionId, override) with timestamp",
+      "Implement getHistory(competitionId)",
+      "Export productionConfigService singleton"
+    ],
+    "verification": "node -e \"require('./server/lib/productionConfigService.js')\" exits 0",
+    "passes": false
+  },
+  {
+    "id": "P9-02",
+    "category": "phase9-firebase-production",
+    "description": "Create config loader with fallback",
+    "steps": [
+      "Create server/lib/configLoader.js",
+      "Track activeCompetitionId module variable",
+      "Implement loadShowConfig() async function",
+      "If activeCompetitionId set: load from Firebase via productionConfigService",
+      "If no production config: fall back to show-config.json",
+      "If no activeCompetitionId: load from show-config.json directly",
+      "Implement setActiveCompetition(competitionId)",
+      "Implement getActiveCompetition()",
+      "Implement clearActiveCompetition()"
+    ],
+    "verification": "node -e \"require('./server/lib/configLoader.js')\" exits 0",
+    "passes": false
+  },
+  {
+    "id": "P9-03",
+    "category": "phase9-firebase-production",
+    "description": "Add production config API endpoints",
+    "steps": [
+      "Add GET /api/competitions/:id/production endpoint",
+      "Add PUT /api/competitions/:id/production/cameras endpoint",
+      "Add PUT /api/competitions/:id/production/rundown endpoint",
+      "Add PUT /api/competitions/:id/production/settings endpoint",
+      "Add GET /api/competitions/:id/production/history endpoint",
+      "Add POST /api/competitions/:id/activate to set active competition",
+      "Add POST /api/competitions/deactivate to clear active competition",
+      "Add GET /api/competitions/active to get current active competition"
+    ],
+    "verification": "curl http://localhost:3001/api/competitions/active returns JSON",
+    "passes": false
+  },
+
+  {
+    "id": "P10-01",
+    "category": "phase10-url-routing",
+    "description": "Create CompetitionContext provider",
+    "steps": [
+      "Create show-controller/src/context/CompetitionContext.jsx",
+      "Create CompetitionContext with createContext(null)",
+      "Implement CompetitionProvider component",
+      "Extract compId from URL using useParams()",
+      "Handle special compId='local' for local development",
+      "Subscribe to competitions/{compId}/config in Firebase (onValue)",
+      "Extract vmAddress and gender from config",
+      "Derive socketUrl and websocketUrl from vmAddress",
+      "Track isLoading and error states",
+      "Implement useCompetition() hook with error if outside provider",
+      "Provide: compId, competitionConfig, vmAddress, gender, socketUrl, isLoading, error, isLocalMode"
+    ],
+    "verification": "Build succeeds and context can be imported",
+    "passes": false
+  },
+  {
+    "id": "P10-02",
+    "category": "phase10-url-routing",
+    "description": "Create CompetitionSelector page",
+    "steps": [
+      "Create show-controller/src/pages/CompetitionSelector.jsx",
+      "Fetch all competitions from Firebase competitions/ collection",
+      "Group competitions by: Today, Tomorrow, Upcoming, Past",
+      "Show event name, gender badge (MAG/WAG), date, venue, teams",
+      "Check VM status with fetch to /api/status (5s timeout)",
+      "Show VM status indicator: green=online, red=offline, gray=no VM",
+      "Add quick-connect buttons: Producer, Talent, Graphics",
+      "Add search/filter by name",
+      "Add Local Development option at top",
+      "Handle ?redirect= query param for auto-navigation",
+      "Add 'Create Competition' button linking to /hub"
+    ],
+    "verification": "node ralph-wigg/test-helper.js screenshot http://localhost:5173/select competition-selector",
+    "passes": false
+  },
+  {
+    "id": "P10-03",
+    "category": "phase10-url-routing",
+    "description": "Create CompetitionLayout and error components",
+    "steps": [
+      "Create show-controller/src/components/CompetitionLayout.jsx",
+      "Wrap children with CompetitionProvider",
+      "Show loading spinner while fetching config",
+      "Show CompetitionError component on errors",
+      "Wrap with ShowProvider when ready",
+      "Render Outlet for nested routes",
+      "Create show-controller/src/components/CompetitionError.jsx",
+      "Handle NOT_FOUND: show 'Competition not found' with link to /select",
+      "Handle NO_VM_ADDRESS: show 'Not configured' with link to configure",
+      "Handle VM_UNREACHABLE: show 'Cannot connect' with retry button",
+      "Create show-controller/src/components/CompetitionHeader.jsx",
+      "Show event name, gender badge, venue",
+      "Show connection status indicator",
+      "Add 'Change' link to /select"
+    ],
+    "verification": "Build succeeds and components can be imported",
+    "passes": false
+  },
+  {
+    "id": "P10-04",
+    "category": "phase10-url-routing",
+    "description": "Update App.jsx with new route structure",
+    "steps": [
+      "Import CompetitionLayout, CompetitionSelector",
+      "Add /select route for CompetitionSelector",
+      "Add / redirect to /select",
+      "Add /:compId route with CompetitionLayout element",
+      "Add nested routes: producer, talent, camera-setup, graphics",
+      "Add index redirect to producer",
+      "Add legacy route redirects: /producer → /select?redirect=/producer",
+      "Add legacy route redirects: /talent, /camera-setup, /show-producer",
+      "Keep standalone routes: /hub, /dashboard, /url-generator, /media-manager, /import"
+    ],
+    "verification": "node ralph-wigg/test-helper.js check http://localhost:5173/select exits 0",
+    "passes": false
+  },
+  {
+    "id": "P10-05",
+    "category": "phase10-url-routing",
+    "description": "Update ShowContext for dynamic socket URL",
+    "steps": [
+      "Import useCompetition from CompetitionContext",
+      "Remove hardcoded VITE_SOCKET_SERVER usage",
+      "Get socketUrl and compId from useCompetition()",
+      "Only connect socket when socketUrl is available",
+      "Add socketUrl and compId to useEffect dependencies",
+      "Disconnect and clear state when connection changes",
+      "Clear: cameraHealth, cameraRuntimeState, activeFallbacks, timesheetState, overrideLog",
+      "Log connection changes: 'Connected to {socketUrl} for {compId}'"
+    ],
+    "verification": "Console shows correct socket URL based on competition",
+    "passes": false
+  },
+  {
+    "id": "P10-06",
+    "category": "phase10-url-routing",
+    "description": "Update useCompetitions hook with vmAddress support",
+    "steps": [
+      "Add isValidVmAddress(address) function - validates host:port format",
+      "Add updateVmAddress(compId, vmAddress) function",
+      "Validate vmAddress format before saving",
+      "Add checkVmStatus(vmAddress) function with 5s timeout",
+      "Return { online, obsConnected } on success, { online: false } on failure",
+      "Export new functions from hook"
+    ],
+    "verification": "Hook imports without error, validation works",
+    "passes": false
+  },
+
+  {
+    "id": "P11-01",
+    "category": "phase11-dynamic-apparatus-ui",
+    "description": "Update CameraSetupPage for dynamic apparatus",
+    "steps": [
+      "Import useCompetition from CompetitionContext",
+      "Import useApparatus from hooks/useApparatus",
+      "Remove hardcoded APPARATUS_OPTIONS constant",
+      "Get gender from useCompetition()",
+      "Get apparatus from useApparatus(gender)",
+      "Build APPARATUS_OPTIONS from apparatus array",
+      "Add competition name and gender badge to page header",
+      "Update all apparatus references to use dynamic options"
+    ],
+    "verification": "WAG competition shows 4 apparatus, MAG shows 6",
+    "passes": false
+  },
+  {
+    "id": "P11-02",
+    "category": "phase11-dynamic-apparatus-ui",
+    "description": "Update CameraRuntimePanel for dynamic apparatus",
+    "steps": [
+      "Import useCompetition from CompetitionContext",
+      "Import useApparatus from hooks/useApparatus",
+      "Get gender from useCompetition()",
+      "Use useApparatus(gender) for apparatus display",
+      "Update reassign dropdown to show correct apparatus",
+      "Validate apparatus codes against gender when reassigning"
+    ],
+    "verification": "Runtime panel shows correct apparatus for competition gender",
+    "passes": false
+  },
+  {
+    "id": "P11-03",
+    "category": "phase11-dynamic-apparatus-ui",
+    "description": "Update QuickActions for dynamic apparatus",
+    "steps": [
+      "Import useCompetition from CompetitionContext",
+      "Import useApparatus from hooks/useApparatus",
+      "Get gender from useCompetition()",
+      "Use useApparatus(gender) for quick-switch buttons",
+      "Render 4 buttons for WAG, 6 buttons for MAG",
+      "Adjust grid layout: grid-cols-4 for WAG, grid-cols-6 for MAG",
+      "Ensure button order matches Olympic order"
+    ],
+    "verification": "node ralph-wigg/test-helper.js screenshot http://localhost:5173/local/producer quick-actions-dynamic",
+    "passes": false
+  },
+
+  {
+    "id": "P12-01",
+    "category": "phase12-migration",
+    "description": "Create migration script for show-config.json",
+    "steps": [
+      "Create server/scripts/migrateToFirebase.js",
+      "Parse command line args for competitionId and gender",
+      "Initialize Firebase Admin SDK",
+      "Read show-config.json",
+      "Import getApparatusCodes from apparatusConfig",
+      "Validate camera apparatus codes against gender",
+      "Warn on invalid apparatus codes for gender",
+      "Build production config object: cameras, rundown, settings, history",
+      "Write to competitions/{id}/production/ in Firebase",
+      "Print migration summary"
+    ],
+    "verification": "node server/scripts/migrateToFirebase.js --help shows usage",
+    "passes": false
+  },
+  {
+    "id": "P12-02",
+    "category": "phase12-migration",
+    "description": "Update environment variables",
+    "steps": [
+      "Update show-controller/.env.example",
+      "Remove VITE_SOCKET_SERVER (no longer needed)",
+      "Add VITE_LOCAL_SERVER=http://localhost:3003",
+      "Update server/.env.example if exists",
+      "Add FIREBASE_DATABASE_URL",
+      "Add note about GOOGLE_APPLICATION_CREDENTIALS",
+      "Update any documentation references"
+    ],
+    "verification": "Environment files updated correctly",
+    "passes": false
+  },
+
+  {
+    "id": "INT-04",
+    "category": "integration",
+    "description": "Competition selector and routing test",
+    "steps": [
+      "Start client dev server",
+      "Navigate to /select",
+      "Verify competitions load from Firebase",
+      "Click on a competition with vmAddress",
+      "Verify navigation to /{compId}/producer",
+      "Verify socket connects to correct VM",
+      "Verify CompetitionHeader shows correct info"
+    ],
+    "verification": "node ralph-wigg/test-helper.js screenshot http://localhost:5173/select select-with-competitions",
+    "passes": false
+  },
+  {
+    "id": "INT-05",
+    "category": "integration",
+    "description": "Dynamic apparatus test",
+    "steps": [
+      "Navigate to a WAG competition",
+      "Verify CameraSetupPage shows 4 apparatus (VT, UB, BB, FX)",
+      "Verify QuickActions shows 4 buttons",
+      "Navigate to a MAG competition (or /local with mens config)",
+      "Verify CameraSetupPage shows 6 apparatus",
+      "Verify QuickActions shows 6 buttons"
+    ],
+    "verification": "Screenshots show correct apparatus count for each gender",
+    "passes": false
+  },
+  {
+    "id": "INT-06",
+    "category": "integration",
+    "description": "Local development mode test",
+    "steps": [
+      "Navigate to /local/producer",
+      "Verify connects to VITE_LOCAL_SERVER (localhost:3003)",
+      "Verify CompetitionHeader shows 'Local Development'",
+      "Verify all producer features work",
+      "Navigate to /local/camera-setup",
+      "Verify camera setup page loads"
+    ],
+    "verification": "node ralph-wigg/test-helper.js check http://localhost:5173/local/producer exits 0",
+    "passes": false
+  },
+  {
+    "id": "INT-07",
+    "category": "integration",
+    "description": "Legacy route redirect test",
+    "steps": [
+      "Navigate to /producer (legacy route)",
+      "Verify redirect to /select?redirect=/producer",
+      "Select a competition",
+      "Verify navigation to /{compId}/producer",
+      "Navigate to /talent (legacy route)",
+      "Verify same redirect behavior"
+    ],
+    "verification": "Legacy routes redirect correctly",
+    "passes": false
+  },
+  {
+    "id": "INT-08",
+    "category": "integration",
+    "description": "Error handling test",
+    "steps": [
+      "Navigate to /invalid-competition-id/producer",
+      "Verify CompetitionError shows 'Competition not found'",
+      "Verify link to /select works",
+      "Create competition without vmAddress",
+      "Navigate to that competition",
+      "Verify 'Not configured' error shows"
+    ],
+    "verification": "Error states display correctly",
+    "passes": false
   }
 ]
 ```
@@ -531,15 +917,21 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 
 | Phase | Tasks | Passed | Status |
 |-------|-------|--------|--------|
-| Phase 1: Data Model | 3 | 3 | Complete |
-| Phase 2: Camera Health | 5 | 5 | Complete |
-| Phase 3: Scene Generator | 3 | 3 | Complete |
-| Phase 4: Timesheet Engine | 6 | 6 | Complete |
-| Phase 5: Camera UI | 3 | 3 | Complete |
-| Phase 6: Timesheet UI | 3 | 3 | Complete |
-| Phase 7: Context & Hooks | 5 | 5 | Complete |
-| Integration | 3 | 3 | Complete |
-| **Total** | **31** | **31** | **100%** |
+| Phase 1: Data Model | 3 | 3 | ✅ Complete |
+| Phase 2: Camera Health | 5 | 5 | ✅ Complete |
+| Phase 3: Scene Generator | 3 | 3 | ✅ Complete |
+| Phase 4: Timesheet Engine | 6 | 6 | ✅ Complete |
+| Phase 5: Camera UI | 3 | 3 | ✅ Complete |
+| Phase 6: Timesheet UI | 3 | 3 | ✅ Complete |
+| Phase 7: Context & Hooks | 5 | 5 | ✅ Complete |
+| Phase 8: Apparatus Config | 3 | 1 | 🔄 In Progress |
+| Phase 9: Firebase Production | 3 | 0 | 🔲 Pending |
+| Phase 10: URL Routing | 6 | 0 | 🔲 Pending |
+| Phase 11: Dynamic Apparatus UI | 3 | 0 | 🔲 Pending |
+| Phase 12: Migration | 2 | 0 | 🔲 Pending |
+| Integration (Original) | 3 | 3 | ✅ Complete |
+| Integration (New) | 5 | 0 | 🔲 Pending |
+| **Total** | **48** | **32** | **67%** |
 
 ---
 
@@ -563,7 +955,29 @@ Phase 1 (Data Model) ──────────┬────────�
                     │                     │
                     └──────────┬──────────┘
                                ▼
-                    Integration Tests
+                    Integration Tests (INT-01 to INT-03) ✅ COMPLETE
+                               │
+═══════════════════════════════╪═══════════════════════════════════════
+   COMPETITION-BOUND ARCHITECTURE (New Phases)
+═══════════════════════════════╪═══════════════════════════════════════
+                               │
+                               ▼
+                    Phase 8 (Apparatus Config)
+                               │
+                    ┌──────────┴──────────┐
+                    ▼                     ▼
+         Phase 9 (Firebase      Phase 10 (URL Routing)
+         Production Config)              │
+                    │                    │
+                    └──────────┬─────────┘
+                               ▼
+                    Phase 11 (Dynamic Apparatus UI)
+                               │
+                               ▼
+                    Phase 12 (Migration)
+                               │
+                               ▼
+                    Integration Tests (INT-04 to INT-08)
 ```
 
 ---
@@ -580,3 +994,35 @@ Scenes use camera identity (`Single - Camera 1`) not apparatus (`Single - Vault`
 - Priority: configured fallback → same apparatus → any healthy camera
 - Maximum depth: 2 fallbacks
 - If all fail: switch to BRB (never show dead feed)
+
+---
+
+## Competition-Bound Architecture Design Decisions
+
+### URL-Based Competition Routing
+- Competition ID in URL: `/{compId}/producer` not `/producer`
+- Special `local` compId for development: `/local/producer`
+- Legacy routes redirect to selector: `/producer` → `/select?redirect=/producer`
+
+### VM Address from Firebase
+- Stored in `competitions/{compId}/config/vmAddress`
+- Format: `host:port` (no protocol) e.g., `3.81.127.185:3003`
+- Real-time Firebase subscription enables live IP updates
+
+### Dynamic Apparatus from Gender
+- Leverage existing `eventConfig.js` for apparatus definitions
+- WAG: VT, UB, BB, FX (4 apparatus)
+- MAG: FX, PH, SR, VT, PB, HB (6 apparatus)
+- No new Firebase collection needed - derive from `config.gender`
+
+### Context Provider Hierarchy
+```
+CompetitionProvider (resolves compId → vmAddress, gender)
+  └── ShowProvider (connects socket to vmAddress)
+        └── ProducerView/TalentView/etc.
+```
+
+### Local Development Mode
+- `compId="local"` uses `VITE_LOCAL_SERVER` env var
+- Defaults to `http://localhost:3003`
+- No Firebase lookup required

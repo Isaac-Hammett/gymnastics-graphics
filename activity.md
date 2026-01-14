@@ -1,9 +1,9 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** Integration Tests (Complete)
-**Last Task:** INT-03 - Full show flow test
-**Next Task:** All tasks complete! 🎉
+**Phase:** Phase 8 - Apparatus Config (In Progress)
+**Last Task:** P8-01 - Create server-side apparatus config module
+**Next Task:** P8-02 - Create client-side useApparatus hook
 
 ---
 
@@ -705,6 +705,23 @@ Created `show-controller/src/hooks/useTimesheet.js` with timesheet state helpers
   - `formatTime(ms)` - Format milliseconds as MM:SS
 - Verification: `npm run build` succeeds without errors
 
+### P8-01: Create server-side apparatus config module
+Created `server/lib/apparatusConfig.js` with apparatus details and validation:
+- Imports and re-exports `MENS_APPARATUS` and `WOMENS_APPARATUS` from `showConfigSchema.js`
+- Defines `APPARATUS_DETAILS` constant with full names and Olympic order for both genders:
+  - Men's: FX(1), PH(2), SR(3), VT(4), PB(5), HB(6)
+  - Women's: VT(1), UB(2), BB(3), FX(4)
+- `getApparatusForGender(gender)` - Returns apparatus array sorted by Olympic order
+  - Mens returns 6 apparatus, Womens returns 4
+  - Each item has: code, name, order
+- `getApparatusCodes(gender)` - Returns array of apparatus codes in Olympic order
+- `getApparatusName(code)` - Returns full name for apparatus code (e.g., 'VT' → 'Vault')
+- `isValidApparatus(gender, code)` - Validates if apparatus code is valid for the gender
+- `validateApparatusCodes(gender, codes[])` - Validates multiple codes, returns `{valid, invalidCodes}`
+- `getAllApparatusDetails()` - Returns all apparatus details keyed by code
+- Helper `normalizeGender()` handles various gender formats (mens/womens/MAG/WAG/male/female)
+- Verification: `node -e "import('./server/lib/apparatusConfig.js').then(a => console.log(a.getApparatusForGender('womens')))"` shows 4 apparatus
+
 ---
 
 ## Task Completion Log
@@ -742,6 +759,7 @@ Created `show-controller/src/hooks/useTimesheet.js` with timesheet state helpers
 | INT-01 | End-to-end server test | ✅ done | 2026-01-13 |
 | INT-02 | End-to-end client test | ✅ done | 2026-01-13 |
 | INT-03 | Full show flow test | ✅ done | 2026-01-13 |
+| P8-01 | Create server-side apparatus config module | ✅ done | 2026-01-13 |
 
 ---
 
