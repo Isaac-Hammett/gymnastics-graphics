@@ -20,6 +20,7 @@ import productionConfigService from './lib/productionConfigService.js';
 import configLoader from './lib/configLoader.js';
 import { getVMPoolManager, VM_STATUS } from './lib/vmPoolManager.js';
 import { getAWSService } from './lib/awsService.js';
+import { getAlertService, ALERT_LEVEL, ALERT_CATEGORY } from './lib/alertService.js';
 
 dotenv.config();
 
@@ -1564,6 +1565,253 @@ app.post('/api/timesheet/jump', async (req, res) => {
     return res.status(400).json({ error: `Cannot jump to segment: ${segmentId}`, state: timesheetEngine.getState() });
   }
   res.json({ success: true, state: timesheetEngine.getState() });
+});
+
+// ============================================
+// Alert System API Endpoints
+// ============================================
+
+// GET /api/alerts/:compId - Get active alerts for a competition
+app.get('/api/alerts/:compId', async (req, res) => {
+  const { compId } = req.params;
+
+  try {
+    const alertService = getAlertService();
+
+    if (!alertService.isInitialized()) {
+      // Try to initialize
+      try {
+        await alertService.initialize();
+      } catch (initError) {
+        return res.status(503).json({
+          error: 'Alert service not initialized',
+          details: 'Firebase credentials not configured'
+        });
+      }
+    }
+
+    const alerts = await alertService.getActiveAlerts(compId);
+    res.json(alerts);
+  } catch (error) {
+    console.error(`[Alerts API] Failed to get alerts for ${compId}:`, error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/alerts/:compId/counts - Get alert counts for a competition
+app.get('/api/alerts/:compId/counts', async (req, res) => {
+  const { compId } = req.params;
+
+  try {
+    const alertService = getAlertService();
+
+    if (!alertService.isInitialized()) {
+      return res.status(503).json({
+        error: 'Alert service not initialized',
+        details: 'Firebase credentials not configured'
+      });
+    }
+
+    const counts = await alertService.getAlertCounts(compId);
+    res.json(counts);
+  } catch (error) {
+    console.error(`[Alerts API] Failed to get counts for ${compId}:`, error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/alerts/:compId/all - Get all alerts (including resolved)
+app.get('/api/alerts/:compId/all', async (req, res) => {
+  const { compId } = req.params;
+  const { includeResolved, limit } = req.query;
+
+  try {
+    const alertService = getAlertService();
+
+    if (!alertService.isInitialized()) {
+      return res.status(503).json({
+        error: 'Alert service not initialized'
+      });
+    }
+
+    const alerts = await alertService.getAllAlerts(compId, {
+      includeResolved: includeResolved !== 'false',
+      limit: limit ? parseInt(limit, 10) : 100
+    });
+    res.json(alerts);
+  } catch (error) {
+    console.error(`[Alerts API] Failed to get all alerts for ${compId}:`, error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/alerts/:compId - Create a new alert
+app.post('/api/alerts/:compId', async (req, res) => {
+  const { compId } = req.params;
+  const { level, category, title, message, sourceId, metadata } = req.body;
+
+  // Validate required fields
+  if (!level || !category || !title || !message) {
+    return res.status(400).json({
+      error: 'Missing required fields',
+      required: ['level', 'category', 'title', 'message']
+    });
+  }
+
+  // Validate level
+  if (!Object.values(ALERT_LEVEL).includes(level)) {
+    return res.status(400).json({
+      error: `Invalid alert level: ${level}`,
+      validLevels: Object.values(ALERT_LEVEL)
+    });
+  }
+
+  // Validate category
+  if (!Object.values(ALERT_CATEGORY).includes(category)) {
+    return res.status(400).json({
+      error: `Invalid alert category: ${category}`,
+      validCategories: Object.values(ALERT_CATEGORY)
+    });
+  }
+
+  try {
+    const alertService = getAlertService();
+
+    if (!alertService.isInitialized()) {
+      try {
+        await alertService.initialize();
+      } catch (initError) {
+        return res.status(503).json({
+          error: 'Alert service not initialized',
+          details: 'Firebase credentials not configured'
+        });
+      }
+    }
+
+    const alert = await alertService.createAlert(compId, {
+      level,
+      category,
+      title,
+      message,
+      sourceId: sourceId || null,
+      metadata: metadata || {}
+    });
+
+    res.json({ success: true, id: alert.id, alert });
+  } catch (error) {
+    console.error(`[Alerts API] Failed to create alert for ${compId}:`, error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/alerts/:compId/:alertId/acknowledge - Acknowledge an alert
+app.post('/api/alerts/:compId/:alertId/acknowledge', async (req, res) => {
+  const { compId, alertId } = req.params;
+  const { acknowledgedBy } = req.body || {};
+
+  try {
+    const alertService = getAlertService();
+
+    if (!alertService.isInitialized()) {
+      return res.status(503).json({
+        error: 'Alert service not initialized'
+      });
+    }
+
+    const alert = await alertService.acknowledgeAlert(compId, alertId, acknowledgedBy || 'api');
+
+    if (!alert) {
+      return res.status(404).json({
+        error: 'Alert not found',
+        alertId
+      });
+    }
+
+    res.json({ success: true, acknowledged: true, alert });
+  } catch (error) {
+    console.error(`[Alerts API] Failed to acknowledge alert ${alertId}:`, error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/alerts/:compId/:alertId/resolve - Resolve an alert
+app.post('/api/alerts/:compId/:alertId/resolve', async (req, res) => {
+  const { compId, alertId } = req.params;
+  const { resolvedBy } = req.body || {};
+
+  try {
+    const alertService = getAlertService();
+
+    if (!alertService.isInitialized()) {
+      return res.status(503).json({
+        error: 'Alert service not initialized'
+      });
+    }
+
+    const alert = await alertService.resolveAlert(compId, alertId, resolvedBy || 'api', false);
+
+    if (!alert) {
+      return res.status(404).json({
+        error: 'Alert not found',
+        alertId
+      });
+    }
+
+    res.json({ success: true, resolved: true, alert });
+  } catch (error) {
+    console.error(`[Alerts API] Failed to resolve alert ${alertId}:`, error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/alerts/:compId/resolve-by-source - Resolve alerts by source ID
+app.post('/api/alerts/:compId/resolve-by-source', async (req, res) => {
+  const { compId } = req.params;
+  const { sourceId, resolvedBy } = req.body || {};
+
+  if (!sourceId) {
+    return res.status(400).json({
+      error: 'sourceId is required'
+    });
+  }
+
+  try {
+    const alertService = getAlertService();
+
+    if (!alertService.isInitialized()) {
+      return res.status(503).json({
+        error: 'Alert service not initialized'
+      });
+    }
+
+    const count = await alertService.resolveBySourceId(compId, sourceId, resolvedBy || 'api');
+    res.json({ success: true, count });
+  } catch (error) {
+    console.error(`[Alerts API] Failed to resolve by sourceId ${sourceId}:`, error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/alerts/:compId/acknowledge-all - Acknowledge all alerts
+app.post('/api/alerts/:compId/acknowledge-all', async (req, res) => {
+  const { compId } = req.params;
+  const { acknowledgedBy } = req.body || {};
+
+  try {
+    const alertService = getAlertService();
+
+    if (!alertService.isInitialized()) {
+      return res.status(503).json({
+        error: 'Alert service not initialized'
+      });
+    }
+
+    const count = await alertService.acknowledgeAll(compId, acknowledgedBy || 'api');
+    res.json({ success: true, count });
+  } catch (error) {
+    console.error(`[Alerts API] Failed to acknowledge all for ${compId}:`, error.message);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // CSV Upload endpoint
