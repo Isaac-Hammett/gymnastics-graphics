@@ -861,7 +861,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Verify QuickActions shows 6 buttons"
     ],
     "verification": "Screenshots show correct apparatus count for each gender",
-    "passes": false
+    "passes": true
   },
   {
     "id": "INT-06",
@@ -930,8 +930,8 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 | Phase 11: Dynamic Apparatus UI | 3 | 3 | ✅ Complete |
 | Phase 12: Migration | 2 | 2 | ✅ Complete |
 | Integration (Original) | 3 | 3 | ✅ Complete |
-| Integration (New) | 5 | 1 | 🔄 In Progress |
-| **Total** | **48** | **44** | **92%** |
+| Integration (New) | 5 | 2 | 🔄 In Progress |
+| **Total** | **48** | **45** | **94%** |
 
 ---
 

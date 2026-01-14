@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { db, ref, onValue } from '../lib/firebase';
 
 // Error types for different failure scenarios
@@ -21,6 +21,7 @@ const CompetitionContext = createContext(null);
  */
 export function CompetitionProvider({ children }) {
   const { compId } = useParams();
+  const [searchParams] = useSearchParams();
 
   // Competition config from Firebase
   const [competitionConfig, setCompetitionConfig] = useState(null);
@@ -74,10 +75,13 @@ export function CompetitionProvider({ children }) {
 
     // Handle local development mode
     if (isLocalMode) {
-      console.log('CompetitionContext: Local development mode');
+      // Support ?gender=mens query param for testing MAG apparatus in local mode
+      const genderParam = searchParams.get('gender');
+      const localGender = genderParam === 'mens' ? 'mens' : 'womens';
+      console.log(`CompetitionContext: Local development mode (gender: ${localGender})`);
       setCompetitionConfig({
         eventName: 'Local Development',
-        gender: 'womens',
+        gender: localGender,
         vmAddress: null // Will use VITE_LOCAL_SERVER
       });
       setIsLoading(false);
@@ -129,7 +133,7 @@ export function CompetitionProvider({ children }) {
     return () => {
       unsubscribe();
     };
-  }, [compId, isLocalMode]);
+  }, [compId, isLocalMode, searchParams]);
 
   const value = {
     // Competition identification
