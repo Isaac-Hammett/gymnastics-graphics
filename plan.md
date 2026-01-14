@@ -1050,7 +1050,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Add SSH command copy button"
     ],
     "verification": "VMCard renders correctly in VMPoolPage",
-    "passes": false
+    "passes": true
   },
   {
     "id": "P16-03",
