@@ -1,5 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useShow } from '../context/ShowContext';
+import { useCompetition } from '../context/CompetitionContext';
+import { useApparatus } from '../hooks/useApparatus';
 import {
   VideoCameraIcon,
   PlayIcon,
@@ -19,9 +21,6 @@ const iconMap = {
   'currency-dollar': CurrencyDollarIcon
 };
 
-// Men's gymnastics apparatus in Olympic order
-const APPARATUS_ORDER = ['FX', 'PH', 'SR', 'VT', 'PB', 'HB'];
-
 // Health status colors
 const HEALTH_COLORS = {
   healthy: 'bg-green-500',
@@ -35,13 +34,15 @@ export default function QuickActions() {
   const { socket, state, overrideScene } = useShow();
   const { showConfig, obsCurrentScene } = state;
 
+  // Get gender from competition context for dynamic apparatus
+  const { gender, socketUrl } = useCompetition();
+  const { apparatusCodes, getApparatusName, count: apparatusCount } = useApparatus(gender);
+
   const [cameraHealth, setCameraHealth] = useState([]);
   const [cameraRuntimeState, setCameraRuntimeState] = useState([]);
 
-  // Server URL for REST API calls
-  const serverUrl = import.meta.env.PROD
-    ? (import.meta.env.VITE_SOCKET_SERVER || '')
-    : 'http://localhost:3003';
+  // Server URL for REST API calls - use socketUrl from competition context
+  const serverUrl = socketUrl || 'http://localhost:3003';
 
   // Fetch initial camera state
   useEffect(() => {
@@ -144,8 +145,9 @@ export default function QuickActions() {
             Apparatus Cameras
           </div>
 
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-4">
-            {APPARATUS_ORDER.map((apparatus) => {
+          {/* Grid layout: grid-cols-4 for WAG (4 apparatus), grid-cols-6 for MAG (6 apparatus) */}
+          <div className={`grid gap-2 mb-4 ${apparatusCount === 4 ? 'grid-cols-4' : 'grid-cols-3 sm:grid-cols-6'}`}>
+            {apparatusCodes.map((apparatus) => {
               const camera = getCameraForApparatus(apparatus);
               const cameraId = camera?.cameraId;
               const isOnline = cameraId ? isCameraOnline(cameraId) : false;
@@ -153,10 +155,11 @@ export default function QuickActions() {
               const cameraName = cameraId ? getCameraName(cameraId) : 'No camera';
               const isActive = isApparatusActive(apparatus);
               const hasMismatch = camera?.hasMismatch;
+              const apparatusFullName = getApparatusName(apparatus);
 
               const tooltipText = camera
-                ? `${cameraName}: ${healthStatus}${hasMismatch ? ' (MISMATCH)' : ''}`
-                : 'No camera assigned';
+                ? `${apparatusFullName} - ${cameraName}: ${healthStatus}${hasMismatch ? ' (MISMATCH)' : ''}`
+                : `${apparatusFullName} - No camera assigned`;
 
               return (
                 <button
