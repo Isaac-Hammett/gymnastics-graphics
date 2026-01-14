@@ -1,13 +1,30 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** Monitoring & Alerts (Phase 17)
-**Last Task:** P17-04 - Create AlertPanel component
-**Next Task:** P17-05 - Create useAlerts hook
+**Phase:** VM Pool Integration Tests
+**Last Task:** P17-05 - Create useAlerts hook
+**Next Task:** INT-09 - VM pool end-to-end test
 
 ---
 
 ## 2026-01-14
+
+### P17-05: Create useAlerts hook
+useAlerts hook already exists and meets all requirements - was created as part of P17-03.
+
+**Verification:**
+- Hook file exists: `show-controller/src/hooks/useAlerts.js`
+- Subscribes to `alerts/{competitionId}/` in Firebase ✓
+- Filters to unresolved alerts ✓
+- Sorts by level then timestamp ✓
+- Returns criticalCount, warningCount, infoCount ✓
+- Implements acknowledgeAlert action ✓
+- Implements acknowledgeAll action ✓
+- Returns hasUnacknowledgedCritical boolean ✓
+
+Marked task as passes: true since implementation was completed during P17-03.
+
+---
 
 ### P17-04: Create AlertPanel component
 AlertPanel component already exists and meets all requirements - was created as part of P17-03.

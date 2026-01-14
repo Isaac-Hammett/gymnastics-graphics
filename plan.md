@@ -1180,7 +1180,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Return hasUnacknowledgedCritical boolean"
     ],
     "verification": "Hook imports without error",
-    "passes": false
+    "passes": true
   },
   {
     "id": "INT-09",
