@@ -2,12 +2,28 @@
 
 ## Current Status
 **Phase:** VM Pool API (Phase 15)
-**Last Task:** P15-01 - Add VM pool management API endpoints
-**Next Task:** P15-02 - Add competition VM assignment endpoints
+**Last Task:** P15-02 - Add competition VM assignment endpoints
+**Next Task:** P15-03 - Add VM pool socket events
 
 ---
 
 ## 2026-01-14
+
+### P15-02: Add competition VM assignment endpoints
+Added competition VM assignment REST API endpoints to `server/index.js`:
+- Added `POST /api/competitions/:compId/vm/assign` - Assigns an available VM to a competition
+  - Checks if competition already has a VM assigned (returns 400 if so)
+  - Supports optional `preferredVmId` parameter to request a specific VM
+  - Updates `competitions/{compId}/config/vmAddress` in Firebase on successful assignment
+- Added `POST /api/competitions/:compId/vm/release` - Releases a VM from a competition
+  - Returns the VM to the available pool
+  - Clears `vmAddress` from competition config in Firebase
+- Added `GET /api/competitions/:compId/vm` - Gets the VM assigned to a competition
+  - Returns VM details including vmId, instanceId, publicIp, status, services, and vmAddress
+  - Returns 404 if no VM is assigned to the competition
+
+All endpoints integrate with the existing vmPoolManager module methods: `assignVM()`, `releaseVM()`, and `getVMForCompetition()`.
+- Verification: Server compiles successfully with `node --check index.js`
 
 ### P15-01: Add VM pool management API endpoints
 Added VM pool management REST API endpoints to `server/index.js`:
