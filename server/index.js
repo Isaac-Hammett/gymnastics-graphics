@@ -16,6 +16,8 @@ import { CameraFallbackManager } from './lib/cameraFallback.js';
 import { OBSSceneGenerator } from './lib/obsSceneGenerator.js';
 import { TimesheetEngine } from './lib/timesheetEngine.js';
 import { getApparatusForGender } from './lib/apparatusConfig.js';
+import productionConfigService from './lib/productionConfigService.js';
+import configLoader from './lib/configLoader.js';
 
 dotenv.config();
 
@@ -749,6 +751,152 @@ app.get('/api/apparatus/:gender', (req, res) => {
   res.json({
     gender: normalizedGender,
     apparatus
+  });
+});
+
+// ============================================
+// Production Config API Endpoints
+// ============================================
+
+// GET /api/competitions/active - Get current active competition
+app.get('/api/competitions/active', (req, res) => {
+  const activeCompetitionId = configLoader.getActiveCompetition();
+  res.json({
+    activeCompetitionId,
+    isActive: !!activeCompetitionId
+  });
+});
+
+// POST /api/competitions/deactivate - Clear active competition
+app.post('/api/competitions/deactivate', (req, res) => {
+  configLoader.clearActiveCompetition();
+  res.json({
+    success: true,
+    message: 'Active competition cleared'
+  });
+});
+
+// GET /api/competitions/:id/production - Get full production config
+app.get('/api/competitions/:id/production', async (req, res) => {
+  const { id } = req.params;
+
+  if (!productionConfigService.isAvailable()) {
+    return res.status(503).json({ error: 'Firebase not available' });
+  }
+
+  try {
+    const productionConfig = await productionConfigService.getProductionConfig(id);
+    if (!productionConfig) {
+      return res.status(404).json({ error: 'Production config not found', competitionId: id });
+    }
+    res.json(productionConfig);
+  } catch (error) {
+    console.error(`Failed to get production config for ${id}:`, error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /api/competitions/:id/production/cameras - Save cameras for a competition
+app.put('/api/competitions/:id/production/cameras', async (req, res) => {
+  const { id } = req.params;
+  const { cameras } = req.body;
+
+  if (!cameras || !Array.isArray(cameras)) {
+    return res.status(400).json({ error: 'cameras must be an array' });
+  }
+
+  if (!productionConfigService.isAvailable()) {
+    return res.status(503).json({ error: 'Firebase not available' });
+  }
+
+  try {
+    const success = await productionConfigService.saveCameras(id, cameras);
+    if (!success) {
+      return res.status(500).json({ error: 'Failed to save cameras' });
+    }
+    res.json({ success: true, cameras: cameras.length, competitionId: id });
+  } catch (error) {
+    console.error(`Failed to save cameras for ${id}:`, error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /api/competitions/:id/production/rundown - Save rundown for a competition
+app.put('/api/competitions/:id/production/rundown', async (req, res) => {
+  const { id } = req.params;
+  const rundown = req.body;
+
+  if (!rundown || typeof rundown !== 'object') {
+    return res.status(400).json({ error: 'rundown must be an object' });
+  }
+
+  if (!productionConfigService.isAvailable()) {
+    return res.status(503).json({ error: 'Firebase not available' });
+  }
+
+  try {
+    const success = await productionConfigService.saveRundown(id, rundown);
+    if (!success) {
+      return res.status(500).json({ error: 'Failed to save rundown' });
+    }
+    res.json({ success: true, competitionId: id });
+  } catch (error) {
+    console.error(`Failed to save rundown for ${id}:`, error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /api/competitions/:id/production/settings - Save settings for a competition
+app.put('/api/competitions/:id/production/settings', async (req, res) => {
+  const { id } = req.params;
+  const settings = req.body;
+
+  if (!settings || typeof settings !== 'object') {
+    return res.status(400).json({ error: 'settings must be an object' });
+  }
+
+  if (!productionConfigService.isAvailable()) {
+    return res.status(503).json({ error: 'Firebase not available' });
+  }
+
+  try {
+    const success = await productionConfigService.saveSettings(id, settings);
+    if (!success) {
+      return res.status(500).json({ error: 'Failed to save settings' });
+    }
+    res.json({ success: true, competitionId: id });
+  } catch (error) {
+    console.error(`Failed to save settings for ${id}:`, error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/competitions/:id/production/history - Get history for a competition
+app.get('/api/competitions/:id/production/history', async (req, res) => {
+  const { id } = req.params;
+
+  if (!productionConfigService.isAvailable()) {
+    return res.status(503).json({ error: 'Firebase not available' });
+  }
+
+  try {
+    const history = await productionConfigService.getHistory(id);
+    res.json(history);
+  } catch (error) {
+    console.error(`Failed to get history for ${id}:`, error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/competitions/:id/activate - Set active competition
+app.post('/api/competitions/:id/activate', (req, res) => {
+  const { id } = req.params;
+
+  configLoader.setActiveCompetition(id);
+  res.json({
+    success: true,
+    activeCompetitionId: id,
+    message: `Competition ${id} activated`
   });
 });
 
