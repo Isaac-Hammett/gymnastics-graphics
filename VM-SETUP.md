@@ -75,15 +75,17 @@ EOF
 pm2 start index.js --name virtius-server && pm2 save
 ```
 
-## Step 4: Configure React App
+## Step 4: Configure Competition in Firebase
 
-Update `show-controller/.env`:
+The show-controller now uses competition-bound routing. Instead of setting an environment variable, configure the VM address in Firebase:
 
-```
-VITE_SOCKET_SERVER=http://YOUR_VM_IP:3003
-```
+1. Go to the Competition Hub (`/hub`)
+2. Select or create your competition
+3. Set the VM Address to `YOUR_VM_IP:3003` (just host:port, no protocol)
 
-Then run locally or deploy to Netlify.
+Alternatively, use `/local/producer` for local development which connects to `VITE_LOCAL_SERVER` (defaults to `http://localhost:3003`).
+
+Note: The old `VITE_SOCKET_SERVER` environment variable is no longer used.
 
 ## Verification
 
