@@ -2,12 +2,51 @@
 
 ## Current Status
 **Phase:** Monitoring & Alerts (Phase 17)
-**Last Task:** P17-02 - Add VM alert triggers
-**Next Task:** P17-03 - Add alerts to Producer view
+**Last Task:** P17-03 - Add alerts to Producer view
+**Next Task:** P17-04 - Create AlertPanel component
 
 ---
 
 ## 2026-01-14
+
+### P17-03: Add alerts to Producer view
+Added alert system integration to ProducerView with critical alert banner, warning alert panel, and header count badges:
+
+**New Files Created:**
+- `show-controller/src/hooks/useAlerts.js` - Hook for managing alerts from Firebase
+- `show-controller/src/components/AlertPanel.jsx` - Collapsible panel component for alerts
+
+**useAlerts Hook Features:**
+- Subscribes to `alerts/{competitionId}/` in Firebase for real-time updates
+- Filters to unresolved alerts only
+- Sorts by level (critical > warning > info) then by timestamp
+- Returns `alerts`, `criticalAlerts`, `warningAlerts`, `infoAlerts` arrays
+- Returns counts: `criticalCount`, `warningCount`, `infoCount`, `unacknowledgedCount`
+- Returns `hasUnacknowledgedCritical` boolean for urgent UI indicators
+- Actions: `acknowledgeAlert(alertId)`, `acknowledgeAll()`
+- Re-exports `ALERT_LEVEL` and `ALERT_CATEGORY` constants
+
+**AlertPanel Component Features:**
+- Collapsible panel design (collapsed by default)
+- Groups alerts by level (Critical, Warning, Info sections)
+- Each alert shows: icon, title, message, timestamp, metadata
+- Acknowledge button per alert
+- "Acknowledge All" button in header
+- Empty state: "No active alerts"
+- Color-coded badges in header showing count per level
+
+**ProducerView Integration:**
+- Imported `useAlerts` hook and `AlertPanel` component
+- Added alert count badges in header (red for critical, yellow for warning)
+- Added critical alert banner at top (always visible when critical alerts exist)
+  - Shows each critical alert with title, message, and Acknowledge button
+  - Red background with border for high visibility
+- Added AlertPanel in right column (after Override Log, before Camera Panel)
+- Pass `alerts`, `onAcknowledge`, `onAcknowledgeAll` props to AlertPanel
+
+Screenshot: `screenshots/producer-with-alerts.png`
+
+---
 
 ### P17-02: Add VM alert triggers
 Updated `server/lib/vmHealthMonitor.js` to integrate with alertService for automatic alert creation:
