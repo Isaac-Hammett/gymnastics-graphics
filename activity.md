@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** Phase 8 - Apparatus Config (In Progress)
-**Last Task:** P8-01 - Create server-side apparatus config module
-**Next Task:** P8-02 - Create client-side useApparatus hook
+**Last Task:** P8-02 - Create client-side useApparatus hook
+**Next Task:** P8-03 - Add apparatus API endpoint
 
 ---
 
@@ -722,6 +722,21 @@ Created `server/lib/apparatusConfig.js` with apparatus details and validation:
 - Helper `normalizeGender()` handles various gender formats (mens/womens/MAG/WAG/male/female)
 - Verification: `node -e "import('./server/lib/apparatusConfig.js').then(a => console.log(a.getApparatusForGender('womens')))"` shows 4 apparatus
 
+### P8-02: Create client-side useApparatus hook
+Created `show-controller/src/hooks/useApparatus.js` with gender-aware apparatus configuration:
+- Uses `useMemo` from React to memoize all returns based on gender
+- Imports `EVENTS` and `EVENT_ORDER` from `lib/eventConfig.js`
+- `useApparatus(gender)` hook accepts gender parameter ('mens', 'womens', 'MAG', 'WAG', etc.)
+- Defaults to 'womens' if gender is null/undefined
+- Returns apparatus array with: code (shortName), name (full name), eventId, order (1-indexed)
+- Returns `apparatusCodes` array of codes in Olympic order
+- Returns `getApparatusName(code)` helper to get full name from code
+- Returns `isValid(code)` helper to check if code is valid for gender
+- Additional helpers: `getApparatusByCode()`, `getEventId()`, `getOrder()`
+- Returns `gender` (normalized) and `count` (4 for WAG, 6 for MAG)
+- Normalizes gender formats: mens/womens/MAG/WAG/male/female/m/w
+- Verification: `npm run build` succeeds without errors
+
 ---
 
 ## Task Completion Log
@@ -760,6 +775,7 @@ Created `server/lib/apparatusConfig.js` with apparatus details and validation:
 | INT-02 | End-to-end client test | ✅ done | 2026-01-13 |
 | INT-03 | Full show flow test | ✅ done | 2026-01-13 |
 | P8-01 | Create server-side apparatus config module | ✅ done | 2026-01-13 |
+| P8-02 | Create client-side useApparatus hook | ✅ done | 2026-01-13 |
 
 ---
 
