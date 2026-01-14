@@ -1,9 +1,9 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** Phase 11 - Dynamic Apparatus UI (Complete)
-**Last Task:** P11-03 - Update QuickActions for dynamic apparatus
-**Next Task:** P12-01 - Create migration script for show-config.json
+**Phase:** Phase 12 - Migration
+**Last Task:** P12-01 - Create migration script for show-config.json
+**Next Task:** P12-02 - Update environment variables
 
 ---
 
@@ -994,6 +994,22 @@ Updated `show-controller/src/components/QuickActions.jsx` with dynamic apparatus
 - Server URL uses `socketUrl` from competition context instead of hardcoded/env value
 - Verification: `npm run build` succeeds, screenshot at `screenshots/quick-actions-dynamic.png`
 
+### P12-01: Create migration script for show-config.json
+Created `server/scripts/migrateToFirebase.js` - CLI tool for migrating local show-config.json to Firebase production config:
+- Parses command line arguments with `-c/--competitionId`, `-g/--gender`, `-f/--config`, `--dry-run`, `--force`, `-h/--help`
+- Imports `getApparatusCodes` and `validateApparatusCodes` from `apparatusConfig.js`
+- Validates camera apparatus codes against the specified gender (mens/womens)
+- Validates segment `intendedApparatus` codes against the specified gender
+- Warns on invalid apparatus codes (e.g., PH, SR, PB, HB are invalid for womens)
+- Displays valid apparatus codes for the specified gender
+- Builds production config object with: cameras, rundown, settings, history
+- Firebase path structure: `competitions/{id}/production/{cameras|rundown|settings|history}`
+- Dry-run mode (`--dry-run`) previews migration without writing to Firebase
+- Force mode (`--force`) allows overwriting existing production config
+- Prints detailed migration summary with camera count, segment count, and warning count
+- Verification: `node server/scripts/migrateToFirebase.js --help` shows usage
+- Tested dry-run with both mens (0 warnings) and womens (6 warnings for men's apparatus codes)
+
 ---
 
 ## Task Completion Log
@@ -1046,6 +1062,7 @@ Updated `show-controller/src/components/QuickActions.jsx` with dynamic apparatus
 | P11-01 | Update CameraSetupPage for dynamic apparatus | ✅ done | 2026-01-14 |
 | P11-02 | Update CameraRuntimePanel for dynamic apparatus | ✅ done | 2026-01-14 |
 | P11-03 | Update QuickActions for dynamic apparatus | ✅ done | 2026-01-14 |
+| P12-01 | Create migration script for show-config.json | ✅ done | 2026-01-13 |
 
 ---
 
