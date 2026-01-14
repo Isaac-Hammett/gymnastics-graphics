@@ -1,9 +1,9 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** Phase 10 - URL Routing (In Progress)
-**Last Task:** P10-05 - Update ShowContext for dynamic socket URL
-**Next Task:** P10-06 - Update useCompetitions hook with vmAddress support
+**Phase:** Phase 11 - Dynamic Apparatus UI (Pending)
+**Last Task:** P10-06 - Update useCompetitions hook with vmAddress support
+**Next Task:** P11-01 - Update CameraSetupPage for dynamic apparatus
 
 ---
 
@@ -923,6 +923,27 @@ Updated `show-controller/src/App.jsx` with competition-bound route architecture:
 - Verification: `node test-helper.js check http://localhost:5175/select` returns status 200
 - Screenshot: `screenshots/P10-04-select-route.png`
 
+### P10-06: Update useCompetitions hook with vmAddress support
+Extended `show-controller/src/hooks/useCompetitions.js` with VM address validation and status checking:
+- Added `isValidVmAddress(address)` function (exported):
+  - Validates host:port format using regex
+  - Supports IP addresses (xxx.xxx.xxx.xxx:port) and hostnames (host.domain.com:port)
+  - Validates port range (1-65535)
+  - Returns boolean indicating valid format
+- Added `checkVmStatus(vmAddress, timeout)` async function (exported):
+  - Fetches `/api/status` endpoint on the VM with configurable timeout (default 5000ms)
+  - Uses AbortController for timeout handling
+  - Returns `{ online: true, obsConnected: boolean }` on success
+  - Returns `{ online: false, error: string }` on failure
+  - Handles network errors, timeouts, and HTTP errors gracefully
+- Added `updateVmAddress(compId, vmAddress)` function in useCompetitions hook:
+  - Validates vmAddress format before saving using `isValidVmAddress()`
+  - Saves to `competitions/{compId}/config/vmAddress` in Firebase
+  - Allows clearing vmAddress by passing null/empty string
+  - Returns `{ success: boolean, error?: string }`
+- All new functions exported from the hook for use by other components
+- Verification: `npm run build` succeeds without errors
+
 ---
 
 ## Task Completion Log
@@ -971,6 +992,7 @@ Updated `show-controller/src/App.jsx` with competition-bound route architecture:
 | P10-03 | Create CompetitionLayout and error components | ✅ done | 2026-01-14 |
 | P10-04 | Update App.jsx with new route structure | ✅ done | 2026-01-14 |
 | P10-05 | Update ShowContext for dynamic socket URL | ✅ done | 2026-01-14 |
+| P10-06 | Update useCompetitions hook with vmAddress support | ✅ done | 2026-01-14 |
 
 ---
 
