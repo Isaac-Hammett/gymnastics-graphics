@@ -27,3 +27,10 @@ Thumbs.db
 *_SceneCollection.json
 *_ShowController.csv
 *_recording_session.json
+
+# Cache directories
+.cache/
+
+# Screenshots (test artifacts)
+screenshots/
+ralph-wigg/screenshots/
