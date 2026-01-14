@@ -1,9 +1,29 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** Integration Testing - COMPLETE
-**Last Task:** INT-08 - Error handling test
-**Next Task:** All tasks complete!
+**Phase:** VM Pool API (Phase 15)
+**Last Task:** P15-01 - Add VM pool management API endpoints
+**Next Task:** P15-02 - Add competition VM assignment endpoints
+
+---
+
+## 2026-01-14
+
+### P15-01: Add VM pool management API endpoints
+Added VM pool management REST API endpoints to `server/index.js`:
+- Imported `getVMPoolManager` and `VM_STATUS` from `./lib/vmPoolManager.js`
+- Imported `getAWSService` from `./lib/awsService.js`
+- Added `GET /api/admin/vm-pool` - Returns full pool status with all VMs and counts
+- Added `GET /api/admin/vm-pool/config` - Returns pool configuration
+- Added `PUT /api/admin/vm-pool/config` - Updates pool configuration
+- Added `GET /api/admin/vm-pool/:vmId` - Returns single VM details
+- Added `POST /api/admin/vm-pool/:vmId/start` - Starts a stopped VM
+- Added `POST /api/admin/vm-pool/:vmId/stop` - Stops a VM
+- Added `POST /api/admin/vm-pool/launch` - Launches a new VM from AMI
+- Added `DELETE /api/admin/vm-pool/:vmId` - Terminates a VM (with safety check for assigned VMs)
+
+All endpoints include proper error handling and return appropriate status codes.
+- Verification: Server compiles and starts successfully with `node --check index.js`
 
 ---
 
