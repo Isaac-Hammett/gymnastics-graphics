@@ -93,41 +93,6 @@ Road to Nationals API provides team scoring statistics (averages, highs, RQS) bu
 
 ---
 
-### Railway Deployment - OBS Scene Control
-**Priority:** High
-**Status:** Ready to Deploy
-
-Deploy the Node.js server to Railway to enable live OBS scene control from the Producer and Talent views.
-
-**Current State:**
-- Server code exists in `server/` directory
-- Socket.IO integration for OBS WebSocket communication
-- Works locally but not deployed
-
-**What this enables:**
-- Producer view can change OBS scenes in real-time
-- Talent view can trigger scene transitions
-- CSV timesheet playback controls OBS automatically
-- Web graphics sync with OBS scene changes
-
-**Why Railway is needed:**
-- The show controller (Producer/Talent views) uses Socket.IO to communicate with OBS
-- Socket.IO requires a persistent WebSocket connection to a Node.js server
-- Netlify only serves static files; it cannot run the Socket.IO server
-- Railway provides always-on Node.js hosting with WebSocket support
-
-**Without Railway deployed:**
-- Web graphics (Firebase-based) work fine on Netlify
-- OBS scene control buttons do nothing (no server to relay commands)
-- CSV timesheet playback won't trigger OBS changes
-
-**Deployment files ready:**
-- `server/Procfile` - Railway process definition
-- `server/railway.json` - Railway configuration
-- `server/.env.example` - Environment variables template
-
----
-
 ### Virtius API Integration - Live Data
 **Priority:** High
 **Status:** Planned
@@ -333,7 +298,121 @@ Use AI to assist talent/commentators during the stream with contextual suggestio
 
 ---
 
+## Architecture Documentation
+
+### VM and Camera Assignment Architecture
+
+**Overview:** Each competition is assigned to a dedicated VM server. Cameras are configured on the VM, not directly on competitions.
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  COMPETITION (Firebase: competitions/{compId}/config)       │
+│                                                             │
+│  eventName: "UCLA vs Stanford"                              │
+│  vmAddress: "3.81.127.185:3003"  ◄── Links to VM            │
+│  gender: "womens"                                           │
+│  team1Name, team2Name, etc.                                 │
+└─────────────────────────────────────────────────────────────┘
+                         │
+                         │ Socket.IO connection
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│  VM SERVER (e.g., 3.81.127.185:3003)                        │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  show-config.json (or Firebase production config)    │   │
+│  │                                                      │   │
+│  │  cameras: [                                          │   │
+│  │    { id: "cam-1", srtPort: 10001,                   │   │
+│  │      expectedApparatus: ["VT"] },                   │   │
+│  │    { id: "cam-2", srtPort: 9002,                    │   │
+│  │      expectedApparatus: ["PH", "PB", "UB"] }        │   │
+│  │  ]                                                   │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  Services running on VM:                                    │
+│  - Socket.IO server (show state, camera events)             │
+│  - CameraHealthMonitor (polls Nimble for SRT stats)         │
+│  - CameraRuntimeState (tracks actual camera positions)      │
+│  - OBS WebSocket integration                                │
+└─────────────────────────────────────────────────────────────┘
+                         │
+                         │ SRT streams
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│  NIMBLE STREAMER (Video Ingest)                             │
+│                                                             │
+│  Receives SRT streams from physical cameras on ports:       │
+│  - Port 10001: Camera 1 (Vault)                             │
+│  - Port 9002: Camera 2 (Bars)                               │
+│  - etc.                                                      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Key Relationships:**
+1. **Competition → VM (1:1):** Each competition has one `vmAddress` in Firebase
+2. **VM → Cameras (1:many):** Each VM has a camera configuration
+3. **Camera → Apparatus (configurable):** Cameras have `expectedApparatus` in config, but `currentApparatus` can be reassigned at runtime by the producer
+
+**Connection Flow:**
+1. User navigates to `/{compId}/producer`
+2. CompetitionContext fetches `vmAddress` from Firebase
+3. ShowContext connects socket.io to `http://{vmAddress}`
+4. Server loads camera config and starts health monitoring
+5. Client receives camera health and runtime state updates
+
+**Local Development Mode:**
+- `vmAddress` is ignored; always connects to `localhost:3003`
+- Uses local `show-config.json` for camera configuration
+- Single VM limitation - cannot test multi-competition scenarios locally
+
+**Production Multi-VM Testing:**
+To test multiple VMs in production:
+1. Create test competitions in Firebase with different `vmAddress` values
+2. Deploy server instances to separate VMs/ports
+3. Each VM has its own `show-config.json` with venue-specific cameras
+4. Navigate to different `/{compId}/producer` routes to connect to different VMs
+
+**Camera Configuration Hierarchy:**
+1. Firebase `competitions/{compId}/production/cameras` (if activeCompetitionId set)
+2. Local `server/config/show-config.json` (fallback)
+
+**Runtime Camera State:**
+- `expectedApparatus`: What config says camera should cover
+- `currentApparatus`: What camera is actually pointing at (producer can reassign)
+- `verified`: Producer has confirmed camera is correctly positioned
+- Mismatch detection alerts producer if expected ≠ current
+
+---
+
 ## Current System Notes
+
+### Producer View - Dual Control Systems (Known Issue)
+
+**Status:** Incomplete Integration
+
+The Producer View currently displays **two separate control systems** that are NOT synchronized:
+
+**Left Side (Original Show Controller) - USE THIS ONE:**
+- Shows "NOW PLAYING" with current segment
+- Has Previous/NEXT/Resume controls
+- Shows "SHOW PROGRESS" with segment count
+- This is the **working system** that controls the show
+
+**Right Side (Timesheet Panel) - INCOMPLETE:**
+- Shows separate "NOW PLAYING" state
+- Has its own "Start Show" button
+- Has its own segment list
+- This is a **new timesheet engine** that is NOT yet integrated with the main show controller
+
+**For now:** Use the left side controls to manage the show. Ignore the Timesheet panel on the right side - it displays stale/incorrect state because it's wired to a separate backend engine that isn't connected to the main show flow.
+
+**Future work needed:**
+- Wire the Timesheet engine to the main show state, OR
+- Remove the duplicate Timesheet panel from the UI, OR
+- Replace the left side controls with the Timesheet panel once it's fully functional
+
+---
 
 ### Competition Types
 - Men's Dual, Women's Dual (2 teams)
