@@ -876,7 +876,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Verify camera setup page loads"
     ],
     "verification": "node ralph-wigg/test-helper.js check http://localhost:5173/local/producer exits 0",
-    "passes": false
+    "passes": true
   },
   {
     "id": "INT-07",
@@ -930,8 +930,8 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 | Phase 11: Dynamic Apparatus UI | 3 | 3 | ✅ Complete |
 | Phase 12: Migration | 2 | 2 | ✅ Complete |
 | Integration (Original) | 3 | 3 | ✅ Complete |
-| Integration (New) | 5 | 2 | 🔄 In Progress |
-| **Total** | **48** | **45** | **94%** |
+| Integration (New) | 5 | 3 | 🔄 In Progress |
+| **Total** | **48** | **46** | **96%** |
 
 ---
 
