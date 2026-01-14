@@ -8,6 +8,7 @@ import UrlGeneratorPage from './pages/UrlGeneratorPage';
 import MediaManagerPage from './pages/MediaManagerPage';
 import CameraSetupPage from './pages/CameraSetupPage';
 import CompetitionSelector from './pages/CompetitionSelector';
+import VMPoolPage from './pages/VMPoolPage';
 
 // Competition-bound layout
 import CompetitionLayout from './components/CompetitionLayout';
@@ -42,6 +43,7 @@ function App() {
         <Route path="/url-generator" element={<UrlGeneratorPage />} />
         <Route path="/media-manager" element={<MediaManagerPage />} />
         <Route path="/import" element={<ImportView />} />
+        <Route path="/admin/vm-pool" element={<VMPoolPage />} />
 
         {/* Legacy route redirects - redirect to selector with redirect param */}
         <Route path="/producer" element={<LegacyRedirect to="/producer" />} />
