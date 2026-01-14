@@ -1,13 +1,57 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** VM Pool UI (Phase 16) - COMPLETE
-**Last Task:** P16-05 - Update CompetitionSelector with VM status
-**Next Task:** P17-01 - Create alert service
+**Phase:** Monitoring & Alerts (Phase 17)
+**Last Task:** P17-01 - Create alert service
+**Next Task:** P17-02 - Add VM alert triggers
 
 ---
 
 ## 2026-01-14
+
+### P17-01: Create alert service
+Created `server/lib/alertService.js` with centralized alert management:
+
+**Alert Levels (ALERT_LEVEL):**
+- `critical` - Red banner, alarm sound - immediate action required
+- `warning` - Yellow panel, chime - attention needed
+- `info` - Toast notification - informational
+
+**Alert Categories (ALERT_CATEGORY):**
+- `vm` - VM health issues (unreachable, starting, stopping)
+- `service` - Service health (OBS, Node, NoMachine)
+- `camera` - Camera health and fallback issues
+- `obs` - OBS-specific issues (disconnection, scene problems)
+- `talent` - Talent view issues (connection, graphics)
+
+**Core Functions:**
+- `createAlert(competitionId, alertData)` - Create alert with auto-ID, stores in Firebase
+- `resolveAlert(competitionId, alertId, resolvedBy, autoResolved)` - Mark alert as resolved
+- `resolveBySourceId(competitionId, sourceId, resolvedBy)` - Auto-resolve by source ID
+- `acknowledgeAlert(competitionId, alertId, acknowledgedBy)` - Mark as seen
+- `acknowledgeAll(competitionId, acknowledgedBy)` - Acknowledge all unacknowledged
+- `getActiveAlerts(competitionId)` - Get unresolved alerts sorted by level/time
+- `getAllAlerts(competitionId, options)` - Get all alerts with filtering
+- `getAlertCounts(competitionId)` - Get counts by level
+- `clearOldResolvedAlerts(competitionId, maxAgeMs)` - Cleanup old alerts
+
+**Events Emitted:**
+- `alertCreated` - `{ competitionId, alert }`
+- `alertResolved` - `{ competitionId, alertId, alert }`
+- `alertAcknowledged` - `{ competitionId, alertId, alert }`
+- `initialized`, `configUpdated`, `shutdown`
+
+**Features:**
+- Auto-ID generation with timestamp and counter
+- Auto-dismiss info alerts after 10 seconds (configurable)
+- Auto-resolve by sourceId for recovery detection
+- Sorted by level (critical > warning > info) then by time
+- Max alerts per competition limit (100 default)
+- Singleton pattern with `getAlertService()`
+
+Verification: `node -e "import('./lib/alertService.js')"` exits 0
+
+---
 
 ### P16-05: Update CompetitionSelector with VM status
 Updated `show-controller/src/pages/CompetitionSelector.jsx` with VM pool integration:
