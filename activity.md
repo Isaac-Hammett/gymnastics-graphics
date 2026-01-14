@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** Integration Testing
-**Last Task:** INT-05 - Dynamic apparatus test
-**Next Task:** INT-06 - Local development mode test
+**Last Task:** INT-06 - Local development mode test
+**Next Task:** INT-07 - Legacy route redirect test
 
 ---
 
@@ -1127,6 +1127,47 @@ Completed dynamic apparatus integration testing for WAG and MAG competitions:
 
 Verification: Screenshots show correct apparatus count for each gender (4 for WAG, 6 for MAG)
 
+### INT-06: Local development mode test
+Completed local development mode integration testing:
+
+**Test Steps Verified:**
+
+1. **Navigate to /local/producer**:
+   - Page loads successfully (HTTP 200, no console errors)
+   - Console logs confirm: `"CompetitionContext: Local development mode (gender: womens)"`
+
+2. **Verify connects to VITE_LOCAL_SERVER (localhost:3003)**:
+   - Console logs confirm: `"ShowContext: Connecting to http://localhost:3003 for competition local"`
+   - Console logs confirm: `"ShowContext: Connected to http://localhost:3003 for local"`
+
+3. **Verify CompetitionHeader shows 'Local Development'**:
+   - Header displays "Local Development" with green "LOCAL" badge
+   - WAG badge (pink) displayed from default gender
+   - "Connected" status indicator (green dot) visible
+   - "Change" link to return to /select available
+
+4. **Verify all producer features work**:
+   - Timesheet panel shows "Show not started" with "Up Next: Show Intro"
+   - Override Log panel visible and collapsible
+   - Camera Status shows 4 cameras (all offline - expected without Nimble server)
+   - Web Graphics section fully functional with all buttons
+   - OBS Status, Connected Clients, Show Progress all display correctly
+   - Camera health, camera runtime state, and timesheet state all received via socket
+
+5. **Navigate to /local/camera-setup**:
+   - Page loads successfully (HTTP 200, no errors)
+   - CompetitionHeader shows "Local Development" with LOCAL badge
+   - Camera Setup title shows WAG badge
+   - 4 cameras configured with apparatus assignments
+   - Scene Generation Preview shows 19 scenes (3 Static, 4 Single, 6 Dual, 4 Triple, 1 Quad, 1 Graphics)
+   - 4 apparatus buttons visible for WAG (VT, UB, BB, FX)
+
+**Screenshots:**
+- `INT-06-local-producer.png` - Producer view via /local/producer - shows CompetitionHeader with "Local Development", all panels functional
+- `INT-06-local-camera-setup.png` - Camera setup page via /local/camera-setup - shows 4 cameras, WAG apparatus, 19 scenes preview
+
+Verification: `node test-helper.js check http://localhost:5175/local/producer` exits 0
+
 ---
 
 ## Task Completion Log
@@ -1183,6 +1224,7 @@ Verification: Screenshots show correct apparatus count for each gender (4 for WA
 | P12-02 | Update environment variables | ✅ done | 2026-01-13 |
 | INT-04 | Competition selector and routing test | ✅ done | 2026-01-14 |
 | INT-05 | Dynamic apparatus test | ✅ done | 2026-01-14 |
+| INT-06 | Local development mode test | ✅ done | 2026-01-14 |
 
 ---
 
@@ -1213,6 +1255,8 @@ Verification: Screenshots show correct apparatus count for each gender (4 for WA
 | INT-05-mag-camera-setup.png | INT-05 | /local/camera-setup?gender=mens | MAG camera setup - shows 6 apparatus (FX, PH, SR, VT, PB, HB) per camera |
 | INT-05-mag-producer.png | INT-05 | /local/producer?gender=mens | MAG producer view with MAG badge |
 | INT-05-mag-talent.png | INT-05 | /local/talent?gender=mens | MAG talent view showing MAG badge |
+| INT-06-local-producer.png | INT-06 | /local/producer | Producer view via local mode - CompetitionHeader with "Local Development", all panels functional |
+| INT-06-local-camera-setup.png | INT-06 | /local/camera-setup | Camera setup via local mode - 4 cameras, WAG apparatus, 19 scenes preview |
 
 ---
 
