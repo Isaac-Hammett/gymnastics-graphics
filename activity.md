@@ -2,12 +2,42 @@
 
 ## Current Status
 **Phase:** VM Pool UI (Phase 16)
-**Last Task:** P16-02 - Create VMCard component
-**Next Task:** P16-03 - Create PoolStatusBar component
+**Last Task:** P16-03 - Create PoolStatusBar component
+**Next Task:** P16-04 - Create useVMPool hook
 
 ---
 
 ## 2026-01-14
+
+### P16-03: Create PoolStatusBar component
+Extracted PoolStatusBar to standalone component file `show-controller/src/components/PoolStatusBar.jsx`:
+
+**Component Features:**
+- Display Available/Assigned/In Use/Stopped/Starting/Error counts with color-coded badges
+- Visual utilization bar showing pool usage percentage (green < 50%, yellow 50-80%, red > 80%)
+- "Pool exhausted" warning when no available or stopped VMs
+- "No warm VMs" warning when available = 0 but stopped VMs exist
+- "Start Cold VM" quick action button (shows count of stopped VMs)
+- Loading state during cold VM startup
+- Responsive grid layout (3 cols mobile, 6 cols desktop)
+
+**Exports:**
+- `PoolStatusBar` (default) - Main component
+- `StatusCount` - Individual status count badge component
+
+**Props:**
+- `stats` - Pool statistics object (total, available, assigned, inUse, stopped, starting, error)
+- `onStartColdVM` - Callback to start a cold VM (optional)
+- `startingColdVM` - Whether a cold VM is currently starting (optional)
+
+**Updated VMPoolPage.jsx:**
+- Removed inline PoolStatusBar and StatusCount functions
+- Imported PoolStatusBar from new component file
+- Added `startingColdVM` state and `handleStartColdVM` handler
+- Passing `onStartColdVM` and `startingColdVM` props to PoolStatusBar
+- Removed unused ExclamationTriangleIcon import
+
+Screenshot: `screenshots/pool-status-bar.png`
 
 ### P16-02: Create VMCard component
 Extracted VMCard component to standalone file `show-controller/src/components/VMCard.jsx`:
