@@ -1147,7 +1147,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Auto-dismiss info alerts after 10s"
     ],
     "verification": "node ralph-wigg/test-helper.js screenshot http://localhost:5173/local/producer producer-with-alerts",
-    "passes": false
+    "passes": true
   },
   {
     "id": "P17-04",
@@ -1253,9 +1253,9 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 | **Phase 14: VM Infrastructure** | 3 | 3 | ✅ Complete |
 | **Phase 15: VM Pool API** | 3 | 3 | ✅ Complete |
 | **Phase 16: VM Pool UI** | 5 | 5 | ✅ Complete |
-| **Phase 17: Monitoring & Alerts** | 5 | 1 | 🔄 In progress |
+| **Phase 17: Monitoring & Alerts** | 5 | 2 | 🔄 In progress |
 | **Integration (VM Pool)** | 3 | 0 | ⬜ Not started |
-| **Total** | **67** | **60** | **90%** |
+| **Total** | **67** | **61** | **91%** |
 
 ---
 

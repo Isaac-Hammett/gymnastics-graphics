@@ -9,6 +9,8 @@ import GraphicsControl from '../components/GraphicsControl';
 import CameraRuntimePanel from '../components/CameraRuntimePanel';
 import TimesheetPanel from '../components/TimesheetPanel';
 import OverrideLog from '../components/OverrideLog';
+import AlertPanel from '../components/AlertPanel';
+import { useAlerts } from '../hooks/useAlerts';
 import {
   PlayIcon,
   BackwardIcon,
@@ -20,7 +22,9 @@ import {
   StopIcon,
   UsersIcon,
   VideoCameraIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
+  ExclamationCircleIcon,
+  BellAlertIcon
 } from '@heroicons/react/24/solid';
 
 // Health status colors for quick camera buttons
@@ -58,6 +62,19 @@ export default function ProducerView() {
     connectedClients,
     showProgress
   } = state;
+
+  // Alerts state
+  const {
+    alerts,
+    criticalAlerts,
+    warningAlerts,
+    criticalCount,
+    warningCount,
+    infoCount,
+    hasUnacknowledgedCritical,
+    acknowledgeAlert,
+    acknowledgeAll
+  } = useAlerts();
 
   const [scenes, setScenes] = useState([]);
   const [cameraHealth, setCameraHealth] = useState([]);
@@ -174,7 +191,26 @@ export default function ProducerView() {
               <div className="text-sm text-zinc-500">Producer View</div>
             </div>
           </div>
-          <ConnectionStatus />
+          <div className="flex items-center gap-3">
+            {/* Alert count badge */}
+            {(criticalCount > 0 || warningCount > 0) && (
+              <div className="flex items-center gap-1">
+                {criticalCount > 0 && (
+                  <span className="flex items-center gap-1 px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded-lg">
+                    <ExclamationCircleIcon className="w-3.5 h-3.5" />
+                    {criticalCount}
+                  </span>
+                )}
+                {warningCount > 0 && (
+                  <span className="flex items-center gap-1 px-2 py-1 bg-yellow-500/20 text-yellow-400 text-xs rounded-lg">
+                    <ExclamationTriangleIcon className="w-3.5 h-3.5" />
+                    {warningCount}
+                  </span>
+                )}
+              </div>
+            )}
+            <ConnectionStatus />
+          </div>
         </div>
       </header>
 
@@ -182,6 +218,31 @@ export default function ProducerView() {
       {error && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50">
           {error}
+        </div>
+      )}
+
+      {/* Critical Alert Banner - always visible at top */}
+      {criticalAlerts.length > 0 && (
+        <div className="bg-red-500/20 border-b border-red-500/40 px-4 py-3">
+          <div className="max-w-6xl mx-auto">
+            {criticalAlerts.map((alert) => (
+              <div key={alert.id} className="flex items-center gap-3 mb-2 last:mb-0">
+                <ExclamationCircleIcon className="w-5 h-5 text-red-400 flex-shrink-0" />
+                <div className="flex-1">
+                  <span className="text-red-400 font-medium">{alert.title}: </span>
+                  <span className="text-red-300/80">{alert.message}</span>
+                </div>
+                {!alert.acknowledged && (
+                  <button
+                    onClick={() => acknowledgeAlert(alert.id)}
+                    className="px-2 py-1 text-xs bg-red-500/30 hover:bg-red-500/50 text-red-300 rounded transition-colors"
+                  >
+                    Acknowledge
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -398,6 +459,14 @@ export default function ProducerView() {
 
             {/* Override Log */}
             <OverrideLog collapsed={true} defaultVisible={5} />
+
+            {/* Alert Panel - warning alerts shown in collapsible panel */}
+            <AlertPanel
+              alerts={alerts}
+              onAcknowledge={acknowledgeAlert}
+              onAcknowledgeAll={acknowledgeAll}
+              collapsed={true}
+            />
 
             {/* Camera Runtime Panel */}
             <CameraRuntimePanel collapsed={false} />
