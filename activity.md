@@ -1,13 +1,37 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** VM Pool UI (Phase 16)
-**Last Task:** P16-04 - Create useVMPool hook
-**Next Task:** P16-05 - Update CompetitionSelector with VM status
+**Phase:** VM Pool UI (Phase 16) - COMPLETE
+**Last Task:** P16-05 - Update CompetitionSelector with VM status
+**Next Task:** P17-01 - Create alert service
 
 ---
 
 ## 2026-01-14
+
+### P16-05: Update CompetitionSelector with VM status
+Updated `show-controller/src/pages/CompetitionSelector.jsx` with VM pool integration:
+
+**Changes:**
+- Imported `useVMPool` hook and `VM_STATUS` constants
+- Added VM status badge to competition cards (shows VM Ready, Assigned, In Use, Starting, Stopping, Error)
+- Added "Assign VM" button with count of available VMs - disabled when no VMs available
+- Added "Release VM" button for competitions with assigned VMs
+- Disabled Producer/Talent buttons when no VM is assigned (with tooltip explaining why)
+- Added VM IP display directly on card when VM is assigned
+- Added VM IP in tooltip on status badge hover
+- Added "VM Pool" link to footer navigation linking to /admin/vm-pool
+- Added loading states for assign/release operations with spinner animation
+
+**UI Features:**
+- VM status badge color-coded by status (green=ready, blue=assigned, purple=in use, yellow=starting, orange=stopping, red=error)
+- Producer/Talent buttons styled differently when disabled (gray text, not-allowed cursor)
+- Assign button shows available VM count in parentheses
+- VM section separated with border-top for visual clarity
+
+Verification: Build succeeds with `npm run build`
+
+---
 
 ### P16-04: Create useVMPool hook
 Created `show-controller/src/hooks/useVMPool.js` for managing VM pool state and actions:

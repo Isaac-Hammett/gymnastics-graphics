@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useCompetitions } from '../hooks/useCompetitions';
+import { useVMPool, VM_STATUS } from '../hooks/useVMPool';
 
 /**
  * CompetitionSelector - Landing page for selecting a competition to control.
@@ -17,8 +18,19 @@ import { useCompetitions } from '../hooks/useCompetitions';
  */
 export default function CompetitionSelector() {
   const { competitions, loading, error } = useCompetitions();
+  const {
+    vms,
+    availableVMs,
+    assignVM,
+    releaseVM,
+    getVMForCompetition,
+    hasVMAssigned,
+    loading: vmPoolLoading,
+  } = useVMPool();
   const [searchQuery, setSearchQuery] = useState('');
   const [vmStatuses, setVmStatuses] = useState({});
+  const [assigningVm, setAssigningVm] = useState(null); // compId being assigned
+  const [releasingVm, setReleasingVm] = useState(null); // compId being released
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -164,6 +176,44 @@ export default function CompetitionSelector() {
     });
   };
 
+  // Handle assigning a VM to a competition
+  const handleAssignVM = async (compId) => {
+    setAssigningVm(compId);
+    const result = await assignVM(compId);
+    setAssigningVm(null);
+    if (!result.success) {
+      console.error('Failed to assign VM:', result.error);
+    }
+  };
+
+  // Handle releasing a VM from a competition
+  const handleReleaseVM = async (compId) => {
+    setReleasingVm(compId);
+    const result = await releaseVM(compId);
+    setReleasingVm(null);
+    if (!result.success) {
+      console.error('Failed to release VM:', result.error);
+    }
+  };
+
+  // Get VM status badge for a competition
+  const getVMStatusBadge = (compId) => {
+    const vm = getVMForCompetition(compId);
+    if (!vm) return null;
+
+    const statusConfig = {
+      [VM_STATUS.AVAILABLE]: { color: 'bg-green-500', label: 'VM Ready' },
+      [VM_STATUS.ASSIGNED]: { color: 'bg-blue-500', label: 'VM Assigned' },
+      [VM_STATUS.IN_USE]: { color: 'bg-purple-500', label: 'VM In Use' },
+      [VM_STATUS.STARTING]: { color: 'bg-yellow-500', label: 'VM Starting' },
+      [VM_STATUS.STOPPING]: { color: 'bg-orange-500', label: 'VM Stopping' },
+      [VM_STATUS.ERROR]: { color: 'bg-red-500', label: 'VM Error' },
+    };
+
+    const config = statusConfig[vm.status] || { color: 'bg-zinc-500', label: vm.status };
+    return { ...config, vm };
+  };
+
   const VmStatusIndicator = ({ compId }) => {
     const status = vmStatuses[compId];
     if (!status) {
@@ -187,6 +237,11 @@ export default function CompetitionSelector() {
     const genderBadge = getGenderBadge(config);
     const teams = getTeams(config);
     const meetDate = config?.meetDate ? new Date(config.meetDate) : null;
+    const vmBadge = getVMStatusBadge(compId);
+    const hasVM = hasVMAssigned(compId);
+    const isAssigning = assigningVm === compId;
+    const isReleasing = releasingVm === compId;
+    const canAssignVM = availableVMs.length > 0 && !hasVM;
 
     return (
       <div className="bg-zinc-900 border-2 border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors">
@@ -196,6 +251,14 @@ export default function CompetitionSelector() {
             <span className={`px-2 py-0.5 rounded text-xs font-bold text-white ${genderBadge.color}`}>
               {genderBadge.label}
             </span>
+            {vmBadge && (
+              <span
+                className={`px-2 py-0.5 rounded text-xs font-bold text-white ${vmBadge.color} cursor-help`}
+                title={vmBadge.vm.publicIp ? `IP: ${vmBadge.vm.publicIp}` : 'No IP assigned'}
+              >
+                {vmBadge.label}
+              </span>
+            )}
           </div>
           <span className="text-xs text-zinc-500">{compId}</span>
         </div>
@@ -210,21 +273,42 @@ export default function CompetitionSelector() {
         </div>
 
         {teams.length > 0 && (
-          <div className="text-sm text-zinc-500 mb-4">
+          <div className="text-sm text-zinc-500 mb-3">
             {teams.join(' vs ')}
           </div>
         )}
 
+        {/* VM IP display when assigned */}
+        {vmBadge?.vm?.publicIp && (
+          <div className="text-xs text-zinc-500 mb-3 font-mono">
+            VM: {vmBadge.vm.publicIp}
+          </div>
+        )}
+
         <div className="flex gap-2 flex-wrap">
+          {/* Producer button - disabled when no VM */}
           <button
             onClick={() => handleCompetitionClick(compId, '/producer')}
-            className="px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-500 transition-colors"
+            disabled={!hasVM}
+            className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+              hasVM
+                ? 'bg-blue-600 text-white hover:bg-blue-500'
+                : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+            }`}
+            title={!hasVM ? 'Assign a VM first' : undefined}
           >
             Producer
           </button>
+          {/* Talent button - disabled when no VM */}
           <button
             onClick={() => handleCompetitionClick(compId, '/talent')}
-            className="px-3 py-1.5 bg-zinc-800 text-zinc-300 text-sm font-medium rounded-lg hover:bg-zinc-700 transition-colors"
+            disabled={!hasVM}
+            className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+              hasVM
+                ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+            }`}
+            title={!hasVM ? 'Assign a VM first' : undefined}
           >
             Talent
           </button>
@@ -242,6 +326,46 @@ export default function CompetitionSelector() {
           >
             Cameras
           </Link>
+        </div>
+
+        {/* VM Assignment Controls */}
+        <div className="flex gap-2 mt-3 pt-3 border-t border-zinc-800">
+          {!hasVM ? (
+            <button
+              onClick={() => handleAssignVM(compId)}
+              disabled={!canAssignVM || isAssigning}
+              className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                canAssignVM && !isAssigning
+                  ? 'bg-green-600 text-white hover:bg-green-500'
+                  : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+              }`}
+              title={!canAssignVM ? 'No VMs available' : undefined}
+            >
+              {isAssigning ? (
+                <span className="flex items-center gap-1">
+                  <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Assigning...
+                </span>
+              ) : (
+                `Assign VM${availableVMs.length > 0 ? ` (${availableVMs.length})` : ''}`
+              )}
+            </button>
+          ) : (
+            <button
+              onClick={() => handleReleaseVM(compId)}
+              disabled={isReleasing}
+              className="px-3 py-1.5 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-500 transition-colors disabled:opacity-50"
+            >
+              {isReleasing ? (
+                <span className="flex items-center gap-1">
+                  <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Releasing...
+                </span>
+              ) : (
+                'Release VM'
+              )}
+            </button>
+          )}
         </div>
       </div>
     );
@@ -421,12 +545,15 @@ export default function CompetitionSelector() {
 
         {/* Footer Links */}
         <div className="mt-12 pt-6 border-t border-zinc-800 text-center">
-          <div className="flex justify-center gap-6 text-sm">
+          <div className="flex justify-center gap-6 text-sm flex-wrap">
             <Link to="/" className="text-zinc-500 hover:text-white transition-colors">
               Hub
             </Link>
             <Link to="/dashboard" className="text-zinc-500 hover:text-white transition-colors">
               Dashboard
+            </Link>
+            <Link to="/admin/vm-pool" className="text-zinc-500 hover:text-white transition-colors">
+              VM Pool
             </Link>
             <Link to="/url-generator" className="text-zinc-500 hover:text-white transition-colors">
               URL Generator
