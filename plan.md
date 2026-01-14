@@ -694,7 +694,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Add 'Change' link to /select"
     ],
     "verification": "Build succeeds and components can be imported",
-    "passes": false
+    "passes": true
   },
   {
     "id": "P10-04",
@@ -926,12 +926,12 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 | Phase 7: Context & Hooks | 5 | 5 | ✅ Complete |
 | Phase 8: Apparatus Config | 3 | 3 | ✅ Complete |
 | Phase 9: Firebase Production | 3 | 3 | ✅ Complete |
-| Phase 10: URL Routing | 6 | 2 | 🔄 In Progress |
+| Phase 10: URL Routing | 6 | 3 | 🔄 In Progress |
 | Phase 11: Dynamic Apparatus UI | 3 | 0 | 🔲 Pending |
 | Phase 12: Migration | 2 | 0 | 🔲 Pending |
 | Integration (Original) | 3 | 3 | ✅ Complete |
 | Integration (New) | 5 | 0 | 🔲 Pending |
-| **Total** | **48** | **39** | **81%** |
+| **Total** | **48** | **40** | **83%** |
 
 ---
 
