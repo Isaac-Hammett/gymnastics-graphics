@@ -1132,7 +1132,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Auto-resolve alerts on recovery"
     ],
     "verification": "VM going offline triggers alert in Firebase",
-    "passes": false
+    "passes": true
   },
   {
     "id": "P17-03",

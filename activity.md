@@ -2,12 +2,52 @@
 
 ## Current Status
 **Phase:** Monitoring & Alerts (Phase 17)
-**Last Task:** P17-01 - Create alert service
-**Next Task:** P17-02 - Add VM alert triggers
+**Last Task:** P17-02 - Add VM alert triggers
+**Next Task:** P17-03 - Add alerts to Producer view
 
 ---
 
 ## 2026-01-14
+
+### P17-02: Add VM alert triggers
+Updated `server/lib/vmHealthMonitor.js` to integrate with alertService for automatic alert creation:
+
+**Imports Added:**
+- `getAlertService`, `ALERT_LEVEL`, `ALERT_CATEGORY` from alertService.js
+
+**Constructor Changes:**
+- Added `_alertService` field to track alert service instance
+
+**Initialize Changes:**
+- Get alertService singleton and initialize if not ready
+
+**Alert Triggers (in _handleUnhealthyVM):**
+- **Critical - VM Unreachable**: When node server fails health check after threshold failures
+  - Uses sourceId `vm-unreachable-{vmId}` for auto-resolution tracking
+  - Includes vmId, publicIp, and error reason in metadata
+- **Critical - OBS Disconnected**: When node is up but OBS WebSocket is down
+  - Uses sourceId `obs-disconnected-{vmId}` for auto-resolution tracking
+  - Only fires if node server is healthy but OBS is not connected
+
+**Auto-Resolution (in _handleHealthyVM):**
+- On VM recovery, auto-resolves alerts by sourceId:
+  - `vm-unreachable-{vmId}`
+  - `obs-disconnected-{vmId}`
+  - `node-down-{vmId}`
+
+**New Method - createIdleTimeoutAlert():**
+- Creates info-level alert when VM is stopped due to idle timeout
+- Uses sourceId `vm-idle-stop-{vmId}`
+- Includes stoppedAt timestamp in metadata
+
+**Key Design Decisions:**
+- Alerts only created for VMs assigned to competitions (vm.assignedTo required)
+- Events still emitted for unassigned VMs for backwards compatibility
+- sourceId pattern enables automatic resolution when VM recovers
+
+Verification: `node -e "import('./lib/vmHealthMonitor.js')"` exits 0
+
+---
 
 ### P17-01: Create alert service
 Created `server/lib/alertService.js` with centralized alert management:
