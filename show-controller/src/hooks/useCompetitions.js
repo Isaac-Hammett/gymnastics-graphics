@@ -224,6 +224,73 @@ async function enrichTeamsWithRTN(config, gender = 'womens') {
   return teamData;
 }
 
+/**
+ * Validate VM address format (host:port)
+ * @param {string} address - The VM address to validate
+ * @returns {boolean} True if valid format
+ */
+export function isValidVmAddress(address) {
+  if (!address || typeof address !== 'string') return false;
+
+  // Match host:port format
+  // Host can be IP address (xxx.xxx.xxx.xxx) or hostname (letters, numbers, dots, hyphens)
+  // Port must be 1-65535
+  const vmAddressRegex = /^([a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?:\d{1,5}$|^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d{1,5}$/;
+
+  if (!vmAddressRegex.test(address)) return false;
+
+  // Extract and validate port range
+  const parts = address.split(':');
+  const port = parseInt(parts[parts.length - 1], 10);
+
+  return port >= 1 && port <= 65535;
+}
+
+/**
+ * Check VM status by fetching /api/status endpoint
+ * @param {string} vmAddress - The VM address (host:port format, no protocol)
+ * @param {number} timeout - Timeout in milliseconds (default 5000)
+ * @returns {Promise<{online: boolean, obsConnected?: boolean, error?: string}>}
+ */
+export async function checkVmStatus(vmAddress, timeout = 5000) {
+  if (!isValidVmAddress(vmAddress)) {
+    return { online: false, error: 'Invalid VM address format' };
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    const response = await fetch(`http://${vmAddress}/api/status`, {
+      signal: controller.signal,
+      headers: {
+        'Accept': 'application/json',
+      },
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      return { online: false, error: `HTTP ${response.status}` };
+    }
+
+    const data = await response.json();
+
+    return {
+      online: true,
+      obsConnected: data.obsConnected || false,
+    };
+  } catch (err) {
+    clearTimeout(timeoutId);
+
+    if (err.name === 'AbortError') {
+      return { online: false, error: 'Request timed out' };
+    }
+
+    return { online: false, error: err.message || 'Connection failed' };
+  }
+}
+
 export function useCompetitions() {
   const [competitions, setCompetitions] = useState({});
   const [loading, setLoading] = useState(true);
@@ -430,6 +497,28 @@ export function useCompetitions() {
     }
   }, []);
 
+  /**
+   * Update the VM address for a competition
+   * @param {string} compId - Competition ID
+   * @param {string} vmAddress - VM address in host:port format (e.g., '3.81.127.185:3003')
+   * @returns {Promise<{success: boolean, error?: string}>}
+   */
+  const updateVmAddress = useCallback(async (compId, vmAddress) => {
+    // Validate vmAddress format before saving
+    if (vmAddress && !isValidVmAddress(vmAddress)) {
+      return { success: false, error: 'Invalid VM address format. Expected host:port (e.g., 192.168.1.1:3003)' };
+    }
+
+    try {
+      await update(ref(db, `competitions/${compId}/config`), {
+        vmAddress: vmAddress || null,
+      });
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  }, []);
+
   return {
     competitions,
     loading,
@@ -440,6 +529,9 @@ export function useCompetitions() {
     duplicateCompetition,
     refreshTeamData,
     addTeamHeadshots,
+    updateVmAddress,
+    isValidVmAddress,
+    checkVmStatus,
   };
 }
 
