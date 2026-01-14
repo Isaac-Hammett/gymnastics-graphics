@@ -3,34 +3,46 @@
   "cameras": [
     {
       "id": "cam-1",
-      "name": "Camera 1 - Floor/Vault",
-      "srtPort": 9001,
-      "srtUrl": "srt://nimble.local:9001",
-      "expectedApparatus": ["FX", "VT"],
+      "name": "Camera 1 - Vault",
+      "srtPort": 10001,
+      "srtUrl": "srt://nimble.local:10001",
+      "expectedApparatus": [
+        "VT"
+      ],
       "fallbackCameraId": "cam-2"
     },
     {
       "id": "cam-2",
-      "name": "Camera 2 - Pommel/PBars",
+      "name": "Camera 2 - ub",
       "srtPort": 9002,
       "srtUrl": "srt://nimble.local:9002",
-      "expectedApparatus": ["PH", "PB"],
+      "expectedApparatus": [
+        "PH",
+        "PB",
+        "UB"
+      ],
       "fallbackCameraId": "cam-1"
     },
     {
       "id": "cam-3",
-      "name": "Camera 3 - Rings/HBar",
+      "name": "Camera 3 - bb",
       "srtPort": 9003,
       "srtUrl": "srt://nimble.local:9003",
-      "expectedApparatus": ["SR", "HB"],
+      "expectedApparatus": [
+        "SR",
+        "HB",
+        "BB"
+      ],
       "fallbackCameraId": "cam-2"
     },
     {
       "id": "cam-talent",
-      "name": "Talent Camera",
+      "name": "Talent Camera 4 - fx",
       "srtPort": 9004,
       "srtUrl": "srt://nimble.local:9004",
-      "expectedApparatus": []
+      "expectedApparatus": [
+        "FX"
+      ]
     }
   ],
   "nimbleServer": {
@@ -45,7 +57,7 @@
     },
     "commentary": {
       "sourceName": "Commentary Mix",
-      "defaultVolume": 1.0
+      "defaultVolume": 1
     }
   },
   "graphicsOverlay": {
@@ -137,7 +149,9 @@
       "type": "live",
       "obsScene": "Single - Camera 1",
       "cameraId": "cam-1",
-      "intendedApparatus": ["FX"],
+      "intendedApparatus": [
+        "FX"
+      ],
       "duration": null,
       "autoAdvance": false,
       "notes": "Floor exercise routines"
@@ -160,7 +174,9 @@
       "type": "live",
       "obsScene": "Single - Camera 2",
       "cameraId": "cam-2",
-      "intendedApparatus": ["PH"],
+      "intendedApparatus": [
+        "PH"
+      ],
       "duration": null,
       "autoAdvance": false,
       "notes": "Pommel horse routines"
@@ -183,7 +199,9 @@
       "type": "live",
       "obsScene": "Single - Camera 3",
       "cameraId": "cam-3",
-      "intendedApparatus": ["SR"],
+      "intendedApparatus": [
+        "SR"
+      ],
       "duration": null,
       "autoAdvance": false,
       "notes": "Still rings routines"
@@ -215,7 +233,9 @@
       "type": "live",
       "obsScene": "Single - Camera 1",
       "cameraId": "cam-1",
-      "intendedApparatus": ["VT"],
+      "intendedApparatus": [
+        "VT"
+      ],
       "duration": null,
       "autoAdvance": false,
       "notes": "Vault routines"
@@ -238,7 +258,9 @@
       "type": "live",
       "obsScene": "Single - Camera 2",
       "cameraId": "cam-2",
-      "intendedApparatus": ["PB"],
+      "intendedApparatus": [
+        "PB"
+      ],
       "duration": null,
       "autoAdvance": false,
       "notes": "Parallel bars routines"
@@ -261,7 +283,9 @@
       "type": "live",
       "obsScene": "Single - Camera 3",
       "cameraId": "cam-3",
-      "intendedApparatus": ["HB"],
+      "intendedApparatus": [
+        "HB"
+      ],
       "duration": null,
       "autoAdvance": false,
       "notes": "High bar routines"
