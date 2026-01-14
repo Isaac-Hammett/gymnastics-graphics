@@ -8,6 +8,7 @@ import ControllerPage from './pages/ControllerPage';
 import UrlGeneratorPage from './pages/UrlGeneratorPage';
 import MediaManagerPage from './pages/MediaManagerPage';
 import CameraSetupPage from './pages/CameraSetupPage';
+import CompetitionSelector from './pages/CompetitionSelector';
 
 // Existing views (for show controller functionality)
 import TalentView from './views/TalentView';
@@ -20,6 +21,8 @@ function App() {
       <Routes>
         {/* New consolidated pages */}
         <Route path="/" element={<HubPage />} />
+        <Route path="/hub" element={<HubPage />} />
+        <Route path="/select" element={<CompetitionSelector />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/controller" element={<ControllerPage />} />
         <Route path="/url-generator" element={<UrlGeneratorPage />} />
