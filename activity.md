@@ -1,9 +1,9 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** Phase 11 - Dynamic Apparatus UI (In Progress)
-**Last Task:** P11-02 - Update CameraRuntimePanel for dynamic apparatus
-**Next Task:** P11-03 - Update QuickActions for dynamic apparatus
+**Phase:** Phase 11 - Dynamic Apparatus UI (Complete)
+**Last Task:** P11-03 - Update QuickActions for dynamic apparatus
+**Next Task:** P12-01 - Create migration script for show-config.json
 
 ---
 
@@ -979,6 +979,21 @@ Updated `show-controller/src/components/CameraRuntimePanel.jsx` with dynamic app
 - Server URL now uses `socketUrl` from competition context instead of hardcoded value
 - Verification: Screenshot at `screenshots/P11-02-camera-runtime-panel.png` shows runtime panel with correct apparatus for competition gender
 
+### P11-03: Update QuickActions for dynamic apparatus
+Updated `show-controller/src/components/QuickActions.jsx` with dynamic apparatus based on competition gender:
+- Imported `useCompetition` from `CompetitionContext` to get gender and socketUrl
+- Imported `useApparatus` hook to get apparatus configuration for gender
+- Removed hardcoded `APPARATUS_ORDER` constant (was 6 men's apparatus: FX, PH, SR, VT, PB, HB)
+- Get `gender` and `socketUrl` from `useCompetition()` hook
+- Get `apparatusCodes`, `getApparatusName`, and `count` from `useApparatus(gender)` hook
+- Apparatus Cameras section now dynamically renders apparatus buttons based on gender:
+  - WAG: 4 apparatus (VT, UB, BB, FX) in Olympic order
+  - MAG: 6 apparatus (FX, PH, SR, VT, PB, HB) in Olympic order
+- Grid layout adjusts dynamically: `grid-cols-4` for WAG, `grid-cols-3 sm:grid-cols-6` for MAG
+- Tooltips now include full apparatus name (e.g., "Vault - Camera 1: healthy")
+- Server URL uses `socketUrl` from competition context instead of hardcoded/env value
+- Verification: `npm run build` succeeds, screenshot at `screenshots/quick-actions-dynamic.png`
+
 ---
 
 ## Task Completion Log
@@ -1030,6 +1045,7 @@ Updated `show-controller/src/components/CameraRuntimePanel.jsx` with dynamic app
 | P10-06 | Update useCompetitions hook with vmAddress support | ✅ done | 2026-01-14 |
 | P11-01 | Update CameraSetupPage for dynamic apparatus | ✅ done | 2026-01-14 |
 | P11-02 | Update CameraRuntimePanel for dynamic apparatus | ✅ done | 2026-01-14 |
+| P11-03 | Update QuickActions for dynamic apparatus | ✅ done | 2026-01-14 |
 
 ---
 
@@ -1051,6 +1067,7 @@ Updated `show-controller/src/components/CameraRuntimePanel.jsx` with dynamic app
 | P10-05-dynamic-socket.png | P10-05 | /local/producer | ShowContext with dynamic socket URL from CompetitionContext |
 | P11-01-camera-setup-dynamic.png | P11-01 | /local/camera-setup | CameraSetupPage with dynamic apparatus (4 for WAG) and gender badge |
 | P11-02-camera-runtime-panel.png | P11-02 | /local/producer | CameraRuntimePanel with dynamic apparatus from competition gender |
+| quick-actions-dynamic.png | P11-03 | /local/producer | QuickActions with dynamic apparatus - renders 4 buttons for WAG, 6 for MAG in Olympic order |
 
 ---
 
