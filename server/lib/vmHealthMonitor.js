@@ -14,6 +14,7 @@
 import { EventEmitter } from 'events';
 import admin from 'firebase-admin';
 import { getVMPoolManager, VM_STATUS } from './vmPoolManager.js';
+import { getAlertService, ALERT_LEVEL, ALERT_CATEGORY } from './alertService.js';
 
 // Health check configuration
 const DEFAULT_CONFIG = {
@@ -35,6 +36,7 @@ class VMHealthMonitor extends EventEmitter {
     this._config = { ...DEFAULT_CONFIG, ...config };
     this._db = null;
     this._poolManager = null;
+    this._alertService = null;
     this._pollInterval = null;
     this._isRunning = false;
     this._failureCounts = new Map();  // Track consecutive failures per VM
@@ -69,6 +71,12 @@ class VMHealthMonitor extends EventEmitter {
 
       this._db = admin.database();
       this._poolManager = getVMPoolManager();
+      this._alertService = getAlertService();
+
+      // Initialize alert service if not already done
+      if (!this._alertService.isInitialized()) {
+        await this._alertService.initialize();
+      }
 
       // Start health check polling loop
       this._startPolling();
@@ -300,6 +308,16 @@ class VMHealthMonitor extends EventEmitter {
     const successCount = (this._successCounts.get(vmId) || 0) + 1;
     this._successCounts.set(vmId, successCount);
 
+    // Auto-resolve any alerts for this VM when healthy
+    if (vm.assignedTo && this._alertService) {
+      // Resolve VM unreachable alerts
+      await this._alertService.resolveBySourceId(vm.assignedTo, `vm-unreachable-${vmId}`, 'system');
+      // Resolve OBS disconnected alerts
+      await this._alertService.resolveBySourceId(vm.assignedTo, `obs-disconnected-${vmId}`, 'system');
+      // Resolve node server down alerts
+      await this._alertService.resolveBySourceId(vm.assignedTo, `node-down-${vmId}`, 'system');
+    }
+
     // If VM was in error state and has recovered
     if (vm.status === VM_STATUS.ERROR && successCount >= this._config.recoveryThreshold) {
       console.log(`[VMHealthMonitor] VM ${vmId} has recovered (${successCount} successful checks)`);
@@ -367,24 +385,98 @@ class VMHealthMonitor extends EventEmitter {
           assignedTo: vm.assignedTo
         });
 
-        // Emit specific events based on what failed
-        if (!result.services?.nodeServer) {
-          this.emit('vmUnreachable', {
-            vmId,
-            publicIp: vm.publicIp,
-            reason: result.error || 'Node server not responding'
-          });
-        }
+        // Create alerts based on what failed - only for VMs assigned to competitions
+        if (vm.assignedTo && this._alertService) {
+          if (!result.services?.nodeServer) {
+            // VM is completely unreachable - critical alert
+            await this._alertService.createAlert(vm.assignedTo, {
+              level: ALERT_LEVEL.CRITICAL,
+              category: ALERT_CATEGORY.VM,
+              title: 'VM Unreachable',
+              message: `Production VM ${vm.name || vmId} is not responding. IP: ${vm.publicIp}. Reason: ${result.error || 'Node server not responding'}`,
+              sourceId: `vm-unreachable-${vmId}`,
+              metadata: {
+                vmId,
+                publicIp: vm.publicIp,
+                reason: result.error
+              }
+            });
 
-        if (result.services?.nodeServer && !result.services?.obsConnected) {
-          this.emit('obsDisconnected', {
-            vmId,
-            publicIp: vm.publicIp
-          });
+            this.emit('vmUnreachable', {
+              vmId,
+              publicIp: vm.publicIp,
+              reason: result.error || 'Node server not responding'
+            });
+          } else if (!result.services?.obsConnected) {
+            // Node is up but OBS is disconnected - critical alert
+            await this._alertService.createAlert(vm.assignedTo, {
+              level: ALERT_LEVEL.CRITICAL,
+              category: ALERT_CATEGORY.OBS,
+              title: 'OBS Disconnected',
+              message: `OBS WebSocket disconnected on VM ${vm.name || vmId}. Streaming may be interrupted.`,
+              sourceId: `obs-disconnected-${vmId}`,
+              metadata: {
+                vmId,
+                publicIp: vm.publicIp
+              }
+            });
+
+            this.emit('obsDisconnected', {
+              vmId,
+              publicIp: vm.publicIp
+            });
+          }
+        } else {
+          // Still emit events for VMs not assigned to competitions
+          if (!result.services?.nodeServer) {
+            this.emit('vmUnreachable', {
+              vmId,
+              publicIp: vm.publicIp,
+              reason: result.error || 'Node server not responding'
+            });
+          }
+
+          if (result.services?.nodeServer && !result.services?.obsConnected) {
+            this.emit('obsDisconnected', {
+              vmId,
+              publicIp: vm.publicIp
+            });
+          }
         }
       } catch (error) {
         console.error(`[VMHealthMonitor] Failed to set error for VM ${vmId}:`, error.message);
       }
+    }
+  }
+
+  /**
+   * Create an info alert for idle timeout stop
+   * Called when a VM is stopped due to idle timeout
+   * @param {string} vmId - VM ID
+   * @param {Object} vm - VM data
+   */
+  async createIdleTimeoutAlert(vmId, vm) {
+    if (!vm.assignedTo || !this._alertService) {
+      return;
+    }
+
+    try {
+      await this._alertService.createAlert(vm.assignedTo, {
+        level: ALERT_LEVEL.INFO,
+        category: ALERT_CATEGORY.VM,
+        title: 'VM Stopped (Idle)',
+        message: `VM ${vm.name || vmId} was stopped due to idle timeout. Click to restart if needed.`,
+        sourceId: `vm-idle-stop-${vmId}`,
+        metadata: {
+          vmId,
+          publicIp: vm.publicIp,
+          stoppedAt: new Date().toISOString()
+        }
+      });
+
+      console.log(`[VMHealthMonitor] Created idle timeout alert for VM ${vmId}`);
+    } catch (error) {
+      console.error(`[VMHealthMonitor] Failed to create idle timeout alert:`, error.message);
     }
   }
 
