@@ -1018,7 +1018,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Broadcast vmError event"
     ],
     "verification": "Server logs show VM socket events registered",
-    "passes": false
+    "passes": true
   },
   {
     "id": "P16-01",
@@ -1251,11 +1251,11 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 | Integration (Original) | 3 | 3 | ✅ Complete |
 | Integration (Phases 8-12) | 5 | 5 | ✅ Complete |
 | **Phase 14: VM Infrastructure** | 3 | 3 | ✅ Complete |
-| **Phase 15: VM Pool API** | 3 | 0 | ⬜ Not started |
+| **Phase 15: VM Pool API** | 3 | 3 | ✅ Complete |
 | **Phase 16: VM Pool UI** | 5 | 0 | ⬜ Not started |
 | **Phase 17: Monitoring & Alerts** | 5 | 0 | ⬜ Not started |
 | **Integration (VM Pool)** | 3 | 0 | ⬜ Not started |
-| **Total** | **67** | **51** | **76%** |
+| **Total** | **67** | **54** | **81%** |
 
 ---
 

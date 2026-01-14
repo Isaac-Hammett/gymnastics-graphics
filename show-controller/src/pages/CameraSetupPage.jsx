@@ -78,11 +78,12 @@ export default function CameraSetupPage() {
   }
 
   function addCamera() {
+    const port = 11000 + cameras.length;
     const newCamera = {
       id: generateCameraId(),
       name: `Camera ${cameras.length + 1}`,
-      srtPort: 9000 + cameras.length + 1,
-      srtUrl: `srt://nimble.local:${9000 + cameras.length + 1}`,
+      srtPort: port,
+      srtUrl: `srt://stream.virti.us:${port}?mode=caller`,
       expectedApparatus: [],
       fallbackCameraId: null
     };
@@ -105,9 +106,13 @@ export default function CameraSetupPage() {
     const newCameras = [...cameras];
     newCameras[index] = { ...newCameras[index], [field]: value };
 
-    // Update srtUrl when srtPort changes
+    // Update srtUrl when srtPort changes (only if URL hasn't been manually customized)
     if (field === 'srtPort') {
-      newCameras[index].srtUrl = `srt://nimble.local:${value}`;
+      const currentUrl = newCameras[index].srtUrl || '';
+      // Only auto-update if URL matches the default virti.us pattern or is empty
+      if (!currentUrl || currentUrl.match(/^srt:\/\/stream\.virti\.us:\d+\?mode=caller$/)) {
+        newCameras[index].srtUrl = `srt://stream.virti.us:${value}?mode=caller`;
+      }
     }
 
     setCameras(newCameras);
@@ -388,14 +393,15 @@ function CameraCard({ camera, index, cameras, onUpdate, onToggleApparatus, onRem
         </div>
       </div>
 
-      {/* SRT URL (read-only, auto-generated) */}
+      {/* SRT URL (editable) */}
       <div className="mb-4">
         <label className="block text-xs text-zinc-400 mb-1">SRT URL</label>
         <input
           type="text"
           value={camera.srtUrl}
-          readOnly
-          className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-zinc-400 text-sm font-mono"
+          onChange={(e) => onUpdate(index, 'srtUrl', e.target.value)}
+          placeholder="srt://hostname:port"
+          className="w-full px-3 py-2 bg-zinc-700 border border-zinc-600 rounded-lg text-white text-sm font-mono focus:outline-none focus:border-blue-500"
         />
       </div>
 

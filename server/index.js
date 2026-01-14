@@ -302,6 +302,88 @@ function initializeTimesheetEngine() {
   console.log('Timesheet engine initialized');
 }
 
+// Initialize VM Pool Manager and wire up event broadcasts (P15-03)
+function initializeVMPoolManager() {
+  const vmPoolManager = getVMPoolManager();
+
+  // Wire up VM pool events to broadcast to all clients
+  vmPoolManager.on('poolUpdated', (data) => {
+    console.log(`[VMPool] Pool updated: ${data.vmCount} VMs`);
+    io.emit('vmPoolStatus', vmPoolManager.getPoolStatus());
+  });
+
+  vmPoolManager.on('vmAssigned', (data) => {
+    console.log(`[VMPool] VM ${data.vmId} assigned to competition ${data.competitionId}`);
+    io.emit('vmAssigned', data);
+    io.emit('vmPoolStatus', vmPoolManager.getPoolStatus());
+  });
+
+  vmPoolManager.on('vmReleased', (data) => {
+    console.log(`[VMPool] VM ${data.vmId} released from competition ${data.competitionId}`);
+    io.emit('vmReleased', data);
+    io.emit('vmPoolStatus', vmPoolManager.getPoolStatus());
+  });
+
+  vmPoolManager.on('vmStarting', (data) => {
+    console.log(`[VMPool] VM ${data.vmId} is starting`);
+    io.emit('vmStarting', {
+      ...data,
+      estimatedReadyTime: new Date(Date.now() + 180000).toISOString() // ~3 minutes
+    });
+    io.emit('vmPoolStatus', vmPoolManager.getPoolStatus());
+  });
+
+  vmPoolManager.on('vmReady', (data) => {
+    console.log(`[VMPool] VM ${data.vmId} is ready at ${data.publicIp}`);
+    io.emit('vmReady', data);
+    io.emit('vmPoolStatus', vmPoolManager.getPoolStatus());
+  });
+
+  vmPoolManager.on('vmStopping', (data) => {
+    console.log(`[VMPool] VM ${data.vmId} is stopping`);
+    io.emit('vmStopping', data);
+    io.emit('vmPoolStatus', vmPoolManager.getPoolStatus());
+  });
+
+  vmPoolManager.on('vmStopped', (data) => {
+    console.log(`[VMPool] VM ${data.vmId} is stopped`);
+    io.emit('vmStopped', data);
+    io.emit('vmPoolStatus', vmPoolManager.getPoolStatus());
+  });
+
+  vmPoolManager.on('vmError', (data) => {
+    console.error(`[VMPool] VM ${data.vmId} error: ${data.error || data.reason}`);
+    io.emit('vmError', data);
+    io.emit('vmPoolStatus', vmPoolManager.getPoolStatus());
+  });
+
+  vmPoolManager.on('vmInUse', (data) => {
+    console.log(`[VMPool] VM ${data.vmId} is now in use for competition ${data.competitionId}`);
+    io.emit('vmInUse', data);
+    io.emit('vmPoolStatus', vmPoolManager.getPoolStatus());
+  });
+
+  vmPoolManager.on('configUpdated', (config) => {
+    console.log('[VMPool] Pool config updated');
+    io.emit('vmPoolConfigUpdated', config);
+  });
+
+  vmPoolManager.on('poolMaintenance', (data) => {
+    console.log(`[VMPool] Pool maintenance: started ${data.startedCount} VMs`);
+    io.emit('vmPoolMaintenance', data);
+  });
+
+  // Try to initialize the pool (non-blocking, will log errors)
+  vmPoolManager.initializePool().then(() => {
+    console.log('[VMPool] VM pool manager initialized and listening for events');
+    // Broadcast initial pool status
+    io.emit('vmPoolStatus', vmPoolManager.getPoolStatus());
+  }).catch((error) => {
+    console.log(`[VMPool] VM pool not available: ${error.message}`);
+    console.log('[VMPool] VM pool features disabled - this is normal for local development');
+  });
+}
+
 // Watch for config changes (hot reload)
 watchFile(join(__dirname, 'config', 'show-config.json'), () => {
   console.log('Show config changed, reloading...');
@@ -2019,6 +2101,122 @@ io.on('connection', (socket) => {
     broadcastState();
   });
 
+  // =====================================================
+  // VM Pool Socket Events (P15-03)
+  // =====================================================
+
+  // Assign a VM to a competition
+  socket.on('assignVM', async ({ competitionId, preferredVmId }) => {
+    try {
+      const vmPoolManager = getVMPoolManager();
+      if (!vmPoolManager.isInitialized()) {
+        socket.emit('vmError', { error: 'VM pool not initialized' });
+        return;
+      }
+
+      const result = await vmPoolManager.assignVM(competitionId, preferredVmId);
+      // vmAssigned event is emitted by the pool manager and will be broadcast via event listener
+      socket.emit('vmAssignmentResult', result);
+    } catch (error) {
+      console.error(`[Socket] assignVM failed:`, error.message);
+      socket.emit('vmError', {
+        error: error.message,
+        competitionId
+      });
+    }
+  });
+
+  // Release a VM from a competition
+  socket.on('releaseVM', async ({ competitionId }) => {
+    try {
+      const vmPoolManager = getVMPoolManager();
+      if (!vmPoolManager.isInitialized()) {
+        socket.emit('vmError', { error: 'VM pool not initialized' });
+        return;
+      }
+
+      const result = await vmPoolManager.releaseVM(competitionId);
+      // vmReleased event is emitted by the pool manager and will be broadcast via event listener
+      socket.emit('vmReleaseResult', result);
+    } catch (error) {
+      console.error(`[Socket] releaseVM failed:`, error.message);
+      socket.emit('vmError', {
+        error: error.message,
+        competitionId
+      });
+    }
+  });
+
+  // Start a stopped VM
+  socket.on('startVM', async ({ vmId }) => {
+    try {
+      const vmPoolManager = getVMPoolManager();
+      if (!vmPoolManager.isInitialized()) {
+        socket.emit('vmError', { error: 'VM pool not initialized' });
+        return;
+      }
+
+      const result = await vmPoolManager.startVM(vmId);
+      // vmStarting event is emitted by the pool manager and will be broadcast via event listener
+      socket.emit('vmStartResult', result);
+    } catch (error) {
+      console.error(`[Socket] startVM failed:`, error.message);
+      socket.emit('vmError', {
+        error: error.message,
+        vmId
+      });
+    }
+  });
+
+  // Stop a VM
+  socket.on('stopVM', async ({ vmId }) => {
+    try {
+      const vmPoolManager = getVMPoolManager();
+      if (!vmPoolManager.isInitialized()) {
+        socket.emit('vmError', { error: 'VM pool not initialized' });
+        return;
+      }
+
+      const result = await vmPoolManager.stopVM(vmId);
+      // vmStopping event is emitted by the pool manager and will be broadcast via event listener
+      socket.emit('vmStopResult', result);
+    } catch (error) {
+      console.error(`[Socket] stopVM failed:`, error.message);
+      socket.emit('vmError', {
+        error: error.message,
+        vmId
+      });
+    }
+  });
+
+  // Acknowledge an alert (placeholder for P17)
+  socket.on('acknowledgeAlert', ({ competitionId, alertId }) => {
+    console.log(`[Socket] acknowledgeAlert: competition=${competitionId}, alert=${alertId}`);
+    // Alert service will be implemented in P17-01
+    // For now, just acknowledge receipt
+    socket.emit('alertAcknowledged', { competitionId, alertId });
+  });
+
+  // Request current VM pool status
+  socket.on('getVMPoolStatus', () => {
+    try {
+      const vmPoolManager = getVMPoolManager();
+      if (!vmPoolManager.isInitialized()) {
+        socket.emit('vmPoolStatus', {
+          initialized: false,
+          vms: [],
+          counts: { total: 0 }
+        });
+        return;
+      }
+
+      socket.emit('vmPoolStatus', vmPoolManager.getPoolStatus());
+    } catch (error) {
+      console.error(`[Socket] getVMPoolStatus failed:`, error.message);
+      socket.emit('vmError', { error: error.message });
+    }
+  });
+
   // Disconnect handling
   socket.on('disconnect', () => {
     console.log(`Client disconnected: ${socket.id}`);
@@ -2052,6 +2250,9 @@ httpServer.listen(PORT, () => {
 
   // Initialize timesheet engine
   initializeTimesheetEngine();
+
+  // Initialize VM pool manager (for VM management features)
+  initializeVMPoolManager();
 
   // Connect to OBS
   connectToOBS();
