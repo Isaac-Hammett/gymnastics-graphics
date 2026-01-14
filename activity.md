@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** Phase 9 - Firebase Production Config (In Progress)
-**Last Task:** P9-01 - Create production config service
-**Next Task:** P9-02 - Create config loader with fallback
+**Last Task:** P9-02 - Create config loader with fallback
+**Next Task:** P9-03 - Add production config API endpoints
 
 ---
 
@@ -773,6 +773,29 @@ Created `server/lib/productionConfigService.js` with Firebase Admin SDK integrat
 - Graceful handling when Firebase is unavailable (methods return null/empty values)
 - Verification: `node -e "import('./lib/productionConfigService.js')"` exits 0
 
+### P9-02: Create config loader with fallback
+Created `server/lib/configLoader.js` with unified config loading interface:
+- Module variable `activeCompetitionId` tracks which competition is active
+- `setActiveCompetition(competitionId)` - Sets the active competition ID
+- `getActiveCompetition()` - Returns the currently active competition ID
+- `clearActiveCompetition()` - Clears the active competition
+- `loadShowConfig()` async function with fallback behavior:
+  - If no activeCompetitionId: loads from local show-config.json directly
+  - If activeCompetitionId set: tries Firebase first via productionConfigService
+  - If Firebase fails or returns null: falls back to local config
+  - Config includes `source` field: 'firebase', 'local', or 'local-fallback'
+- `loadLocalConfig()` - Synchronous load from local show-config.json
+- `loadFirebaseConfig(competitionId)` - Async load from Firebase production config
+- Helper functions:
+  - `isFirebaseConfig(config)` - Check if config came from Firebase
+  - `isLocalConfig(config)` - Check if config came from local file
+  - `getConfigSource(config)` - Get human-readable source description
+- Firebase config structure mapped to show config format:
+  - `cameras` from production/cameras (array)
+  - `segments` from production/rundown/segments
+  - `nimbleServer`, `audioConfig`, `graphicsOverlay`, `transitions` from production/settings
+- Verification: `node -e "import('./lib/configLoader.js')"` exits 0
+
 ---
 
 ## Task Completion Log
@@ -814,6 +837,7 @@ Created `server/lib/productionConfigService.js` with Firebase Admin SDK integrat
 | P8-02 | Create client-side useApparatus hook | ✅ done | 2026-01-13 |
 | P8-03 | Add apparatus API endpoint | ✅ done | 2026-01-13 |
 | P9-01 | Create production config service | ✅ done | 2026-01-13 |
+| P9-02 | Create config loader with fallback | ✅ done | 2026-01-13 |
 
 ---
 
