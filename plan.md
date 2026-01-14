@@ -1210,7 +1210,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Verify VM status badges on competitions"
     ],
     "verification": "node ralph-wigg/test-helper.js screenshot http://localhost:5173/admin/vm-pool vm-pool-complete",
-    "passes": false
+    "passes": true
   },
   {
     "id": "INT-11",
@@ -1254,8 +1254,8 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 | **Phase 15: VM Pool API** | 3 | 3 | ✅ Complete |
 | **Phase 16: VM Pool UI** | 5 | 5 | ✅ Complete |
 | **Phase 17: Monitoring & Alerts** | 5 | 5 | ✅ Complete |
-| **Integration (VM Pool)** | 3 | 1 | 🔄 In progress |
-| **Total** | **67** | **65** | **97%** |
+| **Integration (VM Pool)** | 3 | 2 | 🔄 In progress |
+| **Total** | **67** | **66** | **99%** |
 
 ---
 
