@@ -1163,7 +1163,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Empty state when no alerts"
     ],
     "verification": "AlertPanel renders correctly",
-    "passes": false
+    "passes": true
   },
   {
     "id": "P17-05",
