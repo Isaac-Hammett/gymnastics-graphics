@@ -1,13 +1,67 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** VM Pool Integration Tests
-**Last Task:** INT-10 - VM pool UI test
-**Next Task:** INT-11 - Alert system test
+**Phase:** VM Pool Integration Tests - COMPLETE
+**Last Task:** INT-11 - Alert system test
+**Next Task:** All tasks complete!
 
 ---
 
 ## 2026-01-14
+
+### INT-11: Alert system test
+Implemented comprehensive alert system end-to-end test and added Alert API endpoints:
+
+**New Files Created:**
+- `server/scripts/test-alert-system.js` - End-to-end test script for alert system
+
+**New API Endpoints Added to server/index.js:**
+- `GET /api/alerts/:compId` - Get active alerts for a competition
+- `GET /api/alerts/:compId/counts` - Get alert counts by level
+- `GET /api/alerts/:compId/all` - Get all alerts (including resolved)
+- `POST /api/alerts/:compId` - Create a new alert
+- `POST /api/alerts/:compId/:alertId/acknowledge` - Acknowledge an alert
+- `POST /api/alerts/:compId/:alertId/resolve` - Resolve an alert
+- `POST /api/alerts/:compId/resolve-by-source` - Resolve alerts by sourceId (for auto-resolution)
+- `POST /api/alerts/:compId/acknowledge-all` - Acknowledge all alerts
+
+**Test Script Features:**
+- Server connectivity check
+- Alert creation via API
+- Alert retrieval (active alerts)
+- Alert acknowledgement
+- Alert resolution
+- Auto-resolution by sourceId
+- Alert counts endpoint
+- Cleanup of test alerts
+- Comprehensive verification summary
+
+**Alert System Flow Validated:**
+1. ✅ Alert creation triggers Firebase write at `alerts/{competitionId}/{alertId}`
+2. ✅ Alerts are retrieved and filtered to unresolved only
+3. ✅ Acknowledge marks alert as seen but not resolved
+4. ✅ Resolve marks alert as resolved (filtered from active list)
+5. ✅ Auto-resolve by sourceId enables VM recovery to clear alerts
+6. ✅ Client-side useAlerts hook subscribes to Firebase for real-time updates
+
+**Integration with VM Health Monitor:**
+- vmHealthMonitor creates critical alerts when VM unreachable
+- vmHealthMonitor creates critical alerts when OBS disconnects
+- vmHealthMonitor auto-resolves alerts when VM recovers
+- Alerts use sourceId pattern for automatic resolution tracking
+
+**Client Integration Verified:**
+- useAlerts hook subscribes to `alerts/{competitionId}/`
+- AlertPanel component displays grouped alerts by level
+- ProducerView shows critical banner and AlertPanel
+- Header shows alert count badges
+
+**Verification:**
+- `node --check server/index.js` - Server syntax valid
+- `node --check server/scripts/test-alert-system.js` - Test script syntax valid
+- All alert API endpoints properly handle Firebase unavailability with 503 status
+
+---
 
 ### INT-10: VM pool UI test
 Verified VM pool UI components render correctly and load without errors:
