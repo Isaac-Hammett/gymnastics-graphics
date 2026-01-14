@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** Integration Testing
-**Last Task:** INT-04 - Competition selector and routing test
-**Next Task:** INT-05 - Dynamic apparatus test
+**Last Task:** INT-05 - Dynamic apparatus test
+**Next Task:** INT-06 - Local development mode test
 
 ---
 
@@ -1068,6 +1068,65 @@ Completed end-to-end integration testing for competition selector and URL-based 
 
 Verification: All 7 test steps pass, URL routing and socket connection work correctly
 
+### INT-05: Dynamic apparatus test
+Completed dynamic apparatus integration testing for WAG and MAG competitions:
+
+**Enhancement: Gender Query Parameter Support**
+- Added `?gender=mens` query parameter support in CompetitionContext for local development mode
+- Allows testing MAG apparatus without requiring a configured MAG competition with vmAddress
+- Import `useSearchParams` from react-router-dom
+- Local mode reads `gender` query param to override default 'womens' gender
+
+**Test Steps Verified:**
+
+1. **Navigate to a WAG competition** (`/local/camera-setup`):
+   - WAG badge displayed in header (pink)
+   - Shows "Local Development" as event name
+   - Screenshot: `INT-05-wag-camera-setup.png`
+
+2. **Verify CameraSetupPage shows 4 apparatus (VT, UB, BB, FX)**:
+   - All 4 camera cards show 4 apparatus toggle buttons in Olympic order
+   - Camera 1: VT and FX selected (expected)
+   - Screenshot confirms 4 apparatus buttons per camera ✅
+
+3. **Verify QuickActions shows 4 buttons** (in By Apparatus section):
+   - Producer view "By Apparatus" section shows: VT, UB, BB, FX
+   - Grid layout uses `grid-cols-4` for WAG
+   - Screenshot: `INT-05-wag-producer.png` ✅
+
+4. **Navigate to a MAG competition** (`/local/camera-setup?gender=mens`):
+   - MAG badge displayed in header (blue)
+   - Gender query parameter correctly sets `gender: 'mens'` in CompetitionContext
+   - Screenshot: `INT-05-mag-camera-setup.png`
+
+5. **Verify CameraSetupPage shows 6 apparatus**:
+   - All 4 camera cards show 6 apparatus toggle buttons: FX, PH, SR, VT, PB, HB
+   - Apparatus displayed in Olympic order for men's gymnastics
+   - Camera 1: FX and VT selected, Camera 2: PH and PB selected, Camera 3: SR and HB selected
+   - Screenshot confirms 6 apparatus buttons per camera ✅
+
+6. **Verify QuickActions shows 6 buttons**:
+   - QuickActions component (in TalentView) uses `apparatusCodes` from `useApparatus(gender)`
+   - Grid layout adapts: `grid-cols-6` for MAG
+   - Code review confirms correct implementation at QuickActions.jsx:148-149
+   - Apparatus buttons only visible when cameraRuntimeState is populated and show is running
+
+**Code Changes:**
+- `show-controller/src/context/CompetitionContext.jsx`:
+  - Added `useSearchParams` import from react-router-dom
+  - Local mode now reads `?gender=mens` query param to support MAG testing
+  - Added `searchParams` to useEffect dependencies
+
+**Screenshots:**
+- `INT-05-wag-camera-setup.png` - WAG with 4 apparatus per camera
+- `INT-05-wag-producer.png` - WAG producer view with By Apparatus section
+- `INT-05-mag-camera-setup.png` - MAG with 6 apparatus per camera
+- `INT-05-mag-producer.png` - MAG producer view with MAG badge
+- `INT-05-mag-talent.png` - MAG talent view with MAG badge
+- `INT-05-competition-selector.png` - Competition selector showing WAG and MAG competitions
+
+Verification: Screenshots show correct apparatus count for each gender (4 for WAG, 6 for MAG)
+
 ---
 
 ## Task Completion Log
@@ -1123,6 +1182,7 @@ Verification: All 7 test steps pass, URL routing and socket connection work corr
 | P12-01 | Create migration script for show-config.json | ✅ done | 2026-01-13 |
 | P12-02 | Update environment variables | ✅ done | 2026-01-13 |
 | INT-04 | Competition selector and routing test | ✅ done | 2026-01-14 |
+| INT-05 | Dynamic apparatus test | ✅ done | 2026-01-14 |
 
 ---
 
@@ -1148,6 +1208,11 @@ Verification: All 7 test steps pass, URL routing and socket connection work corr
 | select-with-competitions.png | INT-04 | /select | CompetitionSelector with 7 competitions from Firebase, Local Development option, search filter |
 | INT-04-local-producer.png | INT-04 | /local/producer | Producer view via competition routing - CompetitionHeader with Local Development, WAG badge, Connected status |
 | INT-04-competition-producer.png | INT-04 | /ezb008sp/producer | Error handling for competition without vmAddress - shows "Not Configured" with Configure VM button |
+| INT-05-wag-camera-setup.png | INT-05 | /local/camera-setup | WAG camera setup - shows 4 apparatus (VT, UB, BB, FX) per camera |
+| INT-05-wag-producer.png | INT-05 | /local/producer | WAG producer view with 4 apparatus in "By Apparatus" section |
+| INT-05-mag-camera-setup.png | INT-05 | /local/camera-setup?gender=mens | MAG camera setup - shows 6 apparatus (FX, PH, SR, VT, PB, HB) per camera |
+| INT-05-mag-producer.png | INT-05 | /local/producer?gender=mens | MAG producer view with MAG badge |
+| INT-05-mag-talent.png | INT-05 | /local/talent?gender=mens | MAG talent view showing MAG badge |
 
 ---
 
