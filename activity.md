@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** Phase 10 - URL Routing (In Progress)
-**Last Task:** P10-03 - Create CompetitionLayout and error components
-**Next Task:** P10-04 - Update App.jsx with new route structure
+**Last Task:** P10-04 - Update App.jsx with new route structure
+**Next Task:** P10-05 - Update ShowContext for dynamic socket URL
 
 ---
 
@@ -878,6 +878,30 @@ Created three components for competition-bound route management:
 
 Verification: `npm run build` succeeds without errors
 
+### P10-04: Update App.jsx with new route structure
+Updated `show-controller/src/App.jsx` with competition-bound route architecture:
+- Imported `Navigate` from react-router-dom for redirects
+- Imported `CompetitionLayout` for competition-bound routes
+- Added root redirect: `/` → `/select`
+- Added `/select` route for `CompetitionSelector` landing page
+- Added `LegacyRedirect` component for legacy route handling
+- Added legacy route redirects:
+  - `/producer` → `/select?redirect=/producer`
+  - `/show-producer` → `/select?redirect=/producer`
+  - `/talent` → `/select?redirect=/talent`
+  - `/camera-setup` → `/select?redirect=/camera-setup`
+- Added `/:compId` parent route with `CompetitionLayout` element
+- Added nested competition routes:
+  - Index redirects to `producer`
+  - `producer` → `ProducerView`
+  - `talent` → `TalentView`
+  - `camera-setup` → `CameraSetupPage`
+  - `graphics` → `ControllerPage`
+- Kept standalone routes: `/hub`, `/dashboard`, `/controller`, `/url-generator`, `/media-manager`, `/import`
+- Removed `ShowProvider` wrapper from direct routes (now handled by `CompetitionLayout`)
+- Verification: `node test-helper.js check http://localhost:5175/select` returns status 200
+- Screenshot: `screenshots/P10-04-select-route.png`
+
 ---
 
 ## Task Completion Log
@@ -924,6 +948,7 @@ Verification: `npm run build` succeeds without errors
 | P10-01 | Create CompetitionContext provider | ✅ done | 2026-01-14 |
 | P10-02 | Create CompetitionSelector page | ✅ done | 2026-01-14 |
 | P10-03 | Create CompetitionLayout and error components | ✅ done | 2026-01-14 |
+| P10-04 | Update App.jsx with new route structure | ✅ done | 2026-01-14 |
 
 ---
 
@@ -941,6 +966,7 @@ Verification: `npm run build` succeeds without errors
 | INT-02-producer.png | INT-02 | /producer | Shows ProducerView with timesheet panel, override log, camera status |
 | INT-03-show-flow.png | INT-03 | /producer | ProducerView during active show - shows running timesheet, segment info, camera status |
 | competition-selector.png | P10-02 | /select | CompetitionSelector landing page with Local Development option, search, competition cards grouped by date |
+| P10-04-select-route.png | P10-04 | /select | New route structure with CompetitionSelector as landing page |
 
 ---
 
