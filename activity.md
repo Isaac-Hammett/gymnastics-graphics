@@ -1319,6 +1319,7 @@ Verification: `node test-error-handling.js` exits 0 with all 14 tests passing
 | INT-06 | Local development mode test | ✅ done | 2026-01-14 |
 | INT-07 | Legacy route redirect test | ✅ done | 2026-01-14 |
 | INT-08 | Error handling test | ✅ done | 2026-01-14 |
+| P14-01 | Create AWS SDK service module | ✅ done | 2026-01-14 |
 
 ---
 
@@ -1356,6 +1357,53 @@ Verification: `node test-error-handling.js` exits 0 with all 14 tests passing
 | INT-08-no-vm-address-error.png | INT-08 | /ezb008sp/producer | NO_VM_ADDRESS error - shows "Not Configured" with Configure VM and Back to Selector buttons |
 | INT-08-competition-selector.png | INT-08 | /select | Competition selector with 8 Producer buttons (7 competitions + Local Dev) |
 | INT-08-error-styling.png | INT-08 | /this-id-does-not-exist/producer | Error page styling - centered content, dark background, icon, competition ID display |
+
+---
+
+## 2026-01-14 (Continued)
+
+### P14-01: Create AWS SDK service module
+Created `server/lib/awsService.js` with full AWS EC2 integration for VM pool management:
+
+**Package Installation:**
+- Installed `@aws-sdk/client-ec2` npm package in server
+
+**AWS Configuration (from environment or defaults):**
+- Region: us-east-1
+- VPC ID: vpc-09ba9c02e2c976cf5
+- Security Group ID: sg-025f1ac53cccb756b
+- Key Pair Name: gymnastics-graphics-key-pair
+- AMI ID: ami-0c398cb65a93047f2
+- Default Instance Type: t3.large
+
+**Implemented Functions:**
+- `describeInstances(options)` - List instances with tag filters and state filters
+- `getInstanceStatus(instanceId)` - Get detailed info for single instance
+- `startInstance(instanceIds)` - Start one or more instances
+- `stopInstance(instanceIds, force)` - Stop instances (with optional force)
+- `rebootInstance(instanceIds)` - Reboot instances
+- `terminateInstance(instanceIds)` - Terminate instances
+- `launchInstance(options)` - Launch new instance from AMI with tags
+- `createTags(instanceIds, tags)` - Add/update tags on instances
+- `waitForInstanceRunning(instanceId, timeoutSeconds)` - Wait for running state
+- `waitForInstanceStopped(instanceId, timeoutSeconds)` - Wait for stopped state
+- `checkInstanceServices(publicIp, port, timeoutMs)` - Check if VM services are healthy
+- `waitForServicesReady(publicIp, options)` - Poll until services ready
+
+**Features:**
+- Extends EventEmitter for operation event broadcasting
+- Retry logic with exponential backoff for transient AWS failures
+- Retryable error detection (throttling, network errors, timeouts)
+- Singleton pattern via `getAWSService()` function
+- Formatted instance info with consistent structure
+- Service health checking via `/api/status` endpoint
+
+**Events Emitted:**
+- `instancesDescribed`, `instanceStarting`, `instanceStopping`
+- `instanceRebooting`, `instanceTerminating`, `instanceLaunched`
+- `instanceRunning`, `instanceStopped`, `servicesReady`
+
+Verification: `node -e "import('./lib/awsService.js')"` exits 0, all methods present
 
 ---
 

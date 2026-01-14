@@ -5,7 +5,8 @@ Extend the gymnastics-graphics show controller with camera health monitoring, au
 
 **Reference:**
 - `PRD-ShowControlSystem-2026-01-13.md` (Phases 1-7, Integration)
-- `docs/PRD-CompetitionBoundArchitecture-2026-01-13.md` (Phases 8-13)
+- `docs/PRD-CompetitionBoundArchitecture-2026-01-13.md` (Phases 8-12)
+- `docs/PRD-VMArchitecture-2026-01-14.md` (Phases 14-17, VM Pool Management)
 
 ---
 
@@ -907,6 +908,324 @@ Screenshots saved to: `ralph-wigg/screenshots/`
     ],
     "verification": "Error states display correctly",
     "passes": true
+  },
+
+  {
+    "id": "P14-01",
+    "category": "phase14-vm-infrastructure",
+    "description": "Create AWS SDK service module",
+    "steps": [
+      "Create server/lib/awsService.js",
+      "Install @aws-sdk/client-ec2 package",
+      "Initialize EC2Client with region from env",
+      "Implement describeInstances with tag filters",
+      "Implement startInstance with instanceId",
+      "Implement stopInstance with instanceId",
+      "Implement getInstanceStatus for health",
+      "Implement launchInstance from AMI config",
+      "Implement terminateInstance with instanceId",
+      "Add retry logic for transient failures",
+      "Add logging for all AWS operations"
+    ],
+    "verification": "node -e \"require('./server/lib/awsService.js')\" exits 0",
+    "passes": true
+  },
+  {
+    "id": "P14-02",
+    "category": "phase14-vm-infrastructure",
+    "description": "Create VM pool state manager",
+    "steps": [
+      "Create server/lib/vmPoolManager.js",
+      "Import Firebase Admin and awsService",
+      "Implement initializePool to sync AWS with Firebase",
+      "Implement getAvailableVM to find unassigned VM",
+      "Implement assignVM to reserve VM for competition",
+      "Implement releaseVM to return VM to pool",
+      "Implement getPoolStatus for full state",
+      "Implement ensureMinWarmVMs for pool maintenance",
+      "Define VM status enum: available, assigned, in_use, stopped, starting, error",
+      "Emit events for state changes",
+      "Write pool config schema to Firebase on init"
+    ],
+    "verification": "node -e \"require('./server/lib/vmPoolManager.js')\" exits 0",
+    "passes": false
+  },
+  {
+    "id": "P14-03",
+    "category": "phase14-vm-infrastructure",
+    "description": "Create VM health monitor",
+    "steps": [
+      "Create server/lib/vmHealthMonitor.js",
+      "Implement health check polling loop",
+      "Check VM /api/status endpoint",
+      "Check OBS WebSocket via VM API",
+      "Update Firebase vmPool/{vmId}/services",
+      "Detect unreachable VMs and set error status",
+      "Implement checkVMHealth for on-demand check",
+      "Emit vmHealthChanged event on transitions",
+      "Track lastHealthCheck timestamp"
+    ],
+    "verification": "node -e \"require('./server/lib/vmHealthMonitor.js')\" exits 0",
+    "passes": false
+  },
+  {
+    "id": "P15-01",
+    "category": "phase15-vm-api",
+    "description": "Add VM pool management API endpoints",
+    "steps": [
+      "Import vmPoolManager in server/index.js",
+      "Add GET /api/admin/vm-pool endpoint",
+      "Add GET /api/admin/vm-pool/:vmId endpoint",
+      "Add POST /api/admin/vm-pool/:vmId/start endpoint",
+      "Add POST /api/admin/vm-pool/:vmId/stop endpoint",
+      "Add POST /api/admin/vm-pool/launch endpoint",
+      "Add DELETE /api/admin/vm-pool/:vmId endpoint",
+      "Add GET /api/admin/vm-pool/config endpoint",
+      "Add PUT /api/admin/vm-pool/config endpoint"
+    ],
+    "verification": "curl http://localhost:3001/api/admin/vm-pool returns JSON",
+    "passes": false
+  },
+  {
+    "id": "P15-02",
+    "category": "phase15-vm-api",
+    "description": "Add competition VM assignment endpoints",
+    "steps": [
+      "Add POST /api/competitions/:compId/vm/assign endpoint",
+      "Add POST /api/competitions/:compId/vm/release endpoint",
+      "Add GET /api/competitions/:compId/vm endpoint",
+      "Update competitions/{compId}/config/vmAddress on assign",
+      "Update vmPool/{vmId}/assignedTo on assign",
+      "Handle no VMs available error",
+      "Support preferredVmId parameter"
+    ],
+    "verification": "curl -X POST http://localhost:3001/api/competitions/test/vm/assign returns result",
+    "passes": false
+  },
+  {
+    "id": "P15-03",
+    "category": "phase15-vm-api",
+    "description": "Add VM pool socket events",
+    "steps": [
+      "Add socket listener for assignVM",
+      "Add socket listener for releaseVM",
+      "Add socket listener for startVM",
+      "Add socket listener for stopVM",
+      "Broadcast vmPoolStatus on changes",
+      "Broadcast vmAssigned event",
+      "Broadcast vmReleased event",
+      "Broadcast vmStarting and vmReady events",
+      "Broadcast vmError event"
+    ],
+    "verification": "Server logs show VM socket events registered",
+    "passes": false
+  },
+  {
+    "id": "P16-01",
+    "category": "phase16-vm-ui",
+    "description": "Create VMPoolPage component",
+    "steps": [
+      "Create show-controller/src/pages/VMPoolPage.jsx",
+      "Import useVMPool hook",
+      "Display VM cards in grid layout",
+      "Add PoolStatusBar at top",
+      "Add pool configuration panel (collapsible)",
+      "Add refresh button",
+      "Add route /admin/vm-pool to App.jsx"
+    ],
+    "verification": "node ralph-wigg/test-helper.js screenshot http://localhost:5173/admin/vm-pool vm-pool-page",
+    "passes": false
+  },
+  {
+    "id": "P16-02",
+    "category": "phase16-vm-ui",
+    "description": "Create VMCard component",
+    "steps": [
+      "Create show-controller/src/components/VMCard.jsx",
+      "Display VM name, status badge, public IP",
+      "Add service health dots",
+      "Show assigned competition if any",
+      "Add Start/Stop/Assign/Release buttons",
+      "Add loading state during actions",
+      "Add SSH command copy button"
+    ],
+    "verification": "VMCard renders correctly in VMPoolPage",
+    "passes": false
+  },
+  {
+    "id": "P16-03",
+    "category": "phase16-vm-ui",
+    "description": "Create PoolStatusBar component",
+    "steps": [
+      "Create show-controller/src/components/PoolStatusBar.jsx",
+      "Display Available/Assigned/In Use/Stopped/Error counts",
+      "Add visual utilization bar",
+      "Add warning when pool is low",
+      "Add 'Start Cold VM' quick action"
+    ],
+    "verification": "PoolStatusBar shows correct counts",
+    "passes": false
+  },
+  {
+    "id": "P16-04",
+    "category": "phase16-vm-ui",
+    "description": "Create useVMPool hook",
+    "steps": [
+      "Create show-controller/src/hooks/useVMPool.js",
+      "Subscribe to vmPool/ in Firebase",
+      "Return vms array and poolConfig",
+      "Implement assignVM action",
+      "Implement releaseVM action",
+      "Implement startVM action",
+      "Implement stopVM action",
+      "Return computed: availableVMs, assignedVMs, stoppedVMs",
+      "Return helper: getVMForCompetition"
+    ],
+    "verification": "Hook imports without error",
+    "passes": false
+  },
+  {
+    "id": "P16-05",
+    "category": "phase16-vm-ui",
+    "description": "Update CompetitionSelector with VM status",
+    "steps": [
+      "Import useVMPool in CompetitionSelector",
+      "Add VM status badge to competition cards",
+      "Add quick Assign VM button",
+      "Add quick Release VM button",
+      "Disable Producer/Talent links when no VM",
+      "Show VM IP on hover",
+      "Add link to /admin/vm-pool"
+    ],
+    "verification": "Competition cards show VM status",
+    "passes": false
+  },
+  {
+    "id": "P17-01",
+    "category": "phase17-monitoring",
+    "description": "Create alert service",
+    "steps": [
+      "Create server/lib/alertService.js",
+      "Define alert levels: critical, warning, info",
+      "Define alert categories: vm, service, camera, obs, talent",
+      "Implement createAlert with auto-ID",
+      "Implement resolveAlert",
+      "Implement acknowledgeAlert",
+      "Implement getActiveAlerts",
+      "Emit socket event on new alerts",
+      "Support auto-resolve configuration"
+    ],
+    "verification": "node -e \"require('./server/lib/alertService.js')\" exits 0",
+    "passes": false
+  },
+  {
+    "id": "P17-02",
+    "category": "phase17-monitoring",
+    "description": "Add VM alert triggers",
+    "steps": [
+      "Import alertService in vmHealthMonitor",
+      "Trigger critical alert when VM unreachable",
+      "Trigger critical alert when OBS disconnects",
+      "Trigger warning alert when Node server down",
+      "Trigger warning alert when NoMachine unavailable",
+      "Trigger info alert on idle timeout stop",
+      "Auto-resolve alerts on recovery"
+    ],
+    "verification": "VM going offline triggers alert in Firebase",
+    "passes": false
+  },
+  {
+    "id": "P17-03",
+    "category": "phase17-monitoring",
+    "description": "Add alerts to Producer view",
+    "steps": [
+      "Import useAlerts hook in ProducerView",
+      "Add critical alert banner at top",
+      "Add warning alert panel (collapsible)",
+      "Add alert count badge in header",
+      "Add acknowledge buttons",
+      "Auto-dismiss info alerts after 10s"
+    ],
+    "verification": "node ralph-wigg/test-helper.js screenshot http://localhost:5173/local/producer producer-with-alerts",
+    "passes": false
+  },
+  {
+    "id": "P17-04",
+    "category": "phase17-monitoring",
+    "description": "Create AlertPanel component",
+    "steps": [
+      "Create show-controller/src/components/AlertPanel.jsx",
+      "Collapsible panel design",
+      "Group alerts by level",
+      "Show timestamp, title, message",
+      "Add acknowledge button per alert",
+      "Add acknowledge all button",
+      "Empty state when no alerts"
+    ],
+    "verification": "AlertPanel renders correctly",
+    "passes": false
+  },
+  {
+    "id": "P17-05",
+    "category": "phase17-monitoring",
+    "description": "Create useAlerts hook",
+    "steps": [
+      "Create show-controller/src/hooks/useAlerts.js",
+      "Subscribe to alerts/{competitionId}/ in Firebase",
+      "Filter to unresolved alerts",
+      "Sort by level then timestamp",
+      "Return criticalCount, warningCount, infoCount",
+      "Implement acknowledgeAlert action",
+      "Implement acknowledgeAll action",
+      "Return hasUnacknowledgedCritical boolean"
+    ],
+    "verification": "Hook imports without error",
+    "passes": false
+  },
+  {
+    "id": "INT-09",
+    "category": "integration",
+    "description": "VM pool end-to-end test",
+    "steps": [
+      "Start server with AWS credentials",
+      "Verify /api/admin/vm-pool returns pool status",
+      "Test VM start/stop via API",
+      "Test VM assignment to competition",
+      "Verify Firebase updated correctly",
+      "Test release and re-assignment"
+    ],
+    "verification": "Full VM lifecycle works via API",
+    "passes": false
+  },
+  {
+    "id": "INT-10",
+    "category": "integration",
+    "description": "VM pool UI test",
+    "steps": [
+      "Navigate to /admin/vm-pool",
+      "Verify VMs display from Firebase",
+      "Test start/stop buttons",
+      "Test assignment dropdown",
+      "Navigate to /select",
+      "Verify VM status badges on competitions"
+    ],
+    "verification": "node ralph-wigg/test-helper.js screenshot http://localhost:5173/admin/vm-pool vm-pool-complete",
+    "passes": false
+  },
+  {
+    "id": "INT-11",
+    "category": "integration",
+    "description": "Alert system test",
+    "steps": [
+      "Simulate VM going offline",
+      "Verify alert created in Firebase",
+      "Verify alert displays in Producer view",
+      "Test acknowledge button",
+      "Simulate VM recovery",
+      "Verify alert auto-resolves"
+    ],
+    "verification": "Alerts flow from detection to resolution",
+    "passes": false
   }
 ]
 ```
@@ -930,8 +1249,13 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 | Phase 11: Dynamic Apparatus UI | 3 | 3 | ✅ Complete |
 | Phase 12: Migration | 2 | 2 | ✅ Complete |
 | Integration (Original) | 3 | 3 | ✅ Complete |
-| Integration (New) | 5 | 5 | ✅ Complete |
-| **Total** | **48** | **48** | **100%** |
+| Integration (Phases 8-12) | 5 | 5 | ✅ Complete |
+| **Phase 14: VM Infrastructure** | 3 | 1 | 🔄 In progress |
+| **Phase 15: VM Pool API** | 3 | 0 | ⬜ Not started |
+| **Phase 16: VM Pool UI** | 5 | 0 | ⬜ Not started |
+| **Phase 17: Monitoring & Alerts** | 5 | 0 | ⬜ Not started |
+| **Integration (VM Pool)** | 3 | 0 | ⬜ Not started |
+| **Total** | **67** | **49** | **73%** |
 
 ---
 
@@ -958,7 +1282,7 @@ Phase 1 (Data Model) ──────────┬────────�
                     Integration Tests (INT-01 to INT-03) ✅ COMPLETE
                                │
 ═══════════════════════════════╪═══════════════════════════════════════
-   COMPETITION-BOUND ARCHITECTURE (New Phases)
+   COMPETITION-BOUND ARCHITECTURE (Phases 8-12)
 ═══════════════════════════════╪═══════════════════════════════════════
                                │
                                ▼
@@ -977,7 +1301,42 @@ Phase 1 (Data Model) ──────────┬────────�
                     Phase 12 (Migration)
                                │
                                ▼
-                    Integration Tests (INT-04 to INT-08)
+                    Integration Tests (INT-04 to INT-08) ✅ COMPLETE
+                               │
+═══════════════════════════════╪═══════════════════════════════════════
+   VM POOL MANAGEMENT (Phases 14-17)
+═══════════════════════════════╪═══════════════════════════════════════
+                               │
+                               ▼
+                    Phase 14 (VM Infrastructure)
+                    ├── P14-01: AWS SDK Service
+                    ├── P14-02: VM Pool Manager
+                    └── P14-03: Health Monitor
+                               │
+                               ▼
+                    Phase 15 (VM Pool API)
+                    ├── P15-01: Management Endpoints
+                    ├── P15-02: Assignment Endpoints
+                    └── P15-03: Socket Events
+                               │
+                               ▼
+                    Phase 16 (VM Pool UI)
+                    ├── P16-01: VMPoolPage
+                    ├── P16-02: VMCard
+                    ├── P16-03: PoolStatusBar
+                    ├── P16-04: useVMPool Hook
+                    └── P16-05: CompetitionSelector Integration
+                               │
+                               ▼
+                    Phase 17 (Monitoring & Alerts)
+                    ├── P17-01: Alert Service
+                    ├── P17-02: VM Alert Triggers
+                    ├── P17-03: Producer View Alerts
+                    ├── P17-04: AlertPanel Component
+                    └── P17-05: useAlerts Hook
+                               │
+                               ▼
+                    Integration Tests (INT-09 to INT-11)
 ```
 
 ---
@@ -1026,3 +1385,90 @@ CompetitionProvider (resolves compId → vmAddress, gender)
 - `compId="local"` uses `VITE_LOCAL_SERVER` env var
 - Defaults to `http://localhost:3003`
 - No Firebase lookup required
+
+---
+
+## VM Pool Management Design Decisions
+
+**Reference:** `docs/PRD-VMArchitecture-2026-01-14.md` (Phases 14-17)
+
+### AWS Resources (Production)
+
+| Resource | Value |
+|----------|-------|
+| Region | us-east-1 |
+| VPC ID | vpc-09ba9c02e2c976cf5 |
+| Security Group ID | sg-025f1ac53cccb756b |
+| Key Pair Name | gymnastics-graphics-key-pair |
+| AMI ID | ami-0c398cb65a93047f2 |
+
+### VM Pool Strategy
+- **Warm pool**: 2 VMs always running, ready for immediate assignment
+- **Cold pool**: 3 VMs stopped, started on demand (2-3 min startup)
+- **Total capacity**: 5 VMs supporting 4 concurrent competitions + 1 spare
+
+### VM Status States
+- `available` - Ready for assignment, services running
+- `assigned` - Linked to a competition
+- `in_use` - Competition actively streaming
+- `stopped` - Cold standby, not running
+- `starting` - EC2 instance starting up
+- `error` - Health check failed, needs attention
+
+### Instance Type Selection
+- **t3.large** for testing ($0.08/hr) - CPU-only encoding
+- **g4dn.xlarge** for production ($0.53/hr) - GPU NVENC encoding
+
+### Assignment Flow
+1. Competition created in Firebase without VM
+2. Producer clicks "Assign VM" in CompetitionSelector
+3. System finds available VM from warm pool
+4. Updates `vmAddress` in competition config
+5. Producer can now connect to VM
+
+### Alert Priority
+| Level | Visual | Sound | Examples |
+|-------|--------|-------|----------|
+| Critical | Red banner | Alarm | VM unreachable, OBS crashed |
+| Warning | Yellow panel | Chime | High CPU, service degraded |
+| Info | Toast | None | VM assigned, config updated |
+
+### Socket Events (VM Pool)
+
+**Server → Client:**
+- `vmPoolStatus` - Full pool status update
+- `vmAssigned` - `{ vmId, competitionId, publicIp }`
+- `vmReleased` - `{ vmId, competitionId }`
+- `vmStarting` - `{ vmId, estimatedReadyTime }`
+- `vmReady` - `{ vmId, publicIp, services }`
+- `vmError` - `{ vmId, error, details }`
+- `alertCreated` - `{ competitionId, alert }`
+- `alertResolved` - `{ competitionId, alertId }`
+
+**Client → Server:**
+- `assignVM` - `{ competitionId, preferredVmId? }`
+- `releaseVM` - `{ competitionId }`
+- `startVM` - `{ vmId }`
+- `stopVM` - `{ vmId }`
+- `acknowledgeAlert` - `{ competitionId, alertId }`
+
+### REST API (VM Pool)
+
+**Admin VM Pool Endpoints:**
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/admin/vm-pool` | Full pool status |
+| GET | `/api/admin/vm-pool/:vmId` | Single VM details |
+| POST | `/api/admin/vm-pool/:vmId/start` | Start VM |
+| POST | `/api/admin/vm-pool/:vmId/stop` | Stop VM |
+| POST | `/api/admin/vm-pool/launch` | Launch new VM |
+| DELETE | `/api/admin/vm-pool/:vmId` | Terminate VM |
+| GET | `/api/admin/vm-pool/config` | Pool configuration |
+| PUT | `/api/admin/vm-pool/config` | Update configuration |
+
+**Competition VM Endpoints:**
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/competitions/:compId/vm/assign` | Assign VM |
+| POST | `/api/competitions/:compId/vm/release` | Release VM |
+| GET | `/api/competitions/:compId/vm` | Get assigned VM |
