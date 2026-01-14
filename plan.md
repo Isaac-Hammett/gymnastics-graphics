@@ -1064,7 +1064,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Add 'Start Cold VM' quick action"
     ],
     "verification": "PoolStatusBar shows correct counts",
-    "passes": false
+    "passes": true
   },
   {
     "id": "P16-04",

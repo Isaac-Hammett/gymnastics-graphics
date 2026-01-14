@@ -3,13 +3,13 @@ import { Link } from 'react-router-dom';
 import {
   ServerIcon,
   ArrowPathIcon,
-  ExclamationTriangleIcon,
   XCircleIcon,
   ChevronDownIcon,
   ChevronUpIcon,
   CogIcon,
 } from '@heroicons/react/24/solid';
 import VMCard, { VM_STATUS } from '../components/VMCard';
+import PoolStatusBar from '../components/PoolStatusBar';
 
 // Server URL - this page is standalone (not competition-bound)
 const SERVER_URL = import.meta.env.VITE_LOCAL_SERVER || 'http://localhost:3003';
@@ -22,6 +22,7 @@ export default function VMPoolPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [configExpanded, setConfigExpanded] = useState(false);
   const [actionLoading, setActionLoading] = useState({});
+  const [startingColdVM, setStartingColdVM] = useState(false);
 
   // Fetch VM pool status
   const fetchPoolStatus = useCallback(async () => {
@@ -106,6 +107,32 @@ export default function VMPoolPage() {
       alert(`Failed to stop VM: ${err.message}`);
     } finally {
       setActionLoading(prev => ({ ...prev, [vmId]: null }));
+    }
+  };
+
+  // Start a cold VM (first stopped VM found)
+  const handleStartColdVM = async () => {
+    const stoppedVM = vms.find(vm => vm.status === VM_STATUS.STOPPED);
+    if (!stoppedVM) {
+      alert('No stopped VMs available to start');
+      return;
+    }
+
+    setStartingColdVM(true);
+    try {
+      const res = await fetch(`${SERVER_URL}/api/admin/vm-pool/${stoppedVM.vmId}/start`, {
+        method: 'POST',
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to start VM');
+      }
+      await fetchPoolStatus();
+    } catch (err) {
+      console.error('Failed to start cold VM:', err);
+      alert(`Failed to start cold VM: ${err.message}`);
+    } finally {
+      setStartingColdVM(false);
     }
   };
 
@@ -208,7 +235,11 @@ export default function VMPoolPage() {
         )}
 
         {/* Pool Status Bar */}
-        <PoolStatusBar stats={poolStats} />
+        <PoolStatusBar
+          stats={poolStats}
+          onStartColdVM={handleStartColdVM}
+          startingColdVM={startingColdVM}
+        />
 
         {/* Pool Configuration Panel (Collapsible) */}
         <div className="mb-6 bg-zinc-800 rounded-xl overflow-hidden">
@@ -278,79 +309,3 @@ export default function VMPoolPage() {
     </div>
   );
 }
-
-/**
- * Pool Status Bar - shows counts by status
- */
-function PoolStatusBar({ stats }) {
-  const utilizationPercent = stats.total > 0
-    ? Math.round(((stats.assigned + stats.inUse) / stats.total) * 100)
-    : 0;
-
-  const isLowPool = stats.available === 0 && stats.stopped === 0;
-
-  return (
-    <div className="mb-6 bg-zinc-800 rounded-xl p-4">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-3">
-          <div className="text-white font-medium">Pool Status</div>
-          {isLowPool && (
-            <div className="flex items-center gap-1 px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded text-xs">
-              <ExclamationTriangleIcon className="w-3 h-3" />
-              Pool exhausted
-            </div>
-          )}
-        </div>
-        <div className="text-sm text-zinc-400">
-          {stats.total} total VM{stats.total !== 1 ? 's' : ''}
-        </div>
-      </div>
-
-      {/* Utilization Bar */}
-      <div className="mb-3">
-        <div className="flex justify-between text-xs text-zinc-400 mb-1">
-          <span>Utilization</span>
-          <span>{utilizationPercent}%</span>
-        </div>
-        <div className="h-2 bg-zinc-700 rounded-full overflow-hidden">
-          <div
-            className={`h-full transition-all ${
-              utilizationPercent > 80 ? 'bg-red-500' :
-              utilizationPercent > 50 ? 'bg-yellow-500' : 'bg-green-500'
-            }`}
-            style={{ width: `${utilizationPercent}%` }}
-          />
-        </div>
-      </div>
-
-      {/* Status Counts */}
-      <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
-        <StatusCount label="Available" count={stats.available} color="green" />
-        <StatusCount label="Assigned" count={stats.assigned} color="blue" />
-        <StatusCount label="In Use" count={stats.inUse} color="purple" />
-        <StatusCount label="Stopped" count={stats.stopped} color="zinc" />
-        <StatusCount label="Starting" count={stats.starting} color="yellow" />
-        <StatusCount label="Error" count={stats.error} color="red" />
-      </div>
-    </div>
-  );
-}
-
-function StatusCount({ label, count, color }) {
-  const colorClasses = {
-    green: 'bg-green-500/10 text-green-400',
-    blue: 'bg-blue-500/10 text-blue-400',
-    purple: 'bg-purple-500/10 text-purple-400',
-    zinc: 'bg-zinc-500/10 text-zinc-400',
-    yellow: 'bg-yellow-500/10 text-yellow-400',
-    red: 'bg-red-500/10 text-red-400',
-  };
-
-  return (
-    <div className={`rounded-lg p-2 text-center ${colorClasses[color]}`}>
-      <div className="text-lg font-bold">{count}</div>
-      <div className="text-xs opacity-70">{label}</div>
-    </div>
-  );
-}
-
