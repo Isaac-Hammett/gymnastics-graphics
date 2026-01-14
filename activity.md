@@ -1,9 +1,9 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** Phase 10 - URL Routing (Up Next)
-**Last Task:** P9-03 - Add production config API endpoints
-**Next Task:** P10-01 - Create CompetitionContext provider
+**Phase:** Phase 10 - URL Routing (In Progress)
+**Last Task:** P10-01 - Create CompetitionContext provider
+**Next Task:** P10-02 - Create CompetitionSelector page
 
 ---
 
@@ -812,6 +812,24 @@ Added production config API endpoints to `server/index.js` for Firebase-backed c
 - Tested: `GET /api/competitions/active` returns `{ activeCompetitionId: null, isActive: false }`
 - Verification: `curl http://localhost:3003/api/competitions/active` returns JSON
 
+### P10-01: Create CompetitionContext provider
+Created `show-controller/src/context/CompetitionContext.jsx` with URL-based competition routing:
+- Created `CompetitionContext` with `createContext(null)`
+- Implemented `CompetitionProvider` component that:
+  - Extracts `compId` from URL using `useParams()`
+  - Handles special `compId='local'` for local development mode
+  - Subscribes to `competitions/{compId}/config` in Firebase using `onValue`
+  - Extracts `vmAddress` and `gender` from competition config
+  - Derives `socketUrl` from vmAddress (format: `http://host:port`)
+  - Derives `websocketUrl` (same as socketUrl for socket.io)
+  - Tracks `isLoading` and `error` states with `errorType` for specific handling
+- Exported `CompetitionErrorType` constants: `NOT_FOUND`, `NO_VM_ADDRESS`, `VM_UNREACHABLE`, `FIREBASE_ERROR`
+- Implemented `useCompetition()` hook that throws if used outside provider
+- Context provides: `compId`, `competitionConfig`, `vmAddress`, `gender`, `socketUrl`, `websocketUrl`, `isLoading`, `error`, `errorType`, `isLocalMode`
+- Local mode uses `VITE_LOCAL_SERVER` env var (defaults to `http://localhost:3003`)
+- Real Firebase subscription enables live config updates (e.g., vmAddress changes)
+- Verification: `npm run build` succeeds without errors
+
 ---
 
 ## Task Completion Log
@@ -855,6 +873,7 @@ Added production config API endpoints to `server/index.js` for Firebase-backed c
 | P9-01 | Create production config service | ✅ done | 2026-01-13 |
 | P9-02 | Create config loader with fallback | ✅ done | 2026-01-13 |
 | P9-03 | Add production config API endpoints | ✅ done | 2026-01-13 |
+| P10-01 | Create CompetitionContext provider | ✅ done | 2026-01-14 |
 
 ---
 
