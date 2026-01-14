@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** Integration Testing
-**Last Task:** INT-06 - Local development mode test
-**Next Task:** INT-07 - Legacy route redirect test
+**Last Task:** INT-07 - Legacy route redirect test
+**Next Task:** INT-08 - Error handling test
 
 ---
 
@@ -1168,6 +1168,49 @@ Completed local development mode integration testing:
 
 Verification: `node test-helper.js check http://localhost:5175/local/producer` exits 0
 
+### INT-07: Legacy route redirect test
+Completed legacy route redirect integration testing with automated Playwright test script:
+
+**Test Steps Verified:**
+
+1. **Navigate to /producer (legacy route)**:
+   - Correctly redirects to `/select?redirect=/producer`
+   - URL shows `/select?redirect=%2Fproducer`
+
+2. **Verify redirect to /select?redirect=/producer**:
+   - CompetitionSelector page loads with "Select Competition" header
+   - Shows redirect path indicator "→ /producer" below header
+
+3. **Select a competition**:
+   - Clicked "Producer" button in Local Development section
+   - Successfully navigated to `/local/producer`
+   - Producer page loads with CompetitionHeader showing "Local Development"
+
+4. **Verify navigation to /{compId}/producer**:
+   - URL correctly ends with `/local/producer`
+   - All producer features functional
+
+5. **Navigate to /talent (legacy route)**:
+   - Correctly redirects to `/select?redirect=/talent`
+   - Shows redirect path indicator "→ /talent"
+
+6. **Verify same redirect behavior**:
+   - Clicked "Talent" button in Local Development section
+   - Successfully navigated to `/local/talent`
+
+**Additional Legacy Routes Tested:**
+- `/show-producer` → `/select?redirect=/producer` ✅
+- `/camera-setup` → `/select?redirect=/camera-setup` ✅
+
+**Test Results:** 9/9 tests passed
+
+**Created Test Script:** `test-legacy-routes.js` - Automated Playwright test for legacy route redirects
+
+**Screenshots:**
+- `INT-07-legacy-redirect.png` - CompetitionSelector with redirect query parameter showing "→ /producer"
+
+Verification: `node test-legacy-routes.js` exits 0 with all 9 tests passing
+
 ---
 
 ## Task Completion Log
@@ -1225,6 +1268,7 @@ Verification: `node test-helper.js check http://localhost:5175/local/producer` e
 | INT-04 | Competition selector and routing test | ✅ done | 2026-01-14 |
 | INT-05 | Dynamic apparatus test | ✅ done | 2026-01-14 |
 | INT-06 | Local development mode test | ✅ done | 2026-01-14 |
+| INT-07 | Legacy route redirect test | ✅ done | 2026-01-14 |
 
 ---
 
@@ -1257,6 +1301,7 @@ Verification: `node test-helper.js check http://localhost:5175/local/producer` e
 | INT-05-mag-talent.png | INT-05 | /local/talent?gender=mens | MAG talent view showing MAG badge |
 | INT-06-local-producer.png | INT-06 | /local/producer | Producer view via local mode - CompetitionHeader with "Local Development", all panels functional |
 | INT-06-local-camera-setup.png | INT-06 | /local/camera-setup | Camera setup via local mode - 4 cameras, WAG apparatus, 19 scenes preview |
+| INT-07-legacy-redirect.png | INT-07 | /producer → /select | CompetitionSelector with redirect query parameter showing "→ /producer" indicator |
 
 ---
 
