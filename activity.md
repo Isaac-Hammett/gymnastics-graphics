@@ -1,13 +1,45 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** VM Pool API (Phase 15)
-**Last Task:** P15-02 - Add competition VM assignment endpoints
-**Next Task:** P15-03 - Add VM pool socket events
+**Phase:** VM Pool UI (Phase 16)
+**Last Task:** P15-03 - Add VM pool socket events
+**Next Task:** P16-01 - Create VMPoolPage component
 
 ---
 
 ## 2026-01-14
+
+### P15-03: Add VM pool socket events
+Added VM pool socket events to `server/index.js` for real-time VM management:
+
+**Socket Listeners (client → server):**
+- `assignVM` - Assign a VM to a competition (`{competitionId, preferredVmId?}`)
+- `releaseVM` - Release a VM from a competition (`{competitionId}`)
+- `startVM` - Start a stopped VM (`{vmId}`)
+- `stopVM` - Stop a VM (`{vmId}`)
+- `acknowledgeAlert` - Acknowledge an alert (`{competitionId, alertId}`) - placeholder for P17
+- `getVMPoolStatus` - Request current VM pool status
+
+**Socket Broadcasts (server → clients):**
+- `vmPoolStatus` - Full pool status on any pool change
+- `vmAssigned` - `{ vmId, instanceId, publicIp, vmAddress, competitionId }`
+- `vmReleased` - `{ vmId, instanceId, competitionId }`
+- `vmStarting` - `{ vmId, instanceId, estimatedReadyTime }`
+- `vmReady` - `{ vmId, instanceId, publicIp }`
+- `vmStopping` - `{ vmId, instanceId }`
+- `vmStopped` - `{ vmId, instanceId }`
+- `vmError` - `{ vmId, error }`
+- `vmInUse` - `{ vmId, competitionId }`
+- `vmPoolConfigUpdated` - Pool configuration changes
+- `vmPoolMaintenance` - Pool maintenance events
+
+**Implementation:**
+- Created `initializeVMPoolManager()` function to wire up event listeners
+- VM pool manager events are automatically broadcast to all connected clients
+- Pool initialization is non-blocking - if Firebase/AWS not configured, features are gracefully disabled
+- Individual socket responses: `vmAssignmentResult`, `vmReleaseResult`, `vmStartResult`, `vmStopResult`
+
+Verification: Server compiles successfully with `node --check index.js`
 
 ### P15-02: Add competition VM assignment endpoints
 Added competition VM assignment REST API endpoints to `server/index.js`:
