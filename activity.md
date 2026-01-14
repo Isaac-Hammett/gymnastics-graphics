@@ -1,9 +1,9 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** Phase 9 - Firebase Production Config (In Progress)
-**Last Task:** P9-02 - Create config loader with fallback
-**Next Task:** P9-03 - Add production config API endpoints
+**Phase:** Phase 10 - URL Routing (Up Next)
+**Last Task:** P9-03 - Add production config API endpoints
+**Next Task:** P10-01 - Create CompetitionContext provider
 
 ---
 
@@ -796,6 +796,22 @@ Created `server/lib/configLoader.js` with unified config loading interface:
   - `nimbleServer`, `audioConfig`, `graphicsOverlay`, `transitions` from production/settings
 - Verification: `node -e "import('./lib/configLoader.js')"` exits 0
 
+### P9-03: Add production config API endpoints
+Added production config API endpoints to `server/index.js` for Firebase-backed competition configuration:
+- Imported `productionConfigService` and `configLoader` modules
+- Added `GET /api/competitions/active` - Get current active competition ID and status
+- Added `POST /api/competitions/deactivate` - Clear the active competition
+- Added `GET /api/competitions/:id/production` - Get full production config for a competition
+- Added `PUT /api/competitions/:id/production/cameras` - Save cameras array to Firebase
+- Added `PUT /api/competitions/:id/production/rundown` - Save rundown config to Firebase
+- Added `PUT /api/competitions/:id/production/settings` - Save settings to Firebase
+- Added `GET /api/competitions/:id/production/history` - Get segment history for a competition
+- Added `POST /api/competitions/:id/activate` - Set the active competition ID
+- All endpoints handle Firebase unavailability gracefully (returns 503)
+- All endpoints validate input parameters (cameras must be array, rundown/settings must be objects)
+- Tested: `GET /api/competitions/active` returns `{ activeCompetitionId: null, isActive: false }`
+- Verification: `curl http://localhost:3003/api/competitions/active` returns JSON
+
 ---
 
 ## Task Completion Log
@@ -838,6 +854,7 @@ Created `server/lib/configLoader.js` with unified config loading interface:
 | P8-03 | Add apparatus API endpoint | ✅ done | 2026-01-13 |
 | P9-01 | Create production config service | ✅ done | 2026-01-13 |
 | P9-02 | Create config loader with fallback | ✅ done | 2026-01-13 |
+| P9-03 | Add production config API endpoints | ✅ done | 2026-01-13 |
 
 ---
 
