@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** Phase 10 - URL Routing (In Progress)
-**Last Task:** P10-01 - Create CompetitionContext provider
-**Next Task:** P10-02 - Create CompetitionSelector page
+**Last Task:** P10-02 - Create CompetitionSelector page
+**Next Task:** P10-03 - Create CompetitionLayout and error components
 
 ---
 
@@ -830,6 +830,24 @@ Created `show-controller/src/context/CompetitionContext.jsx` with URL-based comp
 - Real Firebase subscription enables live config updates (e.g., vmAddress changes)
 - Verification: `npm run build` succeeds without errors
 
+### P10-02: Create CompetitionSelector page
+Created `show-controller/src/pages/CompetitionSelector.jsx` as the landing page for selecting competitions:
+- Fetches all competitions from Firebase `competitions/` collection using `useCompetitions()` hook
+- Groups competitions by date: Today, Tomorrow, Upcoming, Past
+- Each competition card shows:
+  - VM status indicator (green=online+OBS, yellow=online, red=offline, gray=no VM)
+  - Gender badge (MAG/WAG) with color coding
+  - Event name, date, venue, and teams
+  - Quick-connect buttons: Producer, Talent, Graphics, Cameras
+- VM status check: fetches `/api/status` with 5s timeout for each competition's vmAddress
+- Search/filter functionality filters by event name, venue, team names, or competition ID
+- Local Development option at top connects to `localhost:3003`
+- Handles `?redirect=` query param for auto-navigation after selection
+- Footer with links to Hub, Dashboard, URL Generator, Media Manager
+- Added `/select` and `/hub` routes to `App.jsx`
+- Screenshot: `screenshots/competition-selector.png`
+- Verification: `npm run build` succeeds, screenshot shows grouped competitions with Local Development option
+
 ---
 
 ## Task Completion Log
@@ -874,6 +892,7 @@ Created `show-controller/src/context/CompetitionContext.jsx` with URL-based comp
 | P9-02 | Create config loader with fallback | ✅ done | 2026-01-13 |
 | P9-03 | Add production config API endpoints | ✅ done | 2026-01-13 |
 | P10-01 | Create CompetitionContext provider | ✅ done | 2026-01-14 |
+| P10-02 | Create CompetitionSelector page | ✅ done | 2026-01-14 |
 
 ---
 
@@ -890,6 +909,7 @@ Created `show-controller/src/context/CompetitionContext.jsx` with URL-based comp
 | INT-02-camera-setup.png | INT-02 | /camera-setup | Shows CameraSetupPage with 4 cameras, scene preview (19 scenes) |
 | INT-02-producer.png | INT-02 | /producer | Shows ProducerView with timesheet panel, override log, camera status |
 | INT-03-show-flow.png | INT-03 | /producer | ProducerView during active show - shows running timesheet, segment info, camera status |
+| competition-selector.png | P10-02 | /select | CompetitionSelector landing page with Local Development option, search, competition cards grouped by date |
 
 ---
 
