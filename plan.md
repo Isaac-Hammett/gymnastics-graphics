@@ -560,7 +560,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Default to 'womens' if gender is null/undefined"
     ],
     "verification": "Build succeeds and hook can be imported",
-    "passes": false
+    "passes": true
   },
   {
     "id": "P8-03",
@@ -924,14 +924,14 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 | Phase 5: Camera UI | 3 | 3 | ✅ Complete |
 | Phase 6: Timesheet UI | 3 | 3 | ✅ Complete |
 | Phase 7: Context & Hooks | 5 | 5 | ✅ Complete |
-| Phase 8: Apparatus Config | 3 | 1 | 🔄 In Progress |
+| Phase 8: Apparatus Config | 3 | 2 | 🔄 In Progress |
 | Phase 9: Firebase Production | 3 | 0 | 🔲 Pending |
 | Phase 10: URL Routing | 6 | 0 | 🔲 Pending |
 | Phase 11: Dynamic Apparatus UI | 3 | 0 | 🔲 Pending |
 | Phase 12: Migration | 2 | 0 | 🔲 Pending |
 | Integration (Original) | 3 | 3 | ✅ Complete |
 | Integration (New) | 5 | 0 | 🔲 Pending |
-| **Total** | **48** | **32** | **67%** |
+| **Total** | **48** | **33** | **69%** |
 
 ---
 
