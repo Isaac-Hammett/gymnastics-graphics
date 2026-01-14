@@ -2,12 +2,37 @@
 
 ## Current Status
 **Phase:** VM Pool UI (Phase 16)
-**Last Task:** P15-03 - Add VM pool socket events
-**Next Task:** P16-01 - Create VMPoolPage component
+**Last Task:** P16-01 - Create VMPoolPage component
+**Next Task:** P16-02 - Create VMCard component
 
 ---
 
 ## 2026-01-14
+
+### P16-01: Create VMPoolPage component
+Created `show-controller/src/pages/VMPoolPage.jsx` with full VM pool management UI:
+
+**Components:**
+- `VMPoolPage` - Main page component with header, status bar, config panel, and VM grid
+- `PoolStatusBar` - Displays pool statistics (Available, Assigned, In Use, Stopped, Starting, Error counts) with utilization bar and low pool warning
+- `VMCard` - Individual VM card with status badge, public IP, assigned competition, service health dots, and action buttons
+- `ServiceDot` - Health indicator dots for Node, OBS, and NoMachine services
+
+**Features:**
+- Fetches VM pool status from `GET /api/admin/vm-pool`
+- Fetches pool configuration from `GET /api/admin/vm-pool/config`
+- Start/Stop VM actions via `POST /api/admin/vm-pool/:vmId/start` and `/stop`
+- Copy SSH command to clipboard
+- Collapsible pool configuration panel showing region, min warm VMs, max VMs, instance type
+- Responsive grid layout (1-3 columns based on viewport)
+- Refresh button for manual pool status refresh
+- Error banner for connection issues
+- Empty state when no VMs in pool
+
+**Route Added:**
+- Added `/admin/vm-pool` route to `App.jsx`
+
+Screenshot: `screenshots/vm-pool-page.png`
 
 ### P15-03: Add VM pool socket events
 Added VM pool socket events to `server/index.js` for real-time VM management:
