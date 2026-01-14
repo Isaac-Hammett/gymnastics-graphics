@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useShow } from '../context/ShowContext';
+import { useCompetition } from '../context/CompetitionContext';
+import { useApparatus } from '../hooks/useApparatus';
 import {
   VideoCameraIcon,
   CheckCircleIcon,
@@ -28,11 +30,11 @@ const HEALTH_TEXT_COLORS = {
   unknown: 'text-zinc-400'
 };
 
-// Men's apparatus options for reassignment
-const APPARATUS_OPTIONS = ['FX', 'PH', 'SR', 'VT', 'PB', 'HB'];
-
 export default function CameraRuntimePanel({ collapsed: initialCollapsed = false }) {
   const { socket } = useShow();
+  const { gender, socketUrl } = useCompetition();
+  const { apparatusCodes, getApparatusName, isValid } = useApparatus(gender);
+
   const [collapsed, setCollapsed] = useState(initialCollapsed);
   const [cameraHealth, setCameraHealth] = useState([]);
   const [cameraRuntimeState, setCameraRuntimeState] = useState([]);
@@ -40,10 +42,8 @@ export default function CameraRuntimePanel({ collapsed: initialCollapsed = false
   const [selectedCamera, setSelectedCamera] = useState(null);
   const [reassignDropdown, setReassignDropdown] = useState(null);
 
-  // Server URL for REST API calls
-  const serverUrl = import.meta.env.PROD
-    ? (import.meta.env.VITE_SOCKET_SERVER || '')
-    : 'http://localhost:3003';
+  // Server URL for REST API calls - use socketUrl from competition context
+  const serverUrl = socketUrl || 'http://localhost:3003';
 
   // Fetch initial state via REST API
   useEffect(() => {
@@ -118,13 +118,22 @@ export default function CameraRuntimePanel({ collapsed: initialCollapsed = false
     }
   }, [socket]);
 
-  // Reassign apparatus
+  // Reassign apparatus - validates codes against current gender
   const reassignApparatus = useCallback((cameraId, apparatus) => {
     if (socket) {
-      socket.emit('reassignApparatus', { cameraId, apparatus, assignedBy: 'producer' });
+      // Filter to only valid apparatus codes for current gender
+      const validApparatus = apparatus.filter(code => isValid(code));
+      if (validApparatus.length !== apparatus.length) {
+        console.warn('CameraRuntimePanel: Some apparatus codes were invalid for current gender', {
+          requested: apparatus,
+          valid: validApparatus,
+          gender
+        });
+      }
+      socket.emit('reassignApparatus', { cameraId, apparatus: validApparatus, assignedBy: 'producer' });
     }
     setReassignDropdown(null);
-  }, [socket]);
+  }, [socket, isValid, gender]);
 
   // Quick switch to camera scene
   const switchToCamera = useCallback((cameraId, cameraName) => {
@@ -231,6 +240,8 @@ export default function CameraRuntimePanel({ collapsed: initialCollapsed = false
                   showReassign={reassignDropdown === camera.id}
                   onToggleReassign={() => setReassignDropdown(reassignDropdown === camera.id ? null : camera.id)}
                   onReassign={(apparatus) => reassignApparatus(camera.id, apparatus)}
+                  apparatusOptions={apparatusCodes}
+                  getApparatusName={getApparatusName}
                 />
               ))}
             </div>
@@ -249,7 +260,9 @@ function CameraCard({
   onSwitchTo,
   showReassign,
   onToggleReassign,
-  onReassign
+  onReassign,
+  apparatusOptions = [],
+  getApparatusName = (code) => code
 }) {
   const [selectedApparatus, setSelectedApparatus] = useState(camera.currentApparatus || []);
 
@@ -325,6 +338,7 @@ function CameraCard({
                     ? 'bg-blue-500/20 text-blue-400'
                     : 'bg-yellow-500/20 text-yellow-400'
                 }`}
+                title={getApparatusName(app)}
               >
                 {app}
               </span>
@@ -378,7 +392,7 @@ function CameraCard({
         <div className="border-t border-zinc-700 p-3 bg-zinc-800/50">
           <div className="text-xs text-zinc-400 mb-2">Select apparatus:</div>
           <div className="flex flex-wrap gap-1 mb-3">
-            {APPARATUS_OPTIONS.map(app => (
+            {apparatusOptions.map(app => (
               <button
                 key={app}
                 onClick={() => toggleApparatus(app)}
@@ -387,6 +401,7 @@ function CameraCard({
                     ? 'bg-blue-600 text-white'
                     : 'bg-zinc-700 text-zinc-400 hover:bg-zinc-600'
                 }`}
+                title={getApparatusName(app)}
               >
                 {app}
               </button>

@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** Phase 11 - Dynamic Apparatus UI (In Progress)
-**Last Task:** P11-01 - Update CameraSetupPage for dynamic apparatus
-**Next Task:** P11-02 - Update CameraRuntimePanel for dynamic apparatus
+**Last Task:** P11-02 - Update CameraRuntimePanel for dynamic apparatus
+**Next Task:** P11-03 - Update QuickActions for dynamic apparatus
 
 ---
 
@@ -960,6 +960,25 @@ Updated `show-controller/src/pages/CameraSetupPage.jsx` with dynamic apparatus b
 - "Covering" display uses `getApparatusName()` for full names
 - Verification: Screenshot at `screenshots/P11-01-camera-setup-dynamic.png` shows WAG competition with 4 apparatus
 
+### P11-02: Update CameraRuntimePanel for dynamic apparatus
+Updated `show-controller/src/components/CameraRuntimePanel.jsx` with dynamic apparatus based on competition gender:
+- Imported `useCompetition` from `CompetitionContext` to get gender
+- Imported `useApparatus` hook to get apparatus configuration for gender
+- Removed hardcoded `APPARATUS_OPTIONS` constant (was 6 men's apparatus)
+- Get `gender` and `socketUrl` from `useCompetition()` hook
+- Get `apparatusCodes`, `getApparatusName`, and `isValid` from `useApparatus(gender)` hook
+- Updated `reassignApparatus` function to validate apparatus codes against current gender
+  - Filters out invalid apparatus codes before sending to server
+  - Logs warning when invalid codes are detected
+- Updated `CameraCard` component to accept `apparatusOptions` and `getApparatusName` props
+- Apparatus display now shows tooltips with full apparatus names via `getApparatusName()`
+- Reassign dropdown now dynamically renders apparatus buttons based on gender:
+  - WAG: 4 apparatus (VT, UB, BB, FX)
+  - MAG: 6 apparatus (FX, PH, SR, VT, PB, HB)
+- Reassign buttons now have tooltips showing full apparatus names
+- Server URL now uses `socketUrl` from competition context instead of hardcoded value
+- Verification: Screenshot at `screenshots/P11-02-camera-runtime-panel.png` shows runtime panel with correct apparatus for competition gender
+
 ---
 
 ## Task Completion Log
@@ -1010,6 +1029,7 @@ Updated `show-controller/src/pages/CameraSetupPage.jsx` with dynamic apparatus b
 | P10-05 | Update ShowContext for dynamic socket URL | ✅ done | 2026-01-14 |
 | P10-06 | Update useCompetitions hook with vmAddress support | ✅ done | 2026-01-14 |
 | P11-01 | Update CameraSetupPage for dynamic apparatus | ✅ done | 2026-01-14 |
+| P11-02 | Update CameraRuntimePanel for dynamic apparatus | ✅ done | 2026-01-14 |
 
 ---
 
@@ -1030,6 +1050,7 @@ Updated `show-controller/src/pages/CameraSetupPage.jsx` with dynamic apparatus b
 | P10-04-select-route.png | P10-04 | /select | New route structure with CompetitionSelector as landing page |
 | P10-05-dynamic-socket.png | P10-05 | /local/producer | ShowContext with dynamic socket URL from CompetitionContext |
 | P11-01-camera-setup-dynamic.png | P11-01 | /local/camera-setup | CameraSetupPage with dynamic apparatus (4 for WAG) and gender badge |
+| P11-02-camera-runtime-panel.png | P11-02 | /local/producer | CameraRuntimePanel with dynamic apparatus from competition gender |
 
 ---
 

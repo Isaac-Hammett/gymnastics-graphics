@@ -777,7 +777,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Validate apparatus codes against gender when reassigning"
     ],
     "verification": "Runtime panel shows correct apparatus for competition gender",
-    "passes": false
+    "passes": true
   },
   {
     "id": "P11-03",
@@ -927,11 +927,11 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 | Phase 8: Apparatus Config | 3 | 3 | ✅ Complete |
 | Phase 9: Firebase Production | 3 | 3 | ✅ Complete |
 | Phase 10: URL Routing | 6 | 6 | ✅ Complete |
-| Phase 11: Dynamic Apparatus UI | 3 | 1 | 🔄 In Progress |
+| Phase 11: Dynamic Apparatus UI | 3 | 2 | 🔄 In Progress |
 | Phase 12: Migration | 2 | 0 | 🔲 Pending |
 | Integration (Original) | 3 | 3 | ✅ Complete |
 | Integration (New) | 5 | 0 | 🔲 Pending |
-| **Total** | **48** | **44** | **92%** |
+| **Total** | **48** | **45** | **94%** |
 
 ---
 
