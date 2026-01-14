@@ -846,7 +846,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Verify CompetitionHeader shows correct info"
     ],
     "verification": "node ralph-wigg/test-helper.js screenshot http://localhost:5173/select select-with-competitions",
-    "passes": false
+    "passes": true
   },
   {
     "id": "INT-05",
@@ -930,8 +930,8 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 | Phase 11: Dynamic Apparatus UI | 3 | 3 | ✅ Complete |
 | Phase 12: Migration | 2 | 2 | ✅ Complete |
 | Integration (Original) | 3 | 3 | ✅ Complete |
-| Integration (New) | 5 | 0 | 🔲 Pending |
-| **Total** | **48** | **43** | **90%** |
+| Integration (New) | 5 | 1 | 🔄 In Progress |
+| **Total** | **48** | **44** | **92%** |
 
 ---
 

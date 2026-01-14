@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** Integration Testing
-**Last Task:** P12-02 - Update environment variables
-**Next Task:** INT-04 - Competition selector and routing test
+**Last Task:** INT-04 - Competition selector and routing test
+**Next Task:** INT-05 - Dynamic apparatus test
 
 ---
 
@@ -1032,6 +1032,42 @@ Updated environment example files for the competition-bound architecture:
 
 Verification: Both .env.example files updated correctly, documentation updated
 
+### INT-04: Competition selector and routing test
+Completed end-to-end integration testing for competition selector and URL-based routing:
+
+**Test Steps Verified:**
+1. **Start client dev server** - Running on port 5175
+2. **Navigate to /select** - CompetitionSelector page loads successfully
+3. **Verify competitions load from Firebase** - 7 competitions displayed (grouped in "Past" section)
+   - Shows WAG/MAG gender badges with correct colors (pink/blue)
+   - Shows event name, date, venue, and teams for each competition
+   - Shows quick-connect buttons: Producer, Talent, Graphics, Cameras
+   - Local Development option displayed at top
+   - Search filter functionality available
+4. **Click on a competition** - Navigation to `/{compId}/producer` works
+   - Competitions without vmAddress show "Not Configured" error correctly
+   - Error page shows "Configure VM" and "Back to Selector" buttons
+5. **Verify navigation to /{compId}/producer** - URL routing works for both:
+   - `/local/producer` - Local development mode
+   - `/ezb008sp/producer` - Real competition ID (shows error due to missing vmAddress)
+6. **Verify socket connects to correct VM** - Console logs confirm:
+   - `"CompetitionContext: Local development mode"`
+   - `"ShowContext: Connecting to http://localhost:3003 for competition local"`
+   - `"ShowContext: Connected to http://localhost:3003 for local"`
+   - Camera health, runtime state, and timesheet state received
+7. **Verify CompetitionHeader shows correct info**:
+   - "Local Development" with LOCAL badge (green)
+   - WAG badge (pink) from competition config
+   - "Connected" status indicator (green dot)
+   - "Change" link to return to selector
+
+**Screenshots:**
+- `select-with-competitions.png` - CompetitionSelector with 7 Firebase competitions
+- `INT-04-local-producer.png` - Producer view via `/local/producer` route
+- `INT-04-competition-producer.png` - Error handling for missing vmAddress
+
+Verification: All 7 test steps pass, URL routing and socket connection work correctly
+
 ---
 
 ## Task Completion Log
@@ -1086,6 +1122,7 @@ Verification: Both .env.example files updated correctly, documentation updated
 | P11-03 | Update QuickActions for dynamic apparatus | ✅ done | 2026-01-14 |
 | P12-01 | Create migration script for show-config.json | ✅ done | 2026-01-13 |
 | P12-02 | Update environment variables | ✅ done | 2026-01-13 |
+| INT-04 | Competition selector and routing test | ✅ done | 2026-01-14 |
 
 ---
 
@@ -1108,6 +1145,9 @@ Verification: Both .env.example files updated correctly, documentation updated
 | P11-01-camera-setup-dynamic.png | P11-01 | /local/camera-setup | CameraSetupPage with dynamic apparatus (4 for WAG) and gender badge |
 | P11-02-camera-runtime-panel.png | P11-02 | /local/producer | CameraRuntimePanel with dynamic apparatus from competition gender |
 | quick-actions-dynamic.png | P11-03 | /local/producer | QuickActions with dynamic apparatus - renders 4 buttons for WAG, 6 for MAG in Olympic order |
+| select-with-competitions.png | INT-04 | /select | CompetitionSelector with 7 competitions from Firebase, Local Development option, search filter |
+| INT-04-local-producer.png | INT-04 | /local/producer | Producer view via competition routing - CompetitionHeader with Local Development, WAG badge, Connected status |
+| INT-04-competition-producer.png | INT-04 | /ezb008sp/producer | Error handling for competition without vmAddress - shows "Not Configured" with Configure VM button |
 
 ---
 
