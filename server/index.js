@@ -15,6 +15,7 @@ import { CameraRuntimeState } from './lib/cameraRuntimeState.js';
 import { CameraFallbackManager } from './lib/cameraFallback.js';
 import { OBSSceneGenerator } from './lib/obsSceneGenerator.js';
 import { TimesheetEngine } from './lib/timesheetEngine.js';
+import { getApparatusForGender } from './lib/apparatusConfig.js';
 
 dotenv.config();
 
@@ -726,6 +727,29 @@ app.put('/api/config/cameras', (req, res) => {
     console.error('Failed to save camera config:', error);
     res.status(500).json({ error: error.message });
   }
+});
+
+// ============================================
+// Apparatus API Endpoints
+// ============================================
+
+// GET /api/apparatus/:gender - Get apparatus for a specific gender
+app.get('/api/apparatus/:gender', (req, res) => {
+  const { gender } = req.params;
+
+  // Handle invalid gender gracefully (defaults to womens internally)
+  const apparatus = getApparatusForGender(gender);
+
+  // Determine normalized gender for response
+  const normalizedGender = (gender && (gender.toLowerCase() === 'mens' ||
+    gender.toLowerCase() === 'mag' ||
+    gender.toLowerCase() === 'male' ||
+    gender.toLowerCase() === 'm')) ? 'mens' : 'womens';
+
+  res.json({
+    gender: normalizedGender,
+    apparatus
+  });
 });
 
 // ============================================

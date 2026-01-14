@@ -1,9 +1,9 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** Phase 8 - Apparatus Config (In Progress)
-**Last Task:** P8-02 - Create client-side useApparatus hook
-**Next Task:** P8-03 - Add apparatus API endpoint
+**Phase:** Phase 8 - Apparatus Config (Complete)
+**Last Task:** P8-03 - Add apparatus API endpoint
+**Next Task:** P9-01 - Create production config service
 
 ---
 
@@ -737,6 +737,19 @@ Created `show-controller/src/hooks/useApparatus.js` with gender-aware apparatus 
 - Normalizes gender formats: mens/womens/MAG/WAG/male/female/m/w
 - Verification: `npm run build` succeeds without errors
 
+### P8-03: Add apparatus API endpoint
+Added apparatus API endpoint to `server/index.js`:
+- Imported `getApparatusForGender` from `./lib/apparatusConfig.js`
+- Added `GET /api/apparatus/:gender` endpoint
+- Returns `{ gender, apparatus: [...] }` with full apparatus data
+- Handles invalid gender gracefully (defaults to womens)
+- Response includes code, name, and Olympic order for each apparatus
+- Tested endpoints:
+  - `/api/apparatus/womens` returns 4 apparatus (VT, UB, BB, FX)
+  - `/api/apparatus/mens` returns 6 apparatus (FX, PH, SR, VT, PB, HB)
+  - `/api/apparatus/invalid` defaults to womens
+- Verification: `curl http://localhost:3001/api/apparatus/womens` returns 4 apparatus
+
 ---
 
 ## Task Completion Log
@@ -776,6 +789,7 @@ Created `show-controller/src/hooks/useApparatus.js` with gender-aware apparatus 
 | INT-03 | Full show flow test | ✅ done | 2026-01-13 |
 | P8-01 | Create server-side apparatus config module | ✅ done | 2026-01-13 |
 | P8-02 | Create client-side useApparatus hook | ✅ done | 2026-01-13 |
+| P8-03 | Add apparatus API endpoint | ✅ done | 2026-01-13 |
 
 ---
 
