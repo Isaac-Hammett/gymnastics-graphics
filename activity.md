@@ -2,12 +2,52 @@
 
 ## Current Status
 **Phase:** VM Pool UI (Phase 16)
-**Last Task:** P16-01 - Create VMPoolPage component
-**Next Task:** P16-02 - Create VMCard component
+**Last Task:** P16-02 - Create VMCard component
+**Next Task:** P16-03 - Create PoolStatusBar component
 
 ---
 
 ## 2026-01-14
+
+### P16-02: Create VMCard component
+Extracted VMCard component to standalone file `show-controller/src/components/VMCard.jsx`:
+
+**Component Features:**
+- VM name and instance ID display with server icon
+- Status badge with color-coded states (available, assigned, in_use, stopped, starting, stopping, error)
+- Public IP display when available
+- Service health dots (Node, OBS, NoMachine) with green/red/gray indicators
+- Assigned competition display with link to producer view
+- Start button (for stopped VMs)
+- Stop button (for available, assigned, or error VMs)
+- Assign button with dropdown for available VMs (optional, controlled by showAssignControls prop)
+- Release button for assigned VMs (optional)
+- SSH command copy button with confirmation feedback
+- Last health check timestamp display
+- Loading state during actions (starting, stopping, assigning, releasing)
+
+**Exports:**
+- `VMCard` (default) - Main component
+- `VM_STATUS` - Status constants object
+- `STATUS_COLORS` - Status badge color mappings
+- `ServiceDot` - Reusable service health indicator
+
+**Props:**
+- `vm` - VM object with vmId, name, instanceId, status, publicIp, services, assignedTo, lastHealthCheck
+- `onStart` - Start VM callback
+- `onStop` - Stop VM callback
+- `onAssign` - Assign VM to competition callback (optional)
+- `onRelease` - Release VM from competition callback (optional)
+- `actionLoading` - Current action loading state
+- `competitions` - Array of competitions for assignment dropdown (optional)
+- `showAssignControls` - Whether to show assign/release buttons (default: true)
+
+**Updated VMPoolPage.jsx:**
+- Removed embedded VMCard, ServiceDot, VM_STATUS, and STATUS_COLORS
+- Imported VMCard and VM_STATUS from new component file
+- Removed unused copySSHCommand function (now handled internally by VMCard)
+
+Screenshot: `screenshots/vm-card.png`
 
 ### P16-01: Create VMPoolPage component
 Created `show-controller/src/pages/VMPoolPage.jsx` with full VM pool management UI:
