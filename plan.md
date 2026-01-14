@@ -1000,7 +1000,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Support preferredVmId parameter"
     ],
     "verification": "curl -X POST http://localhost:3001/api/competitions/test/vm/assign returns result",
-    "passes": false
+    "passes": true
   },
   {
     "id": "P15-03",

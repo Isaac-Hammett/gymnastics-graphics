@@ -1086,6 +1086,90 @@ app.delete('/api/admin/vm-pool/:vmId', async (req, res) => {
 });
 
 // ============================================
+// Competition VM Assignment API Endpoints
+// ============================================
+
+// POST /api/competitions/:compId/vm/assign - Assign a VM to a competition
+app.post('/api/competitions/:compId/vm/assign', async (req, res) => {
+  try {
+    const vmPoolManager = getVMPoolManager();
+    if (!vmPoolManager.isInitialized()) {
+      return res.status(503).json({ error: 'VM pool manager not initialized' });
+    }
+
+    const { compId } = req.params;
+    const { preferredVmId } = req.body || {};
+
+    // Check if competition already has a VM assigned
+    const existingVM = vmPoolManager.getVMForCompetition(compId);
+    if (existingVM) {
+      return res.status(400).json({
+        error: 'Competition already has a VM assigned',
+        competitionId: compId,
+        vmId: existingVM.vmId,
+        publicIp: existingVM.publicIp
+      });
+    }
+
+    const result = await vmPoolManager.assignVM(compId, preferredVmId);
+    res.json(result);
+  } catch (error) {
+    console.error('Failed to assign VM:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/competitions/:compId/vm/release - Release a VM from a competition
+app.post('/api/competitions/:compId/vm/release', async (req, res) => {
+  try {
+    const vmPoolManager = getVMPoolManager();
+    if (!vmPoolManager.isInitialized()) {
+      return res.status(503).json({ error: 'VM pool manager not initialized' });
+    }
+
+    const { compId } = req.params;
+    const result = await vmPoolManager.releaseVM(compId);
+    res.json(result);
+  } catch (error) {
+    console.error('Failed to release VM:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/competitions/:compId/vm - Get the VM assigned to a competition
+app.get('/api/competitions/:compId/vm', (req, res) => {
+  try {
+    const vmPoolManager = getVMPoolManager();
+    if (!vmPoolManager.isInitialized()) {
+      return res.status(503).json({ error: 'VM pool manager not initialized' });
+    }
+
+    const { compId } = req.params;
+    const vm = vmPoolManager.getVMForCompetition(compId);
+
+    if (!vm) {
+      return res.status(404).json({
+        error: 'No VM assigned to this competition',
+        competitionId: compId
+      });
+    }
+
+    res.json({
+      competitionId: compId,
+      vmId: vm.vmId,
+      instanceId: vm.instanceId,
+      publicIp: vm.publicIp,
+      status: vm.status,
+      services: vm.services,
+      vmAddress: vm.publicIp ? `${vm.publicIp}:${vmPoolManager.getPoolStatus().config.servicePort}` : null
+    });
+  } catch (error) {
+    console.error('Failed to get competition VM:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================
 // Camera Health API Endpoints
 // ============================================
 
