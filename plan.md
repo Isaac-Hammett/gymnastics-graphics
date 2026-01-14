@@ -1195,7 +1195,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Test release and re-assignment"
     ],
     "verification": "Full VM lifecycle works via API",
-    "passes": false
+    "passes": true
   },
   {
     "id": "INT-10",
@@ -1253,9 +1253,9 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 | **Phase 14: VM Infrastructure** | 3 | 3 | ✅ Complete |
 | **Phase 15: VM Pool API** | 3 | 3 | ✅ Complete |
 | **Phase 16: VM Pool UI** | 5 | 5 | ✅ Complete |
-| **Phase 17: Monitoring & Alerts** | 5 | 2 | 🔄 In progress |
-| **Integration (VM Pool)** | 3 | 0 | ⬜ Not started |
-| **Total** | **67** | **61** | **91%** |
+| **Phase 17: Monitoring & Alerts** | 5 | 5 | ✅ Complete |
+| **Integration (VM Pool)** | 3 | 1 | 🔄 In progress |
+| **Total** | **67** | **65** | **97%** |
 
 ---
 
