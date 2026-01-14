@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** Phase 10 - URL Routing (In Progress)
-**Last Task:** P10-02 - Create CompetitionSelector page
-**Next Task:** P10-03 - Create CompetitionLayout and error components
+**Last Task:** P10-03 - Create CompetitionLayout and error components
+**Next Task:** P10-04 - Update App.jsx with new route structure
 
 ---
 
@@ -848,6 +848,36 @@ Created `show-controller/src/pages/CompetitionSelector.jsx` as the landing page 
 - Screenshot: `screenshots/competition-selector.png`
 - Verification: `npm run build` succeeds, screenshot shows grouped competitions with Local Development option
 
+### P10-03: Create CompetitionLayout and error components
+Created three components for competition-bound route management:
+
+**CompetitionLayout.jsx** (`show-controller/src/components/CompetitionLayout.jsx`):
+- Wraps competition-specific routes with CompetitionProvider
+- Shows loading spinner while fetching config from Firebase
+- Shows CompetitionError component on errors
+- Wraps content with ShowProvider when ready
+- Renders Outlet for nested routes
+- Includes CompetitionHeader at top of all competition pages
+
+**CompetitionError.jsx** (`show-controller/src/components/CompetitionError.jsx`):
+- Handles NOT_FOUND: "Competition not found" with link to /select
+- Handles NO_VM_ADDRESS: "Not configured" with link to configure VM in Hub
+- Handles VM_UNREACHABLE: "Cannot connect" with retry button
+- Handles FIREBASE_ERROR: Generic error with retry option
+- Color-coded icons for each error type (red, yellow, orange)
+- All error states have "Back to Selector" link
+
+**CompetitionHeader.jsx** (`show-controller/src/components/CompetitionHeader.jsx`):
+- Shows event name from competition config
+- Gender badge (MAG/WAG) with color coding (blue/pink)
+- Venue display (hidden on mobile)
+- Local mode indicator when compId='local'
+- Connection status indicator (green=connected, red=disconnected)
+- VM address display on larger screens
+- "Change" link to navigate back to /select
+
+Verification: `npm run build` succeeds without errors
+
 ---
 
 ## Task Completion Log
@@ -893,6 +923,7 @@ Created `show-controller/src/pages/CompetitionSelector.jsx` as the landing page 
 | P9-03 | Add production config API endpoints | ✅ done | 2026-01-13 |
 | P10-01 | Create CompetitionContext provider | ✅ done | 2026-01-14 |
 | P10-02 | Create CompetitionSelector page | ✅ done | 2026-01-14 |
+| P10-03 | Create CompetitionLayout and error components | ✅ done | 2026-01-14 |
 
 ---
 
