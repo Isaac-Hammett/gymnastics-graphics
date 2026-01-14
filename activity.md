@@ -2,12 +2,47 @@
 
 ## Current Status
 **Phase:** VM Pool UI (Phase 16)
-**Last Task:** P16-03 - Create PoolStatusBar component
-**Next Task:** P16-04 - Create useVMPool hook
+**Last Task:** P16-04 - Create useVMPool hook
+**Next Task:** P16-05 - Update CompetitionSelector with VM status
 
 ---
 
 ## 2026-01-14
+
+### P16-04: Create useVMPool hook
+Created `show-controller/src/hooks/useVMPool.js` for managing VM pool state and actions:
+
+**State:**
+- `vms` - Array of all VMs from Firebase vmPool/
+- `poolConfig` - Pool configuration from Firebase vmPool/config
+- `loading` - Whether initial Firebase subscription is loading
+- `error` - Error message if subscription fails
+
+**Actions:**
+- `startVM(vmId)` - Start a stopped VM via `POST /api/admin/vm-pool/:vmId/start`
+- `stopVM(vmId)` - Stop a VM via `POST /api/admin/vm-pool/:vmId/stop`
+- `assignVM(competitionId, preferredVmId?)` - Assign VM to competition via `POST /api/competitions/:compId/vm/assign`
+- `releaseVM(competitionId)` - Release VM from competition via `POST /api/competitions/:compId/vm/release`
+
+**Computed Arrays:**
+- `availableVMs` - VMs with status 'available'
+- `assignedVMs` - VMs with status 'assigned' or 'in_use'
+- `stoppedVMs` - VMs with status 'stopped' (cold pool)
+- `errorVMs` - VMs with status 'error'
+- `transitioningVMs` - VMs with status 'starting' or 'stopping'
+
+**Helpers:**
+- `getVMForCompetition(competitionId)` - Get VM assigned to a specific competition
+- `hasVMAssigned(competitionId)` - Check if a competition has a VM assigned
+
+**Stats:**
+- `poolStats` - Object with total, available, assigned, stopped, error, transitioning counts
+
+**Exports:**
+- `useVMPool` (default and named) - Main hook
+- `VM_STATUS` - Status constants for convenience
+
+Verification: Build succeeds with `npm run build`
 
 ### P16-03: Create PoolStatusBar component
 Extracted PoolStatusBar to standalone component file `show-controller/src/components/PoolStatusBar.jsx`:

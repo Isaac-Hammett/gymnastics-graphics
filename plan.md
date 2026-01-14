@@ -1082,7 +1082,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Return helper: getVMForCompetition"
     ],
     "verification": "Hook imports without error",
-    "passes": false
+    "passes": true
   },
   {
     "id": "P16-05",
@@ -1252,10 +1252,10 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 | Integration (Phases 8-12) | 5 | 5 | ✅ Complete |
 | **Phase 14: VM Infrastructure** | 3 | 3 | ✅ Complete |
 | **Phase 15: VM Pool API** | 3 | 3 | ✅ Complete |
-| **Phase 16: VM Pool UI** | 5 | 0 | ⬜ Not started |
+| **Phase 16: VM Pool UI** | 5 | 4 | 🔄 In Progress |
 | **Phase 17: Monitoring & Alerts** | 5 | 0 | ⬜ Not started |
 | **Integration (VM Pool)** | 3 | 0 | ⬜ Not started |
-| **Total** | **67** | **54** | **81%** |
+| **Total** | **67** | **58** | **87%** |
 
 ---
 
