@@ -1,9 +1,9 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** Phase 11 - Dynamic Apparatus UI (Pending)
-**Last Task:** P10-06 - Update useCompetitions hook with vmAddress support
-**Next Task:** P11-01 - Update CameraSetupPage for dynamic apparatus
+**Phase:** Phase 11 - Dynamic Apparatus UI (In Progress)
+**Last Task:** P11-01 - Update CameraSetupPage for dynamic apparatus
+**Next Task:** P11-02 - Update CameraRuntimePanel for dynamic apparatus
 
 ---
 
@@ -944,6 +944,22 @@ Extended `show-controller/src/hooks/useCompetitions.js` with VM address validati
 - All new functions exported from the hook for use by other components
 - Verification: `npm run build` succeeds without errors
 
+### P11-01: Update CameraSetupPage for dynamic apparatus
+Updated `show-controller/src/pages/CameraSetupPage.jsx` with dynamic apparatus based on competition gender:
+- Imported `useCompetition` from `CompetitionContext` to get gender
+- Imported `useApparatus` hook to get apparatus configuration for gender
+- Removed hardcoded `APPARATUS_OPTIONS` constant (was 6 men's apparatus)
+- Added `apparatusOptions` state derived from `useApparatus(gender)` hook
+- Use `socketUrl` from competition context instead of hardcoded server URL
+- Added gender badge (MAG/WAG) to page header next to "Camera Setup" title
+- Display competition event name from `competitionConfig` in local mode shows show name
+- Updated `CameraCard` component to accept `apparatusOptions` and `getApparatusName` props
+- Apparatus toggle buttons now dynamically render based on gender:
+  - WAG: 4 apparatus (VT, UB, BB, FX)
+  - MAG: 6 apparatus (FX, PH, SR, VT, PB, HB)
+- "Covering" display uses `getApparatusName()` for full names
+- Verification: Screenshot at `screenshots/P11-01-camera-setup-dynamic.png` shows WAG competition with 4 apparatus
+
 ---
 
 ## Task Completion Log
@@ -993,6 +1009,7 @@ Extended `show-controller/src/hooks/useCompetitions.js` with VM address validati
 | P10-04 | Update App.jsx with new route structure | ✅ done | 2026-01-14 |
 | P10-05 | Update ShowContext for dynamic socket URL | ✅ done | 2026-01-14 |
 | P10-06 | Update useCompetitions hook with vmAddress support | ✅ done | 2026-01-14 |
+| P11-01 | Update CameraSetupPage for dynamic apparatus | ✅ done | 2026-01-14 |
 
 ---
 
@@ -1012,6 +1029,7 @@ Extended `show-controller/src/hooks/useCompetitions.js` with VM address validati
 | competition-selector.png | P10-02 | /select | CompetitionSelector landing page with Local Development option, search, competition cards grouped by date |
 | P10-04-select-route.png | P10-04 | /select | New route structure with CompetitionSelector as landing page |
 | P10-05-dynamic-socket.png | P10-05 | /local/producer | ShowContext with dynamic socket URL from CompetitionContext |
+| P11-01-camera-setup-dynamic.png | P11-01 | /local/camera-setup | CameraSetupPage with dynamic apparatus (4 for WAG) and gender badge |
 
 ---
 

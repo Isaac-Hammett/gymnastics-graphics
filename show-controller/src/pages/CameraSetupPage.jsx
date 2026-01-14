@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   VideoCameraIcon,
@@ -9,16 +9,8 @@ import {
   ExclamationTriangleIcon,
   CubeIcon
 } from '@heroicons/react/24/solid';
-
-// Men's apparatus options
-const APPARATUS_OPTIONS = [
-  { value: 'FX', label: 'Floor Exercise' },
-  { value: 'PH', label: 'Pommel Horse' },
-  { value: 'SR', label: 'Still Rings' },
-  { value: 'VT', label: 'Vault' },
-  { value: 'PB', label: 'Parallel Bars' },
-  { value: 'HB', label: 'High Bar' }
-];
+import { useCompetition } from '../context/CompetitionContext';
+import { useApparatus } from '../hooks/useApparatus';
 
 export default function CameraSetupPage() {
   const [cameras, setCameras] = useState([]);
@@ -29,12 +21,19 @@ export default function CameraSetupPage() {
   const [scenePreview, setScenePreview] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
 
-  // Server URL - use env var or default to localhost in dev
-  // In production, use the env var or empty string (same origin)
-  // In development, prefer localhost:3003 to avoid CORS issues with remote servers
-  const serverUrl = import.meta.env.PROD
-    ? (import.meta.env.VITE_SOCKET_SERVER || '')
-    : 'http://localhost:3003';
+  // Get competition context for gender and socket URL
+  const { gender, socketUrl, competitionConfig, isLocalMode } = useCompetition();
+
+  // Get apparatus options based on competition gender
+  const { apparatus, getApparatusName } = useApparatus(gender);
+
+  // Build apparatus options from dynamic apparatus array
+  const apparatusOptions = useMemo(() => {
+    return apparatus.map(a => ({ value: a.code, label: a.name }));
+  }, [apparatus]);
+
+  // Server URL from competition context
+  const serverUrl = socketUrl || 'http://localhost:3003';
 
   // Load initial config
   useEffect(() => {
@@ -185,15 +184,25 @@ export default function CameraSetupPage() {
               className="flex items-center gap-2 px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-400 text-xs hover:bg-zinc-700 hover:text-zinc-300 transition-colors"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-              Hub
+              Back
             </Link>
             <div>
               <h1 className="text-lg font-bold text-white flex items-center gap-2">
                 <VideoCameraIcon className="w-5 h-5 text-blue-400" />
                 Camera Setup
+                {/* Gender badge */}
+                {gender && (
+                  <span className={`ml-2 px-2 py-0.5 rounded text-xs font-semibold ${
+                    gender === 'mens' ? 'bg-blue-500/20 text-blue-400' : 'bg-pink-500/20 text-pink-400'
+                  }`}>
+                    {gender === 'mens' ? 'MAG' : 'WAG'}
+                  </span>
+                )}
               </h1>
               <div className="text-sm text-zinc-500">
-                {showConfig?.showName || 'Configure cameras for your show'}
+                {isLocalMode
+                  ? (showConfig?.showName || 'Local Development')
+                  : (competitionConfig?.eventName || showConfig?.showName || 'Configure cameras for your show')}
               </div>
             </div>
           </div>
@@ -308,6 +317,8 @@ export default function CameraSetupPage() {
                 onUpdate={updateCamera}
                 onToggleApparatus={toggleApparatus}
                 onRemove={removeCamera}
+                apparatusOptions={apparatusOptions}
+                getApparatusName={getApparatusName}
               />
             ))
           )}
@@ -328,7 +339,7 @@ export default function CameraSetupPage() {
   );
 }
 
-function CameraCard({ camera, index, cameras, onUpdate, onToggleApparatus, onRemove }) {
+function CameraCard({ camera, index, cameras, onUpdate, onToggleApparatus, onRemove, apparatusOptions, getApparatusName }) {
   const otherCameras = cameras.filter(c => c.id !== camera.id);
 
   return (
@@ -392,7 +403,7 @@ function CameraCard({ camera, index, cameras, onUpdate, onToggleApparatus, onRem
       <div className="mb-4">
         <label className="block text-xs text-zinc-400 mb-2">Expected Apparatus</label>
         <div className="flex flex-wrap gap-2">
-          {APPARATUS_OPTIONS.map(({ value, label }) => {
+          {apparatusOptions.map(({ value, label }) => {
             const isSelected = (camera.expectedApparatus || []).includes(value);
             return (
               <button
@@ -412,7 +423,7 @@ function CameraCard({ camera, index, cameras, onUpdate, onToggleApparatus, onRem
         {(camera.expectedApparatus || []).length > 0 && (
           <div className="mt-2 text-xs text-zinc-500">
             Covering: {(camera.expectedApparatus || []).map(a =>
-              APPARATUS_OPTIONS.find(o => o.value === a)?.label || a
+              getApparatusName(a) || a
             ).join(', ')}
           </div>
         )}
