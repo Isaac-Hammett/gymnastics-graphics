@@ -891,7 +891,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Verify same redirect behavior"
     ],
     "verification": "Legacy routes redirect correctly",
-    "passes": false
+    "passes": true
   },
   {
     "id": "INT-08",
@@ -930,8 +930,8 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 | Phase 11: Dynamic Apparatus UI | 3 | 3 | ✅ Complete |
 | Phase 12: Migration | 2 | 2 | ✅ Complete |
 | Integration (Original) | 3 | 3 | ✅ Complete |
-| Integration (New) | 5 | 3 | 🔄 In Progress |
-| **Total** | **48** | **46** | **96%** |
+| Integration (New) | 5 | 4 | 🔄 In Progress |
+| **Total** | **48** | **47** | **98%** |
 
 ---
 
