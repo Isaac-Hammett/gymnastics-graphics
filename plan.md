@@ -1098,7 +1098,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Add link to /admin/vm-pool"
     ],
     "verification": "Competition cards show VM status",
-    "passes": false
+    "passes": true
   },
   {
     "id": "P17-01",
@@ -1252,10 +1252,10 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 | Integration (Phases 8-12) | 5 | 5 | ✅ Complete |
 | **Phase 14: VM Infrastructure** | 3 | 3 | ✅ Complete |
 | **Phase 15: VM Pool API** | 3 | 3 | ✅ Complete |
-| **Phase 16: VM Pool UI** | 5 | 4 | 🔄 In Progress |
+| **Phase 16: VM Pool UI** | 5 | 5 | ✅ Complete |
 | **Phase 17: Monitoring & Alerts** | 5 | 0 | ⬜ Not started |
 | **Integration (VM Pool)** | 3 | 0 | ⬜ Not started |
-| **Total** | **67** | **58** | **87%** |
+| **Total** | **67** | **59** | **88%** |
 
 ---
 
