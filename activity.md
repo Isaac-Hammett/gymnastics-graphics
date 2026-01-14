@@ -1321,6 +1321,7 @@ Verification: `node test-error-handling.js` exits 0 with all 14 tests passing
 | INT-08 | Error handling test | ✅ done | 2026-01-14 |
 | P14-01 | Create AWS SDK service module | ✅ done | 2026-01-14 |
 | P14-02 | Create VM pool state manager | ✅ done | 2026-01-14 |
+| P14-03 | Create VM health monitor | ✅ done | 2026-01-14 |
 
 ---
 
@@ -1456,6 +1457,54 @@ Created `server/lib/vmPoolManager.js` with full VM pool management capabilities:
 - `vmInUse`, `vmError`, `configUpdated`
 
 Verification: `node -e "import('./lib/vmPoolManager.js')"` exits 0, VM_STATUS and all methods present
+
+### P14-03: Create VM health monitor
+Created `server/lib/vmHealthMonitor.js` with VM health monitoring capabilities:
+
+**Configuration:**
+- `pollIntervalMs: 30000` - 30 seconds between health checks
+- `requestTimeoutMs: 5000` - 5 second timeout per request
+- `servicePort: 3003` - Port for service health checks
+- `unhealthyThreshold: 3` - Number of failed checks before marking error
+- `recoveryThreshold: 2` - Number of successful checks before clearing error
+
+**Implemented Functions:**
+- `initialize()` - Initialize Firebase connection and start polling loop
+- `checkVMHealth(vmId)` - Check health of a specific VM (on-demand)
+- `_checkServices(publicIp)` - Check VM /api/status endpoint
+- `_updateVMHealth(vmId, services, healthy)` - Update Firebase vmPool/{vmId}/services
+- `_handleHealthyVM()` - Track recovery and clear errors when VM recovers
+- `_handleUnhealthyVM()` - Track failures and set error status
+- `getHealthStatus()` - Get current health status for all VMs
+- `updateConfig(config)` - Update configuration
+- `forceHealthCheck(vmId)` - Force on-demand health check for specific VM
+- `forceHealthCheckAll()` - Force health check on all VMs
+- `isRunning()` - Check if monitor is running
+- `shutdown()` - Clean shutdown
+
+**Features:**
+- Extends EventEmitter for health event broadcasting
+- Continuous polling loop for all running VMs (AVAILABLE, ASSIGNED, IN_USE)
+- Checks VM /api/status endpoint for Node server health
+- Checks OBS WebSocket connection status via API response
+- Tracks consecutive failures/successes per VM with thresholds
+- Auto-marks VM as ERROR after unhealthyThreshold failures
+- Auto-clears ERROR status after recoveryThreshold successes
+- Updates Firebase vmPool/{vmId}/services with lastHealthCheck timestamp
+- Singleton pattern via `getVMHealthMonitor()` function
+
+**Events Emitted:**
+- `initialized` - Monitor started
+- `healthCheckComplete` - Summary of all health checks
+- `vmHealthChecked` - Individual VM health check result
+- `vmHealthChanged` - VM status changed due to health
+- `vmRecovered` - VM recovered from ERROR state
+- `vmUnreachable` - VM node server not responding
+- `obsDisconnected` - OBS disconnected on VM
+- `configUpdated` - Configuration changed
+- `shutdown` - Monitor stopped
+
+Verification: `node -e "import('./lib/vmHealthMonitor.js')"` exits 0
 
 ---
 
