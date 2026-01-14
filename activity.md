@@ -1,9 +1,9 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** Integration Testing
-**Last Task:** INT-07 - Legacy route redirect test
-**Next Task:** INT-08 - Error handling test
+**Phase:** Integration Testing - COMPLETE
+**Last Task:** INT-08 - Error handling test
+**Next Task:** All tasks complete!
 
 ---
 
@@ -1211,6 +1211,55 @@ Completed legacy route redirect integration testing with automated Playwright te
 
 Verification: `node test-legacy-routes.js` exits 0 with all 9 tests passing
 
+### INT-08: Error handling test
+Completed error handling integration testing with automated Playwright test script:
+
+**Test Steps Verified:**
+
+1. **Navigate to /invalid-competition-id/producer**:
+   - Page loads successfully
+   - Shows "Competition Not Found" title with red icon
+   - Message includes competition ID: "The competition \"invalid-competition-id\" could not be found."
+   - Competition ID displayed in code block
+
+2. **Verify CompetitionError shows 'Competition not found'**:
+   - Title: "Competition Not Found" ✅
+   - Message correctly describes the error ✅
+   - Back to Competition Selector link visible ✅
+
+3. **Verify link to /select works**:
+   - Clicked "Back to Competition Selector" button
+   - Successfully navigated to /select
+   - Competition Selector page loads with "Select Competition" header
+
+4. **Create competition without vmAddress**:
+   - Navigated to `/ezb008sp/producer` (competition exists in Firebase but has no vmAddress)
+   - Shows "Not Configured" error with yellow warning icon
+
+5. **Verify 'Not configured' error shows**:
+   - Title: "Not Configured" ✅
+   - Message: "This competition does not have a VM address configured..." ✅
+   - "Configure VM" button links to `/hub?edit=ezb008sp` ✅
+   - "Back to Selector" button visible ✅
+
+**Additional Tests:**
+- Error page background styling (min-h-screen bg-gray-900) ✅
+- Error content is centered and contained (max-w-md) ✅
+- Error pages display appropriate icons ✅
+- Competition ID displayed in code block on error pages ✅
+
+**Test Results:** 14/14 tests passed
+
+**Created Test Script:** `test-error-handling.js` - Automated Playwright test for error handling
+
+**Screenshots:**
+- `INT-08-not-found-error.png` - NOT_FOUND error for invalid competition ID
+- `INT-08-no-vm-address-error.png` - NO_VM_ADDRESS error for competition without vmAddress
+- `INT-08-competition-selector.png` - Competition selector page
+- `INT-08-error-styling.png` - Error page styling verification
+
+Verification: `node test-error-handling.js` exits 0 with all 14 tests passing
+
 ---
 
 ## Task Completion Log
@@ -1269,6 +1318,7 @@ Verification: `node test-legacy-routes.js` exits 0 with all 9 tests passing
 | INT-05 | Dynamic apparatus test | ✅ done | 2026-01-14 |
 | INT-06 | Local development mode test | ✅ done | 2026-01-14 |
 | INT-07 | Legacy route redirect test | ✅ done | 2026-01-14 |
+| INT-08 | Error handling test | ✅ done | 2026-01-14 |
 
 ---
 
@@ -1302,6 +1352,10 @@ Verification: `node test-legacy-routes.js` exits 0 with all 9 tests passing
 | INT-06-local-producer.png | INT-06 | /local/producer | Producer view via local mode - CompetitionHeader with "Local Development", all panels functional |
 | INT-06-local-camera-setup.png | INT-06 | /local/camera-setup | Camera setup via local mode - 4 cameras, WAG apparatus, 19 scenes preview |
 | INT-07-legacy-redirect.png | INT-07 | /producer → /select | CompetitionSelector with redirect query parameter showing "→ /producer" indicator |
+| INT-08-not-found-error.png | INT-08 | /invalid-competition-id/producer | NOT_FOUND error - shows "Competition Not Found" with red icon, comp ID in code block |
+| INT-08-no-vm-address-error.png | INT-08 | /ezb008sp/producer | NO_VM_ADDRESS error - shows "Not Configured" with Configure VM and Back to Selector buttons |
+| INT-08-competition-selector.png | INT-08 | /select | Competition selector with 8 Producer buttons (7 competitions + Local Dev) |
+| INT-08-error-styling.png | INT-08 | /this-id-does-not-exist/producer | Error page styling - centered content, dark background, icon, competition ID display |
 
 ---
 
