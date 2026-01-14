@@ -1,9 +1,9 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** Phase 8 - Apparatus Config (Complete)
-**Last Task:** P8-03 - Add apparatus API endpoint
-**Next Task:** P9-01 - Create production config service
+**Phase:** Phase 9 - Firebase Production Config (In Progress)
+**Last Task:** P9-01 - Create production config service
+**Next Task:** P9-02 - Create config loader with fallback
 
 ---
 
@@ -750,6 +750,29 @@ Added apparatus API endpoint to `server/index.js`:
   - `/api/apparatus/invalid` defaults to womens
 - Verification: `curl http://localhost:3001/api/apparatus/womens` returns 4 apparatus
 
+### P9-01: Create production config service
+Created `server/lib/productionConfigService.js` with Firebase Admin SDK integration:
+- Installed `firebase-admin` npm package in server
+- Firebase path structure: `competitions/{compId}/production/{cameras|rundown|settings|overrides|history}`
+- `initializeFirebase()` - Initialize Firebase Admin SDK (uses `GOOGLE_APPLICATION_CREDENTIALS` or default credentials)
+- `isAvailable()` - Check if Firebase connection is available
+- `getProductionConfig(competitionId)` - Get full production config for a competition
+- `getCameras(competitionId)` - Get cameras array (converts Firebase object to array)
+- `saveCameras(competitionId, cameras)` - Save cameras (converts array to object keyed by id)
+- `getRundown(competitionId)` - Get rundown configuration
+- `saveRundown(competitionId, rundown)` - Save rundown with `lastModified` timestamp
+- `getSettings(competitionId)` - Get production settings
+- `saveSettings(competitionId, settings)` - Save production settings
+- `appendOverride(competitionId, override)` - Append override with timestamp to overrides array
+- `getOverrides(competitionId)` - Get all overrides for a competition
+- `getHistory(competitionId)` - Get segment history records
+- `appendHistory(competitionId, record)` - Append history record with timestamp
+- `clearProductionData(competitionId)` - Clear all production data for a competition
+- Helper functions: `objectToArray()`, `arrayToObject()` for Firebase data conversion
+- Exported as singleton with all functions and named exports
+- Graceful handling when Firebase is unavailable (methods return null/empty values)
+- Verification: `node -e "import('./lib/productionConfigService.js')"` exits 0
+
 ---
 
 ## Task Completion Log
@@ -790,6 +813,7 @@ Added apparatus API endpoint to `server/index.js`:
 | P8-01 | Create server-side apparatus config module | ✅ done | 2026-01-13 |
 | P8-02 | Create client-side useApparatus hook | ✅ done | 2026-01-13 |
 | P8-03 | Add apparatus API endpoint | ✅ done | 2026-01-13 |
+| P9-01 | Create production config service | ✅ done | 2026-01-13 |
 
 ---
 
