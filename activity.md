@@ -1320,6 +1320,7 @@ Verification: `node test-error-handling.js` exits 0 with all 14 tests passing
 | INT-07 | Legacy route redirect test | ✅ done | 2026-01-14 |
 | INT-08 | Error handling test | ✅ done | 2026-01-14 |
 | P14-01 | Create AWS SDK service module | ✅ done | 2026-01-14 |
+| P14-02 | Create VM pool state manager | ✅ done | 2026-01-14 |
 
 ---
 
@@ -1404,6 +1405,57 @@ Created `server/lib/awsService.js` with full AWS EC2 integration for VM pool man
 - `instanceRunning`, `instanceStopped`, `servicesReady`
 
 Verification: `node -e "import('./lib/awsService.js')"` exits 0, all methods present
+
+### P14-02: Create VM pool state manager
+Created `server/lib/vmPoolManager.js` with full VM pool management capabilities:
+
+**VM Status Enum:**
+- `available` - Ready for assignment, services running
+- `assigned` - Linked to a competition
+- `in_use` - Competition actively streaming
+- `stopped` - Cold standby, not running
+- `starting` - EC2 instance starting up
+- `stopping` - EC2 instance stopping
+- `error` - Health check failed, needs attention
+
+**Pool Configuration (Firebase: vmPool/config):**
+- `warmCount: 2` - VMs always running, ready for immediate assignment
+- `coldCount: 3` - VMs stopped, started on demand
+- `maxInstances: 5` - Maximum total VMs in pool
+- `healthCheckIntervalMs: 30000` - Health check interval (30 seconds)
+- `idleTimeoutMinutes: 60` - Auto-stop after idle timeout
+- `servicePort: 3003` - Port for service health checks
+
+**Implemented Functions:**
+- `initializePool()` - Initialize pool manager, sync AWS with Firebase, set up listeners
+- `getAvailableVM()` - Find unassigned VM from pool
+- `getVMsByStatus(status)` - Get all VMs matching a status
+- `assignVM(competitionId, preferredVmId)` - Reserve VM for competition, update vmAddress in Firebase
+- `releaseVM(competitionId)` - Return VM to pool, clear vmAddress
+- `startVM(vmId)` - Start a stopped VM
+- `stopVM(vmId)` - Stop an available VM
+- `getPoolStatus()` - Get full pool state with counts and all VMs
+- `getVM(vmId)` - Get status for specific VM
+- `getVMForCompetition(competitionId)` - Get VM assigned to a competition
+- `ensureMinWarmVMs()` - Pool maintenance, start VMs if below warm threshold
+- `updatePoolConfig(config)` - Update pool configuration
+- `markVMInUse(vmId)` - Mark VM as actively streaming
+- `updateVMServices(vmId, services)` - Update VM services status from health check
+- `setVMError(vmId, reason)` - Set VM to error status
+- `shutdown()` - Clean shutdown, remove Firebase listeners
+
+**Firebase Integration:**
+- Path structure: `vmPool/config`, `vmPool/vms/{vmId}`
+- Real-time listeners for pool updates
+- Automatic sync between AWS state and Firebase
+- Updates `competitions/{compId}/config/vmAddress` on assign/release
+
+**Events Emitted:**
+- `poolInitialized`, `poolSynced`, `poolUpdated`, `poolMaintenance`, `poolShutdown`
+- `vmAssigned`, `vmReleased`, `vmStarting`, `vmReady`, `vmStopping`, `vmStopped`
+- `vmInUse`, `vmError`, `configUpdated`
+
+Verification: `node -e "import('./lib/vmPoolManager.js')"` exits 0, VM_STATUS and all methods present
 
 ---
 
