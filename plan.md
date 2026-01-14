@@ -984,7 +984,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Add PUT /api/admin/vm-pool/config endpoint"
     ],
     "verification": "curl http://localhost:3001/api/admin/vm-pool returns JSON",
-    "passes": false
+    "passes": true
   },
   {
     "id": "P15-02",

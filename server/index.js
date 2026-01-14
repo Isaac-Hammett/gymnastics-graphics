@@ -18,6 +18,8 @@ import { TimesheetEngine } from './lib/timesheetEngine.js';
 import { getApparatusForGender } from './lib/apparatusConfig.js';
 import productionConfigService from './lib/productionConfigService.js';
 import configLoader from './lib/configLoader.js';
+import { getVMPoolManager, VM_STATUS } from './lib/vmPoolManager.js';
+import { getAWSService } from './lib/awsService.js';
 
 dotenv.config();
 
@@ -898,6 +900,189 @@ app.post('/api/competitions/:id/activate', (req, res) => {
     activeCompetitionId: id,
     message: `Competition ${id} activated`
   });
+});
+
+// ============================================
+// VM Pool Management API Endpoints
+// ============================================
+
+// GET /api/admin/vm-pool - Get full pool status
+app.get('/api/admin/vm-pool', (req, res) => {
+  try {
+    const vmPoolManager = getVMPoolManager();
+    if (!vmPoolManager.isInitialized()) {
+      return res.json({
+        initialized: false,
+        message: 'VM pool manager not initialized. Call initializePool() first.',
+        config: null,
+        counts: { total: 0, available: 0, assigned: 0, inUse: 0, stopped: 0, starting: 0, stopping: 0, error: 0 },
+        vms: []
+      });
+    }
+    res.json(vmPoolManager.getPoolStatus());
+  } catch (error) {
+    console.error('Failed to get VM pool status:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/admin/vm-pool/config - Get pool configuration
+app.get('/api/admin/vm-pool/config', (req, res) => {
+  try {
+    const vmPoolManager = getVMPoolManager();
+    const status = vmPoolManager.getPoolStatus();
+    res.json(status.config || {});
+  } catch (error) {
+    console.error('Failed to get VM pool config:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /api/admin/vm-pool/config - Update pool configuration
+app.put('/api/admin/vm-pool/config', async (req, res) => {
+  try {
+    const vmPoolManager = getVMPoolManager();
+    if (!vmPoolManager.isInitialized()) {
+      return res.status(503).json({ error: 'VM pool manager not initialized' });
+    }
+    const config = req.body;
+    if (!config || typeof config !== 'object') {
+      return res.status(400).json({ error: 'config must be an object' });
+    }
+    const updatedConfig = await vmPoolManager.updatePoolConfig(config);
+    res.json({ success: true, config: updatedConfig });
+  } catch (error) {
+    console.error('Failed to update VM pool config:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/admin/vm-pool/:vmId - Get single VM details
+app.get('/api/admin/vm-pool/:vmId', (req, res) => {
+  try {
+    const vmPoolManager = getVMPoolManager();
+    if (!vmPoolManager.isInitialized()) {
+      return res.status(503).json({ error: 'VM pool manager not initialized' });
+    }
+    const { vmId } = req.params;
+    const vm = vmPoolManager.getVM(vmId);
+    if (!vm) {
+      return res.status(404).json({ error: 'VM not found', vmId });
+    }
+    res.json(vm);
+  } catch (error) {
+    console.error('Failed to get VM:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/admin/vm-pool/:vmId/start - Start a stopped VM
+app.post('/api/admin/vm-pool/:vmId/start', async (req, res) => {
+  try {
+    const vmPoolManager = getVMPoolManager();
+    if (!vmPoolManager.isInitialized()) {
+      return res.status(503).json({ error: 'VM pool manager not initialized' });
+    }
+    const { vmId } = req.params;
+    const result = await vmPoolManager.startVM(vmId);
+    res.json(result);
+  } catch (error) {
+    console.error('Failed to start VM:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/admin/vm-pool/:vmId/stop - Stop a VM
+app.post('/api/admin/vm-pool/:vmId/stop', async (req, res) => {
+  try {
+    const vmPoolManager = getVMPoolManager();
+    if (!vmPoolManager.isInitialized()) {
+      return res.status(503).json({ error: 'VM pool manager not initialized' });
+    }
+    const { vmId } = req.params;
+    const result = await vmPoolManager.stopVM(vmId);
+    res.json(result);
+  } catch (error) {
+    console.error('Failed to stop VM:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/admin/vm-pool/launch - Launch a new VM from AMI
+app.post('/api/admin/vm-pool/launch', async (req, res) => {
+  try {
+    const awsService = getAWSService();
+    const { name, instanceType, tags } = req.body || {};
+    const result = await awsService.launchInstance({
+      name: name || `gymnastics-vm-${Date.now()}`,
+      instanceType,
+      tags: {
+        ...tags,
+        Project: 'gymnastics-graphics',
+        ManagedBy: 'vm-pool-manager'
+      }
+    });
+
+    // Sync the pool to include the new instance
+    const vmPoolManager = getVMPoolManager();
+    if (vmPoolManager.isInitialized()) {
+      // Allow time for AWS to process then re-sync
+      setTimeout(async () => {
+        try {
+          await vmPoolManager._syncWithAWS();
+        } catch (syncError) {
+          console.error('Failed to sync after launch:', syncError);
+        }
+      }, 5000);
+    }
+
+    res.json({
+      success: true,
+      instance: result,
+      message: 'VM launched successfully. It will appear in the pool after startup.'
+    });
+  } catch (error) {
+    console.error('Failed to launch VM:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /api/admin/vm-pool/:vmId - Terminate a VM
+app.delete('/api/admin/vm-pool/:vmId', async (req, res) => {
+  try {
+    const vmPoolManager = getVMPoolManager();
+    if (!vmPoolManager.isInitialized()) {
+      return res.status(503).json({ error: 'VM pool manager not initialized' });
+    }
+    const { vmId } = req.params;
+    const vm = vmPoolManager.getVM(vmId);
+    if (!vm) {
+      return res.status(404).json({ error: 'VM not found', vmId });
+    }
+
+    // Don't allow terminating assigned VMs
+    if (vm.assignedTo) {
+      return res.status(400).json({
+        error: 'Cannot terminate assigned VM',
+        assignedTo: vm.assignedTo,
+        message: 'Release the VM from its competition first'
+      });
+    }
+
+    const awsService = getAWSService();
+    const result = await awsService.terminateInstance(vm.instanceId);
+
+    res.json({
+      success: true,
+      vmId,
+      instanceId: vm.instanceId,
+      result,
+      message: 'VM termination initiated'
+    });
+  } catch (error) {
+    console.error('Failed to terminate VM:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // ============================================
