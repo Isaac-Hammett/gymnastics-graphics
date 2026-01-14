@@ -1,27 +1,50 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { io } from 'socket.io-client';
+import { useCompetition } from './CompetitionContext';
 
 const ShowContext = createContext(null);
 
+// Initial state values for resetting on connection changes
+const INITIAL_STATE = {
+  currentSegmentIndex: 0,
+  currentSegment: null,
+  nextSegment: null,
+  isPlaying: false,
+  isPaused: false,
+  talentLocked: false,
+  obsConnected: false,
+  obsCurrentScene: null,
+  obsIsStreaming: false,
+  obsIsRecording: false,
+  connectedClients: [],
+  showProgress: { completed: 0, total: 0 },
+  showConfig: null
+};
+
+const INITIAL_TIMESHEET_STATE = {
+  state: 'stopped',
+  isRunning: false,
+  isPaused: false,
+  currentSegmentIndex: -1,
+  currentSegment: null,
+  nextSegment: null,
+  segmentElapsedMs: 0,
+  segmentRemainingMs: 0,
+  segmentProgress: 0,
+  showElapsedMs: 0,
+  isHoldSegment: false,
+  canAdvanceHold: false,
+  holdRemainingMs: 0
+};
+
 export function ShowProvider({ children }) {
+  // Get socket URL and competition info from CompetitionContext
+  const { socketUrl, compId } = useCompetition();
+
   const [socket, setSocket] = useState(null);
   const [connected, setConnected] = useState(false);
   const [clientId, setClientId] = useState(null);
-  const [state, setState] = useState({
-    currentSegmentIndex: 0,
-    currentSegment: null,
-    nextSegment: null,
-    isPlaying: false,
-    isPaused: false,
-    talentLocked: false,
-    obsConnected: false,
-    obsCurrentScene: null,
-    obsIsStreaming: false,
-    obsIsRecording: false,
-    connectedClients: [],
-    showProgress: { completed: 0, total: 0 },
-    showConfig: null
-  });
+  const [state, setState] = useState(INITIAL_STATE);
   const [elapsed, setElapsed] = useState(0);
   const [error, setError] = useState(null);
 
@@ -31,34 +54,34 @@ export function ShowProvider({ children }) {
   const [activeFallbacks, setActiveFallbacks] = useState([]);
 
   // Timesheet state
-  const [timesheetState, setTimesheetState] = useState({
-    state: 'stopped',
-    isRunning: false,
-    isPaused: false,
-    currentSegmentIndex: -1,
-    currentSegment: null,
-    nextSegment: null,
-    segmentElapsedMs: 0,
-    segmentRemainingMs: 0,
-    segmentProgress: 0,
-    showElapsedMs: 0,
-    isHoldSegment: false,
-    canAdvanceHold: false,
-    holdRemainingMs: 0
-  });
+  const [timesheetState, setTimesheetState] = useState(INITIAL_TIMESHEET_STATE);
   const [overrideLog, setOverrideLog] = useState([]);
 
   useEffect(() => {
-    // Use VITE_SOCKET_SERVER env var if set, otherwise fall back to origin (prod) or localhost (dev)
-    const socketUrl = import.meta.env.VITE_SOCKET_SERVER
-      || (import.meta.env.PROD ? window.location.origin : 'http://localhost:3003');
+    // Don't connect if no socket URL is available
+    if (!socketUrl) {
+      console.log('ShowContext: No socket URL available, skipping connection');
+      return;
+    }
+
+    console.log(`ShowContext: Connecting to ${socketUrl} for competition ${compId}`);
+
+    // Clear all state when connection changes
+    setState(INITIAL_STATE);
+    setElapsed(0);
+    setError(null);
+    setCameraHealth([]);
+    setCameraRuntimeState([]);
+    setActiveFallbacks([]);
+    setTimesheetState(INITIAL_TIMESHEET_STATE);
+    setOverrideLog([]);
 
     const newSocket = io(socketUrl, {
       transports: ['websocket', 'polling']
     });
 
     newSocket.on('connect', () => {
-      console.log('Connected to server');
+      console.log(`ShowContext: Connected to ${socketUrl} for ${compId}`);
       setConnected(true);
     });
 
@@ -85,7 +108,7 @@ export function ShowProvider({ children }) {
     });
 
     newSocket.on('disconnect', () => {
-      console.log('Disconnected from server');
+      console.log(`ShowContext: Disconnected from ${socketUrl}`);
       setConnected(false);
     });
 
@@ -276,9 +299,12 @@ export function ShowProvider({ children }) {
     setSocket(newSocket);
 
     return () => {
+      console.log(`ShowContext: Closing connection to ${socketUrl}`);
       newSocket.close();
+      setSocket(null);
+      setConnected(false);
     };
-  }, []);
+  }, [socketUrl, compId]);
 
   const identify = useCallback((role, name) => {
     socket?.emit('identify', { role, name });
@@ -383,6 +409,9 @@ export function ShowProvider({ children }) {
   }, []);
 
   const value = {
+    // Connection info
+    socketUrl,
+    compId,
     socket,
     connected,
     clientId,

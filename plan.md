@@ -729,7 +729,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Log connection changes: 'Connected to {socketUrl} for {compId}'"
     ],
     "verification": "Console shows correct socket URL based on competition",
-    "passes": false
+    "passes": true
   },
   {
     "id": "P10-06",
@@ -926,12 +926,12 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 | Phase 7: Context & Hooks | 5 | 5 | ✅ Complete |
 | Phase 8: Apparatus Config | 3 | 3 | ✅ Complete |
 | Phase 9: Firebase Production | 3 | 3 | ✅ Complete |
-| Phase 10: URL Routing | 6 | 4 | 🔄 In Progress |
+| Phase 10: URL Routing | 6 | 5 | 🔄 In Progress |
 | Phase 11: Dynamic Apparatus UI | 3 | 0 | 🔲 Pending |
 | Phase 12: Migration | 2 | 0 | 🔲 Pending |
 | Integration (Original) | 3 | 3 | ✅ Complete |
 | Integration (New) | 5 | 0 | 🔲 Pending |
-| **Total** | **48** | **41** | **85%** |
+| **Total** | **48** | **42** | **88%** |
 
 ---
 

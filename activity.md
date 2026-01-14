@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** Phase 10 - URL Routing (In Progress)
-**Last Task:** P10-04 - Update App.jsx with new route structure
-**Next Task:** P10-05 - Update ShowContext for dynamic socket URL
+**Last Task:** P10-05 - Update ShowContext for dynamic socket URL
+**Next Task:** P10-06 - Update useCompetitions hook with vmAddress support
 
 ---
 
@@ -878,6 +878,27 @@ Created three components for competition-bound route management:
 
 Verification: `npm run build` succeeds without errors
 
+### P10-05: Update ShowContext for dynamic socket URL
+Updated `show-controller/src/context/ShowContext.jsx` with dynamic socket connection from CompetitionContext:
+- Imported `useCompetition` hook from `CompetitionContext.jsx`
+- Removed hardcoded `VITE_SOCKET_SERVER` usage and fallback logic
+- Get `socketUrl` and `compId` from `useCompetition()` hook
+- Only connect socket when `socketUrl` is available (prevents connection attempts with null URL)
+- Added `socketUrl` and `compId` to useEffect dependencies - socket reconnects when competition changes
+- Clear all state when connection changes:
+  - Reset `state`, `elapsed`, `error` to initial values
+  - Clear `cameraHealth`, `cameraRuntimeState`, `activeFallbacks` arrays
+  - Reset `timesheetState` and clear `overrideLog`
+- Enhanced connection logging:
+  - `"ShowContext: Connecting to {socketUrl} for competition {compId}"`
+  - `"ShowContext: Connected to {socketUrl} for {compId}"`
+  - `"ShowContext: Disconnected from {socketUrl}"`
+  - `"ShowContext: Closing connection to {socketUrl}"`
+- Added `socketUrl` and `compId` to context value for component access
+- Extracted initial state constants (`INITIAL_STATE`, `INITIAL_TIMESHEET_STATE`) for clean resets
+- Verification: Console logs show correct connection messages, build succeeds
+- Screenshot: `screenshots/P10-05-dynamic-socket.png`
+
 ### P10-04: Update App.jsx with new route structure
 Updated `show-controller/src/App.jsx` with competition-bound route architecture:
 - Imported `Navigate` from react-router-dom for redirects
@@ -949,6 +970,7 @@ Updated `show-controller/src/App.jsx` with competition-bound route architecture:
 | P10-02 | Create CompetitionSelector page | ✅ done | 2026-01-14 |
 | P10-03 | Create CompetitionLayout and error components | ✅ done | 2026-01-14 |
 | P10-04 | Update App.jsx with new route structure | ✅ done | 2026-01-14 |
+| P10-05 | Update ShowContext for dynamic socket URL | ✅ done | 2026-01-14 |
 
 ---
 
@@ -967,6 +989,7 @@ Updated `show-controller/src/App.jsx` with competition-bound route architecture:
 | INT-03-show-flow.png | INT-03 | /producer | ProducerView during active show - shows running timesheet, segment info, camera status |
 | competition-selector.png | P10-02 | /select | CompetitionSelector landing page with Local Development option, search, competition cards grouped by date |
 | P10-04-select-route.png | P10-04 | /select | New route structure with CompetitionSelector as landing page |
+| P10-05-dynamic-socket.png | P10-05 | /local/producer | ShowContext with dynamic socket URL from CompetitionContext |
 
 ---
 
