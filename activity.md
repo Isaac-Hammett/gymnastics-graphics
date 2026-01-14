@@ -1,9 +1,9 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** Phase 12 - Migration
-**Last Task:** P12-01 - Create migration script for show-config.json
-**Next Task:** P12-02 - Update environment variables
+**Phase:** Integration Testing
+**Last Task:** P12-02 - Update environment variables
+**Next Task:** INT-04 - Competition selector and routing test
 
 ---
 
@@ -1010,6 +1010,28 @@ Created `server/scripts/migrateToFirebase.js` - CLI tool for migrating local sho
 - Verification: `node server/scripts/migrateToFirebase.js --help` shows usage
 - Tested dry-run with both mens (0 warnings) and womens (6 warnings for men's apparatus codes)
 
+### P12-02: Update environment variables
+Updated environment example files for the competition-bound architecture:
+
+**show-controller/.env.example:**
+- Removed `VITE_SOCKET_SERVER` (no longer needed - socket URL now derived from competition's vmAddress)
+- Added `VITE_LOCAL_SERVER=http://localhost:3003` for local development mode (/local/* routes)
+- Added Firebase client configuration placeholders (VITE_FIREBASE_*)
+- Added comments explaining the new competition-bound routing
+
+**server/.env.example:**
+- Added Firebase Admin SDK configuration section
+- Added `FIREBASE_DATABASE_URL` environment variable
+- Added note about `GOOGLE_APPLICATION_CREDENTIALS` for service account authentication
+
+**VM-SETUP.md:**
+- Updated Step 4 to reflect competition-bound architecture
+- Removed `VITE_SOCKET_SERVER` instructions
+- Added instructions for configuring vmAddress in Firebase via Competition Hub
+- Added note about `/local/producer` for local development
+
+Verification: Both .env.example files updated correctly, documentation updated
+
 ---
 
 ## Task Completion Log
@@ -1063,6 +1085,7 @@ Created `server/scripts/migrateToFirebase.js` - CLI tool for migrating local sho
 | P11-02 | Update CameraRuntimePanel for dynamic apparatus | ✅ done | 2026-01-14 |
 | P11-03 | Update QuickActions for dynamic apparatus | ✅ done | 2026-01-14 |
 | P12-01 | Create migration script for show-config.json | ✅ done | 2026-01-13 |
+| P12-02 | Update environment variables | ✅ done | 2026-01-13 |
 
 ---
 
