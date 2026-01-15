@@ -2,12 +2,47 @@
 
 ## Current Status
 **Phase:** Phase 18 - Coordinator Deployment
-**Last Task:** P18-03 - Create coordinator environment config
-**Next Task:** P18-04 - Add coordinator health endpoint
+**Last Task:** P18-04 - Add coordinator health endpoint
+**Next Task:** P19-01 - Create auto-shutdown service
 
 ---
 
 ## 2026-01-15
+
+### P18-04: Add coordinator health endpoint
+Added comprehensive coordinator health and status endpoints to the server.
+
+**Modified File:**
+- `server/index.js` - Added coordinator health endpoints and activity tracking
+
+**New Endpoints:**
+1. **GET /api/coordinator/status** - Returns full coordinator status including:
+   - `status`: 'online'
+   - `uptime`: Server uptime in seconds
+   - `uptimeFormatted`: Human-readable uptime (e.g., "1h 23m 45s")
+   - `version`: Server version (1.0.0)
+   - `mode`: 'coordinator' or 'standalone' based on COORDINATOR_MODE env var
+   - `lastActivity`: ISO timestamp of last activity
+   - `idleSeconds`: Seconds since last activity
+   - `connections.firebase`: 'connected', 'unavailable', or 'error'
+   - `connections.aws`: 'connected', 'no_credentials', 'unreachable', or 'error'
+   - `connections.obs`: 'connected' or 'disconnected'
+   - `connectedClients`: Number of connected socket clients
+
+2. **GET /api/coordinator/activity** - Returns last activity timestamp and idle time
+
+3. **POST /api/coordinator/activity** - Updates last activity timestamp (keep-alive endpoint)
+
+**Helper Functions Added:**
+- `updateLastActivity()` - Updates the last activity timestamp
+- `getUptime()` - Returns server uptime in seconds
+- `getIdleTime()` - Returns time since last activity in seconds
+- `formatUptime(seconds)` - Formats seconds into human-readable string
+
+**Verification:**
+- `node test-helper.js check http://localhost:3003/api/coordinator/status` returns success ✅
+
+---
 
 ### P18-03: Create coordinator environment config
 Created comprehensive environment configuration template for the coordinator server.
