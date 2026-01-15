@@ -1,13 +1,52 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** Phase 20 - Wake System
-**Last Task:** P20-03 - Document Netlify AWS environment variables
-**Next Task:** P20-04 - Create useCoordinator hook
+**Phase:** Phase 21 - Frontend Offline
+**Last Task:** P20-04 - Create useCoordinator hook
+**Next Task:** P21-01 - Create CoordinatorStatus component
 
 ---
 
 ## 2026-01-15
+
+### P20-04: Create useCoordinator hook
+Created the React hook for managing coordinator EC2 instance state via Netlify serverless functions.
+
+**New Files Created:**
+- `show-controller/src/hooks/useCoordinator.js` - React hook for coordinator status
+
+**Features Implemented:**
+1. **Status Checking**
+   - `checkStatus()` calls `/.netlify/functions/coordinator-status`
+   - Returns EC2 state and app readiness
+   - Maps states to: `online`, `offline`, `starting`, `unknown`
+
+2. **Wake Functionality**
+   - `wake()` calls `/.netlify/functions/wake-coordinator`
+   - Triggers EC2 StartInstances via Netlify function
+   - Handles already-running state gracefully
+
+3. **Polling While Starting**
+   - Automatic polling every 5 seconds when waking
+   - Maximum polling duration: 2 minutes
+   - Auto-stops when coordinator becomes ready
+   - `stopPolling()` for manual cancellation
+
+4. **State Management**
+   - `status`: ONLINE, OFFLINE, STARTING, UNKNOWN
+   - `appReady`: boolean for app responsiveness
+   - `isWaking`: boolean during wake process
+   - `error`: error message if any
+   - `details`: full coordinator details (uptime, idleMinutes, etc.)
+
+5. **Computed Values**
+   - `isAvailable`: coordinator online AND app ready
+   - `estimatedTimeRemaining`: seconds left in polling
+
+**Verification:**
+- `npm run build` succeeds (hook imports without error)
+
+---
 
 ### P20-03: Document Netlify AWS environment variables
 Documented the Netlify AWS environment variables and IAM user policy in the show-controller README.

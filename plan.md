@@ -1413,7 +1413,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Return { status, appReady, wake, isWaking, error }"
     ],
     "verification": "Hook imports without error",
-    "passes": false
+    "passes": true
   },
   {
     "id": "P21-01",
@@ -1588,10 +1588,10 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 | Integration (VM Pool) | 3 | 3 | ✅ Complete |
 | **Phase 18: Coordinator Deployment** | 4 | 4 | ✅ Complete |
 | **Phase 19: Auto-Shutdown** | 3 | 3 | ✅ Complete |
-| **Phase 20: Wake System** | 4 | 3 | 🔄 In Progress |
-| **Phase 21: Frontend Offline** | 5 | 0 | ⬚ Pending |
+| **Phase 20: Wake System** | 4 | 4 | ✅ Complete |
+| **Phase 21: Frontend Offline** | 5 | 0 | 🔄 In Progress |
 | **Integration (Coordinator)** | 4 | 0 | ⬚ Pending |
-| **Total** | **87** | **76** | **87%** |
+| **Total** | **87** | **77** | **89%** |
 
 ---
 
