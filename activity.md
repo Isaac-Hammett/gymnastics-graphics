@@ -2,12 +2,54 @@
 
 ## Current Status
 **Phase:** Phase 21 - Frontend Offline
-**Last Task:** P21-02 - Create SystemOfflinePage component
-**Next Task:** P21-03 - Update CompetitionSelector for offline state
+**Last Task:** P21-03 - Update CompetitionSelector for offline state
+**Next Task:** P21-04 - Update VMPoolPage for coordinator status
 
 ---
 
 ## 2026-01-15
+
+### P21-03: Update CompetitionSelector for offline state
+Updated the CompetitionSelector page to handle coordinator offline states and integrate with the useCoordinator hook.
+
+**Modified Files:**
+- `show-controller/src/pages/CompetitionSelector.jsx` - Added coordinator offline state handling
+
+**Features Implemented:**
+1. **CoordinatorStatus in Header**
+   - Added CoordinatorStatus component to top-right of header
+   - Shows coordinator status badge (online/offline/starting/unknown)
+   - Includes refresh button and wake functionality
+
+2. **Offline Banner**
+   - Red banner appears when coordinator is offline (sleeping)
+   - Shows moon icon with "System is Sleeping" message
+   - Explains VM operations are disabled
+   - Large "Start System" button to wake coordinator
+   - Error display for wake failures
+
+3. **Starting Banner**
+   - Yellow banner appears when coordinator is starting
+   - Shows spinner with "System Starting" message
+   - Explains 60-90 second startup time
+
+4. **Disabled VM Actions When Offline**
+   - "Assign VM" button disabled when coordinator offline
+   - "Release VM" button disabled when coordinator offline
+   - Tooltips explain "Start system first"
+   - VM count hidden when coordinator offline
+
+5. **Error Handling**
+   - Coordinator errors displayed in offline banner
+   - Graceful handling of wake failures
+
+**Screenshot:** `screenshots/P21-03-competition-selector-offline.png`
+
+**Verification:**
+- `npm run build` succeeds (component compiles without error)
+- Screenshot captured showing CoordinatorStatus in header
+
+---
 
 ### P21-02: Create SystemOfflinePage component
 Created the full-page component shown when the coordinator EC2 instance is offline (sleeping to save costs).
