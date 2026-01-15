@@ -2,12 +2,49 @@
 
 ## Current Status
 **Phase:** Phase 21 - Frontend Offline
-**Last Task:** P20-04 - Create useCoordinator hook
-**Next Task:** P21-01 - Create CoordinatorStatus component
+**Last Task:** P21-01 - Create CoordinatorStatus component
+**Next Task:** P21-02 - Create SystemOfflinePage component
 
 ---
 
 ## 2026-01-15
+
+### P21-01: Create CoordinatorStatus component
+Created the React component that displays coordinator EC2 instance status with wake functionality.
+
+**New Files Created:**
+- `show-controller/src/components/CoordinatorStatus.jsx` - Status badge component
+
+**Features Implemented:**
+1. **Status Badge Display**
+   - Green badge when online (EC2 running AND app responding)
+   - Yellow badge with pulse animation when starting
+   - Red badge when offline (EC2 stopped)
+   - Gray badge for unknown state
+
+2. **Start System Button**
+   - Appears when coordinator is offline
+   - Triggers wake() from useCoordinator hook
+   - Hidden when already waking
+
+3. **Progress Indicator**
+   - Shows "Starting..." with spinning icon during wake
+   - Displays estimated time remaining when starting
+
+4. **Tooltip on Hover (when online)**
+   - Shows uptime (formatted as 1h 23m)
+   - Shows idle time in minutes
+   - Shows public IP address
+   - Shows Firebase connection status
+
+5. **Refresh Button**
+   - Manual status refresh when not waking
+   - Calls checkStatus() from hook
+
+**Verification:**
+- `npm run build` succeeds (component compiles without error)
+
+---
 
 ### P20-04: Create useCoordinator hook
 Created the React hook for managing coordinator EC2 instance state via Netlify serverless functions.
