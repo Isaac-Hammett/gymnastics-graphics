@@ -2,12 +2,50 @@
 
 ## Current Status
 **Phase:** Phase 21 - Frontend Offline
-**Last Task:** P21-04 - Update VMPoolPage for coordinator status
-**Next Task:** P21-05 - Create CoordinatorGate component
+**Last Task:** P21-05 - Create CoordinatorGate component
+**Next Task:** INT-12 - Coordinator deployment test
 
 ---
 
 ## 2026-01-15
+
+### P21-05: Create CoordinatorGate component
+Created the route guard component that wraps coordinator-dependent pages and shows SystemOfflinePage when coordinator is offline.
+
+**New Files Created:**
+- `show-controller/src/components/CoordinatorGate.jsx` - Route guard component
+
+**Modified Files:**
+- `show-controller/src/App.jsx` - Added CoordinatorGate import and wrapped admin routes
+
+**Features Implemented:**
+1. **Route Guard Logic**
+   - Checks coordinator status on mount via useCoordinator hook
+   - Shows SystemOfflinePage when coordinator is offline
+   - Shows progress spinner when coordinator is starting
+   - Passes through children when coordinator is online
+
+2. **Route Type Handling**
+   - Admin routes (`/_admin/*`) require coordinator to be online
+   - Local competition routes (`/local/*`) bypass coordinator requirement
+   - Optional paths (/hub, /dashboard, etc.) work without coordinator
+   - Competition routes need coordinator for VM operations
+
+3. **User Experience States**
+   - Unknown state: Shows "Checking system status..." with spinner
+   - Offline state: Shows SystemOfflinePage with wake button
+   - Starting state: Shows progress with "System Starting Up..." message
+   - Online state: Renders children normally
+
+4. **App.jsx Integration**
+   - Imported CoordinatorGate component
+   - Wrapped `/_admin/vm-pool` route with CoordinatorGate
+   - SystemOfflinePage route kept unwrapped (test/standalone route)
+
+**Verification:**
+- `npm run build` succeeds (component compiles without error)
+
+---
 
 ### P21-04: Update VMPoolPage for coordinator status
 Updated VMPoolPage to handle coordinator offline states and show SystemOfflinePage when coordinator is offline.
