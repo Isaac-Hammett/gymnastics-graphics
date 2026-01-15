@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useCompetitions } from '../hooks/useCompetitions';
 import { useVMPool, VM_STATUS } from '../hooks/useVMPool';
+import { useCoordinator, COORDINATOR_STATUS } from '../hooks/useCoordinator';
+import CoordinatorStatus from '../components/CoordinatorStatus';
 
 /**
  * CompetitionSelector - Landing page for selecting a competition to control.
@@ -27,6 +29,12 @@ export default function CompetitionSelector() {
     hasVMAssigned,
     loading: vmPoolLoading,
   } = useVMPool();
+  const {
+    status: coordinatorStatus,
+    isWaking,
+    error: coordinatorError,
+    wake,
+  } = useCoordinator();
   const [searchQuery, setSearchQuery] = useState('');
   const [vmStatuses, setVmStatuses] = useState({});
   const [assigningVm, setAssigningVm] = useState(null); // compId being assigned
@@ -35,6 +43,10 @@ export default function CompetitionSelector() {
   const navigate = useNavigate();
 
   const redirectPath = searchParams.get('redirect');
+
+  // Whether coordinator is offline (system sleeping)
+  const isCoordinatorOffline = coordinatorStatus === COORDINATOR_STATUS.OFFLINE;
+  const isCoordinatorStarting = coordinatorStatus === COORDINATOR_STATUS.STARTING;
 
   // Group competitions by date
   const groupedCompetitions = useMemo(() => {
@@ -241,7 +253,9 @@ export default function CompetitionSelector() {
     const hasVM = hasVMAssigned(compId);
     const isAssigning = assigningVm === compId;
     const isReleasing = releasingVm === compId;
-    const canAssignVM = availableVMs.length > 0 && !hasVM;
+    // Disable VM actions when coordinator is offline
+    const canAssignVM = availableVMs.length > 0 && !hasVM && !isCoordinatorOffline;
+    const canReleaseVM = hasVM && !isCoordinatorOffline;
 
     return (
       <div className="bg-zinc-900 border-2 border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors">
@@ -339,7 +353,13 @@ export default function CompetitionSelector() {
                   ? 'bg-green-600 text-white hover:bg-green-500'
                   : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
               }`}
-              title={!canAssignVM ? 'No VMs available' : undefined}
+              title={
+                isCoordinatorOffline
+                  ? 'Start system first'
+                  : !canAssignVM
+                    ? 'No VMs available'
+                    : undefined
+              }
             >
               {isAssigning ? (
                 <span className="flex items-center gap-1">
@@ -347,14 +367,19 @@ export default function CompetitionSelector() {
                   Assigning...
                 </span>
               ) : (
-                `Assign VM${availableVMs.length > 0 ? ` (${availableVMs.length})` : ''}`
+                `Assign VM${!isCoordinatorOffline && availableVMs.length > 0 ? ` (${availableVMs.length})` : ''}`
               )}
             </button>
           ) : (
             <button
               onClick={() => handleReleaseVM(compId)}
-              disabled={isReleasing}
-              className="px-3 py-1.5 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-500 transition-colors disabled:opacity-50"
+              disabled={!canReleaseVM || isReleasing}
+              className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                canReleaseVM && !isReleasing
+                  ? 'bg-orange-600 text-white hover:bg-orange-500'
+                  : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+              }`}
+              title={isCoordinatorOffline ? 'Start system first' : undefined}
             >
               {isReleasing ? (
                 <span className="flex items-center gap-1">
@@ -433,16 +458,80 @@ export default function CompetitionSelector() {
   return (
     <div className="min-h-screen bg-zinc-950 p-6 md:p-10">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-extrabold text-white mb-2">Select Competition</h1>
-          <p className="text-zinc-500">
-            Choose a competition to control
-            {redirectPath && (
-              <span className="text-blue-400"> → {redirectPath}</span>
-            )}
-          </p>
+        {/* Header with Coordinator Status */}
+        <div className="flex justify-between items-start mb-8">
+          <div className="flex-1 text-center">
+            <h1 className="text-3xl font-extrabold text-white mb-2">Select Competition</h1>
+            <p className="text-zinc-500">
+              Choose a competition to control
+              {redirectPath && (
+                <span className="text-blue-400"> → {redirectPath}</span>
+              )}
+            </p>
+          </div>
+          <div className="absolute right-6 md:right-10 top-6 md:top-10">
+            <CoordinatorStatus />
+          </div>
         </div>
+
+        {/* Offline Banner */}
+        {isCoordinatorOffline && (
+          <div className="bg-red-900/30 border-2 border-red-800 rounded-xl p-5 mb-8">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-red-900/50 rounded-full flex items-center justify-center">
+                  <span className="text-xl">🌙</span>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">System is Sleeping</h3>
+                  <p className="text-sm text-red-300/70">
+                    The coordinator is offline to save costs. VM operations are disabled.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={wake}
+                disabled={isWaking}
+                className={`px-5 py-2.5 text-sm font-bold rounded-lg transition-colors ${
+                  isWaking
+                    ? 'bg-zinc-700 text-zinc-400 cursor-not-allowed'
+                    : 'bg-green-600 text-white hover:bg-green-500'
+                }`}
+              >
+                {isWaking ? (
+                  <span className="flex items-center gap-2">
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Starting System...
+                  </span>
+                ) : (
+                  'Start System'
+                )}
+              </button>
+            </div>
+            {coordinatorError && (
+              <div className="mt-3 text-sm text-red-400 bg-red-900/30 rounded-lg px-3 py-2">
+                Error: {coordinatorError}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Starting Banner */}
+        {isCoordinatorStarting && (
+          <div className="bg-yellow-900/30 border-2 border-yellow-800 rounded-xl p-5 mb-8">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-yellow-900/50 rounded-full flex items-center justify-center">
+                <span className="w-5 h-5 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">System Starting</h3>
+                <p className="text-sm text-yellow-300/70">
+                  The coordinator is starting up. This typically takes 60-90 seconds.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Local Development Option */}
         <div className="bg-gradient-to-r from-zinc-900 to-zinc-800 border-2 border-zinc-700 rounded-xl p-5 mb-8">
