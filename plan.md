@@ -1429,7 +1429,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Add tooltip with uptime and idle time when online"
     ],
     "verification": "Component renders correctly in all states",
-    "passes": false
+    "passes": true
   },
   {
     "id": "P21-02",
@@ -1589,9 +1589,9 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 | **Phase 18: Coordinator Deployment** | 4 | 4 | ✅ Complete |
 | **Phase 19: Auto-Shutdown** | 3 | 3 | ✅ Complete |
 | **Phase 20: Wake System** | 4 | 4 | ✅ Complete |
-| **Phase 21: Frontend Offline** | 5 | 0 | 🔄 In Progress |
+| **Phase 21: Frontend Offline** | 5 | 1 | 🔄 In Progress |
 | **Integration (Coordinator)** | 4 | 0 | ⬚ Pending |
-| **Total** | **87** | **77** | **89%** |
+| **Total** | **87** | **78** | **90%** |
 
 ---
 
