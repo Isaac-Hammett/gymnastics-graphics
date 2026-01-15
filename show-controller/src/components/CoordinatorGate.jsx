@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { ArrowPathIcon } from '@heroicons/react/24/solid';
 import { useCoordinator, COORDINATOR_STATUS } from '../hooks/useCoordinator';
@@ -25,13 +24,10 @@ export default function CoordinatorGate({ children, requireCoordinator = true })
     status,
     isWaking,
     isAvailable,
-    checkStatus,
+    error,
   } = useCoordinator();
 
-  // Check status on mount
-  useEffect(() => {
-    checkStatus();
-  }, [checkStatus]);
+  // useCoordinator already checks status on mount, no need to duplicate
 
   // If coordinator is not required, just render children
   if (!requireCoordinator) {

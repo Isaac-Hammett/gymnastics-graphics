@@ -88,6 +88,9 @@ export function useCoordinator() {
       };
     } catch (err) {
       setError(err.message);
+      // On error, set status to OFFLINE so user can try to wake
+      // This prevents infinite "Checking system status..." state
+      setStatus(COORDINATOR_STATUS.OFFLINE);
       return {
         success: false,
         error: err.message,
