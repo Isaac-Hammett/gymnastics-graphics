@@ -1,13 +1,64 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** Phase 18 - Coordinator Deployment
-**Last Task:** P18-04 - Add coordinator health endpoint
-**Next Task:** P19-01 - Create auto-shutdown service
+**Phase:** Phase 19 - Auto-Shutdown
+**Last Task:** P19-01 - Create auto-shutdown service
+**Next Task:** P19-02 - Integrate auto-shutdown with server
 
 ---
 
 ## 2026-01-15
+
+### P19-01: Create auto-shutdown service
+Created the auto-shutdown service module for tracking activity and initiating graceful shutdown when idle timeout is reached.
+
+**New File Created:**
+- `server/lib/autoShutdown.js` - Auto-shutdown service module
+
+**Features Implemented:**
+1. **Activity Tracking**
+   - `resetActivity()` - Updates lastActivityTimestamp (call on API/socket requests)
+   - `getIdleTime()` - Returns idle time in seconds
+   - `getIdleMinutes()` - Returns idle time in minutes
+   - `getLastActivityTimestamp()` - Returns raw timestamp
+
+2. **Idle Timeout Check**
+   - `checkIdleTimeout()` - Checks if idle > AUTO_SHUTDOWN_MINUTES
+   - Runs on configurable interval (default 60 seconds)
+   - Reads AUTO_SHUTDOWN_MINUTES from env (default 120)
+
+3. **Graceful Shutdown**
+   - 30-second delay before actual shutdown (allows cancellation)
+   - Broadcasts `shutdownPending` socket event to all clients
+   - Executes stop callback for graceful cleanup
+   - Emits `shutdownExecuting` and `shutdownComplete` events
+
+4. **Firebase Audit Logging**
+   - Logs shutdown events to `coordinator/shutdownHistory`
+   - Records timestamp, reason, idle minutes, last activity
+
+5. **Additional Methods**
+   - `keepAlive()` - Manual keep-alive endpoint
+   - `hasActiveStreams()` - Checks if any competition is streaming
+   - `isShutdownPending()` - Returns pending state
+   - `getStatus()` - Returns full status object
+   - `updateConfig()` - Updates configuration at runtime
+
+**Configuration:**
+- `AUTO_SHUTDOWN_MINUTES` env var (default 120)
+- `COORDINATOR_MODE=true` required to enable
+- Check interval: 60 seconds
+- Shutdown delay: 30 seconds
+
+**Socket Events:**
+- `shutdownPending` - `{ reason, secondsRemaining, timestamp }`
+- `shutdownCancelled` - `{ reason, timestamp }`
+- `shutdownExecuting` - `{ timestamp, reason, idleMinutes, lastActivity }`
+
+**Verification:**
+- `node -e "import('./lib/autoShutdown.js').then(m => console.log(m.getAutoShutdownService().getStatus()))"` exits 0 ✅
+
+---
 
 ### P18-04: Add coordinator health endpoint
 Added comprehensive coordinator health and status endpoints to the server.
