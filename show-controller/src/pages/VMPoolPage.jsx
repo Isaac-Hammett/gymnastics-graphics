@@ -28,6 +28,17 @@ export default function VMPoolPage() {
   const [actionLoading, setActionLoading] = useState({});
   const [startingColdVM, setStartingColdVM] = useState(false);
   const [launchingVM, setLaunchingVM] = useState(false);
+  const [showLaunchModal, setShowLaunchModal] = useState(false);
+  const [selectedInstanceType, setSelectedInstanceType] = useState('t3.large');
+
+  // Available instance types for the dropdown
+  const INSTANCE_TYPES = [
+    { value: 't3.large', label: 't3.large', description: '2 vCPU, 8 GB RAM - Standard workloads', cost: '$' },
+    { value: 't3.xlarge', label: 't3.xlarge', description: '4 vCPU, 16 GB RAM - Medium workloads', cost: '$$' },
+    { value: 'c5.xlarge', label: 'c5.xlarge', description: '4 vCPU, 8 GB RAM - Compute optimized', cost: '$$' },
+    { value: 'c5.2xlarge', label: 'c5.2xlarge', description: '8 vCPU, 16 GB RAM - High performance', cost: '$$$' },
+    { value: 'c5.4xlarge', label: 'c5.4xlarge', description: '16 vCPU, 32 GB RAM - Maximum performance', cost: '$$$$' },
+  ];
 
   // Coordinator status
   const {
@@ -145,25 +156,28 @@ export default function VMPoolPage() {
     }
   };
 
+  // Open launch modal
+  const handleOpenLaunchModal = () => {
+    setSelectedInstanceType('t3.large');
+    setShowLaunchModal(true);
+  };
+
   // Launch a new VM from AMI
   const handleLaunchVM = async () => {
-    if (!confirm('Launch a new EC2 instance? This will incur AWS charges.')) {
-      return;
-    }
-
+    setShowLaunchModal(false);
     setLaunchingVM(true);
     try {
       const res = await fetch(`${SERVER_URL}/api/admin/vm-pool/launch`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ instanceType: selectedInstanceType }),
       });
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || 'Failed to launch VM');
       }
       const data = await res.json();
-      alert(`VM launched successfully! Instance ID: ${data.instance?.instanceId || 'unknown'}`);
+      alert(`VM launched successfully!\n\nInstance ID: ${data.instance?.instanceId || 'unknown'}\nType: ${selectedInstanceType}`);
       await fetchPoolStatus();
     } catch (err) {
       console.error('Failed to launch VM:', err);
@@ -326,7 +340,7 @@ export default function VMPoolPage() {
             <div className="w-px h-6 bg-zinc-700" />
 
             <button
-              onClick={handleLaunchVM}
+              onClick={handleOpenLaunchModal}
               disabled={launchingVM}
               className="flex items-center gap-2 px-3 py-1.5 bg-purple-600 hover:bg-purple-500 rounded-lg text-white text-xs transition-colors disabled:opacity-50"
             >
@@ -462,6 +476,81 @@ export default function VMPoolPage() {
           </div>
         )}
       </main>
+
+      {/* Launch VM Modal */}
+      {showLaunchModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+          <div className="bg-zinc-800 rounded-xl p-6 max-w-md w-full mx-4 border border-zinc-700">
+            <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <PlusIcon className="w-5 h-5 text-purple-400" />
+              Launch New VM
+            </h2>
+
+            <div className="mb-4">
+              <label className="block text-sm text-zinc-400 mb-2">Instance Type</label>
+              <div className="space-y-2">
+                {INSTANCE_TYPES.map((type) => (
+                  <label
+                    key={type.value}
+                    className={`flex items-center p-3 rounded-lg cursor-pointer border transition-colors ${
+                      selectedInstanceType === type.value
+                        ? 'bg-purple-600/20 border-purple-500'
+                        : 'bg-zinc-700/30 border-zinc-600 hover:border-zinc-500'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="instanceType"
+                      value={type.value}
+                      checked={selectedInstanceType === type.value}
+                      onChange={(e) => setSelectedInstanceType(e.target.value)}
+                      className="sr-only"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-white font-mono text-sm">{type.label}</span>
+                        <span className="text-yellow-400 text-xs">{type.cost}</span>
+                      </div>
+                      <div className="text-xs text-zinc-400 mt-0.5">{type.description}</div>
+                    </div>
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                      selectedInstanceType === type.value
+                        ? 'border-purple-500 bg-purple-500'
+                        : 'border-zinc-500'
+                    }`}>
+                      {selectedInstanceType === type.value && (
+                        <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                      )}
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-zinc-700/30 rounded-lg p-3 mb-4">
+              <div className="text-xs text-zinc-400">
+                This will launch a new EC2 instance from the gymnastics-vm template.
+                The VM will be available in 2-3 minutes.
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowLaunchModal(false)}
+                className="flex-1 px-4 py-2 bg-zinc-700 hover:bg-zinc-600 rounded-lg text-zinc-300 text-sm transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleLaunchVM}
+                className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg text-white text-sm font-medium transition-colors"
+              >
+                Launch VM
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
