@@ -2,6 +2,13 @@
 [build]
   command = "cd show-controller && npm install && npm run build && cp -r ../output.html ../overlays dist/"
   publish = "show-controller/dist"
+  functions = "show-controller/netlify/functions"
+
+# Netlify functions should not be redirected
+[[redirects]]
+  from = "/.netlify/functions/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
 
 # Preserve static files that should not go through SPA routing
 [[redirects]]
