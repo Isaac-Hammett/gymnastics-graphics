@@ -1,12 +1,13 @@
 # Show Control System - Implementation Plan
 
 ## Overview
-Extend the gymnastics-graphics show controller with camera health monitoring, automatic OBS scene generation, timesheet-driven show flow, producer override tracking, **and competition-bound architecture with dynamic VM routing**.
+Extend the gymnastics-graphics show controller with camera health monitoring, automatic OBS scene generation, timesheet-driven show flow, producer override tracking, **competition-bound architecture with dynamic VM routing**, and **centralized coordinator deployment**.
 
 **Reference:**
 - `PRD-ShowControlSystem-2026-01-13.md` (Phases 1-7, Integration)
 - `docs/PRD-CompetitionBoundArchitecture-2026-01-13.md` (Phases 8-12)
 - `docs/PRD-VMArchitecture-2026-01-14.md` (Phases 14-17, VM Pool Management)
+- `docs/PRD-CoordinatorDeployment-2026-01-15.md` (Phases 18-21, Production Deployment)
 
 ---
 
@@ -1226,6 +1227,336 @@ Screenshots saved to: `ralph-wigg/screenshots/`
     ],
     "verification": "Alerts flow from detection to resolution",
     "passes": true
+  },
+
+  {
+    "id": "P18-01",
+    "category": "phase18-coordinator-deployment",
+    "description": "Create deployment script for coordinator",
+    "steps": [
+      "Create server/scripts/deploy-coordinator.sh",
+      "Define COORDINATOR_HOST=44.193.31.120",
+      "Define DEPLOY_PATH=/opt/gymnastics-graphics",
+      "Create rsync command to sync server/ directory",
+      "Exclude node_modules, .env, logs from sync",
+      "SSH to run npm install on coordinator",
+      "SSH to restart PM2 process",
+      "Add --dry-run flag for testing",
+      "Print deployment summary"
+    ],
+    "verification": "bash server/scripts/deploy-coordinator.sh --dry-run shows files to sync",
+    "passes": true
+  },
+  {
+    "id": "P18-02",
+    "category": "phase18-coordinator-deployment",
+    "description": "Create PM2 ecosystem config",
+    "steps": [
+      "Create server/ecosystem.config.js",
+      "Define 'coordinator' app with script: index.js",
+      "Set cwd: /opt/gymnastics-graphics/server",
+      "Set instances: 1, exec_mode: fork",
+      "Set env variables: NODE_ENV=production, PORT=3001",
+      "Set GOOGLE_APPLICATION_CREDENTIALS=/opt/gymnastics-graphics/firebase-service-account.json",
+      "Set FIREBASE_DATABASE_URL from environment",
+      "Enable log rotation: max 10MB, 5 files",
+      "Set restart policy: max_restarts: 10, min_uptime: 5000ms"
+    ],
+    "verification": "node -e \"require('./server/ecosystem.config.js')\" exits 0",
+    "passes": false
+  },
+  {
+    "id": "P18-03",
+    "category": "phase18-coordinator-deployment",
+    "description": "Create coordinator environment config",
+    "steps": [
+      "Create server/.env.coordinator.example",
+      "Add NODE_ENV=production",
+      "Add PORT=3001",
+      "Add FIREBASE_DATABASE_URL=https://gymnastics-graphics-default-rtdb.firebaseio.com",
+      "Add GOOGLE_APPLICATION_CREDENTIALS=/opt/gymnastics-graphics/firebase-service-account.json",
+      "Add AWS_REGION=us-east-1",
+      "Add COORDINATOR_MODE=true",
+      "Add AUTO_SHUTDOWN_MINUTES=120",
+      "Document each variable with comments"
+    ],
+    "verification": "File exists with all required variables documented",
+    "passes": false
+  },
+  {
+    "id": "P18-04",
+    "category": "phase18-coordinator-deployment",
+    "description": "Add coordinator health endpoint",
+    "steps": [
+      "Add GET /api/coordinator/status endpoint in server/index.js",
+      "Return { status: 'online', uptime, version, mode: 'coordinator' }",
+      "Include lastActivity timestamp",
+      "Include Firebase connection status",
+      "Include AWS SDK status (can reach EC2 API)",
+      "Include OBS connection status if applicable",
+      "Add /api/coordinator/activity endpoint to update lastActivity"
+    ],
+    "verification": "curl https://api.commentarygraphic.com/api/coordinator/status returns JSON",
+    "passes": false
+  },
+  {
+    "id": "P19-01",
+    "category": "phase19-auto-shutdown",
+    "description": "Create auto-shutdown service",
+    "steps": [
+      "Create server/lib/autoShutdown.js",
+      "Track lastActivityTimestamp (updated on any API/socket request)",
+      "Implement checkIdleTimeout() function",
+      "Read AUTO_SHUTDOWN_MINUTES from env (default 120)",
+      "If idle > timeout: initiate graceful shutdown",
+      "Graceful shutdown: close sockets, stop polling, then call AWS stopInstance",
+      "Implement resetActivity() to update timestamp",
+      "Implement getIdleTime() for status endpoint",
+      "Log shutdown events to Firebase for audit"
+    ],
+    "verification": "node -e \"require('./server/lib/autoShutdown.js')\" exits 0",
+    "passes": false
+  },
+  {
+    "id": "P19-02",
+    "category": "phase19-auto-shutdown",
+    "description": "Integrate auto-shutdown with server",
+    "steps": [
+      "Import autoShutdown in server/index.js",
+      "Call resetActivity() on every REST request (middleware)",
+      "Call resetActivity() on every socket event",
+      "Start idle check interval (every 60 seconds)",
+      "Add idleMinutes to /api/coordinator/status response",
+      "Add GET /api/coordinator/idle endpoint",
+      "Add POST /api/coordinator/keep-alive endpoint",
+      "Skip auto-shutdown if active competitions are streaming"
+    ],
+    "verification": "Server logs show activity tracking and idle checks",
+    "passes": false
+  },
+  {
+    "id": "P19-03",
+    "category": "phase19-auto-shutdown",
+    "description": "Create self-stop capability",
+    "steps": [
+      "Add server/lib/selfStop.js",
+      "Use AWS SDK to get own instance ID from EC2 metadata",
+      "Implement stopSelf() function using EC2 StopInstances",
+      "Add 30-second delay before actual stop (allows cancel)",
+      "Emit 'shutdownPending' socket event to all clients",
+      "Log shutdown to Firebase: { timestamp, reason, idleMinutes }",
+      "Handle case where instance has no IAM permissions gracefully"
+    ],
+    "verification": "node -e \"require('./server/lib/selfStop.js')\" exits 0",
+    "passes": false
+  },
+  {
+    "id": "P20-01",
+    "category": "phase20-wake-system",
+    "description": "Create Netlify serverless wake function",
+    "steps": [
+      "Create show-controller/netlify/functions/wake-coordinator.js",
+      "Install @aws-sdk/client-ec2 as dependency",
+      "Read AWS credentials from COORDINATOR_AWS_* env vars",
+      "Implement handler to call EC2 StartInstances",
+      "Use instance ID from COORDINATOR_INSTANCE_ID env var",
+      "Return { success: true, message, estimatedReadySeconds: 60 }",
+      "Handle already-running state gracefully",
+      "Add CORS headers for frontend access"
+    ],
+    "verification": "Netlify function deploys and responds to POST",
+    "passes": false
+  },
+  {
+    "id": "P20-02",
+    "category": "phase20-wake-system",
+    "description": "Create Netlify serverless status function",
+    "steps": [
+      "Create show-controller/netlify/functions/coordinator-status.js",
+      "Use EC2 DescribeInstances to get coordinator state",
+      "Return { state: 'running'|'stopped'|'pending', publicIp }",
+      "If running, also ping /api/coordinator/status for app health",
+      "Return { state, appReady: boolean, uptime }",
+      "Cache results for 10 seconds to avoid rate limits"
+    ],
+    "verification": "Netlify function returns coordinator state",
+    "passes": false
+  },
+  {
+    "id": "P20-03",
+    "category": "phase20-wake-system",
+    "description": "Document Netlify AWS environment variables",
+    "steps": [
+      "Document required Netlify env vars in README",
+      "COORDINATOR_AWS_ACCESS_KEY_ID - IAM user with EC2 start/stop/describe",
+      "COORDINATOR_AWS_SECRET_ACCESS_KEY - IAM user secret",
+      "COORDINATOR_AWS_REGION=us-east-1",
+      "COORDINATOR_INSTANCE_ID=i-001383a4293522fa4",
+      "Note: These are already configured in Netlify",
+      "Update Netlify functions to use COORDINATOR_ prefixed env vars",
+      "Document IAM user 'netlify-coordinator-control' and its policy"
+    ],
+    "verification": "Documentation complete, functions use correct env var names",
+    "passes": false
+  },
+  {
+    "id": "P20-04",
+    "category": "phase20-wake-system",
+    "description": "Create useCoordinator hook",
+    "steps": [
+      "Create show-controller/src/hooks/useCoordinator.js",
+      "Implement checkStatus() to call /.netlify/functions/coordinator-status",
+      "Implement wake() to call /.netlify/functions/wake-coordinator",
+      "Track state: online, offline, starting, unknown",
+      "Track appReady boolean (EC2 running AND app responding)",
+      "Implement polling while state is 'starting' (every 5s, max 2 min)",
+      "Return { status, appReady, wake, isWaking, error }"
+    ],
+    "verification": "Hook imports without error",
+    "passes": false
+  },
+  {
+    "id": "P21-01",
+    "category": "phase21-frontend-offline",
+    "description": "Create CoordinatorStatus component",
+    "steps": [
+      "Create show-controller/src/components/CoordinatorStatus.jsx",
+      "Import useCoordinator hook",
+      "Show status badge: green=online, yellow=starting, red=offline",
+      "Show 'Start System' button when offline",
+      "Show progress indicator when starting",
+      "Show estimated time remaining when starting",
+      "Add tooltip with uptime and idle time when online"
+    ],
+    "verification": "Component renders correctly in all states",
+    "passes": false
+  },
+  {
+    "id": "P21-02",
+    "category": "phase21-frontend-offline",
+    "description": "Create SystemOfflinePage component",
+    "steps": [
+      "Create show-controller/src/pages/SystemOfflinePage.jsx",
+      "Full-page display when coordinator is offline",
+      "Show 'System is sleeping to save costs' message",
+      "Large 'Wake Up System' button",
+      "Show estimated startup time (60-90 seconds)",
+      "Progress bar during startup",
+      "Auto-redirect to original destination when ready",
+      "Show last shutdown time if available"
+    ],
+    "verification": "Page renders correctly and wake button works",
+    "passes": false
+  },
+  {
+    "id": "P21-03",
+    "category": "phase21-frontend-offline",
+    "description": "Update CompetitionSelector for offline state",
+    "steps": [
+      "Import useCoordinator in CompetitionSelector",
+      "Show CoordinatorStatus in header",
+      "If offline: show banner explaining system is sleeping",
+      "If offline: disable all VM-related actions",
+      "If offline: show 'Start System' as primary action",
+      "After wake: auto-refresh competition list",
+      "Handle wake errors gracefully"
+    ],
+    "verification": "Competition selector handles offline state correctly",
+    "passes": false
+  },
+  {
+    "id": "P21-04",
+    "category": "phase21-frontend-offline",
+    "description": "Update VMPoolPage for coordinator status",
+    "steps": [
+      "Import useCoordinator in VMPoolPage",
+      "If coordinator offline: show SystemOfflinePage instead",
+      "If coordinator starting: show progress overlay",
+      "When coordinator comes online: auto-fetch VM pool data",
+      "Add coordinator status to page header"
+    ],
+    "verification": "VM pool page handles offline coordinator",
+    "passes": false
+  },
+  {
+    "id": "P21-05",
+    "category": "phase21-frontend-offline",
+    "description": "Create CoordinatorGate component",
+    "steps": [
+      "Create show-controller/src/components/CoordinatorGate.jsx",
+      "Check coordinator status on mount",
+      "For admin routes (/admin/*): require coordinator online",
+      "For competition routes: check if competition needs coordinator",
+      "Allow /select to load even when offline (can browse competitions)",
+      "Show SystemOfflinePage for routes requiring coordinator",
+      "Update App.jsx to wrap admin routes with CoordinatorGate"
+    ],
+    "verification": "App correctly gates routes based on coordinator status",
+    "passes": false
+  },
+  {
+    "id": "INT-12",
+    "category": "integration",
+    "description": "Coordinator deployment test",
+    "steps": [
+      "Run deploy-coordinator.sh script",
+      "Verify files sync to coordinator",
+      "Verify PM2 starts the application",
+      "Verify https://api.commentarygraphic.com/api/status returns OK",
+      "Verify Firebase connection works",
+      "Verify VM pool endpoints work"
+    ],
+    "verification": "curl https://api.commentarygraphic.com/api/coordinator/status returns online",
+    "passes": false
+  },
+  {
+    "id": "INT-13",
+    "category": "integration",
+    "description": "Auto-shutdown test",
+    "steps": [
+      "Set AUTO_SHUTDOWN_MINUTES=5 for testing",
+      "Deploy and start coordinator",
+      "Monitor idle time via /api/coordinator/idle",
+      "Wait for idle timeout",
+      "Verify shutdown event logged to Firebase",
+      "Verify EC2 instance stops"
+    ],
+    "verification": "Coordinator auto-stops after idle timeout",
+    "passes": false
+  },
+  {
+    "id": "INT-14",
+    "category": "integration",
+    "description": "Wake system test",
+    "steps": [
+      "Ensure coordinator is stopped",
+      "Navigate to /select in frontend",
+      "Verify offline state is shown",
+      "Click 'Wake Up System' button",
+      "Verify Netlify function starts EC2 instance",
+      "Verify frontend shows 'starting' state",
+      "Wait for coordinator to be ready",
+      "Verify frontend auto-connects"
+    ],
+    "verification": "Full wake cycle works from frontend",
+    "passes": false
+  },
+  {
+    "id": "INT-15",
+    "category": "integration",
+    "description": "Production end-to-end test",
+    "steps": [
+      "Wake coordinator from stopped state",
+      "Navigate to /select, select a competition",
+      "Assign a VM to the competition",
+      "Navigate to producer view",
+      "Verify socket connection to production coordinator",
+      "Verify VM pool operations work",
+      "Leave system idle for timeout",
+      "Verify graceful shutdown"
+    ],
+    "verification": "Full production workflow completes successfully",
+    "passes": false
   }
 ]
 ```
@@ -1250,12 +1581,17 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 | Phase 12: Migration | 2 | 2 | ✅ Complete |
 | Integration (Original) | 3 | 3 | ✅ Complete |
 | Integration (Phases 8-12) | 5 | 5 | ✅ Complete |
-| **Phase 14: VM Infrastructure** | 3 | 3 | ✅ Complete |
-| **Phase 15: VM Pool API** | 3 | 3 | ✅ Complete |
-| **Phase 16: VM Pool UI** | 5 | 5 | ✅ Complete |
-| **Phase 17: Monitoring & Alerts** | 5 | 5 | ✅ Complete |
-| **Integration (VM Pool)** | 3 | 3 | ✅ Complete |
-| **Total** | **67** | **67** | **100%** |
+| Phase 14: VM Infrastructure | 3 | 3 | ✅ Complete |
+| Phase 15: VM Pool API | 3 | 3 | ✅ Complete |
+| Phase 16: VM Pool UI | 5 | 5 | ✅ Complete |
+| Phase 17: Monitoring & Alerts | 5 | 5 | ✅ Complete |
+| Integration (VM Pool) | 3 | 3 | ✅ Complete |
+| **Phase 18: Coordinator Deployment** | 4 | 1 | 🔄 In Progress |
+| **Phase 19: Auto-Shutdown** | 3 | 0 | ⬚ Pending |
+| **Phase 20: Wake System** | 4 | 0 | ⬚ Pending |
+| **Phase 21: Frontend Offline** | 5 | 0 | ⬚ Pending |
+| **Integration (Coordinator)** | 4 | 0 | ⬚ Pending |
+| **Total** | **87** | **68** | **78%** |
 
 ---
 
@@ -1336,7 +1672,42 @@ Phase 1 (Data Model) ──────────┬────────�
                     └── P17-05: useAlerts Hook
                                │
                                ▼
-                    Integration Tests (INT-09 to INT-11)
+                    Integration Tests (INT-09 to INT-11) ✅ COMPLETE
+                               │
+═══════════════════════════════╪═══════════════════════════════════════
+   COORDINATOR DEPLOYMENT (Phases 18-21)
+═══════════════════════════════╪═══════════════════════════════════════
+                               │
+                               ▼
+                    Phase 18 (Coordinator Deployment)
+                    ├── P18-01: Deployment Script
+                    ├── P18-02: PM2 Config
+                    ├── P18-03: Environment Config
+                    └── P18-04: Health Endpoint
+                               │
+                               ▼
+                    Phase 19 (Auto-Shutdown)
+                    ├── P19-01: Auto-Shutdown Service
+                    ├── P19-02: Server Integration
+                    └── P19-03: Self-Stop Capability
+                               │
+                               ▼
+                    Phase 20 (Wake System)
+                    ├── P20-01: Netlify Wake Function
+                    ├── P20-02: Netlify Status Function
+                    ├── P20-03: AWS Env Vars
+                    └── P20-04: useCoordinator Hook
+                               │
+                               ▼
+                    Phase 21 (Frontend Offline)
+                    ├── P21-01: CoordinatorStatus Component
+                    ├── P21-02: SystemOfflinePage
+                    ├── P21-03: CompetitionSelector Offline
+                    ├── P21-04: VMPoolPage Offline
+                    └── P21-05: CoordinatorGate
+                               │
+                               ▼
+                    Integration Tests (INT-12 to INT-15)
 ```
 
 ---
@@ -1472,3 +1843,114 @@ CompetitionProvider (resolves compId → vmAddress, gender)
 | POST | `/api/competitions/:compId/vm/assign` | Assign VM |
 | POST | `/api/competitions/:compId/vm/release` | Release VM |
 | GET | `/api/competitions/:compId/vm` | Get assigned VM |
+
+---
+
+## Coordinator Deployment Design Decisions
+
+**Reference:** `docs/PRD-CoordinatorDeployment-2026-01-15.md` (Phases 18-21)
+
+### Production Infrastructure
+
+| Resource | Value |
+|----------|-------|
+| Coordinator Instance ID | i-001383a4293522fa4 |
+| Coordinator Instance Type | t3.small |
+| Elastic IP | 44.193.31.120 |
+| Domain | api.commentarygraphic.com |
+| SSL | Let's Encrypt (auto-renew) |
+| App Directory | /opt/gymnastics-graphics |
+| Firebase Credentials | /opt/gymnastics-graphics/firebase-service-account.json |
+
+### On-Demand Architecture
+The coordinator runs only when needed to minimize costs:
+- **When stopped**: ~$2.50/month (Elastic IP charges only)
+- **When running**: ~$0.02/hour additional
+- **Auto-shutdown**: After 2 hours of inactivity
+- **Wake-up time**: ~60 seconds
+
+### Wake/Sleep Flow
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  USER VISITS SITE                                               │
+│                                                                 │
+│   1. Frontend loads from Netlify (always available)             │
+│   2. Frontend calls /.netlify/functions/coordinator-status      │
+│   3. If coordinator stopped:                                    │
+│      └── Show "System Sleeping" page with "Wake Up" button      │
+│   4. User clicks "Wake Up"                                      │
+│      └── Calls /.netlify/functions/wake-coordinator             │
+│      └── Netlify function calls AWS EC2 StartInstances          │
+│   5. Frontend polls status every 5s                             │
+│   6. When coordinator responds:                                 │
+│      └── Redirect to original destination                       │
+│                                                                 │
+│  IDLE SHUTDOWN                                                  │
+│                                                                 │
+│   1. Coordinator tracks lastActivity timestamp                  │
+│   2. Every 60s, check if idle > AUTO_SHUTDOWN_MINUTES           │
+│   3. If idle timeout reached:                                   │
+│      └── Emit 'shutdownPending' to all clients                  │
+│      └── Wait 30s (allows cancel)                               │
+│      └── Call EC2 StopInstances on self                         │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Netlify Functions
+Two serverless functions handle wake/status without needing the coordinator:
+
+| Function | Purpose | Trigger |
+|----------|---------|---------|
+| `coordinator-status` | Check EC2 state + app health | On page load |
+| `wake-coordinator` | Start EC2 instance | User button click |
+
+### IAM Configuration
+- **Coordinator IAM Role** (`coordinator-role`): Full EC2 access for VM pool management
+- **Netlify IAM User** (`netlify-coordinator-control`): Minimal permissions
+  - `ec2:StartInstances` (coordinator only)
+  - `ec2:StopInstances` (coordinator only)
+  - `ec2:DescribeInstances` (coordinator only)
+
+### Socket Events (Coordinator)
+
+**Server → Client:**
+- `shutdownPending` - `{ reason, secondsRemaining }`
+- `shutdownCancelled` - `{ reason }`
+
+**Client → Server:**
+- `keepAlive` - `{}`
+- `cancelShutdown` - `{}`
+
+### REST API (Coordinator)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/coordinator/status` | Coordinator health and uptime |
+| GET | `/api/coordinator/idle` | Current idle time |
+| POST | `/api/coordinator/keep-alive` | Reset activity timer |
+
+### File Manifest (Phases 18-21)
+
+**New Files:**
+| File | Phase | Description |
+|------|-------|-------------|
+| `server/scripts/deploy-coordinator.sh` | 18 | Deployment automation |
+| `server/ecosystem.config.js` | 18 | PM2 configuration |
+| `server/.env.coordinator.example` | 18 | Environment template |
+| `server/lib/autoShutdown.js` | 19 | Activity tracking |
+| `server/lib/selfStop.js` | 19 | EC2 self-stop |
+| `show-controller/netlify/functions/wake-coordinator.js` | 20 | Start EC2 |
+| `show-controller/netlify/functions/coordinator-status.js` | 20 | Check EC2 |
+| `show-controller/src/hooks/useCoordinator.js` | 20 | React hook |
+| `show-controller/src/components/CoordinatorStatus.jsx` | 21 | Status badge |
+| `show-controller/src/pages/SystemOfflinePage.jsx` | 21 | Offline UI |
+| `show-controller/src/components/CoordinatorGate.jsx` | 21 | Route guard |
+
+**Modified Files:**
+| File | Phase | Changes |
+|------|-------|---------|
+| `server/index.js` | 18, 19 | Coordinator endpoints, activity tracking |
+| `show-controller/src/pages/CompetitionSelector.jsx` | 21 | Offline state handling |
+| `show-controller/src/pages/VMPoolPage.jsx` | 21 | Offline state handling |
+| `show-controller/src/App.jsx` | 21 | CoordinatorGate wrapper |
