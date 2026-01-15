@@ -2,12 +2,62 @@
 
 ## Current Status
 **Phase:** Phase 19 - Auto-Shutdown
-**Last Task:** P19-02 - Integrate auto-shutdown with server
-**Next Task:** P19-03 - Create self-stop capability
+**Last Task:** P19-03 - Create self-stop capability
+**Next Task:** P20-01 - Create Netlify serverless wake function
 
 ---
 
 ## 2026-01-15
+
+### P19-03: Create self-stop capability
+Created the self-stop service module that allows an EC2 instance to stop itself using the AWS SDK.
+
+**New File Created:**
+- `server/lib/selfStop.js` - Self-stop service module
+
+**Features Implemented:**
+1. **EC2 Instance Detection**
+   - Uses EC2 Instance Metadata Service (IMDS) v2 for secure token-based authentication
+   - Automatically detects if running on EC2 and retrieves instance ID
+   - Gracefully handles non-EC2 environments
+
+2. **Self-Stop with Delay**
+   - `stopSelf({ reason, idleMinutes })` - Initiates stop with 30-second delay
+   - Broadcasts `shutdownPending` socket event to all connected clients
+   - Allows cancellation before actual stop via `cancelStop()`
+   - Tracks seconds remaining until stop
+
+3. **EC2 StopInstances Integration**
+   - Uses AWS SDK EC2Client to send StopInstances command
+   - Handles IAM permission errors gracefully (UnauthorizedOperation)
+   - Logs previous/current state transitions
+
+4. **Firebase Audit Logging**
+   - Logs all stop events to `coordinator/shutdownHistory`
+   - Records timestamp, reason, idleMinutes, instanceId, type: 'selfStop'
+
+5. **Event System**
+   - `stopPending` - When stop is initiated
+   - `stopCancelled` - When stop is cancelled
+   - `stopExecuting` - Just before EC2 stop command
+   - `stopComplete` - After successful stop
+   - `stopFailed` - If stop fails (IAM permissions, etc.)
+
+6. **Status Methods**
+   - `getInstanceId()` - Returns EC2 instance ID or null
+   - `isEC2Instance()` - Returns true if running on EC2
+   - `isStopPending()` - Returns true if stop is pending
+   - `getStatus()` - Returns full status object
+
+**Configuration:**
+- `COORDINATOR_MODE=true` required to enable
+- `AWS_REGION` env var (default: us-east-1)
+- Shutdown delay: 30 seconds (configurable)
+
+**Verification:**
+- `node -e "import('./lib/selfStop.js')"` exits 0 ✅
+
+---
 
 ### P19-02: Integrate auto-shutdown with server
 Integrated the auto-shutdown service with the server, adding activity tracking middleware, socket event monitoring, and new API endpoints for idle status management.

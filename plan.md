@@ -1348,7 +1348,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Handle case where instance has no IAM permissions gracefully"
     ],
     "verification": "node -e \"require('./server/lib/selfStop.js')\" exits 0",
-    "passes": false
+    "passes": true
   },
   {
     "id": "P20-01",
@@ -1587,11 +1587,11 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 | Phase 17: Monitoring & Alerts | 5 | 5 | ✅ Complete |
 | Integration (VM Pool) | 3 | 3 | ✅ Complete |
 | **Phase 18: Coordinator Deployment** | 4 | 4 | ✅ Complete |
-| **Phase 19: Auto-Shutdown** | 3 | 2 | 🔄 In Progress |
+| **Phase 19: Auto-Shutdown** | 3 | 3 | ✅ Complete |
 | **Phase 20: Wake System** | 4 | 0 | ⬚ Pending |
 | **Phase 21: Frontend Offline** | 5 | 0 | ⬚ Pending |
 | **Integration (Coordinator)** | 4 | 0 | ⬚ Pending |
-| **Total** | **87** | **73** | **84%** |
+| **Total** | **87** | **74** | **85%** |
 
 ---
 
