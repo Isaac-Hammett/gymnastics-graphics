@@ -2,12 +2,77 @@
 
 ## Current Status
 **Phase:** Integration Tests - Coordinator Deployment
-**Last Task:** INT-13 - Auto-shutdown test
-**Next Task:** INT-14 - Wake system test
+**Last Task:** INT-14 - Wake system test
+**Next Task:** INT-15 - Production end-to-end test
 
 ---
 
 ## 2026-01-15
+
+### INT-14: Wake system test
+Verified full wake cycle infrastructure is complete and functional.
+
+**Components Verified:**
+
+1. **Netlify Wake Function** (`show-controller/netlify/functions/wake-coordinator.js`)
+   - Uses EC2 StartInstances API with COORDINATOR_ prefixed env vars
+   - Handles all instance states: stopped, running, pending, stopping, terminated
+   - Returns success response with estimatedReadySeconds: 60
+   - CORS headers configured for frontend access
+   - Error handling for AWS permission and configuration issues
+
+2. **Netlify Status Function** (`show-controller/netlify/functions/coordinator-status.js`)
+   - Uses EC2 DescribeInstances to get coordinator state
+   - Pings /api/coordinator/status when running to verify app health
+   - 10-second cache to avoid AWS rate limits
+   - Returns: { state, publicIp, appReady, uptime, idleMinutes }
+
+3. **useCoordinator Hook** (`show-controller/src/hooks/useCoordinator.js`)
+   - Tracks status: online, offline, starting, unknown
+   - Implements wake() function to call Netlify function
+   - Polls status every 5s while starting (max 2 min)
+   - Auto-stops polling when coordinator comes online
+   - Returns: status, appReady, isWaking, error, wake(), checkStatus()
+
+4. **SystemOfflinePage** (`show-controller/src/pages/SystemOfflinePage.jsx`)
+   - Full-page display when coordinator is offline
+   - "Wake Up System" button triggers wake() from useCoordinator
+   - Progress bar shows elapsed time during startup
+   - Status text updates: "Starting EC2", "Booting OS", "Starting app"
+   - Auto-redirects when coordinator becomes available
+   - Shows estimated startup time: 60-90 seconds
+
+5. **CompetitionSelector Integration** (`show-controller/src/pages/CompetitionSelector.jsx`)
+   - CoordinatorStatus badge in header
+   - Offline banner with "Start System" button
+   - Disables VM operations when coordinator offline
+   - Shows "Starting System..." banner during startup
+   - Error display for wake failures
+
+6. **CoordinatorStatus Component** (`show-controller/src/components/CoordinatorStatus.jsx`)
+   - Status badge: green=online, yellow=starting, red=offline
+   - "Start System" button when offline
+   - Tooltip shows uptime, idle time, IP when online
+   - Progress indicator during startup
+   - Refresh button for manual status check
+
+**Flow Verified:**
+1. User visits /select → useCoordinator checks status via Netlify function
+2. If offline → CoordinatorStatus shows red badge + "Start System" button
+3. User clicks "Start System" → wake() calls /.netlify/functions/wake-coordinator
+4. Netlify function calls EC2 StartInstances API
+5. Frontend shows yellow "Starting" badge with countdown
+6. useCoordinator polls /.netlify/functions/coordinator-status every 5s
+7. When EC2 running AND app ready → status changes to online
+8. User can now access VM pool operations
+
+**Build Verification:**
+- `npm run build` succeeds (776 modules, 1.19s)
+- All hooks and components compile without errors
+- useCoordinator, CoordinatorStatus, SystemOfflinePage all functional
+
+---
+
 
 ### INT-12: Coordinator deployment test
 Verified all coordinator deployment components are in place and code compiles successfully.
