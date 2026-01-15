@@ -1,16 +1,87 @@
-# React + Vite
+# Gymnastics Graphics Show Controller
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend application for managing gymnastics broadcast production.
 
-Currently, two official plugins are available:
+## Getting Started
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+```bash
+# Install dependencies
+npm install
 
-## React Compiler
+# Start development server
+npm run dev
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+# Build for production
+npm run build
+```
 
-## Expanding the ESLint configuration
+## Netlify Deployment
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+The show controller is deployed to Netlify at `commentarygraphic.com`.
+
+### Serverless Functions
+
+The application includes Netlify Functions for managing the coordinator EC2 instance:
+
+- `wake-coordinator.js` - Starts the coordinator when the system is sleeping
+- `coordinator-status.js` - Checks coordinator EC2 state and application health
+
+### Required Netlify Environment Variables
+
+Configure these environment variables in the Netlify dashboard under **Site Settings > Environment Variables**:
+
+| Variable | Description | Example Value |
+|----------|-------------|---------------|
+| `COORDINATOR_AWS_ACCESS_KEY_ID` | IAM user access key for `netlify-coordinator-control` | `AKIA...` |
+| `COORDINATOR_AWS_SECRET_ACCESS_KEY` | IAM user secret key | `wJal...` |
+| `COORDINATOR_AWS_REGION` | AWS region where coordinator runs | `us-east-1` |
+| `COORDINATOR_INSTANCE_ID` | EC2 instance ID of the coordinator | `i-001383a4293522fa4` |
+
+**Note:** These variables are already configured in the production Netlify site.
+
+### IAM User: netlify-coordinator-control
+
+A dedicated IAM user with minimal permissions for the Netlify functions:
+
+**Policy Name:** `netlify-coordinator-control-policy`
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ec2:StartInstances",
+        "ec2:StopInstances",
+        "ec2:DescribeInstances"
+      ],
+      "Resource": "arn:aws:ec2:us-east-1:*:instance/i-001383a4293522fa4"
+    },
+    {
+      "Effect": "Allow",
+      "Action": "ec2:DescribeInstances",
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+This policy follows the principle of least privilege:
+- Can only start/stop the specific coordinator instance
+- Has read-only access to describe any instance (required for status checks)
+- Cannot launch, terminate, or modify instances
+
+## Local Development
+
+For local development, the frontend connects to a local server:
+
+```bash
+# In server/ directory
+npm run dev
+
+# In show-controller/ directory (separate terminal)
+npm run dev
+```
+
+Navigate to `http://localhost:5173/local/producer` for local development mode.
