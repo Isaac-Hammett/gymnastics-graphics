@@ -164,9 +164,9 @@ class AutoShutdownService extends EventEmitter {
 
   /**
    * Check if idle timeout has been reached
-   * If so, initiate graceful shutdown
+   * If so, initiate graceful shutdown (unless active streams exist)
    */
-  checkIdleTimeout() {
+  async checkIdleTimeout() {
     if (!this._config.enabled) {
       return;
     }
@@ -177,6 +177,13 @@ class AutoShutdownService extends EventEmitter {
     console.log(`[AutoShutdown] Idle check: ${idleMinutes}m / ${timeoutMinutes}m`);
 
     if (idleMinutes >= timeoutMinutes && !this._shutdownPending) {
+      // Skip auto-shutdown if there are active streaming competitions
+      const hasStreams = await this.hasActiveStreams();
+      if (hasStreams) {
+        console.log(`[AutoShutdown] Idle timeout reached but active streams detected - skipping shutdown`);
+        return;
+      }
+
       console.log(`[AutoShutdown] Idle timeout reached (${idleMinutes}m >= ${timeoutMinutes}m)`);
       this._initiateShutdown('Idle timeout reached');
     }
