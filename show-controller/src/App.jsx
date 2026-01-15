@@ -1,13 +1,11 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
-// New pages
-import HubPage from './pages/HubPage';
-import DashboardPage from './pages/DashboardPage';
+// Pages
+import HomePage from './pages/HomePage';
 import ControllerPage from './pages/ControllerPage';
 import UrlGeneratorPage from './pages/UrlGeneratorPage';
 import MediaManagerPage from './pages/MediaManagerPage';
 import CameraSetupPage from './pages/CameraSetupPage';
-import CompetitionSelector from './pages/CompetitionSelector';
 import VMPoolPage from './pages/VMPoolPage';
 import SystemOfflinePage from './pages/SystemOfflinePage';
 import SetupGuidePage from './pages/SetupGuidePage';
@@ -23,34 +21,25 @@ import TalentView from './views/TalentView';
 import ProducerView from './views/ProducerView';
 import ImportView from './views/ImportView';
 
-/**
- * Legacy route redirect component
- * Redirects old routes like /producer to /select?redirect=/producer
- */
-function LegacyRedirect({ to }) {
-  return <Navigate to={`/select?redirect=${to}`} replace />;
-}
-
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Root redirects to competition selector */}
-        <Route path="/" element={<Navigate to="/select" replace />} />
+        {/* Home page - consolidated landing page */}
+        <Route path="/" element={<HomePage />} />
 
-        {/* Competition selector (landing page) */}
-        <Route path="/select" element={<CompetitionSelector />} />
+        {/* Legacy routes redirect to home */}
+        <Route path="/select" element={<Navigate to="/" replace />} />
+        <Route path="/hub" element={<Navigate to="/" replace />} />
+        <Route path="/dashboard" element={<Navigate to="/" replace />} />
 
-        {/* Standalone pages (not competition-bound) */}
-        <Route path="/hub" element={<HubPage />} />
-        <Route path="/dashboard" element={<DashboardPage />} />
+        {/* Standalone tool pages */}
         <Route path="/controller" element={<ControllerPage />} />
         <Route path="/url-generator" element={<UrlGeneratorPage />} />
         <Route path="/media-manager" element={<MediaManagerPage />} />
         <Route path="/import" element={<ImportView />} />
 
         {/* Admin routes - use _admin prefix to avoid /:compId catching it */}
-        {/* Admin routes require coordinator to be online (wrapped with CoordinatorGate) */}
         <Route path="/_admin/vm-pool" element={
           <CoordinatorGate>
             <VMPoolPage />
@@ -59,11 +48,11 @@ function App() {
         <Route path="/_admin/system-offline" element={<SystemOfflinePage />} />
         <Route path="/_admin/setup-guide" element={<SetupGuidePage />} />
 
-        {/* Legacy route redirects - redirect to selector with redirect param */}
-        <Route path="/producer" element={<LegacyRedirect to="/producer" />} />
-        <Route path="/show-producer" element={<LegacyRedirect to="/producer" />} />
-        <Route path="/talent" element={<LegacyRedirect to="/talent" />} />
-        <Route path="/camera-setup" element={<LegacyRedirect to="/camera-setup" />} />
+        {/* Legacy route redirects - redirect to home */}
+        <Route path="/producer" element={<Navigate to="/" replace />} />
+        <Route path="/show-producer" element={<Navigate to="/" replace />} />
+        <Route path="/talent" element={<Navigate to="/" replace />} />
+        <Route path="/camera-setup" element={<Navigate to="/" replace />} />
 
         {/* Competition-bound routes */}
         <Route path="/:compId" element={<CompetitionLayout />}>

@@ -242,20 +242,10 @@ export async function handler(event, context) {
         result.idleMinutes = appHealth.idleMinutes;
         result.version = appHealth.version;
       } else {
-        // App didn't respond - check if we should consider it ready anyway
-        // If EC2 has been running for 90+ seconds, assume app is ready
-        // (health check may fail due to firewall, but app is likely running)
-        const GRACE_PERIOD_SECONDS = 90;
-        if (runningSeconds >= GRACE_PERIOD_SECONDS) {
-          console.log(`[coordinator-status] App health check failed but instance running ${runningSeconds}s - assuming ready`);
-          result.appReady = true;
-          result.appHealthSkipped = true;
-          result.appError = appHealth.error;
-        } else {
-          result.appReady = false;
-          result.appError = appHealth.error;
-          console.log(`[coordinator-status] App not ready (${runningSeconds}s < ${GRACE_PERIOD_SECONDS}s grace period)`);
-        }
+        // App didn't respond - not ready
+        result.appReady = false;
+        result.appError = appHealth.error;
+        console.log(`[coordinator-status] App not ready: ${appHealth.error}`);
       }
     } else {
       result.appReady = false;

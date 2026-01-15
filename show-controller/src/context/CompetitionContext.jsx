@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { db, ref, onValue } from '../lib/firebase';
+import { getServerUrl } from '../lib/serverUrl';
 
 // Error types for different failure scenarios
 export const CompetitionErrorType = {
@@ -43,8 +44,8 @@ export function CompetitionProvider({ children }) {
   // socketUrl format: "http://host:port" (e.g., "http://3.81.127.185:3003")
   const socketUrl = (() => {
     if (isLocalMode) {
-      // In local mode, use VITE_LOCAL_SERVER env var or default to localhost:3003
-      return import.meta.env.VITE_LOCAL_SERVER || 'http://localhost:3003';
+      // In local mode, use centralized server URL resolution
+      return getServerUrl();
     }
     if (vmAddress) {
       // Ensure vmAddress doesn't already have protocol
@@ -82,7 +83,7 @@ export function CompetitionProvider({ children }) {
       setCompetitionConfig({
         eventName: 'Local Development',
         gender: localGender,
-        vmAddress: null // Will use VITE_LOCAL_SERVER
+        vmAddress: null // Will use getServerUrl() for local mode
       });
       setIsLoading(false);
       return;

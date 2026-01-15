@@ -15,9 +15,7 @@ import PoolStatusBar from '../components/PoolStatusBar';
 import CoordinatorStatus from '../components/CoordinatorStatus';
 import SystemOfflinePage from './SystemOfflinePage';
 import { useCoordinator, COORDINATOR_STATUS } from '../hooks/useCoordinator';
-
-// Server URL - use VITE_API_URL for production coordinator, fallback to localhost for local dev
-const SERVER_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_LOCAL_SERVER || 'http://localhost:3003';
+import { SERVER_URL } from '../lib/serverUrl';
 
 export default function VMPoolPage() {
   console.log('[VMPoolPage] Component rendering');

@@ -43,11 +43,11 @@ export default function SetupGuidePage() {
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link
-              to="/select"
+              to="/"
               className="flex items-center gap-2 px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-400 text-xs hover:bg-zinc-700 hover:text-zinc-300 transition-colors"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-              Back
+              Home
             </Link>
             <div>
               <h1 className="text-lg font-bold text-white flex items-center gap-2">
@@ -313,11 +313,11 @@ export default function SetupGuidePage() {
               <p className="text-sm text-zinc-400">Manage EC2 instances and stop the system</p>
             </Link>
             <Link
-              to="/select"
+              to="/"
               className="bg-zinc-800 hover:bg-zinc-700 rounded-xl p-4 transition-colors group"
             >
               <PlayIcon className="w-8 h-8 text-green-400 mb-2" />
-              <h3 className="text-white font-semibold group-hover:text-green-300">Competition Selector</h3>
+              <h3 className="text-white font-semibold group-hover:text-green-300">Home</h3>
               <p className="text-sm text-zinc-400">Start or join a competition</p>
             </Link>
             <Link
