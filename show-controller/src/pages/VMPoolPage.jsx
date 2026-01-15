@@ -16,8 +16,8 @@ import CoordinatorStatus from '../components/CoordinatorStatus';
 import SystemOfflinePage from './SystemOfflinePage';
 import { useCoordinator, COORDINATOR_STATUS } from '../hooks/useCoordinator';
 
-// Server URL - this page is standalone (not competition-bound)
-const SERVER_URL = import.meta.env.VITE_LOCAL_SERVER || 'http://localhost:3003';
+// Server URL - use VITE_API_URL for production coordinator, fallback to localhost for local dev
+const SERVER_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_LOCAL_SERVER || 'http://localhost:3003';
 
 export default function VMPoolPage() {
   console.log('[VMPoolPage] Component rendering');
@@ -304,11 +304,11 @@ export default function VMPoolPage() {
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link
-              to="/select"
+              to="/"
               className="flex items-center gap-2 px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-400 text-xs hover:bg-zinc-700 hover:text-zinc-300 transition-colors"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-              Back
+              Home
             </Link>
             <div>
               <h1 className="text-lg font-bold text-white flex items-center gap-2">
