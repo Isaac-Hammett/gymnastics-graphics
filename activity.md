@@ -2,12 +2,55 @@
 
 ## Current Status
 **Phase:** Phase 19 - Auto-Shutdown
-**Last Task:** P19-01 - Create auto-shutdown service
-**Next Task:** P19-02 - Integrate auto-shutdown with server
+**Last Task:** P19-02 - Integrate auto-shutdown with server
+**Next Task:** P19-03 - Create self-stop capability
 
 ---
 
 ## 2026-01-15
+
+### P19-02: Integrate auto-shutdown with server
+Integrated the auto-shutdown service with the server, adding activity tracking middleware, socket event monitoring, and new API endpoints for idle status management.
+
+**Modified Files:**
+- `server/index.js` - Integrated auto-shutdown service with middleware, socket events, and new endpoints
+- `server/lib/autoShutdown.js` - Enhanced checkIdleTimeout() to skip shutdown during active streams
+
+**Features Implemented:**
+1. **Activity Tracking Middleware**
+   - REST middleware calls `resetActivity()` on every request
+   - Socket.io middleware tracks activity on every socket event
+   - Both update local `lastActivityTimestamp` and auto-shutdown service
+
+2. **Auto-Shutdown Initialization**
+   - New `initializeAutoShutdown()` function added
+   - Initializes only when `COORDINATOR_MODE=true`
+   - Wires up shutdown events to broadcast to all clients
+   - Custom graceful stop callback closes sockets, stops camera polling, and timesheet engine
+
+3. **Enhanced Status Endpoint**
+   - Added `idleMinutes` to `/api/coordinator/status` response
+   - Added `autoShutdown` object with full service status
+
+4. **New API Endpoints**
+   - `GET /api/coordinator/idle` - Detailed idle status including time until shutdown
+   - `POST /api/coordinator/keep-alive` - Reset activity and cancel pending shutdown
+
+5. **Stream-Aware Shutdown**
+   - `checkIdleTimeout()` now async and checks for active streams
+   - Skips auto-shutdown if any competition has `isStreaming: true`
+
+**Socket Events Broadcast:**
+- `shutdownPending` - Notifies clients of impending shutdown
+- `shutdownCancelled` - Notifies clients shutdown was cancelled
+- `shutdownExecuting` - Final notification before shutdown
+- `serverShuttingDown` - Custom event for graceful client disconnect
+
+**Verification:**
+- `node --check index.js` exits 0 ✅
+- `node test-helper.js check http://localhost:3003/api/coordinator/status` returns success ✅
+
+---
 
 ### P19-01: Create auto-shutdown service
 Created the auto-shutdown service module for tracking activity and initiating graceful shutdown when idle timeout is reached.

@@ -21,6 +21,7 @@ import configLoader from './lib/configLoader.js';
 import { getVMPoolManager, VM_STATUS } from './lib/vmPoolManager.js';
 import { getAWSService } from './lib/awsService.js';
 import { getAlertService, ALERT_LEVEL, ALERT_CATEGORY } from './lib/alertService.js';
+import { getAutoShutdownService } from './lib/autoShutdown.js';
 
 dotenv.config();
 
@@ -414,6 +415,76 @@ function initializeVMPoolManager() {
   });
 }
 
+// Initialize Auto-Shutdown Service (P19-02)
+async function initializeAutoShutdown() {
+  const isCoordinatorMode = process.env.COORDINATOR_MODE === 'true';
+
+  if (!isCoordinatorMode) {
+    console.log('[AutoShutdown] Not in coordinator mode, skipping initialization');
+    return;
+  }
+
+  const autoShutdown = getAutoShutdownService();
+
+  // Wire up shutdown events to broadcast to all clients
+  autoShutdown.on('shutdownPending', (data) => {
+    console.log(`[AutoShutdown] Shutdown pending: ${data.reason} (${data.secondsRemaining}s)`);
+    io.emit('shutdownPending', data);
+  });
+
+  autoShutdown.on('shutdownCancelled', (data) => {
+    console.log(`[AutoShutdown] Shutdown cancelled: ${data.reason}`);
+    io.emit('shutdownCancelled', data);
+  });
+
+  autoShutdown.on('shutdownExecuting', (data) => {
+    console.log(`[AutoShutdown] Shutdown executing: ${data.reason}`);
+    io.emit('shutdownExecuting', data);
+  });
+
+  // Custom stop callback for graceful shutdown
+  const gracefulStopCallback = async () => {
+    console.log('[AutoShutdown] Graceful shutdown initiated');
+
+    // Notify all connected clients
+    io.emit('serverShuttingDown', {
+      timestamp: new Date().toISOString(),
+      message: 'Server shutting down due to idle timeout'
+    });
+
+    // Close all socket connections gracefully
+    const sockets = await io.fetchSockets();
+    for (const socket of sockets) {
+      socket.disconnect(true);
+    }
+
+    // Stop camera health polling
+    if (cameraHealthMonitor) {
+      cameraHealthMonitor.stop();
+    }
+
+    // Stop timesheet engine
+    if (timesheetEngine) {
+      timesheetEngine.stop();
+    }
+
+    console.log('[AutoShutdown] Graceful shutdown complete');
+  };
+
+  // Initialize with socket.io and AWS service
+  try {
+    const awsService = getAWSService();
+    await autoShutdown.initialize({
+      io,
+      awsService,
+      stopCallback: gracefulStopCallback
+    });
+    console.log('[AutoShutdown] Auto-shutdown service initialized');
+  } catch (error) {
+    console.warn('[AutoShutdown] Failed to initialize:', error.message);
+  }
+}
+
 // Watch for config changes (hot reload)
 watchFile(join(__dirname, 'config', 'show-config.json'), () => {
   console.log('Show config changed, reloading...');
@@ -781,6 +852,17 @@ app.use(express.json());
 app.use(express.static(join(__dirname, '..', 'show-controller', 'dist')));
 // Serve graphics output files from project root (output.html, overlays/)
 app.use(express.static(join(__dirname, '..')));
+
+// Activity tracking middleware - updates last activity on every REST request
+app.use((req, res, next) => {
+  updateLastActivity();
+  // Also update auto-shutdown service if initialized
+  const autoShutdown = getAutoShutdownService();
+  if (autoShutdown.isInitialized()) {
+    autoShutdown.resetActivity();
+  }
+  next();
+});
 
 // REST API endpoints
 app.get('/api/status', (req, res) => {
@@ -1886,6 +1968,10 @@ app.get('/api/coordinator/status', async (req, res) => {
   // Check OBS connection status
   const obsStatus = showState.obsConnected ? 'connected' : 'disconnected';
 
+  // Get auto-shutdown status if initialized
+  const autoShutdown = getAutoShutdownService();
+  const autoShutdownStatus = autoShutdown.isInitialized() ? autoShutdown.getStatus() : null;
+
   // Build response
   const status = {
     status: 'online',
@@ -1895,12 +1981,14 @@ app.get('/api/coordinator/status', async (req, res) => {
     mode: isCoordinatorMode ? 'coordinator' : 'standalone',
     lastActivity: new Date(lastActivityTimestamp).toISOString(),
     idleSeconds: getIdleTime(),
+    idleMinutes: Math.floor(getIdleTime() / 60),
     connections: {
       firebase: firebaseStatus,
       aws: awsStatus,
       obs: obsStatus
     },
-    connectedClients: showState.connectedClients.length
+    connectedClients: showState.connectedClients.length,
+    autoShutdown: autoShutdownStatus
   };
 
   res.json(status);
@@ -1920,6 +2008,48 @@ app.post('/api/coordinator/activity', (req, res) => {
   res.json({
     success: true,
     lastActivity: new Date(lastActivityTimestamp).toISOString()
+  });
+});
+
+// GET /api/coordinator/idle - Get detailed idle status for auto-shutdown (P19-02)
+app.get('/api/coordinator/idle', (req, res) => {
+  const autoShutdown = getAutoShutdownService();
+  const idleSeconds = getIdleTime();
+  const idleMinutes = Math.floor(idleSeconds / 60);
+
+  // Get auto-shutdown config if available
+  const autoShutdownStatus = autoShutdown.isInitialized() ? autoShutdown.getStatus() : null;
+
+  res.json({
+    idleSeconds,
+    idleMinutes,
+    lastActivity: new Date(lastActivityTimestamp).toISOString(),
+    autoShutdown: autoShutdownStatus ? {
+      enabled: autoShutdownStatus.enabled,
+      timeoutMinutes: autoShutdownStatus.idleTimeoutMinutes,
+      shutdownPending: autoShutdownStatus.shutdownPending,
+      timeUntilShutdown: autoShutdownStatus.enabled
+        ? Math.max(0, autoShutdownStatus.idleTimeoutMinutes - idleMinutes)
+        : null
+    } : null
+  });
+});
+
+// POST /api/coordinator/keep-alive - Reset activity and cancel pending shutdown (P19-02)
+app.post('/api/coordinator/keep-alive', (req, res) => {
+  // Update local activity timestamp
+  updateLastActivity();
+
+  // Also update auto-shutdown service if initialized
+  const autoShutdown = getAutoShutdownService();
+  if (autoShutdown.isInitialized()) {
+    autoShutdown.keepAlive();
+  }
+
+  res.json({
+    success: true,
+    lastActivity: new Date(lastActivityTimestamp).toISOString(),
+    message: 'Keep-alive received, activity timestamp updated'
   });
 });
 
@@ -2094,6 +2224,16 @@ app.get('/{*path}', (req, res) => {
 // Socket.io connection handling
 io.on('connection', (socket) => {
   console.log(`Client connected: ${socket.id}`);
+
+  // Track activity on every socket event using socket.io middleware
+  socket.use((packet, next) => {
+    updateLastActivity();
+    const autoShutdown = getAutoShutdownService();
+    if (autoShutdown.isInitialized()) {
+      autoShutdown.resetActivity();
+    }
+    next();
+  });
 
   // Add client to list
   const clientInfo = {
@@ -2630,6 +2770,9 @@ httpServer.listen(PORT, () => {
 
   // Initialize VM pool manager (for VM management features)
   initializeVMPoolManager();
+
+  // Initialize auto-shutdown service (for coordinator mode)
+  initializeAutoShutdown();
 
   // Connect to OBS
   connectToOBS();

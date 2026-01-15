@@ -1332,7 +1332,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Skip auto-shutdown if active competitions are streaming"
     ],
     "verification": "Server logs show activity tracking and idle checks",
-    "passes": false
+    "passes": true
   },
   {
     "id": "P19-03",
@@ -1587,11 +1587,11 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 | Phase 17: Monitoring & Alerts | 5 | 5 | ✅ Complete |
 | Integration (VM Pool) | 3 | 3 | ✅ Complete |
 | **Phase 18: Coordinator Deployment** | 4 | 4 | ✅ Complete |
-| **Phase 19: Auto-Shutdown** | 3 | 1 | 🔄 In Progress |
+| **Phase 19: Auto-Shutdown** | 3 | 2 | 🔄 In Progress |
 | **Phase 20: Wake System** | 4 | 0 | ⬚ Pending |
 | **Phase 21: Frontend Offline** | 5 | 0 | ⬚ Pending |
 | **Integration (Coordinator)** | 4 | 0 | ⬚ Pending |
-| **Total** | **87** | **72** | **83%** |
+| **Total** | **87** | **73** | **84%** |
 
 ---
 
