@@ -2,12 +2,51 @@
 
 ## Current Status
 **Phase:** Phase 21 - Frontend Offline
-**Last Task:** P21-03 - Update CompetitionSelector for offline state
-**Next Task:** P21-04 - Update VMPoolPage for coordinator status
+**Last Task:** P21-04 - Update VMPoolPage for coordinator status
+**Next Task:** P21-05 - Create CoordinatorGate component
 
 ---
 
 ## 2026-01-15
+
+### P21-04: Update VMPoolPage for coordinator status
+Updated VMPoolPage to handle coordinator offline states and show SystemOfflinePage when coordinator is offline.
+
+**Modified Files:**
+- `show-controller/src/pages/VMPoolPage.jsx` - Added coordinator status handling
+
+**Features Implemented:**
+1. **Import useCoordinator Hook**
+   - Added import for useCoordinator hook and COORDINATOR_STATUS
+   - Added import for CoordinatorStatus component
+   - Added import for SystemOfflinePage component
+
+2. **Show SystemOfflinePage When Offline**
+   - If coordinator is offline and not waking, renders SystemOfflinePage with redirectTo="/admin/vm-pool"
+   - User can wake coordinator from the offline page
+   - Auto-redirects back to VM pool when coordinator becomes available
+
+3. **Progress Overlay When Starting**
+   - If coordinator is starting or waking, shows a progress overlay
+   - Displays spinning icon with "System Starting Up..." message
+   - Explains the 60-90 second startup time
+   - Notes that VM pool will auto-load when ready
+
+4. **Auto-Fetch on Coordinator Reconnect**
+   - Tracks previous coordinator availability state
+   - When coordinator becomes available (transitions from offline to online), auto-fetches VM pool data
+   - Initial load only proceeds when coordinator is available
+
+5. **Coordinator Status in Header**
+   - Added CoordinatorStatus component to page header
+   - Shows status badge (online/offline/starting)
+   - Includes vertical divider separator before action buttons
+   - Status appears before Launch VM and Refresh buttons
+
+**Verification:**
+- `npm run build` succeeds (component compiles without error)
+
+---
 
 ### P21-03: Update CompetitionSelector for offline state
 Updated the CompetitionSelector page to handle coordinator offline states and integrate with the useCoordinator hook.

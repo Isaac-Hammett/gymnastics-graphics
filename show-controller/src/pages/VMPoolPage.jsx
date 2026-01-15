@@ -11,6 +11,9 @@ import {
 } from '@heroicons/react/24/solid';
 import VMCard, { VM_STATUS } from '../components/VMCard';
 import PoolStatusBar from '../components/PoolStatusBar';
+import CoordinatorStatus from '../components/CoordinatorStatus';
+import SystemOfflinePage from './SystemOfflinePage';
+import { useCoordinator, COORDINATOR_STATUS } from '../hooks/useCoordinator';
 
 // Server URL - this page is standalone (not competition-bound)
 const SERVER_URL = import.meta.env.VITE_LOCAL_SERVER || 'http://localhost:3003';
@@ -26,6 +29,16 @@ export default function VMPoolPage() {
   const [actionLoading, setActionLoading] = useState({});
   const [startingColdVM, setStartingColdVM] = useState(false);
   const [launchingVM, setLaunchingVM] = useState(false);
+
+  // Coordinator status
+  const {
+    status: coordinatorStatus,
+    isWaking,
+    isAvailable: coordinatorAvailable,
+  } = useCoordinator();
+
+  // Track previous coordinator availability to auto-fetch on reconnect
+  const [prevCoordinatorAvailable, setPrevCoordinatorAvailable] = useState(false);
 
   // Fetch VM pool status
   const fetchPoolStatus = useCallback(async () => {
@@ -60,15 +73,29 @@ export default function VMPoolPage() {
     }
   }, []);
 
-  // Initial load
+  // Initial load - only when coordinator is available
   useEffect(() => {
     async function loadData() {
+      if (!coordinatorAvailable) {
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       await Promise.all([fetchPoolStatus(), fetchPoolConfig()]);
       setLoading(false);
     }
     loadData();
-  }, [fetchPoolStatus, fetchPoolConfig]);
+  }, [fetchPoolStatus, fetchPoolConfig, coordinatorAvailable]);
+
+  // Auto-fetch when coordinator comes online
+  useEffect(() => {
+    if (coordinatorAvailable && !prevCoordinatorAvailable) {
+      console.log('[VMPoolPage] Coordinator became available, fetching VM pool data');
+      fetchPoolStatus();
+      fetchPoolConfig();
+    }
+    setPrevCoordinatorAvailable(coordinatorAvailable);
+  }, [coordinatorAvailable, prevCoordinatorAvailable, fetchPoolStatus, fetchPoolConfig]);
 
   // Refresh handler
   const handleRefresh = async () => {
@@ -210,6 +237,29 @@ export default function VMPoolPage() {
     return stats;
   }, [vms]);
 
+  // If coordinator is offline, show SystemOfflinePage instead
+  if (coordinatorStatus === COORDINATOR_STATUS.OFFLINE && !isWaking) {
+    return <SystemOfflinePage redirectTo="/admin/vm-pool" />;
+  }
+
+  // If coordinator is starting, show progress overlay
+  if (coordinatorStatus === COORDINATOR_STATUS.STARTING || isWaking) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <div className="text-center">
+          <ArrowPathIcon className="w-10 h-10 text-yellow-400 animate-spin mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-white mb-2">System Starting Up...</h2>
+          <p className="text-zinc-400 text-sm">
+            The coordinator is starting. This usually takes 60-90 seconds.
+          </p>
+          <p className="text-zinc-500 text-xs mt-3">
+            VM pool will load automatically when ready.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
@@ -245,7 +295,12 @@ export default function VMPoolPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            {/* Coordinator Status */}
+            <CoordinatorStatus />
+
+            <div className="w-px h-6 bg-zinc-700" />
+
             <button
               onClick={handleLaunchVM}
               disabled={launchingVM}
