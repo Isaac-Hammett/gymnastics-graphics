@@ -24,6 +24,35 @@ import { getAlertService, ALERT_LEVEL, ALERT_CATEGORY } from './lib/alertService
 
 dotenv.config();
 
+// ============================================
+// Coordinator State Tracking
+// ============================================
+const serverStartTime = Date.now();
+let lastActivityTimestamp = Date.now();
+const SERVER_VERSION = '1.0.0';
+
+/**
+ * Update last activity timestamp
+ * Called on API requests and socket events
+ */
+function updateLastActivity() {
+  lastActivityTimestamp = Date.now();
+}
+
+/**
+ * Get server uptime in seconds
+ */
+function getUptime() {
+  return Math.floor((Date.now() - serverStartTime) / 1000);
+}
+
+/**
+ * Get idle time in seconds
+ */
+function getIdleTime() {
+  return Math.floor((Date.now() - lastActivityTimestamp) / 1000);
+}
+
 // Configure multer for file uploads
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -1813,6 +1842,106 @@ app.post('/api/alerts/:compId/acknowledge-all', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// ============================================
+// Coordinator Health API Endpoints
+// ============================================
+
+// GET /api/coordinator/status - Get coordinator health and status
+app.get('/api/coordinator/status', async (req, res) => {
+  updateLastActivity();
+
+  const isCoordinatorMode = process.env.COORDINATOR_MODE === 'true';
+
+  // Check Firebase connection status
+  let firebaseStatus = 'unknown';
+  try {
+    if (productionConfigService.isAvailable()) {
+      firebaseStatus = 'connected';
+    } else {
+      firebaseStatus = 'unavailable';
+    }
+  } catch (error) {
+    firebaseStatus = 'error';
+  }
+
+  // Check AWS SDK status (can we reach EC2 API?)
+  let awsStatus = 'unknown';
+  try {
+    const awsService = getAWSService();
+    // Try a simple describe call with a filter that returns quickly
+    await awsService.describeInstances({ limit: 1 });
+    awsStatus = 'connected';
+  } catch (error) {
+    // Check if it's a credentials error vs network error
+    if (error.name === 'CredentialsProviderError' || error.message?.includes('credentials')) {
+      awsStatus = 'no_credentials';
+    } else if (error.code === 'ENOTFOUND' || error.code === 'ETIMEDOUT') {
+      awsStatus = 'unreachable';
+    } else {
+      awsStatus = 'error';
+    }
+  }
+
+  // Check OBS connection status
+  const obsStatus = showState.obsConnected ? 'connected' : 'disconnected';
+
+  // Build response
+  const status = {
+    status: 'online',
+    uptime: getUptime(),
+    uptimeFormatted: formatUptime(getUptime()),
+    version: SERVER_VERSION,
+    mode: isCoordinatorMode ? 'coordinator' : 'standalone',
+    lastActivity: new Date(lastActivityTimestamp).toISOString(),
+    idleSeconds: getIdleTime(),
+    connections: {
+      firebase: firebaseStatus,
+      aws: awsStatus,
+      obs: obsStatus
+    },
+    connectedClients: showState.connectedClients.length
+  };
+
+  res.json(status);
+});
+
+// GET /api/coordinator/activity - Get last activity timestamp
+app.get('/api/coordinator/activity', (req, res) => {
+  res.json({
+    lastActivity: new Date(lastActivityTimestamp).toISOString(),
+    idleSeconds: getIdleTime()
+  });
+});
+
+// POST /api/coordinator/activity - Update last activity timestamp (keep-alive)
+app.post('/api/coordinator/activity', (req, res) => {
+  updateLastActivity();
+  res.json({
+    success: true,
+    lastActivity: new Date(lastActivityTimestamp).toISOString()
+  });
+});
+
+/**
+ * Format uptime seconds into human readable string
+ * @param {number} seconds - Uptime in seconds
+ * @returns {string} Formatted uptime
+ */
+function formatUptime(seconds) {
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+
+  const parts = [];
+  if (days > 0) parts.push(`${days}d`);
+  if (hours > 0) parts.push(`${hours}h`);
+  if (minutes > 0) parts.push(`${minutes}m`);
+  if (secs > 0 || parts.length === 0) parts.push(`${secs}s`);
+
+  return parts.join(' ');
+}
 
 // CSV Upload endpoint
 app.post('/api/import-csv', upload.single('csv'), (req, res) => {
