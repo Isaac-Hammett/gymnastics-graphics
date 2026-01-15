@@ -7,6 +7,7 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   CogIcon,
+  PlusIcon,
 } from '@heroicons/react/24/solid';
 import VMCard, { VM_STATUS } from '../components/VMCard';
 import PoolStatusBar from '../components/PoolStatusBar';
@@ -15,6 +16,7 @@ import PoolStatusBar from '../components/PoolStatusBar';
 const SERVER_URL = import.meta.env.VITE_LOCAL_SERVER || 'http://localhost:3003';
 
 export default function VMPoolPage() {
+  console.log('[VMPoolPage] Component rendering');
   const [vms, setVMs] = useState([]);
   const [poolConfig, setPoolConfig] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -23,18 +25,23 @@ export default function VMPoolPage() {
   const [configExpanded, setConfigExpanded] = useState(false);
   const [actionLoading, setActionLoading] = useState({});
   const [startingColdVM, setStartingColdVM] = useState(false);
+  const [launchingVM, setLaunchingVM] = useState(false);
 
   // Fetch VM pool status
   const fetchPoolStatus = useCallback(async () => {
+    console.log('[VMPoolPage] Fetching pool status from:', `${SERVER_URL}/api/admin/vm-pool`);
     try {
       const res = await fetch(`${SERVER_URL}/api/admin/vm-pool`);
+      console.log('[VMPoolPage] Response status:', res.status);
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}: ${res.statusText}`);
       }
       const data = await res.json();
+      console.log('[VMPoolPage] Pool data:', data);
       setVMs(data.vms || []);
       setError(null);
     } catch (err) {
+      console.error('[VMPoolPage] Fetch error:', err);
       setError(err.message);
     }
   }, []);
@@ -107,6 +114,34 @@ export default function VMPoolPage() {
       alert(`Failed to stop VM: ${err.message}`);
     } finally {
       setActionLoading(prev => ({ ...prev, [vmId]: null }));
+    }
+  };
+
+  // Launch a new VM from AMI
+  const handleLaunchVM = async () => {
+    if (!confirm('Launch a new EC2 instance? This will incur AWS charges.')) {
+      return;
+    }
+
+    setLaunchingVM(true);
+    try {
+      const res = await fetch(`${SERVER_URL}/api/admin/vm-pool/launch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to launch VM');
+      }
+      const data = await res.json();
+      alert(`VM launched successfully! Instance ID: ${data.instance?.instanceId || 'unknown'}`);
+      await fetchPoolStatus();
+    } catch (err) {
+      console.error('Failed to launch VM:', err);
+      alert(`Failed to launch VM: ${err.message}`);
+    } finally {
+      setLaunchingVM(false);
     }
   };
 
@@ -210,14 +245,28 @@ export default function VMPoolPage() {
             </div>
           </div>
 
-          <button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="flex items-center gap-2 px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-400 text-xs hover:bg-zinc-700 hover:text-zinc-300 transition-colors disabled:opacity-50"
-          >
-            <ArrowPathIcon className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-            Refresh
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleLaunchVM}
+              disabled={launchingVM}
+              className="flex items-center gap-2 px-3 py-1.5 bg-purple-600 hover:bg-purple-500 rounded-lg text-white text-xs transition-colors disabled:opacity-50"
+            >
+              {launchingVM ? (
+                <ArrowPathIcon className="w-4 h-4 animate-spin" />
+              ) : (
+                <PlusIcon className="w-4 h-4" />
+              )}
+              {launchingVM ? 'Launching...' : 'Launch VM'}
+            </button>
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="flex items-center gap-2 px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-400 text-xs hover:bg-zinc-700 hover:text-zinc-300 transition-colors disabled:opacity-50"
+            >
+              <ArrowPathIcon className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
+          </div>
         </div>
       </header>
 
@@ -290,6 +339,18 @@ export default function VMPoolPage() {
             <p className="text-zinc-400 mb-4">
               No EC2 instances found. The pool may not be initialized or AWS credentials may not be configured.
             </p>
+            <button
+              onClick={handleLaunchVM}
+              disabled={launchingVM}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg text-white text-sm font-medium transition-colors disabled:opacity-50"
+            >
+              {launchingVM ? (
+                <ArrowPathIcon className="w-4 h-4 animate-spin" />
+              ) : (
+                <PlusIcon className="w-4 h-4" />
+              )}
+              {launchingVM ? 'Launching...' : 'Launch New VM'}
+            </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

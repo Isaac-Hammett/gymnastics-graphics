@@ -43,7 +43,9 @@ function App() {
         <Route path="/url-generator" element={<UrlGeneratorPage />} />
         <Route path="/media-manager" element={<MediaManagerPage />} />
         <Route path="/import" element={<ImportView />} />
-        <Route path="/admin/vm-pool" element={<VMPoolPage />} />
+
+        {/* Admin routes - use _admin prefix to avoid /:compId catching it */}
+        <Route path="/_admin/vm-pool" element={<VMPoolPage />} />
 
         {/* Legacy route redirects - redirect to selector with redirect param */}
         <Route path="/producer" element={<LegacyRedirect to="/producer" />} />
