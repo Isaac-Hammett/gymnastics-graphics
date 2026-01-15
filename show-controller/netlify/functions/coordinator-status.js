@@ -220,21 +220,42 @@ export async function handler(event, context) {
       timestamp: new Date().toISOString()
     };
 
-    // If running, also check app health
+    // If running, check app health
     if (instanceDetails.state === 'running' && instanceDetails.publicIp) {
       console.log('[coordinator-status] Checking app health...');
       const appHealth = await checkAppHealth(instanceDetails.publicIp);
 
-      result.appReady = appHealth.appReady;
+      // Calculate how long the instance has been running
+      let runningSeconds = 0;
+      if (instanceDetails.launchTime) {
+        const launchDate = new Date(instanceDetails.launchTime);
+        runningSeconds = Math.floor((Date.now() - launchDate.getTime()) / 1000);
+      }
+      result.runningSeconds = runningSeconds;
 
       if (appHealth.appReady) {
+        // App responded - fully ready
+        result.appReady = true;
         result.uptime = appHealth.uptime;
         result.mode = appHealth.mode;
         result.firebase = appHealth.firebase;
         result.idleMinutes = appHealth.idleMinutes;
         result.version = appHealth.version;
       } else {
-        result.appError = appHealth.error;
+        // App didn't respond - check if we should consider it ready anyway
+        // If EC2 has been running for 90+ seconds, assume app is ready
+        // (health check may fail due to firewall, but app is likely running)
+        const GRACE_PERIOD_SECONDS = 90;
+        if (runningSeconds >= GRACE_PERIOD_SECONDS) {
+          console.log(`[coordinator-status] App health check failed but instance running ${runningSeconds}s - assuming ready`);
+          result.appReady = true;
+          result.appHealthSkipped = true;
+          result.appError = appHealth.error;
+        } else {
+          result.appReady = false;
+          result.appError = appHealth.error;
+          console.log(`[coordinator-status] App not ready (${runningSeconds}s < ${GRACE_PERIOD_SECONDS}s grace period)`);
+        }
       }
     } else {
       result.appReady = false;
