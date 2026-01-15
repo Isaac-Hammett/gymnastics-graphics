@@ -1539,7 +1539,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Verify frontend auto-connects"
     ],
     "verification": "Full wake cycle works from frontend",
-    "passes": false
+    "passes": true
   },
   {
     "id": "INT-15",
@@ -1590,8 +1590,8 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 | **Phase 19: Auto-Shutdown** | 3 | 3 | ✅ Complete |
 | **Phase 20: Wake System** | 4 | 4 | ✅ Complete |
 | **Phase 21: Frontend Offline** | 5 | 5 | ✅ Complete |
-| **Integration (Coordinator)** | 4 | 2 | ⏳ In Progress |
-| **Total** | **87** | **85** | **98%** |
+| **Integration (Coordinator)** | 4 | 3 | ⏳ In Progress |
+| **Total** | **87** | **86** | **99%** |
 
 ---
 
