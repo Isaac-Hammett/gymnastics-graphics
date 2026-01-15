@@ -66,7 +66,7 @@ export default function CompetitionHeader() {
 
           {/* Change competition link */}
           <Link
-            to="/select"
+            to="/"
             className="text-gray-400 hover:text-white text-sm transition-colors flex items-center gap-1"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

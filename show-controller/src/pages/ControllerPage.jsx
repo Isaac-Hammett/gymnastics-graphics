@@ -81,8 +81,8 @@ export default function ControllerPage() {
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
         <div className="text-center">
           <p className="text-zinc-400 mb-4">No competition ID specified.</p>
-          <Link to="/dashboard" className="text-blue-500 hover:underline">
-            Go to Dashboard
+          <Link to="/" className="text-blue-500 hover:underline">
+            Go to Home
           </Link>
         </div>
       </div>
