@@ -1446,7 +1446,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Show last shutdown time if available"
     ],
     "verification": "Page renders correctly and wake button works",
-    "passes": false
+    "passes": true
   },
   {
     "id": "P21-03",
