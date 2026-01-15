@@ -2,12 +2,44 @@
 
 ## Current Status
 **Phase:** Phase 20 - Wake System
-**Last Task:** P20-02 - Create Netlify serverless status function
-**Next Task:** P20-03 - Document Netlify AWS environment variables
+**Last Task:** P20-03 - Document Netlify AWS environment variables
+**Next Task:** P20-04 - Create useCoordinator hook
 
 ---
 
 ## 2026-01-15
+
+### P20-03: Document Netlify AWS environment variables
+Documented the Netlify AWS environment variables and IAM user policy in the show-controller README.
+
+**Modified Files:**
+- `show-controller/README.md` - Complete rewrite with Netlify deployment documentation
+
+**Documentation Added:**
+1. **Required Netlify Environment Variables**
+   - `COORDINATOR_AWS_ACCESS_KEY_ID` - IAM user access key
+   - `COORDINATOR_AWS_SECRET_ACCESS_KEY` - IAM user secret key
+   - `COORDINATOR_AWS_REGION` - AWS region (us-east-1)
+   - `COORDINATOR_INSTANCE_ID` - EC2 instance ID (i-001383a4293522fa4)
+
+2. **IAM User Documentation**
+   - Documented `netlify-coordinator-control` IAM user
+   - Included full policy JSON (`netlify-coordinator-control-policy`)
+   - Explained least-privilege principle
+
+3. **Netlify Functions**
+   - Documented both serverless functions (wake-coordinator, coordinator-status)
+   - Note that env vars are already configured in production Netlify
+
+4. **Confirmed Functions Use Correct Env Vars**
+   - Both functions already use `COORDINATOR_` prefixed env vars
+   - No code changes needed
+
+**Verification:**
+- `node --check netlify/functions/wake-coordinator.js` exits 0
+- `node --check netlify/functions/coordinator-status.js` exits 0
+
+---
 
 ### P20-02: Create Netlify serverless status function
 Created the Netlify serverless function that checks the coordinator EC2 instance state and application health.
