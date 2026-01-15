@@ -14,6 +14,9 @@ import SystemOfflinePage from './pages/SystemOfflinePage';
 // Competition-bound layout
 import CompetitionLayout from './components/CompetitionLayout';
 
+// Route guard for coordinator-dependent pages
+import CoordinatorGate from './components/CoordinatorGate';
+
 // Existing views (for show controller functionality)
 import TalentView from './views/TalentView';
 import ProducerView from './views/ProducerView';
@@ -46,7 +49,12 @@ function App() {
         <Route path="/import" element={<ImportView />} />
 
         {/* Admin routes - use _admin prefix to avoid /:compId catching it */}
-        <Route path="/_admin/vm-pool" element={<VMPoolPage />} />
+        {/* Admin routes require coordinator to be online (wrapped with CoordinatorGate) */}
+        <Route path="/_admin/vm-pool" element={
+          <CoordinatorGate>
+            <VMPoolPage />
+          </CoordinatorGate>
+        } />
         <Route path="/_admin/system-offline" element={<SystemOfflinePage />} />
 
         {/* Legacy route redirects - redirect to selector with redirect param */}
