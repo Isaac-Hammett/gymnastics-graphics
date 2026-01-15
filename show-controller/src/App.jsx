@@ -9,6 +9,7 @@ import MediaManagerPage from './pages/MediaManagerPage';
 import CameraSetupPage from './pages/CameraSetupPage';
 import CompetitionSelector from './pages/CompetitionSelector';
 import VMPoolPage from './pages/VMPoolPage';
+import SystemOfflinePage from './pages/SystemOfflinePage';
 
 // Competition-bound layout
 import CompetitionLayout from './components/CompetitionLayout';
@@ -46,6 +47,7 @@ function App() {
 
         {/* Admin routes - use _admin prefix to avoid /:compId catching it */}
         <Route path="/_admin/vm-pool" element={<VMPoolPage />} />
+        <Route path="/_admin/system-offline" element={<SystemOfflinePage />} />
 
         {/* Legacy route redirects - redirect to selector with redirect param */}
         <Route path="/producer" element={<LegacyRedirect to="/producer" />} />

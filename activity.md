@@ -2,12 +2,62 @@
 
 ## Current Status
 **Phase:** Phase 21 - Frontend Offline
-**Last Task:** P21-01 - Create CoordinatorStatus component
-**Next Task:** P21-02 - Create SystemOfflinePage component
+**Last Task:** P21-02 - Create SystemOfflinePage component
+**Next Task:** P21-03 - Update CompetitionSelector for offline state
 
 ---
 
 ## 2026-01-15
+
+### P21-02: Create SystemOfflinePage component
+Created the full-page component shown when the coordinator EC2 instance is offline (sleeping to save costs).
+
+**New Files Created:**
+- `show-controller/src/pages/SystemOfflinePage.jsx` - Full-page offline display
+
+**Modified Files:**
+- `show-controller/src/App.jsx` - Added SystemOfflinePage import and test route at `/_admin/system-offline`
+
+**Features Implemented:**
+1. **Full-page Display When Offline**
+   - Moon icon in dark circle (sleeping state)
+   - "System is Sleeping" title with explanation message
+   - Dark zinc background consistent with app style
+
+2. **Large "Wake Up System" Button**
+   - Green call-to-action button
+   - Calls wake() from useCoordinator hook
+   - Shows estimated startup time (60-90 seconds)
+
+3. **Progress Bar During Startup**
+   - Visual progress bar with gradient (yellow to green)
+   - Shows elapsed time counter
+   - Shows estimated time remaining
+   - Dynamic status messages (Starting EC2, Booting OS, Starting services, Almost ready)
+
+4. **Auto-redirect to Original Destination**
+   - Reads target from props, query param, or defaults to /select
+   - Automatically navigates when coordinator becomes available
+   - Shows "System Ready - Redirecting..." state
+
+5. **Last Shutdown Time Display**
+   - Shows relative time (e.g., "2 hours ago") if available
+   - Appears when not actively waking
+
+6. **Error Handling**
+   - Shows error message box when status check fails
+   - "Try Again" button to retry status check
+
+7. **Footer Information**
+   - Explains automatic 2-hour idle shutdown for cost savings
+
+**Screenshot:** `screenshots/P21-02-system-offline.png`
+
+**Verification:**
+- `npm run build` succeeds (component compiles without error)
+- Screenshot captured showing offline state with moon icon and wake button
+
+---
 
 ### P21-01: Create CoordinatorStatus component
 Created the React component that displays coordinator EC2 instance status with wake functionality.
