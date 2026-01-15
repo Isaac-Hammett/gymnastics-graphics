@@ -1,9 +1,54 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** VM Pool Integration Tests - COMPLETE
-**Last Task:** INT-11 - Alert system test
-**Next Task:** All tasks complete!
+**Phase:** Phase 18 - Coordinator Deployment
+**Last Task:** P18-01 - Create deployment script for coordinator
+**Next Task:** P18-02 - Create PM2 ecosystem config
+
+---
+
+## 2026-01-15
+
+### P18-01: Create deployment script for coordinator
+Created comprehensive deployment script for deploying the server to the coordinator EC2 instance.
+
+**New File Created:**
+- `server/scripts/deploy-coordinator.sh` - Deployment automation script
+
+**Script Features:**
+- **Configuration**:
+  - COORDINATOR_HOST=44.193.31.120
+  - DEPLOY_PATH=/opt/gymnastics-graphics
+  - Configurable SSH_KEY and SSH_USER via environment variables
+- **Rsync Sync**: Syncs server/ directory to coordinator
+- **Exclusions**: node_modules, .env, .env.local, .env.coordinator, logs, *.log, .git, .DS_Store, coverage, .nyc_output, temp, tmp
+- **npm Install**: Runs `npm install --production` on coordinator after sync
+- **PM2 Restart**: Restarts or starts the PM2 process using ecosystem.config.js
+- **Dry Run Mode**: `--dry-run` flag previews files to sync without making changes
+- **Skip Options**: `--skip-install` and `--skip-restart` flags for partial deployments
+- **Help**: `--help` shows usage information
+- **Colored Output**: Uses ANSI colors for clear visual feedback
+- **Deployment Summary**: Shows completion status and verification commands
+
+**Usage:**
+```bash
+# Full deployment
+./server/scripts/deploy-coordinator.sh
+
+# Preview files to sync (dry run)
+./server/scripts/deploy-coordinator.sh --dry-run
+
+# Show help
+./server/scripts/deploy-coordinator.sh --help
+
+# Deploy without restarting
+./server/scripts/deploy-coordinator.sh --skip-restart
+```
+
+**Verification:**
+- Script created with all required steps
+- Includes proper error handling with exit codes
+- Supports all command-line options as specified
 
 ---
 
