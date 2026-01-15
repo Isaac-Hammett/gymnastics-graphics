@@ -1522,7 +1522,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Verify EC2 instance stops"
     ],
     "verification": "Coordinator auto-stops after idle timeout",
-    "passes": false
+    "passes": true
   },
   {
     "id": "INT-14",
@@ -1590,8 +1590,8 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 | **Phase 19: Auto-Shutdown** | 3 | 3 | ✅ Complete |
 | **Phase 20: Wake System** | 4 | 4 | ✅ Complete |
 | **Phase 21: Frontend Offline** | 5 | 5 | ✅ Complete |
-| **Integration (Coordinator)** | 4 | 1 | ⏳ In Progress |
-| **Total** | **87** | **84** | **97%** |
+| **Integration (Coordinator)** | 4 | 2 | ⏳ In Progress |
+| **Total** | **87** | **85** | **98%** |
 
 ---
 

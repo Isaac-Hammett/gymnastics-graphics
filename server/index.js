@@ -22,6 +22,7 @@ import { getVMPoolManager, VM_STATUS } from './lib/vmPoolManager.js';
 import { getAWSService } from './lib/awsService.js';
 import { getAlertService, ALERT_LEVEL, ALERT_CATEGORY } from './lib/alertService.js';
 import { getAutoShutdownService } from './lib/autoShutdown.js';
+import { getSelfStopService } from './lib/selfStop.js';
 
 dotenv.config();
 
@@ -480,6 +481,21 @@ async function initializeAutoShutdown() {
       stopCallback: gracefulStopCallback
     });
     console.log('[AutoShutdown] Auto-shutdown service initialized');
+
+    // Initialize self-stop service and wire it to auto-shutdown
+    const selfStop = getSelfStopService();
+    await selfStop.initialize({ io });
+    console.log('[SelfStop] Self-stop service initialized');
+
+    // Wire auto-shutdown completion to EC2 self-stop
+    autoShutdown.on('shutdownComplete', async (data) => {
+      console.log('[SelfStop] Auto-shutdown complete, initiating EC2 self-stop');
+      const result = await selfStop.stopSelf({
+        reason: data.reason || 'Auto-shutdown idle timeout',
+        idleMinutes: data.idleMinutes || 0
+      });
+      console.log('[SelfStop] Self-stop result:', result);
+    });
   } catch (error) {
     console.warn('[AutoShutdown] Failed to initialize:', error.message);
   }

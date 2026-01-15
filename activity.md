@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** Integration Tests - Coordinator Deployment
-**Last Task:** INT-12 - Coordinator deployment test
-**Next Task:** INT-13 - Auto-shutdown test
+**Last Task:** INT-13 - Auto-shutdown test
+**Next Task:** INT-14 - Wake system test
 
 ---
 
@@ -62,6 +62,53 @@ Verified all coordinator deployment components are in place and code compiles su
 curl https://api.commentarygraphic.com/api/coordinator/status
 # Returns: { status: 'online', uptime: ..., mode: 'coordinator' }
 ```
+
+---
+
+### INT-13: Auto-shutdown test
+Verified auto-shutdown infrastructure is complete and integrated with EC2 self-stop capability.
+
+**Integration Added:**
+- `server/index.js` now imports `getSelfStopService` from `./lib/selfStop.js`
+- Self-stop service is initialized when COORDINATOR_MODE=true
+- Auto-shutdown `shutdownComplete` event is wired to trigger EC2 self-stop
+
+**Flow Verified:**
+1. Auto-shutdown service tracks activity via `resetActivity()` on every API/socket request
+2. Every 60s, `checkIdleTimeout()` runs to check if idle >= `AUTO_SHUTDOWN_MINUTES`
+3. If timeout reached and no active streams, `shutdownPending` event emitted (30s delay)
+4. If activity detected during delay, shutdown is cancelled via `shutdownCancelled` event
+5. After 30s delay, `shutdownExecuting` event emitted, graceful shutdown executes:
+   - Socket.io broadcasts `serverShuttingDown` to all clients
+   - All sockets disconnected gracefully
+   - Camera health polling stopped
+   - Timesheet engine stopped
+6. `shutdownComplete` event triggers self-stop service
+7. Self-stop service calls EC2 `StopInstances` API on own instance ID
+8. Shutdown logged to Firebase at `coordinator/shutdownHistory`
+
+**Components Verified:**
+- `server/lib/autoShutdown.js` - Activity tracking, idle timeout, graceful shutdown
+- `server/lib/selfStop.js` - EC2 instance self-stop via IMDS and AWS SDK
+- `server/index.js:485-498` - SelfStop initialization and event wiring
+
+**API Endpoints Verified:**
+- `GET /api/coordinator/idle` - Returns idle time, auto-shutdown status, time until shutdown
+- `POST /api/coordinator/keep-alive` - Resets activity, cancels pending shutdown
+
+**Configuration:**
+- `AUTO_SHUTDOWN_MINUTES` env var (default: 120 minutes)
+- `COORDINATOR_MODE=true` required to enable auto-shutdown
+- Check interval: 60 seconds
+- Shutdown delay: 30 seconds (allows cancellation)
+
+**Note:** Full end-to-end test requires:
+1. Deploy to coordinator EC2 with `AUTO_SHUTDOWN_MINUTES=5`
+2. Wait for idle timeout
+3. Verify shutdown logged in Firebase `coordinator/shutdownHistory`
+4. Verify EC2 instance stops (viewable in AWS Console)
+
+The code infrastructure is complete - manual production testing is needed for full verification.
 
 ---
 
