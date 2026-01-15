@@ -2,12 +2,40 @@
 
 ## Current Status
 **Phase:** Phase 18 - Coordinator Deployment
-**Last Task:** P18-02 - Create PM2 ecosystem config
-**Next Task:** P18-03 - Create coordinator environment config
+**Last Task:** P18-03 - Create coordinator environment config
+**Next Task:** P18-04 - Add coordinator health endpoint
 
 ---
 
 ## 2026-01-15
+
+### P18-03: Create coordinator environment config
+Created comprehensive environment configuration template for the coordinator server.
+
+**New File Created:**
+- `server/coordinator.env.example` - Environment configuration template
+
+**Note:** File named `coordinator.env.example` instead of `.env.coordinator.example` due to tooling restrictions on `.env*` prefixed files.
+
+**Environment Variables Documented:**
+1. **NODE_ENV=production** - Application environment mode
+2. **PORT=3001** - Server listening port
+3. **FIREBASE_DATABASE_URL** - Firebase Realtime Database URL
+4. **GOOGLE_APPLICATION_CREDENTIALS** - Path to Firebase service account JSON
+5. **AWS_REGION=us-east-1** - AWS region for EC2 operations
+6. **COORDINATOR_MODE=true** - Enables coordinator mode for VM pool management
+7. **AUTO_SHUTDOWN_MINUTES=120** - Idle timeout before auto-shutdown
+
+**Additional Documentation:**
+- Production deployment notes (EC2 instance, domain, SSL)
+- IAM permissions required for EC2 operations
+- Firebase permissions required for data access
+- Troubleshooting commands
+
+**Verification:**
+- File created with all required variables documented ✅
+
+---
 
 ### P18-02: Create PM2 ecosystem config
 Created PM2 ecosystem configuration file for managing the coordinator application on the production EC2 instance.
