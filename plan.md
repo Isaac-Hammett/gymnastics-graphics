@@ -1263,7 +1263,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Set restart policy: max_restarts: 10, min_uptime: 5000ms"
     ],
     "verification": "node -e \"require('./server/ecosystem.config.js')\" exits 0",
-    "passes": false
+    "passes": true
   },
   {
     "id": "P18-03",

@@ -2,12 +2,49 @@
 
 ## Current Status
 **Phase:** Phase 18 - Coordinator Deployment
-**Last Task:** P18-01 - Create deployment script for coordinator
-**Next Task:** P18-02 - Create PM2 ecosystem config
+**Last Task:** P18-02 - Create PM2 ecosystem config
+**Next Task:** P18-03 - Create coordinator environment config
 
 ---
 
 ## 2026-01-15
+
+### P18-02: Create PM2 ecosystem config
+Created PM2 ecosystem configuration file for managing the coordinator application on the production EC2 instance.
+
+**New File Created:**
+- `server/ecosystem.config.js` - PM2 ecosystem configuration
+
+**Configuration Details:**
+- **App Name**: `coordinator`
+- **Script**: `index.js`
+- **CWD**: `/opt/gymnastics-graphics/server`
+- **Instances**: 1 (fork mode)
+- **Environment Variables**:
+  - `NODE_ENV=production`
+  - `PORT=3001`
+  - `GOOGLE_APPLICATION_CREDENTIALS=/opt/gymnastics-graphics/firebase-service-account.json`
+  - `FIREBASE_DATABASE_URL` (from env or default)
+  - `COORDINATOR_MODE=true`
+  - `AUTO_SHUTDOWN_MINUTES=120`
+- **Log Rotation**: Max 10MB, retain 5 files
+- **Restart Policy**: Max 10 restarts, min 5000ms uptime
+- **Log Files**:
+  - Error: `/opt/gymnastics-graphics/server/logs/coordinator-error.log`
+  - Output: `/opt/gymnastics-graphics/server/logs/coordinator-out.log`
+
+**Usage:**
+```bash
+pm2 start ecosystem.config.js
+pm2 restart coordinator
+pm2 stop coordinator
+pm2 logs coordinator
+```
+
+**Verification:**
+- `node -e "require('./server/ecosystem.config.js')"` exits 0 ✅
+
+---
 
 ### P18-01: Create deployment script for coordinator
 Created comprehensive deployment script for deploying the server to the coordinator EC2 instance.
