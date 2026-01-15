@@ -31,7 +31,7 @@ const AWS_CONFIG = {
   vpcId: process.env.AWS_VPC_ID || 'vpc-09ba9c02e2c976cf5',
   securityGroupId: process.env.AWS_SECURITY_GROUP_ID || 'sg-025f1ac53cccb756b',
   keyPairName: process.env.AWS_KEY_PAIR_NAME || 'gymnastics-graphics-key-pair',
-  amiId: process.env.AWS_AMI_ID || 'ami-0c398cb65a93047f2',
+  amiId: process.env.AWS_AMI_ID || 'ami-01a93c8f425f37d39',
   defaultInstanceType: process.env.AWS_INSTANCE_TYPE || 't3.large'
 };
 
