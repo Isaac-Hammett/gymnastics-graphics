@@ -552,7 +552,7 @@ export default function CompetitionSelector() {
             <Link to="/dashboard" className="text-zinc-500 hover:text-white transition-colors">
               Dashboard
             </Link>
-            <Link to="/admin/vm-pool" className="text-zinc-500 hover:text-white transition-colors">
+            <Link to="/_admin/vm-pool" className="text-zinc-500 hover:text-white transition-colors">
               VM Pool
             </Link>
             <Link to="/url-generator" className="text-zinc-500 hover:text-white transition-colors">

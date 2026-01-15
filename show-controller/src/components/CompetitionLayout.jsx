@@ -1,8 +1,11 @@
-import { Outlet } from 'react-router-dom';
+import { Outlet, useParams, Navigate } from 'react-router-dom';
 import { CompetitionProvider, useCompetition, CompetitionErrorType } from '../context/CompetitionContext';
 import { ShowProvider } from '../context/ShowContext';
 import CompetitionError from './CompetitionError';
 import CompetitionHeader from './CompetitionHeader';
+
+// Reserved path prefixes that should NOT be treated as competition IDs
+const RESERVED_PREFIXES = ['_admin', 'admin', 'api', '_'];
 
 /**
  * Inner layout component that uses the competition context
@@ -75,6 +78,17 @@ function CompetitionLayoutInner() {
  * </Route>
  */
 export default function CompetitionLayout() {
+  const { compId } = useParams();
+
+  // Check if this is a reserved path that shouldn't be treated as a competition
+  // This handles cases where React Router incorrectly matches /:compId for admin routes
+  if (compId && RESERVED_PREFIXES.some(prefix => compId.startsWith(prefix))) {
+    // Return null to let the actual route handle it, or redirect to the correct path
+    // Since we're here, it means the route wasn't matched properly - try a hard navigation
+    window.location.href = `/${compId}${window.location.pathname.slice(compId.length + 1)}`;
+    return null;
+  }
+
   return (
     <CompetitionProvider>
       <CompetitionLayoutInner />
