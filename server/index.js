@@ -1223,14 +1223,11 @@ app.post('/api/admin/vm-pool/launch', async (req, res) => {
   try {
     const awsService = getAWSService();
     const { name, instanceType, tags } = req.body || {};
+    // Note: Project and ManagedBy tags are added automatically by awsService.launchInstance()
     const result = await awsService.launchInstance({
       name: name || `gymnastics-vm-${Date.now()}`,
       instanceType,
-      tags: {
-        ...tags,
-        Project: 'gymnastics-graphics',
-        ManagedBy: 'vm-pool-manager'
-      }
+      tags: tags || {}
     });
 
     // Sync the pool to include the new instance
