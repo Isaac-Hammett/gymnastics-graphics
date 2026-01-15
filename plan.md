@@ -1365,7 +1365,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Add CORS headers for frontend access"
     ],
     "verification": "Netlify function deploys and responds to POST",
-    "passes": false
+    "passes": true
   },
   {
     "id": "P20-02",

@@ -1,13 +1,62 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** Phase 19 - Auto-Shutdown
-**Last Task:** P19-03 - Create self-stop capability
-**Next Task:** P20-01 - Create Netlify serverless wake function
+**Phase:** Phase 20 - Wake System
+**Last Task:** P20-01 - Create Netlify serverless wake function
+**Next Task:** P20-02 - Create Netlify serverless status function
 
 ---
 
 ## 2026-01-15
+
+### P20-01: Create Netlify serverless wake function
+Created the Netlify serverless function that starts the coordinator EC2 instance when the system is sleeping.
+
+**New Files Created:**
+- `show-controller/netlify/functions/wake-coordinator.js` - Serverless function to wake coordinator
+
+**Modified Files:**
+- `show-controller/package.json` - Added @aws-sdk/client-ec2 dependency
+
+**Features Implemented:**
+1. **EC2 StartInstances Integration**
+   - Uses AWS SDK EC2Client to call StartInstances
+   - Reads credentials from COORDINATOR_AWS_* env vars (Netlify environment)
+   - Uses COORDINATOR_INSTANCE_ID for target instance
+
+2. **State Handling**
+   - Handles 'running' state: Returns success with publicIp
+   - Handles 'pending' state: Returns success (already starting)
+   - Handles 'stopping' state: Returns 409 with retry suggestion
+   - Handles 'terminated' state: Returns error with admin contact message
+   - Handles 'stopped' state: Starts instance
+
+3. **Response Format**
+   - `{ success: true, message, state, estimatedReadySeconds: 60 }`
+   - Includes previousState, instanceId, timestamp on start
+   - Includes publicIp when already running
+
+4. **CORS Support**
+   - Full CORS headers for frontend access
+   - Handles OPTIONS preflight requests
+   - Allows POST method only
+
+5. **Error Handling**
+   - IAM permission errors (UnauthorizedOperation)
+   - Instance not found errors
+   - Missing configuration errors
+   - Generic internal errors
+
+**Environment Variables Required (Netlify):**
+- `COORDINATOR_AWS_ACCESS_KEY_ID` - IAM user access key
+- `COORDINATOR_AWS_SECRET_ACCESS_KEY` - IAM user secret key
+- `COORDINATOR_AWS_REGION` - AWS region (default: us-east-1)
+- `COORDINATOR_INSTANCE_ID` - EC2 instance ID to start
+
+**Verification:**
+- `node --check netlify/functions/wake-coordinator.js` exits 0
+
+---
 
 ### P19-03: Create self-stop capability
 Created the self-stop service module that allows an EC2 instance to stop itself using the AWS SDK.
