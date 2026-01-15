@@ -2,12 +2,55 @@
 
 ## Current Status
 **Phase:** Phase 20 - Wake System
-**Last Task:** P20-01 - Create Netlify serverless wake function
-**Next Task:** P20-02 - Create Netlify serverless status function
+**Last Task:** P20-02 - Create Netlify serverless status function
+**Next Task:** P20-03 - Document Netlify AWS environment variables
 
 ---
 
 ## 2026-01-15
+
+### P20-02: Create Netlify serverless status function
+Created the Netlify serverless function that checks the coordinator EC2 instance state and application health.
+
+**New Files Created:**
+- `show-controller/netlify/functions/coordinator-status.js` - Serverless function to check coordinator status
+
+**Features Implemented:**
+1. **EC2 DescribeInstances Integration**
+   - Uses AWS SDK EC2Client to call DescribeInstances
+   - Reads credentials from COORDINATOR_AWS_* env vars (Netlify environment)
+   - Returns state: running, stopped, pending, stopping, terminated
+
+2. **Application Health Check**
+   - If instance is running, pings /api/coordinator/status endpoint
+   - Returns appReady boolean indicating if Node app is responding
+   - Includes uptime, mode, firebase status, idleMinutes from coordinator
+
+3. **Response Format**
+   - `{ success: true, state, publicIp, appReady, uptime, ... }`
+   - Includes launchTime for uptime calculations
+   - Includes timestamp for cache freshness
+
+4. **10-Second Cache**
+   - In-memory cache to avoid rate limits
+   - Returns cached: true and cacheAge when serving from cache
+   - TTL of 10 seconds for balance between freshness and efficiency
+
+5. **CORS Support**
+   - Full CORS headers for frontend access
+   - Handles OPTIONS preflight requests
+   - Allows GET method only
+
+6. **Error Handling**
+   - IAM permission errors (UnauthorizedOperation)
+   - Instance not found errors
+   - Missing configuration errors
+   - App timeout (5 second limit)
+
+**Verification:**
+- `node --check netlify/functions/coordinator-status.js` exits 0
+
+---
 
 ### P20-01: Create Netlify serverless wake function
 Created the Netlify serverless function that starts the coordinator EC2 instance when the system is sleeping.
