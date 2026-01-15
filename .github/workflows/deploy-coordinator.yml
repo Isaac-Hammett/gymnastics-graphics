@@ -1,0 +1,55 @@
+name: Deploy Coordinator
+
+# Triggers when pushing to main AND changes are in server/ directory
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'server/**'
+      - '.github/workflows/deploy-coordinator.yml'
+
+  # Allow manual trigger from GitHub UI
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to Coordinator VM
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 44.193.31.120
+          username: ubuntu
+          key: ${{ secrets.COORDINATOR_SSH_KEY }}
+          port: 22
+          script_stop: true
+          script: |
+            echo "=== Starting deployment ==="
+            cd /opt/gymnastics-graphics
+
+            echo "=== Pulling latest code ==="
+            git fetch origin main
+            git reset --hard origin/main
+
+            echo "=== Installing dependencies ==="
+            cd server
+            npm install --production --silent
+
+            echo "=== Restarting coordinator ==="
+            pm2 restart coordinator --update-env
+
+            echo "=== Verifying deployment ==="
+            sleep 3
+            curl -s http://localhost:3001/api/status | head -c 200
+
+            echo ""
+            echo "=== Deployment complete ==="
+
+      - name: Deployment Summary
+        run: |
+          echo "## Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          echo "Coordinator VM updated at $(date -u)" >> $GITHUB_STEP_SUMMARY
+          echo "- Host: 44.193.31.120" >> $GITHUB_STEP_SUMMARY
+          echo "- Branch: main" >> $GITHUB_STEP_SUMMARY
