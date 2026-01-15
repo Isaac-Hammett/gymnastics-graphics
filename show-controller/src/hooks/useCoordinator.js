@@ -7,6 +7,7 @@ export const COORDINATOR_STATUS = {
   ONLINE: 'online',      // EC2 running AND app responding
   OFFLINE: 'offline',    // EC2 stopped
   STARTING: 'starting',  // EC2 pending or running but app not ready
+  STOPPING: 'stopping',  // EC2 stopping
   UNKNOWN: 'unknown',    // Initial state or error
 };
 
@@ -22,6 +23,7 @@ export function useCoordinator() {
   const [status, setStatus] = useState(COORDINATOR_STATUS.UNKNOWN);
   const [appReady, setAppReady] = useState(false);
   const [isWaking, setIsWaking] = useState(false);
+  const [isStopping, setIsStopping] = useState(false);
   const [error, setError] = useState(null);
   const [details, setDetails] = useState(null);
 
@@ -58,6 +60,9 @@ export function useCoordinator() {
       let newStatus;
       if (data.state === 'stopped') {
         newStatus = COORDINATOR_STATUS.OFFLINE;
+        setIsStopping(false);
+      } else if (data.state === 'stopping') {
+        newStatus = COORDINATOR_STATUS.STOPPING;
       } else if (data.state === 'running' && data.appReady) {
         newStatus = COORDINATOR_STATUS.ONLINE;
       } else if (data.state === 'running' || data.state === 'pending') {
@@ -151,6 +156,89 @@ export function useCoordinator() {
   }, [isWaking]);
 
   /**
+   * Stop the coordinator via Netlify function
+   * @returns {Promise<Object>} Stop response
+   */
+  const stop = useCallback(async () => {
+    if (isStopping) {
+      return { success: false, error: 'Already stopping' };
+    }
+
+    setIsStopping(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/.netlify/functions/stop-coordinator', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || data.error || 'Failed to stop coordinator');
+      }
+
+      // If already stopped, update status immediately
+      if (data.state === 'stopped') {
+        setStatus(COORDINATOR_STATUS.OFFLINE);
+        setAppReady(false);
+        setIsStopping(false);
+        return { success: true, alreadyStopped: true };
+      }
+
+      // Update to stopping state and start polling
+      setStatus(COORDINATOR_STATUS.STOPPING);
+      startStopPolling();
+
+      return { success: true };
+    } catch (err) {
+      setError(err.message);
+      setIsStopping(false);
+      return {
+        success: false,
+        error: err.message,
+      };
+    }
+  }, [isStopping]);
+
+  /**
+   * Start polling for coordinator to finish stopping
+   */
+  const startStopPolling = useCallback(() => {
+    // Clear any existing polling
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+    }
+
+    pollingStartTime.current = Date.now();
+
+    pollingRef.current = setInterval(async () => {
+      // Check if we've exceeded max polling time
+      const elapsed = Date.now() - pollingStartTime.current;
+      if (elapsed >= MAX_POLLING_MS) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+        setIsStopping(false);
+        setError('Coordinator did not stop within 2 minutes');
+        return;
+      }
+
+      // Check status
+      const result = await checkStatus();
+
+      // If coordinator is now offline, stop polling
+      if (result.status === COORDINATOR_STATUS.OFFLINE) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+        setIsStopping(false);
+      }
+    }, POLL_INTERVAL_MS);
+  }, [checkStatus]);
+
+  /**
    * Start polling for coordinator readiness
    */
   const startPolling = useCallback(() => {
@@ -222,12 +310,14 @@ export function useCoordinator() {
     status,
     appReady,
     isWaking,
+    isStopping,
     error,
     details,
 
     // Actions
     checkStatus,
     wake,
+    stop,
     stopPolling,
 
     // Computed

@@ -8,6 +8,7 @@ import {
   ChevronUpIcon,
   CogIcon,
   PlusIcon,
+  StopIcon,
 } from '@heroicons/react/24/solid';
 import VMCard, { VM_STATUS } from '../components/VMCard';
 import PoolStatusBar from '../components/PoolStatusBar';
@@ -34,7 +35,9 @@ export default function VMPoolPage() {
   const {
     status: coordinatorStatus,
     isWaking,
+    isStopping,
     isAvailable: coordinatorAvailable,
+    stop: stopCoordinator,
   } = useCoordinator();
 
   // Track previous coordinator availability to auto-fetch on reconnect
@@ -237,9 +240,32 @@ export default function VMPoolPage() {
     return stats;
   }, [vms]);
 
+  // Handle stop system
+  const handleStopSystem = async () => {
+    if (!confirm('Stop the coordinator system? You will need to wake it up again to use VM pool features.')) {
+      return;
+    }
+    await stopCoordinator();
+  };
+
   // If coordinator is offline, show SystemOfflinePage instead
   if (coordinatorStatus === COORDINATOR_STATUS.OFFLINE && !isWaking) {
-    return <SystemOfflinePage redirectTo="/admin/vm-pool" />;
+    return <SystemOfflinePage redirectTo="/_admin/vm-pool" />;
+  }
+
+  // If coordinator is stopping, show progress
+  if (coordinatorStatus === COORDINATOR_STATUS.STOPPING || isStopping) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <div className="text-center">
+          <ArrowPathIcon className="w-10 h-10 text-orange-400 animate-spin mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-white mb-2">System Shutting Down...</h2>
+          <p className="text-zinc-400 text-sm">
+            The coordinator is stopping. This usually takes 30-60 seconds.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   // If coordinator is starting, show progress overlay
@@ -320,6 +346,22 @@ export default function VMPoolPage() {
             >
               <ArrowPathIcon className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
               Refresh
+            </button>
+
+            <div className="w-px h-6 bg-zinc-700" />
+
+            <button
+              onClick={handleStopSystem}
+              disabled={isStopping}
+              className="flex items-center gap-2 px-3 py-1.5 bg-red-600/20 border border-red-600/30 hover:bg-red-600/30 rounded-lg text-red-400 text-xs transition-colors disabled:opacity-50"
+              title="Stop the coordinator to save costs"
+            >
+              {isStopping ? (
+                <ArrowPathIcon className="w-4 h-4 animate-spin" />
+              ) : (
+                <StopIcon className="w-4 h-4" />
+              )}
+              {isStopping ? 'Stopping...' : 'Stop System'}
             </button>
           </div>
         </div>

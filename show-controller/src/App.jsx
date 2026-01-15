@@ -10,6 +10,7 @@ import CameraSetupPage from './pages/CameraSetupPage';
 import CompetitionSelector from './pages/CompetitionSelector';
 import VMPoolPage from './pages/VMPoolPage';
 import SystemOfflinePage from './pages/SystemOfflinePage';
+import SetupGuidePage from './pages/SetupGuidePage';
 
 // Competition-bound layout
 import CompetitionLayout from './components/CompetitionLayout';
@@ -56,6 +57,7 @@ function App() {
           </CoordinatorGate>
         } />
         <Route path="/_admin/system-offline" element={<SystemOfflinePage />} />
+        <Route path="/_admin/setup-guide" element={<SetupGuidePage />} />
 
         {/* Legacy route redirects - redirect to selector with redirect param */}
         <Route path="/producer" element={<LegacyRedirect to="/producer" />} />
