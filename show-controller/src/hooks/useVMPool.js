@@ -1,8 +1,8 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { db, ref, onValue } from '../lib/firebase';
 
-// Server URL for API calls - this hook is for admin pages (not competition-bound)
-const SERVER_URL = import.meta.env.VITE_LOCAL_SERVER || 'http://localhost:3003';
+// Server URL for API calls - use VITE_API_URL for production, fallback to localhost for local dev
+const SERVER_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_LOCAL_SERVER || 'http://localhost:3003';
 
 // VM Status constants matching server-side
 export const VM_STATUS = {
