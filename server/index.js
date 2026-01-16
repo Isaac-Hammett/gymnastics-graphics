@@ -1141,7 +1141,16 @@ app.get('/api/admin/vm-pool/config', (req, res) => {
   try {
     const vmPoolManager = getVMPoolManager();
     const status = vmPoolManager.getPoolStatus();
-    res.json(status.config || {});
+    const awsService = getAWSService();
+    const awsConfig = awsService.getConfig();
+
+    // Merge pool config with AWS config (AMI, region, instance type)
+    res.json({
+      ...status.config,
+      region: awsConfig.region,
+      amiId: awsConfig.amiId,
+      defaultInstanceType: awsConfig.defaultInstanceType,
+    });
   } catch (error) {
     console.error('Failed to get VM pool config:', error);
     res.status(500).json({ error: error.message });
