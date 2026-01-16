@@ -1,13 +1,71 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** MCP Server Testing - Firebase Tools
-**Last Task:** MCP-29 - Test full Firebase CRUD workflow (dev only)
-**Next Task:** MCP-30 - Test aws_list_security_group_rules
+**Phase:** MCP Server Testing - Security Group Tools
+**Last Task:** MCP-30 - Test aws_list_security_group_rules
+**Next Task:** MCP-31 - Set up proper test framework structure
 
 ---
 
 ## 2026-01-16
+
+### MCP-30: Test aws_list_security_group_rules
+Verified that `aws_list_security_group_rules` correctly returns security group configuration with inbound rules.
+
+**Test Results:**
+- Created test script: `tools/mcp-server/test-mcp-30.mjs`
+- Step 1: Called aws_list_security_group_rules()
+- Step 2: Verified response includes securityGroupId
+- Step 3: Verified response includes inboundRules array
+- Step 4: Verified rules contain expected ports (22, 80, 443, 3001, 8080)
+
+**Response Structure Verified:**
+```json
+{
+  "securityGroupId": "sg-025f1ac53cccb756b",
+  "securityGroupName": "gymnastics-vm-pool",
+  "inboundRules": [
+    {
+      "protocol": "tcp",
+      "fromPort": 80,
+      "toPort": 80,
+      "sources": [
+        {
+          "type": "cidr",
+          "value": "0.0.0.0/0",
+          "description": "SSL certificate verification"
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Inbound Rules Found:**
+| Port | Protocol | Description |
+|------|----------|-------------|
+| 22   | TCP      | SSH access for admin |
+| 80   | TCP      | SSL certificate verification |
+| 443  | TCP      | API access |
+| 3001 | TCP      | Coordinator API |
+| 3003 | TCP      | Show server API |
+| 4000 | TCP      | NoMachine (emergency access) |
+| 8080 | TCP      | Test server |
+
+**Verification Results:**
+- securityGroupId present: PASS
+- securityGroupId format valid (sg-[a-f0-9]+): PASS
+- inboundRules is array: PASS
+- port 22 present: PASS
+- port 80 present: PASS
+- port 443 present: PASS
+- port 3001 present: PASS
+- port 8080 present: PASS
+- at least one port configured: PASS
+
+**Verification:** MCP-30 PASSED - Security group rules are readable
+
+---
 
 ### MCP-29: Test full Firebase CRUD workflow (dev only)
 Verified the complete Create-Read-Update-Delete workflow for Firebase operations using the dev environment.
