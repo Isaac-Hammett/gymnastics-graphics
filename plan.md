@@ -1732,7 +1732,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Verify error message mentions invalid instance"
     ],
     "verification": "Invalid instance ID returns AWS error gracefully",
-    "passes": false
+    "passes": true
   },
   {
     "id": "MCP-14",
@@ -1875,11 +1875,11 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 | **Phase MCP: SSH Coordinator** | 5 | 5 | ✅ Complete |
 | **Phase MCP: SSH Multi** | 2 | 2 | ✅ Complete |
 | **Phase MCP: File Transfer** | 1 | 1 | ✅ Complete |
-| **Phase MCP: Error Handling** | 3 | 1 | ⏳ Pending |
+| **Phase MCP: Error Handling** | 3 | 2 | ⏳ Pending |
 | **Phase MCP: AWS Write** | 2 | 0 | ⏳ Pending |
 | **Phase MCP: Integration** | 3 | 0 | ⏳ Pending |
 | **Phase MCP: Performance** | 1 | 0 | ⏳ Pending |
-| **Total** | **107** | **99** | **93%** |
+| **Total** | **107** | **100** | **93%** |
 
 ---
 
