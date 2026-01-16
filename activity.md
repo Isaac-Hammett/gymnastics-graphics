@@ -3028,6 +3028,25 @@ Verified MCP server ssh_exec functionality for system information commands on th
 
 **Verification:** System info commands return valid data - PASSED
 
+### MCP-07: Test ssh_exec service status on coordinator
+Verified MCP server ssh_exec functionality for checking service status on the coordinator VM.
+
+**Test Results:**
+1. `systemctl is-active pm2-ubuntu || echo inactive` (with sudo):
+   - stdout: "active" ✓
+   - Response contains status information ✓
+   - exitCode: 0 ✓
+
+2. `pm2 list --no-color`:
+   - stdout shows PM2 process table with headers (id, name, status, etc.) ✓
+   - Shows 'coordinator' process with status 'online' ✓
+   - Process info: PID 4316, 110m uptime, 139.1mb memory ✓
+   - exitCode: 0 ✓
+
+**Test Script Created:** `tools/mcp-server/test-ssh-service-status.js`
+
+**Verification:** Service status commands execute successfully - PASSED
+
 ---
 
 ## Issues & Blockers
