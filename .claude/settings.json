@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "gymnastics": {
+      "command": "node",
+      "args": ["/Users/juliacosmiano/code/gymnastics-graphics/tools/mcp-server/index.js"]
+    }
+  }
+}
