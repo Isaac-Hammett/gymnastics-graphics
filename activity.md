@@ -1,13 +1,44 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** MCP Server Testing
-**Last Task:** MCP-19 - Test network connectivity from coordinator
-**Next Task:** MCP-20 - Test SSH command latency
+**Phase:** MCP Server Testing - COMPLETE
+**Last Task:** MCP-20 - Test SSH command latency
+**Next Task:** All tasks complete!
 
 ---
 
 ## 2026-01-16
+
+### MCP-20: Test SSH command latency
+Verified that SSH commands complete within acceptable latency by running 'echo test' 3 times and measuring response times.
+
+**Test Results:**
+- Created test script: `tools/mcp-server/test-mcp-20.mjs`
+- Step 1: Called ssh_exec(target='coordinator', command='echo test') 3 times
+- Step 2: Recorded response time for each call
+- Step 3: Verified all calls complete successfully
+- Step 4: Verified average latency is under 5 seconds per command
+
+**Latency Results:**
+```
+Call  │ Latency    │ Status
+──────┼────────────┼────────
+1     │ 1.181s     │ PASS
+2     │ 0.688s     │ PASS
+3     │ 0.845s     │ PASS
+```
+
+**Statistics:**
+- Min latency: 0.688s
+- Max latency: 1.181s
+- Average latency: 0.905s
+- Threshold: 5s
+- All calls successful: PASS
+- Average under threshold: PASS
+
+**Verification:** MCP-20 PASSED - SSH commands complete within acceptable latency (avg: 0.905s < 5s)
+
+---
 
 ### MCP-19: Test network connectivity from coordinator
 Verified that the coordinator has internet connectivity and local service connectivity.
