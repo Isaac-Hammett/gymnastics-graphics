@@ -2,12 +2,56 @@
 
 ## Current Status
 **Phase:** MCP Server Testing
-**Last Task:** MCP-13 - Test error handling for invalid AWS instance ID
-**Next Task:** MCP-14 - Test error handling for failed SSH command
+**Last Task:** MCP-14 - Test error handling for failed SSH command
+**Next Task:** MCP-15 - Test aws_start_instance and aws_stop_instance lifecycle
 
 ---
 
 ## 2026-01-16
+
+### MCP-14: Test error handling for failed SSH command
+Verified that `ssh_exec` properly handles commands that fail with non-zero exit codes and commands that don't exist.
+
+**Test Results:**
+- Created test script: `tools/mcp-server/test-mcp-14.mjs`
+- Test 1: Called ssh_exec with target='coordinator', command='exit 1'
+- Test 2: Called ssh_exec with command='nonexistent-command-xyz123'
+
+**Response Structure (exit 1):**
+```json
+{
+  "target": "44.193.31.120",
+  "command": "exit 1",
+  "exitCode": 1,
+  "stdout": "",
+  "stderr": "",
+  "success": false
+}
+```
+
+**Response Structure (nonexistent command):**
+```json
+{
+  "target": "44.193.31.120",
+  "command": "nonexistent-command-xyz123",
+  "exitCode": 127,
+  "stdout": "",
+  "stderr": "bash: line 1: nonexistent-command-xyz123: command not found",
+  "success": false
+}
+```
+
+**Verification Results:**
+- Test 1 (exit 1):
+  - exitCode is 1: PASS
+  - success is false: PASS
+- Test 2 (nonexistent command):
+  - exitCode is non-zero (127): PASS
+  - stderr contains "command not found": PASS
+
+**Verification:** MCP-14 PASSED - Failed commands return proper exit codes and success=false
+
+---
 
 ### MCP-13: Test error handling for invalid AWS instance ID
 Verified that `aws_start_instance` properly handles invalid instance IDs and returns a descriptive error.
