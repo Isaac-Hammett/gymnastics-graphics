@@ -2978,6 +2978,34 @@ Verification: `node -e "import('./lib/vmHealthMonitor.js')"` exits 0
 
 ---
 
+## 2026-01-16
+
+### MCP-05: Test ssh_exec with sudo on coordinator
+Verified MCP server ssh_exec with sudo=true functionality on the coordinator VM.
+
+**Test Results:**
+- Connected to coordinator at 44.193.31.120 via SSH
+- Ran 'sudo whoami' command
+- Verified stdout contains 'root' ✓
+- Verified exit code is 0 ✓
+- Verified success is true ✓
+
+**MCP Response Format:**
+```json
+{
+  "target": "44.193.31.120",
+  "command": "sudo whoami",
+  "exitCode": 0,
+  "stdout": "root",
+  "stderr": "",
+  "success": true
+}
+```
+
+**Verification:** Sudo execution works and returns root user - PASSED
+
+---
+
 ## Issues & Blockers
 
 | Issue | Task | Status | Resolution |
