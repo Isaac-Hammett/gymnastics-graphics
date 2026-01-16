@@ -2,12 +2,69 @@
 
 ## Current Status
 **Phase:** MCP Server Testing
-**Last Task:** MCP-10 - Test ssh_multi_exec aggregation on multiple VMs
-**Next Task:** MCP-11 - Test ssh_upload_file and ssh_download_file roundtrip
+**Last Task:** MCP-11 - Test ssh_upload_file and ssh_download_file roundtrip
+**Next Task:** MCP-12 - Test error handling for invalid SSH target
 
 ---
 
 ## 2026-01-16
+
+### MCP-11: Test ssh_upload_file and ssh_download_file roundtrip
+Verified that `ssh_upload_file` and `ssh_download_file` correctly transfer files and preserve content integrity.
+
+**Test Results:**
+- Created test script: `tools/mcp-server/test-mcp-11.mjs`
+- Step 1: Created local test file with unique content in /tmp/claude/
+- Step 2: Uploaded to /tmp/mcp-test-file.txt on coordinator via `ssh_upload_file`
+- Step 3: Verified upload response has success=true
+- Step 4: Used `ssh_exec` to cat the uploaded file
+- Step 5: Verified file contents match original (trimmed comparison due to SSH stdout behavior)
+- Step 6: Downloaded to different local path via `ssh_download_file`
+- Step 7: Verified download response has success=true
+- Step 8: Verified downloaded content matches original exactly
+
+**Upload Response Structure:**
+```json
+{
+  "target": "44.193.31.120",
+  "localPath": "/tmp/claude/mcp-test-upload-{timestamp}.txt",
+  "remotePath": "/tmp/mcp-test-file.txt",
+  "success": true,
+  "message": "File uploaded successfully to 44.193.31.120:/tmp/mcp-test-file.txt"
+}
+```
+
+**Download Response Structure:**
+```json
+{
+  "target": "44.193.31.120",
+  "remotePath": "/tmp/mcp-test-file.txt",
+  "localPath": "/tmp/claude/mcp-test-download-{timestamp}.txt",
+  "success": true,
+  "message": "File downloaded successfully to /tmp/claude/mcp-test-download-{timestamp}.txt"
+}
+```
+
+**Verification Results:**
+- local test file created: PASS
+- upload response has success=true: PASS
+- upload response has target: PASS
+- upload response has localPath: PASS
+- upload response has remotePath: PASS
+- upload response has message: PASS
+- ssh_exec to cat file succeeded: PASS
+- uploaded file contents match original (trimmed comparison): PASS
+- download response has success=true: PASS
+- download response has target: PASS
+- download response has remotePath: PASS
+- download response has localPath: PASS
+- download response has message: PASS
+- downloaded file exists: PASS
+- downloaded file contents match original: PASS
+
+**Verification:** MCP-11 PASSED - File upload and download preserve content integrity
+
+---
 
 ### MCP-10: Test ssh_multi_exec aggregation on multiple VMs
 Verified that `ssh_multi_exec` correctly aggregates results from multiple VMs in parallel.
