@@ -8,7 +8,7 @@ Extend the gymnastics-graphics show controller with camera health monitoring, au
 - `docs/PRD-CompetitionBoundArchitecture-2026-01-13.md` (Phases 8-12)
 - `docs/PRD-VMArchitecture-2026-01-14.md` (Phases 14-17, VM Pool Management)
 - `docs/PRD-CoordinatorDeployment-2026-01-15.md` (Phases 18-21, Production Deployment)
-- `docs/PRD-MCPServerTesting-2026-01-16.md` (Phase MCP, MCP Server Testing)
+- `docs/prd-mcp-server-testing.md` (Phase MCP, MCP Server Testing)
 
 ---
 
@@ -1837,6 +1837,163 @@ Screenshots saved to: `ralph-wigg/screenshots/`
     ],
     "verification": "SSH commands complete within acceptable latency",
     "passes": true
+  },
+  {
+    "id": "MCP-21",
+    "category": "mcp-firebase-read",
+    "description": "Test firebase_get reads existing data",
+    "steps": [
+      "Call firebase_get(project='dev', path='/')",
+      "Verify response includes project: 'dev'",
+      "Verify response includes exists: true or false",
+      "Verify response includes data field"
+    ],
+    "verification": "firebase_get returns valid response structure",
+    "passes": true
+  },
+  {
+    "id": "MCP-22",
+    "category": "mcp-firebase-read",
+    "description": "Test firebase_get handles non-existent path",
+    "steps": [
+      "Call firebase_get(project='dev', path='/nonexistent/path/12345')",
+      "Verify response includes exists: false",
+      "Verify response includes data: null"
+    ],
+    "verification": "firebase_get returns exists:false for missing paths",
+    "passes": false
+  },
+  {
+    "id": "MCP-23",
+    "category": "mcp-firebase-read",
+    "description": "Test firebase_list_paths returns children",
+    "steps": [
+      "Call firebase_list_paths(project='dev', path='/')",
+      "Verify response includes children array",
+      "Verify response includes childCount number",
+      "Verify children array contains expected top-level keys"
+    ],
+    "verification": "firebase_list_paths returns child keys",
+    "passes": false
+  },
+  {
+    "id": "MCP-24",
+    "category": "mcp-firebase-write",
+    "description": "Test firebase_set writes data (dev only)",
+    "steps": [
+      "Call firebase_set(project='dev', path='mcp-tests/test-24', data={name:'test',value:1})",
+      "Verify response includes success: true",
+      "Call firebase_get to verify data was written",
+      "Call firebase_delete to clean up test data"
+    ],
+    "verification": "firebase_set successfully writes data to dev",
+    "passes": false
+  },
+  {
+    "id": "MCP-25",
+    "category": "mcp-firebase-write",
+    "description": "Test firebase_update merges data (dev only)",
+    "steps": [
+      "Call firebase_set(project='dev', path='mcp-tests/test-25', data={name:'original',count:1})",
+      "Call firebase_update(project='dev', path='mcp-tests/test-25', data={count:2})",
+      "Call firebase_get to verify name preserved and count updated",
+      "Call firebase_delete to clean up test data"
+    ],
+    "verification": "firebase_update merges without overwriting existing fields",
+    "passes": false
+  },
+  {
+    "id": "MCP-26",
+    "category": "mcp-firebase-write",
+    "description": "Test firebase_delete removes data (dev only)",
+    "steps": [
+      "Call firebase_set(project='dev', path='mcp-tests/test-26', data={temp:true})",
+      "Call firebase_delete(project='dev', path='mcp-tests/test-26')",
+      "Call firebase_get to verify path no longer exists",
+      "Verify exists: false in response"
+    ],
+    "verification": "firebase_delete successfully removes data",
+    "passes": false
+  },
+  {
+    "id": "MCP-27",
+    "category": "mcp-firebase-read",
+    "description": "Test firebase_export returns JSON data",
+    "steps": [
+      "Call firebase_export(project='dev', path='/')",
+      "Verify response includes exportedAt timestamp",
+      "Verify response includes data field",
+      "Verify data is valid JSON structure"
+    ],
+    "verification": "firebase_export returns timestamped JSON export",
+    "passes": false
+  },
+  {
+    "id": "MCP-28",
+    "category": "mcp-firebase-error",
+    "description": "Test Firebase error handling for invalid project",
+    "steps": [
+      "Call firebase_get(project='invalid', path='/')",
+      "Verify response is an error",
+      "Verify error message mentions 'dev' or 'prod'"
+    ],
+    "verification": "Invalid project returns descriptive error",
+    "passes": false
+  },
+  {
+    "id": "MCP-29",
+    "category": "mcp-firebase-e2e",
+    "description": "Test full Firebase CRUD workflow (dev only)",
+    "steps": [
+      "SET: firebase_set(project='dev', path='mcp-tests/crud-test', data={step:1})",
+      "GET: firebase_get and verify step:1",
+      "UPDATE: firebase_update with {step:2, extra:'added'}",
+      "GET: verify step:2 and extra:'added'",
+      "DELETE: firebase_delete the test path",
+      "GET: verify exists:false"
+    ],
+    "verification": "Complete CRUD workflow succeeds on dev Firebase",
+    "passes": false
+  },
+  {
+    "id": "MCP-30",
+    "category": "mcp-security-group",
+    "description": "Test aws_list_security_group_rules",
+    "steps": [
+      "Call aws_list_security_group_rules()",
+      "Verify response includes securityGroupId",
+      "Verify response includes inboundRules array",
+      "Verify rules contain expected ports (22, 80, 443, 3001, 8080)"
+    ],
+    "verification": "Security group rules are readable",
+    "passes": false
+  },
+  {
+    "id": "MCP-31",
+    "category": "mcp-test-framework",
+    "description": "Set up proper test framework structure",
+    "steps": [
+      "Create tools/mcp-server/__tests__/ directory",
+      "Create __tests__/unit/, __tests__/integration/, __tests__/e2e/ subdirs",
+      "Create __tests__/helpers/testConfig.js with constants",
+      "Add test npm scripts to package.json",
+      "Create placeholder test file that passes"
+    ],
+    "verification": "npm test runs successfully in tools/mcp-server",
+    "passes": false
+  },
+  {
+    "id": "MCP-32",
+    "category": "mcp-cleanup",
+    "description": "Migrate standalone tests to framework and cleanup",
+    "steps": [
+      "Review existing test-mcp-*.mjs files for useful patterns",
+      "Migrate key test logic to __tests__/ framework",
+      "Delete legacy test-mcp-01.mjs through test-mcp-20.mjs",
+      "Update README.md with new test instructions"
+    ],
+    "verification": "Legacy test files removed, npm test covers all scenarios",
+    "passes": false
   }
 ]
 ```
@@ -1879,7 +2036,14 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 | **Phase MCP: AWS Write** | 2 | 2 | ✅ Complete |
 | **Phase MCP: Integration** | 3 | 3 | ✅ Complete |
 | **Phase MCP: Performance** | 1 | 1 | ✅ Complete |
-| **Total** | **107** | **107** | **100%** |
+| **Phase MCP: Firebase Read** | 4 | 0 | ⬜ Not Started |
+| **Phase MCP: Firebase Write** | 3 | 0 | ⬜ Not Started |
+| **Phase MCP: Firebase Error** | 1 | 0 | ⬜ Not Started |
+| **Phase MCP: Firebase E2E** | 1 | 0 | ⬜ Not Started |
+| **Phase MCP: Security Group** | 1 | 0 | ⬜ Not Started |
+| **Phase MCP: Test Framework** | 1 | 0 | ⬜ Not Started |
+| **Phase MCP: Cleanup** | 1 | 0 | ⬜ Not Started |
+| **Total** | **119** | **107** | **90%** |
 
 ---
 
@@ -2044,6 +2208,33 @@ Phase 1 (Data Model) ──────────┬────────�
                                ▼
                     MCP Performance (MCP-20)
                     └── MCP-20: SSH latency test
+                               │
+                               ▼
+                    MCP Firebase Read Tests (MCP-21 to MCP-23, MCP-27)
+                    ├── MCP-21: firebase_get existing data
+                    ├── MCP-22: firebase_get non-existent path
+                    ├── MCP-23: firebase_list_paths
+                    └── MCP-27: firebase_export
+                               │
+                               ▼
+                    MCP Firebase Write Tests (MCP-24 to MCP-26) [DEV ONLY]
+                    ├── MCP-24: firebase_set
+                    ├── MCP-25: firebase_update (merge)
+                    └── MCP-26: firebase_delete
+                               │
+                               ▼
+                    MCP Firebase Error & E2E (MCP-28 to MCP-29)
+                    ├── MCP-28: Invalid project error handling
+                    └── MCP-29: Full CRUD workflow
+                               │
+                               ▼
+                    MCP Security Group (MCP-30)
+                    └── MCP-30: aws_list_security_group_rules
+                               │
+                               ▼
+                    MCP Test Framework & Cleanup (MCP-31 to MCP-32)
+                    ├── MCP-31: Set up __tests__/ structure
+                    └── MCP-32: Migrate and cleanup legacy tests
 ```
 
 ---
@@ -2310,6 +2501,16 @@ Two serverless functions handle wake/status without needing the coordinator:
 | `ssh_multi_exec` | SSH | Execute command on multiple VMs |
 | `ssh_upload_file` | SSH | Upload file to VM via SCP |
 | `ssh_download_file` | SSH | Download file from VM via SCP |
+| `firebase_get` | Firebase | Read data at path |
+| `firebase_set` | Firebase | Write data (overwrite) |
+| `firebase_update` | Firebase | Partial update (merge) |
+| `firebase_delete` | Firebase | Delete data at path |
+| `firebase_list_paths` | Firebase | List child keys (shallow) |
+| `firebase_export` | Firebase | Export data to JSON |
+| `firebase_sync_to_prod` | Firebase | Copy dev → prod with backup |
+| `aws_list_security_group_rules` | AWS | List inbound rules |
+| `aws_open_port` | AWS | Open port in security group |
+| `aws_close_port` | AWS | Close port in security group |
 
 ### Test Execution Strategy
 Tests are designed to be run via MCP tools directly by Claude Code:
@@ -2330,6 +2531,13 @@ Tests are designed to be run via MCP tools directly by Claude Code:
 | AWS Write | MCP-15 to MCP-16 | ⚠️ DESTRUCTIVE - costs money |
 | Integration | MCP-17 to MCP-19 | ✅ When coordinator running |
 | Performance | MCP-20 | ✅ When coordinator running |
+| Firebase Read | MCP-21 to MCP-23, MCP-27 | ✅ Always |
+| Firebase Write | MCP-24 to MCP-26 | ⚠️ DEV ONLY - modifies data |
+| Firebase Error | MCP-28 | ✅ Always |
+| Firebase E2E | MCP-29 | ⚠️ DEV ONLY - modifies data |
+| Security Group | MCP-30 | ✅ Always |
+| Test Framework | MCP-31 | ✅ Local only |
+| Cleanup | MCP-32 | ✅ Local only |
 
 ### Configuration
 
@@ -2399,5 +2607,12 @@ const CONFIG = {
 | AWS Write | 2 | 80% (may skip if no test instances) |
 | Integration | 3 | 100% |
 | Performance | 1 | 100% |
+| Firebase Read | 4 | 100% |
+| Firebase Write | 3 | 100% |
+| Firebase Error | 1 | 100% |
+| Firebase E2E | 1 | 100% |
+| Security Group | 1 | 100% |
+| Test Framework | 1 | 100% |
+| Cleanup | 1 | 100% |
 
-**Overall Target:** 95% pass rate (19/20 tests)
+**Overall Target:** 95% pass rate (30/32 tests)
