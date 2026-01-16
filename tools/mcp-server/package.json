@@ -5,7 +5,11 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "test": "node --test __tests__/**/*.test.js",
+    "test:unit": "node --test __tests__/unit/*.test.js",
+    "test:integration": "node --test __tests__/integration/*.test.js",
+    "test:e2e": "node --test __tests__/e2e/*.test.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
