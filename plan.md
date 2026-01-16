@@ -1938,7 +1938,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Verify error message mentions 'dev' or 'prod'"
     ],
     "verification": "Invalid project returns descriptive error",
-    "passes": false
+    "passes": true
   },
   {
     "id": "MCP-29",

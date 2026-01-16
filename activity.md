@@ -2,12 +2,35 @@
 
 ## Current Status
 **Phase:** MCP Server Testing - Firebase Tools
-**Last Task:** MCP-27 - Test firebase_export returns JSON data
-**Next Task:** MCP-28 - Test Firebase error handling for invalid project
+**Last Task:** MCP-28 - Test Firebase error handling for invalid project
+**Next Task:** MCP-29 - Test full Firebase CRUD workflow (dev only)
 
 ---
 
 ## 2026-01-16
+
+### MCP-28: Test Firebase error handling for invalid project
+Verified that `firebase_get` returns a descriptive error when called with an invalid project name.
+
+**Test Results:**
+- Created test script: `tools/mcp-server/test-mcp-28.mjs`
+- Step 1: Called firebase_get(project='invalid', path='/')
+- Step 2: Verified response is an error (exception thrown)
+- Step 3: Verified error message mentions 'dev' or 'prod'
+
+**Error Response:**
+```
+Error: Invalid project: invalid. Must be 'dev' or 'prod'.
+```
+
+**Verification Results:**
+- response is an error: PASS
+- error message mentions 'dev' or 'prod': PASS
+- error message mentions invalid value: PASS
+
+**Verification:** MCP-28 PASSED - Invalid project returns descriptive error
+
+---
 
 ### MCP-27: Test firebase_export returns JSON data
 Verified that `firebase_export` correctly returns timestamped JSON export from Firebase Realtime Database.
