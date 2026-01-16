@@ -2,12 +2,65 @@
 
 ## Current Status
 **Phase:** MCP Server Testing
-**Last Task:** MCP-09 - Test ssh_multi_exec on single target
-**Next Task:** MCP-10 - Test ssh_multi_exec aggregation on multiple VMs
+**Last Task:** MCP-10 - Test ssh_multi_exec aggregation on multiple VMs
+**Next Task:** MCP-11 - Test ssh_upload_file and ssh_download_file roundtrip
 
 ---
 
 ## 2026-01-16
+
+### MCP-10: Test ssh_multi_exec aggregation on multiple VMs
+Verified that `ssh_multi_exec` correctly aggregates results from multiple VMs in parallel.
+
+**Test Results:**
+- Created test script: `tools/mcp-server/test-mcp-10.mjs`
+- Step 1: Listed running instances via `aws_list_instances(stateFilter='running')` - Found 1 running VM
+- Step 2: Extracted publicIp addresses - Found IP: 3.236.220.35
+- Step 3: Built target list: coordinator (44.193.31.120) + running VM (3.236.220.35)
+- Step 4: Ran `ssh_multi_exec` with 2 targets, command='hostname'
+- Step 5: Verified all assertions
+
+**Response Structure:**
+```json
+{
+  "command": "hostname",
+  "results": [
+    {
+      "target": "44.193.31.120",
+      "command": "hostname",
+      "exitCode": 0,
+      "stdout": "ip-172-31-12-111",
+      "stderr": "",
+      "success": true
+    },
+    {
+      "target": "3.236.220.35",
+      "command": "hostname",
+      "exitCode": 0,
+      "stdout": "ip-172-31-67-124",
+      "stderr": "",
+      "success": true
+    }
+  ],
+  "successCount": 2,
+  "failureCount": 0
+}
+```
+
+**Verification Results:**
+- response has "command" property: PASS
+- response has "results" array: PASS
+- response has "successCount" property: PASS
+- response has "failureCount" property: PASS
+- results array length matches target count: PASS
+- successCount + failureCount equals target count: PASS
+- Each result has target and success properties: PASS
+- Each successful result has stdout property: PASS
+- At least one VM was reachable: PASS
+
+**Verification:** MCP-10 PASSED - ssh_multi_exec aggregates results from multiple VMs
+
+---
 
 ### MCP-09: Test ssh_multi_exec on single target
 Verified that `ssh_multi_exec` works correctly when targeting a single VM.
