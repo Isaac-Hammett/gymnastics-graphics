@@ -2,12 +2,43 @@
 
 ## Current Status
 **Phase:** MCP Server Testing - Firebase Tools
-**Last Task:** MCP-26 - Test firebase_delete removes data (dev only)
-**Next Task:** MCP-27 - Test firebase_export returns JSON data
+**Last Task:** MCP-27 - Test firebase_export returns JSON data
+**Next Task:** MCP-28 - Test Firebase error handling for invalid project
 
 ---
 
 ## 2026-01-16
+
+### MCP-27: Test firebase_export returns JSON data
+Verified that `firebase_export` correctly returns timestamped JSON export from Firebase Realtime Database.
+
+**Test Results:**
+- Created test script: `tools/mcp-server/test-mcp-27.mjs`
+- Step 1: Called firebase_export(project='dev', path='/')
+- Step 2: Verified response includes exportedAt timestamp
+- Step 3: Verified response includes data field
+- Step 4: Verified data is valid JSON structure
+
+**Response Structure Verified:**
+```json
+{
+  "project": "dev",
+  "path": "/",
+  "exportedAt": "2026-01-16T22:36:11.873Z",
+  "data": "{...} (2 keys)"
+}
+```
+
+**Verification Results:**
+- response includes exportedAt timestamp: PASS
+- response includes data field: PASS
+- data is valid JSON structure: PASS
+- response has correct project: PASS
+- response has correct path: PASS
+
+**Verification:** MCP-27 PASSED - firebase_export returns timestamped JSON export
+
+---
 
 ### MCP-26: Test firebase_delete removes data (dev only)
 Verified that `firebase_delete` correctly removes data from Firebase Realtime Database.

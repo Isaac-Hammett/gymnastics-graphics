@@ -1926,7 +1926,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Verify data is valid JSON structure"
     ],
     "verification": "firebase_export returns timestamped JSON export",
-    "passes": false
+    "passes": true
   },
   {
     "id": "MCP-28",
