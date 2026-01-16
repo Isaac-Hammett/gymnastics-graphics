@@ -1720,7 +1720,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Verify error message is descriptive"
     ],
     "verification": "Invalid target returns proper error, not crash",
-    "passes": false
+    "passes": true
   },
   {
     "id": "MCP-13",
@@ -1875,11 +1875,11 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 | **Phase MCP: SSH Coordinator** | 5 | 5 | ✅ Complete |
 | **Phase MCP: SSH Multi** | 2 | 2 | ✅ Complete |
 | **Phase MCP: File Transfer** | 1 | 1 | ✅ Complete |
-| **Phase MCP: Error Handling** | 3 | 0 | ⏳ Pending |
+| **Phase MCP: Error Handling** | 3 | 1 | ⏳ Pending |
 | **Phase MCP: AWS Write** | 2 | 0 | ⏳ Pending |
 | **Phase MCP: Integration** | 3 | 0 | ⏳ Pending |
 | **Phase MCP: Performance** | 1 | 0 | ⏳ Pending |
-| **Total** | **107** | **98** | **92%** |
+| **Total** | **107** | **99** | **93%** |
 
 ---
 

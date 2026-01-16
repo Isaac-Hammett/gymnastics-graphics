@@ -2,12 +2,43 @@
 
 ## Current Status
 **Phase:** MCP Server Testing
-**Last Task:** MCP-11 - Test ssh_upload_file and ssh_download_file roundtrip
-**Next Task:** MCP-12 - Test error handling for invalid SSH target
+**Last Task:** MCP-12 - Test error handling for invalid SSH target
+**Next Task:** MCP-13 - Test error handling for invalid AWS instance ID
 
 ---
 
 ## 2026-01-16
+
+### MCP-12: Test error handling for invalid SSH target
+Verified that `ssh_exec` properly handles connection failures when targeting an unreachable IP address.
+
+**Test Results:**
+- Created test script: `tools/mcp-server/test-mcp-12.mjs`
+- Step 1: Called ssh_exec with target='192.0.2.1' (TEST-NET, unreachable), command='echo test'
+- Step 2: Verified response indicates connection failure (success=false)
+- Step 3: Verified error message is descriptive ("Timed out while waiting for handshake")
+
+**Response Structure (Error Case):**
+```json
+{
+  "target": "192.0.2.1",
+  "command": "echo test",
+  "exitCode": -1,
+  "stdout": "",
+  "stderr": "",
+  "success": false,
+  "error": "Timed out while waiting for handshake"
+}
+```
+
+**Verification Results:**
+- Response indicates connection failure (success=false): PASS
+- Response has error field: PASS
+- Error message is descriptive (contains 'timed out' or 'handshake'): PASS
+
+**Verification:** MCP-12 PASSED - Invalid target returns proper error, not crash
+
+---
 
 ### MCP-11: Test ssh_upload_file and ssh_download_file roundtrip
 Verified that `ssh_upload_file` and `ssh_download_file` correctly transfer files and preserve content integrity.
