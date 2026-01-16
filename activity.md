@@ -2,12 +2,37 @@
 
 ## Current Status
 **Phase:** MCP Server Testing
-**Last Task:** MCP-04 - Test ssh_exec basic command on coordinator
-**Next Task:** MCP-05 - Test ssh_exec with sudo on coordinator
+**Last Task:** MCP-08 - Test ssh_exec by IP address (not shortcut)
+**Next Task:** MCP-09 - Test ssh_multi_exec on single target
 
 ---
 
 ## 2026-01-16
+
+### MCP-08: Test ssh_exec by IP address (not shortcut)
+Verified that `ssh_exec` works with a direct IP address target instead of the "coordinator" shortcut.
+
+**Test Results:**
+- Created test script: `tools/mcp-server/test-mcp-08.mjs`
+- success is true: PASS
+- stdout contains 'test': PASS
+- target is the direct IP address (44.193.31.120): PASS
+
+**Response Structure:**
+```json
+{
+  "target": "44.193.31.120",
+  "command": "echo test",
+  "exitCode": 0,
+  "stdout": "test",
+  "stderr": "",
+  "success": true
+}
+```
+
+**Verification:** MCP-08 PASSED - Direct IP targeting works same as "coordinator" shortcut
+
+---
 
 ### MCP-04: Test ssh_exec basic command on coordinator
 Verified that `ssh_exec` can connect to the coordinator and execute basic commands.
