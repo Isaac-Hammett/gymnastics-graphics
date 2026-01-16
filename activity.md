@@ -2,12 +2,59 @@
 
 ## Current Status
 **Phase:** MCP Server Testing
-**Last Task:** MCP-17 - Test full VM diagnostics workflow
-**Next Task:** MCP-18 - Test coordinator app deployment check
+**Last Task:** MCP-18 - Test coordinator app deployment check
+**Next Task:** MCP-19 - Test network connectivity from coordinator
 
 ---
 
 ## 2026-01-16
+
+### MCP-18: Test coordinator app deployment check
+Verified that the MCP server can check the coordinator deployment structure via SSH commands.
+
+**Test Results:**
+- Created test script: `tools/mcp-server/test-mcp-18.mjs`
+- Step 1: Called ssh_exec(command='ls -la /opt/gymnastics-graphics') - Directory exists with all expected contents
+- Step 2: Verified server/ and show-controller/ directories exist
+- Step 3: Called ssh_exec(command='cat /opt/gymnastics-graphics/server/package.json | head -10')
+- Step 4: Verified package.json has "name" and "version" fields
+- Step 5: Called ssh_exec(command='pm2 list --no-color')
+- Step 6: Verified PM2 shows "coordinator" process running (online, 1.0.0, 2h uptime)
+
+**Deployment Structure Verified:**
+```
+/opt/gymnastics-graphics/
+├── .git/
+├── server/
+│   ├── package.json (name: show-controller-server, version: 1.0.0)
+│   ├── node_modules/ (installed)
+│   ├── ecosystem.config.js (PM2 config)
+│   └── .env (environment variables)
+├── show-controller/
+└── [documentation and config files]
+```
+
+**PM2 Process Status:**
+```
+│ id │ name        │ version │ mode │ pid  │ uptime │ status │ cpu │ mem     │
+│ 0  │ coordinator │ 1.0.0   │ fork │ 4316 │ 2h     │ online │ 0%  │ 138.8mb │
+```
+
+**Verification Results:**
+- directory exists: PASS (CRITICAL)
+- server directory exists: PASS (CRITICAL)
+- package.json exists: PASS (CRITICAL)
+- package.json has name field: PASS
+- package.json has version field: PASS
+- pm2 command executed: PASS
+- pm2 shows process list: PASS
+- node_modules installed: PASS
+- ecosystem.config.js exists: PASS
+- .env file exists: PASS
+
+**Verification:** MCP-18 PASSED - Coordinator deployment structure is correct
+
+---
 
 ### MCP-17: Test full VM diagnostics workflow
 Verified that the MCP server can perform a complete VM diagnostics workflow combining AWS and SSH operations.
