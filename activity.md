@@ -1,13 +1,53 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** MCP Server Testing - Security Group Tools
-**Last Task:** MCP-30 - Test aws_list_security_group_rules
-**Next Task:** MCP-31 - Set up proper test framework structure
+**Phase:** MCP Server Testing - Test Framework Setup
+**Last Task:** MCP-31 - Set up proper test framework structure
+**Next Task:** MCP-32 - Migrate standalone tests to framework and cleanup
 
 ---
 
 ## 2026-01-16
+
+### MCP-31: Set up proper test framework structure
+Created a proper test framework for the MCP server using Node.js built-in test runner.
+
+**New Files Created:**
+- `tools/mcp-server/__tests__/unit/` - Unit test directory
+- `tools/mcp-server/__tests__/integration/` - Integration test directory
+- `tools/mcp-server/__tests__/e2e/` - End-to-end test directory
+- `tools/mcp-server/__tests__/helpers/testConfig.js` - Centralized test constants
+- `tools/mcp-server/__tests__/unit/testConfig.test.js` - Placeholder tests verifying framework
+
+**testConfig.js Constants:**
+- `COORDINATOR_IP`, `COORDINATOR_HOST` - Target hosts
+- `UNREACHABLE_IP` - RFC 5737 TEST-NET IP for error testing
+- `AWS_REGION`, `SECURITY_GROUP_ID`, `EXPECTED_PORTS` - AWS config
+- `FIREBASE_PROJECTS`, `FIREBASE_TEST_BASE_PATH` - Firebase config
+- `INSTANCE_ID_PATTERN`, `AMI_ID_PATTERN`, `SECURITY_GROUP_PATTERN` - Validation regex
+- `VALID_INSTANCE_STATES` - EC2 state enum
+- Timeout constants and helper functions
+
+**npm Scripts Added to package.json:**
+- `npm test` - Run all tests (`node --test __tests__/**/*.test.js`)
+- `npm run test:unit` - Run unit tests only
+- `npm run test:integration` - Run integration tests only
+- `npm run test:e2e` - Run end-to-end tests only
+
+**Test Results:**
+```
+▶ testConfig constants (7 tests)
+▶ testConfig helper functions (5 tests)
+▶ test framework setup (2 tests)
+ℹ tests 14
+ℹ pass 14
+ℹ fail 0
+ℹ duration_ms 49.357708
+```
+
+**Verification:** MCP-31 PASSED - npm test runs successfully in tools/mcp-server
+
+---
 
 ### MCP-30: Test aws_list_security_group_rules
 Verified that `aws_list_security_group_rules` correctly returns security group configuration with inbound rules.
