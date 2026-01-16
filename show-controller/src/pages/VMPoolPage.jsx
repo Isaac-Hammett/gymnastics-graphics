@@ -425,15 +425,25 @@ export default function VMPoolPage() {
                 </div>
                 <div className="bg-zinc-700/30 rounded-lg p-3">
                   <div className="text-xs text-zinc-400 mb-1">Min Warm VMs</div>
-                  <div className="text-white font-mono text-sm">{poolConfig.minWarmVMs || 2}</div>
+                  <div className="text-white font-mono text-sm">{poolConfig.warmCount || 2}</div>
                 </div>
                 <div className="bg-zinc-700/30 rounded-lg p-3">
                   <div className="text-xs text-zinc-400 mb-1">Max VMs</div>
-                  <div className="text-white font-mono text-sm">{poolConfig.maxVMs || 5}</div>
+                  <div className="text-white font-mono text-sm">{poolConfig.maxInstances || 5}</div>
                 </div>
                 <div className="bg-zinc-700/30 rounded-lg p-3">
                   <div className="text-xs text-zinc-400 mb-1">Instance Type</div>
-                  <div className="text-white font-mono text-sm">{poolConfig.instanceType || 't3.large'}</div>
+                  <div className="text-white font-mono text-sm">{poolConfig.defaultInstanceType || 't3.large'}</div>
+                </div>
+              </div>
+              {/* AMI Info */}
+              <div className="mt-4 bg-zinc-700/30 rounded-lg p-3">
+                <div className="text-xs text-zinc-400 mb-2">AMI Template</div>
+                <div className="flex items-center justify-between">
+                  <div className="text-white font-mono text-sm">{poolConfig.amiId || 'Not configured'}</div>
+                  <div className="text-xs text-zinc-500">
+                    VMs auto-update from <span className="text-purple-400">main</span> branch on boot
+                  </div>
                 </div>
               </div>
             </div>
