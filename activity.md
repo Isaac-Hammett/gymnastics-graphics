@@ -2,12 +2,50 @@
 
 ## Current Status
 **Phase:** MCP Server Testing
-**Last Task:** MCP-15 - Test aws_start_instance and aws_stop_instance lifecycle
-**Next Task:** MCP-16 - Test aws_create_ami creates valid AMI
+**Last Task:** MCP-16 - Test aws_create_ami creates valid AMI
+**Next Task:** MCP-17 - Test full VM diagnostics workflow
 
 ---
 
 ## 2026-01-16
+
+### MCP-16: Test aws_create_ami creates valid AMI
+Verified that `aws_create_ami` correctly creates an AMI from a running instance with proper response format.
+
+**Test Results:**
+- Created test script: `tools/mcp-server/test-mcp-16.mjs`
+- Step 1: Called aws_list_instances to find a running instance
+- Found running instance: `i-08abea9194f19ddbd` (gymnastics-vm-1768578923817)
+- Step 2: Called aws_create_ami with instanceId and name='mcp-test-ami-{timestamp}'
+- Step 3: Verified response has amiId, name, and message fields
+- Step 4: Waited 30 seconds for AMI to register
+- Step 5: Called aws_list_amis to verify AMI appears
+- Step 6: Cleaned up test AMI via deregistration
+
+**Create AMI Response:**
+```json
+{
+  "amiId": "ami-0421ecec6222badd1",
+  "name": "mcp-test-ami-1768585439982",
+  "message": "AMI creation started. ID: ami-0421ecec6222badd1. It will take 5-10 minutes to complete."
+}
+```
+
+**Verification Results:**
+- Has amiId: PASS
+- amiId matches ami-[a-f0-9]+ pattern: PASS
+- Has name: PASS
+- name matches requested: PASS
+- Has message: PASS
+- AMI appeared in list within 30 seconds: PASS
+
+**Cleanup:**
+- Test AMI deregistered after verification
+- Associated snapshots may need manual cleanup
+
+**Verification:** MCP-16 PASSED - AMI creation initiates successfully
+
+---
 
 ### MCP-15: Test aws_start_instance and aws_stop_instance lifecycle
 Verified that `aws_start_instance` and `aws_stop_instance` correctly manage EC2 instance lifecycle.
