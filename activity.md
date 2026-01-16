@@ -3004,6 +3004,30 @@ Verified MCP server ssh_exec with sudo=true functionality on the coordinator VM.
 
 **Verification:** Sudo execution works and returns root user - PASSED
 
+### MCP-06: Test ssh_exec system info commands on coordinator
+Verified MCP server ssh_exec functionality for system information commands on the coordinator VM.
+
+**Test Results:**
+1. `hostname` command:
+   - stdout: "ip-172-31-12-111" ✓ (non-empty)
+   - exitCode: 0 ✓
+
+2. `uptime` command:
+   - stdout: "17:23:58 up 20:26, 1 user, load average: 0.06, 0.01, 0.00"
+   - Contains 'up' ✓
+   - Contains 'load average' ✓
+   - exitCode: 0 ✓
+
+3. `df -h /` command:
+   - stdout contains filesystem info (Filesystem header) ✓
+   - stdout contains size info (G for gigabytes) ✓
+   - Shows 19G total, 2.8G used, 16G available (15% usage)
+   - exitCode: 0 ✓
+
+**Test Script Created:** `tools/mcp-server/test-ssh-system-info.js`
+
+**Verification:** System info commands return valid data - PASSED
+
 ---
 
 ## Issues & Blockers
