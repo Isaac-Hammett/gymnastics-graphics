@@ -2,12 +2,51 @@
 
 ## Current Status
 **Phase:** MCP Server Testing
-**Last Task:** MCP-18 - Test coordinator app deployment check
-**Next Task:** MCP-19 - Test network connectivity from coordinator
+**Last Task:** MCP-19 - Test network connectivity from coordinator
+**Next Task:** MCP-20 - Test SSH command latency
 
 ---
 
 ## 2026-01-16
+
+### MCP-19: Test network connectivity from coordinator
+Verified that the coordinator has internet connectivity and local service connectivity.
+
+**Test Results:**
+- Created test script: `tools/mcp-server/test-mcp-19.mjs`
+- Step 1: Called ssh_exec(command='curl -s -o /dev/null -w "%{http_code}" https://api.github.com')
+- Step 2: Verified stdout is '200' (GitHub API reachable)
+- Step 3: Called ssh_exec(command='curl -s http://localhost:3001/api/status || echo unreachable')
+- Step 4: Recorded local API is running and responding with valid JSON
+
+**Connectivity Results:**
+```
+Internet Connectivity:
+  Target: https://api.github.com
+  Reachable: ✓
+  HTTP Code: 200
+
+Local API:
+  Target: http://localhost:3001/api/status
+  Running: ✓
+  Response: Valid JSON with currentSegment, nextSegment, etc.
+```
+
+**Additional Checks:**
+- DNS resolution works: PASS
+- Outbound HTTPS (google.com): PASS (code: 200)
+
+**Verification Results:**
+- internet connectivity (GitHub API): PASS (CRITICAL)
+- HTTP response is 200: PASS
+- local API responds: PASS
+- local API returns valid JSON: PASS
+- DNS resolution works: PASS (CRITICAL)
+- outbound HTTPS works: PASS
+
+**Verification:** MCP-19 PASSED - Coordinator has internet and local service connectivity
+
+---
 
 ### MCP-18: Test coordinator app deployment check
 Verified that the MCP server can check the coordinator deployment structure via SSH commands.
