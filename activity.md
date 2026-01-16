@@ -2,12 +2,38 @@
 
 ## Current Status
 **Phase:** MCP Server Testing
-**Last Task:** MCP-03 - Test aws_list_amis returns AMI catalog
-**Next Task:** MCP-04 - Test ssh_exec basic command on coordinator
+**Last Task:** MCP-04 - Test ssh_exec basic command on coordinator
+**Next Task:** MCP-05 - Test ssh_exec with sudo on coordinator
 
 ---
 
 ## 2026-01-16
+
+### MCP-04: Test ssh_exec basic command on coordinator
+Verified that `ssh_exec` can connect to the coordinator and execute basic commands.
+
+**Test Results:**
+- Created test script: `tools/mcp-server/test-mcp-04.mjs`
+- Response has all required fields (target, command, exitCode, stdout, stderr, success): PASS
+- exitCode is 0: PASS
+- stdout contains 'hello': PASS
+- success is true: PASS
+
+**Response Structure:**
+```json
+{
+  "target": "44.193.31.120",
+  "command": "echo hello",
+  "exitCode": 0,
+  "stdout": "hello",
+  "stderr": "",
+  "success": true
+}
+```
+
+**Verification:** MCP-04 PASSED
+
+---
 
 ### MCP-03: Test aws_list_amis returns AMI catalog
 Verified that `aws_list_amis` returns AMI catalog with valid structure and sorting.
