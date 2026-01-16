@@ -2,12 +2,43 @@
 
 ## Current Status
 **Phase:** MCP Server Testing - Firebase Tools
-**Last Task:** MCP-22 - Test firebase_get handles non-existent path
-**Next Task:** MCP-23 - Test firebase_list_paths returns children
+**Last Task:** MCP-23 - Test firebase_list_paths returns children
+**Next Task:** MCP-24 - Test firebase_set writes data (dev only)
 
 ---
 
 ## 2026-01-16
+
+### MCP-23: Test firebase_list_paths returns children
+Verified that `firebase_list_paths` returns child keys at a path in Firebase Realtime Database.
+
+**Test Results:**
+- Created test script: `tools/mcp-server/test-mcp-23.mjs`
+- Step 1: Called firebase_list_paths(project='dev', path='/')
+- Step 2: Verified response includes children array
+- Step 3: Verified response includes childCount number
+- Step 4: Verified children array contains expected top-level keys
+
+**Response Structure Verified:**
+```json
+{
+  "project": "dev",
+  "path": "/",
+  "exists": true,
+  "children": ["competitions", "currentGraphic"],
+  "childCount": 2
+}
+```
+
+**Verification Results:**
+- response includes children array: PASS
+- response includes childCount number: PASS
+- children array contains expected top-level keys: PASS
+- response includes exists boolean: PASS
+
+**Verification:** MCP-23 PASSED - firebase_list_paths returns child keys
+
+---
 
 ### MCP-22: Test firebase_get handles non-existent path
 Verified that `firebase_get` returns `exists: false` and `data: null` for non-existent paths in Firebase Realtime Database.

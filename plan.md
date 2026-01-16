@@ -1874,7 +1874,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Verify children array contains expected top-level keys"
     ],
     "verification": "firebase_list_paths returns child keys",
-    "passes": false
+    "passes": true
   },
   {
     "id": "MCP-24",
