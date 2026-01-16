@@ -1747,7 +1747,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Verify stderr contains error about command not found"
     ],
     "verification": "Failed commands return proper exit codes and success=false",
-    "passes": false
+    "passes": true
   },
   {
     "id": "MCP-15",
@@ -1875,11 +1875,11 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 | **Phase MCP: SSH Coordinator** | 5 | 5 | ✅ Complete |
 | **Phase MCP: SSH Multi** | 2 | 2 | ✅ Complete |
 | **Phase MCP: File Transfer** | 1 | 1 | ✅ Complete |
-| **Phase MCP: Error Handling** | 3 | 2 | ⏳ Pending |
+| **Phase MCP: Error Handling** | 3 | 3 | ✅ Complete |
 | **Phase MCP: AWS Write** | 2 | 0 | ⏳ Pending |
 | **Phase MCP: Integration** | 3 | 0 | ⏳ Pending |
 | **Phase MCP: Performance** | 1 | 0 | ⏳ Pending |
-| **Total** | **107** | **100** | **93%** |
+| **Total** | **107** | **101** | **94%** |
 
 ---
 
