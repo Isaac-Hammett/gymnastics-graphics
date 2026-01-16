@@ -2,12 +2,41 @@
 
 ## Current Status
 **Phase:** MCP Server Testing
-**Last Task:** MCP-12 - Test error handling for invalid SSH target
-**Next Task:** MCP-13 - Test error handling for invalid AWS instance ID
+**Last Task:** MCP-13 - Test error handling for invalid AWS instance ID
+**Next Task:** MCP-14 - Test error handling for failed SSH command
 
 ---
 
 ## 2026-01-16
+
+### MCP-13: Test error handling for invalid AWS instance ID
+Verified that `aws_start_instance` properly handles invalid instance IDs and returns a descriptive error.
+
+**Test Results:**
+- Created test script: `tools/mcp-server/test-mcp-13.mjs`
+- Step 1: Called aws_start_instance with instanceId='i-invalid123456789'
+- Step 2: Verified response contains error field
+- Step 3: Verified error message mentions invalid instance
+
+**Response Structure (Error Case):**
+```json
+{
+  "error": "Invalid id: \"i-invalid123456789\"",
+  "tool": "aws_start_instance",
+  "args": {
+    "instanceId": "i-invalid123456789"
+  }
+}
+```
+
+**Verification Results:**
+- No unhandled exception: PASS
+- Response contains error: PASS
+- Error message mentions invalid instance: PASS
+
+**Verification:** MCP-13 PASSED - Invalid instance ID returns AWS error gracefully
+
+---
 
 ### MCP-12: Test error handling for invalid SSH target
 Verified that `ssh_exec` properly handles connection failures when targeting an unreachable IP address.
