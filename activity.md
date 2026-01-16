@@ -2,12 +2,44 @@
 
 ## Current Status
 **Phase:** MCP Server Testing
-**Last Task:** MCP-08 - Test ssh_exec by IP address (not shortcut)
-**Next Task:** MCP-09 - Test ssh_multi_exec on single target
+**Last Task:** MCP-09 - Test ssh_multi_exec on single target
+**Next Task:** MCP-10 - Test ssh_multi_exec aggregation on multiple VMs
 
 ---
 
 ## 2026-01-16
+
+### MCP-09: Test ssh_multi_exec on single target
+Verified that `ssh_multi_exec` works correctly when targeting a single VM.
+
+**Test Results:**
+- Created test script: `tools/mcp-server/test-mcp-09.mjs`
+- Response has command, results array, successCount, failureCount: PASS
+- results[0] has target and success=true: PASS
+- successCount is 1, failureCount is 0: PASS
+
+**Response Structure:**
+```json
+{
+  "command": "hostname",
+  "results": [
+    {
+      "target": "44.193.31.120",
+      "command": "hostname",
+      "exitCode": 0,
+      "stdout": "ip-172-31-12-111",
+      "stderr": "",
+      "success": true
+    }
+  ],
+  "successCount": 1,
+  "failureCount": 0
+}
+```
+
+**Verification:** MCP-09 PASSED - ssh_multi_exec works correctly with single target
+
+---
 
 ### MCP-08: Test ssh_exec by IP address (not shortcut)
 Verified that `ssh_exec` works with a direct IP address target instead of the "coordinator" shortcut.
