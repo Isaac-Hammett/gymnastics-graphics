@@ -1953,7 +1953,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "GET: verify exists:false"
     ],
     "verification": "Complete CRUD workflow succeeds on dev Firebase",
-    "passes": false
+    "passes": true
   },
   {
     "id": "MCP-30",
