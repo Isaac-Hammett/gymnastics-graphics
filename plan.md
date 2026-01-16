@@ -1913,7 +1913,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Verify exists: false in response"
     ],
     "verification": "firebase_delete successfully removes data",
-    "passes": false
+    "passes": true
   },
   {
     "id": "MCP-27",
