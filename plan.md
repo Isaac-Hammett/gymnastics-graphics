@@ -8,6 +8,7 @@ Extend the gymnastics-graphics show controller with camera health monitoring, au
 - `docs/PRD-CompetitionBoundArchitecture-2026-01-13.md` (Phases 8-12)
 - `docs/PRD-VMArchitecture-2026-01-14.md` (Phases 14-17, VM Pool Management)
 - `docs/PRD-CoordinatorDeployment-2026-01-15.md` (Phases 18-21, Production Deployment)
+- `docs/PRD-MCPServerTesting-2026-01-16.md` (Phase MCP, MCP Server Testing)
 
 ---
 
@@ -1557,6 +1558,285 @@ Screenshots saved to: `ralph-wigg/screenshots/`
     ],
     "verification": "Full production workflow completes successfully",
     "passes": true
+  },
+
+  {
+    "id": "MCP-01",
+    "category": "mcp-aws-read",
+    "description": "Test aws_list_instances returns valid instance data",
+    "steps": [
+      "Call aws_list_instances with no filter",
+      "Verify response is an array",
+      "Verify each instance has: instanceId, name, state, instanceType",
+      "Verify instanceId matches pattern i-[a-f0-9]+",
+      "Verify state is one of: running, stopped, pending, stopping, terminated"
+    ],
+    "verification": "Response contains at least 1 instance with valid structure",
+    "passes": true
+  },
+  {
+    "id": "MCP-02",
+    "category": "mcp-aws-read",
+    "description": "Test aws_list_instances with state filter",
+    "steps": [
+      "Call aws_list_instances with stateFilter='running'",
+      "Verify all returned instances have state='running'",
+      "Call aws_list_instances with stateFilter='stopped'",
+      "Verify all returned instances have state='stopped'"
+    ],
+    "verification": "State filter correctly filters results",
+    "passes": true
+  },
+  {
+    "id": "MCP-03",
+    "category": "mcp-aws-read",
+    "description": "Test aws_list_amis returns AMI catalog",
+    "steps": [
+      "Call aws_list_amis with no parameters",
+      "Verify response is an array",
+      "Verify each AMI has: amiId, name, state, creationDate",
+      "Verify amiId matches pattern ami-[a-f0-9]+",
+      "Verify AMIs are sorted by creationDate descending"
+    ],
+    "verification": "Response contains AMIs with valid structure, sorted by date",
+    "passes": true
+  },
+  {
+    "id": "MCP-04",
+    "category": "mcp-ssh-coordinator",
+    "description": "Test ssh_exec basic command on coordinator",
+    "steps": [
+      "Call ssh_exec with target='coordinator', command='echo hello'",
+      "Verify response has: target, command, exitCode, stdout, stderr, success",
+      "Verify exitCode is 0",
+      "Verify stdout contains 'hello'",
+      "Verify success is true"
+    ],
+    "verification": "SSH exec returns successful result with correct output",
+    "passes": true
+  },
+  {
+    "id": "MCP-05",
+    "category": "mcp-ssh-coordinator",
+    "description": "Test ssh_exec with sudo on coordinator",
+    "steps": [
+      "Call ssh_exec with target='coordinator', command='whoami', sudo=true",
+      "Verify stdout contains 'root'",
+      "Verify success is true"
+    ],
+    "verification": "Sudo execution works and returns root user",
+    "passes": true
+  },
+  {
+    "id": "MCP-06",
+    "category": "mcp-ssh-coordinator",
+    "description": "Test ssh_exec system info commands on coordinator",
+    "steps": [
+      "Call ssh_exec with command='hostname'",
+      "Verify stdout is non-empty",
+      "Call ssh_exec with command='uptime'",
+      "Verify stdout contains 'up' or 'load average'",
+      "Call ssh_exec with command='df -h /'",
+      "Verify stdout contains filesystem info"
+    ],
+    "verification": "System info commands return valid data",
+    "passes": true
+  },
+  {
+    "id": "MCP-07",
+    "category": "mcp-ssh-coordinator",
+    "description": "Test ssh_exec service status on coordinator",
+    "steps": [
+      "Call ssh_exec with command='systemctl is-active pm2-ubuntu || echo inactive', sudo=true",
+      "Verify response contains status information",
+      "Call ssh_exec with command='pm2 list --no-color'",
+      "Verify stdout contains process information or indicates no processes"
+    ],
+    "verification": "Service status commands execute successfully",
+    "passes": true
+  },
+  {
+    "id": "MCP-08",
+    "category": "mcp-ssh-coordinator",
+    "description": "Test ssh_exec by IP address (not shortcut)",
+    "steps": [
+      "Call ssh_exec with target='44.193.31.120', command='echo test'",
+      "Verify success is true",
+      "Verify stdout contains 'test'"
+    ],
+    "verification": "Direct IP targeting works same as 'coordinator' shortcut",
+    "passes": true
+  },
+  {
+    "id": "MCP-09",
+    "category": "mcp-ssh-multi",
+    "description": "Test ssh_multi_exec on single target",
+    "steps": [
+      "Call ssh_multi_exec with targets=['coordinator'], command='hostname'",
+      "Verify response has: command, results array, successCount, failureCount",
+      "Verify results[0] has target and success=true",
+      "Verify successCount is 1, failureCount is 0"
+    ],
+    "verification": "Multi-exec works with single target",
+    "passes": true
+  },
+  {
+    "id": "MCP-10",
+    "category": "mcp-ssh-multi",
+    "description": "Test ssh_multi_exec aggregation on multiple VMs",
+    "steps": [
+      "Get list of running instances via aws_list_instances(stateFilter='running')",
+      "Extract publicIp addresses from running instances",
+      "Call ssh_multi_exec with coordinator plus any running VM IPs",
+      "Verify successCount equals number of reachable VMs",
+      "Verify each result has target IP and stdout"
+    ],
+    "verification": "Multi-exec aggregates results from multiple VMs",
+    "passes": true
+  },
+  {
+    "id": "MCP-11",
+    "category": "mcp-file-transfer",
+    "description": "Test ssh_upload_file and ssh_download_file roundtrip",
+    "steps": [
+      "Create a local test file with unique content in /tmp/claude/",
+      "Call ssh_upload_file to upload to /tmp/mcp-test-file.txt on coordinator",
+      "Verify upload response has success=true",
+      "Call ssh_exec to cat the uploaded file",
+      "Verify file contents match original",
+      "Call ssh_download_file to download to different local path",
+      "Verify download response has success=true"
+    ],
+    "verification": "File upload and download preserve content integrity",
+    "passes": true
+  },
+  {
+    "id": "MCP-12",
+    "category": "mcp-error-handling",
+    "description": "Test error handling for invalid SSH target",
+    "steps": [
+      "Call ssh_exec with target='192.0.2.1' (TEST-NET, unreachable), command='echo test'",
+      "Verify response indicates connection failure or timeout",
+      "Verify error message is descriptive"
+    ],
+    "verification": "Invalid target returns proper error, not crash",
+    "passes": true
+  },
+  {
+    "id": "MCP-13",
+    "category": "mcp-error-handling",
+    "description": "Test error handling for invalid AWS instance ID",
+    "steps": [
+      "Call aws_start_instance with instanceId='i-invalid123456789'",
+      "Verify response contains error",
+      "Verify error message mentions invalid instance"
+    ],
+    "verification": "Invalid instance ID returns AWS error gracefully",
+    "passes": true
+  },
+  {
+    "id": "MCP-14",
+    "category": "mcp-error-handling",
+    "description": "Test error handling for failed SSH command",
+    "steps": [
+      "Call ssh_exec with target='coordinator', command='exit 1'",
+      "Verify exitCode is 1",
+      "Verify success is false",
+      "Call ssh_exec with command='nonexistent-command-xyz123'",
+      "Verify exitCode is non-zero",
+      "Verify stderr contains error about command not found"
+    ],
+    "verification": "Failed commands return proper exit codes and success=false",
+    "passes": true
+  },
+  {
+    "id": "MCP-15",
+    "category": "mcp-aws-write",
+    "description": "Test aws_start_instance and aws_stop_instance lifecycle",
+    "steps": [
+      "Call aws_list_instances to find a stopped instance",
+      "If no stopped instance, skip this test (mark as passed)",
+      "Call aws_start_instance with the instanceId",
+      "Verify response has: instanceId, previousState, currentState",
+      "Wait and verify instance reaches running state",
+      "Call aws_stop_instance with the instanceId",
+      "Verify response indicates stopping"
+    ],
+    "verification": "Instance lifecycle (start/stop) works correctly",
+    "passes": true,
+    "note": "DESTRUCTIVE: Only run on test instances. Incurs AWS charges."
+  },
+  {
+    "id": "MCP-16",
+    "category": "mcp-aws-write",
+    "description": "Test aws_create_ami creates valid AMI",
+    "steps": [
+      "Call aws_list_instances to find a running instance",
+      "Call aws_create_ami with instanceId and name='mcp-test-ami-TIMESTAMP'",
+      "Verify response has: amiId matching ami-[a-f0-9]+, name, message",
+      "Wait 30 seconds",
+      "Call aws_list_amis",
+      "Verify new AMI appears in list"
+    ],
+    "verification": "AMI creation initiates successfully",
+    "passes": true,
+    "note": "DESTRUCTIVE: Creates billable resource. Delete test AMI after verification."
+  },
+  {
+    "id": "MCP-17",
+    "category": "mcp-integration",
+    "description": "Test full VM diagnostics workflow",
+    "steps": [
+      "Call aws_list_instances(stateFilter='running')",
+      "For the coordinator VM, verify it appears in list",
+      "Call ssh_exec(target='coordinator', command='free -m')",
+      "Call ssh_exec(target='coordinator', command='df -h')",
+      "Call ssh_exec(target='coordinator', command='uptime')",
+      "Aggregate results into VM health report"
+    ],
+    "verification": "Full diagnostics workflow executes without errors",
+    "passes": true
+  },
+  {
+    "id": "MCP-18",
+    "category": "mcp-integration",
+    "description": "Test coordinator app deployment check",
+    "steps": [
+      "Call ssh_exec(target='coordinator', command='ls -la /opt/gymnastics-graphics')",
+      "Verify directory exists",
+      "Call ssh_exec(target='coordinator', command='cat /opt/gymnastics-graphics/server/package.json | head -5')",
+      "Verify package.json exists and contains expected structure",
+      "Call ssh_exec(target='coordinator', command='pm2 list --no-color')",
+      "Verify PM2 shows process status"
+    ],
+    "verification": "Coordinator deployment structure is correct",
+    "passes": true
+  },
+  {
+    "id": "MCP-19",
+    "category": "mcp-integration",
+    "description": "Test network connectivity from coordinator",
+    "steps": [
+      "Call ssh_exec(target='coordinator', command='curl -s -o /dev/null -w \"%{http_code}\" https://api.github.com')",
+      "Verify stdout is '200' (GitHub API reachable)",
+      "Call ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/status || echo unreachable')",
+      "Record whether local API is running"
+    ],
+    "verification": "Coordinator has internet and local service connectivity",
+    "passes": true
+  },
+  {
+    "id": "MCP-20",
+    "category": "mcp-performance",
+    "description": "Test SSH command latency",
+    "steps": [
+      "Call ssh_exec(target='coordinator', command='echo test') 3 times",
+      "Record response time for each call",
+      "Verify all calls complete successfully",
+      "Verify average latency is under 5 seconds per command"
+    ],
+    "verification": "SSH commands complete within acceptable latency",
+    "passes": true
   }
 ]
 ```
@@ -1591,7 +1871,15 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 | **Phase 20: Wake System** | 4 | 4 | ✅ Complete |
 | **Phase 21: Frontend Offline** | 5 | 5 | ✅ Complete |
 | **Integration (Coordinator)** | 4 | 4 | ✅ Complete |
-| **Total** | **87** | **87** | **100%** |
+| **Phase MCP: AWS Read** | 3 | 3 | ✅ Complete |
+| **Phase MCP: SSH Coordinator** | 5 | 5 | ✅ Complete |
+| **Phase MCP: SSH Multi** | 2 | 2 | ✅ Complete |
+| **Phase MCP: File Transfer** | 1 | 1 | ✅ Complete |
+| **Phase MCP: Error Handling** | 3 | 3 | ✅ Complete |
+| **Phase MCP: AWS Write** | 2 | 2 | ✅ Complete |
+| **Phase MCP: Integration** | 3 | 3 | ✅ Complete |
+| **Phase MCP: Performance** | 1 | 1 | ✅ Complete |
+| **Total** | **107** | **107** | **100%** |
 
 ---
 
@@ -1708,6 +1996,54 @@ Phase 1 (Data Model) ──────────┬────────�
                                │
                                ▼
                     Integration Tests (INT-12 to INT-15)
+                               │
+═══════════════════════════════╪═══════════════════════════════════════
+   MCP SERVER TESTING (Phase MCP)
+═══════════════════════════════╪═══════════════════════════════════════
+                               │
+                               ▼
+                    MCP AWS Read Tests (MCP-01 to MCP-03)
+                    ├── MCP-01: aws_list_instances
+                    ├── MCP-02: aws_list_instances with filter
+                    └── MCP-03: aws_list_amis
+                               │
+                               ▼
+                    MCP SSH Coordinator Tests (MCP-04 to MCP-08)
+                    ├── MCP-04: Basic ssh_exec
+                    ├── MCP-05: ssh_exec with sudo
+                    ├── MCP-06: System info commands
+                    ├── MCP-07: Service status
+                    └── MCP-08: Direct IP targeting
+                               │
+                               ▼
+                    MCP SSH Multi Tests (MCP-09 to MCP-10)
+                    ├── MCP-09: Single target
+                    └── MCP-10: Multi-target aggregation
+                               │
+                               ▼
+                    MCP File Transfer (MCP-11)
+                    └── MCP-11: Upload/download roundtrip
+                               │
+                               ▼
+                    MCP Error Handling (MCP-12 to MCP-14)
+                    ├── MCP-12: Invalid SSH target
+                    ├── MCP-13: Invalid AWS instance ID
+                    └── MCP-14: Failed SSH commands
+                               │
+                               ▼
+                    MCP AWS Write Tests (MCP-15 to MCP-16) [DESTRUCTIVE]
+                    ├── MCP-15: Start/stop instance lifecycle
+                    └── MCP-16: Create AMI
+                               │
+                               ▼
+                    MCP Integration (MCP-17 to MCP-19)
+                    ├── MCP-17: Full VM diagnostics
+                    ├── MCP-18: Deployment check
+                    └── MCP-19: Network connectivity
+                               │
+                               ▼
+                    MCP Performance (MCP-20)
+                    └── MCP-20: SSH latency test
 ```
 
 ---
@@ -1954,3 +2290,114 @@ Two serverless functions handle wake/status without needing the coordinator:
 | `show-controller/src/pages/CompetitionSelector.jsx` | 21 | Offline state handling |
 | `show-controller/src/pages/VMPoolPage.jsx` | 21 | Offline state handling |
 | `show-controller/src/App.jsx` | 21 | CoordinatorGate wrapper |
+
+---
+
+## MCP Server Testing Design Decisions
+
+**Reference:** `docs/PRD-MCPServerTesting-2026-01-16.md` (Phase MCP)
+
+### MCP Server Tools
+
+| Tool | Category | Description |
+|------|----------|-------------|
+| `aws_list_instances` | AWS | List EC2 instances with optional state filter |
+| `aws_start_instance` | AWS | Start a stopped EC2 instance |
+| `aws_stop_instance` | AWS | Stop a running EC2 instance |
+| `aws_create_ami` | AWS | Create AMI from instance |
+| `aws_list_amis` | AWS | List gymnastics-related AMIs |
+| `ssh_exec` | SSH | Execute command on single VM |
+| `ssh_multi_exec` | SSH | Execute command on multiple VMs |
+| `ssh_upload_file` | SSH | Upload file to VM via SCP |
+| `ssh_download_file` | SSH | Download file from VM via SCP |
+
+### Test Execution Strategy
+Tests are designed to be run via MCP tools directly by Claude Code:
+1. Execute MCP tool with specific parameters
+2. Verify response structure matches expected schema
+3. Verify response content meets success criteria
+4. Mark test as passed/failed in plan.md
+
+### Test Categories
+
+| Category | Tests | Safe to Run |
+|----------|-------|-------------|
+| AWS Read | MCP-01 to MCP-03 | ✅ Always |
+| SSH Coordinator | MCP-04 to MCP-08 | ✅ When coordinator running |
+| SSH Multi | MCP-09 to MCP-10 | ✅ When VMs running |
+| File Transfer | MCP-11 | ✅ When coordinator running |
+| Error Handling | MCP-12 to MCP-14 | ✅ Always |
+| AWS Write | MCP-15 to MCP-16 | ⚠️ DESTRUCTIVE - costs money |
+| Integration | MCP-17 to MCP-19 | ✅ When coordinator running |
+| Performance | MCP-20 | ✅ When coordinator running |
+
+### Configuration
+
+```javascript
+const CONFIG = {
+  awsRegion: 'us-east-1',
+  sshKeyPath: '~/.ssh/gymnastics-graphics-key-pair.pem',
+  sshUsername: 'ubuntu',
+  coordinatorIp: '44.193.31.120',
+  projectTag: 'gymnastics-graphics',
+  sshTimeout: 30000,      // 30 seconds
+  commandTimeout: 60000,  // 60 seconds
+};
+```
+
+### Expected Response Schemas
+
+**aws_list_instances:**
+```json
+[
+  {
+    "instanceId": "i-0abc123def456789",
+    "name": "gymnastics-coordinator",
+    "state": "running",
+    "publicIp": "44.193.31.120",
+    "privateIp": "172.31.9.204",
+    "instanceType": "t3.small",
+    "launchTime": "2026-01-15T10:30:00.000Z"
+  }
+]
+```
+
+**ssh_exec:**
+```json
+{
+  "target": "44.193.31.120",
+  "command": "echo hello",
+  "exitCode": 0,
+  "stdout": "hello\n",
+  "stderr": "",
+  "success": true
+}
+```
+
+**ssh_multi_exec:**
+```json
+{
+  "command": "hostname",
+  "results": [
+    { "target": "44.193.31.120", "exitCode": 0, "stdout": "coordinator\n", "success": true },
+    { "target": "44.197.188.85", "exitCode": 0, "stdout": "vm-001\n", "success": true }
+  ],
+  "successCount": 2,
+  "failureCount": 0
+}
+```
+
+### Success Criteria
+
+| Category | Tests | Required Pass Rate |
+|----------|-------|-------------------|
+| AWS Read | 3 | 100% |
+| SSH Coordinator | 5 | 100% |
+| SSH Multi | 2 | 100% |
+| File Transfer | 1 | 100% |
+| Error Handling | 3 | 100% |
+| AWS Write | 2 | 80% (may skip if no test instances) |
+| Integration | 3 | 100% |
+| Performance | 1 | 100% |
+
+**Overall Target:** 95% pass rate (19/20 tests)

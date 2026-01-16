@@ -1,9 +1,619 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** Integration Tests - Coordinator Deployment (COMPLETE)
-**Last Task:** INT-15 - Production end-to-end test
-**Next Task:** ALL TASKS COMPLETE
+**Phase:** MCP Server Testing - COMPLETE
+**Last Task:** MCP-20 - Test SSH command latency
+**Next Task:** All tasks complete!
+
+---
+
+## 2026-01-16
+
+### MCP-20: Test SSH command latency
+Verified that SSH commands complete within acceptable latency by running 'echo test' 3 times and measuring response times.
+
+**Test Results:**
+- Created test script: `tools/mcp-server/test-mcp-20.mjs`
+- Step 1: Called ssh_exec(target='coordinator', command='echo test') 3 times
+- Step 2: Recorded response time for each call
+- Step 3: Verified all calls complete successfully
+- Step 4: Verified average latency is under 5 seconds per command
+
+**Latency Results:**
+```
+Call  │ Latency    │ Status
+──────┼────────────┼────────
+1     │ 1.181s     │ PASS
+2     │ 0.688s     │ PASS
+3     │ 0.845s     │ PASS
+```
+
+**Statistics:**
+- Min latency: 0.688s
+- Max latency: 1.181s
+- Average latency: 0.905s
+- Threshold: 5s
+- All calls successful: PASS
+- Average under threshold: PASS
+
+**Verification:** MCP-20 PASSED - SSH commands complete within acceptable latency (avg: 0.905s < 5s)
+
+---
+
+### MCP-19: Test network connectivity from coordinator
+Verified that the coordinator has internet connectivity and local service connectivity.
+
+**Test Results:**
+- Created test script: `tools/mcp-server/test-mcp-19.mjs`
+- Step 1: Called ssh_exec(command='curl -s -o /dev/null -w "%{http_code}" https://api.github.com')
+- Step 2: Verified stdout is '200' (GitHub API reachable)
+- Step 3: Called ssh_exec(command='curl -s http://localhost:3001/api/status || echo unreachable')
+- Step 4: Recorded local API is running and responding with valid JSON
+
+**Connectivity Results:**
+```
+Internet Connectivity:
+  Target: https://api.github.com
+  Reachable: ✓
+  HTTP Code: 200
+
+Local API:
+  Target: http://localhost:3001/api/status
+  Running: ✓
+  Response: Valid JSON with currentSegment, nextSegment, etc.
+```
+
+**Additional Checks:**
+- DNS resolution works: PASS
+- Outbound HTTPS (google.com): PASS (code: 200)
+
+**Verification Results:**
+- internet connectivity (GitHub API): PASS (CRITICAL)
+- HTTP response is 200: PASS
+- local API responds: PASS
+- local API returns valid JSON: PASS
+- DNS resolution works: PASS (CRITICAL)
+- outbound HTTPS works: PASS
+
+**Verification:** MCP-19 PASSED - Coordinator has internet and local service connectivity
+
+---
+
+### MCP-18: Test coordinator app deployment check
+Verified that the MCP server can check the coordinator deployment structure via SSH commands.
+
+**Test Results:**
+- Created test script: `tools/mcp-server/test-mcp-18.mjs`
+- Step 1: Called ssh_exec(command='ls -la /opt/gymnastics-graphics') - Directory exists with all expected contents
+- Step 2: Verified server/ and show-controller/ directories exist
+- Step 3: Called ssh_exec(command='cat /opt/gymnastics-graphics/server/package.json | head -10')
+- Step 4: Verified package.json has "name" and "version" fields
+- Step 5: Called ssh_exec(command='pm2 list --no-color')
+- Step 6: Verified PM2 shows "coordinator" process running (online, 1.0.0, 2h uptime)
+
+**Deployment Structure Verified:**
+```
+/opt/gymnastics-graphics/
+├── .git/
+├── server/
+│   ├── package.json (name: show-controller-server, version: 1.0.0)
+│   ├── node_modules/ (installed)
+│   ├── ecosystem.config.js (PM2 config)
+│   └── .env (environment variables)
+├── show-controller/
+└── [documentation and config files]
+```
+
+**PM2 Process Status:**
+```
+│ id │ name        │ version │ mode │ pid  │ uptime │ status │ cpu │ mem     │
+│ 0  │ coordinator │ 1.0.0   │ fork │ 4316 │ 2h     │ online │ 0%  │ 138.8mb │
+```
+
+**Verification Results:**
+- directory exists: PASS (CRITICAL)
+- server directory exists: PASS (CRITICAL)
+- package.json exists: PASS (CRITICAL)
+- package.json has name field: PASS
+- package.json has version field: PASS
+- pm2 command executed: PASS
+- pm2 shows process list: PASS
+- node_modules installed: PASS
+- ecosystem.config.js exists: PASS
+- .env file exists: PASS
+
+**Verification:** MCP-18 PASSED - Coordinator deployment structure is correct
+
+---
+
+### MCP-17: Test full VM diagnostics workflow
+Verified that the MCP server can perform a complete VM diagnostics workflow combining AWS and SSH operations.
+
+**Test Results:**
+- Created test script: `tools/mcp-server/test-mcp-17.mjs`
+- Step 1: Called aws_list_instances(stateFilter='running') - Found 1 running instance
+- Step 2: Verified coordinator VM info available (accessible at static IP 44.193.31.120)
+- Step 3: Called ssh_exec(command='free -m') - Memory: 477MB used / 1910MB total (25% used)
+- Step 4: Called ssh_exec(command='df -h') - Disk: 2.8G used / 19G total (15% used)
+- Step 5: Called ssh_exec(command='uptime') - Uptime: 20:49, Load: 0.00
+- Step 6: Aggregated results into VM health report with health status determination
+
+**VM Health Report Generated:**
+```json
+{
+  "timestamp": "2026-01-16T17:46:54.116Z",
+  "coordinator": {
+    "publicIp": "44.193.31.120",
+    "note": "Coordinator reachable at static IP"
+  },
+  "memory": {
+    "total": 1910,
+    "used": 477,
+    "usedPercent": 25
+  },
+  "disk": {
+    "size": "19G",
+    "used": "2.8G",
+    "usedPercent": "15%"
+  },
+  "uptime": {
+    "uptime": "20:49",
+    "loadAverage": { "1min": 0, "5min": 0, "15min": 0 }
+  },
+  "healthStatus": "healthy",
+  "healthWarnings": []
+}
+```
+
+**Verification Results:**
+- aws_list_instances returns array: PASS
+- coordinator VM info available: PASS
+- memory command executed successfully: PASS
+- memory info parsed successfully: PASS
+- disk command executed successfully: PASS
+- disk info parsed successfully: PASS
+- uptime command executed successfully: PASS
+- uptime info parsed successfully: PASS
+- health report generated: PASS
+- all diagnostic commands succeeded: PASS
+
+**Verification:** MCP-17 PASSED - Full diagnostics workflow executes without errors
+
+---
+
+### MCP-16: Test aws_create_ami creates valid AMI
+Verified that `aws_create_ami` correctly creates an AMI from a running instance with proper response format.
+
+**Test Results:**
+- Created test script: `tools/mcp-server/test-mcp-16.mjs`
+- Step 1: Called aws_list_instances to find a running instance
+- Found running instance: `i-08abea9194f19ddbd` (gymnastics-vm-1768578923817)
+- Step 2: Called aws_create_ami with instanceId and name='mcp-test-ami-{timestamp}'
+- Step 3: Verified response has amiId, name, and message fields
+- Step 4: Waited 30 seconds for AMI to register
+- Step 5: Called aws_list_amis to verify AMI appears
+- Step 6: Cleaned up test AMI via deregistration
+
+**Create AMI Response:**
+```json
+{
+  "amiId": "ami-0421ecec6222badd1",
+  "name": "mcp-test-ami-1768585439982",
+  "message": "AMI creation started. ID: ami-0421ecec6222badd1. It will take 5-10 minutes to complete."
+}
+```
+
+**Verification Results:**
+- Has amiId: PASS
+- amiId matches ami-[a-f0-9]+ pattern: PASS
+- Has name: PASS
+- name matches requested: PASS
+- Has message: PASS
+- AMI appeared in list within 30 seconds: PASS
+
+**Cleanup:**
+- Test AMI deregistered after verification
+- Associated snapshots may need manual cleanup
+
+**Verification:** MCP-16 PASSED - AMI creation initiates successfully
+
+---
+
+### MCP-15: Test aws_start_instance and aws_stop_instance lifecycle
+Verified that `aws_start_instance` and `aws_stop_instance` correctly manage EC2 instance lifecycle.
+
+**Test Results:**
+- Created test script: `tools/mcp-server/test-mcp-15.mjs`
+- Step 1: Called aws_list_instances to find a stopped instance
+- Found stopped instance: `i-058b0d139756f034c` (gymnastics-vm-template)
+- Step 2: Called aws_start_instance with the instanceId
+- Step 3: Waited for instance to reach running state
+- Step 4: Called aws_stop_instance with the instanceId
+- Step 5: Verified response indicates stopping
+
+**Start Instance Response:**
+```json
+{
+  "instanceId": "i-058b0d139756f034c",
+  "previousState": "stopped",
+  "currentState": "pending"
+}
+```
+
+**Stop Instance Response:**
+```json
+{
+  "instanceId": "i-058b0d139756f034c",
+  "previousState": "running",
+  "currentState": "stopping"
+}
+```
+
+**Verification Results:**
+- Start response has instanceId: PASS
+- Start response has previousState: PASS
+- Start response has currentState: PASS
+- Instance reached running state: PASS
+- Stop response has instanceId: PASS
+- Stop response has previousState: PASS
+- Stop response has currentState: PASS
+- Stop response indicates stopping: PASS
+
+**Verification:** MCP-15 PASSED - Instance lifecycle (start/stop) works correctly
+
+---
+
+### MCP-14: Test error handling for failed SSH command
+Verified that `ssh_exec` properly handles commands that fail with non-zero exit codes and commands that don't exist.
+
+**Test Results:**
+- Created test script: `tools/mcp-server/test-mcp-14.mjs`
+- Test 1: Called ssh_exec with target='coordinator', command='exit 1'
+- Test 2: Called ssh_exec with command='nonexistent-command-xyz123'
+
+**Response Structure (exit 1):**
+```json
+{
+  "target": "44.193.31.120",
+  "command": "exit 1",
+  "exitCode": 1,
+  "stdout": "",
+  "stderr": "",
+  "success": false
+}
+```
+
+**Response Structure (nonexistent command):**
+```json
+{
+  "target": "44.193.31.120",
+  "command": "nonexistent-command-xyz123",
+  "exitCode": 127,
+  "stdout": "",
+  "stderr": "bash: line 1: nonexistent-command-xyz123: command not found",
+  "success": false
+}
+```
+
+**Verification Results:**
+- Test 1 (exit 1):
+  - exitCode is 1: PASS
+  - success is false: PASS
+- Test 2 (nonexistent command):
+  - exitCode is non-zero (127): PASS
+  - stderr contains "command not found": PASS
+
+**Verification:** MCP-14 PASSED - Failed commands return proper exit codes and success=false
+
+---
+
+### MCP-13: Test error handling for invalid AWS instance ID
+Verified that `aws_start_instance` properly handles invalid instance IDs and returns a descriptive error.
+
+**Test Results:**
+- Created test script: `tools/mcp-server/test-mcp-13.mjs`
+- Step 1: Called aws_start_instance with instanceId='i-invalid123456789'
+- Step 2: Verified response contains error field
+- Step 3: Verified error message mentions invalid instance
+
+**Response Structure (Error Case):**
+```json
+{
+  "error": "Invalid id: \"i-invalid123456789\"",
+  "tool": "aws_start_instance",
+  "args": {
+    "instanceId": "i-invalid123456789"
+  }
+}
+```
+
+**Verification Results:**
+- No unhandled exception: PASS
+- Response contains error: PASS
+- Error message mentions invalid instance: PASS
+
+**Verification:** MCP-13 PASSED - Invalid instance ID returns AWS error gracefully
+
+---
+
+### MCP-12: Test error handling for invalid SSH target
+Verified that `ssh_exec` properly handles connection failures when targeting an unreachable IP address.
+
+**Test Results:**
+- Created test script: `tools/mcp-server/test-mcp-12.mjs`
+- Step 1: Called ssh_exec with target='192.0.2.1' (TEST-NET, unreachable), command='echo test'
+- Step 2: Verified response indicates connection failure (success=false)
+- Step 3: Verified error message is descriptive ("Timed out while waiting for handshake")
+
+**Response Structure (Error Case):**
+```json
+{
+  "target": "192.0.2.1",
+  "command": "echo test",
+  "exitCode": -1,
+  "stdout": "",
+  "stderr": "",
+  "success": false,
+  "error": "Timed out while waiting for handshake"
+}
+```
+
+**Verification Results:**
+- Response indicates connection failure (success=false): PASS
+- Response has error field: PASS
+- Error message is descriptive (contains 'timed out' or 'handshake'): PASS
+
+**Verification:** MCP-12 PASSED - Invalid target returns proper error, not crash
+
+---
+
+### MCP-11: Test ssh_upload_file and ssh_download_file roundtrip
+Verified that `ssh_upload_file` and `ssh_download_file` correctly transfer files and preserve content integrity.
+
+**Test Results:**
+- Created test script: `tools/mcp-server/test-mcp-11.mjs`
+- Step 1: Created local test file with unique content in /tmp/claude/
+- Step 2: Uploaded to /tmp/mcp-test-file.txt on coordinator via `ssh_upload_file`
+- Step 3: Verified upload response has success=true
+- Step 4: Used `ssh_exec` to cat the uploaded file
+- Step 5: Verified file contents match original (trimmed comparison due to SSH stdout behavior)
+- Step 6: Downloaded to different local path via `ssh_download_file`
+- Step 7: Verified download response has success=true
+- Step 8: Verified downloaded content matches original exactly
+
+**Upload Response Structure:**
+```json
+{
+  "target": "44.193.31.120",
+  "localPath": "/tmp/claude/mcp-test-upload-{timestamp}.txt",
+  "remotePath": "/tmp/mcp-test-file.txt",
+  "success": true,
+  "message": "File uploaded successfully to 44.193.31.120:/tmp/mcp-test-file.txt"
+}
+```
+
+**Download Response Structure:**
+```json
+{
+  "target": "44.193.31.120",
+  "remotePath": "/tmp/mcp-test-file.txt",
+  "localPath": "/tmp/claude/mcp-test-download-{timestamp}.txt",
+  "success": true,
+  "message": "File downloaded successfully to /tmp/claude/mcp-test-download-{timestamp}.txt"
+}
+```
+
+**Verification Results:**
+- local test file created: PASS
+- upload response has success=true: PASS
+- upload response has target: PASS
+- upload response has localPath: PASS
+- upload response has remotePath: PASS
+- upload response has message: PASS
+- ssh_exec to cat file succeeded: PASS
+- uploaded file contents match original (trimmed comparison): PASS
+- download response has success=true: PASS
+- download response has target: PASS
+- download response has remotePath: PASS
+- download response has localPath: PASS
+- download response has message: PASS
+- downloaded file exists: PASS
+- downloaded file contents match original: PASS
+
+**Verification:** MCP-11 PASSED - File upload and download preserve content integrity
+
+---
+
+### MCP-10: Test ssh_multi_exec aggregation on multiple VMs
+Verified that `ssh_multi_exec` correctly aggregates results from multiple VMs in parallel.
+
+**Test Results:**
+- Created test script: `tools/mcp-server/test-mcp-10.mjs`
+- Step 1: Listed running instances via `aws_list_instances(stateFilter='running')` - Found 1 running VM
+- Step 2: Extracted publicIp addresses - Found IP: 3.236.220.35
+- Step 3: Built target list: coordinator (44.193.31.120) + running VM (3.236.220.35)
+- Step 4: Ran `ssh_multi_exec` with 2 targets, command='hostname'
+- Step 5: Verified all assertions
+
+**Response Structure:**
+```json
+{
+  "command": "hostname",
+  "results": [
+    {
+      "target": "44.193.31.120",
+      "command": "hostname",
+      "exitCode": 0,
+      "stdout": "ip-172-31-12-111",
+      "stderr": "",
+      "success": true
+    },
+    {
+      "target": "3.236.220.35",
+      "command": "hostname",
+      "exitCode": 0,
+      "stdout": "ip-172-31-67-124",
+      "stderr": "",
+      "success": true
+    }
+  ],
+  "successCount": 2,
+  "failureCount": 0
+}
+```
+
+**Verification Results:**
+- response has "command" property: PASS
+- response has "results" array: PASS
+- response has "successCount" property: PASS
+- response has "failureCount" property: PASS
+- results array length matches target count: PASS
+- successCount + failureCount equals target count: PASS
+- Each result has target and success properties: PASS
+- Each successful result has stdout property: PASS
+- At least one VM was reachable: PASS
+
+**Verification:** MCP-10 PASSED - ssh_multi_exec aggregates results from multiple VMs
+
+---
+
+### MCP-09: Test ssh_multi_exec on single target
+Verified that `ssh_multi_exec` works correctly when targeting a single VM.
+
+**Test Results:**
+- Created test script: `tools/mcp-server/test-mcp-09.mjs`
+- Response has command, results array, successCount, failureCount: PASS
+- results[0] has target and success=true: PASS
+- successCount is 1, failureCount is 0: PASS
+
+**Response Structure:**
+```json
+{
+  "command": "hostname",
+  "results": [
+    {
+      "target": "44.193.31.120",
+      "command": "hostname",
+      "exitCode": 0,
+      "stdout": "ip-172-31-12-111",
+      "stderr": "",
+      "success": true
+    }
+  ],
+  "successCount": 1,
+  "failureCount": 0
+}
+```
+
+**Verification:** MCP-09 PASSED - ssh_multi_exec works correctly with single target
+
+---
+
+### MCP-08: Test ssh_exec by IP address (not shortcut)
+Verified that `ssh_exec` works with a direct IP address target instead of the "coordinator" shortcut.
+
+**Test Results:**
+- Created test script: `tools/mcp-server/test-mcp-08.mjs`
+- success is true: PASS
+- stdout contains 'test': PASS
+- target is the direct IP address (44.193.31.120): PASS
+
+**Response Structure:**
+```json
+{
+  "target": "44.193.31.120",
+  "command": "echo test",
+  "exitCode": 0,
+  "stdout": "test",
+  "stderr": "",
+  "success": true
+}
+```
+
+**Verification:** MCP-08 PASSED - Direct IP targeting works same as "coordinator" shortcut
+
+---
+
+### MCP-04: Test ssh_exec basic command on coordinator
+Verified that `ssh_exec` can connect to the coordinator and execute basic commands.
+
+**Test Results:**
+- Created test script: `tools/mcp-server/test-mcp-04.mjs`
+- Response has all required fields (target, command, exitCode, stdout, stderr, success): PASS
+- exitCode is 0: PASS
+- stdout contains 'hello': PASS
+- success is true: PASS
+
+**Response Structure:**
+```json
+{
+  "target": "44.193.31.120",
+  "command": "echo hello",
+  "exitCode": 0,
+  "stdout": "hello",
+  "stderr": "",
+  "success": true
+}
+```
+
+**Verification:** MCP-04 PASSED
+
+---
+
+### MCP-03: Test aws_list_amis returns AMI catalog
+Verified that `aws_list_amis` returns AMI catalog with valid structure and sorting.
+
+**Test Results:**
+- Created test script: `tools/mcp-server/test-mcp-03.mjs`
+- Response is array: PASS
+- AMI count: 3 AMIs found
+- All AMIs have required fields (amiId, name, state, creationDate): PASS
+- All amiId values match pattern `ami-[a-f0-9]+`: PASS
+- AMIs sorted by creationDate descending: PASS
+
+**AMIs Found:**
+1. `ami-01bdb25682977bb09` (gymnastics-vm-v2.1) - created: 2026-01-16
+2. `ami-01a93c8f425f37d39` (gymnastics-vm-v2.0) - created: 2026-01-15
+3. `ami-0cd400e38fe002902` (gymnastics-vm-v1.0) - created: 2026-01-14
+
+**Verification:** MCP-03 PASSED
+
+---
+
+### MCP-02: Test aws_list_instances with state filter
+Verified that `aws_list_instances` correctly filters instances by state.
+
+**Test Results:**
+- Created test script: `tools/mcp-server/test-mcp-02.mjs`
+- Test 1 (stateFilter='running'): Found 1 running instance, all have state='running': PASS
+- Test 2 (stateFilter='stopped'): Found 1 stopped instance, all have state='stopped': PASS
+- Running filter count matches expected: PASS
+- Stopped filter count matches expected: PASS
+
+**Instances by State:**
+- Running: `i-08abea9194f19ddbd` (gymnastics-vm-1768578923817)
+- Stopped: `i-058b0d139756f034c` (gymnastics-vm-template)
+
+**Verification:** MCP-02 PASSED
+
+---
+
+### MCP-01: Test aws_list_instances returns valid instance data
+Verified the `aws_list_instances` function in the MCP server works correctly.
+
+**Test Results:**
+- Created test script: `tools/mcp-server/test-mcp-01.mjs`
+- Response is array: PASS
+- Instance count: 2 instances found
+- All instances have required fields (instanceId, name, state, instanceType): PASS
+- All instanceId values match pattern `i-[a-f0-9]+`: PASS
+- All states are valid (running, stopped, pending, stopping, terminated): PASS
+
+**Instances Found:**
+1. `i-058b0d139756f034c` (gymnastics-vm-template) - state: stopped
+2. `i-08abea9194f19ddbd` (gymnastics-vm-1768578923817) - state: running
+
+**Verification:** MCP-01 PASSED
 
 ---
 
@@ -2890,6 +3500,77 @@ Created `server/lib/vmHealthMonitor.js` with VM health monitoring capabilities:
 - `shutdown` - Monitor stopped
 
 Verification: `node -e "import('./lib/vmHealthMonitor.js')"` exits 0
+
+---
+
+## 2026-01-16
+
+### MCP-05: Test ssh_exec with sudo on coordinator
+Verified MCP server ssh_exec with sudo=true functionality on the coordinator VM.
+
+**Test Results:**
+- Connected to coordinator at 44.193.31.120 via SSH
+- Ran 'sudo whoami' command
+- Verified stdout contains 'root' ✓
+- Verified exit code is 0 ✓
+- Verified success is true ✓
+
+**MCP Response Format:**
+```json
+{
+  "target": "44.193.31.120",
+  "command": "sudo whoami",
+  "exitCode": 0,
+  "stdout": "root",
+  "stderr": "",
+  "success": true
+}
+```
+
+**Verification:** Sudo execution works and returns root user - PASSED
+
+### MCP-06: Test ssh_exec system info commands on coordinator
+Verified MCP server ssh_exec functionality for system information commands on the coordinator VM.
+
+**Test Results:**
+1. `hostname` command:
+   - stdout: "ip-172-31-12-111" ✓ (non-empty)
+   - exitCode: 0 ✓
+
+2. `uptime` command:
+   - stdout: "17:23:58 up 20:26, 1 user, load average: 0.06, 0.01, 0.00"
+   - Contains 'up' ✓
+   - Contains 'load average' ✓
+   - exitCode: 0 ✓
+
+3. `df -h /` command:
+   - stdout contains filesystem info (Filesystem header) ✓
+   - stdout contains size info (G for gigabytes) ✓
+   - Shows 19G total, 2.8G used, 16G available (15% usage)
+   - exitCode: 0 ✓
+
+**Test Script Created:** `tools/mcp-server/test-ssh-system-info.js`
+
+**Verification:** System info commands return valid data - PASSED
+
+### MCP-07: Test ssh_exec service status on coordinator
+Verified MCP server ssh_exec functionality for checking service status on the coordinator VM.
+
+**Test Results:**
+1. `systemctl is-active pm2-ubuntu || echo inactive` (with sudo):
+   - stdout: "active" ✓
+   - Response contains status information ✓
+   - exitCode: 0 ✓
+
+2. `pm2 list --no-color`:
+   - stdout shows PM2 process table with headers (id, name, status, etc.) ✓
+   - Shows 'coordinator' process with status 'online' ✓
+   - Process info: PID 4316, 110m uptime, 139.1mb memory ✓
+   - exitCode: 0 ✓
+
+**Test Script Created:** `tools/mcp-server/test-ssh-service-status.js`
+
+**Verification:** Service status commands execute successfully - PASSED
 
 ---
 
