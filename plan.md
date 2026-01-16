@@ -1763,7 +1763,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Verify response indicates stopping"
     ],
     "verification": "Instance lifecycle (start/stop) works correctly",
-    "passes": false,
+    "passes": true,
     "note": "DESTRUCTIVE: Only run on test instances. Incurs AWS charges."
   },
   {
@@ -1876,10 +1876,10 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 | **Phase MCP: SSH Multi** | 2 | 2 | ✅ Complete |
 | **Phase MCP: File Transfer** | 1 | 1 | ✅ Complete |
 | **Phase MCP: Error Handling** | 3 | 3 | ✅ Complete |
-| **Phase MCP: AWS Write** | 2 | 0 | ⏳ Pending |
+| **Phase MCP: AWS Write** | 2 | 1 | ⏳ In Progress |
 | **Phase MCP: Integration** | 3 | 0 | ⏳ Pending |
 | **Phase MCP: Performance** | 1 | 0 | ⏳ Pending |
-| **Total** | **107** | **101** | **94%** |
+| **Total** | **107** | **102** | **95%** |
 
 ---
 
