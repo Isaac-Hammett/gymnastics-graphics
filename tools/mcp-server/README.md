@@ -179,6 +179,48 @@ Run `aws sts get-caller-identity` to test your credentials. If it fails, re-chec
 3. Restart Claude Code
 4. Check Claude Code logs for MCP errors
 
+## Testing
+
+The MCP server includes a comprehensive test suite using Node.js built-in test runner.
+
+### Running Tests
+
+```bash
+cd tools/mcp-server
+
+# Run all tests
+npm test
+
+# Run only unit tests (fast, no external dependencies)
+npm run test:unit
+
+# Run only integration tests (requires AWS/SSH/Firebase credentials)
+npm run test:integration
+```
+
+### Test Structure
+
+```
+__tests__/
+├── helpers/
+│   └── testConfig.js      # Shared test constants and utilities
+├── unit/
+│   └── testConfig.test.js # Unit tests for config helpers
+└── integration/
+    ├── aws.test.js        # AWS EC2 operations tests
+    ├── ssh.test.js        # SSH command execution tests
+    └── firebase.test.js   # Firebase CRUD operations tests
+```
+
+### Test Requirements
+
+- **Unit tests**: No external dependencies, always runnable
+- **AWS tests**: Require AWS credentials in `~/.aws/credentials` or environment variables
+- **SSH tests**: Require SSH key at `~/.ssh/gymnastics-graphics-key-pair.pem`
+- **Firebase tests**: Require Firebase service account at `~/.config/firebase/gymnastics-graphics-dev-sa.json`
+
+Tests that require unavailable credentials are automatically skipped.
+
 ## Security Notes
 
 - SSH key stays on your local machine only
