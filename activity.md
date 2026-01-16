@@ -2,12 +2,55 @@
 
 ## Current Status
 **Phase:** MCP Server Testing - Firebase Tools
-**Last Task:** MCP-24 - Test firebase_set writes data (dev only)
-**Next Task:** MCP-25 - Test firebase_update merges data (dev only)
+**Last Task:** MCP-25 - Test firebase_update merges data (dev only)
+**Next Task:** MCP-26 - Test firebase_delete removes data (dev only)
 
 ---
 
 ## 2026-01-16
+
+### MCP-25: Test firebase_update merges data (dev only)
+Verified that `firebase_update` correctly merges data without overwriting existing fields in Firebase Realtime Database.
+
+**Test Results:**
+- Created test script: `tools/mcp-server/test-mcp-25.mjs`
+- Step 1: Called firebase_set(project='dev', path='mcp-tests/test-25', data={name:'original',count:1})
+- Step 2: Called firebase_update(project='dev', path='mcp-tests/test-25', data={count:2})
+- Step 3: Called firebase_get to verify name preserved and count updated
+- Step 4: Called firebase_delete to clean up test data
+
+**Response Structure Verified:**
+```json
+{
+  "project": "dev",
+  "path": "mcp-tests/test-25",
+  "success": true,
+  "message": "Data updated at mcp-tests/test-25"
+}
+```
+
+**Merged Data Verified:**
+```json
+{
+  "count": 2,
+  "name": "original"
+}
+```
+
+**Verification Results:**
+- initial data created successfully: PASS
+- update response includes success: true: PASS
+- update response has correct path: PASS
+- update response has message: PASS
+- data exists after update: PASS
+- name field preserved (not overwritten): PASS
+- count field updated to new value: PASS
+- cleanup delete succeeded: PASS
+- data was cleaned up: PASS
+
+**Verification:** MCP-25 PASSED - firebase_update merges without overwriting existing fields
+
+---
 
 ### MCP-24: Test firebase_set writes data (dev only)
 Verified that `firebase_set` correctly writes data to Firebase Realtime Database.

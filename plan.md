@@ -1900,7 +1900,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Call firebase_delete to clean up test data"
     ],
     "verification": "firebase_update merges without overwriting existing fields",
-    "passes": false
+    "passes": true
   },
   {
     "id": "MCP-26",
