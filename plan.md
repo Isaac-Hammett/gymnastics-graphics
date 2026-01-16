@@ -1585,7 +1585,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Verify all returned instances have state='stopped'"
     ],
     "verification": "State filter correctly filters results",
-    "passes": false
+    "passes": true
   },
   {
     "id": "MCP-03",
@@ -1871,7 +1871,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 | **Phase 20: Wake System** | 4 | 4 | ✅ Complete |
 | **Phase 21: Frontend Offline** | 5 | 5 | ✅ Complete |
 | **Integration (Coordinator)** | 4 | 4 | ✅ Complete |
-| **Phase MCP: AWS Read** | 3 | 1 | 🔄 In Progress |
+| **Phase MCP: AWS Read** | 3 | 2 | 🔄 In Progress |
 | **Phase MCP: SSH Coordinator** | 5 | 0 | ⏳ Pending |
 | **Phase MCP: SSH Multi** | 2 | 0 | ⏳ Pending |
 | **Phase MCP: File Transfer** | 1 | 0 | ⏳ Pending |
@@ -1879,7 +1879,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 | **Phase MCP: AWS Write** | 2 | 0 | ⏳ Pending |
 | **Phase MCP: Integration** | 3 | 0 | ⏳ Pending |
 | **Phase MCP: Performance** | 1 | 0 | ⏳ Pending |
-| **Total** | **107** | **88** | **82%** |
+| **Total** | **107** | **89** | **83%** |
 
 ---
 

@@ -2,12 +2,30 @@
 
 ## Current Status
 **Phase:** MCP Server Testing
-**Last Task:** MCP-01 - Test aws_list_instances returns valid instance data
-**Next Task:** MCP-02 - Test aws_list_instances with state filter
+**Last Task:** MCP-02 - Test aws_list_instances with state filter
+**Next Task:** MCP-03 - Test aws_list_amis returns AMI catalog
 
 ---
 
 ## 2026-01-16
+
+### MCP-02: Test aws_list_instances with state filter
+Verified that `aws_list_instances` correctly filters instances by state.
+
+**Test Results:**
+- Created test script: `tools/mcp-server/test-mcp-02.mjs`
+- Test 1 (stateFilter='running'): Found 1 running instance, all have state='running': PASS
+- Test 2 (stateFilter='stopped'): Found 1 stopped instance, all have state='stopped': PASS
+- Running filter count matches expected: PASS
+- Stopped filter count matches expected: PASS
+
+**Instances by State:**
+- Running: `i-08abea9194f19ddbd` (gymnastics-vm-1768578923817)
+- Stopped: `i-058b0d139756f034c` (gymnastics-vm-template)
+
+**Verification:** MCP-02 PASSED
+
+---
 
 ### MCP-01: Test aws_list_instances returns valid instance data
 Verified the `aws_list_instances` function in the MCP server works correctly.
