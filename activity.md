@@ -2,12 +2,32 @@
 
 ## Current Status
 **Phase:** MCP Server Testing
-**Last Task:** MCP-02 - Test aws_list_instances with state filter
-**Next Task:** MCP-03 - Test aws_list_amis returns AMI catalog
+**Last Task:** MCP-03 - Test aws_list_amis returns AMI catalog
+**Next Task:** MCP-04 - Test ssh_exec basic command on coordinator
 
 ---
 
 ## 2026-01-16
+
+### MCP-03: Test aws_list_amis returns AMI catalog
+Verified that `aws_list_amis` returns AMI catalog with valid structure and sorting.
+
+**Test Results:**
+- Created test script: `tools/mcp-server/test-mcp-03.mjs`
+- Response is array: PASS
+- AMI count: 3 AMIs found
+- All AMIs have required fields (amiId, name, state, creationDate): PASS
+- All amiId values match pattern `ami-[a-f0-9]+`: PASS
+- AMIs sorted by creationDate descending: PASS
+
+**AMIs Found:**
+1. `ami-01bdb25682977bb09` (gymnastics-vm-v2.1) - created: 2026-01-16
+2. `ami-01a93c8f425f37d39` (gymnastics-vm-v2.0) - created: 2026-01-15
+3. `ami-0cd400e38fe002902` (gymnastics-vm-v1.0) - created: 2026-01-14
+
+**Verification:** MCP-03 PASSED
+
+---
 
 ### MCP-02: Test aws_list_instances with state filter
 Verified that `aws_list_instances` correctly filters instances by state.

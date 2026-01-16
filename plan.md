@@ -1599,7 +1599,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Verify AMIs are sorted by creationDate descending"
     ],
     "verification": "Response contains AMIs with valid structure, sorted by date",
-    "passes": false
+    "passes": true
   },
   {
     "id": "MCP-04",
@@ -1871,15 +1871,15 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 | **Phase 20: Wake System** | 4 | 4 | ✅ Complete |
 | **Phase 21: Frontend Offline** | 5 | 5 | ✅ Complete |
 | **Integration (Coordinator)** | 4 | 4 | ✅ Complete |
-| **Phase MCP: AWS Read** | 3 | 2 | 🔄 In Progress |
-| **Phase MCP: SSH Coordinator** | 5 | 0 | ⏳ Pending |
+| **Phase MCP: AWS Read** | 3 | 3 | ✅ Complete |
+| **Phase MCP: SSH Coordinator** | 5 | 0 | 🔄 In Progress |
 | **Phase MCP: SSH Multi** | 2 | 0 | ⏳ Pending |
 | **Phase MCP: File Transfer** | 1 | 0 | ⏳ Pending |
 | **Phase MCP: Error Handling** | 3 | 0 | ⏳ Pending |
 | **Phase MCP: AWS Write** | 2 | 0 | ⏳ Pending |
 | **Phase MCP: Integration** | 3 | 0 | ⏳ Pending |
 | **Phase MCP: Performance** | 1 | 0 | ⏳ Pending |
-| **Total** | **107** | **89** | **83%** |
+| **Total** | **107** | **90** | **84%** |
 
 ---
 
