@@ -1,9 +1,30 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** Integration Tests - Coordinator Deployment (COMPLETE)
-**Last Task:** INT-15 - Production end-to-end test
-**Next Task:** ALL TASKS COMPLETE
+**Phase:** MCP Server Testing
+**Last Task:** MCP-01 - Test aws_list_instances returns valid instance data
+**Next Task:** MCP-02 - Test aws_list_instances with state filter
+
+---
+
+## 2026-01-16
+
+### MCP-01: Test aws_list_instances returns valid instance data
+Verified the `aws_list_instances` function in the MCP server works correctly.
+
+**Test Results:**
+- Created test script: `tools/mcp-server/test-mcp-01.mjs`
+- Response is array: PASS
+- Instance count: 2 instances found
+- All instances have required fields (instanceId, name, state, instanceType): PASS
+- All instanceId values match pattern `i-[a-f0-9]+`: PASS
+- All states are valid (running, stopped, pending, stopping, terminated): PASS
+
+**Instances Found:**
+1. `i-058b0d139756f034c` (gymnastics-vm-template) - state: stopped
+2. `i-08abea9194f19ddbd` (gymnastics-vm-1768578923817) - state: running
+
+**Verification:** MCP-01 PASSED
 
 ---
 
