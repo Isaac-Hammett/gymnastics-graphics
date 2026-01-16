@@ -1,13 +1,42 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** MCP Server Testing - COMPLETE
-**Last Task:** MCP-20 - Test SSH command latency
-**Next Task:** All tasks complete!
+**Phase:** MCP Server Testing - Firebase Tools
+**Last Task:** MCP-21 - Test firebase_get reads existing data
+**Next Task:** MCP-22 - Test firebase_get handles non-existent path
 
 ---
 
 ## 2026-01-16
+
+### MCP-21: Test firebase_get reads existing data
+Verified that `firebase_get` returns valid response structure when reading from Firebase Realtime Database.
+
+**Test Results:**
+- Created test script: `tools/mcp-server/test-mcp-21.mjs`
+- Step 1: Called firebase_get(project='dev', path='/')
+- Step 2: Verified response includes project: 'dev'
+- Step 3: Verified response includes exists: true or false
+- Step 4: Verified response includes data field
+
+**Response Structure Verified:**
+```json
+{
+  "project": "dev",
+  "path": "/",
+  "exists": true,
+  "data": { "competitions": {...}, "currentGraphic": {...} }
+}
+```
+
+**Verification Results:**
+- response includes project: 'dev': PASS
+- response includes exists: boolean: PASS
+- response includes data field: PASS
+
+**Verification:** MCP-21 PASSED - firebase_get returns valid response structure
+
+---
 
 ### MCP-20: Test SSH command latency
 Verified that SSH commands complete within acceptable latency by running 'echo test' 3 times and measuring response times.
