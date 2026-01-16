@@ -2,12 +2,67 @@
 
 ## Current Status
 **Phase:** MCP Server Testing
-**Last Task:** MCP-16 - Test aws_create_ami creates valid AMI
-**Next Task:** MCP-17 - Test full VM diagnostics workflow
+**Last Task:** MCP-17 - Test full VM diagnostics workflow
+**Next Task:** MCP-18 - Test coordinator app deployment check
 
 ---
 
 ## 2026-01-16
+
+### MCP-17: Test full VM diagnostics workflow
+Verified that the MCP server can perform a complete VM diagnostics workflow combining AWS and SSH operations.
+
+**Test Results:**
+- Created test script: `tools/mcp-server/test-mcp-17.mjs`
+- Step 1: Called aws_list_instances(stateFilter='running') - Found 1 running instance
+- Step 2: Verified coordinator VM info available (accessible at static IP 44.193.31.120)
+- Step 3: Called ssh_exec(command='free -m') - Memory: 477MB used / 1910MB total (25% used)
+- Step 4: Called ssh_exec(command='df -h') - Disk: 2.8G used / 19G total (15% used)
+- Step 5: Called ssh_exec(command='uptime') - Uptime: 20:49, Load: 0.00
+- Step 6: Aggregated results into VM health report with health status determination
+
+**VM Health Report Generated:**
+```json
+{
+  "timestamp": "2026-01-16T17:46:54.116Z",
+  "coordinator": {
+    "publicIp": "44.193.31.120",
+    "note": "Coordinator reachable at static IP"
+  },
+  "memory": {
+    "total": 1910,
+    "used": 477,
+    "usedPercent": 25
+  },
+  "disk": {
+    "size": "19G",
+    "used": "2.8G",
+    "usedPercent": "15%"
+  },
+  "uptime": {
+    "uptime": "20:49",
+    "loadAverage": { "1min": 0, "5min": 0, "15min": 0 }
+  },
+  "healthStatus": "healthy",
+  "healthWarnings": []
+}
+```
+
+**Verification Results:**
+- aws_list_instances returns array: PASS
+- coordinator VM info available: PASS
+- memory command executed successfully: PASS
+- memory info parsed successfully: PASS
+- disk command executed successfully: PASS
+- disk info parsed successfully: PASS
+- uptime command executed successfully: PASS
+- uptime info parsed successfully: PASS
+- health report generated: PASS
+- all diagnostic commands succeeded: PASS
+
+**Verification:** MCP-17 PASSED - Full diagnostics workflow executes without errors
+
+---
 
 ### MCP-16: Test aws_create_ami creates valid AMI
 Verified that `aws_create_ami` correctly creates an AMI from a running instance with proper response format.
