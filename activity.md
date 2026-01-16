@@ -2,12 +2,56 @@
 
 ## Current Status
 **Phase:** MCP Server Testing
-**Last Task:** MCP-14 - Test error handling for failed SSH command
-**Next Task:** MCP-15 - Test aws_start_instance and aws_stop_instance lifecycle
+**Last Task:** MCP-15 - Test aws_start_instance and aws_stop_instance lifecycle
+**Next Task:** MCP-16 - Test aws_create_ami creates valid AMI
 
 ---
 
 ## 2026-01-16
+
+### MCP-15: Test aws_start_instance and aws_stop_instance lifecycle
+Verified that `aws_start_instance` and `aws_stop_instance` correctly manage EC2 instance lifecycle.
+
+**Test Results:**
+- Created test script: `tools/mcp-server/test-mcp-15.mjs`
+- Step 1: Called aws_list_instances to find a stopped instance
+- Found stopped instance: `i-058b0d139756f034c` (gymnastics-vm-template)
+- Step 2: Called aws_start_instance with the instanceId
+- Step 3: Waited for instance to reach running state
+- Step 4: Called aws_stop_instance with the instanceId
+- Step 5: Verified response indicates stopping
+
+**Start Instance Response:**
+```json
+{
+  "instanceId": "i-058b0d139756f034c",
+  "previousState": "stopped",
+  "currentState": "pending"
+}
+```
+
+**Stop Instance Response:**
+```json
+{
+  "instanceId": "i-058b0d139756f034c",
+  "previousState": "running",
+  "currentState": "stopping"
+}
+```
+
+**Verification Results:**
+- Start response has instanceId: PASS
+- Start response has previousState: PASS
+- Start response has currentState: PASS
+- Instance reached running state: PASS
+- Stop response has instanceId: PASS
+- Stop response has previousState: PASS
+- Stop response has currentState: PASS
+- Stop response indicates stopping: PASS
+
+**Verification:** MCP-15 PASSED - Instance lifecycle (start/stop) works correctly
+
+---
 
 ### MCP-14: Test error handling for failed SSH command
 Verified that `ssh_exec` properly handles commands that fail with non-zero exit codes and commands that don't exist.
