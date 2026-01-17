@@ -1,7 +1,7 @@
 /**
  * OBS Scene CRUD API Routes
  *
- * Provides RESTful endpoints for managing OBS scenes, sources, audio, transitions, streaming, assets, templates, and talent communications:
+ * Provides RESTful endpoints for managing OBS scenes, sources, audio, transitions, streaming, assets, templates, talent communications, and preview system:
  * - Scene CRUD operations
  * - Input/Source CRUD operations
  * - Scene item management (add, remove, transform, enable, lock, reorder)
@@ -11,6 +11,7 @@
  * - Asset management (list, upload, delete, download, manifest)
  * - Template management (list, get, create, apply, update, delete)
  * - Talent communications (setup, regenerate, status, method switching)
+ * - Preview system (screenshots, studio mode, preview/program transitions)
  *
  * @module routes/obs
  */
@@ -2020,7 +2021,206 @@ export function setupOBSRoutes(app, obs, obsStateSyncOrGetter) {
     }
   });
 
-  console.log('[OBS Routes] Scene CRUD, Source Management, Audio Management, Transition Management, Stream Configuration, Asset Management, Template Management, and Talent Communications endpoints mounted at server startup');
+  // ============================================================================
+  // Preview System Endpoints
+  // ============================================================================
+
+  /**
+   * GET /api/obs/preview/screenshot - Take screenshot of current output
+   * Query params: imageFormat (png|jpg), imageWidth, imageHeight
+   */
+  app.get('/api/obs/preview/screenshot', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      const { imageFormat = 'png', imageWidth, imageHeight } = req.query;
+
+      const options = {
+        imageFormat
+      };
+
+      if (imageWidth) options.imageWidth = parseInt(imageWidth, 10);
+      if (imageHeight) options.imageHeight = parseInt(imageHeight, 10);
+
+      console.log(`[OBS Routes] GET /api/obs/preview/screenshot - Taking screenshot of current output (format: ${imageFormat})`);
+
+      const imageData = await obsStateSync.takeScreenshot(null, options);
+
+      res.json({
+        success: true,
+        imageData,
+        format: imageFormat
+      });
+    } catch (error) {
+      console.error('[OBS Routes] Error taking screenshot:', error.message);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * GET /api/obs/preview/screenshot/:sceneName - Take screenshot of specific scene
+   * Query params: imageFormat (png|jpg), imageWidth, imageHeight
+   */
+  app.get('/api/obs/preview/screenshot/:sceneName', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      const { sceneName } = req.params;
+      const { imageFormat = 'png', imageWidth, imageHeight } = req.query;
+
+      const options = {
+        imageFormat
+      };
+
+      if (imageWidth) options.imageWidth = parseInt(imageWidth, 10);
+      if (imageHeight) options.imageHeight = parseInt(imageHeight, 10);
+
+      console.log(`[OBS Routes] GET /api/obs/preview/screenshot/${sceneName} - Taking screenshot of scene (format: ${imageFormat})`);
+
+      const imageData = await obsStateSync.takeScreenshot(sceneName, options);
+
+      res.json({
+        success: true,
+        sceneName,
+        imageData,
+        format: imageFormat
+      });
+    } catch (error) {
+      console.error(`[OBS Routes] Error taking screenshot of scene ${req.params.sceneName}:`, error.message);
+      if (error.message.includes('not found') || error.message.includes('does not exist')) {
+        return res.status(404).json({ error: error.message });
+      }
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * GET /api/obs/studio-mode - Get studio mode status
+   */
+  app.get('/api/obs/studio-mode', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      console.log('[OBS Routes] GET /api/obs/studio-mode - Getting studio mode status');
+
+      const status = await obsStateSync.getStudioModeStatus();
+
+      res.json({
+        success: true,
+        ...status
+      });
+    } catch (error) {
+      console.error('[OBS Routes] Error getting studio mode status:', error.message);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * PUT /api/obs/studio-mode - Enable or disable studio mode
+   * Body: { enabled: boolean }
+   */
+  app.put('/api/obs/studio-mode', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      const { enabled } = req.body;
+
+      if (typeof enabled !== 'boolean') {
+        return res.status(400).json({ error: 'enabled must be a boolean' });
+      }
+
+      console.log(`[OBS Routes] PUT /api/obs/studio-mode - Setting studio mode to ${enabled}`);
+
+      await obsStateSync.setStudioMode(enabled);
+
+      res.json({
+        success: true,
+        studioModeEnabled: enabled
+      });
+    } catch (error) {
+      console.error('[OBS Routes] Error setting studio mode:', error.message);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * PUT /api/obs/studio-mode/preview - Set preview scene (requires studio mode enabled)
+   * Body: { sceneName: string }
+   */
+  app.put('/api/obs/studio-mode/preview', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      const { sceneName } = req.body;
+
+      if (!sceneName) {
+        return res.status(400).json({ error: 'sceneName is required' });
+      }
+
+      console.log(`[OBS Routes] PUT /api/obs/studio-mode/preview - Setting preview scene to ${sceneName}`);
+
+      await obsStateSync.setPreviewScene(sceneName);
+
+      res.json({
+        success: true,
+        previewScene: sceneName
+      });
+    } catch (error) {
+      console.error('[OBS Routes] Error setting preview scene:', error.message);
+      if (error.message.includes('studio mode is not enabled')) {
+        return res.status(400).json({ error: error.message });
+      }
+      if (error.message.includes('not found') || error.message.includes('does not exist')) {
+        return res.status(404).json({ error: error.message });
+      }
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * POST /api/obs/studio-mode/transition - Execute transition from preview to program
+   * Requires studio mode enabled
+   */
+  app.post('/api/obs/studio-mode/transition', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      console.log('[OBS Routes] POST /api/obs/studio-mode/transition - Executing transition from preview to program');
+
+      await obsStateSync.executeTransition();
+
+      res.json({
+        success: true,
+        message: 'Transition executed successfully'
+      });
+    } catch (error) {
+      console.error('[OBS Routes] Error executing transition:', error.message);
+      if (error.message.includes('studio mode is not enabled')) {
+        return res.status(400).json({ error: error.message });
+      }
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  console.log('[OBS Routes] Scene CRUD, Source Management, Audio Management, Transition Management, Stream Configuration, Asset Management, Template Management, Talent Communications, and Preview System endpoints mounted at server startup');
 }
 
 export default setupOBSRoutes;

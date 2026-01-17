@@ -2,20 +2,46 @@
 
 ## Current Status
 **Phase:** OBS Integration Tool - In Progress
-**Last Task:** OBS-23 - Implement OBS Preview and Studio Mode ✅
-**Next Task:** OBS-24 - Add Preview System API endpoints
+**Last Task:** OBS-24 - Add Preview System API endpoints ✅
+**Next Task:** OBS-25 - Create OBS Context and hook
 **Blocker:** None
 
 ### Summary
 OBS Integration Tool implementation phase in progress. This phase will add comprehensive OBS WebSocket control capabilities to the show controller.
 
-**Progress:** 23/38 tasks complete (61%)
+**Progress:** 24/38 tasks complete (63%)
 
 ---
 
 ## Activity Log
 
 ### 2026-01-17
+
+### OBS-24: Add Preview System API endpoints ✅
+Added 6 REST API endpoints to `/server/routes/obs.js` for preview screenshots and studio mode control.
+
+**Endpoints implemented:**
+- `GET /api/obs/preview/screenshot` - Take screenshot of current OBS output (query params: imageFormat, imageWidth, imageHeight)
+- `GET /api/obs/preview/screenshot/:sceneName` - Take screenshot of specific scene
+- `GET /api/obs/studio-mode` - Get studio mode status
+- `PUT /api/obs/studio-mode` - Enable/disable studio mode (body: { enabled: boolean })
+- `PUT /api/obs/studio-mode/preview` - Set preview scene (body: { sceneName: string })
+- `POST /api/obs/studio-mode/transition` - Execute transition from preview to program
+
+**Implementation details:**
+- All endpoints check obsStateSync initialized (503 if not)
+- Screenshot endpoints return base64-encoded image data
+- Studio mode preview requires studio mode to be enabled first
+- Proper error handling (400, 404, 500, 503)
+- Lines 2031-2220 in server/routes/obs.js
+- Updated file header documentation
+
+**Verification:** PASSED
+- Method: Deployed to coordinator, verified with `curl http://localhost:3003/api/obs/preview/screenshot`
+- Result: `{"error":"OBS State Sync not initialized. Activate a competition first."}` (expected 503 response)
+- Also verified: `curl http://localhost:3003/api/obs/studio-mode` returns same expected 503
+
+---
 
 ### OBS-23: Implement OBS Preview and Studio Mode ✅
 Added preview screenshot capture and studio mode functionality to the OBS State Sync module.
