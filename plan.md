@@ -1959,7 +1959,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Verify rules contain expected ports (22, 80, 443, 3001, 8080)"
     ],
     "verification": "Security group rules are readable",
-    "passes": false
+    "passes": true
   },
   {
     "id": "MCP-31",
