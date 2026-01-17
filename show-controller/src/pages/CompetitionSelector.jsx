@@ -250,12 +250,22 @@ export default function CompetitionSelector() {
     const teams = getTeams(config);
     const meetDate = config?.meetDate ? new Date(config.meetDate) : null;
     const vmBadge = getVMStatusBadge(compId);
-    const hasVM = hasVMAssigned(compId);
+    const hasVMFromPool = hasVMAssigned(compId);
+    // Also check if competition has vmAddress configured (fallback when vmPool isn't accessible)
+    const hasVMAddress = !!config?.vmAddress;
+    const vmStatus = vmStatuses[compId];
+    const isVMOnline = vmStatus?.online === true;
+    // Enable Producer/Talent if either vmPool says assigned OR vmAddress is configured and online
+    const hasVM = hasVMFromPool || (hasVMAddress && isVMOnline);
+
+    // Debug logging
+    console.log(`[CompCard ${compId}] hasVMFromPool=${hasVMFromPool}, hasVMAddress=${hasVMAddress}, vmStatus=`, vmStatus, `isVMOnline=${isVMOnline}, hasVM=${hasVM}`);
+
     const isAssigning = assigningVm === compId;
     const isReleasing = releasingVm === compId;
     // Disable VM actions when coordinator is offline
-    const canAssignVM = availableVMs.length > 0 && !hasVM && !isCoordinatorOffline;
-    const canReleaseVM = hasVM && !isCoordinatorOffline;
+    const canAssignVM = availableVMs.length > 0 && !hasVMFromPool && !isCoordinatorOffline;
+    const canReleaseVM = hasVMFromPool && !isCoordinatorOffline;
 
     return (
       <div className="bg-zinc-900 border-2 border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors">
@@ -300,32 +310,20 @@ export default function CompetitionSelector() {
         )}
 
         <div className="flex gap-2 flex-wrap">
-          {/* Producer button - disabled when no VM */}
-          <button
-            onClick={() => handleCompetitionClick(compId, '/producer')}
-            disabled={!hasVM}
-            className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-              hasVM
-                ? 'bg-blue-600 text-white hover:bg-blue-500'
-                : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
-            }`}
-            title={!hasVM ? 'Assign a VM first' : undefined}
+          {/* Producer link - CompetitionLayout handles errors if VM isn't configured */}
+          <Link
+            to={`/${compId}/producer`}
+            className="px-3 py-1.5 text-sm font-medium rounded-lg transition-colors bg-blue-600 text-white hover:bg-blue-500"
           >
             Producer
-          </button>
-          {/* Talent button - disabled when no VM */}
-          <button
-            onClick={() => handleCompetitionClick(compId, '/talent')}
-            disabled={!hasVM}
-            className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-              hasVM
-                ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
-                : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
-            }`}
-            title={!hasVM ? 'Assign a VM first' : undefined}
+          </Link>
+          {/* Talent link - CompetitionLayout handles errors if VM isn't configured */}
+          <Link
+            to={`/${compId}/talent`}
+            className="px-3 py-1.5 text-sm font-medium rounded-lg transition-colors bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
           >
             Talent
-          </button>
+          </Link>
           <a
             href={`/output.html?comp=${compId}`}
             target="_blank"

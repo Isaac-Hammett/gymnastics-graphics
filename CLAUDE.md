@@ -136,3 +136,57 @@ Both teams compete on the SAME apparatus - used when viewing event summary by ap
 - mens-tri, womens-tri (3 teams)
 - mens-quad, womens-quad (4 teams)
 - mens-5, mens-6 (5-6 teams)
+
+---
+
+## Adding a New Team - Checklist
+
+When adding a new team to the database, **all three steps must be completed**:
+
+### Step 1: Add Team Entry
+```
+Path: teamsDatabase/teams/{team-key}
+```
+Required fields:
+- `displayName`: "School Name Men's" or "School Name Women's"
+- `gender`: "mens" or "womens"
+- `logo`: Virtius URL (e.g., `https://media.virti.us/upload/images/team/...`)
+- `school`: "School Name"
+- `roster`: Array of athlete names (e.g., `["First Last", "First Last", ...]`)
+- `updatedAt`: ISO timestamp
+
+**Example:**
+```json
+{
+  "displayName": "UW-Whitewater Women's",
+  "gender": "womens",
+  "logo": "https://media.virti.us/upload/images/team/CbWKimoC_0RpBy-M-lcSy",
+  "school": "UW-Whitewater",
+  "roster": ["Athlete One", "Athlete Two"],
+  "updatedAt": "2026-01-17T00:00:00.000Z"
+}
+```
+
+### Step 2: Add Athlete Headshots
+```
+Path: teamsDatabase/headshots/{athlete-name-lowercase}
+```
+Required fields:
+- `name`: "First Last" (proper case)
+- `teamKey`: "{school}-mens" or "{school}-womens"
+- `url`: Virtius URL (e.g., `https://media.virti.us/upload/images/athlete/...`)
+- `updatedAt`: ISO timestamp
+
+### Step 3: Add Aliases (Optional)
+```
+Path: teamsDatabase/aliases/{alias-lowercase}
+```
+Value: team key without gender suffix (e.g., "uw-whitewater")
+
+Common aliases: full university name, abbreviations, mascot names
+
+### Verification
+After adding, check the Media Manager to confirm:
+- [ ] Team logo appears
+- [ ] Roster is populated (not "No roster defined")
+- [ ] Athlete headshots load correctly

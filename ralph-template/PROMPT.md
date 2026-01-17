@@ -78,12 +78,12 @@ git commit -m "TASK-ID: Brief description"
 
 ## Completion Signal
 
-**ONLY output `<promise>COMPLETE</promise>` when:**
+**ONLY output `[[RALPH_LOOP_DONE]]` when:**
 - You checked plan.md
 - EVERY task in Execute Tasks has status "completed" or "skipped"
 - There are ZERO tasks with status "pending"
 
-**DO NOT output `<promise>COMPLETE</promise>` if ANY tasks are still pending!**
+**DO NOT output `[[RALPH_LOOP_DONE]]` if ANY tasks are still pending!**
 
 Before outputting the completion signal, explicitly list the remaining pending tasks to verify there are none.
 
