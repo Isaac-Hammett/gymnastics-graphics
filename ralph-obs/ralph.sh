@@ -180,16 +180,20 @@ mcp__gymnastics__firebase_list_paths\
       esac
     done
 
-  # Check for completion - count occurrences of the signal
-  # It appears twice in PROMPT.md (instructions), so we need MORE than 2 to indicate actual completion
-  SIGNAL_COUNT=$(grep -c '\[\[RALPH_LOOP_DONE\]\]' "$OUTPUT_FILE" 2>/dev/null || echo "0")
-  if [ "$SIGNAL_COUNT" -gt 2 ]; then
-    echo ""
-    echo -e "${GREEN}========================================"
-    echo "ALL TASKS COMPLETE!"
-    echo "Finished after $i iterations."
-    echo -e "========================================${NC}"
-    exit 0
+  # Check for completion - look for the unique completion signal
+  # This signal only appears once in PROMPT.md (as instruction), so if it appears in output, we're done
+  if grep -q '<RALPH_COMPLETE>ALL_DONE</RALPH_COMPLETE>' "$OUTPUT_FILE" 2>/dev/null; then
+    # But verify it's actually in Claude's response, not just the prompt echo
+    # Count occurrences - should be more than 1 if Claude actually output it
+    SIGNAL_COUNT=$(grep -c '<RALPH_COMPLETE>ALL_DONE</RALPH_COMPLETE>' "$OUTPUT_FILE" 2>/dev/null || echo "0")
+    if [ "$SIGNAL_COUNT" -gt 1 ]; then
+      echo ""
+      echo -e "${GREEN}========================================"
+      echo "ALL TASKS COMPLETE!"
+      echo "Finished after $i iterations."
+      echo -e "========================================${NC}"
+      exit 0
+    fi
   fi
 
   # Check if phase changed

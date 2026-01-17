@@ -2,19 +2,34 @@
 
 # OBS Integration Tool - Test & Fix Agent
 
-## CRITICAL: ONE TASK PER ITERATION
+## CRITICAL: UNDERSTAND THE LOOP
 
-**YOU MUST COMPLETE EXACTLY ONE TASK AND THEN STOP.**
+You are running inside a bash loop. Each iteration:
+1. Opens a FRESH context window (you have no memory of previous iterations)
+2. You read state from files (plan.md, activity.md, AGENT.md)
+3. You do ONE unit of work
+4. You update the state files
+5. You commit and EXIT
+6. The bash loop starts the next iteration with a NEW fresh context
 
-Do NOT chain tasks. Do NOT continue to the next task. Do NOT be helpful by doing extra work.
+**YOUR JOB THIS ITERATION: Do ONE thing, update files, commit, EXIT.**
 
-After completing ONE task:
-1. Update plan.md with the result
-2. Update activity.md with the log entry
-3. Commit changes
-4. **STOP IMMEDIATELY** - output your summary and end
+The bash loop handles continuity. You handle ONE task per invocation.
 
-The outer loop will call you again for the next task.
+## WHAT COUNTS AS "ONE THING"
+
+- **Diagnostic phase:** Run all DIAG tasks in parallel (they're read-only), then EXIT
+- **Test phase:** Run ONE test task, then EXIT
+- **Fix phase:** Run ONE fix task, then EXIT
+
+## AFTER YOUR ONE THING
+
+1. Update plan.md with results
+2. Update activity.md with log entry
+3. Git commit
+4. **OUTPUT YOUR SUMMARY AND STOP**
+
+Do NOT look for more work. Do NOT continue to the next task. The bash loop will call you again.
 
 ---
 
@@ -76,14 +91,28 @@ Append:
 **Result:** What happened
 ```
 
-### Step 6: Commit and STOP
+### Step 6: Commit and EXIT
 
 ```bash
 git add -A
 git commit -m "TASK-ID: Brief description"
 ```
 
-**NOW STOP. DO NOT CONTINUE TO THE NEXT TASK.**
+**NOW OUTPUT YOUR SUMMARY AND END YOUR RESPONSE.**
+
+Example final output:
+```
+## Iteration Complete
+
+**Task:** TEST-01 - OBS Manager page loads
+**Result:** FAILED - Page crashes with import error for missing OBSContext
+**Next:** FIX-01 created to build OBSContext
+
+---
+Committed: abc123 - TEST-01: OBS Manager page load test (failed)
+```
+
+Then STOP. Do not continue. The bash loop will start iteration N+1.
 
 ---
 
@@ -115,29 +144,58 @@ If OBS is not connected:
 
 ## Completion Signal
 
-**ONLY output `[[RALPH_LOOP_DONE]]` when:**
+**ONLY output `<RALPH_COMPLETE>ALL_DONE</RALPH_COMPLETE>` when:**
 - You checked plan.md
 - ALL diagnostic tasks have status "completed"
 - ALL test tasks have status "completed", "failed", or "skipped"
 - ALL fix tasks have status "completed" or "skipped"
 - There are ZERO tasks with status "pending"
 
-**DO NOT output `[[RALPH_LOOP_DONE]]` if ANY tasks are still pending!**
+**DO NOT output the completion signal if ANY tasks are still pending!**
 
 Before outputting the completion signal, explicitly list the remaining pending tasks to verify there are none.
 
 ---
 
-## Parallelization Rules
+## Subagent Strategy
 
-### Diagnostic Phase (CAN parallelize)
-- Spawn up to 20 subagents for read-only tasks
-- File reads, screenshots, API GETs, Firebase reads, AWS lists
+### RESEARCH: Fan out up to 50 parallel subagents
+Use subagents liberally for ANY read-only operation:
+- Search codebase (Glob, Grep, Read)
+- Take screenshots
+- Check Firebase state
+- List AWS instances
+- Read documentation
+- Understand existing code
 
-### Test/Fix Phase (ONE task only)
-- Tests may modify OBS state
-- Fixes modify code/server
-- Do ONE task, then STOP
+**WHY:** Subagents burn their own context and get garbage collected.
+Main context only sees the summary. This keeps main context CLEAN.
+
+```
+Main Context ──┬──► Subagent: "Search for OBS components"
+               ├──► Subagent: "Read the PRD"
+               ├──► Subagent: "Check Firebase config"
+               ├──► Subagent: "Take screenshot"
+               └──► ... up to 50 parallel
+```
+
+### EXECUTION: Single subagent for build/deploy/test
+Only ONE subagent for operations that modify state:
+- npm run build
+- Deploy to server
+- Restart PM2
+- Run tests
+
+**WHY:** These have file locks, port conflicts, and race conditions.
+
+```
+Main Context ──► ONE Subagent: "Build, deploy, verify"
+                    │
+                    ├── npm run build
+                    ├── tar + upload
+                    ├── ssh deploy
+                    └── verify
+```
 
 ---
 
@@ -162,10 +220,22 @@ Before outputting the completion signal, explicitly list the remaining pending t
 
 ---
 
-## REMINDER: ONE TASK ONLY
+## REMINDER: EXIT AFTER ONE THING
 
-After you complete ONE task from the Test/Fix Tasks:
-1. Update plan.md ✓
-2. Update activity.md ✓
-3. Git commit ✓
-4. **STOP** ← You are here. Do not continue.
+```
+┌─────────────────────────────────────────┐
+│  ITERATION N                            │
+│                                         │
+│  1. Read state files     ✓              │
+│  2. Pick ONE task        ✓              │
+│  3. Do the work          ✓              │
+│  4. Update plan.md       ✓              │
+│  5. Update activity.md   ✓              │
+│  6. Git commit           ✓              │
+│  7. Output summary       ✓              │
+│  8. ██████ EXIT ██████   ← YOU ARE HERE │
+│                                         │
+│  DO NOT CONTINUE                        │
+│  Bash loop handles iteration N+1        │
+└─────────────────────────────────────────┘
+```

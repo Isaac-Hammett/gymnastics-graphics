@@ -19,26 +19,29 @@
 
 ### Diagnostic Phase (currentPhase = "diagnostic")
 1. Find ALL tasks in `diagnosticTasks` with `"status": "pending"`
-2. Spawn up to 20 parallel subagents to execute them simultaneously
+2. Spawn up to **50 parallel subagents** to execute them simultaneously
 3. Wait for all to complete
 4. Update statuses based on results
 5. When all diagnostic tasks complete, set `"currentPhase": "test"`
+6. **Commit and EXIT** - bash loop starts next iteration
 
 ### Test Phase (currentPhase = "test")
 1. Find FIRST task in `testTasks` with `"status": "pending"`
-2. Execute it (ONE at a time, sequentially)
-3. Verify with Playwright screenshot
-4. Update status
-5. If FAILED, create a FIX task
-6. Log to activity.md
-7. Commit and exit (one test task per iteration)
+2. **Use subagents for research** (up to 50 parallel) to understand the task
+3. **Use ONE subagent for execution** (build/deploy/test)
+4. Verify with Playwright screenshot
+5. Update status
+6. If FAILED, create a FIX task
+7. Log to activity.md
+8. **Commit and EXIT** - bash loop starts next iteration
 
 ### Fix Phase
 When a FIX task is created, it becomes the next pending task to execute.
+Same rules: fan out for research, single subagent for execution.
 
 ---
 
-## Diagnostic Tasks (CAN parallelize - up to 20 subagents)
+## Diagnostic Tasks (CAN parallelize - up to 50 subagents)
 
 These are read-only exploration and diagnostic tasks.
 
@@ -95,7 +98,8 @@ These test actual OBS functionality and may modify state.
     "description": "Find or create a test competition with a running VM",
     "action": "Find competition with vmAddress, or create one and assign a VM",
     "verification": "Competition exists with running VM assigned",
-    "status": "pending"
+    "status": "completed",
+    "result": "Competition 8kyf0rnl (Simpson vs UW-Whitewater) confirmed with VM 3.89.92.162 running, vmAddress set in Firebase"
   },
   {
     "id": "PREREQ-02",
@@ -258,5 +262,5 @@ Then add to fixTasks:
 When ALL tasks have `"status": "completed"`, `"failed"`, or `"skipped"`, and all FIX tasks for failures are completed, output:
 
 ```
-[[RALPH_LOOP_DONE]]
+<RALPH_COMPLETE>ALL_DONE</RALPH_COMPLETE>
 ```

@@ -62,32 +62,55 @@ ssh_exec(target=VM_IP, command='netstat -tlnp | grep 4455')  # Check WebSocket p
 
 ---
 
-## Subagent Parallelization (CRITICAL)
+## Subagent Strategy (CRITICAL)
 
-### Diagnostic Phase - CAN Parallelize (up to 20 subagents)
+### RESEARCH: Fan out up to 50 parallel subagents
+
+Use subagents LIBERALLY for any read-only operation. They burn their own context and get garbage collected. Main context only sees summaries - stays CLEAN.
 
 ```
-# Example: Spawn diagnostic subagents in ONE message
-Task(subagent_type="Explore", prompt="Search codebase for OBS routes")
-Task(subagent_type="general-purpose", prompt="Take screenshot of homepage")
-Task(subagent_type="general-purpose", prompt="Check AWS instances")
-Task(subagent_type="general-purpose", prompt="Check coordinator logs")
+Main Context ──┬──► Subagent 1: "Search for OBS routes"
+               ├──► Subagent 2: "Read server/lib/obsStateSync.js"
+               ├──► Subagent 3: "Check Firebase for competition config"
+               ├──► Subagent 4: "Take screenshot of homepage"
+               ├──► Subagent 5: "List AWS instances"
+               ├──► Subagent 6: "Search for useOBS hook"
+               ├──► ...
+               └──► Subagent 50: "Read PRD for expected behavior"
+                         │
+                         ▼
+               All return summaries ──► Main context stays CLEAN
 ```
 
-**Safe for parallel:**
+**Safe for parallel (up to 50):**
 - File reads (Read, Glob, Grep)
 - Screenshots (browser_navigate, browser_take_screenshot)
 - API GET requests
-- Firebase reads
+- Firebase reads (firebase_get, firebase_list_paths)
 - AWS list operations
+- SSH read-only commands
+- Reading documentation/PRDs
 
-### Test/Fix Phase - MUST Serialize (1 task only)
+### EXECUTION: Single subagent for build/deploy/test
 
-**NEVER parallelize:**
-- npm run build
-- Deploy operations
-- OBS commands (may conflict)
-- File writes
+Only ONE subagent for operations that modify state. These have file locks, port conflicts, and race conditions.
+
+```
+Main Context ──► ONE Subagent: "Build, deploy, verify"
+                    │
+                    ├── npm run build
+                    ├── tar + upload
+                    ├── ssh deploy
+                    ├── pm2 restart
+                    └── verify with screenshot
+```
+
+**MUST be sequential (1 subagent only):**
+- npm run build (file locks on node_modules, dist/)
+- npm test (port conflicts)
+- Deploy operations (SSH upload, extract, restart)
+- PM2 restart/reload
+- Any operation that modifies shared state
 
 ---
 
