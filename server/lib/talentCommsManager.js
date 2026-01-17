@@ -1,0 +1,342 @@
+/**
+ * Talent Communications Manager
+ *
+ * Manages talent communication systems for production (VDO.Ninja, Discord, etc.)
+ * Provides capabilities for:
+ * - Generating unique room IDs and passwords
+ * - Creating VDO.Ninja URLs (director, OBS scene, talent)
+ * - Setting up talent comms configuration in Firebase
+ * - Regenerating URLs when needed
+ * - Switching between communication methods
+ *
+ * @module talentCommsManager
+ */
+
+import crypto from 'crypto';
+
+/**
+ * Supported communication methods
+ */
+export const COMMS_METHODS = {
+  VDO_NINJA: 'vdo-ninja',
+  DISCORD: 'discord'
+};
+
+/**
+ * VDO.Ninja base URL
+ */
+export const VDO_NINJA_BASE_URL = 'https://vdo.ninja';
+
+/**
+ * Generate a unique room ID
+ * @private
+ * @returns {string} URL-safe room ID
+ */
+function generateRoomId() {
+  const randomBytes = crypto.randomBytes(6);
+  const roomId = `gym-${randomBytes.toString('hex')}`;
+  return roomId;
+}
+
+/**
+ * Generate a secure password
+ * @private
+ * @returns {string} Secure password
+ */
+function generatePassword() {
+  const randomBytes = crypto.randomBytes(12);
+  return randomBytes.toString('base64url');
+}
+
+/**
+ * Talent Communications Manager class
+ * Provides talent comms configuration and management
+ */
+export class TalentCommsManager {
+  constructor(productionConfigService = null) {
+    this.productionConfigService = productionConfigService;
+  }
+
+  /**
+   * Get Firebase database reference
+   * @private
+   * @returns {Object} Firebase database reference
+   */
+  _getDatabase() {
+    if (!this.productionConfigService) {
+      throw new Error('Production config service not available');
+    }
+
+    const db = this.productionConfigService.initialize();
+    if (!db) {
+      throw new Error('Firebase database not available');
+    }
+
+    return db;
+  }
+
+  /**
+   * Generate a unique room ID
+   * @returns {string} URL-safe room ID
+   */
+  generateRoomId() {
+    return generateRoomId();
+  }
+
+  /**
+   * Generate VDO.Ninja URLs for a room
+   * @param {string} roomId - Room ID
+   * @param {string} password - Room password
+   * @returns {Object} Object containing director, obsScene, and talent URLs
+   */
+  generateVdoNinjaUrls(roomId, password = null) {
+    if (!roomId) {
+      throw new Error('Room ID is required');
+    }
+
+    const pwd = password || generatePassword();
+
+    return {
+      director: `${VDO_NINJA_BASE_URL}/?director=${roomId}&password=${pwd}`,
+      obsScene: `${VDO_NINJA_BASE_URL}/?view=${roomId}&scene`,
+      talent1: `${VDO_NINJA_BASE_URL}/?room=${roomId}&push=talent1`,
+      talent2: `${VDO_NINJA_BASE_URL}/?room=${roomId}&push=talent2`
+    };
+  }
+
+  /**
+   * Setup talent communications for a competition
+   * Creates initial config or overwrites existing
+   * @param {string} compId - Competition ID
+   * @param {string} method - Communication method (default: 'vdo-ninja')
+   * @returns {Promise<Object>} Created configuration
+   */
+  async setupTalentComms(compId, method = COMMS_METHODS.VDO_NINJA) {
+    if (!compId) {
+      throw new Error('Competition ID is required');
+    }
+
+    // Validate method
+    const validMethods = Object.values(COMMS_METHODS);
+    if (!validMethods.includes(method)) {
+      throw new Error(`Invalid method. Must be one of: ${validMethods.join(', ')}`);
+    }
+
+    try {
+      const database = this._getDatabase();
+
+      // Generate room ID and password
+      const roomId = this.generateRoomId();
+      const password = generatePassword();
+
+      // Generate URLs based on method
+      let urls = {};
+      if (method === COMMS_METHODS.VDO_NINJA) {
+        urls = this.generateVdoNinjaUrls(roomId, password);
+      }
+
+      // Create config object
+      const config = {
+        method,
+        roomId,
+        password,
+        urls,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      // Save to Firebase
+      await database.ref(`competitions/${compId}/config/talentComms`).set(config);
+
+      console.log(`[TalentCommsManager] Setup talent comms for competition ${compId} using ${method}`);
+
+      return config;
+    } catch (error) {
+      console.error(`[TalentCommsManager] Failed to setup talent comms for ${compId}:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Regenerate URLs for existing talent comms
+   * Creates new room ID and URLs while preserving method
+   * @param {string} compId - Competition ID
+   * @returns {Promise<Object>} Updated configuration
+   */
+  async regenerateUrls(compId) {
+    if (!compId) {
+      throw new Error('Competition ID is required');
+    }
+
+    try {
+      const database = this._getDatabase();
+
+      // Get existing config
+      const snapshot = await database.ref(`competitions/${compId}/config/talentComms`).once('value');
+      const existingConfig = snapshot.val();
+
+      if (!existingConfig) {
+        throw new Error('Talent comms not configured for this competition');
+      }
+
+      // Generate new room ID and password
+      const roomId = this.generateRoomId();
+      const password = generatePassword();
+
+      // Generate new URLs based on existing method
+      let urls = {};
+      if (existingConfig.method === COMMS_METHODS.VDO_NINJA) {
+        urls = this.generateVdoNinjaUrls(roomId, password);
+      }
+
+      // Update config
+      const updatedConfig = {
+        ...existingConfig,
+        roomId,
+        password,
+        urls,
+        updatedAt: new Date().toISOString()
+      };
+
+      // Save to Firebase
+      await database.ref(`competitions/${compId}/config/talentComms`).set(updatedConfig);
+
+      console.log(`[TalentCommsManager] Regenerated URLs for competition ${compId}`);
+
+      return updatedConfig;
+    } catch (error) {
+      console.error(`[TalentCommsManager] Failed to regenerate URLs for ${compId}:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Get talent communications configuration
+   * @param {string} compId - Competition ID
+   * @returns {Promise<Object|null>} Configuration or null if not found
+   */
+  async getTalentComms(compId) {
+    if (!compId) {
+      throw new Error('Competition ID is required');
+    }
+
+    try {
+      const database = this._getDatabase();
+
+      const snapshot = await database.ref(`competitions/${compId}/config/talentComms`).once('value');
+      const config = snapshot.val();
+
+      if (!config) {
+        console.log(`[TalentCommsManager] No talent comms configured for competition ${compId}`);
+        return null;
+      }
+
+      console.log(`[TalentCommsManager] Retrieved talent comms config for competition ${compId}`);
+
+      return config;
+    } catch (error) {
+      console.error(`[TalentCommsManager] Failed to get talent comms for ${compId}:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Update communication method
+   * Switches between vdo-ninja and discord, regenerating config
+   * @param {string} compId - Competition ID
+   * @param {string} method - New communication method
+   * @returns {Promise<Object>} Updated configuration
+   */
+  async updateMethod(compId, method) {
+    if (!compId) {
+      throw new Error('Competition ID is required');
+    }
+
+    // Validate method
+    const validMethods = Object.values(COMMS_METHODS);
+    if (!validMethods.includes(method)) {
+      throw new Error(`Invalid method. Must be one of: ${validMethods.join(', ')}`);
+    }
+
+    try {
+      const database = this._getDatabase();
+
+      // Get existing config
+      const snapshot = await database.ref(`competitions/${compId}/config/talentComms`).once('value');
+      const existingConfig = snapshot.val();
+
+      if (!existingConfig) {
+        throw new Error('Talent comms not configured for this competition');
+      }
+
+      // If method is the same, just return existing config
+      if (existingConfig.method === method) {
+        console.log(`[TalentCommsManager] Method already set to ${method} for competition ${compId}`);
+        return existingConfig;
+      }
+
+      // Generate new config with new method
+      const roomId = this.generateRoomId();
+      const password = generatePassword();
+
+      let urls = {};
+      if (method === COMMS_METHODS.VDO_NINJA) {
+        urls = this.generateVdoNinjaUrls(roomId, password);
+      }
+
+      const updatedConfig = {
+        method,
+        roomId,
+        password,
+        urls,
+        createdAt: existingConfig.createdAt,
+        updatedAt: new Date().toISOString()
+      };
+
+      // Save to Firebase
+      await database.ref(`competitions/${compId}/config/talentComms`).set(updatedConfig);
+
+      console.log(`[TalentCommsManager] Updated method to ${method} for competition ${compId}`);
+
+      return updatedConfig;
+    } catch (error) {
+      console.error(`[TalentCommsManager] Failed to update method for ${compId}:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete talent communications configuration
+   * @param {string} compId - Competition ID
+   * @returns {Promise<Object>} Result
+   */
+  async deleteTalentComms(compId) {
+    if (!compId) {
+      throw new Error('Competition ID is required');
+    }
+
+    try {
+      const database = this._getDatabase();
+
+      // Check if config exists
+      const snapshot = await database.ref(`competitions/${compId}/config/talentComms`).once('value');
+      if (!snapshot.val()) {
+        throw new Error('Talent comms not configured for this competition');
+      }
+
+      // Delete from Firebase
+      await database.ref(`competitions/${compId}/config/talentComms`).remove();
+
+      console.log(`[TalentCommsManager] Deleted talent comms for competition ${compId}`);
+
+      return {
+        success: true
+      };
+    } catch (error) {
+      console.error(`[TalentCommsManager] Failed to delete talent comms for ${compId}:`, error.message);
+      throw error;
+    }
+  }
+}
+
+export default TalentCommsManager;
