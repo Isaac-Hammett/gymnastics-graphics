@@ -468,7 +468,7 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
       "Document Discord fallback with SSH tunnel instructions"
     ],
     "verification": "Routes added; on show VM: curl http://localhost:3003/api/talent-comms returns 503 or comms config",
-    "passes": false
+    "passes": true
   },
 
   {
@@ -746,11 +746,11 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
 | **OBS Phase 6: Stream** | 2 | 2 | Complete |
 | **OBS Phase 7: Assets** | 2 | 2 | Complete |
 | **OBS Phase 8: Templates** | 2 | 2 | Complete |
-| **OBS Phase 9: Talent Comms** | 2 | 1 | In Progress |
+| **OBS Phase 9: Talent Comms** | 2 | 2 | Complete |
 | **OBS Phase 10: Preview** | 2 | 0 | Not Started |
 | **OBS Phase 11: UI** | 7 | 0 | Not Started |
 | **OBS Integration Tests** | 7 | 0 | Not Started |
-| **Total** | **38** | **21** | **55%** |
+| **Total** | **38** | **22** | **58%** |
 
 ---
 
