@@ -1854,7 +1854,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Verify response includes data: null"
     ],
     "verification": "firebase_get returns exists:false for missing paths",
-    "passes": false
+    "passes": true
   },
   {
     "id": "MCP-23",
