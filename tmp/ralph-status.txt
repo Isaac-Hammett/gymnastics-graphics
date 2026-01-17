@@ -41,3 +41,38 @@ aws ec2 authorize-security-group-ingress \
 
 Then restart coordinator to establish connection.
 Starting: Open port 4455 for OBS WebSocket
+Starting: OBS-INT-01 integration test
+Step 1: Checking OBS VM status - PASS (running)
+Step 2: Getting OBS VM IP - 100.48.62.137
+Step 3: Checking OBS services
+Step 3: Checking OBS services - PASS (both running)
+Step 4: Checking OBS WebSocket
+Step 4: Checking OBS WebSocket - PASS (listening on 4455)
+Step 5: Testing WebSocket connectivity
+Step 5: Testing WebSocket connectivity - PASS (connection succeeded)
+Step 6: Checking coordinator logs
+Step 6: Checking coordinator logs - FAIL (Authentication failed)
+Step 7: Checking OBS state API
+Step 7: Checking OBS state API - No obsState (no active competition)
+Done: FAIL - Authentication failed
+Starting: Re-run OBS-INT-01 verification
+Step 1: Verify OBS connected
+Step 2: Check competition status
+Step 3: Check OBS state API
+Step 4: Navigate to test frontend
+Step 4b: Check available competitions
+Step 4c: Activate test competition
+Step 4d: Activation timed out - checking logs
+Done: PARTIAL PASS - OBS connected but activation endpoint blocked
+Step 2: Checking OBS services on VMs
+Step 3: OBS VM identified (100.48.62.137), checking coordinator connection
+Step 4: Coordinator trying localhost:4455, OBS is on remote VM - checking network
+Step 5: Found issue - coordinator .env points to localhost, OBS on 100.48.62.137
+Step 6: Updating coordinator .env to point to OBS VM
+Step 7: Restarting coordinator with new OBS URL
+Step 8: Connection reached OBS VM but authentication failed - checking password
+Step 9: Updating coordinator with correct OBS password (683CwfXzeNHxL39V)
+Step 10: Using pm2 reload --update-env to load new credentials
+Step 11: OBS connected successfully! Checking obsState
+Step 12: OBS connected, testing UI at http://44.193.31.120:8080/test-comp/obs-manager
+Step 13: Activating test-comp to initialize OBS State Sync

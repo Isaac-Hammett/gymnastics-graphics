@@ -53,3 +53,10 @@ Starting: Deploy server for OBS-24
 [7] Restarting PM2 after permission fix
 [8] Testing endpoints after restart
 Done: PASS - Both endpoints responding correctly
+Starting: Fix OBS WebSocket authentication
+Step 1: Getting OBS password from VM
+Step 2: Checking coordinator config
+Step 3: Updating coordinator password
+Step 5: Restarting coordinator
+Step 6: Verifying connection
+Done: OBS WebSocket authentication fixed - coordinator now connected

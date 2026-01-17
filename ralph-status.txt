@@ -109,3 +109,9 @@ Starting: Build, deploy, and verify OBS-28
 [step] Build completed
 [step] Deploy completed
 Done: OBS-28 verification - PASS
+Step 1: Package server
+Step 2: Upload server
+Step 3: Extract server
+Step 4: Restart coordinator
+Step 5: Activate competition
+Step 6: Check logs

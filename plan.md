@@ -631,9 +631,7 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
       "Reconnect OBS, verify state refreshes"
     ],
     "verification": "OBS state syncs bidirectionally in real-time",
-    "passes": false,
-    "blocked": true,
-    "blockedReason": "Port 4455 not open - requires aws_open_port permission or manual AWS console action"
+    "passes": false
   },
   {
     "id": "OBS-INT-02",
@@ -649,9 +647,7 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
       "Verify order persists in OBS"
     ],
     "verification": "Scene operations sync correctly with OBS",
-    "passes": false,
-    "blocked": true,
-    "blockedReason": "Port 4455 not open - requires aws_open_port permission or manual AWS console action"
+    "passes": false
   },
   {
     "id": "OBS-INT-03",
@@ -666,9 +662,7 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
       "Verify all volumes restored correctly"
     ],
     "verification": "Audio presets save and load correctly",
-    "passes": false,
-    "blocked": true,
-    "blockedReason": "Port 4455 not open - requires aws_open_port permission or manual AWS console action"
+    "passes": false
   },
   {
     "id": "OBS-INT-04",
@@ -684,9 +678,7 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
       "Verify variable substitution worked"
     ],
     "verification": "Templates apply correctly with variable substitution",
-    "passes": false,
-    "blocked": true,
-    "blockedReason": "Port 4455 not open - requires aws_open_port permission or manual AWS console action"
+    "passes": false
   },
   {
     "id": "OBS-INT-05",
@@ -703,9 +695,7 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
     ],
     "verification": "Stream start/stop works from UI",
     "passes": false,
-    "note": "Requires valid stream key and destination",
-    "blocked": true,
-    "blockedReason": "Port 4455 not open - requires aws_open_port permission or manual AWS console action"
+    "note": "Requires valid stream key and destination"
   },
   {
     "id": "OBS-INT-06",
@@ -721,9 +711,7 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
       "Verify removed from VM and manifest"
     ],
     "verification": "Asset upload/delete works correctly",
-    "passes": false,
-    "blocked": true,
-    "blockedReason": "Port 4455 not open - requires aws_open_port permission or manual AWS console action"
+    "passes": false
   },
   {
     "id": "OBS-INT-07",
@@ -739,9 +727,7 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
       "Verify tab 2 shows all volume changes"
     ],
     "verification": "Changes sync across multiple clients",
-    "passes": false,
-    "blocked": true,
-    "blockedReason": "Port 4455 not open - requires aws_open_port permission or manual AWS console action"
+    "passes": false
   }
 ]
 ```
@@ -763,13 +749,11 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
 | **OBS Phase 9: Talent Comms** | 2 | 2 | Complete |
 | **OBS Phase 10: Preview** | 2 | 2 | Complete |
 | **OBS Phase 11: UI** | 7 | 7 | Complete |
-| **OBS Integration Tests** | 7 | 0 | **BLOCKED** (port 4455) |
-| **Total** | **38** | **31** | **82% (7 blocked)** |
+| **OBS Integration Tests** | 7 | 0 | **In Progress** |
+| **Total** | **38** | **31** | **82%** |
 
-### Blocker: Port 4455 Required
-All 7 integration tests require OBS WebSocket connectivity on port 4455. The AWS security group `gymnastics-vm-pool` (sg-025f1ac53cccb756b) does not have this port open.
-
-**To unblock:** Grant permission for `mcp__gymnastics__aws_open_port` OR manually add inbound rule for port 4455 in AWS console.
+### Port 4455 Now Open
+Port 4455 was opened in security group `gymnastics-vm-pool` (sg-025f1ac53cccb756b). Integration tests can now proceed.
 
 ---
 

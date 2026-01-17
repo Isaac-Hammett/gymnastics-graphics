@@ -128,6 +128,16 @@ class OBSStateSync extends EventEmitter {
       // Register all OBS WebSocket event handlers
       this.registerEventHandlers();
 
+      // Handle case where OBS was already connected before handlers were registered
+      if (this.obs && this.obs.identified) {
+        console.log('[OBSStateSync] OBS already connected, triggering initial state refresh');
+        this.state.connected = true;
+        this.state.connectionError = null;
+        this.refreshFullState().catch(err => {
+          console.error('[OBSStateSync] Error refreshing state after late initialization:', err);
+        });
+      }
+
       this._isInitialized = true;
 
       console.log('[OBSStateSync] Initialized successfully');
