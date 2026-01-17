@@ -1723,7 +1723,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Verify error message mentions invalid instance"
     ],
     "verification": "Invalid instance ID returns AWS error gracefully",
-    "passes": false
+    "passes": true
   },
   {
     "id": "MCP-14",
