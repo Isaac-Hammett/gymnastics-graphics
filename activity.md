@@ -2,20 +2,62 @@
 
 ## Current Status
 **Phase:** OBS Integration Tool - In Progress
-**Last Task:** OBS-12 - Add Audio Management API endpoints ✅
-**Next Task:** OBS-13 - Create OBS Transition Manager module
+**Last Task:** OBS-13 - Create OBS Transition Manager module ✅
+**Next Task:** OBS-14 - Add Transition Management API endpoints
 **Blocker:** None
 
 ### Summary
 OBS Integration Tool implementation phase in progress. This phase will add comprehensive OBS WebSocket control capabilities to the show controller.
 
-**Progress:** 12/38 tasks complete (32%)
+**Progress:** 13/38 tasks complete (34%)
 
 ---
 
 ## Activity Log
 
 ### 2026-01-17
+
+### OBS-13: Create OBS Transition Manager module ✅
+Created `/server/lib/obsTransitionManager.js` - transition management module for OBS.
+
+**Methods implemented:**
+- `getTransitions()` - Returns cached transitions from stateSync
+- `getCurrentTransition()` - Gets current transition with name, duration, and kind via GetSceneTransitionList
+- `setCurrentTransition(transitionName)` - Sets current transition
+- `setTransitionDuration(duration)` - Sets transition duration in milliseconds
+- `getTransitionSettings(transitionName)` - Gets transition-specific settings
+- `setTransitionSettings(transitionName, settings)` - Updates transition settings with overlay merge
+
+**Mock implementations added to mockOBS.js:**
+- `GetTransitionKind` - Returns transition kind for a transition name
+- `GetCurrentSceneTransitionCursor` - Returns current transition cursor
+- `SetCurrentSceneTransitionSettings` - Sets transition-specific settings
+- `addTransition` - Helper method to add custom transitions in tests
+
+**Tests created:**
+- `/server/__tests__/obsTransitionManager.test.js` - 46 comprehensive tests covering:
+  - Module exports (1 test)
+  - getTransitions (4 tests)
+  - getCurrentTransition (5 tests)
+  - setCurrentTransition (6 tests)
+  - setTransitionDuration (7 tests)
+  - getTransitionSettings (5 tests)
+  - setTransitionSettings (7 tests)
+  - Error handling (3 tests)
+  - Integration (8 tests)
+
+**Design decisions:**
+- Uses OBSStateSync for cached transitions list
+- Validates duration is positive number
+- Uses overlay mode for settings merge
+- Consistent [OBSTransitionManager] logging prefix
+- Error handling matches existing manager patterns
+
+**Verification:** PASSED
+- Method: `cd server && node --test __tests__/obsTransitionManager.test.js`
+- Result: All 46 tests pass (10 suites, 0 failures)
+
+---
 
 ### OBS-12: Add Audio Management API endpoints ✅
 Added 9 REST API endpoints to `/server/routes/obs.js` for audio source and preset management.
