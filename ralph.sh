@@ -27,6 +27,42 @@ cd "$(dirname "$0")"
 # Create screenshots directory if it doesn't exist
 mkdir -p screenshots
 
+# Create temp directory for stream processing
+RALPH_TMP="/tmp/claude/ralph-$$"
+mkdir -p "$RALPH_TMP"
+
+# Status file for subagent updates (shared location subagents write to)
+STATUS_FILE="/tmp/claude/ralph-status.txt"
+> "$STATUS_FILE"  # Clear at start
+
+# Cleanup on exit
+cleanup() {
+  rm -rf "$RALPH_TMP"
+  # Kill status monitor if running
+  if [ -n "$STATUS_MONITOR_PID" ]; then
+    kill "$STATUS_MONITOR_PID" 2>/dev/null
+  fi
+}
+trap cleanup EXIT
+
+# Background function to monitor status file
+monitor_status() {
+  local last_line_count=0
+  while true; do
+    if [ -f "$STATUS_FILE" ]; then
+      current_count=$(wc -l < "$STATUS_FILE" 2>/dev/null | tr -d ' ')
+      if [ "$current_count" -gt "$last_line_count" ]; then
+        # New lines added - show them
+        tail -n $((current_count - last_line_count)) "$STATUS_FILE" | while read -r line; do
+          printf "[%s]    ↳ %s\n" "$(date '+%H:%M:%S')" "$line"
+        done
+        last_line_count=$current_count
+      fi
+    fi
+    sleep 0.5
+  done
+}
+
 echo "========================================"
 echo "Ralph Wiggum Loop Starting"
 echo "Max iterations: $1"
@@ -38,8 +74,22 @@ for ((i=1; i<=$1; i++)); do
   echo "Iteration $i of $1"
   echo "Started: $(date '+%Y-%m-%d %H:%M:%S')"
   echo "========================================"
+  echo ""
 
-  # Run Claude with the prompt and allowed tools
+  # Reset counter files for this iteration
+  OUTPUT_FILE="$RALPH_TMP/output.txt"
+  SUBAGENT_FILE="$RALPH_TMP/subagents.txt"
+  TOOL_FILE="$RALPH_TMP/tools.txt"
+  > "$OUTPUT_FILE"
+  > "$SUBAGENT_FILE"
+  > "$TOOL_FILE"
+  > "$STATUS_FILE"  # Clear status file for new iteration
+
+  # Start status file monitor in background
+  monitor_status &
+  STATUS_MONITOR_PID=$!
+
+  # Run Claude with stream-json and process in realtime
   # MCP tools are prefixed with mcp__gymnastics__ for our custom server
   # and mcp__playwright__ for browser automation
   #
@@ -49,7 +99,7 @@ for ((i=1; i<=$1; i++)); do
   # - Bash: npm, node, git, tar, rm, mkdir, ls, cd
   # - MCP Playwright: browser automation
   # - MCP Gymnastics: SSH, Firebase, AWS
-  result=$(claude -p "$(cat PROMPT.md)" \
+  claude -p "$(cat PROMPT.md)" \
     --allowedTools "\
 Read,\
 Write,\
@@ -63,11 +113,15 @@ Bash(node:*),\
 Bash(git add:*),\
 Bash(git commit:*),\
 Bash(git push:*),\
+Bash(git status:*),\
+Bash(git diff:*),\
+Bash(git log:*),\
 Bash(mkdir:*),\
 Bash(cd:*),\
 Bash(ls:*),\
 Bash(tar:*),\
 Bash(rm:*),\
+Bash(echo:*),\
 mcp__playwright__*,\
 mcp__gymnastics__ssh_exec,\
 mcp__gymnastics__ssh_upload_file,\
@@ -84,16 +138,121 @@ mcp__gymnastics__aws_start_instance,\
 mcp__gymnastics__aws_stop_instance,\
 mcp__gymnastics__aws_list_security_group_rules\
 " \
-    --output-format text 2>&1) || true
+    --verbose \
+    --output-format stream-json 2>&1 | while IFS= read -r line; do
+      # Save all output for later analysis
+      echo "$line" >> "$OUTPUT_FILE"
 
-  echo "$result"
+      # Try to parse as JSON - skip if not valid JSON
+      if ! echo "$line" | jq -e '.' >/dev/null 2>&1; then
+        # Not JSON, might be error output - show it
+        if [ -n "$line" ]; then
+          echo "[raw] $line"
+        fi
+        continue
+      fi
+
+      # Get the event type
+      event_type=$(echo "$line" | jq -r '.type // empty' 2>/dev/null)
+
+      case "$event_type" in
+        "assistant")
+          # Check for tool use in content array
+          tool_names=$(echo "$line" | jq -r '.message.content[]? | select(.type=="tool_use") | .name' 2>/dev/null)
+
+          for tool_name in $tool_names; do
+            [ -z "$tool_name" ] && continue
+            echo "$tool_name" >> "$TOOL_FILE"
+            tool_count=$(wc -l < "$TOOL_FILE" | tr -d ' ')
+
+            if [ "$tool_name" = "Task" ]; then
+              subagent_desc=$(echo "$line" | jq -r '.message.content[]? | select(.type=="tool_use" and .name=="Task") | .input.description // "unknown"' 2>/dev/null | head -1)
+              subagent_type=$(echo "$line" | jq -r '.message.content[]? | select(.type=="tool_use" and .name=="Task") | .input.subagent_type // "general"' 2>/dev/null | head -1)
+              echo "$subagent_desc" >> "$SUBAGENT_FILE"
+              subagent_count=$(wc -l < "$SUBAGENT_FILE" | tr -d ' ')
+              printf "[%s] 🤖 Subagent #%d (%s): %s\n" "$(date '+%H:%M:%S')" "$subagent_count" "$subagent_type" "$subagent_desc"
+            elif [[ "$tool_name" == mcp__* ]]; then
+              # MCP tool - show abbreviated name
+              short_name=$(echo "$tool_name" | sed 's/mcp__gymnastics__/mcp:/' | sed 's/mcp__playwright__/browser:/')
+              printf "[%s] 🔧 %s (tools: %d)\n" "$(date '+%H:%M:%S')" "$short_name" "$tool_count"
+            else
+              printf "[%s] 🔧 %s (tools: %d)\n" "$(date '+%H:%M:%S')" "$tool_name" "$tool_count"
+            fi
+          done
+
+          # Check for text content (Claude's thinking/response)
+          text_content=$(echo "$line" | jq -r '.message.content[]? | select(.type=="text") | .text' 2>/dev/null | head -c 200)
+          if [ -n "$text_content" ]; then
+            # Show first line of Claude's response
+            first_line=$(echo "$text_content" | head -1 | cut -c1-100)
+            if [ -n "$first_line" ]; then
+              printf "[%s] 💭 %s...\n" "$(date '+%H:%M:%S')" "$first_line"
+            fi
+          fi
+          ;;
+
+        "user")
+          # Tool results coming back
+          tool_results=$(echo "$line" | jq -r '.message.content[]? | select(.type=="tool_result") | .tool_use_id' 2>/dev/null | wc -l | tr -d ' ')
+          if [ "$tool_results" -gt 0 ]; then
+            printf "[%s] ✓ Tool results received: %d\n" "$(date '+%H:%M:%S')" "$tool_results"
+          fi
+          ;;
+
+        "result")
+          # Final result
+          result_text=$(echo "$line" | jq -r '.result // empty' 2>/dev/null)
+          if [ -n "$result_text" ]; then
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "FINAL OUTPUT:"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "$result_text"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          fi
+          ;;
+
+        "error")
+          error_msg=$(echo "$line" | jq -r '.error.message // .error // "unknown error"' 2>/dev/null)
+          printf "[%s] ❌ Error: %s\n" "$(date '+%H:%M:%S')" "$error_msg"
+          ;;
+
+        *)
+          # Unknown event type - show if debugging
+          if [ -n "$event_type" ]; then
+            : # printf "[%s] [%s] event\n" "$(date '+%H:%M:%S')" "$event_type"
+          fi
+          ;;
+      esac
+    done
+
+  # Stop the status monitor
+  if [ -n "$STATUS_MONITOR_PID" ]; then
+    kill "$STATUS_MONITOR_PID" 2>/dev/null
+    wait "$STATUS_MONITOR_PID" 2>/dev/null
+    STATUS_MONITOR_PID=""
+  fi
+
+  # Read the saved output for completion checks
+  result=$(cat "$OUTPUT_FILE" 2>/dev/null || echo "")
+
+  # Count from files (survives subshell)
+  subagent_count=$(wc -l < "$SUBAGENT_FILE" 2>/dev/null | tr -d ' ' || echo "0")
+  tool_count=$(wc -l < "$TOOL_FILE" 2>/dev/null | tr -d ' ' || echo "0")
+  status_count=$(wc -l < "$STATUS_FILE" 2>/dev/null | tr -d ' ' || echo "0")
+
+  # Show summary
+  echo ""
+  echo "┌──────────────────────────────────────────────────┐"
+  printf "│ Summary: %2d subagents, %3d tools, %3d status msgs │\n" "$subagent_count" "$tool_count" "$status_count"
+  echo "└──────────────────────────────────────────────────┘"
 
   # Check for permission issues - exit early if found
-  if [[ "$result" == *"need permission"* ]] || \
-     [[ "$result" == *"grant write"* ]] || \
-     [[ "$result" == *"grant access"* ]] || \
-     [[ "$result" == *"Please grant"* ]] || \
-     [[ "$result" == *"permission to write"* ]]; then
+  # Look for specific Claude CLI permission error patterns (not general mentions of "permission")
+  if [[ "$result" == *'"type":"error"'*'permission'* ]] || \
+     [[ "$result" == *'Claude needs permission'* ]] || \
+     [[ "$result" == *'tool is not allowed'* ]] || \
+     [[ "$result" == *'not in the allowed tools list'* ]]; then
     echo ""
     echo "========================================"
     echo "PERMISSION ERROR DETECTED - Stopping early"

@@ -1604,7 +1604,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Verify success is true"
     ],
     "verification": "SSH exec returns successful result with correct output",
-    "passes": false
+    "passes": true
   },
   {
     "id": "MCP-05",
