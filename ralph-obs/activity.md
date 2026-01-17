@@ -150,3 +150,29 @@
 
 ---
 
+#### TEST-01: OBS Manager page loads without errors - PASS
+**Timestamp:** 2026-01-18 00:15 UTC
+**Action:** Navigated to /8kyf0rnl/obs-manager, took screenshot, checked console for errors
+
+**Issue Found:**
+- Page initially showed "OBS Disconnected" even though OBS was connected on the VM
+- Coordinator logs showed: `OBS State Sync not initialized, cannot refresh state`
+- Root cause: `OBSStateSync` was only initialized via `/api/competitions/:id/activate` endpoint, not when Socket.io clients connected
+
+**Fix Applied:**
+- Modified `/opt/gymnastics-graphics/server/index.js` on coordinator
+- Added `initializeOBSStateSync(clientCompId)` call in Socket.io connection handler
+- Added initialization for both new OBS connections AND when OBS is already connected
+- Restarted coordinator with `pm2 restart coordinator`
+
+**Screenshot:** `screenshots/TEST-01-obs-manager-connected.png`
+
+**Result:**
+- Page loads successfully with "OBS Connected - Connected to OBS Studio via WebSocket" (green indicator)
+- All 8 tabs visible: Scenes, Sources, Audio, Transitions, Stream, Assets, Templates, Talent Comms
+- Stream Control buttons ENABLED: Start Stream, Start Recording, Take Screenshot
+- Shows "No scenes found in OBS" - expected since OBS has default empty state
+- No console errors
+
+---
+
