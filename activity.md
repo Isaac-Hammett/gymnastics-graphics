@@ -2,20 +2,48 @@
 
 ## Current Status
 **Phase:** OBS Integration Tool - In Progress
-**Last Task:** OBS-05 - Create OBS Scene Manager module ✅
-**Next Task:** OBS-06 - Add Scene CRUD API endpoints
+**Last Task:** OBS-06 - Add Scene CRUD API endpoints ✅
+**Next Task:** OBS-07 - Create OBS Source Manager module
 **Blocker:** None
 
 ### Summary
 OBS Integration Tool implementation phase in progress. This phase will add comprehensive OBS WebSocket control capabilities to the show controller.
 
-**Progress:** 5/38 tasks complete (13%)
+**Progress:** 6/38 tasks complete (16%)
 
 ---
 
 ## Activity Log
 
 ### 2026-01-17
+
+### OBS-06: Add Scene CRUD API endpoints ✅
+Created `/server/routes/obs.js` - RESTful API endpoints for OBS scene management.
+
+**Endpoints implemented:**
+- `GET /api/obs/scenes` - List all scenes with items
+- `GET /api/obs/scenes/:sceneName` - Get single scene details
+- `POST /api/obs/scenes` - Create new scene
+- `POST /api/obs/scenes/:sceneName/duplicate` - Duplicate scene
+- `PUT /api/obs/scenes/:sceneName` - Rename scene
+- `PUT /api/obs/scenes/reorder` - Validate scene reorder
+- `DELETE /api/obs/scenes/:sceneName` - Delete scene
+
+**Integration changes:**
+- Routes mounted in `server/index.js` at line 2283 (before catch-all route)
+- Uses getter pattern for obsStateSync to handle null state gracefully
+- Returns HTTP 503 with message when obsStateSync not initialized
+
+**Deployment fix:**
+- Moved `setupOBSRoutes()` from inside `initializeOBSStateSync()` to server startup
+- Routes now available immediately, not just after competition activation
+
+**Verification:** PASSED
+- Method: `ssh_exec curl http://localhost:3003/api/obs/scenes`
+- Result: `{"error":"OBS State Sync not initialized. Activate a competition first."}`
+- This is expected behavior - routes respond with JSON even when no competition is active
+
+---
 
 ### OBS-05: Create OBS Scene Manager module ✅
 Created `/server/lib/obsSceneManager.js` - CRUD operations module for OBS scenes (separate from obsSceneGenerator.js which auto-generates scenes).
