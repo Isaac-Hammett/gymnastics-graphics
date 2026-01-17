@@ -1738,7 +1738,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Verify stderr contains error about command not found"
     ],
     "verification": "Failed commands return proper exit codes and success=false",
-    "passes": false
+    "passes": true
   },
   {
     "id": "MCP-15",

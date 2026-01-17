@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** MCP Server Testing
-**Last Task:** MCP-13 - Test error handling for invalid AWS instance ID ✅
-**Next Task:** MCP-14 - Test error handling for failed SSH command
+**Last Task:** MCP-14 - Test error handling for failed SSH command ✅
+**Next Task:** MCP-15 - Test aws_start_instance and aws_stop_instance lifecycle
 **Blocker:** None
 
 ---
@@ -240,6 +240,39 @@ Tested the `aws_start_instance` MCP tool with an invalid instance ID.
 - Graceful failure handling confirmed
 
 **Verification:** MCP-13 PASSED - Invalid instance ID returns AWS error gracefully
+
+### MCP-14: Test error handling for failed SSH command ✅
+Tested the `ssh_exec` MCP tool with commands that fail.
+
+**Test 1: Command with exit code 1**
+- Command: `exit 1`
+- Results:
+
+| Field | Value | Expected | Status |
+|-------|-------|----------|--------|
+| exitCode | 1 | 1 | ✓ |
+| success | false | false | ✓ |
+| stdout | "" | - | ✓ |
+| stderr | "" | - | ✓ |
+
+**Test 2: Nonexistent command**
+- Command: `nonexistent-command-xyz123`
+- Results:
+
+| Field | Value | Expected | Status |
+|-------|-------|----------|--------|
+| exitCode | 127 | non-zero | ✓ |
+| success | false | false | ✓ |
+| stdout | "" | - | ✓ |
+| stderr | "bash: line 1: nonexistent-command-xyz123: command not found" | contains "command not found" | ✓ |
+
+**Analysis:**
+- Exit code 127 is the standard "command not found" exit code
+- Tool properly captures exit codes and distinguishes success/failure
+- stderr output is correctly returned for debugging failed commands
+- Both error scenarios handled gracefully
+
+**Verification:** MCP-14 PASSED - Failed commands return proper exit codes and success=false
 
 ---
 
