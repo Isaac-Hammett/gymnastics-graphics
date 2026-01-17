@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   SignalIcon,
@@ -11,6 +11,7 @@ import {
   ArrowPathIcon
 } from '@heroicons/react/24/solid';
 import { useOBS } from '../context/OBSContext';
+import { useShow } from '../context/ShowContext';
 import SceneList from '../components/obs/SceneList';
 import SceneEditor from '../components/obs/SceneEditor';
 import SourceEditor from '../components/obs/SourceEditor';
@@ -22,6 +23,7 @@ import TemplateManager from '../components/obs/TemplateManager';
 import TalentCommsPanel from '../components/obs/TalentCommsPanel';
 
 export default function OBSManager() {
+  const { identify } = useShow();
   const {
     obsState,
     obsConnected,
@@ -34,6 +36,11 @@ export default function OBSManager() {
   } = useOBS();
 
   const [activeTab, setActiveTab] = useState('scenes');
+
+  // Identify as producer on mount to enable scene switching
+  useEffect(() => {
+    identify('producer', 'OBS Manager');
+  }, [identify]);
   const [selectedScene, setSelectedScene] = useState(null);
   const [showSceneEditor, setShowSceneEditor] = useState(false);
   const [selectedSource, setSelectedSource] = useState(null);

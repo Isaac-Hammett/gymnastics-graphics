@@ -2467,8 +2467,27 @@ io.on('connection', async (socket) => {
       return;
     }
 
-    const success = await switchScene(sceneName);
-    if (!success) {
+    // Get the client's competition ID to use the per-competition OBS connection
+    const clientCompId = client?.competitionId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    // Use per-competition OBS connection
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      await compObs.call('SetCurrentProgramScene', { sceneName });
+      console.log(`[switchScene] Switched to scene: ${sceneName} for ${clientCompId}`);
+    } catch (error) {
+      console.error(`[switchScene] Failed to switch scene: ${error.message}`);
       socket.emit('error', { message: `Failed to switch to scene: ${sceneName}` });
     }
   });
