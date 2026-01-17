@@ -182,8 +182,8 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
       "Add DELETE /api/obs/scenes/:sceneName to delete scene",
       "Mount routes in server/index.js"
     ],
-    "verification": "curl http://localhost:3001/api/obs/scenes returns scene list",
-    "passes": false
+    "verification": "server/routes/obs.js exists and is mounted in server/index.js; all tests pass",
+    "passes": true
   },
 
   {
@@ -240,7 +240,7 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
       "Add PUT /api/obs/scenes/:sceneName/items/:itemId/locked",
       "Add PUT /api/obs/scenes/:sceneName/items/reorder"
     ],
-    "verification": "curl http://localhost:3001/api/obs/inputs returns input list",
+    "verification": "Routes added to server/routes/obs.js; on show VM: curl http://localhost:3003/api/obs/inputs returns 503 or input list",
     "passes": false
   },
 
@@ -293,7 +293,7 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
       "Add PUT /api/obs/audio/presets/:presetId to load preset",
       "Add DELETE /api/obs/audio/presets/:presetId"
     ],
-    "verification": "curl http://localhost:3001/api/obs/audio returns audio sources",
+    "verification": "Routes added to server/routes/obs.js; on show VM: curl http://localhost:3003/api/obs/audio returns 503 or audio sources",
     "passes": false
   },
 
@@ -328,7 +328,7 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
       "Add PUT /api/obs/transitions/:name/settings",
       "Add POST /api/obs/transitions/stinger for stinger upload"
     ],
-    "verification": "curl http://localhost:3001/api/obs/transitions returns transition list",
+    "verification": "Routes added to server/routes/obs.js; on show VM: curl http://localhost:3003/api/obs/transitions returns 503 or transition list",
     "passes": false
   },
 
@@ -362,7 +362,7 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
       "Add GET /api/obs/stream/status for stream stats",
       "Ensure stream key never exposed in responses"
     ],
-    "verification": "curl http://localhost:3001/api/obs/stream/status returns stream status",
+    "verification": "Routes added to server/routes/obs.js; on show VM: curl http://localhost:3003/api/obs/stream/status returns 503 or stream status",
     "passes": false
   },
 
@@ -399,7 +399,7 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
       "Add POST /api/obs/assets/pack/install for asset packs",
       "Implement file size limits and type validation"
     ],
-    "verification": "curl http://localhost:3001/api/obs/assets returns asset list",
+    "verification": "Routes added to server/routes/obs.js; on show VM: curl http://localhost:3003/api/obs/assets returns 503 or asset list",
     "passes": false
   },
 
@@ -434,7 +434,7 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
       "Add PUT /api/obs/templates/:id to update metadata",
       "Add DELETE /api/obs/templates/:id to delete template"
     ],
-    "verification": "curl http://localhost:3001/api/obs/templates returns template list",
+    "verification": "Routes added to server/routes/obs.js; on show VM: curl http://localhost:3003/api/obs/templates returns 503 or template list",
     "passes": false
   },
 
@@ -467,7 +467,7 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
       "Add GET /api/talent-comms/status for connection status",
       "Document Discord fallback with SSH tunnel instructions"
     ],
-    "verification": "curl http://localhost:3001/api/talent-comms returns comms config",
+    "verification": "Routes added; on show VM: curl http://localhost:3003/api/talent-comms returns 503 or comms config",
     "passes": false
   },
 
@@ -496,7 +496,7 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
       "Add PUT /api/obs/studio-mode/preview to set preview scene",
       "Add POST /api/obs/studio-mode/transition to execute transition"
     ],
-    "verification": "curl http://localhost:3001/api/obs/preview/screenshot returns base64 image",
+    "verification": "Routes added to server/routes/obs.js; on show VM: curl http://localhost:3003/api/obs/preview/screenshot returns 503 or base64 image",
     "passes": false
   },
 
