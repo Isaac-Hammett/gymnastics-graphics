@@ -2,7 +2,7 @@
  * URL Builder for Virtius Graphics Engine
  * Generates properly formatted URLs for all graphics overlays
  *
- * Production: https://virtiusgraphicsenginev001.netlify.app
+ * Production: https://commentarygraphic.com
  * Local: Uses window.location.origin
  */
 

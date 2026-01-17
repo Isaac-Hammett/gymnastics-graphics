@@ -43,16 +43,9 @@ function CompetitionLayoutInner() {
     );
   }
 
-  // Check if vmAddress is required but missing (not for local mode)
-  if (!isLocalMode && !socketUrl) {
-    return (
-      <CompetitionError
-        error="No VM address configured for this competition"
-        errorType={CompetitionErrorType.NO_VM_ADDRESS}
-        compId={compId}
-      />
-    );
-  }
+  // Note: We no longer block on missing vmAddress - the Producer view should work
+  // even without a VM configured. Individual features that require VM connection
+  // (like OBS control, live graphics) can show their own connection status.
 
   // Ready to render - wrap with ShowProvider and OBSProvider and render nested routes
   return (

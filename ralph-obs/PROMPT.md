@@ -1,6 +1,6 @@
 @plan.md @activity.md @AGENT.md @PRD.md
 
-# VM Pool Fix - Agent Instructions
+# OBS Integration Tool - Test & Fix Agent
 
 ## CRITICAL: ONE TASK PER ITERATION
 
@@ -24,12 +24,23 @@ The outer loop will call you again for the next task.
 
 Read `plan.md` and find the **FIRST** task with `"status": "pending"`.
 
-- If in Research Tasks section → you may spawn parallel subagents for ALL pending research tasks
-- If in Execute Tasks section → do ONLY the first pending task, then STOP
+- If in Diagnostic Tasks section → you may spawn parallel subagents for ALL pending diagnostic tasks
+- If in Test/Fix Tasks section → do ONLY the first pending task, then STOP
 
 ### Step 2: Execute that ONE task
 
 Do the work specified in the task's `action` field.
+
+For TEST tasks:
+1. Navigate to the appropriate page
+2. Take screenshot
+3. Check console for errors
+4. Verify the expected behavior
+
+For FIX tasks:
+1. Implement the fix
+2. Build and deploy if needed
+3. Verify the fix works
 
 ### Step 3: Verify with screenshot
 
@@ -53,7 +64,7 @@ If FAILED:
 "failureReason": "What went wrong"
 ```
 
-If failed, also add a NEW task to fix the issue.
+If failed, also add a NEW task to fix the issue (FIX-XX).
 
 ### Step 5: Log to activity.md
 
@@ -76,11 +87,39 @@ git commit -m "TASK-ID: Brief description"
 
 ---
 
+## Test Competition
+
+Use the competition ID stored in `plan.md` under `testCompetition.compId`.
+
+If no test competition exists:
+1. First task should be PREREQ-01 to find/create one
+2. Store the compId in plan.md for subsequent tasks
+
+---
+
+## OBS Connection Requirements
+
+OBS tests require:
+1. A competition with an assigned VM
+2. The VM must be running
+3. OBS Studio must be running on the VM
+4. OBS WebSocket must be enabled (port 4455)
+5. Server must be connected to OBS WebSocket
+
+If OBS is not connected:
+- Check VM status with `aws_list_instances`
+- Check if OBS is running: `ssh_exec(target=VM_IP, command='pgrep -x obs')`
+- Check OBS WebSocket: `ssh_exec(target=VM_IP, command='netstat -tlnp | grep 4455')`
+
+---
+
 ## Completion Signal
 
 **ONLY output `[[RALPH_LOOP_DONE]]` when:**
 - You checked plan.md
-- EVERY task in Execute Tasks has status "completed" or "skipped"
+- ALL diagnostic tasks have status "completed"
+- ALL test tasks have status "completed", "failed", or "skipped"
+- ALL fix tasks have status "completed" or "skipped"
 - There are ZERO tasks with status "pending"
 
 **DO NOT output `[[RALPH_LOOP_DONE]]` if ANY tasks are still pending!**
@@ -91,12 +130,13 @@ Before outputting the completion signal, explicitly list the remaining pending t
 
 ## Parallelization Rules
 
-### Research Phase (CAN parallelize)
-- Spawn up to 30 subagents for read-only tasks
+### Diagnostic Phase (CAN parallelize)
+- Spawn up to 20 subagents for read-only tasks
 - File reads, screenshots, API GETs, Firebase reads, AWS lists
 
-### Execute Phase (ONE task only)
-- npm build, deploys, file writes, server mutations
+### Test/Fix Phase (ONE task only)
+- Tests may modify OBS state
+- Fixes modify code/server
 - Do ONE task, then STOP
 
 ---
@@ -111,7 +151,7 @@ Before outputting the completion signal, explicitly list the remaining pending t
 - `browser_click(element, ref)` - Click
 
 ### SSH
-- `ssh_exec(target, command)` - Run command
+- `ssh_exec(target, command)` - Run command on VM
 - `ssh_upload_file` / `ssh_download_file`
 
 ### AWS
@@ -124,7 +164,7 @@ Before outputting the completion signal, explicitly list the remaining pending t
 
 ## REMINDER: ONE TASK ONLY
 
-After you complete ONE task from the Execute Tasks:
+After you complete ONE task from the Test/Fix Tasks:
 1. Update plan.md ✓
 2. Update activity.md ✓
 3. Git commit ✓

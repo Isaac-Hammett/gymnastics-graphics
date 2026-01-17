@@ -38,6 +38,7 @@ export function useVMPool() {
     // Subscribe to VM pool (all VMs under vmPool/vms/)
     vmsUnsub = onValue(vmsRef, (snapshot) => {
       const data = snapshot.val() || {};
+      console.log('[useVMPool] Firebase vmPool/vms data:', data);
 
       // Convert object to array of VMs
       const vmArray = [];
@@ -50,9 +51,11 @@ export function useVMPool() {
         }
       }
 
+      console.log('[useVMPool] Converted VM array:', vmArray);
       setVMs(vmArray);
       setLoading(false);
     }, (err) => {
+      console.error('[useVMPool] Firebase error:', err.message);
       setError(err.message);
       setLoading(false);
     });

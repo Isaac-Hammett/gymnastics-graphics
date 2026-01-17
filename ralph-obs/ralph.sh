@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# Ralph Wiggum Loop - VM Pool Fix (v2 - Parallel Research)
+# Ralph Wiggum Loop - OBS Integration Test & Fix
 #
 # Architecture:
-#   PHASE 1 (research): Claude spawns up to 30 parallel subagents for read-only tasks
-#   PHASE 2 (execute):  Claude runs 1 task at a time for build/test/deploy
+#   PHASE 1 (diagnostic): Claude spawns up to 20 parallel subagents for read-only tasks
+#   PHASE 2 (test):       Claude runs 1 test at a time, creates FIX tasks for failures
 #
 # Usage: ./ralph.sh <iterations>
 
@@ -13,12 +13,12 @@ set -e
 if [ -z "$1" ]; then
   echo "Usage: $0 <iterations>"
   echo ""
-  echo "Example: ./ralph.sh 20"
+  echo "Example: ./ralph.sh 30"
   echo ""
-  echo "This will run up to 20 iterations to fix VM Pool Management."
+  echo "This will run up to 30 iterations to test OBS Integration."
   echo ""
-  echo "Phase 1 (research): Parallel subagents gather information"
-  echo "Phase 2 (execute):  Sequential tasks for build/test/deploy"
+  echo "Phase 1 (diagnostic): Parallel subagents gather information"
+  echo "Phase 2 (test):       Sequential tests with fix tasks for failures"
   exit 1
 fi
 
@@ -29,7 +29,7 @@ cd "$(dirname "$0")"
 mkdir -p screenshots
 
 # Temp directory for stream processing
-RALPH_TMP="/tmp/claude/ralph-vmpool-$$"
+RALPH_TMP="/tmp/claude/ralph-obs-$$"
 mkdir -p "$RALPH_TMP"
 
 # Cleanup on exit
@@ -52,7 +52,7 @@ get_phase() {
 }
 
 echo -e "${CYAN}========================================"
-echo "VM Pool Fix - Ralph Loop v2"
+echo "OBS Integration Test - Ralph Loop"
 echo "Max iterations: $1"
 echo -e "========================================${NC}"
 echo ""
@@ -67,10 +67,10 @@ for ((i=1; i<=$1; i++)); do
   echo -e "========================================${NC}"
   echo ""
 
-  if [ "$PHASE" = "research" ]; then
-    echo -e "${BLUE}[RESEARCH MODE] Claude will spawn parallel subagents${NC}"
+  if [ "$PHASE" = "diagnostic" ]; then
+    echo -e "${BLUE}[DIAGNOSTIC MODE] Claude will spawn parallel subagents${NC}"
   else
-    echo -e "${GREEN}[EXECUTE MODE] Claude will run tasks sequentially${NC}"
+    echo -e "${GREEN}[TEST MODE] Claude will run tests sequentially${NC}"
   fi
   echo ""
 
@@ -102,6 +102,12 @@ mcp__playwright__browser_console_messages,\
 mcp__playwright__browser_network_requests,\
 mcp__playwright__browser_type,\
 mcp__playwright__browser_wait_for,\
+mcp__playwright__browser_fill_form,\
+mcp__playwright__browser_evaluate,\
+mcp__playwright__browser_drag,\
+mcp__playwright__browser_hover,\
+mcp__playwright__browser_select_option,\
+mcp__playwright__browser_file_upload,\
 mcp__gymnastics__ssh_exec,\
 mcp__gymnastics__ssh_upload_file,\
 mcp__gymnastics__ssh_download_file,\
@@ -110,6 +116,8 @@ mcp__gymnastics__aws_start_instance,\
 mcp__gymnastics__aws_stop_instance,\
 mcp__gymnastics__firebase_get,\
 mcp__gymnastics__firebase_set,\
+mcp__gymnastics__firebase_update,\
+mcp__gymnastics__firebase_delete,\
 mcp__gymnastics__firebase_list_paths\
 " \
     --verbose \

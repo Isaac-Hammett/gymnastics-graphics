@@ -2288,6 +2288,17 @@ outro,Thanks for Watching,video,Video Scene,0:15,false,,,/path/to/videos/outro.m
 // Pass getter function for obsStateSync since it may be null until competition is activated
 setupOBSRoutes(app, obs, () => obsStateSync);
 
+// Redirect Netlify function paths to API endpoints (for compatibility when not on Netlify)
+app.get('/.netlify/functions/coordinator-status', (req, res) => {
+  res.redirect(307, '/api/coordinator/status');
+});
+app.post('/.netlify/functions/wake-coordinator', (req, res) => {
+  res.redirect(307, '/api/coordinator/wake');
+});
+app.post('/.netlify/functions/stop-coordinator', (req, res) => {
+  res.redirect(307, '/api/coordinator/stop');
+});
+
 // Serve React app for all other routes (Express 5 syntax)
 app.get('/{*path}', (req, res) => {
   res.sendFile(join(__dirname, '..', 'show-controller', 'dist', 'index.html'));

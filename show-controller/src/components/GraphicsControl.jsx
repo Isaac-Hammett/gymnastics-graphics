@@ -71,7 +71,7 @@ const commonLeaderboardButtons = [
 // All possible event frame IDs (for both genders)
 const eventFrames = ['floor', 'pommel', 'rings', 'vault', 'pbars', 'hbar', 'ubars', 'beam', 'allaround', 'final'];
 
-const OUTPUT_BASE_URL = 'https://virtiusgraphicsenginev001.netlify.app/output.html';
+const OUTPUT_BASE_URL = 'https://commentarygraphic.com/output.html';
 const LOCAL_OUTPUT_URL = 'http://localhost:3003/output.html';
 
 const teamCounts = {
