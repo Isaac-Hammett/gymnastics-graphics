@@ -2,20 +2,53 @@
 
 ## Current Status
 **Phase:** OBS Integration Tool - In Progress
-**Last Task:** OBS-07 - Create OBS Source Manager module ✅
-**Next Task:** OBS-08 - Implement scene item management
+**Last Task:** OBS-08 - Implement scene item management ✅
+**Next Task:** OBS-09 - Add Source Management API endpoints
 **Blocker:** None
 
 ### Summary
 OBS Integration Tool implementation phase in progress. This phase will add comprehensive OBS WebSocket control capabilities to the show controller.
 
-**Progress:** 7/38 tasks complete (18%)
+**Progress:** 8/38 tasks complete (21%)
 
 ---
 
 ## Activity Log
 
 ### 2026-01-17
+
+### OBS-08: Implement scene item management ✅
+Extended `/server/lib/obsSourceManager.js` with scene item management methods.
+
+**Methods implemented:**
+- `getSceneItems(sceneName)` - Returns all scene items with transform data
+- `addSourceToScene(sceneName, sourceName, transform)` - Adds source to scene with optional transform
+- `removeSourceFromScene(sceneName, sceneItemId)` - Removes item from scene
+- `updateSceneItemTransform(sceneName, sceneItemId, transform)` - Updates position/scale/bounds
+- `setSceneItemEnabled(sceneName, sceneItemId, enabled)` - Shows/hides scene item
+- `setSceneItemLocked(sceneName, sceneItemId, locked)` - Locks/unlocks scene item
+- `reorderSceneItems(sceneName, itemOrder)` - Reorders items by z-index
+
+**TRANSFORM_PRESETS exported:**
+- `fullscreen` - 1920x1080 full canvas
+- `dualLeft`, `dualRight` - Side-by-side layouts
+- `quadTopLeft`, `quadTopRight`, `quadBottomLeft`, `quadBottomRight` - Four-up layouts
+- `tripleMain`, `tripleTopRight`, `tripleBottomRight` - Main + two smaller views
+
+**Mock implementations added to mockOBS.js:**
+- `GetSceneItemTransform` - Returns transform data for scene item
+- `SetSceneItemLocked` - Sets locked state
+- `SetSceneItemIndex` - Enhanced to handle item reordering
+
+**Tests added:**
+- 44 new tests for scene item management covering all methods, validation, error handling
+- Total tests in obsSourceManager.test.js: 81 (up from 40)
+
+**Verification:** PASSED
+- Method: `cd server && node --test __tests__/obsSourceManager.test.js`
+- Result: All 81 tests pass (19 suites, 0 failures)
+
+---
 
 ### OBS-07: Create OBS Source Manager module ✅
 Created `/server/lib/obsSourceManager.js` - CRUD operations module for OBS inputs/sources.
