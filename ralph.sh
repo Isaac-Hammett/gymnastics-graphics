@@ -247,19 +247,8 @@ mcp__gymnastics__aws_list_security_group_rules\
   printf "│ Summary: %2d subagents, %3d tools, %3d status msgs │\n" "$subagent_count" "$tool_count" "$status_count"
   echo "└──────────────────────────────────────────────────┘"
 
-  # Check for permission issues - exit early if found
-  # Look for specific Claude CLI permission error patterns (not general mentions of "permission")
-  if [[ "$result" == *'"type":"error"'*'permission'* ]] || \
-     [[ "$result" == *'Claude needs permission'* ]] || \
-     [[ "$result" == *'tool is not allowed'* ]] || \
-     [[ "$result" == *'not in the allowed tools list'* ]]; then
-    echo ""
-    echo "========================================"
-    echo "PERMISSION ERROR DETECTED - Stopping early"
-    echo "Check ~/.claude/settings.json or --allowedTools flag"
-    echo "========================================"
-    exit 2
-  fi
+  # Note: Permission errors are now shown via the "error" event handler in the stream parser
+  # The old string-based detection had too many false positives
 
   # Check for completion marker
   if [[ "$result" == *"<promise>COMPLETE</promise>"* ]]; then

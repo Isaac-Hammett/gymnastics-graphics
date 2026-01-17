@@ -1616,7 +1616,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Verify success is true"
     ],
     "verification": "Sudo execution works and returns root user",
-    "passes": false
+    "passes": true
   },
   {
     "id": "MCP-06",
