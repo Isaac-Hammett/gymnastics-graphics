@@ -130,7 +130,7 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
       "Add tests for Firebase persistence to server/__tests__/obsStateSync.test.js"
     ],
     "verification": "cd server && npm run test:obs (Firebase Persistence tests must pass)",
-    "passes": false
+    "passes": true
   },
   {
     "id": "OBS-04",
@@ -738,7 +738,7 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
 
 | Phase | Tasks | Done | Status |
 |-------|-------|------|--------|
-| **OBS Phase 1: State Sync** | 4 | 2 | In Progress |
+| **OBS Phase 1: State Sync** | 4 | 3 | In Progress |
 | **OBS Phase 2: Scene CRUD** | 2 | 0 | Not Started |
 | **OBS Phase 3: Source Mgmt** | 3 | 0 | Not Started |
 | **OBS Phase 4: Audio** | 3 | 0 | Not Started |
@@ -750,7 +750,7 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
 | **OBS Phase 10: Preview** | 2 | 0 | Not Started |
 | **OBS Phase 11: UI** | 7 | 0 | Not Started |
 | **OBS Integration Tests** | 7 | 0 | Not Started |
-| **Total** | **38** | **2** | **5%** |
+| **Total** | **38** | **3** | **8%** |
 
 ---
 

@@ -253,11 +253,16 @@ class OBSStateSync extends EventEmitter {
   /**
    * Handle OBS connection closed
    */
-  onConnectionClosed() {
+  async onConnectionClosed() {
     console.log('[OBSStateSync] OBS connection closed');
 
     this.state.connected = false;
     this.state.connectionError = 'Connection closed';
+
+    // Save state to persist disconnected status
+    await this._saveState().catch(err => {
+      console.error('[OBSStateSync] Failed to save state on disconnect:', err.message);
+    });
 
     this.broadcast('obs:disconnected', {
       connected: false,
@@ -270,11 +275,16 @@ class OBSStateSync extends EventEmitter {
   /**
    * Handle OBS connection error
    */
-  onConnectionError(error) {
+  async onConnectionError(error) {
     console.error('[OBSStateSync] OBS connection error:', error);
 
     this.state.connected = false;
     this.state.connectionError = error.message || 'Connection error';
+
+    // Save state to persist error status
+    await this._saveState().catch(err => {
+      console.error('[OBSStateSync] Failed to save state on error:', err.message);
+    });
 
     this.broadcast('obs:error', {
       connected: false,
@@ -304,12 +314,17 @@ class OBSStateSync extends EventEmitter {
   /**
    * Handle current program scene changed
    */
-  onCurrentProgramSceneChanged(data) {
+  async onCurrentProgramSceneChanged(data) {
     const sceneName = data.sceneName;
     console.log(`[OBSStateSync] Current scene changed to: ${sceneName}`);
 
     this.state.currentScene = sceneName;
     this.state.lastSync = new Date().toISOString();
+
+    // Save state after scene change
+    await this._saveState().catch(err => {
+      console.error('[OBSStateSync] Failed to save state on scene change:', err.message);
+    });
 
     this.broadcast('obs:currentSceneChanged', {
       sceneName,
@@ -710,13 +725,29 @@ class OBSStateSync extends EventEmitter {
   }
 
   /**
-   * Save current state to Firebase (stub for OBS-03)
+   * Save current state to Firebase
    * @private
    */
   async _saveState() {
-    // OBS-03 will implement Firebase persistence
-    // This is stubbed for now
-    console.log('[OBSStateSync] _saveState() stubbed (OBS-03 will implement)');
+    if (!this._db || !this.competitionId) {
+      console.warn('[OBSStateSync] Cannot save state - no database or competition ID');
+      return;
+    }
+
+    try {
+      // Update lastSync timestamp before saving
+      this.state.lastSync = new Date().toISOString();
+
+      // Save to Firebase
+      await this._db
+        .ref(`competitions/${this.competitionId}/production/obsState`)
+        .set(this.state);
+
+      console.log('[OBSStateSync] State saved to Firebase');
+    } catch (error) {
+      console.error('[OBSStateSync] Failed to save state to Firebase:', error.message);
+      throw error;
+    }
   }
 
   /**
@@ -792,6 +823,9 @@ class OBSStateSync extends EventEmitter {
       this.state.lastSync = new Date().toISOString();
 
       console.log('[OBSStateSync] Full state refresh complete');
+
+      // Save state to Firebase
+      await this._saveState();
 
       // Broadcast state update
       this.broadcast('obs:stateUpdated', this.state);

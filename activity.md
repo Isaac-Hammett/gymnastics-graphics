@@ -2,20 +2,49 @@
 
 ## Current Status
 **Phase:** OBS Integration Tool - In Progress
-**Last Task:** OBS-02 - Implement OBS state refresh and caching ✅
-**Next Task:** OBS-03 - Firebase state persistence
+**Last Task:** OBS-03 - Implement Firebase persistence for OBS state ✅
+**Next Task:** OBS-04 - Integrate OBS State Sync with server
 **Blocker:** None
 
 ### Summary
 OBS Integration Tool implementation phase in progress. This phase will add comprehensive OBS WebSocket control capabilities to the show controller.
 
-**Progress:** 2/38 tasks complete (5%)
+**Progress:** 3/38 tasks complete (8%)
 
 ---
 
 ## Activity Log
 
 ### 2026-01-16
+
+### OBS-03: Implement Firebase persistence for OBS state ✅
+Implemented Firebase persistence layer for OBS state in `/server/lib/obsStateSync.js`.
+
+**Methods implemented:**
+- `_saveState()` - Persists current state to Firebase at `competitions/{compId}/production/obsState` with lastSync timestamp
+- Enhanced `onConnectionClosed()` - Now async, saves state when connection is lost
+- Enhanced `onConnectionError()` - Now async, saves state on error with error details
+- Enhanced `onCurrentProgramSceneChanged()` - Now async, saves state after scene changes
+- Enhanced `refreshFullState()` - Calls `_saveState()` after successful refresh
+
+**Integration:**
+- State automatically persists on connection events (connect, disconnect, error)
+- State persists after scene changes and full state refresh
+- Handles missing compId gracefully (no-op when not initialized)
+- Handles Firebase errors with try/catch (logs but doesn't throw)
+
+**Tests added:** 16 new tests covering:
+- `initialize()` with Firebase (3 tests): loads existing state, handles missing state, handles Firebase errors
+- `_saveState()` (5 tests): saves to correct path, skips when no compId, handles Firebase errors, includes timestamp, preserves state structure
+- State persistence on events (5 tests): onConnectionClosed, onConnectionError, onCurrentProgramSceneChanged, refreshFullState persists, handles errors gracefully
+- State recovery after reconnection (2 tests): preserves state through reconnect, refreshes and saves on reconnect
+- Integration: Firebase path structure (1 test)
+
+**Verification:** PASSED
+- Method: `cd server && npm run test:obs`
+- Result: All 99 tests pass (49 from OBS-01 + 34 from OBS-02 + 16 new for OBS-03)
+
+---
 
 ### OBS-02: Implement OBS state refresh and caching ✅
 Implemented full state refresh and caching methods in `/server/lib/obsStateSync.js`.
