@@ -24,3 +24,8 @@ Step 2: free -m complete
 Step 3: df -h complete
 Step 4: uptime complete
 Done: MCP-17 PASS
+Starting: Test coordinator app deployment structure
+Step 1: Check /opt/gymnastics-graphics directory
+Step 2: Check server/package.json
+Step 3: Check PM2 process status
+Done: PASS

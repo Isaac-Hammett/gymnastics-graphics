@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** MCP Server Testing
-**Last Task:** MCP-17 - Test full VM diagnostics workflow ✅
-**Next Task:** MCP-18 - Test coordinator app deployment check
+**Last Task:** MCP-18 - Test coordinator app deployment check ✅
+**Next Task:** MCP-19 - Test network connectivity from coordinator
 **Blocker:** None
 
 ---
@@ -387,6 +387,44 @@ Tested the full VM diagnostics workflow using MCP tools.
 - No warnings or issues detected
 
 **Verification:** MCP-17 PASSED - Full diagnostics workflow executes without errors
+
+### MCP-18: Test coordinator app deployment check ✅
+Tested the coordinator application deployment structure via SSH.
+
+**Steps Executed:**
+
+| Step | Command | Exit Code | Result |
+|------|---------|-----------|--------|
+| 1 | `ls -la /opt/gymnastics-graphics` | 0 | Directory exists with expected structure |
+| 2 | `cat .../server/package.json \| head -5` | 0 | package.json valid |
+| 3 | `pm2 list --no-color` | 0 | Process online |
+
+**Directory Structure Verified:**
+- `/opt/gymnastics-graphics/server/` - Server application
+- `/opt/gymnastics-graphics/show-controller/` - Frontend
+- `/opt/gymnastics-graphics/overlays/` - Graphics overlays
+- `/opt/gymnastics-graphics/.git/` - Git repo
+- `firebase-service-account.json` - Firebase credentials
+
+**Package.json Contents:**
+```json
+{
+  "name": "show-controller-server",
+  "version": "1.0.0",
+  "description": "OBS Show Controller Server for Gymnastics Graphics",
+  "main": "index.js"
+}
+```
+
+**PM2 Process Status:**
+- Process: coordinator (id: 0)
+- Status: **online**
+- Version: 1.0.0
+- Uptime: 12h
+- Memory: 140.2mb
+- Restarts: 3 (stable)
+
+**Verification:** MCP-18 PASSED - Coordinator deployment structure is correct
 
 ---
 
