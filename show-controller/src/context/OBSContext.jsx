@@ -105,14 +105,15 @@ export function OBSProvider({ children }) {
     };
 
     // Subscribe to all OBS events
-    socket.on('obs:stateUpdate', handleStateUpdate);
+    // Note: Event names must match server emissions in server/lib/obsStateSync.js
+    socket.on('obs:stateUpdated', handleStateUpdate);
     socket.on('obs:connected', handleConnected);
     socket.on('obs:disconnected', handleDisconnected);
     socket.on('sceneChanged', handleSceneChanged);
     socket.on('obs:previewSceneChanged', handlePreviewSceneChanged);
-    socket.on('obs:streamingStateChanged', handleStreamingStateChanged);
-    socket.on('obs:recordingStateChanged', handleRecordingStateChanged);
-    socket.on('obs:transitionChanged', handleTransitionChanged);
+    socket.on('obs:streamStateChanged', handleStreamingStateChanged);
+    socket.on('obs:recordStateChanged', handleRecordingStateChanged);
+    socket.on('obs:currentTransitionChanged', handleTransitionChanged);
     socket.on('obs:error', handleError);
 
     // Request initial state
@@ -120,14 +121,14 @@ export function OBSProvider({ children }) {
 
     return () => {
       console.log('OBSContext: Cleaning up event listeners');
-      socket.off('obs:stateUpdate', handleStateUpdate);
+      socket.off('obs:stateUpdated', handleStateUpdate);
       socket.off('obs:connected', handleConnected);
       socket.off('obs:disconnected', handleDisconnected);
       socket.off('sceneChanged', handleSceneChanged);
       socket.off('obs:previewSceneChanged', handlePreviewSceneChanged);
-      socket.off('obs:streamingStateChanged', handleStreamingStateChanged);
-      socket.off('obs:recordingStateChanged', handleRecordingStateChanged);
-      socket.off('obs:transitionChanged', handleTransitionChanged);
+      socket.off('obs:streamStateChanged', handleStreamingStateChanged);
+      socket.off('obs:recordStateChanged', handleRecordingStateChanged);
+      socket.off('obs:currentTransitionChanged', handleTransitionChanged);
       socket.off('obs:error', handleError);
     };
   }, [socket, connected]);

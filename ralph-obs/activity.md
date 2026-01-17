@@ -197,3 +197,35 @@
 
 ---
 
+#### FIX-02: Fix Socket.io event name mismatch - PASS
+**Timestamp:** 2026-01-18 00:00 UTC
+**Action:** Fixed event name mismatches in frontend OBSContext.jsx
+
+**Root Cause Analysis:**
+Research revealed 4 event name mismatches between server and frontend:
+1. `obs:stateUpdate` vs `obs:stateUpdated` (state updates)
+2. `obs:streamingStateChanged` vs `obs:streamStateChanged` (streaming)
+3. `obs:recordingStateChanged` vs `obs:recordStateChanged` (recording)
+4. `obs:transitionChanged` vs `obs:currentTransitionChanged` (transitions)
+
+**Fix Applied:**
+Updated `show-controller/src/context/OBSContext.jsx` lines 108-117 and 123-132 to use correct event names matching server emissions in `server/lib/obsStateSync.js`.
+
+**Deployment:**
+1. Built frontend: `npm run build` (787 modules, 1.37s)
+2. Created tarball and uploaded to production server (3.87.107.201)
+3. Extracted to `/var/www/commentarygraphic/`
+
+**Verification:**
+- Navigated to https://commentarygraphic.com/8kyf0rnl/obs-manager
+- Console shows: `OBSContext: State update received {connected: true, ...}`
+- Page displays "OBS Connected" with green checkmark
+- **Scenes (1)** now shows with scene named "Scene" and LIVE badge
+- No console errors
+
+**Screenshot:** `screenshots/FIX-02-scenes-working.png`
+
+**Result:** TEST-02 now passes - scenes display correctly after event name fix.
+
+---
+
