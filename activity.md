@@ -2,20 +2,66 @@
 
 ## Current Status
 **Phase:** OBS Integration Tool - In Progress
-**Last Task:** OBS-20 - Add Template Management API endpoints ✅
-**Next Task:** OBS-21 - Implement VDO.Ninja integration
+**Last Task:** OBS-21 - Implement VDO.Ninja integration ✅
+**Next Task:** OBS-22 - Add Talent Communication API endpoints
 **Blocker:** None
 
 ### Summary
 OBS Integration Tool implementation phase in progress. This phase will add comprehensive OBS WebSocket control capabilities to the show controller.
 
-**Progress:** 20/38 tasks complete (53%)
+**Progress:** 21/38 tasks complete (55%)
 
 ---
 
 ## Activity Log
 
 ### 2026-01-17
+
+### OBS-21: Implement VDO.Ninja integration ✅
+Created `/server/lib/talentCommsManager.js` - talent communication manager for VDO.Ninja integration.
+
+**Methods implemented:**
+- `generateRoomId()` - Create unique, URL-safe room ID (format: `gym-{12-hex-chars}`)
+- `generateVdoNinjaUrls(roomId, password)` - Generate director, obsScene, and talent URLs
+- `setupTalentComms(compId, method)` - Initial setup, saves to Firebase
+- `regenerateUrls(compId)` - Generate new room ID and URLs
+- `getTalentComms(compId)` - Retrieve configuration from Firebase
+- `updateMethod(compId, method)` - Switch between vdo-ninja/discord
+- `deleteTalentComms(compId)` - Remove configuration
+
+**VDO.Ninja URL patterns:**
+- Director: `https://vdo.ninja/?director={roomId}&password={password}`
+- OBS Scene: `https://vdo.ninja/?view={roomId}&scene`
+- Talent: `https://vdo.ninja/?room={roomId}&push=talent{N}`
+
+**Firebase storage:**
+- Path: `competitions/{compId}/config/talentComms`
+- Stores: method, roomId, password, urls, timestamps
+
+**Exports:**
+- `TalentCommsManager` class
+- `COMMS_METHODS` constant: ['vdo-ninja', 'discord']
+- `VDO_NINJA_BASE_URL` constant
+
+**Tests created:**
+- `/server/__tests__/talentCommsManager.test.js` - 62 comprehensive tests covering:
+  - Module exports (3 tests)
+  - Constructor (3 tests)
+  - generateRoomId (5 tests)
+  - generateVdoNinjaUrls (8 tests)
+  - setupTalentComms (10 tests)
+  - regenerateUrls (7 tests)
+  - getTalentComms (4 tests)
+  - updateMethod (9 tests)
+  - deleteTalentComms (4 tests)
+  - Error handling (4 tests)
+  - Integration scenarios (4 tests)
+
+**Verification:** PASSED
+- Method: `cd server && node --test __tests__/talentCommsManager.test.js`
+- Result: All 62 tests pass (12 suites, 0 failures, 78ms)
+
+---
 
 ### OBS-20: Add Template Management API endpoints ✅
 Added 6 REST API endpoints to `/server/routes/obs.js` for template management.
