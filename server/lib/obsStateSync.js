@@ -1072,6 +1072,134 @@ class OBSStateSync extends EventEmitter {
     this.emit('shutdown');
     console.log('[OBSStateSync] Shutdown complete');
   }
+
+  // ============================================================================
+  // Preview and Studio Mode Methods
+  // ============================================================================
+
+  /**
+   * Take a screenshot of a scene or the current program scene
+   * @param {string} sceneName - Optional scene name. If omitted, uses current program scene
+   * @param {Object} options - Screenshot options
+   * @param {string} options.imageFormat - Image format ('png' or 'jpg'). Default: 'png'
+   * @param {number} options.imageWidth - Image width in pixels. Optional.
+   * @param {number} options.imageHeight - Image height in pixels. Optional.
+   * @returns {Promise<string>} Base64-encoded image data
+   */
+  async takeScreenshot(sceneName = null, options = {}) {
+    if (!this.obs || !this.state.connected) {
+      throw new Error('Cannot take screenshot - not connected to OBS');
+    }
+
+    try {
+      const targetScene = sceneName || this.state.currentScene;
+
+      if (!targetScene) {
+        throw new Error('No scene specified and no current scene available');
+      }
+
+      const params = {
+        sourceName: targetScene,
+        imageFormat: options.imageFormat || 'png'
+      };
+
+      // Add optional dimensions if provided
+      if (options.imageWidth) params.imageWidth = options.imageWidth;
+      if (options.imageHeight) params.imageHeight = options.imageHeight;
+
+      const response = await this.obs.call('GetSourceScreenshot', params);
+
+      console.log(`[OBSStateSync] Screenshot captured for scene: ${targetScene}`);
+
+      return response.imageData;
+    } catch (error) {
+      console.error('[OBSStateSync] Failed to take screenshot:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Get studio mode status
+   * @returns {Promise<Object>} Studio mode status { studioModeEnabled: boolean }
+   */
+  async getStudioModeStatus() {
+    if (!this.obs || !this.state.connected) {
+      throw new Error('Cannot get studio mode status - not connected to OBS');
+    }
+
+    try {
+      const response = await this.obs.call('GetStudioModeEnabled');
+      console.log(`[OBSStateSync] Studio mode status: ${response.studioModeEnabled}`);
+      return response;
+    } catch (error) {
+      console.error('[OBSStateSync] Failed to get studio mode status:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Set studio mode enabled or disabled
+   * @param {boolean} enabled - Whether to enable studio mode
+   * @returns {Promise<void>}
+   */
+  async setStudioMode(enabled) {
+    if (!this.obs || !this.state.connected) {
+      throw new Error('Cannot set studio mode - not connected to OBS');
+    }
+
+    try {
+      await this.obs.call('SetStudioModeEnabled', { studioModeEnabled: enabled });
+      console.log(`[OBSStateSync] Studio mode ${enabled ? 'enabled' : 'disabled'}`);
+    } catch (error) {
+      console.error('[OBSStateSync] Failed to set studio mode:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Set the current preview scene (only works when studio mode is enabled)
+   * @param {string} sceneName - Name of the scene to set as preview
+   * @returns {Promise<void>}
+   */
+  async setPreviewScene(sceneName) {
+    if (!this.obs || !this.state.connected) {
+      throw new Error('Cannot set preview scene - not connected to OBS');
+    }
+
+    if (!this.state.studioModeEnabled) {
+      throw new Error('Cannot set preview scene - studio mode is not enabled');
+    }
+
+    try {
+      await this.obs.call('SetCurrentPreviewScene', { sceneName });
+      console.log(`[OBSStateSync] Preview scene set to: ${sceneName}`);
+    } catch (error) {
+      console.error('[OBSStateSync] Failed to set preview scene:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Execute a transition from preview to program (only works when studio mode is enabled)
+   * @returns {Promise<void>}
+   */
+  async executeTransition() {
+    if (!this.obs || !this.state.connected) {
+      throw new Error('Cannot execute transition - not connected to OBS');
+    }
+
+    if (!this.state.studioModeEnabled) {
+      throw new Error('Cannot execute transition - studio mode is not enabled');
+    }
+
+    try {
+      await this.obs.call('TriggerStudioModeTransition');
+      console.log('[OBSStateSync] Studio mode transition executed');
+    } catch (error) {
+      console.error('[OBSStateSync] Failed to execute transition:', error.message);
+      throw error;
+    }
+  }
 }
 
 // ============================================================================

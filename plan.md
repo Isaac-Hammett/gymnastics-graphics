@@ -483,7 +483,7 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
       "Implement executeTransition() to go preview to program"
     ],
     "verification": "Screenshot capture works via OBS WebSocket",
-    "passes": false
+    "passes": true
   },
   {
     "id": "OBS-24",
@@ -747,10 +747,10 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
 | **OBS Phase 7: Assets** | 2 | 2 | Complete |
 | **OBS Phase 8: Templates** | 2 | 2 | Complete |
 | **OBS Phase 9: Talent Comms** | 2 | 2 | Complete |
-| **OBS Phase 10: Preview** | 2 | 0 | Not Started |
+| **OBS Phase 10: Preview** | 2 | 1 | In Progress |
 | **OBS Phase 11: UI** | 7 | 0 | Not Started |
 | **OBS Integration Tests** | 7 | 0 | Not Started |
-| **Total** | **38** | **22** | **58%** |
+| **Total** | **38** | **23** | **61%** |
 
 ---
 

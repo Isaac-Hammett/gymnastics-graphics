@@ -604,6 +604,57 @@ export class MockOBSWebSocket extends EventEmitter {
       return {};
     },
 
+    TriggerStudioModeTransition: function() {
+      if (!this._studioModeEnabled) {
+        const error = new Error('Studio mode is not enabled');
+        error.code = 608;
+        throw error;
+      }
+
+      // In studio mode, transition moves preview to program
+      if (this._previewScene) {
+        const oldScene = this._currentScene;
+        this._currentScene = this._previewScene;
+
+        setImmediate(() => {
+          this.emit('SceneTransitionStarted', { transitionName: this._currentTransition });
+        });
+
+        setTimeout(() => {
+          setImmediate(() => {
+            this.emit('CurrentProgramSceneChanged', { sceneName: this._currentScene });
+            this.emit('SceneTransitionEnded', { transitionName: this._currentTransition });
+          });
+        }, 10);
+      }
+
+      return {};
+    },
+
+    GetSourceScreenshot: function(params) {
+      const { sourceName, imageFormat, imageWidth, imageHeight } = params;
+
+      // Check if source exists (as a scene)
+      if (!this._scenes.has(sourceName)) {
+        const error = new Error(`Source not found: ${sourceName}`);
+        error.code = 600;
+        throw error;
+      }
+
+      // Generate mock base64 image data
+      // This is a tiny 1x1 PNG encoded in base64
+      const mockPngBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+
+      // For testing, we can include metadata about the request
+      const format = imageFormat || 'png';
+
+      return {
+        imageData: mockPngBase64,
+        imageWidth: imageWidth || 1920,
+        imageHeight: imageHeight || 1080
+      };
+    },
+
     // Scene item methods
     CreateSceneItem: function(params) {
       const { sceneName, sourceName } = params;
