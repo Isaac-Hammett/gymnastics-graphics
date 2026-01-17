@@ -2,20 +2,54 @@
 
 ## Current Status
 **Phase:** OBS Integration Tool - In Progress
-**Last Task:** OBS-03 - Implement Firebase persistence for OBS state ✅
-**Next Task:** OBS-04 - Integrate OBS State Sync with server
+**Last Task:** OBS-04 - Integrate OBS State Sync with server ✅
+**Next Task:** OBS-05 - Create OBS Scene Manager module
 **Blocker:** None
 
 ### Summary
 OBS Integration Tool implementation phase in progress. This phase will add comprehensive OBS WebSocket control capabilities to the show controller.
 
-**Progress:** 3/38 tasks complete (8%)
+**Progress:** 4/38 tasks complete (11%)
 
 ---
 
 ## Activity Log
 
 ### 2026-01-16
+
+### OBS-04: Integrate OBS State Sync with server ✅
+Integrated OBSStateSync service into the main server (`/server/index.js`).
+
+**Changes implemented:**
+- Line 26: Added import for `getOBSStateSync` from `./lib/obsStateSync.js`
+- Line 117: Added module-level `obsStateSync` variable
+- Lines 342-363: Added `initializeOBSStateSync(competitionId)` function that:
+  - Instantiates OBSStateSync with obs, io, and productionConfigService
+  - Calls initialize() to load cached state from Firebase
+  - Sets up broadcast event listener
+- Lines 1138-1145: Competition activation integration - calls `initializeOBSStateSync(id)` when competition is activated
+- Line 575: Added `obsState` to `broadcastState()` function for state broadcasts
+- Lines 2337-2339: Send initial OBS state to clients on socket connection
+- Lines 2443-2456: Added `obs:refreshState` socket listener for client-requested state refresh
+
+**Integration points:**
+- OBS state initializes when competition is activated
+- State included in periodic state broadcasts
+- New clients receive current OBS state on connection
+- Clients can request state refresh via `obs:refreshState` event
+
+**Deployment:**
+- Server packaged and deployed to coordinator VM
+- PM2 process restarted successfully
+- Server status: ONLINE (healthy)
+
+**Verification:** PASSED
+- Method: `cd server && npm run test:obs`
+- Result: All 82 tests pass
+- Syntax check: `node --check index.js` passed
+- Server deployment verified on coordinator
+
+---
 
 ### OBS-03: Implement Firebase persistence for OBS state ✅
 Implemented Firebase persistence layer for OBS state in `/server/lib/obsStateSync.js`.
