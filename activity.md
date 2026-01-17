@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** MCP Server Testing
-**Last Task:** MCP-10 - Test ssh_multi_exec aggregation on multiple VMs ✅
-**Next Task:** MCP-17 - Test full VM diagnostics workflow
+**Last Task:** MCP-17 - Test full VM diagnostics workflow ✅
+**Next Task:** MCP-18 - Test coordinator app deployment check
 **Blocker:** None
 
 ---
@@ -359,6 +359,34 @@ Tested the `ssh_multi_exec` MCP tool with aggregation capability.
 | failureCount | 0 | ✓ |
 
 **Verification:** MCP-10 PASSED - Multi-exec aggregates results correctly. No additional running VMs were available for multi-target testing, but aggregation structure verified.
+
+### MCP-17: Test full VM diagnostics workflow ✅
+Tested the full VM diagnostics workflow using MCP tools.
+
+**Steps Executed:**
+
+| Step | MCP Tool | Command | Result |
+|------|----------|---------|--------|
+| 1 | `aws_list_instances` | stateFilter='running' | 0 running EC2 instances (coordinator accessible via shortcut) |
+| 2 | `ssh_exec` | `free -m` | Memory stats retrieved |
+| 3 | `ssh_exec` | `df -h` | Disk usage retrieved |
+| 4 | `ssh_exec` | `uptime` | Uptime retrieved |
+
+**Aggregated Health Report:**
+
+| Metric | Value | Status |
+|--------|-------|--------|
+| Memory | 1910 MB total, 508 MB used (26.6%), 1402 MB available (73.4%) | HEALTHY |
+| Disk (root) | 19G total, 2.8G used (16%), 16G available | HEALTHY |
+| Uptime | 1 day, 6 hours, 37 minutes | STABLE |
+| Load Average | 0.00, 0.00, 0.00 | IDLE |
+
+**Assessment:**
+- All 4 diagnostic steps executed successfully
+- Coordinator VM is healthy with excellent resource availability
+- No warnings or issues detected
+
+**Verification:** MCP-17 PASSED - Full diagnostics workflow executes without errors
 
 ---
 
