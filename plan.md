@@ -1656,7 +1656,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Verify stdout contains 'test'"
     ],
     "verification": "Direct IP targeting works same as 'coordinator' shortcut",
-    "passes": false
+    "passes": true
   },
   {
     "id": "MCP-09",

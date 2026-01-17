@@ -1,0 +1,4 @@
+Starting: Test ssh_exec by IP address
+[Step 1] Called ssh_exec with IP 44.193.31.120
+[Step 2] Verifying response
+Done: PASS
