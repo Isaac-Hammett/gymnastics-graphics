@@ -124,8 +124,9 @@ These test actual OBS functionality and may modify state.
     "description": "Scene list displays correctly",
     "action": "On OBS Manager, verify Scenes tab shows OBS scenes",
     "verification": "Scenes are listed with names and categories",
-    "status": "pending",
-    "dependsOn": "TEST-01"
+    "status": "failed",
+    "dependsOn": "TEST-01",
+    "failureReason": "Scenes tab shows 'No scenes found in OBS' even though Firebase has scene data. Root cause: Socket.io event name mismatch - server broadcasts 'obs:stateUpdated' but frontend listens for 'obs:stateUpdate'"
   },
   {
     "id": "TEST-03",
@@ -233,6 +234,13 @@ Created dynamically when tests fail.
     "status": "completed",
     "result": "CompetitionContext.jsx already routes through https://api.commentarygraphic.com when on HTTPS. OBSContext.jsx and all OBS components exist. Rebuilt and deployed frontend. OBS Manager page loads without Mixed Content errors.",
     "blocksTests": ["PREREQ-02", "TEST-01", "TEST-02", "TEST-03", "TEST-04", "TEST-05", "TEST-06", "TEST-07", "TEST-08", "TEST-09", "TEST-10", "TEST-11", "TEST-12", "TEST-13"]
+  },
+  {
+    "id": "FIX-02",
+    "description": "Fix Socket.io event name mismatch - OBS state not received by frontend",
+    "action": "Change server/lib/obsStateSync.js line 872 from 'obs:stateUpdated' to 'obs:stateUpdate' to match frontend listener. Then redeploy coordinator.",
+    "status": "pending",
+    "blocksTests": ["TEST-02", "TEST-03", "TEST-04", "TEST-05", "TEST-06", "TEST-11", "TEST-12", "TEST-13"]
   }
 ]
 ```

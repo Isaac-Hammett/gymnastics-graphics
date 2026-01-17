@@ -176,3 +176,24 @@
 
 ---
 
+#### TEST-02: Scene list displays correctly - FAIL
+**Timestamp:** 2026-01-17 23:45 UTC
+**Action:** Navigated to /8kyf0rnl/obs-manager, clicked Scenes tab, verified scene display
+
+**Findings:**
+1. OBS Connected successfully (coordinator reconnected after OBS restart)
+2. OBS has 1 scene ("Scene") - confirmed via Firebase at `competitions/8kyf0rnl/production/obsState`
+3. Frontend shows "No scenes found in OBS" - scenes array not reaching UI
+
+**Root Cause Analysis:**
+- Server broadcasts state with event name `obs:stateUpdated` (server/lib/obsStateSync.js:872)
+- Frontend listens for event name `obs:stateUpdate` (OBSContext.jsx)
+- **Event name mismatch** - frontend never receives the state update
+- obsState remains at INITIAL_OBS_STATE with empty scenes array
+
+**Screenshot:** `screenshots/TEST-02-scenes-tab.png`
+
+**Created:** FIX-02 to fix the Socket.io event name mismatch
+
+---
+
