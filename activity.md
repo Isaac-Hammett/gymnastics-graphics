@@ -2,20 +2,46 @@
 
 ## Current Status
 **Phase:** OBS Integration Tool - In Progress
-**Last Task:** OBS-21 - Implement VDO.Ninja integration ✅
-**Next Task:** OBS-22 - Add Talent Communication API endpoints
+**Last Task:** OBS-22 - Add Talent Communication API endpoints ✅
+**Next Task:** OBS-23 - Implement OBS Preview and Studio Mode
 **Blocker:** None
 
 ### Summary
 OBS Integration Tool implementation phase in progress. This phase will add comprehensive OBS WebSocket control capabilities to the show controller.
 
-**Progress:** 21/38 tasks complete (55%)
+**Progress:** 22/38 tasks complete (58%)
 
 ---
 
 ## Activity Log
 
 ### 2026-01-17
+
+### OBS-22: Add Talent Communication API endpoints ✅
+Added 6 REST API endpoints to `/server/routes/obs.js` for talent communications management.
+
+**Endpoints implemented:**
+- `GET /api/obs/talent-comms` - Get current talent comms configuration
+- `POST /api/obs/talent-comms/setup` - Setup with VDO.Ninja or Discord method
+- `POST /api/obs/talent-comms/regenerate` - Regenerate VDO.Ninja URLs
+- `PUT /api/obs/talent-comms/method` - Switch between vdo-ninja/discord
+- `GET /api/obs/talent-comms/status` - Get status with URLs and timestamps
+- `DELETE /api/obs/talent-comms` - Delete configuration
+
+**Implementation details:**
+- Imported TalentCommsManager at line 24
+- All endpoints check obsStateSync initialized (503 if not)
+- All endpoints check active competition exists (400 if missing)
+- Proper error handling (400, 404, 500, 503)
+- Discord fallback with SSH tunnel documented in JSDoc comments
+- Lines 1782-2021 in server/routes/obs.js
+
+**Verification:** PASSED
+- Method: Deployed to coordinator, verified with `curl http://localhost:3003/api/obs/talent-comms`
+- Result: `{"error":"OBS State Sync not initialized. Activate a competition first."}` (expected 503 response)
+- Server status: online, restart successful via PM2
+
+---
 
 ### OBS-21: Implement VDO.Ninja integration ✅
 Created `/server/lib/talentCommsManager.js` - talent communication manager for VDO.Ninja integration.

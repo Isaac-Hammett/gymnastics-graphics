@@ -1,7 +1,7 @@
 /**
  * OBS Scene CRUD API Routes
  *
- * Provides RESTful endpoints for managing OBS scenes, sources, audio, transitions, streaming, assets, and templates:
+ * Provides RESTful endpoints for managing OBS scenes, sources, audio, transitions, streaming, assets, templates, and talent communications:
  * - Scene CRUD operations
  * - Input/Source CRUD operations
  * - Scene item management (add, remove, transform, enable, lock, reorder)
@@ -10,6 +10,7 @@
  * - Stream configuration (settings, start, stop, status)
  * - Asset management (list, upload, delete, download, manifest)
  * - Template management (list, get, create, apply, update, delete)
+ * - Talent communications (setup, regenerate, status, method switching)
  *
  * @module routes/obs
  */
@@ -21,6 +22,7 @@ import { OBSTransitionManager } from '../lib/obsTransitionManager.js';
 import { OBSStreamManager } from '../lib/obsStreamManager.js';
 import { OBSAssetManager } from '../lib/obsAssetManager.js';
 import { OBSTemplateManager } from '../lib/obsTemplateManager.js';
+import { TalentCommsManager } from '../lib/talentCommsManager.js';
 import configLoader from '../lib/configLoader.js';
 import productionConfigService from '../lib/productionConfigService.js';
 import multer from 'multer';
@@ -1777,7 +1779,248 @@ export function setupOBSRoutes(app, obs, obsStateSyncOrGetter) {
     }
   });
 
-  console.log('[OBS Routes] Scene CRUD, Source Management, Audio Management, Transition Management, Stream Configuration, Asset Management, and Template Management endpoints mounted at server startup');
+  // ============================================================================
+  // Talent Communications Endpoints
+  // ============================================================================
+
+  /**
+   * GET /api/obs/talent-comms - Get current talent communications configuration
+   */
+  app.get('/api/obs/talent-comms', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      const compId = configLoader.getActiveCompetition();
+      if (!compId) {
+        return res.status(400).json({ error: 'No active competition. Activate a competition first.' });
+      }
+
+      console.log(`[OBS Routes] GET /api/obs/talent-comms - Fetching talent comms config for competition ${compId}`);
+
+      const talentCommsManager = new TalentCommsManager(productionConfigService);
+      const config = await talentCommsManager.getTalentComms(compId);
+
+      if (!config) {
+        return res.json({
+          configured: false,
+          message: 'Talent communications not configured for this competition'
+        });
+      }
+
+      res.json({
+        configured: true,
+        config
+      });
+    } catch (error) {
+      console.error('[OBS Routes] Error fetching talent comms:', error.message);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * POST /api/obs/talent-comms/setup - Setup talent communications with VDO.Ninja or Discord
+   * Body: { method: 'vdo-ninja' | 'discord' }
+   */
+  app.post('/api/obs/talent-comms/setup', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      const compId = configLoader.getActiveCompetition();
+      if (!compId) {
+        return res.status(400).json({ error: 'No active competition. Activate a competition first.' });
+      }
+
+      const { method = 'vdo-ninja' } = req.body;
+
+      console.log(`[OBS Routes] POST /api/obs/talent-comms/setup - Setting up talent comms for competition ${compId} using ${method}`);
+
+      const talentCommsManager = new TalentCommsManager(productionConfigService);
+      const config = await talentCommsManager.setupTalentComms(compId, method);
+
+      res.status(201).json({
+        success: true,
+        config
+      });
+    } catch (error) {
+      console.error('[OBS Routes] Error setting up talent comms:', error.message);
+      if (error.message.includes('Invalid method')) {
+        return res.status(400).json({ error: error.message });
+      }
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * POST /api/obs/talent-comms/regenerate - Regenerate VDO.Ninja URLs
+   * Creates new room ID and URLs while preserving the method
+   */
+  app.post('/api/obs/talent-comms/regenerate', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      const compId = configLoader.getActiveCompetition();
+      if (!compId) {
+        return res.status(400).json({ error: 'No active competition. Activate a competition first.' });
+      }
+
+      console.log(`[OBS Routes] POST /api/obs/talent-comms/regenerate - Regenerating URLs for competition ${compId}`);
+
+      const talentCommsManager = new TalentCommsManager(productionConfigService);
+      const config = await talentCommsManager.regenerateUrls(compId);
+
+      res.json({
+        success: true,
+        config
+      });
+    } catch (error) {
+      console.error('[OBS Routes] Error regenerating talent comms URLs:', error.message);
+      if (error.message.includes('not configured')) {
+        return res.status(404).json({ error: error.message });
+      }
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * PUT /api/obs/talent-comms/method - Switch communication method
+   * Body: { method: 'vdo-ninja' | 'discord' }
+   *
+   * DISCORD FALLBACK:
+   * When switching to Discord, you'll need to set up an SSH tunnel from your VMs to Discord:
+   * 1. Install Discord on production VMs
+   * 2. Create a dedicated voice channel for talent comms
+   * 3. Configure screen share settings for OBS capture
+   * 4. Use SSH tunnel for secure connection: ssh -L 6667:discord.com:6667 user@vm-ip
+   */
+  app.put('/api/obs/talent-comms/method', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      const compId = configLoader.getActiveCompetition();
+      if (!compId) {
+        return res.status(400).json({ error: 'No active competition. Activate a competition first.' });
+      }
+
+      const { method } = req.body;
+
+      if (!method) {
+        return res.status(400).json({ error: 'Method is required (vdo-ninja or discord)' });
+      }
+
+      console.log(`[OBS Routes] PUT /api/obs/talent-comms/method - Switching to ${method} for competition ${compId}`);
+
+      const talentCommsManager = new TalentCommsManager(productionConfigService);
+      const config = await talentCommsManager.updateMethod(compId, method);
+
+      res.json({
+        success: true,
+        config
+      });
+    } catch (error) {
+      console.error('[OBS Routes] Error updating talent comms method:', error.message);
+      if (error.message.includes('Invalid method')) {
+        return res.status(400).json({ error: error.message });
+      }
+      if (error.message.includes('not configured')) {
+        return res.status(404).json({ error: error.message });
+      }
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * GET /api/obs/talent-comms/status - Get talent communications status
+   * Returns basic connection information and configuration status
+   */
+  app.get('/api/obs/talent-comms/status', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      const compId = configLoader.getActiveCompetition();
+      if (!compId) {
+        return res.status(400).json({ error: 'No active competition. Activate a competition first.' });
+      }
+
+      console.log(`[OBS Routes] GET /api/obs/talent-comms/status - Checking status for competition ${compId}`);
+
+      const talentCommsManager = new TalentCommsManager(productionConfigService);
+      const config = await talentCommsManager.getTalentComms(compId);
+
+      if (!config) {
+        return res.json({
+          configured: false,
+          status: 'not_configured',
+          message: 'Talent communications not configured for this competition'
+        });
+      }
+
+      // Basic status information
+      const status = {
+        configured: true,
+        status: 'ready',
+        method: config.method,
+        roomId: config.roomId,
+        createdAt: config.createdAt,
+        updatedAt: config.updatedAt,
+        urls: config.urls
+      };
+
+      res.json(status);
+    } catch (error) {
+      console.error('[OBS Routes] Error fetching talent comms status:', error.message);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * DELETE /api/obs/talent-comms - Delete talent communications configuration
+   */
+  app.delete('/api/obs/talent-comms', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      const compId = configLoader.getActiveCompetition();
+      if (!compId) {
+        return res.status(400).json({ error: 'No active competition. Activate a competition first.' });
+      }
+
+      console.log(`[OBS Routes] DELETE /api/obs/talent-comms - Deleting talent comms config for competition ${compId}`);
+
+      const talentCommsManager = new TalentCommsManager(productionConfigService);
+      const result = await talentCommsManager.deleteTalentComms(compId);
+
+      res.json({
+        success: result.success,
+        message: 'Talent communications configuration deleted'
+      });
+    } catch (error) {
+      console.error('[OBS Routes] Error deleting talent comms:', error.message);
+      if (error.message.includes('not configured')) {
+        return res.status(404).json({ error: error.message });
+      }
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  console.log('[OBS Routes] Scene CRUD, Source Management, Audio Management, Transition Management, Stream Configuration, Asset Management, Template Management, and Talent Communications endpoints mounted at server startup');
 }
 
 export default setupOBSRoutes;
