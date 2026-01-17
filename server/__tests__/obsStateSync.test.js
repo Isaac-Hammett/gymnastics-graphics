@@ -1262,6 +1262,383 @@ describe('OBS State Sync Module', async () => {
       });
     });
   });
+
+  describe('OBS-23: Preview and Studio Mode', () => {
+    let stateSync, mockObs, mockIo;
+
+    beforeEach(async () => {
+      mockObs = new MockOBSWebSocket();
+      mockIo = createMockSocketIO();
+      stateSync = new OBSStateSync(mockObs, mockIo, null);
+      stateSync.registerEventHandlers();
+
+      // Connect to OBS for these tests
+      await mockObs.connect();
+      mockObs.emit('Identified', {});
+      await new Promise(resolve => setTimeout(resolve, 10));
+    });
+
+    describe('takeScreenshot()', () => {
+      it('should return base64 image for current scene when no sceneName provided', async () => {
+        stateSync.state.currentScene = 'Starting Soon';
+
+        const imageData = await stateSync.takeScreenshot();
+
+        assert.ok(imageData, 'Should return image data');
+        assert.ok(imageData.includes('base64'), 'Should be base64 encoded');
+        assert.ok(mockObs.wasCalledWith('GetSourceScreenshot', { sourceName: 'Starting Soon' }), 'Should call GetSourceScreenshot with current scene');
+      });
+
+      it('should return base64 image for specific scene', async () => {
+        const imageData = await stateSync.takeScreenshot('BRB');
+
+        assert.ok(imageData, 'Should return image data');
+        assert.ok(imageData.includes('base64'), 'Should be base64 encoded');
+        assert.ok(mockObs.wasCalledWith('GetSourceScreenshot', { sourceName: 'BRB' }), 'Should call GetSourceScreenshot with specified scene');
+      });
+
+      it('should pass imageFormat option to OBS', async () => {
+        await stateSync.takeScreenshot('BRB', { imageFormat: 'jpg' });
+
+        const calls = mockObs.getCallsTo('GetSourceScreenshot');
+        assert.strictEqual(calls[0].params.imageFormat, 'jpg');
+      });
+
+      it('should pass imageWidth and imageHeight options to OBS', async () => {
+        await stateSync.takeScreenshot('BRB', {
+          imageWidth: 1280,
+          imageHeight: 720
+        });
+
+        const calls = mockObs.getCallsTo('GetSourceScreenshot');
+        assert.strictEqual(calls[0].params.imageWidth, 1280);
+        assert.strictEqual(calls[0].params.imageHeight, 720);
+      });
+
+      it('should default to png format if not specified', async () => {
+        await stateSync.takeScreenshot('BRB');
+
+        const calls = mockObs.getCallsTo('GetSourceScreenshot');
+        assert.strictEqual(calls[0].params.imageFormat, 'png');
+      });
+
+      it('should throw error if not connected', async () => {
+        stateSync.state.connected = false;
+
+        await assert.rejects(
+          async () => await stateSync.takeScreenshot(),
+          /not connected to OBS/,
+          'Should throw error when not connected'
+        );
+      });
+
+      it('should throw error if no scene specified and no current scene', async () => {
+        stateSync.state.currentScene = null;
+
+        await assert.rejects(
+          async () => await stateSync.takeScreenshot(),
+          /No scene specified and no current scene available/,
+          'Should throw error when no scene available'
+        );
+      });
+
+      it('should handle OBS errors gracefully', async () => {
+        mockObs.injectErrorOnMethod('GetSourceScreenshot', new Error('OBS screenshot failed'));
+
+        await assert.rejects(
+          async () => await stateSync.takeScreenshot('BRB'),
+          /OBS screenshot failed/,
+          'Should throw OBS error'
+        );
+
+        mockObs.clearErrorOnMethod('GetSourceScreenshot');
+      });
+
+      it('should throw error if scene does not exist', async () => {
+        await assert.rejects(
+          async () => await stateSync.takeScreenshot('NonExistentScene'),
+          /Source not found/,
+          'Should throw error for non-existent scene'
+        );
+      });
+    });
+
+    describe('getStudioModeStatus()', () => {
+      it('should return enabled status when studio mode is on', async () => {
+        mockObs._studioModeEnabled = true;
+
+        const result = await stateSync.getStudioModeStatus();
+
+        assert.ok(result, 'Should return result');
+        assert.strictEqual(result.studioModeEnabled, true);
+      });
+
+      it('should return disabled status when studio mode is off', async () => {
+        mockObs._studioModeEnabled = false;
+
+        const result = await stateSync.getStudioModeStatus();
+
+        assert.ok(result, 'Should return result');
+        assert.strictEqual(result.studioModeEnabled, false);
+      });
+
+      it('should throw error if not connected', async () => {
+        stateSync.state.connected = false;
+
+        await assert.rejects(
+          async () => await stateSync.getStudioModeStatus(),
+          /not connected to OBS/,
+          'Should throw error when not connected'
+        );
+      });
+
+      it('should handle OBS errors gracefully', async () => {
+        mockObs.injectErrorOnMethod('GetStudioModeEnabled', new Error('OBS error'));
+
+        await assert.rejects(
+          async () => await stateSync.getStudioModeStatus(),
+          /OBS error/,
+          'Should throw OBS error'
+        );
+
+        mockObs.clearErrorOnMethod('GetStudioModeEnabled');
+      });
+    });
+
+    describe('setStudioMode()', () => {
+      it('should enable studio mode', async () => {
+        mockObs._studioModeEnabled = false;
+
+        await stateSync.setStudioMode(true);
+
+        assert.ok(mockObs.wasCalledWith('SetStudioModeEnabled', { studioModeEnabled: true }));
+      });
+
+      it('should disable studio mode', async () => {
+        mockObs._studioModeEnabled = true;
+
+        await stateSync.setStudioMode(false);
+
+        assert.ok(mockObs.wasCalledWith('SetStudioModeEnabled', { studioModeEnabled: false }));
+      });
+
+      it('should emit StudioModeStateChanged event', async () => {
+        mockIo.clearEvents();
+
+        await stateSync.setStudioMode(true);
+
+        // Wait for event emission
+        await new Promise(resolve => setTimeout(resolve, 10));
+
+        assert.ok(mockIo.wasEventEmitted('obs:studioModeChanged'), 'Should broadcast studio mode change');
+      });
+
+      it('should throw error if not connected', async () => {
+        stateSync.state.connected = false;
+
+        await assert.rejects(
+          async () => await stateSync.setStudioMode(true),
+          /not connected to OBS/,
+          'Should throw error when not connected'
+        );
+      });
+
+      it('should handle OBS errors gracefully', async () => {
+        mockObs.injectErrorOnMethod('SetStudioModeEnabled', new Error('OBS error'));
+
+        await assert.rejects(
+          async () => await stateSync.setStudioMode(true),
+          /OBS error/,
+          'Should throw OBS error'
+        );
+
+        mockObs.clearErrorOnMethod('SetStudioModeEnabled');
+      });
+    });
+
+    describe('setPreviewScene()', () => {
+      beforeEach(async () => {
+        // Enable studio mode for these tests
+        mockObs._studioModeEnabled = true;
+        stateSync.state.studioModeEnabled = true;
+      });
+
+      it('should set preview scene when studio mode enabled', async () => {
+        await stateSync.setPreviewScene('BRB');
+
+        assert.ok(mockObs.wasCalledWith('SetCurrentPreviewScene', { sceneName: 'BRB' }));
+      });
+
+      it('should emit CurrentPreviewSceneChanged event', async () => {
+        mockIo.clearEvents();
+
+        await stateSync.setPreviewScene('BRB');
+
+        // Wait for event emission
+        await new Promise(resolve => setTimeout(resolve, 10));
+
+        assert.ok(mockIo.wasEventEmitted('obs:previewSceneChanged'), 'Should broadcast preview scene change');
+      });
+
+      it('should throw error if studio mode not enabled', async () => {
+        stateSync.state.studioModeEnabled = false;
+
+        await assert.rejects(
+          async () => await stateSync.setPreviewScene('BRB'),
+          /studio mode is not enabled/,
+          'Should throw error when studio mode disabled'
+        );
+      });
+
+      it('should throw error if not connected', async () => {
+        stateSync.state.connected = false;
+
+        await assert.rejects(
+          async () => await stateSync.setPreviewScene('BRB'),
+          /not connected to OBS/,
+          'Should throw error when not connected'
+        );
+      });
+
+      it('should throw error if scene does not exist', async () => {
+        await assert.rejects(
+          async () => await stateSync.setPreviewScene('NonExistentScene'),
+          /Scene not found/,
+          'Should throw error for non-existent scene'
+        );
+      });
+
+      it('should handle OBS errors gracefully', async () => {
+        mockObs.injectErrorOnMethod('SetCurrentPreviewScene', new Error('OBS error'));
+
+        await assert.rejects(
+          async () => await stateSync.setPreviewScene('BRB'),
+          /OBS error/,
+          'Should throw OBS error'
+        );
+
+        mockObs.clearErrorOnMethod('SetCurrentPreviewScene');
+      });
+    });
+
+    describe('executeTransition()', () => {
+      beforeEach(async () => {
+        // Enable studio mode and set preview scene for these tests
+        mockObs._studioModeEnabled = true;
+        stateSync.state.studioModeEnabled = true;
+        mockObs._currentScene = 'Starting Soon';
+        mockObs._previewScene = 'BRB';
+      });
+
+      it('should execute transition when studio mode enabled', async () => {
+        await stateSync.executeTransition();
+
+        assert.ok(mockObs.getCallCount('TriggerStudioModeTransition') > 0, 'Should call TriggerStudioModeTransition');
+      });
+
+      it('should emit transition events', async () => {
+        mockIo.clearEvents();
+
+        await stateSync.executeTransition();
+
+        // Wait for events to be emitted
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        assert.ok(mockIo.wasEventEmitted('obs:transitionStarted'), 'Should broadcast transition started');
+        assert.ok(mockIo.wasEventEmitted('obs:transitionEnded'), 'Should broadcast transition ended');
+      });
+
+      it('should update current scene after transition', async () => {
+        const initialScene = mockObs._currentScene;
+        const previewScene = mockObs._previewScene;
+
+        await stateSync.executeTransition();
+
+        // Wait for transition to complete
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        // The preview scene should now be the current scene
+        assert.notStrictEqual(mockObs._currentScene, initialScene);
+        assert.strictEqual(mockObs._currentScene, previewScene);
+      });
+
+      it('should throw error if studio mode not enabled', async () => {
+        stateSync.state.studioModeEnabled = false;
+
+        await assert.rejects(
+          async () => await stateSync.executeTransition(),
+          /studio mode is not enabled/,
+          'Should throw error when studio mode disabled'
+        );
+      });
+
+      it('should throw error if not connected', async () => {
+        stateSync.state.connected = false;
+
+        await assert.rejects(
+          async () => await stateSync.executeTransition(),
+          /not connected to OBS/,
+          'Should throw error when not connected'
+        );
+      });
+
+      it('should handle OBS errors gracefully', async () => {
+        mockObs.injectErrorOnMethod('TriggerStudioModeTransition', new Error('OBS error'));
+
+        await assert.rejects(
+          async () => await stateSync.executeTransition(),
+          /OBS error/,
+          'Should throw OBS error'
+        );
+
+        mockObs.clearErrorOnMethod('TriggerStudioModeTransition');
+      });
+    });
+
+    describe('Integration: Studio Mode Workflow', () => {
+      it('should support full studio mode workflow', async () => {
+        // Start with studio mode disabled
+        mockObs._studioModeEnabled = false;
+        stateSync.state.studioModeEnabled = false;
+
+        // 1. Enable studio mode
+        await stateSync.setStudioMode(true);
+        await new Promise(resolve => setTimeout(resolve, 10));
+        assert.strictEqual(mockObs._studioModeEnabled, true);
+
+        // Update state to match
+        stateSync.state.studioModeEnabled = true;
+
+        // 2. Set preview scene
+        await stateSync.setPreviewScene('BRB');
+        await new Promise(resolve => setTimeout(resolve, 10));
+        assert.strictEqual(mockObs._previewScene, 'BRB');
+
+        // 3. Execute transition
+        mockObs._currentScene = 'Starting Soon';
+        await stateSync.executeTransition();
+        await new Promise(resolve => setTimeout(resolve, 50));
+        assert.strictEqual(mockObs._currentScene, 'BRB');
+
+        // 4. Disable studio mode
+        await stateSync.setStudioMode(false);
+        await new Promise(resolve => setTimeout(resolve, 10));
+        assert.strictEqual(mockObs._studioModeEnabled, false);
+      });
+
+      it('should take screenshots at any time regardless of studio mode', async () => {
+        // With studio mode disabled
+        mockObs._studioModeEnabled = false;
+        let imageData = await stateSync.takeScreenshot('Starting Soon');
+        assert.ok(imageData, 'Should take screenshot with studio mode disabled');
+
+        // With studio mode enabled
+        mockObs._studioModeEnabled = true;
+        imageData = await stateSync.takeScreenshot('BRB');
+        assert.ok(imageData, 'Should take screenshot with studio mode enabled');
+      });
+    });
+  });
 });
 
 // Run tests and report
