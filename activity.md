@@ -2,20 +2,47 @@
 
 ## Current Status
 **Phase:** OBS Integration Tool - In Progress
-**Last Task:** OBS-13 - Create OBS Transition Manager module ✅
-**Next Task:** OBS-14 - Add Transition Management API endpoints
+**Last Task:** OBS-14 - Add Transition Management API endpoints ✅
+**Next Task:** OBS-15 - Create OBS Stream Manager module
 **Blocker:** None
 
 ### Summary
 OBS Integration Tool implementation phase in progress. This phase will add comprehensive OBS WebSocket control capabilities to the show controller.
 
-**Progress:** 13/38 tasks complete (34%)
+**Progress:** 14/38 tasks complete (37%)
 
 ---
 
 ## Activity Log
 
 ### 2026-01-17
+
+### OBS-14: Add Transition Management API endpoints ✅
+Added 7 REST API endpoints to `/server/routes/obs.js` for transition management.
+
+**Endpoints implemented:**
+- `GET /api/obs/transitions` - List all available transitions (line 982)
+- `GET /api/obs/transitions/current` - Get current transition with name, duration, kind (line 1002)
+- `PUT /api/obs/transitions/current` - Set default transition (line 1023)
+- `PUT /api/obs/transitions/duration` - Set transition duration in ms (line 1055)
+- `GET /api/obs/transitions/:name/settings` - Get transition-specific settings (line 1086)
+- `PUT /api/obs/transitions/:name/settings` - Update transition settings (line 1113)
+- `POST /api/obs/transitions/stinger` - Placeholder for stinger upload, returns 501 (line 1149)
+
+**Implementation details:**
+- Imported OBSTransitionManager at line 17
+- All endpoints check obsStateSync initialized (503 if not)
+- Proper error handling (400, 404, 500, 503)
+- Stinger upload endpoint returns 501 Not Implemented (requires file upload infrastructure)
+
+**Verification:** PASSED
+- Method: Syntax check + deployed to coordinator + curl test
+- Syntax: `node --check routes/obs.js` passed
+- Deployment: Server restarted on coordinator via PM2
+- API Test: `curl http://localhost:3003/api/obs/transitions` returned expected 503 response:
+  `{"error":"OBS State Sync not initialized. Activate a competition first."}`
+
+---
 
 ### OBS-13: Create OBS Transition Manager module ✅
 Created `/server/lib/obsTransitionManager.js` - transition management module for OBS.

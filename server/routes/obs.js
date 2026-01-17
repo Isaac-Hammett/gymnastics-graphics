@@ -1,11 +1,12 @@
 /**
  * OBS Scene CRUD API Routes
  *
- * Provides RESTful endpoints for managing OBS scenes, sources, and audio:
+ * Provides RESTful endpoints for managing OBS scenes, sources, audio, and transitions:
  * - Scene CRUD operations
  * - Input/Source CRUD operations
  * - Scene item management (add, remove, transform, enable, lock, reorder)
  * - Audio management (volume, mute, monitor, presets)
+ * - Transition management (list, set, duration, settings)
  *
  * @module routes/obs
  */
@@ -13,6 +14,7 @@
 import { OBSSceneManager } from '../lib/obsSceneManager.js';
 import { OBSSourceManager } from '../lib/obsSourceManager.js';
 import { OBSAudioManager } from '../lib/obsAudioManager.js';
+import { OBSTransitionManager } from '../lib/obsTransitionManager.js';
 import configLoader from '../lib/configLoader.js';
 import productionConfigService from '../lib/productionConfigService.js';
 
@@ -970,7 +972,200 @@ export function setupOBSRoutes(app, obs, obsStateSyncOrGetter) {
     }
   });
 
-  console.log('[OBS Routes] Scene CRUD, Source Management, and Audio Management endpoints mounted at server startup');
+  // ============================================================================
+  // Transition Management Endpoints
+  // ============================================================================
+
+  /**
+   * GET /api/obs/transitions - List all transitions
+   */
+  app.get('/api/obs/transitions', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      console.log('[OBS Routes] GET /api/obs/transitions - Fetching all transitions');
+      const transitionManager = new OBSTransitionManager(obs, obsStateSync);
+      const transitions = transitionManager.getTransitions();
+      res.json({ transitions });
+    } catch (error) {
+      console.error('[OBS Routes] Error fetching transitions:', error.message);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * GET /api/obs/transitions/current - Get current transition
+   */
+  app.get('/api/obs/transitions/current', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      console.log('[OBS Routes] GET /api/obs/transitions/current - Fetching current transition');
+      const transitionManager = new OBSTransitionManager(obs, obsStateSync);
+      const current = await transitionManager.getCurrentTransition();
+      res.json(current);
+    } catch (error) {
+      console.error('[OBS Routes] Error fetching current transition:', error.message);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * PUT /api/obs/transitions/current - Set default transition
+   * Body: { transitionName }
+   */
+  app.put('/api/obs/transitions/current', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      const { transitionName } = req.body;
+
+      if (!transitionName) {
+        return res.status(400).json({ error: 'transitionName is required' });
+      }
+
+      console.log(`[OBS Routes] PUT /api/obs/transitions/current - Setting transition to ${transitionName}`);
+
+      const transitionManager = new OBSTransitionManager(obs, obsStateSync);
+      const result = await transitionManager.setCurrentTransition(transitionName);
+
+      res.json({
+        success: result.success,
+        transitionName
+      });
+    } catch (error) {
+      console.error(`[OBS Routes] Error setting current transition:`, error.message);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * PUT /api/obs/transitions/duration - Set transition duration
+   * Body: { duration }
+   */
+  app.put('/api/obs/transitions/duration', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      const { duration } = req.body;
+
+      if (duration === undefined || typeof duration !== 'number' || duration <= 0) {
+        return res.status(400).json({ error: 'duration must be a positive number' });
+      }
+
+      console.log(`[OBS Routes] PUT /api/obs/transitions/duration - Setting duration to ${duration}ms`);
+
+      const transitionManager = new OBSTransitionManager(obs, obsStateSync);
+      const result = await transitionManager.setTransitionDuration(duration);
+
+      res.json({
+        success: result.success,
+        duration
+      });
+    } catch (error) {
+      console.error(`[OBS Routes] Error setting transition duration:`, error.message);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * GET /api/obs/transitions/:name/settings - Get transition settings
+   */
+  app.get('/api/obs/transitions/:name/settings', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      const { name } = req.params;
+      console.log(`[OBS Routes] GET /api/obs/transitions/${name}/settings - Fetching transition settings`);
+
+      const transitionManager = new OBSTransitionManager(obs, obsStateSync);
+      const settings = await transitionManager.getTransitionSettings(name);
+
+      res.json(settings);
+    } catch (error) {
+      console.error(`[OBS Routes] Error fetching transition settings for ${req.params.name}:`, error.message);
+      if (error.message.includes('not found') || error.message.includes('does not exist')) {
+        return res.status(404).json({ error: error.message });
+      }
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * PUT /api/obs/transitions/:name/settings - Update transition settings
+   * Body: { settings }
+   */
+  app.put('/api/obs/transitions/:name/settings', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      const { name } = req.params;
+      const { settings } = req.body;
+
+      if (!settings || typeof settings !== 'object') {
+        return res.status(400).json({ error: 'settings object is required' });
+      }
+
+      console.log(`[OBS Routes] PUT /api/obs/transitions/${name}/settings - Updating transition settings`);
+
+      const transitionManager = new OBSTransitionManager(obs, obsStateSync);
+      const result = await transitionManager.setTransitionSettings(name, settings);
+
+      res.json({
+        success: result.success,
+        transitionName: name
+      });
+    } catch (error) {
+      console.error(`[OBS Routes] Error updating transition settings for ${req.params.name}:`, error.message);
+      if (error.message.includes('not found') || error.message.includes('does not exist')) {
+        return res.status(404).json({ error: error.message });
+      }
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * POST /api/obs/transitions/stinger - Upload stinger file (placeholder)
+   * Note: Returns 501 Not Implemented - requires file upload infrastructure
+   */
+  app.post('/api/obs/transitions/stinger', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      console.log('[OBS Routes] POST /api/obs/transitions/stinger - Stinger upload not yet implemented');
+
+      res.status(501).json({
+        error: 'Not Implemented',
+        message: 'Stinger upload requires file upload infrastructure (multer/multipart support). This endpoint is reserved for future implementation.'
+      });
+    } catch (error) {
+      console.error('[OBS Routes] Error in stinger upload endpoint:', error.message);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  console.log('[OBS Routes] Scene CRUD, Source Management, Audio Management, and Transition Management endpoints mounted at server startup');
 }
 
 export default setupOBSRoutes;
