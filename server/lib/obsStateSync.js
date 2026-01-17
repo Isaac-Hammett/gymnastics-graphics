@@ -1,0 +1,809 @@
+/**
+ * OBS State Sync Service
+ *
+ * Comprehensive OBS state synchronization service that:
+ * - Maintains real-time state cache of OBS connection
+ * - Listens to all OBS WebSocket events
+ * - Broadcasts state changes via Socket.io
+ * - Persists state to Firebase for recovery
+ * - Categorizes scenes by type (generated, static, graphics, manual)
+ *
+ * @module obsStateSync
+ */
+
+import { EventEmitter } from 'events';
+import admin from 'firebase-admin';
+
+/**
+ * Scene category types
+ */
+export const SCENE_CATEGORY = {
+  GENERATED_SINGLE: 'generated-single',
+  GENERATED_MULTI: 'generated-multi',
+  STATIC: 'static',
+  GRAPHICS: 'graphics',
+  MANUAL: 'manual'
+};
+
+/**
+ * OBS State Sync Service
+ * Extends EventEmitter to emit state change events for internal listeners
+ */
+class OBSStateSync extends EventEmitter {
+  constructor(obs, io, productionConfigService) {
+    super();
+
+    // Store dependencies
+    this.obs = obs;
+    this.io = io;
+    this.configService = productionConfigService;
+
+    // Initialize state cache
+    this.state = this.getInitialState();
+
+    // Competition ID for Firebase paths
+    this.competitionId = null;
+
+    // Firebase database reference
+    this._db = null;
+
+    // Initialization flag
+    this._isInitialized = false;
+
+    console.log('[OBSStateSync] Instance created');
+  }
+
+  /**
+   * Get initial/default state structure
+   * @returns {Object} Default state object
+   */
+  getInitialState() {
+    return {
+      connected: false,
+      lastSync: null,
+      connectionError: null,
+      scenes: [],
+      inputs: [],
+      audioSources: [],
+      transitions: [],
+      currentScene: null,
+      currentTransition: null,
+      currentTransitionDuration: 0,
+      studioModeEnabled: false,
+      previewScene: null,
+      streaming: {
+        active: false,
+        timecode: null,
+        duration: null
+      },
+      recording: {
+        active: false,
+        timecode: null,
+        duration: null,
+        paused: false
+      },
+      videoSettings: {
+        baseWidth: null,
+        baseHeight: null,
+        outputWidth: null,
+        outputHeight: null,
+        fpsNumerator: null,
+        fpsDenominator: null
+      }
+    };
+  }
+
+  /**
+   * Initialize the service
+   * Loads cached state from Firebase and registers OBS event handlers
+   * @param {string} compId - Competition ID for Firebase path
+   */
+  async initialize(compId) {
+    if (this._isInitialized) {
+      console.log('[OBSStateSync] Already initialized');
+      return;
+    }
+
+    console.log(`[OBSStateSync] Initializing for competition: ${compId}`);
+
+    this.competitionId = compId;
+
+    try {
+      // Initialize Firebase if not already done
+      if (admin.apps.length === 0) {
+        const databaseURL = process.env.FIREBASE_DATABASE_URL ||
+          'https://gymnastics-graphics-default-rtdb.firebaseio.com';
+
+        admin.initializeApp({
+          credential: admin.credential.applicationDefault(),
+          databaseURL
+        });
+      }
+
+      this._db = admin.database();
+
+      // Load cached state from Firebase
+      await this._loadCachedState();
+
+      // Register all OBS WebSocket event handlers
+      this.registerEventHandlers();
+
+      this._isInitialized = true;
+
+      console.log('[OBSStateSync] Initialized successfully');
+      this.emit('initialized');
+    } catch (error) {
+      console.error('[OBSStateSync] Initialization failed:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Load cached state from Firebase
+   * @private
+   */
+  async _loadCachedState() {
+    if (!this._db || !this.competitionId) {
+      console.warn('[OBSStateSync] Cannot load cached state - no database or competition ID');
+      return;
+    }
+
+    try {
+      const snapshot = await this._db
+        .ref(`competitions/${this.competitionId}/production/obsState`)
+        .once('value');
+
+      const cachedState = snapshot.val();
+
+      if (cachedState) {
+        // Merge cached state with initial state (preserving structure)
+        this.state = {
+          ...this.getInitialState(),
+          ...cachedState,
+          // Reset connection state on load
+          connected: false,
+          lastSync: cachedState.lastSync || null
+        };
+
+        console.log('[OBSStateSync] Loaded cached state from Firebase');
+      } else {
+        console.log('[OBSStateSync] No cached state found, using initial state');
+      }
+    } catch (error) {
+      console.error('[OBSStateSync] Failed to load cached state:', error.message);
+      // Continue with initial state
+    }
+  }
+
+  /**
+   * Register all OBS WebSocket event handlers
+   * Wire up listeners for all OBS events we care about
+   */
+  registerEventHandlers() {
+    if (!this.obs) {
+      console.warn('[OBSStateSync] No OBS instance provided, skipping event handlers');
+      return;
+    }
+
+    console.log('[OBSStateSync] Registering OBS event handlers...');
+
+    // Connection events
+    this.obs.on('ConnectionClosed', this.onConnectionClosed.bind(this));
+    this.obs.on('ConnectionError', this.onConnectionError.bind(this));
+    this.obs.on('Identified', this.onConnected.bind(this));
+
+    // Scene events
+    this.obs.on('SceneListChanged', this.onSceneListChanged.bind(this));
+    this.obs.on('CurrentProgramSceneChanged', this.onCurrentProgramSceneChanged.bind(this));
+    this.obs.on('SceneItemListReindexed', this.onSceneItemListReindexed.bind(this));
+    this.obs.on('SceneItemCreated', this.onSceneItemCreated.bind(this));
+    this.obs.on('SceneItemRemoved', this.onSceneItemRemoved.bind(this));
+    this.obs.on('SceneItemEnableStateChanged', this.onSceneItemEnableStateChanged.bind(this));
+    this.obs.on('SceneItemTransformChanged', this.onSceneItemTransformChanged.bind(this));
+
+    // Input events
+    this.obs.on('InputCreated', this.onInputCreated.bind(this));
+    this.obs.on('InputRemoved', this.onInputRemoved.bind(this));
+    this.obs.on('InputNameChanged', this.onInputNameChanged.bind(this));
+    this.obs.on('InputSettingsChanged', this.onInputSettingsChanged.bind(this));
+
+    // Audio events
+    this.obs.on('InputVolumeChanged', this.onInputVolumeChanged.bind(this));
+    this.obs.on('InputMuteStateChanged', this.onInputMuteStateChanged.bind(this));
+    this.obs.on('InputAudioMonitorTypeChanged', this.onInputAudioMonitorTypeChanged.bind(this));
+
+    // Transition events
+    this.obs.on('SceneTransitionStarted', this.onSceneTransitionStarted.bind(this));
+    this.obs.on('SceneTransitionEnded', this.onSceneTransitionEnded.bind(this));
+    this.obs.on('CurrentSceneTransitionChanged', this.onCurrentSceneTransitionChanged.bind(this));
+    this.obs.on('CurrentSceneTransitionDurationChanged', this.onCurrentSceneTransitionDurationChanged.bind(this));
+
+    // Stream/Recording events
+    this.obs.on('StreamStateChanged', this.onStreamStateChanged.bind(this));
+    this.obs.on('RecordStateChanged', this.onRecordStateChanged.bind(this));
+
+    // Studio mode events
+    this.obs.on('StudioModeStateChanged', this.onStudioModeStateChanged.bind(this));
+    this.obs.on('CurrentPreviewSceneChanged', this.onCurrentPreviewSceneChanged.bind(this));
+
+    console.log('[OBSStateSync] Event handlers registered');
+  }
+
+  // ============================================================================
+  // Connection Event Handlers
+  // ============================================================================
+
+  /**
+   * Handle OBS connection established
+   */
+  async onConnected(data) {
+    console.log('[OBSStateSync] OBS connected (Identified)');
+
+    this.state.connected = true;
+    this.state.connectionError = null;
+    this.state.lastSync = new Date().toISOString();
+
+    // Trigger full state refresh (OBS-02 will implement)
+    // await this.refreshFullState();
+
+    this.broadcast('obs:connected', { connected: true });
+    this.emit('connected');
+  }
+
+  /**
+   * Handle OBS connection closed
+   */
+  onConnectionClosed() {
+    console.log('[OBSStateSync] OBS connection closed');
+
+    this.state.connected = false;
+    this.state.connectionError = 'Connection closed';
+
+    this.broadcast('obs:disconnected', {
+      connected: false,
+      error: 'Connection closed'
+    });
+
+    this.emit('disconnected');
+  }
+
+  /**
+   * Handle OBS connection error
+   */
+  onConnectionError(error) {
+    console.error('[OBSStateSync] OBS connection error:', error);
+
+    this.state.connected = false;
+    this.state.connectionError = error.message || 'Connection error';
+
+    this.broadcast('obs:error', {
+      connected: false,
+      error: this.state.connectionError
+    });
+
+    this.emit('error', error);
+  }
+
+  // ============================================================================
+  // Scene Event Handlers
+  // ============================================================================
+
+  /**
+   * Handle scene list changed (scenes added/removed/reordered)
+   */
+  async onSceneListChanged(data) {
+    console.log('[OBSStateSync] Scene list changed');
+
+    // Trigger scene list refresh (OBS-02 will implement full fetch)
+    // await this.refreshScenes();
+
+    this.broadcast('obs:sceneListChanged', data);
+    this.emit('sceneListChanged', data);
+  }
+
+  /**
+   * Handle current program scene changed
+   */
+  onCurrentProgramSceneChanged(data) {
+    const sceneName = data.sceneName;
+    console.log(`[OBSStateSync] Current scene changed to: ${sceneName}`);
+
+    this.state.currentScene = sceneName;
+    this.state.lastSync = new Date().toISOString();
+
+    this.broadcast('obs:currentSceneChanged', {
+      sceneName,
+      category: this.categorizeScene(sceneName)
+    });
+
+    this.emit('currentSceneChanged', { sceneName });
+  }
+
+  /**
+   * Handle scene item list reindexed (items reordered)
+   */
+  onSceneItemListReindexed(data) {
+    console.log(`[OBSStateSync] Scene items reindexed in: ${data.sceneName}`);
+
+    this.broadcast('obs:sceneItemListReindexed', data);
+    this.emit('sceneItemListReindexed', data);
+  }
+
+  /**
+   * Handle scene item created
+   */
+  onSceneItemCreated(data) {
+    console.log(`[OBSStateSync] Scene item created in ${data.sceneName}: ${data.sourceName}`);
+
+    this.broadcast('obs:sceneItemCreated', data);
+    this.emit('sceneItemCreated', data);
+  }
+
+  /**
+   * Handle scene item removed
+   */
+  onSceneItemRemoved(data) {
+    console.log(`[OBSStateSync] Scene item removed from ${data.sceneName}: ${data.sourceName}`);
+
+    this.broadcast('obs:sceneItemRemoved', data);
+    this.emit('sceneItemRemoved', data);
+  }
+
+  /**
+   * Handle scene item visibility changed
+   */
+  onSceneItemEnableStateChanged(data) {
+    console.log(`[OBSStateSync] Scene item visibility changed: ${data.sceneItemId} enabled=${data.sceneItemEnabled}`);
+
+    this.broadcast('obs:sceneItemEnableStateChanged', data);
+    this.emit('sceneItemEnableStateChanged', data);
+  }
+
+  /**
+   * Handle scene item transform changed (position, scale, crop, etc.)
+   */
+  onSceneItemTransformChanged(data) {
+    console.log(`[OBSStateSync] Scene item transform changed: ${data.sceneItemId}`);
+
+    this.broadcast('obs:sceneItemTransformChanged', data);
+    this.emit('sceneItemTransformChanged', data);
+  }
+
+  // ============================================================================
+  // Input Event Handlers
+  // ============================================================================
+
+  /**
+   * Handle input (source) created
+   */
+  async onInputCreated(data) {
+    console.log(`[OBSStateSync] Input created: ${data.inputName} (${data.inputKind})`);
+
+    // Trigger input list refresh (OBS-02 will implement)
+    // await this.refreshInputs();
+
+    this.broadcast('obs:inputCreated', data);
+    this.emit('inputCreated', data);
+  }
+
+  /**
+   * Handle input removed
+   */
+  async onInputRemoved(data) {
+    console.log(`[OBSStateSync] Input removed: ${data.inputName}`);
+
+    // Remove from state cache
+    this.state.inputs = this.state.inputs.filter(input => input.inputName !== data.inputName);
+
+    this.broadcast('obs:inputRemoved', data);
+    this.emit('inputRemoved', data);
+  }
+
+  /**
+   * Handle input name changed
+   */
+  onInputNameChanged(data) {
+    console.log(`[OBSStateSync] Input renamed: ${data.oldInputName} -> ${data.inputName}`);
+
+    // Update name in state cache
+    const input = this.state.inputs.find(i => i.inputName === data.oldInputName);
+    if (input) {
+      input.inputName = data.inputName;
+    }
+
+    this.broadcast('obs:inputNameChanged', data);
+    this.emit('inputNameChanged', data);
+  }
+
+  /**
+   * Handle input settings changed
+   */
+  onInputSettingsChanged(data) {
+    console.log(`[OBSStateSync] Input settings changed: ${data.inputName}`);
+
+    this.broadcast('obs:inputSettingsChanged', data);
+    this.emit('inputSettingsChanged', data);
+  }
+
+  // ============================================================================
+  // Audio Event Handlers
+  // ============================================================================
+
+  /**
+   * Handle input volume changed
+   */
+  onInputVolumeChanged(data) {
+    const { inputName, inputVolumeDb, inputVolumeMul } = data;
+
+    // Update audio source in state
+    const audioSource = this.state.audioSources.find(s => s.inputName === inputName);
+    if (audioSource) {
+      audioSource.volumeDb = inputVolumeDb;
+      audioSource.volumeMul = inputVolumeMul;
+    }
+
+    this.broadcast('obs:volumeChanged', {
+      inputName,
+      volumeDb: inputVolumeDb,
+      volumeMul: inputVolumeMul
+    });
+
+    this.emit('volumeChanged', { inputName, volumeDb: inputVolumeDb });
+  }
+
+  /**
+   * Handle input mute state changed
+   */
+  onInputMuteStateChanged(data) {
+    const { inputName, inputMuted } = data;
+    console.log(`[OBSStateSync] Mute state changed: ${inputName} muted=${inputMuted}`);
+
+    // Update audio source in state
+    const audioSource = this.state.audioSources.find(s => s.inputName === inputName);
+    if (audioSource) {
+      audioSource.muted = inputMuted;
+    }
+
+    this.broadcast('obs:muteChanged', {
+      inputName,
+      muted: inputMuted
+    });
+
+    this.emit('muteChanged', { inputName, muted: inputMuted });
+  }
+
+  /**
+   * Handle input audio monitor type changed
+   */
+  onInputAudioMonitorTypeChanged(data) {
+    const { inputName, monitorType } = data;
+    console.log(`[OBSStateSync] Monitor type changed: ${inputName} monitorType=${monitorType}`);
+
+    // Update audio source in state
+    const audioSource = this.state.audioSources.find(s => s.inputName === inputName);
+    if (audioSource) {
+      audioSource.monitorType = monitorType;
+    }
+
+    this.broadcast('obs:monitorTypeChanged', {
+      inputName,
+      monitorType
+    });
+
+    this.emit('monitorTypeChanged', { inputName, monitorType });
+  }
+
+  // ============================================================================
+  // Transition Event Handlers
+  // ============================================================================
+
+  /**
+   * Handle scene transition started
+   */
+  onSceneTransitionStarted(data) {
+    console.log(`[OBSStateSync] Transition started: ${data.transitionName}`);
+
+    this.broadcast('obs:transitionStarted', data);
+    this.emit('transitionStarted', data);
+  }
+
+  /**
+   * Handle scene transition ended
+   */
+  onSceneTransitionEnded(data) {
+    console.log(`[OBSStateSync] Transition ended: ${data.transitionName}`);
+
+    this.broadcast('obs:transitionEnded', data);
+    this.emit('transitionEnded', data);
+  }
+
+  /**
+   * Handle current scene transition changed
+   */
+  onCurrentSceneTransitionChanged(data) {
+    const { transitionName } = data;
+    console.log(`[OBSStateSync] Current transition changed to: ${transitionName}`);
+
+    this.state.currentTransition = transitionName;
+
+    this.broadcast('obs:currentTransitionChanged', { transitionName });
+    this.emit('currentTransitionChanged', { transitionName });
+  }
+
+  /**
+   * Handle current scene transition duration changed
+   */
+  onCurrentSceneTransitionDurationChanged(data) {
+    const { transitionDuration } = data;
+    console.log(`[OBSStateSync] Transition duration changed to: ${transitionDuration}ms`);
+
+    this.state.currentTransitionDuration = transitionDuration;
+
+    this.broadcast('obs:transitionDurationChanged', { transitionDuration });
+    this.emit('transitionDurationChanged', { transitionDuration });
+  }
+
+  // ============================================================================
+  // Stream/Recording Event Handlers
+  // ============================================================================
+
+  /**
+   * Handle stream state changed
+   */
+  onStreamStateChanged(data) {
+    const { outputActive, outputState } = data;
+    console.log(`[OBSStateSync] Stream state changed: ${outputState} (active=${outputActive})`);
+
+    this.state.streaming.active = outputActive;
+
+    if (outputActive) {
+      // Stream started/running
+      this.state.streaming.timecode = data.outputTimecode || null;
+      this.state.streaming.duration = data.outputDuration || null;
+    } else {
+      // Stream stopped
+      this.state.streaming.timecode = null;
+      this.state.streaming.duration = null;
+    }
+
+    this.broadcast('obs:streamStateChanged', {
+      active: outputActive,
+      state: outputState,
+      timecode: this.state.streaming.timecode,
+      duration: this.state.streaming.duration
+    });
+
+    this.emit('streamStateChanged', this.state.streaming);
+  }
+
+  /**
+   * Handle recording state changed
+   */
+  onRecordStateChanged(data) {
+    const { outputActive, outputState, outputPath } = data;
+    console.log(`[OBSStateSync] Recording state changed: ${outputState} (active=${outputActive})`);
+
+    this.state.recording.active = outputActive;
+
+    if (outputActive) {
+      // Recording started/running
+      this.state.recording.timecode = data.outputTimecode || null;
+      this.state.recording.duration = data.outputDuration || null;
+      this.state.recording.path = outputPath || null;
+    } else {
+      // Recording stopped
+      this.state.recording.timecode = null;
+      this.state.recording.duration = null;
+    }
+
+    this.broadcast('obs:recordStateChanged', {
+      active: outputActive,
+      state: outputState,
+      timecode: this.state.recording.timecode,
+      duration: this.state.recording.duration,
+      path: this.state.recording.path
+    });
+
+    this.emit('recordStateChanged', this.state.recording);
+  }
+
+  // ============================================================================
+  // Studio Mode Event Handlers
+  // ============================================================================
+
+  /**
+   * Handle studio mode state changed
+   */
+  onStudioModeStateChanged(data) {
+    const { studioModeEnabled } = data;
+    console.log(`[OBSStateSync] Studio mode changed: ${studioModeEnabled}`);
+
+    this.state.studioModeEnabled = studioModeEnabled;
+
+    this.broadcast('obs:studioModeChanged', { studioModeEnabled });
+    this.emit('studioModeChanged', { studioModeEnabled });
+  }
+
+  /**
+   * Handle current preview scene changed (in studio mode)
+   */
+  onCurrentPreviewSceneChanged(data) {
+    const { sceneName } = data;
+    console.log(`[OBSStateSync] Preview scene changed to: ${sceneName}`);
+
+    this.state.previewScene = sceneName;
+
+    this.broadcast('obs:previewSceneChanged', {
+      sceneName,
+      category: this.categorizeScene(sceneName)
+    });
+
+    this.emit('previewSceneChanged', { sceneName });
+  }
+
+  // ============================================================================
+  // Scene Categorization
+  // ============================================================================
+
+  /**
+   * Categorize a scene by its name
+   * @param {string} sceneName - Scene name to categorize
+   * @returns {string} Scene category (SCENE_CATEGORY constant)
+   */
+  categorizeScene(sceneName) {
+    if (!sceneName) {
+      return SCENE_CATEGORY.MANUAL;
+    }
+
+    const name = sceneName.toLowerCase();
+
+    // Generated single-competitor scenes
+    if (name.startsWith('single - ')) {
+      return SCENE_CATEGORY.GENERATED_SINGLE;
+    }
+
+    // Generated multi-competitor scenes
+    if (name.startsWith('dual - ') || name.startsWith('triple - ') || name.startsWith('quad - ')) {
+      return SCENE_CATEGORY.GENERATED_MULTI;
+    }
+
+    // Static production scenes
+    const staticScenes = ['starting soon', 'brb', 'thanks for watching', 'be right back'];
+    if (staticScenes.some(s => name.includes(s))) {
+      return SCENE_CATEGORY.STATIC;
+    }
+
+    // Graphics fullscreen
+    if (name.includes('graphics fullscreen')) {
+      return SCENE_CATEGORY.GRAPHICS;
+    }
+
+    // Everything else is manual
+    return SCENE_CATEGORY.MANUAL;
+  }
+
+  // ============================================================================
+  // State Management
+  // ============================================================================
+
+  /**
+   * Get current state
+   * @returns {Object} Current state object
+   */
+  getState() {
+    return { ...this.state };
+  }
+
+  /**
+   * Broadcast state change via Socket.io and EventEmitter
+   * @param {string} event - Event name
+   * @param {Object} data - Event data
+   */
+  broadcast(event, data) {
+    // Emit to internal EventEmitter listeners
+    this.emit('broadcast', { event, data });
+
+    // Broadcast to Socket.io clients
+    if (this.io) {
+      this.io.emit(event, data);
+    }
+  }
+
+  /**
+   * Save current state to Firebase (stub for OBS-03)
+   * @private
+   */
+  async _saveState() {
+    // OBS-03 will implement Firebase persistence
+    // This is stubbed for now
+    console.log('[OBSStateSync] _saveState() stubbed (OBS-03 will implement)');
+  }
+
+  /**
+   * Refresh full state from OBS (stub for OBS-02)
+   * @returns {Promise<Object>} Full state object
+   */
+  async refreshFullState() {
+    // OBS-02 will implement full state fetching
+    console.log('[OBSStateSync] refreshFullState() stubbed (OBS-02 will implement)');
+    return this.state;
+  }
+
+  /**
+   * Refresh scenes list from OBS (stub for OBS-02)
+   * @returns {Promise<Array>} Array of scene objects
+   */
+  async refreshScenes() {
+    // OBS-02 will implement scene list fetching
+    console.log('[OBSStateSync] refreshScenes() stubbed (OBS-02 will implement)');
+    return this.state.scenes;
+  }
+
+  /**
+   * Refresh inputs list from OBS (stub for OBS-02)
+   * @returns {Promise<Array>} Array of input objects
+   */
+  async refreshInputs() {
+    // OBS-02 will implement input list fetching
+    console.log('[OBSStateSync] refreshInputs() stubbed (OBS-02 will implement)');
+    return this.state.inputs;
+  }
+
+  // ============================================================================
+  // Lifecycle
+  // ============================================================================
+
+  /**
+   * Check if the service is initialized
+   * @returns {boolean}
+   */
+  isInitialized() {
+    return this._isInitialized;
+  }
+
+  /**
+   * Shutdown the service
+   */
+  async shutdown() {
+    console.log('[OBSStateSync] Shutting down...');
+
+    // Save final state to Firebase
+    await this._saveState();
+
+    // Remove all OBS event listeners
+    if (this.obs) {
+      this.obs.removeAllListeners();
+    }
+
+    this._isInitialized = false;
+
+    this.emit('shutdown');
+    console.log('[OBSStateSync] Shutdown complete');
+  }
+}
+
+// ============================================================================
+// Singleton Export
+// ============================================================================
+
+let instance = null;
+
+/**
+ * Get or create the OBS State Sync singleton
+ * @param {Object} obs - OBS WebSocket instance
+ * @param {Object} io - Socket.io server instance
+ * @param {Object} productionConfigService - Production config service
+ * @returns {OBSStateSync} The singleton instance
+ */
+export function getOBSStateSync(obs, io, productionConfigService) {
+  if (!instance) {
+    instance = new OBSStateSync(obs, io, productionConfigService);
+  }
+  return instance;
+}
+
+// Export class for testing
+export { OBSStateSync };
+
+// Default export is the singleton getter
+export default getOBSStateSync;
