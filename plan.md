@@ -1611,12 +1611,13 @@ Screenshots saved to: `ralph-wigg/screenshots/`
     "category": "mcp-ssh-coordinator",
     "description": "Test ssh_exec with sudo on coordinator",
     "steps": [
-      "Call ssh_exec with target='coordinator', command='whoami', sudo=true",
+      "Call ssh_exec MCP tool with target='coordinator', command='whoami', sudo=true",
       "Verify stdout contains 'root'",
       "Verify success is true"
     ],
-    "verification": "Sudo execution works and returns root user",
-    "passes": true
+    "verification": "Must use actual MCP tool mcp__gymnastics__ssh_exec - NOT a test script workaround",
+    "passes": false,
+    "note": "Reverted - was marked pass incorrectly using test script instead of MCP tool"
   },
   {
     "id": "MCP-06",
