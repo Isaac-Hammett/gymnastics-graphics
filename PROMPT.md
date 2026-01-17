@@ -150,6 +150,13 @@ Task(subagent_type='general-purpose', prompt='
   Steps:
   [LIST VERIFICATION STEPS FROM PLAN.MD]
 
+  ## CRITICAL: NO LOOPS
+  - Call the MCP tool ONCE (or twice if the task requires comparing two calls)
+  - Inspect the response
+  - Return PASS or FAIL immediately
+  - Do NOT retry on failure - just report the failure
+  - Do NOT call the same tool more than the task requires
+
   Return: PASS or FAIL with tool response data
 ')
 ```
@@ -245,6 +252,12 @@ When ALL tasks in plan.md have `"passes": true`, output:
 - Clear task description
 - Specific steps to follow
 - Expected return format (PASS/FAIL, summary, data)
+
+### Subagent Anti-Patterns (AVOID)
+- **Runaway loops:** Calling the same MCP tool 100+ times when once is enough
+- **Retry loops:** Keep retrying a failed operation instead of reporting failure
+- **Polling:** Repeatedly checking status when a single check is sufficient
+- If a subagent calls the same tool more than 5 times, something is wrong
 
 ---
 
