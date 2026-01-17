@@ -1,0 +1,6 @@
+Starting: Test ssh_multi_exec on single target
+Step 1: Calling mcp__gymnastics__ssh_multi_exec
+Starting: Test ssh_multi_exec on single target
+[Step 1] Calling ssh_multi_exec with targets=['coordinator'], command='hostname'
+[Step 2] Waiting for MCP tool permission approval...
+Done: FAIL - MCP tool permission not granted
