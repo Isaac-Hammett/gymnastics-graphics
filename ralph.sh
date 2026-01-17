@@ -124,6 +124,7 @@ Bash(rm:*),\
 Bash(echo:*),\
 mcp__playwright__*,\
 mcp__gymnastics__ssh_exec,\
+mcp__gymnastics__ssh_multi_exec,\
 mcp__gymnastics__ssh_upload_file,\
 mcp__gymnastics__ssh_download_file,\
 mcp__gymnastics__firebase_get,\
