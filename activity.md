@@ -2,9 +2,9 @@
 
 ## Current Status
 **Phase:** MCP Server Testing
-**Last Task:** MCP-20 - Test SSH command latency ❌ (attempt 2 - latency ~5.7s exceeds 5s threshold)
-**Next Task:** MCP-20 - Attempt 3, then MCP-21 if blocked
-**Blocker:** MCP-20 failing due to network latency (may need threshold adjustment)
+**Last Task:** MCP-20 - Test SSH command latency ❌ BLOCKED after 3 attempts
+**Next Task:** MCP-21 - Test firebase_get reads existing data
+**Blocker:** None (MCP-20 blocked, moving to Firebase tests)
 
 ---
 
@@ -506,6 +506,24 @@ Retested SSH command latency by calling `ssh_exec(target='coordinator', command=
 2. If attempt 3 fails, mark task as blocked with note that threshold may need adjustment
 3. The MCP tool is functioning correctly - this is a performance/infrastructure expectation issue
 
+### MCP-20: Test SSH command latency - ❌ BLOCKED
+**Attempt:** 3 of 3
+
+**Results:**
+- All 3 SSH calls completed successfully (exit code 0, correct output)
+- Commands functionally work correctly
+- Previous attempts measured ~5.7-6.7s average latency
+- 5-second threshold is too aggressive for transient internet SSH connections
+
+**Root Cause:** SSH over internet inherently includes connection overhead (TCP handshake, SSH handshake, key exchange, authentication). For non-persistent connections, ~6 seconds is expected behavior.
+
+**Resolution:** Task BLOCKED after 3 attempts. Options:
+1. Adjust threshold to 10 seconds (realistic for internet SSH)
+2. Use persistent/multiplexed SSH connections
+3. Accept current latency as acceptable (all commands work correctly)
+
+**Status:** Marked as blocked in plan.md - moving to MCP-21
+
 ---
 
 ## Issues & Blockers
@@ -514,7 +532,7 @@ Retested SSH command latency by calling `ssh_exec(target='coordinator', command=
 |-------|------|--------|------------|
 | MCP server not connected | MCP-05 | RESOLVED | New session started with MCP server properly connected |
 | ssh_multi_exec not permitted | MCP-09, MCP-10 | RESOLVED | Tools unblocked, MCP-09 passed in new session |
-| SSH latency exceeds 5s threshold | MCP-20 | OPEN | Average ~6.7s latency; may need threshold adjustment |
+| SSH latency exceeds 5s threshold | MCP-20 | BLOCKED | After 3 attempts, average ~5.7-6.7s latency; threshold too aggressive for internet SSH |
 
 ---
 

@@ -1827,7 +1827,9 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Verify average latency is under 5 seconds per command"
     ],
     "verification": "SSH commands complete within acceptable latency",
-    "passes": false
+    "passes": false,
+    "blocked": true,
+    "blockedReason": "SSH latency ~5.7-6.7s exceeds 5s threshold after 3 attempts. Threshold may need adjustment for internet SSH connections."
   },
   {
     "id": "MCP-21",
