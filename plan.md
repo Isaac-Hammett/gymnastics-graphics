@@ -1669,7 +1669,9 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Verify successCount is 1, failureCount is 0"
     ],
     "verification": "Multi-exec works with single target",
-    "passes": false
+    "passes": false,
+    "blocked": true,
+    "blockedReason": "mcp__gymnastics__ssh_multi_exec not in permitted tools list after 3 attempts"
   },
   {
     "id": "MCP-10",
@@ -1683,7 +1685,9 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Verify each result has target IP and stdout"
     ],
     "verification": "Multi-exec aggregates results from multiple VMs",
-    "passes": false
+    "passes": false,
+    "blocked": true,
+    "blockedReason": "Depends on ssh_multi_exec which is not permitted"
   },
   {
     "id": "MCP-11",

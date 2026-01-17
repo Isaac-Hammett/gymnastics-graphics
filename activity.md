@@ -2,9 +2,9 @@
 
 ## Current Status
 **Phase:** MCP Server Testing
-**Last Task:** MCP-08 - Test ssh_exec by IP address (not shortcut) ✅
-**Next Task:** MCP-09 - Test ssh_multi_exec on single target (Attempt 3)
-**Blocker:** MCP tool `ssh_multi_exec` not in permitted tools list (2 failed attempts)
+**Last Task:** MCP-09/MCP-10 - Marked BLOCKED after 3 failed attempts (ssh_multi_exec not permitted)
+**Next Task:** MCP-11 - Test ssh_upload_file and ssh_download_file roundtrip
+**Blocker:** None
 
 ---
 
@@ -205,6 +205,17 @@ The tool call returned: "Claude requested permissions to use mcp__gymnastics__ss
 1. User must grant permission for `mcp__gymnastics__ssh_multi_exec`
 2. If not possible, this task should be marked as blocked after Attempt 3
 
+### MCP-09: Test ssh_multi_exec on single target - ❌ BLOCKED
+**Attempt:** 3 of 3 (FINAL)
+
+**Error:** `mcp__gymnastics__ssh_multi_exec` permission not granted
+
+**Root Cause:** The MCP tool exists in the MCP server but is not included in the session's permitted tools list. After 3 attempts, the user has not granted permission.
+
+**Resolution:** Task marked as BLOCKED in plan.md. Also marked MCP-10 as blocked since it depends on the same tool.
+
+**Moving on to:** MCP-11 (file transfer tests)
+
 ---
 
 ## Issues & Blockers
@@ -212,7 +223,7 @@ The tool call returned: "Claude requested permissions to use mcp__gymnastics__ss
 | Issue | Task | Status | Resolution |
 |-------|------|--------|------------|
 | MCP server not connected | MCP-05 | RESOLVED | New session started with MCP server properly connected |
-| ssh_multi_exec not permitted | MCP-09, MCP-10 | OPEN | Need user to add tool to permitted list |
+| ssh_multi_exec not permitted | MCP-09, MCP-10 | BLOCKED | Tasks marked blocked after 3 failed attempts - user did not grant permission |
 
 ---
 
