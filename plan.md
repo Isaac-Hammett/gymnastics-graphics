@@ -1683,7 +1683,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Verify each result has target IP and stdout"
     ],
     "verification": "Multi-exec aggregates results from multiple VMs",
-    "passes": false
+    "passes": true
   },
   {
     "id": "MCP-11",
