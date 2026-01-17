@@ -2,3 +2,7 @@ Starting: Test ssh_exec by IP address
 [Step 1] Called ssh_exec with IP 44.193.31.120
 [Step 2] Verifying response
 Done: PASS
+Starting: Test MCP-13 aws_start_instance error handling
+Tool called with invalid instance ID: i-invalid123456789
+Error received: Invalid id
+Done: MCP-13 PASSED - Error handling works correctly
