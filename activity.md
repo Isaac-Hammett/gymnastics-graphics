@@ -2,20 +2,68 @@
 
 ## Current Status
 **Phase:** OBS Integration Tool - In Progress
-**Last Task:** OBS-16 - Add Stream Configuration API endpoints ✅
-**Next Task:** OBS-17 - Create OBS Asset Manager module
+**Last Task:** OBS-17 - Create OBS Asset Manager module ✅
+**Next Task:** OBS-18 - Add Asset Management API endpoints
 **Blocker:** None
 
 ### Summary
 OBS Integration Tool implementation phase in progress. This phase will add comprehensive OBS WebSocket control capabilities to the show controller.
 
-**Progress:** 16/38 tasks complete (42%)
+**Progress:** 17/38 tasks complete (45%)
 
 ---
 
 ## Activity Log
 
 ### 2026-01-17
+
+### OBS-17: Create OBS Asset Manager module ✅
+Created `/server/lib/obsAssetManager.js` - asset manifest management module for OBS media files.
+
+**Constants exported:**
+- `ASSET_TYPES`: ['music', 'stingers', 'backgrounds', 'logos']
+- `ASSET_BASE_PATH`: '/var/www/assets/'
+
+**Methods implemented:**
+- `listAssets(compId)` - List all assets grouped by type
+- `listAssetsByType(compId, type)` - List assets of a specific type
+- `uploadAsset(compId, type, filename, metadata)` - Add asset to manifest
+- `deleteAsset(compId, type, filename)` - Remove asset from manifest
+- `downloadAsset(compId, type, filename)` - Get asset metadata
+- `updateManifest(compId, type, filename, updates)` - Update asset metadata
+- `getAssetMetadata(compId, type, filename)` - Get specific asset metadata
+- `clearAssetsByType(compId, type)` - Clear all assets of a type
+- `getStorageStats(compId)` - Get storage statistics by type
+
+**Design decisions:**
+- Manifest-based management (actual file transfers happen via MCP tools/API routes)
+- Firebase storage at `competitions/{compId}/obs/assets/{type}/{filename}`
+- Comprehensive filename validation (prevents path traversal attacks)
+- Tracks upload timestamps, file sizes, and custom metadata
+- Consistent [OBSAssetManager] logging prefix
+
+**Tests created:**
+- `/server/__tests__/obsAssetManager.test.js` - 64 comprehensive tests covering:
+  - Module exports (3 tests)
+  - Constructor (2 tests)
+  - listAssets (4 tests)
+  - listAssetsByType (5 tests)
+  - uploadAsset (10 tests)
+  - deleteAsset (5 tests)
+  - downloadAsset (5 tests)
+  - updateManifest (7 tests)
+  - getAssetMetadata (5 tests)
+  - clearAssetsByType (4 tests)
+  - getStorageStats (5 tests)
+  - Error handling (4 tests)
+  - Integration scenarios (3 tests)
+  - Filename validation (2 tests)
+
+**Verification:** PASSED
+- Method: `cd server && node --test __tests__/obsAssetManager.test.js`
+- Result: All 64 tests pass (17 suites, 0 failures)
+
+---
 
 ### OBS-16: Add Stream Configuration API endpoints ✅
 Added 5 REST API endpoints to `/server/routes/obs.js` for stream configuration and control.
