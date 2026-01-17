@@ -241,7 +241,7 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
       "Add PUT /api/obs/scenes/:sceneName/items/reorder"
     ],
     "verification": "Routes added to server/routes/obs.js; on show VM: curl http://localhost:3003/api/obs/inputs returns 503 or input list",
-    "passes": false
+    "passes": true
   },
 
   {
