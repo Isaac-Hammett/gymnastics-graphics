@@ -31,36 +31,36 @@ mkdir -p screenshots
 RALPH_TMP="/tmp/claude/ralph-$$"
 mkdir -p "$RALPH_TMP"
 
-# Status file for subagent updates (shared location subagents write to)
+# Status file for subagent progress (well-known location)
 STATUS_FILE="/tmp/claude/ralph-status.txt"
-> "$STATUS_FILE"  # Clear at start
 
 # Cleanup on exit
 cleanup() {
   rm -rf "$RALPH_TMP"
   # Kill status monitor if running
-  if [ -n "$STATUS_MONITOR_PID" ]; then
-    kill "$STATUS_MONITOR_PID" 2>/dev/null
-  fi
+  [ -n "$MONITOR_PID" ] && kill "$MONITOR_PID" 2>/dev/null
 }
 trap cleanup EXIT
 
-# Background function to monitor status file
-monitor_status() {
-  local last_line_count=0
-  while true; do
-    if [ -f "$STATUS_FILE" ]; then
-      current_count=$(wc -l < "$STATUS_FILE" 2>/dev/null | tr -d ' ')
-      if [ "$current_count" -gt "$last_line_count" ]; then
-        # New lines added - show them
-        tail -n $((current_count - last_line_count)) "$STATUS_FILE" | while read -r line; do
-          printf "[%s]    ↳ %s\n" "$(date '+%H:%M:%S')" "$line"
-        done
-        last_line_count=$current_count
+# Monitor the status file in background and print new lines
+start_status_monitor() {
+  (
+    local last_size=0
+    while true; do
+      if [ -f "$STATUS_FILE" ]; then
+        local current_size=$(wc -c < "$STATUS_FILE" 2>/dev/null | tr -d ' ')
+        if [ "$current_size" -gt "$last_size" ]; then
+          # Read only the new content
+          tail -c +$((last_size + 1)) "$STATUS_FILE" | while IFS= read -r line; do
+            [ -n "$line" ] && printf "[%s]    ↳ %s\n" "$(date '+%H:%M:%S')" "$line"
+          done
+          last_size=$current_size
+        fi
       fi
-    fi
-    sleep 0.5
-  done
+      sleep 0.3
+    done
+  ) &
+  MONITOR_PID=$!
 }
 
 echo "========================================"
@@ -83,11 +83,10 @@ for ((i=1; i<=$1; i++)); do
   > "$OUTPUT_FILE"
   > "$SUBAGENT_FILE"
   > "$TOOL_FILE"
-  > "$STATUS_FILE"  # Clear status file for new iteration
+  > "$STATUS_FILE"
 
-  # Start status file monitor in background
-  monitor_status &
-  STATUS_MONITOR_PID=$!
+  # Start monitoring the status file
+  start_status_monitor
 
   # Run Claude with stream-json and process in realtime
   # MCP tools are prefixed with mcp__gymnastics__ for our custom server
@@ -226,12 +225,9 @@ mcp__gymnastics__aws_list_security_group_rules\
       esac
     done
 
-  # Stop the status monitor
-  if [ -n "$STATUS_MONITOR_PID" ]; then
-    kill "$STATUS_MONITOR_PID" 2>/dev/null
-    wait "$STATUS_MONITOR_PID" 2>/dev/null
-    STATUS_MONITOR_PID=""
-  fi
+  # Stop status monitor
+  [ -n "$MONITOR_PID" ] && kill "$MONITOR_PID" 2>/dev/null
+  MONITOR_PID=""
 
   # Read the saved output for completion checks
   result=$(cat "$OUTPUT_FILE" 2>/dev/null || echo "")
@@ -250,8 +246,10 @@ mcp__gymnastics__aws_list_security_group_rules\
   # Note: Permission errors are now shown via the "error" event handler in the stream parser
   # The old string-based detection had too many false positives
 
-  # Check for completion marker
-  if [[ "$result" == *"<promise>COMPLETE</promise>"* ]]; then
+  # Check for completion marker - must be in the final result text, not just anywhere in JSON
+  # Extract just the result text and check there
+  final_result=$(cat "$OUTPUT_FILE" | grep '"type":"result"' | jq -r '.result // empty' 2>/dev/null | tail -1)
+  if [[ "$final_result" == *"<promise>COMPLETE</promise>"* ]]; then
     echo ""
     echo "========================================"
     echo "ALL TASKS COMPLETE!"

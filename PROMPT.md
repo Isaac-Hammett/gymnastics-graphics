@@ -12,6 +12,22 @@ You are an orchestrator that delegates work to subagents. Your job is to:
 
 ---
 
+## Subagent Status Updates (IMPORTANT)
+
+All subagent prompts MUST include this instruction at the START:
+```
+IMPORTANT: Log your progress to /tmp/claude/ralph-status.txt so the operator can monitor:
+  echo "Starting: [brief description]" >> /tmp/claude/ralph-status.txt
+  # Then before each major step:
+  echo "[what you're doing]" >> /tmp/claude/ralph-status.txt
+  # At the end:
+  echo "Done: [result summary]" >> /tmp/claude/ralph-status.txt
+```
+
+This lets the operator see subagent progress in real-time.
+
+---
+
 ## Workflow
 
 ### Step 1: Load State (Do This Yourself)
@@ -39,16 +55,9 @@ Skip this step for pure testing/verification tasks (MCP tool tests).
 
 ### Step 3: Implement (Subagent)
 
-Spawn a subagent to implement the task. **ALWAYS include status update instructions:**
+Spawn a subagent to implement the task:
 ```
 Task(subagent_type='general-purpose', prompt='
-  ## STATUS UPDATES - DO THIS FIRST AND THROUGHOUT
-  Write progress to /tmp/claude/ralph-status.txt so the operator can see what you are doing:
-  - Run: echo "Starting [task]" >> /tmp/claude/ralph-status.txt
-  - Before each major step: echo "[step description]" >> /tmp/claude/ralph-status.txt
-  - When done: echo "DONE: [summary]" >> /tmp/claude/ralph-status.txt
-
-  ## TASK
   Task: [TASK_ID] - [DESCRIPTION]
   Category: [CATEGORY]
 
@@ -126,12 +135,10 @@ Task(subagent_type='general-purpose', prompt='
 **For MCP tool tests:**
 ```
 Task(subagent_type='general-purpose', prompt='
-  ## STATUS UPDATES - DO THIS FIRST AND THROUGHOUT
-  Write progress to /tmp/claude/ralph-status.txt:
-  - echo "Starting: Test [TOOL_NAME]" >> /tmp/claude/ralph-status.txt
-  - Before each MCP call: echo "Calling [tool]..." >> /tmp/claude/ralph-status.txt
-  - After results: echo "Result: [brief summary]" >> /tmp/claude/ralph-status.txt
-  - At end: echo "DONE: PASS/FAIL" >> /tmp/claude/ralph-status.txt
+  IMPORTANT: Log progress to /tmp/claude/ralph-status.txt:
+    echo "Starting: Test [TOOL_NAME]" >> /tmp/claude/ralph-status.txt
+    # Before each step: echo "[step]" >> /tmp/claude/ralph-status.txt
+    # At end: echo "Done: PASS/FAIL" >> /tmp/claude/ralph-status.txt
 
   ## TASK
   Test MCP tool: [TOOL_NAME]
@@ -211,21 +218,6 @@ When ALL tasks in plan.md have `"passes": true`, output:
 ---
 
 ## Subagent Guidelines
-
-### Status Updates (IMPORTANT)
-Subagents MUST write status updates to `/tmp/claude/ralph-status.txt` so the operator can monitor progress.
-
-**At the START of every subagent prompt, include:**
-```
-FIRST: Write your current step to /tmp/claude/ralph-status.txt using:
-echo "[STEP]: [DESCRIPTION]" >> /tmp/claude/ralph-status.txt
-
-Update this file as you work:
-- Before each major action: echo "[action]" >> /tmp/claude/ralph-status.txt
-- Example: echo "Reading plan.md" >> /tmp/claude/ralph-status.txt
-- Example: echo "Calling aws_list_amis" >> /tmp/claude/ralph-status.txt
-- Example: echo "PASS: Tool returned 3 AMIs" >> /tmp/claude/ralph-status.txt
-```
 
 ### Parallelism Rules
 - **Search/Research:** Use as many subagents as needed
