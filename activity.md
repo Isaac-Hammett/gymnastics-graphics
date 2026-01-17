@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** MCP Server Testing
-**Last Task:** MCP-07 - Test ssh_exec service status on coordinator ✅
-**Next Task:** MCP-08 - Test ssh_exec by IP address (not shortcut)
+**Last Task:** MCP-08 - Test ssh_exec by IP address (not shortcut) ✅
+**Next Task:** MCP-09 - Test ssh_multi_exec on single target
 **Blocker:** None
 
 ---
@@ -152,6 +152,21 @@ Tested the `ssh_exec` MCP tool with service status commands.
 - memory: 140.2mb
 
 **Verification:** MCP-07 PASSED - Service status commands execute successfully
+
+### MCP-08: Test ssh_exec by IP address (not shortcut) ✅
+Tested the `ssh_exec` MCP tool with direct IP address instead of 'coordinator' shortcut.
+
+**Results:**
+| Field | Value | Expected | Status |
+|-------|-------|----------|--------|
+| target | 44.193.31.120 | 44.193.31.120 | ✓ |
+| command | echo test | - | ✓ |
+| exitCode | 0 | 0 | ✓ |
+| stdout | "test" | contains 'test' | ✓ |
+| stderr | "" | - | ✓ |
+| success | true | true | ✓ |
+
+**Verification:** MCP-08 PASSED - Direct IP targeting works same as 'coordinator' shortcut
 
 ---
 
