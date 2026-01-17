@@ -22,7 +22,6 @@
  * - firebase_delete: Delete data from Firebase
  * - firebase_export: Export data to JSON
  * - firebase_list_paths: List child keys at a path
- * - firebase_sync_to_prod: Copy dev data to prod
  * - aws_open_port: Open a port in security group
  * - aws_close_port: Close a port in security group
  * - aws_list_security_group_rules: List current security group rules
@@ -62,46 +61,34 @@ const CONFIG = {
   commandTimeout: 60000, // 60 seconds for command execution
 };
 
-// Firebase Configuration
+// Firebase Configuration (single production database)
 const FIREBASE_CONFIG = {
-  dev: {
-    databaseURL: 'https://gymnastics-graphics-dev-default-rtdb.firebaseio.com',
-    serviceAccountPath: join(homedir(), '.config', 'firebase', 'gymnastics-graphics-dev-sa.json'),
-  },
-  prod: {
-    databaseURL: 'https://gymnastics-graphics-default-rtdb.firebaseio.com',
-    serviceAccountPath: join(homedir(), '.config', 'firebase', 'gymnastics-graphics-prod-sa.json'),
-  },
+  databaseURL: 'https://gymnastics-graphics-default-rtdb.firebaseio.com',
+  serviceAccountPath: join(homedir(), '.config', 'firebase', 'gymnastics-graphics-prod-sa.json'),
 };
 
-// Firebase app instances (lazy initialized)
-const firebaseApps = {};
+// Firebase app instance (lazy initialized)
+let firebaseApp = null;
 
-function getFirebaseApp(project) {
-  if (!['dev', 'prod'].includes(project)) {
-    throw new Error(`Invalid project: ${project}. Must be 'dev' or 'prod'.`);
-  }
-
-  if (!firebaseApps[project]) {
-    const config = FIREBASE_CONFIG[project];
-
-    if (!existsSync(config.serviceAccountPath)) {
-      throw new Error(`Service account not found: ${config.serviceAccountPath}`);
+function getFirebaseApp() {
+  if (!firebaseApp) {
+    if (!existsSync(FIREBASE_CONFIG.serviceAccountPath)) {
+      throw new Error(`Service account not found: ${FIREBASE_CONFIG.serviceAccountPath}`);
     }
 
-    const serviceAccount = JSON.parse(readFileSync(config.serviceAccountPath, 'utf8'));
+    const serviceAccount = JSON.parse(readFileSync(FIREBASE_CONFIG.serviceAccountPath, 'utf8'));
 
-    firebaseApps[project] = admin.initializeApp({
+    firebaseApp = admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
-      databaseURL: config.databaseURL,
-    }, project); // Use project name as app name to allow multiple apps
+      databaseURL: FIREBASE_CONFIG.databaseURL,
+    });
   }
 
-  return firebaseApps[project];
+  return firebaseApp;
 }
 
-function getFirebaseDb(project) {
-  const app = getFirebaseApp(project);
+function getFirebaseDb() {
+  const app = getFirebaseApp();
   return admin.database(app);
 }
 
@@ -278,17 +265,12 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        project: {
-          type: 'string',
-          enum: ['dev', 'prod'],
-          description: 'Which Firebase project to use'
-        },
         path: {
           type: 'string',
           description: 'Database path (e.g., "competitions/pac12-2025/config")'
         }
       },
-      required: ['project', 'path']
+      required: ['path']
     }
   },
   {
@@ -297,11 +279,6 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        project: {
-          type: 'string',
-          enum: ['dev', 'prod'],
-          description: 'Which Firebase project to use'
-        },
         path: {
           type: 'string',
           description: 'Database path to write to'
@@ -310,7 +287,7 @@ const TOOLS = [
           description: 'The data to write (any JSON value)'
         }
       },
-      required: ['project', 'path', 'data']
+      required: ['path', 'data']
     }
   },
   {
@@ -319,11 +296,6 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        project: {
-          type: 'string',
-          enum: ['dev', 'prod'],
-          description: 'Which Firebase project to use'
-        },
         path: {
           type: 'string',
           description: 'Database path to update'
@@ -333,7 +305,7 @@ const TOOLS = [
           description: 'The data to merge at this path'
         }
       },
-      required: ['project', 'path', 'data']
+      required: ['path', 'data']
     }
   },
   {
@@ -342,17 +314,12 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        project: {
-          type: 'string',
-          enum: ['dev', 'prod'],
-          description: 'Which Firebase project to use'
-        },
         path: {
           type: 'string',
           description: 'Database path to delete'
         }
       },
-      required: ['project', 'path']
+      required: ['path']
     }
   },
   {
@@ -361,17 +328,12 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        project: {
-          type: 'string',
-          enum: ['dev', 'prod'],
-          description: 'Which Firebase project to use'
-        },
         path: {
           type: 'string',
           description: 'Path to export (use "/" for entire database)'
         }
       },
-      required: ['project', 'path']
+      required: ['path']
     }
   },
   {
@@ -380,32 +342,9 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        project: {
-          type: 'string',
-          enum: ['dev', 'prod'],
-          description: 'Which Firebase project to use'
-        },
         path: {
           type: 'string',
           description: 'Database path to list children of'
-        }
-      },
-      required: ['project', 'path']
-    }
-  },
-  {
-    name: 'firebase_sync_to_prod',
-    description: 'Copy data from dev Firebase to prod Firebase at a given path. Creates backup of prod first.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        path: {
-          type: 'string',
-          description: 'Path to sync (use "/" for entire database)'
-        },
-        createBackup: {
-          type: 'boolean',
-          description: 'Whether to backup prod data first (default: true)'
         }
       },
       required: ['path']
@@ -687,75 +626,69 @@ async function sshDownloadFile(target, remotePath, localPath) {
 }
 
 // Firebase implementations
-async function firebaseGet(project, path) {
-  const db = getFirebaseDb(project);
+async function firebaseGet(path) {
+  const db = getFirebaseDb();
   const snapshot = await db.ref(path).once('value');
   const data = snapshot.val();
 
   return {
-    project,
     path,
     exists: snapshot.exists(),
     data,
   };
 }
 
-async function firebaseSet(project, path, data) {
-  const db = getFirebaseDb(project);
+async function firebaseSet(path, data) {
+  const db = getFirebaseDb();
   await db.ref(path).set(data);
 
   return {
-    project,
     path,
     success: true,
-    message: `Data written to ${project}:${path}`,
+    message: `Data written to ${path}`,
   };
 }
 
-async function firebaseUpdate(project, path, data) {
-  const db = getFirebaseDb(project);
+async function firebaseUpdate(path, data) {
+  const db = getFirebaseDb();
   await db.ref(path).update(data);
 
   return {
-    project,
     path,
     success: true,
-    message: `Data updated at ${project}:${path}`,
+    message: `Data updated at ${path}`,
   };
 }
 
-async function firebaseDelete(project, path) {
-  const db = getFirebaseDb(project);
+async function firebaseDelete(path) {
+  const db = getFirebaseDb();
   await db.ref(path).remove();
 
   return {
-    project,
     path,
     success: true,
-    message: `Data deleted at ${project}:${path}`,
+    message: `Data deleted at ${path}`,
   };
 }
 
-async function firebaseExport(project, path) {
-  const db = getFirebaseDb(project);
+async function firebaseExport(path) {
+  const db = getFirebaseDb();
   const snapshot = await db.ref(path).once('value');
   const data = snapshot.val();
 
   return {
-    project,
     path,
     exportedAt: new Date().toISOString(),
     data,
   };
 }
 
-async function firebaseListPaths(project, path) {
-  const db = getFirebaseDb(project);
+async function firebaseListPaths(path) {
+  const db = getFirebaseDb();
   const snapshot = await db.ref(path).once('value');
 
   if (!snapshot.exists()) {
     return {
-      project,
       path,
       exists: false,
       children: [],
@@ -766,50 +699,10 @@ async function firebaseListPaths(project, path) {
   const children = typeof val === 'object' && val !== null ? Object.keys(val) : [];
 
   return {
-    project,
     path,
     exists: true,
     children,
     childCount: children.length,
-  };
-}
-
-async function firebaseSyncToProd(path, createBackup = true) {
-  const devDb = getFirebaseDb('dev');
-  const prodDb = getFirebaseDb('prod');
-
-  // Get dev data
-  const devSnapshot = await devDb.ref(path).once('value');
-  const devData = devSnapshot.val();
-
-  if (!devSnapshot.exists()) {
-    return {
-      success: false,
-      message: `No data found at dev:${path}`,
-    };
-  }
-
-  let backup = null;
-
-  // Backup prod data first if requested
-  if (createBackup) {
-    const prodSnapshot = await prodDb.ref(path).once('value');
-    backup = {
-      path,
-      backedUpAt: new Date().toISOString(),
-      data: prodSnapshot.val(),
-    };
-  }
-
-  // Write dev data to prod
-  await prodDb.ref(path).set(devData);
-
-  return {
-    success: true,
-    path,
-    syncedAt: new Date().toISOString(),
-    message: `Data synced from dev to prod at ${path}`,
-    backup: createBackup ? backup : 'Backup skipped',
   };
 }
 
@@ -990,31 +883,27 @@ async function main() {
 
         // Firebase tools
         case 'firebase_get':
-          result = await firebaseGet(args.project, args.path);
+          result = await firebaseGet(args.path);
           break;
 
         case 'firebase_set':
-          result = await firebaseSet(args.project, args.path, args.data);
+          result = await firebaseSet(args.path, args.data);
           break;
 
         case 'firebase_update':
-          result = await firebaseUpdate(args.project, args.path, args.data);
+          result = await firebaseUpdate(args.path, args.data);
           break;
 
         case 'firebase_delete':
-          result = await firebaseDelete(args.project, args.path);
+          result = await firebaseDelete(args.path);
           break;
 
         case 'firebase_export':
-          result = await firebaseExport(args.project, args.path);
+          result = await firebaseExport(args.path);
           break;
 
         case 'firebase_list_paths':
-          result = await firebaseListPaths(args.project, args.path);
-          break;
-
-        case 'firebase_sync_to_prod':
-          result = await firebaseSyncToProd(args.path, args.createBackup ?? true);
+          result = await firebaseListPaths(args.path);
           break;
 
         // Security Group tools
