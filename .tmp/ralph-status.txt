@@ -2,3 +2,8 @@ Starting: Test MCP-14 error handling
 [Test 1: exit 1]
 [Test 2: nonexistent command]
 Done: PASS
+Starting: Test firebase_delete MCP tool
+Step 1: firebase_set to create test data
+Step 2: firebase_delete to delete the data
+Step 3: firebase_get to verify deletion
+Done: PASS
