@@ -1669,7 +1669,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Verify successCount is 1, failureCount is 0"
     ],
     "verification": "Multi-exec works with single target",
-    "passes": false
+    "passes": true
   },
   {
     "id": "MCP-10",
