@@ -609,7 +609,81 @@ export class MockOBSWebSocket extends EventEmitter {
       return {};
     },
 
+    GetSceneItemTransform: function(params) {
+      const { sceneName, sceneItemId } = params;
+      const scene = this._scenes.get(sceneName);
+      if (!scene) {
+        const error = new Error(`Scene not found: ${sceneName}`);
+        error.code = 600;
+        throw error;
+      }
+      const item = scene.items.find(i => i.sceneItemId === sceneItemId);
+      if (!item) {
+        const error = new Error(`Scene item not found: ${sceneItemId}`);
+        error.code = 600;
+        throw error;
+      }
+      return {
+        sceneItemTransform: item.transform || {
+          positionX: 0,
+          positionY: 0,
+          scaleX: 1,
+          scaleY: 1,
+          rotation: 0,
+          width: 1920,
+          height: 1080,
+          boundsType: 'OBS_BOUNDS_NONE',
+          boundsWidth: 1920,
+          boundsHeight: 1080
+        }
+      };
+    },
+
+    SetSceneItemLocked: function(params) {
+      const { sceneName, sceneItemId, sceneItemLocked } = params;
+      const scene = this._scenes.get(sceneName);
+      if (!scene) {
+        const error = new Error(`Scene not found: ${sceneName}`);
+        error.code = 600;
+        throw error;
+      }
+      const item = scene.items.find(i => i.sceneItemId === sceneItemId);
+      if (!item) {
+        const error = new Error(`Scene item not found: ${sceneItemId}`);
+        error.code = 600;
+        throw error;
+      }
+      item.sceneItemLocked = sceneItemLocked;
+
+      setImmediate(() => {
+        this.emit('SceneItemLockStateChanged', { sceneName, sceneItemId, sceneItemLocked });
+      });
+
+      return {};
+    },
+
     SetSceneItemIndex: function(params) {
+      const { sceneName, sceneItemId, sceneItemIndex } = params;
+      const scene = this._scenes.get(sceneName);
+      if (!scene) {
+        const error = new Error(`Scene not found: ${sceneName}`);
+        error.code = 600;
+        throw error;
+      }
+      const itemIdx = scene.items.findIndex(i => i.sceneItemId === sceneItemId);
+      if (itemIdx === -1) {
+        const error = new Error(`Scene item not found: ${sceneItemId}`);
+        error.code = 600;
+        throw error;
+      }
+      // Move item to new position
+      const [item] = scene.items.splice(itemIdx, 1);
+      scene.items.splice(sceneItemIndex, 0, item);
+
+      setImmediate(() => {
+        this.emit('SceneItemListReindexed', { sceneName, sceneItems: scene.items });
+      });
+
       return {};
     },
 

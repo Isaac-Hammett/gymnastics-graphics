@@ -468,4 +468,487 @@ describe('OBSSourceManager', () => {
       assert.equal(obs.getCallsTo('RemoveInput').length, 1);
     });
   });
+
+  describe('Scene Item Management', () => {
+    describe('getSceneItems', () => {
+      it('should return scene items with transforms', async () => {
+        const sceneName = 'Single - Camera 1';
+        const items = await sourceManager.getSceneItems(sceneName);
+
+        assert.ok(Array.isArray(items));
+        assert.equal(items.length, 1);
+        assert.equal(items[0].sceneItemId, 1);
+        assert.equal(items[0].sourceName, 'Camera 1 SRT');
+        assert.ok(items[0].transform);
+
+        // Verify OBS calls
+        assert.equal(obs.getCallsTo('GetSceneItemList').length, 1);
+        assert.equal(obs.getCallsTo('GetSceneItemTransform').length, 1);
+      });
+
+      it('should handle empty scene', async () => {
+        const sceneName = 'Starting Soon';
+        const items = await sourceManager.getSceneItems(sceneName);
+
+        assert.ok(Array.isArray(items));
+        assert.equal(items.length, 0);
+      });
+
+      it('should throw error when scene name is missing', async () => {
+        await assert.rejects(
+          async () => await sourceManager.getSceneItems(''),
+          { message: 'Scene name is required' }
+        );
+      });
+
+      it('should handle OBS error when scene not found', async () => {
+        const error = new Error('Scene not found: Unknown Scene');
+        error.code = 600;
+        obs.injectErrorOnMethod('GetSceneItemList', error);
+
+        await assert.rejects(
+          async () => await sourceManager.getSceneItems('Unknown Scene'),
+          { message: 'Scene not found: Unknown Scene' }
+        );
+      });
+
+      it('should handle transform fetch errors gracefully', async () => {
+        obs.addScene('Test Scene', [
+          { sceneItemId: 100, sourceName: 'Test Source', sceneItemEnabled: true }
+        ]);
+
+        // Inject error for transform fetch
+        obs.injectErrorOnMethod('GetSceneItemTransform', new Error('Transform error'));
+
+        const items = await sourceManager.getSceneItems('Test Scene');
+
+        // Should still return items, just without transform
+        assert.ok(Array.isArray(items));
+        assert.equal(items.length, 1);
+        assert.equal(items[0].sourceName, 'Test Source');
+
+        obs.clearErrorOnMethod('GetSceneItemTransform');
+      });
+    });
+
+    describe('addSourceToScene', () => {
+      it('should add source to scene without transform', async () => {
+        const result = await sourceManager.addSourceToScene('BRB', 'Camera 1 SRT');
+
+        assert.equal(result.sceneName, 'BRB');
+        assert.equal(result.sourceName, 'Camera 1 SRT');
+        assert.ok(result.sceneItemId);
+        assert.equal(result.transform, null);
+
+        // Verify OBS call
+        const calls = obs.getCallsTo('CreateSceneItem');
+        assert.equal(calls.length, 1);
+        assert.equal(calls[0].params.sceneName, 'BRB');
+        assert.equal(calls[0].params.sourceName, 'Camera 1 SRT');
+      });
+
+      it('should add source to scene with transform', async () => {
+        const transform = {
+          positionX: 100,
+          positionY: 200,
+          scaleX: 0.5,
+          scaleY: 0.5
+        };
+
+        const result = await sourceManager.addSourceToScene('BRB', 'Camera 1 SRT', transform);
+
+        assert.equal(result.sceneName, 'BRB');
+        assert.equal(result.sourceName, 'Camera 1 SRT');
+        assert.ok(result.sceneItemId);
+        assert.deepEqual(result.transform, transform);
+
+        // Verify OBS calls
+        assert.equal(obs.getCallsTo('CreateSceneItem').length, 1);
+        const transformCalls = obs.getCallsTo('SetSceneItemTransform');
+        assert.equal(transformCalls.length, 1);
+        assert.deepEqual(transformCalls[0].params.sceneItemTransform, transform);
+      });
+
+      it('should throw error when scene name is missing', async () => {
+        await assert.rejects(
+          async () => await sourceManager.addSourceToScene('', 'Camera 1'),
+          { message: 'Scene name is required' }
+        );
+      });
+
+      it('should throw error when source name is missing', async () => {
+        await assert.rejects(
+          async () => await sourceManager.addSourceToScene('Test Scene', ''),
+          { message: 'Source name is required' }
+        );
+      });
+
+      it('should handle OBS error when scene not found', async () => {
+        const error = new Error('Scene not found: Unknown Scene');
+        error.code = 600;
+        obs.injectErrorOnMethod('CreateSceneItem', error);
+
+        await assert.rejects(
+          async () => await sourceManager.addSourceToScene('Unknown Scene', 'Camera 1'),
+          { message: 'Scene not found: Unknown Scene' }
+        );
+      });
+    });
+
+    describe('removeSourceFromScene', () => {
+      it('should remove source from scene', async () => {
+        const result = await sourceManager.removeSourceFromScene('Single - Camera 1', 1);
+
+        assert.equal(result.sceneName, 'Single - Camera 1');
+        assert.equal(result.sceneItemId, 1);
+        assert.equal(result.removed, true);
+
+        // Verify OBS call
+        const calls = obs.getCallsTo('RemoveSceneItem');
+        assert.equal(calls.length, 1);
+        assert.equal(calls[0].params.sceneName, 'Single - Camera 1');
+        assert.equal(calls[0].params.sceneItemId, 1);
+      });
+
+      it('should throw error when scene name is missing', async () => {
+        await assert.rejects(
+          async () => await sourceManager.removeSourceFromScene('', 1),
+          { message: 'Scene name is required' }
+        );
+      });
+
+      it('should throw error when scene item ID is missing', async () => {
+        await assert.rejects(
+          async () => await sourceManager.removeSourceFromScene('Test Scene', null),
+          { message: 'Scene item ID is required' }
+        );
+      });
+
+      it('should handle OBS error when scene item not found', async () => {
+        const error = new Error('Scene item not found: 999');
+        error.code = 600;
+        obs.injectErrorOnMethod('RemoveSceneItem', error);
+
+        await assert.rejects(
+          async () => await sourceManager.removeSourceFromScene('Test Scene', 999),
+          { message: 'Scene item not found: 999' }
+        );
+      });
+    });
+
+    describe('updateSceneItemTransform', () => {
+      it('should update scene item transform', async () => {
+        const transform = {
+          positionX: 960,
+          positionY: 540,
+          scaleX: 0.5,
+          scaleY: 0.5
+        };
+
+        const result = await sourceManager.updateSceneItemTransform('Single - Camera 1', 1, transform);
+
+        assert.equal(result.sceneName, 'Single - Camera 1');
+        assert.equal(result.sceneItemId, 1);
+        assert.deepEqual(result.transform, transform);
+        assert.equal(result.updated, true);
+
+        // Verify OBS call
+        const calls = obs.getCallsTo('SetSceneItemTransform');
+        assert.equal(calls.length, 1);
+        assert.equal(calls[0].params.sceneName, 'Single - Camera 1');
+        assert.equal(calls[0].params.sceneItemId, 1);
+        assert.deepEqual(calls[0].params.sceneItemTransform, transform);
+      });
+
+      it('should throw error when scene name is missing', async () => {
+        await assert.rejects(
+          async () => await sourceManager.updateSceneItemTransform('', 1, { positionX: 0 }),
+          { message: 'Scene name is required' }
+        );
+      });
+
+      it('should throw error when scene item ID is missing', async () => {
+        await assert.rejects(
+          async () => await sourceManager.updateSceneItemTransform('Test Scene', null, { positionX: 0 }),
+          { message: 'Scene item ID is required' }
+        );
+      });
+
+      it('should throw error when transform is missing', async () => {
+        await assert.rejects(
+          async () => await sourceManager.updateSceneItemTransform('Test Scene', 1, null),
+          { message: 'Transform must be an object' }
+        );
+      });
+
+      it('should throw error when transform is not an object', async () => {
+        await assert.rejects(
+          async () => await sourceManager.updateSceneItemTransform('Test Scene', 1, 'not an object'),
+          { message: 'Transform must be an object' }
+        );
+      });
+
+      it('should handle OBS error', async () => {
+        const error = new Error('Scene item not found: 999');
+        error.code = 600;
+        obs.injectErrorOnMethod('SetSceneItemTransform', error);
+
+        await assert.rejects(
+          async () => await sourceManager.updateSceneItemTransform('Test Scene', 999, { positionX: 0 }),
+          { message: 'Scene item not found: 999' }
+        );
+      });
+    });
+
+    describe('setSceneItemEnabled', () => {
+      it('should set scene item enabled to true', async () => {
+        const result = await sourceManager.setSceneItemEnabled('Single - Camera 1', 1, true);
+
+        assert.equal(result.sceneName, 'Single - Camera 1');
+        assert.equal(result.sceneItemId, 1);
+        assert.equal(result.enabled, true);
+        assert.equal(result.updated, true);
+
+        // Verify OBS call
+        const calls = obs.getCallsTo('SetSceneItemEnabled');
+        assert.equal(calls.length, 1);
+        assert.equal(calls[0].params.sceneItemEnabled, true);
+      });
+
+      it('should set scene item enabled to false', async () => {
+        const result = await sourceManager.setSceneItemEnabled('Single - Camera 1', 1, false);
+
+        assert.equal(result.enabled, false);
+        assert.equal(result.updated, true);
+      });
+
+      it('should throw error when scene name is missing', async () => {
+        await assert.rejects(
+          async () => await sourceManager.setSceneItemEnabled('', 1, true),
+          { message: 'Scene name is required' }
+        );
+      });
+
+      it('should throw error when scene item ID is missing', async () => {
+        await assert.rejects(
+          async () => await sourceManager.setSceneItemEnabled('Test Scene', null, true),
+          { message: 'Scene item ID is required' }
+        );
+      });
+
+      it('should throw error when enabled is not boolean', async () => {
+        await assert.rejects(
+          async () => await sourceManager.setSceneItemEnabled('Test Scene', 1, 'true'),
+          { message: 'Enabled must be a boolean' }
+        );
+      });
+
+      it('should handle OBS error', async () => {
+        const error = new Error('Scene item not found: 999');
+        error.code = 600;
+        obs.injectErrorOnMethod('SetSceneItemEnabled', error);
+
+        await assert.rejects(
+          async () => await sourceManager.setSceneItemEnabled('Test Scene', 999, true),
+          { message: 'Scene item not found: 999' }
+        );
+      });
+    });
+
+    describe('setSceneItemLocked', () => {
+      it('should set scene item locked to true', async () => {
+        const result = await sourceManager.setSceneItemLocked('Single - Camera 1', 1, true);
+
+        assert.equal(result.sceneName, 'Single - Camera 1');
+        assert.equal(result.sceneItemId, 1);
+        assert.equal(result.locked, true);
+        assert.equal(result.updated, true);
+
+        // Verify OBS call
+        const calls = obs.getCallsTo('SetSceneItemLocked');
+        assert.equal(calls.length, 1);
+        assert.equal(calls[0].params.sceneItemLocked, true);
+      });
+
+      it('should set scene item locked to false', async () => {
+        const result = await sourceManager.setSceneItemLocked('Single - Camera 1', 1, false);
+
+        assert.equal(result.locked, false);
+        assert.equal(result.updated, true);
+      });
+
+      it('should throw error when scene name is missing', async () => {
+        await assert.rejects(
+          async () => await sourceManager.setSceneItemLocked('', 1, true),
+          { message: 'Scene name is required' }
+        );
+      });
+
+      it('should throw error when scene item ID is missing', async () => {
+        await assert.rejects(
+          async () => await sourceManager.setSceneItemLocked('Test Scene', null, true),
+          { message: 'Scene item ID is required' }
+        );
+      });
+
+      it('should throw error when locked is not boolean', async () => {
+        await assert.rejects(
+          async () => await sourceManager.setSceneItemLocked('Test Scene', 1, 'true'),
+          { message: 'Locked must be a boolean' }
+        );
+      });
+
+      it('should handle OBS error', async () => {
+        const error = new Error('Scene item not found: 999');
+        error.code = 600;
+        obs.injectErrorOnMethod('SetSceneItemLocked', error);
+
+        await assert.rejects(
+          async () => await sourceManager.setSceneItemLocked('Test Scene', 999, true),
+          { message: 'Scene item not found: 999' }
+        );
+      });
+    });
+
+    describe('reorderSceneItems', () => {
+      beforeEach(() => {
+        // Create a scene with multiple items
+        obs.addScene('Multi Scene', [
+          { sceneItemId: 1, sourceName: 'Source 1', sceneItemEnabled: true },
+          { sceneItemId: 2, sourceName: 'Source 2', sceneItemEnabled: true },
+          { sceneItemId: 3, sourceName: 'Source 3', sceneItemEnabled: true }
+        ]);
+      });
+
+      it('should reorder scene items', async () => {
+        const itemOrder = [
+          { sceneItemId: 3, index: 0 },
+          { sceneItemId: 1, index: 1 },
+          { sceneItemId: 2, index: 2 }
+        ];
+
+        const result = await sourceManager.reorderSceneItems('Multi Scene', itemOrder);
+
+        assert.equal(result.sceneName, 'Multi Scene');
+        assert.equal(result.reordered, 3);
+
+        // Verify OBS calls (should be called for each item)
+        const calls = obs.getCallsTo('SetSceneItemIndex');
+        assert.equal(calls.length, 3);
+      });
+
+      it('should handle empty item order', async () => {
+        const result = await sourceManager.reorderSceneItems('Multi Scene', []);
+
+        assert.equal(result.sceneName, 'Multi Scene');
+        assert.equal(result.reordered, 0);
+
+        // No OBS calls should be made
+        const calls = obs.getCallsTo('SetSceneItemIndex');
+        assert.equal(calls.length, 0);
+      });
+
+      it('should throw error when scene name is missing', async () => {
+        await assert.rejects(
+          async () => await sourceManager.reorderSceneItems('', []),
+          { message: 'Scene name is required' }
+        );
+      });
+
+      it('should throw error when item order is not array', async () => {
+        await assert.rejects(
+          async () => await sourceManager.reorderSceneItems('Test Scene', 'not an array'),
+          { message: 'Item order must be an array' }
+        );
+      });
+
+      it('should throw error when item missing sceneItemId', async () => {
+        const itemOrder = [
+          { index: 0 }
+        ];
+
+        await assert.rejects(
+          async () => await sourceManager.reorderSceneItems('Multi Scene', itemOrder),
+          { message: 'Each item must have a sceneItemId' }
+        );
+      });
+
+      it('should throw error when item missing index', async () => {
+        const itemOrder = [
+          { sceneItemId: 1 }
+        ];
+
+        await assert.rejects(
+          async () => await sourceManager.reorderSceneItems('Multi Scene', itemOrder),
+          { message: 'Each item must have an index' }
+        );
+      });
+
+      it('should handle OBS error', async () => {
+        const error = new Error('Scene not found: Unknown Scene');
+        error.code = 600;
+        obs.injectErrorOnMethod('SetSceneItemIndex', error);
+
+        const itemOrder = [
+          { sceneItemId: 1, index: 0 }
+        ];
+
+        await assert.rejects(
+          async () => await sourceManager.reorderSceneItems('Unknown Scene', itemOrder),
+          { message: 'Scene not found: Unknown Scene' }
+        );
+      });
+
+      it('should sort items by index before applying', async () => {
+        // Pass in unsorted order
+        const itemOrder = [
+          { sceneItemId: 2, index: 2 },
+          { sceneItemId: 3, index: 0 },
+          { sceneItemId: 1, index: 1 }
+        ];
+
+        const result = await sourceManager.reorderSceneItems('Multi Scene', itemOrder);
+
+        assert.equal(result.reordered, 3);
+
+        // Verify calls were made in sorted order (by index)
+        const calls = obs.getCallsTo('SetSceneItemIndex');
+        assert.equal(calls[0].params.sceneItemId, 3); // index 0
+        assert.equal(calls[1].params.sceneItemId, 1); // index 1
+        assert.equal(calls[2].params.sceneItemId, 2); // index 2
+      });
+    });
+
+    describe('Scene Item Integration', () => {
+      it('should handle complete workflow: add, update transform, enable/disable, lock, remove', async () => {
+        // Add source to scene
+        const addResult = await sourceManager.addSourceToScene('BRB', 'Camera 1 SRT');
+        const sceneItemId = addResult.sceneItemId;
+
+        // Update transform
+        const transform = { positionX: 100, positionY: 200 };
+        const transformResult = await sourceManager.updateSceneItemTransform('BRB', sceneItemId, transform);
+        assert.equal(transformResult.updated, true);
+
+        // Disable
+        const disableResult = await sourceManager.setSceneItemEnabled('BRB', sceneItemId, false);
+        assert.equal(disableResult.enabled, false);
+
+        // Lock
+        const lockResult = await sourceManager.setSceneItemLocked('BRB', sceneItemId, true);
+        assert.equal(lockResult.locked, true);
+
+        // Remove
+        const removeResult = await sourceManager.removeSourceFromScene('BRB', sceneItemId);
+        assert.equal(removeResult.removed, true);
+
+        // Verify all calls were made
+        assert.equal(obs.getCallsTo('CreateSceneItem').length, 1);
+        assert.equal(obs.getCallsTo('SetSceneItemTransform').length, 1);
+        assert.equal(obs.getCallsTo('SetSceneItemEnabled').length, 1);
+        assert.equal(obs.getCallsTo('SetSceneItemLocked').length, 1);
+        assert.equal(obs.getCallsTo('RemoveSceneItem').length, 1);
+      });
+    });
+  });
 });
