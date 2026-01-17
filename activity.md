@@ -18,36 +18,24 @@ OBS Integration Tool implementation phase in progress. All UI components for OBS
 ### 2026-01-17
 
 ### OBS-INT-01: OBS state sync end-to-end test - ❌ BLOCKED
-**Attempt:** 1 of 3
+**Attempt:** 2 of 3
 
-**Investigation Findings:**
+**Status:** Still blocked - permission for `mcp__gymnastics__aws_open_port` not granted.
+
+**Previous Findings (from attempt 1):**
 1. **Coordinator VM:** Running at 44.193.31.120, healthy, PM2 process active
-2. **OBS VM:** Started i-08abea9194f19ddbd, now running at 100.48.62.137
+2. **OBS VM:** Started i-08abea9194f19ddbd, running at 100.48.62.137
 3. **OBS Services:** Both xvfb.service and obs-headless.service are ACTIVE and RUNNING
 4. **OBS WebSocket:** Listening on port 4455 (all interfaces)
 5. **WebSocket Password:** 9QqZIhTH4dqIT1Bz
 
-**Error:** Network connectivity blocked between coordinator and OBS VM
+**Blocker:** AWS Security Group (sg-025f1ac53cccb756b) does not have an inbound rule allowing traffic on port 4455.
 
-**Root Cause:** AWS Security Group (sg-025f1ac53cccb756b) does not have an inbound rule allowing traffic on port 4455. The OBS WebSocket port is not exposed.
+**What's Needed to Unblock:**
+1. Grant permission for `mcp__gymnastics__aws_open_port` MCP tool
+2. OR manually open port 4455 in AWS console for the gymnastics-graphics security group
 
-**Actions Taken:**
-- Started the stopped OBS VM (i-08abea9194f19ddbd)
-- Verified OBS services are running correctly
-- Configured coordinator .env to point to OBS VM IP
-- Attempted to open port 4455 but permission was not granted
-
-**What's Needed:**
-1. Open port 4455 in AWS security group (requires `aws_open_port` permission)
-2. Once port is open, coordinator can connect to OBS WebSocket
-3. Integration tests can then proceed
-
-**Next Steps:**
-- Grant permission for `mcp__gymnastics__aws_open_port` tool
-- OR manually open port 4455 in AWS console
-- Then retry OBS-INT-01
-
-**Note:** All 31 implementation tasks (OBS-01 through OBS-31) passed their unit tests using MockOBS. The integration tests are for end-to-end validation with real OBS.
+**Note:** All 31 implementation tasks (OBS-01 through OBS-31) passed their unit tests using MockOBS. The integration tests require real OBS connectivity which is blocked by this infrastructure issue.
 
 ---
 
