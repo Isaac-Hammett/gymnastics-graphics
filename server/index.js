@@ -25,6 +25,7 @@ import { getAutoShutdownService } from './lib/autoShutdown.js';
 import { getSelfStopService } from './lib/selfStop.js';
 import { getOBSStateSync } from './lib/obsStateSync.js';
 import { setupOBSRoutes } from './routes/obs.js';
+import { getOBSConnectionManager } from './lib/obsConnectionManager.js';
 
 dotenv.config();
 
@@ -2305,8 +2306,10 @@ app.get('/{*path}', (req, res) => {
 });
 
 // Socket.io connection handling
-io.on('connection', (socket) => {
-  console.log(`Client connected: ${socket.id}`);
+io.on('connection', async (socket) => {
+  // Extract compId from connection query (sent by frontend)
+  const clientCompId = socket.handshake.query.compId;
+  console.log(`Client connected: ${socket.id} for competition: ${clientCompId || 'none'}`);
 
   // Track activity on every socket event using socket.io middleware
   socket.use((packet, next) => {
@@ -2318,11 +2321,45 @@ io.on('connection', (socket) => {
     next();
   });
 
+  // If client has a compId, try to connect to that competition's VM OBS
+  if (clientCompId && clientCompId !== 'local') {
+    try {
+      // Join a room for this competition to receive targeted broadcasts
+      socket.join(`competition:${clientCompId}`);
+
+      // Look up VM for this competition
+      const vmPoolManager = getVMPoolManager();
+      if (vmPoolManager.isInitialized()) {
+        const vm = vmPoolManager.getVMForCompetition(clientCompId);
+        if (vm && vm.publicIp) {
+          console.log(`[Socket] Competition ${clientCompId} has VM at ${vm.publicIp}`);
+
+          // Connect to OBS on that VM (if not already connected)
+          const obsConnManager = getOBSConnectionManager();
+          if (!obsConnManager.isConnected(clientCompId)) {
+            try {
+              await obsConnManager.connectToVM(clientCompId, vm.publicIp);
+              console.log(`[Socket] Connected to OBS for competition ${clientCompId}`);
+            } catch (obsError) {
+              console.warn(`[Socket] Failed to connect to OBS for ${clientCompId}: ${obsError.message}`);
+              // Continue without OBS - some features won't work
+            }
+          }
+        } else {
+          console.log(`[Socket] No VM assigned to competition ${clientCompId}`);
+        }
+      }
+    } catch (error) {
+      console.error(`[Socket] Error setting up competition ${clientCompId}:`, error.message);
+    }
+  }
+
   // Add client to list
   const clientInfo = {
     id: socket.id,
     role: 'unknown',
-    name: 'Unknown'
+    name: 'Unknown',
+    compId: clientCompId || null
   };
   showState.connectedClients.push(clientInfo);
 
@@ -2356,7 +2393,18 @@ io.on('connection', (socket) => {
   }
 
   // Send initial OBS state if available
-  if (obsStateSync && obsStateSync.isInitialized()) {
+  // First, try to get OBS state from the competition's VM connection
+  if (clientCompId && clientCompId !== 'local') {
+    const obsConnManager = getOBSConnectionManager();
+    const connState = obsConnManager.getConnectionState(clientCompId);
+    if (connState) {
+      socket.emit('obs:stateUpdated', {
+        connected: connState.connected,
+        connectionError: connState.error
+      });
+    }
+  } else if (obsStateSync && obsStateSync.isInitialized()) {
+    // Fall back to local OBS state
     socket.emit('obs:stateUpdated', obsStateSync.getState());
   }
 
@@ -2854,6 +2902,84 @@ setInterval(() => {
   }
 }, 1000);
 
+// Initialize OBS Connection Manager event forwarding
+function initializeOBSConnectionManager() {
+  const obsConnManager = getOBSConnectionManager();
+
+  // Forward OBS events to the appropriate competition room
+  obsConnManager.on('obsEvent', ({ compId, eventName, data }) => {
+    const room = `competition:${compId}`;
+    console.log(`[OBSConnManager] Forwarding ${eventName} to room ${room}`);
+
+    // Map OBS events to Socket.io events
+    switch (eventName) {
+      case 'CurrentProgramSceneChanged':
+        io.to(room).emit('sceneChanged', data.sceneName);
+        io.to(room).emit('obs:currentSceneChanged', { sceneName: data.sceneName });
+        break;
+      case 'SceneListChanged':
+        io.to(room).emit('obs:sceneListChanged', data);
+        break;
+      case 'InputVolumeChanged':
+        io.to(room).emit('obs:volumeChanged', {
+          inputName: data.inputName,
+          volumeDb: data.inputVolumeDb,
+          volumeMul: data.inputVolumeMul
+        });
+        break;
+      case 'InputMuteStateChanged':
+        io.to(room).emit('obs:muteChanged', {
+          inputName: data.inputName,
+          muted: data.inputMuted
+        });
+        break;
+      case 'StreamStateChanged':
+        io.to(room).emit('obs:streamStateChanged', {
+          active: data.outputActive,
+          state: data.outputState
+        });
+        break;
+      case 'RecordStateChanged':
+        io.to(room).emit('obs:recordStateChanged', {
+          active: data.outputActive,
+          state: data.outputState
+        });
+        break;
+      case 'StudioModeStateChanged':
+        io.to(room).emit('obs:studioModeChanged', {
+          studioModeEnabled: data.studioModeEnabled
+        });
+        break;
+      case 'CurrentPreviewSceneChanged':
+        io.to(room).emit('obs:previewSceneChanged', {
+          sceneName: data.sceneName
+        });
+        break;
+      default:
+        // Forward unknown events generically
+        io.to(room).emit(`obs:${eventName}`, data);
+    }
+  });
+
+  // Handle connection events
+  obsConnManager.on('connected', ({ compId, vmAddress }) => {
+    const room = `competition:${compId}`;
+    io.to(room).emit('obs:connected', { connected: true, vmAddress });
+  });
+
+  obsConnManager.on('disconnected', ({ compId }) => {
+    const room = `competition:${compId}`;
+    io.to(room).emit('obs:disconnected', { connected: false });
+  });
+
+  obsConnManager.on('connectionError', ({ compId, error }) => {
+    const room = `competition:${compId}`;
+    io.to(room).emit('obs:error', { error });
+  });
+
+  console.log('[Server] OBS Connection Manager initialized');
+}
+
 // Start server
 httpServer.listen(PORT, () => {
   console.log(`Show Controller Server running on port ${PORT}`);
@@ -2878,6 +3004,9 @@ httpServer.listen(PORT, () => {
   // Initialize auto-shutdown service (for coordinator mode)
   initializeAutoShutdown();
 
-  // Connect to OBS
+  // Initialize OBS Connection Manager for per-competition OBS connections
+  initializeOBSConnectionManager();
+
+  // Connect to OBS (for local/default OBS)
   connectToOBS();
 });
