@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** MCP Server Testing
-**Last Task:** MCP-29 - Test full Firebase CRUD workflow (dev only) ✅
-**Next Task:** MCP-30 - Test aws_list_security_group_rules
+**Last Task:** MCP-30 - Test aws_list_security_group_rules ✅
+**Next Task:** MCP-31 - Set up proper test framework structure
 **Blocker:** None
 
 ---
@@ -814,6 +814,36 @@ Tested the complete Firebase CRUD workflow using MCP tools.
 - GET after DELETE confirms exists: false
 
 **Verification:** MCP-29 PASSED - Complete CRUD workflow succeeds on dev Firebase
+
+### MCP-30: Test aws_list_security_group_rules ✅
+Tested the `aws_list_security_group_rules` MCP tool with no parameters.
+
+**Results:**
+
+| Field | Value | Expected | Status |
+|-------|-------|----------|--------|
+| securityGroupId | "sg-025f1ac53cccb756b" | present | ✓ |
+| securityGroupName | "gymnastics-vm-pool" | present | ✓ (bonus) |
+| inboundRules | array with 7 rules | array | ✓ |
+
+**Port Verification:**
+
+| Port | Found | Description |
+|------|-------|-------------|
+| 22 | ✓ | SSH access for admin |
+| 80 | ✓ | SSL certificate verification |
+| 443 | ✓ | API access |
+| 3001 | ✓ | Coordinator API |
+| 8080 | ✓ | Test server |
+| 3003 | ✓ | Show server API (additional) |
+| 4000 | ✓ | NoMachine (additional) |
+
+**Full Response Structure:**
+- Each rule contains: protocol, fromPort, toPort, sources[]
+- Each source contains: type, value, description
+- All expected ports (22, 80, 443, 3001, 8080) found
+
+**Verification:** MCP-30 PASSED - Security group rules are readable
 
 ---
 
