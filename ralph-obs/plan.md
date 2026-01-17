@@ -124,9 +124,9 @@ These test actual OBS functionality and may modify state.
     "description": "Scene list displays correctly",
     "action": "On OBS Manager, verify Scenes tab shows OBS scenes",
     "verification": "Scenes are listed with names and categories",
-    "status": "failed",
+    "status": "completed",
     "dependsOn": "TEST-01",
-    "failureReason": "Scenes tab shows 'No scenes found in OBS' even though Firebase has scene data. Root cause: Socket.io event name mismatch - server broadcasts 'obs:stateUpdated' but frontend listens for 'obs:stateUpdate'"
+    "result": "After FIX-02, scenes display correctly. Shows 'Scenes (1)' with scene named 'Scene' showing LIVE badge and source count. Event name mismatch fixed."
   },
   {
     "id": "TEST-03",
@@ -238,8 +238,9 @@ Created dynamically when tests fail.
   {
     "id": "FIX-02",
     "description": "Fix Socket.io event name mismatch - OBS state not received by frontend",
-    "action": "Change server/lib/obsStateSync.js line 872 from 'obs:stateUpdated' to 'obs:stateUpdate' to match frontend listener. Then redeploy coordinator.",
-    "status": "pending",
+    "action": "Fixed on frontend side: Changed OBSContext.jsx to listen for correct event names matching server emissions",
+    "status": "completed",
+    "result": "Fixed 4 event name mismatches in OBSContext.jsx: obs:stateUpdate→obs:stateUpdated, obs:streamingStateChanged→obs:streamStateChanged, obs:recordingStateChanged→obs:recordStateChanged, obs:transitionChanged→obs:currentTransitionChanged. Rebuilt and deployed frontend. Scenes now display correctly.",
     "blocksTests": ["TEST-02", "TEST-03", "TEST-04", "TEST-05", "TEST-06", "TEST-11", "TEST-12", "TEST-13"]
   }
 ]
