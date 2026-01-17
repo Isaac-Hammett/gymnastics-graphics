@@ -361,9 +361,6 @@ async function initializeOBSStateSync(competitionId) {
   });
 
   console.log('OBS State Sync initialized and ready');
-
-  // Setup OBS Scene CRUD API routes (OBS-06)
-  setupOBSRoutes(app, obs, obsStateSync);
 }
 
 // Initialize VM Pool Manager and wire up event broadcasts (P15-03)
@@ -2280,6 +2277,10 @@ outro,Thanks for Watching,video,Video Scene,0:15,false,,,/path/to/videos/outro.m
   res.setHeader('Content-Disposition', 'attachment; filename="show-template.csv"');
   res.send(template);
 });
+
+// Setup OBS Scene CRUD API routes (OBS-06)
+// Pass getter function for obsStateSync since it may be null until competition is activated
+setupOBSRoutes(app, obs, () => obsStateSync);
 
 // Serve React app for all other routes (Express 5 syntax)
 app.get('/{*path}', (req, res) => {

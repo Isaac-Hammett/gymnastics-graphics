@@ -19,18 +19,28 @@ import { OBSSceneManager } from '../lib/obsSceneManager.js';
  * Setup OBS routes
  * @param {Express.Application} app - Express app instance
  * @param {OBSWebSocket} obs - OBS WebSocket instance
- * @param {OBSStateSync} obsStateSync - OBS state sync instance
+ * @param {Function|OBSStateSync} obsStateSyncOrGetter - OBS state sync instance or getter function
  */
-export function setupOBSRoutes(app, obs, obsStateSync) {
-  // Instantiate the scene manager
-  const sceneManager = new OBSSceneManager(obs, obsStateSync);
+export function setupOBSRoutes(app, obs, obsStateSyncOrGetter) {
+  // Helper to get current obsStateSync (handles both direct instance and getter function)
+  const getStateSync = () => {
+    return typeof obsStateSyncOrGetter === 'function'
+      ? obsStateSyncOrGetter()
+      : obsStateSyncOrGetter;
+  };
 
   /**
    * GET /api/obs/scenes - List all scenes with items
    */
   app.get('/api/obs/scenes', async (req, res) => {
     try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
       console.log('[OBS Routes] GET /api/obs/scenes - Fetching all scenes');
+      const sceneManager = new OBSSceneManager(obs, obsStateSync);
       const scenes = sceneManager.getScenes();
       res.json({ scenes });
     } catch (error) {
@@ -44,9 +54,15 @@ export function setupOBSRoutes(app, obs, obsStateSync) {
    */
   app.get('/api/obs/scenes/:sceneName', async (req, res) => {
     try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
       const { sceneName } = req.params;
       console.log(`[OBS Routes] GET /api/obs/scenes/${sceneName} - Fetching scene details`);
 
+      const sceneManager = new OBSSceneManager(obs, obsStateSync);
       const scene = await sceneManager.getScene(sceneName);
 
       if (!scene) {
@@ -65,6 +81,11 @@ export function setupOBSRoutes(app, obs, obsStateSync) {
    */
   app.post('/api/obs/scenes', async (req, res) => {
     try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
       const { sceneName } = req.body;
 
       if (!sceneName) {
@@ -73,6 +94,7 @@ export function setupOBSRoutes(app, obs, obsStateSync) {
 
       console.log(`[OBS Routes] POST /api/obs/scenes - Creating scene: ${sceneName}`);
 
+      const sceneManager = new OBSSceneManager(obs, obsStateSync);
       const scene = await sceneManager.createScene(sceneName);
 
       res.status(201).json({
@@ -91,6 +113,11 @@ export function setupOBSRoutes(app, obs, obsStateSync) {
    */
   app.post('/api/obs/scenes/:sceneName/duplicate', async (req, res) => {
     try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
       const { sceneName } = req.params;
       const { newName } = req.body;
 
@@ -100,6 +127,7 @@ export function setupOBSRoutes(app, obs, obsStateSync) {
 
       console.log(`[OBS Routes] POST /api/obs/scenes/${sceneName}/duplicate - Duplicating to: ${newName}`);
 
+      const sceneManager = new OBSSceneManager(obs, obsStateSync);
       const result = await sceneManager.duplicateScene(sceneName, newName);
 
       res.status(201).json({
@@ -118,6 +146,11 @@ export function setupOBSRoutes(app, obs, obsStateSync) {
    */
   app.put('/api/obs/scenes/:sceneName', async (req, res) => {
     try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
       const { sceneName } = req.params;
       const { newName } = req.body;
 
@@ -127,6 +160,7 @@ export function setupOBSRoutes(app, obs, obsStateSync) {
 
       console.log(`[OBS Routes] PUT /api/obs/scenes/${sceneName} - Renaming to: ${newName}`);
 
+      const sceneManager = new OBSSceneManager(obs, obsStateSync);
       const result = await sceneManager.renameScene(sceneName, newName);
 
       res.json({
@@ -147,6 +181,11 @@ export function setupOBSRoutes(app, obs, obsStateSync) {
    */
   app.put('/api/obs/scenes/reorder', async (req, res) => {
     try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
       const { sceneOrder } = req.body;
 
       if (!sceneOrder || !Array.isArray(sceneOrder)) {
@@ -155,6 +194,7 @@ export function setupOBSRoutes(app, obs, obsStateSync) {
 
       console.log(`[OBS Routes] PUT /api/obs/scenes/reorder - Reordering ${sceneOrder.length} scenes`);
 
+      const sceneManager = new OBSSceneManager(obs, obsStateSync);
       const result = await sceneManager.reorderScenes(sceneOrder);
 
       res.json({
@@ -173,10 +213,16 @@ export function setupOBSRoutes(app, obs, obsStateSync) {
    */
   app.delete('/api/obs/scenes/:sceneName', async (req, res) => {
     try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
       const { sceneName } = req.params;
 
       console.log(`[OBS Routes] DELETE /api/obs/scenes/${sceneName} - Deleting scene`);
 
+      const sceneManager = new OBSSceneManager(obs, obsStateSync);
       const result = await sceneManager.deleteScene(sceneName);
 
       res.json({
@@ -189,7 +235,7 @@ export function setupOBSRoutes(app, obs, obsStateSync) {
     }
   });
 
-  console.log('[OBS Routes] Scene CRUD endpoints mounted');
+  console.log('[OBS Routes] Scene CRUD endpoints mounted at server startup');
 }
 
 export default setupOBSRoutes;
