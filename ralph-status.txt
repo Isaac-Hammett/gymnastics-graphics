@@ -44,3 +44,7 @@ Step 4: Verified children contains expected keys: YES (competitions, currentGrap
 Done: PASS
 MCP-27: firebase_export called successfully
 Done: PASS
+Starting: Test firebase_get with invalid project
+[Step 1] Calling firebase_get with project='invalid'
+[Step 2] Verifying error response
+Done: PASS

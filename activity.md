@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** MCP Server Testing
-**Last Task:** MCP-27 - Test firebase_export returns JSON data ✅
-**Next Task:** MCP-28 - Test Firebase error handling for invalid project
+**Last Task:** MCP-28 - Test Firebase error handling for invalid project ✅
+**Next Task:** MCP-29 - Test full Firebase CRUD workflow (dev only)
 **Blocker:** None
 
 ---
@@ -754,6 +754,43 @@ Tested the `firebase_export` MCP tool to verify it exports data with timestamps.
 ```
 
 **Verification:** MCP-27 PASSED - firebase_export returns timestamped JSON export with all required fields
+
+### MCP-28: Test Firebase error handling for invalid project ✅
+Tested the `firebase_get` MCP tool with an invalid project parameter.
+
+**Test Parameters:**
+- project: 'invalid'
+- path: '/'
+
+**Results:**
+
+| Field | Value | Expected | Status |
+|-------|-------|----------|--------|
+| Response type | Error object | Error indication | ✓ |
+| error | "Invalid project: invalid. Must be 'dev' or 'prod'." | Descriptive message | ✓ |
+| Mentions valid options | Yes ('dev' or 'prod') | Must mention valid options | ✓ |
+| tool | "firebase_get" | Context preserved | ✓ |
+| args | {project: "invalid", path: "/"} | Input preserved | ✓ |
+
+**Full Response:**
+```json
+{
+  "error": "Invalid project: invalid. Must be 'dev' or 'prod'.",
+  "tool": "firebase_get",
+  "args": {
+    "project": "invalid",
+    "path": "/"
+  }
+}
+```
+
+**Analysis:**
+- Tool properly rejected invalid project parameter
+- Error message is descriptive: includes invalid value AND valid options
+- Response includes context (tool name, arguments used)
+- Graceful failure handling confirmed
+
+**Verification:** MCP-28 PASSED - Invalid project returns descriptive error mentioning 'dev' and 'prod'
 
 ---
 
