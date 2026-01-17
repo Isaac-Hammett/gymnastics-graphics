@@ -561,7 +561,7 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
       "Preset layout buttons for quick positioning"
     ],
     "verification": "Source editor allows editing source properties",
-    "passes": false
+    "passes": true
   },
   {
     "id": "OBS-29",
@@ -748,9 +748,9 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
 | **OBS Phase 8: Templates** | 2 | 2 | Complete |
 | **OBS Phase 9: Talent Comms** | 2 | 2 | Complete |
 | **OBS Phase 10: Preview** | 2 | 2 | Complete |
-| **OBS Phase 11: UI** | 7 | 3 | In Progress |
+| **OBS Phase 11: UI** | 7 | 4 | In Progress |
 | **OBS Integration Tests** | 7 | 0 | Not Started |
-| **Total** | **38** | **27** | **71%** |
+| **Total** | **38** | **28** | **74%** |
 
 ---
 

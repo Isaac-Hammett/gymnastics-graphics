@@ -2,20 +2,62 @@
 
 ## Current Status
 **Phase:** OBS Integration Tool - In Progress
-**Last Task:** OBS-27 - Create Scene List and Editor components ✅
-**Next Task:** OBS-28 - Create Source Editor component
+**Last Task:** OBS-28 - Create Source Editor component ✅
+**Next Task:** OBS-29 - Create Audio Mixer component
 **Blocker:** None
 
 ### Summary
 OBS Integration Tool implementation phase in progress. This phase will add comprehensive OBS WebSocket control capabilities to the show controller.
 
-**Progress:** 27/38 tasks complete (71%)
+**Progress:** 28/38 tasks complete (74%)
 
 ---
 
 ## Activity Log
 
 ### 2026-01-17
+
+### OBS-28: Create Source Editor component ✅
+Created `/show-controller/src/components/obs/SourceEditor.jsx` - comprehensive source/input settings editor modal component.
+
+**SourceEditor.jsx (~600 lines):**
+- Modal interface with source name, input kind, and close button
+- Dynamic form rendering based on `inputKind` with 5 supported types:
+  - **ffmpeg_source**: URL/path, buffering, reconnect delay, local file, looping, restart on activate
+  - **browser_source**: URL, width, height, FPS, reroute audio, shutdown when hidden
+  - **image_source**: File path, unload when hidden
+  - **vlc_source**: Playlist items (textarea), loop, shuffle
+  - **color_source**: Color picker, width, height
+- Transform controls: position (X, Y), scale (X, Y), crop (left, right, top, bottom)
+- Layout preset buttons (10 presets): Fullscreen, Dual Left/Right, Quad TL/TR/BL/BR, Triple Main/TR/BR
+- Save/Cancel actions with loading state
+- Error handling for connection issues and API failures
+
+**OBSManager.jsx Updates:**
+- Imported SourceEditor component
+- Added state: `selectedSource`, `showSourceEditor`
+- Added handler functions: `handleEditSource`, `handleCloseSourceEditor`, `handleSourceUpdate`
+- Replaced "Sources" tab placeholder with functional SourceList component
+- Added SourceEditor modal rendering when source is selected
+
+**SourceList Component (inline in OBSManager.jsx):**
+- Groups inputs by type (browser_source, ffmpeg_source, etc.)
+- Human-readable labels for input kinds
+- Total source count display
+- Edit button per source opens SourceEditor modal
+- Empty state handling
+
+**Files Created/Modified:**
+- Created: `show-controller/src/components/obs/SourceEditor.jsx` (~600 lines)
+- Modified: `show-controller/src/pages/OBSManager.jsx` (~470 lines)
+
+**Verification:** PASSED
+- Method: `cd show-controller && npm run build` + deploy to test server
+- Result: Build succeeded (781 modules, 796.88 KB JS bundle)
+- Deployment: Frontend deployed to test server at http://44.193.31.120:8080
+- HTTP 200 OK, all assets present
+
+---
 
 ### OBS-27: Create Scene List and Editor components ✅
 Created `/show-controller/src/components/obs/SceneList.jsx` and `/show-controller/src/components/obs/SceneEditor.jsx` - comprehensive scene management UI components.

@@ -13,6 +13,7 @@ import {
 import { useOBS } from '../context/OBSContext';
 import SceneList from '../components/obs/SceneList';
 import SceneEditor from '../components/obs/SceneEditor';
+import SourceEditor from '../components/obs/SourceEditor';
 
 export default function OBSManager() {
   const {
@@ -29,6 +30,8 @@ export default function OBSManager() {
   const [activeTab, setActiveTab] = useState('scenes');
   const [selectedScene, setSelectedScene] = useState(null);
   const [showSceneEditor, setShowSceneEditor] = useState(false);
+  const [selectedSource, setSelectedSource] = useState(null);
+  const [showSourceEditor, setShowSourceEditor] = useState(false);
 
   // Extract streaming and recording states
   const isStreaming = obsState?.streaming?.active || obsState?.streaming || false;
@@ -63,6 +66,24 @@ export default function OBSManager() {
       default:
         console.warn('Unknown scene action:', action);
     }
+  };
+
+  // Handle source editing
+  const handleEditSource = (source) => {
+    setSelectedSource(source);
+    setShowSourceEditor(true);
+  };
+
+  const handleCloseSourceEditor = () => {
+    setShowSourceEditor(false);
+    setSelectedSource(null);
+  };
+
+  const handleSourceUpdate = () => {
+    setShowSourceEditor(false);
+    setSelectedSource(null);
+    // Refresh OBS state to get updated source info
+    refreshState();
   };
 
   return (
@@ -193,10 +214,10 @@ export default function OBSManager() {
             )
           )}
           {activeTab === 'sources' && (
-            <div className="text-center text-gray-400 py-12">
-              <h3 className="text-xl font-semibold text-white mb-2">Source Editor</h3>
-              <p>Source editor will be added in OBS-28</p>
-            </div>
+            <SourceList
+              inputs={obsState.inputs || []}
+              onEditSource={handleEditSource}
+            />
           )}
           {activeTab === 'audio' && (
             <div className="text-center text-gray-400 py-12">
@@ -229,6 +250,16 @@ export default function OBSManager() {
             </div>
           )}
         </div>
+
+        {/* Source Editor Modal */}
+        {showSourceEditor && selectedSource && (
+          <SourceEditor
+            source={selectedSource}
+            sceneName={selectedScene?.sceneName || ''}
+            onClose={handleCloseSourceEditor}
+            onUpdate={handleSourceUpdate}
+          />
+        )}
       </main>
     </div>
   );
@@ -350,6 +381,82 @@ function TabNavigation({ activeTab, onTabChange }) {
         >
           {tab.label}
         </button>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * SourceList - Display all OBS inputs grouped by type
+ */
+function SourceList({ inputs, onEditSource }) {
+  if (!inputs || inputs.length === 0) {
+    return (
+      <div className="text-center text-gray-400 py-12">
+        <h3 className="text-xl font-semibold text-white mb-2">No Sources</h3>
+        <p>No input sources found in OBS. Connect to OBS and add sources to your scenes.</p>
+      </div>
+    );
+  }
+
+  // Group inputs by kind
+  const groupedInputs = inputs.reduce((acc, input) => {
+    const kind = input.inputKind || 'unknown';
+    if (!acc[kind]) {
+      acc[kind] = [];
+    }
+    acc[kind].push(input);
+    return acc;
+  }, {});
+
+  // Human-readable names for input kinds
+  const kindNames = {
+    ffmpeg_source: 'SRT/Media Sources',
+    browser_source: 'Browser Sources',
+    image_source: 'Image Sources',
+    vlc_source: 'VLC Sources',
+    color_source: 'Color Sources',
+    text_gdiplus: 'Text Sources',
+    dshow_input: 'Video Capture Devices',
+    wasapi_input_capture: 'Audio Input Capture',
+    wasapi_output_capture: 'Audio Output Capture',
+    unknown: 'Other Sources'
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-white font-semibold text-lg">Input Sources</h3>
+        <div className="text-sm text-gray-400">
+          {inputs.length} source{inputs.length !== 1 ? 's' : ''} total
+        </div>
+      </div>
+
+      {Object.entries(groupedInputs).map(([kind, sources]) => (
+        <div key={kind} className="space-y-2">
+          <h4 className="text-gray-300 font-medium text-sm uppercase tracking-wider">
+            {kindNames[kind] || kind}
+          </h4>
+          <div className="space-y-2">
+            {sources.map((source) => (
+              <div
+                key={source.inputName}
+                className="bg-gray-700 rounded-lg p-4 flex items-center justify-between hover:bg-gray-600 transition-colors"
+              >
+                <div className="flex-1">
+                  <div className="text-white font-medium">{source.inputName}</div>
+                  <div className="text-gray-400 text-sm">{source.inputKind}</div>
+                </div>
+                <button
+                  onClick={() => onEditSource(source)}
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded transition-colors"
+                >
+                  Edit
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
       ))}
     </div>
   );
