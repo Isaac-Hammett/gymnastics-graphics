@@ -175,3 +175,22 @@ Created Ralph loop for VM Pool fix:
 **Remaining:** WORKFLOW-05, WORKFLOW-06 (homepage and competition assignment)
 
 ---
+
+### WORKFLOW-05: Navigate to homepage and view competitions - COMPLETED ✅
+**Action:** Navigated to https://commentarygraphic.com
+**Screenshot:** screenshots/WORKFLOW-05.png
+**Console:** No errors
+
+**Result:**
+- ✅ Homepage loads successfully
+- ✅ "Online" status indicator shows green in top-right corner
+- ✅ "+ Create Competition" button visible
+- ✅ Competition search box present
+- ✅ "No competitions scheduled for today" message displayed
+- ✅ "Past Competitions (8)" section available (expandable)
+- ✅ Management Tools and System Administration sections visible
+- ✅ VM Pool link available at `/_admin/vm-pool`
+
+**Next:** Run WORKFLOW-06 to test assigning VM to competition
+
+---

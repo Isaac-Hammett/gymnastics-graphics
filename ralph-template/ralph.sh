@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Ralph Wiggum Loop - VM Pool Fix (v2 - Parallel Research)
+# Ralph Wiggum Loop - Generic Template (v2 - Parallel Research)
 #
 # Architecture:
 #   PHASE 1 (research): Claude spawns up to 30 parallel subagents for read-only tasks
@@ -15,8 +15,6 @@ if [ -z "$1" ]; then
   echo ""
   echo "Example: ./ralph.sh 20"
   echo ""
-  echo "This will run up to 20 iterations to fix VM Pool Management."
-  echo ""
   echo "Phase 1 (research): Parallel subagents gather information"
   echo "Phase 2 (execute):  Sequential tasks for build/test/deploy"
   exit 1
@@ -29,7 +27,7 @@ cd "$(dirname "$0")"
 mkdir -p screenshots
 
 # Temp directory for stream processing
-RALPH_TMP="/tmp/claude/ralph-vmpool-$$"
+RALPH_TMP="/tmp/claude/ralph-$$"
 mkdir -p "$RALPH_TMP"
 
 # Cleanup on exit
@@ -51,8 +49,11 @@ get_phase() {
   grep -o '"currentPhase":\s*"[^"]*"' plan.md 2>/dev/null | grep -o '"[^"]*"$' | tr -d '"' || echo "unknown"
 }
 
+# Get project name from PRD.md
+PROJECT_NAME=$(head -1 PRD.md 2>/dev/null | sed 's/# //' | sed 's/ -.*//' || echo "Ralph Loop")
+
 echo -e "${CYAN}========================================"
-echo "VM Pool Fix - Ralph Loop v2"
+echo "$PROJECT_NAME - Ralph Loop v2"
 echo "Max iterations: $1"
 echo -e "========================================${NC}"
 echo ""

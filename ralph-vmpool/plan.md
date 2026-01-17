@@ -145,7 +145,8 @@ These modify state and must run one at a time.
     "action": "Navigate to https://commentarygraphic.com, take screenshot",
     "verification": "Screenshot shows competition list or create button",
     "expected": "Homepage loads with competition UI",
-    "status": "pending"
+    "status": "completed",
+    "result": "Homepage loads with Online status, + Create Competition button, search box, Past Competitions (8), and no console errors."
   },
   {
     "id": "WORKFLOW-06",
