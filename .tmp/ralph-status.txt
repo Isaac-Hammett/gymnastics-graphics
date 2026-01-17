@@ -1,0 +1,4 @@
+Starting: Test MCP-14 error handling
+[Test 1: exit 1]
+[Test 2: nonexistent command]
+Done: PASS
