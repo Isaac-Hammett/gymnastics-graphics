@@ -24,6 +24,7 @@ import { getAlertService, ALERT_LEVEL, ALERT_CATEGORY } from './lib/alertService
 import { getAutoShutdownService } from './lib/autoShutdown.js';
 import { getSelfStopService } from './lib/selfStop.js';
 import { getOBSStateSync } from './lib/obsStateSync.js';
+import { setupOBSRoutes } from './routes/obs.js';
 
 dotenv.config();
 
@@ -360,6 +361,9 @@ async function initializeOBSStateSync(competitionId) {
   });
 
   console.log('OBS State Sync initialized and ready');
+
+  // Setup OBS Scene CRUD API routes (OBS-06)
+  setupOBSRoutes(app, obs, obsStateSync);
 }
 
 // Initialize VM Pool Manager and wire up event broadcasts (P15-03)
