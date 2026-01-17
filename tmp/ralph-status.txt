@@ -6,3 +6,7 @@ Starting: Test MCP-13 aws_start_instance error handling
 Tool called with invalid instance ID: i-invalid123456789
 Error received: Invalid id
 Done: MCP-13 PASSED - Error handling works correctly
+Starting: Test SSH command latency (MCP-20)
+Call 1 completed
+Call 2 completed
+Done: MCP-20 SSH latency test - all 3 calls successful
