@@ -1,6 +1,7 @@
 import { Outlet, useParams, Navigate } from 'react-router-dom';
 import { CompetitionProvider, useCompetition, CompetitionErrorType } from '../context/CompetitionContext';
 import { ShowProvider } from '../context/ShowContext';
+import { OBSProvider } from '../context/OBSContext';
 import CompetitionError from './CompetitionError';
 import CompetitionHeader from './CompetitionHeader';
 
@@ -53,15 +54,17 @@ function CompetitionLayoutInner() {
     );
   }
 
-  // Ready to render - wrap with ShowProvider and render nested routes
+  // Ready to render - wrap with ShowProvider and OBSProvider and render nested routes
   return (
     <ShowProvider>
-      <div className="min-h-screen bg-gray-900 flex flex-col">
-        <CompetitionHeader />
-        <div className="flex-1">
-          <Outlet />
+      <OBSProvider>
+        <div className="min-h-screen bg-gray-900 flex flex-col">
+          <CompetitionHeader />
+          <div className="flex-1">
+            <Outlet />
+          </div>
         </div>
-      </div>
+      </OBSProvider>
     </ShowProvider>
   );
 }

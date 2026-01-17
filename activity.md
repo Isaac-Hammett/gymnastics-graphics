@@ -2,20 +2,61 @@
 
 ## Current Status
 **Phase:** OBS Integration Tool - In Progress
-**Last Task:** OBS-25 - Create OBS Context and hook ✅
-**Next Task:** OBS-26 - Create OBS Manager main page
+**Last Task:** OBS-26 - Create OBS Manager main page ✅
+**Next Task:** OBS-27 - Create Scene List and Editor components
 **Blocker:** None
 
 ### Summary
 OBS Integration Tool implementation phase in progress. This phase will add comprehensive OBS WebSocket control capabilities to the show controller.
 
-**Progress:** 25/38 tasks complete (66%)
+**Progress:** 26/38 tasks complete (68%)
 
 ---
 
 ## Activity Log
 
 ### 2026-01-17
+
+### OBS-26: Create OBS Manager main page ✅
+Created `/show-controller/src/pages/OBSManager.jsx` - main OBS Manager page with tabbed navigation and stream controls.
+
+**Page Components:**
+- `OBSManager` - Main page component with header, tabs, and content
+- `OBSConnectionStatus` - Shows connection state with error display
+- `OBSCurrentOutput` - Shows current scene name and stream/recording status badges
+- `TabNavigation` - Tab buttons for 7 sections
+
+**Tab Structure (7 tabs):**
+- Scenes (default active) - placeholder for OBS-27
+- Sources - placeholder for OBS-28
+- Audio - placeholder for OBS-29
+- Transitions - placeholder (coming soon)
+- Stream - placeholder for OBS-30
+- Assets - placeholder for OBS-30
+- Templates - placeholder for OBS-31
+
+**Stream Control Buttons:**
+- Start/Stop Stream (conditional based on streaming state)
+- Start/Stop Recording (conditional based on recording state)
+- Take Screenshot button
+- All buttons disabled when OBS not connected
+
+**Routing Integration:**
+- Added `OBSManager` import to App.jsx
+- Added route `/:compId/obs-manager` within CompetitionLayout block
+- Added `OBSProvider` wrapper in CompetitionLayout.jsx
+
+**Files Created/Modified:**
+- Created: `show-controller/src/pages/OBSManager.jsx` (316 lines)
+- Modified: `show-controller/src/App.jsx` (added route)
+- Modified: `show-controller/src/components/CompetitionLayout.jsx` (added OBSProvider wrapper)
+
+**Verification:** PASSED
+- Method: `cd show-controller && npm run build`
+- Result: Build succeeded (dist/assets/index-DsRjb37v.js 761.35 KB)
+- Frontend deployed to test server at http://44.193.31.120:8080
+
+---
 
 ### OBS-25: Create OBS Context and hook ✅
 Created `/show-controller/src/context/OBSContext.jsx` - React context and hook for OBS state management in the frontend.
