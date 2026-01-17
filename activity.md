@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** MCP Server Testing
-**Last Task:** MCP-19 - Test network connectivity from coordinator ✅
-**Next Task:** MCP-20 - Test SSH command latency
+**Last Task:** MCP-20 - Test SSH command latency ❌ (latency exceeded threshold)
+**Next Task:** MCP-21 - Test firebase_get reads existing data
 **Blocker:** None
 
 ---
@@ -449,6 +449,35 @@ Tested network connectivity from the coordinator VM using MCP tools.
 
 **Verification:** MCP-19 PASSED - Coordinator has internet and local service connectivity
 
+### MCP-20: Test SSH command latency - ❌ FAILED
+**Attempt:** 1 of 3
+
+Tested SSH command latency by calling `ssh_exec(target='coordinator', command='echo test')` 3 times.
+
+**Results:**
+
+| Call | Success | Exit Code | Output | Latency |
+|------|---------|-----------|--------|---------|
+| 1 | true | 0 | "test" | ~7000ms |
+| 2 | true | 0 | "test" | ~7000ms |
+| 3 | true | 0 | "test" | ~6000ms |
+
+**Summary:**
+- All 3 calls succeeded functionally (exit code 0, correct output)
+- Average latency: ~6,667ms (~6.7 seconds)
+- Required threshold: < 5 seconds
+
+**Error:** Average latency of ~6.7 seconds exceeds the 5-second threshold specified in test requirements
+
+**Root Cause:** Network latency and/or SSH connection overhead between local machine and coordinator VM at 44.193.31.120. The SSH connection establishment time dominates the total time (the echo command itself is nearly instantaneous).
+
+**Analysis:** This is likely expected behavior for SSH over internet - connection setup includes TCP handshake, SSH handshake, key exchange, and authentication. A 5-second threshold may be too aggressive for non-persistent SSH connections.
+
+**Next Steps:**
+1. Consider adjusting the threshold to 10 seconds (more realistic for transient SSH)
+2. Or, test with persistent/multiplexed SSH connections
+3. Or, accept this as informational (all commands worked correctly, just slower than hoped)
+
 ---
 
 ## Issues & Blockers
@@ -457,6 +486,7 @@ Tested network connectivity from the coordinator VM using MCP tools.
 |-------|------|--------|------------|
 | MCP server not connected | MCP-05 | RESOLVED | New session started with MCP server properly connected |
 | ssh_multi_exec not permitted | MCP-09, MCP-10 | RESOLVED | Tools unblocked, MCP-09 passed in new session |
+| SSH latency exceeds 5s threshold | MCP-20 | OPEN | Average ~6.7s latency; may need threshold adjustment |
 
 ---
 
