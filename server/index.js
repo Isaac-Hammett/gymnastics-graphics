@@ -2035,7 +2035,12 @@ app.get('/api/coordinator/status', async (req, res) => {
   const autoShutdownStatus = autoShutdown.isInitialized() ? autoShutdown.getStatus() : null;
 
   // Build response
+  // Include 'state' and 'appReady' fields for frontend compatibility
+  // (frontend expects EC2-style state from Netlify functions)
   const status = {
+    success: true,
+    state: 'running',  // EC2-style state for frontend
+    appReady: true,    // App is responding, so it's ready
     status: 'online',
     uptime: getUptime(),
     uptimeFormatted: formatUptime(getUptime()),
@@ -2044,6 +2049,7 @@ app.get('/api/coordinator/status', async (req, res) => {
     lastActivity: new Date(lastActivityTimestamp).toISOString(),
     idleSeconds: getIdleTime(),
     idleMinutes: Math.floor(getIdleTime() / 60),
+    publicIp: process.env.PUBLIC_IP || null,
     connections: {
       firebase: firebaseStatus,
       aws: awsStatus,
