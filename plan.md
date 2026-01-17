@@ -1590,7 +1590,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Verify AMIs are sorted by creationDate descending"
     ],
     "verification": "Response contains AMIs with valid structure, sorted by date",
-    "passes": false
+    "passes": true
   },
   {
     "id": "MCP-04",
