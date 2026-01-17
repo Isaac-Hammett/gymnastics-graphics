@@ -99,6 +99,7 @@ for ((i=1; i<=$1; i++)); do
   # - MCP Playwright: browser automation
   # - MCP Gymnastics: SSH, Firebase, AWS
   claude -p "$(cat PROMPT.md)" \
+    --mcp-config .mcp.json \
     --allowedTools "\
 Read,\
 Write,\
