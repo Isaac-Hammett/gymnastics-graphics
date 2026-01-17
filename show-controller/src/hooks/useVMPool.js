@@ -29,20 +29,20 @@ export function useVMPool() {
 
   // Subscribe to vmPool in Firebase
   useEffect(() => {
-    const vmPoolRef = ref(db, 'vmPool');
+    const vmsRef = ref(db, 'vmPool/vms');
     const configRef = ref(db, 'vmPool/config');
 
-    let vmPoolUnsub;
+    let vmsUnsub;
     let configUnsub;
 
-    // Subscribe to VM pool (all VMs)
-    vmPoolUnsub = onValue(vmPoolRef, (snapshot) => {
+    // Subscribe to VM pool (all VMs under vmPool/vms/)
+    vmsUnsub = onValue(vmsRef, (snapshot) => {
       const data = snapshot.val() || {};
 
-      // Convert object to array of VMs, excluding the config key
+      // Convert object to array of VMs
       const vmArray = [];
       for (const [key, value] of Object.entries(data)) {
-        if (key !== 'config' && value && typeof value === 'object') {
+        if (value && typeof value === 'object') {
           vmArray.push({
             vmId: key,
             ...value,
@@ -63,7 +63,7 @@ export function useVMPool() {
     });
 
     return () => {
-      if (vmPoolUnsub) vmPoolUnsub();
+      if (vmsUnsub) vmsUnsub();
       if (configUnsub) configUnsub();
     };
   }, []);
