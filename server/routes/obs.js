@@ -1,13 +1,14 @@
 /**
  * OBS Scene CRUD API Routes
  *
- * Provides RESTful endpoints for managing OBS scenes, sources, audio, transitions, and streaming:
+ * Provides RESTful endpoints for managing OBS scenes, sources, audio, transitions, streaming, and assets:
  * - Scene CRUD operations
  * - Input/Source CRUD operations
  * - Scene item management (add, remove, transform, enable, lock, reorder)
  * - Audio management (volume, mute, monitor, presets)
  * - Transition management (list, set, duration, settings)
  * - Stream configuration (settings, start, stop, status)
+ * - Asset management (list, upload, delete, download, manifest)
  *
  * @module routes/obs
  */
@@ -17,8 +18,10 @@ import { OBSSourceManager } from '../lib/obsSourceManager.js';
 import { OBSAudioManager } from '../lib/obsAudioManager.js';
 import { OBSTransitionManager } from '../lib/obsTransitionManager.js';
 import { OBSStreamManager } from '../lib/obsStreamManager.js';
+import { OBSAssetManager } from '../lib/obsAssetManager.js';
 import configLoader from '../lib/configLoader.js';
 import productionConfigService from '../lib/productionConfigService.js';
+import multer from 'multer';
 
 /**
  * Setup OBS routes
@@ -1297,7 +1300,267 @@ export function setupOBSRoutes(app, obs, obsStateSyncOrGetter) {
     }
   });
 
-  console.log('[OBS Routes] Scene CRUD, Source Management, Audio Management, Transition Management, and Stream Configuration endpoints mounted at server startup');
+  // ============================================================================
+  // Asset Management Endpoints
+  // ============================================================================
+
+  // Configure multer for file uploads
+  const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+      fileSize: 100 * 1024 * 1024 // 100MB max (largest supported asset type - stingers)
+    },
+    fileFilter: (req, file, cb) => {
+      const { type } = req.body;
+      const ext = file.originalname.split('.').pop().toLowerCase();
+
+      // File size limits and allowed extensions by type
+      const limits = {
+        music: { maxSize: 50 * 1024 * 1024, exts: ['mp3', 'wav', 'flac', 'm4a', 'ogg'] },
+        stingers: { maxSize: 100 * 1024 * 1024, exts: ['mp4', 'mov', 'webm'] },
+        backgrounds: { maxSize: 20 * 1024 * 1024, exts: ['jpg', 'jpeg', 'png', 'webp'] },
+        logos: { maxSize: 10 * 1024 * 1024, exts: ['png', 'svg', 'webp'] }
+      };
+
+      if (!type || !limits[type]) {
+        return cb(new Error('Invalid asset type'), false);
+      }
+
+      if (!limits[type].exts.includes(ext)) {
+        return cb(new Error(`Invalid file type for ${type}. Allowed: ${limits[type].exts.join(', ')}`), false);
+      }
+
+      cb(null, true);
+    }
+  });
+
+  /**
+   * GET /api/obs/assets - List all assets
+   */
+  app.get('/api/obs/assets', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      const compId = configLoader.getActiveCompetition();
+      if (!compId) {
+        return res.status(400).json({ error: 'No active competition. Activate a competition first.' });
+      }
+
+      console.log(`[OBS Routes] GET /api/obs/assets - Listing all assets for competition ${compId}`);
+
+      const assetManager = new OBSAssetManager(obs, obsStateSync, productionConfigService);
+      const assets = await assetManager.listAssets(compId);
+
+      res.json({ assets });
+    } catch (error) {
+      console.error('[OBS Routes] Error listing assets:', error.message);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * GET /api/obs/assets/:type - List assets by type
+   */
+  app.get('/api/obs/assets/:type', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      const compId = configLoader.getActiveCompetition();
+      if (!compId) {
+        return res.status(400).json({ error: 'No active competition. Activate a competition first.' });
+      }
+
+      const { type } = req.params;
+      console.log(`[OBS Routes] GET /api/obs/assets/${type} - Listing ${type} assets for competition ${compId}`);
+
+      const assetManager = new OBSAssetManager(obs, obsStateSync, productionConfigService);
+      const assets = await assetManager.listAssetsByType(compId, type);
+
+      res.json({ assets });
+    } catch (error) {
+      console.error(`[OBS Routes] Error listing assets for type ${req.params.type}:`, error.message);
+      if (error.message.includes('Invalid asset type')) {
+        return res.status(400).json({ error: error.message });
+      }
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * POST /api/obs/assets/upload - Upload asset file
+   * Multipart form data: file, type, metadata
+   */
+  app.post('/api/obs/assets/upload', upload.single('file'), async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      const compId = configLoader.getActiveCompetition();
+      if (!compId) {
+        return res.status(400).json({ error: 'No active competition. Activate a competition first.' });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+
+      const { type } = req.body;
+      if (!type) {
+        return res.status(400).json({ error: 'Asset type is required' });
+      }
+
+      const filename = req.file.originalname;
+
+      // Validate file size against type-specific limits
+      const limits = {
+        music: 50 * 1024 * 1024,
+        stingers: 100 * 1024 * 1024,
+        backgrounds: 20 * 1024 * 1024,
+        logos: 10 * 1024 * 1024
+      };
+
+      if (req.file.size > limits[type]) {
+        return res.status(400).json({
+          error: `File size exceeds limit for ${type} (max ${limits[type] / 1024 / 1024}MB)`
+        });
+      }
+
+      console.log(`[OBS Routes] POST /api/obs/assets/upload - Uploading ${filename} (${type}) for competition ${compId}`);
+
+      const assetManager = new OBSAssetManager(obs, obsStateSync, productionConfigService);
+
+      // Add to manifest
+      const metadata = {
+        size: req.file.size,
+        mimetype: req.file.mimetype,
+        uploadedBy: req.body.uploadedBy || 'system'
+      };
+
+      const result = await assetManager.uploadAsset(compId, type, filename, metadata);
+
+      res.status(201).json({
+        success: true,
+        asset: result.asset,
+        note: 'File stored in manifest. Use MCP ssh_upload_file to transfer file to VMs.'
+      });
+    } catch (error) {
+      console.error('[OBS Routes] Error uploading asset:', error.message);
+      if (error.message.includes('Invalid asset type') || error.message.includes('Invalid filename')) {
+        return res.status(400).json({ error: error.message });
+      }
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * DELETE /api/obs/assets/:type/:filename - Delete asset
+   */
+  app.delete('/api/obs/assets/:type/:filename', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      const compId = configLoader.getActiveCompetition();
+      if (!compId) {
+        return res.status(400).json({ error: 'No active competition. Activate a competition first.' });
+      }
+
+      const { type, filename } = req.params;
+
+      console.log(`[OBS Routes] DELETE /api/obs/assets/${type}/${filename} - Deleting asset for competition ${compId}`);
+
+      const assetManager = new OBSAssetManager(obs, obsStateSync, productionConfigService);
+      const result = await assetManager.deleteAsset(compId, type, filename);
+
+      res.json({
+        success: true,
+        deleted: result.asset,
+        note: 'Asset removed from manifest. Use MCP ssh_exec to delete file from VMs.'
+      });
+    } catch (error) {
+      console.error(`[OBS Routes] Error deleting asset ${req.params.filename}:`, error.message);
+      if (error.message.includes('Invalid asset type') || error.message.includes('Invalid filename')) {
+        return res.status(400).json({ error: error.message });
+      }
+      if (error.message.includes('not found')) {
+        return res.status(404).json({ error: error.message });
+      }
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * GET /api/obs/assets/:type/:filename/download - Get asset metadata
+   */
+  app.get('/api/obs/assets/:type/:filename/download', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      const compId = configLoader.getActiveCompetition();
+      if (!compId) {
+        return res.status(400).json({ error: 'No active competition. Activate a competition first.' });
+      }
+
+      const { type, filename } = req.params;
+
+      console.log(`[OBS Routes] GET /api/obs/assets/${type}/${filename}/download - Getting asset metadata for competition ${compId}`);
+
+      const assetManager = new OBSAssetManager(obs, obsStateSync, productionConfigService);
+      const result = await assetManager.downloadAsset(compId, type, filename);
+
+      res.json({
+        success: true,
+        asset: result.asset,
+        note: 'Use MCP ssh_download_file to retrieve file from VMs.'
+      });
+    } catch (error) {
+      console.error(`[OBS Routes] Error getting asset ${req.params.filename}:`, error.message);
+      if (error.message.includes('Invalid asset type') || error.message.includes('Invalid filename')) {
+        return res.status(400).json({ error: error.message });
+      }
+      if (error.message.includes('not found')) {
+        return res.status(404).json({ error: error.message });
+      }
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * POST /api/obs/assets/pack/install - Install asset pack (placeholder)
+   */
+  app.post('/api/obs/assets/pack/install', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      console.log('[OBS Routes] POST /api/obs/assets/pack/install - Asset pack installation not yet implemented');
+
+      res.status(501).json({
+        error: 'Not Implemented',
+        message: 'Asset pack installation requires infrastructure for bulk file transfers and validation. This endpoint is reserved for future implementation.'
+      });
+    } catch (error) {
+      console.error('[OBS Routes] Error in asset pack installation endpoint:', error.message);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  console.log('[OBS Routes] Scene CRUD, Source Management, Audio Management, Transition Management, Stream Configuration, and Asset Management endpoints mounted at server startup');
 }
 
 export default setupOBSRoutes;
