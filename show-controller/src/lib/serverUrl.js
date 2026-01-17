@@ -41,4 +41,7 @@ export function getServerUrl(socketUrl) {
  */
 export const SERVER_URL = getServerUrl();
 
+// Debug: Log resolved URL at module load (build timestamp: 2026-01-17T18:00)
+console.log('[serverUrl] Resolved SERVER_URL:', SERVER_URL, 'VITE_API_URL:', import.meta.env.VITE_API_URL);
+
 export default getServerUrl;

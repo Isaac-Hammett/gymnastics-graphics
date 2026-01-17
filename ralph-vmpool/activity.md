@@ -63,3 +63,30 @@ Created Ralph loop for VM Pool fix:
 **Next:** Run FIX-00 to add VITE_API_URL and rebuild/redeploy frontend
 
 ---
+
+### FIX-00: Add VITE_API_URL and rebuild/redeploy - COMPLETED ✅
+**Action:**
+1. Added `VITE_API_URL=https://api.commentarygraphic.com` to `show-controller/.env`
+2. Ran `npm run build` (initial build didn't pick up env var due to Vite caching)
+3. Added debug log to `serverUrl.js` to force rebuild with new hash
+4. Deployed to production server at 3.87.107.201
+
+**Screenshot:** screenshots/FIX-00-pass.png
+**Console:**
+- `[serverUrl] Resolved SERVER_URL: https://api.commentarygraphic.com`
+- `[VMPoolPage] Fetching pool status from: https://api.commentarygraphic.com/api/admin/vm-pool`
+- `[VMPoolPage] Response status: 200`
+- No errors!
+
+**Result:**
+- ✅ Page loads at `/_admin/vm-pool` without "Connection Error"
+- ✅ API calls go to `api.commentarygraphic.com` (not localhost:3003)
+- ✅ Pool Status displays correctly (0 VMs, "No VMs in Pool")
+- ✅ "Online" status indicator shows green
+
+**Tasks Skipped:** DIAG-02, DIAG-03, FIX-01 no longer needed - frontend now calls API directly
+**Tasks Completed:** VERIFY-01, VERIFY-02 verified during FIX-00
+
+**Next:** Run WORKFLOW-01 to test launching a new VM
+
+---
