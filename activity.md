@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** MCP Server Testing
-**Last Task:** MCP-05 - Test ssh_exec with sudo on coordinator ✅
-**Next Task:** MCP-07 - Test ssh_exec service status on coordinator
+**Last Task:** MCP-07 - Test ssh_exec service status on coordinator ✅
+**Next Task:** MCP-08 - Test ssh_exec by IP address (not shortcut)
 **Blocker:** None
 
 ---
@@ -132,6 +132,26 @@ Called `mcp__gymnastics__ssh_exec` MCP tool directly (not a test script):
 | success | true | true | ✓ |
 
 **Verification:** MCP-05 PASSED - Used actual MCP tool `mcp__gymnastics__ssh_exec` with sudo=true, stdout returned 'root'
+
+### MCP-07: Test ssh_exec service status on coordinator ✅
+Tested the `ssh_exec` MCP tool with service status commands.
+
+**Results:**
+
+| Command | Exit Code | stdout | Status |
+|---------|-----------|--------|--------|
+| `systemctl is-active pm2-ubuntu` (sudo) | 0 | `active` | ✓ |
+| `pm2 list --no-color` | 0 | Process table showing coordinator online | ✓ |
+
+**PM2 Process Details:**
+- name: coordinator
+- version: 1.0.0
+- pid: 4316
+- uptime: 11h
+- status: online
+- memory: 140.2mb
+
+**Verification:** MCP-07 PASSED - Service status commands execute successfully
 
 ---
 
