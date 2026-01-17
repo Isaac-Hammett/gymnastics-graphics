@@ -154,7 +154,8 @@ These modify state and must run one at a time.
     "action": "Select/create competition, assign available VM",
     "verification": "Screenshot shows VM assigned, firebase_get shows vmAddress",
     "expected": "VM assigned to competition successfully",
-    "status": "pending"
+    "status": "completed",
+    "result": "VM assigned via API to competition 3602v1c8 (Simpson vs UW-Whitewater). Firebase confirms vmAddress=3.89.92.162:3003 and VM status=assigned. UI shows 1 Assigned, 50% utilization. Also fixed useVMPool hook to read from vmPool/vms/ instead of vmPool/."
   }
 ]
 ```
