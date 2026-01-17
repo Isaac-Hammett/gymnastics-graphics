@@ -313,7 +313,7 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
       "Create server/__tests__/obsTransitionManager.test.js with tests"
     ],
     "verification": "cd server && node --test __tests__/obsTransitionManager.test.js (all tests pass)",
-    "passes": false
+    "passes": true
   },
   {
     "id": "OBS-14",
@@ -742,7 +742,7 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
 | **OBS Phase 2: Scene CRUD** | 2 | 2 | Complete |
 | **OBS Phase 3: Source Mgmt** | 3 | 3 | Complete |
 | **OBS Phase 4: Audio** | 3 | 3 | Complete |
-| **OBS Phase 5: Transitions** | 2 | 0 | Not Started |
+| **OBS Phase 5: Transitions** | 2 | 1 | In Progress |
 | **OBS Phase 6: Stream** | 2 | 0 | Not Started |
 | **OBS Phase 7: Assets** | 2 | 0 | Not Started |
 | **OBS Phase 8: Templates** | 2 | 0 | Not Started |
@@ -750,7 +750,7 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
 | **OBS Phase 10: Preview** | 2 | 0 | Not Started |
 | **OBS Phase 11: UI** | 7 | 0 | Not Started |
 | **OBS Integration Tests** | 7 | 0 | Not Started |
-| **Total** | **38** | **12** | **32%** |
+| **Total** | **38** | **13** | **34%** |
 
 ---
 

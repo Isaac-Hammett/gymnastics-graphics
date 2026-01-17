@@ -443,6 +443,48 @@ export class MockOBSWebSocket extends EventEmitter {
       return {};
     },
 
+    GetTransitionKind: function(params) {
+      const { transitionName } = params;
+      const transition = this._transitions.get(transitionName);
+      if (!transition) {
+        const error = new Error(`Transition not found: ${transitionName}`);
+        error.code = 600;
+        throw error;
+      }
+      return {
+        transitionKind: transition.transitionKind
+      };
+    },
+
+    GetCurrentSceneTransitionCursor: function() {
+      return {
+        transitionCursor: 0.0  // 0.0 to 1.0, 0 when not transitioning
+      };
+    },
+
+    SetCurrentSceneTransitionSettings: function(params) {
+      const { transitionName, transitionSettings, overlay } = params;
+      const transition = this._transitions.get(transitionName);
+      if (!transition) {
+        const error = new Error(`Transition not found: ${transitionName}`);
+        error.code = 600;
+        throw error;
+      }
+
+      // Store settings on the transition
+      if (overlay) {
+        transition.settings = { ...transition.settings, ...transitionSettings };
+      } else {
+        transition.settings = transitionSettings;
+      }
+
+      setImmediate(() => {
+        this.emit('CurrentSceneTransitionChanged', { transitionName });
+      });
+
+      return {};
+    },
+
     // Stream/Record methods
     GetStreamStatus: function() {
       return {
@@ -870,6 +912,17 @@ export class MockOBSWebSocket extends EventEmitter {
       volumeMul: Math.pow(10, volumeDb / 20),
       muted,
       monitorType
+    });
+  }
+
+  /**
+   * Add a transition
+   */
+  addTransition(transitionName, transitionKind, settings = {}) {
+    this._transitions.set(transitionName, {
+      transitionName,
+      transitionKind,
+      settings
     });
   }
 
