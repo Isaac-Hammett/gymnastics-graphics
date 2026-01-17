@@ -243,8 +243,8 @@ class OBSStateSync extends EventEmitter {
     this.state.connectionError = null;
     this.state.lastSync = new Date().toISOString();
 
-    // Trigger full state refresh (OBS-02 will implement)
-    // await this.refreshFullState();
+    // Trigger full state refresh
+    await this.refreshFullState();
 
     this.broadcast('obs:connected', { connected: true });
     this.emit('connected');
@@ -294,8 +294,8 @@ class OBSStateSync extends EventEmitter {
   async onSceneListChanged(data) {
     console.log('[OBSStateSync] Scene list changed');
 
-    // Trigger scene list refresh (OBS-02 will implement full fetch)
-    // await this.refreshScenes();
+    // Trigger scene list refresh
+    await this.refreshScenes();
 
     this.broadcast('obs:sceneListChanged', data);
     this.emit('sceneListChanged', data);
@@ -379,8 +379,8 @@ class OBSStateSync extends EventEmitter {
   async onInputCreated(data) {
     console.log(`[OBSStateSync] Input created: ${data.inputName} (${data.inputKind})`);
 
-    // Trigger input list refresh (OBS-02 will implement)
-    // await this.refreshInputs();
+    // Trigger input list refresh
+    await this.refreshInputs();
 
     this.broadcast('obs:inputCreated', data);
     this.emit('inputCreated', data);
@@ -720,33 +720,288 @@ class OBSStateSync extends EventEmitter {
   }
 
   /**
-   * Refresh full state from OBS (stub for OBS-02)
+   * Refresh full state from OBS
    * @returns {Promise<Object>} Full state object
    */
   async refreshFullState() {
-    // OBS-02 will implement full state fetching
-    console.log('[OBSStateSync] refreshFullState() stubbed (OBS-02 will implement)');
-    return this.state;
+    if (!this.obs || !this.state.connected) {
+      console.warn('[OBSStateSync] Cannot refresh state - not connected to OBS');
+      return this.state;
+    }
+
+    console.log('[OBSStateSync] Refreshing full state from OBS...');
+
+    try {
+      // Fetch all state in parallel
+      const [
+        scenes,
+        inputs,
+        transitions,
+        streamStatus,
+        recordStatus,
+        videoSettings,
+        studioMode
+      ] = await Promise.all([
+        this.fetchScenes(),
+        this.fetchInputs(),
+        this.fetchTransitions(),
+        this.obs.call('GetStreamStatus'),
+        this.obs.call('GetRecordStatus'),
+        this.obs.call('GetVideoSettings'),
+        this.obs.call('GetStudioModeEnabled')
+      ]);
+
+      // Update state with fetched data
+      this.state.scenes = scenes;
+      this.state.inputs = inputs;
+      this.state.audioSources = this.extractAudioSources(inputs);
+      this.state.transitions = transitions.transitions;
+      this.state.currentTransition = transitions.currentTransition;
+      this.state.currentTransitionDuration = transitions.currentTransitionDuration;
+
+      // Update current scene
+      const currentSceneResponse = await this.obs.call('GetCurrentProgramScene');
+      this.state.currentScene = currentSceneResponse.currentProgramSceneName;
+
+      // Update stream status
+      this.state.streaming = this.mapStreamStatus(streamStatus);
+
+      // Update record status
+      this.state.recording = this.mapRecordStatus(recordStatus);
+
+      // Update video settings
+      this.state.videoSettings = {
+        baseWidth: videoSettings.baseWidth,
+        baseHeight: videoSettings.baseHeight,
+        outputWidth: videoSettings.outputWidth,
+        outputHeight: videoSettings.outputHeight,
+        fpsNumerator: videoSettings.fpsNumerator,
+        fpsDenominator: videoSettings.fpsDenominator
+      };
+
+      // Update studio mode
+      this.state.studioModeEnabled = studioMode.studioModeEnabled;
+      if (studioMode.studioModeEnabled) {
+        const previewSceneResponse = await this.obs.call('GetCurrentPreviewScene');
+        this.state.previewScene = previewSceneResponse.currentPreviewSceneName;
+      } else {
+        this.state.previewScene = null;
+      }
+
+      // Update last sync timestamp
+      this.state.lastSync = new Date().toISOString();
+
+      console.log('[OBSStateSync] Full state refresh complete');
+
+      // Broadcast state update
+      this.broadcast('obs:stateUpdated', this.state);
+
+      return this.state;
+    } catch (error) {
+      console.error('[OBSStateSync] Failed to refresh full state:', error.message);
+      throw error;
+    }
   }
 
   /**
-   * Refresh scenes list from OBS (stub for OBS-02)
+   * Fetch scenes list with items from OBS
+   * @private
+   * @returns {Promise<Array>} Array of scene objects
+   */
+  async fetchScenes() {
+    const sceneListResponse = await this.obs.call('GetSceneList');
+    const scenes = [];
+
+    // Fetch scene items for each scene in parallel
+    const sceneItemPromises = sceneListResponse.scenes.map(async (scene) => {
+      const sceneItemsResponse = await this.obs.call('GetSceneItemList', {
+        sceneName: scene.sceneName
+      });
+
+      return {
+        sceneName: scene.sceneName,
+        sceneIndex: scene.sceneIndex,
+        items: sceneItemsResponse.sceneItems,
+        category: this.categorizeScene(scene.sceneName)
+      };
+    });
+
+    const scenesWithItems = await Promise.all(sceneItemPromises);
+    return scenesWithItems;
+  }
+
+  /**
+   * Fetch inputs list from OBS
+   * @private
+   * @returns {Promise<Array>} Array of input objects
+   */
+  async fetchInputs() {
+    const inputListResponse = await this.obs.call('GetInputList');
+    return inputListResponse.inputs;
+  }
+
+  /**
+   * Fetch transitions list from OBS
+   * @private
+   * @returns {Promise<Object>} Transitions object with current transition info
+   */
+  async fetchTransitions() {
+    const transitionListResponse = await this.obs.call('GetSceneTransitionList');
+    return {
+      transitions: transitionListResponse.transitions,
+      currentTransition: transitionListResponse.currentSceneTransitionName,
+      currentTransitionDuration: transitionListResponse.currentSceneTransitionDuration
+    };
+  }
+
+  /**
+   * Extract audio sources from inputs list
+   * @private
+   * @param {Array} inputs - Array of input objects
+   * @returns {Array} Array of audio source objects
+   */
+  extractAudioSources(inputs) {
+    // Audio-capable input kinds
+    const audioKinds = [
+      'wasapi_input_capture',
+      'wasapi_output_capture',
+      'coreaudio_input_capture',
+      'coreaudio_output_capture',
+      'pulse_input_capture',
+      'pulse_output_capture',
+      'alsa_input_capture',
+      'ffmpeg_source', // Can have audio
+      'browser_source' // Can have audio
+    ];
+
+    const audioSources = [];
+
+    for (const input of inputs) {
+      if (audioKinds.includes(input.inputKind)) {
+        audioSources.push({
+          inputName: input.inputName,
+          inputKind: input.inputKind,
+          volumeDb: 0, // Will be updated by volume events
+          volumeMul: 1,
+          muted: false
+        });
+      }
+    }
+
+    return audioSources;
+  }
+
+  /**
+   * Map OBS stream status response to state format
+   * @private
+   * @param {Object} response - OBS GetStreamStatus response
+   * @returns {Object} Stream status object
+   */
+  mapStreamStatus(response) {
+    return {
+      active: response.outputActive,
+      timecode: response.outputActive ? response.outputTimecode : null,
+      duration: response.outputActive ? response.outputDuration : null
+    };
+  }
+
+  /**
+   * Map OBS record status response to state format
+   * @private
+   * @param {Object} response - OBS GetRecordStatus response
+   * @returns {Object} Record status object
+   */
+  mapRecordStatus(response) {
+    return {
+      active: response.outputActive,
+      paused: response.outputPaused || false,
+      timecode: response.outputActive ? response.outputTimecode : null,
+      duration: response.outputActive ? response.outputDuration : null
+    };
+  }
+
+  /**
+   * Refresh scenes list from OBS
    * @returns {Promise<Array>} Array of scene objects
    */
   async refreshScenes() {
-    // OBS-02 will implement scene list fetching
-    console.log('[OBSStateSync] refreshScenes() stubbed (OBS-02 will implement)');
-    return this.state.scenes;
+    if (!this.obs || !this.state.connected) {
+      console.warn('[OBSStateSync] Cannot refresh scenes - not connected to OBS');
+      return this.state.scenes;
+    }
+
+    console.log('[OBSStateSync] Refreshing scenes...');
+
+    try {
+      this.state.scenes = await this.fetchScenes();
+      this.state.lastSync = new Date().toISOString();
+      console.log(`[OBSStateSync] Scenes refreshed: ${this.state.scenes.length} scenes`);
+      return this.state.scenes;
+    } catch (error) {
+      console.error('[OBSStateSync] Failed to refresh scenes:', error.message);
+      throw error;
+    }
   }
 
   /**
-   * Refresh inputs list from OBS (stub for OBS-02)
+   * Refresh inputs list from OBS
    * @returns {Promise<Array>} Array of input objects
    */
   async refreshInputs() {
-    // OBS-02 will implement input list fetching
-    console.log('[OBSStateSync] refreshInputs() stubbed (OBS-02 will implement)');
-    return this.state.inputs;
+    if (!this.obs || !this.state.connected) {
+      console.warn('[OBSStateSync] Cannot refresh inputs - not connected to OBS');
+      return this.state.inputs;
+    }
+
+    console.log('[OBSStateSync] Refreshing inputs...');
+
+    try {
+      this.state.inputs = await this.fetchInputs();
+      this.state.audioSources = this.extractAudioSources(this.state.inputs);
+      this.state.lastSync = new Date().toISOString();
+      console.log(`[OBSStateSync] Inputs refreshed: ${this.state.inputs.length} inputs`);
+      return this.state.inputs;
+    } catch (error) {
+      console.error('[OBSStateSync] Failed to refresh inputs:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Start periodic state synchronization
+   * @param {number} intervalMs - Sync interval in milliseconds (default: 30000)
+   */
+  startPeriodicSync(intervalMs = 30000) {
+    if (this._syncInterval) {
+      console.warn('[OBSStateSync] Periodic sync already running');
+      return;
+    }
+
+    console.log(`[OBSStateSync] Starting periodic sync (interval: ${intervalMs}ms)`);
+
+    this._syncInterval = setInterval(async () => {
+      if (this.state.connected) {
+        try {
+          await this.refreshFullState();
+        } catch (error) {
+          console.error('[OBSStateSync] Periodic sync failed:', error.message);
+        }
+      }
+    }, intervalMs);
+  }
+
+  /**
+   * Stop periodic state synchronization
+   */
+  stopPeriodicSync() {
+    if (!this._syncInterval) {
+      console.warn('[OBSStateSync] No periodic sync running');
+      return;
+    }
+
+    console.log('[OBSStateSync] Stopping periodic sync');
+    clearInterval(this._syncInterval);
+    this._syncInterval = null;
   }
 
   // ============================================================================
@@ -766,6 +1021,9 @@ class OBSStateSync extends EventEmitter {
    */
   async shutdown() {
     console.log('[OBSStateSync] Shutting down...');
+
+    // Stop periodic sync
+    this.stopPeriodicSync();
 
     // Save final state to Firebase
     await this._saveState();

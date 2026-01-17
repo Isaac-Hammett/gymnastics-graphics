@@ -621,6 +621,383 @@ describe('OBS State Sync Module', async () => {
       assert.notStrictEqual(state2.currentScene, 'Modified');
     });
   });
+
+  describe('OBS-02: State Refresh and Caching', () => {
+    let stateSync, mockObs, mockIo;
+
+    beforeEach(() => {
+      mockObs = new MockOBSWebSocket();
+      mockIo = createMockSocketIO();
+      stateSync = new OBSStateSync(mockObs, mockIo, null);
+      stateSync.registerEventHandlers();
+    });
+
+    describe('refreshFullState()', () => {
+      it('should return state without refreshing if not connected', async () => {
+        stateSync.state.connected = false;
+        const result = await stateSync.refreshFullState();
+
+        assert.strictEqual(result, stateSync.state);
+        assert.strictEqual(mockObs.getCallCount('GetSceneList'), 0);
+      });
+
+      it('should fetch all OBS state when connected', async () => {
+        // Connect first
+        await mockObs.connect();
+        mockObs.emit('Identified', {});
+        await new Promise(resolve => setTimeout(resolve, 10));
+
+        // Clear history after connection
+        mockObs.clearHistory();
+        mockIo.clearEvents();
+
+        // Refresh state
+        const result = await stateSync.refreshFullState();
+
+        // Verify all OBS calls were made
+        assert.ok(mockObs.getCallCount('GetSceneList') > 0, 'Should call GetSceneList');
+        assert.ok(mockObs.getCallCount('GetInputList') > 0, 'Should call GetInputList');
+        assert.ok(mockObs.getCallCount('GetSceneTransitionList') > 0, 'Should call GetSceneTransitionList');
+        assert.ok(mockObs.getCallCount('GetStreamStatus') > 0, 'Should call GetStreamStatus');
+        assert.ok(mockObs.getCallCount('GetRecordStatus') > 0, 'Should call GetRecordStatus');
+        assert.ok(mockObs.getCallCount('GetVideoSettings') > 0, 'Should call GetVideoSettings');
+        assert.ok(mockObs.getCallCount('GetStudioModeEnabled') > 0, 'Should call GetStudioModeEnabled');
+      });
+
+      it('should update state with fetched data', async () => {
+        await mockObs.connect();
+        mockObs.emit('Identified', {});
+        await new Promise(resolve => setTimeout(resolve, 10));
+
+        await stateSync.refreshFullState();
+
+        const state = stateSync.getState();
+
+        // Verify state was updated
+        assert.ok(Array.isArray(state.scenes), 'scenes should be an array');
+        assert.ok(state.scenes.length > 0, 'scenes should have data');
+        assert.ok(Array.isArray(state.inputs), 'inputs should be an array');
+        assert.ok(Array.isArray(state.transitions), 'transitions should be an array');
+        assert.ok(state.lastSync, 'lastSync should be set');
+        assert.ok(state.videoSettings.baseWidth, 'videoSettings should be populated');
+      });
+
+      it('should broadcast obs:stateUpdated after refresh', async () => {
+        await mockObs.connect();
+        mockObs.emit('Identified', {});
+        await new Promise(resolve => setTimeout(resolve, 10));
+
+        mockIo.clearEvents();
+        await stateSync.refreshFullState();
+
+        assert.ok(mockIo.wasEventEmitted('obs:stateUpdated'), 'Should broadcast obs:stateUpdated');
+      });
+
+      it('should handle errors gracefully', async () => {
+        await mockObs.connect();
+        mockObs.emit('Identified', {});
+        await new Promise(resolve => setTimeout(resolve, 10));
+
+        // Inject error on GetSceneList
+        mockObs.injectErrorOnMethod('GetSceneList', new Error('OBS error'));
+
+        await assert.rejects(
+          async () => await stateSync.refreshFullState(),
+          /OBS error/,
+          'Should throw error on OBS failure'
+        );
+
+        mockObs.clearErrorOnMethod('GetSceneList');
+      });
+    });
+
+    describe('fetchScenes()', () => {
+      it('should fetch scenes with items and categories', async () => {
+        await mockObs.connect();
+        mockObs.emit('Identified', {});
+        await new Promise(resolve => setTimeout(resolve, 10));
+
+        const scenes = await stateSync.fetchScenes();
+
+        assert.ok(Array.isArray(scenes), 'Should return array');
+        assert.ok(scenes.length > 0, 'Should have scenes');
+
+        // Check scene structure
+        const scene = scenes[0];
+        assert.ok(scene.sceneName, 'Scene should have name');
+        assert.ok('sceneIndex' in scene, 'Scene should have index');
+        assert.ok(Array.isArray(scene.items), 'Scene should have items array');
+        assert.ok(scene.category, 'Scene should have category');
+      });
+
+      it('should categorize scenes correctly', async () => {
+        // Add test scenes
+        mockObs.addScene('Single - Camera A');
+        mockObs.addScene('Dual - Cam1/Cam2');
+        mockObs.addScene('Starting Soon');
+        mockObs.addScene('Graphics Fullscreen');
+        mockObs.addScene('Custom Scene');
+
+        await mockObs.connect();
+        mockObs.emit('Identified', {});
+        await new Promise(resolve => setTimeout(resolve, 10));
+
+        const scenes = await stateSync.fetchScenes();
+
+        const singleScene = scenes.find(s => s.sceneName === 'Single - Camera A');
+        const dualScene = scenes.find(s => s.sceneName === 'Dual - Cam1/Cam2');
+        const staticScene = scenes.find(s => s.sceneName === 'Starting Soon');
+        const graphicsScene = scenes.find(s => s.sceneName === 'Graphics Fullscreen');
+        const customScene = scenes.find(s => s.sceneName === 'Custom Scene');
+
+        assert.strictEqual(singleScene?.category, 'generated-single');
+        assert.strictEqual(dualScene?.category, 'generated-multi');
+        assert.strictEqual(staticScene?.category, 'static');
+        assert.strictEqual(graphicsScene?.category, 'graphics');
+        assert.strictEqual(customScene?.category, 'manual');
+      });
+    });
+
+    describe('fetchInputs()', () => {
+      it('should fetch inputs from OBS', async () => {
+        await mockObs.connect();
+        mockObs.emit('Identified', {});
+        await new Promise(resolve => setTimeout(resolve, 10));
+
+        const inputs = await stateSync.fetchInputs();
+
+        assert.ok(Array.isArray(inputs), 'Should return array');
+        assert.ok(inputs.length > 0, 'Should have inputs');
+      });
+    });
+
+    describe('fetchTransitions()', () => {
+      it('should fetch transitions with current transition info', async () => {
+        await mockObs.connect();
+        mockObs.emit('Identified', {});
+        await new Promise(resolve => setTimeout(resolve, 10));
+
+        const result = await stateSync.fetchTransitions();
+
+        assert.ok(Array.isArray(result.transitions), 'Should have transitions array');
+        assert.ok(result.currentTransition, 'Should have current transition');
+        assert.ok(typeof result.currentTransitionDuration === 'number', 'Should have duration');
+      });
+    });
+
+    describe('extractAudioSources()', () => {
+      it('should filter audio-capable inputs', () => {
+        const inputs = [
+          { inputName: 'Mic', inputKind: 'wasapi_input_capture' },
+          { inputName: 'Desktop Audio', inputKind: 'wasapi_output_capture' },
+          { inputName: 'Camera', inputKind: 'ffmpeg_source' },
+          { inputName: 'Browser', inputKind: 'browser_source' },
+          { inputName: 'Image', inputKind: 'image_source' }, // Not audio
+          { inputName: 'Color', inputKind: 'color_source' } // Not audio
+        ];
+
+        const audioSources = stateSync.extractAudioSources(inputs);
+
+        assert.strictEqual(audioSources.length, 4, 'Should extract 4 audio sources');
+        assert.ok(audioSources.find(a => a.inputName === 'Mic'), 'Should include Mic');
+        assert.ok(audioSources.find(a => a.inputName === 'Desktop Audio'), 'Should include Desktop Audio');
+        assert.ok(audioSources.find(a => a.inputName === 'Camera'), 'Should include Camera (ffmpeg)');
+        assert.ok(audioSources.find(a => a.inputName === 'Browser'), 'Should include Browser');
+        assert.ok(!audioSources.find(a => a.inputName === 'Image'), 'Should not include Image');
+        assert.ok(!audioSources.find(a => a.inputName === 'Color'), 'Should not include Color');
+      });
+
+      it('should include default volume and mute values', () => {
+        const inputs = [
+          { inputName: 'Mic', inputKind: 'wasapi_input_capture' }
+        ];
+
+        const audioSources = stateSync.extractAudioSources(inputs);
+
+        assert.strictEqual(audioSources[0].volumeDb, 0);
+        assert.strictEqual(audioSources[0].volumeMul, 1);
+        assert.strictEqual(audioSources[0].muted, false);
+      });
+    });
+
+    describe('mapStreamStatus()', () => {
+      it('should map active stream status', () => {
+        const response = {
+          outputActive: true,
+          outputTimecode: '00:05:30.000',
+          outputDuration: 330000
+        };
+
+        const result = stateSync.mapStreamStatus(response);
+
+        assert.strictEqual(result.active, true);
+        assert.strictEqual(result.timecode, '00:05:30.000');
+        assert.strictEqual(result.duration, 330000);
+      });
+
+      it('should map inactive stream status', () => {
+        const response = {
+          outputActive: false,
+          outputTimecode: '00:00:00.000',
+          outputDuration: 0
+        };
+
+        const result = stateSync.mapStreamStatus(response);
+
+        assert.strictEqual(result.active, false);
+        assert.strictEqual(result.timecode, null);
+        assert.strictEqual(result.duration, null);
+      });
+    });
+
+    describe('mapRecordStatus()', () => {
+      it('should map active recording status', () => {
+        const response = {
+          outputActive: true,
+          outputPaused: false,
+          outputTimecode: '00:10:00.000',
+          outputDuration: 600000
+        };
+
+        const result = stateSync.mapRecordStatus(response);
+
+        assert.strictEqual(result.active, true);
+        assert.strictEqual(result.paused, false);
+        assert.strictEqual(result.timecode, '00:10:00.000');
+        assert.strictEqual(result.duration, 600000);
+      });
+
+      it('should map inactive recording status', () => {
+        const response = {
+          outputActive: false,
+          outputTimecode: '00:00:00.000',
+          outputDuration: 0
+        };
+
+        const result = stateSync.mapRecordStatus(response);
+
+        assert.strictEqual(result.active, false);
+        assert.strictEqual(result.timecode, null);
+        assert.strictEqual(result.duration, null);
+      });
+    });
+
+    describe('refreshScenes()', () => {
+      it('should update state scenes', async () => {
+        await mockObs.connect();
+        mockObs.emit('Identified', {});
+        await new Promise(resolve => setTimeout(resolve, 10));
+
+        const result = await stateSync.refreshScenes();
+
+        assert.ok(Array.isArray(result), 'Should return array');
+        assert.strictEqual(result, stateSync.state.scenes, 'Should update state');
+        assert.ok(stateSync.state.lastSync, 'Should update lastSync');
+      });
+
+      it('should return current state if not connected', async () => {
+        stateSync.state.connected = false;
+        const result = await stateSync.refreshScenes();
+
+        assert.strictEqual(result, stateSync.state.scenes);
+        assert.strictEqual(mockObs.getCallCount('GetSceneList'), 0);
+      });
+    });
+
+    describe('refreshInputs()', () => {
+      it('should update state inputs and audio sources', async () => {
+        await mockObs.connect();
+        mockObs.emit('Identified', {});
+        await new Promise(resolve => setTimeout(resolve, 10));
+
+        const result = await stateSync.refreshInputs();
+
+        assert.ok(Array.isArray(result), 'Should return array');
+        assert.strictEqual(result, stateSync.state.inputs, 'Should update state');
+        assert.ok(Array.isArray(stateSync.state.audioSources), 'Should update audioSources');
+        assert.ok(stateSync.state.lastSync, 'Should update lastSync');
+      });
+
+      it('should return current state if not connected', async () => {
+        stateSync.state.connected = false;
+        const result = await stateSync.refreshInputs();
+
+        assert.strictEqual(result, stateSync.state.inputs);
+        assert.strictEqual(mockObs.getCallCount('GetInputList'), 0);
+      });
+    });
+
+    describe('Periodic Sync', () => {
+      it('should start periodic sync', () => {
+        stateSync.startPeriodicSync(1000);
+        assert.ok(stateSync._syncInterval, 'Should set sync interval');
+      });
+
+      it('should not start if already running', () => {
+        stateSync.startPeriodicSync(1000);
+        const firstInterval = stateSync._syncInterval;
+
+        stateSync.startPeriodicSync(1000);
+        assert.strictEqual(stateSync._syncInterval, firstInterval, 'Should keep same interval');
+
+        stateSync.stopPeriodicSync();
+      });
+
+      it('should stop periodic sync', () => {
+        stateSync.startPeriodicSync(1000);
+        stateSync.stopPeriodicSync();
+
+        assert.strictEqual(stateSync._syncInterval, null, 'Should clear interval');
+      });
+
+      it('should call refreshFullState periodically when connected', async () => {
+        await mockObs.connect();
+        mockObs.emit('Identified', {});
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        mockObs.clearHistory();
+
+        stateSync.startPeriodicSync(100);
+
+        // Wait for at least one sync cycle
+        await new Promise(resolve => setTimeout(resolve, 150));
+
+        stateSync.stopPeriodicSync();
+
+        // Should have called OBS methods during periodic sync
+        assert.ok(mockObs.getCallCount('GetSceneList') > 0, 'Should sync periodically');
+      });
+
+      it('should stop periodic sync on shutdown', async () => {
+        stateSync.startPeriodicSync(1000);
+        assert.ok(stateSync._syncInterval, 'Sync should be running');
+
+        await stateSync.shutdown();
+
+        assert.strictEqual(stateSync._syncInterval, null, 'Should stop sync on shutdown');
+      });
+    });
+
+    describe('Integration: onConnected', () => {
+      it('should trigger full state refresh on connection', async () => {
+        mockObs.clearHistory();
+
+        await mockObs.connect();
+        mockObs.emit('Identified', {});
+
+        // Wait for connection and refresh
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        // Verify state refresh was triggered
+        assert.ok(mockObs.getCallCount('GetSceneList') > 0, 'Should fetch scenes');
+        assert.ok(mockObs.getCallCount('GetInputList') > 0, 'Should fetch inputs');
+
+        const state = stateSync.getState();
+        assert.ok(state.connected, 'Should be connected');
+        assert.ok(state.lastSync, 'Should have lastSync timestamp');
+      });
+    });
+  });
 });
 
 // Run tests and report

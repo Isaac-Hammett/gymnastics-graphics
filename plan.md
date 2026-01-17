@@ -37,26 +37,39 @@ cd server && npm run test:lib
 ```
 
 ### UI/Integration Tests (for frontend tasks)
+Use MCP Playwright tools to test on the remote test server:
+
 ```bash
-# Take screenshot of a page
-node ralph-wigg/test-helper.js screenshot http://localhost:5173 <name>
+# Navigate to test page
+browser_navigate(url='http://44.193.31.120:8080/ROUTE')
 
-# Check if URL loads without errors
-node ralph-wigg/test-helper.js check http://localhost:3001/api/status
+# Get accessibility snapshot (for element refs)
+browser_snapshot()
 
-# Get console logs from page
-node ralph-wigg/test-helper.js console http://localhost:5173
+# Take screenshot
+browser_take_screenshot(filename='screenshots/TASK-ID.png')
 
-# Check all server health endpoints
-node ralph-wigg/test-helper.js health
+# Check for console errors
+browser_console_messages()
 ```
+
+### API Tests (run ON the coordinator via SSH)
+```bash
+# Check coordinator API status
+ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/status')
+
+# Check specific endpoint
+ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes')
+```
+
+**Note:** Show Server API (port 3003) runs on individual show VMs, not the coordinator.
 
 ### Test Infrastructure
 - **Mock OBS WebSocket:** `server/__tests__/helpers/mockOBS.js` - Use for testing OBS interactions
 - **Test Files:** `server/__tests__/*.test.js` - Follow this pattern for new test files
 - **Test Framework:** Node.js built-in `node:test` module with `describe/it` pattern
-
-Screenshots saved to: `ralph-wigg/screenshots/`
+- **Test Server:** http://44.193.31.120:8080 (use `browser_navigate`)
+- **Screenshots:** Save to `screenshots/` directory locally
 
 ---
 
@@ -101,7 +114,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Add tests to server/__tests__/obsStateSync.test.js for refresh methods"
     ],
     "verification": "cd server && npm run test:obs (new State Refresh tests must pass)",
-    "passes": false
+    "passes": true
   },
   {
     "id": "OBS-03",
@@ -725,7 +738,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 
 | Phase | Tasks | Done | Status |
 |-------|-------|------|--------|
-| **OBS Phase 1: State Sync** | 4 | 1 | In Progress |
+| **OBS Phase 1: State Sync** | 4 | 2 | In Progress |
 | **OBS Phase 2: Scene CRUD** | 2 | 0 | Not Started |
 | **OBS Phase 3: Source Mgmt** | 3 | 0 | Not Started |
 | **OBS Phase 4: Audio** | 3 | 0 | Not Started |
@@ -737,7 +750,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
 | **OBS Phase 10: Preview** | 2 | 0 | Not Started |
 | **OBS Phase 11: UI** | 7 | 0 | Not Started |
 | **OBS Integration Tests** | 7 | 0 | Not Started |
-| **Total** | **38** | **1** | **3%** |
+| **Total** | **38** | **2** | **5%** |
 
 ---
 
