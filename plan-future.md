@@ -1,0 +1,677 @@
+# Show Control System - Future Tasks
+
+## Overview
+This file contains future implementation tasks that are not currently being worked on.
+When ready to implement these features, move tasks to `plan.md`.
+
+**Reference:**
+- `docs/PRD-OBSIntegrationTool-2026-01-16.md` (OBS Integration Tool)
+
+---
+
+## Task List
+
+```json
+[
+  {
+    "id": "OBS-01",
+    "category": "obs-phase1-state-sync",
+    "description": "Create OBS State Sync service module",
+    "steps": [
+      "Create server/lib/obsStateSync.js",
+      "Implement OBSStateSync class extending EventEmitter",
+      "Define getInitialState() returning full state structure",
+      "Implement initialize(compId) to load cached state from Firebase",
+      "Implement registerEventHandlers() for all OBS WebSocket events",
+      "Handle scene events: SceneListChanged, CurrentProgramSceneChanged, etc.",
+      "Handle input events: InputCreated, InputRemoved, InputSettingsChanged, etc.",
+      "Handle audio events: InputVolumeChanged, InputMuteStateChanged, etc.",
+      "Handle transition events: SceneTransitionStarted, CurrentSceneTransitionChanged, etc.",
+      "Handle stream/recording events: StreamStateChanged, RecordStateChanged"
+    ],
+    "verification": "node -e \"require('./server/lib/obsStateSync.js')\" exits 0",
+    "passes": false
+  },
+  {
+    "id": "OBS-02",
+    "category": "obs-phase1-state-sync",
+    "description": "Implement OBS state refresh and caching",
+    "steps": [
+      "Implement refreshFullState() to fetch all OBS state via Promise.all",
+      "Implement fetchScenes() with GetSceneList and GetSceneItemList per scene",
+      "Implement fetchInputs() with GetInputList and GetInputSettings per input",
+      "Implement fetchTransitions() with GetSceneTransitionList",
+      "Implement categorizeScene(sceneName) returning category string",
+      "Implement extractAudioSources(inputs) to filter audio-capable inputs",
+      "Implement mapStreamStatus() and mapRecordStatus() helpers",
+      "Implement startPeriodicSync() for regular state updates"
+    ],
+    "verification": "OBS state refresh fetches complete state from OBS",
+    "passes": false
+  },
+  {
+    "id": "OBS-03",
+    "category": "obs-phase1-state-sync",
+    "description": "Implement Firebase persistence for OBS state",
+    "steps": [
+      "Implement loadStateFromFirebase() reading from competitions/{compId}/obs/state/",
+      "Implement saveStateToFirebase() persisting state with lastSync timestamp",
+      "Implement broadcast(event, data) to emit via Socket.io",
+      "Handle connection lost: update state.connected and state.connectionError",
+      "Handle reconnection: call refreshFullState() and broadcast",
+      "Export OBSStateSync class"
+    ],
+    "verification": "OBS state persists to Firebase and broadcasts to clients",
+    "passes": false
+  },
+  {
+    "id": "OBS-04",
+    "category": "obs-phase1-state-sync",
+    "description": "Integrate OBS State Sync with server",
+    "steps": [
+      "Import OBSStateSync in server/index.js",
+      "Instantiate with obs, io, and productionConfigService",
+      "Call initialize() when competition is activated",
+      "Add obs:refreshState socket listener",
+      "Include obsState in stateUpdate broadcast",
+      "Test state sync on OBS connect/disconnect"
+    ],
+    "verification": "Server broadcasts OBS state changes in real-time",
+    "passes": false
+  },
+
+  {
+    "id": "OBS-05",
+    "category": "obs-phase2-scene-crud",
+    "description": "Create OBS Scene Manager module",
+    "steps": [
+      "Create server/lib/obsSceneManager.js",
+      "Implement getScenes() returning cached scenes from stateSync",
+      "Implement getScene(sceneName) with scene item details",
+      "Implement createScene(sceneName) using obs.call('CreateScene')",
+      "Implement duplicateScene(sceneName, newName) copying all scene items",
+      "Implement renameScene(sceneName, newName) using obs.call('SetSceneName')",
+      "Implement deleteScene(sceneName) using obs.call('RemoveScene')",
+      "Implement reorderScenes(sceneOrder) using multiple scene operations",
+      "Export OBSSceneManager class"
+    ],
+    "verification": "node -e \"require('./server/lib/obsSceneManager.js')\" exits 0",
+    "passes": false
+  },
+  {
+    "id": "OBS-06",
+    "category": "obs-phase2-scene-crud",
+    "description": "Add Scene CRUD API endpoints",
+    "steps": [
+      "Create server/routes/obs.js for all OBS routes",
+      "Add GET /api/obs/scenes listing all scenes with items",
+      "Add GET /api/obs/scenes/:sceneName for single scene details",
+      "Add POST /api/obs/scenes to create new scene",
+      "Add POST /api/obs/scenes/:sceneName/duplicate to copy scene",
+      "Add PUT /api/obs/scenes/:sceneName to rename scene",
+      "Add PUT /api/obs/scenes/reorder to reorder scene list",
+      "Add DELETE /api/obs/scenes/:sceneName to delete scene",
+      "Mount routes in server/index.js"
+    ],
+    "verification": "curl http://localhost:3001/api/obs/scenes returns scene list",
+    "passes": false
+  },
+
+  {
+    "id": "OBS-07",
+    "category": "obs-phase3-source-mgmt",
+    "description": "Create OBS Source Manager module",
+    "steps": [
+      "Create server/lib/obsSourceManager.js",
+      "Implement getInputKinds() using obs.call('GetInputKindList')",
+      "Implement getInputs() returning all inputs with settings",
+      "Implement createInput(inputName, inputKind, inputSettings, sceneName)",
+      "Implement getInputSettings(inputName)",
+      "Implement updateInputSettings(inputName, inputSettings)",
+      "Implement deleteInput(inputName)",
+      "Export OBSSourceManager class"
+    ],
+    "verification": "node -e \"require('./server/lib/obsSourceManager.js')\" exits 0",
+    "passes": false
+  },
+  {
+    "id": "OBS-08",
+    "category": "obs-phase3-source-mgmt",
+    "description": "Implement scene item management",
+    "steps": [
+      "Implement getSceneItems(sceneName) returning items with transforms",
+      "Implement addSourceToScene(sceneName, sourceName, transform)",
+      "Implement removeSourceFromScene(sceneName, sceneItemId)",
+      "Implement updateSceneItemTransform(sceneName, sceneItemId, transform)",
+      "Implement setSceneItemEnabled(sceneName, sceneItemId, enabled)",
+      "Implement setSceneItemLocked(sceneName, sceneItemId, locked)",
+      "Implement reorderSceneItems(sceneName, itemOrder)",
+      "Define TRANSFORM_PRESETS constant with all layout presets"
+    ],
+    "verification": "Scene item operations work correctly via OBS WebSocket",
+    "passes": false
+  },
+  {
+    "id": "OBS-09",
+    "category": "obs-phase3-source-mgmt",
+    "description": "Add Source Management API endpoints",
+    "steps": [
+      "Add GET /api/obs/inputs listing all inputs",
+      "Add GET /api/obs/inputs/kinds listing available input types",
+      "Add POST /api/obs/inputs to create new input",
+      "Add GET /api/obs/inputs/:inputName for input settings",
+      "Add PUT /api/obs/inputs/:inputName to update settings",
+      "Add DELETE /api/obs/inputs/:inputName to delete input",
+      "Add GET /api/obs/scenes/:sceneName/items for scene items",
+      "Add POST /api/obs/scenes/:sceneName/items to add source",
+      "Add DELETE /api/obs/scenes/:sceneName/items/:itemId to remove",
+      "Add PUT /api/obs/scenes/:sceneName/items/:itemId/transform",
+      "Add PUT /api/obs/scenes/:sceneName/items/:itemId/enabled",
+      "Add PUT /api/obs/scenes/:sceneName/items/:itemId/locked",
+      "Add PUT /api/obs/scenes/:sceneName/items/reorder"
+    ],
+    "verification": "curl http://localhost:3001/api/obs/inputs returns input list",
+    "passes": false
+  },
+
+  {
+    "id": "OBS-10",
+    "category": "obs-phase4-audio",
+    "description": "Create OBS Audio Manager module",
+    "steps": [
+      "Create server/lib/obsAudioManager.js",
+      "Implement getAudioSources() returning audio inputs with levels",
+      "Implement getVolume(inputName) in dB and linear",
+      "Implement setVolume(inputName, volumeDb) or setVolumeMul",
+      "Implement getMute(inputName)",
+      "Implement setMute(inputName, muted)",
+      "Implement getMonitorType(inputName)",
+      "Implement setMonitorType(inputName, monitorType)",
+      "Export OBSAudioManager class"
+    ],
+    "verification": "node -e \"require('./server/lib/obsAudioManager.js')\" exits 0",
+    "passes": false
+  },
+  {
+    "id": "OBS-11",
+    "category": "obs-phase4-audio",
+    "description": "Implement audio presets system",
+    "steps": [
+      "Implement savePreset(compId, preset) to Firebase competitions/{compId}/obs/presets/",
+      "Implement loadPreset(compId, presetId) reading from Firebase",
+      "Implement applyPreset(preset) setting all audio levels",
+      "Implement deletePreset(compId, presetId)",
+      "Implement listPresets(compId) returning all presets",
+      "Define DEFAULT_PRESETS constant (commentary-focus, venue-focus, music-bed, all-muted, break-music)"
+    ],
+    "verification": "Audio presets save to Firebase and apply correctly",
+    "passes": false
+  },
+  {
+    "id": "OBS-12",
+    "category": "obs-phase4-audio",
+    "description": "Add Audio Management API endpoints",
+    "steps": [
+      "Add GET /api/obs/audio listing all audio sources",
+      "Add GET /api/obs/audio/:inputName for single source",
+      "Add PUT /api/obs/audio/:inputName/volume to set volume",
+      "Add PUT /api/obs/audio/:inputName/mute to set mute state",
+      "Add PUT /api/obs/audio/:inputName/monitor to set monitor type",
+      "Add GET /api/obs/audio/presets listing presets",
+      "Add POST /api/obs/audio/presets to save current mix",
+      "Add PUT /api/obs/audio/presets/:presetId to load preset",
+      "Add DELETE /api/obs/audio/presets/:presetId"
+    ],
+    "verification": "curl http://localhost:3001/api/obs/audio returns audio sources",
+    "passes": false
+  },
+
+  {
+    "id": "OBS-13",
+    "category": "obs-phase5-transitions",
+    "description": "Create OBS Transition Manager module",
+    "steps": [
+      "Create server/lib/obsTransitionManager.js",
+      "Implement getTransitions() using GetSceneTransitionList",
+      "Implement getCurrentTransition() with name and duration",
+      "Implement setCurrentTransition(transitionName)",
+      "Implement setTransitionDuration(duration)",
+      "Implement getTransitionSettings(transitionName)",
+      "Implement setTransitionSettings(transitionName, settings)",
+      "Export OBSTransitionManager class"
+    ],
+    "verification": "node -e \"require('./server/lib/obsTransitionManager.js')\" exits 0",
+    "passes": false
+  },
+  {
+    "id": "OBS-14",
+    "category": "obs-phase5-transitions",
+    "description": "Add Transition Management API endpoints",
+    "steps": [
+      "Add GET /api/obs/transitions listing all transitions",
+      "Add GET /api/obs/transitions/current for current transition",
+      "Add PUT /api/obs/transitions/current to set default transition",
+      "Add PUT /api/obs/transitions/duration to set duration",
+      "Add GET /api/obs/transitions/:name/settings",
+      "Add PUT /api/obs/transitions/:name/settings",
+      "Add POST /api/obs/transitions/stinger for stinger upload"
+    ],
+    "verification": "curl http://localhost:3001/api/obs/transitions returns transition list",
+    "passes": false
+  },
+
+  {
+    "id": "OBS-15",
+    "category": "obs-phase6-stream",
+    "description": "Create OBS Stream Manager module",
+    "steps": [
+      "Create server/lib/obsStreamManager.js",
+      "Implement getStreamSettings() using GetStreamServiceSettings",
+      "Implement setStreamSettings(settings) with encrypted key storage",
+      "Implement startStream() using StartStream",
+      "Implement stopStream() using StopStream",
+      "Implement getStreamStatus() returning full stats",
+      "Handle stream key encryption for Firebase storage",
+      "Export OBSStreamManager class"
+    ],
+    "verification": "node -e \"require('./server/lib/obsStreamManager.js')\" exits 0",
+    "passes": false
+  },
+  {
+    "id": "OBS-16",
+    "category": "obs-phase6-stream",
+    "description": "Add Stream Configuration API endpoints",
+    "steps": [
+      "Add GET /api/obs/stream/settings returning settings (key masked)",
+      "Add PUT /api/obs/stream/settings to update stream config",
+      "Add POST /api/obs/stream/start to begin streaming",
+      "Add POST /api/obs/stream/stop to end streaming",
+      "Add GET /api/obs/stream/status for stream stats",
+      "Ensure stream key never exposed in responses"
+    ],
+    "verification": "curl http://localhost:3001/api/obs/stream/status returns stream status",
+    "passes": false
+  },
+
+  {
+    "id": "OBS-17",
+    "category": "obs-phase7-assets",
+    "description": "Create OBS Asset Manager module",
+    "steps": [
+      "Create server/lib/obsAssetManager.js",
+      "Define ASSET_TYPES: music, stingers, backgrounds, logos",
+      "Define ASSET_BASE_PATH: /var/www/assets/",
+      "Implement listAssets(vmAddress) reading manifest from VM",
+      "Implement listAssetsByType(vmAddress, type)",
+      "Implement uploadAsset(vmAddress, type, localPath, filename)",
+      "Implement deleteAsset(vmAddress, type, filename)",
+      "Implement downloadAsset(vmAddress, type, filename, localPath)",
+      "Implement updateManifest(compId, type, entry) in Firebase",
+      "Export OBSAssetManager class"
+    ],
+    "verification": "node -e \"require('./server/lib/obsAssetManager.js')\" exits 0",
+    "passes": false
+  },
+  {
+    "id": "OBS-18",
+    "category": "obs-phase7-assets",
+    "description": "Add Asset Management API endpoints",
+    "steps": [
+      "Add GET /api/obs/assets listing all assets",
+      "Add GET /api/obs/assets/:type listing by type",
+      "Add POST /api/obs/assets/upload with multipart/form-data",
+      "Add DELETE /api/obs/assets/:type/:filename",
+      "Add GET /api/obs/assets/:type/:filename/download",
+      "Add POST /api/obs/assets/pack/install for asset packs",
+      "Implement file size limits and type validation"
+    ],
+    "verification": "curl http://localhost:3001/api/obs/assets returns asset list",
+    "passes": false
+  },
+
+  {
+    "id": "OBS-19",
+    "category": "obs-phase8-templates",
+    "description": "Create OBS Template Manager module",
+    "steps": [
+      "Create server/lib/obsTemplateManager.js",
+      "Implement listTemplates() reading from Firebase templates/obs/",
+      "Implement getTemplate(templateId)",
+      "Implement createTemplate(name, description, meetTypes) from current OBS state",
+      "Implement applyTemplate(templateId) with variable substitution",
+      "Implement deleteTemplate(templateId)",
+      "Implement resolveVariables(template, context) for {{...}} placeholders",
+      "Implement validateRequirements(template) checking assets and cameras",
+      "Export OBSTemplateManager class"
+    ],
+    "verification": "node -e \"require('./server/lib/obsTemplateManager.js')\" exits 0",
+    "passes": false
+  },
+  {
+    "id": "OBS-20",
+    "category": "obs-phase8-templates",
+    "description": "Add Template Management API endpoints",
+    "steps": [
+      "Add GET /api/obs/templates listing available templates",
+      "Add GET /api/obs/templates/:id for template details",
+      "Add POST /api/obs/templates to create from current OBS",
+      "Add POST /api/obs/templates/:id/apply to apply template",
+      "Add PUT /api/obs/templates/:id to update metadata",
+      "Add DELETE /api/obs/templates/:id to delete template"
+    ],
+    "verification": "curl http://localhost:3001/api/obs/templates returns template list",
+    "passes": false
+  },
+
+  {
+    "id": "OBS-21",
+    "category": "obs-phase9-talent-comms",
+    "description": "Implement VDO.Ninja integration",
+    "steps": [
+      "Create server/lib/talentCommsManager.js",
+      "Implement generateRoomId() creating unique room ID",
+      "Implement generateVdoNinjaUrls(roomId) returning director, obsScene, talent URLs",
+      "Implement setupTalentComms(compId) generating and saving to Firebase",
+      "Implement regenerateUrls(compId) creating new room and URLs",
+      "Store in competitions/{compId}/config/talentComms",
+      "Export TalentCommsManager class"
+    ],
+    "verification": "node -e \"require('./server/lib/talentCommsManager.js')\" exits 0",
+    "passes": false
+  },
+  {
+    "id": "OBS-22",
+    "category": "obs-phase9-talent-comms",
+    "description": "Add Talent Communication API endpoints",
+    "steps": [
+      "Add GET /api/talent-comms returning current config",
+      "Add POST /api/talent-comms/setup to generate VDO.Ninja URLs",
+      "Add POST /api/talent-comms/regenerate for new URLs",
+      "Add PUT /api/talent-comms/method to switch vdo-ninja/discord",
+      "Add GET /api/talent-comms/status for connection status",
+      "Document Discord fallback with SSH tunnel instructions"
+    ],
+    "verification": "curl http://localhost:3001/api/talent-comms returns comms config",
+    "passes": false
+  },
+
+  {
+    "id": "OBS-23",
+    "category": "obs-phase10-preview",
+    "description": "Implement OBS Preview and Studio Mode",
+    "steps": [
+      "Add takeScreenshot(sceneName?) to obsStateSync using GetSourceScreenshot",
+      "Implement getStudioModeStatus()",
+      "Implement setStudioMode(enabled)",
+      "Implement setPreviewScene(sceneName)",
+      "Implement executeTransition() to go preview to program"
+    ],
+    "verification": "Screenshot capture works via OBS WebSocket",
+    "passes": false
+  },
+  {
+    "id": "OBS-24",
+    "category": "obs-phase10-preview",
+    "description": "Add Preview System API endpoints",
+    "steps": [
+      "Add GET /api/obs/preview/screenshot for current output",
+      "Add GET /api/obs/preview/screenshot/:sceneName for specific scene",
+      "Add PUT /api/obs/studio-mode to enable/disable",
+      "Add PUT /api/obs/studio-mode/preview to set preview scene",
+      "Add POST /api/obs/studio-mode/transition to execute transition"
+    ],
+    "verification": "curl http://localhost:3001/api/obs/preview/screenshot returns base64 image",
+    "passes": false
+  },
+
+  {
+    "id": "OBS-25",
+    "category": "obs-phase11-ui",
+    "description": "Create OBS Context and hook",
+    "steps": [
+      "Create show-controller/src/context/OBSContext.jsx",
+      "Create OBSProvider component subscribing to obs:* socket events",
+      "Track obsState, obsConnected, connectionError",
+      "Implement useOBS() hook returning state and actions",
+      "Actions: switchScene, setTransition, setVolume, setMute, loadPreset, startStream, stopStream",
+      "Export OBSContext, OBSProvider, useOBS"
+    ],
+    "verification": "Build succeeds and OBS context can be imported",
+    "passes": false
+  },
+  {
+    "id": "OBS-26",
+    "category": "obs-phase11-ui",
+    "description": "Create OBS Manager main page",
+    "steps": [
+      "Create show-controller/src/pages/OBSManager.jsx",
+      "Add tabbed navigation: Scenes, Sources, Audio, Transitions, Stream, Assets, Templates",
+      "Implement OBSConnectionStatus component showing connection state",
+      "Implement OBSCurrentOutput component with preview image and stream status",
+      "Add stream control buttons: Start/Stop Stream, Start/Stop Recording, Screenshot",
+      "Add route /:compId/obs-manager to App.jsx"
+    ],
+    "verification": "OBS Manager page renders at /:compId/obs-manager",
+    "passes": false
+  },
+  {
+    "id": "OBS-27",
+    "category": "obs-phase11-ui",
+    "description": "Create Scene List and Editor components",
+    "steps": [
+      "Create show-controller/src/components/obs/SceneList.jsx",
+      "Group scenes by category (generated-single, generated-multi, static, manual, template)",
+      "Add scene actions: Preview, Edit, Duplicate, Delete",
+      "Show source count per scene",
+      "Create show-controller/src/components/obs/SceneEditor.jsx",
+      "Display scene items with drag-to-reorder",
+      "Add/remove sources from scene",
+      "Implement transform editor with preset buttons"
+    ],
+    "verification": "Scene list shows categorized scenes with edit capabilities",
+    "passes": false
+  },
+  {
+    "id": "OBS-28",
+    "category": "obs-phase11-ui",
+    "description": "Create Source Editor component",
+    "steps": [
+      "Create show-controller/src/components/obs/SourceEditor.jsx",
+      "Edit source settings based on inputKind",
+      "SRT source: URL, buffering, reconnect settings",
+      "Browser source: URL, width, height, FPS",
+      "Media source: file path, loop, restart",
+      "Transform controls: position, scale, crop",
+      "Preset layout buttons for quick positioning"
+    ],
+    "verification": "Source editor allows editing source properties",
+    "passes": false
+  },
+  {
+    "id": "OBS-29",
+    "category": "obs-phase11-ui",
+    "description": "Create Audio Mixer component",
+    "steps": [
+      "Create show-controller/src/components/obs/AudioMixer.jsx",
+      "Display all audio sources with volume sliders",
+      "Show real-time audio levels (if available)",
+      "Mute toggles per source",
+      "Monitor type dropdown per source",
+      "Create show-controller/src/components/obs/AudioPresetManager.jsx",
+      "List saved presets with one-click load",
+      "Save current mix as new preset button",
+      "Delete preset functionality"
+    ],
+    "verification": "Audio mixer shows volume controls and presets",
+    "passes": false
+  },
+  {
+    "id": "OBS-30",
+    "category": "obs-phase11-ui",
+    "description": "Create Stream Config and Asset Manager components",
+    "steps": [
+      "Create show-controller/src/components/obs/StreamConfig.jsx",
+      "Service selector: YouTube, Twitch, Custom RTMP",
+      "Stream key input (masked)",
+      "Output settings display",
+      "Create show-controller/src/components/obs/AssetManager.jsx",
+      "Asset list grouped by type",
+      "Drag-and-drop file upload",
+      "Preview for images/videos",
+      "Delete confirmation"
+    ],
+    "verification": "Stream config and asset manager UI components render correctly",
+    "passes": false
+  },
+  {
+    "id": "OBS-31",
+    "category": "obs-phase11-ui",
+    "description": "Create Template Manager and Talent Comms UI",
+    "steps": [
+      "Create show-controller/src/components/obs/TemplateManager.jsx",
+      "List available templates with metadata",
+      "Apply template button with confirmation modal",
+      "Save current as template button",
+      "Create show-controller/src/components/obs/TalentCommsPanel.jsx",
+      "Show VDO.Ninja URLs with copy buttons",
+      "Show talent connection status",
+      "Regenerate URLs button",
+      "Method switcher: VDO.Ninja vs Discord"
+    ],
+    "verification": "Template manager and talent comms UI components work",
+    "passes": false
+  },
+
+  {
+    "id": "OBS-INT-01",
+    "category": "obs-integration",
+    "description": "OBS state sync end-to-end test",
+    "steps": [
+      "Connect to test environment with OBS running",
+      "Verify obsState populated with scenes, inputs, audio",
+      "Change scene in OBS, verify UI updates",
+      "Change volume in OBS, verify UI updates",
+      "Disconnect OBS, verify error state shown",
+      "Reconnect OBS, verify state refreshes"
+    ],
+    "verification": "OBS state syncs bidirectionally in real-time",
+    "passes": false
+  },
+  {
+    "id": "OBS-INT-02",
+    "category": "obs-integration",
+    "description": "Scene CRUD end-to-end test",
+    "steps": [
+      "Create new scene via OBS Manager UI",
+      "Verify scene appears in OBS",
+      "Duplicate scene via UI",
+      "Rename duplicated scene",
+      "Delete the duplicate",
+      "Reorder scenes via drag-and-drop",
+      "Verify order persists in OBS"
+    ],
+    "verification": "Scene operations sync correctly with OBS",
+    "passes": false
+  },
+  {
+    "id": "OBS-INT-03",
+    "category": "obs-integration",
+    "description": "Audio preset end-to-end test",
+    "steps": [
+      "Adjust multiple volume levels via Audio Mixer",
+      "Save current mix as preset",
+      "Verify preset saved to Firebase",
+      "Reset volumes to default",
+      "Load saved preset",
+      "Verify all volumes restored correctly"
+    ],
+    "verification": "Audio presets save and load correctly",
+    "passes": false
+  },
+  {
+    "id": "OBS-INT-04",
+    "category": "obs-integration",
+    "description": "Template apply end-to-end test",
+    "steps": [
+      "Start with minimal OBS scene collection",
+      "Apply template via Template Manager",
+      "Verify confirmation modal shows requirements",
+      "Confirm and apply template",
+      "Verify scenes created in OBS",
+      "Verify sources configured correctly",
+      "Verify variable substitution worked"
+    ],
+    "verification": "Templates apply correctly with variable substitution",
+    "passes": false
+  },
+  {
+    "id": "OBS-INT-05",
+    "category": "obs-integration",
+    "description": "Stream control end-to-end test",
+    "steps": [
+      "Configure stream settings via UI",
+      "Verify settings saved (key masked)",
+      "Start stream via UI button",
+      "Verify stream status shows LIVE",
+      "Monitor stream stats display",
+      "Stop stream via UI button",
+      "Verify stream stopped cleanly"
+    ],
+    "verification": "Stream start/stop works from UI",
+    "passes": false,
+    "note": "Requires valid stream key and destination"
+  },
+  {
+    "id": "OBS-INT-06",
+    "category": "obs-integration",
+    "description": "Asset upload end-to-end test",
+    "steps": [
+      "Upload music file via Asset Manager",
+      "Verify file appears on VM in /var/www/assets/music/",
+      "Verify manifest updated in Firebase",
+      "Upload stinger video",
+      "Verify stinger available for transition config",
+      "Delete uploaded asset",
+      "Verify removed from VM and manifest"
+    ],
+    "verification": "Asset upload/delete works correctly",
+    "passes": false
+  },
+  {
+    "id": "OBS-INT-07",
+    "category": "obs-integration",
+    "description": "Multi-client sync test",
+    "steps": [
+      "Open OBS Manager in two browser tabs",
+      "Change scene in tab 1",
+      "Verify tab 2 shows update",
+      "Adjust volume in tab 2",
+      "Verify tab 1 shows update",
+      "Load preset in tab 1",
+      "Verify tab 2 shows all volume changes"
+    ],
+    "verification": "Changes sync across multiple clients",
+    "passes": false
+  }
+]
+```
+
+---
+
+## Progress Summary
+
+| Phase | Tasks | Done | Status |
+|-------|-------|------|--------|
+| **OBS Phase 1: State Sync** | 4 | 0 | Not Started |
+| **OBS Phase 2: Scene CRUD** | 2 | 0 | Not Started |
+| **OBS Phase 3: Source Mgmt** | 3 | 0 | Not Started |
+| **OBS Phase 4: Audio** | 3 | 0 | Not Started |
+| **OBS Phase 5: Transitions** | 2 | 0 | Not Started |
+| **OBS Phase 6: Stream** | 2 | 0 | Not Started |
+| **OBS Phase 7: Assets** | 2 | 0 | Not Started |
+| **OBS Phase 8: Templates** | 2 | 0 | Not Started |
+| **OBS Phase 9: Talent Comms** | 2 | 0 | Not Started |
+| **OBS Phase 10: Preview** | 2 | 0 | Not Started |
+| **OBS Phase 11: UI** | 7 | 0 | Not Started |
+| **OBS Integration Tests** | 7 | 0 | Not Started |
+| **Total** | **38** | **0** | **0%** |
