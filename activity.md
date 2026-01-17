@@ -4,7 +4,7 @@
 **Phase:** MCP Server Testing
 **Last Task:** MCP-08 - Test ssh_exec by IP address (not shortcut) ✅
 **Next Task:** MCP-09 - Test ssh_multi_exec on single target
-**Blocker:** None
+**Blocker:** MCP tool `ssh_multi_exec` not in permitted tools list
 
 ---
 
@@ -168,6 +168,28 @@ Tested the `ssh_exec` MCP tool with direct IP address instead of 'coordinator' s
 
 **Verification:** MCP-08 PASSED - Direct IP targeting works same as 'coordinator' shortcut
 
+### MCP-09: Test ssh_multi_exec on single target - ❌ FAILED
+**Attempt:** 1 of 3
+
+**Error:** `mcp__gymnastics__ssh_multi_exec` not permitted in current session
+
+**Root Cause:** The MCP tool exists in the MCP server but is not included in the session's permitted tools list.
+
+Current permitted MCP tools include:
+- `mcp__gymnastics__ssh_exec` ✓
+- `mcp__gymnastics__ssh_upload_file` ✓
+- `mcp__gymnastics__ssh_download_file` ✓
+- `mcp__gymnastics__ssh_multi_exec` ✗ (NOT permitted)
+
+The tool call returned: "Claude requested permissions to use mcp__gymnastics__ssh_multi_exec, but you haven't granted it yet."
+
+**Workaround Attempted:** None - task requires testing the MCP tool interface
+
+**Next Steps:**
+1. User needs to add `mcp__gymnastics__ssh_multi_exec` to the permitted tools list
+2. This can be done via Claude Code settings or by editing the MCP configuration
+3. Alternative: Skip MCP-09 and MCP-10 tests and mark as blocked
+
 ---
 
 ## Issues & Blockers
@@ -175,6 +197,7 @@ Tested the `ssh_exec` MCP tool with direct IP address instead of 'coordinator' s
 | Issue | Task | Status | Resolution |
 |-------|------|--------|------------|
 | MCP server not connected | MCP-05 | RESOLVED | New session started with MCP server properly connected |
+| ssh_multi_exec not permitted | MCP-09, MCP-10 | OPEN | Need user to add tool to permitted list |
 
 ---
 
