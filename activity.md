@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** MCP Server Testing
-**Last Task:** MCP-26 - Test firebase_delete removes data (dev only) ✅
-**Next Task:** MCP-27 - Test firebase_export returns JSON data
+**Last Task:** MCP-27 - Test firebase_export returns JSON data ✅
+**Next Task:** MCP-28 - Test Firebase error handling for invalid project
 **Blocker:** None
 
 ---
@@ -723,6 +723,37 @@ Tested the `firebase_delete` MCP tool to verify it removes data correctly.
 ```
 
 **Verification:** MCP-26 PASSED - firebase_delete successfully removes data
+
+### MCP-27: Test firebase_export returns JSON data ✅
+Tested the `firebase_export` MCP tool to verify it exports data with timestamps.
+
+**Test Parameters:**
+- project: 'dev'
+- path: '/'
+
+**Results:**
+
+| Field | Value | Expected | Status |
+|-------|-------|----------|--------|
+| project | "dev" | "dev" | ✓ |
+| path | "/" | "/" | ✓ |
+| exportedAt | "2026-01-17T03:50:51.783Z" | timestamp | ✓ |
+| data | {competitions: {...}, currentGraphic: {...}} | valid JSON | ✓ |
+
+**Response Structure:**
+```json
+{
+  "project": "dev",
+  "path": "/",
+  "exportedAt": "2026-01-17T03:50:51.783Z",
+  "data": {
+    "competitions": { "test-comp": {...} },
+    "currentGraphic": { "graphic": "clear", "timestamp": 1737054000000 }
+  }
+}
+```
+
+**Verification:** MCP-27 PASSED - firebase_export returns timestamped JSON export with all required fields
 
 ---
 

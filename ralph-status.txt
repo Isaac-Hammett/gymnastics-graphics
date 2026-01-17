@@ -42,3 +42,5 @@ Step 2: Verified response includes children array: YES
 Step 3: Verified response includes childCount number: YES (2)
 Step 4: Verified children contains expected keys: YES (competitions, currentGraphic)
 Done: PASS
+MCP-27: firebase_export called successfully
+Done: PASS
