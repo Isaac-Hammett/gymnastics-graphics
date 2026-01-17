@@ -2,20 +2,52 @@
 
 ## Current Status
 **Phase:** OBS Integration Tool - In Progress
-**Last Task:** OBS-08 - Implement scene item management ✅
-**Next Task:** OBS-09 - Add Source Management API endpoints
+**Last Task:** OBS-09 - Add Source Management API endpoints ✅
+**Next Task:** OBS-10 - Create OBS Audio Manager module
 **Blocker:** None
 
 ### Summary
 OBS Integration Tool implementation phase in progress. This phase will add comprehensive OBS WebSocket control capabilities to the show controller.
 
-**Progress:** 8/38 tasks complete (21%)
+**Progress:** 9/38 tasks complete (24%)
 
 ---
 
 ## Activity Log
 
 ### 2026-01-17
+
+### OBS-09: Add Source Management API endpoints ✅
+Added 13 REST API endpoints to `/server/routes/obs.js` for input and scene item management.
+
+**Input Management Endpoints (6):**
+- `GET /api/obs/inputs` - List all inputs
+- `GET /api/obs/inputs/kinds` - List available input types (browser_source, ffmpeg_source, etc.)
+- `POST /api/obs/inputs` - Create new input (with optional scene placement)
+- `GET /api/obs/inputs/:inputName` - Get input settings
+- `PUT /api/obs/inputs/:inputName` - Update input settings
+- `DELETE /api/obs/inputs/:inputName` - Delete input
+
+**Scene Item Management Endpoints (7):**
+- `GET /api/obs/scenes/:sceneName/items` - Get all scene items with transforms
+- `POST /api/obs/scenes/:sceneName/items` - Add source to scene
+- `DELETE /api/obs/scenes/:sceneName/items/:itemId` - Remove item from scene
+- `PUT /api/obs/scenes/:sceneName/items/:itemId/transform` - Update item transform
+- `PUT /api/obs/scenes/:sceneName/items/:itemId/enabled` - Set item visibility
+- `PUT /api/obs/scenes/:sceneName/items/:itemId/locked` - Set item locked state
+- `PUT /api/obs/scenes/:sceneName/items/reorder` - Reorder scene items (z-index)
+
+**Implementation details:**
+- Imported OBSSourceManager from lib/obsSourceManager.js
+- All endpoints follow existing error handling pattern
+- Returns HTTP 503 when OBS State Sync not initialized
+- Proper input validation with HTTP 400 for invalid requests
+
+**Verification:** PASSED
+- Method: `node --check routes/obs.js` (syntax check) + endpoint presence verification
+- Result: All 13 endpoints present, syntax valid, import correct
+
+---
 
 ### OBS-08: Implement scene item management ✅
 Extended `/server/lib/obsSourceManager.js` with scene item management methods.
