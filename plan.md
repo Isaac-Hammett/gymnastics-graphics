@@ -1880,7 +1880,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Call firebase_delete to clean up test data"
     ],
     "verification": "firebase_set successfully writes data to dev",
-    "passes": false
+    "passes": true
   },
   {
     "id": "MCP-25",
