@@ -31,6 +31,15 @@
     "action": "Search show-controller for VMPool, vm-pool, admin routes to understand current routing structure",
     "verification": "Identify what route/component handles VM Pool management",
     "expected": "Find the correct URL or determine if page needs to be created/routed",
+    "status": "completed",
+    "result": "VM Pool page exists at /_admin/vm-pool (App.jsx:44). Page loads but shows 'Connection Error - Failed to fetch'. Console shows requests to localhost:3003 instead of production API. Root cause: VITE_API_URL not set in .env - defaults to localhost:3003. Fix: Add VITE_API_URL=https://api.commentarygraphic.com and rebuild."
+  },
+  {
+    "id": "FIX-00",
+    "description": "Fix: Add VITE_API_URL to .env and rebuild/redeploy frontend",
+    "action": "1. Add VITE_API_URL=https://api.commentarygraphic.com to show-controller/.env, 2. npm run build, 3. Deploy to production server",
+    "verification": "Navigate to /_admin/vm-pool, console should show requests to api.commentarygraphic.com instead of localhost:3003",
+    "expected": "Frontend makes API calls to production coordinator",
     "status": "pending"
   },
   {
@@ -60,9 +69,9 @@
   {
     "id": "VERIFY-01",
     "description": "Verify: VM Pool page loads without Connection Error",
-    "action": "Navigate to https://commentarygraphic.com/vm-pool, take screenshot, check console",
-    "verification": "Screenshot shows no 'Connection Error', console has no fetch failures",
-    "expected": "Page loads, Pool Status visible, no errors",
+    "action": "Navigate to https://commentarygraphic.com/_admin/vm-pool, take screenshot, check console",
+    "verification": "Screenshot shows no 'Connection Error', console has no fetch failures to localhost",
+    "expected": "Page loads, Pool Status visible, API calls go to api.commentarygraphic.com",
     "status": "pending"
   },
   {
