@@ -39,9 +39,16 @@ Skip this step for pure testing/verification tasks (MCP tool tests).
 
 ### Step 3: Implement (Subagent)
 
-Spawn a subagent to implement the task:
+Spawn a subagent to implement the task. **ALWAYS include status update instructions:**
 ```
 Task(subagent_type='general-purpose', prompt='
+  ## STATUS UPDATES - DO THIS FIRST AND THROUGHOUT
+  Write progress to /tmp/claude/ralph-status.txt so the operator can see what you are doing:
+  - Run: echo "Starting [task]" >> /tmp/claude/ralph-status.txt
+  - Before each major step: echo "[step description]" >> /tmp/claude/ralph-status.txt
+  - When done: echo "DONE: [summary]" >> /tmp/claude/ralph-status.txt
+
+  ## TASK
   Task: [TASK_ID] - [DESCRIPTION]
   Category: [CATEGORY]
 
@@ -119,6 +126,14 @@ Task(subagent_type='general-purpose', prompt='
 **For MCP tool tests:**
 ```
 Task(subagent_type='general-purpose', prompt='
+  ## STATUS UPDATES - DO THIS FIRST AND THROUGHOUT
+  Write progress to /tmp/claude/ralph-status.txt:
+  - echo "Starting: Test [TOOL_NAME]" >> /tmp/claude/ralph-status.txt
+  - Before each MCP call: echo "Calling [tool]..." >> /tmp/claude/ralph-status.txt
+  - After results: echo "Result: [brief summary]" >> /tmp/claude/ralph-status.txt
+  - At end: echo "DONE: PASS/FAIL" >> /tmp/claude/ralph-status.txt
+
+  ## TASK
   Test MCP tool: [TOOL_NAME]
 
   Steps:

@@ -1,0 +1,2 @@
+Starting: MCP-05 Test ssh_exec with sudo
+DONE: FAIL - MCP tool mcp__gymnastics__ssh_exec not available in current session
