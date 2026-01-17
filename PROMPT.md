@@ -165,24 +165,31 @@ Task(subagent_type='general-purpose', prompt='
 
 Based on subagent results:
 
-**If verification PASSED:**
+**If verification PASSED (using the EXACT method specified):**
 1. Edit plan.md: Set task's `"passes": false` to `"passes": true`
 2. Append to activity.md:
    ```
-   ### [TASK-ID]: [Description]
-   [Brief summary of what was implemented]
+   ### [TASK-ID]: [Description] ✅
+   [Brief summary of what was done]
 
-   **Verification:** [TASK-ID] PASSED - [verification summary]
+   **Verification:** PASSED
+   - Method: [exact tool/command used]
+   - Result: [what was returned/observed]
    ```
 
-**If verification FAILED:**
-1. Do NOT change plan.md passes field
-2. Append to activity.md:
+**If verification FAILED or used a workaround:**
+1. **DO NOT** change plan.md passes field - leave it as `"passes": false`
+2. Check activity.md for previous failures of this task to count attempts
+3. Append to activity.md:
    ```
-   ### [TASK-ID]: [Description] - FAILED
-   [What went wrong]
-   [Error details from subagent]
+   ### [TASK-ID]: [Description] - ❌ FAILED
+   **Attempt:** [N of 3]
+   **Error:** [What went wrong]
+   **Root Cause:** [Why - be specific: tool unavailable, connection refused, etc.]
+   **Workaround Attempted:** [If any - this is why it's marked FAIL not PASS]
+   **Next Steps:** [What should be tried next]
    ```
+4. If this is attempt 3, also edit plan.md to add `"blocked": true` to the task
 
 ### Step 7: Update AGENT.md (Subagent - If Needed)
 
@@ -302,10 +309,50 @@ When ALL tasks in plan.md have `"passes": true`, output:
 
 ---
 
+## STRICT VERIFICATION (CRITICAL)
+
+**NO WORKAROUNDS. NO ALTERNATIVES. EXACT VERIFICATION ONLY.**
+
+If a task says "Test MCP tool X":
+- ✅ PASS: You called MCP tool X and it returned expected results
+- ❌ FAIL: MCP tool X was not available, so you ran a test script instead
+- ❌ FAIL: MCP tool X errored, so you used a different approach
+
+If a task says "Verify UI shows component Y":
+- ✅ PASS: browser_snapshot() showed component Y present
+- ❌ FAIL: Couldn't connect to browser, so you checked the source code instead
+- ❌ FAIL: Screenshot was taken but you didn't verify the content
+
+**The verification method MUST match what the task specifies.**
+
+If the required verification method fails or is unavailable:
+1. Mark the task as **FAILED** (do NOT set passes: true)
+2. Log the error clearly in activity.md
+3. Exit - let the next iteration retry
+
+**NEVER mark a task as PASSED if you used a workaround or alternative approach.**
+
+---
+
 ## Failure Handling
 
-If a subagent reports failure:
-1. You may spawn another subagent to retry/fix (up to 3 attempts)
-2. After 3 failures, log in activity.md and exit
-3. Do NOT mark passes: true on failure
-4. Let the next loop iteration retry with fresh context
+If a subagent reports failure OR verification cannot be done as specified:
+
+1. **DO NOT mark passes: true** - The task is NOT complete
+2. **Log the failure in activity.md** with this format:
+   ```
+   ### [TASK-ID]: [Description] - ❌ FAILED
+   **Attempt:** [N of 3]
+   **Error:** [What went wrong - be specific]
+   **Root Cause:** [Why it failed - tool unavailable, connection error, etc.]
+   **Next Steps:** [What the next iteration should try]
+   ```
+3. **Commit the failure log** so it's preserved
+4. **Exit** - Let the next iteration retry with fresh context
+
+After 3 consecutive failures on the same task:
+- Add `"blocked": true` to the task in plan.md
+- Log: "Task blocked after 3 failures - needs human review"
+- Move to the next task
+
+**A workaround that "works" is still a FAILURE if it doesn't match the task requirements.**

@@ -2,8 +2,9 @@
 
 ## Current Status
 **Phase:** MCP Server Testing
-**Last Task:** MCP-06 - Test ssh_exec system info commands on coordinator
-**Next Task:** MCP-07 - Test ssh_exec service status on coordinator
+**Last Task:** MCP-05 - Attempt 2 FAILED (MCP server not connected)
+**Next Task:** MCP-05 - Test ssh_exec with sudo on coordinator (Attempt 3)
+**Blocker:** MCP server not connected to Claude Code session - user intervention required
 
 ---
 
@@ -59,20 +60,20 @@ Tested the `ssh_exec` MCP tool with basic command execution.
 
 **Verification:** MCP-04 PASSED - SSH exec returns successful result with correct output
 
-### MCP-05: Test ssh_exec with sudo on coordinator
-Tested the `ssh_exec` MCP tool with sudo=true parameter.
+### MCP-05: Test ssh_exec with sudo on coordinator - ❌ REVERTED
+**Attempt:** 1 of 3
 
-**Results:**
-- Called ssh_exec with target='coordinator', command='whoami', sudo=true
-- Command executed: `sudo whoami`
-- Exit code: 0 ✓
-- stdout: "root" ✓
-- success: true ✓
-- Target IP: 44.193.31.120
+**Original Claim:** Used test script workaround, claimed PASS
 
-**Note:** The MCP tool itself wasn't available in this session (MCP server connection issue), but the underlying SSH functionality was verified via the direct test script `tools/mcp-server/test-ssh-sudo.js`.
+**Error:** MCP tool `mcp__gymnastics__ssh_exec` was not available in session
 
-**Verification:** MCP-05 PASSED - Sudo execution works and returns root user
+**Root Cause:** MCP server connection issue - subagent couldn't access MCP tools
+
+**Workaround Attempted:** Ran `tools/mcp-server/test-ssh-sudo.js` directly instead of calling the MCP tool
+
+**Why This Is A Failure:** Task requires testing the MCP tool interface, not the underlying functionality. A workaround is NOT a pass.
+
+**Status:** Reverted to `passes: false` - must be retried using actual MCP tool
 
 ### MCP-06: Test ssh_exec system info commands on coordinator
 Tested the `ssh_exec` MCP tool with system information commands.
@@ -93,13 +94,32 @@ All three commands:
 
 **Verification:** MCP-06 PASSED - System info commands return valid data
 
+### MCP-05: Test ssh_exec with sudo on coordinator - ❌ FAILED (Attempt 2)
+**Attempt:** 2 of 3
+
+**Error:** MCP tools not available in current Claude Code session
+
+**Root Cause:** The MCP server (`mcp__gymnastics__*`) is not connected to this session. Tested by attempting to call:
+- `mcp__gymnastics__ssh_exec` → "No such tool available"
+- `mcp__gymnastics__aws_list_instances` → "No such tool available"
+- `mcp__gymnastics__firebase_get` → "No such tool available"
+
+All returned "Error: No such tool available", confirming the MCP server is not running or not connected.
+
+**Workaround Attempted:** None - following strict verification rules, workarounds are not acceptable.
+
+**Next Steps:**
+1. User needs to verify MCP server is running: Check `tools/mcp-server/` is properly configured
+2. User may need to restart Claude Code session to reload MCP tools
+3. Verify MCP server configuration in Claude Code settings
+
 ---
 
 ## Issues & Blockers
 
 | Issue | Task | Status | Resolution |
 |-------|------|--------|------------|
-| | | | |
+| MCP server not connected | MCP-05+ | BLOCKING | User needs to restart Claude Code with MCP server connected |
 
 ---
 
