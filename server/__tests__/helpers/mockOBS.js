@@ -388,6 +388,25 @@ export class MockOBSWebSocket extends EventEmitter {
       return {};
     },
 
+    GetInputAudioMonitorType: function(params) {
+      const { inputName } = params;
+      const audio = this._audioSources.get(inputName) || { monitorType: 'OBS_MONITORING_TYPE_NONE' };
+      return { monitorType: audio.monitorType || 'OBS_MONITORING_TYPE_NONE' };
+    },
+
+    SetInputAudioMonitorType: function(params) {
+      const { inputName, monitorType } = params;
+      const audio = this._audioSources.get(inputName) || {};
+      audio.monitorType = monitorType;
+      this._audioSources.set(inputName, audio);
+
+      setImmediate(() => {
+        this.emit('InputAudioMonitorTypeChanged', { inputName, monitorType });
+      });
+
+      return {};
+    },
+
     // Transition methods
     GetSceneTransitionList: function() {
       return {
@@ -845,8 +864,13 @@ export class MockOBSWebSocket extends EventEmitter {
   /**
    * Add an audio source
    */
-  addAudioSource(inputName, volumeDb = 0, muted = false) {
-    this._audioSources.set(inputName, { volumeDb, volumeMul: Math.pow(10, volumeDb / 20), muted });
+  addAudioSource(inputName, volumeDb = 0, muted = false, monitorType = 'OBS_MONITORING_TYPE_NONE') {
+    this._audioSources.set(inputName, {
+      volumeDb,
+      volumeMul: Math.pow(10, volumeDb / 20),
+      muted,
+      monitorType
+    });
   }
 
   /**

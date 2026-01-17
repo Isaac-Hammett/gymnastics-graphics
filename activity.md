@@ -2,20 +2,61 @@
 
 ## Current Status
 **Phase:** OBS Integration Tool - In Progress
-**Last Task:** OBS-09 - Add Source Management API endpoints ✅
-**Next Task:** OBS-10 - Create OBS Audio Manager module
+**Last Task:** OBS-10 - Create OBS Audio Manager module ✅
+**Next Task:** OBS-11 - Implement audio presets system
 **Blocker:** None
 
 ### Summary
 OBS Integration Tool implementation phase in progress. This phase will add comprehensive OBS WebSocket control capabilities to the show controller.
 
-**Progress:** 9/38 tasks complete (24%)
+**Progress:** 10/38 tasks complete (26%)
 
 ---
 
 ## Activity Log
 
 ### 2026-01-17
+
+### OBS-10: Create OBS Audio Manager module ✅
+Created `/server/lib/obsAudioManager.js` - audio source management module for OBS.
+
+**Methods implemented:**
+- `getAudioSources()` - Returns cached audio sources from OBSStateSync
+- `getVolume(inputName)` - Gets volume in dB and multiplier via GetInputVolume
+- `setVolume(inputName, volumeDb, volumeMul)` - Sets volume by dB or multiplier
+- `getMute(inputName)` - Gets mute state via GetInputMute
+- `setMute(inputName, muted)` - Sets mute state
+- `getMonitorType(inputName)` - Gets monitor type (none, monitor only, monitor+output)
+- `setMonitorType(inputName, monitorType)` - Sets monitor type with validation
+
+**Mock implementations added to mockOBS.js:**
+- `GetInputAudioMonitorType` - Returns monitor type for input
+- `SetInputAudioMonitorType` - Sets monitor type and emits event
+
+**Tests created:**
+- `/server/__tests__/obsAudioManager.test.js` - 43 comprehensive tests covering:
+  - Module exports (1 test)
+  - getAudioSources (3 tests)
+  - getVolume (4 tests)
+  - setVolume (6 tests)
+  - getMute (4 tests)
+  - setMute (5 tests)
+  - getMonitorType (4 tests)
+  - setMonitorType (7 tests)
+  - Error handling (3 tests)
+  - Integration (6 tests)
+
+**Design decisions:**
+- Uses OBSStateSync for cached audio source list
+- Validates monitor types against OBS constants
+- Consistent [OBSAudioManager] logging prefix
+- Error handling matches existing manager patterns
+
+**Verification:** PASSED
+- Method: `cd server && node --test __tests__/obsAudioManager.test.js`
+- Result: All 43 tests pass (11 suites, 0 failures)
+
+---
 
 ### OBS-09: Add Source Management API endpoints ✅
 Added 13 REST API endpoints to `/server/routes/obs.js` for input and scene item management.
