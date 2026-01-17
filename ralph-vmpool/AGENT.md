@@ -13,6 +13,40 @@
 
 ---
 
+## Subagent Parallelization (CRITICAL)
+
+### Research Phase - CAN Parallelize (up to 30 subagents)
+
+Use the `Task` tool to spawn parallel subagents for read-only operations:
+
+```
+# Example: Spawn 4 diagnostic subagents in ONE message
+Task(subagent_type="Explore", prompt="Search codebase for VMPool components")
+Task(subagent_type="general-purpose", prompt="Take screenshot of /_admin/vm-pool")
+Task(subagent_type="general-purpose", prompt="Check coordinator API health")
+Task(subagent_type="general-purpose", prompt="List current AWS instances")
+```
+
+**Safe for parallel:**
+- File reads (Read, Glob, Grep)
+- Screenshots (browser_navigate, browser_take_screenshot)
+- API GET requests
+- Firebase reads
+- AWS list operations
+
+### Execute Phase - MUST Serialize (1 subagent only)
+
+**NEVER parallelize:**
+- npm run build (file locks)
+- npm test (port conflicts)
+- Deploy operations (server state)
+- File writes (potential conflicts)
+- PM2 restarts (process conflicts)
+
+**Why:** Parallel builds/deploys cause race conditions, file locks, and flaky results.
+
+---
+
 ## Deployment
 
 ### Frontend Changes

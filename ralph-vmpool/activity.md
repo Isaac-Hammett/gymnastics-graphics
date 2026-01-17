@@ -90,3 +90,24 @@ Created Ralph loop for VM Pool fix:
 **Next:** Run WORKFLOW-01 to test launching a new VM
 
 ---
+
+### WORKFLOW-01: Launch New VM - COMPLETED ✅
+**Action:** Clicked "Launch New VM" button on VM Pool page
+**Screenshot:** screenshots/WORKFLOW-01-before.png (captured before launch)
+**Console:** No errors
+
+**Result:**
+- ✅ Clicked "Launch New VM" button (ref=e88)
+- ✅ Dialog appeared: "VM launched successfully! Instance ID: i-0a20c68a1d940b11a, Type: t3.large"
+- ✅ AWS verification via `aws_list_instances`:
+  - Instance ID: `i-0a20c68a1d940b11a`
+  - Name: `gymnastics-vm-1768672589234`
+  - State: `running`
+  - Public IP: `44.203.192.255`
+  - Type: t3.large
+
+**Note:** Browser dialog blocked UI screenshot after launch. AWS confirmed VM exists and is running.
+
+**Next:** Run WORKFLOW-02 to verify VM appears as Available in pool
+
+---

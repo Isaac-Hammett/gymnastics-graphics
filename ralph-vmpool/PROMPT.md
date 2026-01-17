@@ -2,12 +2,38 @@
 
 # VM Pool Fix - Agent Instructions
 
-You are fixing the VM Pool Management system. Your job is to:
-1. Execute ONE task from plan.md
-2. Verify with Playwright screenshot
-3. Update status based on verification result
-4. Log to activity.md
-5. Exit
+You are fixing the VM Pool Management system using a **two-phase approach**:
+
+**PHASE 1 - RESEARCH:** Spawn up to 30 parallel subagents for read-only operations
+**PHASE 2 - EXECUTE:** Use exactly 1 subagent for build/test/deploy (sequential)
+
+---
+
+## Parallelization Rules (CRITICAL)
+
+### ✅ CAN Parallelize (Research Phase - up to 30 subagents)
+| Operation | Why Safe |
+|-----------|----------|
+| File reads (Read, Glob, Grep) | Read-only, no conflicts |
+| Diagnostic screenshots | Read-only browser state |
+| API status checks (curl GET) | Read-only |
+| Firebase reads (firebase_get, firebase_list_paths) | Read-only |
+| AWS list operations (aws_list_instances) | Read-only |
+| Codebase exploration | Read-only |
+
+### ❌ MUST Serialize (Execute Phase - 1 subagent only)
+| Operation | Why Serial |
+|-----------|------------|
+| npm run build | File locks, shared dist/ |
+| npm test | Port conflicts, shared state |
+| tar/package | File locks |
+| ssh_upload_file | Network resource |
+| ssh_exec (mutations) | Server state |
+| PM2 restart | Process conflicts |
+| Deploy verification | Depends on deploy completion |
+| File writes (Edit, Write) | Potential conflicts |
+
+**Why:** Multiple subagents running build/test/deploy cause file lock conflicts, race conditions, and flaky results.
 
 ---
 
@@ -15,14 +41,57 @@ You are fixing the VM Pool Management system. Your job is to:
 
 ### Step 1: Read State
 1. Read `activity.md` - understand what's been done
-2. Read `plan.md` - find FIRST task with `"status": "pending"`
+2. Read `plan.md` - find tasks in current phase
 3. Read `AGENT.md` - know deployment patterns
 4. Read `PRD.md` - understand success criteria
 
-### Step 2: Execute Task
-Run the action specified in the task. Use MCP tools directly.
+### Step 2: Identify Phase
 
-### Step 3: Verify with Screenshot (REQUIRED)
+Look at `plan.md` for the current phase:
+
+```json
+{
+  "currentPhase": "research",  // or "execute"
+  "researchTasks": [...],      // CAN run in parallel
+  "executeTasks": [...]        // MUST run sequentially
+}
+```
+
+### Step 3: Execute Based on Phase
+
+#### If RESEARCH Phase:
+**Spawn parallel subagents** using the Task tool:
+
+```
+Use Task tool to spawn up to 30 subagents simultaneously:
+- subagent_type: "Explore" for codebase research
+- subagent_type: "general-purpose" for diagnostics
+
+Example: Fan out 5 diagnostic tasks in ONE message with 5 Task tool calls
+```
+
+**Research subagents can:**
+- Read files (Read, Glob, Grep)
+- Take screenshots (browser_navigate, browser_take_screenshot)
+- Check API responses (curl GET only)
+- Read Firebase data
+- List AWS resources
+
+**Research subagents CANNOT:**
+- Write or edit files
+- Run npm build/test
+- Deploy anything
+- Modify server state
+
+#### If EXECUTE Phase:
+**Run ONE task at a time, sequentially:**
+
+1. Execute the action (build, deploy, etc.)
+2. Verify with screenshot
+3. Update status
+4. Move to next task only after completion
+
+### Step 4: Verify with Screenshot (REQUIRED)
 
 **Every task must end with Playwright verification:**
 
@@ -37,7 +106,7 @@ Run the action specified in the task. Use MCP tools directly.
 - Are there any error messages visible?
 - Are there console errors?
 
-### Step 4: Update Status
+### Step 5: Update Status
 
 **If verification PASSED:**
 ```json
@@ -69,7 +138,7 @@ Then CREATE A NEW TASK to fix the specific issue:
 }
 ```
 
-### Step 5: Log to activity.md
+### Step 6: Log to activity.md
 
 Append entry:
 ```markdown
@@ -81,24 +150,28 @@ Append entry:
 **Next:** [If failed, reference the new fix task created]
 ```
 
-### Step 6: Commit and Exit
+### Step 7: Transition Phases or Exit
 
+**If research phase complete:** Update plan.md to set `"currentPhase": "execute"`
+
+**If execute phase complete:** Commit and exit:
 ```bash
 git add -A
 git commit -m "TASK-ID: Brief description"
 ```
 
-**STOP. Do not continue to the next task.**
+**STOP after completing one execute task. Do not continue.**
 
 ---
 
 ## Critical Rules
 
-1. **ONE TASK PER ITERATION** - Complete one task, then exit
-2. **ALWAYS SCREENSHOT** - No task is complete without a screenshot
-3. **TRUST THE SCREENSHOT** - If it shows an error, the task failed
-4. **FAILED = NEW TASK** - Don't retry same approach, create new task with different approach
-5. **BE SPECIFIC** - Failure reasons must describe exactly what the screenshot showed
+1. **RESEARCH = PARALLEL** - Spawn up to 30 subagents for read-only tasks
+2. **EXECUTE = SERIAL** - Only 1 subagent for build/test/deploy
+3. **ALWAYS SCREENSHOT** - No task is complete without a screenshot
+4. **TRUST THE SCREENSHOT** - If it shows an error, the task failed
+5. **FAILED = NEW TASK** - Don't retry same approach, create new task with different approach
+6. **BE SPECIFIC** - Failure reasons must describe exactly what the screenshot showed
 
 ---
 
