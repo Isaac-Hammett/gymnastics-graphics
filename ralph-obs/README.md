@@ -540,6 +540,69 @@ cd ralph-obs
 
 ---
 
+## Completion Detection - How The Loop Knows When To Stop
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        COMPLETION SIGNAL FLOW                                │
+│                                                                              │
+│   The loop uses a unique signal: <RALPH_COMPLETE>ALL_DONE</RALPH_COMPLETE>   │
+│                                                                              │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │                                                                      │   │
+│   │   WRONG WAY (causes premature exit):                                │   │
+│   │   ══════════════════════════════════                                 │   │
+│   │                                                                      │   │
+│   │   Claude output (stream-json) includes EVERYTHING:                   │   │
+│   │   ┌────────────────────────────────────────────────────────────┐    │   │
+│   │   │ {"type":"system","content":"...RALPH_COMPLETE..."}  ◄── PROMPT │    │   │
+│   │   │ {"type":"assistant","content":"Working on task..."}         │    │   │
+│   │   │ {"type":"result","result":"Done with iteration"}            │    │   │
+│   │   └────────────────────────────────────────────────────────────┘    │   │
+│   │                                                                      │   │
+│   │   If we grep the raw output → finds signal in PROMPT → exits early! │   │
+│   │                                                                      │   │
+│   └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                              │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │                                                                      │   │
+│   │   RIGHT WAY (what we do):                                           │   │
+│   │   ═══════════════════════                                           │   │
+│   │                                                                      │   │
+│   │   1. Parse JSON stream                                              │   │
+│   │   2. Extract ONLY "assistant" and "result" text                     │   │
+│   │   3. Check for signal in Claude's ACTUAL output only                │   │
+│   │                                                                      │   │
+│   │   ┌────────────────────────────────────────────────────────────┐    │   │
+│   │   │ Raw JSON stream ──► Filter ──► Claude's text only          │    │   │
+│   │   │                         │                                   │    │   │
+│   │   │                         ▼                                   │    │   │
+│   │   │              ┌─────────────────────┐                       │    │   │
+│   │   │              │ "Working on task..."│  ◄── No signal here   │    │   │
+│   │   │              │ "Done, 5 pending"   │      = keep looping   │    │   │
+│   │   │              └─────────────────────┘                       │    │   │
+│   │   │                                                             │    │   │
+│   │   │              ┌─────────────────────┐                       │    │   │
+│   │   │              │ "All tasks done!"   │                       │    │   │
+│   │   │              │ <RALPH_COMPLETE>    │  ◄── Signal here      │    │   │
+│   │   │              │ ALL_DONE            │      = exit loop!     │    │   │
+│   │   │              │ </RALPH_COMPLETE>   │                       │    │   │
+│   │   │              └─────────────────────┘                       │    │   │
+│   │   └────────────────────────────────────────────────────────────┘    │   │
+│   │                                                                      │   │
+│   └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                              │
+│   Claude ONLY outputs the signal when ALL conditions are met:               │
+│   • All diagnostic tasks: completed                                         │
+│   • All test tasks: completed, failed, or skipped                          │
+│   • All fix tasks: completed or skipped                                    │
+│   • Zero tasks with status: pending                                        │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## Quick Reference
 
 | Command | What it does |

@@ -53,9 +53,11 @@ For TEST tasks:
 4. Verify the expected behavior
 
 For FIX tasks:
-1. Implement the fix
-2. Build and deploy if needed
-3. Verify the fix works
+1. Research (use subagents to understand the problem)
+2. Implement the fix
+3. Build and deploy
+4. Verify with screenshot
+5. Update plan.md and commit
 
 ### Step 3: Verify with screenshot
 
@@ -220,7 +222,7 @@ Main Context ──► ONE Subagent: "Build, deploy, verify"
 
 ---
 
-## REMINDER: EXIT AFTER ONE THING
+## REMINDER: ONE TASK = ONE ITERATION
 
 ```
 ┌─────────────────────────────────────────┐
@@ -228,14 +230,25 @@ Main Context ──► ONE Subagent: "Build, deploy, verify"
 │                                         │
 │  1. Read state files     ✓              │
 │  2. Pick ONE task        ✓              │
-│  3. Do the work          ✓              │
-│  4. Update plan.md       ✓              │
-│  5. Update activity.md   ✓              │
-│  6. Git commit           ✓              │
-│  7. Output summary       ✓              │
-│  8. ██████ EXIT ██████   ← YOU ARE HERE │
+│  3. Research (subagents) ✓              │
+│  4. Implement fix        ✓              │
+│  5. Build & deploy       ✓              │
+│  6. Test & screenshot    ✓              │
+│  7. Update plan.md       ✓              │
+│  8. Update activity.md   ✓              │
+│  9. Git commit           ✓              │
+│  10. Output summary      ✓              │
+│  11. ██████ EXIT ██████  ← STOP HERE    │
 │                                         │
-│  DO NOT CONTINUE                        │
+│  DO NOT START ANOTHER TASK              │
 │  Bash loop handles iteration N+1        │
 └─────────────────────────────────────────┘
 ```
+
+## HARD STOP RULE
+
+After you make your FIRST code edit, you are committed to THIS task.
+Complete the cycle: implement → build → test → update plan → commit → EXIT.
+
+Do NOT discover "oh I also need to fix X" and keep editing.
+If the fix doesn't work, mark it FAILED and EXIT. Next iteration will handle it.
