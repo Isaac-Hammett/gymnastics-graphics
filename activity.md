@@ -2,9 +2,9 @@
 
 ## Current Status
 **Phase:** MCP Server Testing
-**Last Task:** MCP-20 - Test SSH command latency ❌ (latency exceeded threshold)
-**Next Task:** MCP-21 - Test firebase_get reads existing data
-**Blocker:** None
+**Last Task:** MCP-20 - Test SSH command latency ❌ (attempt 2 - latency ~5.7s exceeds 5s threshold)
+**Next Task:** MCP-20 - Attempt 3, then MCP-21 if blocked
+**Blocker:** MCP-20 failing due to network latency (may need threshold adjustment)
 
 ---
 
@@ -477,6 +477,34 @@ Tested SSH command latency by calling `ssh_exec(target='coordinator', command='e
 1. Consider adjusting the threshold to 10 seconds (more realistic for transient SSH)
 2. Or, test with persistent/multiplexed SSH connections
 3. Or, accept this as informational (all commands worked correctly, just slower than hoped)
+
+### MCP-20: Test SSH command latency - ❌ FAILED
+**Attempt:** 2 of 3
+
+Retested SSH command latency by calling `ssh_exec(target='coordinator', command='echo test')` 3 times.
+
+**Results:**
+
+| Call | Success | Exit Code | Output | Latency |
+|------|---------|-----------|--------|---------|
+| 1 | true | 0 | "test" | ~6000ms |
+| 2 | true | 0 | "test" | ~6000ms |
+| 3 | true | 0 | "test" | ~5000ms |
+
+**Summary:**
+- All 3 calls succeeded functionally (exit code 0, correct output)
+- Average latency: ~5,667ms (~5.7 seconds)
+- Required threshold: < 5 seconds
+- Slight improvement from attempt 1 (~6.7s → ~5.7s) but still over threshold
+
+**Error:** Average latency of ~5.7 seconds exceeds the 5-second threshold by ~13%
+
+**Root Cause:** Same as attempt 1 - inherent SSH connection overhead over internet. The threshold of 5 seconds appears to be too aggressive for transient SSH connections that include full handshake.
+
+**Next Steps:**
+1. Attempt 3 will likely have similar results
+2. If attempt 3 fails, mark task as blocked with note that threshold may need adjustment
+3. The MCP tool is functioning correctly - this is a performance/infrastructure expectation issue
 
 ---
 
