@@ -2,9 +2,9 @@
 
 ## Current Status
 **Phase:** MCP Server Testing
-**Last Task:** MCP-05 - Attempt 2 FAILED (MCP server not connected)
-**Next Task:** MCP-05 - Test ssh_exec with sudo on coordinator (Attempt 3)
-**Blocker:** MCP server not connected to Claude Code session - user intervention required
+**Last Task:** MCP-05 - Test ssh_exec with sudo on coordinator ✅
+**Next Task:** MCP-07 - Test ssh_exec service status on coordinator
+**Blocker:** None
 
 ---
 
@@ -113,13 +113,33 @@ All returned "Error: No such tool available", confirming the MCP server is not r
 2. User may need to restart Claude Code session to reload MCP tools
 3. Verify MCP server configuration in Claude Code settings
 
+### MCP-05: Test ssh_exec with sudo on coordinator ✅
+**Attempt:** 3 of 3 (New session with MCP server connected)
+
+Called `mcp__gymnastics__ssh_exec` MCP tool directly (not a test script):
+- target: 'coordinator'
+- command: 'whoami'
+- sudo: true
+
+**Results:**
+| Field | Value | Expected | Status |
+|-------|-------|----------|--------|
+| target | 44.193.31.120 | coordinator resolved | ✓ |
+| command | sudo whoami | - | ✓ |
+| exitCode | 0 | 0 | ✓ |
+| stdout | "root" | contains 'root' | ✓ |
+| stderr | "" | - | ✓ |
+| success | true | true | ✓ |
+
+**Verification:** MCP-05 PASSED - Used actual MCP tool `mcp__gymnastics__ssh_exec` with sudo=true, stdout returned 'root'
+
 ---
 
 ## Issues & Blockers
 
 | Issue | Task | Status | Resolution |
 |-------|------|--------|------------|
-| MCP server not connected | MCP-05+ | BLOCKING | User needs to restart Claude Code with MCP server connected |
+| MCP server not connected | MCP-05 | RESOLVED | New session started with MCP server properly connected |
 
 ---
 

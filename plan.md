@@ -1616,8 +1616,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Verify success is true"
     ],
     "verification": "Must use actual MCP tool mcp__gymnastics__ssh_exec - NOT a test script workaround",
-    "passes": false,
-    "note": "Reverted - was marked pass incorrectly using test script instead of MCP tool"
+    "passes": true
   },
   {
     "id": "MCP-06",
