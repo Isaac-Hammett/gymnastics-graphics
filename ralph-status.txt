@@ -48,3 +48,4 @@ Starting: Test firebase_get with invalid project
 [Step 1] Calling firebase_get with project='invalid'
 [Step 2] Verifying error response
 Done: PASS
+Done: npm test result - PASS (40/40 tests passed)

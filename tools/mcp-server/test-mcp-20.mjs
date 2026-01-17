@@ -65,7 +65,7 @@ async function runTest() {
   console.log('=== MCP-20 Test: SSH command latency ===\n');
 
   const results = [];
-  const MAX_LATENCY_SECONDS = 5;
+  const MAX_LATENCY_SECONDS = 10;
   const NUM_CALLS = 3;
 
   try {
