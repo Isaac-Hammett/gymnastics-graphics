@@ -615,7 +615,7 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
       "Method switcher: VDO.Ninja vs Discord"
     ],
     "verification": "Template manager and talent comms UI components work",
-    "passes": false
+    "passes": true
   },
 
   {
@@ -748,9 +748,9 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
 | **OBS Phase 8: Templates** | 2 | 2 | Complete |
 | **OBS Phase 9: Talent Comms** | 2 | 2 | Complete |
 | **OBS Phase 10: Preview** | 2 | 2 | Complete |
-| **OBS Phase 11: UI** | 7 | 6 | In Progress |
+| **OBS Phase 11: UI** | 7 | 7 | Complete |
 | **OBS Integration Tests** | 7 | 0 | Not Started |
-| **Total** | **38** | **30** | **79%** |
+| **Total** | **38** | **31** | **82%** |
 
 ---
 
