@@ -1,0 +1,10 @@
+Starting: Check security group for port 4455
+
+SECURITY GROUP CHECK RESULTS:
+===========================
+Port 4455 Status: NOT OPEN
+Current open ports: 80, 8080, 22, 3001, 4000, 443, 3003
+Security Group ID: sg-025f1ac53cccb756b
+Security Group Name: gymnastics-vm-pool
+
+Port 4455 is NOT in the current inbound rules.
