@@ -1,6 +1,6 @@
 @plan.md @activity.md @AGENT.md @PRD.md
 
-# VM Pool Fix - Agent Instructions
+# {{PROJECT_NAME}} - Agent Instructions
 
 ## CRITICAL: ONE TASK PER ITERATION
 
