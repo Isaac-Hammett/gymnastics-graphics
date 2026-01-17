@@ -1576,7 +1576,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Verify all returned instances have state='stopped'"
     ],
     "verification": "State filter correctly filters results",
-    "passes": false
+    "passes": true
   },
   {
     "id": "MCP-03",
