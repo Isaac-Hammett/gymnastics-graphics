@@ -48,6 +48,31 @@ All Firebase tools require `project: "dev"` or `project: "prod"`.
 
 ---
 
+## Subagent Parallelization Rules - IMPORTANT
+
+When spawning subagents, follow these rules to avoid resource contention:
+
+| Task Type | Parallelization | Reason |
+|-----------|-----------------|--------|
+| **File search** (Glob, Grep, Read) | ✅ Fan out freely | Read-only, no conflicts |
+| **File writes** (Edit, Write) | ✅ Can parallelize | Different files, no overlap |
+| **Build** (npm run build) | ❌ Single subagent | File locks, shared artifacts |
+| **Test** (npm test) | ❌ Single subagent | Shared test state, port conflicts |
+| **Deploy** (SSH, PM2) | ❌ Single subagent | Server state, restart conflicts |
+| **Server verification** (curl) | ❌ Single subagent | Depends on deploy completion |
+
+**Why:** Multiple subagents running build/test/deploy simultaneously cause:
+- File lock conflicts (node_modules, dist/)
+- Race conditions on shared resources
+- Flaky test results
+- Bad back-pressure on the system
+
+**Rules:**
+- Use parallel subagents for exploration/search (max 20 concurrent)
+- Use only ONE subagent for validation (build + test + deploy + verify)
+
+---
+
 ## Test Environment (Ralph Wiggum Loop) - IMPORTANT
 
 **ALWAYS use the test environment when making UI changes to show-controller.** This allows unlimited iterations without burning Netlify build credits.
