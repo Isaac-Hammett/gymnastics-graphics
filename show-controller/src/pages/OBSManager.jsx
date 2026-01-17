@@ -16,6 +16,8 @@ import SceneEditor from '../components/obs/SceneEditor';
 import SourceEditor from '../components/obs/SourceEditor';
 import AudioMixer from '../components/obs/AudioMixer';
 import AudioPresetManager from '../components/obs/AudioPresetManager';
+import StreamConfig from '../components/obs/StreamConfig';
+import AssetManager from '../components/obs/AssetManager';
 
 export default function OBSManager() {
   const {
@@ -240,18 +242,8 @@ export default function OBSManager() {
               <p>Transition controls coming soon</p>
             </div>
           )}
-          {activeTab === 'stream' && (
-            <div className="text-center text-gray-400 py-12">
-              <h3 className="text-xl font-semibold text-white mb-2">Stream Configuration</h3>
-              <p>Stream configuration will be added in OBS-30</p>
-            </div>
-          )}
-          {activeTab === 'assets' && (
-            <div className="text-center text-gray-400 py-12">
-              <h3 className="text-xl font-semibold text-white mb-2">Asset Manager</h3>
-              <p>Asset manager will be added in OBS-30</p>
-            </div>
-          )}
+          {activeTab === 'stream' && <StreamConfig />}
+          {activeTab === 'assets' && <AssetManager />}
           {activeTab === 'templates' && (
             <div className="text-center text-gray-400 py-12">
               <h3 className="text-xl font-semibold text-white mb-2">Template Manager</h3>

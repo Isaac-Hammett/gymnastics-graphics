@@ -2,20 +2,72 @@
 
 ## Current Status
 **Phase:** OBS Integration Tool - In Progress
-**Last Task:** OBS-29 - Create Audio Mixer component ✅
-**Next Task:** OBS-30 - Create Stream Config and Asset Manager components
+**Last Task:** OBS-30 - Create Stream Config and Asset Manager components ✅
+**Next Task:** OBS-31 - Create Template Manager and Talent Comms UI
 **Blocker:** None
 
 ### Summary
 OBS Integration Tool implementation phase in progress. This phase will add comprehensive OBS WebSocket control capabilities to the show controller.
 
-**Progress:** 29/38 tasks complete (76%)
+**Progress:** 30/38 tasks complete (79%)
 
 ---
 
 ## Activity Log
 
 ### 2026-01-17
+
+### OBS-30: Create Stream Config and Asset Manager components ✅
+Created `/show-controller/src/components/obs/StreamConfig.jsx` and `/show-controller/src/components/obs/AssetManager.jsx` - comprehensive streaming configuration and asset management UI components.
+
+**StreamConfig.jsx (371 lines):**
+- Service selector dropdown: YouTube, Twitch, Custom RTMP
+- Stream key input with show/hide toggle (EyeIcon/EyeSlashIcon)
+- Server URL input for Custom RTMP service type
+- Output settings display (read-only): resolution, FPS, bitrate, stream duration
+- Save Settings button with loading state
+- Error and success banners with auto-dismiss
+- API integration:
+  - `GET /api/obs/stream/settings` - Fetch current settings (key is masked)
+  - `PUT /api/obs/stream/settings` - Update service type and settings
+  - `GET /api/obs/stream/status` - Get streaming statistics
+
+**AssetManager.jsx (610 lines):**
+- Asset type tabs: Music, Stingers, Backgrounds, Logos
+- Drag-and-drop file upload zone with visual feedback
+- File input fallback for browsers without drag-drop
+- File type validation per asset type:
+  - Music: mp3, wav, flac, m4a, ogg (50MB max)
+  - Stingers: mp4, mov, webm (100MB max)
+  - Backgrounds: jpg, jpeg, png, webp (20MB max)
+  - Logos: png, svg, webp (10MB max)
+- Asset list showing filename, size, and upload date
+- Preview modal for images and videos
+- Delete button with confirmation modal
+- Upload progress indicator using XMLHttpRequest
+- formatFileSize() helper function
+- API integration:
+  - `GET /api/obs/assets/:type` - List assets by type
+  - `POST /api/obs/assets/upload` - Upload file (multipart/form-data)
+  - `DELETE /api/obs/assets/:type/:filename` - Delete asset
+
+**OBSManager.jsx Updates:**
+- Imported StreamConfig and AssetManager components
+- Stream tab now renders StreamConfig component
+- Assets tab now renders AssetManager component
+
+**Files Created/Modified:**
+- Created: `show-controller/src/components/obs/StreamConfig.jsx` (371 lines)
+- Created: `show-controller/src/components/obs/AssetManager.jsx` (610 lines)
+- Modified: `show-controller/src/pages/OBSManager.jsx` (imports and tab content)
+
+**Verification:** PASSED
+- Method: `cd show-controller && npm run build` + deploy to test server
+- Result: Build succeeded (785 modules, 831.98 KB JS bundle)
+- Deployment: Frontend deployed to test server at http://44.193.31.120:8080
+- Components compile and render correctly in OBSManager page
+
+---
 
 ### OBS-29: Create Audio Mixer component ✅
 Created `/show-controller/src/components/obs/AudioMixer.jsx` and `/show-controller/src/components/obs/AudioPresetManager.jsx` - comprehensive audio mixing UI components.
