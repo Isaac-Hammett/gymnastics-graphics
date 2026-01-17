@@ -2459,6 +2459,20 @@ io.on('connection', async (socket) => {
     }
   });
 
+  // Switch scene (alias for overrideScene - used by OBS Manager UI)
+  socket.on('switchScene', async ({ sceneName }) => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can switch scenes' });
+      return;
+    }
+
+    const success = await switchScene(sceneName);
+    if (!success) {
+      socket.emit('error', { message: `Failed to switch to scene: ${sceneName}` });
+    }
+  });
+
   // Toggle talent lock
   socket.on('lockTalent', ({ locked }) => {
     const client = showState.connectedClients.find(c => c.id === socket.id);
