@@ -1631,7 +1631,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Verify stdout contains filesystem info"
     ],
     "verification": "System info commands return valid data",
-    "passes": false
+    "passes": true
   },
   {
     "id": "MCP-07",

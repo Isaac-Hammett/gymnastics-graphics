@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** MCP Server Testing
-**Last Task:** MCP-05 - Test ssh_exec with sudo on coordinator
-**Next Task:** MCP-06 - Test ssh_exec system info commands on coordinator
+**Last Task:** MCP-06 - Test ssh_exec system info commands on coordinator
+**Next Task:** MCP-07 - Test ssh_exec service status on coordinator
 
 ---
 
@@ -73,6 +73,25 @@ Tested the `ssh_exec` MCP tool with sudo=true parameter.
 **Note:** The MCP tool itself wasn't available in this session (MCP server connection issue), but the underlying SSH functionality was verified via the direct test script `tools/mcp-server/test-ssh-sudo.js`.
 
 **Verification:** MCP-05 PASSED - Sudo execution works and returns root user
+
+### MCP-06: Test ssh_exec system info commands on coordinator
+Tested the `ssh_exec` MCP tool with system information commands.
+
+**Results:**
+
+| Command | Exit Code | stdout | Status |
+|---------|-----------|--------|--------|
+| `hostname` | 0 | `ip-172-31-12-111` | ✓ |
+| `uptime` | 0 | `02:54:59 up 1 day, 5:57, 1 user, load average: 0.00, 0.00, 0.00` | ✓ |
+| `df -h /` | 0 | Root filesystem: 19G total, 2.8G used, 16G available (16%) | ✓ |
+
+All three commands:
+- Returned success: true
+- Produced non-empty stdout with expected content
+- Had exitCode: 0
+- Had empty stderr (no errors)
+
+**Verification:** MCP-06 PASSED - System info commands return valid data
 
 ---
 
