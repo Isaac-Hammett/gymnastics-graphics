@@ -2,20 +2,58 @@
 
 ## Current Status
 **Phase:** OBS Integration Tool - In Progress
-**Last Task:** OBS-26 - Create OBS Manager main page ✅
-**Next Task:** OBS-27 - Create Scene List and Editor components
+**Last Task:** OBS-27 - Create Scene List and Editor components ✅
+**Next Task:** OBS-28 - Create Source Editor component
 **Blocker:** None
 
 ### Summary
 OBS Integration Tool implementation phase in progress. This phase will add comprehensive OBS WebSocket control capabilities to the show controller.
 
-**Progress:** 26/38 tasks complete (68%)
+**Progress:** 27/38 tasks complete (71%)
 
 ---
 
 ## Activity Log
 
 ### 2026-01-17
+
+### OBS-27: Create Scene List and Editor components ✅
+Created `/show-controller/src/components/obs/SceneList.jsx` and `/show-controller/src/components/obs/SceneEditor.jsx` - comprehensive scene management UI components.
+
+**SceneList.jsx (310 lines):**
+- Groups scenes by category (generated-single, generated-multi, static, graphics, manual, template)
+- Color-coded category badges with collapsible groups
+- Scene cards showing: name, LIVE/PREVIEW badges, source count
+- Action buttons: Preview (eye), Edit (pencil), Duplicate (squares), Delete (trash)
+- Studio mode aware (preview vs direct switching)
+- Integrates with `useOBS()` hook from OBSContext
+
+**SceneEditor.jsx (392 lines):**
+- Displays scene items with full metadata (ID, position, enabled, locked status)
+- Native HTML5 drag-and-drop for reordering scene items
+- Per-item controls: visibility toggle, lock toggle, delete button
+- Transform preset buttons (10 presets matching server/lib/obsSourceManager.js):
+  - Fullscreen, Dual layouts, Quad layouts, Triple layouts
+- "Add Source" modal showing unused inputs
+- Selected item highlighting with purple ring
+
+**OBSManager.jsx Updates:**
+- Imported SceneList and SceneEditor components
+- Added state for selectedScene and showSceneEditor
+- Scenes tab now conditionally renders SceneList or SceneEditor
+- Back button to return from editor to list view
+
+**Files Created/Modified:**
+- Created: `show-controller/src/components/obs/SceneList.jsx` (310 lines)
+- Created: `show-controller/src/components/obs/SceneEditor.jsx` (392 lines)
+- Modified: `show-controller/src/pages/OBSManager.jsx` (356 lines)
+
+**Verification:** PASSED
+- Method: `cd show-controller && npm run build`
+- Result: Build succeeded (780 modules, 781.09 KB JS bundle)
+- Deployment: Frontend deployed to test server at http://44.193.31.120:8080
+
+---
 
 ### OBS-26: Create OBS Manager main page ✅
 Created `/show-controller/src/pages/OBSManager.jsx` - main OBS Manager page with tabbed navigation and stream controls.
