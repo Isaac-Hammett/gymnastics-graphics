@@ -38,6 +38,11 @@ export class MockOBSWebSocket extends EventEmitter {
     this._previewScene = null;
     this._streaming = false;
     this._recording = false;
+    this._streamServiceType = 'rtmp_common';
+    this._streamServiceSettings = {
+      server: 'rtmp://a.rtmp.youtube.com/live2',
+      key: 'test-stream-key-abc123'
+    };
 
     // Call tracking for assertions
     this._callHistory = [];
@@ -496,6 +501,23 @@ export class MockOBSWebSocket extends EventEmitter {
       };
     },
 
+    GetStreamServiceSettings: function() {
+      return {
+        streamServiceType: this._streamServiceType || 'rtmp_common',
+        streamServiceSettings: this._streamServiceSettings || {
+          server: 'rtmp://a.rtmp.youtube.com/live2',
+          key: 'test-stream-key-abc123'
+        }
+      };
+    },
+
+    SetStreamServiceSettings: function(params) {
+      const { streamServiceType, streamServiceSettings } = params;
+      this._streamServiceType = streamServiceType;
+      this._streamServiceSettings = streamServiceSettings;
+      return {};
+    },
+
     StartStream: function() {
       this._streaming = true;
 
@@ -878,6 +900,11 @@ export class MockOBSWebSocket extends EventEmitter {
     this._previewScene = null;
     this._streaming = false;
     this._recording = false;
+    this._streamServiceType = 'rtmp_common';
+    this._streamServiceSettings = {
+      server: 'rtmp://a.rtmp.youtube.com/live2',
+      key: 'test-stream-key-abc123'
+    };
     this._callHistory = [];
     this._eventHistory = [];
     this._errorOnNextCall = null;
@@ -931,6 +958,14 @@ export class MockOBSWebSocket extends EventEmitter {
    */
   setConnected(connected) {
     this._connected = connected;
+  }
+
+  /**
+   * Set stream service settings for testing
+   */
+  setStreamSettings(serviceType, settings) {
+    this._streamServiceType = serviceType;
+    this._streamServiceSettings = settings;
   }
 
   /**

@@ -2,20 +2,70 @@
 
 ## Current Status
 **Phase:** OBS Integration Tool - In Progress
-**Last Task:** OBS-14 - Add Transition Management API endpoints ✅
-**Next Task:** OBS-15 - Create OBS Stream Manager module
+**Last Task:** OBS-15 - Create OBS Stream Manager module ✅
+**Next Task:** OBS-16 - Add Stream Configuration API endpoints
 **Blocker:** None
 
 ### Summary
 OBS Integration Tool implementation phase in progress. This phase will add comprehensive OBS WebSocket control capabilities to the show controller.
 
-**Progress:** 14/38 tasks complete (37%)
+**Progress:** 15/38 tasks complete (39%)
 
 ---
 
 ## Activity Log
 
 ### 2026-01-17
+
+### OBS-15: Create OBS Stream Manager module ✅
+Created `/server/lib/obsStreamManager.js` - stream configuration and control module for OBS.
+
+**Methods implemented:**
+- `getStreamSettings()` - Get stream service settings (key masked for security)
+- `setStreamSettings(settings, storeEncrypted)` - Set stream service settings, optionally store encrypted key
+- `startStream()` - Start streaming via OBS WebSocket
+- `stopStream()` - Stop streaming via OBS WebSocket
+- `getStreamStatus()` - Get stream status with timing and statistics
+- `loadStreamKeyFromFirebase()` - Load and decrypt stream key from Firebase
+- `deleteStreamKeyFromFirebase()` - Remove stream key from Firebase
+
+**Encryption utilities exported:**
+- `encryptStreamKey(plainKey)` - Encrypt stream key using AES-256-CBC with random IV
+- `decryptStreamKey(encryptedKey)` - Decrypt stream key from storage
+- `maskStreamKey(key)` - Mask key for display (****last4chars)
+
+**Mock implementations added to mockOBS.js:**
+- `GetStreamServiceSettings` - Returns stream service type and settings
+- `SetStreamServiceSettings` - Sets stream service settings
+- `setStreamSettings()` - Helper method for test setup
+
+**Tests created:**
+- `/server/__tests__/obsStreamManager.test.js` - 51 comprehensive tests covering:
+  - Module exports (2 tests)
+  - encryptStreamKey (4 tests)
+  - decryptStreamKey (4 tests)
+  - maskStreamKey (4 tests)
+  - getStreamSettings (4 tests)
+  - setStreamSettings (6 tests)
+  - startStream (4 tests)
+  - stopStream (4 tests)
+  - getStreamStatus (5 tests)
+  - Firebase integration (7 tests)
+  - Error handling (3 tests)
+  - Integration (4 tests)
+
+**Design decisions:**
+- Uses AES-256-CBC encryption with random IV for stream key security
+- Stream keys never exposed in API responses (masked with ****)
+- Encryption key configurable via STREAM_KEY_ENCRYPTION_KEY environment variable
+- Firebase storage at `competitions/{compId}/obs/streamConfig`
+- Consistent [OBSStreamManager] logging prefix
+
+**Verification:** PASSED
+- Method: `cd server && node --test __tests__/obsStreamManager.test.js`
+- Result: All 51 tests pass (17 suites, 0 failures)
+
+---
 
 ### OBS-14: Add Transition Management API endpoints ✅
 Added 7 REST API endpoints to `/server/routes/obs.js` for transition management.
