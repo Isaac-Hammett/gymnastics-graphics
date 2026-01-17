@@ -2,20 +2,51 @@
 
 ## Current Status
 **Phase:** OBS Integration Tool - In Progress
-**Last Task:** OBS-17 - Create OBS Asset Manager module ✅
-**Next Task:** OBS-18 - Add Asset Management API endpoints
+**Last Task:** OBS-18 - Add Asset Management API endpoints ✅
+**Next Task:** OBS-19 - Create OBS Template Manager module
 **Blocker:** None
 
 ### Summary
 OBS Integration Tool implementation phase in progress. This phase will add comprehensive OBS WebSocket control capabilities to the show controller.
 
-**Progress:** 17/38 tasks complete (45%)
+**Progress:** 18/38 tasks complete (47%)
 
 ---
 
 ## Activity Log
 
 ### 2026-01-17
+
+### OBS-18: Add Asset Management API endpoints ✅
+Added 6 REST API endpoints to `/server/routes/obs.js` for asset management.
+
+**Endpoints implemented:**
+- `GET /api/obs/assets` - List all assets grouped by type
+- `GET /api/obs/assets/:type` - List assets of a specific type
+- `POST /api/obs/assets/upload` - Upload asset file (multipart/form-data)
+- `DELETE /api/obs/assets/:type/:filename` - Delete asset from manifest
+- `GET /api/obs/assets/:type/:filename/download` - Get asset metadata
+- `POST /api/obs/assets/pack/install` - Placeholder for asset packs (501 Not Implemented)
+
+**File size limits and type validation:**
+- Music: 50MB max (mp3, wav, flac, m4a, ogg)
+- Stingers: 100MB max (mp4, mov, webm)
+- Backgrounds: 20MB max (jpg, jpeg, png, webp)
+- Logos: 10MB max (png, svg, webp)
+
+**Implementation details:**
+- Imported OBSAssetManager and multer at lines 20, 23
+- Multer configuration with memory storage at lines 1306-1334
+- All endpoints check obsStateSync initialized (503 if not)
+- Proper error handling (400, 404, 500, 503)
+- File extension and size validation via multer middleware
+
+**Verification:** PASSED
+- Method: `ssh_exec curl http://localhost:3003/api/obs/assets`
+- Result: `{"error":"OBS State Sync not initialized. Activate a competition first."}` (expected 503 response)
+- Syntax check: `node --check routes/obs.js` passed
+
+---
 
 ### OBS-17: Create OBS Asset Manager module ✅
 Created `/server/lib/obsAssetManager.js` - asset manifest management module for OBS media files.

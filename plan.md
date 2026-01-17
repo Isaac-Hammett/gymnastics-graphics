@@ -400,7 +400,7 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
       "Implement file size limits and type validation"
     ],
     "verification": "Routes added to server/routes/obs.js; on show VM: curl http://localhost:3003/api/obs/assets returns 503 or asset list",
-    "passes": false
+    "passes": true
   },
 
   {
@@ -744,13 +744,13 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
 | **OBS Phase 4: Audio** | 3 | 3 | Complete |
 | **OBS Phase 5: Transitions** | 2 | 2 | Complete |
 | **OBS Phase 6: Stream** | 2 | 2 | Complete |
-| **OBS Phase 7: Assets** | 2 | 1 | In Progress |
+| **OBS Phase 7: Assets** | 2 | 2 | Complete |
 | **OBS Phase 8: Templates** | 2 | 0 | Not Started |
 | **OBS Phase 9: Talent Comms** | 2 | 0 | Not Started |
 | **OBS Phase 10: Preview** | 2 | 0 | Not Started |
 | **OBS Phase 11: UI** | 7 | 0 | Not Started |
 | **OBS Integration Tests** | 7 | 0 | Not Started |
-| **Total** | **38** | **17** | **45%** |
+| **Total** | **38** | **18** | **47%** |
 
 ---
 
