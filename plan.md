@@ -545,7 +545,7 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
       "Implement transform editor with preset buttons"
     ],
     "verification": "Scene list shows categorized scenes with edit capabilities",
-    "passes": false
+    "passes": true
   },
   {
     "id": "OBS-28",
@@ -748,9 +748,9 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
 | **OBS Phase 8: Templates** | 2 | 2 | Complete |
 | **OBS Phase 9: Talent Comms** | 2 | 2 | Complete |
 | **OBS Phase 10: Preview** | 2 | 2 | Complete |
-| **OBS Phase 11: UI** | 7 | 2 | In Progress |
+| **OBS Phase 11: UI** | 7 | 3 | In Progress |
 | **OBS Integration Tests** | 7 | 0 | Not Started |
-| **Total** | **38** | **26** | **68%** |
+| **Total** | **38** | **27** | **71%** |
 
 ---
 

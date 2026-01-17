@@ -11,6 +11,8 @@ import {
   ArrowPathIcon
 } from '@heroicons/react/24/solid';
 import { useOBS } from '../context/OBSContext';
+import SceneList from '../components/obs/SceneList';
+import SceneEditor from '../components/obs/SceneEditor';
 
 export default function OBSManager() {
   const {
@@ -25,10 +27,43 @@ export default function OBSManager() {
   } = useOBS();
 
   const [activeTab, setActiveTab] = useState('scenes');
+  const [selectedScene, setSelectedScene] = useState(null);
+  const [showSceneEditor, setShowSceneEditor] = useState(false);
 
   // Extract streaming and recording states
   const isStreaming = obsState?.streaming?.active || obsState?.streaming || false;
   const isRecording = obsState?.recording?.active || obsState?.recording || false;
+
+  // Handle scene editing
+  const handleEditScene = (sceneName) => {
+    setSelectedScene(sceneName);
+    setShowSceneEditor(true);
+  };
+
+  const handleCloseSceneEditor = () => {
+    setShowSceneEditor(false);
+    setSelectedScene(null);
+  };
+
+  const handleSceneAction = (action, sceneName) => {
+    console.log('Scene action:', action, sceneName);
+    // TODO: Implement scene actions (duplicate, delete)
+    switch (action) {
+      case 'duplicate':
+        alert(`Duplicate scene: ${sceneName} (not yet implemented)`);
+        break;
+      case 'delete':
+        if (confirm(`Delete scene "${sceneName}"?`)) {
+          alert(`Delete scene: ${sceneName} (not yet implemented)`);
+        }
+        break;
+      case 'preview':
+        // Already handled by SceneList
+        break;
+      default:
+        console.warn('Unknown scene action:', action);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-900">
@@ -145,11 +180,17 @@ export default function OBSManager() {
         {/* Tab Content */}
         <div className="bg-gray-800 rounded-xl p-6 min-h-[400px]">
           {activeTab === 'scenes' && (
-            <div className="text-center text-gray-400 py-12">
-              <SignalIcon className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-white mb-2">Scene Management</h3>
-              <p>Scene list and editor components will be added in OBS-27</p>
-            </div>
+            showSceneEditor ? (
+              <SceneEditor
+                sceneName={selectedScene}
+                onClose={handleCloseSceneEditor}
+              />
+            ) : (
+              <SceneList
+                onEditScene={handleEditScene}
+                onSceneAction={handleSceneAction}
+              />
+            )
           )}
           {activeTab === 'sources' && (
             <div className="text-center text-gray-400 py-12">
