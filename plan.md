@@ -1711,7 +1711,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Verify error message is descriptive"
     ],
     "verification": "Invalid target returns proper error, not crash",
-    "passes": false
+    "passes": true
   },
   {
     "id": "MCP-13",

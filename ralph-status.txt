@@ -11,3 +11,8 @@ Step 3: Verifying uploaded file content
 Step 4: Downloading file back to different local path
 Step 5: Verifying downloaded file content
 Done: MCP-11 PASS - Upload/download roundtrip successful, all content verified
+Starting: Test MCP-12 - Invalid SSH target error handling
+[Step 1] Calling ssh_exec with unreachable target 192.0.2.1
+[Step 2] Received error response - timeout during handshake
+[Step 3] Error message is descriptive and indicates failure properly
+Done: PASS
