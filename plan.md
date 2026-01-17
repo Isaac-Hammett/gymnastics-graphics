@@ -497,7 +497,7 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
       "Add POST /api/obs/studio-mode/transition to execute transition"
     ],
     "verification": "Routes added to server/routes/obs.js; on show VM: curl http://localhost:3003/api/obs/preview/screenshot returns 503 or base64 image",
-    "passes": false
+    "passes": true
   },
 
   {
@@ -747,10 +747,10 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
 | **OBS Phase 7: Assets** | 2 | 2 | Complete |
 | **OBS Phase 8: Templates** | 2 | 2 | Complete |
 | **OBS Phase 9: Talent Comms** | 2 | 2 | Complete |
-| **OBS Phase 10: Preview** | 2 | 1 | In Progress |
+| **OBS Phase 10: Preview** | 2 | 2 | Complete |
 | **OBS Phase 11: UI** | 7 | 0 | Not Started |
 | **OBS Integration Tests** | 7 | 0 | Not Started |
-| **Total** | **38** | **23** | **61%** |
+| **Total** | **38** | **24** | **63%** |
 
 ---
 
