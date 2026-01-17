@@ -4,10 +4,10 @@
 **Phase:** OBS Integration Tool - In Progress
 **Last Task:** OBS-31 - Create Template Manager and Talent Comms UI ✅
 **Next Task:** OBS-INT-01 - OBS state sync end-to-end test
-**Blocker:** None
+**Blocker:** Port 4455 not open in AWS security group
 
 ### Summary
-OBS Integration Tool implementation phase in progress. All UI components for OBS Phase 11 are now complete. Next up: Integration testing.
+OBS Integration Tool implementation phase in progress. All UI components for OBS Phase 11 are now complete. Integration testing blocked by infrastructure - need port 4455 opened for OBS WebSocket.
 
 **Progress:** 31/38 tasks complete (82%)
 
@@ -16,6 +16,40 @@ OBS Integration Tool implementation phase in progress. All UI components for OBS
 ## Activity Log
 
 ### 2026-01-17
+
+### OBS-INT-01: OBS state sync end-to-end test - ❌ BLOCKED
+**Attempt:** 1 of 3
+
+**Investigation Findings:**
+1. **Coordinator VM:** Running at 44.193.31.120, healthy, PM2 process active
+2. **OBS VM:** Started i-08abea9194f19ddbd, now running at 100.48.62.137
+3. **OBS Services:** Both xvfb.service and obs-headless.service are ACTIVE and RUNNING
+4. **OBS WebSocket:** Listening on port 4455 (all interfaces)
+5. **WebSocket Password:** 9QqZIhTH4dqIT1Bz
+
+**Error:** Network connectivity blocked between coordinator and OBS VM
+
+**Root Cause:** AWS Security Group (sg-025f1ac53cccb756b) does not have an inbound rule allowing traffic on port 4455. The OBS WebSocket port is not exposed.
+
+**Actions Taken:**
+- Started the stopped OBS VM (i-08abea9194f19ddbd)
+- Verified OBS services are running correctly
+- Configured coordinator .env to point to OBS VM IP
+- Attempted to open port 4455 but permission was not granted
+
+**What's Needed:**
+1. Open port 4455 in AWS security group (requires `aws_open_port` permission)
+2. Once port is open, coordinator can connect to OBS WebSocket
+3. Integration tests can then proceed
+
+**Next Steps:**
+- Grant permission for `mcp__gymnastics__aws_open_port` tool
+- OR manually open port 4455 in AWS console
+- Then retry OBS-INT-01
+
+**Note:** All 31 implementation tasks (OBS-01 through OBS-31) passed their unit tests using MockOBS. The integration tests are for end-to-end validation with real OBS.
+
+---
 
 ### OBS-31: Create Template Manager and Talent Comms UI ✅
 Created `/show-controller/src/components/obs/TemplateManager.jsx` and `/show-controller/src/components/obs/TalentCommsPanel.jsx` - comprehensive template management and talent communications UI components.
