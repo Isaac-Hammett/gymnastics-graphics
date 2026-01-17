@@ -76,3 +76,28 @@
 - Producer page loads successfully
 **Screenshot:** `screenshots/PREREQ-01-competition-page.png`
 
+#### PREREQ-02: Verify OBS is running and WebSocket is connected - FAIL
+**Timestamp:** 2026-01-17 21:00 UTC
+**Action:** Navigated to /8kyf0rnl/obs-manager, checked connection status
+**Screenshot:** `screenshots/PREREQ-02-mixed-content-error.png`
+
+**Findings:**
+1. **vmAddress location issue (FIXED):** vmAddress was at `competitions/8kyf0rnl/vmAddress` but frontend expects it at `competitions/8kyf0rnl/config/vmAddress`. Fixed by setting `config.vmAddress = "3.89.92.162:3003"`
+
+2. **OBS IS running on VM:** SSH check confirmed OBS running (PID 425)
+
+3. **BLOCKING: Mixed Content Error:**
+   ```
+   Mixed Content: The page at 'https://commentarygraphic.com/8kyf0rnl/obs-manager'
+   was loaded over HTTPS, but attempted to connect to the insecure WebSocket
+   endpoint 'ws://3.89.92.162:3003/socket.io/'. This request has been blocked.
+   ```
+
+**Root Cause:** Browser security policy blocks HTTP/WS connections from HTTPS pages. The frontend is served over HTTPS (commentarygraphic.com) but tries to connect directly to the VM's WebSocket over plain HTTP.
+
+**Solution Required:** Route VM WebSocket connections through the coordinator API proxy (api.commentarygraphic.com already has SSL), OR set up SSL on each VM (complex).
+
+**Created:** FIX-01 to address this blocking issue.
+
+---
+
