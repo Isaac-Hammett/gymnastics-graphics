@@ -145,7 +145,7 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
       "Test state sync on OBS connect/disconnect"
     ],
     "verification": "Server broadcasts OBS state changes in real-time",
-    "passes": false
+    "passes": true
   },
 
   {
@@ -738,7 +738,7 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
 
 | Phase | Tasks | Done | Status |
 |-------|-------|------|--------|
-| **OBS Phase 1: State Sync** | 4 | 3 | In Progress |
+| **OBS Phase 1: State Sync** | 4 | 4 | Complete |
 | **OBS Phase 2: Scene CRUD** | 2 | 0 | Not Started |
 | **OBS Phase 3: Source Mgmt** | 3 | 0 | Not Started |
 | **OBS Phase 4: Audio** | 3 | 0 | Not Started |
@@ -750,7 +750,7 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
 | **OBS Phase 10: Preview** | 2 | 0 | Not Started |
 | **OBS Phase 11: UI** | 7 | 0 | Not Started |
 | **OBS Integration Tests** | 7 | 0 | Not Started |
-| **Total** | **38** | **3** | **8%** |
+| **Total** | **38** | **4** | **11%** |
 
 ---
 
