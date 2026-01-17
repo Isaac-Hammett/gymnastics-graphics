@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** MCP Server Testing
-**Last Task:** MCP-18 - Test coordinator app deployment check ✅
-**Next Task:** MCP-19 - Test network connectivity from coordinator
+**Last Task:** MCP-19 - Test network connectivity from coordinator ✅
+**Next Task:** MCP-20 - Test SSH command latency
 **Blocker:** None
 
 ---
@@ -425,6 +425,29 @@ Tested the coordinator application deployment structure via SSH.
 - Restarts: 3 (stable)
 
 **Verification:** MCP-18 PASSED - Coordinator deployment structure is correct
+
+### MCP-19: Test network connectivity from coordinator ✅
+Tested network connectivity from the coordinator VM using MCP tools.
+
+**Test 1: GitHub API Connectivity**
+- Command: `curl -s -o /dev/null -w "%{http_code}" https://api.github.com`
+- Result: HTTP 200 ✓
+- Exit Code: 0
+
+**Test 2: Local API Status**
+- Command: `curl -s http://localhost:3001/api/status`
+- Result: Valid JSON response with full status object
+- Exit Code: 0
+- API returned: Current segment "Show Intro", 0/21 segments completed, OBS not connected
+
+**Assessment:**
+| Metric | Status |
+|--------|--------|
+| Outbound Internet | ✓ Working (GitHub API reachable) |
+| Local API (port 3001) | ✓ Running and responsive |
+| Network Stack | ✓ Healthy |
+
+**Verification:** MCP-19 PASSED - Coordinator has internet and local service connectivity
 
 ---
 
