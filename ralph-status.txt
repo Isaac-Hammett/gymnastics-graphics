@@ -29,3 +29,6 @@ Step 1: Check /opt/gymnastics-graphics directory
 Step 2: Check server/package.json
 Step 3: Check PM2 process status
 Done: PASS
+Test 1: GitHub API connectivity - 200
+Test 2: Local API status - running
+Done: PASS

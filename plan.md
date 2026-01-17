@@ -1814,7 +1814,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Record whether local API is running"
     ],
     "verification": "Coordinator has internet and local service connectivity",
-    "passes": false
+    "passes": true
   },
   {
     "id": "MCP-20",
