@@ -14,6 +14,8 @@ import { useOBS } from '../context/OBSContext';
 import SceneList from '../components/obs/SceneList';
 import SceneEditor from '../components/obs/SceneEditor';
 import SourceEditor from '../components/obs/SourceEditor';
+import AudioMixer from '../components/obs/AudioMixer';
+import AudioPresetManager from '../components/obs/AudioPresetManager';
 
 export default function OBSManager() {
   const {
@@ -220,9 +222,16 @@ export default function OBSManager() {
             />
           )}
           {activeTab === 'audio' && (
-            <div className="text-center text-gray-400 py-12">
-              <h3 className="text-xl font-semibold text-white mb-2">Audio Mixer</h3>
-              <p>Audio mixer will be added in OBS-29</p>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Main Audio Mixer (left/main area) */}
+              <div className="lg:col-span-2">
+                <AudioMixer />
+              </div>
+
+              {/* Audio Presets (right sidebar) */}
+              <div className="lg:col-span-1">
+                <AudioPresetManager />
+              </div>
             </div>
           )}
           {activeTab === 'transitions' && (

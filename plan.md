@@ -579,7 +579,7 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
       "Delete preset functionality"
     ],
     "verification": "Audio mixer shows volume controls and presets",
-    "passes": false
+    "passes": true
   },
   {
     "id": "OBS-30",
@@ -748,9 +748,9 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
 | **OBS Phase 8: Templates** | 2 | 2 | Complete |
 | **OBS Phase 9: Talent Comms** | 2 | 2 | Complete |
 | **OBS Phase 10: Preview** | 2 | 2 | Complete |
-| **OBS Phase 11: UI** | 7 | 4 | In Progress |
+| **OBS Phase 11: UI** | 7 | 5 | In Progress |
 | **OBS Integration Tests** | 7 | 0 | Not Started |
-| **Total** | **38** | **28** | **74%** |
+| **Total** | **38** | **29** | **76%** |
 
 ---
 
