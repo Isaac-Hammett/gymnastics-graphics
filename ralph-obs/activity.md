@@ -131,3 +131,22 @@
 
 ---
 
+#### PREREQ-02: Verify OBS is running and WebSocket is connected - PASS
+**Timestamp:** 2026-01-17 23:25 UTC
+**Action:** Navigated to /8kyf0rnl/obs-manager, verified OBS connection status
+
+**Issues Found & Fixed:**
+1. **VM assignment mismatch:** The VM (3.89.92.162) was assigned to competition `3602v1c8` in VM Pool Manager, not `8kyf0rnl`. Fixed by releasing from wrong competition and reassigning to correct one.
+2. **OBS WebSocket disabled:** The OBS WebSocket server was disabled in config (`server_enabled: false`). Fixed by updating `~/.config/obs-studio/plugin_config/obs-websocket/config.json` to enable it and disable auth.
+3. **OBS crashed on restart:** Initial restart attempts failed due to wrong DISPLAY (`:0` vs `:99`) and safe mode. Fixed by using correct display and `--disable-shutdown-check` flag.
+
+**Screenshot:** `screenshots/PREREQ-02-obs-connected.png`
+
+**Result:**
+- OBS Manager shows **"OBS Connected"** with green checkmark
+- Console log confirms: `OBSContext: OBS connected {connected: true, vmAddress: 3.89.92.162}`
+- Stream Control buttons are now enabled
+- No console errors
+
+---
+
