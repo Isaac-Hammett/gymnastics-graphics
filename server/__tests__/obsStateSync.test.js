@@ -998,6 +998,270 @@ describe('OBS State Sync Module', async () => {
       });
     });
   });
+
+  describe('OBS-03: Firebase Persistence', () => {
+    let stateSync, mockObs, mockIo, mockFirebase;
+
+    beforeEach(() => {
+      mockObs = new MockOBSWebSocket();
+      mockIo = createMockSocketIO();
+      mockFirebase = createMockFirebase();
+      stateSync = new OBSStateSync(mockObs, mockIo, null);
+      stateSync.registerEventHandlers();
+    });
+
+    describe('initialize() with Firebase', () => {
+      it('should load cached state from Firebase on initialization', async () => {
+        // Set up cached state in mock Firebase
+        const cachedState = {
+          connected: false,
+          lastSync: '2024-01-15T10:00:00.000Z',
+          currentScene: 'Single - Camera 1',
+          scenes: [{ sceneName: 'Single - Camera 1', category: 'generated-single' }],
+          inputs: [],
+          audioSources: [],
+          transitions: [],
+          streaming: { active: false },
+          recording: { active: false },
+          videoSettings: {}
+        };
+
+        mockFirebase._setData('competitions/test-comp/production/obsState', cachedState);
+
+        // Mock Firebase into the stateSync instance
+        stateSync._db = mockFirebase.database();
+        stateSync.competitionId = 'test-comp';
+
+        // Load cached state
+        await stateSync._loadCachedState();
+
+        const state = stateSync.getState();
+        assert.strictEqual(state.currentScene, 'Single - Camera 1', 'Should load cached currentScene');
+        assert.strictEqual(state.lastSync, '2024-01-15T10:00:00.000Z', 'Should load cached lastSync');
+        assert.strictEqual(state.connected, false, 'Should reset connected to false on load');
+      });
+
+      it('should use initial state if no cached state exists', async () => {
+        stateSync._db = mockFirebase.database();
+        stateSync.competitionId = 'test-comp';
+
+        await stateSync._loadCachedState();
+
+        const state = stateSync.getState();
+        assert.strictEqual(state.currentScene, null, 'Should use initial state');
+        assert.strictEqual(state.lastSync, null);
+      });
+
+      it('should handle errors when loading cached state', async () => {
+        // Create a mock database that throws an error
+        const errorDb = {
+          ref: () => ({
+            once: async () => {
+              throw new Error('Firebase read error');
+            }
+          })
+        };
+
+        stateSync._db = errorDb;
+        stateSync.competitionId = 'test-comp';
+
+        // Should not throw, just continue with initial state
+        await stateSync._loadCachedState();
+
+        const state = stateSync.getState();
+        assert.strictEqual(state.currentScene, null, 'Should fall back to initial state');
+      });
+    });
+
+    describe('_saveState()', () => {
+      beforeEach(() => {
+        stateSync._db = mockFirebase.database();
+        stateSync.competitionId = 'test-comp';
+      });
+
+      it('should save state to Firebase at correct path', async () => {
+        stateSync.state.currentScene = 'Test Scene';
+        stateSync.state.connected = true;
+
+        await stateSync._saveState();
+
+        const savedState = mockFirebase._getData('competitions/test-comp/production/obsState');
+        assert.ok(savedState, 'State should be saved');
+        assert.strictEqual(savedState.currentScene, 'Test Scene');
+        assert.strictEqual(savedState.connected, true);
+      });
+
+      it('should update lastSync timestamp when saving', async () => {
+        const beforeSave = new Date().toISOString();
+        await stateSync._saveState();
+
+        const savedState = mockFirebase._getData('competitions/test-comp/production/obsState');
+        assert.ok(savedState.lastSync, 'lastSync should be set');
+        assert.ok(savedState.lastSync >= beforeSave, 'lastSync should be recent');
+      });
+
+      it('should not save if database is not initialized', async () => {
+        stateSync._db = null;
+
+        // Should not throw, just log warning
+        await stateSync._saveState();
+
+        const savedState = mockFirebase._getData('competitions/test-comp/production/obsState');
+        assert.strictEqual(savedState, undefined, 'Should not save without db');
+      });
+
+      it('should not save if competitionId is not set', async () => {
+        stateSync.competitionId = null;
+
+        await stateSync._saveState();
+
+        const savedState = mockFirebase._getData('competitions/test-comp/production/obsState');
+        assert.strictEqual(savedState, undefined, 'Should not save without competitionId');
+      });
+
+      it('should throw error if Firebase set fails', async () => {
+        const errorDb = {
+          ref: () => ({
+            set: async () => {
+              throw new Error('Firebase write error');
+            }
+          })
+        };
+
+        stateSync._db = errorDb;
+
+        await assert.rejects(
+          async () => await stateSync._saveState(),
+          /Firebase write error/,
+          'Should throw error on Firebase failure'
+        );
+      });
+    });
+
+    describe('State persistence on events', () => {
+      beforeEach(() => {
+        stateSync._db = mockFirebase.database();
+        stateSync.competitionId = 'test-comp';
+      });
+
+      it('should save state after full refresh', async () => {
+        await mockObs.connect();
+        mockObs.emit('Identified', {});
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        mockFirebase._clearData();
+
+        await stateSync.refreshFullState();
+
+        const savedState = mockFirebase._getData('competitions/test-comp/production/obsState');
+        assert.ok(savedState, 'State should be saved after refresh');
+        assert.ok(savedState.lastSync, 'lastSync should be set');
+      });
+
+      it('should save state on connection closed', async () => {
+        stateSync.state.connected = true;
+        mockFirebase._clearData();
+
+        await stateSync.onConnectionClosed();
+
+        const savedState = mockFirebase._getData('competitions/test-comp/production/obsState');
+        assert.ok(savedState, 'State should be saved on disconnect');
+        assert.strictEqual(savedState.connected, false);
+        assert.strictEqual(savedState.connectionError, 'Connection closed');
+      });
+
+      it('should save state on connection error', async () => {
+        mockFirebase._clearData();
+
+        // Catch error event to prevent unhandled error
+        stateSync.on('error', () => {});
+
+        await stateSync.onConnectionError(new Error('Test connection error'));
+
+        const savedState = mockFirebase._getData('competitions/test-comp/production/obsState');
+        assert.ok(savedState, 'State should be saved on error');
+        assert.strictEqual(savedState.connected, false);
+        assert.ok(savedState.connectionError.includes('Test connection error'));
+      });
+
+      it('should save state on current scene changed', async () => {
+        mockFirebase._clearData();
+
+        await stateSync.onCurrentProgramSceneChanged({ sceneName: 'New Scene' });
+
+        const savedState = mockFirebase._getData('competitions/test-comp/production/obsState');
+        assert.ok(savedState, 'State should be saved on scene change');
+        assert.strictEqual(savedState.currentScene, 'New Scene');
+      });
+
+      it('should handle save errors gracefully without crashing', async () => {
+        const errorDb = {
+          ref: () => ({
+            set: async () => {
+              throw new Error('Firebase write error');
+            }
+          })
+        };
+
+        stateSync._db = errorDb;
+
+        // Should not throw, just log error
+        await stateSync.onCurrentProgramSceneChanged({ sceneName: 'Test' });
+
+        // State should still be updated locally
+        assert.strictEqual(stateSync.state.currentScene, 'Test');
+      });
+    });
+
+    describe('State recovery after reconnection', () => {
+      beforeEach(() => {
+        stateSync._db = mockFirebase.database();
+        stateSync.competitionId = 'test-comp';
+      });
+
+      it('should refresh full state on reconnection', async () => {
+        // Simulate disconnect
+        stateSync.state.connected = false;
+
+        await mockObs.connect();
+        mockObs.clearHistory();
+
+        // Simulate reconnection (Identified event triggers onConnected)
+        mockObs.emit('Identified', {});
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        // Verify full state refresh was called
+        assert.ok(mockObs.getCallCount('GetSceneList') > 0, 'Should refresh scenes on reconnect');
+        assert.ok(mockObs.getCallCount('GetInputList') > 0, 'Should refresh inputs on reconnect');
+        assert.ok(stateSync.state.connected, 'Should be connected');
+      });
+
+      it('should broadcast state update after reconnection', async () => {
+        await mockObs.connect();
+        mockIo.clearEvents();
+
+        mockObs.emit('Identified', {});
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        assert.ok(mockIo.wasEventEmitted('obs:connected'), 'Should broadcast connected');
+        assert.ok(mockIo.wasEventEmitted('obs:stateUpdated'), 'Should broadcast state update');
+      });
+    });
+
+    describe('Integration: Firebase path structure', () => {
+      it('should use correct Firebase path pattern', async () => {
+        stateSync._db = mockFirebase.database();
+        stateSync.competitionId = 'pac12-2025';
+
+        stateSync.state.currentScene = 'Test';
+        await stateSync._saveState();
+
+        // Verify path structure
+        const savedState = mockFirebase._getData('competitions/pac12-2025/production/obsState');
+        assert.ok(savedState, 'Should save at competitions/{compId}/production/obsState');
+      });
+    });
+  });
 });
 
 // Run tests and report
