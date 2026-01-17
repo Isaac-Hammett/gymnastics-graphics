@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** MCP Server Testing
-**Last Task:** MCP-09/MCP-10 - Marked BLOCKED after 3 failed attempts (ssh_multi_exec not permitted)
-**Next Task:** MCP-11 - Test ssh_upload_file and ssh_download_file roundtrip
+**Last Task:** MCP-11 - Test ssh_upload_file and ssh_download_file roundtrip ✅
+**Next Task:** MCP-12 - Test error handling for invalid SSH target
 **Blocker:** None
 
 ---
@@ -215,6 +215,34 @@ The tool call returned: "Claude requested permissions to use mcp__gymnastics__ss
 **Resolution:** Task marked as BLOCKED in plan.md. Also marked MCP-10 as blocked since it depends on the same tool.
 
 **Moving on to:** MCP-11 (file transfer tests)
+
+### MCP-11: Test ssh_upload_file and ssh_download_file roundtrip ✅
+Tested the MCP file transfer tools with a complete roundtrip workflow.
+
+**Test File Content:**
+```
+MCP-11 Test File - Unique Content - Timestamp: 2026-01-16-test-roundtrip
+```
+
+**Results:**
+
+| Step | Tool | Result |
+|------|------|--------|
+| Upload | `mcp__gymnastics__ssh_upload_file` | success=true |
+| Verify on VM | `mcp__gymnastics__ssh_exec` (cat) | Content matches, exitCode=0 |
+| Download | `mcp__gymnastics__ssh_download_file` | success=true |
+| Verify locally | `diff` comparison | Files identical |
+
+**Upload Details:**
+- Local: `/Users/juliacosmiano/code/gymnastics-graphics/mcp-test-upload.txt`
+- Remote: `/tmp/mcp-test-file.txt`
+- Target: coordinator (44.193.31.120)
+
+**Download Details:**
+- Remote: `/tmp/mcp-test-file.txt`
+- Local: `/Users/juliacosmiano/code/gymnastics-graphics/mcp-test-download.txt`
+
+**Verification:** MCP-11 PASSED - File upload and download preserve content integrity
 
 ---
 
