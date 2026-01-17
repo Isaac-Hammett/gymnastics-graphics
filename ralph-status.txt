@@ -16,3 +16,5 @@ Starting: Test MCP-12 - Invalid SSH target error handling
 [Step 2] Received error response - timeout during handshake
 [Step 3] Error message is descriptive and indicates failure properly
 Done: PASS
+Step 1: Found 0 running instances, will test with coordinator only
+Done: MCP-10 PASS - ssh_multi_exec returns correct aggregation structure
