@@ -2,20 +2,48 @@
 
 ## Current Status
 **Phase:** OBS Integration Tool - In Progress
-**Last Task:** OBS-11 - Implement audio presets system ✅
-**Next Task:** OBS-12 - Add Audio Management API endpoints
+**Last Task:** OBS-12 - Add Audio Management API endpoints ✅
+**Next Task:** OBS-13 - Create OBS Transition Manager module
 **Blocker:** None
 
 ### Summary
 OBS Integration Tool implementation phase in progress. This phase will add comprehensive OBS WebSocket control capabilities to the show controller.
 
-**Progress:** 11/38 tasks complete (29%)
+**Progress:** 12/38 tasks complete (32%)
 
 ---
 
 ## Activity Log
 
 ### 2026-01-17
+
+### OBS-12: Add Audio Management API endpoints ✅
+Added 9 REST API endpoints to `/server/routes/obs.js` for audio source and preset management.
+
+**Audio Control Endpoints (5):**
+- `GET /api/obs/audio` - List all audio sources
+- `GET /api/obs/audio/:inputName` - Get single source details (volume, mute, monitor type)
+- `PUT /api/obs/audio/:inputName/volume` - Set volume in dB
+- `PUT /api/obs/audio/:inputName/mute` - Set mute state
+- `PUT /api/obs/audio/:inputName/monitor` - Set monitor type
+
+**Preset Management Endpoints (4):**
+- `GET /api/obs/audio/presets` - List all presets (default + user)
+- `POST /api/obs/audio/presets` - Save current mix as new preset
+- `PUT /api/obs/audio/presets/:presetId` - Load and apply preset
+- `DELETE /api/obs/audio/presets/:presetId` - Delete user preset
+
+**Implementation details:**
+- Imported OBSAudioManager, configLoader, productionConfigService
+- All endpoints check obsStateSync initialized (503 if not)
+- Preset endpoints check active competition exists (400 if not)
+- Proper error handling (400, 404, 500, 503)
+
+**Verification:** PASSED
+- Method: `node --check routes/obs.js` (syntax check) + endpoint presence verification
+- Result: All 9 endpoints present at lines 647-970, syntax valid
+
+---
 
 ### OBS-11: Implement audio presets system ✅
 Extended `/server/lib/obsAudioManager.js` with audio preset management capabilities.

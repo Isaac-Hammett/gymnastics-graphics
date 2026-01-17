@@ -1,16 +1,20 @@
 /**
  * OBS Scene CRUD API Routes
  *
- * Provides RESTful endpoints for managing OBS scenes and sources:
+ * Provides RESTful endpoints for managing OBS scenes, sources, and audio:
  * - Scene CRUD operations
  * - Input/Source CRUD operations
  * - Scene item management (add, remove, transform, enable, lock, reorder)
+ * - Audio management (volume, mute, monitor, presets)
  *
  * @module routes/obs
  */
 
 import { OBSSceneManager } from '../lib/obsSceneManager.js';
 import { OBSSourceManager } from '../lib/obsSourceManager.js';
+import { OBSAudioManager } from '../lib/obsAudioManager.js';
+import configLoader from '../lib/configLoader.js';
+import productionConfigService from '../lib/productionConfigService.js';
 
 /**
  * Setup OBS routes
@@ -633,7 +637,340 @@ export function setupOBSRoutes(app, obs, obsStateSyncOrGetter) {
     }
   });
 
-  console.log('[OBS Routes] Scene CRUD and Source Management endpoints mounted at server startup');
+  // ============================================================================
+  // Audio Management Endpoints
+  // ============================================================================
+
+  /**
+   * GET /api/obs/audio - List all audio sources
+   */
+  app.get('/api/obs/audio', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      console.log('[OBS Routes] GET /api/obs/audio - Fetching all audio sources');
+      const audioManager = new OBSAudioManager(obs, obsStateSync, productionConfigService);
+      const sources = audioManager.getAudioSources();
+      res.json({ sources });
+    } catch (error) {
+      console.error('[OBS Routes] Error fetching audio sources:', error.message);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * GET /api/obs/audio/:inputName - Get single audio source details
+   */
+  app.get('/api/obs/audio/:inputName', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      const { inputName } = req.params;
+      console.log(`[OBS Routes] GET /api/obs/audio/${inputName} - Fetching audio source details`);
+
+      const audioManager = new OBSAudioManager(obs, obsStateSync, productionConfigService);
+
+      // Get volume and mute state
+      const volume = await audioManager.getVolume(inputName);
+      const muteState = await audioManager.getMute(inputName);
+      const monitorType = await audioManager.getMonitorType(inputName);
+
+      res.json({
+        inputName,
+        ...volume,
+        ...muteState,
+        ...monitorType
+      });
+    } catch (error) {
+      console.error(`[OBS Routes] Error fetching audio source ${req.params.inputName}:`, error.message);
+      if (error.message.includes('not found') || error.message.includes('does not exist')) {
+        return res.status(404).json({ error: error.message });
+      }
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * PUT /api/obs/audio/:inputName/volume - Set volume for audio source
+   * Body: { volumeDb }
+   */
+  app.put('/api/obs/audio/:inputName/volume', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      const { inputName } = req.params;
+      const { volumeDb } = req.body;
+
+      if (volumeDb === undefined) {
+        return res.status(400).json({ error: 'volumeDb is required' });
+      }
+
+      console.log(`[OBS Routes] PUT /api/obs/audio/${inputName}/volume - Setting volume to ${volumeDb} dB`);
+
+      const audioManager = new OBSAudioManager(obs, obsStateSync, productionConfigService);
+      const result = await audioManager.setVolume(inputName, volumeDb);
+
+      res.json({
+        success: result.success,
+        inputName,
+        volumeDb
+      });
+    } catch (error) {
+      console.error(`[OBS Routes] Error setting volume for ${req.params.inputName}:`, error.message);
+      if (error.message.includes('not found') || error.message.includes('does not exist')) {
+        return res.status(404).json({ error: error.message });
+      }
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * PUT /api/obs/audio/:inputName/mute - Set mute state for audio source
+   * Body: { muted }
+   */
+  app.put('/api/obs/audio/:inputName/mute', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      const { inputName } = req.params;
+      const { muted } = req.body;
+
+      if (typeof muted !== 'boolean') {
+        return res.status(400).json({ error: 'muted must be a boolean' });
+      }
+
+      console.log(`[OBS Routes] PUT /api/obs/audio/${inputName}/mute - Setting mute to ${muted}`);
+
+      const audioManager = new OBSAudioManager(obs, obsStateSync, productionConfigService);
+      const result = await audioManager.setMute(inputName, muted);
+
+      res.json({
+        success: result.success,
+        inputName,
+        muted
+      });
+    } catch (error) {
+      console.error(`[OBS Routes] Error setting mute for ${req.params.inputName}:`, error.message);
+      if (error.message.includes('not found') || error.message.includes('does not exist')) {
+        return res.status(404).json({ error: error.message });
+      }
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * PUT /api/obs/audio/:inputName/monitor - Set monitor type for audio source
+   * Body: { monitorType }
+   */
+  app.put('/api/obs/audio/:inputName/monitor', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      const { inputName } = req.params;
+      const { monitorType } = req.body;
+
+      if (!monitorType) {
+        return res.status(400).json({ error: 'monitorType is required' });
+      }
+
+      console.log(`[OBS Routes] PUT /api/obs/audio/${inputName}/monitor - Setting monitor type to ${monitorType}`);
+
+      const audioManager = new OBSAudioManager(obs, obsStateSync, productionConfigService);
+      const result = await audioManager.setMonitorType(inputName, monitorType);
+
+      res.json({
+        success: result.success,
+        inputName,
+        monitorType
+      });
+    } catch (error) {
+      console.error(`[OBS Routes] Error setting monitor type for ${req.params.inputName}:`, error.message);
+      if (error.message.includes('not found') || error.message.includes('does not exist')) {
+        return res.status(404).json({ error: error.message });
+      }
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * GET /api/obs/audio/presets - List all audio presets
+   */
+  app.get('/api/obs/audio/presets', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      const compId = configLoader.getActiveCompetition();
+      if (!compId) {
+        return res.status(400).json({ error: 'No active competition. Activate a competition first.' });
+      }
+
+      console.log(`[OBS Routes] GET /api/obs/audio/presets - Listing presets for competition ${compId}`);
+
+      const audioManager = new OBSAudioManager(obs, obsStateSync, productionConfigService);
+      const presets = await audioManager.listPresets(compId);
+
+      res.json({ presets });
+    } catch (error) {
+      console.error('[OBS Routes] Error listing audio presets:', error.message);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * POST /api/obs/audio/presets - Save current mix as preset
+   * Body: { id, name, description, sources: [{inputName, volumeDb, muted}] }
+   */
+  app.post('/api/obs/audio/presets', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      const compId = configLoader.getActiveCompetition();
+      if (!compId) {
+        return res.status(400).json({ error: 'No active competition. Activate a competition first.' });
+      }
+
+      const preset = req.body;
+
+      if (!preset || typeof preset !== 'object') {
+        return res.status(400).json({ error: 'Preset object is required' });
+      }
+
+      if (!preset.id) {
+        return res.status(400).json({ error: 'Preset id is required' });
+      }
+
+      if (!preset.name) {
+        return res.status(400).json({ error: 'Preset name is required' });
+      }
+
+      if (!Array.isArray(preset.sources)) {
+        return res.status(400).json({ error: 'Preset sources array is required' });
+      }
+
+      console.log(`[OBS Routes] POST /api/obs/audio/presets - Saving preset "${preset.name}" for competition ${compId}`);
+
+      const audioManager = new OBSAudioManager(obs, obsStateSync, productionConfigService);
+      await audioManager.savePreset(compId, preset);
+
+      res.status(201).json({
+        success: true,
+        preset: {
+          id: preset.id,
+          name: preset.name
+        }
+      });
+    } catch (error) {
+      console.error('[OBS Routes] Error saving audio preset:', error.message);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * PUT /api/obs/audio/presets/:presetId - Load and apply preset
+   */
+  app.put('/api/obs/audio/presets/:presetId', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      const compId = configLoader.getActiveCompetition();
+      if (!compId) {
+        return res.status(400).json({ error: 'No active competition. Activate a competition first.' });
+      }
+
+      const { presetId } = req.params;
+      console.log(`[OBS Routes] PUT /api/obs/audio/presets/${presetId} - Loading and applying preset for competition ${compId}`);
+
+      const audioManager = new OBSAudioManager(obs, obsStateSync, productionConfigService);
+
+      // Load preset
+      const preset = await audioManager.loadPreset(compId, presetId);
+      if (!preset) {
+        return res.status(404).json({ error: `Preset not found: ${presetId}` });
+      }
+
+      // Apply preset
+      const result = await audioManager.applyPreset(preset);
+
+      res.json({
+        success: true,
+        preset: {
+          id: preset.id,
+          name: preset.name
+        },
+        applied: result.applied,
+        errors: result.errors
+      });
+    } catch (error) {
+      console.error(`[OBS Routes] Error applying audio preset ${req.params.presetId}:`, error.message);
+      if (error.message.includes('not found')) {
+        return res.status(404).json({ error: error.message });
+      }
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * DELETE /api/obs/audio/presets/:presetId - Delete preset
+   */
+  app.delete('/api/obs/audio/presets/:presetId', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      const compId = configLoader.getActiveCompetition();
+      if (!compId) {
+        return res.status(400).json({ error: 'No active competition. Activate a competition first.' });
+      }
+
+      const { presetId } = req.params;
+      console.log(`[OBS Routes] DELETE /api/obs/audio/presets/${presetId} - Deleting preset for competition ${compId}`);
+
+      const audioManager = new OBSAudioManager(obs, obsStateSync, productionConfigService);
+      await audioManager.deletePreset(compId, presetId);
+
+      res.json({
+        success: true,
+        deleted: presetId
+      });
+    } catch (error) {
+      console.error(`[OBS Routes] Error deleting audio preset ${req.params.presetId}:`, error.message);
+      if (error.message.includes('Cannot delete default presets')) {
+        return res.status(400).json({ error: error.message });
+      }
+      if (error.message.includes('not found')) {
+        return res.status(404).json({ error: error.message });
+      }
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  console.log('[OBS Routes] Scene CRUD, Source Management, and Audio Management endpoints mounted at server startup');
 }
 
 export default setupOBSRoutes;
