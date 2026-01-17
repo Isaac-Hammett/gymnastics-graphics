@@ -40,7 +40,8 @@
     "action": "1. Add VITE_API_URL=https://api.commentarygraphic.com to show-controller/.env, 2. npm run build, 3. Deploy to production server",
     "verification": "Navigate to /_admin/vm-pool, console should show requests to api.commentarygraphic.com instead of localhost:3003",
     "expected": "Frontend makes API calls to production coordinator",
-    "status": "pending"
+    "status": "completed",
+    "result": "VITE_API_URL added to .env, rebuilt, deployed. Console shows 'Fetching pool status from: https://api.commentarygraphic.com/api/admin/vm-pool' and 'Response status: 200'. Page loads without Connection Error. Pool Status displays correctly."
   },
   {
     "id": "DIAG-02",
@@ -48,7 +49,8 @@
     "action": "ssh_exec on 3.87.107.201: grep 'location /api' /etc/nginx/sites-enabled/commentarygraphic.com",
     "verification": "Command output shows proxy rule OR shows it's missing",
     "expected": "Document whether rule exists - this is diagnostic",
-    "status": "pending"
+    "status": "skipped",
+    "result": "Not needed - FIX-00 resolved the issue by making frontend call api.commentarygraphic.com directly"
   },
   {
     "id": "DIAG-03",
@@ -56,7 +58,8 @@
     "action": "ssh_exec on coordinator: curl -s http://localhost:3003/api/admin/vm-pool",
     "verification": "Command returns JSON response",
     "expected": "Document API response - confirms coordinator is working",
-    "status": "pending"
+    "status": "skipped",
+    "result": "Not needed - FIX-00 verified API responds with 200 status"
   },
   {
     "id": "FIX-01",
@@ -64,7 +67,8 @@
     "action": "Add location /api/ block to /etc/nginx/sites-enabled/commentarygraphic.com on 3.87.107.201",
     "verification": "nginx -t passes, systemctl reload nginx succeeds",
     "expected": "nginx config updated and reloaded",
-    "status": "pending"
+    "status": "skipped",
+    "result": "Not needed - frontend now calls api.commentarygraphic.com directly"
   },
   {
     "id": "VERIFY-01",
@@ -72,7 +76,8 @@
     "action": "Navigate to https://commentarygraphic.com/_admin/vm-pool, take screenshot, check console",
     "verification": "Screenshot shows no 'Connection Error', console has no fetch failures to localhost",
     "expected": "Page loads, Pool Status visible, API calls go to api.commentarygraphic.com",
-    "status": "pending"
+    "status": "completed",
+    "result": "Verified in FIX-00 - page loads, no errors, API calls to api.commentarygraphic.com"
   },
   {
     "id": "VERIFY-02",
@@ -80,7 +85,8 @@
     "action": "On VM Pool page, verify Pool Status section displays correctly",
     "verification": "Screenshot shows Pool Status with VM count or 'No VMs in Pool'",
     "expected": "Pool Status renders with real data from API",
-    "status": "pending"
+    "status": "completed",
+    "result": "Verified in FIX-00 - Pool Status shows '0 total VMs', 'No VMs in Pool' message"
   },
   {
     "id": "WORKFLOW-01",
