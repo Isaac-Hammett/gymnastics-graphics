@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** MCP Server Testing
-**Last Task:** MCP-24 - Test firebase_set writes data (dev only) ✅
-**Next Task:** MCP-25 - Test firebase_update merges data (dev only)
+**Last Task:** MCP-25 - Test firebase_update merges data (dev only) ✅
+**Next Task:** MCP-26 - Test firebase_delete removes data (dev only)
 **Blocker:** None
 
 ---
@@ -648,6 +648,48 @@ Tested the `firebase_set` MCP tool to write data to Firebase dev database.
 ```
 
 **Verification:** MCP-24 PASSED - firebase_set successfully writes data to dev
+
+### MCP-25: Test firebase_update merges data (dev only) ✅
+Tested the `firebase_update` MCP tool to verify merge behavior (partial updates).
+
+**Test Workflow:**
+
+| Step | MCP Tool | Result |
+|------|----------|--------|
+| 1 | `firebase_set` | Created {name:'original', count:1} |
+| 2 | `firebase_update` | Updated with {count:2} |
+| 3 | `firebase_get` | Verified merge: name preserved, count updated |
+| 4 | `firebase_delete` | Cleaned up test data |
+
+**firebase_update Response:**
+```json
+{
+  "project": "dev",
+  "path": "mcp-tests/test-25",
+  "success": true,
+  "message": "Data updated at dev:mcp-tests/test-25"
+}
+```
+
+**firebase_get Verification (merge confirmed):**
+```json
+{
+  "project": "dev",
+  "path": "mcp-tests/test-25",
+  "exists": true,
+  "data": {
+    "count": 2,
+    "name": "original"
+  }
+}
+```
+
+**Key Finding:** `firebase_update` correctly implements merge behavior:
+- Existing fields not mentioned in update (`name`) are preserved
+- Fields included in update (`count`) are modified
+- This differs from `firebase_set` which would overwrite the entire object
+
+**Verification:** MCP-25 PASSED - firebase_update merges without overwriting existing fields
 
 ---
 
