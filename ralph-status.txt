@@ -37,3 +37,8 @@ Starting: Test firebase_get non-existent path
 Step 1: Calling firebase_get with non-existent path
 Step 2: Verifying response format
 Done: PASS
+Step 1: Called firebase_list_paths(project='dev', path='/')
+Step 2: Verified response includes children array: YES
+Step 3: Verified response includes childCount number: YES (2)
+Step 4: Verified children contains expected keys: YES (competitions, currentGraphic)
+Done: PASS

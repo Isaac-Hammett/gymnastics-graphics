@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** MCP Server Testing
-**Last Task:** MCP-22 - Test firebase_get handles non-existent path ✅
-**Next Task:** MCP-23 - Test firebase_list_paths returns children
+**Last Task:** MCP-23 - Test firebase_list_paths returns children ✅
+**Next Task:** MCP-24 - Test firebase_set writes data (dev only)
 **Blocker:** None
 
 ---
@@ -572,6 +572,36 @@ Tested the `firebase_get` MCP tool with a non-existent path.
 ```
 
 **Verification:** MCP-22 PASSED - firebase_get returns exists:false for missing paths
+
+### MCP-23: Test firebase_list_paths returns children ✅
+Tested the `firebase_list_paths` MCP tool with root path query.
+
+**Test Parameters:**
+- project: 'dev'
+- path: '/'
+
+**Results:**
+
+| Field | Value | Expected | Status |
+|-------|-------|----------|--------|
+| project | "dev" | "dev" | ✓ |
+| path | "/" | "/" | ✓ |
+| exists | true | - | ✓ (bonus field) |
+| children | ["competitions", "currentGraphic"] | array | ✓ |
+| childCount | 2 | number | ✓ |
+
+**Full Response:**
+```json
+{
+  "project": "dev",
+  "path": "/",
+  "exists": true,
+  "children": ["competitions", "currentGraphic"],
+  "childCount": 2
+}
+```
+
+**Verification:** MCP-23 PASSED - firebase_list_paths returns child keys with expected structure
 
 ---
 
