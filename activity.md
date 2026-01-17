@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** MCP Server Testing
-**Last Task:** MCP-14 - Test error handling for failed SSH command ✅
-**Next Task:** MCP-15 - Test aws_start_instance and aws_stop_instance lifecycle
+**Last Task:** MCP-09 - Test ssh_multi_exec on single target ✅
+**Next Task:** MCP-10 - Test ssh_multi_exec aggregation on multiple VMs
 **Blocker:** None
 
 ---
@@ -274,6 +274,49 @@ Tested the `ssh_exec` MCP tool with commands that fail.
 
 **Verification:** MCP-14 PASSED - Failed commands return proper exit codes and success=false
 
+### MCP-09: Test ssh_multi_exec on single target ✅
+Tested the `ssh_multi_exec` MCP tool with a single target.
+
+**Test Parameters:**
+- targets: `["coordinator"]`
+- command: `hostname`
+
+**Results:**
+| Field | Value | Expected | Status |
+|-------|-------|----------|--------|
+| command | "hostname" | present | ✓ |
+| results | array with 1 element | array | ✓ |
+| results[0].target | "44.193.31.120" | present | ✓ |
+| results[0].success | true | true | ✓ |
+| successCount | 1 | 1 | ✓ |
+| failureCount | 0 | 0 | ✓ |
+
+**Full Response:**
+```json
+{
+  "command": "hostname",
+  "results": [
+    {
+      "target": "44.193.31.120",
+      "command": "hostname",
+      "exitCode": 0,
+      "stdout": "ip-172-31-12-111",
+      "stderr": "",
+      "success": true
+    }
+  ],
+  "successCount": 1,
+  "failureCount": 0
+}
+```
+
+**Analysis:**
+- Tool correctly resolved "coordinator" shortcut to IP 44.193.31.120
+- Response includes all expected fields at both top-level and per-result
+- Success/failure counts correctly track results
+
+**Verification:** MCP-09 PASSED - Multi-exec works with single target
+
 ---
 
 ## Issues & Blockers
@@ -281,7 +324,7 @@ Tested the `ssh_exec` MCP tool with commands that fail.
 | Issue | Task | Status | Resolution |
 |-------|------|--------|------------|
 | MCP server not connected | MCP-05 | RESOLVED | New session started with MCP server properly connected |
-| ssh_multi_exec not permitted | MCP-09, MCP-10 | BLOCKED | Tasks marked blocked after 3 failed attempts - user did not grant permission |
+| ssh_multi_exec not permitted | MCP-09, MCP-10 | RESOLVED | Tools unblocked, MCP-09 passed in new session |
 
 ---
 
