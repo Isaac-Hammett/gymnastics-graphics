@@ -231,6 +231,35 @@ export class MockOBSWebSocket extends EventEmitter {
       return {};
     },
 
+    SetSceneName: function(params) {
+      const { sceneName, newSceneName } = params;
+      if (!this._scenes.has(sceneName)) {
+        const error = new Error(`Scene not found: ${sceneName}`);
+        error.code = 600;
+        throw error;
+      }
+      if (this._scenes.has(newSceneName)) {
+        const error = new Error(`Scene name already in use: ${newSceneName}`);
+        error.code = 602;
+        throw error;
+      }
+      const scene = this._scenes.get(sceneName);
+      this._scenes.delete(sceneName);
+      scene.sceneName = newSceneName;
+      this._scenes.set(newSceneName, scene);
+
+      // Update current scene if it was renamed
+      if (this._currentScene === sceneName) {
+        this._currentScene = newSceneName;
+      }
+
+      setImmediate(() => {
+        this.emit('SceneListChanged', { scenes: this.call('GetSceneList').scenes });
+      });
+
+      return {};
+    },
+
     GetSceneItemList: function(params) {
       const { sceneName } = params;
       const scene = this._scenes.get(sceneName);

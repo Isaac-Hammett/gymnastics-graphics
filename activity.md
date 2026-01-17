@@ -2,18 +2,58 @@
 
 ## Current Status
 **Phase:** OBS Integration Tool - In Progress
-**Last Task:** OBS-04 - Integrate OBS State Sync with server ✅
-**Next Task:** OBS-05 - Create OBS Scene Manager module
+**Last Task:** OBS-05 - Create OBS Scene Manager module ✅
+**Next Task:** OBS-06 - Add Scene CRUD API endpoints
 **Blocker:** None
 
 ### Summary
 OBS Integration Tool implementation phase in progress. This phase will add comprehensive OBS WebSocket control capabilities to the show controller.
 
-**Progress:** 4/38 tasks complete (11%)
+**Progress:** 5/38 tasks complete (13%)
 
 ---
 
 ## Activity Log
+
+### 2026-01-17
+
+### OBS-05: Create OBS Scene Manager module ✅
+Created `/server/lib/obsSceneManager.js` - CRUD operations module for OBS scenes (separate from obsSceneGenerator.js which auto-generates scenes).
+
+**Features implemented:**
+- `OBSSceneManager` class providing manual scene management
+- `getScenes()` - Returns cached scenes from OBSStateSync
+- `getScene(sceneName)` - Gets single scene with fresh item details from OBS
+- `createScene(sceneName)` - Creates new empty scene via OBS WebSocket
+- `duplicateScene(sourceName, newName)` - Copies scene with all items (preserves layer order)
+- `renameScene(oldName, newName)` - Renames existing scene
+- `deleteScene(sceneName)` - Deletes scene
+- `reorderScenes(sceneOrder)` - Validates scene order (client-side managed)
+
+**Tests created:**
+- `/server/__tests__/obsSceneManager.test.js` - 41 comprehensive tests covering:
+  - getScenes (3 tests): cached scenes, empty state, undefined scenes
+  - getScene (3 tests): known scene with items, unknown scene, OBS errors
+  - createScene (6 tests): valid creation, name validation, duplicate handling, OBS errors
+  - duplicateScene (7 tests): full copy, empty scenes, validation, error handling
+  - renameScene (6 tests): successful rename, validation, name conflicts
+  - deleteScene (5 tests): deletion, validation, current scene protection
+  - reorderScenes (5 tests): validation, unknown scenes, partial orders
+  - Error handling (3 tests): connection errors, timeouts, invalid names
+  - Integration (3 tests): empty state, null stateSync, missing properties
+
+**Design decisions:**
+- Uses OBSStateSync for cached scene list (avoids redundant OBS calls)
+- Fetches fresh scene items from OBS when needed
+- Reverses item order when duplicating to maintain visual layer order
+- Comprehensive input validation with descriptive error messages
+- Logging with `[OBSSceneManager]` prefix for debugging
+
+**Verification:** PASSED
+- Method: `cd server && node --test __tests__/obsSceneManager.test.js`
+- Result: All 41 tests pass (10 suites, 0 failures)
+
+---
 
 ### 2026-01-16
 
