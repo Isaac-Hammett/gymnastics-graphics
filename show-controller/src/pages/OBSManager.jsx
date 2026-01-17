@@ -18,6 +18,8 @@ import AudioMixer from '../components/obs/AudioMixer';
 import AudioPresetManager from '../components/obs/AudioPresetManager';
 import StreamConfig from '../components/obs/StreamConfig';
 import AssetManager from '../components/obs/AssetManager';
+import TemplateManager from '../components/obs/TemplateManager';
+import TalentCommsPanel from '../components/obs/TalentCommsPanel';
 
 export default function OBSManager() {
   const {
@@ -244,12 +246,8 @@ export default function OBSManager() {
           )}
           {activeTab === 'stream' && <StreamConfig />}
           {activeTab === 'assets' && <AssetManager />}
-          {activeTab === 'templates' && (
-            <div className="text-center text-gray-400 py-12">
-              <h3 className="text-xl font-semibold text-white mb-2">Template Manager</h3>
-              <p>Template manager will be added in OBS-31</p>
-            </div>
-          )}
+          {activeTab === 'templates' && <TemplateManager />}
+          {activeTab === 'talent-comms' && <TalentCommsPanel />}
         </div>
 
         {/* Source Editor Modal */}
@@ -365,7 +363,8 @@ function TabNavigation({ activeTab, onTabChange }) {
     { id: 'transitions', label: 'Transitions' },
     { id: 'stream', label: 'Stream' },
     { id: 'assets', label: 'Assets' },
-    { id: 'templates', label: 'Templates' }
+    { id: 'templates', label: 'Templates' },
+    { id: 'talent-comms', label: 'Talent Comms' }
   ];
 
   return (

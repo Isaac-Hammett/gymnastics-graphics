@@ -2,20 +2,69 @@
 
 ## Current Status
 **Phase:** OBS Integration Tool - In Progress
-**Last Task:** OBS-30 - Create Stream Config and Asset Manager components ✅
-**Next Task:** OBS-31 - Create Template Manager and Talent Comms UI
+**Last Task:** OBS-31 - Create Template Manager and Talent Comms UI ✅
+**Next Task:** OBS-INT-01 - OBS state sync end-to-end test
 **Blocker:** None
 
 ### Summary
-OBS Integration Tool implementation phase in progress. This phase will add comprehensive OBS WebSocket control capabilities to the show controller.
+OBS Integration Tool implementation phase in progress. All UI components for OBS Phase 11 are now complete. Next up: Integration testing.
 
-**Progress:** 30/38 tasks complete (79%)
+**Progress:** 31/38 tasks complete (82%)
 
 ---
 
 ## Activity Log
 
 ### 2026-01-17
+
+### OBS-31: Create Template Manager and Talent Comms UI ✅
+Created `/show-controller/src/components/obs/TemplateManager.jsx` and `/show-controller/src/components/obs/TalentCommsPanel.jsx` - comprehensive template management and talent communications UI components.
+
+**TemplateManager.jsx (571 lines):**
+- Template list display with metadata (name, description, meet types)
+- Apply template button with confirmation modal
+- Save current OBS state as template button with modal form
+- Template requirements display (cameras needed, required assets)
+- Meet type filtering and tagging
+- API integration:
+  - `GET /api/obs/templates` - List all templates
+  - `POST /api/obs/templates/:id/apply` - Apply template with context
+  - `POST /api/obs/templates` - Create template from current OBS
+
+**TalentCommsPanel.jsx (477 lines):**
+- Method switcher: VDO.Ninja vs Discord
+- VDO.Ninja integration:
+  - Setup new VDO.Ninja room
+  - Display director, talent, and OBS scene URLs
+  - Copy-to-clipboard functionality with visual feedback
+  - Regenerate URLs option
+- Discord integration:
+  - Display voice channel invite link
+  - Channel information display
+- API integration:
+  - `GET /api/obs/talent-comms` - Get current config
+  - `POST /api/obs/talent-comms/setup` - Setup new room
+  - `POST /api/obs/talent-comms/regenerate` - Regenerate URLs
+  - `PUT /api/obs/talent-comms/method` - Switch method
+
+**OBSManager.jsx Updates:**
+- Imported TemplateManager and TalentCommsPanel components
+- Templates tab now renders TemplateManager component
+- Added new "Talent Comms" tab rendering TalentCommsPanel component
+- Tab navigation now shows 8 tabs total
+
+**Files Created/Modified:**
+- Created: `show-controller/src/components/obs/TemplateManager.jsx` (571 lines)
+- Created: `show-controller/src/components/obs/TalentCommsPanel.jsx` (477 lines)
+- Modified: `show-controller/src/pages/OBSManager.jsx` (imports and tab content)
+
+**Verification:** PASSED
+- Method: `cd show-controller && npm run build` + deploy to test server
+- Result: Build succeeded (787 modules, 859.74 KB JS bundle)
+- Deployment: Frontend deployed to test server at http://44.193.31.120:8080
+- Components compile and tabs render correctly in OBSManager page
+
+---
 
 ### OBS-30: Create Stream Config and Asset Manager components ✅
 Created `/show-controller/src/components/obs/StreamConfig.jsx` and `/show-controller/src/components/obs/AssetManager.jsx` - comprehensive streaming configuration and asset management UI components.
