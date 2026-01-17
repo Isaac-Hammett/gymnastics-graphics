@@ -133,8 +133,9 @@ These test actual OBS functionality and may modify state.
     "description": "Scene switching works",
     "action": "Click on a different scene to switch",
     "verification": "Scene changes, UI updates",
-    "status": "pending",
-    "dependsOn": "TEST-02"
+    "status": "failed",
+    "dependsOn": "TEST-02",
+    "failureReason": "Socket.io event name mismatch - frontend emits 'switchScene' but server only handles 'overrideScene'. Backend OBS scene switching verified working via API."
   },
   {
     "id": "TEST-04",
@@ -242,6 +243,13 @@ Created dynamically when tests fail.
     "status": "completed",
     "result": "Fixed 4 event name mismatches in OBSContext.jsx: obs:stateUpdate→obs:stateUpdated, obs:streamingStateChanged→obs:streamStateChanged, obs:recordingStateChanged→obs:recordStateChanged, obs:transitionChanged→obs:currentTransitionChanged. Rebuilt and deployed frontend. Scenes now display correctly.",
     "blocksTests": ["TEST-02", "TEST-03", "TEST-04", "TEST-05", "TEST-06", "TEST-11", "TEST-12", "TEST-13"]
+  },
+  {
+    "id": "FIX-03",
+    "description": "Fix scene switching Socket.io event name mismatch",
+    "action": "Frontend emits 'switchScene' but server only handles 'overrideScene'. Need to add 'switchScene' handler to server or change frontend to emit 'overrideScene'",
+    "status": "pending",
+    "blocksTests": ["TEST-03"]
   }
 ]
 ```
