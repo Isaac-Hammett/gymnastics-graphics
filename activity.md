@@ -2,9 +2,9 @@
 
 ## Current Status
 **Phase:** MCP Server Testing
-**Last Task:** MCP-20 - Test SSH command latency ❌ BLOCKED after 3 attempts
-**Next Task:** MCP-21 - Test firebase_get reads existing data
-**Blocker:** None (MCP-20 blocked, moving to Firebase tests)
+**Last Task:** MCP-21 - Test firebase_get reads existing data ✅
+**Next Task:** MCP-22 - Test firebase_get handles non-existent path
+**Blocker:** None
 
 ---
 
@@ -523,6 +523,27 @@ Retested SSH command latency by calling `ssh_exec(target='coordinator', command=
 3. Accept current latency as acceptable (all commands work correctly)
 
 **Status:** Marked as blocked in plan.md - moving to MCP-21
+
+### MCP-21: Test firebase_get reads existing data ✅
+Tested the `firebase_get` MCP tool with root path query.
+
+**Test Parameters:**
+- project: 'dev'
+- path: '/'
+
+**Results:**
+
+| Field | Value | Expected | Status |
+|-------|-------|----------|--------|
+| project | "dev" | "dev" | ✓ |
+| exists | true | true or false | ✓ |
+| data | {competitions: {...}, currentGraphic: {...}} | data field present | ✓ |
+
+**Response Data:**
+- competitions: Contains test-comp with competition config
+- currentGraphic: {graphic: "clear", timestamp: 1737054000000}
+
+**Verification:** MCP-21 PASSED - firebase_get returns valid response structure with all required fields
 
 ---
 
