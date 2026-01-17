@@ -3,8 +3,8 @@
 ## Current Status
 **Phase:** MCP Server Testing
 **Last Task:** MCP-08 - Test ssh_exec by IP address (not shortcut) ✅
-**Next Task:** MCP-09 - Test ssh_multi_exec on single target
-**Blocker:** MCP tool `ssh_multi_exec` not in permitted tools list
+**Next Task:** MCP-09 - Test ssh_multi_exec on single target (Attempt 3)
+**Blocker:** MCP tool `ssh_multi_exec` not in permitted tools list (2 failed attempts)
 
 ---
 
@@ -189,6 +189,21 @@ The tool call returned: "Claude requested permissions to use mcp__gymnastics__ss
 1. User needs to add `mcp__gymnastics__ssh_multi_exec` to the permitted tools list
 2. This can be done via Claude Code settings or by editing the MCP configuration
 3. Alternative: Skip MCP-09 and MCP-10 tests and mark as blocked
+
+### MCP-09: Test ssh_multi_exec on single target - ❌ FAILED
+**Attempt:** 2 of 3
+
+**Error:** `mcp__gymnastics__ssh_multi_exec` still not permitted in session
+
+**Root Cause:** Same as Attempt 1 - the tool exists in the MCP server but permission has not been granted by the user.
+
+The tool call returned: "Claude requested permissions to use mcp__gymnastics__ssh_multi_exec, but you haven't granted it yet."
+
+**Workaround Attempted:** None - strict verification requires using the actual MCP tool
+
+**Next Steps:**
+1. User must grant permission for `mcp__gymnastics__ssh_multi_exec`
+2. If not possible, this task should be marked as blocked after Attempt 3
 
 ---
 
