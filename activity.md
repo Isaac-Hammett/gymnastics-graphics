@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** MCP Server Testing
-**Last Task:** MCP-28 - Test Firebase error handling for invalid project ✅
-**Next Task:** MCP-29 - Test full Firebase CRUD workflow (dev only)
+**Last Task:** MCP-29 - Test full Firebase CRUD workflow (dev only) ✅
+**Next Task:** MCP-30 - Test aws_list_security_group_rules
 **Blocker:** None
 
 ---
@@ -791,6 +791,29 @@ Tested the `firebase_get` MCP tool with an invalid project parameter.
 - Graceful failure handling confirmed
 
 **Verification:** MCP-28 PASSED - Invalid project returns descriptive error mentioning 'dev' and 'prod'
+
+### MCP-29: Test full Firebase CRUD workflow (dev only) ✅
+Tested the complete Firebase CRUD workflow using MCP tools.
+
+**Workflow Executed:**
+
+| Step | MCP Tool | Result |
+|------|----------|--------|
+| 1. SET | `firebase_set(project='dev', path='mcp-tests/crud-test', data={step:1})` | success: true ✓ |
+| 2. GET | `firebase_get` | exists: true, data.step: 1 ✓ |
+| 3. UPDATE | `firebase_update(data={step:2, extra:'added'})` | success: true ✓ |
+| 4. GET | `firebase_get` | step: 2, extra: 'added' ✓ |
+| 5. DELETE | `firebase_delete` | success: true ✓ |
+| 6. GET | `firebase_get` | exists: false, data: null ✓ |
+
+**Key Findings:**
+- SET creates new data correctly
+- GET retrieves data with exists flag
+- UPDATE merges data (preserves step, adds extra)
+- DELETE removes data completely
+- GET after DELETE confirms exists: false
+
+**Verification:** MCP-29 PASSED - Complete CRUD workflow succeeds on dev Firebase
 
 ---
 
