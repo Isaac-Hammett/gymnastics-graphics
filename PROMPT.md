@@ -197,6 +197,21 @@ When ALL tasks in plan.md have `"passes": true`, output:
 
 ## Subagent Guidelines
 
+### Status Updates (IMPORTANT)
+Subagents MUST write status updates to `/tmp/claude/ralph-status.txt` so the operator can monitor progress.
+
+**At the START of every subagent prompt, include:**
+```
+FIRST: Write your current step to /tmp/claude/ralph-status.txt using:
+echo "[STEP]: [DESCRIPTION]" >> /tmp/claude/ralph-status.txt
+
+Update this file as you work:
+- Before each major action: echo "[action]" >> /tmp/claude/ralph-status.txt
+- Example: echo "Reading plan.md" >> /tmp/claude/ralph-status.txt
+- Example: echo "Calling aws_list_amis" >> /tmp/claude/ralph-status.txt
+- Example: echo "PASS: Tool returned 3 AMIs" >> /tmp/claude/ralph-status.txt
+```
+
 ### Parallelism Rules
 - **Search/Research:** Use as many subagents as needed
 - **Implementation:** One subagent per task
@@ -208,6 +223,7 @@ When ALL tasks in plan.md have `"passes": true`, output:
 - Bash commands for build/deploy
 
 ### Subagent Prompts Should Include
+- Status file update instructions (see above)
 - Clear task description
 - Specific steps to follow
 - Expected return format (PASS/FAIL, summary, data)

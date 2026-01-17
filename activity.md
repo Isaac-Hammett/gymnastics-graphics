@@ -2,8 +2,8 @@
 
 ## Current Status
 **Phase:** MCP Server Testing
-**Last Task:** MCP-03 - Test aws_list_amis returns AMI catalog
-**Next Task:** MCP-04 - Test ssh_exec basic command on coordinator
+**Last Task:** MCP-04 - Test ssh_exec basic command on coordinator
+**Next Task:** MCP-05 - Test ssh_exec with sudo on coordinator
 
 ---
 
@@ -45,6 +45,19 @@ Tested the `aws_list_amis` MCP tool with no parameters.
   - ami-0cd400e38fe002902 (gymnastics-vm-v1.0) - created: 2026-01-14T22:11:24.000Z
 
 **Verification:** MCP-03 PASSED - Response contains 3 AMIs with valid structure, sorted by date
+
+### MCP-04: Test ssh_exec basic command on coordinator
+Tested the `ssh_exec` MCP tool with basic command execution.
+
+**Results:**
+- Called ssh_exec with target='coordinator', command='echo hello'
+- Response structure: target, command, exitCode, stdout, stderr, success - all present
+- exitCode: 0 (expected: 0) ✓
+- stdout: "hello" (expected: contains "hello") ✓
+- success: true (expected: true) ✓
+- Target resolved to IP: 44.193.31.120
+
+**Verification:** MCP-04 PASSED - SSH exec returns successful result with correct output
 
 ---
 

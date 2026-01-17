@@ -1,0 +1,3 @@
+[MCP-04]: Testing ssh_exec basic command
+[MCP-04]: Running test-mcp-04.mjs
+[MCP-04]: PASSED - ssh_exec returned valid response
