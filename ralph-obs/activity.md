@@ -101,3 +101,33 @@
 
 ---
 
+#### FIX-01: Fix Mixed Content error - PASS
+**Timestamp:** 2026-01-17 22:30 UTC
+**Action:** Investigated and deployed fix for Mixed Content error
+
+**Investigation Findings:**
+1. `CompetitionContext.jsx` (lines 45-70) ALREADY routes through `https://api.commentarygraphic.com` when on HTTPS - this was the correct fix
+2. `OBSContext.jsx` EXISTS and uses Socket.io through ShowContext
+3. ALL OBS components EXIST in `show-controller/src/components/obs/`
+4. `CompetitionLayout.jsx` correctly wraps routes with ShowProvider and OBSProvider
+
+**Root Cause:** The code was correct but the frontend had not been rebuilt/deployed since the fix was implemented.
+
+**Fix Applied:**
+1. Rebuilt frontend with `npm run build`
+2. Deployed to production server (3.87.107.201)
+3. Verified OBS Manager page loads without Mixed Content errors
+
+**Screenshot:** `screenshots/FIX-01-obs-manager-no-mixed-content.png`
+
+**Result:**
+- OBS Manager page loads successfully at https://commentarygraphic.com/8kyf0rnl/obs-manager
+- "Connected" status shows (green indicator) - connected to coordinator
+- "OBS Disconnected" shows - expected, OBS not connected to coordinator yet
+- All tabs visible: Scenes, Sources, Audio, Transitions, Stream, Assets, Templates, Talent Comms
+- **NO console errors, NO Mixed Content errors**
+
+**Status:** PREREQ-02 reset to pending for re-test (now that Mixed Content is fixed)
+
+---
+

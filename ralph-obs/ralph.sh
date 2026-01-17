@@ -180,20 +180,37 @@ mcp__gymnastics__firebase_list_paths\
       esac
     done
 
-  # Check for completion - look for the unique completion signal
-  # This signal only appears once in PROMPT.md (as instruction), so if it appears in output, we're done
-  if grep -q '<RALPH_COMPLETE>ALL_DONE</RALPH_COMPLETE>' "$OUTPUT_FILE" 2>/dev/null; then
-    # But verify it's actually in Claude's response, not just the prompt echo
-    # Count occurrences - should be more than 1 if Claude actually output it
-    SIGNAL_COUNT=$(grep -c '<RALPH_COMPLETE>ALL_DONE</RALPH_COMPLETE>' "$OUTPUT_FILE" 2>/dev/null || echo "0")
-    if [ "$SIGNAL_COUNT" -gt 1 ]; then
-      echo ""
-      echo -e "${GREEN}========================================"
-      echo "ALL TASKS COMPLETE!"
-      echo "Finished after $i iterations."
-      echo -e "========================================${NC}"
-      exit 0
+  # Check for completion - extract ONLY Claude's text responses from the JSON stream
+  # The stream-json format includes the prompt, so we must parse out just Claude's output
+  CLAUDE_TEXT_FILE="$RALPH_TMP/claude_text.txt"
+  > "$CLAUDE_TEXT_FILE"
+
+  # Extract text content from assistant messages and result events
+  # This filters out the prompt and system messages, keeping only Claude's actual responses
+  while IFS= read -r json_line; do
+    if echo "$json_line" | jq -e '.' >/dev/null 2>&1; then
+      event_type=$(echo "$json_line" | jq -r '.type // empty' 2>/dev/null)
+      case "$event_type" in
+        "assistant")
+          # Extract text blocks from assistant messages
+          echo "$json_line" | jq -r '.message.content[]? | select(.type=="text") | .text' 2>/dev/null >> "$CLAUDE_TEXT_FILE"
+          ;;
+        "result")
+          # Extract final result text
+          echo "$json_line" | jq -r '.result // empty' 2>/dev/null >> "$CLAUDE_TEXT_FILE"
+          ;;
+      esac
     fi
+  done < "$OUTPUT_FILE"
+
+  # Now check for completion signal in ONLY Claude's text output
+  if grep -q '<RALPH_COMPLETE>ALL_DONE</RALPH_COMPLETE>' "$CLAUDE_TEXT_FILE" 2>/dev/null; then
+    echo ""
+    echo -e "${GREEN}========================================"
+    echo "ALL TASKS COMPLETE!"
+    echo "Finished after $i iterations."
+    echo -e "========================================${NC}"
+    exit 0
   fi
 
   # Check if phase changed

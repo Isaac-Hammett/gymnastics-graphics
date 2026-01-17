@@ -106,9 +106,9 @@ These test actual OBS functionality and may modify state.
     "description": "Verify OBS is running and WebSocket is connected",
     "action": "Navigate to /{compId}/obs-manager, check connection status",
     "verification": "OBS shows 'Connected' status",
-    "status": "failed",
+    "status": "pending",
     "dependsOn": "PREREQ-01",
-    "failureReason": "Mixed Content Error: HTTPS page cannot connect to HTTP/WS WebSocket on VM. Browser blocks ws://3.89.92.162:3003. OBS IS running on VM (PID 425), vmAddress was also in wrong Firebase location (fixed). Architecture requires proxy or SSL on VMs."
+    "note": "Mixed Content error was fixed by FIX-01. Needs re-test to verify OBS connection."
   },
   {
     "id": "TEST-01",
@@ -229,7 +229,8 @@ Created dynamically when tests fail.
     "id": "FIX-01",
     "description": "Fix Mixed Content error - Frontend cannot connect to VM WebSocket over HTTP from HTTPS page",
     "action": "Route VM WebSocket connections through coordinator API proxy, or use WSS. The coordinator already has SSL via api.commentarygraphic.com",
-    "status": "pending",
+    "status": "completed",
+    "result": "CompetitionContext.jsx already routes through https://api.commentarygraphic.com when on HTTPS. OBSContext.jsx and all OBS components exist. Rebuilt and deployed frontend. OBS Manager page loads without Mixed Content errors.",
     "blocksTests": ["PREREQ-02", "TEST-01", "TEST-02", "TEST-03", "TEST-04", "TEST-05", "TEST-06", "TEST-07", "TEST-08", "TEST-09", "TEST-10", "TEST-11", "TEST-12", "TEST-13"]
   }
 ]
