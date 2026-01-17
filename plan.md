@@ -276,7 +276,7 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
       "Define DEFAULT_PRESETS constant (commentary-focus, venue-focus, music-bed, all-muted, break-music)"
     ],
     "verification": "Audio presets save to Firebase and apply correctly",
-    "passes": false
+    "passes": true
   },
   {
     "id": "OBS-12",
@@ -741,7 +741,7 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
 | **OBS Phase 1: State Sync** | 4 | 4 | Complete |
 | **OBS Phase 2: Scene CRUD** | 2 | 2 | Complete |
 | **OBS Phase 3: Source Mgmt** | 3 | 3 | Complete |
-| **OBS Phase 4: Audio** | 3 | 1 | In Progress |
+| **OBS Phase 4: Audio** | 3 | 2 | In Progress |
 | **OBS Phase 5: Transitions** | 2 | 0 | Not Started |
 | **OBS Phase 6: Stream** | 2 | 0 | Not Started |
 | **OBS Phase 7: Assets** | 2 | 0 | Not Started |
@@ -750,7 +750,7 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
 | **OBS Phase 10: Preview** | 2 | 0 | Not Started |
 | **OBS Phase 11: UI** | 7 | 0 | Not Started |
 | **OBS Integration Tests** | 7 | 0 | Not Started |
-| **Total** | **38** | **10** | **26%** |
+| **Total** | **38** | **11** | **29%** |
 
 ---
 

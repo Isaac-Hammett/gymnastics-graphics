@@ -7,6 +7,7 @@
  * - Getting/setting mute state
  * - Getting/setting monitor type
  * - Accessing cached audio sources
+ * - Audio presets (save/load/apply/delete)
  *
  * Works with OBSStateSync for cached state access to avoid redundant OBS calls.
  *
@@ -14,13 +15,71 @@
  */
 
 /**
+ * Default audio presets for common scenarios
+ * Used as starting templates and available across all competitions
+ */
+export const DEFAULT_PRESETS = {
+  'default-commentary-focus': {
+    id: 'default-commentary-focus',
+    name: 'Commentary Focus',
+    description: 'Commentary loud, venue ambient soft',
+    sources: [
+      { inputName: 'Commentary', volumeDb: -6, muted: false },
+      { inputName: 'Venue', volumeDb: -18, muted: false },
+      { inputName: 'Music', volumeDb: -96, muted: true }
+    ]
+  },
+  'default-venue-focus': {
+    id: 'default-venue-focus',
+    name: 'Venue Focus',
+    description: 'Venue ambient loud, commentary soft',
+    sources: [
+      { inputName: 'Commentary', volumeDb: -18, muted: false },
+      { inputName: 'Venue', volumeDb: -6, muted: false },
+      { inputName: 'Music', volumeDb: -96, muted: true }
+    ]
+  },
+  'default-music-bed': {
+    id: 'default-music-bed',
+    name: 'Music Bed',
+    description: 'Music moderate, others muted',
+    sources: [
+      { inputName: 'Music', volumeDb: -12, muted: false },
+      { inputName: 'Commentary', volumeDb: -96, muted: true },
+      { inputName: 'Venue', volumeDb: -96, muted: true }
+    ]
+  },
+  'default-all-muted': {
+    id: 'default-all-muted',
+    name: 'All Muted',
+    description: 'All audio sources muted',
+    sources: [
+      { inputName: 'Commentary', volumeDb: -96, muted: true },
+      { inputName: 'Venue', volumeDb: -96, muted: true },
+      { inputName: 'Music', volumeDb: -96, muted: true }
+    ]
+  },
+  'default-break-music': {
+    id: 'default-break-music',
+    name: 'Break Music',
+    description: 'Music at full volume, others muted',
+    sources: [
+      { inputName: 'Music', volumeDb: 0, muted: false },
+      { inputName: 'Commentary', volumeDb: -96, muted: true },
+      { inputName: 'Venue', volumeDb: -96, muted: true }
+    ]
+  }
+};
+
+/**
  * OBS Audio Manager class
  * Provides audio control operations for inputs/sources
  */
 export class OBSAudioManager {
-  constructor(obs, stateSync) {
+  constructor(obs, stateSync, productionConfigService = null) {
     this.obs = obs;           // OBS WebSocket instance
     this.stateSync = stateSync; // OBSStateSync instance for cached state
+    this.productionConfigService = productionConfigService; // Firebase service for preset storage
   }
 
   /**
@@ -202,6 +261,223 @@ export class OBSAudioManager {
       return { success: true };
     } catch (error) {
       console.error(`[OBSAudioManager] Failed to set monitor type for input ${inputName}:`, error.message);
+      throw error;
+    }
+  }
+
+  // ============================================================================
+  // Audio Presets
+  // ============================================================================
+
+  /**
+   * Get Firebase database reference
+   * @private
+   * @returns {Object} Firebase database reference
+   */
+  _getDatabase() {
+    if (!this.productionConfigService) {
+      throw new Error('Production config service not available');
+    }
+
+    // Initialize if needed
+    const db = this.productionConfigService.initialize();
+    if (!db) {
+      throw new Error('Firebase database not available');
+    }
+
+    return db;
+  }
+
+  /**
+   * Save an audio preset to Firebase
+   * @param {string} compId - Competition ID
+   * @param {Object} preset - Preset object with {id, name, description, sources: [{inputName, volumeDb, muted}]}
+   * @returns {Promise<boolean>} Success status
+   */
+  async savePreset(compId, preset) {
+    if (!compId) {
+      throw new Error('Competition ID is required');
+    }
+
+    if (!preset || typeof preset !== 'object') {
+      throw new Error('Preset must be an object');
+    }
+
+    if (!preset.id) {
+      throw new Error('Preset must have an id');
+    }
+
+    if (!preset.name) {
+      throw new Error('Preset must have a name');
+    }
+
+    if (!Array.isArray(preset.sources)) {
+      throw new Error('Preset must have a sources array');
+    }
+
+    try {
+      const database = this._getDatabase();
+
+      const presetWithTimestamp = {
+        ...preset,
+        createdAt: preset.createdAt || new Date().toISOString()
+      };
+
+      await database.ref(`competitions/${compId}/obs/presets/${preset.id}`).set(presetWithTimestamp);
+      console.log(`[OBSAudioManager] Saved preset "${preset.name}" (${preset.id}) for competition ${compId}`);
+
+      return true;
+    } catch (error) {
+      console.error(`[OBSAudioManager] Failed to save preset ${preset.id}:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Load an audio preset from Firebase
+   * @param {string} compId - Competition ID
+   * @param {string} presetId - Preset ID to load
+   * @returns {Promise<Object|null>} Preset object or null if not found
+   */
+  async loadPreset(compId, presetId) {
+    if (!compId) {
+      throw new Error('Competition ID is required');
+    }
+
+    if (!presetId) {
+      throw new Error('Preset ID is required');
+    }
+
+    try {
+      const database = this._getDatabase();
+
+      const snapshot = await database.ref(`competitions/${compId}/obs/presets/${presetId}`).once('value');
+      const preset = snapshot.val();
+
+      if (!preset) {
+        console.log(`[OBSAudioManager] Preset ${presetId} not found for competition ${compId}`);
+        return null;
+      }
+
+      console.log(`[OBSAudioManager] Loaded preset "${preset.name}" (${presetId}) for competition ${compId}`);
+      return preset;
+    } catch (error) {
+      console.error(`[OBSAudioManager] Failed to load preset ${presetId}:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Apply an audio preset to OBS
+   * @param {Object} preset - Preset object with sources array
+   * @returns {Promise<{applied: number, errors: Array}>} Result with count and errors
+   */
+  async applyPreset(preset) {
+    if (!preset || typeof preset !== 'object') {
+      throw new Error('Preset must be an object');
+    }
+
+    if (!Array.isArray(preset.sources)) {
+      throw new Error('Preset must have a sources array');
+    }
+
+    const errors = [];
+    let applied = 0;
+
+    console.log(`[OBSAudioManager] Applying preset "${preset.name || preset.id}"`);
+
+    for (const source of preset.sources) {
+      try {
+        // Set volume if specified
+        if (source.volumeDb !== undefined) {
+          await this.setVolume(source.inputName, source.volumeDb);
+        }
+
+        // Set mute state if specified
+        if (source.muted !== undefined) {
+          await this.setMute(source.inputName, source.muted);
+        }
+
+        applied++;
+      } catch (error) {
+        console.warn(`[OBSAudioManager] Failed to apply preset setting for ${source.inputName}:`, error.message);
+        errors.push({
+          inputName: source.inputName,
+          error: error.message
+        });
+      }
+    }
+
+    console.log(`[OBSAudioManager] Applied preset: ${applied}/${preset.sources.length} sources configured`);
+
+    return {
+      applied,
+      errors
+    };
+  }
+
+  /**
+   * Delete an audio preset from Firebase
+   * @param {string} compId - Competition ID
+   * @param {string} presetId - Preset ID to delete
+   * @returns {Promise<boolean>} Success status
+   */
+  async deletePreset(compId, presetId) {
+    if (!compId) {
+      throw new Error('Competition ID is required');
+    }
+
+    if (!presetId) {
+      throw new Error('Preset ID is required');
+    }
+
+    // Don't allow deleting default presets
+    if (presetId.startsWith('default-')) {
+      throw new Error('Cannot delete default presets');
+    }
+
+    try {
+      const database = this._getDatabase();
+
+      await database.ref(`competitions/${compId}/obs/presets/${presetId}`).remove();
+      console.log(`[OBSAudioManager] Deleted preset ${presetId} for competition ${compId}`);
+
+      return true;
+    } catch (error) {
+      console.error(`[OBSAudioManager] Failed to delete preset ${presetId}:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * List all audio presets for a competition (user presets + default presets)
+   * @param {string} compId - Competition ID
+   * @returns {Promise<Array>} Array of all available presets
+   */
+  async listPresets(compId) {
+    if (!compId) {
+      throw new Error('Competition ID is required');
+    }
+
+    try {
+      const database = this._getDatabase();
+
+      // Get user presets from Firebase
+      const snapshot = await database.ref(`competitions/${compId}/obs/presets`).once('value');
+      const userPresetsObj = snapshot.val() || {};
+
+      // Convert to array
+      const userPresets = Object.values(userPresetsObj);
+
+      // Combine with default presets
+      const defaultPresets = Object.values(DEFAULT_PRESETS);
+      const allPresets = [...defaultPresets, ...userPresets];
+
+      console.log(`[OBSAudioManager] Listed ${allPresets.length} presets (${defaultPresets.length} default, ${userPresets.length} user) for competition ${compId}`);
+
+      return allPresets;
+    } catch (error) {
+      console.error(`[OBSAudioManager] Failed to list presets for ${compId}:`, error.message);
       throw error;
     }
   }

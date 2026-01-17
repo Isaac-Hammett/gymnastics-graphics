@@ -7,7 +7,7 @@
 
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { OBSAudioManager } from '../lib/obsAudioManager.js';
+import { OBSAudioManager, DEFAULT_PRESETS } from '../lib/obsAudioManager.js';
 import { MockOBSWebSocket } from './helpers/mockOBS.js';
 
 describe('OBSAudioManager', () => {
@@ -500,6 +500,427 @@ describe('OBSAudioManager', () => {
       // Verify all calls were made
       assert.equal(obs.getCallsTo('SetInputVolume').length, 3);
       assert.equal(obs.getCallsTo('SetInputMute').length, 2);
+    });
+  });
+
+  describe('Audio Presets', () => {
+    let mockProductionConfigService;
+    let mockDatabase;
+    let firebaseStore;
+    let audioManagerWithFirebase;
+
+    beforeEach(() => {
+      // Create in-memory Firebase store
+      firebaseStore = {};
+
+      // Mock Firebase database
+      mockDatabase = {
+        ref: (path) => ({
+          set: async (data) => {
+            firebaseStore[path] = data;
+          },
+          once: async (eventType) => {
+            const value = firebaseStore[path];
+
+            // If path ends with /presets (listing path), return object of all presets
+            if (path.endsWith('/presets') && !value) {
+              const presets = {};
+              Object.keys(firebaseStore).forEach(key => {
+                if (key.startsWith(path + '/')) {
+                  const presetId = key.substring(path.length + 1);
+                  presets[presetId] = firebaseStore[key];
+                }
+              });
+              return { val: () => Object.keys(presets).length > 0 ? presets : null };
+            }
+
+            return { val: () => value || null };
+          },
+          remove: async () => {
+            delete firebaseStore[path];
+          }
+        })
+      };
+
+      // Mock production config service
+      mockProductionConfigService = {
+        initialize: () => mockDatabase
+      };
+
+      // Create audio manager with Firebase support
+      audioManagerWithFirebase = new OBSAudioManager(obs, stateSync, mockProductionConfigService);
+    });
+
+    describe('DEFAULT_PRESETS', () => {
+      it('should export DEFAULT_PRESETS constant', () => {
+        assert.ok(DEFAULT_PRESETS);
+        assert.equal(typeof DEFAULT_PRESETS, 'object');
+      });
+
+      it('should have commentary-focus preset', () => {
+        assert.ok(DEFAULT_PRESETS['default-commentary-focus']);
+        assert.equal(DEFAULT_PRESETS['default-commentary-focus'].name, 'Commentary Focus');
+        assert.ok(Array.isArray(DEFAULT_PRESETS['default-commentary-focus'].sources));
+      });
+
+      it('should have venue-focus preset', () => {
+        assert.ok(DEFAULT_PRESETS['default-venue-focus']);
+        assert.equal(DEFAULT_PRESETS['default-venue-focus'].name, 'Venue Focus');
+      });
+
+      it('should have music-bed preset', () => {
+        assert.ok(DEFAULT_PRESETS['default-music-bed']);
+        assert.equal(DEFAULT_PRESETS['default-music-bed'].name, 'Music Bed');
+      });
+
+      it('should have all-muted preset', () => {
+        assert.ok(DEFAULT_PRESETS['default-all-muted']);
+        assert.equal(DEFAULT_PRESETS['default-all-muted'].name, 'All Muted');
+      });
+
+      it('should have break-music preset', () => {
+        assert.ok(DEFAULT_PRESETS['default-break-music']);
+        assert.equal(DEFAULT_PRESETS['default-break-music'].name, 'Break Music');
+      });
+
+      it('should have valid structure for all presets', () => {
+        Object.values(DEFAULT_PRESETS).forEach(preset => {
+          assert.ok(preset.id, 'Preset should have id');
+          assert.ok(preset.name, 'Preset should have name');
+          assert.ok(preset.description, 'Preset should have description');
+          assert.ok(Array.isArray(preset.sources), 'Preset should have sources array');
+
+          preset.sources.forEach(source => {
+            assert.ok(source.inputName, 'Source should have inputName');
+            assert.ok(typeof source.volumeDb === 'number', 'Source should have volumeDb number');
+            assert.ok(typeof source.muted === 'boolean', 'Source should have muted boolean');
+          });
+        });
+      });
+    });
+
+    describe('savePreset', () => {
+      it('should save preset to Firebase', async () => {
+        const preset = {
+          id: 'custom-preset-1',
+          name: 'Custom Preset',
+          description: 'My custom audio preset',
+          sources: [
+            { inputName: 'Microphone', volumeDb: -8, muted: false }
+          ]
+        };
+
+        const result = await audioManagerWithFirebase.savePreset('comp123', preset);
+
+        assert.equal(result, true);
+        assert.ok(firebaseStore['competitions/comp123/obs/presets/custom-preset-1']);
+        assert.equal(firebaseStore['competitions/comp123/obs/presets/custom-preset-1'].name, 'Custom Preset');
+        assert.ok(firebaseStore['competitions/comp123/obs/presets/custom-preset-1'].createdAt);
+      });
+
+      it('should throw error when compId is missing', async () => {
+        const preset = { id: 'test', name: 'Test', sources: [] };
+
+        await assert.rejects(
+          async () => await audioManagerWithFirebase.savePreset('', preset),
+          { message: 'Competition ID is required' }
+        );
+      });
+
+      it('should throw error when preset is missing', async () => {
+        await assert.rejects(
+          async () => await audioManagerWithFirebase.savePreset('comp123', null),
+          { message: 'Preset must be an object' }
+        );
+      });
+
+      it('should throw error when preset id is missing', async () => {
+        const preset = { name: 'Test', sources: [] };
+
+        await assert.rejects(
+          async () => await audioManagerWithFirebase.savePreset('comp123', preset),
+          { message: 'Preset must have an id' }
+        );
+      });
+
+      it('should throw error when preset name is missing', async () => {
+        const preset = { id: 'test', sources: [] };
+
+        await assert.rejects(
+          async () => await audioManagerWithFirebase.savePreset('comp123', preset),
+          { message: 'Preset must have a name' }
+        );
+      });
+
+      it('should throw error when preset sources is not an array', async () => {
+        const preset = { id: 'test', name: 'Test' };
+
+        await assert.rejects(
+          async () => await audioManagerWithFirebase.savePreset('comp123', preset),
+          { message: 'Preset must have a sources array' }
+        );
+      });
+
+      it('should throw error when production config service is not available', async () => {
+        const preset = { id: 'test', name: 'Test', sources: [] };
+
+        await assert.rejects(
+          async () => await audioManager.savePreset('comp123', preset),
+          { message: 'Production config service not available' }
+        );
+      });
+    });
+
+    describe('loadPreset', () => {
+      it('should load preset from Firebase', async () => {
+        const preset = {
+          id: 'custom-preset-1',
+          name: 'Custom Preset',
+          description: 'My custom audio preset',
+          sources: [
+            { inputName: 'Microphone', volumeDb: -8, muted: false }
+          ],
+          createdAt: new Date().toISOString()
+        };
+
+        // Save preset first
+        await audioManagerWithFirebase.savePreset('comp123', preset);
+
+        // Load it back
+        const loaded = await audioManagerWithFirebase.loadPreset('comp123', 'custom-preset-1');
+
+        assert.ok(loaded);
+        assert.equal(loaded.id, 'custom-preset-1');
+        assert.equal(loaded.name, 'Custom Preset');
+        assert.equal(loaded.description, 'My custom audio preset');
+        assert.equal(loaded.sources.length, 1);
+        assert.equal(loaded.sources[0].inputName, 'Microphone');
+      });
+
+      it('should return null when preset is not found', async () => {
+        const loaded = await audioManagerWithFirebase.loadPreset('comp123', 'nonexistent');
+
+        assert.equal(loaded, null);
+      });
+
+      it('should throw error when compId is missing', async () => {
+        await assert.rejects(
+          async () => await audioManagerWithFirebase.loadPreset('', 'preset-1'),
+          { message: 'Competition ID is required' }
+        );
+      });
+
+      it('should throw error when presetId is missing', async () => {
+        await assert.rejects(
+          async () => await audioManagerWithFirebase.loadPreset('comp123', ''),
+          { message: 'Preset ID is required' }
+        );
+      });
+
+      it('should throw error when production config service is not available', async () => {
+        await assert.rejects(
+          async () => await audioManager.loadPreset('comp123', 'preset-1'),
+          { message: 'Production config service not available' }
+        );
+      });
+    });
+
+    describe('applyPreset', () => {
+      it('should apply preset to all sources', async () => {
+        const preset = {
+          id: 'test-preset',
+          name: 'Test Preset',
+          sources: [
+            { inputName: 'Microphone', volumeDb: -8, muted: false },
+            { inputName: 'Desktop Audio', volumeDb: -12, muted: true }
+          ]
+        };
+
+        obs.clearHistory();
+
+        const result = await audioManagerWithFirebase.applyPreset(preset);
+
+        assert.equal(result.applied, 2);
+        assert.equal(result.errors.length, 0);
+
+        // Verify OBS calls
+        const volumeCalls = obs.getCallsTo('SetInputVolume');
+        const muteCalls = obs.getCallsTo('SetInputMute');
+
+        assert.equal(volumeCalls.length, 2);
+        assert.equal(muteCalls.length, 2);
+      });
+
+      it('should handle missing sources gracefully', async () => {
+        const preset = {
+          id: 'test-preset',
+          name: 'Test Preset',
+          sources: [
+            { inputName: 'Microphone', volumeDb: -8, muted: false },
+            { inputName: 'NonexistentSource', volumeDb: -12, muted: true }
+          ]
+        };
+
+        // Don't inject error - just let OBS handle the missing source
+        // The mock will still succeed, but in real OBS it would fail
+        // For testing purposes, we'll manually create a failing mock that only fails for specific input
+        const originalCall = obs.call.bind(obs);
+        obs.call = async function(method, params) {
+          if (method === 'SetInputVolume' && params.inputName === 'NonexistentSource') {
+            throw new Error('Input not found: NonexistentSource');
+          }
+          return originalCall(method, params);
+        };
+
+        const result = await audioManagerWithFirebase.applyPreset(preset);
+
+        assert.equal(result.applied, 1);
+        assert.equal(result.errors.length, 1);
+        assert.equal(result.errors[0].inputName, 'NonexistentSource');
+
+        // Restore original call method
+        obs.call = originalCall;
+      });
+
+      it('should throw error when preset is missing', async () => {
+        await assert.rejects(
+          async () => await audioManagerWithFirebase.applyPreset(null),
+          { message: 'Preset must be an object' }
+        );
+      });
+
+      it('should throw error when preset sources is not an array', async () => {
+        const preset = { id: 'test', name: 'Test' };
+
+        await assert.rejects(
+          async () => await audioManagerWithFirebase.applyPreset(preset),
+          { message: 'Preset must have a sources array' }
+        );
+      });
+
+      it('should apply only volume when muted is undefined', async () => {
+        const preset = {
+          id: 'test-preset',
+          name: 'Test Preset',
+          sources: [
+            { inputName: 'Microphone', volumeDb: -8 } // No muted property
+          ]
+        };
+
+        obs.clearHistory();
+
+        const result = await audioManagerWithFirebase.applyPreset(preset);
+
+        assert.equal(result.applied, 1);
+
+        // Verify only volume call was made
+        const volumeCalls = obs.getCallsTo('SetInputVolume');
+        const muteCalls = obs.getCallsTo('SetInputMute');
+
+        assert.equal(volumeCalls.length, 1);
+        assert.equal(muteCalls.length, 0);
+      });
+    });
+
+    describe('deletePreset', () => {
+      it('should delete preset from Firebase', async () => {
+        const preset = {
+          id: 'custom-preset-1',
+          name: 'Custom Preset',
+          sources: []
+        };
+
+        // Save preset first
+        await audioManagerWithFirebase.savePreset('comp123', preset);
+        assert.ok(firebaseStore['competitions/comp123/obs/presets/custom-preset-1']);
+
+        // Delete it
+        const result = await audioManagerWithFirebase.deletePreset('comp123', 'custom-preset-1');
+
+        assert.equal(result, true);
+        assert.equal(firebaseStore['competitions/comp123/obs/presets/custom-preset-1'], undefined);
+      });
+
+      it('should throw error when trying to delete default preset', async () => {
+        await assert.rejects(
+          async () => await audioManagerWithFirebase.deletePreset('comp123', 'default-commentary-focus'),
+          { message: 'Cannot delete default presets' }
+        );
+      });
+
+      it('should throw error when compId is missing', async () => {
+        await assert.rejects(
+          async () => await audioManagerWithFirebase.deletePreset('', 'preset-1'),
+          { message: 'Competition ID is required' }
+        );
+      });
+
+      it('should throw error when presetId is missing', async () => {
+        await assert.rejects(
+          async () => await audioManagerWithFirebase.deletePreset('comp123', ''),
+          { message: 'Preset ID is required' }
+        );
+      });
+
+      it('should throw error when production config service is not available', async () => {
+        await assert.rejects(
+          async () => await audioManager.deletePreset('comp123', 'preset-1'),
+          { message: 'Production config service not available' }
+        );
+      });
+    });
+
+    describe('listPresets', () => {
+      it('should return default presets when no user presets exist', async () => {
+        const presets = await audioManagerWithFirebase.listPresets('comp123');
+
+        assert.ok(Array.isArray(presets));
+        assert.equal(presets.length, 5); // 5 default presets
+
+        const defaultNames = presets.map(p => p.id);
+        assert.ok(defaultNames.includes('default-commentary-focus'));
+        assert.ok(defaultNames.includes('default-venue-focus'));
+        assert.ok(defaultNames.includes('default-music-bed'));
+        assert.ok(defaultNames.includes('default-all-muted'));
+        assert.ok(defaultNames.includes('default-break-music'));
+      });
+
+      it('should return default presets plus user presets', async () => {
+        // Save some user presets
+        await audioManagerWithFirebase.savePreset('comp123', {
+          id: 'custom-1',
+          name: 'Custom 1',
+          sources: []
+        });
+        await audioManagerWithFirebase.savePreset('comp123', {
+          id: 'custom-2',
+          name: 'Custom 2',
+          sources: []
+        });
+
+        const presets = await audioManagerWithFirebase.listPresets('comp123');
+
+        assert.equal(presets.length, 7); // 5 default + 2 custom
+
+        const presetIds = presets.map(p => p.id);
+        assert.ok(presetIds.includes('default-commentary-focus'));
+        assert.ok(presetIds.includes('custom-1'));
+        assert.ok(presetIds.includes('custom-2'));
+      });
+
+      it('should throw error when compId is missing', async () => {
+        await assert.rejects(
+          async () => await audioManagerWithFirebase.listPresets(''),
+          { message: 'Competition ID is required' }
+        );
+      });
+
+      it('should throw error when production config service is not available', async () => {
+        await assert.rejects(
+          async () => await audioManager.listPresets('comp123'),
+          { message: 'Production config service not available' }
+        );
+      });
     });
   });
 });
