@@ -74,6 +74,18 @@ export class MockOBSWebSocket extends EventEmitter {
       ]
     });
 
+    // Default inputs (including audio sources)
+    this._inputs.set('Camera 1 SRT', {
+      inputName: 'Camera 1 SRT',
+      inputKind: 'ffmpeg_source',
+      settings: { url: 'srt://example.com:1234' }
+    });
+    this._inputs.set('Microphone', {
+      inputName: 'Microphone',
+      inputKind: 'wasapi_input_capture',
+      settings: {}
+    });
+
     // Default transitions
     this._transitions.set('Fade', { transitionName: 'Fade', transitionKind: 'fade_transition' });
     this._transitions.set('Cut', { transitionName: 'Cut', transitionKind: 'cut_transition' });
