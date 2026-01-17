@@ -2,20 +2,56 @@
 
 ## Current Status
 **Phase:** OBS Integration Tool - In Progress
-**Last Task:** OBS-06 - Add Scene CRUD API endpoints ✅
-**Next Task:** OBS-07 - Create OBS Source Manager module
+**Last Task:** OBS-07 - Create OBS Source Manager module ✅
+**Next Task:** OBS-08 - Implement scene item management
 **Blocker:** None
 
 ### Summary
 OBS Integration Tool implementation phase in progress. This phase will add comprehensive OBS WebSocket control capabilities to the show controller.
 
-**Progress:** 6/38 tasks complete (16%)
+**Progress:** 7/38 tasks complete (18%)
 
 ---
 
 ## Activity Log
 
 ### 2026-01-17
+
+### OBS-07: Create OBS Source Manager module ✅
+Created `/server/lib/obsSourceManager.js` - CRUD operations module for OBS inputs/sources.
+
+**Features implemented:**
+- `OBSSourceManager` class providing input management
+- `getInputKinds()` - Returns available input types from OBS via GetInputKindList
+- `getInputs()` - Returns cached inputs from OBSStateSync
+- `createInput(inputName, inputKind, inputSettings, sceneName)` - Creates new input via OBS WebSocket
+- `getInputSettings(inputName)` - Gets input kind and settings
+- `updateInputSettings(inputName, inputSettings)` - Updates input settings with overlay merge
+- `deleteInput(inputName)` - Removes input from OBS
+
+**Tests created:**
+- `/server/__tests__/obsSourceManager.test.js` - 40 comprehensive tests covering:
+  - Module exports (1 test)
+  - getInputKinds (4 tests): input kinds retrieval, empty list, OBS errors
+  - getInputs (3 tests): cached inputs, empty state, undefined handling
+  - createInput (8 tests): full parameters, global input, validation, errors
+  - getInputSettings (4 tests): settings retrieval, validation, unknown input
+  - updateInputSettings (7 tests): updates, validation, overlay flag verification
+  - deleteInput (5 tests): deletion, validation, not found errors
+  - Error handling (3 tests): connection, timeout, network errors
+  - Integration (4 tests): empty state, null handling, complete workflow
+
+**Design decisions:**
+- Uses OBSStateSync for cached input list (efficient, no redundant OBS calls)
+- updateInputSettings uses overlay: true to merge rather than replace
+- Comprehensive input validation with descriptive error messages
+- Logging with `[OBSSourceManager]` prefix for debugging
+
+**Verification:** PASSED
+- Method: `cd server && node --test __tests__/obsSourceManager.test.js`
+- Result: All 40 tests pass (10 suites, 0 failures)
+
+---
 
 ### OBS-06: Add Scene CRUD API endpoints ✅
 Created `/server/routes/obs.js` - RESTful API endpoints for OBS scene management.

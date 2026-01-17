@@ -1,0 +1,2 @@
+Examining reference files and creating obsSourceManager.js
+Done: Created OBSSourceManager with 6 methods (getInputKinds, getInputs, createInput, getInputSettings, updateInputSettings, deleteInput)
