@@ -1,0 +1,571 @@
+import { useState, useEffect } from 'react';
+import {
+  ExclamationTriangleIcon,
+  CheckCircleIcon,
+  ArrowPathIcon,
+  DocumentDuplicateIcon,
+  PlusIcon,
+  CameraIcon,
+  PhotoIcon,
+  InformationCircleIcon,
+  XMarkIcon
+} from '@heroicons/react/24/outline';
+import { useOBS } from '../../context/OBSContext';
+import { useShow } from '../../context/ShowContext';
+
+/**
+ * TemplateManager - Manage OBS scene templates
+ * Allows applying pre-configured templates and saving current state as template
+ */
+export default function TemplateManager() {
+  const { obsConnected } = useOBS();
+  const { compId } = useShow();
+
+  const [templates, setTemplates] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [applying, setApplying] = useState(null);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+
+  // Modal states
+  const [showApplyModal, setShowApplyModal] = useState(null);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [saveTemplateName, setSaveTemplateName] = useState('');
+  const [saveTemplateDescription, setSaveTemplateDescription] = useState('');
+  const [saveTemplateMeetTypes, setSaveTemplateMeetTypes] = useState([]);
+
+  // Available meet types
+  const meetTypes = ['mens-dual', 'womens-dual', 'mens-tri', 'womens-tri', 'mens-quad', 'womens-quad'];
+
+  // Fetch templates on mount
+  useEffect(() => {
+    if (obsConnected) {
+      fetchTemplates();
+    }
+  }, [obsConnected]);
+
+  const fetchTemplates = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/obs/templates');
+      if (!response.ok) {
+        throw new Error(`Failed to fetch templates: ${response.statusText}`);
+      }
+      const data = await response.json();
+      setTemplates(data);
+    } catch (err) {
+      console.error('Error fetching templates:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApplyTemplate = async (templateId) => {
+    setError(null);
+    setSuccess(null);
+    setApplying(templateId);
+
+    try {
+      const response = await fetch(`/api/obs/templates/${templateId}/apply`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          competitionId: compId
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Failed to apply template: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      setSuccess(`Template applied successfully: ${data.scenesCreated} scenes created`);
+      setShowApplyModal(null);
+
+      // Clear success message after 5 seconds
+      setTimeout(() => setSuccess(null), 5000);
+    } catch (err) {
+      console.error('Error applying template:', err);
+      setError(err.message);
+    } finally {
+      setApplying(null);
+    }
+  };
+
+  const handleSaveTemplate = async () => {
+    setError(null);
+    setSuccess(null);
+    setSaving(true);
+
+    try {
+      // Validate inputs
+      if (!saveTemplateName.trim()) {
+        throw new Error('Template name is required');
+      }
+      if (saveTemplateMeetTypes.length === 0) {
+        throw new Error('Select at least one meet type');
+      }
+
+      const response = await fetch('/api/obs/templates', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: saveTemplateName.trim(),
+          description: saveTemplateDescription.trim(),
+          meetTypes: saveTemplateMeetTypes
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Failed to save template: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      setSuccess(`Template "${data.name}" saved successfully`);
+      setShowSaveModal(false);
+      setSaveTemplateName('');
+      setSaveTemplateDescription('');
+      setSaveTemplateMeetTypes([]);
+      fetchTemplates(); // Refresh template list
+
+      // Clear success message after 5 seconds
+      setTimeout(() => setSuccess(null), 5000);
+    } catch (err) {
+      console.error('Error saving template:', err);
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const toggleMeetType = (meetType) => {
+    setSaveTemplateMeetTypes(prev =>
+      prev.includes(meetType)
+        ? prev.filter(t => t !== meetType)
+        : [...prev, meetType]
+    );
+  };
+
+  if (!obsConnected) {
+    return (
+      <div className="text-center text-gray-400 py-12">
+        <ExclamationTriangleIcon className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+        <p className="text-lg font-semibold text-white mb-2">OBS Not Connected</p>
+        <p>Connect to OBS to manage templates</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h3 className="text-white font-semibold text-lg">Template Manager</h3>
+          <p className="text-gray-400 text-sm mt-1">Apply pre-configured scene templates or save current setup</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={fetchTemplates}
+            disabled={loading}
+            className="flex items-center gap-2 px-3 py-1.5 bg-gray-700 border border-gray-600 rounded-lg text-gray-300 text-sm hover:bg-gray-600 disabled:opacity-50 transition-colors"
+          >
+            <ArrowPathIcon className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+          <button
+            onClick={() => setShowSaveModal(true)}
+            className="flex items-center gap-2 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            <PlusIcon className="w-4 h-4" />
+            Save Current as Template
+          </button>
+        </div>
+      </div>
+
+      {/* Error Banner */}
+      {error && (
+        <div className="bg-red-900/20 border border-red-700 rounded-lg p-4 flex items-start gap-3">
+          <ExclamationTriangleIcon className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <div className="text-red-300 font-semibold">Error</div>
+            <div className="text-red-200/80 text-sm">{error}</div>
+          </div>
+          <button
+            onClick={() => setError(null)}
+            className="text-red-300 hover:text-red-100"
+          >
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+        </div>
+      )}
+
+      {/* Success Banner */}
+      {success && (
+        <div className="bg-green-900/20 border border-green-700 rounded-lg p-4 flex items-start gap-3">
+          <CheckCircleIcon className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <div className="text-green-300 font-semibold">Success</div>
+            <div className="text-green-200/80 text-sm">{success}</div>
+          </div>
+          <button
+            onClick={() => setSuccess(null)}
+            className="text-green-300 hover:text-green-100"
+          >
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+        </div>
+      )}
+
+      {/* Templates List */}
+      <div className="bg-gray-700 rounded-lg p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <DocumentDuplicateIcon className="w-5 h-5 text-gray-300" />
+          <h4 className="text-white font-semibold">
+            Available Templates ({templates.length})
+          </h4>
+        </div>
+
+        {loading ? (
+          <div className="text-center py-12">
+            <ArrowPathIcon className="w-8 h-8 text-gray-400 mx-auto mb-2 animate-spin" />
+            <div className="text-gray-400">Loading templates...</div>
+          </div>
+        ) : templates.length === 0 ? (
+          <div className="text-center py-12">
+            <DocumentDuplicateIcon className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+            <div className="text-gray-400">No templates available</div>
+            <div className="text-gray-500 text-sm mt-1">Save your current OBS setup as a template to get started</div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {templates.map((template) => (
+              <TemplateCard
+                key={template.id}
+                template={template}
+                onApply={() => setShowApplyModal(template)}
+                isApplying={applying === template.id}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Apply Template Confirmation Modal */}
+      {showApplyModal && (
+        <ApplyTemplateModal
+          template={showApplyModal}
+          onConfirm={() => handleApplyTemplate(showApplyModal.id)}
+          onCancel={() => setShowApplyModal(null)}
+          isApplying={applying === showApplyModal.id}
+        />
+      )}
+
+      {/* Save Template Modal */}
+      {showSaveModal && (
+        <SaveTemplateModal
+          name={saveTemplateName}
+          description={saveTemplateDescription}
+          meetTypes={saveTemplateMeetTypes}
+          availableMeetTypes={meetTypes}
+          onNameChange={setSaveTemplateName}
+          onDescriptionChange={setSaveTemplateDescription}
+          onToggleMeetType={toggleMeetType}
+          onSave={handleSaveTemplate}
+          onCancel={() => {
+            setShowSaveModal(false);
+            setSaveTemplateName('');
+            setSaveTemplateDescription('');
+            setSaveTemplateMeetTypes([]);
+          }}
+          isSaving={saving}
+        />
+      )}
+    </div>
+  );
+}
+
+/**
+ * TemplateCard - Individual template card with metadata
+ */
+function TemplateCard({ template, onApply, isApplying }) {
+  return (
+    <div className="bg-gray-800 rounded-lg p-4 hover:bg-gray-750 transition-colors">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-2">
+            <h5 className="text-white font-medium">{template.name}</h5>
+            {template.isDefault && (
+              <span className="px-2 py-0.5 bg-purple-600/20 border border-purple-600 text-purple-300 text-xs font-semibold rounded">
+                DEFAULT
+              </span>
+            )}
+          </div>
+
+          {template.description && (
+            <p className="text-gray-400 text-sm mb-3">{template.description}</p>
+          )}
+
+          <div className="flex flex-wrap gap-2 mb-3">
+            {template.meetTypes?.map(type => (
+              <span
+                key={type}
+                className="px-2 py-1 bg-gray-700 text-gray-300 text-xs rounded border border-gray-600"
+              >
+                {type}
+              </span>
+            ))}
+          </div>
+
+          {/* Template Requirements */}
+          <div className="space-y-2">
+            {template.requirements?.cameras && (
+              <div className="flex items-center gap-2 text-sm text-gray-400">
+                <CameraIcon className="w-4 h-4" />
+                <span>{template.requirements.cameras.length} cameras needed</span>
+              </div>
+            )}
+            {template.requirements?.assets && template.requirements.assets.length > 0 && (
+              <div className="flex items-center gap-2 text-sm text-gray-400">
+                <PhotoIcon className="w-4 h-4" />
+                <span>{template.requirements.assets.length} assets required</span>
+              </div>
+            )}
+          </div>
+
+          {/* Metadata */}
+          <div className="text-gray-500 text-xs mt-3">
+            {template.createdAt && (
+              <span>Created {new Date(template.createdAt).toLocaleDateString()}</span>
+            )}
+            {template.scenesCount && (
+              <>
+                <span> • </span>
+                <span>{template.scenesCount} scenes</span>
+              </>
+            )}
+          </div>
+        </div>
+
+        <button
+          onClick={onApply}
+          disabled={isApplying}
+          className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:text-gray-500 text-white font-medium rounded-lg transition-colors whitespace-nowrap"
+        >
+          {isApplying ? (
+            <>
+              <ArrowPathIcon className="w-5 h-5 animate-spin" />
+              Applying...
+            </>
+          ) : (
+            <>
+              <DocumentDuplicateIcon className="w-5 h-5" />
+              Apply Template
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * ApplyTemplateModal - Confirmation dialog for applying templates
+ */
+function ApplyTemplateModal({ template, onConfirm, onCancel, isApplying }) {
+  return (
+    <div
+      className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+      onClick={onCancel}
+    >
+      <div
+        className="bg-gray-800 rounded-lg max-w-lg w-full"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-6">
+          <div className="flex items-start gap-4 mb-4">
+            <div className="w-10 h-10 rounded-full bg-purple-900/20 flex items-center justify-center flex-shrink-0">
+              <InformationCircleIcon className="w-6 h-6 text-purple-400" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-white font-semibold text-lg mb-2">Apply Template</h3>
+              <p className="text-gray-400 text-sm mb-4">
+                Are you sure you want to apply the template <span className="text-white font-medium">"{template.name}"</span>?
+              </p>
+
+              {/* Template Details */}
+              <div className="bg-gray-900 rounded-lg p-4 space-y-2 mb-4">
+                <div className="text-gray-300 text-sm">
+                  <span className="text-gray-500">Scenes:</span> {template.scenesCount || 0}
+                </div>
+                {template.requirements?.cameras && (
+                  <div className="text-gray-300 text-sm">
+                    <span className="text-gray-500">Cameras:</span> {template.requirements.cameras.length}
+                  </div>
+                )}
+                {template.requirements?.assets && template.requirements.assets.length > 0 && (
+                  <div className="text-gray-300 text-sm">
+                    <span className="text-gray-500">Assets:</span> {template.requirements.assets.join(', ')}
+                  </div>
+                )}
+              </div>
+
+              <div className="bg-yellow-900/20 border border-yellow-700 rounded-lg p-3 flex items-start gap-2">
+                <ExclamationTriangleIcon className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+                <div className="text-yellow-200 text-sm">
+                  This will create new scenes in OBS based on this template. Existing scenes will not be affected.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={onCancel}
+              disabled={isApplying}
+              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-white rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={onConfirm}
+              disabled={isApplying}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg transition-colors"
+            >
+              {isApplying ? (
+                <>
+                  <ArrowPathIcon className="w-5 h-5 animate-spin" />
+                  Applying...
+                </>
+              ) : (
+                'Apply Template'
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * SaveTemplateModal - Modal for saving current OBS state as template
+ */
+function SaveTemplateModal({
+  name,
+  description,
+  meetTypes,
+  availableMeetTypes,
+  onNameChange,
+  onDescriptionChange,
+  onToggleMeetType,
+  onSave,
+  onCancel,
+  isSaving
+}) {
+  return (
+    <div
+      className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+      onClick={onCancel}
+    >
+      <div
+        className="bg-gray-800 rounded-lg max-w-lg w-full"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-6">
+          <h3 className="text-white font-semibold text-lg mb-4">Save Current Setup as Template</h3>
+
+          <div className="space-y-4 mb-6">
+            {/* Template Name */}
+            <div>
+              <label className="block text-white font-medium mb-2">
+                Template Name <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => onNameChange(e.target.value)}
+                placeholder="e.g., Dual Meet Standard Setup"
+                className="w-full px-3 py-2 bg-gray-900 text-white rounded border border-gray-600 focus:border-purple-500 focus:outline-none"
+              />
+            </div>
+
+            {/* Template Description */}
+            <div>
+              <label className="block text-white font-medium mb-2">
+                Description
+              </label>
+              <textarea
+                value={description}
+                onChange={(e) => onDescriptionChange(e.target.value)}
+                placeholder="Describe what this template includes..."
+                rows={3}
+                className="w-full px-3 py-2 bg-gray-900 text-white rounded border border-gray-600 focus:border-purple-500 focus:outline-none resize-none"
+              />
+            </div>
+
+            {/* Meet Types */}
+            <div>
+              <label className="block text-white font-medium mb-2">
+                Meet Types <span className="text-red-400">*</span>
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {availableMeetTypes.map(type => (
+                  <button
+                    key={type}
+                    onClick={() => onToggleMeetType(type)}
+                    className={`px-3 py-2 rounded-lg font-medium text-sm transition-colors ${
+                      meetTypes.includes(type)
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                  >
+                    {type}
+                  </button>
+                ))}
+              </div>
+              <p className="text-gray-400 text-xs mt-2">
+                Select which meet types this template is suitable for
+              </p>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={onCancel}
+              disabled={isSaving}
+              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-white rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={onSave}
+              disabled={isSaving}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg transition-colors"
+            >
+              {isSaving ? (
+                <>
+                  <ArrowPathIcon className="w-5 h-5 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <PlusIcon className="w-5 h-5" />
+                  Save Template
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

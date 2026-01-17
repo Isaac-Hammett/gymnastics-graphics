@@ -1,0 +1,1 @@
+Done: MCP-32 complete - 27 legacy files deleted, ssh_multi_exec and file transfer patterns migrated, 44/44 tests PASS

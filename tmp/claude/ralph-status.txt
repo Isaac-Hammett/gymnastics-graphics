@@ -1,0 +1,19 @@
+Starting: Test ssh_multi_exec on single target
+Step 1: Calling mcp__gymnastics__ssh_multi_exec
+Starting: Test ssh_multi_exec on single target
+[Step 1] Calling ssh_multi_exec with targets=['coordinator'], command='hostname'
+[Step 2] Waiting for MCP tool permission approval...
+Done: FAIL - MCP tool permission not granted
+Starting: MCP-29 Firebase CRUD workflow test
+[Step 1: SET]
+[Step 2: GET (verify SET)]
+[Step 3: UPDATE]
+[Step 4: GET (verify UPDATE)]
+[Step 5: DELETE]
+[Step 6: GET (verify DELETE)]
+Done: PASS
+Step 2: Identify fix location
+Step 3: Apply fix
+Step 4: Verify syntax
+Step 5: Run tests
+Done: Fix applied successfully, syntax OK, all tests passing

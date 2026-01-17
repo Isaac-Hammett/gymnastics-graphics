@@ -1,0 +1,1 @@
+Done: Port 4455 NOT OPEN. Currently open ports: 22, 80, 443, 3001, 3003, 4000, 8080

@@ -3,15 +3,29 @@
 /**
  * Gymnastics Graphics MCP Server
  *
- * Provides Claude Code with tools to manage AWS infrastructure and SSH into VMs.
+ * Provides Claude Code with tools to manage AWS infrastructure, SSH into VMs,
+ * and interact with Firebase Realtime Database.
  *
  * Tools provided:
  * - aws_list_instances: List all EC2 instances
  * - aws_start_instance: Start a stopped instance
  * - aws_stop_instance: Stop a running instance
  * - aws_create_ami: Create an AMI from an instance
+ * - aws_list_amis: List AMIs owned by this account
  * - ssh_exec: Execute a command on a VM via SSH
  * - ssh_multi_exec: Execute a command on multiple VMs
+ * - ssh_upload_file: Upload a file to a VM
+ * - ssh_download_file: Download a file from a VM
+ * - firebase_get: Read data from Firebase
+ * - firebase_set: Write data to Firebase
+ * - firebase_update: Partial update to Firebase
+ * - firebase_delete: Delete data from Firebase
+ * - firebase_export: Export data to JSON
+ * - firebase_list_paths: List child keys at a path
+ * - firebase_sync_to_prod: Copy dev data to prod
+ * - aws_open_port: Open a port in security group
+ * - aws_close_port: Close a port in security group
+ * - aws_list_security_group_rules: List current security group rules
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
@@ -27,11 +41,15 @@ import {
   StopInstancesCommand,
   CreateImageCommand,
   DescribeImagesCommand,
+  DescribeSecurityGroupsCommand,
+  AuthorizeSecurityGroupIngressCommand,
+  RevokeSecurityGroupIngressCommand,
 } from '@aws-sdk/client-ec2';
 import { NodeSSH } from 'node-ssh';
 import { readFileSync, existsSync } from 'fs';
 import { homedir } from 'os';
 import { join } from 'path';
+import admin from 'firebase-admin';
 
 // Configuration
 const CONFIG = {
@@ -43,6 +61,49 @@ const CONFIG = {
   sshTimeout: 30000, // 30 seconds
   commandTimeout: 60000, // 60 seconds for command execution
 };
+
+// Firebase Configuration
+const FIREBASE_CONFIG = {
+  dev: {
+    databaseURL: 'https://gymnastics-graphics-dev-default-rtdb.firebaseio.com',
+    serviceAccountPath: join(homedir(), '.config', 'firebase', 'gymnastics-graphics-dev-sa.json'),
+  },
+  prod: {
+    databaseURL: 'https://gymnastics-graphics-default-rtdb.firebaseio.com',
+    serviceAccountPath: join(homedir(), '.config', 'firebase', 'gymnastics-graphics-prod-sa.json'),
+  },
+};
+
+// Firebase app instances (lazy initialized)
+const firebaseApps = {};
+
+function getFirebaseApp(project) {
+  if (!['dev', 'prod'].includes(project)) {
+    throw new Error(`Invalid project: ${project}. Must be 'dev' or 'prod'.`);
+  }
+
+  if (!firebaseApps[project]) {
+    const config = FIREBASE_CONFIG[project];
+
+    if (!existsSync(config.serviceAccountPath)) {
+      throw new Error(`Service account not found: ${config.serviceAccountPath}`);
+    }
+
+    const serviceAccount = JSON.parse(readFileSync(config.serviceAccountPath, 'utf8'));
+
+    firebaseApps[project] = admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+      databaseURL: config.databaseURL,
+    }, project); // Use project name as app name to allow multiple apps
+  }
+
+  return firebaseApps[project];
+}
+
+function getFirebaseDb(project) {
+  const app = getFirebaseApp(project);
+  return admin.database(app);
+}
 
 // Initialize AWS EC2 client
 const ec2 = new EC2Client({ region: CONFIG.awsRegion });
@@ -208,6 +269,187 @@ const TOOLS = [
         }
       },
       required: ['target', 'remotePath', 'localPath']
+    }
+  },
+  // Firebase tools
+  {
+    name: 'firebase_get',
+    description: 'Read data from Firebase Realtime Database at a specific path.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        project: {
+          type: 'string',
+          enum: ['dev', 'prod'],
+          description: 'Which Firebase project to use'
+        },
+        path: {
+          type: 'string',
+          description: 'Database path (e.g., "competitions/pac12-2025/config")'
+        }
+      },
+      required: ['project', 'path']
+    }
+  },
+  {
+    name: 'firebase_set',
+    description: 'Write data to Firebase, overwriting any existing data at that path.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        project: {
+          type: 'string',
+          enum: ['dev', 'prod'],
+          description: 'Which Firebase project to use'
+        },
+        path: {
+          type: 'string',
+          description: 'Database path to write to'
+        },
+        data: {
+          description: 'The data to write (any JSON value)'
+        }
+      },
+      required: ['project', 'path', 'data']
+    }
+  },
+  {
+    name: 'firebase_update',
+    description: 'Partially update data at a path (merge, not overwrite).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        project: {
+          type: 'string',
+          enum: ['dev', 'prod'],
+          description: 'Which Firebase project to use'
+        },
+        path: {
+          type: 'string',
+          description: 'Database path to update'
+        },
+        data: {
+          type: 'object',
+          description: 'The data to merge at this path'
+        }
+      },
+      required: ['project', 'path', 'data']
+    }
+  },
+  {
+    name: 'firebase_delete',
+    description: 'Delete data at a path. USE WITH CAUTION.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        project: {
+          type: 'string',
+          enum: ['dev', 'prod'],
+          description: 'Which Firebase project to use'
+        },
+        path: {
+          type: 'string',
+          description: 'Database path to delete'
+        }
+      },
+      required: ['project', 'path']
+    }
+  },
+  {
+    name: 'firebase_export',
+    description: 'Export all data at a path to JSON. Useful for backups.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        project: {
+          type: 'string',
+          enum: ['dev', 'prod'],
+          description: 'Which Firebase project to use'
+        },
+        path: {
+          type: 'string',
+          description: 'Path to export (use "/" for entire database)'
+        }
+      },
+      required: ['project', 'path']
+    }
+  },
+  {
+    name: 'firebase_list_paths',
+    description: 'List all child keys at a path (shallow read).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        project: {
+          type: 'string',
+          enum: ['dev', 'prod'],
+          description: 'Which Firebase project to use'
+        },
+        path: {
+          type: 'string',
+          description: 'Database path to list children of'
+        }
+      },
+      required: ['project', 'path']
+    }
+  },
+  {
+    name: 'firebase_sync_to_prod',
+    description: 'Copy data from dev Firebase to prod Firebase at a given path. Creates backup of prod first.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        path: {
+          type: 'string',
+          description: 'Path to sync (use "/" for entire database)'
+        },
+        createBackup: {
+          type: 'boolean',
+          description: 'Whether to backup prod data first (default: true)'
+        }
+      },
+      required: ['path']
+    }
+  },
+  // Security Group tools
+  {
+    name: 'aws_list_security_group_rules',
+    description: 'List inbound rules for the gymnastics-graphics security group.',
+    inputSchema: {
+      type: 'object',
+      properties: {}
+    }
+  },
+  {
+    name: 'aws_open_port',
+    description: 'Open a port in the gymnastics-graphics security group for inbound traffic.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        port: {
+          type: 'number',
+          description: 'The port number to open (e.g., 8080)'
+        },
+        description: {
+          type: 'string',
+          description: 'Description for this rule (e.g., "Test server")'
+        }
+      },
+      required: ['port']
+    }
+  },
+  {
+    name: 'aws_close_port',
+    description: 'Close a port in the gymnastics-graphics security group.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        port: {
+          type: 'number',
+          description: 'The port number to close'
+        }
+      },
+      required: ['port']
     }
   }
 ];
@@ -444,6 +686,245 @@ async function sshDownloadFile(target, remotePath, localPath) {
   }
 }
 
+// Firebase implementations
+async function firebaseGet(project, path) {
+  const db = getFirebaseDb(project);
+  const snapshot = await db.ref(path).once('value');
+  const data = snapshot.val();
+
+  return {
+    project,
+    path,
+    exists: snapshot.exists(),
+    data,
+  };
+}
+
+async function firebaseSet(project, path, data) {
+  const db = getFirebaseDb(project);
+  await db.ref(path).set(data);
+
+  return {
+    project,
+    path,
+    success: true,
+    message: `Data written to ${project}:${path}`,
+  };
+}
+
+async function firebaseUpdate(project, path, data) {
+  const db = getFirebaseDb(project);
+  await db.ref(path).update(data);
+
+  return {
+    project,
+    path,
+    success: true,
+    message: `Data updated at ${project}:${path}`,
+  };
+}
+
+async function firebaseDelete(project, path) {
+  const db = getFirebaseDb(project);
+  await db.ref(path).remove();
+
+  return {
+    project,
+    path,
+    success: true,
+    message: `Data deleted at ${project}:${path}`,
+  };
+}
+
+async function firebaseExport(project, path) {
+  const db = getFirebaseDb(project);
+  const snapshot = await db.ref(path).once('value');
+  const data = snapshot.val();
+
+  return {
+    project,
+    path,
+    exportedAt: new Date().toISOString(),
+    data,
+  };
+}
+
+async function firebaseListPaths(project, path) {
+  const db = getFirebaseDb(project);
+  const snapshot = await db.ref(path).once('value');
+
+  if (!snapshot.exists()) {
+    return {
+      project,
+      path,
+      exists: false,
+      children: [],
+    };
+  }
+
+  const val = snapshot.val();
+  const children = typeof val === 'object' && val !== null ? Object.keys(val) : [];
+
+  return {
+    project,
+    path,
+    exists: true,
+    children,
+    childCount: children.length,
+  };
+}
+
+async function firebaseSyncToProd(path, createBackup = true) {
+  const devDb = getFirebaseDb('dev');
+  const prodDb = getFirebaseDb('prod');
+
+  // Get dev data
+  const devSnapshot = await devDb.ref(path).once('value');
+  const devData = devSnapshot.val();
+
+  if (!devSnapshot.exists()) {
+    return {
+      success: false,
+      message: `No data found at dev:${path}`,
+    };
+  }
+
+  let backup = null;
+
+  // Backup prod data first if requested
+  if (createBackup) {
+    const prodSnapshot = await prodDb.ref(path).once('value');
+    backup = {
+      path,
+      backedUpAt: new Date().toISOString(),
+      data: prodSnapshot.val(),
+    };
+  }
+
+  // Write dev data to prod
+  await prodDb.ref(path).set(devData);
+
+  return {
+    success: true,
+    path,
+    syncedAt: new Date().toISOString(),
+    message: `Data synced from dev to prod at ${path}`,
+    backup: createBackup ? backup : 'Backup skipped',
+  };
+}
+
+// Security Group implementations
+async function getGymnasticsSecurityGroup() {
+  // First, get an instance to find its security group
+  const instancesCommand = new DescribeInstancesCommand({
+    Filters: [
+      { Name: 'tag:Project', Values: [CONFIG.projectTag] }
+    ]
+  });
+
+  const instancesResponse = await ec2.send(instancesCommand);
+
+  for (const reservation of instancesResponse.Reservations || []) {
+    for (const instance of reservation.Instances || []) {
+      if (instance.SecurityGroups && instance.SecurityGroups.length > 0) {
+        return instance.SecurityGroups[0].GroupId;
+      }
+    }
+  }
+
+  throw new Error('No security group found for gymnastics-graphics instances');
+}
+
+async function listSecurityGroupRules() {
+  const groupId = await getGymnasticsSecurityGroup();
+
+  const command = new DescribeSecurityGroupsCommand({
+    GroupIds: [groupId]
+  });
+
+  const response = await ec2.send(command);
+  const sg = response.SecurityGroups?.[0];
+
+  if (!sg) {
+    throw new Error('Security group not found');
+  }
+
+  const rules = (sg.IpPermissions || []).map(rule => ({
+    protocol: rule.IpProtocol,
+    fromPort: rule.FromPort,
+    toPort: rule.ToPort,
+    sources: [
+      ...(rule.IpRanges || []).map(r => ({ type: 'cidr', value: r.CidrIp, description: r.Description })),
+      ...(rule.Ipv6Ranges || []).map(r => ({ type: 'cidrv6', value: r.CidrIpv6, description: r.Description })),
+    ]
+  }));
+
+  return {
+    securityGroupId: groupId,
+    securityGroupName: sg.GroupName,
+    inboundRules: rules
+  };
+}
+
+async function openPort(port, description = '') {
+  const groupId = await getGymnasticsSecurityGroup();
+
+  const command = new AuthorizeSecurityGroupIngressCommand({
+    GroupId: groupId,
+    IpPermissions: [
+      {
+        IpProtocol: 'tcp',
+        FromPort: port,
+        ToPort: port,
+        IpRanges: [
+          {
+            CidrIp: '0.0.0.0/0',
+            Description: description || `Port ${port} opened via MCP`
+          }
+        ]
+      }
+    ]
+  });
+
+  await ec2.send(command);
+
+  return {
+    success: true,
+    securityGroupId: groupId,
+    port,
+    message: `Port ${port} opened for inbound TCP traffic`
+  };
+}
+
+async function closePort(port) {
+  const groupId = await getGymnasticsSecurityGroup();
+
+  const command = new RevokeSecurityGroupIngressCommand({
+    GroupId: groupId,
+    IpPermissions: [
+      {
+        IpProtocol: 'tcp',
+        FromPort: port,
+        ToPort: port,
+        IpRanges: [
+          {
+            CidrIp: '0.0.0.0/0'
+          }
+        ]
+      }
+    ]
+  });
+
+  await ec2.send(command);
+
+  return {
+    success: true,
+    securityGroupId: groupId,
+    port,
+    message: `Port ${port} closed for inbound TCP traffic`
+  };
+}
+
 // Main server setup
 async function main() {
   const server = new Server(
@@ -505,6 +986,48 @@ async function main() {
 
         case 'ssh_download_file':
           result = await sshDownloadFile(args.target, args.remotePath, args.localPath);
+          break;
+
+        // Firebase tools
+        case 'firebase_get':
+          result = await firebaseGet(args.project, args.path);
+          break;
+
+        case 'firebase_set':
+          result = await firebaseSet(args.project, args.path, args.data);
+          break;
+
+        case 'firebase_update':
+          result = await firebaseUpdate(args.project, args.path, args.data);
+          break;
+
+        case 'firebase_delete':
+          result = await firebaseDelete(args.project, args.path);
+          break;
+
+        case 'firebase_export':
+          result = await firebaseExport(args.project, args.path);
+          break;
+
+        case 'firebase_list_paths':
+          result = await firebaseListPaths(args.project, args.path);
+          break;
+
+        case 'firebase_sync_to_prod':
+          result = await firebaseSyncToProd(args.path, args.createBackup ?? true);
+          break;
+
+        // Security Group tools
+        case 'aws_list_security_group_rules':
+          result = await listSecurityGroupRules();
+          break;
+
+        case 'aws_open_port':
+          result = await openPort(args.port, args.description);
+          break;
+
+        case 'aws_close_port':
+          result = await closePort(args.port);
           break;
 
         default:

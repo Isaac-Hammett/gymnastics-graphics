@@ -23,6 +23,8 @@ import { getAWSService } from './lib/awsService.js';
 import { getAlertService, ALERT_LEVEL, ALERT_CATEGORY } from './lib/alertService.js';
 import { getAutoShutdownService } from './lib/autoShutdown.js';
 import { getSelfStopService } from './lib/selfStop.js';
+import { getOBSStateSync } from './lib/obsStateSync.js';
+import { setupOBSRoutes } from './routes/obs.js';
 
 dotenv.config();
 
@@ -111,6 +113,9 @@ let obsSceneGenerator = null;
 
 // Timesheet Engine
 let timesheetEngine = null;
+
+// OBS State Sync
+let obsStateSync = null;
 
 // Load show configuration
 function loadShowConfig(exitOnInvalid = false) {
@@ -334,6 +339,30 @@ function initializeTimesheetEngine() {
   console.log('Timesheet engine initialized');
 }
 
+// Initialize OBS State Sync
+async function initializeOBSStateSync(competitionId) {
+  if (!competitionId) {
+    console.log('No competition ID provided, skipping OBS State Sync initialization');
+    return;
+  }
+
+  console.log(`Initializing OBS State Sync for competition: ${competitionId}`);
+
+  // Get or create the singleton instance
+  obsStateSync = getOBSStateSync(obs, io, productionConfigService);
+
+  // Initialize with competition ID
+  await obsStateSync.initialize(competitionId);
+
+  // Wire up state change event to broadcast
+  obsStateSync.on('broadcast', ({ event, data }) => {
+    // State changes are already broadcast by obsStateSync
+    // This listener is here for logging or additional handling if needed
+  });
+
+  console.log('OBS State Sync initialized and ready');
+}
+
 // Initialize VM Pool Manager and wire up event broadcasts (P15-03)
 function initializeVMPoolManager() {
   const vmPoolManager = getVMPoolManager();
@@ -543,7 +572,8 @@ function broadcastState() {
       showName: showConfig.showName,
       segments: showConfig.segments,
       sponsors: showConfig.sponsors
-    } : null
+    } : null,
+    obsState: obsStateSync && obsStateSync.isInitialized() ? obsStateSync.getState() : null
   });
 }
 
@@ -1101,10 +1131,20 @@ app.get('/api/competitions/:id/production/history', async (req, res) => {
 });
 
 // POST /api/competitions/:id/activate - Set active competition
-app.post('/api/competitions/:id/activate', (req, res) => {
+app.post('/api/competitions/:id/activate', async (req, res) => {
   const { id } = req.params;
 
   configLoader.setActiveCompetition(id);
+
+  // Initialize OBS State Sync for this competition
+  try {
+    await initializeOBSStateSync(id);
+    console.log(`OBS State Sync initialized for competition: ${id}`);
+  } catch (error) {
+    console.error(`Failed to initialize OBS State Sync for ${id}:`, error);
+    // Don't fail the activation if OBS State Sync fails
+  }
+
   res.json({
     success: true,
     activeCompetitionId: id,
@@ -2238,6 +2278,10 @@ outro,Thanks for Watching,video,Video Scene,0:15,false,,,/path/to/videos/outro.m
   res.send(template);
 });
 
+// Setup OBS Scene CRUD API routes (OBS-06)
+// Pass getter function for obsStateSync since it may be null until competition is activated
+setupOBSRoutes(app, obs, () => obsStateSync);
+
 // Serve React app for all other routes (Express 5 syntax)
 app.get('/{*path}', (req, res) => {
   res.sendFile(join(__dirname, '..', 'show-controller', 'dist', 'index.html'));
@@ -2292,6 +2336,11 @@ io.on('connection', (socket) => {
   // Send initial timesheet state if available
   if (timesheetEngine) {
     socket.emit('timesheetState', timesheetEngine.getState());
+  }
+
+  // Send initial OBS state if available
+  if (obsStateSync && obsStateSync.isInitialized()) {
+    socket.emit('obs:stateUpdated', obsStateSync.getState());
   }
 
   broadcastState();
@@ -2393,6 +2442,22 @@ io.on('connection', (socket) => {
   socket.on('clearGraphic', () => {
     io.emit('clearGraphic');
     console.log('Cleared graphic');
+  });
+
+  // OBS State Sync: Refresh full state from OBS
+  socket.on('obs:refreshState', async () => {
+    if (obsStateSync && obsStateSync.isInitialized()) {
+      try {
+        console.log('Client requested OBS state refresh');
+        await obsStateSync.refreshFullState();
+      } catch (error) {
+        console.error('Failed to refresh OBS state:', error);
+        socket.emit('error', { message: 'Failed to refresh OBS state' });
+      }
+    } else {
+      console.warn('OBS State Sync not initialized, cannot refresh state');
+      socket.emit('error', { message: 'OBS State Sync not initialized' });
+    }
   });
 
   // ============================================
