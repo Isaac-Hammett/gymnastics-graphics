@@ -1,14 +1,43 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** MCP Server Testing
-**Last Task:** MCP-31 - Set up proper test framework structure ✅
-**Next Task:** MCP-32 - Migrate standalone tests to framework and cleanup
+**Phase:** MCP Server Testing - COMPLETE
+**Last Task:** MCP-32 - Migrate standalone tests to framework and cleanup ✅
+**Next Task:** All MCP tasks complete
 **Blocker:** None
 
 ---
 
 ## 2026-01-17
+
+### MCP-32: Migrate standalone tests to framework and cleanup ✅
+Migrated all legacy test files to the new test framework and cleaned up the codebase.
+
+**Actions Completed:**
+
+| Step | Description | Result |
+|------|-------------|--------|
+| 1 | Reviewed new framework coverage | Found missing: ssh_multi_exec, file transfer |
+| 2 | Added ssh_multi_exec tests | 3 tests added to ssh.test.js |
+| 3 | Added file transfer tests | Upload/download roundtrip test added |
+| 4 | Deleted 27 legacy test files | test-mcp-01.mjs through test-mcp-30.mjs removed |
+| 5 | Verified npm test | 44 tests pass |
+
+**Test Results:**
+```
+npm test - PASS
+- tests: 44
+- suites: 19
+- pass: 44
+- fail: 0
+- duration: ~58 seconds
+```
+
+**Verification:** PASSED
+- Legacy files: 0 found (Glob "test-mcp-*.mjs" returns empty)
+- npm test: 44 tests pass, 0 failures
+
+---
 
 ### MCP-31: Set up proper test framework structure ✅
 Verified that the test framework already exists and is fully functional.

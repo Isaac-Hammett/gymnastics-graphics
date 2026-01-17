@@ -10,8 +10,8 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert';
 import { NodeSSH } from 'node-ssh';
-import { existsSync } from 'fs';
-import { homedir } from 'os';
+import { existsSync, writeFileSync, readFileSync, unlinkSync } from 'fs';
+import { homedir, tmpdir } from 'os';
 import { join } from 'path';
 import {
   COORDINATOR_IP,
@@ -269,6 +269,180 @@ describe('SSH Operations', { skip: !sshKeyExists }, () => {
 
       assert.strictEqual(result.exitCode, 0);
       assert.ok(result.stdout.includes('has address'), 'DNS should resolve');
+    });
+  });
+
+  describe('ssh_multi_exec', () => {
+    // Helper function to execute SSH command on multiple targets
+    async function sshMultiExec(targets, command, sudo = false) {
+      const results = await Promise.all(
+        targets.map(async (target) => {
+          try {
+            return await sshExec(target, command, sudo);
+          } catch (error) {
+            const ip = target === 'coordinator' ? COORDINATOR_IP : target;
+            return {
+              target: ip,
+              command,
+              success: false,
+              error: error.message
+            };
+          }
+        })
+      );
+
+      return {
+        command,
+        results,
+        successCount: results.filter(r => r.success).length,
+        failureCount: results.filter(r => !r.success).length
+      };
+    }
+
+    test('executes on single target', async () => {
+      const response = await sshMultiExec(['coordinator'], 'echo hello');
+
+      assert.strictEqual(response.results.length, 1);
+      assert.strictEqual(response.successCount, 1);
+      assert.strictEqual(response.failureCount, 0);
+      assert.ok(response.results[0].stdout.includes('hello'));
+    });
+
+    test('executes on multiple targets (coordinator only for safety)', async () => {
+      const response = await sshMultiExec(['coordinator', COORDINATOR_IP], 'hostname');
+
+      assert.strictEqual(response.results.length, 2);
+      assert.ok('command' in response);
+      assert.ok('successCount' in response);
+      assert.ok('failureCount' in response);
+      assert.strictEqual(response.successCount + response.failureCount, 2);
+    });
+
+    test('aggregates results correctly with mixed success/failure', async () => {
+      const response = await sshMultiExec(
+        ['coordinator', UNREACHABLE_IP],
+        'echo test'
+      );
+
+      assert.strictEqual(response.results.length, 2);
+      assert.ok(response.successCount >= 1, 'At least coordinator should succeed');
+      assert.ok(response.failureCount >= 0, 'Should have failure count');
+
+      // Check each result has proper structure
+      for (const result of response.results) {
+        assert.ok('target' in result);
+        assert.ok('success' in result);
+        if (result.success) {
+          assert.ok('stdout' in result);
+        }
+      }
+    });
+  });
+
+  describe('ssh_upload_file and ssh_download_file', () => {
+    // Helper functions for file transfer
+    async function sshUploadFile(target, localPath, remotePath) {
+      const ip = target === 'coordinator' ? COORDINATOR_IP : target;
+      const ssh = new NodeSSH();
+
+      if (!existsSync(CONFIG.sshKeyPath)) {
+        throw new Error(`SSH key not found at ${CONFIG.sshKeyPath}`);
+      }
+
+      await ssh.connect({
+        host: ip,
+        username: CONFIG.sshUsername,
+        privateKeyPath: CONFIG.sshKeyPath,
+        readyTimeout: CONFIG.sshTimeout,
+      });
+
+      try {
+        await ssh.putFile(localPath, remotePath);
+        return {
+          target: ip,
+          localPath,
+          remotePath,
+          success: true,
+          message: `File uploaded successfully to ${ip}:${remotePath}`
+        };
+      } finally {
+        ssh.dispose();
+      }
+    }
+
+    async function sshDownloadFile(target, remotePath, localPath) {
+      const ip = target === 'coordinator' ? COORDINATOR_IP : target;
+      const ssh = new NodeSSH();
+
+      if (!existsSync(CONFIG.sshKeyPath)) {
+        throw new Error(`SSH key not found at ${CONFIG.sshKeyPath}`);
+      }
+
+      await ssh.connect({
+        host: ip,
+        username: CONFIG.sshUsername,
+        privateKeyPath: CONFIG.sshKeyPath,
+        readyTimeout: CONFIG.sshTimeout,
+      });
+
+      try {
+        await ssh.getFile(localPath, remotePath);
+        return {
+          target: ip,
+          remotePath,
+          localPath,
+          success: true,
+          message: `File downloaded successfully to ${localPath}`
+        };
+      } finally {
+        ssh.dispose();
+      }
+    }
+
+    const TIMESTAMP = Date.now();
+    const LOCAL_UPLOAD_PATH = join(tmpdir(), `test-upload-${TIMESTAMP}.txt`);
+    const LOCAL_DOWNLOAD_PATH = join(tmpdir(), `test-download-${TIMESTAMP}.txt`);
+    const REMOTE_PATH = `/tmp/test-file-${TIMESTAMP}.txt`;
+    const TEST_CONTENT = `Test file ${TIMESTAMP}\nSecond line\nThird line\n`;
+
+    test('upload and download preserves content', async () => {
+      try {
+        // Create local test file
+        writeFileSync(LOCAL_UPLOAD_PATH, TEST_CONTENT, 'utf8');
+        assert.ok(existsSync(LOCAL_UPLOAD_PATH), 'Local file should be created');
+
+        // Upload file
+        const uploadResponse = await sshUploadFile('coordinator', LOCAL_UPLOAD_PATH, REMOTE_PATH);
+        assert.strictEqual(uploadResponse.success, true, 'Upload should succeed');
+        assert.ok('target' in uploadResponse);
+        assert.ok('message' in uploadResponse);
+
+        // Verify file exists on remote
+        const catResult = await sshExec('coordinator', `cat ${REMOTE_PATH}`);
+        assert.strictEqual(catResult.exitCode, 0, 'File should exist on remote');
+        assert.strictEqual(catResult.stdout.trim(), TEST_CONTENT.trim(), 'Remote content should match');
+
+        // Download file
+        const downloadResponse = await sshDownloadFile('coordinator', REMOTE_PATH, LOCAL_DOWNLOAD_PATH);
+        assert.strictEqual(downloadResponse.success, true, 'Download should succeed');
+        assert.ok('target' in downloadResponse);
+        assert.ok('message' in downloadResponse);
+
+        // Verify downloaded content
+        assert.ok(existsSync(LOCAL_DOWNLOAD_PATH), 'Downloaded file should exist');
+        const downloadedContent = readFileSync(LOCAL_DOWNLOAD_PATH, 'utf8');
+        assert.strictEqual(downloadedContent, TEST_CONTENT, 'Downloaded content should match original');
+
+      } finally {
+        // Cleanup
+        try {
+          if (existsSync(LOCAL_UPLOAD_PATH)) unlinkSync(LOCAL_UPLOAD_PATH);
+          if (existsSync(LOCAL_DOWNLOAD_PATH)) unlinkSync(LOCAL_DOWNLOAD_PATH);
+          await sshExec('coordinator', `rm -f ${REMOTE_PATH}`);
+        } catch (e) {
+          // Ignore cleanup errors
+        }
+      }
     });
   });
 });
