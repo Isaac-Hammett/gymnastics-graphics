@@ -1,7 +1,7 @@
 /**
  * OBS Scene CRUD API Routes
  *
- * Provides RESTful endpoints for managing OBS scenes, sources, audio, transitions, streaming, and assets:
+ * Provides RESTful endpoints for managing OBS scenes, sources, audio, transitions, streaming, assets, and templates:
  * - Scene CRUD operations
  * - Input/Source CRUD operations
  * - Scene item management (add, remove, transform, enable, lock, reorder)
@@ -9,6 +9,7 @@
  * - Transition management (list, set, duration, settings)
  * - Stream configuration (settings, start, stop, status)
  * - Asset management (list, upload, delete, download, manifest)
+ * - Template management (list, get, create, apply, update, delete)
  *
  * @module routes/obs
  */
@@ -19,6 +20,7 @@ import { OBSAudioManager } from '../lib/obsAudioManager.js';
 import { OBSTransitionManager } from '../lib/obsTransitionManager.js';
 import { OBSStreamManager } from '../lib/obsStreamManager.js';
 import { OBSAssetManager } from '../lib/obsAssetManager.js';
+import { OBSTemplateManager } from '../lib/obsTemplateManager.js';
 import configLoader from '../lib/configLoader.js';
 import productionConfigService from '../lib/productionConfigService.js';
 import multer from 'multer';
@@ -1560,7 +1562,222 @@ export function setupOBSRoutes(app, obs, obsStateSyncOrGetter) {
     }
   });
 
-  console.log('[OBS Routes] Scene CRUD, Source Management, Audio Management, Transition Management, Stream Configuration, and Asset Management endpoints mounted at server startup');
+  // ============================================================================
+  // Template Management Endpoints
+  // ============================================================================
+
+  /**
+   * GET /api/obs/templates - List all available templates
+   */
+  app.get('/api/obs/templates', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      console.log('[OBS Routes] GET /api/obs/templates - Listing all templates');
+
+      const templateManager = new OBSTemplateManager(obs, obsStateSync, productionConfigService);
+      const templates = await templateManager.listTemplates();
+
+      res.json({ templates });
+    } catch (error) {
+      console.error('[OBS Routes] Error listing templates:', error.message);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * GET /api/obs/templates/:id - Get template details
+   */
+  app.get('/api/obs/templates/:id', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      const { id } = req.params;
+      console.log(`[OBS Routes] GET /api/obs/templates/${id} - Fetching template details`);
+
+      const templateManager = new OBSTemplateManager(obs, obsStateSync, productionConfigService);
+      const template = await templateManager.getTemplate(id);
+
+      if (!template) {
+        return res.status(404).json({ error: `Template not found: ${id}` });
+      }
+
+      res.json(template);
+    } catch (error) {
+      console.error(`[OBS Routes] Error fetching template ${req.params.id}:`, error.message);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * POST /api/obs/templates - Create template from current OBS state
+   * Body: { name, description, meetTypes, createdBy, version }
+   */
+  app.post('/api/obs/templates', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      const compId = configLoader.getActiveCompetition();
+      if (!compId) {
+        return res.status(400).json({ error: 'No active competition. Activate a competition first.' });
+      }
+
+      const { name, description, meetTypes = [], createdBy, version } = req.body;
+
+      if (!name) {
+        return res.status(400).json({ error: 'Template name is required' });
+      }
+
+      if (!description) {
+        return res.status(400).json({ error: 'Template description is required' });
+      }
+
+      console.log(`[OBS Routes] POST /api/obs/templates - Creating template "${name}" from current OBS state`);
+
+      const templateManager = new OBSTemplateManager(obs, obsStateSync, productionConfigService);
+      const template = await templateManager.createTemplate(name, description, meetTypes, {
+        createdBy,
+        version
+      });
+
+      res.status(201).json({
+        success: true,
+        template
+      });
+    } catch (error) {
+      console.error('[OBS Routes] Error creating template:', error.message);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * POST /api/obs/templates/:id/apply - Apply template to current OBS
+   * Body: { context: { cameras, assets, config } }
+   */
+  app.post('/api/obs/templates/:id/apply', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      const compId = configLoader.getActiveCompetition();
+      if (!compId) {
+        return res.status(400).json({ error: 'No active competition. Activate a competition first.' });
+      }
+
+      const { id } = req.params;
+      const { context = {} } = req.body;
+
+      console.log(`[OBS Routes] POST /api/obs/templates/${id}/apply - Applying template with context`);
+
+      const templateManager = new OBSTemplateManager(obs, obsStateSync, productionConfigService);
+      const result = await templateManager.applyTemplate(id, context);
+
+      res.json({
+        success: true,
+        result
+      });
+    } catch (error) {
+      console.error(`[OBS Routes] Error applying template ${req.params.id}:`, error.message);
+      if (error.message.includes('not found')) {
+        return res.status(404).json({ error: error.message });
+      }
+      if (error.message.includes('requirements not met')) {
+        return res.status(400).json({ error: error.message });
+      }
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * PUT /api/obs/templates/:id - Update template metadata
+   * Body: { name, description, meetTypes }
+   */
+  app.put('/api/obs/templates/:id', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      const { id } = req.params;
+      const { name, description, meetTypes } = req.body;
+
+      console.log(`[OBS Routes] PUT /api/obs/templates/${id} - Updating template metadata`);
+
+      const templateManager = new OBSTemplateManager(obs, obsStateSync, productionConfigService);
+
+      // Get existing template
+      const template = await templateManager.getTemplate(id);
+      if (!template) {
+        return res.status(404).json({ error: `Template not found: ${id}` });
+      }
+
+      // Update metadata fields
+      if (name !== undefined) template.name = name;
+      if (description !== undefined) template.description = description;
+      if (meetTypes !== undefined) template.meetTypes = meetTypes;
+      template.updatedAt = new Date().toISOString();
+
+      // Save updated template
+      const database = productionConfigService.initialize();
+      await database.ref(`templates/obs/${id}`).set(template);
+
+      console.log(`[OBS Routes] Template ${id} metadata updated`);
+
+      res.json({
+        success: true,
+        template
+      });
+    } catch (error) {
+      console.error(`[OBS Routes] Error updating template ${req.params.id}:`, error.message);
+      if (error.message.includes('not found')) {
+        return res.status(404).json({ error: error.message });
+      }
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * DELETE /api/obs/templates/:id - Delete template
+   */
+  app.delete('/api/obs/templates/:id', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      const { id } = req.params;
+      console.log(`[OBS Routes] DELETE /api/obs/templates/${id} - Deleting template`);
+
+      const templateManager = new OBSTemplateManager(obs, obsStateSync, productionConfigService);
+      await templateManager.deleteTemplate(id);
+
+      res.json({
+        success: true,
+        deleted: id
+      });
+    } catch (error) {
+      console.error(`[OBS Routes] Error deleting template ${req.params.id}:`, error.message);
+      if (error.message.includes('not found')) {
+        return res.status(404).json({ error: error.message });
+      }
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  console.log('[OBS Routes] Scene CRUD, Source Management, Audio Management, Transition Management, Stream Configuration, Asset Management, and Template Management endpoints mounted at server startup');
 }
 
 export default setupOBSRoutes;

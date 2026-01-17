@@ -2,20 +2,45 @@
 
 ## Current Status
 **Phase:** OBS Integration Tool - In Progress
-**Last Task:** OBS-19 - Create OBS Template Manager module ✅
-**Next Task:** OBS-20 - Add Template Management API endpoints
+**Last Task:** OBS-20 - Add Template Management API endpoints ✅
+**Next Task:** OBS-21 - Implement VDO.Ninja integration
 **Blocker:** None
 
 ### Summary
 OBS Integration Tool implementation phase in progress. This phase will add comprehensive OBS WebSocket control capabilities to the show controller.
 
-**Progress:** 19/38 tasks complete (50%)
+**Progress:** 20/38 tasks complete (53%)
 
 ---
 
 ## Activity Log
 
 ### 2026-01-17
+
+### OBS-20: Add Template Management API endpoints ✅
+Added 6 REST API endpoints to `/server/routes/obs.js` for template management.
+
+**Endpoints implemented:**
+- `GET /api/obs/templates` - List all available templates
+- `GET /api/obs/templates/:id` - Get template details
+- `POST /api/obs/templates` - Create template from current OBS state
+- `POST /api/obs/templates/:id/apply` - Apply template with context
+- `PUT /api/obs/templates/:id` - Update template metadata
+- `DELETE /api/obs/templates/:id` - Delete template
+
+**Implementation details:**
+- Imported OBSTemplateManager at line 23
+- All endpoints check if obsStateSync is initialized (503 if not)
+- Create endpoint requires active competition (400 if missing)
+- Apply endpoint accepts context for variable substitution
+- Proper error handling (400, 404, 500, 503)
+- Lines 1564-1777 in server/routes/obs.js
+
+**Verification:** PASSED
+- Method: `node --check routes/obs.js` (syntax check)
+- Result: Syntax valid, all 6 endpoints added following existing patterns
+
+---
 
 ### OBS-19: Create OBS Template Manager module ✅
 Created `/server/lib/obsTemplateManager.js` - template management module for OBS scene collections.

@@ -435,7 +435,7 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
       "Add DELETE /api/obs/templates/:id to delete template"
     ],
     "verification": "Routes added to server/routes/obs.js; on show VM: curl http://localhost:3003/api/obs/templates returns 503 or template list",
-    "passes": false
+    "passes": true
   },
 
   {
@@ -745,12 +745,12 @@ ssh_exec(target='coordinator', command='curl -s http://localhost:3001/api/scenes
 | **OBS Phase 5: Transitions** | 2 | 2 | Complete |
 | **OBS Phase 6: Stream** | 2 | 2 | Complete |
 | **OBS Phase 7: Assets** | 2 | 2 | Complete |
-| **OBS Phase 8: Templates** | 2 | 1 | In Progress |
+| **OBS Phase 8: Templates** | 2 | 2 | Complete |
 | **OBS Phase 9: Talent Comms** | 2 | 0 | Not Started |
 | **OBS Phase 10: Preview** | 2 | 0 | Not Started |
 | **OBS Phase 11: UI** | 7 | 0 | Not Started |
 | **OBS Integration Tests** | 7 | 0 | Not Started |
-| **Total** | **38** | **19** | **50%** |
+| **Total** | **38** | **20** | **53%** |
 
 ---
 
