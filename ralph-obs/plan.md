@@ -106,9 +106,9 @@ These test actual OBS functionality and may modify state.
     "description": "Verify OBS is running and WebSocket is connected",
     "action": "Navigate to /{compId}/obs-manager, check connection status",
     "verification": "OBS shows 'Connected' status",
-    "status": "pending",
+    "status": "completed",
     "dependsOn": "PREREQ-01",
-    "note": "Mixed Content error was fixed by FIX-01. Needs re-test to verify OBS connection."
+    "result": "Fixed VM assignment (was assigned to wrong competition) and enabled OBS WebSocket server. OBS Manager now shows 'OBS Connected' status."
   },
   {
     "id": "TEST-01",
