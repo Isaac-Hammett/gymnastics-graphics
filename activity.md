@@ -2,20 +2,46 @@
 
 ## Current Status
 **Phase:** OBS Integration Tool - In Progress
-**Last Task:** OBS-15 - Create OBS Stream Manager module ✅
-**Next Task:** OBS-16 - Add Stream Configuration API endpoints
+**Last Task:** OBS-16 - Add Stream Configuration API endpoints ✅
+**Next Task:** OBS-17 - Create OBS Asset Manager module
 **Blocker:** None
 
 ### Summary
 OBS Integration Tool implementation phase in progress. This phase will add comprehensive OBS WebSocket control capabilities to the show controller.
 
-**Progress:** 15/38 tasks complete (39%)
+**Progress:** 16/38 tasks complete (42%)
 
 ---
 
 ## Activity Log
 
 ### 2026-01-17
+
+### OBS-16: Add Stream Configuration API endpoints ✅
+Added 5 REST API endpoints to `/server/routes/obs.js` for stream configuration and control.
+
+**Endpoints implemented:**
+- `GET /api/obs/stream/settings` - Get stream service settings (key masked for security)
+- `PUT /api/obs/stream/settings` - Update stream service configuration (auto-encrypts key)
+- `POST /api/obs/stream/start` - Begin streaming
+- `POST /api/obs/stream/stop` - End streaming
+- `GET /api/obs/stream/status` - Get stream status with timing/statistics
+
+**Implementation details:**
+- Imported OBSStreamManager at line 18
+- All endpoints check obsStateSync initialized (503 if not)
+- Proper error handling (400, 500, 503)
+- Stream key NEVER exposed in responses (uses maskStreamKey())
+- Stream key auto-encrypted for Firebase storage when provided
+
+**Verification:** PASSED
+- Method: Syntax check + deployed to coordinator + curl test
+- Syntax: `node --check routes/obs.js` passed
+- Deployment: Server restarted on coordinator via PM2
+- API Test: `curl http://localhost:3003/api/obs/stream/status` returned expected 503 response:
+  `{"error":"OBS State Sync not initialized. Activate a competition first."}`
+
+---
 
 ### OBS-15: Create OBS Stream Manager module ✅
 Created `/server/lib/obsStreamManager.js` - stream configuration and control module for OBS.

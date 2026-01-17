@@ -1,12 +1,13 @@
 /**
  * OBS Scene CRUD API Routes
  *
- * Provides RESTful endpoints for managing OBS scenes, sources, audio, and transitions:
+ * Provides RESTful endpoints for managing OBS scenes, sources, audio, transitions, and streaming:
  * - Scene CRUD operations
  * - Input/Source CRUD operations
  * - Scene item management (add, remove, transform, enable, lock, reorder)
  * - Audio management (volume, mute, monitor, presets)
  * - Transition management (list, set, duration, settings)
+ * - Stream configuration (settings, start, stop, status)
  *
  * @module routes/obs
  */
@@ -15,6 +16,7 @@ import { OBSSceneManager } from '../lib/obsSceneManager.js';
 import { OBSSourceManager } from '../lib/obsSourceManager.js';
 import { OBSAudioManager } from '../lib/obsAudioManager.js';
 import { OBSTransitionManager } from '../lib/obsTransitionManager.js';
+import { OBSStreamManager } from '../lib/obsStreamManager.js';
 import configLoader from '../lib/configLoader.js';
 import productionConfigService from '../lib/productionConfigService.js';
 
@@ -1165,7 +1167,137 @@ export function setupOBSRoutes(app, obs, obsStateSyncOrGetter) {
     }
   });
 
-  console.log('[OBS Routes] Scene CRUD, Source Management, Audio Management, and Transition Management endpoints mounted at server startup');
+  // ============================================================================
+  // Stream Configuration Endpoints
+  // ============================================================================
+
+  /**
+   * GET /api/obs/stream/settings - Get stream service settings
+   */
+  app.get('/api/obs/stream/settings', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      console.log('[OBS Routes] GET /api/obs/stream/settings - Fetching stream settings');
+      const streamManager = new OBSStreamManager(obs, obsStateSync, productionConfigService);
+      const settings = await streamManager.getStreamSettings();
+      res.json(settings);
+    } catch (error) {
+      console.error('[OBS Routes] Error fetching stream settings:', error.message);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * PUT /api/obs/stream/settings - Update stream service settings
+   * Body: { serviceType, settings: { server, key, etc } }
+   */
+  app.put('/api/obs/stream/settings', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      const { serviceType, settings } = req.body;
+
+      if (!serviceType) {
+        return res.status(400).json({ error: 'serviceType is required' });
+      }
+
+      if (!settings || typeof settings !== 'object') {
+        return res.status(400).json({ error: 'settings object is required' });
+      }
+
+      console.log(`[OBS Routes] PUT /api/obs/stream/settings - Updating stream settings (service: ${serviceType})`);
+
+      const streamManager = new OBSStreamManager(obs, obsStateSync, productionConfigService);
+      const result = await streamManager.setStreamSettings({ serviceType, settings });
+
+      res.json({
+        success: result.success,
+        serviceType
+      });
+    } catch (error) {
+      console.error('[OBS Routes] Error updating stream settings:', error.message);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * POST /api/obs/stream/start - Start streaming
+   */
+  app.post('/api/obs/stream/start', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      console.log('[OBS Routes] POST /api/obs/stream/start - Starting stream');
+
+      const streamManager = new OBSStreamManager(obs, obsStateSync, productionConfigService);
+      const result = await streamManager.startStream();
+
+      res.json({
+        success: result.success,
+        message: 'Stream started'
+      });
+    } catch (error) {
+      console.error('[OBS Routes] Error starting stream:', error.message);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * POST /api/obs/stream/stop - Stop streaming
+   */
+  app.post('/api/obs/stream/stop', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      console.log('[OBS Routes] POST /api/obs/stream/stop - Stopping stream');
+
+      const streamManager = new OBSStreamManager(obs, obsStateSync, productionConfigService);
+      const result = await streamManager.stopStream();
+
+      res.json({
+        success: result.success,
+        message: 'Stream stopped'
+      });
+    } catch (error) {
+      console.error('[OBS Routes] Error stopping stream:', error.message);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * GET /api/obs/stream/status - Get stream status and statistics
+   */
+  app.get('/api/obs/stream/status', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      console.log('[OBS Routes] GET /api/obs/stream/status - Fetching stream status');
+      const streamManager = new OBSStreamManager(obs, obsStateSync, productionConfigService);
+      const status = await streamManager.getStreamStatus();
+      res.json(status);
+    } catch (error) {
+      console.error('[OBS Routes] Error fetching stream status:', error.message);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  console.log('[OBS Routes] Scene CRUD, Source Management, Audio Management, Transition Management, and Stream Configuration endpoints mounted at server startup');
 }
 
 export default setupOBSRoutes;
