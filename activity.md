@@ -20,6 +20,15 @@ Grant permission for `mcp__gymnastics__aws_open_port` OR manually open port 4455
 
 ### 2026-01-17
 
+### Orchestrator Check (2026-01-17)
+Verified `aws_open_port` permission status - still not granted. All 7 integration tests (OBS-INT-01 through OBS-INT-07) remain BLOCKED pending port 4455 access.
+
+Current security group ports: 22, 80, 443, 3001, 3003, 4000, 8080 (no 4455).
+
+**Action Required:** Grant `mcp__gymnastics__aws_open_port` permission or manually open port 4455 in AWS console.
+
+---
+
 ### OBS-INT-01: OBS state sync end-to-end test - ❌ BLOCKED (3 attempts exhausted)
 **Attempt:** 3 of 3 - BLOCKED
 
