@@ -1,15 +1,18 @@
 # Show Control System - Activity Log
 
 ## Current Status
-**Phase:** OBS Integration Tool - In Progress
-**Last Task:** OBS-31 - Create Template Manager and Talent Comms UI ✅
-**Next Task:** OBS-INT-01 - OBS state sync end-to-end test
-**Blocker:** Port 4455 not open in AWS security group
+**Phase:** OBS Integration Tool - Integration Tests Blocked
+**Last Task:** OBS-INT-01 - BLOCKED after 3 attempts (port 4455)
+**Next Task:** OBS-INT-02 through OBS-INT-07 (all blocked by same issue)
+**Blocker:** Port 4455 not open in AWS security group - requires human intervention
 
 ### Summary
-OBS Integration Tool implementation phase in progress. All UI components for OBS Phase 11 are now complete. Integration testing blocked by infrastructure - need port 4455 opened for OBS WebSocket.
+OBS Integration Tool implementation phase COMPLETE (31/31 tasks). All integration tests (OBS-INT-01 through OBS-INT-07) are BLOCKED because they require OBS WebSocket connectivity on port 4455, which is not open in the AWS security group.
 
-**Progress:** 31/38 tasks complete (82%)
+**Progress:** 31/38 tasks complete (82%) - remaining 7 tasks blocked by infrastructure
+
+### Resolution Required
+Grant permission for `mcp__gymnastics__aws_open_port` OR manually open port 4455 in AWS console for security group `gymnastics-vm-pool` (sg-025f1ac53cccb756b).
 
 ---
 
@@ -17,10 +20,17 @@ OBS Integration Tool implementation phase in progress. All UI components for OBS
 
 ### 2026-01-17
 
-### OBS-INT-01: OBS state sync end-to-end test - ❌ BLOCKED
-**Attempt:** 2 of 3
+### OBS-INT-01: OBS state sync end-to-end test - ❌ BLOCKED (3 attempts exhausted)
+**Attempt:** 3 of 3 - BLOCKED
 
-**Status:** Still blocked - permission for `mcp__gymnastics__aws_open_port` not granted.
+**Status:** Infrastructure blocker - port 4455 cannot be opened.
+
+**Attempt 3 (2026-01-17):**
+- Verified security group rules via `aws_list_security_group_rules` - port 4455 NOT present
+- Attempted `aws_open_port` - permission not granted
+- Task blocked after 3 failed attempts
+
+**Root Cause:** The `mcp__gymnastics__aws_open_port` MCP tool requires explicit permission grant from the user. Without port 4455 open in the AWS security group (sg-025f1ac53cccb756b / gymnastics-vm-pool), the coordinator cannot connect to the OBS WebSocket running on the OBS VM.
 
 **Previous Findings (from attempt 1):**
 1. **Coordinator VM:** Running at 44.193.31.120, healthy, PM2 process active
@@ -33,9 +43,11 @@ OBS Integration Tool implementation phase in progress. All UI components for OBS
 
 **What's Needed to Unblock:**
 1. Grant permission for `mcp__gymnastics__aws_open_port` MCP tool
-2. OR manually open port 4455 in AWS console for the gymnastics-graphics security group
+2. OR manually open port 4455 in AWS console for the gymnastics-vm-pool security group (sg-025f1ac53cccb756b)
 
 **Note:** All 31 implementation tasks (OBS-01 through OBS-31) passed their unit tests using MockOBS. The integration tests require real OBS connectivity which is blocked by this infrastructure issue.
+
+**Task Status:** BLOCKED after 3 attempts - needs human intervention to open port 4455.
 
 ---
 
