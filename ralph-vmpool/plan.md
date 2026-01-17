@@ -118,7 +118,8 @@ These modify state and must run one at a time.
     "action": "Wait for launched VM to reach Available status",
     "verification": "Screenshot shows VM as Available, aws_list_instances shows running",
     "expected": "VM transitions from Starting to Available",
-    "status": "pending"
+    "status": "completed",
+    "result": "VM pool manager was not initialized due to missing GOOGLE_APPLICATION_CREDENTIALS. Added env var, restarted coordinator. VM now shows as Available with IP 44.203.192.255."
   },
   {
     "id": "WORKFLOW-03",
@@ -126,7 +127,8 @@ These modify state and must run one at a time.
     "action": "Click Stop on a running VM, observe status change",
     "verification": "Screenshot shows VM as Stopping then Stopped, AWS confirms",
     "expected": "VM stops successfully",
-    "status": "pending"
+    "status": "completed",
+    "result": "Clicked Stop on available VM. UI showed 'stopping' state, AWS confirmed 'stopped' after ~40 seconds. Pool now shows 2 Stopped, 0 Available."
   },
   {
     "id": "WORKFLOW-04",
@@ -134,7 +136,8 @@ These modify state and must run one at a time.
     "action": "Click Start on stopped VM, observe status change",
     "verification": "Screenshot shows VM as Starting then Available, AWS confirms",
     "expected": "VM starts successfully",
-    "status": "pending"
+    "status": "completed",
+    "result": "Clicked Start on stopped VM. UI showed 'starting' state, AWS confirmed 'running' after ~30 seconds. VM became Available with new IP 3.89.92.162."
   },
   {
     "id": "WORKFLOW-05",

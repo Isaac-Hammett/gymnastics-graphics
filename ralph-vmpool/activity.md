@@ -111,3 +111,67 @@ Created Ralph loop for VM Pool fix:
 **Next:** Run WORKFLOW-02 to verify VM appears as Available in pool
 
 ---
+
+### WORKFLOW-02: VM becomes Available - COMPLETED ✅
+**Action:** Waited for VM to show as Available in pool
+
+**Issue Found:** VM Pool page showed "0 total VMs" and "VM pool manager not initialized" despite AWS showing the VM running.
+
+**Root Cause:** `GOOGLE_APPLICATION_CREDENTIALS` environment variable was not set on the coordinator server, causing Firebase Admin SDK to fail authentication.
+
+**Fix Applied:**
+1. Added `GOOGLE_APPLICATION_CREDENTIALS=/opt/gymnastics-graphics/firebase-service-account.json` to `/opt/gymnastics-graphics/server/.env`
+2. Restarted coordinator: `pm2 restart coordinator`
+
+**Screenshot:** screenshots/WORKFLOW-02-pass.png
+**Console:** No errors
+- `[VMPoolManager] Pool initialized successfully`
+- `[VMPoolManager] Found 2 AWS instances`
+- `[VMPoolManager] Synced 2 updates to Firebase`
+
+**Result:**
+- ✅ VM Pool Manager now initializes on coordinator startup
+- ✅ Pool shows 2 total VMs (1 Available, 1 Stopped)
+- ✅ VM `gymnastics-vm-1768672589234` shows as Available with IP 44.203.192.255
+
+**Next:** Run WORKFLOW-03 to test stopping a VM
+
+---
+
+### WORKFLOW-03: Stop a VM - COMPLETED ✅
+**Action:** Clicked "Stop" button on available VM `gymnastics-vm-1768672589234`
+
+**Screenshot:** screenshots/WORKFLOW-03-stopping.png (during transition), screenshots/WORKFLOW-03-pass.png (final)
+**Console:** No errors
+
+**Result:**
+- ✅ Clicked Stop button, UI showed "stopping" status (orange badge)
+- ✅ AWS confirmed state changed from "running" to "stopping" to "stopped" (~40 seconds)
+- ✅ UI updated to show VM as "stopped" with 2 Stopped, 0 Available
+- ✅ "No warm VMs" warning appeared as expected
+
+**Next:** Run WORKFLOW-04 to test starting a stopped VM
+
+---
+
+### WORKFLOW-04: Start a stopped VM - COMPLETED ✅
+**Action:** Clicked "Start" button on stopped VM `gymnastics-vm-1768672589234`
+
+**Screenshot:** screenshots/WORKFLOW-04-starting.png (during transition), screenshots/WORKFLOW-04-pass.png (final)
+**Console:** No errors
+
+**Result:**
+- ✅ Clicked Start button, UI showed "starting" status (yellow badge)
+- ✅ AWS confirmed state changed from "stopped" to "running" (~30 seconds)
+- ✅ VM received new public IP: 3.89.92.162
+- ✅ UI updated to show VM as "available" with 1 Available, 1 Stopped
+
+**Workflows Completed:**
+- ✅ WORKFLOW-01: Launch New VM
+- ✅ WORKFLOW-02: VM becomes Available
+- ✅ WORKFLOW-03: Stop a VM
+- ✅ WORKFLOW-04: Start a stopped VM
+
+**Remaining:** WORKFLOW-05, WORKFLOW-06 (homepage and competition assignment)
+
+---
