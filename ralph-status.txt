@@ -1,3 +1,13 @@
 Starting: MCP-05 Test ssh_exec with sudo
 DONE: FAIL - MCP tool mcp__gymnastics__ssh_exec not available in current session
 Done: FAIL - Permission not granted for mcp__gymnastics__ssh_multi_exec
+Starting: Test ssh_upload_file and ssh_download_file roundtrip
+Step 1: Created local test file
+Step 2: Uploading file to coordinator
+Starting: Test MCP-11 file transfer
+Step 1: Using existing test file mcp-test-upload.txt
+Step 2: Uploading file to coordinator VM
+Step 3: Verifying uploaded file content
+Step 4: Downloading file back to different local path
+Step 5: Verifying downloaded file content
+Done: MCP-11 PASS - Upload/download roundtrip successful, all content verified

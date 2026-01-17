@@ -1699,7 +1699,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Verify download response has success=true"
     ],
     "verification": "File upload and download preserve content integrity",
-    "passes": false
+    "passes": true
   },
   {
     "id": "MCP-12",
