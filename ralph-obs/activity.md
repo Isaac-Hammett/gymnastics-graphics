@@ -229,3 +229,28 @@ Updated `show-controller/src/context/OBSContext.jsx` lines 108-117 and 123-132 t
 
 ---
 
+#### TEST-03: Scene switching works - FAIL
+**Timestamp:** 2026-01-18 00:30 UTC
+**Action:** Attempted to test scene switching via UI
+
+**Findings:**
+1. Page shows OBS Connected with 1 scene ("Scene")
+2. Only 1 scene exists by default - created "Test Scene 2" via OBS WebSocket API for testing
+3. Backend scene switching WORKS - verified via direct OBS WebSocket:
+   - Successfully switched Scene → Test Scene 2 → Scene
+   - OBS WebSocket API responds correctly
+4. **Bug Found:** Frontend Socket.io event name mismatch
+   - `OBSContext.jsx:139` emits `socket.emit('switchScene', { sceneName })`
+   - `server/index.js:2449` only handles `socket.on('overrideScene', ...)`
+   - No handler exists for `switchScene` event
+
+**Additional Issue:**
+- Playwright blocked by alert dialog from "Duplicate scene (not yet implemented)" click
+- Could not capture screenshot of scene switching attempt
+
+**Root Cause:** The frontend sends `switchScene` Socket.io event but the server only has a handler for `overrideScene`. This is another event name mismatch like FIX-02.
+
+**Created:** FIX-03 to fix the scene switching event name mismatch
+
+---
+
