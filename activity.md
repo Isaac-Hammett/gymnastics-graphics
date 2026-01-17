@@ -2,20 +2,63 @@
 
 ## Current Status
 **Phase:** OBS Integration Tool - In Progress
-**Last Task:** OBS-28 - Create Source Editor component ✅
-**Next Task:** OBS-29 - Create Audio Mixer component
+**Last Task:** OBS-29 - Create Audio Mixer component ✅
+**Next Task:** OBS-30 - Create Stream Config and Asset Manager components
 **Blocker:** None
 
 ### Summary
 OBS Integration Tool implementation phase in progress. This phase will add comprehensive OBS WebSocket control capabilities to the show controller.
 
-**Progress:** 28/38 tasks complete (74%)
+**Progress:** 29/38 tasks complete (76%)
 
 ---
 
 ## Activity Log
 
 ### 2026-01-17
+
+### OBS-29: Create Audio Mixer component ✅
+Created `/show-controller/src/components/obs/AudioMixer.jsx` and `/show-controller/src/components/obs/AudioPresetManager.jsx` - comprehensive audio mixing UI components.
+
+**AudioMixer.jsx (231 lines):**
+- Displays all audio sources from obsState.audioSources
+- Volume sliders (-60dB to 0dB range) with real-time dB and percentage display
+- Debounced volume updates (500ms) to prevent flooding socket events
+- Mute/unmute toggle buttons with visual feedback (SpeakerWaveIcon/SpeakerXMarkIcon)
+- Monitor type dropdown (None, Monitor Only, Monitor and Output)
+- Visual volume level bars with color coding (green/yellow/red based on level)
+- Empty state handling when no audio sources exist
+- Disconnected state handling
+
+**AudioPresetManager.jsx (401 lines):**
+- Fetches presets from `/api/obs/audio/presets` API endpoint
+- Grid layout for preset cards (responsive: 1 col mobile, 2 cols desktop)
+- One-click "Apply" button to load presets via PUT endpoint
+- "Save Current Mix" button with modal dialog for name/description
+- Captures current audio state and POSTs to save endpoint
+- Delete button for user presets (prevents deletion of default presets)
+- Visual distinction for default presets (blue badge)
+- Loading states, error handling, and empty states
+
+**OBSManager.jsx Updates:**
+- Imported AudioMixer and AudioPresetManager components
+- Audio tab now renders responsive grid layout:
+  - AudioMixer: 2/3 width (main area)
+  - AudioPresetManager: 1/3 width (sidebar)
+  - Stack vertically on mobile
+
+**Files Created/Modified:**
+- Created: `show-controller/src/components/obs/AudioMixer.jsx` (231 lines)
+- Created: `show-controller/src/components/obs/AudioPresetManager.jsx` (401 lines)
+- Modified: `show-controller/src/pages/OBSManager.jsx` (Audio tab content)
+
+**Verification:** PASSED
+- Method: `cd show-controller && npm run build` + deploy to test server
+- Result: Build succeeded (783 modules, 809 KB JS bundle)
+- Deployment: Frontend deployed to test server at http://44.193.31.120:8080
+- HTTP 200 OK, all assets present
+
+---
 
 ### OBS-28: Create Source Editor component ✅
 Created `/show-controller/src/components/obs/SourceEditor.jsx` - comprehensive source/input settings editor modal component.
