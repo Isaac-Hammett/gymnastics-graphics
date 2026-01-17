@@ -24,6 +24,19 @@ Implement OBS Integration Tool for the gymnastics-graphics show controller. This
 
 ## Verification Commands
 
+### OBS Module Tests (Primary - use these!)
+```bash
+# Run ALL OBS-related tests (comprehensive verification)
+cd server && npm run test:obs
+
+# Run specific test file
+cd server && node --test __tests__/obsStateSync.test.js
+
+# Run scene generator tests
+cd server && npm run test:lib
+```
+
+### UI/Integration Tests (for frontend tasks)
 ```bash
 # Take screenshot of a page
 node ralph-wigg/test-helper.js screenshot http://localhost:5173 <name>
@@ -37,6 +50,11 @@ node ralph-wigg/test-helper.js console http://localhost:5173
 # Check all server health endpoints
 node ralph-wigg/test-helper.js health
 ```
+
+### Test Infrastructure
+- **Mock OBS WebSocket:** `server/__tests__/helpers/mockOBS.js` - Use for testing OBS interactions
+- **Test Files:** `server/__tests__/*.test.js` - Follow this pattern for new test files
+- **Test Framework:** Node.js built-in `node:test` module with `describe/it` pattern
 
 Screenshots saved to: `ralph-wigg/screenshots/`
 
@@ -60,9 +78,11 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Handle input events: InputCreated, InputRemoved, InputSettingsChanged, etc.",
       "Handle audio events: InputVolumeChanged, InputMuteStateChanged, etc.",
       "Handle transition events: SceneTransitionStarted, CurrentSceneTransitionChanged, etc.",
-      "Handle stream/recording events: StreamStateChanged, RecordStateChanged"
+      "Handle stream/recording events: StreamStateChanged, RecordStateChanged",
+      "Create server/__tests__/obsStateSync.test.js with comprehensive tests",
+      "Create server/__tests__/helpers/mockOBS.js for test mocking"
     ],
-    "verification": "node -e \"require('./server/lib/obsStateSync.js')\" exits 0",
+    "verification": "cd server && npm run test:obs (must pass all 49 tests)",
     "passes": true
   },
   {
@@ -77,9 +97,10 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Implement categorizeScene(sceneName) returning category string",
       "Implement extractAudioSources(inputs) to filter audio-capable inputs",
       "Implement mapStreamStatus() and mapRecordStatus() helpers",
-      "Implement startPeriodicSync() for regular state updates"
+      "Implement startPeriodicSync() for regular state updates",
+      "Add tests to server/__tests__/obsStateSync.test.js for refresh methods"
     ],
-    "verification": "OBS state refresh fetches complete state from OBS",
+    "verification": "cd server && npm run test:obs (new State Refresh tests must pass)",
     "passes": false
   },
   {
@@ -92,9 +113,10 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Implement broadcast(event, data) to emit via Socket.io",
       "Handle connection lost: update state.connected and state.connectionError",
       "Handle reconnection: call refreshFullState() and broadcast",
-      "Export OBSStateSync class"
+      "Export OBSStateSync class",
+      "Add tests for Firebase persistence to server/__tests__/obsStateSync.test.js"
     ],
-    "verification": "OBS state persists to Firebase and broadcasts to clients",
+    "verification": "cd server && npm run test:obs (Firebase Persistence tests must pass)",
     "passes": false
   },
   {
@@ -126,9 +148,10 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Implement renameScene(sceneName, newName) using obs.call('SetSceneName')",
       "Implement deleteScene(sceneName) using obs.call('RemoveScene')",
       "Implement reorderScenes(sceneOrder) using multiple scene operations",
-      "Export OBSSceneManager class"
+      "Export OBSSceneManager class",
+      "Create server/__tests__/obsSceneManager.test.js with tests using mockOBS.js"
     ],
-    "verification": "node -e \"require('./server/lib/obsSceneManager.js')\" exits 0",
+    "verification": "cd server && node --test __tests__/obsSceneManager.test.js (all tests pass)",
     "passes": false
   },
   {
@@ -162,9 +185,10 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Implement getInputSettings(inputName)",
       "Implement updateInputSettings(inputName, inputSettings)",
       "Implement deleteInput(inputName)",
-      "Export OBSSourceManager class"
+      "Export OBSSourceManager class",
+      "Create server/__tests__/obsSourceManager.test.js with tests"
     ],
-    "verification": "node -e \"require('./server/lib/obsSourceManager.js')\" exits 0",
+    "verification": "cd server && node --test __tests__/obsSourceManager.test.js (all tests pass)",
     "passes": false
   },
   {
@@ -220,9 +244,10 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Implement setMute(inputName, muted)",
       "Implement getMonitorType(inputName)",
       "Implement setMonitorType(inputName, monitorType)",
-      "Export OBSAudioManager class"
+      "Export OBSAudioManager class",
+      "Create server/__tests__/obsAudioManager.test.js with tests"
     ],
-    "verification": "node -e \"require('./server/lib/obsAudioManager.js')\" exits 0",
+    "verification": "cd server && node --test __tests__/obsAudioManager.test.js (all tests pass)",
     "passes": false
   },
   {
@@ -271,9 +296,10 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Implement setTransitionDuration(duration)",
       "Implement getTransitionSettings(transitionName)",
       "Implement setTransitionSettings(transitionName, settings)",
-      "Export OBSTransitionManager class"
+      "Export OBSTransitionManager class",
+      "Create server/__tests__/obsTransitionManager.test.js with tests"
     ],
-    "verification": "node -e \"require('./server/lib/obsTransitionManager.js')\" exits 0",
+    "verification": "cd server && node --test __tests__/obsTransitionManager.test.js (all tests pass)",
     "passes": false
   },
   {
@@ -305,9 +331,10 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Implement stopStream() using StopStream",
       "Implement getStreamStatus() returning full stats",
       "Handle stream key encryption for Firebase storage",
-      "Export OBSStreamManager class"
+      "Export OBSStreamManager class",
+      "Create server/__tests__/obsStreamManager.test.js with tests"
     ],
-    "verification": "node -e \"require('./server/lib/obsStreamManager.js')\" exits 0",
+    "verification": "cd server && node --test __tests__/obsStreamManager.test.js (all tests pass)",
     "passes": false
   },
   {
@@ -340,9 +367,10 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Implement deleteAsset(vmAddress, type, filename)",
       "Implement downloadAsset(vmAddress, type, filename, localPath)",
       "Implement updateManifest(compId, type, entry) in Firebase",
-      "Export OBSAssetManager class"
+      "Export OBSAssetManager class",
+      "Create server/__tests__/obsAssetManager.test.js with tests"
     ],
-    "verification": "node -e \"require('./server/lib/obsAssetManager.js')\" exits 0",
+    "verification": "cd server && node --test __tests__/obsAssetManager.test.js (all tests pass)",
     "passes": false
   },
   {
@@ -375,9 +403,10 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Implement deleteTemplate(templateId)",
       "Implement resolveVariables(template, context) for {{...}} placeholders",
       "Implement validateRequirements(template) checking assets and cameras",
-      "Export OBSTemplateManager class"
+      "Export OBSTemplateManager class",
+      "Create server/__tests__/obsTemplateManager.test.js with tests"
     ],
-    "verification": "node -e \"require('./server/lib/obsTemplateManager.js')\" exits 0",
+    "verification": "cd server && node --test __tests__/obsTemplateManager.test.js (all tests pass)",
     "passes": false
   },
   {
@@ -407,9 +436,10 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Implement setupTalentComms(compId) generating and saving to Firebase",
       "Implement regenerateUrls(compId) creating new room and URLs",
       "Store in competitions/{compId}/config/talentComms",
-      "Export TalentCommsManager class"
+      "Export TalentCommsManager class",
+      "Create server/__tests__/talentCommsManager.test.js with tests"
     ],
-    "verification": "node -e \"require('./server/lib/talentCommsManager.js')\" exits 0",
+    "verification": "cd server && node --test __tests__/talentCommsManager.test.js (all tests pass)",
     "passes": false
   },
   {

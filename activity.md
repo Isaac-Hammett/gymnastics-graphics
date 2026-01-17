@@ -32,9 +32,36 @@ Created `/server/lib/obsStateSync.js` - comprehensive OBS state synchronization 
 - Connection state tracking (connected, connectionError)
 - Stubbed methods for OBS-02 (refresh) and OBS-03 (Firebase persistence)
 
+**Test Infrastructure Created:**
+- `server/__tests__/helpers/mockOBS.js` - Comprehensive MockOBSWebSocket class for testing
+  - Tracks all method calls for verification
+  - Simulates realistic OBS state (scenes, inputs, transitions)
+  - Supports event emission for testing event handlers
+  - Error injection for testing error handling
+  - Helper functions: createMockSocketIO(), createMockFirebase()
+- `server/__tests__/obsStateSync.test.js` - 49 comprehensive tests covering:
+  - Module exports
+  - Initial state structure
+  - Event handler registration
+  - Connection events (connect, disconnect, error)
+  - Scene events
+  - Input events
+  - Audio events
+  - Transition events
+  - Stream/Recording events
+  - Studio mode events
+  - Scene categorization
+  - Broadcast functionality
+  - Lifecycle management
+  - State immutability
+- Updated `server/package.json` with test scripts:
+  - `npm run test` - run all tests
+  - `npm run test:obs` - run OBS state sync tests
+  - `npm run test:lib` - run scene generator tests
+
 **Verification:** PASSED
-- Method: `node -e "require('./server/lib/obsStateSync.js')"` exits 0
-- Result: Module loads successfully
+- Method: `cd server && npm run test:obs`
+- Result: All 49 tests pass
 
 ---
 

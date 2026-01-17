@@ -6,7 +6,11 @@
   "scripts": {
     "start": "node index.js",
     "dev": "node --watch index.js",
-    "build:client": "cd ../show-controller && npm run build"
+    "build:client": "cd ../show-controller && npm run build",
+    "test": "node --test __tests__/**/*.test.js",
+    "test:unit": "node --test __tests__/*.test.js",
+    "test:obs": "node --test __tests__/obsStateSync.test.js",
+    "test:lib": "node lib/obsSceneGenerator.test.js"
   },
   "keywords": [],
   "author": "",
