@@ -1644,7 +1644,7 @@ Screenshots saved to: `ralph-wigg/screenshots/`
       "Verify stdout contains process information or indicates no processes"
     ],
     "verification": "Service status commands execute successfully",
-    "passes": false
+    "passes": true
   },
   {
     "id": "MCP-08",

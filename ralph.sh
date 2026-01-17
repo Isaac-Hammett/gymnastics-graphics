@@ -226,9 +226,12 @@ mcp__gymnastics__aws_list_security_group_rules\
       esac
     done
 
-  # Stop status monitor
-  [ -n "$MONITOR_PID" ] && kill "$MONITOR_PID" 2>/dev/null
-  MONITOR_PID=""
+  # Stop status monitor (suppress termination message)
+  if [ -n "$MONITOR_PID" ]; then
+    kill "$MONITOR_PID" 2>/dev/null
+    wait "$MONITOR_PID" 2>/dev/null
+    MONITOR_PID=""
+  fi
 
   # Read the saved output for completion checks
   result=$(cat "$OUTPUT_FILE" 2>/dev/null || echo "")
