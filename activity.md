@@ -2,20 +2,51 @@
 
 ## Current Status
 **Phase:** OBS Integration Tool - In Progress
-**Last Task:** OBS-10 - Create OBS Audio Manager module ✅
-**Next Task:** OBS-11 - Implement audio presets system
+**Last Task:** OBS-11 - Implement audio presets system ✅
+**Next Task:** OBS-12 - Add Audio Management API endpoints
 **Blocker:** None
 
 ### Summary
 OBS Integration Tool implementation phase in progress. This phase will add comprehensive OBS WebSocket control capabilities to the show controller.
 
-**Progress:** 10/38 tasks complete (26%)
+**Progress:** 11/38 tasks complete (29%)
 
 ---
 
 ## Activity Log
 
 ### 2026-01-17
+
+### OBS-11: Implement audio presets system ✅
+Extended `/server/lib/obsAudioManager.js` with audio preset management capabilities.
+
+**DEFAULT_PRESETS constant (5 presets):**
+- `default-commentary-focus`: Commentary -6dB, venue -18dB, music muted
+- `default-venue-focus`: Venue -6dB, commentary -18dB, music muted
+- `default-music-bed`: Music -12dB, others muted
+- `default-all-muted`: All sources muted at -96dB
+- `default-break-music`: Music 0dB (full), others muted
+
+**Methods implemented:**
+- `savePreset(compId, preset)` - Saves to Firebase at `competitions/{compId}/obs/presets/{presetId}`
+- `loadPreset(compId, presetId)` - Loads preset from Firebase, returns null if not found
+- `applyPreset(preset)` - Applies volume/mute settings to OBS sources, returns {applied, errors}
+- `deletePreset(compId, presetId)` - Deletes user presets (prevents deletion of default presets)
+- `listPresets(compId)` - Returns combined array of default + user presets
+
+**Constructor updated:**
+- Added optional `productionConfigService` parameter for Firebase access
+
+**Tests added:**
+- 33 new tests for preset functionality
+- Total tests in obsAudioManager.test.js: 76 (up from 43)
+- Covers DEFAULT_PRESETS validation, save/load/apply/delete/list operations, error handling
+
+**Verification:** PASSED
+- Method: `cd server && node --test __tests__/obsAudioManager.test.js`
+- Result: All 76 tests pass (0 failures)
+
+---
 
 ### OBS-10: Create OBS Audio Manager module ✅
 Created `/server/lib/obsAudioManager.js` - audio source management module for OBS.
