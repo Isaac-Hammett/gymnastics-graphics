@@ -525,3 +525,40 @@ After reviewing the PRD (`docs/PRD-OBSIntegrationTool-2026-01-16.md`) against cu
 
 ---
 
+#### FIX-05: Fix API URL routing - PASS
+**Timestamp:** 2026-01-18 02:30 UTC
+**Action:** Updated all OBS components to use socketUrl from ShowContext for API calls
+
+**Files Modified:**
+1. `AudioPresetManager.jsx` - Added useShow import, socketUrl destructuring, updated 4 fetch calls
+2. `StreamConfig.jsx` - Added useShow import, socketUrl destructuring, updated 3 fetch calls
+3. `AssetManager.jsx` - Added useShow import, socketUrl destructuring, updated 3 fetch calls
+4. `TemplateManager.jsx` - Added socketUrl to existing useShow destructuring, updated 3 fetch calls
+5. `TalentCommsPanel.jsx` - Added useShow import, socketUrl destructuring, updated 4 fetch calls
+6. `SourceEditor.jsx` - Added useShow import, socketUrl destructuring, uncommented and updated 3 fetch calls
+
+**Total Changes:** 20 fetch calls updated across 6 files
+
+**Deployment:**
+- Built frontend: `npm run build` (787 modules, 1.30s)
+- Created tarball and uploaded to production (3.87.107.201)
+- Extracted to `/var/www/commentarygraphic/`
+
+**Verification:**
+- Navigated to https://commentarygraphic.com/8kyf0rnl/obs-manager
+- OBS Connected status shows correctly
+- Clicked Stream tab to verify API routing
+- Network requests now go to `https://api.commentarygraphic.com/api/obs/...` (correct)
+- Previously went to static server and returned HTML (404 pages)
+- Now returns 503 Service Unavailable (coordinator receives request but OBS routes need mounting)
+
+**Screenshots:**
+- `screenshots/FIX-05-obs-manager-deployed.png`
+- `screenshots/FIX-05-api-routing-working.png`
+
+**Result:** PASS - API URL routing fixed. All OBS component fetch calls now route through coordinator API. 503 errors indicate coordinator is receiving requests (separate issue - OBS API routes need to be enabled).
+
+**Also Completed:** FIX-11 (SourceEditor API calls) - done as part of this fix
+
+---
+

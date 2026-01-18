@@ -11,6 +11,7 @@ import {
   XMarkIcon
 } from '@heroicons/react/24/outline';
 import { useOBS } from '../../context/OBSContext';
+import { useShow } from '../../context/ShowContext';
 
 /**
  * TalentCommsPanel - Manage talent communications (VDO.Ninja, Discord)
@@ -18,6 +19,7 @@ import { useOBS } from '../../context/OBSContext';
  */
 export default function TalentCommsPanel() {
   const { obsConnected } = useOBS();
+  const { socketUrl } = useShow();
 
   const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -38,7 +40,7 @@ export default function TalentCommsPanel() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/obs/talent-comms');
+      const response = await fetch(`${socketUrl}/api/obs/talent-comms`);
       if (!response.ok) {
         throw new Error(`Failed to fetch talent comms config: ${response.statusText}`);
       }
@@ -58,7 +60,7 @@ export default function TalentCommsPanel() {
     setRegenerating(true);
 
     try {
-      const response = await fetch('/api/obs/talent-comms/setup', {
+      const response = await fetch(`${socketUrl}/api/obs/talent-comms/setup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -90,7 +92,7 @@ export default function TalentCommsPanel() {
     setRegenerating(true);
 
     try {
-      const response = await fetch('/api/obs/talent-comms/regenerate', {
+      const response = await fetch(`${socketUrl}/api/obs/talent-comms/regenerate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -122,7 +124,7 @@ export default function TalentCommsPanel() {
     setSwitching(true);
 
     try {
-      const response = await fetch('/api/obs/talent-comms/method', {
+      const response = await fetch(`${socketUrl}/api/obs/talent-comms/method`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
