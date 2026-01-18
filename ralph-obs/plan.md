@@ -358,9 +358,10 @@ These test actual OBS functionality and may modify state.
     "description": "Talent comms setup works",
     "action": "Call POST /api/obs/talent-comms/setup to initialize talent comms, then test method switch",
     "verification": "Talent comms initialized, method can be switched between vdo-ninja and discord",
-    "status": "pending",
+    "status": "completed",
     "dependsOn": "TEST-18",
-    "note": "TEST-18 showed 404 on method switch because talent comms was not set up first - this is expected behavior"
+    "note": "TEST-18 showed 404 on method switch because talent comms was not set up first - this is expected behavior",
+    "result": "Talent comms setup and method switching work correctly. POST /api/obs/talent-comms/setup returned 201 Created with VDO.Ninja config (roomId, password, URLs generated). PUT /api/obs/talent-comms/method successfully switched to Discord (200 OK) and back to VDO.Ninja (200 OK). Firebase confirms config persisted at competitions/8kyf0rnl/config/talentComms with all fields populated. No console errors."
   }
 ]
 ```
