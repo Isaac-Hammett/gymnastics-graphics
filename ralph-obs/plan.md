@@ -431,8 +431,10 @@ These test actual OBS functionality and may modify state.
     "description": "Edit source settings works (SRT/Media source)",
     "action": "Click Edit on an ffmpeg_source, change SRT URL, save",
     "verification": "Source settings updated in OBS, stream reconnects to new URL",
-    "status": "pending",
-    "dependsOn": "TEST-31"
+    "status": "failed",
+    "dependsOn": "TEST-31",
+    "failureReason": "No Edit button exists in SceneEditor UI. Sources only have Hide/Lock/Delete buttons. Clicking a source opens Transform Presets panel (position/scale), not source settings editor. Additionally, no ffmpeg_source exists in OBS to test with. Blocked by FIX-24.",
+    "result": "FAILED - SourceEditor for editing source settings not implemented. SceneEditor only supports visibility, lock, delete, and transform presets - no source configuration editing (SRT URL, browser URL, etc.)."
   },
   {
     "id": "TEST-36",
