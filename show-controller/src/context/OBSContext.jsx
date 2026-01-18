@@ -234,6 +234,11 @@ export function OBSProvider({ children }) {
     socket?.emit('obs:renameScene', { sceneName, newSceneName });
   }, [socket]);
 
+  const reorderScenes = useCallback((sceneNames) => {
+    console.log('OBSContext: Reordering scenes', sceneNames);
+    socket?.emit('obs:reorderScenes', { sceneNames });
+  }, [socket]);
+
   // Scene item actions
   const toggleItemVisibility = useCallback((sceneName, sceneItemId, enabled) => {
     console.log('OBSContext: Toggle item visibility', sceneName, sceneItemId, enabled);
@@ -328,6 +333,7 @@ export function OBSProvider({ children }) {
     deleteScene,
     duplicateScene,
     renameScene,
+    reorderScenes,
 
     // Scene item actions
     toggleItemVisibility,

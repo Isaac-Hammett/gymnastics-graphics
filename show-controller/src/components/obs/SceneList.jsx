@@ -7,7 +7,8 @@ import {
   RectangleStackIcon,
   PlusIcon,
   XMarkIcon,
-  Cog6ToothIcon
+  Cog6ToothIcon,
+  Bars3Icon
 } from '@heroicons/react/24/outline';
 import { useOBS } from '../../context/OBSContext';
 
@@ -16,7 +17,7 @@ import { useOBS } from '../../context/OBSContext';
  * Groups scenes by category and provides actions: Preview, Edit, Duplicate, Delete
  */
 export default function SceneList({ onEditScene, onSceneAction }) {
-  const { obsState, obsConnected, switchScene, setPreviewScene, createScene, refreshState } = useOBS();
+  const { obsState, obsConnected, switchScene, setPreviewScene, createScene, refreshState, reorderScenes } = useOBS();
   const [expandedCategories, setExpandedCategories] = useState({
     'generated-single': true,
     'generated-multi': true,
@@ -28,6 +29,7 @@ export default function SceneList({ onEditScene, onSceneAction }) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newSceneName, setNewSceneName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+  const [draggedScene, setDraggedScene] = useState(null);
 
   // Get scenes from obsState
   const scenes = obsState?.scenes || [];
@@ -112,6 +114,54 @@ export default function SceneList({ onEditScene, onSceneAction }) {
     if (onSceneAction) {
       onSceneAction('delete', sceneName);
     }
+  };
+
+  // Drag-and-drop handlers for scene reordering
+  const handleSceneDragStart = (e, scene) => {
+    setDraggedScene(scene);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', scene.sceneName || scene.name);
+  };
+
+  const handleSceneDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleSceneDrop = (e, targetScene) => {
+    e.preventDefault();
+    if (!draggedScene || draggedScene === targetScene) {
+      setDraggedScene(null);
+      return;
+    }
+
+    const draggedName = draggedScene.sceneName || draggedScene.name;
+    const targetName = targetScene.sceneName || targetScene.name;
+
+    // Create new order of all scenes
+    const newScenes = [...scenes];
+    const draggedIndex = newScenes.findIndex(s => (s.sceneName || s.name) === draggedName);
+    const targetIndex = newScenes.findIndex(s => (s.sceneName || s.name) === targetName);
+
+    if (draggedIndex === -1 || targetIndex === -1) {
+      setDraggedScene(null);
+      return;
+    }
+
+    // Remove dragged scene and insert at target position
+    newScenes.splice(draggedIndex, 1);
+    newScenes.splice(targetIndex, 0, draggedScene);
+
+    // Extract scene names for the API call
+    const sceneNames = newScenes.map(s => s.sceneName || s.name);
+    console.log('SceneList: Reordering scenes to', sceneNames);
+    reorderScenes(sceneNames);
+
+    setDraggedScene(null);
+  };
+
+  const handleSceneDragEnd = () => {
+    setDraggedScene(null);
   };
 
   const handleCreateScene = async () => {
@@ -310,6 +360,11 @@ export default function SceneList({ onEditScene, onSceneAction }) {
           onRename={handleRename}
           onDuplicate={handleDuplicate}
           onDelete={handleDelete}
+          onDragStart={handleSceneDragStart}
+          onDragOver={handleSceneDragOver}
+          onDrop={handleSceneDrop}
+          onDragEnd={handleSceneDragEnd}
+          draggedScene={draggedScene}
         />
       ))}
     </div>
@@ -330,7 +385,12 @@ function CategoryGroup({
   onEdit,
   onRename,
   onDuplicate,
-  onDelete
+  onDelete,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
+  draggedScene
 }) {
   const colorClasses = {
     purple: 'bg-purple-600/20 text-purple-300 border-purple-500',
@@ -377,6 +437,7 @@ function CategoryGroup({
             return (
               <SceneCard
                 key={sceneName}
+                scene={scene}
                 sceneName={sceneName}
                 sourceCount={sourceCount}
                 category={category}
@@ -388,6 +449,11 @@ function CategoryGroup({
                 onRename={() => onRename(sceneName)}
                 onDuplicate={() => onDuplicate(sceneName)}
                 onDelete={() => onDelete(sceneName)}
+                onDragStart={(e) => onDragStart(e, scene)}
+                onDragOver={onDragOver}
+                onDrop={(e) => onDrop(e, scene)}
+                onDragEnd={onDragEnd}
+                isDragging={draggedScene === scene}
               />
             );
           })}
@@ -401,6 +467,7 @@ function CategoryGroup({
  * SceneCard - Individual scene card with actions
  */
 function SceneCard({
+  scene,
   sceneName,
   sourceCount,
   category,
@@ -411,7 +478,12 @@ function SceneCard({
   onEdit,
   onRename,
   onDuplicate,
-  onDelete
+  onDelete,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
+  isDragging
 }) {
   const borderClass = isActive
     ? 'border-green-500 bg-green-900/20'
@@ -420,8 +492,19 @@ function SceneCard({
     : 'border-gray-600';
 
   return (
-    <div className={`bg-gray-900 rounded-lg border-2 ${borderClass} p-3 hover:bg-gray-850 transition-colors`}>
+    <div
+      draggable
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      onDragEnd={onDragEnd}
+      className={`bg-gray-900 rounded-lg border-2 ${borderClass} p-3 hover:bg-gray-850 transition-colors cursor-move ${isDragging ? 'opacity-50' : ''}`}
+    >
       <div className="flex items-center justify-between">
+        {/* Drag Handle */}
+        <div className="flex-shrink-0 mr-2 cursor-grab active:cursor-grabbing">
+          <Bars3Icon className="w-5 h-5 text-gray-500 hover:text-gray-300" />
+        </div>
         {/* Scene Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">

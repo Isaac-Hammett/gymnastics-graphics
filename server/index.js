@@ -2655,6 +2655,56 @@ io.on('connection', async (socket) => {
     }
   });
 
+  // Reorder scenes in OBS
+  socket.on('obs:reorderScenes', async ({ sceneNames }) => {
+    console.log(`[reorderScenes] Received request to reorder scenes:`, sceneNames);
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can reorder scenes' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      // Get current scene list to get UUIDs
+      const currentSceneList = await compObs.call('GetSceneList');
+      const sceneMap = {};
+      currentSceneList.scenes.forEach(scene => {
+        sceneMap[scene.sceneName] = scene.sceneUuid;
+      });
+
+      // Build new scene list with UUIDs in requested order
+      const newSceneList = sceneNames.map(name => ({
+        sceneName: name,
+        sceneUuid: sceneMap[name]
+      })).filter(s => s.sceneUuid); // Only include scenes that exist
+
+      // Note: OBS WebSocket expects scenes in reverse order (last = bottom of list in OBS)
+      // The SetSceneList API orders scenes from bottom to top
+      await compObs.call('SetSceneList', { scenes: newSceneList.reverse() });
+      console.log(`[reorderScenes] Reordered ${newSceneList.length} scenes for ${clientCompId}`);
+
+      // Broadcast updated state to all clients in this competition
+      await broadcastOBSState(clientCompId, obsConnManager, io);
+    } catch (error) {
+      console.error(`[reorderScenes] Failed to reorder scenes: ${error.message}`);
+      socket.emit('error', { message: `Failed to reorder scenes: ${error.message}` });
+    }
+  });
+
   // Refresh OBS state (for Refresh button in UI)
   socket.on('obs:refreshState', async () => {
     const client = showState.connectedClients.find(c => c.id === socket.id);
