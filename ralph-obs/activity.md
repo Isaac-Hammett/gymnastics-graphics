@@ -1819,3 +1819,40 @@ The index calculation in handleDrop (line 107: `newIndex = newItems.length - 1 -
 
 ---
 
+#### TEST-43: Asset upload works (music file) - PASS
+**Timestamp:** 2026-01-18
+**Action:** Tested music file upload via Asset Manager
+
+**Initial Attempt - FAIL:**
+1. Navigated to /8kyf0rnl/obs-manager, clicked Assets tab
+2. Clicked "browse files", selected test.mp3 file
+3. Upload progress showed 100%, then **500 Internal Server Error**
+4. Console error: `SyntaxError: Unexpected token '<'` (server returning HTML, not JSON)
+5. Server logs showed: `Error: Invalid asset type`
+
+**Root Cause:**
+- Multer's `fileFilter` callback runs when processing the file field
+- FormData was sending fields in order: `file`, `type`, `metadata`
+- When `fileFilter` checked `req.body.type`, it was undefined (type field not yet parsed)
+- This caused "Invalid asset type" error
+
+**Fix Applied:**
+- Modified `show-controller/src/components/obs/AssetManager.jsx`
+- Changed FormData field order to: `type`, `metadata`, `file`
+- Comment added explaining why order matters for multer
+
+**Verification After Fix:**
+1. Rebuilt and redeployed frontend
+2. Navigated to Assets tab
+3. Clicked "browse files", selected test.mp3
+4. **Success toast: "test.mp3 uploaded successfully"**
+5. Music count updated from (0) to (1)
+6. Asset appears in list with filename, size (3 Bytes), and date
+7. No console errors
+
+**Screenshot:** `screenshots/TEST-43-upload-success.png`
+
+**Result:** PASS - Asset upload works after fixing FormData field order. File successfully stored in Firebase manifest.
+
+---
+

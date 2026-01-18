@@ -147,12 +147,14 @@ export default function AssetManager() {
 
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      // IMPORTANT: 'type' must come BEFORE 'file' for multer's fileFilter to work
+      // Multer processes fields in order, and fileFilter runs when processing the file
       formData.append('type', activeTab);
       formData.append('metadata', JSON.stringify({
         originalName: file.name,
         uploadedAt: new Date().toISOString()
       }));
+      formData.append('file', file);
 
       const xhr = new XMLHttpRequest();
 
