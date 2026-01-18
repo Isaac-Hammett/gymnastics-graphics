@@ -380,10 +380,9 @@ These test actual OBS functionality and may modify state.
     "description": "Create scene from template works",
     "action": "Click Create Scene, select 'From Template' option, choose a template, verify scene is created with template sources",
     "verification": "New scene created with sources matching the selected template",
-    "status": "failed",
+    "status": "pending",
     "dependsOn": "TEST-27",
-    "failureReason": "Create Scene modal only has a simple name input field. No 'From Template' option exists. Templates are managed in a separate Templates tab but are not integrated with the Create Scene workflow. Requires FIX-21 to implement.",
-    "blockedBy": "FIX-21"
+    "note": "FIX-21 completed - ready for re-test"
   },
 
   {
@@ -728,7 +727,8 @@ Created dynamically when tests fail.
     "phase": "Phase 2 - Scene CRUD",
     "description": "Add 'Create from Template' option to Create Scene modal",
     "action": "Extend Create Scene modal to include template selection dropdown. When template selected, call API to create scene with template sources pre-populated.",
-    "status": "pending",
+    "status": "completed",
+    "result": "Implemented 'Create from Template' option in Create Scene modal: 1) Added CreateSceneModal component with mode selector (Blank Scene / From Template). 2) Added template fetching from /api/obs/templates when modal opens. 3) Added template dropdown with description display. 4) Updated OBSContext.jsx createScene to accept optional templateId. 5) Updated server obs:createScene handler to fetch template from Firebase and copy source items to new scene. UI shows green 'Blank Scene' button and purple 'From Template' button with template dropdown.",
     "blocksTests": ["TEST-30"]
   },
 
