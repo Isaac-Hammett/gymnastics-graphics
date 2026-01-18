@@ -419,8 +419,16 @@ Created dynamically when tests fail.
     "id": "FIX-13",
     "description": "Initialize OBS State Sync when Socket.io client connects for a competition",
     "action": "Add initializeOBSStateSync(clientCompId) call in server/index.js Socket.io connection handler when client identifies with a competition ID. This ensures the REST API routes work when accessed from OBS Manager page.",
-    "status": "pending",
+    "status": "completed",
+    "result": "Added initializeOBSStateSync(clientCompId) call to Socket.io connection handler in server/index.js (line 2433-2440). Deployed to coordinator. OBS State Sync now initializes when clients connect. Note: Presets API returns 500 due to separate routing bug (endpoint /api/obs/audio/presets being parsed as /api/obs/audio/:inputName with inputName='presets').",
     "blocksTests": ["TEST-14", "TEST-15", "TEST-16", "TEST-17", "TEST-18"]
+  },
+  {
+    "id": "FIX-14",
+    "description": "Fix OBS audio presets API routing - endpoint conflicts with audio input route",
+    "action": "In server/routes/obs.js, the /api/obs/audio/presets route is being caught by /api/obs/audio/:inputName. Need to reorder routes or change path pattern.",
+    "status": "pending",
+    "blocksTests": ["TEST-14"]
   }
 ]
 ```

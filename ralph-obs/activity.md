@@ -896,3 +896,50 @@ const handleMonitorTypeChange = useCallback((inputName, monitorType) => {
 
 ---
 
+#### FIX-13: Initialize OBS State Sync when Socket.io client connects - PASS
+**Timestamp:** 2026-01-18 07:30 UTC
+**Action:** Added initializeOBSStateSync(clientCompId) call to Socket.io connection handler
+
+**Root Cause:**
+- OBS REST API routes in `server/routes/obs.js` check `obsStateSync.isInitialized()` before processing
+- `obsStateSync` was ONLY initialized via `/api/competitions/:id/activate` endpoint
+- OBS Manager page connects via Socket.io and never calls the activate endpoint
+- Result: All REST API endpoints returned 503 "OBS State Sync not initialized"
+
+**Fix Applied:**
+- Added `initializeOBSStateSync(clientCompId)` call in Socket.io connection handler (server/index.js lines 2433-2440)
+- Called after OBS connection manager setup, inside the `if (clientCompId && clientCompId !== 'local')` block
+- Error handling added to prevent initialization failures from breaking Socket.io connection
+
+**Code Change:**
+```javascript
+// Initialize OBS State Sync for this competition (enables REST API routes)
+try {
+  await initializeOBSStateSync(clientCompId);
+  console.log(`[Socket] OBS State Sync initialized for competition ${clientCompId}`);
+} catch (syncError) {
+  console.warn(`[Socket] Failed to initialize OBS State Sync for ${clientCompId}: ${syncError.message}`);
+  // Continue - Socket.io events will still work, but REST API endpoints won't
+}
+```
+
+**Deployment:**
+1. Committed to dev branch: `236312c`
+2. Pushed to GitHub
+3. Pulled on coordinator (44.193.31.120)
+4. Restarted PM2 coordinator process
+
+**Verification:**
+- Navigated to https://commentarygraphic.com/8kyf0rnl/obs-manager
+- OBS Connected status shown
+- Clicked Audio tab
+- API now returns 500 (Internal Server Error) instead of 503 (Service Unavailable)
+- This confirms OBS State Sync IS initialized
+- 500 error is separate bug: `/api/obs/audio/presets` caught by `/api/obs/audio/:inputName` route
+
+**Screenshot:** `screenshots/FIX-13-obs-state-sync-initialized.png`
+
+**Result:** PASS - OBS State Sync now initializes when Socket.io clients connect. Created FIX-14 to address the separate presets API routing bug.
+
+---
+
