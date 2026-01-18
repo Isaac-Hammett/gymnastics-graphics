@@ -2430,6 +2430,10 @@ io.on('connection', async (socket) => {
         }
       }
 
+      // Set active competition so REST API routes can access the competition ID
+      configLoader.setActiveCompetition(clientCompId);
+      console.log(`[Socket] Active competition set to ${clientCompId}`);
+
       // Initialize OBS State Sync for this competition (enables REST API routes)
       try {
         await initializeOBSStateSync(clientCompId);
