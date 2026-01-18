@@ -674,6 +674,88 @@ export function setupOBSRoutes(app, obs, obsStateSyncOrGetter) {
   });
 
   /**
+   * GET /api/obs/audio/presets - List all audio presets
+   * NOTE: This route MUST be defined BEFORE /api/obs/audio/:inputName
+   *       Otherwise Express will match "presets" as an inputName parameter
+   */
+  app.get('/api/obs/audio/presets', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      const compId = configLoader.getActiveCompetition();
+      if (!compId) {
+        return res.status(400).json({ error: 'No active competition. Activate a competition first.' });
+      }
+
+      console.log(`[OBS Routes] GET /api/obs/audio/presets - Listing presets for competition ${compId}`);
+
+      const audioManager = new OBSAudioManager(obs, obsStateSync, productionConfigService);
+      const presets = await audioManager.listPresets(compId);
+
+      res.json({ presets });
+    } catch (error) {
+      console.error('[OBS Routes] Error listing audio presets:', error.message);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * POST /api/obs/audio/presets - Save current mix as preset
+   * Body: { id, name, description, sources: [{inputName, volumeDb, muted}] }
+   * NOTE: This route MUST be defined BEFORE /api/obs/audio/:inputName
+   */
+  app.post('/api/obs/audio/presets', async (req, res) => {
+    try {
+      const obsStateSync = getStateSync();
+      if (!obsStateSync || !obsStateSync.isInitialized()) {
+        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
+      }
+
+      const compId = configLoader.getActiveCompetition();
+      if (!compId) {
+        return res.status(400).json({ error: 'No active competition. Activate a competition first.' });
+      }
+
+      const preset = req.body;
+
+      if (!preset || typeof preset !== 'object') {
+        return res.status(400).json({ error: 'Preset object is required' });
+      }
+
+      if (!preset.id) {
+        return res.status(400).json({ error: 'Preset id is required' });
+      }
+
+      if (!preset.name) {
+        return res.status(400).json({ error: 'Preset name is required' });
+      }
+
+      if (!Array.isArray(preset.sources)) {
+        return res.status(400).json({ error: 'Preset sources array is required' });
+      }
+
+      console.log(`[OBS Routes] POST /api/obs/audio/presets - Saving preset "${preset.name}" for competition ${compId}`);
+
+      const audioManager = new OBSAudioManager(obs, obsStateSync, productionConfigService);
+      await audioManager.savePreset(compId, preset);
+
+      res.status(201).json({
+        success: true,
+        preset: {
+          id: preset.id,
+          name: preset.name
+        }
+      });
+    } catch (error) {
+      console.error('[OBS Routes] Error saving audio preset:', error.message);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
    * GET /api/obs/audio/:inputName - Get single audio source details
    */
   app.get('/api/obs/audio/:inputName', async (req, res) => {
@@ -815,85 +897,6 @@ export function setupOBSRoutes(app, obs, obsStateSyncOrGetter) {
       if (error.message.includes('not found') || error.message.includes('does not exist')) {
         return res.status(404).json({ error: error.message });
       }
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  /**
-   * GET /api/obs/audio/presets - List all audio presets
-   */
-  app.get('/api/obs/audio/presets', async (req, res) => {
-    try {
-      const obsStateSync = getStateSync();
-      if (!obsStateSync || !obsStateSync.isInitialized()) {
-        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
-      }
-
-      const compId = configLoader.getActiveCompetition();
-      if (!compId) {
-        return res.status(400).json({ error: 'No active competition. Activate a competition first.' });
-      }
-
-      console.log(`[OBS Routes] GET /api/obs/audio/presets - Listing presets for competition ${compId}`);
-
-      const audioManager = new OBSAudioManager(obs, obsStateSync, productionConfigService);
-      const presets = await audioManager.listPresets(compId);
-
-      res.json({ presets });
-    } catch (error) {
-      console.error('[OBS Routes] Error listing audio presets:', error.message);
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  /**
-   * POST /api/obs/audio/presets - Save current mix as preset
-   * Body: { id, name, description, sources: [{inputName, volumeDb, muted}] }
-   */
-  app.post('/api/obs/audio/presets', async (req, res) => {
-    try {
-      const obsStateSync = getStateSync();
-      if (!obsStateSync || !obsStateSync.isInitialized()) {
-        return res.status(503).json({ error: 'OBS State Sync not initialized. Activate a competition first.' });
-      }
-
-      const compId = configLoader.getActiveCompetition();
-      if (!compId) {
-        return res.status(400).json({ error: 'No active competition. Activate a competition first.' });
-      }
-
-      const preset = req.body;
-
-      if (!preset || typeof preset !== 'object') {
-        return res.status(400).json({ error: 'Preset object is required' });
-      }
-
-      if (!preset.id) {
-        return res.status(400).json({ error: 'Preset id is required' });
-      }
-
-      if (!preset.name) {
-        return res.status(400).json({ error: 'Preset name is required' });
-      }
-
-      if (!Array.isArray(preset.sources)) {
-        return res.status(400).json({ error: 'Preset sources array is required' });
-      }
-
-      console.log(`[OBS Routes] POST /api/obs/audio/presets - Saving preset "${preset.name}" for competition ${compId}`);
-
-      const audioManager = new OBSAudioManager(obs, obsStateSync, productionConfigService);
-      await audioManager.savePreset(compId, preset);
-
-      res.status(201).json({
-        success: true,
-        preset: {
-          id: preset.id,
-          name: preset.name
-        }
-      });
-    } catch (error) {
-      console.error('[OBS Routes] Error saving audio preset:', error.message);
       res.status(500).json({ error: error.message });
     }
   });
