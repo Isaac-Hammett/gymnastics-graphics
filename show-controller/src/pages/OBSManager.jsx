@@ -36,7 +36,8 @@ export default function OBSManager() {
     refreshState,
     duplicateScene,
     deleteScene,
-    renameScene
+    renameScene,
+    takeScreenshot
   } = useOBS();
 
   const [activeTab, setActiveTab] = useState('scenes');
@@ -244,6 +245,7 @@ export default function OBSManager() {
 
             {/* Screenshot Button */}
             <button
+              onClick={takeScreenshot}
               disabled={!obsConnected}
               className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-600 text-white font-medium rounded-lg transition-colors"
             >

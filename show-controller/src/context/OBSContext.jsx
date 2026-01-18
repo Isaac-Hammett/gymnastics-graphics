@@ -104,6 +104,19 @@ export function OBSProvider({ children }) {
       setTimeout(() => setConnectionError(null), 5000);
     };
 
+    const handleScreenshotCaptured = (data) => {
+      console.log('OBSContext: Screenshot captured', data.sceneName, data.timestamp);
+      // Download the screenshot as a file
+      if (data.imageData) {
+        const link = document.createElement('a');
+        link.href = data.imageData;
+        link.download = `screenshot-${data.sceneName}-${Date.now()}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    };
+
     // Subscribe to all OBS events
     // Note: Event names must match server emissions in server/lib/obsStateSync.js
     socket.on('obs:stateUpdated', handleStateUpdate);
@@ -115,6 +128,7 @@ export function OBSProvider({ children }) {
     socket.on('obs:recordStateChanged', handleRecordingStateChanged);
     socket.on('obs:currentTransitionChanged', handleTransitionChanged);
     socket.on('obs:error', handleError);
+    socket.on('obs:screenshotCaptured', handleScreenshotCaptured);
 
     // Request initial state
     socket.emit('obs:refreshState');
@@ -130,6 +144,7 @@ export function OBSProvider({ children }) {
       socket.off('obs:recordStateChanged', handleRecordingStateChanged);
       socket.off('obs:currentTransitionChanged', handleTransitionChanged);
       socket.off('obs:error', handleError);
+      socket.off('obs:screenshotCaptured', handleScreenshotCaptured);
     };
   }, [socket, connected]);
 
@@ -256,6 +271,12 @@ export function OBSProvider({ children }) {
     socket?.emit('obs:setMonitorType', { inputName, monitorType });
   }, [socket]);
 
+  // Screenshot capture
+  const takeScreenshot = useCallback(() => {
+    console.log('OBSContext: Taking screenshot');
+    socket?.emit('obs:takeScreenshot');
+  }, [socket]);
+
   const refreshState = useCallback(() => {
     console.log('OBSContext: Refreshing state');
     socket?.emit('obs:refreshState');
@@ -318,6 +339,9 @@ export function OBSProvider({ children }) {
 
     // Audio monitoring
     setMonitorType,
+
+    // Screenshot capture
+    takeScreenshot,
 
     // Connection actions
     refreshState,
