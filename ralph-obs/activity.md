@@ -1877,3 +1877,23 @@ The index calculation in handleDrop (line 107: `newIndex = newItems.length - 1 -
 
 ---
 
+### TEST-45: Asset categories filter correctly - PASS
+
+**Timestamp:** 2026-01-18
+
+**Action:** Tested switching between Music, Stingers, Backgrounds, Logos tabs in Asset Manager
+
+**Steps:**
+1. Navigated to OBS Manager → Assets tab
+2. Verified Music tab active by default, showing "Music (0)" and MP3/WAV/FLAC/M4A/OGG file types (50MB max)
+3. Clicked Stingers → UI updated to "Stingers (0)" with MP4/MOV/WEBM file types (100MB max)
+4. Clicked Backgrounds → UI updated to "Backgrounds (0)" with JPG/JPEG/PNG/WEBP file types (20MB max)
+5. Clicked Logos → UI updated to "Logos (0)" with PNG/SVG/WEBP file types (10MB max)
+6. Clicked back to Music → correctly returned to Music view
+
+**Screenshot:** `screenshots/TEST-45-asset-categories.png`
+
+**Result:** PASS - All 4 asset categories filter correctly with appropriate file type restrictions and max sizes.
+
+---
+
