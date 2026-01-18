@@ -393,8 +393,10 @@ These test actual OBS functionality and may modify state.
     "description": "Add new source to scene works",
     "action": "In SceneEditor, click 'Add Source' button, select source type (e.g., color source), configure settings",
     "verification": "New source is created and added to the scene, visible in OBS",
-    "status": "pending",
-    "dependsOn": "TEST-21"
+    "status": "failed",
+    "dependsOn": "TEST-21",
+    "failureReason": "Add Source button exists but only shows existing OBS inputs, not source type picker. Modal shows 'No available sources to add' when all inputs are in scene. No way to CREATE new sources (color, browser, ffmpeg, image). Also the actual addSourceToScene call has a TODO comment - not implemented.",
+    "blockedBy": "FIX-22"
   },
   {
     "id": "TEST-32",

@@ -1392,3 +1392,28 @@ try {
 
 ---
 
+#### TEST-31: Add new source to scene works - FAIL
+**Timestamp:** 2026-01-18 05:30 UTC
+**Action:** Navigated to /8kyf0rnl/obs-manager, opened SceneEditor for "Scene", clicked "Add Source" button
+
+**Findings:**
+1. OBS Connected, Scenes tab shows 5 scenes
+2. Clicked "Edit sources" on "Scene" (has 1 source: "Test Color Source")
+3. SceneEditor opened showing "Scene Items (1)" with Add Source button
+4. Clicked "Add Source" button → Modal opened with title "Add Source to Scene"
+5. Modal shows: "No available sources to add - All inputs are already in this scene"
+6. **NO source type picker** - Cannot select color_source, browser_source, ffmpeg_source, image_source
+7. The modal only lists EXISTING OBS inputs not yet in the scene, NOT source types to create
+8. Code inspection confirms: SceneEditor.jsx line 141 has `// TODO: Call OBS API to add source to scene`
+
+**Screenshot:** `screenshots/TEST-31-add-source-modal.png`
+
+**Root Cause:** Feature not fully implemented:
+- UI only supports adding EXISTING inputs to a scene (from obsState.inputs)
+- No source type picker to CREATE new inputs
+- The actual addSourceToScene OBS API call is a TODO stub
+
+**Result:** FAIL - Cannot create new sources. Add Source only works with existing inputs. Blocked by FIX-22.
+
+---
+
