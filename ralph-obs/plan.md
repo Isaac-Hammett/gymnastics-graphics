@@ -424,8 +424,9 @@ These test actual OBS functionality and may modify state.
     "description": "Source lock toggle works",
     "action": "In SceneEditor, click Lock button on a source",
     "verification": "Source lock state toggles, locked sources cannot be transformed",
-    "status": "pending",
-    "dependsOn": "TEST-21"
+    "status": "completed",
+    "dependsOn": "TEST-21",
+    "result": "Lock toggle works correctly. Clicked Lock on 'Test Color Source 2' → console logged 'OBSContext: Toggle item lock Scene 2 true', button changed to 'Unlock' with yellow locked padlock icon. Clicked Unlock → console logged 'OBSContext: Toggle item lock Scene 2 false', button returned to 'Lock'. State updates received from OBS. No console errors."
   },
   {
     "id": "TEST-35",

@@ -1486,3 +1486,31 @@ The index calculation in handleDrop (line 107: `newIndex = newItems.length - 1 -
 
 ---
 
+#### TEST-34: Source lock toggle works - PASS
+**Timestamp:** 2026-01-18 07:00 UTC
+**Action:** Tested source lock toggle via SceneEditor
+
+**Steps:**
+1. Navigated to https://commentarygraphic.com/8kyf0rnl/obs-manager
+2. OBS Connected, Scenes tab shows 5 scenes
+3. Clicked "Edit sources" on "Scene" (has 2 sources)
+4. SceneEditor opened showing "Scene Items (2)" with "Test Color Source 2" and "Test Color Source"
+5. Each source row has Hide, Lock, Delete buttons
+6. Clicked "Lock" button on "Test Color Source 2"
+7. Console logged: `OBSContext: Toggle item lock Scene 2 true`
+8. Button changed from "Lock" to "Unlock" with yellow locked padlock icon
+9. State update received from OBS
+10. Clicked "Unlock" button
+11. Console logged: `OBSContext: Toggle item lock Scene 2 false`
+12. Button returned to "Lock" with unlocked padlock icon
+13. No console errors
+
+**Screenshots:**
+- `screenshots/TEST-34-before-lock.png` - SceneEditor with Lock buttons visible
+- `screenshots/TEST-34-after-lock.png` - Locked state with yellow padlock icon
+- `screenshots/TEST-34-after-unlock.png` - Unlocked state restored
+
+**Result:** PASS - Source lock toggle works correctly. Lock/Unlock button properly toggles lock state in OBS. UI updates immediately with correct icon states. Socket.io events emit correctly and state propagates back from OBS.
+
+---
+
