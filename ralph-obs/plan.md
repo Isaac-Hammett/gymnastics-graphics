@@ -169,8 +169,9 @@ These test actual OBS functionality and may modify state.
     "description": "Stream config displays correctly",
     "action": "Click Stream tab, verify stream settings shown",
     "verification": "Shows RTMP server, key, status",
-    "status": "pending",
-    "dependsOn": "TEST-01"
+    "status": "completed",
+    "dependsOn": "TEST-01",
+    "result": "Stream tab displays correctly. Shows: 'Stream Configuration' header, Streaming Service dropdown (YouTube/Twitch/Custom RTMP), Stream Key input with visibility toggle, Save Settings button. Stream status shown in header bar (LIVE/RECORDING badges). Note: API errors for fetching saved stream settings (returns HTML not JSON) - non-blocking for display test."
   },
   {
     "id": "TEST-08",
