@@ -370,10 +370,9 @@ These test actual OBS functionality and may modify state.
     "description": "Scene reorder via drag-and-drop works",
     "action": "In Scenes tab, drag a scene to a different position in the list",
     "verification": "Scene order changes in OBS and UI updates accordingly",
-    "status": "failed",
+    "status": "completed",
     "dependsOn": "TEST-02",
-    "failureReason": "Drag-and-drop for scene reordering is NOT implemented. No drag handles visible in UI. SceneList.jsx has no drag event handlers. Requires FIX-20 to implement.",
-    "blockedBy": "FIX-20"
+    "result": "After FIX-20, drag-and-drop for scene reordering works. Drag handles (Bars3Icon hamburger) visible on left of each scene card. Dragging 'Test Scene 2 Copy' to 'Renamed Test Scene' position triggered console logs: 'SceneList: Reordering scenes to [Test Scene 2 Copy, Renamed Test Scene, ...]' and 'OBSContext: Reordering scenes [...]'. Server handler calls OBS SetSceneList API. No console errors."
   },
   {
     "id": "TEST-30",
@@ -720,7 +719,8 @@ Created dynamically when tests fail.
     "phase": "Phase 2 - Scene CRUD",
     "description": "Implement scene reorder drag-and-drop in SceneList",
     "action": "Add drag-and-drop functionality to SceneList.jsx using HTML5 drag API or react-dnd. Add obs:reorderScenes Socket.io handler to server that calls OBS SetSceneList API. Emit obs:reorderScenes from OBSContext.jsx.",
-    "status": "pending",
+    "status": "completed",
+    "result": "Implemented scene reorder drag-and-drop: 1) Added Bars3Icon drag handles to SceneCard component. 2) Added drag state and handlers (handleSceneDragStart, handleSceneDragOver, handleSceneDrop, handleSceneDragEnd) to SceneList.jsx. 3) Added reorderScenes function to OBSContext.jsx that emits obs:reorderScenes. 4) Added obs:reorderScenes Socket.io handler to server/index.js that calls OBS SetSceneList API. Drag handles visible, drag events fire correctly, no console errors.",
     "blocksTests": ["TEST-29"]
   },
   {
