@@ -868,3 +868,31 @@ const handleMonitorTypeChange = useCallback((inputName, monitorType) => {
 
 ---
 
+#### TEST-22: Transform presets work - PASS
+**Timestamp:** 2026-01-18 07:00 UTC
+**Action:** Tested transform presets via SceneEditor
+
+**Steps:**
+1. Navigated to https://commentarygraphic.com/8kyf0rnl/obs-manager
+2. OBS Connected, Scenes tab shows 4 scenes
+3. Clicked "Edit sources" button on "Scene" (has 1 source)
+4. SceneEditor opened showing "Scene Items (1)" with "Test Color Source" at Position (0, 0)
+5. Clicked on the source item to select it
+6. Transform Presets panel appeared with 10 presets:
+   - Fullscreen (1920x1080)
+   - Dual Left/Right (960x1080)
+   - Quad Top Left/Right/Bottom Left/Right (960x540)
+   - Triple Main/Top Right/Bottom Right (1280x1080, 640x540)
+7. Clicked "Dual Right" → Console: `OBSContext: Apply transform preset Scene 1 {positionX: 960, positionY: 0, scaleX: 0.5, scaleY: 1}`
+8. Position updated to (960, 0) in UI
+9. Clicked "Quad Bottom Left" → Console: `OBSContext: Apply transform preset Scene 1 {positionX: 0, positionY: 540, scaleX: 0.5, scaleY: 0.5}`
+10. Position updated to (0, 540) in UI
+11. State updates received from OBS and UI updated correctly
+12. No console errors
+
+**Screenshot:** `screenshots/TEST-22-transform-presets-success.png`
+
+**Result:** PASS - Transform presets work correctly. All 10 presets available. Clicking a preset sends the correct transform values (positionX, positionY, scaleX, scaleY) to OBS via Socket.io. State updates propagate back and UI shows updated position.
+
+---
+
