@@ -295,8 +295,9 @@ These test actual OBS functionality and may modify state.
     "description": "Source visibility toggle works",
     "action": "Open a scene, toggle visibility on a source",
     "verification": "Source visibility changes in OBS",
-    "status": "pending",
-    "dependsOn": "FIX-12"
+    "status": "completed",
+    "dependsOn": "FIX-12",
+    "result": "Added Edit sources button to SceneCard, fixed broadcastOBSState to include scene items. Created test source 'Test Color Source' in OBS. Clicked Edit sources on 'Scene', SceneEditor showed source with Hide/Show/Lock/Delete buttons. Clicked Hide → source enabled=false in OBS, button changed to 'Show'. Clicked Show → source enabled=true in OBS. Console confirms: 'OBSContext: Toggle item visibility Scene 1 false/true'. Visibility toggle works correctly."
   },
   {
     "id": "TEST-22",
