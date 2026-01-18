@@ -519,8 +519,9 @@ These test actual OBS functionality and may modify state.
     "description": "Asset upload works (music file)",
     "action": "Drag and drop or browse to upload an MP3 file",
     "verification": "File uploads to VM, appears in music asset list",
-    "status": "pending",
-    "dependsOn": "TEST-16"
+    "status": "completed",
+    "dependsOn": "TEST-16",
+    "result": "After fixing FormData field order (type before file for multer), upload works. Clicked 'browse files', selected test.mp3, success toast showed 'test.mp3 uploaded successfully'. Music count updated from (0) to (1), file appears in list with filename, size (3 Bytes), and date. No console errors."
   },
   {
     "id": "TEST-44",
