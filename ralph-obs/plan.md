@@ -214,9 +214,9 @@ These test actual OBS functionality and may modify state.
     "description": "Scene creation works",
     "action": "Create a new scene via UI",
     "verification": "Scene is created in OBS, appears in list",
-    "status": "failed",
+    "status": "completed",
     "dependsOn": "TEST-02",
-    "failureReason": "No 'Create scene' button exists in the UI. SceneList.jsx only has Preview, Edit, Duplicate, Delete actions. Backend API exists (POST /api/obs/scenes) but frontend has no UI to call it."
+    "result": "After FIX-04, Create Scene button added to SceneList.jsx. Button opens modal with scene name input. Created 'Test Scene Created' - server logs confirm: [createScene] Created scene: Test Scene Created for 8kyf0rnl. Scene creation works via Socket.io obs:createScene event."
   },
   {
     "id": "TEST-13",
@@ -265,7 +265,8 @@ Created dynamically when tests fail.
     "id": "FIX-04",
     "description": "Add 'Create Scene' button to SceneList.jsx",
     "action": "Add a 'Create Scene' button to the SceneList component that opens a modal/dialog to enter a new scene name and calls the POST /api/obs/scenes endpoint",
-    "status": "pending",
+    "status": "completed",
+    "result": "1) Added createScene and deleteScene functions to OBSContext.jsx that emit Socket.io events. 2) Added obs:createScene and obs:deleteScene handlers to server/index.js. 3) Added 'Create Scene' button to SceneList.jsx header (both empty and populated states). 4) Added modal with scene name input, Cancel/Create buttons. 5) Deployed frontend and server. Verified: button visible, modal opens, scene created successfully (server logs confirm).",
     "blocksTests": ["TEST-12"]
   }
 ]

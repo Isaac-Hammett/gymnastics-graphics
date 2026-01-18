@@ -407,3 +407,46 @@ Updated `show-controller/src/context/OBSContext.jsx` lines 108-117 and 123-132 t
 
 ---
 
+#### FIX-04: Add 'Create Scene' button to SceneList.jsx - PASS
+**Timestamp:** 2026-01-18 00:30 UTC
+**Action:** Implemented Create Scene functionality in frontend and server
+
+**Changes Made:**
+
+1. **OBSContext.jsx** - Added `createScene` and `deleteScene` functions that emit Socket.io events:
+   - `createScene(sceneName)` → emits `obs:createScene`
+   - `deleteScene(sceneName)` → emits `obs:deleteScene`
+
+2. **server/index.js** - Added Socket.io handlers:
+   - `obs:createScene` handler calls OBS `CreateScene` API
+   - `obs:deleteScene` handler calls OBS `RemoveScene` API
+   - Both handlers check producer role and refresh state after completion
+
+3. **SceneList.jsx** - Added UI components:
+   - Green "+ Create Scene" button in header (visible in both empty and populated states)
+   - Modal dialog with scene name input field
+   - Cancel/Create buttons with proper disabled states
+   - Keyboard shortcuts (Enter to submit, Escape to cancel)
+
+**Deployment:**
+- Built frontend: `npm run build` (787 modules, 1.33s)
+- Deployed frontend to production (3.87.107.201)
+- Pushed server changes to dev branch
+- Pulled on coordinator and restarted PM2
+
+**Verification:**
+- Navigated to https://commentarygraphic.com/8kyf0rnl/obs-manager
+- "Create Scene" button visible in Scenes tab
+- Clicked button → modal opened with "Create New Scene" heading
+- Entered "Test Scene Created" → clicked Create
+- Server logs confirm: `[createScene] Created scene: Test Scene Created for 8kyf0rnl`
+
+**Screenshots:**
+- `screenshots/FIX-04-create-scene-button.png` - Shows OBS Manager with Create Scene button
+- `screenshots/FIX-04-scenes-tab-with-create-button.png` - Full page showing Scenes (0) with button
+- `screenshots/FIX-04-create-scene-modal.png` - Modal dialog for entering scene name
+
+**Result:** PASS - Create Scene button implemented and working. TEST-12 now passes.
+
+---
+
