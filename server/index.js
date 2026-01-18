@@ -2429,6 +2429,15 @@ io.on('connection', async (socket) => {
           console.log(`[Socket] No VM assigned to competition ${clientCompId}`);
         }
       }
+
+      // Initialize OBS State Sync for this competition (enables REST API routes)
+      try {
+        await initializeOBSStateSync(clientCompId);
+        console.log(`[Socket] OBS State Sync initialized for competition ${clientCompId}`);
+      } catch (syncError) {
+        console.warn(`[Socket] Failed to initialize OBS State Sync for ${clientCompId}: ${syncError.message}`);
+        // Continue - Socket.io events will still work, but REST API endpoints won't
+      }
     } catch (error) {
       console.error(`[Socket] Error setting up competition ${clientCompId}:`, error.message);
     }
