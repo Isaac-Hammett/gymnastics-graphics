@@ -226,6 +226,78 @@ These test actual OBS functionality and may modify state.
     "status": "completed",
     "dependsOn": "TEST-12",
     "result": "Delete button exists in UI. Clicking shows native browser confirm dialog. OBS WebSocket RemoveScene API works - deleted 'Test Scene Created' successfully. Scene list updated from 3 to 2 scenes. Server obs:deleteScene handler broadcasts state after deletion."
+  },
+  {
+    "id": "TEST-14",
+    "description": "Audio presets API works",
+    "action": "Open Audio tab, verify presets load without 404 error, save a preset, load it back",
+    "verification": "Presets load from API, can save and load",
+    "status": "pending",
+    "dependsOn": "FIX-12"
+  },
+  {
+    "id": "TEST-15",
+    "description": "Stream config API works",
+    "action": "Open Stream tab, verify settings load without 404 error, save stream key",
+    "verification": "Stream settings load from API, can save",
+    "status": "pending",
+    "dependsOn": "FIX-12"
+  },
+  {
+    "id": "TEST-16",
+    "description": "Asset manager API works",
+    "action": "Open Assets tab, verify assets load without 404 error",
+    "verification": "Assets list loads from API",
+    "status": "pending",
+    "dependsOn": "FIX-12"
+  },
+  {
+    "id": "TEST-17",
+    "description": "Template manager API works",
+    "action": "Open Templates tab, verify templates load without 404 error, save current as template",
+    "verification": "Templates load from API, can save",
+    "status": "pending",
+    "dependsOn": "FIX-12"
+  },
+  {
+    "id": "TEST-18",
+    "description": "Talent comms API works",
+    "action": "Open Talent Comms tab, verify config loads without 404 error, switch method",
+    "verification": "Config loads from API, can switch method",
+    "status": "pending",
+    "dependsOn": "FIX-12"
+  },
+  {
+    "id": "TEST-19",
+    "description": "Scene duplicate works",
+    "action": "Click duplicate button on a scene, enter new name",
+    "verification": "New scene created with same sources as original",
+    "status": "pending",
+    "dependsOn": "FIX-12"
+  },
+  {
+    "id": "TEST-20",
+    "description": "Scene rename works",
+    "action": "Click edit button on a scene, change name",
+    "verification": "Scene name updated in OBS and UI",
+    "status": "pending",
+    "dependsOn": "FIX-12"
+  },
+  {
+    "id": "TEST-21",
+    "description": "Source visibility toggle works",
+    "action": "Open a scene, toggle visibility on a source",
+    "verification": "Source visibility changes in OBS",
+    "status": "pending",
+    "dependsOn": "FIX-12"
+  },
+  {
+    "id": "TEST-22",
+    "description": "Transform presets work",
+    "action": "Open a scene, apply a transform preset to a source",
+    "verification": "Source position/scale changes to match preset",
+    "status": "pending",
+    "dependsOn": "FIX-12"
   }
 ]
 ```
@@ -269,6 +341,62 @@ Created dynamically when tests fail.
     "status": "completed",
     "result": "1) Added createScene and deleteScene functions to OBSContext.jsx that emit Socket.io events. 2) Added obs:createScene and obs:deleteScene handlers to server/index.js. 3) Added 'Create Scene' button to SceneList.jsx header (both empty and populated states). 4) Added modal with scene name input, Cancel/Create buttons. 5) Deployed frontend and server. Verified: button visible, modal opens, scene created successfully (server logs confirm).",
     "blocksTests": ["TEST-12"]
+  },
+  {
+    "id": "FIX-05",
+    "description": "Fix API URL routing - OBS components call /api/obs/... which goes to static server instead of coordinator",
+    "action": "Update all OBS components to use socketUrl from ShowContext for API calls. Components: AudioPresetManager, StreamConfig, AssetManager, TemplateManager, TalentCommsPanel, SourceEditor",
+    "status": "pending",
+    "blocksTests": ["TEST-04", "TEST-07", "TEST-08", "TEST-09", "TEST-10", "TEST-11"]
+  },
+  {
+    "id": "FIX-06",
+    "description": "Add missing Socket.io handlers for scene item operations",
+    "action": "Add handlers to server/index.js: obs:toggleItemVisibility, obs:toggleItemLock, obs:deleteSceneItem, obs:reorderSceneItems, obs:applyTransformPreset, obs:addSourceToScene, obs:duplicateScene, obs:renameScene, obs:setMonitorType",
+    "status": "pending",
+    "dependsOn": "FIX-05"
+  },
+  {
+    "id": "FIX-07",
+    "description": "Add missing action emitters to OBSContext",
+    "action": "Add to OBSContext.jsx: toggleItemVisibility, toggleItemLock, deleteSceneItem, reorderSceneItems, applyTransformPreset, addSourceToScene, duplicateScene, renameScene, setMonitorType",
+    "status": "pending",
+    "dependsOn": "FIX-06"
+  },
+  {
+    "id": "FIX-08",
+    "description": "Wire SceneList duplicate/rename buttons",
+    "action": "Replace alert stubs in SceneList.jsx with calls to duplicateScene() and renameScene() from OBSContext",
+    "status": "pending",
+    "dependsOn": "FIX-07"
+  },
+  {
+    "id": "FIX-09",
+    "description": "Wire SceneEditor item operations",
+    "action": "Connect SceneEditor.jsx handlers to OBSContext actions: visibility toggle, lock toggle, delete item, reorder, transform presets, add source",
+    "status": "pending",
+    "dependsOn": "FIX-07"
+  },
+  {
+    "id": "FIX-10",
+    "description": "Wire AudioMixer monitor type",
+    "action": "Connect AudioMixer.jsx monitor dropdown to setMonitorType action from OBSContext",
+    "status": "pending",
+    "dependsOn": "FIX-07"
+  },
+  {
+    "id": "FIX-11",
+    "description": "Wire SourceEditor API calls",
+    "action": "Uncomment and update SourceEditor.jsx fetch calls to use socketUrl, connect save buttons to API endpoints",
+    "status": "pending",
+    "dependsOn": "FIX-05"
+  },
+  {
+    "id": "FIX-12",
+    "description": "Build and deploy all fixes",
+    "action": "npm run build in show-controller, deploy to 3.87.107.201, git pull on coordinator (44.193.31.120), restart PM2",
+    "status": "pending",
+    "dependsOn": "FIX-11"
   }
 ]
 ```

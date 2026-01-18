@@ -498,3 +498,30 @@ Updated `show-controller/src/context/OBSContext.jsx` lines 108-117 and 123-132 t
 
 ---
 
+### Plan Update: OBS Integration Completion Tasks
+**Timestamp:** 2026-01-17 (Session resumed)
+**Action:** Added comprehensive FIX and TEST tasks to complete OBS integration per PRD
+
+**Gap Analysis Summary:**
+After reviewing the PRD (`docs/PRD-OBSIntegrationTool-2026-01-16.md`) against current implementation:
+- Backend is ~92% complete (all API routes exist in `server/routes/obs.js`)
+- Frontend UI is 100% complete (all components built)
+- **Critical Gap:** Frontend uses relative URLs (`/api/obs/...`) which hit static server instead of coordinator API
+
+**New FIX Tasks Added:**
+- FIX-05: Fix API URL routing (use socketUrl from ShowContext)
+- FIX-06: Add Socket.io handlers for scene item operations
+- FIX-07: Add action emitters to OBSContext
+- FIX-08: Wire SceneList duplicate/rename buttons
+- FIX-09: Wire SceneEditor item operations
+- FIX-10: Wire AudioMixer monitor type
+- FIX-11: Wire SourceEditor API calls
+- FIX-12: Build and deploy all fixes
+
+**New TEST Tasks Added:**
+- TEST-14 through TEST-22: Verify API endpoints work after FIX-05, test scene duplicate/rename, source visibility, transform presets
+
+**Next Step:** FIX-05 (API URL routing fix)
+
+---
+
