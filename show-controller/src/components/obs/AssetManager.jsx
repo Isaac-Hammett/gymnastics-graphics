@@ -13,6 +13,7 @@ import {
   XMarkIcon
 } from '@heroicons/react/24/outline';
 import { useOBS } from '../../context/OBSContext';
+import { useShow } from '../../context/ShowContext';
 
 /**
  * Helper function to format file sizes
@@ -30,6 +31,7 @@ function formatFileSize(bytes) {
  */
 export default function AssetManager() {
   const { obsConnected } = useOBS();
+  const { socketUrl } = useShow();
 
   const [activeTab, setActiveTab] = useState('music');
   const [assets, setAssets] = useState({});
@@ -95,7 +97,7 @@ export default function AssetManager() {
     setError(null);
     try {
       // Fetch assets for the active tab type
-      const response = await fetch(`/api/obs/assets/${activeTab}`);
+      const response = await fetch(`${socketUrl}/api/obs/assets/${activeTab}`);
       if (!response.ok) {
         throw new Error(`Failed to fetch assets: ${response.statusText}`);
       }
@@ -184,7 +186,7 @@ export default function AssetManager() {
         setUploadProgress(0);
       });
 
-      xhr.open('POST', '/api/obs/assets/upload');
+      xhr.open('POST', `${socketUrl}/api/obs/assets/upload`);
       xhr.send(formData);
     } catch (err) {
       console.error('Error uploading file:', err);
@@ -199,7 +201,7 @@ export default function AssetManager() {
     setSuccess(null);
 
     try {
-      const response = await fetch(`/api/obs/assets/${activeTab}/${encodeURIComponent(filename)}`, {
+      const response = await fetch(`${socketUrl}/api/obs/assets/${activeTab}/${encodeURIComponent(filename)}`, {
         method: 'DELETE'
       });
 

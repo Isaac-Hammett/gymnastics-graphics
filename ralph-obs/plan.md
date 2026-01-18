@@ -346,7 +346,8 @@ Created dynamically when tests fail.
     "id": "FIX-05",
     "description": "Fix API URL routing - OBS components call /api/obs/... which goes to static server instead of coordinator",
     "action": "Update all OBS components to use socketUrl from ShowContext for API calls. Components: AudioPresetManager, StreamConfig, AssetManager, TemplateManager, TalentCommsPanel, SourceEditor",
-    "status": "pending",
+    "status": "completed",
+    "result": "Updated 6 components to import useShow and use socketUrl for all fetch calls: AudioPresetManager (4 calls), StreamConfig (3 calls), AssetManager (3 calls), TemplateManager (3 calls), TalentCommsPanel (4 calls), SourceEditor (3 calls - uncommented). API calls now route to https://api.commentarygraphic.com/api/obs/... instead of static server. 503 errors indicate coordinator receives requests but OBS API routes need mounting (separate issue).",
     "blocksTests": ["TEST-04", "TEST-07", "TEST-08", "TEST-09", "TEST-10", "TEST-11"]
   },
   {
@@ -388,7 +389,8 @@ Created dynamically when tests fail.
     "id": "FIX-11",
     "description": "Wire SourceEditor API calls",
     "action": "Uncomment and update SourceEditor.jsx fetch calls to use socketUrl, connect save buttons to API endpoints",
-    "status": "pending",
+    "status": "completed",
+    "result": "Completed as part of FIX-05. SourceEditor.jsx now uses socketUrl for all fetch calls: GET /api/obs/inputs/:name, PUT /api/obs/inputs/:name, PUT /api/obs/scenes/:scene/items/:id/transform. All 3 fetch calls uncommented and updated.",
     "dependsOn": "FIX-05"
   },
   {

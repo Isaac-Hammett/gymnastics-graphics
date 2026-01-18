@@ -9,6 +9,7 @@ import {
   CheckIcon
 } from '@heroicons/react/24/outline';
 import { useOBS } from '../../context/OBSContext';
+import { useShow } from '../../context/ShowContext';
 
 /**
  * AudioPresetManager - Manage and load audio presets
@@ -22,6 +23,7 @@ import { useOBS } from '../../context/OBSContext';
  */
 export default function AudioPresetManager() {
   const { obsState, obsConnected, loadPreset } = useOBS();
+  const { socketUrl } = useShow();
 
   // State
   const [presets, setPresets] = useState([]);
@@ -40,7 +42,7 @@ export default function AudioPresetManager() {
     setError(null);
 
     try {
-      const response = await fetch('/api/obs/audio/presets');
+      const response = await fetch(`${socketUrl}/api/obs/audio/presets`);
       if (!response.ok) {
         throw new Error(`Failed to fetch presets: ${response.statusText}`);
       }
@@ -60,7 +62,7 @@ export default function AudioPresetManager() {
     setError(null);
 
     try {
-      const response = await fetch(`/api/obs/audio/presets/${presetId}`, {
+      const response = await fetch(`${socketUrl}/api/obs/audio/presets/${presetId}`, {
         method: 'PUT'
       });
 
@@ -89,7 +91,7 @@ export default function AudioPresetManager() {
     setError(null);
 
     try {
-      const response = await fetch(`/api/obs/audio/presets/${presetId}`, {
+      const response = await fetch(`${socketUrl}/api/obs/audio/presets/${presetId}`, {
         method: 'DELETE'
       });
 
@@ -136,7 +138,7 @@ export default function AudioPresetManager() {
         return acc;
       }, {});
 
-      const response = await fetch('/api/obs/audio/presets', {
+      const response = await fetch(`${socketUrl}/api/obs/audio/presets`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, description, sources })

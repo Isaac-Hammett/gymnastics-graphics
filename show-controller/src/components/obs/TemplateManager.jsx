@@ -19,7 +19,7 @@ import { useShow } from '../../context/ShowContext';
  */
 export default function TemplateManager() {
   const { obsConnected } = useOBS();
-  const { compId } = useShow();
+  const { compId, socketUrl } = useShow();
 
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -49,7 +49,7 @@ export default function TemplateManager() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/obs/templates');
+      const response = await fetch(`${socketUrl}/api/obs/templates`);
       if (!response.ok) {
         throw new Error(`Failed to fetch templates: ${response.statusText}`);
       }
@@ -69,7 +69,7 @@ export default function TemplateManager() {
     setApplying(templateId);
 
     try {
-      const response = await fetch(`/api/obs/templates/${templateId}/apply`, {
+      const response = await fetch(`${socketUrl}/api/obs/templates/${templateId}/apply`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -112,7 +112,7 @@ export default function TemplateManager() {
         throw new Error('Select at least one meet type');
       }
 
-      const response = await fetch('/api/obs/templates', {
+      const response = await fetch(`${socketUrl}/api/obs/templates`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

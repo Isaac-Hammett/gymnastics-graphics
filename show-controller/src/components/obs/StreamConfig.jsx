@@ -8,6 +8,7 @@ import {
   InformationCircleIcon
 } from '@heroicons/react/24/outline';
 import { useOBS } from '../../context/OBSContext';
+import { useShow } from '../../context/ShowContext';
 
 /**
  * StreamConfig - Configure streaming settings
@@ -15,6 +16,7 @@ import { useOBS } from '../../context/OBSContext';
  */
 export default function StreamConfig() {
   const { obsConnected } = useOBS();
+  const { socketUrl } = useShow();
 
   const [serviceType, setServiceType] = useState('youtube');
   const [streamKey, setStreamKey] = useState('');
@@ -41,7 +43,7 @@ export default function StreamConfig() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/obs/stream/settings');
+      const response = await fetch(`${socketUrl}/api/obs/stream/settings`);
       if (!response.ok) {
         throw new Error(`Failed to fetch stream settings: ${response.statusText}`);
       }
@@ -66,7 +68,7 @@ export default function StreamConfig() {
 
   const fetchStreamStatus = async () => {
     try {
-      const response = await fetch('/api/obs/stream/status');
+      const response = await fetch(`${socketUrl}/api/obs/stream/status`);
       if (!response.ok) {
         throw new Error(`Failed to fetch stream status: ${response.statusText}`);
       }
@@ -104,7 +106,7 @@ export default function StreamConfig() {
         payload.settings.key = streamKey.trim();
       }
 
-      const response = await fetch('/api/obs/stream/settings', {
+      const response = await fetch(`${socketUrl}/api/obs/stream/settings`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'

@@ -6,6 +6,7 @@ import {
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import { useOBS } from '../../context/OBSContext';
+import { useShow } from '../../context/ShowContext';
 
 /**
  * Transform presets matching SceneEditor.jsx
@@ -253,6 +254,7 @@ const INPUT_SETTINGS_CONFIG = {
  */
 export default function SourceEditor({ source, sceneName, onClose, onUpdate }) {
   const { obsConnected } = useOBS();
+  const { socketUrl } = useShow();
 
   // Source information (handle multiple property name formats)
   const sourceName = source?.sourceName || source?.inputName || source?.name;
@@ -284,14 +286,15 @@ export default function SourceEditor({ source, sceneName, onClose, onUpdate }) {
       setError(null);
 
       try {
-        // TODO: Fetch current input settings
-        // const response = await fetch(`/api/obs/inputs/${encodeURIComponent(sourceName)}`);
-        // if (!response.ok) throw new Error('Failed to load source settings');
-        // const data = await response.json();
-        // setSettings(data.inputSettings || {});
-
-        // For now, initialize with empty settings
-        setSettings({});
+        // Fetch current input settings
+        const response = await fetch(`${socketUrl}/api/obs/inputs/${encodeURIComponent(sourceName)}`);
+        if (response.ok) {
+          const data = await response.json();
+          setSettings(data.inputSettings || {});
+        } else {
+          // Fall back to empty settings if API fails
+          setSettings({});
+        }
 
         // Load transform from source object
         const sourceTransform = source?.transform || source?.sceneItemTransform || {};
@@ -356,24 +359,24 @@ export default function SourceEditor({ source, sceneName, onClose, onUpdate }) {
     setError(null);
 
     try {
-      // TODO: Update input settings
-      // const settingsResponse = await fetch(`/api/obs/inputs/${encodeURIComponent(sourceName)}`, {
-      //   method: 'PUT',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ inputSettings: settings })
-      // });
-      // if (!settingsResponse.ok) throw new Error('Failed to update source settings');
+      // Update input settings
+      const settingsResponse = await fetch(`${socketUrl}/api/obs/inputs/${encodeURIComponent(sourceName)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inputSettings: settings })
+      });
+      if (!settingsResponse.ok) throw new Error('Failed to update source settings');
 
-      // TODO: Update scene item transform
-      // const transformResponse = await fetch(
-      //   `/api/obs/scenes/${encodeURIComponent(sceneName)}/items/${itemId}/transform`,
-      //   {
-      //     method: 'PUT',
-      //     headers: { 'Content-Type': 'application/json' },
-      //     body: JSON.stringify({ transform })
-      //   }
-      // );
-      // if (!transformResponse.ok) throw new Error('Failed to update transform');
+      // Update scene item transform
+      const transformResponse = await fetch(
+        `${socketUrl}/api/obs/scenes/${encodeURIComponent(sceneName)}/items/${itemId}/transform`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ transform })
+        }
+      );
+      if (!transformResponse.ok) throw new Error('Failed to update transform');
 
       console.log('Source updated:', { sourceName, settings, transform });
 
