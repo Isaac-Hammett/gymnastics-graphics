@@ -1856,3 +1856,24 @@ The index calculation in handleDrop (line 107: `newIndex = newItems.length - 1 -
 
 ---
 
+### TEST-44: Asset delete works - PASS
+**Timestamp:** 2026-01-17
+
+**Action:** Tested asset delete functionality in Asset Manager
+
+**Steps:**
+1. Navigated to OBS Manager → Assets tab
+2. Verified test.mp3 was present (from TEST-43)
+3. Clicked Delete button on test.mp3
+4. Confirmation dialog appeared: "Delete Asset - Are you sure you want to delete test.mp3? This action cannot be undone."
+5. Clicked Delete to confirm
+6. Success toast: "test.mp3 deleted successfully"
+7. Music count updated from (1) to (0)
+8. Empty state displayed: "No music uploaded yet"
+
+**Screenshot:** `screenshots/TEST-44.png`
+
+**Result:** PASS - Asset delete works correctly with confirmation dialog and success feedback.
+
+---
+
