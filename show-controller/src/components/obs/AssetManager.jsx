@@ -102,9 +102,11 @@ export default function AssetManager() {
         throw new Error(`Failed to fetch assets: ${response.statusText}`);
       }
       const data = await response.json();
+      // API returns { assets: [...] }, extract the array
+      const assetList = Array.isArray(data) ? data : (data.assets || []);
       setAssets(prev => ({
         ...prev,
-        [activeTab]: data
+        [activeTab]: assetList
       }));
     } catch (err) {
       console.error('Error fetching assets:', err);
