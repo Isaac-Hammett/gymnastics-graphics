@@ -496,9 +496,11 @@ These test actual OBS functionality and may modify state.
     "description": "Live preview thumbnail displays current scene",
     "action": "Verify the preview placeholder in OBS Manager header shows actual OBS output",
     "verification": "Preview thumbnail shows real-time OBS output (updated periodically or via WebSocket)",
-    "status": "pending",
+    "status": "failed",
     "dependsOn": "TEST-01",
-    "note": "Currently shows 'Preview placeholder' - needs implementation"
+    "note": "Currently shows 'Preview placeholder' - needs implementation",
+    "failureReason": "Preview area shows only static 'Preview placeholder' text. No actual live preview thumbnail of OBS output is displayed. Feature not implemented.",
+    "result": "FAILED - The Current Output section shows 'Preview placeholder' text instead of a live OBS preview thumbnail. No preview image, no periodic refresh, no WebSocket-based updates. Blocked by FIX-30."
   },
   {
     "id": "TEST-42",
@@ -506,8 +508,9 @@ These test actual OBS functionality and may modify state.
     "description": "Preview updates on scene change",
     "action": "Switch scenes and verify preview thumbnail updates",
     "verification": "Preview reflects new scene within 1-2 seconds of switching",
-    "status": "pending",
-    "dependsOn": "TEST-41"
+    "status": "skipped",
+    "dependsOn": "TEST-41",
+    "result": "Skipped - Depends on TEST-41 which failed. Preview system not implemented. Blocked by FIX-30."
   },
 
   {

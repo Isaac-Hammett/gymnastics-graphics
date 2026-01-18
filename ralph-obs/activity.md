@@ -1794,3 +1794,28 @@ The index calculation in handleDrop (line 107: `newIndex = newItems.length - 1 -
 
 ---
 
+#### TEST-41: Live preview thumbnail displays current scene - FAIL
+**Timestamp:** 2026-01-17
+**Action:** Navigated to /8kyf0rnl/obs-manager, verified Current Output section
+
+**Findings:**
+1. OBS Connected status shown (green checkmark)
+2. "Current Output" section visible with "Scene: Renamed Test Scene"
+3. **Preview area shows only "Preview placeholder" text** - no actual OBS preview
+4. No live thumbnail, no periodic refresh, no WebSocket-based image updates
+5. No console errors
+
+**Screenshot:** `screenshots/TEST-41-preview-placeholder.png`
+
+**Result:** FAIL - The live preview thumbnail feature is not implemented. The Current Output section displays a static "Preview placeholder" text instead of showing actual OBS output. Blocked by FIX-30 (Implement live preview thumbnail).
+
+---
+
+#### TEST-42: Preview updates on scene change - SKIPPED
+**Timestamp:** 2026-01-17
+**Action:** Skipped due to TEST-41 failure
+
+**Result:** SKIPPED - Depends on TEST-41 which failed. Cannot test preview updates when preview system is not implemented. Blocked by FIX-30.
+
+---
+
