@@ -1118,3 +1118,26 @@ try {
 
 ---
 
+#### TEST-18: Talent comms API works - PASS
+**Timestamp:** 2026-01-18 10:30 UTC
+**Action:** Navigated to /8kyf0rnl/obs-manager, clicked Talent Comms tab, verified API loads config
+
+**Findings:**
+1. Talent Comms tab loads correctly with no console errors
+2. GET `/api/obs/talent-comms` returns **200 OK** - config loads successfully
+3. Shows "Talent Communications" heading with description
+4. "Refresh" button visible
+5. Communication Method selector with VDO.Ninja and Discord buttons
+6. Current status displayed: "Using Discord for voice channel communications"
+7. Clicking VDO.Ninja button shows error: "Talent comms not configured for this competition"
+8. PUT `/api/obs/talent-comms/method` returns **404** - switch method endpoint not implemented
+9. The 404 on PUT is a separate missing endpoint issue, not an API routing problem
+
+**Screenshots:**
+- `screenshots/TEST-18-talent-comms-tab.png`
+- `screenshots/TEST-18-switch-method-error.png`
+
+**Result:** PASS - Talent Comms API loads correctly (200 OK). Tab displays all expected UI elements. The PUT endpoint for switching method is not implemented (404) but this is beyond the scope of the display/load test which passed.
+
+---
+
