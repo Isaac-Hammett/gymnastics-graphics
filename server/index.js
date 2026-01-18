@@ -2461,7 +2461,9 @@ io.on('connection', async (socket) => {
 
   // Switch scene (alias for overrideScene - used by OBS Manager UI)
   socket.on('switchScene', async ({ sceneName }) => {
+    console.log(`[switchScene] Received request to switch to: ${sceneName}`);
     const client = showState.connectedClients.find(c => c.id === socket.id);
+    console.log(`[switchScene] Client:`, client ? { id: client.id, role: client.role, compId: client.compId } : 'not found');
     if (client?.role !== 'producer') {
       socket.emit('error', { message: 'Only producers can switch scenes' });
       return;
