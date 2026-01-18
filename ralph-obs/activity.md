@@ -1753,3 +1753,28 @@ The index calculation in handleDrop (line 107: `newIndex = newItems.length - 1 -
 
 ---
 
+#### TEST-36: Edit source settings works (Browser source) - FAIL
+**Timestamp:** 2026-01-17 (Iteration)
+**Action:** Navigated to /8kyf0rnl/obs-manager, opened SceneEditor for "Scene", verified no Edit button exists for source settings
+
+**Steps:**
+1. Navigated to https://commentarygraphic.com/8kyf0rnl/obs-manager
+2. OBS Connected, Scenes tab shows 6 scenes
+3. Clicked "Edit sources" on "Scene" (has 3 sources: Test Color Source 2, Test Color Source, FIX-22 Test Color)
+4. SceneEditor opened showing "Scene Items (3)"
+5. **Observed:** Each source row has only 3 buttons: Hide (eye), Lock (padlock), Delete (trash)
+6. **NO Edit button exists** to modify source settings (URL, width, height for browser sources)
+7. Same issue as TEST-35 - SourceEditor component not implemented
+
+**Root Cause:**
+- SourceEditor component for editing source settings is NOT implemented
+- SceneEditor.jsx only supports: visibility toggle, lock toggle, delete, drag reorder, transform presets
+- FIX-25 ("Implement SourceEditor for Browser sources") is pending
+- Additionally, no browser_source exists in OBS to test with (only color sources present)
+
+**Screenshot:** `screenshots/TEST-36-scene-editor-no-edit-button.png`
+
+**Result:** FAIL - Source settings editing not implemented. SceneEditor only supports visibility, lock, delete, and transform presets - no source configuration editing (browser URL, width, height). Blocked by FIX-25.
+
+---
+
