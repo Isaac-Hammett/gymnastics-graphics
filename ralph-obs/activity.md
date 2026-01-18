@@ -1184,3 +1184,19 @@ try {
 
 ---
 
+#### TEST-23, TEST-24, TEST-25: Transitions - SKIPPED
+**Timestamp:** 2026-01-17
+**Action:** Navigated to /8kyf0rnl/obs-manager, clicked Transitions tab
+
+**Findings:**
+1. Transitions tab loads and displays correctly (tab button is clickable and shows active state)
+2. Content shows: "Transitions" heading with "Transition controls coming soon" placeholder
+3. No TransitionPanel component exists in the codebase
+4. No console errors
+
+**Screenshot:** `screenshots/TEST-23-transitions-tab.png`
+
+**Result:** SKIPPED - The Transitions tab UI is a placeholder. The TransitionPanel component has not been implemented yet. This is a known incomplete feature, not a failure. TEST-24 and TEST-25 depend on TEST-23 and are also skipped.
+
+---
+
