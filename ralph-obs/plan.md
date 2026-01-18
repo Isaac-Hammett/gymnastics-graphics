@@ -133,9 +133,9 @@ These test actual OBS functionality and may modify state.
     "description": "Scene switching works",
     "action": "Click on a different scene to switch",
     "verification": "Scene changes, UI updates",
-    "status": "failed",
+    "status": "completed",
     "dependsOn": "TEST-02",
-    "failureReason": "Socket.io event name mismatch - frontend emits 'switchScene' but server only handles 'overrideScene'. Backend OBS scene switching verified working via API."
+    "result": "After FIX-03, scene switching works. Clicked 'Switch to scene' button for 'Test Scene 2', scene changed in OBS, UI shows updated current scene after refresh. Server logs confirm: [switchScene] Switched to scene: Test Scene 2 for 8kyf0rnl"
   },
   {
     "id": "TEST-04",
@@ -247,8 +247,9 @@ Created dynamically when tests fail.
   {
     "id": "FIX-03",
     "description": "Fix scene switching Socket.io event name mismatch",
-    "action": "Frontend emits 'switchScene' but server only handles 'overrideScene'. Need to add 'switchScene' handler to server or change frontend to emit 'overrideScene'",
-    "status": "pending",
+    "action": "Added 'switchScene' handler to server/index.js that uses per-competition OBS connection. Also added producer identification to OBSManager.jsx.",
+    "status": "completed",
+    "result": "1) Added switchScene Socket.io handler to server using getOBSConnectionManager() for per-competition OBS connection. 2) Fixed client.compId property name (was competitionId). 3) Added useShow hook to OBSManager.jsx to identify as producer on mount. Scene switching now works - verified via Playwright.",
     "blocksTests": ["TEST-03"]
   }
 ]
