@@ -209,6 +209,53 @@ export function OBSProvider({ children }) {
     socket?.emit('obs:deleteScene', { sceneName });
   }, [socket]);
 
+  const duplicateScene = useCallback((sceneName, newSceneName) => {
+    console.log('OBSContext: Duplicating scene', sceneName, 'to', newSceneName);
+    socket?.emit('obs:duplicateScene', { sceneName, newSceneName });
+  }, [socket]);
+
+  const renameScene = useCallback((sceneName, newSceneName) => {
+    console.log('OBSContext: Renaming scene', sceneName, 'to', newSceneName);
+    socket?.emit('obs:renameScene', { sceneName, newSceneName });
+  }, [socket]);
+
+  // Scene item actions
+  const toggleItemVisibility = useCallback((sceneName, sceneItemId, enabled) => {
+    console.log('OBSContext: Toggle item visibility', sceneName, sceneItemId, enabled);
+    socket?.emit('obs:toggleItemVisibility', { sceneName, sceneItemId, enabled });
+  }, [socket]);
+
+  const toggleItemLock = useCallback((sceneName, sceneItemId, locked) => {
+    console.log('OBSContext: Toggle item lock', sceneName, sceneItemId, locked);
+    socket?.emit('obs:toggleItemLock', { sceneName, sceneItemId, locked });
+  }, [socket]);
+
+  const deleteSceneItem = useCallback((sceneName, sceneItemId) => {
+    console.log('OBSContext: Delete scene item', sceneName, sceneItemId);
+    socket?.emit('obs:deleteSceneItem', { sceneName, sceneItemId });
+  }, [socket]);
+
+  const reorderSceneItems = useCallback((sceneName, sceneItemId, newIndex) => {
+    console.log('OBSContext: Reorder scene items', sceneName, sceneItemId, newIndex);
+    socket?.emit('obs:reorderSceneItems', { sceneName, sceneItemId, newIndex });
+  }, [socket]);
+
+  const applyTransformPreset = useCallback((sceneName, sceneItemId, transform) => {
+    console.log('OBSContext: Apply transform preset', sceneName, sceneItemId, transform);
+    socket?.emit('obs:applyTransformPreset', { sceneName, sceneItemId, transform });
+  }, [socket]);
+
+  const addSourceToScene = useCallback((sceneName, sourceName) => {
+    console.log('OBSContext: Add source to scene', sceneName, sourceName);
+    socket?.emit('obs:addSourceToScene', { sceneName, sourceName });
+  }, [socket]);
+
+  // Audio monitoring
+  const setMonitorType = useCallback((inputName, monitorType) => {
+    console.log('OBSContext: Set monitor type', inputName, monitorType);
+    socket?.emit('obs:setMonitorType', { inputName, monitorType });
+  }, [socket]);
+
   const refreshState = useCallback(() => {
     console.log('OBSContext: Refreshing state');
     socket?.emit('obs:refreshState');
@@ -258,6 +305,19 @@ export function OBSProvider({ children }) {
     // Scene CRUD actions
     createScene,
     deleteScene,
+    duplicateScene,
+    renameScene,
+
+    // Scene item actions
+    toggleItemVisibility,
+    toggleItemLock,
+    deleteSceneItem,
+    reorderSceneItems,
+    applyTransformPreset,
+    addSourceToScene,
+
+    // Audio monitoring
+    setMonitorType,
 
     // Connection actions
     refreshState,

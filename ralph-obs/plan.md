@@ -362,7 +362,8 @@ Created dynamically when tests fail.
     "id": "FIX-07",
     "description": "Add missing action emitters to OBSContext",
     "action": "Add to OBSContext.jsx: toggleItemVisibility, toggleItemLock, deleteSceneItem, reorderSceneItems, applyTransformPreset, addSourceToScene, duplicateScene, renameScene, setMonitorType",
-    "status": "pending",
+    "status": "completed",
+    "result": "Added 9 action emitters to OBSContext.jsx: duplicateScene, renameScene, toggleItemVisibility, toggleItemLock, deleteSceneItem, reorderSceneItems, applyTransformPreset, addSourceToScene, setMonitorType. All functions emit Socket.io events matching server handlers from FIX-06. Built and deployed frontend to production.",
     "dependsOn": "FIX-06"
   },
   {
