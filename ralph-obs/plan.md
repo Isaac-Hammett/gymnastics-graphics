@@ -560,8 +560,10 @@ These test actual OBS functionality and may modify state.
     "description": "Template delete works",
     "action": "Click delete button on a saved template",
     "verification": "Template removed from list",
-    "status": "pending",
-    "dependsOn": "TEST-27"
+    "status": "failed",
+    "dependsOn": "TEST-27",
+    "failureReason": "No Delete button exists in TemplateManager UI. Template cards only show 'Apply Template' button. Delete functionality not implemented in frontend.",
+    "result": "FAILED - TemplateManager.jsx has no delete button or delete handler. Templates can only be applied, not deleted. Blocked by FIX-34."
   }
 ]
 ```
