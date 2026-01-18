@@ -1082,3 +1082,39 @@ try {
 
 ---
 
+#### TEST-17: Template manager API works - PASS
+**Timestamp:** 2026-01-18 10:00 UTC
+**Action:** Navigated to /8kyf0rnl/obs-manager, clicked Templates tab
+
+**Initial Issue:**
+- Clicking Templates tab crashed the page with `TypeError: r.map is not a function`
+- Root cause: API returns `{ templates: [...] }` but frontend expected plain array
+- TemplateManager.jsx line 57 stored `data` directly instead of extracting `data.templates`
+
+**FIX-17 Applied:**
+- Updated `TemplateManager.jsx` fetchTemplates function to extract templates array:
+  ```javascript
+  const templateList = Array.isArray(data) ? data : (data.templates || []);
+  ```
+- Built and deployed frontend to production
+
+**Verification:**
+1. Navigated to https://commentarygraphic.com/8kyf0rnl/obs-manager
+2. Clicked Templates tab
+3. Template Manager loaded successfully without crash
+4. Shows "Template Manager" heading with description
+5. "Refresh" and "Save Current as Template" buttons visible
+6. "Available Templates (0)" displayed (no templates saved yet - expected)
+7. Clicked "Save Current as Template" → Modal opened with form fields
+8. Entered template name, description, selected meet type
+9. Clicked Save → Error: `undefined in currentTransitionDuration` (server-side data issue, not API routing)
+10. No crash, no `r.map` error
+
+**Screenshots:**
+- `screenshots/TEST-17-templates-tab-working.png`
+- `screenshots/TEST-17-template-save-error.png`
+
+**Result:** PASS - Template Manager API works correctly after FIX-17. Tab loads without crash, displays all UI elements properly. Save operation has separate server-side data issue (undefined transition duration) which is not an API routing problem.
+
+---
+

@@ -54,7 +54,9 @@ export default function TemplateManager() {
         throw new Error(`Failed to fetch templates: ${response.statusText}`);
       }
       const data = await response.json();
-      setTemplates(data);
+      // API returns {templates: [...]} but we need the array
+      const templateList = Array.isArray(data) ? data : (data.templates || []);
+      setTemplates(templateList);
     } catch (err) {
       console.error('Error fetching templates:', err);
       setError(err.message);
