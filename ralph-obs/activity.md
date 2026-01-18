@@ -841,3 +841,30 @@ const handleMonitorTypeChange = useCallback((inputName, monitorType) => {
 
 ---
 
+#### TEST-21: Source visibility toggle works - PASS
+**Timestamp:** 2026-01-18 06:45 UTC
+**Action:** Tested source visibility toggle via SceneEditor
+
+**Pre-requisite Fixes:**
+1. **broadcastOBSState** - Updated to include scene items (id, sourceName, enabled, locked, transform) for each scene. Without this, frontend had no visibility into scene items.
+2. **SceneList.jsx** - Added "Edit sources" button (Cog6ToothIcon) that was missing. The `onEdit` prop existed but had no button wired to it.
+3. **Created test source** - Added "Test Color Source" (color_source_v3) to "Scene" via OBS WebSocket since OBS had no sources.
+
+**Test Steps:**
+1. Navigated to https://commentarygraphic.com/8kyf0rnl/obs-manager
+2. Scenes tab now shows "Scene" with "1 source" (fixed by broadcastOBSState change)
+3. Clicked "Edit sources" button (gear icon) on "Scene"
+4. SceneEditor opened showing "Scene Items (1)" with "Test Color Source"
+5. Source row shows: ID: 1 | Position: (0, 0) with Hide/Lock/Delete buttons
+6. Clicked "Hide" button → Console: `OBSContext: Toggle item visibility Scene 1 false`
+7. Verified in OBS: `sceneItemEnabled: false` - source is hidden
+8. Button changed to "Show"
+9. Clicked "Show" button → Console: `OBSContext: Toggle item visibility Scene 1 true`
+10. Verified in OBS: `sceneItemEnabled: true` - source is visible again
+
+**Screenshot:** `screenshots/TEST-21-visibility-toggle-success.png`
+
+**Result:** PASS - Source visibility toggle works correctly. Hide/Show button toggles source visibility in OBS. State updates propagate correctly to frontend.
+
+---
+

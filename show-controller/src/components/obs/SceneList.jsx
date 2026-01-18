@@ -6,7 +6,8 @@ import {
   TrashIcon,
   RectangleStackIcon,
   PlusIcon,
-  XMarkIcon
+  XMarkIcon,
+  Cog6ToothIcon
 } from '@heroicons/react/24/outline';
 import { useOBS } from '../../context/OBSContext';
 
@@ -449,6 +450,13 @@ function SceneCard({
             title={studioModeEnabled ? 'Set as preview' : 'Switch to scene'}
           >
             <EyeIcon className="w-5 h-5" />
+          </button>
+          <button
+            onClick={onEdit}
+            className="p-2 text-gray-400 hover:text-yellow-400 hover:bg-gray-700 rounded transition-colors"
+            title="Edit sources"
+          >
+            <Cog6ToothIcon className="w-5 h-5" />
           </button>
           <button
             onClick={onRename}
