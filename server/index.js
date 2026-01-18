@@ -2494,6 +2494,78 @@ io.on('connection', async (socket) => {
     }
   });
 
+  // Create scene (producer only)
+  socket.on('obs:createScene', async ({ sceneName }) => {
+    console.log(`[createScene] Received request to create: ${sceneName}`);
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can create scenes' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      await compObs.call('CreateScene', { sceneName });
+      console.log(`[createScene] Created scene: ${sceneName} for ${clientCompId}`);
+      // Trigger state refresh to update scene list
+      if (obsStateSync && obsStateSync.isInitialized()) {
+        await obsStateSync.refreshFullState();
+      }
+    } catch (error) {
+      console.error(`[createScene] Failed to create scene: ${error.message}`);
+      socket.emit('error', { message: `Failed to create scene: ${sceneName}` });
+    }
+  });
+
+  // Delete scene (producer only)
+  socket.on('obs:deleteScene', async ({ sceneName }) => {
+    console.log(`[deleteScene] Received request to delete: ${sceneName}`);
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can delete scenes' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      await compObs.call('RemoveScene', { sceneName });
+      console.log(`[deleteScene] Deleted scene: ${sceneName} for ${clientCompId}`);
+      // Trigger state refresh to update scene list
+      if (obsStateSync && obsStateSync.isInitialized()) {
+        await obsStateSync.refreshFullState();
+      }
+    } catch (error) {
+      console.error(`[deleteScene] Failed to delete scene: ${error.message}`);
+      socket.emit('error', { message: `Failed to delete scene: ${sceneName}` });
+    }
+  });
+
   // Toggle talent lock
   socket.on('lockTalent', ({ locked }) => {
     const client = showState.connectedClients.find(c => c.id === socket.id);
