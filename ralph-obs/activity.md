@@ -1917,3 +1917,23 @@ The index calculation in handleDrop (line 107: `newIndex = newItems.length - 1 -
 
 ---
 
+### TEST-47: Template delete works - FAILED
+
+**Timestamp:** 2026-01-18
+
+**Action:** Attempted to test clicking delete button on a saved template
+
+**Steps:**
+1. Navigated to OBS Manager → Templates tab
+2. Found 1 template: 'TEST-27 Test Template'
+3. Looked for Delete button on template card
+4. Only 'Apply Template' button exists - no Delete button in UI
+
+**Screenshot:** `screenshots/TEST-47.png`
+
+**Result:** FAILED - TemplateManager.jsx has no delete button or delete handler. Templates can only be applied, not deleted. The delete functionality is not implemented in the frontend component.
+
+**Blocked By:** FIX-34 (Implement template delete functionality)
+
+---
+
