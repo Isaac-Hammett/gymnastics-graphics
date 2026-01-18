@@ -4,7 +4,9 @@ import {
   PencilIcon,
   DocumentDuplicateIcon,
   TrashIcon,
-  RectangleStackIcon
+  RectangleStackIcon,
+  PlusIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 import { useOBS } from '../../context/OBSContext';
 
@@ -13,7 +15,7 @@ import { useOBS } from '../../context/OBSContext';
  * Groups scenes by category and provides actions: Preview, Edit, Duplicate, Delete
  */
 export default function SceneList({ onEditScene, onSceneAction }) {
-  const { obsState, obsConnected, switchScene, setPreviewScene } = useOBS();
+  const { obsState, obsConnected, switchScene, setPreviewScene, createScene, refreshState } = useOBS();
   const [expandedCategories, setExpandedCategories] = useState({
     'generated-single': true,
     'generated-multi': true,
@@ -22,6 +24,9 @@ export default function SceneList({ onEditScene, onSceneAction }) {
     'manual': true,
     'template': true
   });
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newSceneName, setNewSceneName] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
 
   // Get scenes from obsState
   const scenes = obsState?.scenes || [];
@@ -102,6 +107,25 @@ export default function SceneList({ onEditScene, onSceneAction }) {
     }
   };
 
+  const handleCreateScene = async () => {
+    if (!newSceneName.trim()) return;
+
+    setIsCreating(true);
+    try {
+      createScene(newSceneName.trim());
+      // Wait a moment for OBS to process, then refresh state
+      setTimeout(() => {
+        refreshState();
+      }, 500);
+      setNewSceneName('');
+      setShowCreateModal(false);
+    } catch (error) {
+      console.error('Failed to create scene:', error);
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   if (!obsConnected) {
     return (
       <div className="text-center text-gray-400 py-12">
@@ -126,10 +150,75 @@ export default function SceneList({ onEditScene, onSceneAction }) {
         <h3 className="text-white font-semibold text-lg">
           Scenes ({scenes.length})
         </h3>
-        <div className="text-sm text-gray-400">
-          {studioModeEnabled ? 'Studio Mode Active' : 'Direct Mode'}
+        <div className="flex items-center gap-3">
+          <div className="text-sm text-gray-400">
+            {studioModeEnabled ? 'Studio Mode Active' : 'Direct Mode'}
+          </div>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-1 px-3 py-1.5 bg-green-600 hover:bg-green-500 text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            <PlusIcon className="w-4 h-4" />
+            Create Scene
+          </button>
         </div>
       </div>
+
+      {/* Create Scene Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-white font-semibold text-lg">Create New Scene</h3>
+              <button
+                onClick={() => {
+                  setShowCreateModal(false);
+                  setNewSceneName('');
+                }}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm text-gray-400 mb-2">Scene Name</label>
+              <input
+                type="text"
+                value={newSceneName}
+                onChange={(e) => setNewSceneName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleCreateScene();
+                  if (e.key === 'Escape') {
+                    setShowCreateModal(false);
+                    setNewSceneName('');
+                  }
+                }}
+                placeholder="Enter scene name..."
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-green-500"
+                autoFocus
+              />
+            </div>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowCreateModal(false);
+                  setNewSceneName('');
+                }}
+                className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateScene}
+                disabled={!newSceneName.trim() || isCreating}
+                className="px-4 py-2 bg-green-600 hover:bg-green-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
+              >
+                {isCreating ? 'Creating...' : 'Create'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {groupedScenes.map(category => (
         <CategoryGroup

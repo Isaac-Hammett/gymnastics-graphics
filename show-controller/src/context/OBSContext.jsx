@@ -199,6 +199,16 @@ export function OBSProvider({ children }) {
     socket?.emit('obs:disableStudioMode');
   }, [socket]);
 
+  const createScene = useCallback((sceneName) => {
+    console.log('OBSContext: Creating scene', sceneName);
+    socket?.emit('obs:createScene', { sceneName });
+  }, [socket]);
+
+  const deleteScene = useCallback((sceneName) => {
+    console.log('OBSContext: Deleting scene', sceneName);
+    socket?.emit('obs:deleteScene', { sceneName });
+  }, [socket]);
+
   const refreshState = useCallback(() => {
     console.log('OBSContext: Refreshing state');
     socket?.emit('obs:refreshState');
@@ -244,6 +254,10 @@ export function OBSProvider({ children }) {
     // Studio mode actions
     enableStudioMode,
     disableStudioMode,
+
+    // Scene CRUD actions
+    createScene,
+    deleteScene,
 
     // Connection actions
     refreshState,
