@@ -381,8 +381,10 @@ These test actual OBS functionality and may modify state.
     "description": "Create scene from template works",
     "action": "Click Create Scene, select 'From Template' option, choose a template, verify scene is created with template sources",
     "verification": "New scene created with sources matching the selected template",
-    "status": "pending",
-    "dependsOn": "TEST-27"
+    "status": "failed",
+    "dependsOn": "TEST-27",
+    "failureReason": "Create Scene modal only has a simple name input field. No 'From Template' option exists. Templates are managed in a separate Templates tab but are not integrated with the Create Scene workflow. Requires FIX-21 to implement.",
+    "blockedBy": "FIX-21"
   },
 
   {

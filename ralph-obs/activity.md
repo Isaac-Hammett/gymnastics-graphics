@@ -1359,3 +1359,36 @@ try {
 
 ---
 
+#### TEST-30: Create scene from template works - FAIL
+**Timestamp:** 2026-01-17
+**Action:** Navigated to /8kyf0rnl/obs-manager, opened Create Scene modal to check for template option
+
+**Findings:**
+1. OBS Connected, Scenes tab shows scene list with "Create Scene" button
+2. Clicked "Create Scene" button → Modal opened with title "Create New Scene"
+3. Modal only contains:
+   - Scene Name text input (placeholder: "Enter scene name...")
+   - Cancel and Create buttons
+4. **NO "From Template" option** - no dropdown, radio button, or selector for templates
+5. Templates exist in separate "Templates" tab (1 template: "TEST-27 Test Template")
+6. Templates can be applied from Templates tab, but NOT integrated with Create Scene flow
+7. No console errors
+
+**Code Analysis:**
+- SceneList.jsx lines 238-290: Create modal only has name input, no template selection
+- Template category exists (scenes starting with "TEMPLATE-" are categorized) but no creation from template
+- FIX-21 in plan.md already specifies the required implementation
+
+**Screenshots:**
+- `screenshots/create-scene-modal.png` - Shows simple Create Scene dialog with name input only
+- `screenshots/templates-tab.png` - Shows Templates tab with Template Manager (separate from scene creation)
+
+**Root Cause:** Feature not implemented. FIX-21 (pending) specifies the required implementation:
+- Add "From Template" option to Create Scene modal
+- Add template selector dropdown when "From Template" chosen
+- Wire to API to create scene with template sources
+
+**Result:** FAIL - "Create Scene from Template" feature is not implemented. Create Scene modal only has name input. Blocked by FIX-21.
+
+---
+
