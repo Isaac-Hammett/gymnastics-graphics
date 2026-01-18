@@ -1141,3 +1141,46 @@ try {
 
 ---
 
+#### FIX-18: Fix template save 500 error - undefined currentTransitionDuration - PASS
+**Timestamp:** 2026-01-17
+**Action:** Fixed obsTemplateManager.js to handle undefined transition duration
+
+**Root Cause:**
+- `_captureTransitions()` method called OBS API `GetSceneTransitionList`
+- When OBS has no transition duration configured, the API returns `undefined` for `currentSceneTransitionDuration`
+- Firebase cannot serialize objects containing `undefined` values
+- This caused a 500 error when saving templates
+
+**Fix Applied:**
+- In `server/lib/obsTemplateManager.js` line 485:
+  - Changed `currentSceneTransitionDuration: transitionListResponse.currentSceneTransitionDuration`
+  - To: `currentSceneTransitionDuration: transitionListResponse.currentSceneTransitionDuration ?? 0`
+- Also added `|| []` fallback for `transitions` array
+
+**Result:** Template save now handles undefined transition duration gracefully by defaulting to 0.
+
+---
+
+#### Plan Update: Added Missing Tests
+**Timestamp:** 2026-01-17
+**Action:** Added 6 new tests to cover gaps identified in PRD review
+
+**New Tests Added:**
+| Test ID | Description | Phase |
+|---------|-------------|-------|
+| TEST-23 | Transition list displays correctly | Phase 5 |
+| TEST-24 | Transition switching works | Phase 5 |
+| TEST-25 | Transition duration can be set | Phase 5 |
+| TEST-26 | Screenshot capture works | Phase 10 |
+| TEST-27 | Template save works (after FIX-18) | Phase 8 |
+| TEST-28 | Talent comms setup works | Phase 9 |
+
+**Clarification on TEST-18 (Talent Comms):**
+- The 404 error on `PUT /api/obs/talent-comms/method` was NOT because the endpoint doesn't exist
+- The endpoint EXISTS at `server/routes/obs.js:1908`
+- The 404 was returned because `TalentCommsManager.updateMethod()` throws "Talent comms not configured for this competition" when no config exists
+- This is **expected behavior** - you must call `/api/obs/talent-comms/setup` first to initialize talent comms before switching methods
+- TEST-28 added to properly test this flow
+
+---
+

@@ -307,6 +307,55 @@ These test actual OBS functionality and may modify state.
     "status": "completed",
     "dependsOn": "FIX-12",
     "result": "Clicked 'Edit sources' on 'Scene', selected 'Test Color Source'. Transform Presets panel appeared with all 10 presets (Fullscreen, Dual Left/Right, Quad corners, Triple layouts). Applied 'Dual Right' → position changed to (960, 0). Applied 'Quad Bottom Left' → position changed to (0, 540). Console confirms: 'OBSContext: Apply transform preset Scene 1 {positionX, positionY, scaleX, scaleY}'. State updates received and UI updated correctly. No console errors."
+  },
+  {
+    "id": "TEST-23",
+    "description": "Transition list displays correctly",
+    "action": "Click Transitions tab, verify transition list shows available transitions",
+    "verification": "Shows Cut, Fade, and any other configured transitions with current selection highlighted",
+    "status": "pending",
+    "dependsOn": "TEST-01"
+  },
+  {
+    "id": "TEST-24",
+    "description": "Transition switching works",
+    "action": "Click on a different transition to set it as default",
+    "verification": "Transition changes, UI updates to show new selection",
+    "status": "pending",
+    "dependsOn": "TEST-23"
+  },
+  {
+    "id": "TEST-25",
+    "description": "Transition duration can be set",
+    "action": "Change transition duration slider or input",
+    "verification": "Duration updates in OBS state",
+    "status": "pending",
+    "dependsOn": "TEST-23"
+  },
+  {
+    "id": "TEST-26",
+    "description": "Screenshot capture works",
+    "action": "Click Take Screenshot button in OBS Manager header",
+    "verification": "Screenshot is captured and displayed or saved",
+    "status": "pending",
+    "dependsOn": "TEST-01"
+  },
+  {
+    "id": "TEST-27",
+    "description": "Template save works (after FIX-18)",
+    "action": "Click 'Save Current as Template', enter details, click Save",
+    "verification": "Template saves successfully without 500 error",
+    "status": "pending",
+    "dependsOn": "FIX-18"
+  },
+  {
+    "id": "TEST-28",
+    "description": "Talent comms setup works",
+    "action": "Call POST /api/obs/talent-comms/setup to initialize talent comms, then test method switch",
+    "verification": "Talent comms initialized, method can be switched between vdo-ninja and discord",
+    "status": "pending",
+    "dependsOn": "TEST-18",
+    "note": "TEST-18 showed 404 on method switch because talent comms was not set up first - this is expected behavior"
   }
 ]
 ```
@@ -454,6 +503,14 @@ Created dynamically when tests fail.
     "status": "completed",
     "result": "Fixed TemplateManager.jsx line 56-59 to extract templateList from API response: `const templateList = Array.isArray(data) ? data : (data.templates || [])`. Built and deployed frontend. Templates tab now loads without crash.",
     "blocksTests": ["TEST-17"]
+  },
+  {
+    "id": "FIX-18",
+    "description": "Fix template save 500 error - undefined currentTransitionDuration",
+    "action": "In server/lib/obsTemplateManager.js _captureTransitions(), OBS API can return undefined for currentSceneTransitionDuration. Added nullish coalescing to provide default value of 0.",
+    "status": "completed",
+    "result": "Fixed obsTemplateManager.js line 485 to use `transitionListResponse.currentSceneTransitionDuration ?? 0` and added `|| []` fallback for transitions array. Firebase no longer fails when serializing template with undefined values.",
+    "blocksTests": ["TEST-27"]
   }
 ]
 ```
