@@ -600,3 +600,41 @@ All handlers follow the established pattern from existing obs:createScene/obs:de
 
 ---
 
+#### FIX-07: Add missing action emitters to OBSContext - PASS
+**Timestamp:** 2026-01-18 03:30 UTC
+**Action:** Added 9 action emitter functions to OBSContext.jsx
+
+**Functions Added:**
+
+| Function | Socket.io Event | Purpose |
+|----------|-----------------|---------|
+| `duplicateScene(sceneName, newSceneName)` | obs:duplicateScene | Clone scene with all items |
+| `renameScene(sceneName, newSceneName)` | obs:renameScene | Rename scene |
+| `toggleItemVisibility(sceneName, sceneItemId, enabled)` | obs:toggleItemVisibility | Show/hide source |
+| `toggleItemLock(sceneName, sceneItemId, locked)` | obs:toggleItemLock | Lock/unlock source |
+| `deleteSceneItem(sceneName, sceneItemId)` | obs:deleteSceneItem | Remove source from scene |
+| `reorderSceneItems(sceneName, sceneItemId, newIndex)` | obs:reorderSceneItems | Change z-order |
+| `applyTransformPreset(sceneName, sceneItemId, transform)` | obs:applyTransformPreset | Apply position/scale |
+| `addSourceToScene(sceneName, sourceName)` | obs:addSourceToScene | Add existing source |
+| `setMonitorType(inputName, monitorType)` | obs:setMonitorType | Set audio monitoring |
+
+**Implementation Pattern:**
+All functions use `useCallback` with `[socket]` dependency, emit to socket with `socket?.emit('obs:eventName', payload)`.
+
+**Deployment:**
+1. Built frontend: `npm run build` (787 modules, 1.22s)
+2. Created tarball and uploaded to production (3.87.107.201)
+3. Extracted to `/var/www/commentarygraphic/`
+
+**Verification:**
+- Navigated to https://commentarygraphic.com/8kyf0rnl/obs-manager
+- Page loads with "OBS Connected" status
+- No console errors
+- Scenes tab shows 2 scenes with all action buttons (Duplicate, Delete, Edit)
+
+**Screenshot:** `screenshots/FIX-07-action-emitters-deployed.png`
+
+**Result:** PASS - All 9 action emitters added to OBSContext.jsx and exported in context value. Frontend deployed. Next step: FIX-08 to wire SceneList buttons to these new functions.
+
+---
+
