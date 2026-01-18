@@ -638,3 +638,41 @@ All functions use `useCallback` with `[socket]` dependency, emit to socket with 
 
 ---
 
+#### FIX-08: Wire SceneList duplicate/rename buttons - PASS
+**Timestamp:** 2026-01-18 04:00 UTC
+**Action:** Wired SceneList duplicate/rename buttons to OBSContext actions
+
+**Changes Made:**
+
+1. **OBSManager.jsx** - Updated to wire scene actions:
+   - Imported `duplicateScene`, `deleteScene`, `renameScene` from OBSContext
+   - Added state for duplicate/rename modals: `showDuplicateModal`, `showRenameModal`, `modalSceneName`, `newSceneName`
+   - Replaced alert stubs in `handleSceneAction` with proper implementations
+   - Added `handleDuplicateConfirm()` and `handleRenameConfirm()` functions
+   - Added Duplicate Scene Modal with name input (pre-filled with "Scene Copy")
+   - Added Rename Scene Modal with name input (pre-filled with current name)
+
+2. **SceneList.jsx** - Updated to support rename action:
+   - Added `handleRename()` function that calls `onSceneAction('rename', sceneName)`
+   - Passed `onRename` prop through `CategoryGroup` to `SceneCard`
+   - Changed PencilIcon button from `onEdit` to `onRename` (more intuitive UX)
+
+**Deployment:**
+- Built frontend: `npm run build` (787 modules, 1.24s)
+- Uploaded to production (3.87.107.201)
+- Extracted to `/var/www/commentarygraphic/`
+
+**Verification:**
+1. Navigated to https://commentarygraphic.com/8kyf0rnl/obs-manager
+2. Clicked Duplicate button on "Test Scene 2" → Modal appeared with "Test Scene 2 Copy" pre-filled
+3. Clicked Duplicate → New scene "Test Scene 2 Copy" created, scene count updated to 3
+4. Clicked Rename button on "Test Scene 2 Copy" → Modal appeared with current name
+5. Changed to "Renamed Test Scene" → Click Rename → Scene name updated successfully
+6. Clicked Delete on "Renamed Test Scene" → Confirmation dialog appeared (working)
+
+**Screenshot:** `screenshots/FIX-08-duplicate-rename-working.png`
+
+**Result:** PASS - Duplicate, Rename, and Delete scene buttons all working correctly. Modals have proper UX with disabled buttons when name unchanged, keyboard shortcuts (Enter/Escape), and auto-focus on input field.
+
+---
+
