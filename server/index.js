@@ -2318,31 +2318,52 @@ async function broadcastOBSState(compId, obsConnManager, io) {
   try {
     // Fetch scene list
     const sceneListResponse = await compObs.call('GetSceneList');
-    const scenes = (sceneListResponse.scenes || []).map(scene => ({
-      name: scene.sceneName,
-      uuid: scene.sceneUuid,
-      index: scene.sceneIndex
-    }));
-
-    // Fetch current scene
     const currentScene = sceneListResponse.currentProgramSceneName || null;
 
-    // Fetch audio inputs
+    // Fetch scene items for each scene
+    const scenes = await Promise.all((sceneListResponse.scenes || []).map(async (scene) => {
+      let items = [];
+      try {
+        const itemsResponse = await compObs.call('GetSceneItemList', { sceneName: scene.sceneName });
+        items = (itemsResponse.sceneItems || []).map(item => ({
+          id: item.sceneItemId,
+          sourceName: item.sourceName,
+          sourceType: item.sourceType,
+          inputKind: item.inputKind,
+          enabled: item.sceneItemEnabled,
+          locked: item.sceneItemLocked,
+          transform: item.sceneItemTransform
+        }));
+      } catch (itemError) {
+        console.log(`[broadcastOBSState] Could not fetch items for scene ${scene.sceneName}: ${itemError.message}`);
+      }
+      return {
+        name: scene.sceneName,
+        uuid: scene.sceneUuid,
+        index: scene.sceneIndex,
+        items
+      };
+    }));
+
+    // Fetch ALL inputs (sources)
+    let inputs = [];
     let audioSources = [];
     try {
       const inputsResponse = await compObs.call('GetInputList');
-      audioSources = (inputsResponse.inputs || []).filter(input =>
-        input.inputKind?.includes('audio') ||
-        input.inputKind?.includes('wasapi') ||
-        input.inputKind?.includes('pulse') ||
-        input.inputKind?.includes('coreaudio')
-      ).map(input => ({
+      inputs = (inputsResponse.inputs || []).map(input => ({
         name: input.inputName,
         kind: input.inputKind,
         uuid: input.inputUuid
       }));
+      // Also filter for audio sources separately
+      audioSources = inputs.filter(input =>
+        input.kind?.includes('audio') ||
+        input.kind?.includes('wasapi') ||
+        input.kind?.includes('pulse') ||
+        input.kind?.includes('coreaudio')
+      );
     } catch (audioError) {
-      console.log(`[broadcastOBSState] Could not fetch audio inputs for ${compId}: ${audioError.message}`);
+      console.log(`[broadcastOBSState] Could not fetch inputs for ${compId}: ${audioError.message}`);
     }
 
     // Broadcast full state
@@ -2351,12 +2372,13 @@ async function broadcastOBSState(compId, obsConnManager, io) {
       connectionError: null,
       scenes,
       currentScene,
+      inputs,
       audioSources,
       isStreaming: false,
       isRecording: false
     };
 
-    console.log(`[broadcastOBSState] Broadcasting for ${compId}: ${scenes.length} scenes, current: ${currentScene}`);
+    console.log(`[broadcastOBSState] Broadcasting for ${compId}: ${scenes.length} scenes, current: ${currentScene}, inputs: ${inputs.length}`);
     io.to(room).emit('obs:stateUpdated', obsState);
   } catch (error) {
     console.error(`[broadcastOBSState] Failed to fetch state for ${compId}:`, error.message);
