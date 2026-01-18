@@ -370,7 +370,8 @@ Created dynamically when tests fail.
     "id": "FIX-08",
     "description": "Wire SceneList duplicate/rename buttons",
     "action": "Replace alert stubs in SceneList.jsx with calls to duplicateScene() and renameScene() from OBSContext",
-    "status": "pending",
+    "status": "completed",
+    "result": "1) Updated OBSManager.jsx to import duplicateScene, deleteScene, renameScene from OBSContext. 2) Replaced alert stubs in handleSceneAction with proper implementations. 3) Added showDuplicateModal/showRenameModal state and modals. 4) Updated SceneList.jsx to add handleRename and pass onRename through CategoryGroup to SceneCard. 5) Changed PencilIcon button to call onRename instead of onEdit. Verified: Duplicate creates new scene with ' Copy' suffix, Rename opens modal and updates scene name. Delete shows confirmation dialog.",
     "dependsOn": "FIX-07"
   },
   {

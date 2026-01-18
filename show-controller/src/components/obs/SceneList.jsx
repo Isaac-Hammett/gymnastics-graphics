@@ -95,6 +95,12 @@ export default function SceneList({ onEditScene, onSceneAction }) {
     }
   };
 
+  const handleRename = (sceneName) => {
+    if (onSceneAction) {
+      onSceneAction('rename', sceneName);
+    }
+  };
+
   const handleDuplicate = (sceneName) => {
     if (onSceneAction) {
       onSceneAction('duplicate', sceneName);
@@ -300,6 +306,7 @@ export default function SceneList({ onEditScene, onSceneAction }) {
           studioModeEnabled={studioModeEnabled}
           onPreview={handlePreview}
           onEdit={handleEdit}
+          onRename={handleRename}
           onDuplicate={handleDuplicate}
           onDelete={handleDelete}
         />
@@ -320,6 +327,7 @@ function CategoryGroup({
   studioModeEnabled,
   onPreview,
   onEdit,
+  onRename,
   onDuplicate,
   onDelete
 }) {
@@ -376,6 +384,7 @@ function CategoryGroup({
                 studioModeEnabled={studioModeEnabled}
                 onPreview={() => onPreview(sceneName)}
                 onEdit={() => onEdit(sceneName)}
+                onRename={() => onRename(sceneName)}
                 onDuplicate={() => onDuplicate(sceneName)}
                 onDelete={() => onDelete(sceneName)}
               />
@@ -399,6 +408,7 @@ function SceneCard({
   studioModeEnabled,
   onPreview,
   onEdit,
+  onRename,
   onDuplicate,
   onDelete
 }) {
@@ -441,9 +451,9 @@ function SceneCard({
             <EyeIcon className="w-5 h-5" />
           </button>
           <button
-            onClick={onEdit}
+            onClick={onRename}
             className="p-2 text-gray-400 hover:text-purple-400 hover:bg-gray-700 rounded transition-colors"
-            title="Edit scene"
+            title="Rename scene"
           >
             <PencilIcon className="w-5 h-5" />
           </button>
