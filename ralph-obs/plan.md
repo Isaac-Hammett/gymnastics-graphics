@@ -362,6 +362,185 @@ These test actual OBS functionality and may modify state.
     "dependsOn": "TEST-18",
     "note": "TEST-18 showed 404 on method switch because talent comms was not set up first - this is expected behavior",
     "result": "Talent comms setup and method switching work correctly. POST /api/obs/talent-comms/setup returned 201 Created with VDO.Ninja config (roomId, password, URLs generated). PUT /api/obs/talent-comms/method successfully switched to Discord (200 OK) and back to VDO.Ninja (200 OK). Firebase confirms config persisted at competitions/8kyf0rnl/config/talentComms with all fields populated. No console errors."
+  },
+
+  {
+    "id": "TEST-29",
+    "phase": "Phase 2 - Scene CRUD",
+    "description": "Scene reorder via drag-and-drop works",
+    "action": "In Scenes tab, drag a scene to a different position in the list",
+    "verification": "Scene order changes in OBS and UI updates accordingly",
+    "status": "pending",
+    "dependsOn": "TEST-02"
+  },
+  {
+    "id": "TEST-30",
+    "phase": "Phase 2 - Scene CRUD",
+    "description": "Create scene from template works",
+    "action": "Click Create Scene, select 'From Template' option, choose a template, verify scene is created with template sources",
+    "verification": "New scene created with sources matching the selected template",
+    "status": "pending",
+    "dependsOn": "TEST-27"
+  },
+
+  {
+    "id": "TEST-31",
+    "phase": "Phase 3 - Source Management",
+    "description": "Add new source to scene works",
+    "action": "In SceneEditor, click 'Add Source' button, select source type (e.g., color source), configure settings",
+    "verification": "New source is created and added to the scene, visible in OBS",
+    "status": "pending",
+    "dependsOn": "TEST-21"
+  },
+  {
+    "id": "TEST-32",
+    "phase": "Phase 3 - Source Management",
+    "description": "Remove source from scene works",
+    "action": "In SceneEditor, click Delete button on a source",
+    "verification": "Source is removed from scene (but not deleted from OBS inputs)",
+    "status": "pending",
+    "dependsOn": "TEST-21"
+  },
+  {
+    "id": "TEST-33",
+    "phase": "Phase 3 - Source Management",
+    "description": "Layer z-order reorder via drag-and-drop works",
+    "action": "In SceneEditor, drag a source to change its layer order (z-index)",
+    "verification": "Source order changes in OBS, front/back layer order updates",
+    "status": "pending",
+    "dependsOn": "TEST-21"
+  },
+  {
+    "id": "TEST-34",
+    "phase": "Phase 3 - Source Management",
+    "description": "Source lock toggle works",
+    "action": "In SceneEditor, click Lock button on a source",
+    "verification": "Source lock state toggles, locked sources cannot be transformed",
+    "status": "pending",
+    "dependsOn": "TEST-21"
+  },
+  {
+    "id": "TEST-35",
+    "phase": "Phase 3 - Source Management",
+    "description": "Edit source settings works (SRT/Media source)",
+    "action": "Click Edit on an ffmpeg_source, change SRT URL, save",
+    "verification": "Source settings updated in OBS, stream reconnects to new URL",
+    "status": "pending",
+    "dependsOn": "TEST-31"
+  },
+  {
+    "id": "TEST-36",
+    "phase": "Phase 3 - Source Management",
+    "description": "Edit source settings works (Browser source)",
+    "action": "Click Edit on a browser_source, change URL, width, height, save",
+    "verification": "Browser source settings updated in OBS",
+    "status": "pending",
+    "dependsOn": "TEST-31"
+  },
+
+  {
+    "id": "TEST-37",
+    "phase": "Phase 5 - Transitions",
+    "description": "Transition list displays available transitions",
+    "action": "Click Transitions tab, verify list of available transitions (Cut, Fade, Stinger, etc.)",
+    "verification": "Shows all configured transitions with current selection highlighted",
+    "status": "pending",
+    "dependsOn": "TEST-01",
+    "note": "Requires implementing TransitionPanel component - currently shows placeholder"
+  },
+  {
+    "id": "TEST-38",
+    "phase": "Phase 5 - Transitions",
+    "description": "Switch default transition works",
+    "action": "Click on a different transition to set it as the default for scene switches",
+    "verification": "Default transition changes, next scene switch uses new transition",
+    "status": "pending",
+    "dependsOn": "TEST-37"
+  },
+  {
+    "id": "TEST-39",
+    "phase": "Phase 5 - Transitions",
+    "description": "Transition duration slider works",
+    "action": "Adjust transition duration slider or input field",
+    "verification": "Duration updates in OBS state, scene transitions use new duration",
+    "status": "pending",
+    "dependsOn": "TEST-37"
+  },
+  {
+    "id": "TEST-40",
+    "phase": "Phase 5 - Transitions",
+    "description": "Stinger transition configuration works",
+    "action": "Configure stinger transition with video file path and transition point",
+    "verification": "Stinger settings saved, transition plays stinger video during scene switch",
+    "status": "pending",
+    "dependsOn": "TEST-37"
+  },
+
+  {
+    "id": "TEST-41",
+    "phase": "Phase 10 - Preview System",
+    "description": "Live preview thumbnail displays current scene",
+    "action": "Verify the preview placeholder in OBS Manager header shows actual OBS output",
+    "verification": "Preview thumbnail shows real-time OBS output (updated periodically or via WebSocket)",
+    "status": "pending",
+    "dependsOn": "TEST-01",
+    "note": "Currently shows 'Preview placeholder' - needs implementation"
+  },
+  {
+    "id": "TEST-42",
+    "phase": "Phase 10 - Preview System",
+    "description": "Preview updates on scene change",
+    "action": "Switch scenes and verify preview thumbnail updates",
+    "verification": "Preview reflects new scene within 1-2 seconds of switching",
+    "status": "pending",
+    "dependsOn": "TEST-41"
+  },
+
+  {
+    "id": "TEST-43",
+    "phase": "Phase 7 - Asset Management",
+    "description": "Asset upload works (music file)",
+    "action": "Drag and drop or browse to upload an MP3 file",
+    "verification": "File uploads to VM, appears in music asset list",
+    "status": "pending",
+    "dependsOn": "TEST-16"
+  },
+  {
+    "id": "TEST-44",
+    "phase": "Phase 7 - Asset Management",
+    "description": "Asset delete works",
+    "action": "Click delete button on an uploaded asset",
+    "verification": "Asset removed from VM and list",
+    "status": "pending",
+    "dependsOn": "TEST-43"
+  },
+  {
+    "id": "TEST-45",
+    "phase": "Phase 7 - Asset Management",
+    "description": "Asset categories filter correctly",
+    "action": "Switch between Music, Stingers, Backgrounds, Logos tabs",
+    "verification": "Each tab shows only assets of that type",
+    "status": "pending",
+    "dependsOn": "TEST-16"
+  },
+
+  {
+    "id": "TEST-46",
+    "phase": "Phase 8 - Templates",
+    "description": "Template apply works",
+    "action": "Click 'Apply Template' on a saved template",
+    "verification": "OBS scenes/sources replaced with template content",
+    "status": "pending",
+    "dependsOn": "TEST-27"
+  },
+  {
+    "id": "TEST-47",
+    "phase": "Phase 8 - Templates",
+    "description": "Template delete works",
+    "action": "Click delete button on a saved template",
+    "verification": "Template removed from list",
+    "status": "pending",
+    "dependsOn": "TEST-27"
   }
 ]
 ```
@@ -525,6 +704,132 @@ Created dynamically when tests fail.
     "status": "completed",
     "result": "Implemented screenshot capture: 1) Added takeScreenshot callback to OBSContext.jsx that emits obs:takeScreenshot event. 2) Added obs:takeScreenshot handler to server/index.js that calls OBS GetSourceScreenshot API and emits obs:screenshotCaptured with base64 PNG data. 3) Added onClick handler to Take Screenshot button in OBSManager.jsx. 4) Added obs:screenshotCaptured listener that auto-downloads the screenshot as a PNG file. Verified working - clicking button captures and downloads screenshot.",
     "blocksTests": ["TEST-26"]
+  },
+
+  {
+    "id": "FIX-20",
+    "phase": "Phase 2 - Scene CRUD",
+    "description": "Implement scene reorder drag-and-drop in SceneList",
+    "action": "Add drag-and-drop functionality to SceneList.jsx using HTML5 drag API or react-dnd. Add obs:reorderScenes Socket.io handler to server that calls OBS SetSceneList API. Emit obs:reorderScenes from OBSContext.jsx.",
+    "status": "pending",
+    "blocksTests": ["TEST-29"]
+  },
+  {
+    "id": "FIX-21",
+    "phase": "Phase 2 - Scene CRUD",
+    "description": "Add 'Create from Template' option to Create Scene modal",
+    "action": "Extend Create Scene modal to include template selection dropdown. When template selected, call API to create scene with template sources pre-populated.",
+    "status": "pending",
+    "blocksTests": ["TEST-30"]
+  },
+
+  {
+    "id": "FIX-22",
+    "phase": "Phase 3 - Source Management",
+    "description": "Implement 'Add Source' UI in SceneEditor",
+    "action": "Add 'Add Source' button to SceneEditor that opens source type picker. Support creating: color_source, browser_source, ffmpeg_source, image_source. Wire to obs:createInput + obs:addSourceToScene Socket.io events.",
+    "status": "pending",
+    "blocksTests": ["TEST-31"]
+  },
+  {
+    "id": "FIX-23",
+    "phase": "Phase 3 - Source Management",
+    "description": "Implement layer z-order drag-and-drop in SceneEditor",
+    "action": "Add drag handles to source list items in SceneEditor. Implement drag-and-drop reordering that calls reorderSceneItems from OBSContext.",
+    "status": "pending",
+    "blocksTests": ["TEST-33"]
+  },
+  {
+    "id": "FIX-24",
+    "phase": "Phase 3 - Source Management",
+    "description": "Implement SourceEditor for SRT/Media sources",
+    "action": "Add SourceEditor modal/panel for ffmpeg_source type with fields: SRT URL, buffering, reconnect delay, hardware decode. Wire to PUT /api/obs/inputs/:name API.",
+    "status": "pending",
+    "blocksTests": ["TEST-35"]
+  },
+  {
+    "id": "FIX-25",
+    "phase": "Phase 3 - Source Management",
+    "description": "Implement SourceEditor for Browser sources",
+    "action": "Add SourceEditor panel for browser_source type with fields: URL, width, height, CSS, refresh on scene. Wire to PUT /api/obs/inputs/:name API.",
+    "status": "pending",
+    "blocksTests": ["TEST-36"]
+  },
+
+  {
+    "id": "FIX-26",
+    "phase": "Phase 5 - Transitions",
+    "description": "Implement TransitionPanel component",
+    "action": "Create TransitionPanel.jsx component to replace placeholder in OBSManager. Display list of available transitions from obsState.transitions. Highlight current default transition. Add click-to-select functionality.",
+    "status": "pending",
+    "blocksTests": ["TEST-37"]
+  },
+  {
+    "id": "FIX-27",
+    "phase": "Phase 5 - Transitions",
+    "description": "Implement transition switching",
+    "action": "Add setCurrentTransition to OBSContext.jsx that emits obs:setTransition. Add Socket.io handler that calls OBS SetCurrentSceneTransition API. Wire TransitionPanel selection to this action.",
+    "status": "pending",
+    "blocksTests": ["TEST-38"]
+  },
+  {
+    "id": "FIX-28",
+    "phase": "Phase 5 - Transitions",
+    "description": "Implement transition duration control",
+    "action": "Add duration slider/input to TransitionPanel. Add setTransitionDuration to OBSContext. Add Socket.io handler for OBS SetCurrentSceneTransitionDuration API.",
+    "status": "pending",
+    "blocksTests": ["TEST-39"]
+  },
+  {
+    "id": "FIX-29",
+    "phase": "Phase 5 - Transitions",
+    "description": "Implement stinger transition configuration",
+    "action": "Add stinger configuration panel to TransitionPanel. Fields: video path (from assets), transition point (ms). Wire to OBS SetSceneTransitionSettings API.",
+    "status": "pending",
+    "blocksTests": ["TEST-40"]
+  },
+
+  {
+    "id": "FIX-30",
+    "phase": "Phase 10 - Preview System",
+    "description": "Implement live preview thumbnail",
+    "action": "Replace 'Preview placeholder' div with actual OBS preview. Options: 1) Periodic screenshot polling (every 2-3 seconds), 2) WebRTC stream from OBS virtual camera, 3) NDI preview. Start with periodic screenshots using existing takeScreenshot infrastructure.",
+    "status": "pending",
+    "blocksTests": ["TEST-41", "TEST-42"]
+  },
+
+  {
+    "id": "FIX-31",
+    "phase": "Phase 7 - Asset Management",
+    "description": "Implement asset upload functionality",
+    "action": "Wire AssetManager upload UI to POST /api/obs/assets/upload API. Handle file validation, upload progress, success/error states. Verify files are saved to VM at /assets/{category}/.",
+    "status": "pending",
+    "blocksTests": ["TEST-43"]
+  },
+  {
+    "id": "FIX-32",
+    "phase": "Phase 7 - Asset Management",
+    "description": "Implement asset delete functionality",
+    "action": "Add delete button to asset list items. Wire to DELETE /api/obs/assets/:category/:filename API. Add confirmation dialog.",
+    "status": "pending",
+    "blocksTests": ["TEST-44"]
+  },
+
+  {
+    "id": "FIX-33",
+    "phase": "Phase 8 - Templates",
+    "description": "Implement template apply functionality",
+    "action": "Wire 'Apply Template' button to POST /api/obs/templates/:id/apply API. Handle confirmation (this will replace current scenes). Show progress indicator during apply.",
+    "status": "pending",
+    "blocksTests": ["TEST-46"]
+  },
+  {
+    "id": "FIX-34",
+    "phase": "Phase 8 - Templates",
+    "description": "Implement template delete functionality",
+    "action": "Add delete button to template list items. Wire to DELETE /api/obs/templates/:id API. Add confirmation dialog.",
+    "status": "pending",
+    "blocksTests": ["TEST-47"]
   }
 ]
 ```
