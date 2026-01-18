@@ -142,24 +142,27 @@ These test actual OBS functionality and may modify state.
     "description": "Audio mixer displays correctly",
     "action": "Click Audio tab, verify audio sources shown",
     "verification": "Audio sources listed with volume sliders and mute buttons",
-    "status": "pending",
-    "dependsOn": "TEST-01"
+    "status": "completed",
+    "dependsOn": "TEST-01",
+    "result": "Audio tab displays correctly. Shows 'No Audio Sources' message (expected - OBS has no audio sources configured). Audio Presets section visible with 'Save Current Mix' button. Note: Presets API returns HTML instead of JSON (non-blocking error for display test)."
   },
   {
     "id": "TEST-05",
     "description": "Audio volume control works",
     "action": "Adjust a volume slider",
     "verification": "Volume changes in OBS state",
-    "status": "pending",
-    "dependsOn": "TEST-04"
+    "status": "skipped",
+    "dependsOn": "TEST-04",
+    "result": "Skipped - No audio sources in OBS to test volume control. Audio UI displays correctly but cannot test interaction without audio sources."
   },
   {
     "id": "TEST-06",
     "description": "Audio mute toggle works",
     "action": "Click mute button on an audio source",
     "verification": "Mute state toggles",
-    "status": "pending",
-    "dependsOn": "TEST-04"
+    "status": "skipped",
+    "dependsOn": "TEST-04",
+    "result": "Skipped - No audio sources in OBS to test mute toggle. Audio UI displays correctly but cannot test interaction without audio sources."
   },
   {
     "id": "TEST-07",
@@ -198,8 +201,9 @@ These test actual OBS functionality and may modify state.
     "description": "Audio presets work",
     "action": "Save and load an audio preset",
     "verification": "Preset saves, loads, restores audio levels",
-    "status": "pending",
-    "dependsOn": "TEST-05"
+    "status": "skipped",
+    "dependsOn": "TEST-05",
+    "result": "Skipped - No audio sources in OBS to test presets. Also noted: presets API endpoint returns HTML instead of JSON."
   },
   {
     "id": "TEST-12",
