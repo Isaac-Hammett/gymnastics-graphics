@@ -382,3 +382,28 @@ Updated `show-controller/src/context/OBSContext.jsx` lines 108-117 and 123-132 t
 
 ---
 
+#### TEST-12: Scene creation works - FAIL
+**Timestamp:** 2026-01-18 01:00 UTC
+**Action:** Attempted to create a new scene via the OBS Manager UI
+
+**Findings:**
+1. Navigated to https://commentarygraphic.com/8kyf0rnl/obs-manager
+2. OBS Connected, Scenes tab shows 2 scenes ("Test Scene 2" with LIVE badge, "Scene")
+3. Scene action buttons visible: Preview (eye), Edit (pencil), Duplicate (copy), Delete (trash)
+4. **NO "Create Scene" or "Add Scene" button exists in the UI**
+5. Code investigation confirmed:
+   - `SceneList.jsx` only has Preview, Edit, Duplicate, Delete actions
+   - No `createScene` function in frontend OBSContext.jsx
+   - Backend API EXISTS: `POST /api/obs/scenes` with `{ sceneName }` body
+   - `obsSceneManager.js` has working `createScene()` method
+
+**Root Cause:** The frontend was never implemented with a "Create Scene" button. The backend API is complete but there's no UI to invoke it.
+
+**Screenshot:** `screenshots/TEST-12-scenes-panel.png`
+
+**Result:** FAIL - Scene creation cannot be tested because there is no UI button to create scenes. Backend API exists but frontend is missing the create functionality.
+
+**Created:** FIX-04 to add "Create Scene" button to SceneList.jsx
+
+---
+

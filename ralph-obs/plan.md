@@ -214,8 +214,9 @@ These test actual OBS functionality and may modify state.
     "description": "Scene creation works",
     "action": "Create a new scene via UI",
     "verification": "Scene is created in OBS, appears in list",
-    "status": "pending",
-    "dependsOn": "TEST-02"
+    "status": "failed",
+    "dependsOn": "TEST-02",
+    "failureReason": "No 'Create scene' button exists in the UI. SceneList.jsx only has Preview, Edit, Duplicate, Delete actions. Backend API exists (POST /api/obs/scenes) but frontend has no UI to call it."
   },
   {
     "id": "TEST-13",
@@ -259,6 +260,13 @@ Created dynamically when tests fail.
     "status": "completed",
     "result": "1) Added switchScene Socket.io handler to server using getOBSConnectionManager() for per-competition OBS connection. 2) Fixed client.compId property name (was competitionId). 3) Added useShow hook to OBSManager.jsx to identify as producer on mount. Scene switching now works - verified via Playwright.",
     "blocksTests": ["TEST-03"]
+  },
+  {
+    "id": "FIX-04",
+    "description": "Add 'Create Scene' button to SceneList.jsx",
+    "action": "Add a 'Create Scene' button to the SceneList component that opens a modal/dialog to enter a new scene name and calls the POST /api/obs/scenes endpoint",
+    "status": "pending",
+    "blocksTests": ["TEST-12"]
   }
 ]
 ```
