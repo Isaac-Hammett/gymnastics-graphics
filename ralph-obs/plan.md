@@ -232,40 +232,45 @@ These test actual OBS functionality and may modify state.
     "description": "Audio presets API works",
     "action": "Open Audio tab, verify presets load without 404 error, save a preset, load it back",
     "verification": "Presets load from API, can save and load",
-    "status": "pending",
-    "dependsOn": "FIX-12"
+    "status": "failed",
+    "dependsOn": "FIX-12",
+    "failureReason": "API returns 503 'OBS State Sync not initialized'. The OBS REST API routes require obsStateSync to be initialized via /api/competitions/:id/activate, but OBS Manager page never calls this endpoint."
   },
   {
     "id": "TEST-15",
     "description": "Stream config API works",
     "action": "Open Stream tab, verify settings load without 404 error, save stream key",
     "verification": "Stream settings load from API, can save",
-    "status": "pending",
-    "dependsOn": "FIX-12"
+    "status": "blocked",
+    "dependsOn": "FIX-13",
+    "note": "Blocked by same OBS State Sync issue as TEST-14"
   },
   {
     "id": "TEST-16",
     "description": "Asset manager API works",
     "action": "Open Assets tab, verify assets load without 404 error",
     "verification": "Assets list loads from API",
-    "status": "pending",
-    "dependsOn": "FIX-12"
+    "status": "blocked",
+    "dependsOn": "FIX-13",
+    "note": "Blocked by same OBS State Sync issue as TEST-14"
   },
   {
     "id": "TEST-17",
     "description": "Template manager API works",
     "action": "Open Templates tab, verify templates load without 404 error, save current as template",
     "verification": "Templates load from API, can save",
-    "status": "pending",
-    "dependsOn": "FIX-12"
+    "status": "blocked",
+    "dependsOn": "FIX-13",
+    "note": "Blocked by same OBS State Sync issue as TEST-14"
   },
   {
     "id": "TEST-18",
     "description": "Talent comms API works",
     "action": "Open Talent Comms tab, verify config loads without 404 error, switch method",
     "verification": "Config loads from API, can switch method",
-    "status": "pending",
-    "dependsOn": "FIX-12"
+    "status": "blocked",
+    "dependsOn": "FIX-13",
+    "note": "Blocked by same OBS State Sync issue as TEST-14"
   },
   {
     "id": "TEST-19",
@@ -405,6 +410,13 @@ Created dynamically when tests fail.
     "status": "completed",
     "result": "Built frontend (787 modules, 1.32s), created tarball, uploaded to production server 3.87.107.201, extracted to /var/www/commentarygraphic/. Frontend deployed successfully. OBS Manager loads with all components working.",
     "dependsOn": "FIX-11"
+  },
+  {
+    "id": "FIX-13",
+    "description": "Initialize OBS State Sync when Socket.io client connects for a competition",
+    "action": "Add initializeOBSStateSync(clientCompId) call in server/index.js Socket.io connection handler when client identifies with a competition ID. This ensures the REST API routes work when accessed from OBS Manager page.",
+    "status": "pending",
+    "blocksTests": ["TEST-14", "TEST-15", "TEST-16", "TEST-17", "TEST-18"]
   }
 ]
 ```

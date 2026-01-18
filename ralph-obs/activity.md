@@ -767,3 +767,36 @@ const handleMonitorTypeChange = useCallback((inputName, monitorType) => {
 
 ---
 
+#### TEST-14: Audio presets API works - FAIL
+**Timestamp:** 2026-01-18 05:50 UTC
+**Action:** Navigated to /8kyf0rnl/obs-manager, clicked Audio tab, verified presets API
+
+**Findings:**
+1. Audio tab loads and displays correctly
+2. Shows "No Audio Sources" (expected - no audio sources in OBS)
+3. Audio Presets section visible with "Save Current Mix" button
+4. **ERROR:** `Failed to fetch presets: Service Unavailable` (HTTP 503)
+5. API endpoint `https://api.commentarygraphic.com/api/obs/audio/presets` returns:
+   ```json
+   {"error":"OBS State Sync not initialized. Activate a competition first."}
+   ```
+
+**Root Cause Analysis:**
+- The OBS REST API routes in `server/routes/obs.js` require `obsStateSync` to be initialized
+- `obsStateSync` is ONLY initialized via `/api/competitions/:id/activate` endpoint
+- The OBS Manager page connects via Socket.io but never calls the activate endpoint
+- Therefore, all REST API endpoints return 503 "OBS State Sync not initialized"
+
+**Impact:** All OBS REST API tests blocked:
+- TEST-14: Audio presets API
+- TEST-15: Stream config API
+- TEST-16: Asset manager API
+- TEST-17: Template manager API
+- TEST-18: Talent comms API
+
+**Screenshot:** `screenshots/TEST-14-audio-presets-api-503.png`
+
+**Created:** FIX-13 to initialize OBS State Sync when Socket.io client connects with a competition ID
+
+---
+
