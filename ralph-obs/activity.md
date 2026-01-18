@@ -1240,3 +1240,28 @@ try {
 
 ---
 
+#### TEST-27: Template save works (after FIX-18) - PASS
+**Timestamp:** 2026-01-17 23:00 UTC
+**Action:** Tested template save functionality after FIX-18 fixed undefined currentTransitionDuration
+
+**Steps:**
+1. Navigated to https://commentarygraphic.com/8kyf0rnl/obs-manager
+2. OBS Connected status shown
+3. Clicked Templates tab → Template Manager loaded correctly
+4. Clicked "Save Current as Template" → Modal opened
+5. Entered template name: "TEST-27 Test Template"
+6. Entered description: "Test template created for TEST-27 verification"
+7. Selected meet type: "mens-dual"
+8. Clicked "Save Template"
+9. Success message appeared: "Template 'undefined' saved successfully" (minor UI bug in toast)
+10. Template count updated to "Available Templates (1)"
+11. Template appears in list with correct name, description, meet type, and creation date
+12. "Apply Template" button visible for the saved template
+13. No console errors
+
+**Screenshot:** `screenshots/TEST-27-template-save-success.png`
+
+**Result:** PASS - Template save works after FIX-18. The nullish coalescing fix for `currentTransitionDuration ?? 0` resolved the 500 error. Templates can now be saved successfully. Minor bug: success toast shows "undefined" instead of template name, but this is cosmetic and doesn't affect functionality.
+
+---
+
