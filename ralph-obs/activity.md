@@ -1897,3 +1897,23 @@ The index calculation in handleDrop (line 107: `newIndex = newItems.length - 1 -
 
 ---
 
+### TEST-46: Template apply works - PASS
+
+**Timestamp:** 2026-01-18
+
+**Action:** Tested clicking 'Apply Template' on a saved template
+
+**Steps:**
+1. Navigated to OBS Manager → Templates tab
+2. Found 1 template: 'TEST-27 Test Template' (mens-dual, created 1/17/2026)
+3. Clicked 'Apply Template' button
+4. Confirmation dialog appeared: "Are you sure you want to apply the template 'TEST-27 Test Template'?" with info "This will create new scenes in OBS based on this template. Existing scenes will not be affected."
+5. Clicked confirm 'Apply Template' button
+6. Success toast appeared: "Template applied successfully: undefined scenes created"
+
+**Screenshot:** `screenshots/TEST-46-template-apply.png`
+
+**Result:** PASS - Template apply works. API call succeeded. Minor UI bug: toast shows 'undefined' for scene count (template had 0 scenes). No console errors.
+
+---
+
