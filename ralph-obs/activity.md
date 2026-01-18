@@ -979,3 +979,54 @@ try {
 
 ---
 
+#### FIX-15: Set active competition when Socket.io client connects - PASS
+**Timestamp:** 2026-01-18 08:30 UTC
+**Action:** Added configLoader.setActiveCompetition(clientCompId) call to Socket.io connection handler
+
+**Root Cause:**
+- REST API routes in `server/routes/obs.js` call `configLoader.getActiveCompetition()` to get the competition ID
+- This was returning `null` because the competition was never "activated"
+- The `/api/competitions/:id/activate` endpoint calls `configLoader.setActiveCompetition(id)` but OBS Manager page never calls this endpoint
+- FIX-13 added `initializeOBSStateSync(clientCompId)` but did NOT call `setActiveCompetition`
+
+**Fix Applied:**
+Added `configLoader.setActiveCompetition(clientCompId)` call in Socket.io connection handler (server/index.js line 2433), BEFORE the `initializeOBSStateSync` call. This mirrors the pattern used in the `/api/competitions/:id/activate` endpoint.
+
+**Code Change:**
+```javascript
+// Set active competition so REST API routes can access the competition ID
+configLoader.setActiveCompetition(clientCompId);
+console.log(`[Socket] Active competition set to ${clientCompId}`);
+
+// Initialize OBS State Sync for this competition (enables REST API routes)
+try {
+  await initializeOBSStateSync(clientCompId);
+  ...
+```
+
+**Deployment:**
+1. Committed to dev branch: `c6ee084`
+2. Pushed to GitHub
+3. Pulled on coordinator (44.193.31.120)
+4. Restarted PM2 coordinator process
+
+**Verification:**
+- Navigated to https://commentarygraphic.com/8kyf0rnl/obs-manager
+- OBS Connected status shown
+- Clicked Audio tab
+- **Audio Presets now load successfully!**
+- 5 presets displayed:
+  - Commentary Focus (Commentary loud, venue ambient soft) - 3 sources
+  - Venue Focus (Venue ambient loud, commentary soft) - 3 sources
+  - Music Bed (Music moderate, others muted) - 3 sources
+  - All Muted (All audio sources muted) - 3 sources
+  - Break Music (Music at full volume, others muted) - 3 sources
+- Each preset has Apply and Delete buttons
+- No console errors
+
+**Screenshot:** `screenshots/FIX-15-audio-presets-working.png`
+
+**Result:** PASS - REST API routes now have access to competition ID. TEST-14 now passes. TEST-15 through TEST-18 are unblocked and ready for testing.
+
+---
+

@@ -232,45 +232,45 @@ These test actual OBS functionality and may modify state.
     "description": "Audio presets API works",
     "action": "Open Audio tab, verify presets load without 404 error, save a preset, load it back",
     "verification": "Presets load from API, can save and load",
-    "status": "failed",
-    "dependsOn": "FIX-12",
-    "failureReason": "API returns 503 'OBS State Sync not initialized'. The OBS REST API routes require obsStateSync to be initialized via /api/competitions/:id/activate, but OBS Manager page never calls this endpoint."
+    "status": "completed",
+    "dependsOn": "FIX-15",
+    "result": "After FIX-15, Audio Presets load successfully. 5 presets displayed: Commentary Focus, Venue Focus, Music Bed, All Muted, Break Music. Each shows description, source count, Apply and Delete buttons. No console errors."
   },
   {
     "id": "TEST-15",
     "description": "Stream config API works",
     "action": "Open Stream tab, verify settings load without 404 error, save stream key",
     "verification": "Stream settings load from API, can save",
-    "status": "blocked",
-    "dependsOn": "FIX-13",
-    "note": "Blocked by same OBS State Sync issue as TEST-14"
+    "status": "pending",
+    "dependsOn": "FIX-15",
+    "note": "Unblocked by FIX-15 - ready to test"
   },
   {
     "id": "TEST-16",
     "description": "Asset manager API works",
     "action": "Open Assets tab, verify assets load without 404 error",
     "verification": "Assets list loads from API",
-    "status": "blocked",
-    "dependsOn": "FIX-13",
-    "note": "Blocked by same OBS State Sync issue as TEST-14"
+    "status": "pending",
+    "dependsOn": "FIX-15",
+    "note": "Unblocked by FIX-15 - ready to test"
   },
   {
     "id": "TEST-17",
     "description": "Template manager API works",
     "action": "Open Templates tab, verify templates load without 404 error, save current as template",
     "verification": "Templates load from API, can save",
-    "status": "blocked",
-    "dependsOn": "FIX-13",
-    "note": "Blocked by same OBS State Sync issue as TEST-14"
+    "status": "pending",
+    "dependsOn": "FIX-15",
+    "note": "Unblocked by FIX-15 - ready to test"
   },
   {
     "id": "TEST-18",
     "description": "Talent comms API works",
     "action": "Open Talent Comms tab, verify config loads without 404 error, switch method",
     "verification": "Config loads from API, can switch method",
-    "status": "blocked",
-    "dependsOn": "FIX-13",
-    "note": "Blocked by same OBS State Sync issue as TEST-14"
+    "status": "pending",
+    "dependsOn": "FIX-15",
+    "note": "Unblocked by FIX-15 - ready to test"
   },
   {
     "id": "TEST-19",
@@ -435,7 +435,8 @@ Created dynamically when tests fail.
     "id": "FIX-15",
     "description": "Set active competition when Socket.io client connects",
     "action": "The REST API routes use configLoader.getActiveCompetition() which returns null because competition is not 'activated'. Need to call configLoader.setActiveCompetition(compId) in Socket.io connection handler so REST API routes work.",
-    "status": "pending",
+    "status": "completed",
+    "result": "Added configLoader.setActiveCompetition(clientCompId) call before initializeOBSStateSync in Socket.io connection handler (server/index.js). REST API routes now have access to competition ID. Audio presets load successfully - 5 presets displayed (Commentary Focus, Venue Focus, Music Bed, All Muted, Break Music). No console errors.",
     "blocksTests": ["TEST-14", "TEST-15", "TEST-16", "TEST-17", "TEST-18"]
   }
 ]
