@@ -442,8 +442,10 @@ These test actual OBS functionality and may modify state.
     "description": "Edit source settings works (Browser source)",
     "action": "Click Edit on a browser_source, change URL, width, height, save",
     "verification": "Browser source settings updated in OBS",
-    "status": "pending",
-    "dependsOn": "TEST-31"
+    "status": "failed",
+    "dependsOn": "TEST-31",
+    "failureReason": "No Edit button exists in SceneEditor UI. Sources only have Hide/Lock/Delete buttons. Clicking a source opens Transform Presets panel (position/scale), not source settings editor. Additionally, no browser_source exists in OBS to test with. Blocked by FIX-25.",
+    "result": "FAILED - SourceEditor for editing source settings not implemented. SceneEditor only supports visibility, lock, delete, and transform presets - no source configuration editing (browser URL, width, height, etc.)."
   },
 
   {
