@@ -137,9 +137,78 @@ export default function SceneList({ onEditScene, onSceneAction }) {
 
   if (scenes.length === 0) {
     return (
-      <div className="text-center text-gray-400 py-12">
-        <RectangleStackIcon className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-        <p>No scenes found in OBS</p>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-white font-semibold text-lg">Scenes (0)</h3>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-1 px-3 py-1.5 bg-green-600 hover:bg-green-500 text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            <PlusIcon className="w-4 h-4" />
+            Create Scene
+          </button>
+        </div>
+        <div className="text-center text-gray-400 py-12">
+          <RectangleStackIcon className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+          <p>No scenes found in OBS</p>
+          <p className="text-sm mt-2">Click "Create Scene" to add your first scene</p>
+        </div>
+
+        {/* Create Scene Modal */}
+        {showCreateModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-white font-semibold text-lg">Create New Scene</h3>
+                <button
+                  onClick={() => {
+                    setShowCreateModal(false);
+                    setNewSceneName('');
+                  }}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <XMarkIcon className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm text-gray-400 mb-2">Scene Name</label>
+                <input
+                  type="text"
+                  value={newSceneName}
+                  onChange={(e) => setNewSceneName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleCreateScene();
+                    if (e.key === 'Escape') {
+                      setShowCreateModal(false);
+                      setNewSceneName('');
+                    }
+                  }}
+                  placeholder="Enter scene name..."
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-green-500"
+                  autoFocus
+                />
+              </div>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => {
+                    setShowCreateModal(false);
+                    setNewSceneName('');
+                  }}
+                  className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateScene}
+                  disabled={!newSceneName.trim() || isCreating}
+                  className="px-4 py-2 bg-green-600 hover:bg-green-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
+                >
+                  {isCreating ? 'Creating...' : 'Create'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
