@@ -2963,6 +2963,49 @@ io.on('connection', async (socket) => {
     }
   });
 
+  // Create a new input/source in OBS
+  socket.on('obs:createInput', async ({ inputName, inputKind, inputSettings, sceneName }) => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can create inputs' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      // CreateInput with sceneName will create the input AND add it to the scene
+      const params = {
+        inputName,
+        inputKind,
+        inputSettings: inputSettings || {}
+      };
+
+      if (sceneName) {
+        params.sceneName = sceneName;
+      }
+
+      const result = await compObs.call('CreateInput', params);
+      console.log(`[createInput] Created input ${inputName} (${inputKind})${sceneName ? ` in scene ${sceneName}` : ''} for ${clientCompId}`, result);
+      await broadcastOBSState(clientCompId, obsConnManager, io);
+    } catch (error) {
+      console.error(`[createInput] Failed: ${error.message}`);
+      socket.emit('error', { message: `Failed to create input: ${error.message}` });
+    }
+  });
+
   // Duplicate scene
   socket.on('obs:duplicateScene', async ({ sceneName, newSceneName }) => {
     const client = showState.connectedClients.find(c => c.id === socket.id);
