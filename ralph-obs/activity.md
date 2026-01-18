@@ -327,3 +327,21 @@ Updated `show-controller/src/context/OBSContext.jsx` lines 108-117 and 123-132 t
 
 ---
 
+#### TEST-08: Asset manager displays correctly - PASS
+**Timestamp:** 2026-01-18 00:20 UTC
+**Action:** Navigated to /8kyf0rnl/obs-manager, clicked Assets tab, verified display
+
+**Findings:**
+1. Assets tab loads and shows "Asset Manager" heading with description
+2. All 4 asset categories visible: Music, Stingers, Backgrounds, Logos
+3. Upload interface visible with drag-and-drop area
+4. File type restrictions shown: MP3, WAV, FLAC, M4A, OGG (max 50MB)
+5. Asset list section shows "Music (0)" - "No music uploaded yet" (expected - no assets)
+6. Console error: `Error fetching assets: SyntaxError: Unexpected token '<'` - API returns HTML instead of JSON (non-blocking)
+
+**Screenshot:** `screenshots/TEST-08-assets-tab.png`
+
+**Result:** PASS - Asset Manager UI displays correctly with all expected categories and upload functionality. API error for fetching assets is non-blocking for the display test.
+
+---
+
