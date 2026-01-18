@@ -254,3 +254,42 @@ Updated `show-controller/src/context/OBSContext.jsx` lines 108-117 and 123-132 t
 
 ---
 
+#### FIX-03: Fix scene switching Socket.io event name mismatch - PASS
+**Timestamp:** 2026-01-18 00:02 UTC
+**Action:** Added switchScene handler to server and producer identification to frontend
+
+**Root Cause Analysis:**
+1. Frontend emits `socket.emit('switchScene', { sceneName })` but server only had `overrideScene` handler
+2. The `switchScene` function on server used global `obs` connection (not connected) instead of per-competition OBS connection
+3. `switchScene` handler required `producer` role but OBSManager.jsx didn't identify as producer
+4. Client object uses `compId` property, not `competitionId`
+
+**Fixes Applied:**
+1. **server/index.js:2463** - Added `switchScene` Socket.io handler that:
+   - Checks client role is 'producer'
+   - Gets client's `compId` (not `competitionId`)
+   - Uses `getOBSConnectionManager().getConnection(clientCompId)` for per-competition OBS
+   - Calls `compObs.call('SetCurrentProgramScene', { sceneName })`
+
+2. **show-controller/src/pages/OBSManager.jsx** - Added producer identification:
+   - Import `useShow` from ShowContext
+   - Call `identify('producer', 'OBS Manager')` on mount via useEffect
+
+**Deployment:**
+1. Committed and pushed to dev branch
+2. Pulled on coordinator, applied stashed OBSStateSync fixes
+3. Restarted PM2 coordinator
+4. Rebuilt and deployed frontend (npm run build, tar, upload, extract)
+
+**Verification:**
+- Navigated to https://commentarygraphic.com/8kyf0rnl/obs-manager
+- Clicked "Switch to scene" button for "Test Scene 2"
+- Server logs confirmed: `[switchScene] Switched to scene: Test Scene 2 for 8kyf0rnl`
+- After clicking Refresh, UI shows "Scene: Test Scene 2" with LIVE badge
+
+**Screenshot:** `screenshots/FIX-03-scene-switching-working.png`
+
+**Result:** TEST-03 now passes - scene switching works via OBS Manager UI.
+
+---
+
