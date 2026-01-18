@@ -454,9 +454,10 @@ These test actual OBS functionality and may modify state.
     "description": "Transition list displays available transitions",
     "action": "Click Transitions tab, verify list of available transitions (Cut, Fade, Stinger, etc.)",
     "verification": "Shows all configured transitions with current selection highlighted",
-    "status": "pending",
+    "status": "skipped",
     "dependsOn": "TEST-01",
-    "note": "Requires implementing TransitionPanel component - currently shows placeholder"
+    "note": "Requires implementing TransitionPanel component - currently shows placeholder",
+    "result": "Skipped - Transitions tab shows 'Transition controls coming soon' placeholder. TransitionPanel component not implemented. No console errors. Blocked by FIX-26."
   },
   {
     "id": "TEST-38",
@@ -464,8 +465,9 @@ These test actual OBS functionality and may modify state.
     "description": "Switch default transition works",
     "action": "Click on a different transition to set it as the default for scene switches",
     "verification": "Default transition changes, next scene switch uses new transition",
-    "status": "pending",
-    "dependsOn": "TEST-37"
+    "status": "skipped",
+    "dependsOn": "TEST-37",
+    "result": "Skipped - Depends on TEST-37 which is blocked (TransitionPanel not implemented). Blocked by FIX-27."
   },
   {
     "id": "TEST-39",
@@ -473,8 +475,9 @@ These test actual OBS functionality and may modify state.
     "description": "Transition duration slider works",
     "action": "Adjust transition duration slider or input field",
     "verification": "Duration updates in OBS state, scene transitions use new duration",
-    "status": "pending",
-    "dependsOn": "TEST-37"
+    "status": "skipped",
+    "dependsOn": "TEST-37",
+    "result": "Skipped - Depends on TEST-37 which is blocked (TransitionPanel not implemented). Blocked by FIX-28."
   },
   {
     "id": "TEST-40",
@@ -482,8 +485,9 @@ These test actual OBS functionality and may modify state.
     "description": "Stinger transition configuration works",
     "action": "Configure stinger transition with video file path and transition point",
     "verification": "Stinger settings saved, transition plays stinger video during scene switch",
-    "status": "pending",
-    "dependsOn": "TEST-37"
+    "status": "skipped",
+    "dependsOn": "TEST-37",
+    "result": "Skipped - Depends on TEST-37 which is blocked (TransitionPanel not implemented). Blocked by FIX-29."
   },
 
   {

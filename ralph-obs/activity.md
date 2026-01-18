@@ -1778,3 +1778,19 @@ The index calculation in handleDrop (line 107: `newIndex = newItems.length - 1 -
 
 ---
 
+#### TEST-37, TEST-38, TEST-39, TEST-40: Transitions - SKIPPED
+**Timestamp:** 2026-01-17 (Iteration)
+**Action:** Navigated to /8kyf0rnl/obs-manager, clicked Transitions tab
+
+**Findings:**
+1. Transitions tab loads and shows as active when selected
+2. Content shows: "Transitions" heading with "Transition controls coming soon" placeholder
+3. No TransitionPanel component is implemented - just a placeholder div
+4. No console errors
+
+**Screenshot:** `screenshots/TEST-37-transitions-placeholder.png`
+
+**Result:** SKIPPED - All 4 Transitions tests (TEST-37, TEST-38, TEST-39, TEST-40) skipped because the TransitionPanel component is not implemented. The tab shows only a placeholder message. These tests are blocked by FIX-26, FIX-27, FIX-28, FIX-29 respectively.
+
+---
+
