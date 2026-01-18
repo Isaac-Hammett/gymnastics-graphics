@@ -313,24 +313,27 @@ These test actual OBS functionality and may modify state.
     "description": "Transition list displays correctly",
     "action": "Click Transitions tab, verify transition list shows available transitions",
     "verification": "Shows Cut, Fade, and any other configured transitions with current selection highlighted",
-    "status": "pending",
-    "dependsOn": "TEST-01"
+    "status": "skipped",
+    "dependsOn": "TEST-01",
+    "result": "Skipped - Transitions tab shows 'Transition controls coming soon' placeholder. TransitionPanel component not implemented yet. No console errors."
   },
   {
     "id": "TEST-24",
     "description": "Transition switching works",
     "action": "Click on a different transition to set it as default",
     "verification": "Transition changes, UI updates to show new selection",
-    "status": "pending",
-    "dependsOn": "TEST-23"
+    "status": "skipped",
+    "dependsOn": "TEST-23",
+    "result": "Skipped - Depends on TEST-23 which is not implemented (Transitions UI is a placeholder)."
   },
   {
     "id": "TEST-25",
     "description": "Transition duration can be set",
     "action": "Change transition duration slider or input",
     "verification": "Duration updates in OBS state",
-    "status": "pending",
-    "dependsOn": "TEST-23"
+    "status": "skipped",
+    "dependsOn": "TEST-23",
+    "result": "Skipped - Depends on TEST-23 which is not implemented (Transitions UI is a placeholder)."
   },
   {
     "id": "TEST-26",
