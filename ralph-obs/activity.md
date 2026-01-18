@@ -1305,3 +1305,30 @@ try {
 
 ---
 
+#### TEST-28: Talent comms setup works - PASS
+**Timestamp:** 2026-01-18 04:10 UTC
+**Action:** Tested talent comms setup API and method switching
+
+**Steps:**
+1. Navigated to https://commentarygraphic.com/8kyf0rnl/obs-manager
+2. OBS Connected status shown
+3. Clicked Talent Comms tab
+4. Called POST /api/obs/talent-comms/setup with method "vdo-ninja"
+5. Response: 201 Created with config containing roomId, password, and VDO.Ninja URLs
+6. Called PUT /api/obs/talent-comms/method with method "discord"
+7. Response: 200 OK - successfully switched to Discord (new roomId/password generated)
+8. Called PUT /api/obs/talent-comms/method with method "vdo-ninja"
+9. Response: 200 OK - successfully switched back to VDO.Ninja (new roomId/password, URLs regenerated)
+10. Verified Firebase at competitions/8kyf0rnl/config/talentComms - config persisted correctly
+
+**API Responses:**
+- Setup (POST): 201 - `{method: "vdo-ninja", roomId: "gym-0b6187c4b92c", urls: {director, obsScene, talent1, talent2}}`
+- Switch to Discord (PUT): 200 - `{method: "discord", roomId: "gym-f5a33ea0c8c3", urls: {}}`
+- Switch to VDO.Ninja (PUT): 200 - `{method: "vdo-ninja", roomId: "gym-0915199025c5", urls: {director, obsScene, talent1, talent2}}`
+
+**Screenshot:** `screenshots/TEST-28-talent-comms-setup.png`
+
+**Result:** PASS - Talent comms setup and method switching work correctly. All API endpoints return expected responses. Firebase persists configuration. Note: UI shows stale method after API changes until page refresh (minor UX issue, not a blocker).
+
+---
+
