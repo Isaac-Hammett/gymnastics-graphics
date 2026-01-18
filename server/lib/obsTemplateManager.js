@@ -481,8 +481,9 @@ export class OBSTemplateManager {
     const transitionListResponse = await this.obs.call('GetSceneTransitionList');
     return {
       currentTransition: transitionListResponse.currentSceneTransitionName,
-      currentTransitionDuration: transitionListResponse.currentSceneTransitionDuration,
-      transitions: transitionListResponse.transitions
+      // Provide default of 0 if duration is undefined to prevent Firebase serialization errors
+      currentTransitionDuration: transitionListResponse.currentSceneTransitionDuration ?? 0,
+      transitions: transitionListResponse.transitions || []
     };
   }
 
