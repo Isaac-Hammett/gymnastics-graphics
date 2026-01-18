@@ -1030,3 +1030,24 @@ try {
 
 ---
 
+#### TEST-15: Stream config API works - PASS
+**Timestamp:** 2026-01-18 09:00 UTC
+**Action:** Navigated to /8kyf0rnl/obs-manager, clicked Stream tab, verified API loads and save works
+
+**Findings:**
+1. Stream tab loads without API errors (previously returned HTML/404)
+2. Stream Configuration panel displays correctly:
+   - Streaming Service dropdown (YouTube/Twitch/Custom RTMP)
+   - Stream Key input field with visibility toggle
+   - Save Settings button
+   - Output Settings section with Status: Offline
+3. Entered test stream key "test-stream-key-12345"
+4. Clicked "Save Settings" → Success message: "Settings Saved - Stream configuration updated successfully"
+5. No console errors
+
+**Screenshot:** `screenshots/TEST-15-stream-config-api.png`, `screenshots/TEST-15-stream-save-success.png`
+
+**Result:** PASS - Stream config API works correctly. Settings load and save without errors after FIX-15.
+
+---
+
