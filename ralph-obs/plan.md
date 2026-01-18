@@ -304,8 +304,9 @@ These test actual OBS functionality and may modify state.
     "description": "Transform presets work",
     "action": "Open a scene, apply a transform preset to a source",
     "verification": "Source position/scale changes to match preset",
-    "status": "pending",
-    "dependsOn": "FIX-12"
+    "status": "completed",
+    "dependsOn": "FIX-12",
+    "result": "Clicked 'Edit sources' on 'Scene', selected 'Test Color Source'. Transform Presets panel appeared with all 10 presets (Fullscreen, Dual Left/Right, Quad corners, Triple layouts). Applied 'Dual Right' → position changed to (960, 0). Applied 'Quad Bottom Left' → position changed to (0, 540). Console confirms: 'OBSContext: Apply transform preset Scene 1 {positionX, positionY, scaleX, scaleY}'. State updates received and UI updated correctly. No console errors."
   }
 ]
 ```
