@@ -349,8 +349,9 @@ These test actual OBS functionality and may modify state.
     "description": "Template save works (after FIX-18)",
     "action": "Click 'Save Current as Template', enter details, click Save",
     "verification": "Template saves successfully without 500 error",
-    "status": "pending",
-    "dependsOn": "FIX-18"
+    "status": "completed",
+    "dependsOn": "FIX-18",
+    "result": "Template save works! Created 'TEST-27 Test Template' with description and mens-dual meet type. Template saved successfully (no 500 error), appears in Available Templates list (count shows 1). Minor UI bug: success toast shows 'Template undefined saved' but template name displays correctly in list."
   },
   {
     "id": "TEST-28",
