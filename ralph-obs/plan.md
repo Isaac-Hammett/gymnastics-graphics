@@ -250,9 +250,9 @@ These test actual OBS functionality and may modify state.
     "description": "Asset manager API works",
     "action": "Open Assets tab, verify assets load without 404 error",
     "verification": "Assets list loads from API",
-    "status": "pending",
+    "status": "completed",
     "dependsOn": "FIX-15",
-    "note": "Unblocked by FIX-15 - ready to test"
+    "result": "After FIX-16 (fix AssetManager.jsx to extract data.assets from API response), Asset Manager tab loads correctly. Shows all 4 categories (Music, Stingers, Backgrounds, Logos), upload interface with drag-drop, and 'Music (0)' list. No console errors, no crashes."
   },
   {
     "id": "TEST-17",
@@ -438,6 +438,14 @@ Created dynamically when tests fail.
     "status": "completed",
     "result": "Added configLoader.setActiveCompetition(clientCompId) call before initializeOBSStateSync in Socket.io connection handler (server/index.js). REST API routes now have access to competition ID. Audio presets load successfully - 5 presets displayed (Commentary Focus, Venue Focus, Music Bed, All Muted, Break Music). No console errors.",
     "blocksTests": ["TEST-14", "TEST-15", "TEST-16", "TEST-17", "TEST-18"]
+  },
+  {
+    "id": "FIX-16",
+    "description": "Fix AssetManager crash - API response format mismatch",
+    "action": "AssetManager.jsx expected array from API but received {assets: [...]}. Updated fetchAssets to extract data.assets from response.",
+    "status": "completed",
+    "result": "Fixed AssetManager.jsx line 104-109 to extract assetList from API response: `const assetList = Array.isArray(data) ? data : (data.assets || [])`. Built and deployed frontend. Assets tab now loads without crash.",
+    "blocksTests": ["TEST-16"]
   }
 ]
 ```

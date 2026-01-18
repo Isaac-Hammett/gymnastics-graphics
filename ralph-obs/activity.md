@@ -1051,3 +1051,34 @@ try {
 
 ---
 
+#### TEST-16: Asset manager API works - PASS (after FIX-16)
+**Timestamp:** 2026-01-18 09:30 UTC
+**Action:** Navigated to /8kyf0rnl/obs-manager, clicked Assets tab
+
+**Initial Issue:**
+- Clicking Assets tab crashed the page with `TypeError: le.map is not a function`
+- Root cause: API returns `{ assets: [...] }` but frontend expected plain array
+- AssetManager.jsx line 104-109 stored `data` directly instead of extracting `data.assets`
+
+**FIX-16 Applied:**
+- Updated `AssetManager.jsx` fetchAssets function to extract assets array:
+  ```javascript
+  const assetList = Array.isArray(data) ? data : (data.assets || []);
+  ```
+- Built and deployed frontend to production
+
+**Verification:**
+1. Navigated to https://commentarygraphic.com/8kyf0rnl/obs-manager
+2. Clicked Assets tab
+3. Asset Manager loaded successfully without crash
+4. Shows all 4 categories: Music, Stingers, Backgrounds, Logos
+5. Upload interface visible with drag-and-drop area
+6. "Music (0)" displayed - no assets uploaded yet (expected)
+7. No console errors
+
+**Screenshot:** `screenshots/TEST-16-assets-tab-working.png`
+
+**Result:** PASS - Asset Manager API works correctly after FIX-16. Tab loads without crash, displays all UI elements properly.
+
+---
+
