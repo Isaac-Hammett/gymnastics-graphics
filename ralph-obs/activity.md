@@ -562,3 +562,41 @@ After reviewing the PRD (`docs/PRD-OBSIntegrationTool-2026-01-16.md`) against cu
 
 ---
 
+#### FIX-06: Add Socket.io handlers for scene item operations - PASS
+**Timestamp:** 2026-01-18 03:00 UTC
+**Action:** Added 9 Socket.io handlers to server/index.js for scene item operations
+
+**Handlers Added:**
+
+| Event | OBS API | Purpose |
+|-------|---------|---------|
+| `obs:toggleItemVisibility` | SetSceneItemEnabled | Toggle source visibility |
+| `obs:toggleItemLock` | SetSceneItemLocked | Lock/unlock sources |
+| `obs:deleteSceneItem` | RemoveSceneItem | Remove source from scene |
+| `obs:reorderSceneItems` | SetSceneItemIndex | Change z-order of sources |
+| `obs:applyTransformPreset` | SetSceneItemTransform | Apply position/scale/rotation |
+| `obs:addSourceToScene` | CreateSceneItem | Add existing source to scene |
+| `obs:duplicateScene` | GetSceneItemList + CreateScene + CreateSceneItem | Clone scene with all items |
+| `obs:renameScene` | Copy items + RemoveScene | Rename scene (no native API) |
+| `obs:setMonitorType` | SetInputAudioMonitorType | Set audio monitoring mode |
+
+**Pattern Used:**
+All handlers follow the established pattern from existing obs:createScene/obs:deleteScene handlers:
+1. Find client by socket ID
+2. Check producer role
+3. Get client's compId
+4. Get per-competition OBS connection via getOBSConnectionManager()
+5. Make OBS WebSocket API call
+6. Broadcast updated state via broadcastOBSState()
+7. Handle errors with socket.emit('error', ...)
+
+**Deployment:**
+1. Committed to dev branch: `35e544f`
+2. Pushed to GitHub
+3. Pulled on coordinator (44.193.31.120)
+4. Restarted PM2 coordinator process
+
+**Result:** PASS - All 9 handlers added and deployed. Server-side Socket.io infrastructure is now complete for scene item operations. Next step: FIX-07 to add frontend emitters in OBSContext.jsx.
+
+---
+

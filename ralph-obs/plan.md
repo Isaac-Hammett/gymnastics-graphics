@@ -354,7 +354,8 @@ Created dynamically when tests fail.
     "id": "FIX-06",
     "description": "Add missing Socket.io handlers for scene item operations",
     "action": "Add handlers to server/index.js: obs:toggleItemVisibility, obs:toggleItemLock, obs:deleteSceneItem, obs:reorderSceneItems, obs:applyTransformPreset, obs:addSourceToScene, obs:duplicateScene, obs:renameScene, obs:setMonitorType",
-    "status": "pending",
+    "status": "completed",
+    "result": "Added 9 Socket.io handlers to server/index.js: obs:toggleItemVisibility (SetSceneItemEnabled), obs:toggleItemLock (SetSceneItemLocked), obs:deleteSceneItem (RemoveSceneItem), obs:reorderSceneItems (SetSceneItemIndex), obs:applyTransformPreset (SetSceneItemTransform), obs:addSourceToScene (CreateSceneItem), obs:duplicateScene (GetSceneItemList+CreateScene+CreateSceneItem), obs:renameScene (copy items to new scene + RemoveScene), obs:setMonitorType (SetInputAudioMonitorType). All handlers follow established pattern with producer role check, per-competition OBS connection, and state broadcast. Deployed to coordinator.",
     "dependsOn": "FIX-05"
   },
   {
