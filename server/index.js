@@ -3021,6 +3021,54 @@ io.on('connection', async (socket) => {
     }
   });
 
+  // Take screenshot of current output
+  socket.on('obs:takeScreenshot', async () => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can take screenshots' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      // Get current program scene name
+      const { currentProgramSceneName } = await compObs.call('GetCurrentProgramScene');
+
+      // Take screenshot of the current program scene
+      const response = await compObs.call('GetSourceScreenshot', {
+        sourceName: currentProgramSceneName,
+        imageFormat: 'png',
+        imageWidth: 1920,
+        imageHeight: 1080
+      });
+
+      console.log(`[takeScreenshot] Captured screenshot of ${currentProgramSceneName} for ${clientCompId}`);
+
+      // Emit screenshot data back to the client (base64 encoded PNG)
+      socket.emit('obs:screenshotCaptured', {
+        imageData: response.imageData,
+        sceneName: currentProgramSceneName,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error(`[takeScreenshot] Failed: ${error.message}`);
+      socket.emit('error', { message: `Failed to take screenshot: ${error.message}` });
+    }
+  });
+
   // Toggle talent lock
   socket.on('lockTalent', ({ locked }) => {
     const client = showState.connectedClients.find(c => c.id === socket.id);
