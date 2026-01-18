@@ -270,6 +270,12 @@ export function OBSProvider({ children }) {
     socket?.emit('obs:addSourceToScene', { sceneName, sourceName });
   }, [socket]);
 
+  // Create a new input/source and optionally add it to a scene
+  const createInput = useCallback((inputName, inputKind, inputSettings, sceneName = null) => {
+    console.log('OBSContext: Creating input', inputName, inputKind, inputSettings, sceneName ? `in scene ${sceneName}` : '');
+    socket?.emit('obs:createInput', { inputName, inputKind, inputSettings, sceneName });
+  }, [socket]);
+
   // Audio monitoring
   const setMonitorType = useCallback((inputName, monitorType) => {
     console.log('OBSContext: Set monitor type', inputName, monitorType);
@@ -342,6 +348,7 @@ export function OBSProvider({ children }) {
     reorderSceneItems,
     applyTransformPreset,
     addSourceToScene,
+    createInput,
 
     // Audio monitoring
     setMonitorType,
