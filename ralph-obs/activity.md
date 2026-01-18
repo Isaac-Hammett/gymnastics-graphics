@@ -1575,3 +1575,53 @@ The index calculation in handleDrop (line 107: `newIndex = newItems.length - 1 -
 
 ---
 
+#### FIX-21: Add 'Create from Template' option to Create Scene modal - PASS
+**Timestamp:** 2026-01-18 05:15 UTC
+**Action:** Implemented "Create from Template" option in the Create Scene modal
+
+**Changes Made:**
+
+1. **OBSContext.jsx** - Updated createScene function:
+   - Changed signature from `createScene(sceneName)` to `createScene(sceneName, templateId = null)`
+   - Passes templateId in Socket.io event payload
+
+2. **SceneList.jsx** - Major modal redesign:
+   - Added new state: `createMode` ('blank' | 'template'), `templates`, `selectedTemplateId`, `isLoadingTemplates`
+   - Added useEffect to fetch templates from `/api/obs/templates` when modal opens
+   - Created new `CreateSceneModal` component with:
+     - "Creation Method" selector with "Blank Scene" (green) and "From Template" (purple) buttons
+     - Template dropdown that appears when "From Template" is selected
+     - Template details preview showing name and description
+     - "Create from Template" button (purple) when in template mode
+
+3. **server/index.js** - Updated obs:createScene handler:
+   - Accepts optional `templateId` parameter
+   - When templateId provided, fetches template from Firebase at `templates/obs/{templateId}`
+   - Creates blank scene first, then copies source items from template's first scene
+   - Each item added via OBS CreateSceneItem API
+
+**Deployment:**
+- Built frontend: 787 modules, 1.34s
+- Deployed to production (3.87.107.201)
+- Committed and pushed to dev branch: `84bc742`
+- Pulled on coordinator and restarted PM2
+
+**Verification:**
+1. Navigated to https://commentarygraphic.com/8kyf0rnl/obs-manager
+2. Clicked "Create Scene" button
+3. Modal shows "Creation Method" with "Blank Scene" and "From Template" buttons
+4. Clicked "From Template" → template dropdown appeared
+5. Selected "TEST-27 Test Template" → details panel showed template name and description
+6. Entered scene name "FIX-21 Scene From Template"
+7. "Create from Template" button enabled (purple)
+8. No console errors
+
+**Screenshots:**
+- `screenshots/FIX-21-create-scene-modal-with-template-option.png` - Modal with mode selector
+- `screenshots/FIX-21-template-selector-visible.png` - Template dropdown shown
+- `screenshots/FIX-21-complete-form.png` - Complete form ready to create
+
+**Result:** PASS - "Create from Template" UI fully implemented. TEST-30 unblocked and ready for re-test.
+
+---
+
