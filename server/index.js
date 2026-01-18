@@ -2305,6 +2305,64 @@ app.get('/{*path}', (req, res) => {
   res.sendFile(join(__dirname, '..', 'show-controller', 'dist', 'index.html'));
 });
 
+// Helper function to fetch and broadcast OBS state for a competition
+async function broadcastOBSState(compId, obsConnManager, io) {
+  const room = `competition:${compId}`;
+  const compObs = obsConnManager.getConnection(compId);
+
+  if (!compObs) {
+    console.log(`[broadcastOBSState] No OBS connection for ${compId}`);
+    return;
+  }
+
+  try {
+    // Fetch scene list
+    const sceneListResponse = await compObs.call('GetSceneList');
+    const scenes = (sceneListResponse.scenes || []).map(scene => ({
+      name: scene.sceneName,
+      uuid: scene.sceneUuid,
+      index: scene.sceneIndex
+    }));
+
+    // Fetch current scene
+    const currentScene = sceneListResponse.currentProgramSceneName || null;
+
+    // Fetch audio inputs
+    let audioSources = [];
+    try {
+      const inputsResponse = await compObs.call('GetInputList');
+      audioSources = (inputsResponse.inputs || []).filter(input =>
+        input.inputKind?.includes('audio') ||
+        input.inputKind?.includes('wasapi') ||
+        input.inputKind?.includes('pulse') ||
+        input.inputKind?.includes('coreaudio')
+      ).map(input => ({
+        name: input.inputName,
+        kind: input.inputKind,
+        uuid: input.inputUuid
+      }));
+    } catch (audioError) {
+      console.log(`[broadcastOBSState] Could not fetch audio inputs for ${compId}: ${audioError.message}`);
+    }
+
+    // Broadcast full state
+    const obsState = {
+      connected: true,
+      connectionError: null,
+      scenes,
+      currentScene,
+      audioSources,
+      isStreaming: false,
+      isRecording: false
+    };
+
+    console.log(`[broadcastOBSState] Broadcasting for ${compId}: ${scenes.length} scenes, current: ${currentScene}`);
+    io.to(room).emit('obs:stateUpdated', obsState);
+  } catch (error) {
+    console.error(`[broadcastOBSState] Failed to fetch state for ${compId}:`, error.message);
+  }
+}
+
 // Socket.io connection handling
 io.on('connection', async (socket) => {
   // Extract compId from connection query (sent by frontend)
@@ -2520,10 +2578,8 @@ io.on('connection', async (socket) => {
     try {
       await compObs.call('CreateScene', { sceneName });
       console.log(`[createScene] Created scene: ${sceneName} for ${clientCompId}`);
-      // Trigger state refresh to update scene list
-      if (obsStateSync && obsStateSync.isInitialized()) {
-        await obsStateSync.refreshFullState();
-      }
+      // Broadcast updated state to all clients in this competition
+      await broadcastOBSState(clientCompId, obsConnManager, io);
     } catch (error) {
       console.error(`[createScene] Failed to create scene: ${error.message}`);
       socket.emit('error', { message: `Failed to create scene: ${sceneName}` });
@@ -2556,14 +2612,27 @@ io.on('connection', async (socket) => {
     try {
       await compObs.call('RemoveScene', { sceneName });
       console.log(`[deleteScene] Deleted scene: ${sceneName} for ${clientCompId}`);
-      // Trigger state refresh to update scene list
-      if (obsStateSync && obsStateSync.isInitialized()) {
-        await obsStateSync.refreshFullState();
-      }
+      // Broadcast updated state to all clients in this competition
+      await broadcastOBSState(clientCompId, obsConnManager, io);
     } catch (error) {
       console.error(`[deleteScene] Failed to delete scene: ${error.message}`);
       socket.emit('error', { message: `Failed to delete scene: ${sceneName}` });
     }
+  });
+
+  // Refresh OBS state (for Refresh button in UI)
+  socket.on('obs:refreshState', async () => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    const clientCompId = client?.compId;
+
+    if (!clientCompId) {
+      console.log('[obs:refreshState] No competition ID for client');
+      return;
+    }
+
+    console.log(`[obs:refreshState] Refreshing OBS state for ${clientCompId}`);
+    const obsConnManager = getOBSConnectionManager();
+    await broadcastOBSState(clientCompId, obsConnManager, io);
   });
 
   // Toggle talent lock
@@ -3069,9 +3138,12 @@ function initializeOBSConnectionManager() {
   });
 
   // Handle connection events
-  obsConnManager.on('connected', ({ compId, vmAddress }) => {
+  obsConnManager.on('connected', async ({ compId, vmAddress }) => {
     const room = `competition:${compId}`;
     io.to(room).emit('obs:connected', { connected: true, vmAddress });
+
+    // Fetch and broadcast OBS state when connected
+    await broadcastOBSState(compId, obsConnManager, io);
   });
 
   obsConnManager.on('disconnected', ({ compId }) => {
