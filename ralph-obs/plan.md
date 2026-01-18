@@ -370,8 +370,10 @@ These test actual OBS functionality and may modify state.
     "description": "Scene reorder via drag-and-drop works",
     "action": "In Scenes tab, drag a scene to a different position in the list",
     "verification": "Scene order changes in OBS and UI updates accordingly",
-    "status": "pending",
-    "dependsOn": "TEST-02"
+    "status": "failed",
+    "dependsOn": "TEST-02",
+    "failureReason": "Drag-and-drop for scene reordering is NOT implemented. No drag handles visible in UI. SceneList.jsx has no drag event handlers. Requires FIX-20 to implement.",
+    "blockedBy": "FIX-20"
   },
   {
     "id": "TEST-30",
