@@ -1652,3 +1652,74 @@ The index calculation in handleDrop (line 107: `newIndex = newItems.length - 1 -
 
 ---
 
+#### FIX-22: Implement 'Add Source' UI in SceneEditor - PASS
+**Timestamp:** 2026-01-18 05:20 UTC
+**Action:** Implemented full Add Source functionality with source type picker
+
+**Changes Made:**
+
+1. **OBSContext.jsx** - Added `createInput` function:
+   - Emits `obs:createInput` Socket.io event with inputName, inputKind, inputSettings, sceneName
+   - Added to context value exports
+
+2. **server/index.js** - Added `obs:createInput` Socket.io handler:
+   - Validates producer role
+   - Gets per-competition OBS connection
+   - Calls OBS `CreateInput` API with sceneName to create AND add to scene in one call
+   - Broadcasts updated state via `broadcastOBSState()`
+
+3. **SceneEditor.jsx** - Completely redesigned AddSourceModal:
+   - Mode selector: "Create New Source" (purple) vs "Add Existing" (blue)
+   - Source type picker with 4 types:
+     - Color Source (SwatchIcon) - color picker with 8 preset colors
+     - Browser Source (GlobeAltIcon) - URL, width, height inputs
+     - Media/SRT Source (FilmIcon) - SRT URL / media path input
+     - Image Source (PhotoIcon) - file path input
+   - Each type shows icon, label, description
+   - "Create Source" button creates input and adds to scene
+
+**Deployment:**
+- Built frontend: `npm run build` (787 modules, 1.24s)
+- Deployed to production (3.87.107.201)
+- Pushed to dev branch, pulled on coordinator, restarted PM2
+
+**Verification:**
+1. Navigated to https://commentarygraphic.com/8kyf0rnl/obs-manager
+2. Opened SceneEditor for "Scene" (had 2 sources)
+3. Clicked "Add Source" → New modal appeared with mode selector
+4. Clicked "Create New Source" → Source type picker appeared with 4 types
+5. Selected "Color Source" → Configuration form appeared with name input and color picker
+6. Entered name "FIX-22 Test Color", clicked "Create Source"
+7. Console logged: `OBSContext: Creating input FIX-22 Test Color color_source_v3 {color: 4278190335} in scene Scene`
+8. Scene Items count updated from 2 to 3
+9. New source "FIX-22 Test Color" visible in list with ID: 3
+
+**Screenshots:**
+- `screenshots/FIX-22-create-source-form.png` - Color source creation form with name and color picker
+- `screenshots/FIX-22-source-created-success.png` - Scene Items (3) showing new source created
+
+**Result:** PASS - Add Source UI fully implemented. TEST-31 now passes.
+
+---
+
+#### TEST-31: Add new source to scene works - PASS
+**Timestamp:** 2026-01-18 05:25 UTC
+**Action:** Tested Add Source functionality after FIX-22 implementation
+
+**Steps:**
+1. Opened SceneEditor for "Scene" (2 sources)
+2. Clicked "Add Source" button
+3. Modal showed mode selector with "Create New Source" and "Add Existing" options
+4. Clicked "Create New Source" → Source type picker with 4 types (Color, Browser, Media/SRT, Image)
+5. Selected "Color Source" → Form with Source Name input and color picker
+6. Entered "FIX-22 Test Color", clicked "Create Source"
+7. Console: `OBSContext: Creating input FIX-22 Test Color color_source_v3 {color: 4278190335} in scene Scene`
+8. Scene Items count: 2 → 3
+9. New source "FIX-22 Test Color" (ID: 3) visible in list
+
+**Screenshot:** `screenshots/FIX-22-source-created-success.png`
+
+**Result:** PASS - Source creation works correctly. All 4 source types supported with appropriate configuration forms.
+
+---
+
