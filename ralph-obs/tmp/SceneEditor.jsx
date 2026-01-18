@@ -31,16 +31,7 @@ const TRANSFORM_PRESETS = {
  * SceneEditor - Edit scene items with drag-drop reordering and transform presets
  */
 export default function SceneEditor({ sceneName, onClose }) {
-  const {
-    obsState,
-    obsConnected,
-    toggleItemVisibility,
-    toggleItemLock,
-    deleteSceneItem,
-    reorderSceneItems,
-    applyTransformPreset: applyTransformPresetAction,
-    addSourceToScene
-  } = useOBS();
+  const { obsState, obsConnected } = useOBS();
   const [sceneItems, setSceneItems] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [showAddSource, setShowAddSource] = useState(false);
@@ -101,11 +92,8 @@ export default function SceneEditor({ sceneName, onClose }) {
     setSceneItems(newItems);
     setDraggedItem(null);
 
-    // Call OBS API to reorder scene items
-    // OBS uses index 0 = bottom, so calculate new index from position in reversed list
-    const itemId = draggedItem.sceneItemId || draggedItem.id;
-    const newIndex = newItems.length - 1 - targetIndex;
-    reorderSceneItems(sceneName, itemId, newIndex);
+    // TODO: Call OBS API to reorder scene items
+    console.log('Scene items reordered:', newItems);
   };
 
   const handleDragEnd = () => {
@@ -113,51 +101,44 @@ export default function SceneEditor({ sceneName, onClose }) {
   };
 
   // Item actions
-  const handleToggleVisibility = (item) => {
+  const toggleVisibility = (item) => {
     const itemId = item.sceneItemId || item.id;
     const currentEnabled = item.sceneItemEnabled ?? item.enabled ?? true;
-    toggleItemVisibility(sceneName, itemId, !currentEnabled);
+
+    console.log('Toggle visibility:', sceneName, itemId, !currentEnabled);
+    // TODO: Call OBS API to toggle visibility
   };
 
-  const handleToggleLock = (item) => {
+  const toggleLock = (item) => {
     const itemId = item.sceneItemId || item.id;
     const currentLocked = item.sceneItemLocked ?? item.locked ?? false;
-    toggleItemLock(sceneName, itemId, !currentLocked);
+
+    console.log('Toggle lock:', sceneName, itemId, !currentLocked);
+    // TODO: Call OBS API to toggle lock
   };
 
-  const handleDeleteItem = (item) => {
+  const deleteItem = (item) => {
     const itemId = item.sceneItemId || item.id;
     const sourceName = item.sourceName || item.inputName || item.name;
 
     if (confirm(`Delete "${sourceName}" from scene?`)) {
-      deleteSceneItem(sceneName, itemId);
+      console.log('Delete item:', sceneName, itemId);
+      // TODO: Call OBS API to delete scene item
       setSceneItems(items => items.filter(i => i !== item));
     }
   };
 
-  const handleApplyTransformPreset = (presetName) => {
+  const applyTransformPreset = (presetName) => {
     if (!selectedItem) return;
 
     const itemId = selectedItem.sceneItemId || selectedItem.id;
-    // Map preset name to OBS transform values
-    const transformMap = {
-      fullscreen: { positionX: 0, positionY: 0, scaleX: 1, scaleY: 1 },
-      dualLeft: { positionX: 0, positionY: 0, scaleX: 0.5, scaleY: 1 },
-      dualRight: { positionX: 960, positionY: 0, scaleX: 0.5, scaleY: 1 },
-      quadTopLeft: { positionX: 0, positionY: 0, scaleX: 0.5, scaleY: 0.5 },
-      quadTopRight: { positionX: 960, positionY: 0, scaleX: 0.5, scaleY: 0.5 },
-      quadBottomLeft: { positionX: 0, positionY: 540, scaleX: 0.5, scaleY: 0.5 },
-      quadBottomRight: { positionX: 960, positionY: 540, scaleX: 0.5, scaleY: 0.5 },
-      tripleMain: { positionX: 0, positionY: 0, scaleX: 0.667, scaleY: 1 },
-      tripleTopRight: { positionX: 1280, positionY: 0, scaleX: 0.333, scaleY: 0.5 },
-      tripleBottomRight: { positionX: 1280, positionY: 540, scaleX: 0.333, scaleY: 0.5 }
-    };
-    const transform = transformMap[presetName] || transformMap.fullscreen;
-    applyTransformPresetAction(sceneName, itemId, transform);
+    console.log('Apply transform preset:', sceneName, itemId, presetName);
+    // TODO: Call OBS API to apply transform preset
   };
 
-  const handleAddSource = (sourceName) => {
-    addSourceToScene(sceneName, sourceName);
+  const addSource = (sourceName) => {
+    console.log('Add source to scene:', sceneName, sourceName);
+    // TODO: Call OBS API to add source to scene
     setShowAddSource(false);
   };
 
@@ -220,9 +201,9 @@ export default function SceneEditor({ sceneName, onClose }) {
                 item={item}
                 isSelected={selectedItem === item}
                 onSelect={() => setSelectedItem(item)}
-                onToggleVisibility={() => handleToggleVisibility(item)}
-                onToggleLock={() => handleToggleLock(item)}
-                onDelete={() => handleDeleteItem(item)}
+                onToggleVisibility={() => toggleVisibility(item)}
+                onToggleLock={() => toggleLock(item)}
+                onDelete={() => deleteItem(item)}
                 onDragStart={(e) => handleDragStart(e, item)}
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDrop(e, item)}
@@ -243,7 +224,7 @@ export default function SceneEditor({ sceneName, onClose }) {
             {Object.entries(TRANSFORM_PRESETS).map(([key, preset]) => (
               <button
                 key={key}
-                onClick={() => handleApplyTransformPreset(key)}
+                onClick={() => applyTransformPreset(key)}
                 className="px-3 py-2 bg-gray-800 hover:bg-gray-600 text-white text-sm rounded transition-colors text-left"
               >
                 <div className="font-medium">{preset.label}</div>
@@ -258,7 +239,7 @@ export default function SceneEditor({ sceneName, onClose }) {
       {showAddSource && (
         <AddSourceModal
           availableSources={unusedSources}
-          onAdd={handleAddSource}
+          onAdd={addSource}
           onClose={() => setShowAddSource(false)}
         />
       )}

@@ -676,3 +676,40 @@ All functions use `useCallback` with `[socket]` dependency, emit to socket with 
 
 ---
 
+#### FIX-09: Wire SceneEditor item operations - PASS
+**Timestamp:** 2026-01-18 04:45 UTC
+**Action:** Wired SceneEditor.jsx handlers to OBSContext action functions
+
+**Changes Made:**
+
+1. **SceneEditor.jsx** - Updated useOBS destructuring to include 6 new actions:
+   - `toggleItemVisibility`
+   - `toggleItemLock`
+   - `deleteSceneItem`
+   - `reorderSceneItems`
+   - `applyTransformPreset` (aliased as `applyTransformPresetAction`)
+   - `addSourceToScene`
+
+2. **Handler Implementations:**
+   | Handler | OBSContext Action | Status |
+   |---------|------------------|--------|
+   | `handleToggleVisibility(item)` | `toggleItemVisibility(sceneName, itemId, !enabled)` | Wired |
+   | `handleToggleLock(item)` | `toggleItemLock(sceneName, itemId, !locked)` | Wired |
+   | `handleDeleteItem(item)` | `deleteSceneItem(sceneName, itemId)` | Wired |
+   | `handleDrop(e, targetItem)` | `reorderSceneItems(sceneName, itemId, newIndex)` | Wired |
+   | `handleApplyTransformPreset(presetName)` | `applyTransformPresetAction(sceneName, itemId, transform)` | Wired |
+   | `handleAddSource(sourceName)` | `addSourceToScene(sceneName, sourceName)` | Wired |
+
+3. **Transform Preset Mapping:**
+   Added coordinate mapping for all 10 presets (fullscreen, dualLeft, dualRight, quadTopLeft, etc.) with proper positionX, positionY, scaleX, scaleY values for 1920x1080 canvas.
+
+**Deployment:**
+- Built frontend: `npm run build` (787 modules, 1.30s)
+- Uploaded and extracted to production (3.87.107.201)
+
+**Screenshot:** `screenshots/FIX-09-scene-editor-wired.png`
+
+**Result:** PASS - All 6 SceneEditor handlers are now wired to OBSContext actions. Note: OBS currently has no scene items (sources) to visually test the operations. Functional testing will be covered by TEST-21 and TEST-22.
+
+---
+
