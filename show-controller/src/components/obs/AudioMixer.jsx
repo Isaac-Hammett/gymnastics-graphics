@@ -26,7 +26,7 @@ const MONITOR_TYPES = {
  * - Debounced volume updates to prevent flooding
  */
 export default function AudioMixer() {
-  const { obsState, obsConnected, setVolume, setMute } = useOBS();
+  const { obsState, obsConnected, setVolume, setMute, setMonitorType } = useOBS();
   const audioSources = obsState?.audioSources || [];
 
   // Debounce state for volume changes
@@ -67,10 +67,9 @@ export default function AudioMixer() {
 
   // Handle monitor type change
   const handleMonitorTypeChange = useCallback((inputName, monitorType) => {
-    console.log('Monitor type change:', inputName, monitorType);
-    // TODO: Implement setMonitorType action in OBSContext
-    // For now, just log it
-  }, []);
+    console.log('AudioMixer: Setting monitor type', inputName, monitorType);
+    setMonitorType(inputName, monitorType);
+  }, [setMonitorType]);
 
   // Not connected state
   if (!obsConnected) {
