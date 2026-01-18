@@ -277,8 +277,9 @@ These test actual OBS functionality and may modify state.
     "description": "Scene duplicate works",
     "action": "Click duplicate button on a scene, enter new name",
     "verification": "New scene created with same sources as original",
-    "status": "pending",
-    "dependsOn": "FIX-12"
+    "status": "completed",
+    "dependsOn": "FIX-12",
+    "result": "Clicked Duplicate button on 'Test Scene 2', modal appeared with pre-filled name 'Test Scene 2 Copy', clicked Duplicate, scene count increased from 3 to 4, new scene 'Test Scene 2 Copy' visible in list. Console confirms: 'OBSContext: Duplicating scene Test Scene 2 to Test Scene 2 Copy'."
   },
   {
     "id": "TEST-20",

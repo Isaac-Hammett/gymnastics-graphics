@@ -800,3 +800,23 @@ const handleMonitorTypeChange = useCallback((inputName, monitorType) => {
 
 ---
 
+#### TEST-19: Scene duplicate works - PASS
+**Timestamp:** 2026-01-18 06:00 UTC
+**Action:** Tested scene duplication via OBS Manager UI
+
+**Steps:**
+1. Navigated to https://commentarygraphic.com/8kyf0rnl/obs-manager
+2. OBS Connected, Scenes tab shows 3 scenes (Test Scene 2, Renamed Test Scene, Scene)
+3. Clicked "Duplicate scene" button on "Test Scene 2"
+4. Modal appeared with title "Duplicate Scene" and pre-filled name "Test Scene 2 Copy"
+5. Clicked "Duplicate" button
+6. Console logged: `OBSContext: Duplicating scene Test Scene 2 to Test Scene 2 Copy`
+7. State update showed `scenes: Array(4)` - count increased from 3 to 4
+8. UI updated to show "Scenes (4)" with new scene "Test Scene 2 Copy" in the list
+
+**Screenshot:** `screenshots/TEST-19-scene-duplicate-success.png`
+
+**Result:** PASS - Scene duplication works correctly. Modal UX is good with pre-filled name, new scene appears immediately in list after creation.
+
+---
+
