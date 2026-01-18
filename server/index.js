@@ -2468,7 +2468,7 @@ io.on('connection', async (socket) => {
     }
 
     // Get the client's competition ID to use the per-competition OBS connection
-    const clientCompId = client?.competitionId;
+    const clientCompId = client?.compId;
     if (!clientCompId) {
       socket.emit('error', { message: 'No competition ID for client' });
       return;
