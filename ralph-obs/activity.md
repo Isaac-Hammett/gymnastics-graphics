@@ -820,3 +820,24 @@ const handleMonitorTypeChange = useCallback((inputName, monitorType) => {
 
 ---
 
+#### TEST-20: Scene rename works - PASS
+**Timestamp:** 2026-01-18 06:15 UTC
+**Action:** Tested scene rename via OBS Manager UI
+
+**Steps:**
+1. Navigated to https://commentarygraphic.com/8kyf0rnl/obs-manager
+2. OBS Connected, Scenes tab shows 4 scenes
+3. Clicked "Rename scene" button (pencil icon) on "Test Scene 2"
+4. Modal appeared with title "Rename Scene" and current name pre-filled
+5. Changed name to "TEST-20 Renamed Scene"
+6. Clicked "Rename" button
+7. Console logged: `OBSContext: Renaming scene Test Scene 2 to TEST-20 Renamed Scene`
+8. State update received with updated scenes array
+9. UI updated immediately showing "TEST-20 Renamed Scene" in the list
+
+**Screenshot:** `screenshots/TEST-20-scene-rename-success.png`
+
+**Result:** PASS - Scene rename works correctly. Modal shows current name, rename button is disabled until name changes, scene name updates immediately in OBS and UI after rename. No console errors.
+
+---
+

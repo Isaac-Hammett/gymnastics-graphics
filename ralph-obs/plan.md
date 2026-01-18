@@ -286,8 +286,9 @@ These test actual OBS functionality and may modify state.
     "description": "Scene rename works",
     "action": "Click edit button on a scene, change name",
     "verification": "Scene name updated in OBS and UI",
-    "status": "pending",
-    "dependsOn": "FIX-12"
+    "status": "completed",
+    "dependsOn": "FIX-12",
+    "result": "Clicked Rename button on 'Test Scene 2', modal appeared with current name pre-filled, changed to 'TEST-20 Renamed Scene', clicked Rename. Console confirms: 'OBSContext: Renaming scene Test Scene 2 to TEST-20 Renamed Scene'. Scene list updated immediately showing new name. No console errors."
   },
   {
     "id": "TEST-21",
