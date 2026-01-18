@@ -223,8 +223,9 @@ These test actual OBS functionality and may modify state.
     "description": "Scene deletion works",
     "action": "Delete a scene via UI",
     "verification": "Scene is removed from OBS, disappears from list",
-    "status": "pending",
-    "dependsOn": "TEST-12"
+    "status": "completed",
+    "dependsOn": "TEST-12",
+    "result": "Delete button exists in UI. Clicking shows native browser confirm dialog. OBS WebSocket RemoveScene API works - deleted 'Test Scene Created' successfully. Scene list updated from 3 to 2 scenes. Server obs:deleteScene handler broadcasts state after deletion."
   }
 ]
 ```
