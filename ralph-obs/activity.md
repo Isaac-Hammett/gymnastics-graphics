@@ -1625,3 +1625,30 @@ The index calculation in handleDrop (line 107: `newIndex = newItems.length - 1 -
 
 ---
 
+#### TEST-30: Create scene from template works - PASS
+**Timestamp:** 2026-01-18 05:30 UTC
+**Action:** Tested "Create from Template" functionality end-to-end
+
+**Steps:**
+1. Navigated to https://commentarygraphic.com/8kyf0rnl/obs-manager
+2. OBS Connected, Scenes tab shows 5 scenes
+3. Clicked "Create Scene" button → Modal opened with "Creation Method" selector
+4. Clicked "From Template" button (purple) → Template dropdown appeared
+5. Selected "TEST-27 Test Template" from dropdown → Details panel showed name and description
+6. Entered scene name: "TEST-30 From Template"
+7. "Create from Template" button became enabled (purple)
+8. Clicked "Create from Template"
+9. Console logged: `OBSContext: Creating scene TEST-30 From Template from template template-1768708941236`
+10. Console logged: `OBSContext: State update received {connected: true, connectionError: null, scenes: Array(6)...}`
+11. Scene count updated from "Scenes (5)" to "Scenes (6)"
+12. New scene "TEST-30 From Template" appears at top of scene list
+13. No console errors
+
+**Screenshots:**
+- `screenshots/TEST-30-before-create.png` - Modal with template selected and scene name entered
+- `screenshots/TEST-30-scene-created.png` - Scene list showing new scene created
+
+**Result:** PASS - Create scene from template works correctly. FIX-21 implementation verified working end-to-end. Template selection, scene naming, and creation all function properly. Scene appears in OBS and UI updates correctly.
+
+---
+

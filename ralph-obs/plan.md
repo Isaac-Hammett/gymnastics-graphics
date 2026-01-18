@@ -380,9 +380,9 @@ These test actual OBS functionality and may modify state.
     "description": "Create scene from template works",
     "action": "Click Create Scene, select 'From Template' option, choose a template, verify scene is created with template sources",
     "verification": "New scene created with sources matching the selected template",
-    "status": "pending",
+    "status": "completed",
     "dependsOn": "TEST-27",
-    "note": "FIX-21 completed - ready for re-test"
+    "result": "Create from template works. Clicked Create Scene, selected 'From Template' mode (purple button), chose 'TEST-27 Test Template' from dropdown, entered scene name 'TEST-30 From Template', clicked 'Create from Template'. Console logged: 'OBSContext: Creating scene TEST-30 From Template from template template-1768708941236'. Scene count increased from 5 to 6, new scene appears in list. No console errors."
   },
 
   {
