@@ -427,8 +427,16 @@ Created dynamically when tests fail.
     "id": "FIX-14",
     "description": "Fix OBS audio presets API routing - endpoint conflicts with audio input route",
     "action": "In server/routes/obs.js, the /api/obs/audio/presets route is being caught by /api/obs/audio/:inputName. Need to reorder routes or change path pattern.",
-    "status": "pending",
+    "status": "completed",
+    "result": "Moved GET/POST /api/obs/audio/presets routes BEFORE the /api/obs/audio/:inputName wildcard route in server/routes/obs.js. Express matches routes in declaration order, so the literal /presets path now matches before the wildcard. Route conflict resolved - API now returns 400 'No active competition' instead of 500 error.",
     "blocksTests": ["TEST-14"]
+  },
+  {
+    "id": "FIX-15",
+    "description": "Set active competition when Socket.io client connects",
+    "action": "The REST API routes use configLoader.getActiveCompetition() which returns null because competition is not 'activated'. Need to call configLoader.setActiveCompetition(compId) in Socket.io connection handler so REST API routes work.",
+    "status": "pending",
+    "blocksTests": ["TEST-14", "TEST-15", "TEST-16", "TEST-17", "TEST-18"]
   }
 ]
 ```
