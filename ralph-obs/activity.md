@@ -364,3 +364,21 @@ Updated `show-controller/src/context/OBSContext.jsx` lines 108-117 and 123-132 t
 
 ---
 
+#### TEST-10: Talent comms panel displays correctly - PASS
+**Timestamp:** 2026-01-18 00:30 UTC
+**Action:** Navigated to /8kyf0rnl/obs-manager, clicked Talent Comms tab, verified display
+
+**Findings:**
+1. Talent Comms tab loads and shows "Talent Communications" heading with description
+2. "Refresh" button visible
+3. Communication Method section with VDO.Ninja and Discord buttons
+4. Shows current method status: "Using Discord for voice channel communications"
+5. Console error: `Error fetching talent comms config: SyntaxError: Unexpected token '<'` - API returns HTML instead of JSON (non-blocking)
+6. Switching to VDO.Ninja fails with 405 Not Allowed error (API issue, non-blocking for display test)
+
+**Screenshot:** `screenshots/TEST-10-talent-comms.png`
+
+**Result:** PASS - Talent Communications UI displays correctly with all expected elements (heading, refresh, communication method selector with VDO.Ninja/Discord options). API error for fetching config is non-blocking for the display test.
+
+---
+
