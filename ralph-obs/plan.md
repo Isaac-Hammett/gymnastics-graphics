@@ -340,8 +340,9 @@ These test actual OBS functionality and may modify state.
     "description": "Screenshot capture works",
     "action": "Click Take Screenshot button in OBS Manager header",
     "verification": "Screenshot is captured and displayed or saved",
-    "status": "pending",
-    "dependsOn": "TEST-01"
+    "status": "failed",
+    "dependsOn": "TEST-01",
+    "failureReason": "Take Screenshot button exists but has no onClick handler. No takeScreenshot function in OBSContext, no Socket.io event emitter, no backend handler. Button is purely decorative placeholder UI."
   },
   {
     "id": "TEST-27",
@@ -514,6 +515,13 @@ Created dynamically when tests fail.
     "status": "completed",
     "result": "Fixed obsTemplateManager.js line 485 to use `transitionListResponse.currentSceneTransitionDuration ?? 0` and added `|| []` fallback for transitions array. Firebase no longer fails when serializing template with undefined values.",
     "blocksTests": ["TEST-27"]
+  },
+  {
+    "id": "FIX-19",
+    "description": "Implement screenshot capture functionality",
+    "action": "Add takeScreenshot function to OBSContext.jsx that emits obs:takeScreenshot Socket.io event. Add obs:takeScreenshot handler to server/index.js that calls OBS GetSourceScreenshot API. Add onClick handler to Take Screenshot button in OBSManager.jsx. Add UI feedback for screenshot capture (success/error message or display captured image).",
+    "status": "pending",
+    "blocksTests": ["TEST-26"]
   }
 ]
 ```
