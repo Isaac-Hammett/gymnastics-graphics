@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   EyeIcon,
   PencilIcon,
@@ -8,9 +8,11 @@ import {
   PlusIcon,
   XMarkIcon,
   Cog6ToothIcon,
-  Bars3Icon
+  Bars3Icon,
+  DocumentTextIcon
 } from '@heroicons/react/24/outline';
 import { useOBS } from '../../context/OBSContext';
+import { useShow } from '../../context/ShowContext';
 
 /**
  * SceneList - Display and manage OBS scenes
@@ -18,6 +20,7 @@ import { useOBS } from '../../context/OBSContext';
  */
 export default function SceneList({ onEditScene, onSceneAction }) {
   const { obsState, obsConnected, switchScene, setPreviewScene, createScene, refreshState, reorderScenes } = useOBS();
+  const { socketUrl } = useShow();
   const [expandedCategories, setExpandedCategories] = useState({
     'generated-single': true,
     'generated-multi': true,
@@ -30,6 +33,32 @@ export default function SceneList({ onEditScene, onSceneAction }) {
   const [newSceneName, setNewSceneName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [draggedScene, setDraggedScene] = useState(null);
+
+  // Template-related state
+  const [createMode, setCreateMode] = useState('blank'); // 'blank' or 'template'
+  const [templates, setTemplates] = useState([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState('');
+  const [isLoadingTemplates, setIsLoadingTemplates] = useState(false);
+
+  // Fetch templates when modal opens
+  useEffect(() => {
+    if (showCreateModal && socketUrl) {
+      setIsLoadingTemplates(true);
+      fetch(`${socketUrl}/api/obs/templates`)
+        .then(res => res.json())
+        .then(data => {
+          const templateList = Array.isArray(data) ? data : (data.templates || []);
+          setTemplates(templateList);
+        })
+        .catch(err => {
+          console.error('Failed to fetch templates:', err);
+          setTemplates([]);
+        })
+        .finally(() => {
+          setIsLoadingTemplates(false);
+        });
+    }
+  }, [showCreateModal, socketUrl]);
 
   // Get scenes from obsState
   const scenes = obsState?.scenes || [];
@@ -166,21 +195,34 @@ export default function SceneList({ onEditScene, onSceneAction }) {
 
   const handleCreateScene = async () => {
     if (!newSceneName.trim()) return;
+    if (createMode === 'template' && !selectedTemplateId) return;
 
     setIsCreating(true);
     try {
-      createScene(newSceneName.trim());
+      // Pass templateId if creating from template
+      const templateId = createMode === 'template' ? selectedTemplateId : null;
+      createScene(newSceneName.trim(), templateId);
       // Wait a moment for OBS to process, then refresh state
       setTimeout(() => {
         refreshState();
       }, 500);
+      // Reset modal state
       setNewSceneName('');
+      setCreateMode('blank');
+      setSelectedTemplateId('');
       setShowCreateModal(false);
     } catch (error) {
       console.error('Failed to create scene:', error);
     } finally {
       setIsCreating(false);
     }
+  };
+
+  const resetCreateModal = () => {
+    setShowCreateModal(false);
+    setNewSceneName('');
+    setCreateMode('blank');
+    setSelectedTemplateId('');
   };
 
   if (!obsConnected) {
@@ -213,58 +255,20 @@ export default function SceneList({ onEditScene, onSceneAction }) {
 
         {/* Create Scene Modal */}
         {showCreateModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-white font-semibold text-lg">Create New Scene</h3>
-                <button
-                  onClick={() => {
-                    setShowCreateModal(false);
-                    setNewSceneName('');
-                  }}
-                  className="text-gray-400 hover:text-white transition-colors"
-                >
-                  <XMarkIcon className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm text-gray-400 mb-2">Scene Name</label>
-                <input
-                  type="text"
-                  value={newSceneName}
-                  onChange={(e) => setNewSceneName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleCreateScene();
-                    if (e.key === 'Escape') {
-                      setShowCreateModal(false);
-                      setNewSceneName('');
-                    }
-                  }}
-                  placeholder="Enter scene name..."
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-green-500"
-                  autoFocus
-                />
-              </div>
-              <div className="flex justify-end gap-3">
-                <button
-                  onClick={() => {
-                    setShowCreateModal(false);
-                    setNewSceneName('');
-                  }}
-                  className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleCreateScene}
-                  disabled={!newSceneName.trim() || isCreating}
-                  className="px-4 py-2 bg-green-600 hover:bg-green-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
-                >
-                  {isCreating ? 'Creating...' : 'Create'}
-                </button>
-              </div>
-            </div>
-          </div>
+          <CreateSceneModal
+            isOpen={showCreateModal}
+            onClose={resetCreateModal}
+            newSceneName={newSceneName}
+            setNewSceneName={setNewSceneName}
+            createMode={createMode}
+            setCreateMode={setCreateMode}
+            templates={templates}
+            selectedTemplateId={selectedTemplateId}
+            setSelectedTemplateId={setSelectedTemplateId}
+            isLoadingTemplates={isLoadingTemplates}
+            isCreating={isCreating}
+            handleCreateScene={handleCreateScene}
+          />
         )}
       </div>
     );
@@ -292,58 +296,20 @@ export default function SceneList({ onEditScene, onSceneAction }) {
 
       {/* Create Scene Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-white font-semibold text-lg">Create New Scene</h3>
-              <button
-                onClick={() => {
-                  setShowCreateModal(false);
-                  setNewSceneName('');
-                }}
-                className="text-gray-400 hover:text-white transition-colors"
-              >
-                <XMarkIcon className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="mb-4">
-              <label className="block text-sm text-gray-400 mb-2">Scene Name</label>
-              <input
-                type="text"
-                value={newSceneName}
-                onChange={(e) => setNewSceneName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleCreateScene();
-                  if (e.key === 'Escape') {
-                    setShowCreateModal(false);
-                    setNewSceneName('');
-                  }
-                }}
-                placeholder="Enter scene name..."
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-green-500"
-                autoFocus
-              />
-            </div>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => {
-                  setShowCreateModal(false);
-                  setNewSceneName('');
-                }}
-                className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreateScene}
-                disabled={!newSceneName.trim() || isCreating}
-                className="px-4 py-2 bg-green-600 hover:bg-green-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
-              >
-                {isCreating ? 'Creating...' : 'Create'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <CreateSceneModal
+          isOpen={showCreateModal}
+          onClose={resetCreateModal}
+          newSceneName={newSceneName}
+          setNewSceneName={setNewSceneName}
+          createMode={createMode}
+          setCreateMode={setCreateMode}
+          templates={templates}
+          selectedTemplateId={selectedTemplateId}
+          setSelectedTemplateId={setSelectedTemplateId}
+          isLoadingTemplates={isLoadingTemplates}
+          isCreating={isCreating}
+          handleCreateScene={handleCreateScene}
+        />
       )}
 
       {groupedScenes.map(category => (
@@ -561,6 +527,152 @@ function SceneCard({
             title="Delete scene"
           >
             <TrashIcon className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * CreateSceneModal - Modal for creating a new scene (blank or from template)
+ */
+function CreateSceneModal({
+  isOpen,
+  onClose,
+  newSceneName,
+  setNewSceneName,
+  createMode,
+  setCreateMode,
+  templates,
+  selectedTemplateId,
+  setSelectedTemplateId,
+  isLoadingTemplates,
+  isCreating,
+  handleCreateScene
+}) {
+  if (!isOpen) return null;
+
+  const canCreate = newSceneName.trim() &&
+    (createMode === 'blank' || (createMode === 'template' && selectedTemplateId));
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-white font-semibold text-lg">Create New Scene</h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-white transition-colors"
+          >
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Mode Selection */}
+        <div className="mb-4">
+          <label className="block text-sm text-gray-400 mb-2">Creation Method</label>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setCreateMode('blank')}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
+                createMode === 'blank'
+                  ? 'bg-green-600 border-green-500 text-white'
+                  : 'bg-gray-700 border-gray-600 text-gray-300 hover:border-gray-500'
+              }`}
+            >
+              <PlusIcon className="w-5 h-5" />
+              Blank Scene
+            </button>
+            <button
+              onClick={() => setCreateMode('template')}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
+                createMode === 'template'
+                  ? 'bg-purple-600 border-purple-500 text-white'
+                  : 'bg-gray-700 border-gray-600 text-gray-300 hover:border-gray-500'
+              }`}
+            >
+              <DocumentTextIcon className="w-5 h-5" />
+              From Template
+            </button>
+          </div>
+        </div>
+
+        {/* Template Selection (shown only when createMode is 'template') */}
+        {createMode === 'template' && (
+          <div className="mb-4">
+            <label className="block text-sm text-gray-400 mb-2">Select Template</label>
+            {isLoadingTemplates ? (
+              <div className="text-gray-500 text-sm py-2">Loading templates...</div>
+            ) : templates.length === 0 ? (
+              <div className="text-yellow-500 text-sm py-2 px-3 bg-yellow-900/20 rounded-lg border border-yellow-700">
+                No templates available. Save your current OBS setup as a template in the Templates tab first.
+              </div>
+            ) : (
+              <select
+                value={selectedTemplateId}
+                onChange={(e) => setSelectedTemplateId(e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-purple-500"
+              >
+                <option value="">-- Select a template --</option>
+                {templates.map(template => (
+                  <option key={template.id} value={template.id}>
+                    {template.name} {template.description ? `- ${template.description}` : ''}
+                  </option>
+                ))}
+              </select>
+            )}
+            {selectedTemplateId && templates.length > 0 && (
+              <div className="mt-2 text-sm text-gray-400">
+                {(() => {
+                  const selected = templates.find(t => t.id === selectedTemplateId);
+                  if (!selected) return null;
+                  return (
+                    <div className="p-2 bg-gray-700/50 rounded-lg">
+                      <p className="text-purple-300 font-medium">{selected.name}</p>
+                      {selected.description && <p className="text-gray-400 text-xs mt-1">{selected.description}</p>}
+                      {selected.scenesCount && <p className="text-gray-500 text-xs mt-1">{selected.scenesCount} scene(s)</p>}
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Scene Name Input */}
+        <div className="mb-4">
+          <label className="block text-sm text-gray-400 mb-2">Scene Name</label>
+          <input
+            type="text"
+            value={newSceneName}
+            onChange={(e) => setNewSceneName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && canCreate) handleCreateScene();
+              if (e.key === 'Escape') onClose();
+            }}
+            placeholder="Enter scene name..."
+            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-green-500"
+            autoFocus
+          />
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleCreateScene}
+            disabled={!canCreate || isCreating}
+            className={`px-4 py-2 ${
+              createMode === 'template' ? 'bg-purple-600 hover:bg-purple-500' : 'bg-green-600 hover:bg-green-500'
+            } disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors`}
+          >
+            {isCreating ? 'Creating...' : createMode === 'template' ? 'Create from Template' : 'Create'}
           </button>
         </div>
       </div>

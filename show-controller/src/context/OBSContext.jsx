@@ -214,9 +214,9 @@ export function OBSProvider({ children }) {
     socket?.emit('obs:disableStudioMode');
   }, [socket]);
 
-  const createScene = useCallback((sceneName) => {
-    console.log('OBSContext: Creating scene', sceneName);
-    socket?.emit('obs:createScene', { sceneName });
+  const createScene = useCallback((sceneName, templateId = null) => {
+    console.log('OBSContext: Creating scene', sceneName, templateId ? `from template ${templateId}` : '(blank)');
+    socket?.emit('obs:createScene', { sceneName, templateId });
   }, [socket]);
 
   const deleteScene = useCallback((sceneName) => {

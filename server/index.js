@@ -2587,9 +2587,9 @@ io.on('connection', async (socket) => {
     }
   });
 
-  // Create scene (producer only)
-  socket.on('obs:createScene', async ({ sceneName }) => {
-    console.log(`[createScene] Received request to create: ${sceneName}`);
+  // Create scene (producer only) - supports creating from template
+  socket.on('obs:createScene', async ({ sceneName, templateId }) => {
+    console.log(`[createScene] Received request to create: ${sceneName}${templateId ? ` from template ${templateId}` : ''}`);
     const client = showState.connectedClients.find(c => c.id === socket.id);
     if (client?.role !== 'producer') {
       socket.emit('error', { message: 'Only producers can create scenes' });
@@ -2611,8 +2611,59 @@ io.on('connection', async (socket) => {
     }
 
     try {
+      // Create the scene first
       await compObs.call('CreateScene', { sceneName });
       console.log(`[createScene] Created scene: ${sceneName} for ${clientCompId}`);
+
+      // If templateId is provided, copy sources from template to the new scene
+      if (templateId) {
+        try {
+          // Fetch the template from Firebase via productionConfigService
+          productionConfigService.initialize();
+          if (productionConfigService.isAvailable()) {
+            // Use Firebase Admin SDK directly to read template
+            const admin = await import('firebase-admin');
+            const database = admin.default.database();
+            const templateRef = database.ref(`templates/obs/${templateId}`);
+            const snapshot = await templateRef.once('value');
+            const template = snapshot.val();
+
+            if (template && template.scenes && template.scenes.length > 0) {
+              // Use the first scene from the template as the source configuration
+              const templateScene = template.scenes[0];
+              const items = templateScene.items || templateScene.sceneItems || [];
+
+              console.log(`[createScene] Copying ${items.length} items from template to ${sceneName}`);
+
+              // Add each item from the template to the new scene
+              for (const item of items) {
+                try {
+                  // CreateSceneItem adds an existing input to the scene
+                  await compObs.call('CreateSceneItem', {
+                    sceneName: sceneName,
+                    sourceName: item.sourceName,
+                    sceneItemEnabled: item.sceneItemEnabled !== undefined ? item.sceneItemEnabled : true
+                  });
+                  console.log(`[createScene] Added source ${item.sourceName} to ${sceneName}`);
+                } catch (itemError) {
+                  // Source might not exist - that's okay, just log and continue
+                  console.warn(`[createScene] Could not add source ${item.sourceName}: ${itemError.message}`);
+                }
+              }
+              console.log(`[createScene] Created scene from template: ${sceneName} for ${clientCompId}`);
+            } else {
+              console.warn(`[createScene] Template ${templateId} has no scenes, created empty scene`);
+            }
+          } else {
+            console.warn('[createScene] Firebase not available, created empty scene');
+          }
+        } catch (templateError) {
+          // Template copy failed but scene was created - log warning but don't fail
+          console.warn(`[createScene] Failed to copy template content: ${templateError.message}`);
+          socket.emit('obs:warning', { message: `Scene created but template copy failed: ${templateError.message}` });
+        }
+      }
+
       // Broadcast updated state to all clients in this competition
       await broadcastOBSState(clientCompId, obsConnManager, io);
     } catch (error) {
