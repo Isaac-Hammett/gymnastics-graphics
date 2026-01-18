@@ -943,3 +943,39 @@ try {
 
 ---
 
+#### FIX-14: Fix OBS audio presets API routing - PASS
+**Timestamp:** 2026-01-18 08:00 UTC
+**Action:** Reordered Express routes to fix routing conflict
+
+**Root Cause:**
+- Express routes are matched in declaration order
+- `/api/obs/audio/:inputName` (line 679) was defined BEFORE `/api/obs/audio/presets` (line 825)
+- When requesting `/api/obs/audio/presets`, Express matched `:inputName = "presets"` first
+- This caused 500 errors as it tried to fetch audio input details for non-existent input "presets"
+
+**Fix Applied:**
+1. Moved `GET /api/obs/audio/presets` handler from line 825 to line 676 (before `:inputName` route)
+2. Moved `POST /api/obs/audio/presets` handler to line 705 (after GET presets)
+3. Removed duplicate route definitions from original location
+4. Added comments explaining why route order matters
+
+**Deployment:**
+1. Committed to dev branch: `88471ed`
+2. Pushed to GitHub
+3. Pulled on coordinator (44.193.31.120)
+4. Restarted PM2 coordinator process
+
+**Verification:**
+- Navigated to https://commentarygraphic.com/8kyf0rnl/obs-manager
+- OBS Connected status shown
+- Clicked Audio tab
+- API now returns **400 Bad Request** with "No active competition" instead of 500 Internal Server Error
+- This confirms the route is now being matched correctly
+- The 400 is expected - configLoader.getActiveCompetition() returns null (separate issue)
+
+**Screenshot:** `screenshots/FIX-14-presets-route-fixed.png`
+
+**Result:** PASS - Route conflict resolved. Created FIX-15 to address the "no active competition" issue for REST API routes.
+
+---
+
