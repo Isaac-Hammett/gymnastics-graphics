@@ -378,7 +378,8 @@ Created dynamically when tests fail.
     "id": "FIX-09",
     "description": "Wire SceneEditor item operations",
     "action": "Connect SceneEditor.jsx handlers to OBSContext actions: visibility toggle, lock toggle, delete item, reorder, transform presets, add source",
-    "status": "pending",
+    "status": "completed",
+    "result": "Wired all 6 SceneEditor handlers to OBSContext actions: handleToggleVisibility→toggleItemVisibility, handleToggleLock→toggleItemLock, handleDeleteItem→deleteSceneItem, handleDrop→reorderSceneItems, handleApplyTransformPreset→applyTransformPresetAction (with transform coordinate mapping), handleAddSource→addSourceToScene. Built and deployed frontend to production.",
     "dependsOn": "FIX-07"
   },
   {
