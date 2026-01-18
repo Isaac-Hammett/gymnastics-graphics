@@ -340,9 +340,9 @@ These test actual OBS functionality and may modify state.
     "description": "Screenshot capture works",
     "action": "Click Take Screenshot button in OBS Manager header",
     "verification": "Screenshot is captured and displayed or saved",
-    "status": "failed",
-    "dependsOn": "TEST-01",
-    "failureReason": "Take Screenshot button exists but has no onClick handler. No takeScreenshot function in OBSContext, no Socket.io event emitter, no backend handler. Button is purely decorative placeholder UI."
+    "status": "completed",
+    "dependsOn": "FIX-19",
+    "result": "After FIX-19, screenshot capture works. Clicked 'Take Screenshot' button, console shows 'OBSContext: Taking screenshot' then 'OBSContext: Screenshot captured Scene 2026-01-18T04:07:21.108Z'. Screenshot file auto-downloaded as 'screenshot-Scene-1768709241071.png'. Server calls OBS GetSourceScreenshot API for current program scene and returns base64 PNG data."
   },
   {
     "id": "TEST-27",
@@ -521,7 +521,8 @@ Created dynamically when tests fail.
     "id": "FIX-19",
     "description": "Implement screenshot capture functionality",
     "action": "Add takeScreenshot function to OBSContext.jsx that emits obs:takeScreenshot Socket.io event. Add obs:takeScreenshot handler to server/index.js that calls OBS GetSourceScreenshot API. Add onClick handler to Take Screenshot button in OBSManager.jsx. Add UI feedback for screenshot capture (success/error message or display captured image).",
-    "status": "pending",
+    "status": "completed",
+    "result": "Implemented screenshot capture: 1) Added takeScreenshot callback to OBSContext.jsx that emits obs:takeScreenshot event. 2) Added obs:takeScreenshot handler to server/index.js that calls OBS GetSourceScreenshot API and emits obs:screenshotCaptured with base64 PNG data. 3) Added onClick handler to Take Screenshot button in OBSManager.jsx. 4) Added obs:screenshotCaptured listener that auto-downloads the screenshot as a PNG file. Verified working - clicking button captures and downloads screenshot.",
     "blocksTests": ["TEST-26"]
   }
 ]

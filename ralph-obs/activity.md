@@ -1265,3 +1265,43 @@ try {
 
 ---
 
+#### FIX-19: Implement screenshot capture functionality - PASS
+**Timestamp:** 2026-01-18 04:07 UTC
+**Action:** Implemented screenshot capture feature for OBS Manager
+
+**Changes Made:**
+
+1. **OBSContext.jsx** - Added takeScreenshot action and screenshotCaptured listener:
+   - `takeScreenshot()` callback that emits `obs:takeScreenshot` Socket.io event
+   - `handleScreenshotCaptured()` listener that receives base64 PNG data and auto-downloads it as a file
+
+2. **server/index.js** - Added `obs:takeScreenshot` Socket.io handler:
+   - Validates producer role
+   - Gets current program scene via `GetCurrentProgramScene`
+   - Captures screenshot via OBS `GetSourceScreenshot` API (1920x1080 PNG)
+   - Emits `obs:screenshotCaptured` with base64 image data back to client
+
+3. **OBSManager.jsx** - Wired Take Screenshot button:
+   - Imported `takeScreenshot` from `useOBS()`
+   - Added `onClick={takeScreenshot}` to button
+
+**Deployment:**
+1. Built frontend: `npm run build` (787 modules, 1.36s)
+2. Deployed frontend to production (3.87.107.201)
+3. Pushed server changes to dev branch
+4. Pulled on coordinator (44.193.31.120) and restarted PM2
+
+**Verification:**
+1. Navigated to https://commentarygraphic.com/8kyf0rnl/obs-manager
+2. OBS Connected status shown
+3. Clicked "Take Screenshot" button
+4. Console logged: `OBSContext: Taking screenshot`
+5. Console logged: `OBSContext: Screenshot captured Scene 2026-01-18T04:07:21.108Z`
+6. File auto-downloaded: `screenshot-Scene-1768709241071.png`
+
+**Screenshot:** `screenshots/FIX-19-screenshot-capture-working.png`
+
+**Result:** PASS - Screenshot capture fully implemented and working. TEST-26 now passes.
+
+---
+
