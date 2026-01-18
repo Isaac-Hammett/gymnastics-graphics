@@ -1332,3 +1332,30 @@ try {
 
 ---
 
+#### TEST-29: Scene reorder via drag-and-drop works - FAIL
+**Timestamp:** 2026-01-17
+**Action:** Navigated to /8kyf0rnl/obs-manager, inspected Scenes tab for drag-and-drop functionality
+
+**Findings:**
+1. OBS Connected, Scenes tab shows 5 scenes in list
+2. Each scene card has action buttons: Preview, Edit, Rename, Duplicate, Delete
+3. **NO drag handles visible** - no 6-dot grip icon or similar drag indicator
+4. **NO draggable behavior** - scene cards are not draggable
+5. Code analysis confirmed:
+   - SceneList.jsx has NO drag-and-drop implementation for scenes
+   - No drag event handlers (onDragStart, onDragOver, onDrop)
+   - No reorderScenes function in OBSContext.jsx
+   - No obs:reorderScenes Socket.io handler on server
+6. SceneEditor.jsx DOES have drag-and-drop for scene items (sources), but this is different functionality
+
+**Screenshot:** `screenshots/TEST-29-scene-list-full.png`
+
+**Root Cause:** Feature not implemented. FIX-20 (pending) specifies the required implementation:
+- Add drag-and-drop to SceneList.jsx
+- Add obs:reorderScenes Socket.io handler
+- Use OBS SetSceneList API
+
+**Result:** FAIL - Drag-and-drop for scene reordering is not implemented. Blocked by FIX-20.
+
+---
+
