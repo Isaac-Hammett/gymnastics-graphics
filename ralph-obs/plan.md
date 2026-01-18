@@ -391,10 +391,9 @@ These test actual OBS functionality and may modify state.
     "description": "Add new source to scene works",
     "action": "In SceneEditor, click 'Add Source' button, select source type (e.g., color source), configure settings",
     "verification": "New source is created and added to the scene, visible in OBS",
-    "status": "failed",
+    "status": "completed",
     "dependsOn": "TEST-21",
-    "failureReason": "Add Source button exists but only shows existing OBS inputs, not source type picker. Modal shows 'No available sources to add' when all inputs are in scene. No way to CREATE new sources (color, browser, ffmpeg, image). Also the actual addSourceToScene call has a TODO comment - not implemented.",
-    "blockedBy": "FIX-22"
+    "result": "After FIX-22, Add Source modal now has mode selector: 'Create New Source' (purple) and 'Add Existing' (blue). Clicking Create New Source shows source type picker with 4 types: Color Source, Browser Source, Media/SRT Source, Image Source. Selected Color Source, entered name 'FIX-22 Test Color', clicked Create Source. Console logged: 'OBSContext: Creating input FIX-22 Test Color color_source_v3 {color: 4278190335} in scene Scene'. Scene Items count increased from 2 to 3, new source visible in list with ID: 3."
   },
   {
     "id": "TEST-32",
@@ -737,8 +736,9 @@ Created dynamically when tests fail.
     "phase": "Phase 3 - Source Management",
     "description": "Implement 'Add Source' UI in SceneEditor",
     "action": "Add 'Add Source' button to SceneEditor that opens source type picker. Support creating: color_source, browser_source, ffmpeg_source, image_source. Wire to obs:createInput + obs:addSourceToScene Socket.io events.",
-    "status": "pending",
-    "blocksTests": ["TEST-31"]
+    "status": "completed",
+    "blocksTests": ["TEST-31"],
+    "result": "Implemented full Add Source UI: 1) Added createInput function to OBSContext.jsx that emits obs:createInput event. 2) Added obs:createInput Socket.io handler to server/index.js that calls OBS CreateInput API with sceneName parameter. 3) Completely redesigned AddSourceModal with mode selector (Create New vs Add Existing), source type picker (4 types with icons), and type-specific configuration forms (color picker, URL/dimensions for browser, SRT URL for ffmpeg, file path for image). Source creation verified working - 'FIX-22 Test Color' created successfully in scene."
   },
   {
     "id": "FIX-23",
