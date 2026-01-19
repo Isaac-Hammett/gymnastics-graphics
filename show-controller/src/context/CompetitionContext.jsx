@@ -40,13 +40,25 @@ export function CompetitionProvider({ children }) {
   const gender = competitionConfig?.gender || 'womens';
 
   // Derive socket URL from vmAddress
-  // vmAddress format: "host:port" (e.g., "3.81.127.185:3003")
-  // socketUrl format: "http://host:port" (e.g., "http://3.81.127.185:3003")
+  // In production (HTTPS), always use the coordinator API to avoid Mixed Content errors
+  // The coordinator handles routing to the appropriate VM based on compId
   const socketUrl = (() => {
     if (isLocalMode) {
       // In local mode, use centralized server URL resolution
       return getServerUrl();
     }
+
+    // Check if we're on HTTPS (production) - if so, use coordinator to avoid Mixed Content
+    const isSecureContext = typeof window !== 'undefined' &&
+      (window.location.protocol === 'https:' || window.location.hostname === 'commentarygraphic.com');
+
+    if (isSecureContext) {
+      // In production, always use the secure coordinator API
+      // The coordinator will handle VM-specific connections server-side
+      return 'https://api.commentarygraphic.com';
+    }
+
+    // In development (HTTP), can connect directly to VM
     if (vmAddress) {
       // Ensure vmAddress doesn't already have protocol
       if (vmAddress.startsWith('http://') || vmAddress.startsWith('https://')) {

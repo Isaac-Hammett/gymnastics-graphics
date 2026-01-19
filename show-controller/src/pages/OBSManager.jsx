@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   SignalIcon,
@@ -8,9 +8,11 @@ import {
   CameraIcon,
   ExclamationTriangleIcon,
   CheckCircleIcon,
-  ArrowPathIcon
+  ArrowPathIcon,
+  XMarkIcon
 } from '@heroicons/react/24/solid';
 import { useOBS } from '../context/OBSContext';
+import { useShow } from '../context/ShowContext';
 import SceneList from '../components/obs/SceneList';
 import SceneEditor from '../components/obs/SceneEditor';
 import SourceEditor from '../components/obs/SourceEditor';
@@ -22,6 +24,7 @@ import TemplateManager from '../components/obs/TemplateManager';
 import TalentCommsPanel from '../components/obs/TalentCommsPanel';
 
 export default function OBSManager() {
+  const { identify } = useShow();
   const {
     obsState,
     obsConnected,
@@ -30,10 +33,19 @@ export default function OBSManager() {
     stopStream,
     startRecording,
     stopRecording,
-    refreshState
+    refreshState,
+    duplicateScene,
+    deleteScene,
+    renameScene,
+    takeScreenshot
   } = useOBS();
 
   const [activeTab, setActiveTab] = useState('scenes');
+
+  // Identify as producer on mount to enable scene switching
+  useEffect(() => {
+    identify('producer', 'OBS Manager');
+  }, [identify]);
   const [selectedScene, setSelectedScene] = useState(null);
   const [showSceneEditor, setShowSceneEditor] = useState(false);
   const [selectedSource, setSelectedSource] = useState(null);
@@ -54,17 +66,31 @@ export default function OBSManager() {
     setSelectedScene(null);
   };
 
+  // State for duplicate/rename modals
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [showRenameModal, setShowRenameModal] = useState(false);
+  const [modalSceneName, setModalSceneName] = useState('');
+  const [newSceneName, setNewSceneName] = useState('');
+
   const handleSceneAction = (action, sceneName) => {
     console.log('Scene action:', action, sceneName);
-    // TODO: Implement scene actions (duplicate, delete)
     switch (action) {
       case 'duplicate':
-        alert(`Duplicate scene: ${sceneName} (not yet implemented)`);
+        setModalSceneName(sceneName);
+        setNewSceneName(`${sceneName} Copy`);
+        setShowDuplicateModal(true);
         break;
       case 'delete':
         if (confirm(`Delete scene "${sceneName}"?`)) {
-          alert(`Delete scene: ${sceneName} (not yet implemented)`);
+          deleteScene(sceneName);
+          // Refresh state after a short delay to get updated scene list
+          setTimeout(() => refreshState(), 500);
         }
+        break;
+      case 'rename':
+        setModalSceneName(sceneName);
+        setNewSceneName(sceneName);
+        setShowRenameModal(true);
         break;
       case 'preview':
         // Already handled by SceneList
@@ -72,6 +98,33 @@ export default function OBSManager() {
       default:
         console.warn('Unknown scene action:', action);
     }
+  };
+
+  const handleDuplicateConfirm = () => {
+    if (newSceneName.trim() && newSceneName.trim() !== modalSceneName) {
+      duplicateScene(modalSceneName, newSceneName.trim());
+      setTimeout(() => refreshState(), 500);
+    }
+    setShowDuplicateModal(false);
+    setModalSceneName('');
+    setNewSceneName('');
+  };
+
+  const handleRenameConfirm = () => {
+    if (newSceneName.trim() && newSceneName.trim() !== modalSceneName) {
+      renameScene(modalSceneName, newSceneName.trim());
+      setTimeout(() => refreshState(), 500);
+    }
+    setShowRenameModal(false);
+    setModalSceneName('');
+    setNewSceneName('');
+  };
+
+  const closeModals = () => {
+    setShowDuplicateModal(false);
+    setShowRenameModal(false);
+    setModalSceneName('');
+    setNewSceneName('');
   };
 
   // Handle source editing
@@ -192,6 +245,7 @@ export default function OBSManager() {
 
             {/* Screenshot Button */}
             <button
+              onClick={takeScreenshot}
               disabled={!obsConnected}
               className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-600 text-white font-medium rounded-lg transition-colors"
             >
@@ -258,6 +312,106 @@ export default function OBSManager() {
             onClose={handleCloseSourceEditor}
             onUpdate={handleSourceUpdate}
           />
+        )}
+
+        {/* Duplicate Scene Modal */}
+        {showDuplicateModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-white font-semibold text-lg">Duplicate Scene</h3>
+                <button
+                  onClick={closeModals}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <XMarkIcon className="w-5 h-5" />
+                </button>
+              </div>
+              <p className="text-gray-400 text-sm mb-4">
+                Create a copy of "{modalSceneName}" with all its sources.
+              </p>
+              <div className="mb-4">
+                <label className="block text-sm text-gray-400 mb-2">New Scene Name</label>
+                <input
+                  type="text"
+                  value={newSceneName}
+                  onChange={(e) => setNewSceneName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleDuplicateConfirm();
+                    if (e.key === 'Escape') closeModals();
+                  }}
+                  placeholder="Enter new scene name..."
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                  autoFocus
+                />
+              </div>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={closeModals}
+                  className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDuplicateConfirm}
+                  disabled={!newSceneName.trim() || newSceneName.trim() === modalSceneName}
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
+                >
+                  Duplicate
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Rename Scene Modal */}
+        {showRenameModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-white font-semibold text-lg">Rename Scene</h3>
+                <button
+                  onClick={closeModals}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <XMarkIcon className="w-5 h-5" />
+                </button>
+              </div>
+              <p className="text-gray-400 text-sm mb-4">
+                Enter a new name for "{modalSceneName}".
+              </p>
+              <div className="mb-4">
+                <label className="block text-sm text-gray-400 mb-2">New Scene Name</label>
+                <input
+                  type="text"
+                  value={newSceneName}
+                  onChange={(e) => setNewSceneName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleRenameConfirm();
+                    if (e.key === 'Escape') closeModals();
+                  }}
+                  placeholder="Enter new scene name..."
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                  autoFocus
+                />
+              </div>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={closeModals}
+                  className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleRenameConfirm}
+                  disabled={!newSceneName.trim() || newSceneName.trim() === modalSceneName}
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
+                >
+                  Rename
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </main>
     </div>
