@@ -136,12 +136,13 @@ export default function GraphicsControl({ competitionId }) {
   const [currentGraphic, setCurrentGraphic] = useState(null);
   const [currentGraphicId, setCurrentGraphicId] = useState(null); // Track the specific button ID (e.g., 'floor', 'pommel')
   const [config, setConfig] = useState(null);
-  const [compId, setCompId] = useState(competitionId || '');
-  const [competitions, setCompetitions] = useState([]);
   const [copied, setCopied] = useState(false);
   const [summaryTheme, setSummaryTheme] = useState('default');
   const [liveAthletes, setLiveAthletes] = useState([]); // Athletes currently competing (type: 0, no score yet)
   const [isPolling, setIsPolling] = useState(false);
+
+  // Use competitionId directly from props (no local state needed)
+  const compId = competitionId || '';
 
   // Get gender-specific event configuration
   const { events, eventIds, rotationCount, gender } = useEventConfig(config?.compType);
@@ -176,31 +177,6 @@ export default function GraphicsControl({ competitionId }) {
       label: event.shortName,
     }));
   }, [events]);
-
-  // Load available competitions with their names
-  useEffect(() => {
-    const compsRef = ref(db, 'competitions');
-    const unsubscribe = onValue(compsRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        // Store full competition data including config for names
-        const compList = Object.entries(data).map(([id, comp]) => ({
-          id,
-          name: comp.config?.eventName || id
-        }));
-        setCompetitions(compList);
-        // Auto-select first competition only on initial load (when competitionId prop wasn't provided)
-        setCompId((current) => {
-          if (!current && compList.length > 0) {
-            return compList[0].id;
-          }
-          return current;
-        });
-      }
-    });
-
-    return () => unsubscribe();
-  }, []);
 
   // Load competition config
   useEffect(() => {
@@ -486,22 +462,6 @@ export default function GraphicsControl({ competitionId }) {
             {currentGraphic}
           </span>
         )}
-      </div>
-
-      {/* Competition Selector */}
-      <div className="mb-4">
-        <select
-          value={compId}
-          onChange={(e) => setCompId(e.target.value)}
-          className="w-full px-3 py-2 bg-zinc-700 border border-zinc-600 rounded-lg text-white text-sm"
-        >
-          <option value="">Select competition...</option>
-          {competitions.map((comp) => (
-            <option key={comp.id} value={comp.id}>
-              {comp.name} ({comp.id})
-            </option>
-          ))}
-        </select>
       </div>
 
       {/* Copy Output URL & URL Generator */}
