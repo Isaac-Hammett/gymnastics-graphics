@@ -25,6 +25,7 @@ import { getAutoShutdownService } from './lib/autoShutdown.js';
 import { getSelfStopService } from './lib/selfStop.js';
 import { getOBSStateSync } from './lib/obsStateSync.js';
 import { setupOBSRoutes } from './routes/obs.js';
+import { getOBSConnectionManager } from './lib/obsConnectionManager.js';
 
 dotenv.config();
 
@@ -2035,7 +2036,12 @@ app.get('/api/coordinator/status', async (req, res) => {
   const autoShutdownStatus = autoShutdown.isInitialized() ? autoShutdown.getStatus() : null;
 
   // Build response
+  // Include 'state' and 'appReady' fields for frontend compatibility
+  // (frontend expects EC2-style state from Netlify functions)
   const status = {
+    success: true,
+    state: 'running',  // EC2-style state for frontend
+    appReady: true,    // App is responding, so it's ready
     status: 'online',
     uptime: getUptime(),
     uptimeFormatted: formatUptime(getUptime()),
@@ -2044,6 +2050,7 @@ app.get('/api/coordinator/status', async (req, res) => {
     lastActivity: new Date(lastActivityTimestamp).toISOString(),
     idleSeconds: getIdleTime(),
     idleMinutes: Math.floor(getIdleTime() / 60),
+    publicIp: process.env.PUBLIC_IP || null,
     connections: {
       firebase: firebaseStatus,
       aws: awsStatus,
@@ -2282,14 +2289,107 @@ outro,Thanks for Watching,video,Video Scene,0:15,false,,,/path/to/videos/outro.m
 // Pass getter function for obsStateSync since it may be null until competition is activated
 setupOBSRoutes(app, obs, () => obsStateSync);
 
+// Redirect Netlify function paths to API endpoints (for compatibility when not on Netlify)
+app.get('/.netlify/functions/coordinator-status', (req, res) => {
+  res.redirect(307, '/api/coordinator/status');
+});
+app.post('/.netlify/functions/wake-coordinator', (req, res) => {
+  res.redirect(307, '/api/coordinator/wake');
+});
+app.post('/.netlify/functions/stop-coordinator', (req, res) => {
+  res.redirect(307, '/api/coordinator/stop');
+});
+
 // Serve React app for all other routes (Express 5 syntax)
 app.get('/{*path}', (req, res) => {
   res.sendFile(join(__dirname, '..', 'show-controller', 'dist', 'index.html'));
 });
 
+// Helper function to fetch and broadcast OBS state for a competition
+async function broadcastOBSState(compId, obsConnManager, io) {
+  const room = `competition:${compId}`;
+  const compObs = obsConnManager.getConnection(compId);
+
+  if (!compObs) {
+    console.log(`[broadcastOBSState] No OBS connection for ${compId}`);
+    return;
+  }
+
+  try {
+    // Fetch scene list
+    const sceneListResponse = await compObs.call('GetSceneList');
+    const currentScene = sceneListResponse.currentProgramSceneName || null;
+
+    // Fetch scene items for each scene
+    const scenes = await Promise.all((sceneListResponse.scenes || []).map(async (scene) => {
+      let items = [];
+      try {
+        const itemsResponse = await compObs.call('GetSceneItemList', { sceneName: scene.sceneName });
+        items = (itemsResponse.sceneItems || []).map(item => ({
+          id: item.sceneItemId,
+          sourceName: item.sourceName,
+          sourceType: item.sourceType,
+          inputKind: item.inputKind,
+          enabled: item.sceneItemEnabled,
+          locked: item.sceneItemLocked,
+          transform: item.sceneItemTransform
+        }));
+      } catch (itemError) {
+        console.log(`[broadcastOBSState] Could not fetch items for scene ${scene.sceneName}: ${itemError.message}`);
+      }
+      return {
+        name: scene.sceneName,
+        uuid: scene.sceneUuid,
+        index: scene.sceneIndex,
+        items
+      };
+    }));
+
+    // Fetch ALL inputs (sources)
+    let inputs = [];
+    let audioSources = [];
+    try {
+      const inputsResponse = await compObs.call('GetInputList');
+      inputs = (inputsResponse.inputs || []).map(input => ({
+        name: input.inputName,
+        kind: input.inputKind,
+        uuid: input.inputUuid
+      }));
+      // Also filter for audio sources separately
+      audioSources = inputs.filter(input =>
+        input.kind?.includes('audio') ||
+        input.kind?.includes('wasapi') ||
+        input.kind?.includes('pulse') ||
+        input.kind?.includes('coreaudio')
+      );
+    } catch (audioError) {
+      console.log(`[broadcastOBSState] Could not fetch inputs for ${compId}: ${audioError.message}`);
+    }
+
+    // Broadcast full state
+    const obsState = {
+      connected: true,
+      connectionError: null,
+      scenes,
+      currentScene,
+      inputs,
+      audioSources,
+      isStreaming: false,
+      isRecording: false
+    };
+
+    console.log(`[broadcastOBSState] Broadcasting for ${compId}: ${scenes.length} scenes, current: ${currentScene}, inputs: ${inputs.length}`);
+    io.to(room).emit('obs:stateUpdated', obsState);
+  } catch (error) {
+    console.error(`[broadcastOBSState] Failed to fetch state for ${compId}:`, error.message);
+  }
+}
+
 // Socket.io connection handling
-io.on('connection', (socket) => {
-  console.log(`Client connected: ${socket.id}`);
+io.on('connection', async (socket) => {
+  // Extract compId from connection query (sent by frontend)
+  const clientCompId = socket.handshake.query.compId;
+  console.log(`Client connected: ${socket.id} for competition: ${clientCompId || 'none'}`);
 
   // Track activity on every socket event using socket.io middleware
   socket.use((packet, next) => {
@@ -2301,11 +2401,58 @@ io.on('connection', (socket) => {
     next();
   });
 
+  // If client has a compId, try to connect to that competition's VM OBS
+  if (clientCompId && clientCompId !== 'local') {
+    try {
+      // Join a room for this competition to receive targeted broadcasts
+      socket.join(`competition:${clientCompId}`);
+
+      // Look up VM for this competition
+      const vmPoolManager = getVMPoolManager();
+      if (vmPoolManager.isInitialized()) {
+        const vm = vmPoolManager.getVMForCompetition(clientCompId);
+        if (vm && vm.publicIp) {
+          console.log(`[Socket] Competition ${clientCompId} has VM at ${vm.publicIp}`);
+
+          // Connect to OBS on that VM (if not already connected)
+          const obsConnManager = getOBSConnectionManager();
+          if (!obsConnManager.isConnected(clientCompId)) {
+            try {
+              await obsConnManager.connectToVM(clientCompId, vm.publicIp);
+              console.log(`[Socket] Connected to OBS for competition ${clientCompId}`);
+            } catch (obsError) {
+              console.warn(`[Socket] Failed to connect to OBS for ${clientCompId}: ${obsError.message}`);
+              // Continue without OBS - some features won't work
+            }
+          }
+        } else {
+          console.log(`[Socket] No VM assigned to competition ${clientCompId}`);
+        }
+      }
+
+      // Set active competition so REST API routes can access the competition ID
+      configLoader.setActiveCompetition(clientCompId);
+      console.log(`[Socket] Active competition set to ${clientCompId}`);
+
+      // Initialize OBS State Sync for this competition (enables REST API routes)
+      try {
+        await initializeOBSStateSync(clientCompId);
+        console.log(`[Socket] OBS State Sync initialized for competition ${clientCompId}`);
+      } catch (syncError) {
+        console.warn(`[Socket] Failed to initialize OBS State Sync for ${clientCompId}: ${syncError.message}`);
+        // Continue - Socket.io events will still work, but REST API endpoints won't
+      }
+    } catch (error) {
+      console.error(`[Socket] Error setting up competition ${clientCompId}:`, error.message);
+    }
+  }
+
   // Add client to list
   const clientInfo = {
     id: socket.id,
     role: 'unknown',
-    name: 'Unknown'
+    name: 'Unknown',
+    compId: clientCompId || null
   };
   showState.connectedClients.push(clientInfo);
 
@@ -2339,7 +2486,18 @@ io.on('connection', (socket) => {
   }
 
   // Send initial OBS state if available
-  if (obsStateSync && obsStateSync.isInitialized()) {
+  // First, try to get OBS state from the competition's VM connection
+  if (clientCompId && clientCompId !== 'local') {
+    const obsConnManager = getOBSConnectionManager();
+    const connState = obsConnManager.getConnectionState(clientCompId);
+    if (connState) {
+      socket.emit('obs:stateUpdated', {
+        connected: connState.connected,
+        connectionError: connState.error
+      });
+    }
+  } else if (obsStateSync && obsStateSync.isInitialized()) {
+    // Fall back to local OBS state
     socket.emit('obs:stateUpdated', obsStateSync.getState());
   }
 
@@ -2391,6 +2549,667 @@ io.on('connection', (socket) => {
     const success = await switchScene(sceneName);
     if (!success) {
       socket.emit('error', { message: `Failed to switch to scene: ${sceneName}` });
+    }
+  });
+
+  // Switch scene (alias for overrideScene - used by OBS Manager UI)
+  socket.on('switchScene', async ({ sceneName }) => {
+    console.log(`[switchScene] Received request to switch to: ${sceneName}`);
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    console.log(`[switchScene] Client:`, client ? { id: client.id, role: client.role, compId: client.compId } : 'not found');
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can switch scenes' });
+      return;
+    }
+
+    // Get the client's competition ID to use the per-competition OBS connection
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    // Use per-competition OBS connection
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      await compObs.call('SetCurrentProgramScene', { sceneName });
+      console.log(`[switchScene] Switched to scene: ${sceneName} for ${clientCompId}`);
+    } catch (error) {
+      console.error(`[switchScene] Failed to switch scene: ${error.message}`);
+      socket.emit('error', { message: `Failed to switch to scene: ${sceneName}` });
+    }
+  });
+
+  // Create scene (producer only) - supports creating from template
+  socket.on('obs:createScene', async ({ sceneName, templateId }) => {
+    console.log(`[createScene] Received request to create: ${sceneName}${templateId ? ` from template ${templateId}` : ''}`);
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can create scenes' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      // Create the scene first
+      await compObs.call('CreateScene', { sceneName });
+      console.log(`[createScene] Created scene: ${sceneName} for ${clientCompId}`);
+
+      // If templateId is provided, copy sources from template to the new scene
+      if (templateId) {
+        try {
+          // Fetch the template from Firebase via productionConfigService
+          productionConfigService.initialize();
+          if (productionConfigService.isAvailable()) {
+            // Use Firebase Admin SDK directly to read template
+            const admin = await import('firebase-admin');
+            const database = admin.default.database();
+            const templateRef = database.ref(`templates/obs/${templateId}`);
+            const snapshot = await templateRef.once('value');
+            const template = snapshot.val();
+
+            if (template && template.scenes && template.scenes.length > 0) {
+              // Use the first scene from the template as the source configuration
+              const templateScene = template.scenes[0];
+              const items = templateScene.items || templateScene.sceneItems || [];
+
+              console.log(`[createScene] Copying ${items.length} items from template to ${sceneName}`);
+
+              // Add each item from the template to the new scene
+              for (const item of items) {
+                try {
+                  // CreateSceneItem adds an existing input to the scene
+                  await compObs.call('CreateSceneItem', {
+                    sceneName: sceneName,
+                    sourceName: item.sourceName,
+                    sceneItemEnabled: item.sceneItemEnabled !== undefined ? item.sceneItemEnabled : true
+                  });
+                  console.log(`[createScene] Added source ${item.sourceName} to ${sceneName}`);
+                } catch (itemError) {
+                  // Source might not exist - that's okay, just log and continue
+                  console.warn(`[createScene] Could not add source ${item.sourceName}: ${itemError.message}`);
+                }
+              }
+              console.log(`[createScene] Created scene from template: ${sceneName} for ${clientCompId}`);
+            } else {
+              console.warn(`[createScene] Template ${templateId} has no scenes, created empty scene`);
+            }
+          } else {
+            console.warn('[createScene] Firebase not available, created empty scene');
+          }
+        } catch (templateError) {
+          // Template copy failed but scene was created - log warning but don't fail
+          console.warn(`[createScene] Failed to copy template content: ${templateError.message}`);
+          socket.emit('obs:warning', { message: `Scene created but template copy failed: ${templateError.message}` });
+        }
+      }
+
+      // Broadcast updated state to all clients in this competition
+      await broadcastOBSState(clientCompId, obsConnManager, io);
+    } catch (error) {
+      console.error(`[createScene] Failed to create scene: ${error.message}`);
+      socket.emit('error', { message: `Failed to create scene: ${sceneName}` });
+    }
+  });
+
+  // Delete scene (producer only)
+  socket.on('obs:deleteScene', async ({ sceneName }) => {
+    console.log(`[deleteScene] Received request to delete: ${sceneName}`);
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can delete scenes' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      await compObs.call('RemoveScene', { sceneName });
+      console.log(`[deleteScene] Deleted scene: ${sceneName} for ${clientCompId}`);
+      // Broadcast updated state to all clients in this competition
+      await broadcastOBSState(clientCompId, obsConnManager, io);
+    } catch (error) {
+      console.error(`[deleteScene] Failed to delete scene: ${error.message}`);
+      socket.emit('error', { message: `Failed to delete scene: ${sceneName}` });
+    }
+  });
+
+  // Reorder scenes in OBS
+  socket.on('obs:reorderScenes', async ({ sceneNames }) => {
+    console.log(`[reorderScenes] Received request to reorder scenes:`, sceneNames);
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can reorder scenes' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      // Get current scene list to get UUIDs
+      const currentSceneList = await compObs.call('GetSceneList');
+      const sceneMap = {};
+      currentSceneList.scenes.forEach(scene => {
+        sceneMap[scene.sceneName] = scene.sceneUuid;
+      });
+
+      // Build new scene list with UUIDs in requested order
+      const newSceneList = sceneNames.map(name => ({
+        sceneName: name,
+        sceneUuid: sceneMap[name]
+      })).filter(s => s.sceneUuid); // Only include scenes that exist
+
+      // Note: OBS WebSocket expects scenes in reverse order (last = bottom of list in OBS)
+      // The SetSceneList API orders scenes from bottom to top
+      await compObs.call('SetSceneList', { scenes: newSceneList.reverse() });
+      console.log(`[reorderScenes] Reordered ${newSceneList.length} scenes for ${clientCompId}`);
+
+      // Broadcast updated state to all clients in this competition
+      await broadcastOBSState(clientCompId, obsConnManager, io);
+    } catch (error) {
+      console.error(`[reorderScenes] Failed to reorder scenes: ${error.message}`);
+      socket.emit('error', { message: `Failed to reorder scenes: ${error.message}` });
+    }
+  });
+
+  // Refresh OBS state (for Refresh button in UI)
+  socket.on('obs:refreshState', async () => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    const clientCompId = client?.compId;
+
+    if (!clientCompId) {
+      console.log('[obs:refreshState] No competition ID for client');
+      return;
+    }
+
+    console.log(`[obs:refreshState] Refreshing OBS state for ${clientCompId}`);
+    const obsConnManager = getOBSConnectionManager();
+    await broadcastOBSState(clientCompId, obsConnManager, io);
+  });
+
+  // Toggle scene item visibility
+  socket.on('obs:toggleItemVisibility', async ({ sceneName, sceneItemId, enabled }) => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can toggle item visibility' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      await compObs.call('SetSceneItemEnabled', { sceneName, sceneItemId, sceneItemEnabled: enabled });
+      console.log(`[toggleItemVisibility] Set item ${sceneItemId} in ${sceneName} to ${enabled ? 'visible' : 'hidden'} for ${clientCompId}`);
+      await broadcastOBSState(clientCompId, obsConnManager, io);
+    } catch (error) {
+      console.error(`[toggleItemVisibility] Failed: ${error.message}`);
+      socket.emit('error', { message: `Failed to toggle visibility: ${error.message}` });
+    }
+  });
+
+  // Toggle scene item lock
+  socket.on('obs:toggleItemLock', async ({ sceneName, sceneItemId, locked }) => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can toggle item lock' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      await compObs.call('SetSceneItemLocked', { sceneName, sceneItemId, sceneItemLocked: locked });
+      console.log(`[toggleItemLock] Set item ${sceneItemId} in ${sceneName} to ${locked ? 'locked' : 'unlocked'} for ${clientCompId}`);
+      await broadcastOBSState(clientCompId, obsConnManager, io);
+    } catch (error) {
+      console.error(`[toggleItemLock] Failed: ${error.message}`);
+      socket.emit('error', { message: `Failed to toggle lock: ${error.message}` });
+    }
+  });
+
+  // Delete scene item
+  socket.on('obs:deleteSceneItem', async ({ sceneName, sceneItemId }) => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can delete scene items' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      await compObs.call('RemoveSceneItem', { sceneName, sceneItemId });
+      console.log(`[deleteSceneItem] Removed item ${sceneItemId} from ${sceneName} for ${clientCompId}`);
+      await broadcastOBSState(clientCompId, obsConnManager, io);
+    } catch (error) {
+      console.error(`[deleteSceneItem] Failed: ${error.message}`);
+      socket.emit('error', { message: `Failed to delete scene item: ${error.message}` });
+    }
+  });
+
+  // Reorder scene items
+  socket.on('obs:reorderSceneItems', async ({ sceneName, sceneItemId, newIndex }) => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can reorder scene items' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      await compObs.call('SetSceneItemIndex', { sceneName, sceneItemId, sceneItemIndex: newIndex });
+      console.log(`[reorderSceneItems] Moved item ${sceneItemId} to index ${newIndex} in ${sceneName} for ${clientCompId}`);
+      await broadcastOBSState(clientCompId, obsConnManager, io);
+    } catch (error) {
+      console.error(`[reorderSceneItems] Failed: ${error.message}`);
+      socket.emit('error', { message: `Failed to reorder scene items: ${error.message}` });
+    }
+  });
+
+  // Apply transform preset to scene item
+  socket.on('obs:applyTransformPreset', async ({ sceneName, sceneItemId, transform }) => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can apply transform presets' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      await compObs.call('SetSceneItemTransform', { sceneName, sceneItemId, sceneItemTransform: transform });
+      console.log(`[applyTransformPreset] Applied transform to item ${sceneItemId} in ${sceneName} for ${clientCompId}`);
+      await broadcastOBSState(clientCompId, obsConnManager, io);
+    } catch (error) {
+      console.error(`[applyTransformPreset] Failed: ${error.message}`);
+      socket.emit('error', { message: `Failed to apply transform: ${error.message}` });
+    }
+  });
+
+  // Add source to scene
+  socket.on('obs:addSourceToScene', async ({ sceneName, sourceName }) => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can add sources to scenes' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      await compObs.call('CreateSceneItem', { sceneName, sourceName });
+      console.log(`[addSourceToScene] Added source ${sourceName} to ${sceneName} for ${clientCompId}`);
+      await broadcastOBSState(clientCompId, obsConnManager, io);
+    } catch (error) {
+      console.error(`[addSourceToScene] Failed: ${error.message}`);
+      socket.emit('error', { message: `Failed to add source: ${error.message}` });
+    }
+  });
+
+  // Create a new input/source in OBS
+  socket.on('obs:createInput', async ({ inputName, inputKind, inputSettings, sceneName }) => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can create inputs' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      // CreateInput with sceneName will create the input AND add it to the scene
+      const params = {
+        inputName,
+        inputKind,
+        inputSettings: inputSettings || {}
+      };
+
+      if (sceneName) {
+        params.sceneName = sceneName;
+      }
+
+      const result = await compObs.call('CreateInput', params);
+      console.log(`[createInput] Created input ${inputName} (${inputKind})${sceneName ? ` in scene ${sceneName}` : ''} for ${clientCompId}`, result);
+      await broadcastOBSState(clientCompId, obsConnManager, io);
+    } catch (error) {
+      console.error(`[createInput] Failed: ${error.message}`);
+      socket.emit('error', { message: `Failed to create input: ${error.message}` });
+    }
+  });
+
+  // Duplicate scene
+  socket.on('obs:duplicateScene', async ({ sceneName, newSceneName }) => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can duplicate scenes' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      // Get items from source scene
+      const { sceneItems } = await compObs.call('GetSceneItemList', { sceneName });
+
+      // Create new scene
+      await compObs.call('CreateScene', { sceneName: newSceneName });
+
+      // Add each item to new scene (in reverse order to maintain z-order)
+      for (const item of sceneItems.reverse()) {
+        try {
+          const { sceneItemId } = await compObs.call('CreateSceneItem', {
+            sceneName: newSceneName,
+            sourceName: item.sourceName
+          });
+          // Apply original transform
+          if (item.sceneItemTransform) {
+            await compObs.call('SetSceneItemTransform', {
+              sceneName: newSceneName,
+              sceneItemId,
+              sceneItemTransform: item.sceneItemTransform
+            });
+          }
+          // Apply visibility
+          await compObs.call('SetSceneItemEnabled', {
+            sceneName: newSceneName,
+            sceneItemId,
+            sceneItemEnabled: item.sceneItemEnabled
+          });
+        } catch (itemError) {
+          console.warn(`[duplicateScene] Could not copy item ${item.sourceName}: ${itemError.message}`);
+        }
+      }
+
+      console.log(`[duplicateScene] Duplicated ${sceneName} to ${newSceneName} for ${clientCompId}`);
+      await broadcastOBSState(clientCompId, obsConnManager, io);
+    } catch (error) {
+      console.error(`[duplicateScene] Failed: ${error.message}`);
+      socket.emit('error', { message: `Failed to duplicate scene: ${error.message}` });
+    }
+  });
+
+  // Rename scene (OBS doesn't have native rename, so we duplicate and delete)
+  socket.on('obs:renameScene', async ({ sceneName, newSceneName }) => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can rename scenes' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      // Get items from source scene
+      const { sceneItems } = await compObs.call('GetSceneItemList', { sceneName });
+
+      // Create new scene with new name
+      await compObs.call('CreateScene', { sceneName: newSceneName });
+
+      // Copy each item to new scene
+      for (const item of sceneItems.reverse()) {
+        try {
+          const { sceneItemId } = await compObs.call('CreateSceneItem', {
+            sceneName: newSceneName,
+            sourceName: item.sourceName
+          });
+          if (item.sceneItemTransform) {
+            await compObs.call('SetSceneItemTransform', {
+              sceneName: newSceneName,
+              sceneItemId,
+              sceneItemTransform: item.sceneItemTransform
+            });
+          }
+          await compObs.call('SetSceneItemEnabled', {
+            sceneName: newSceneName,
+            sceneItemId,
+            sceneItemEnabled: item.sceneItemEnabled
+          });
+        } catch (itemError) {
+          console.warn(`[renameScene] Could not copy item ${item.sourceName}: ${itemError.message}`);
+        }
+      }
+
+      // Delete original scene
+      await compObs.call('RemoveScene', { sceneName });
+
+      console.log(`[renameScene] Renamed ${sceneName} to ${newSceneName} for ${clientCompId}`);
+      await broadcastOBSState(clientCompId, obsConnManager, io);
+    } catch (error) {
+      console.error(`[renameScene] Failed: ${error.message}`);
+      socket.emit('error', { message: `Failed to rename scene: ${error.message}` });
+    }
+  });
+
+  // Set audio monitor type
+  socket.on('obs:setMonitorType', async ({ inputName, monitorType }) => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can change monitor type' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      await compObs.call('SetInputAudioMonitorType', { inputName, monitorType });
+      console.log(`[setMonitorType] Set ${inputName} monitor type to ${monitorType} for ${clientCompId}`);
+      await broadcastOBSState(clientCompId, obsConnManager, io);
+    } catch (error) {
+      console.error(`[setMonitorType] Failed: ${error.message}`);
+      socket.emit('error', { message: `Failed to set monitor type: ${error.message}` });
+    }
+  });
+
+  // Take screenshot of current output
+  socket.on('obs:takeScreenshot', async () => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can take screenshots' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      // Get current program scene name
+      const { currentProgramSceneName } = await compObs.call('GetCurrentProgramScene');
+
+      // Take screenshot of the current program scene
+      const response = await compObs.call('GetSourceScreenshot', {
+        sourceName: currentProgramSceneName,
+        imageFormat: 'png',
+        imageWidth: 1920,
+        imageHeight: 1080
+      });
+
+      console.log(`[takeScreenshot] Captured screenshot of ${currentProgramSceneName} for ${clientCompId}`);
+
+      // Emit screenshot data back to the client (base64 encoded PNG)
+      socket.emit('obs:screenshotCaptured', {
+        imageData: response.imageData,
+        sceneName: currentProgramSceneName,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error(`[takeScreenshot] Failed: ${error.message}`);
+      socket.emit('error', { message: `Failed to take screenshot: ${error.message}` });
     }
   });
 
@@ -2837,6 +3656,87 @@ setInterval(() => {
   }
 }, 1000);
 
+// Initialize OBS Connection Manager event forwarding
+function initializeOBSConnectionManager() {
+  const obsConnManager = getOBSConnectionManager();
+
+  // Forward OBS events to the appropriate competition room
+  obsConnManager.on('obsEvent', ({ compId, eventName, data }) => {
+    const room = `competition:${compId}`;
+    console.log(`[OBSConnManager] Forwarding ${eventName} to room ${room}`);
+
+    // Map OBS events to Socket.io events
+    switch (eventName) {
+      case 'CurrentProgramSceneChanged':
+        io.to(room).emit('sceneChanged', data.sceneName);
+        io.to(room).emit('obs:currentSceneChanged', { sceneName: data.sceneName });
+        break;
+      case 'SceneListChanged':
+        io.to(room).emit('obs:sceneListChanged', data);
+        break;
+      case 'InputVolumeChanged':
+        io.to(room).emit('obs:volumeChanged', {
+          inputName: data.inputName,
+          volumeDb: data.inputVolumeDb,
+          volumeMul: data.inputVolumeMul
+        });
+        break;
+      case 'InputMuteStateChanged':
+        io.to(room).emit('obs:muteChanged', {
+          inputName: data.inputName,
+          muted: data.inputMuted
+        });
+        break;
+      case 'StreamStateChanged':
+        io.to(room).emit('obs:streamStateChanged', {
+          active: data.outputActive,
+          state: data.outputState
+        });
+        break;
+      case 'RecordStateChanged':
+        io.to(room).emit('obs:recordStateChanged', {
+          active: data.outputActive,
+          state: data.outputState
+        });
+        break;
+      case 'StudioModeStateChanged':
+        io.to(room).emit('obs:studioModeChanged', {
+          studioModeEnabled: data.studioModeEnabled
+        });
+        break;
+      case 'CurrentPreviewSceneChanged':
+        io.to(room).emit('obs:previewSceneChanged', {
+          sceneName: data.sceneName
+        });
+        break;
+      default:
+        // Forward unknown events generically
+        io.to(room).emit(`obs:${eventName}`, data);
+    }
+  });
+
+  // Handle connection events
+  obsConnManager.on('connected', async ({ compId, vmAddress }) => {
+    const room = `competition:${compId}`;
+    io.to(room).emit('obs:connected', { connected: true, vmAddress });
+
+    // Fetch and broadcast OBS state when connected
+    await broadcastOBSState(compId, obsConnManager, io);
+  });
+
+  obsConnManager.on('disconnected', ({ compId }) => {
+    const room = `competition:${compId}`;
+    io.to(room).emit('obs:disconnected', { connected: false });
+  });
+
+  obsConnManager.on('connectionError', ({ compId, error }) => {
+    const room = `competition:${compId}`;
+    io.to(room).emit('obs:error', { error });
+  });
+
+  console.log('[Server] OBS Connection Manager initialized');
+}
+
 // Start server
 httpServer.listen(PORT, () => {
   console.log(`Show Controller Server running on port ${PORT}`);
@@ -2861,6 +3761,9 @@ httpServer.listen(PORT, () => {
   // Initialize auto-shutdown service (for coordinator mode)
   initializeAutoShutdown();
 
-  // Connect to OBS
+  // Initialize OBS Connection Manager for per-competition OBS connections
+  initializeOBSConnectionManager();
+
+  // Connect to OBS (for local/default OBS)
   connectToOBS();
 });

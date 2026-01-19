@@ -77,7 +77,8 @@ export function ShowProvider({ children }) {
     setOverrideLog([]);
 
     const newSocket = io(socketUrl, {
-      transports: ['websocket', 'polling']
+      transports: ['websocket', 'polling'],
+      query: { compId }  // Include competition ID for server to route to correct VM
     });
 
     newSocket.on('connect', () => {

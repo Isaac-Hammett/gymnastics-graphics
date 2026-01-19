@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useShow } from '../context/ShowContext';
+import { useCompetition } from '../context/CompetitionContext';
 import CurrentSegment from '../components/CurrentSegment';
 import NextSegment from '../components/NextSegment';
 import RunOfShow from '../components/RunOfShow';
@@ -37,6 +38,7 @@ const HEALTH_COLORS = {
 };
 
 export default function ProducerView() {
+  const { compId, competitionConfig } = useCompetition();
   const {
     socket,
     state,
@@ -186,7 +188,7 @@ export default function ProducerView() {
             </Link>
             <div>
               <h1 className="text-lg font-bold text-white">
-                {showConfig?.showName || 'Show Controller'}
+                {competitionConfig?.eventName || showConfig?.showName || 'Show Controller'}
               </h1>
               <div className="text-sm text-zinc-500">Producer View</div>
             </div>
@@ -472,7 +474,7 @@ export default function ProducerView() {
             <CameraRuntimePanel collapsed={false} />
 
             {/* Web Graphics Control */}
-            <GraphicsControl />
+            <GraphicsControl competitionId={compId} />
 
             {/* OBS Status */}
             <div className="bg-zinc-800 rounded-xl p-4">

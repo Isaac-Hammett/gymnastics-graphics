@@ -15,6 +15,7 @@ import { EventEmitter } from 'events';
 import admin from 'firebase-admin';
 import { getVMPoolManager, VM_STATUS } from './vmPoolManager.js';
 import { getAlertService, ALERT_LEVEL, ALERT_CATEGORY } from './alertService.js';
+import { getAWSService } from './awsService.js';
 
 // Health check configuration
 const DEFAULT_CONFIG = {
@@ -22,7 +23,8 @@ const DEFAULT_CONFIG = {
   requestTimeoutMs: 5000,     // 5 second timeout per request
   servicePort: 3003,          // Port for service health checks
   unhealthyThreshold: 3,      // Number of failed checks before marking error
-  recoveryThreshold: 2        // Number of successful checks before clearing error
+  recoveryThreshold: 2,       // Number of successful checks before clearing error
+  awsReconcileIntervalCycles: 5  // Run AWS reconciliation every N health check cycles (5 cycles = 2.5 min)
 };
 
 /**
@@ -37,10 +39,12 @@ class VMHealthMonitor extends EventEmitter {
     this._db = null;
     this._poolManager = null;
     this._alertService = null;
+    this._aws = null;
     this._pollInterval = null;
     this._isRunning = false;
     this._failureCounts = new Map();  // Track consecutive failures per VM
     this._successCounts = new Map();  // Track consecutive successes per VM
+    this._cycleCount = 0;             // Track health check cycles for AWS reconciliation
 
     console.log('[VMHealthMonitor] Instance created');
   }
@@ -72,6 +76,7 @@ class VMHealthMonitor extends EventEmitter {
       this._db = admin.database();
       this._poolManager = getVMPoolManager();
       this._alertService = getAlertService();
+      this._aws = getAWSService();
 
       // Initialize alert service if not already done
       if (!this._alertService.isInitialized()) {
@@ -134,6 +139,15 @@ class VMHealthMonitor extends EventEmitter {
       return;
     }
 
+    // Increment cycle counter
+    this._cycleCount++;
+
+    // Run AWS reconciliation periodically to catch external state changes
+    if (this._cycleCount >= this._config.awsReconcileIntervalCycles) {
+      this._cycleCount = 0;
+      await this._runAWSReconciliation();
+    }
+
     const poolStatus = this._poolManager.getPoolStatus();
     const vmsToCheck = poolStatus.vms.filter(vm =>
       // Only check VMs that are running (have a public IP and are in a running state)
@@ -160,6 +174,165 @@ class VMHealthMonitor extends EventEmitter {
       unhealthy,
       results
     });
+  }
+
+  /**
+   * Reconcile Firebase VM state with actual AWS EC2 state
+   * Detects and fixes state desync when VMs are stopped/started externally
+   */
+  async _runAWSReconciliation() {
+    console.log('[VMHealthMonitor] Running AWS state reconciliation...');
+
+    try {
+      // Get all pool-managed instances from AWS
+      const awsInstances = await this._aws.describeInstances({
+        tags: {
+          Project: 'gymnastics-graphics',
+          ManagedBy: 'vm-pool-manager'
+        }
+      });
+
+      // Build a map of instanceId -> AWS state
+      const awsStateMap = new Map();
+      for (const instance of awsInstances) {
+        awsStateMap.set(instance.instanceId, instance);
+      }
+
+      // Get current Firebase VM state
+      const poolStatus = this._poolManager.getPoolStatus();
+      const updates = {};
+      const reconciliationEvents = [];
+
+      for (const vm of poolStatus.vms) {
+        const awsInstance = awsStateMap.get(vm.instanceId);
+
+        if (!awsInstance) {
+          // Instance no longer exists in AWS (terminated externally)
+          console.warn(`[VMHealthMonitor] VM ${vm.vmId} (${vm.instanceId}) not found in AWS - marking as terminated`);
+
+          // Create alert if this VM was assigned
+          if (vm.assignedTo && this._alertService) {
+            await this._alertService.createAlert(vm.assignedTo, {
+              level: ALERT_LEVEL.CRITICAL,
+              category: ALERT_CATEGORY.VM,
+              title: 'VM Terminated Externally',
+              message: `VM ${vm.name || vm.vmId} was terminated outside of pool management. The competition has lost its assigned VM.`,
+              sourceId: `vm-terminated-${vm.vmId}`,
+              metadata: { vmId: vm.vmId, instanceId: vm.instanceId }
+            });
+          }
+
+          // Remove from Firebase
+          updates[`vmPool/vms/${vm.vmId}`] = null;
+          reconciliationEvents.push({
+            vmId: vm.vmId,
+            type: 'terminated',
+            previousStatus: vm.status,
+            assignedTo: vm.assignedTo
+          });
+          continue;
+        }
+
+        const awsState = awsInstance.state; // 'running', 'stopped', 'pending', etc.
+        const firebaseStatus = vm.status;
+
+        // Check for state mismatches
+        if (awsState === 'stopped' && ![VM_STATUS.STOPPED, VM_STATUS.STOPPING].includes(firebaseStatus)) {
+          // AWS says stopped but Firebase thinks it's running/assigned
+          console.warn(`[VMHealthMonitor] State desync detected: VM ${vm.vmId} is STOPPED in AWS but ${firebaseStatus} in Firebase`);
+
+          const wasAssigned = vm.assignedTo;
+
+          // Create alert if this VM was assigned to a competition
+          if (wasAssigned && this._alertService) {
+            await this._alertService.createAlert(wasAssigned, {
+              level: ALERT_LEVEL.CRITICAL,
+              category: ALERT_CATEGORY.VM,
+              title: 'VM Stopped Unexpectedly',
+              message: `VM ${vm.name || vm.vmId} was stopped externally (possibly via AWS console or auto-scaling). The competition needs a new VM assignment.`,
+              sourceId: `vm-stopped-external-${vm.vmId}`,
+              metadata: {
+                vmId: vm.vmId,
+                instanceId: vm.instanceId,
+                previousStatus: firebaseStatus
+              }
+            });
+          }
+
+          // Update Firebase to match AWS
+          updates[`vmPool/vms/${vm.vmId}/status`] = VM_STATUS.STOPPED;
+          updates[`vmPool/vms/${vm.vmId}/publicIp`] = null;
+          updates[`vmPool/vms/${vm.vmId}/assignedTo`] = null;
+          updates[`vmPool/vms/${vm.vmId}/services`] = null;
+          updates[`vmPool/vms/${vm.vmId}/lastStateChange`] = new Date().toISOString();
+
+          // Also clear vmAddress from competition config if it was assigned
+          if (wasAssigned) {
+            updates[`competitions/${wasAssigned}/config/vmAddress`] = null;
+          }
+
+          reconciliationEvents.push({
+            vmId: vm.vmId,
+            type: 'stopped_externally',
+            previousStatus: firebaseStatus,
+            newStatus: VM_STATUS.STOPPED,
+            assignedTo: wasAssigned
+          });
+
+        } else if (awsState === 'running' && firebaseStatus === VM_STATUS.STOPPED) {
+          // AWS says running but Firebase thinks it's stopped
+          console.warn(`[VMHealthMonitor] State desync detected: VM ${vm.vmId} is RUNNING in AWS but ${firebaseStatus} in Firebase`);
+
+          updates[`vmPool/vms/${vm.vmId}/status`] = VM_STATUS.AVAILABLE;
+          updates[`vmPool/vms/${vm.vmId}/publicIp`] = awsInstance.publicIp;
+          updates[`vmPool/vms/${vm.vmId}/privateIp`] = awsInstance.privateIp;
+          updates[`vmPool/vms/${vm.vmId}/lastStateChange`] = new Date().toISOString();
+
+          reconciliationEvents.push({
+            vmId: vm.vmId,
+            type: 'running_externally',
+            previousStatus: firebaseStatus,
+            newStatus: VM_STATUS.AVAILABLE
+          });
+
+        } else if (awsState === 'running' && awsInstance.publicIp !== vm.publicIp) {
+          // IP address changed (can happen after stop/start)
+          console.log(`[VMHealthMonitor] IP changed for VM ${vm.vmId}: ${vm.publicIp} -> ${awsInstance.publicIp}`);
+
+          updates[`vmPool/vms/${vm.vmId}/publicIp`] = awsInstance.publicIp;
+          updates[`vmPool/vms/${vm.vmId}/privateIp`] = awsInstance.privateIp;
+
+          // Update competition vmAddress if assigned
+          if (vm.assignedTo && awsInstance.publicIp) {
+            updates[`competitions/${vm.assignedTo}/config/vmAddress`] = `${awsInstance.publicIp}:${this._config.servicePort}`;
+          }
+
+          reconciliationEvents.push({
+            vmId: vm.vmId,
+            type: 'ip_changed',
+            oldIp: vm.publicIp,
+            newIp: awsInstance.publicIp
+          });
+        }
+      }
+
+      // Apply all updates atomically
+      if (Object.keys(updates).length > 0) {
+        await this._db.ref().update(updates);
+        console.log(`[VMHealthMonitor] AWS reconciliation applied ${Object.keys(updates).length} updates`);
+
+        this.emit('awsReconciled', {
+          updatesCount: Object.keys(updates).length,
+          events: reconciliationEvents
+        });
+      } else {
+        console.log('[VMHealthMonitor] AWS reconciliation: no state mismatches found');
+      }
+
+    } catch (error) {
+      console.error('[VMHealthMonitor] AWS reconciliation failed:', error.message);
+      this.emit('awsReconciliationError', { error: error.message });
+    }
   }
 
   /**
@@ -544,6 +717,16 @@ class VMHealthMonitor extends EventEmitter {
   }
 
   /**
+   * Force AWS state reconciliation (on-demand)
+   * Use this to immediately sync Firebase state with AWS
+   * @returns {Promise<void>}
+   */
+  async forceAWSReconciliation() {
+    console.log('[VMHealthMonitor] Force AWS reconciliation');
+    await this._runAWSReconciliation();
+  }
+
+  /**
    * Check if the health monitor is running
    * @returns {boolean}
    */
@@ -560,6 +743,7 @@ class VMHealthMonitor extends EventEmitter {
     this._stopPolling();
     this._failureCounts.clear();
     this._successCounts.clear();
+    this._cycleCount = 0;
     this._isRunning = false;
 
     this.emit('shutdown');

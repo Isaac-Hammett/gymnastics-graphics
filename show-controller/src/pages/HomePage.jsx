@@ -930,32 +930,20 @@ function CompetitionCard({
         </div>
       )}
 
-      {/* Action buttons */}
+      {/* Action buttons - always navigate, CompetitionLayout handles VM errors */}
       <div className="flex gap-2 flex-wrap">
-        <button
-          onClick={() => navigate(`/${compId}/producer`)}
-          disabled={!hasVM}
-          className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-            hasVM
-              ? 'bg-blue-600 text-white hover:bg-blue-500'
-              : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
-          }`}
-          title={!hasVM ? 'Assign a VM first' : undefined}
+        <Link
+          to={`/${compId}/producer`}
+          className="px-3 py-1.5 text-sm font-medium rounded-lg transition-colors bg-blue-600 text-white hover:bg-blue-500"
         >
           Producer
-        </button>
-        <button
-          onClick={() => navigate(`/${compId}/talent`)}
-          disabled={!hasVM}
-          className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-            hasVM
-              ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
-              : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
-          }`}
-          title={!hasVM ? 'Assign a VM first' : undefined}
+        </Link>
+        <Link
+          to={`/${compId}/talent`}
+          className="px-3 py-1.5 text-sm font-medium rounded-lg transition-colors bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
         >
           Talent
-        </button>
+        </Link>
         <a
           href={`/output.html?comp=${compId}`}
           target="_blank"

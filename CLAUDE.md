@@ -2,18 +2,16 @@
 
 ## Git Workflow - IMPORTANT
 
-**Always work on `dev` branch** - Push to `dev` for development work. Only merge to `main` when ready for production deployment.
+**Always work on `dev` branch** - Push to `dev` for development work.
 
 - `dev` branch: Active development (push freely)
-- `main` branch: Production only (triggers Netlify deploy, costs 15 credits each)
-
-To deploy to production: `git checkout main && git merge dev && git push && git checkout dev`
+- `main` branch: Production (no longer uses Netlify)
 
 ---
 
 ## MCP Tools Available
 
-### Firebase Tools (dev/prod environments)
+### Firebase Tools
 | Tool | Description |
 |------|-------------|
 | `firebase_get` | Read data from path |
@@ -22,9 +20,6 @@ To deploy to production: `git checkout main && git merge dev && git push && git 
 | `firebase_delete` | Delete data at path |
 | `firebase_list_paths` | List child keys |
 | `firebase_export` | Export path to JSON |
-| `firebase_sync_to_prod` | Copy dev → prod (auto-backup) |
-
-All Firebase tools require `project: "dev"` or `project: "prod"`.
 
 ### AWS/Infrastructure Tools
 | Tool | Description |
@@ -73,24 +68,15 @@ When spawning subagents, follow these rules to avoid resource contention:
 
 ---
 
-## Test Environment (Ralph Wiggum Loop) - IMPORTANT
+## Deploy to Production (commentarygraphic.com)
 
-**ALWAYS use the test environment when making UI changes to show-controller.** This allows unlimited iterations without burning Netlify build credits.
+**Production Server**: `https://commentarygraphic.com`
+**Server IP**: `3.87.107.201`
+**Directory on VM**: `/var/www/commentarygraphic`
 
-**Test Server**: `http://44.193.31.120:8080`
-**Directory on VM**: `/var/www/gymnastics-test`
-**Firebase**: Use `project: "dev"` for test data
-
-### When to Use Test Environment
-- Any changes to `show-controller/` components
-- Testing new graphics overlays
-- Verifying Firebase data structure changes
-- Before pushing to production
-
-### Deploy to Test Server
 ```bash
-# 1. Build with dev Firebase
-cd show-controller && VITE_FIREBASE_ENV=dev npm run build
+# 1. Build the frontend
+cd show-controller && npm run build
 
 # 2. Create tarball
 tar -czf /tmp/claude/dist.tar.gz -C dist .
@@ -98,30 +84,21 @@ tar -czf /tmp/claude/dist.tar.gz -C dist .
 # 3. Upload (use ssh_upload_file MCP tool)
 # localPath: /tmp/claude/dist.tar.gz
 # remotePath: /tmp/dist.tar.gz
-# target: coordinator
+# target: 3.87.107.201
 
 # 4. Extract (use ssh_exec MCP tool)
-# command: sudo rm -rf /var/www/gymnastics-test/* && sudo tar -xzf /tmp/dist.tar.gz -C /var/www/gymnastics-test/ && sudo find /var/www/gymnastics-test -name '._*' -delete
+# target: 3.87.107.201
+# command: rm -rf /var/www/commentarygraphic/* && tar -xzf /tmp/dist.tar.gz -C /var/www/commentarygraphic/ && find /var/www/commentarygraphic -name '._*' -delete
 
 # 5. Verify with Playwright
-# browser_navigate to http://44.193.31.120:8080
+# browser_navigate to https://commentarygraphic.com
 # browser_take_screenshot
 # browser_console_messages (check for errors)
 ```
 
-**Note:** The test server nginx config proxies `/.netlify/functions/*` to the coordinator API, so the frontend works the same as production.
+**Note:** SSL auto-renews via Certbot. Certificate expires 2026-04-17.
 
-**After verifying changes work on test server, THEN commit and consider production deploy.**
-
-### Firebase Environment Switching
-- `VITE_FIREBASE_ENV=dev` → uses gymnastics-graphics-dev database
-- `VITE_FIREBASE_ENV=prod` (or omit) → uses production database
-
-### Production Deploy
-When ready for production:
-1. `firebase_sync_to_prod` (copies dev data with backup)
-2. `git checkout main && git merge dev && git push` (triggers Netlify)
-3. `git checkout dev`
+---
 
 ## Competition Formats
 
@@ -159,3 +136,57 @@ Both teams compete on the SAME apparatus - used when viewing event summary by ap
 - mens-tri, womens-tri (3 teams)
 - mens-quad, womens-quad (4 teams)
 - mens-5, mens-6 (5-6 teams)
+
+---
+
+## Adding a New Team - Checklist
+
+When adding a new team to the database, **all three steps must be completed**:
+
+### Step 1: Add Team Entry
+```
+Path: teamsDatabase/teams/{team-key}
+```
+Required fields:
+- `displayName`: "School Name Men's" or "School Name Women's"
+- `gender`: "mens" or "womens"
+- `logo`: Virtius URL (e.g., `https://media.virti.us/upload/images/team/...`)
+- `school`: "School Name"
+- `roster`: Array of athlete names (e.g., `["First Last", "First Last", ...]`)
+- `updatedAt`: ISO timestamp
+
+**Example:**
+```json
+{
+  "displayName": "UW-Whitewater Women's",
+  "gender": "womens",
+  "logo": "https://media.virti.us/upload/images/team/CbWKimoC_0RpBy-M-lcSy",
+  "school": "UW-Whitewater",
+  "roster": ["Athlete One", "Athlete Two"],
+  "updatedAt": "2026-01-17T00:00:00.000Z"
+}
+```
+
+### Step 2: Add Athlete Headshots
+```
+Path: teamsDatabase/headshots/{athlete-name-lowercase}
+```
+Required fields:
+- `name`: "First Last" (proper case)
+- `teamKey`: "{school}-mens" or "{school}-womens"
+- `url`: Virtius URL (e.g., `https://media.virti.us/upload/images/athlete/...`)
+- `updatedAt`: ISO timestamp
+
+### Step 3: Add Aliases (Optional)
+```
+Path: teamsDatabase/aliases/{alias-lowercase}
+```
+Value: team key without gender suffix (e.g., "uw-whitewater")
+
+Common aliases: full university name, abbreviations, mascot names
+
+### Verification
+After adding, check the Media Manager to confirm:
+- [ ] Team logo appears
+- [ ] Roster is populated (not "No roster defined")
+- [ ] Athlete headshots load correctly

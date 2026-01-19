@@ -18,7 +18,7 @@ export const SECURITY_GROUP_ID = 'sg-025f1ac53cccb756b';
 export const SECURITY_GROUP_NAME = 'gymnastics-vm-pool';
 
 // Expected ports in security group
-export const EXPECTED_PORTS = [22, 80, 443, 3001, 8080];
+export const EXPECTED_PORTS = [22, 80, 443, 3003];
 
 // Firebase Configuration
 export const FIREBASE_PROJECTS = ['dev', 'prod'];
