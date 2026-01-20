@@ -253,7 +253,7 @@ const INPUT_SETTINGS_CONFIG = {
  * - onUpdate: Callback when source is updated successfully
  */
 export default function SourceEditor({ source, sceneName, onClose, onUpdate }) {
-  const { obsConnected } = useOBS();
+  const { obsConnected, updateInputSettings, setSceneItemTransform } = useOBS();
   const { socketUrl } = useShow();
 
   // Source information (handle multiple property name formats)
@@ -353,30 +353,23 @@ export default function SourceEditor({ source, sceneName, onClose, onUpdate }) {
     }));
   };
 
-  // Save changes
+  // Save changes - uses Socket.io events via OBSContext (PRD-OBS-03)
   const handleSave = async () => {
     setSaving(true);
     setError(null);
 
     try {
-      // Update input settings
-      const settingsResponse = await fetch(`${socketUrl}/api/obs/inputs/${encodeURIComponent(sourceName)}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inputSettings: settings })
-      });
-      if (!settingsResponse.ok) throw new Error('Failed to update source settings');
+      // Update input settings via socket event
+      if (Object.keys(settings).length > 0) {
+        updateInputSettings(sourceName, settings);
+        console.log('SourceEditor: Emitted updateInputSettings', sourceName, settings);
+      }
 
-      // Update scene item transform
-      const transformResponse = await fetch(
-        `${socketUrl}/api/obs/scenes/${encodeURIComponent(sceneName)}/items/${itemId}/transform`,
-        {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ transform })
-        }
-      );
-      if (!transformResponse.ok) throw new Error('Failed to update transform');
+      // Update scene item transform via socket event
+      if (itemId) {
+        setSceneItemTransform(sceneName, itemId, transform);
+        console.log('SourceEditor: Emitted setSceneItemTransform', sceneName, itemId, transform);
+      }
 
       console.log('Source updated:', { sourceName, settings, transform });
 
@@ -385,10 +378,12 @@ export default function SourceEditor({ source, sceneName, onClose, onUpdate }) {
         onUpdate();
       }
 
-      // Close editor
-      if (onClose) {
-        onClose();
-      }
+      // Close editor after a brief delay to allow socket events to process
+      setTimeout(() => {
+        if (onClose) {
+          onClose();
+        }
+      }, 300);
     } catch (err) {
       console.error('Error saving source:', err);
       setError(err.message);

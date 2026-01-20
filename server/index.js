@@ -3163,6 +3163,71 @@ io.on('connection', async (socket) => {
     }
   });
 
+  // Update input settings (PRD-OBS-03: Source Management)
+  socket.on('obs:updateInputSettings', async ({ inputName, inputSettings }) => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can update input settings' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      // SetInputSettings with overlay: true merges with existing settings
+      await compObs.call('SetInputSettings', { inputName, inputSettings, overlay: true });
+      console.log(`[updateInputSettings] Updated settings for ${inputName} for ${clientCompId}`);
+      await broadcastOBSState(clientCompId, obsConnManager, io);
+    } catch (error) {
+      console.error(`[updateInputSettings] Failed: ${error.message}`);
+      socket.emit('error', { message: `Failed to update input settings: ${error.message}` });
+    }
+  });
+
+  // Set scene item transform (PRD-OBS-03: Source Management)
+  socket.on('obs:setSceneItemTransform', async ({ sceneName, sceneItemId, transform }) => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can set scene item transforms' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      await compObs.call('SetSceneItemTransform', { sceneName, sceneItemId, sceneItemTransform: transform });
+      console.log(`[setSceneItemTransform] Updated transform for item ${sceneItemId} in ${sceneName} for ${clientCompId}`);
+      await broadcastOBSState(clientCompId, obsConnManager, io);
+    } catch (error) {
+      console.error(`[setSceneItemTransform] Failed: ${error.message}`);
+      socket.emit('error', { message: `Failed to set scene item transform: ${error.message}` });
+    }
+  });
+
   // Duplicate scene
   socket.on('obs:duplicateScene', async ({ sceneName, newSceneName }) => {
     const client = showState.connectedClients.find(c => c.id === socket.id);
