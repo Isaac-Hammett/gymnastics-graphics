@@ -87,7 +87,7 @@ export class TalentCommsManager {
    * Generate VDO.Ninja URLs for a room
    * @param {string} roomId - Room ID
    * @param {string} password - Room password
-   * @returns {Object} Object containing director, obsScene, and talent URLs
+   * @returns {Object} Object containing directorUrl, obsSceneUrl, and talentUrls (PRD-compliant)
    */
   generateVdoNinjaUrls(roomId, password = null) {
     if (!roomId) {
@@ -97,10 +97,12 @@ export class TalentCommsManager {
     const pwd = password || generatePassword();
 
     return {
-      director: `${VDO_NINJA_BASE_URL}/?director=${roomId}&password=${pwd}`,
-      obsScene: `${VDO_NINJA_BASE_URL}/?view=${roomId}&scene`,
-      talent1: `${VDO_NINJA_BASE_URL}/?room=${roomId}&push=talent1`,
-      talent2: `${VDO_NINJA_BASE_URL}/?room=${roomId}&push=talent2`
+      directorUrl: `${VDO_NINJA_BASE_URL}/?director=${roomId}&password=${pwd}`,
+      obsSceneUrl: `${VDO_NINJA_BASE_URL}/?view=${roomId}&scene`,
+      talentUrls: {
+        'talent-1': `${VDO_NINJA_BASE_URL}/?room=${roomId}&push=talent1`,
+        'talent-2': `${VDO_NINJA_BASE_URL}/?room=${roomId}&push=talent2`
+      }
     };
   }
 
@@ -109,7 +111,7 @@ export class TalentCommsManager {
    * Creates initial config or overwrites existing
    * @param {string} compId - Competition ID
    * @param {string} method - Communication method (default: 'vdo-ninja')
-   * @returns {Promise<Object>} Created configuration
+   * @returns {Promise<Object>} Created configuration (PRD-compliant)
    */
   async setupTalentComms(compId, method = COMMS_METHODS.VDO_NINJA) {
     if (!compId) {
@@ -129,21 +131,31 @@ export class TalentCommsManager {
       const roomId = this.generateRoomId();
       const password = generatePassword();
 
-      // Generate URLs based on method
-      let urls = {};
-      if (method === COMMS_METHODS.VDO_NINJA) {
-        urls = this.generateVdoNinjaUrls(roomId, password);
-      }
-
-      // Create config object
+      // Create config object following PRD schema
       const config = {
         method,
-        roomId,
-        password,
-        urls,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        generatedAt: new Date().toISOString()
       };
+
+      // Add VDO.Ninja config if that method is selected
+      if (method === COMMS_METHODS.VDO_NINJA) {
+        const vdoUrls = this.generateVdoNinjaUrls(roomId, password);
+        config.vdoNinja = {
+          roomId,
+          ...vdoUrls,
+          generatedAt: new Date().toISOString()
+        };
+      }
+
+      // Add Discord config placeholder if that method is selected
+      if (method === COMMS_METHODS.DISCORD) {
+        config.discord = {
+          guildId: null,
+          channelId: null,
+          channelUrl: null,
+          channelName: null
+        };
+      }
 
       // Save to Firebase
       await database.ref(`competitions/${compId}/config/talentComms`).set(config);
@@ -161,7 +173,7 @@ export class TalentCommsManager {
    * Regenerate URLs for existing talent comms
    * Creates new room ID and URLs while preserving method
    * @param {string} compId - Competition ID
-   * @returns {Promise<Object>} Updated configuration
+   * @returns {Promise<Object>} Updated configuration (PRD-compliant)
    */
   async regenerateUrls(compId) {
     if (!compId) {
@@ -183,20 +195,31 @@ export class TalentCommsManager {
       const roomId = this.generateRoomId();
       const password = generatePassword();
 
-      // Generate new URLs based on existing method
-      let urls = {};
+      // Update config following PRD schema
+      const updatedConfig = {
+        method: existingConfig.method,
+        generatedAt: existingConfig.generatedAt || new Date().toISOString()
+      };
+
+      // Regenerate VDO.Ninja URLs if that method is selected
       if (existingConfig.method === COMMS_METHODS.VDO_NINJA) {
-        urls = this.generateVdoNinjaUrls(roomId, password);
+        const vdoUrls = this.generateVdoNinjaUrls(roomId, password);
+        updatedConfig.vdoNinja = {
+          roomId,
+          ...vdoUrls,
+          generatedAt: new Date().toISOString()
+        };
       }
 
-      // Update config
-      const updatedConfig = {
-        ...existingConfig,
-        roomId,
-        password,
-        urls,
-        updatedAt: new Date().toISOString()
-      };
+      // Preserve Discord config if that method is selected
+      if (existingConfig.method === COMMS_METHODS.DISCORD) {
+        updatedConfig.discord = existingConfig.discord || {
+          guildId: null,
+          channelId: null,
+          channelUrl: null,
+          channelName: null
+        };
+      }
 
       // Save to Firebase
       await database.ref(`competitions/${compId}/config/talentComms`).set(updatedConfig);
@@ -245,7 +268,7 @@ export class TalentCommsManager {
    * Switches between vdo-ninja and discord, regenerating config
    * @param {string} compId - Competition ID
    * @param {string} method - New communication method
-   * @returns {Promise<Object>} Updated configuration
+   * @returns {Promise<Object>} Updated configuration (PRD-compliant)
    */
   async updateMethod(compId, method) {
     if (!compId) {
@@ -275,23 +298,33 @@ export class TalentCommsManager {
         return existingConfig;
       }
 
-      // Generate new config with new method
-      const roomId = this.generateRoomId();
-      const password = generatePassword();
-
-      let urls = {};
-      if (method === COMMS_METHODS.VDO_NINJA) {
-        urls = this.generateVdoNinjaUrls(roomId, password);
-      }
-
+      // Generate new config with new method following PRD schema
       const updatedConfig = {
         method,
-        roomId,
-        password,
-        urls,
-        createdAt: existingConfig.createdAt,
-        updatedAt: new Date().toISOString()
+        generatedAt: existingConfig.generatedAt || new Date().toISOString()
       };
+
+      // Generate VDO.Ninja config if switching to that method
+      if (method === COMMS_METHODS.VDO_NINJA) {
+        const roomId = this.generateRoomId();
+        const password = generatePassword();
+        const vdoUrls = this.generateVdoNinjaUrls(roomId, password);
+        updatedConfig.vdoNinja = {
+          roomId,
+          ...vdoUrls,
+          generatedAt: new Date().toISOString()
+        };
+      }
+
+      // Add Discord config placeholder if switching to that method
+      if (method === COMMS_METHODS.DISCORD) {
+        updatedConfig.discord = existingConfig.discord || {
+          guildId: null,
+          channelId: null,
+          channelUrl: null,
+          channelName: null
+        };
+      }
 
       // Save to Firebase
       await database.ref(`competitions/${compId}/config/talentComms`).set(updatedConfig);
