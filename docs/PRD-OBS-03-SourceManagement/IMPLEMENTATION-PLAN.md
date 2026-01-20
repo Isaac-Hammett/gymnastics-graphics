@@ -169,6 +169,15 @@ When debugging source management issues:
 - **BLOCKED:** Direct SSH access not configured (Permission denied on both 3.87.107.201 and 44.193.31.120)
 - **STATUS:** All code complete, deployment blocked on MCP tool availability
 
+### 2026-01-20 (Deployment Attempt #3)
+- **VERIFIED:** Production site responds HTTP 200
+- **VERIFIED:** Production bundle: `index-DYthXK9J.js` (unchanged)
+- **VERIFIED:** Local build: `index-Dp7oK54x.js` (toast notifications not deployed)
+- **VERIFIED:** Build artifacts exist in `/tmp/claude/` - `dist.tar.gz`, `overlays.tar.gz`
+- **BLOCKED:** MCP tools (ssh_upload_file, ssh_exec, mcp__playwright__*) still not available
+- **BLOCKED:** Cannot complete deployment or Playwright verification
+- **STATUS:** All P0-P3 implementation complete. Toast notification deployment pending MCP tool availability.
+
 ---
 
 ## Verification URLs
