@@ -45,7 +45,16 @@ export default function TalentCommsPanel() {
         throw new Error(`Failed to fetch talent comms config: ${response.statusText}`);
       }
       const data = await response.json();
-      setConfig(data);
+      // API returns { configured: true, config: {...} } or { configured: false, ... }
+      // Extract the config if it exists, otherwise use the whole response for "not configured" case
+      if (data.configured && data.config) {
+        setConfig(data.config);
+      } else if (data.configured === false) {
+        // Not configured yet - set a minimal config with default method
+        setConfig({ method: 'vdo-ninja' });
+      } else {
+        setConfig(data);
+      }
     } catch (err) {
       console.error('Error fetching talent comms config:', err);
       setError(err.message);
@@ -73,7 +82,8 @@ export default function TalentCommsPanel() {
       }
 
       const data = await response.json();
-      setConfig(data);
+      // API returns { success: true, config: {...} } - extract the config
+      setConfig(data.config || data);
       setSuccess('VDO.Ninja room created successfully');
 
       // Clear success message after 3 seconds
@@ -105,7 +115,8 @@ export default function TalentCommsPanel() {
       }
 
       const data = await response.json();
-      setConfig(data);
+      // API returns { success: true, config: {...} } - extract the config
+      setConfig(data.config || data);
       setSuccess('URLs regenerated successfully');
 
       // Clear success message after 3 seconds
@@ -138,7 +149,8 @@ export default function TalentCommsPanel() {
       }
 
       const data = await response.json();
-      setConfig(data);
+      // API returns { success: true, config: {...} } - extract the config
+      setConfig(data.config || data);
       setSuccess(`Switched to ${method === 'vdo-ninja' ? 'VDO.Ninja' : 'Discord'}`);
 
       // Clear success message after 3 seconds
