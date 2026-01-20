@@ -3163,6 +3163,39 @@ io.on('connection', async (socket) => {
     }
   });
 
+  // Remove an input entirely from OBS (PRD-OBS-03: Source Management)
+  socket.on('obs:removeInput', async ({ inputName }) => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can remove inputs' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      // RemoveInput removes the input from OBS entirely (from all scenes)
+      await compObs.call('RemoveInput', { inputName });
+      console.log(`[removeInput] Removed input ${inputName} for ${clientCompId}`);
+      await broadcastOBSState(clientCompId, obsConnManager, io);
+    } catch (error) {
+      console.error(`[removeInput] Failed: ${error.message}`);
+      socket.emit('error', { message: `Failed to remove input: ${error.message}` });
+    }
+  });
+
   // Update input settings (PRD-OBS-03: Source Management)
   socket.on('obs:updateInputSettings', async ({ inputName, inputSettings }) => {
     const client = showState.connectedClients.find(c => c.id === socket.id);
