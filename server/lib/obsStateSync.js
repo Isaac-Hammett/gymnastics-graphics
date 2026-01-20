@@ -160,7 +160,7 @@ class OBSStateSync extends EventEmitter {
 
     try {
       const snapshot = await this._db
-        .ref(`competitions/${this.competitionId}/production/obsState`)
+        .ref(`competitions/${this.competitionId}/obs/state`)
         .once('value');
 
       const cachedState = snapshot.val();
