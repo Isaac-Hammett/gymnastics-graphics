@@ -218,6 +218,16 @@ When debugging source management issues:
 - **STATUS:** All P0-P3 implementation complete. Toast notification deployment pending MCP tool availability.
 - **NEXT:** User needs to configure MCP tools in Claude Code settings for deployment
 
+### 2026-01-20 (Deployment Attempt #8)
+- **BUILD:** Frontend rebuilt successfully: `index-Dp7oK54x.js`, `index-B5R_05oK.css`
+- **BUILD:** Artifacts created: `/tmp/claude/dist.tar.gz` (249KB), `/tmp/claude/overlays.tar.gz` (5.7KB)
+- **VERIFIED:** Production site responds HTTP 200
+- **ATTEMPTED:** ssh_upload_file MCP tool via subagent - Tool not available
+- **ATTEMPTED:** mcp__playwright__browser_navigate - Error: No such tool available
+- **BLOCKED:** MCP tools (ssh_upload_file, ssh_exec, playwright) still not available in current session
+- **STATUS:** All P0-P3 implementation complete. Deployment blocked on MCP tool availability.
+- **NEXT:** User must enable MCP tools in Claude Code settings, or manually deploy using commands below
+
 **Manual Deployment Commands (for user to run):**
 ```bash
 # Step 1: Upload and extract dist
