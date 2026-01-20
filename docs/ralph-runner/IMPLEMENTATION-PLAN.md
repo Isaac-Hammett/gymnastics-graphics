@@ -1,98 +1,99 @@
 # PRD-OBS-05: Transition Management - Implementation Plan
 
 **Last Updated:** 2026-01-20
-**Status:** In Progress
+**Status:** COMPLETED
 **PRD:** [PRD-OBS-05-Transitions.md](../PRD-OBS-05-Transitions/PRD-OBS-05-Transitions.md)
-
----
-
-## Priority Items
-
-### 1. [HIGH] Add Socket.io Handlers for Transition Events
-**Status:** NOT STARTED
-**Files:**
-- `server/index.js` (~lines 2500-3100 socket handlers section)
-
-**Tasks:**
-- [ ] Add `obs:getTransitions` handler
-- [ ] Add `obs:setCurrentTransition` handler
-- [ ] Add `obs:setTransitionDuration` handler
-- [ ] Add `obs:setTransitionSettings` handler
-
-**Reference:** PRD Section "Socket Events (Production Architecture)" - Frontend → Coordinator Events
-
----
-
-### 2. [HIGH] Update broadcastOBSState to Include Transitions
-**Status:** NOT STARTED
-**Files:**
-- `server/index.js` (~line 2500 broadcastOBSState function)
-
-**Tasks:**
-- [ ] Fetch transition list from OBS (`GetSceneTransitionList`)
-- [ ] Add `transitions` and `currentTransition` to obsState broadcast
-
----
-
-### 3. [HIGH] Create TransitionPicker.jsx Component
-**Status:** NOT STARTED
-**Files:**
-- `show-controller/src/components/obs/TransitionPicker.jsx` (CREATE)
-
-**Tasks:**
-- [ ] Create component with UI per PRD design spec
-- [ ] Show list of available transitions
-- [ ] Dropdown to select current transition
-- [ ] Duration input field
-- [ ] Wire up to OBSContext methods
-
-**Reference:** PRD Section "UI Design - TransitionPicker.jsx"
-
----
-
-### 4. [MEDIUM] Update OBSContext.jsx with Transition Methods
-**Status:** NOT STARTED
-**Files:**
-- `show-controller/src/context/OBSContext.jsx` (lines 170-173, 327-340)
-
-**Tasks:**
-- [ ] Add `setCurrentTransition` method (emit `obs:setCurrentTransition`)
-- [ ] Add `setTransitionDuration` method (emit `obs:setTransitionDuration`)
-- [ ] Add `getTransitions` method (emit `obs:getTransitions`)
-- [ ] Ensure `transitions` state is exposed from `obsState`
-
----
-
-### 5. [MEDIUM] Integrate TransitionPicker into OBSManager
-**Status:** NOT STARTED
-**Files:**
-- `show-controller/src/pages/OBSManager.jsx` (~line 295-300)
-
-**Tasks:**
-- [ ] Import TransitionPicker component
-- [ ] Replace placeholder with TransitionPicker in transitions tab
 
 ---
 
 ## Completed Items
 
-(None yet)
+### 1. [DONE] Add Socket.io Handlers for Transition Events
+**Files Modified:**
+- `server/index.js` (lines 3500-3620)
+
+**Handlers Added:**
+- [x] `obs:getTransitions` - Returns list of available transitions
+- [x] `obs:setCurrentTransition` - Sets the default transition
+- [x] `obs:setTransitionDuration` - Sets duration in milliseconds
+- [x] `obs:setTransitionSettings` - Updates transition-specific settings
+
+---
+
+### 2. [DONE] Update broadcastOBSState to Include Transitions
+**Files Modified:**
+- `server/index.js` (lines 2500-2530)
+
+**Changes:**
+- [x] Fetch transition list from OBS (`GetSceneTransitionList`)
+- [x] Add `transitions`, `currentTransition`, and `transitionDuration` to obsState broadcast
+
+---
+
+### 3. [DONE] Create TransitionPicker.jsx Component
+**Files Created:**
+- `show-controller/src/components/obs/TransitionPicker.jsx`
+
+**Features:**
+- [x] Dropdown to select current transition
+- [x] Duration input field with manual entry
+- [x] Quick preset buttons (250ms, 500ms, 750ms, 1s)
+- [x] List of available transitions with "Active" badge
+- [x] Click-to-select transitions from list
+- [x] Loading state handling
+
+---
+
+### 4. [DONE] Update OBSContext.jsx with Transition Methods
+**Files Modified:**
+- `show-controller/src/context/OBSContext.jsx`
+
+**Methods Added:**
+- [x] `setCurrentTransition(transitionName)` - emit `obs:setCurrentTransition`
+- [x] `setTransitionDuration(duration)` - emit `obs:setTransitionDuration`
+- [x] `getTransitions()` - emit `obs:getTransitions`
+- [x] `setTransitionSettings(name, settings)` - emit `obs:setTransitionSettings`
+- [x] Event listener for `obs:transitionsList`
+
+---
+
+### 5. [DONE] Integrate TransitionPicker into OBSManager
+**Files Modified:**
+- `show-controller/src/pages/OBSManager.jsx`
+
+**Changes:**
+- [x] Import TransitionPicker component
+- [x] Replace placeholder text with TransitionPicker in transitions tab
+
+---
+
+## Verification Results
+
+**Production URL:** https://commentarygraphic.com/8kyf0rnl/obs-manager
+
+### Playwright MCP Verification (2026-01-20)
+
+| Test | Result |
+|------|--------|
+| Transitions tab shows TransitionPicker | PASS |
+| 2 transitions available (Cut, Fade) | PASS |
+| Select transition via dropdown | PASS |
+| Change duration via preset buttons | PASS |
+| "Active" badge moves to selected transition | PASS |
+| State syncs via Socket.io | PASS |
+| Coordinator logs show handler execution | PASS |
+
+### Coordinator Logs Confirmation
+```
+[setCurrentTransition] Set transition to Cut for 8kyf0rnl
+[setTransitionDuration] Set duration to 500ms for 8kyf0rnl
+```
 
 ---
 
 ## Bugs Found During Implementation
 
-(None yet)
-
----
-
-## Verification Checklist
-
-- [ ] OBS Manager shows transitions tab with TransitionPicker
-- [ ] Available transitions are listed
-- [ ] Selecting a transition updates OBS
-- [ ] Duration slider/input works
-- [ ] Changes sync across browser tabs
+None - implementation completed successfully.
 
 ---
 
@@ -100,8 +101,14 @@
 
 | File | Purpose |
 |------|---------|
-| `server/index.js:2500` | broadcastOBSState function |
-| `server/index.js:2520+` | Socket.io handlers |
-| `server/lib/obsTransitionManager.js` | Transition logic (local dev only) |
+| `server/index.js:2500` | broadcastOBSState with transitions |
+| `server/index.js:3500` | Socket.io transition handlers |
 | `show-controller/src/context/OBSContext.jsx` | Frontend state management |
-| `show-controller/src/pages/OBSManager.jsx:295` | Transitions tab placeholder |
+| `show-controller/src/components/obs/TransitionPicker.jsx` | Transition UI component |
+| `show-controller/src/pages/OBSManager.jsx` | Integration point |
+
+---
+
+## Commits
+
+- `9895896` - PRD-OBS-05: Implement Transition Management
