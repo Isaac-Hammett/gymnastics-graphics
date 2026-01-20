@@ -28,8 +28,11 @@ const baseGraphicButtons = [
   { id: 'frame-quad', label: 'Quad View', section: 'Frame Overlays' },
   { id: 'frame-tri-center', label: 'Tri Center', section: 'Frame Overlays' },
   { id: 'frame-tri-wide', label: 'Tri Wide', section: 'Frame Overlays' },
-  { id: 'frame-team-header', label: 'Team Header', section: 'Frame Overlays' },
+  { id: 'frame-team-header', label: 'Team Header Dual', section: 'Frame Overlays' },
   { id: 'frame-single', label: 'Single', section: 'Frame Overlays' },
+  { id: 'frame-dual', label: 'Dual View', section: 'Frame Overlays' },
+  // In-Meet graphics
+  { id: 'replay', label: 'Replay', section: 'In-Meet' },
 ];
 
 // Event button mapping for different genders (uses eventConfig IDs)
@@ -438,7 +441,7 @@ export default function GraphicsControl({ competitionId }) {
     });
   };
 
-  const sections = ['Pre-Meet', 'Events', 'Frame Overlays', 'Leaderboards', 'Stream'];
+  const sections = ['Pre-Meet', 'In-Meet', 'Events', 'Frame Overlays', 'Leaderboards', 'Stream'];
 
   const outputUrl = compId ? `${OUTPUT_BASE_URL}?comp=${compId}` : '';
   const localOutputUrl = compId ? `${LOCAL_OUTPUT_URL}?comp=${compId}` : '';

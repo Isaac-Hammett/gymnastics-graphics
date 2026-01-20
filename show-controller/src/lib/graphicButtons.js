@@ -32,8 +32,9 @@ export const graphicButtons = {
     { id: 'frame-quad', label: 'Quad View', number: 21 },
     { id: 'frame-tri-center', label: 'Tri Center', number: 22 },
     { id: 'frame-tri-wide', label: 'Tri Wide', number: 23 },
-    { id: 'frame-team-header', label: 'Team Header', number: 24 },
+    { id: 'frame-team-header', label: 'Team Header Dual', number: 24 },
     { id: 'frame-single', label: 'Single', number: 25 },
+    { id: 'frame-dual', label: 'Dual View', number: 26 },
   ],
   mensApparatus: [
     { id: 'floor', label: 'Floor Exercise', title: 'FLOOR EXERCISE', number: 8 },
@@ -62,6 +63,9 @@ export const graphicButtons = {
   stream: [
     { id: 'stream-starting', label: 'Starting Soon', number: 19 },
     { id: 'stream-thanks', label: 'Thanks', number: 20 },
+  ],
+  inMeet: [
+    { id: 'replay', label: 'Replay', number: 27 },
   ],
 };
 
@@ -94,8 +98,10 @@ export const graphicNames = {
   'frame-quad': 'Quad View',
   'frame-tri-center': 'Tri Center',
   'frame-tri-wide': 'Tri Wide',
-  'frame-team-header': 'Team Header',
-  'frame-single': 'Single Frame'
+  'frame-team-header': 'Team Header Dual',
+  'frame-single': 'Single Frame',
+  'frame-dual': 'Dual View',
+  'replay': 'Replay'
 };
 
 export const teamCounts = {
@@ -134,10 +140,10 @@ export const typeLabels = {
 export const eventFrameIds = ['floor', 'pommel', 'rings', 'vault', 'pbars', 'hbar', 'ubars', 'beam', 'allaround', 'final', 'order', 'lineups', 'summary'];
 
 // Base transparent graphics (without team-specific ones)
-const baseTransparentGraphics = ['event-bar', 'warm-up', 'hosts', ...eventFrameIds];
+const baseTransparentGraphics = ['event-bar', 'warm-up', 'replay', 'hosts', ...eventFrameIds];
 
 // Frame overlays are transparent (used as OBS overlays)
-const frameOverlayIds = ['frame-quad', 'frame-tri-center', 'frame-tri-wide', 'frame-team-header', 'frame-single'];
+const frameOverlayIds = ['frame-quad', 'frame-tri-center', 'frame-tri-wide', 'frame-team-header', 'frame-single', 'frame-dual'];
 
 // Generate transparent graphics list for all possible teams (up to 6)
 const teamTransparentGraphics = [];

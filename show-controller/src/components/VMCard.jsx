@@ -57,11 +57,11 @@ export function ServiceDot({ label, healthy }) {
  * - vm: VM object with vmId, name, instanceId, status, publicIp, services, assignedTo, lastHealthCheck
  * - onStart: (vmId) => void - Start a stopped VM
  * - onStop: (vmId) => void - Stop a VM
- * - onAssign: (vmId) => void - Assign VM to a competition (optional)
+ * - onAssign: () => void - Open assignment modal for this VM (optional)
  * - onRelease: (vmId) => void - Release VM from competition (optional)
  * - actionLoading: string | null - Current action loading state ('starting', 'stopping', 'assigning', 'releasing')
- * - competitions: array - Available competitions for assignment dropdown (optional)
  * - showAssignControls: boolean - Whether to show assign/release buttons (default: true)
+ * - hasAvailableCompetitions: boolean - Whether there are competitions available for assignment (default: true)
  */
 export default function VMCard({
   vm,
@@ -70,11 +70,10 @@ export default function VMCard({
   onAssign,
   onRelease,
   actionLoading,
-  competitions = [],
   showAssignControls = true,
+  hasAvailableCompetitions = true,
 }) {
   const [copiedSSH, setCopiedSSH] = useState(false);
-  const [showAssignDropdown, setShowAssignDropdown] = useState(false);
 
   const statusColor = STATUS_COLORS[vm.status] || STATUS_COLORS[VM_STATUS.ERROR];
   const canStart = vm.status === VM_STATUS.STOPPED;
@@ -92,14 +91,6 @@ export default function VMCard({
     navigator.clipboard.writeText(sshCommand);
     setCopiedSSH(true);
     setTimeout(() => setCopiedSSH(false), 2000);
-  };
-
-  // Handle assignment
-  const handleAssign = (competitionId) => {
-    if (onAssign) {
-      onAssign(vm.vmId, competitionId);
-    }
-    setShowAssignDropdown(false);
   };
 
   return (
@@ -201,37 +192,21 @@ export default function VMCard({
           </button>
         )}
 
-        {/* Assign Button with Dropdown */}
+        {/* Assign Button - opens modal in parent */}
         {showAssignControls && canAssign && (
-          <div className="relative flex-1 min-w-[80px]">
-            <button
-              onClick={() => setShowAssignDropdown(!showAssignDropdown)}
-              disabled={!!actionLoading || competitions.length === 0}
-              className="w-full flex items-center justify-center gap-1 px-3 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-700 disabled:text-zinc-500 text-white text-sm font-medium rounded-lg transition-colors"
-            >
-              {actionLoading === 'assigning' ? (
-                <ArrowPathIcon className="w-4 h-4 animate-spin" />
-              ) : (
-                <LinkIcon className="w-4 h-4" />
-              )}
-              Assign
-            </button>
-
-            {/* Dropdown Menu */}
-            {showAssignDropdown && competitions.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-zinc-700 border border-zinc-600 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
-                {competitions.map((comp) => (
-                  <button
-                    key={comp.id}
-                    onClick={() => handleAssign(comp.id)}
-                    className="w-full px-3 py-2 text-left text-sm text-white hover:bg-zinc-600 first:rounded-t-lg last:rounded-b-lg transition-colors"
-                  >
-                    {comp.name || comp.id}
-                  </button>
-                ))}
-              </div>
+          <button
+            onClick={onAssign}
+            disabled={!!actionLoading || !hasAvailableCompetitions}
+            className="flex-1 min-w-[80px] flex items-center justify-center gap-1 px-3 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-700 disabled:text-zinc-500 text-white text-sm font-medium rounded-lg transition-colors"
+            title={!hasAvailableCompetitions ? 'All competitions already have a VM assigned' : 'Assign to a competition'}
+          >
+            {actionLoading === 'assigning' ? (
+              <ArrowPathIcon className="w-4 h-4 animate-spin" />
+            ) : (
+              <LinkIcon className="w-4 h-4" />
             )}
-          </div>
+            Assign
+          </button>
         )}
 
         {/* SSH Copy Button */}

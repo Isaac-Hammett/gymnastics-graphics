@@ -103,6 +103,34 @@ export function ShowProvider({ children }) {
       setState(prev => ({ ...prev, obsCurrentScene: sceneName }));
     });
 
+    // Also listen for new event format from obsStateSync
+    newSocket.on('obs:currentSceneChanged', (data) => {
+      const sceneName = data?.sceneName || data;
+      setState(prev => ({ ...prev, obsCurrentScene: sceneName }));
+    });
+
+    // Listen for OBS connection status from obsConnectionManager
+    newSocket.on('obs:connected', (data) => {
+      console.log('ShowContext: OBS connected', data);
+      setState(prev => ({ ...prev, obsConnected: true }));
+    });
+
+    newSocket.on('obs:disconnected', (data) => {
+      console.log('ShowContext: OBS disconnected', data);
+      setState(prev => ({ ...prev, obsConnected: false }));
+    });
+
+    // Also extract connection status from obs:stateUpdated (sent on initial connection)
+    newSocket.on('obs:stateUpdated', (data) => {
+      console.log('ShowContext: OBS state updated', data);
+      if (data?.connected !== undefined) {
+        setState(prev => ({ ...prev, obsConnected: data.connected }));
+      }
+      if (data?.currentScene) {
+        setState(prev => ({ ...prev, obsCurrentScene: data.currentScene }));
+      }
+    });
+
     newSocket.on('error', ({ message }) => {
       setError(message);
       setTimeout(() => setError(null), 3000);
