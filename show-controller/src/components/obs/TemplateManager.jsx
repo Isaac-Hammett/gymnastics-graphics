@@ -8,7 +8,8 @@ import {
   CameraIcon,
   PhotoIcon,
   InformationCircleIcon,
-  XMarkIcon
+  XMarkIcon,
+  TrashIcon
 } from '@heroicons/react/24/outline';
 import { useOBS } from '../../context/OBSContext';
 import { useShow } from '../../context/ShowContext';
@@ -30,6 +31,8 @@ export default function TemplateManager() {
 
   // Modal states
   const [showApplyModal, setShowApplyModal] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(null);
+  const [deleting, setDeleting] = useState(null);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [saveTemplateName, setSaveTemplateName] = useState('');
   const [saveTemplateDescription, setSaveTemplateDescription] = useState('');
@@ -149,6 +152,35 @@ export default function TemplateManager() {
     }
   };
 
+  const handleDeleteTemplate = async (templateId) => {
+    setError(null);
+    setSuccess(null);
+    setDeleting(templateId);
+
+    try {
+      const response = await fetch(`${socketUrl}/api/obs/templates/${encodeURIComponent(templateId)}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Failed to delete template: ${response.statusText}`);
+      }
+
+      setSuccess('Template deleted successfully');
+      setShowDeleteModal(null);
+      fetchTemplates(); // Refresh template list
+
+      // Clear success message after 5 seconds
+      setTimeout(() => setSuccess(null), 5000);
+    } catch (err) {
+      console.error('Error deleting template:', err);
+      setError(err.message);
+    } finally {
+      setDeleting(null);
+    }
+  };
+
   const toggleMeetType = (meetType) => {
     setSaveTemplateMeetTypes(prev =>
       prev.includes(meetType)
@@ -254,7 +286,9 @@ export default function TemplateManager() {
                 key={template.id}
                 template={template}
                 onApply={() => setShowApplyModal(template)}
+                onDelete={() => setShowDeleteModal(template)}
                 isApplying={applying === template.id}
+                isDeleting={deleting === template.id}
               />
             ))}
           </div>
@@ -291,6 +325,16 @@ export default function TemplateManager() {
           isSaving={saving}
         />
       )}
+
+      {/* Delete Template Confirmation Modal */}
+      {showDeleteModal && (
+        <DeleteTemplateModal
+          template={showDeleteModal}
+          onConfirm={() => handleDeleteTemplate(showDeleteModal.id)}
+          onCancel={() => setShowDeleteModal(null)}
+          isDeleting={deleting === showDeleteModal.id}
+        />
+      )}
     </div>
   );
 }
@@ -298,7 +342,7 @@ export default function TemplateManager() {
 /**
  * TemplateCard - Individual template card with metadata
  */
-function TemplateCard({ template, onApply, isApplying }) {
+function TemplateCard({ template, onApply, onDelete, isApplying, isDeleting }) {
   return (
     <div className="bg-gray-800 rounded-lg p-4 hover:bg-gray-750 transition-colors">
       <div className="flex items-start justify-between gap-4">
@@ -357,23 +401,37 @@ function TemplateCard({ template, onApply, isApplying }) {
           </div>
         </div>
 
-        <button
-          onClick={onApply}
-          disabled={isApplying}
-          className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:text-gray-500 text-white font-medium rounded-lg transition-colors whitespace-nowrap"
-        >
-          {isApplying ? (
-            <>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onApply}
+            disabled={isApplying || isDeleting}
+            className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:text-gray-500 text-white font-medium rounded-lg transition-colors whitespace-nowrap"
+          >
+            {isApplying ? (
+              <>
+                <ArrowPathIcon className="w-5 h-5 animate-spin" />
+                Applying...
+              </>
+            ) : (
+              <>
+                <DocumentDuplicateIcon className="w-5 h-5" />
+                Apply
+              </>
+            )}
+          </button>
+          <button
+            onClick={onDelete}
+            disabled={isApplying || isDeleting}
+            className="flex items-center gap-2 px-3 py-2 bg-red-600/20 hover:bg-red-600/40 disabled:bg-gray-700 disabled:text-gray-500 text-red-400 hover:text-red-300 font-medium rounded-lg transition-colors border border-red-600/30"
+            title="Delete template"
+          >
+            {isDeleting ? (
               <ArrowPathIcon className="w-5 h-5 animate-spin" />
-              Applying...
-            </>
-          ) : (
-            <>
-              <DocumentDuplicateIcon className="w-5 h-5" />
-              Apply Template
-            </>
-          )}
-        </button>
+            ) : (
+              <TrashIcon className="w-5 h-5" />
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -562,6 +620,71 @@ function SaveTemplateModal({
                 <>
                   <PlusIcon className="w-5 h-5" />
                   Save Template
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * DeleteTemplateModal - Confirmation dialog for deleting templates
+ */
+function DeleteTemplateModal({ template, onConfirm, onCancel, isDeleting }) {
+  return (
+    <div
+      className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+      onClick={onCancel}
+    >
+      <div
+        className="bg-gray-800 rounded-lg max-w-md w-full"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-6">
+          <div className="flex items-start gap-4 mb-4">
+            <div className="w-10 h-10 rounded-full bg-red-900/20 flex items-center justify-center flex-shrink-0">
+              <TrashIcon className="w-6 h-6 text-red-400" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-white font-semibold text-lg mb-2">Delete Template</h3>
+              <p className="text-gray-400 text-sm mb-4">
+                Are you sure you want to delete the template <span className="text-white font-medium">"{template.name}"</span>?
+              </p>
+
+              <div className="bg-red-900/20 border border-red-700 rounded-lg p-3 flex items-start gap-2">
+                <ExclamationTriangleIcon className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                <div className="text-red-200 text-sm">
+                  This action cannot be undone. The template will be permanently deleted.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={onCancel}
+              disabled={isDeleting}
+              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-white rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={onConfirm}
+              disabled={isDeleting}
+              className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg transition-colors"
+            >
+              {isDeleting ? (
+                <>
+                  <ArrowPathIcon className="w-5 h-5 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <TrashIcon className="w-5 h-5" />
+                  Delete Template
                 </>
               )}
             </button>
