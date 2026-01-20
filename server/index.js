@@ -3710,10 +3710,9 @@ io.on('connection', async (socket) => {
   // Request screenshot for preview (with configurable options)
   socket.on('obs:requestScreenshot', async (options = {}) => {
     const { sceneName = null, imageWidth = 640, imageHeight = 360, imageFormat = 'jpg' } = options;
-    const client = showState.connectedClients.find(c => c.id === socket.id);
 
-    // Allow any connected client to request screenshots (not just producers)
-    const clientCompId = client?.compId;
+    // Get compId from socket handshake query (same as other handlers)
+    const clientCompId = socket.handshake?.query?.compId;
     if (!clientCompId) {
       socket.emit('obs:screenshotError', { error: 'No competition ID for client' });
       return;
