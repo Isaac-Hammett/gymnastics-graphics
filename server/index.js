@@ -361,6 +361,11 @@ async function initializeOBSStateSync(competitionId) {
     // This listener is here for logging or additional handling if needed
   });
 
+  // Sync legacy showState.obsCurrentScene from new system
+  obsStateSync.on('currentSceneChanged', ({ sceneName }) => {
+    showState.obsCurrentScene = sceneName;
+  });
+
   console.log('OBS State Sync initialized and ready');
 }
 
@@ -624,11 +629,8 @@ async function connectToOBS() {
 }
 
 // OBS Event Handlers
-obs.on('CurrentProgramSceneChanged', ({ sceneName }) => {
-  showState.obsCurrentScene = sceneName;
-  io.emit('sceneChanged', sceneName);
-  broadcastState();
-});
+// Note: CurrentProgramSceneChanged is now handled by obsStateSync (line ~3670)
+// Legacy showState.obsCurrentScene is synced via obsStateSync.on('currentSceneChanged')
 
 obs.on('StreamStateChanged', ({ outputActive }) => {
   showState.obsIsStreaming = outputActive;
@@ -2756,21 +2758,6 @@ io.on('connection', async (socket) => {
     }
   });
 
-  // Refresh OBS state (for Refresh button in UI)
-  socket.on('obs:refreshState', async () => {
-    const client = showState.connectedClients.find(c => c.id === socket.id);
-    const clientCompId = client?.compId;
-
-    if (!clientCompId) {
-      console.log('[obs:refreshState] No competition ID for client');
-      return;
-    }
-
-    console.log(`[obs:refreshState] Refreshing OBS state for ${clientCompId}`);
-    const obsConnManager = getOBSConnectionManager();
-    await broadcastOBSState(clientCompId, obsConnManager, io);
-  });
-
   // Toggle scene item visibility
   socket.on('obs:toggleItemVisibility', async ({ sceneName, sceneItemId, enabled }) => {
     const client = showState.connectedClients.find(c => c.id === socket.id);
@@ -3726,6 +3713,13 @@ function initializeOBSConnectionManager() {
 
   obsConnManager.on('disconnected', ({ compId }) => {
     const room = `competition:${compId}`;
+    io.to(room).emit('obs:disconnected', { connected: false });
+  });
+
+  // Handle unexpected connection loss (TCP close or heartbeat failure)
+  obsConnManager.on('connectionClosed', ({ compId }) => {
+    const room = `competition:${compId}`;
+    console.log(`[OBS] Connection closed for ${compId}, notifying clients`);
     io.to(room).emit('obs:disconnected', { connected: false });
   });
 
