@@ -153,12 +153,21 @@ When debugging source management issues:
 
 **Note:** Core source management functionality (P0-P2) was already deployed in earlier commits. Only the toast notification polish (P3 #14) is pending deployment.
 
-### 2026-01-20 (Deployment Attempt)
+### 2026-01-20 (Deployment Attempt #1)
 - **ATTEMPTED:** Frontend deployment - MCP tools not available in this session
 - **VERIFIED:** Production site is accessible (HTTP 200)
 - **VERIFIED:** Production has older build (different asset hashes)
 - **BLOCKED:** Cannot deploy without ssh_upload_file and ssh_exec MCP tools
 - **BLOCKED:** Cannot run Playwright verification without playwright MCP tools
+
+### 2026-01-20 (Deployment Attempt #2)
+- **VERIFIED:** Production site responsive (HTTP 200 at 21:31 UTC)
+- **VERIFIED:** Production bundle: `index-DYthXK9J.js`
+- **VERIFIED:** Local build completed: `index-Dp7oK54x.js` (still different = not deployed)
+- **VERIFIED:** Build artifacts ready: `/tmp/claude/dist.tar.gz`, `/tmp/claude/overlays.tar.gz`
+- **BLOCKED:** MCP tools (ssh_upload_file, ssh_exec, playwright) still not available
+- **BLOCKED:** Direct SSH access not configured (Permission denied on both 3.87.107.201 and 44.193.31.120)
+- **STATUS:** All code complete, deployment blocked on MCP tool availability
 
 ---
 
