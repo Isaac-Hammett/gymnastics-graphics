@@ -109,6 +109,17 @@ export function ShowProvider({ children }) {
       setState(prev => ({ ...prev, obsCurrentScene: sceneName }));
     });
 
+    // Listen for OBS connection status from obsConnectionManager
+    newSocket.on('obs:connected', (data) => {
+      console.log('ShowContext: OBS connected', data);
+      setState(prev => ({ ...prev, obsConnected: true }));
+    });
+
+    newSocket.on('obs:disconnected', (data) => {
+      console.log('ShowContext: OBS disconnected', data);
+      setState(prev => ({ ...prev, obsConnected: false }));
+    });
+
     newSocket.on('error', ({ message }) => {
       setError(message);
       setTimeout(() => setError(null), 3000);
