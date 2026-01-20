@@ -160,7 +160,7 @@ class OBSStateSync extends EventEmitter {
 
     try {
       const snapshot = await this._db
-        .ref(`competitions/${this.competitionId}/production/obsState`)
+        .ref(`competitions/${this.competitionId}/obs/state`)
         .once('value');
 
       const cachedState = snapshot.val();
@@ -266,18 +266,29 @@ class OBSStateSync extends EventEmitter {
   async onConnectionClosed() {
     console.log('[OBSStateSync] OBS connection closed');
 
+    // Clear all OBS-specific state to prevent stale data
     this.state.connected = false;
     this.state.connectionError = 'Connection closed';
+    this.state.scenes = [];
+    this.state.inputs = [];
+    this.state.audioSources = [];
+    this.state.transitions = [];
+    this.state.currentScene = null;
+    this.state.currentProgramScene = null;
 
     // Save state to persist disconnected status
     await this._saveState().catch(err => {
       console.error('[OBSStateSync] Failed to save state on disconnect:', err.message);
     });
 
+    // Broadcast disconnected event
     this.broadcast('obs:disconnected', {
       connected: false,
       error: 'Connection closed'
     });
+
+    // Broadcast full state update so clients clear their scene lists
+    this.broadcast('obs:stateUpdated', this.state);
 
     this.emit('disconnected');
   }

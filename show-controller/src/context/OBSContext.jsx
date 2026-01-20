@@ -23,10 +23,13 @@ export function OBSProvider({ children }) {
   // Get socket from ShowContext
   const { socket, connected } = useShow();
 
-  // State
+  // State - obsConnected is derived from obsState.connected (set by obs:stateUpdated event)
   const [obsState, setObsState] = useState(INITIAL_OBS_STATE);
-  const [obsConnected, setObsConnected] = useState(false);
   const [connectionError, setConnectionError] = useState(null);
+
+  // obsConnected comes from obsState which is updated directly by obs:stateUpdated
+  // This ensures OBSManager sees the connected state immediately when the event fires
+  const obsConnected = obsState?.connected ?? false;
 
   // Subscribe to socket events
   useEffect(() => {
@@ -40,19 +43,18 @@ export function OBSProvider({ children }) {
     const handleStateUpdate = (state) => {
       console.log('OBSContext: State update received', state);
       setObsState(state);
-      setObsConnected(state?.connected ?? false);
       setConnectionError(state?.connectionError ?? null);
     };
 
     const handleConnected = (data) => {
       console.log('OBSContext: OBS connected', data);
-      setObsConnected(true);
+      setObsState(prev => ({ ...prev, connected: true }));
       setConnectionError(null);
     };
 
     const handleDisconnected = (data) => {
       console.log('OBSContext: OBS disconnected', data);
-      setObsConnected(false);
+      setObsState(prev => ({ ...prev, connected: false }));
       if (data?.error) {
         setConnectionError(data.error);
       }

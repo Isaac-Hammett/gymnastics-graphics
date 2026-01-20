@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useCompetitions } from '../hooks/useCompetitions';
+import { useCompetitions, checkVmStatus } from '../hooks/useCompetitions';
 import { useVMPool, VM_STATUS } from '../hooks/useVMPool';
 import { useCoordinator, COORDINATOR_STATUS } from '../hooks/useCoordinator';
 import CoordinatorStatus from '../components/CoordinatorStatus';
@@ -152,41 +152,22 @@ export default function HomePage() {
     return groups;
   }, [competitions, searchQuery]);
 
-  // Check VM status for competitions
+  // Check VM status for competitions (routes through coordinator in production)
   useEffect(() => {
-    const checkVmStatus = async (compId, vmAddress) => {
-      if (!vmAddress) {
-        setVmStatuses(prev => ({ ...prev, [compId]: { online: false, noVm: true } }));
-        return;
-      }
-
-      const url = vmAddress.startsWith('http') ? vmAddress : `http://${vmAddress}`;
-
-      try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 5000);
-
-        const response = await fetch(`${url}/api/status`, { signal: controller.signal });
-        clearTimeout(timeout);
-
-        if (response.ok) {
-          const data = await response.json();
-          setVmStatuses(prev => ({
-            ...prev,
-            [compId]: { online: true, obsConnected: data.obsConnected || false }
-          }));
-        } else {
-          setVmStatuses(prev => ({ ...prev, [compId]: { online: false } }));
+    const checkStatuses = async () => {
+      for (const [compId, data] of Object.entries(competitions)) {
+        const vmAddress = data?.config?.vmAddress;
+        if (!vmAddress) {
+          setVmStatuses(prev => ({ ...prev, [compId]: { online: false, noVm: true } }));
+          continue;
         }
-      } catch {
-        setVmStatuses(prev => ({ ...prev, [compId]: { online: false } }));
+
+        const status = await checkVmStatus(vmAddress, 5000, compId);
+        setVmStatuses(prev => ({ ...prev, [compId]: status }));
       }
     };
 
-    Object.entries(competitions).forEach(([compId, data]) => {
-      const vmAddress = data?.config?.vmAddress;
-      checkVmStatus(compId, vmAddress);
-    });
+    checkStatuses();
   }, [competitions]);
 
   // VM assignment handlers

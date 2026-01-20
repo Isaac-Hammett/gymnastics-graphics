@@ -1428,6 +1428,61 @@ app.get('/api/competitions/:compId/vm', (req, res) => {
   }
 });
 
+// GET /api/vm/:compId/status - Proxy VM status check (avoids Mixed Content in production)
+// Frontend calls this instead of hitting the VM directly
+app.get('/api/vm/:compId/status', async (req, res) => {
+  const { compId } = req.params;
+
+  try {
+    const vmPoolManager = getVMPoolManager();
+    if (!vmPoolManager.isInitialized()) {
+      return res.json({ online: false, noVm: true, error: 'VM pool not initialized' });
+    }
+
+    // Find VM assigned to this competition
+    let vm = null;
+    for (const [, v] of vmPoolManager._vms) {
+      if (v.assignedTo === compId) {
+        vm = v;
+        break;
+      }
+    }
+
+    if (!vm || !vm.publicIp) {
+      return res.json({ online: false, noVm: true });
+    }
+
+    // Server-side request to VM (no Mixed Content issues)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+    try {
+      const response = await fetch(`http://${vm.publicIp}:3003/api/status`, {
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        const data = await response.json();
+        return res.json({
+          online: true,
+          obsConnected: data.obsConnected || false,
+          uptime: data.uptime,
+          version: data.version
+        });
+      }
+      return res.json({ online: false, error: `HTTP ${response.status}` });
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      const errorMessage = fetchError.name === 'AbortError' ? 'Request timeout' : fetchError.message;
+      return res.json({ online: false, error: errorMessage });
+    }
+  } catch (error) {
+    console.error(`[API] Failed to check VM status for ${compId}:`, error);
+    res.json({ online: false, error: error.message });
+  }
+});
+
 // ============================================
 // Camera Health API Endpoints
 // ============================================
@@ -2307,6 +2362,64 @@ app.get('/{*path}', (req, res) => {
   res.sendFile(join(__dirname, '..', 'show-controller', 'dist', 'index.html'));
 });
 
+// Helper function to categorize scene by name (for coordinator)
+// Note: This function mirrors the categorization logic from obsStateSync.js
+// but operates independently since obsStateSync is only for local development
+function categorizeSceneByName(sceneName, templateScenes = []) {
+  if (!sceneName) {
+    return 'manual';
+  }
+
+  // Check if scene is in templateScenes list (from Firebase)
+  if (templateScenes && templateScenes.includes(sceneName)) {
+    return 'template';
+  }
+
+  const name = sceneName.toLowerCase();
+
+  // Generated single-camera scenes
+  // Template patterns: "Full Screen - Camera X", "Replay - Camera X"
+  // Legacy patterns: "Single - Camera X"
+  if (name.startsWith('full screen - ') ||
+      name.startsWith('replay - ') ||
+      name.startsWith('single - ')) {
+    return 'generated-single';
+  }
+
+  // Generated multi-camera scenes
+  // Template patterns: "Dual View - ...", "Triple View - ...", "Quad View"
+  // Legacy patterns: "Dual - ...", "Triple - ...", "Quad - ..."
+  if (name.startsWith('dual view') ||
+      name.startsWith('triple view') ||
+      name.startsWith('quad view') ||
+      name === 'quad view' ||
+      name.startsWith('dual - ') ||
+      name.startsWith('triple - ') ||
+      name.startsWith('quad - ')) {
+    return 'generated-multi';
+  }
+
+  // Static production scenes
+  // Template patterns: "Stream Starting Soon", "End Stream"
+  // Legacy patterns: "Starting Soon", "BRB", "Thanks for Watching", "Be Right Back"
+  const staticScenes = ['starting soon', 'brb', 'thanks for watching', 'be right back', 'end stream'];
+  if (staticScenes.some(s => name.includes(s))) {
+    return 'static';
+  }
+
+  // Graphics-only scenes
+  // Template pattern: "Web-graphics-only-no-video"
+  // Legacy pattern: "Graphics Fullscreen"
+  if (name.includes('graphics fullscreen') ||
+      name.includes('web-graphics-only') ||
+      name.includes('graphics-only')) {
+    return 'graphics';
+  }
+
+  // Everything else is manual
+  return 'manual';
+}
+
 // Helper function to fetch and broadcast OBS state for a competition
 async function broadcastOBSState(compId, obsConnManager, io) {
   const room = `competition:${compId}`;
@@ -2318,6 +2431,21 @@ async function broadcastOBSState(compId, obsConnManager, io) {
   }
 
   try {
+    // Fetch template scenes from Firebase for proper categorization
+    let templateScenes = [];
+    try {
+      const db = productionConfigService.getDb();
+      if (db) {
+        const snapshot = await db.ref(`competitions/${compId}/obs/templateScenes`).once('value');
+        templateScenes = snapshot.val() || [];
+        if (!Array.isArray(templateScenes)) {
+          templateScenes = [];
+        }
+      }
+    } catch (fbError) {
+      console.log(`[broadcastOBSState] Could not fetch template scenes: ${fbError.message}`);
+    }
+
     // Fetch scene list
     const sceneListResponse = await compObs.call('GetSceneList');
     const currentScene = sceneListResponse.currentProgramSceneName || null;
@@ -2341,9 +2469,11 @@ async function broadcastOBSState(compId, obsConnManager, io) {
       }
       return {
         name: scene.sceneName,
+        sceneName: scene.sceneName, // Include both for compatibility
         uuid: scene.sceneUuid,
         index: scene.sceneIndex,
-        items
+        items,
+        category: categorizeSceneByName(scene.sceneName, templateScenes)
       };
     }));
 
@@ -2658,6 +2788,23 @@ io.on('connection', async (socket) => {
                 }
               }
               console.log(`[createScene] Created scene from template: ${sceneName} for ${clientCompId}`);
+
+              // Store scene name in templateScenes list in Firebase for proper categorization
+              try {
+                const templateScenesRef = database.ref(`competitions/${clientCompId}/obs/templateScenes`);
+                const templateScenesSnapshot = await templateScenesRef.once('value');
+                let templateScenes = templateScenesSnapshot.val() || [];
+                if (!Array.isArray(templateScenes)) {
+                  templateScenes = [];
+                }
+                if (!templateScenes.includes(sceneName)) {
+                  templateScenes.push(sceneName);
+                  await templateScenesRef.set(templateScenes);
+                  console.log(`[createScene] Added ${sceneName} to templateScenes list`);
+                }
+              } catch (fbError) {
+                console.warn(`[createScene] Could not update templateScenes list: ${fbError.message}`);
+              }
             } else {
               console.warn(`[createScene] Template ${templateId} has no scenes, created empty scene`);
             }
@@ -2705,6 +2852,24 @@ io.on('connection', async (socket) => {
     try {
       await compObs.call('RemoveScene', { sceneName });
       console.log(`[deleteScene] Deleted scene: ${sceneName} for ${clientCompId}`);
+
+      // Remove scene from templateScenes list in Firebase if present
+      try {
+        const db = productionConfigService.getDb();
+        if (db) {
+          const templateScenesRef = db.ref(`competitions/${clientCompId}/obs/templateScenes`);
+          const templateScenesSnapshot = await templateScenesRef.once('value');
+          let templateScenes = templateScenesSnapshot.val() || [];
+          if (Array.isArray(templateScenes) && templateScenes.includes(sceneName)) {
+            templateScenes = templateScenes.filter(s => s !== sceneName);
+            await templateScenesRef.set(templateScenes);
+            console.log(`[deleteScene] Removed ${sceneName} from templateScenes list`);
+          }
+        }
+      } catch (fbError) {
+        console.warn(`[deleteScene] Could not update templateScenes list: ${fbError.message}`);
+      }
+
       // Broadcast updated state to all clients in this competition
       await broadcastOBSState(clientCompId, obsConnManager, io);
     } catch (error) {
@@ -3257,9 +3422,33 @@ io.on('connection', async (socket) => {
 
   // OBS State Sync: Refresh full state from OBS
   socket.on('obs:refreshState', async () => {
+    console.log(`[obs:refreshState] Request from client, compId: ${clientCompId || 'none'}`);
+
+    // First, try competition-based OBS connection (via obsConnectionManager)
+    if (clientCompId && clientCompId !== 'local') {
+      const obsConnManager = getOBSConnectionManager();
+      const connState = obsConnManager.getConnectionState(clientCompId);
+      console.log(`[obs:refreshState] Connection state for ${clientCompId}:`, connState ? { connected: connState.connected, error: connState.error } : 'null');
+
+      if (connState && connState.connected) {
+        try {
+          console.log(`[obs:refreshState] Broadcasting full state for competition ${clientCompId}`);
+          await broadcastOBSState(clientCompId, obsConnManager, io);
+          return;
+        } catch (error) {
+          console.error(`[obs:refreshState] Failed to refresh OBS state for ${clientCompId}:`, error);
+          socket.emit('error', { message: 'Failed to refresh OBS state' });
+          return;
+        }
+      } else {
+        console.log(`[obs:refreshState] OBS not connected for ${clientCompId}, falling back to local`);
+      }
+    }
+
+    // Fall back to local obsStateSync
     if (obsStateSync && obsStateSync.isInitialized()) {
       try {
-        console.log('Client requested OBS state refresh');
+        console.log('Client requested OBS state refresh (local)');
         await obsStateSync.refreshFullState();
       } catch (error) {
         console.error('Failed to refresh OBS state:', error);
