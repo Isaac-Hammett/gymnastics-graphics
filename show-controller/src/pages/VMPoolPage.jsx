@@ -9,12 +9,16 @@ import {
   CogIcon,
   PlusIcon,
   StopIcon,
+  LinkIcon,
+  MagnifyingGlassIcon,
 } from '@heroicons/react/24/solid';
 import VMCard, { VM_STATUS } from '../components/VMCard';
 import PoolStatusBar from '../components/PoolStatusBar';
 import CoordinatorStatus from '../components/CoordinatorStatus';
 import SystemOfflinePage from './SystemOfflinePage';
 import { useCoordinator, COORDINATOR_STATUS } from '../hooks/useCoordinator';
+import { useCompetitions } from '../hooks/useCompetitions';
+import { useVMPool } from '../hooks/useVMPool';
 import { SERVER_URL } from '../lib/serverUrl';
 
 export default function VMPoolPage() {
@@ -30,6 +34,16 @@ export default function VMPoolPage() {
   const [launchingVM, setLaunchingVM] = useState(false);
   const [showLaunchModal, setShowLaunchModal] = useState(false);
   const [selectedInstanceType, setSelectedInstanceType] = useState('t3.large');
+
+  // Assignment modal state
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [selectedVMForAssign, setSelectedVMForAssign] = useState(null);
+  const [assignSearch, setAssignSearch] = useState('');
+  const [assigning, setAssigning] = useState(false);
+
+  // Get competitions for assignment
+  const { competitions } = useCompetitions();
+  const { assignVM, releaseVM, getVMForCompetition } = useVMPool();
 
   // Available instance types for the dropdown
   const INSTANCE_TYPES = [
@@ -186,6 +200,86 @@ export default function VMPoolPage() {
       setLaunchingVM(false);
     }
   };
+
+  // Open assign modal for a specific VM
+  const handleOpenAssignModal = (vm) => {
+    setSelectedVMForAssign(vm);
+    setAssignSearch('');
+    setShowAssignModal(true);
+  };
+
+  // Assign VM to a competition
+  const handleAssignVM = async (competitionId) => {
+    if (!selectedVMForAssign) return;
+
+    setAssigning(true);
+    try {
+      const result = await assignVM(competitionId, selectedVMForAssign.vmId);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to assign VM');
+      }
+      setShowAssignModal(false);
+      setSelectedVMForAssign(null);
+      await fetchPoolStatus();
+    } catch (err) {
+      console.error('Failed to assign VM:', err);
+      alert(`Failed to assign VM: ${err.message}`);
+    } finally {
+      setAssigning(false);
+    }
+  };
+
+  // Release VM from competition
+  const handleReleaseVM = async (vmId) => {
+    const vm = vms.find(v => v.vmId === vmId);
+    if (!vm?.assignedTo) return;
+
+    setActionLoading(prev => ({ ...prev, [vmId]: 'releasing' }));
+    try {
+      const result = await releaseVM(vm.assignedTo);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to release VM');
+      }
+      await fetchPoolStatus();
+    } catch (err) {
+      console.error('Failed to release VM:', err);
+      alert(`Failed to release VM: ${err.message}`);
+    } finally {
+      setActionLoading(prev => ({ ...prev, [vmId]: null }));
+    }
+  };
+
+  // Get competitions available for assignment (not already assigned to a VM)
+  const availableCompetitions = useMemo(() => {
+    const compList = Object.entries(competitions).map(([id, data]) => ({
+      id,
+      name: data.config?.eventName || id,
+      date: data.config?.meetDate,
+      gender: data.config?.gender,
+      team1: data.config?.team1Name,
+      team2: data.config?.team2Name,
+      vmAddress: data.config?.vmAddress,
+    }));
+
+    // Filter out competitions that already have a VM assigned
+    return compList.filter(comp => {
+      const assignedVM = getVMForCompetition(comp.id);
+      return !assignedVM;
+    });
+  }, [competitions, getVMForCompetition]);
+
+  // Filter competitions by search
+  const filteredCompetitions = useMemo(() => {
+    if (!assignSearch.trim()) return availableCompetitions;
+
+    const search = assignSearch.toLowerCase();
+    return availableCompetitions.filter(comp =>
+      comp.name.toLowerCase().includes(search) ||
+      comp.id.toLowerCase().includes(search) ||
+      comp.team1?.toLowerCase().includes(search) ||
+      comp.team2?.toLowerCase().includes(search)
+    );
+  }, [availableCompetitions, assignSearch]);
 
   // Start a cold VM (first stopped VM found)
   const handleStartColdVM = async () => {
@@ -479,8 +573,11 @@ export default function VMPoolPage() {
                 vm={vm}
                 onStart={handleStartVM}
                 onStop={handleStopVM}
+                onAssign={() => handleOpenAssignModal(vm)}
+                onRelease={handleReleaseVM}
                 actionLoading={actionLoading[vm.vmId]}
-                showAssignControls={false}
+                showAssignControls={true}
+                hasAvailableCompetitions={availableCompetitions.length > 0}
               />
             ))}
           </div>
@@ -558,6 +655,112 @@ export default function VMPoolPage() {
                 Launch VM
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Assign VM Modal */}
+      {showAssignModal && selectedVMForAssign && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+          <div className="bg-zinc-800 rounded-xl p-6 max-w-lg w-full mx-4 border border-zinc-700 max-h-[80vh] flex flex-col">
+            <h2 className="text-lg font-semibold text-white mb-1 flex items-center gap-2">
+              <LinkIcon className="w-5 h-5 text-blue-400" />
+              Assign VM to Competition
+            </h2>
+            <p className="text-sm text-zinc-400 mb-4">
+              Assigning <span className="text-white font-mono">{selectedVMForAssign.name || selectedVMForAssign.vmId}</span>
+              {selectedVMForAssign.publicIp && (
+                <span className="text-zinc-500"> ({selectedVMForAssign.publicIp})</span>
+              )}
+            </p>
+
+            {/* Search */}
+            <div className="relative mb-4">
+              <MagnifyingGlassIcon className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search competitions..."
+                value={assignSearch}
+                onChange={(e) => setAssignSearch(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 bg-zinc-700/50 border border-zinc-600 rounded-lg text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-blue-500"
+              />
+            </div>
+
+            {/* Competition List */}
+            <div className="flex-1 overflow-y-auto min-h-0 -mx-2 px-2">
+              {filteredCompetitions.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="text-zinc-500 text-sm">
+                    {availableCompetitions.length === 0
+                      ? 'All competitions already have a VM assigned'
+                      : 'No competitions match your search'}
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {filteredCompetitions.map((comp) => (
+                    <button
+                      key={comp.id}
+                      onClick={() => handleAssignVM(comp.id)}
+                      disabled={assigning}
+                      className="w-full p-3 bg-zinc-700/30 hover:bg-zinc-700/50 border border-zinc-600 hover:border-blue-500/50 rounded-lg text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-white font-medium truncate">{comp.name}</div>
+                          <div className="text-xs text-zinc-400 mt-1 flex items-center gap-2">
+                            {comp.gender && (
+                              <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
+                                comp.gender === 'womens'
+                                  ? 'bg-pink-500/20 text-pink-400'
+                                  : 'bg-blue-500/20 text-blue-400'
+                              }`}>
+                                {comp.gender === 'womens' ? 'WAG' : 'MAG'}
+                              </span>
+                            )}
+                            {comp.date && (
+                              <span>{new Date(comp.date).toLocaleDateString()}</span>
+                            )}
+                          </div>
+                          {(comp.team1 || comp.team2) && (
+                            <div className="text-xs text-zinc-500 mt-1 truncate">
+                              {[comp.team1, comp.team2].filter(Boolean).join(' vs ')}
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-xs text-zinc-500 font-mono shrink-0">
+                          {comp.id.length > 20 ? comp.id.substring(0, 20) + '...' : comp.id}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex gap-3 mt-4 pt-4 border-t border-zinc-700">
+              <button
+                onClick={() => {
+                  setShowAssignModal(false);
+                  setSelectedVMForAssign(null);
+                }}
+                disabled={assigning}
+                className="flex-1 px-4 py-2 bg-zinc-700 hover:bg-zinc-600 rounded-lg text-zinc-300 text-sm transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+            </div>
+
+            {/* Assigning overlay */}
+            {assigning && (
+              <div className="absolute inset-0 bg-zinc-800/80 rounded-xl flex items-center justify-center">
+                <div className="flex items-center gap-2 text-white">
+                  <ArrowPathIcon className="w-5 h-5 animate-spin" />
+                  <span>Assigning VM...</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

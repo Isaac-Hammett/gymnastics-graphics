@@ -58,7 +58,8 @@ export function OBSProvider({ children }) {
       }
     };
 
-    const handleSceneChanged = (sceneName) => {
+    const handleSceneChanged = (data) => {
+      const sceneName = data?.sceneName || data;
       console.log('OBSContext: Scene changed to', sceneName);
       setObsState(prev => ({
         ...prev,
@@ -78,7 +79,7 @@ export function OBSProvider({ children }) {
       console.log('OBSContext: Streaming state changed', data);
       setObsState(prev => ({
         ...prev,
-        streaming: data.streaming
+        streaming: data.active
       }));
     };
 
@@ -86,7 +87,7 @@ export function OBSProvider({ children }) {
       console.log('OBSContext: Recording state changed', data);
       setObsState(prev => ({
         ...prev,
-        recording: data.recording
+        recording: data.active
       }));
     };
 
@@ -122,7 +123,7 @@ export function OBSProvider({ children }) {
     socket.on('obs:stateUpdated', handleStateUpdate);
     socket.on('obs:connected', handleConnected);
     socket.on('obs:disconnected', handleDisconnected);
-    socket.on('sceneChanged', handleSceneChanged);
+    socket.on('obs:currentSceneChanged', handleSceneChanged);
     socket.on('obs:previewSceneChanged', handlePreviewSceneChanged);
     socket.on('obs:streamStateChanged', handleStreamingStateChanged);
     socket.on('obs:recordStateChanged', handleRecordingStateChanged);
@@ -138,7 +139,7 @@ export function OBSProvider({ children }) {
       socket.off('obs:stateUpdated', handleStateUpdate);
       socket.off('obs:connected', handleConnected);
       socket.off('obs:disconnected', handleDisconnected);
-      socket.off('sceneChanged', handleSceneChanged);
+      socket.off('obs:currentSceneChanged', handleSceneChanged);
       socket.off('obs:previewSceneChanged', handlePreviewSceneChanged);
       socket.off('obs:streamStateChanged', handleStreamingStateChanged);
       socket.off('obs:recordStateChanged', handleRecordingStateChanged);

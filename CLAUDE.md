@@ -74,27 +74,69 @@ When spawning subagents, follow these rules to avoid resource contention:
 **Server IP**: `3.87.107.201`
 **Directory on VM**: `/var/www/commentarygraphic`
 
+### Step 1: Build and Deploy React SPA
 ```bash
-# 1. Build the frontend
+# Build the frontend
 cd show-controller && npm run build
 
-# 2. Create tarball
+# Create tarball
 tar -czf /tmp/claude/dist.tar.gz -C dist .
 
-# 3. Upload (use ssh_upload_file MCP tool)
+# Upload (use ssh_upload_file MCP tool)
 # localPath: /tmp/claude/dist.tar.gz
 # remotePath: /tmp/dist.tar.gz
 # target: 3.87.107.201
 
-# 4. Extract (use ssh_exec MCP tool)
+# Extract (use ssh_exec MCP tool)
 # target: 3.87.107.201
 # command: rm -rf /var/www/commentarygraphic/* && tar -xzf /tmp/dist.tar.gz -C /var/www/commentarygraphic/ && find /var/www/commentarygraphic -name '._*' -delete
+```
 
-# 5. Verify with Playwright
+### Step 2: Deploy Graphics Files (CRITICAL - DO NOT SKIP)
+
+**These files are NOT part of the React build and must be deployed separately:**
+
+```bash
+# Upload output.html (main graphics renderer - from project root)
+# localPath: /Users/juliacosmiano/code/gymnastics-graphics/output.html
+# remotePath: /tmp/output.html
+# target: 3.87.107.201
+
+# Copy to web directory (ssh_exec)
+# command: cp /tmp/output.html /var/www/commentarygraphic/output.html
+
+# Upload overlays directory (static overlay HTML files)
+tar -czf /tmp/claude/overlays.tar.gz overlays/
+
+# Upload (use ssh_upload_file MCP tool)
+# localPath: /tmp/claude/overlays.tar.gz
+# remotePath: /tmp/overlays.tar.gz
+# target: 3.87.107.201
+
+# Extract overlays (ssh_exec)
+# command: cd /var/www/commentarygraphic && tar -xzf /tmp/overlays.tar.gz && find /var/www/commentarygraphic -name '._*' -delete
+```
+
+**Why this matters:** Without these files, the URL Generator preview will be blank and OBS browser sources won't work. The React SPA will incorrectly intercept requests to `/output.html` and `/overlays/*`.
+
+### Step 3: Verify Deployment
+```bash
+# Verify with Playwright
 # browser_navigate to https://commentarygraphic.com
 # browser_take_screenshot
 # browser_console_messages (check for errors)
+
+# Also verify graphics files are accessible:
+# browser_navigate to https://commentarygraphic.com/output.html?graphic=logos
+# Should show graphics output page, NOT the React SPA
 ```
+
+### Deployment Checklist
+- [ ] React SPA deployed (`show-controller/dist/`)
+- [ ] `output.html` deployed (from project root)
+- [ ] `overlays/` directory deployed (from project root)
+- [ ] No console errors on main site
+- [ ] URL Generator preview works
 
 **Note:** SSL auto-renews via Certbot. Certificate expires 2026-04-17.
 
