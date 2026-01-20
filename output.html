@@ -3973,6 +3973,56 @@
       letter-spacing: -0.5px;
     }
 
+    /* Replay Graphic */
+    .graphic-replay {
+      position: absolute;
+      bottom: 120px;
+      left: 100px;
+      display: flex;
+      flex-direction: row;
+      animation: slideIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .replay-logo-section {
+      width: 100px;
+      background: #BFBFBF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 15px;
+    }
+    .replay-logo-section img {
+      width: 70px;
+      height: 70px;
+      object-fit: contain;
+    }
+    .replay-content-section {
+      display: flex;
+      flex-direction: column;
+    }
+    .replay-title-row {
+      background: #BFBFBF;
+      padding: 10px 40px;
+      min-width: 450px;
+    }
+    .replay-title-text {
+      font-size: 30px;
+      font-weight: 900;
+      color: #000;
+      text-transform: uppercase;
+      letter-spacing: -0.5px;
+    }
+    .replay-status-row {
+      background: #000;
+      padding: 10px 40px;
+    }
+    .replay-status-text {
+      font-size: 28px;
+      font-weight: 800;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: -0.5px;
+    }
+
     /* Now Competing Graphic */
     .graphic-now-competing {
       position: absolute;
@@ -7643,6 +7693,22 @@
           </div>
         `;
       },
+
+      'replay': (data) => `
+        <div class="graphic-container graphic-replay">
+          <div class="replay-logo-section">
+            <img src="${getTeamLogoUrl(data.team1Name, data.team1Logo)}" alt="Team">
+          </div>
+          <div class="replay-content-section">
+            <div class="replay-title-row">
+              <div class="replay-title-text">INSTANT REPLAY</div>
+            </div>
+            <div class="replay-status-row">
+              <div class="replay-status-text">REPLAY</div>
+            </div>
+          </div>
+        </div>
+      `,
 
       'now-competing': (data) => `
         <div class="graphic-container graphic-now-competing">

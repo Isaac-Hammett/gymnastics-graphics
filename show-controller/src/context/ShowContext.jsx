@@ -103,6 +103,12 @@ export function ShowProvider({ children }) {
       setState(prev => ({ ...prev, obsCurrentScene: sceneName }));
     });
 
+    // Also listen for new event format from obsStateSync
+    newSocket.on('obs:currentSceneChanged', (data) => {
+      const sceneName = data?.sceneName || data;
+      setState(prev => ({ ...prev, obsCurrentScene: sceneName }));
+    });
+
     newSocket.on('error', ({ message }) => {
       setError(message);
       setTimeout(() => setError(null), 3000);

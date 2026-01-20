@@ -371,7 +371,7 @@ export function generateGraphicURL(graphicId, formData, teamCount, baseUrl, opti
   }
 
   // Handle frame overlay graphics
-  const frameMatch = graphicId.match(/^frame-(quad|tri-center|tri-wide|team-header|single)$/);
+  const frameMatch = graphicId.match(/^frame-(quad|tri-center|tri-wide|team-header|single|dual)$/);
   if (frameMatch) {
     return buildFrameOverlayURL({
       frameType: frameMatch[1],
@@ -469,6 +469,12 @@ export function generateGraphicURL(graphicId, formData, teamCount, baseUrl, opti
       warmUpParams.set('team1Logo', getTeamLogo(1));
       if (formData.venue) warmUpParams.set('venue', formData.venue);
       return `${base}/overlays/warm-up.html?${warmUpParams.toString()}`;
+
+    case 'replay':
+      // Replay graphic - simple instant replay indicator
+      const replayParams = new URLSearchParams();
+      replayParams.set('team1Logo', getTeamLogo(1));
+      return `${base}/overlays/replay.html?${replayParams.toString()}`;
 
     case 'hosts':
       return buildHostsURL({

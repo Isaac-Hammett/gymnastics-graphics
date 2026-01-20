@@ -750,7 +750,7 @@ class OBSStateSync extends EventEmitter {
 
       // Save to Firebase
       await this._db
-        .ref(`competitions/${this.competitionId}/production/obsState`)
+        .ref(`competitions/${this.competitionId}/obs/state`)
         .set(this.state);
 
       console.log('[OBSStateSync] State saved to Firebase');
