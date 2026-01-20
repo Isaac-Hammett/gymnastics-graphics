@@ -1,79 +1,56 @@
-# PRD-OBS-05: Transition Management - Implementation Plan
+# PRD-OBS-06: Stream & Recording - Implementation Plan
 
 **Last Updated:** 2026-01-20
 **Status:** COMPLETED
-**PRD:** [PRD-OBS-05-Transitions.md](../PRD-OBS-05-Transitions/PRD-OBS-05-Transitions.md)
+**PRD:** [PRD-OBS-06-StreamRecording.md](../PRD-OBS-06-StreamRecording/PRD-OBS-06-StreamRecording.md)
 
 ---
 
 ## Completed Items
 
-### 1. [DONE] Add Socket.io Handlers for Transition Events
+### 1. [DONE] Implement Socket.io Handlers for Stream/Recording
 **Files Modified:**
-- `server/index.js` (lines 3520-3620)
+- `server/index.js` (lines 3706-4047)
 
 **Handlers Added:**
-- [x] `obs:getTransitions` - Returns list of available transitions
-- [x] `obs:setCurrentTransition` - Sets the default transition
-- [x] `obs:setTransitionDuration` - Sets duration in milliseconds
-- [x] `obs:setTransitionSettings` - Updates transition-specific settings
+- [x] `obs:startStream` - Start streaming on VM's OBS
+- [x] `obs:stopStream` - Stop streaming
+- [x] `obs:getStreamStatus` - Get stream status (active, timecode, dropped frames)
+- [x] `obs:getStreamSettings` - Get stream service settings (key masked)
+- [x] `obs:setStreamSettings` - Update stream settings
+- [x] `obs:startRecording` - Start recording
+- [x] `obs:stopRecording` - Stop recording (returns file path)
+- [x] `obs:pauseRecording` - Pause recording
+- [x] `obs:resumeRecording` - Resume recording
+- [x] `obs:getRecordingStatus` - Get recording status
 
 ---
 
-### 2. [DONE] Update broadcastOBSState to Include Transitions
-**Files Modified:**
-- `server/index.js` (lines 2500-2530)
-
-**Changes:**
-- [x] Fetch transition list from OBS (`GetSceneTransitionList`)
-- [x] Add `transitions`, `currentTransition`, and `transitionDuration` to obsState broadcast
-
----
-
-### 3. [DONE] Create TransitionPicker.jsx Component
-**Files Created:**
-- `show-controller/src/components/obs/TransitionPicker.jsx`
-
-**Features:**
-- [x] Dropdown to select current transition
-- [x] Duration input field with manual entry
-- [x] Quick preset buttons (250ms, 500ms, 750ms, 1s)
-- [x] List of available transitions with "Active" badge
-- [x] Click-to-select transitions from list
-- [x] Loading state handling
-
----
-
-### 4. [DONE] Update OBSContext.jsx with Transition Methods
+### 2. [DONE] Update OBSContext.jsx with Stream/Recording Methods
 **Files Modified:**
 - `show-controller/src/context/OBSContext.jsx`
 
-**Methods Added:**
-- [x] `setCurrentTransition(transitionName)` - emit `obs:setCurrentTransition`
-- [x] `setTransitionDuration(duration)` - emit `obs:setTransitionDuration`
-- [x] `getTransitions()` - emit `obs:getTransitions`
-- [x] `setTransitionSettings(name, settings)` - emit `obs:setTransitionSettings`
-- [x] Event listener for `obs:transitionsList`
+**Changes:**
+- [x] Added state fields: `streamSettings`, `streamStatus`, `recordingStatus`, `recordingPaused`
+- [x] Added event handlers for all stream/recording socket events
+- [x] Added action methods: `getStreamSettings`, `setStreamSettings`, `getStreamStatus`, `pauseRecording`, `resumeRecording`, `getRecordingStatus`
+- [x] Event subscriptions and cleanup for new events
 
 ---
 
-### 5. [DONE] Integrate TransitionPicker into OBSManager
+### 3. [DONE] Rewrite StreamConfig.jsx to Use Socket.io
 **Files Modified:**
-- `show-controller/src/pages/OBSManager.jsx`
+- `show-controller/src/components/obs/StreamConfig.jsx`
 
 **Changes:**
-- [x] Import TransitionPicker component
-- [x] Replace placeholder text with TransitionPicker in transitions tab
-
----
-
-## Deferred Items (Stinger Configuration)
-
-| # | Task | Status | Notes |
-|---|------|--------|-------|
-| 1 | Implement stinger path configuration | DEFERRED | Not needed for basic transitions |
-| 2 | Implement transition point configuration | DEFERRED | Not needed for basic transitions |
-| 3 | Test stinger transition plays correctly | DEFERRED | Will implement when stinger assets available |
+- [x] Removed REST API fetch calls (was using `/api/obs/stream/*`)
+- [x] Now uses Socket.io via OBSContext
+- [x] Added Output Controls section with:
+  - Streaming: Go Live / Stop buttons
+  - Recording: Record / Pause / Resume / Stop buttons
+- [x] Stream Settings form with service type selector and stream key input
+- [x] Stream Info display showing status, duration, dropped frames
+- [x] Settings disabled while streaming (must stop to change)
 
 ---
 
@@ -85,27 +62,27 @@
 
 | Test | Result |
 |------|--------|
-| Transitions tab shows TransitionPicker | PASS |
-| 2 transitions available (Cut, Fade) | PASS |
-| Select transition via dropdown | PASS |
-| Change duration via preset buttons | PASS |
-| "Active" badge moves to selected transition | PASS |
-| State syncs via Socket.io | PASS |
-| Coordinator logs show handler execution | PASS |
+| Stream tab loads without errors | PASS |
+| Stream settings fetched via Socket.io | PASS |
+| Stream status fetched via Socket.io | PASS |
+| Recording status fetched via Socket.io | PASS |
+| Service type dropdown shows current setting | PASS |
+| Stream key input with mask/show toggle | PASS |
+| Go Live / Stop Stream buttons visible | PASS |
+| Record / Pause / Resume / Stop buttons visible | PASS |
+| No console errors | PASS |
 
-### Coordinator Logs Confirmation
-```
-[setCurrentTransition] Set transition to Cut for 8kyf0rnl
-[setTransitionDuration] Set duration to 500ms for 8kyf0rnl
-```
-
-Screenshot: `docs/ralph-runner/screenshots/PRD-OBS-05-verification-transitions-tab.png`
+Screenshot: `screenshots/PRD-OBS-06-stream-tab-verification.png`
 
 ---
 
-## Bugs Found During Implementation
+## Deferred Items (Live Stream Testing)
 
-None - implementation completed successfully.
+| # | Task | Status | Notes |
+|---|------|--------|-------|
+| 1 | Test actual stream to YouTube/Twitch | DEFERRED | Requires valid stream key |
+| 2 | Verify stream key encryption in Firebase | DEFERRED | Not implemented in coordinator |
+| 3 | Test recording file path display | DEFERRED | Requires recording test |
 
 ---
 
@@ -113,14 +90,12 @@ None - implementation completed successfully.
 
 | File | Purpose |
 |------|---------|
-| `server/index.js:2500` | broadcastOBSState with transitions |
-| `server/index.js:3520` | Socket.io transition handlers |
-| `show-controller/src/context/OBSContext.jsx` | Frontend state management |
-| `show-controller/src/components/obs/TransitionPicker.jsx` | Transition UI component |
-| `show-controller/src/pages/OBSManager.jsx` | Integration point |
+| `server/index.js:3706-4047` | Socket.io stream/recording handlers |
+| `show-controller/src/context/OBSContext.jsx` | Frontend state management for stream/recording |
+| `show-controller/src/components/obs/StreamConfig.jsx` | Stream & Recording UI component |
 
 ---
 
 ## Commits
 
-- `9895896` - PRD-OBS-05: Implement Transition Management
+- `8a91d7b` - PRD-OBS-06: Implement Stream & Recording Socket.io handlers
