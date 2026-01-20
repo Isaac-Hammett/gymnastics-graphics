@@ -128,7 +128,9 @@ When debugging source management issues:
 - **ADDED:** Success toast on delete: "Input {name} deleted successfully"
 - **ADDED:** Error toast on failure with error message
 - **ADDED:** Toast UI component with green (success) / red (error) styling
-- **DEPLOYED:** Frontend built and deployed to commentarygraphic.com
+- **BUILD:** Frontend built successfully (`npm run build`)
+- **COMMIT:** a5d8342
+- **PENDING:** Frontend deployment - requires manual deploy per CLAUDE.md deploy instructions
 
 ---
 
