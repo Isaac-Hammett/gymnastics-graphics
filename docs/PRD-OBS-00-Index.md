@@ -31,7 +31,7 @@ Each PRD now has its own folder with:
 | [07](PRD-OBS-07-AssetManagement/) | Asset Management | 🟢 Working | P1 | Verify |
 | [08](PRD-OBS-08-Templates/) | Template System | 🟡 Delete Broken | P1 | Small |
 | [09](PRD-OBS-09-PreviewSystem/) | Preview System | 🔴 **BROKEN** | P1 | Medium |
-| [10](PRD-OBS-10-TalentComms/) | Talent Communications | 🟡 Untested | P2 | Verify |
+| [10](PRD-OBS-10-TalentComms/) | Talent Communications | 🟢 Working | P2 | Verified |
 
 ---
 
@@ -141,7 +141,7 @@ PRD-01: State Sync (FOUNDATION)
 | `lib/obsStreamManager.js` | 313 | Working |
 | `lib/obsAssetManager.js` | 504 | Working |
 | `lib/obsTemplateManager.js` | 652 | **Needs Fix** |
-| `lib/talentCommsManager.js` | ~200 | Untested |
+| `lib/talentCommsManager.js` | ~200 | Working |
 | `routes/obs.js` | 2,229 | Mostly Working |
 
 ### Frontend (show-controller/src/)
@@ -157,7 +157,7 @@ PRD-01: State Sync (FOUNDATION)
 | `components/obs/StreamConfig.jsx` | Working |
 | `components/obs/AssetManager.jsx` | Working |
 | `components/obs/TemplateManager.jsx` | **Delete Broken** |
-| `components/obs/TalentCommsPanel.jsx` | Untested |
+| `components/obs/TalentCommsPanel.jsx` | Working |
 | `components/obs/TransitionPicker.jsx` | **Missing** |
 | `components/obs/OBSCurrentOutput.jsx` | **Placeholder Only** |
 
