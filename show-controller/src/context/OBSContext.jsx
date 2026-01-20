@@ -101,6 +101,17 @@ export function OBSProvider({ children }) {
       }));
     };
 
+    // PRD-OBS-05: Handle transitions list response
+    const handleTransitionsList = (data) => {
+      console.log('OBSContext: Transitions list received', data);
+      setObsState(prev => ({
+        ...prev,
+        transitions: data.transitions || [],
+        currentTransition: data.currentTransition,
+        transitionDuration: data.transitionDuration
+      }));
+    };
+
     const handleError = (data) => {
       console.error('OBSContext: Error received', data);
       setConnectionError(data?.message || 'Unknown OBS error');
@@ -130,6 +141,7 @@ export function OBSProvider({ children }) {
     socket.on('obs:streamStateChanged', handleStreamingStateChanged);
     socket.on('obs:recordStateChanged', handleRecordingStateChanged);
     socket.on('obs:currentTransitionChanged', handleTransitionChanged);
+    socket.on('obs:transitionsList', handleTransitionsList);
     socket.on('obs:error', handleError);
     socket.on('obs:screenshotCaptured', handleScreenshotCaptured);
 
@@ -146,6 +158,7 @@ export function OBSProvider({ children }) {
       socket.off('obs:streamStateChanged', handleStreamingStateChanged);
       socket.off('obs:recordStateChanged', handleRecordingStateChanged);
       socket.off('obs:currentTransitionChanged', handleTransitionChanged);
+      socket.off('obs:transitionsList', handleTransitionsList);
       socket.off('obs:error', handleError);
       socket.off('obs:screenshotCaptured', handleScreenshotCaptured);
     };
@@ -170,6 +183,27 @@ export function OBSProvider({ children }) {
   const setTransition = useCallback((transitionName, duration) => {
     console.log('OBSContext: Setting transition', transitionName, duration);
     socket?.emit('obs:setTransition', { transitionName, duration });
+  }, [socket]);
+
+  // PRD-OBS-05: Transition Management
+  const setCurrentTransition = useCallback((transitionName) => {
+    console.log('OBSContext: Setting current transition', transitionName);
+    socket?.emit('obs:setCurrentTransition', { transitionName });
+  }, [socket]);
+
+  const setTransitionDuration = useCallback((transitionDuration) => {
+    console.log('OBSContext: Setting transition duration', transitionDuration);
+    socket?.emit('obs:setTransitionDuration', { transitionDuration });
+  }, [socket]);
+
+  const getTransitions = useCallback(() => {
+    console.log('OBSContext: Getting transitions');
+    socket?.emit('obs:getTransitions');
+  }, [socket]);
+
+  const setTransitionSettings = useCallback((transitionName, transitionSettings) => {
+    console.log('OBSContext: Setting transition settings', transitionName, transitionSettings);
+    socket?.emit('obs:setTransitionSettings', { transitionName, transitionSettings });
   }, [socket]);
 
   const setVolume = useCallback((inputName, volumeDb) => {
@@ -337,6 +371,10 @@ export function OBSProvider({ children }) {
 
     // Transition actions
     setTransition,
+    setCurrentTransition,
+    setTransitionDuration,
+    getTransitions,
+    setTransitionSettings,
 
     // Audio actions
     setVolume,

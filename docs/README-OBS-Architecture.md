@@ -574,9 +574,67 @@ For detailed scene breakdowns, see [PRD-OBS-02-SceneManagement](PRD-OBS-02-Scene
 
 ---
 
+## MCP Tools and Playwright Testing
+
+### MCP Tool Availability
+
+MCP tools (`mcp__playwright__*`, `mcp__gymnastics__*`) are **only available to the main Claude conversation**. They cannot be used by Task subagents.
+
+**This means:**
+- Do NOT spawn a Task agent to run Playwright browser tests
+- Do NOT try to call MCP tools via Bash commands (e.g., `mcp__playwright__browser_navigate --url "..."` won't work)
+- Call Playwright MCP tools DIRECTLY in the main conversation
+
+**Wrong:**
+```
+Task(prompt="Use Playwright to verify the page...")  // Subagent can't access MCP tools
+```
+
+**Wrong:**
+```bash
+mcp__playwright__browser_navigate --url "https://..."  // MCP tools aren't CLI commands
+```
+
+**Right:**
+```
+mcp__playwright__browser_navigate(url="https://commentarygraphic.com/...")
+```
+
+### Playwright Browser Lock Issues
+
+Playwright MCP uses Chrome browser profiles in `~/Library/Caches/ms-playwright/mcp-chrome-*/`. These can become locked if:
+- A Claude session crashes
+- The browser wasn't properly closed
+- Multiple sessions try to use the same profile
+
+**Symptoms:** "Browser is already in use" error
+
+**Fix:** Run the cleanup script before Playwright operations:
+```bash
+./scripts/cleanup-playwright.sh
+```
+
+Or nuke all profiles:
+```bash
+rm -rf ~/Library/Caches/ms-playwright/mcp-chrome-*
+```
+
+The RALPH runner automatically cleans up Playwright locks before each iteration.
+
+### RALPH Runner Integration
+
+The [RALPH runner](ralph-runner/README.md) automatically:
+1. Cleans up stale Playwright browser locks before each PRD iteration
+2. Prepends MCP usage instructions to prompts reminding Claude not to use Task agents for Playwright
+
+If a PRD requires browser verification, ensure the prompt instructs the main agent to do it directly, not via subagents.
+
+---
+
 ## Related Documents
 
 - [PRD-OBS-00-Index.md](PRD-OBS-00-Index.md) - Overview of all OBS PRDs
 - [PRD-OBS-02-SceneManagement](PRD-OBS-02-SceneManagement/PRD-OBS-02-SceneManagement.md) - Scene management PRD
 - [SPEC-competition-vm-routing.md](SPEC-competition-vm-routing.md) - How routing works
 - [CLAUDE.md](../CLAUDE.md) - MCP tools and deployment instructions
+- [ralph-runner/README.md](ralph-runner/README.md) - RALPH automated PRD runner
