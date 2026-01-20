@@ -434,6 +434,7 @@ const productionConfigService = {
   // Initialization
   initialize: initializeFirebase,
   isAvailable,
+  getDb,
 
   // Production config
   getProductionConfig,
@@ -471,6 +472,7 @@ export default productionConfigService;
 export {
   initializeFirebase,
   isAvailable,
+  getDb,
   getProductionConfig,
   getCameras,
   saveCameras,
