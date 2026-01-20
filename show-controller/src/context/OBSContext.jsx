@@ -15,8 +15,13 @@ const INITIAL_OBS_STATE = {
   currentTransition: null,
   streaming: false,
   recording: false,
+  recordingPaused: false,
   studioModeEnabled: false,
-  connectionError: null
+  connectionError: null,
+  // PRD-OBS-06: Stream & Recording state
+  streamSettings: null,
+  streamStatus: null,
+  recordingStatus: null
 };
 
 export function OBSProvider({ children }) {
@@ -131,6 +136,94 @@ export function OBSProvider({ children }) {
       }
     };
 
+    // PRD-OBS-06: Stream settings response handler
+    const handleStreamSettings = (data) => {
+      console.log('OBSContext: Stream settings received', data);
+      setObsState(prev => ({
+        ...prev,
+        streamSettings: data
+      }));
+    };
+
+    // PRD-OBS-06: Stream status response handler
+    const handleStreamStatus = (data) => {
+      console.log('OBSContext: Stream status received', data);
+      setObsState(prev => ({
+        ...prev,
+        streamStatus: data,
+        streaming: data.active
+      }));
+    };
+
+    // PRD-OBS-06: Recording status response handler
+    const handleRecordingStatus = (data) => {
+      console.log('OBSContext: Recording status received', data);
+      setObsState(prev => ({
+        ...prev,
+        recordingStatus: data,
+        recording: data.active,
+        recordingPaused: data.paused
+      }));
+    };
+
+    // PRD-OBS-06: Stream started confirmation
+    const handleStreamStarted = () => {
+      console.log('OBSContext: Stream started');
+      setObsState(prev => ({
+        ...prev,
+        streaming: true
+      }));
+    };
+
+    // PRD-OBS-06: Stream stopped confirmation
+    const handleStreamStopped = () => {
+      console.log('OBSContext: Stream stopped');
+      setObsState(prev => ({
+        ...prev,
+        streaming: false,
+        streamStatus: null
+      }));
+    };
+
+    // PRD-OBS-06: Recording started confirmation
+    const handleRecordingStarted = () => {
+      console.log('OBSContext: Recording started');
+      setObsState(prev => ({
+        ...prev,
+        recording: true,
+        recordingPaused: false
+      }));
+    };
+
+    // PRD-OBS-06: Recording stopped confirmation
+    const handleRecordingStopped = (data) => {
+      console.log('OBSContext: Recording stopped', data?.path);
+      setObsState(prev => ({
+        ...prev,
+        recording: false,
+        recordingPaused: false,
+        recordingStatus: null
+      }));
+    };
+
+    // PRD-OBS-06: Recording paused confirmation
+    const handleRecordingPaused = () => {
+      console.log('OBSContext: Recording paused');
+      setObsState(prev => ({
+        ...prev,
+        recordingPaused: true
+      }));
+    };
+
+    // PRD-OBS-06: Recording resumed confirmation
+    const handleRecordingResumed = () => {
+      console.log('OBSContext: Recording resumed');
+      setObsState(prev => ({
+        ...prev,
+        recordingPaused: false
+      }));
+    };
+
     // Subscribe to all OBS events
     // Note: Event names must match server emissions in server/lib/obsStateSync.js
     socket.on('obs:stateUpdated', handleStateUpdate);
@@ -144,6 +237,16 @@ export function OBSProvider({ children }) {
     socket.on('obs:transitionsList', handleTransitionsList);
     socket.on('obs:error', handleError);
     socket.on('obs:screenshotCaptured', handleScreenshotCaptured);
+    // PRD-OBS-06: Stream & Recording events
+    socket.on('obs:streamSettings', handleStreamSettings);
+    socket.on('obs:streamStatus', handleStreamStatus);
+    socket.on('obs:recordingStatus', handleRecordingStatus);
+    socket.on('obs:streamStarted', handleStreamStarted);
+    socket.on('obs:streamStopped', handleStreamStopped);
+    socket.on('obs:recordingStarted', handleRecordingStarted);
+    socket.on('obs:recordingStopped', handleRecordingStopped);
+    socket.on('obs:recordingPaused', handleRecordingPaused);
+    socket.on('obs:recordingResumed', handleRecordingResumed);
 
     // Request initial state
     socket.emit('obs:refreshState');
@@ -161,6 +264,16 @@ export function OBSProvider({ children }) {
       socket.off('obs:transitionsList', handleTransitionsList);
       socket.off('obs:error', handleError);
       socket.off('obs:screenshotCaptured', handleScreenshotCaptured);
+      // PRD-OBS-06: Stream & Recording events cleanup
+      socket.off('obs:streamSettings', handleStreamSettings);
+      socket.off('obs:streamStatus', handleStreamStatus);
+      socket.off('obs:recordingStatus', handleRecordingStatus);
+      socket.off('obs:streamStarted', handleStreamStarted);
+      socket.off('obs:streamStopped', handleStreamStopped);
+      socket.off('obs:recordingStarted', handleRecordingStarted);
+      socket.off('obs:recordingStopped', handleRecordingStopped);
+      socket.off('obs:recordingPaused', handleRecordingPaused);
+      socket.off('obs:recordingResumed', handleRecordingResumed);
     };
   }, [socket, connected]);
 
@@ -239,6 +352,37 @@ export function OBSProvider({ children }) {
   const stopRecording = useCallback(() => {
     console.log('OBSContext: Stopping recording');
     socket?.emit('obs:stopRecording');
+  }, [socket]);
+
+  // PRD-OBS-06: Additional stream/recording controls
+  const getStreamSettings = useCallback(() => {
+    console.log('OBSContext: Getting stream settings');
+    socket?.emit('obs:getStreamSettings');
+  }, [socket]);
+
+  const setStreamSettings = useCallback((serviceType, settings) => {
+    console.log('OBSContext: Setting stream settings', serviceType, settings);
+    socket?.emit('obs:setStreamSettings', { serviceType, settings });
+  }, [socket]);
+
+  const getStreamStatus = useCallback(() => {
+    console.log('OBSContext: Getting stream status');
+    socket?.emit('obs:getStreamStatus');
+  }, [socket]);
+
+  const pauseRecording = useCallback(() => {
+    console.log('OBSContext: Pausing recording');
+    socket?.emit('obs:pauseRecording');
+  }, [socket]);
+
+  const resumeRecording = useCallback(() => {
+    console.log('OBSContext: Resuming recording');
+    socket?.emit('obs:resumeRecording');
+  }, [socket]);
+
+  const getRecordingStatus = useCallback(() => {
+    console.log('OBSContext: Getting recording status');
+    socket?.emit('obs:getRecordingStatus');
   }, [socket]);
 
   const enableStudioMode = useCallback(() => {
@@ -386,8 +530,16 @@ export function OBSProvider({ children }) {
     // Streaming actions
     startStream,
     stopStream,
+    getStreamSettings,
+    setStreamSettings,
+    getStreamStatus,
+
+    // Recording actions
     startRecording,
     stopRecording,
+    pauseRecording,
+    resumeRecording,
+    getRecordingStatus,
 
     // Studio mode actions
     enableStudioMode,
