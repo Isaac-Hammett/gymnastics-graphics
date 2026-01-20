@@ -90,13 +90,16 @@ Each competition gets its own dedicated VM running:
 
 This server ONLY serves static files (HTML, JS, CSS). It does NOT run any backend services. Users download the React app from here, then the app connects to the **coordinator**.
 
-### 4. VM Template
+### 4. VM Template AMI
 
 | Property | Value |
 |----------|-------|
-| **Name** | gymnastics-vm-template |
-| **Instance ID** | i-058b0d139756f034c |
-| **Purpose** | Golden image for creating new VMs |
+| **Current AMI** | `ami-070ce58462b2b9213` (gymnastics-vm-v2.2) |
+| **Created From** | VM 50.19.137.152 on 2026-01-20 |
+| **Features** | OBS WebSocket auth disabled, heartbeat disconnect fix, state sync fixes |
+| **Config Location** | `server/lib/awsService.js` line 34 |
+
+New VMs launched by the VM Pool Manager will automatically use this AMI.
 
 ---
 
@@ -508,6 +511,42 @@ socket.on('obs:refreshState', async () => {
 | `broadcastOBSState()` | index.js:2311 | Fetches full OBS state and broadcasts to room |
 | `initializeOBSConnectionManager()` | index.js:3676 | Sets up event forwarding from OBS to clients |
 | `getOBSConnectionManager()` | index.js | Returns singleton obsConnectionManager |
+
+---
+
+## Deploying Coordinator Changes
+
+When you make changes to server code that affects OBS functionality, you must deploy to the coordinator:
+
+```bash
+# Via MCP tool (ssh_exec)
+ssh_exec target="coordinator" command="cd /opt/gymnastics-graphics && sudo git pull --rebase origin dev && pm2 restart coordinator"
+
+# Or manually via SSH
+ssh ubuntu@44.193.31.120
+cd /opt/gymnastics-graphics
+sudo git pull --rebase origin dev
+pm2 restart coordinator
+```
+
+**What requires coordinator deployment:**
+- Changes to `server/index.js` (Socket.io handlers, routing)
+- Changes to `server/lib/obsConnectionManager.js` (OBS connection management)
+- Changes to `server/lib/obsStateSync.js` (state sync logic)
+- Changes to `server/lib/vmPoolManager.js` (VM pool management)
+- Changes to `server/lib/awsService.js` (AWS/AMI configuration)
+
+**Verify deployment:**
+```bash
+# Check coordinator is running
+ssh_exec target="coordinator" command="pm2 list"
+
+# Check recent logs
+ssh_exec target="coordinator" command="pm2 logs coordinator --lines 20"
+
+# Check API health
+curl https://api.commentarygraphic.com/api/coordinator/status
+```
 
 ---
 

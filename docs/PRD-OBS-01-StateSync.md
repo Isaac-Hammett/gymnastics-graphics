@@ -1,8 +1,8 @@
 # PRD-OBS-01: State Sync Foundation
 
-**Version:** 1.6
+**Version:** 1.9
 **Date:** 2026-01-20
-**Status:** 🔧 In Progress (Critical Bugs)
+**Status:** ✅ COMPLETE
 **Depends On:** None (Foundation)
 **Blocks:** All other OBS PRDs
 
@@ -12,14 +12,18 @@
 
 This PRD covers the foundational OBS state synchronization layer. All other OBS features depend on this working correctly. The two parallel systems have been unified into a single event-based architecture.
 
+> **Architecture Reference:** See [README-OBS-Architecture.md](README-OBS-Architecture.md) for the complete system architecture, including VM inventory, connection flow, and debugging checklist.
+
 ---
 
-## Decisions Made
+## Key Architecture Decisions
 
 | Question | Decision |
 |----------|----------|
+| Frontend-to-OBS communication | **Via Coordinator only** - Frontend never connects directly to OBS (Mixed Content security) |
 | Scene change events | **Option B** - Migrate to `obs:currentSceneChanged` (clean approach) |
 | Firebase path | Use original PRD path: `competitions/{compId}/obs/state/` |
+| OBS WebSocket authentication | **Disabled** on VMs (internal network, not exposed to internet) |
 | Legacy state audit | Required - see audit results below |
 
 ---
@@ -28,23 +32,50 @@ This PRD covers the foundational OBS state synchronization layer. All other OBS 
 
 ### Architecture (Post-Implementation)
 
+> **Critical Architecture Principle:** The frontend NEVER connects directly to OBS. All OBS communication flows through the coordinator server. See [README-OBS-Architecture.md](README-OBS-Architecture.md) for details.
+
+```
+┌─────────────────┐     Socket.io (WSS)     ┌─────────────────────┐
+│  Frontend       │ ───────────────────────▶│  Coordinator        │
+│  (Browser)      │                         │  api.commentarygraphic.com │
+│                 │ ◀─────────────────────── │                     │
+└─────────────────┘     obs:* events        └─────────────────────┘
+                                                      │
+                                                      │ OBS WebSocket (ws://)
+                                                      ▼
+                                            ┌─────────────────────┐
+                                            │  Competition VM     │
+                                            │  OBS Studio         │
+                                            │  Port 4455 (local)  │
+                                            └─────────────────────┘
+```
+
 | File | Purpose |
 |------|---------|
-| `server/lib/obsStateSync.js` | Primary state sync service (EventEmitter-based) |
-| `server/lib/obsConnectionManager.js` | Per-competition OBS WebSocket connections |
-| `server/index.js` | Event forwarding, legacy state sync |
+| `server/lib/obsConnectionManager.js` | Per-competition OBS WebSocket connections (production) |
+| `server/lib/obsStateSync.js` | State sync service for LOCAL development only |
+| `server/index.js` | Event forwarding, routing, Socket.io handlers |
 | `show-controller/src/context/OBSContext.jsx` | React context - listens for `obs:*` events |
 | `show-controller/src/context/ShowContext.jsx` | Show context - listens for both event formats |
 
-### Unified Event Flow
+### Two OBS Subsystems
+
+The codebase has TWO different OBS management paths:
+
+| Subsystem | Used When | Purpose |
+|-----------|-----------|---------|
+| `obsConnectionManager` | `compId !== 'local'` (production) | Manages per-competition OBS connections to VMs |
+| `obsStateSync` | `compId === 'local'` (development) | Manages single local OBS connection |
+
+### Event Flow (Production)
 
 ```
-OBS WebSocket → obsConnectionManager → server/index.js → Socket.io rooms
-                                              ↓
-                              Emits both: sceneChanged (legacy)
-                                          obs:currentSceneChanged (new)
-                                              ↓
-                              Frontend contexts receive updates
+1. Frontend → Coordinator: socket.emit('switchScene', {sceneName})
+2. Coordinator routes to correct VM via obsConnectionManager
+3. VM OBS executes scene change
+4. OBS fires: CurrentProgramSceneChanged
+5. Coordinator broadcasts: io.to('competition:compId').emit('obs:currentSceneChanged')
+6. Frontend receives update, UI re-renders
 ```
 
 **Legacy `showState.obsCurrentScene` is synced** via `obsStateSync.on('currentSceneChanged')` at `server/index.js:364-367`.
@@ -235,13 +266,13 @@ npm test -- --grep "OBSStateSync"
 
 ## Definition of Done
 
-1. ✅ Scene changes work end-to-end (OBS → backend → all frontends) - Code complete
+1. ✅ Scene changes work end-to-end (OBS → backend → all frontends) - Complete
 2. ✅ No duplicate handlers or events - Verified
 3. ✅ State persists to Firebase at new path - Code uses `obs/state/`
-4. ⏳ QuickActions, ProducerView, ConnectionStatus still work - Needs manual test
-5. ⏳ No console errors - Needs manual test
-6. ⏳ Tests pass - Needs manual test
-7. ⏳ Code reviewed and merged
+4. ✅ QuickActions, ProducerView, ConnectionStatus still work - Verified 2026-01-20
+5. ✅ No console errors - Verified 2026-01-20
+6. ✅ Tests pass - Verified 2026-01-20
+7. ✅ Code reviewed and merged
 
 ---
 
@@ -405,18 +436,29 @@ obsConnManager.on('connectionClosed', ({ compId }) => {
 
 ---
 
-### Issue: Firebase Path Not Updated
+### Issue: Firebase Path Not Updated ✅ FIXED
 
 **Severity:** Low (technical debt)
 **Component:** `server/lib/obsStateSync.js`
 
-**Problem:** OBS state is being stored at `competitions/{compId}/production/obsState` instead of the PRD-specified path `competitions/{compId}/obs/state`.
+**Problem:** OBS state was being stored at `competitions/{compId}/production/obsState` instead of the PRD-specified path `competitions/{compId}/obs/state`.
 
-**Evidence:** Firebase query for `competitions/8kyf0rnl/obs/state` returns null, but `competitions/8kyf0rnl/production/obsState` contains the full state object.
+**Fix Applied:** 2026-01-20 - Updated `obsStateSync.js` to use `obs/state` path for both reading and writing.
 
-**Impact:** Functional - state persists and restores correctly. However, path doesn't match PRD specification and mixes concerns (`production/` vs `obs/`).
+**Firebase Path (Current):**
+```
+competitions/
+  {compId}/
+    config/
+      vmAddress: "50.19.137.152:3003"    # Which VM runs this competition
+    obs/
+      state/                              # OBS state now stored here
+        connected: true
+        currentScene: "Camera 1"
+        scenes: [...]
+```
 
-**Proposed Fix:** Update `obsStateSync.js` to write to `obs/state` path, or update PRD to document current path as intentional.
+See [README-OBS-Architecture.md § Firebase Paths](README-OBS-Architecture.md#firebase-paths) for complete path documentation.
 
 ---
 
@@ -619,11 +661,43 @@ socket.on('obs:connected', () => {
 
 ## Acceptance Criteria (Updated)
 
-- [ ] ProducerView and OBS Manager always show same connection status
-- [ ] Disconnecting OBS clears scene list immediately
-- [ ] Reconnecting OBS shows fresh scene list (not cached)
-- [ ] No multiple page refreshes needed to restore state
-- [ ] Connection status updates within 1 second of actual state change
+- [x] ProducerView and OBS Manager always show same connection status
+- [x] Disconnecting OBS clears scene list immediately
+- [x] Reconnecting OBS shows fresh scene list (not cached)
+- [x] No multiple page refreshes needed to restore state
+- [x] Connection status updates within 1 second of actual state change
+
+---
+
+## Bug 4: OBS WebSocket Authentication 🟡 MEDIUM
+
+**Severity:** Medium
+**Component:** VM OBS configuration
+
+**Problem:** OBS generates a new random WebSocket password each time it restarts. The server `.env` has the old password hardcoded, causing authentication failures.
+
+**Symptoms:**
+- Server logs show "Connected to OBS WebSocket" but Firebase shows `connected: false`
+- Frontend shows "Connection closed" or "Waiting for connection"
+- Error: "Your payload's data is missing an `authentication` string"
+
+**Root Cause:** OBS WebSocket plugin regenerates `server_password` on each restart, but server expects static password from `.env`.
+
+**Fix Applied (2026-01-20):** Disabled OBS WebSocket authentication on VMs.
+
+**Config change:**
+```json
+// ~/.config/obs-studio/plugin_config/obs-websocket/config.json
+{
+  "auth_required": false,  // Changed from true
+  "server_enabled": true,
+  "server_port": 4455
+}
+```
+
+**Why this is acceptable:** VMs are internal, not exposed to internet. WebSocket port 4455 is only accessible from localhost or internal network.
+
+**VM Template Updated:** 2026-01-20 - Created AMI `gymnastics-vm-v2.2` (ami-070ce58462b2b9213) from working VM 50.19.137.152 with all fixes applied.
 
 ---
 
@@ -660,3 +734,40 @@ grep -n "obsStateSync.on" server/index.js | grep -i scene
 # Check Firebase path
 grep -n "obs/state" server/lib/obsStateSync.js
 ```
+
+---
+
+## Socket Events Reference
+
+See [README-OBS-Architecture.md § Socket Events Reference](README-OBS-Architecture.md#socket-events-reference) for the complete event table.
+
+### Key Events for State Sync
+
+**Frontend → Coordinator:**
+
+| Event | Purpose |
+|-------|---------|
+| `obs:refreshState` | Request full OBS state on page load or reconnect |
+| `switchScene` | Request scene change |
+
+**Coordinator → Frontend:**
+
+| Event | Purpose |
+|-------|---------|
+| `obs:stateUpdated` | Full state update (scenes, inputs, audio, etc.) |
+| `obs:connected` | OBS connection established |
+| `obs:disconnected` | OBS connection lost |
+| `obs:currentSceneChanged` | Scene switched in OBS |
+| `sceneChanged` | Legacy scene changed event (for backward compatibility) |
+
+---
+
+## Debugging
+
+If OBS state sync isn't working, follow the checklist in [README-OBS-Architecture.md § Debugging Checklist](README-OBS-Architecture.md#debugging-checklist).
+
+Common issues:
+1. **Coordinator not running** - Check `pm2 list` on coordinator VM
+2. **VM not assigned** - Check `competitions/{compId}/config/vmAddress` in Firebase
+3. **OBS not running on VM** - SSH to VM and check `systemctl status obs`
+4. **Wrong OBS subsystem** - Production uses `obsConnectionManager`, not `obsStateSync`
