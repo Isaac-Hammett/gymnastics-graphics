@@ -1,7 +1,7 @@
 # PRD-OBS-04: Audio Management - Implementation Plan
 
 **Last Updated:** 2026-01-20
-**Status:** Deployed - Needs UI Verification
+**Status:** Code Complete - Awaiting Live Browser Verification (Playwright MCP Unavailable)
 
 ---
 
@@ -27,13 +27,14 @@
 | 0.2 | Add missing `obs:setMute` handler | ✅ DONE | server/index.js:3434 |
 | 0.3 | Deploy coordinator to production | ✅ DONE | Deployed 2026-01-20 via SSH `pm2 restart coordinator` |
 
-### P1 - Verify Existing Functionality (IN PROGRESS)
+### P1 - Verify Existing Functionality (CODE VERIFIED - NEEDS BROWSER TEST)
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 1 | Verify volume slider works | NOT STARTED | Needs Playwright MCP verification |
-| 2 | Verify mute toggle works | NOT STARTED | Needs Playwright MCP verification |
-| 3 | Verify monitor type dropdown works | NOT STARTED | `obs:setMonitorType` exists at server/index.js:3467 |
+| 1 | Verify volume slider works | ✅ CODE VERIFIED | Frontend: OBSContext.jsx:177, Backend: server/index.js:3392 |
+| 2 | Verify mute toggle works | ✅ CODE VERIFIED | Frontend: OBSContext.jsx:182, Backend: server/index.js:3435 |
+| 3 | Verify monitor type dropdown works | ✅ CODE VERIFIED | Frontend: OBSContext.jsx:303, Backend: server/index.js:3467 |
+| 4 | Live browser test with Playwright MCP | ⏸️ BLOCKED | MCP tools unavailable in this session |
 
 ### P2 - Verify Audio Presets (After P1)
 
@@ -62,14 +63,17 @@
 ## Source Files
 
 ### Frontend (all verified working)
-- `show-controller/src/components/obs/AudioMixer.jsx` - Volume slider, mute toggle, monitor dropdown
+- `show-controller/src/components/obs/AudioMixer.jsx` - Volume slider, mute toggle, monitor dropdown (231 lines, complete)
 - `show-controller/src/components/obs/AudioPresetManager.jsx` - Preset CRUD
-- `show-controller/src/context/OBSContext.jsx` - Socket event emission for `obs:setVolume`, `obs:setMute`, `obs:setMonitorType`
+- `show-controller/src/context/OBSContext.jsx` - Socket event emission:
+  - Line 177: `socket?.emit('obs:setVolume', { inputName, volumeDb })`
+  - Line 182: `socket?.emit('obs:setMute', { inputName, muted })`
+  - Line 303: `socket?.emit('obs:setMonitorType', { inputName, monitorType })`
 
 ### Backend (Coordinator)
-- `server/index.js:3391` - `obs:setVolume` handler (NEW)
-- `server/index.js:3434` - `obs:setMute` handler (NEW)
-- `server/index.js:3467` - `obs:setMonitorType` handler (existed)
+- `server/index.js:3392` - `obs:setVolume` handler → calls `SetInputVolume` with volumeDb or volumeMul
+- `server/index.js:3435` - `obs:setMute` handler → calls `SetInputMute` with inputMuted boolean
+- `server/index.js:3467` - `obs:setMonitorType` handler → calls `SetInputAudioMonitorType`
 
 ---
 
@@ -104,6 +108,16 @@ browser_take_screenshot
 ---
 
 ## Progress Log
+
+### 2026-01-20 - Context 4
+- **CODE VERIFIED:** All audio control handlers confirmed present:
+  - `obs:setVolume`: Frontend OBSContext.jsx:177 → Backend server/index.js:3392
+  - `obs:setMute`: Frontend OBSContext.jsx:182 → Backend server/index.js:3435
+  - `obs:setMonitorType`: Frontend OBSContext.jsx:303 → Backend server/index.js:3467
+- **AudioMixer.jsx VERIFIED:** Complete implementation with volume sliders, mute toggles, monitor dropdowns
+- **BLOCKED:** Playwright MCP tools unavailable - cannot perform live browser verification
+- **COORDINATOR STATUS:** Online with 2m 22s uptime, 3 connected clients
+- **NEXT:** Live browser test when Playwright MCP becomes available
 
 ### 2026-01-20 - Context 3
 - **DEPLOYED:** Coordinator restarted via direct SSH to 44.193.31.120
