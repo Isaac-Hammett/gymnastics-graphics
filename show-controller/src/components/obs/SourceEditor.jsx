@@ -269,6 +269,7 @@ export default function SourceEditor({ source, sceneName, onClose, onUpdate }) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [error, setError] = useState(null);
   const [settings, setSettings] = useState({});
+  const [toast, setToast] = useState(null); // {type: 'success'|'error', message: string}
   const [transform, setTransform] = useState({
     positionX: 0,
     positionY: 0,
@@ -325,6 +326,12 @@ export default function SourceEditor({ source, sceneName, onClose, onUpdate }) {
   // Get settings config for this input kind
   const settingsConfig = INPUT_SETTINGS_CONFIG[inputKind];
 
+  // Show toast notification with auto-dismiss
+  const showToast = (type, message) => {
+    setToast({ type, message });
+    setTimeout(() => setToast(null), 3000);
+  };
+
   // Handle settings field change
   const handleSettingChange = (key, value) => {
     setSettings(prev => ({
@@ -376,6 +383,9 @@ export default function SourceEditor({ source, sceneName, onClose, onUpdate }) {
 
       console.log('Source updated:', { sourceName, settings, transform });
 
+      // Show success toast
+      showToast('success', `Source "${sourceName}" updated successfully`);
+
       // Call onUpdate callback
       if (onUpdate) {
         onUpdate();
@@ -386,10 +396,11 @@ export default function SourceEditor({ source, sceneName, onClose, onUpdate }) {
         if (onClose) {
           onClose();
         }
-      }, 300);
+      }, 500);
     } catch (err) {
       console.error('Error saving source:', err);
       setError(err.message);
+      showToast('error', `Failed to update source: ${err.message}`);
     } finally {
       setSaving(false);
     }
@@ -411,6 +422,9 @@ export default function SourceEditor({ source, sceneName, onClose, onUpdate }) {
       removeInput(sourceName);
       console.log('SourceEditor: Deleted input', sourceName);
 
+      // Show success toast
+      showToast('success', `Input "${sourceName}" deleted successfully`);
+
       // Call onUpdate callback
       if (onUpdate) {
         onUpdate();
@@ -421,10 +435,11 @@ export default function SourceEditor({ source, sceneName, onClose, onUpdate }) {
         if (onClose) {
           onClose();
         }
-      }, 300);
+      }, 500);
     } catch (err) {
       console.error('Error deleting input:', err);
       setError(err.message);
+      showToast('error', `Failed to delete input: ${err.message}`);
       setDeleting(false);
       setShowDeleteConfirm(false);
     }
@@ -745,6 +760,24 @@ export default function SourceEditor({ source, sceneName, onClose, onUpdate }) {
           </div>
         </div>
       </div>
+
+      {/* Toast Notification */}
+      {toast && (
+        <div
+          className={`fixed bottom-5 left-1/2 -translate-x-1/2 px-6 py-3 rounded-lg font-medium shadow-lg z-[100] flex items-center gap-2 transition-all ${
+            toast.type === 'success'
+              ? 'bg-green-600 text-white'
+              : 'bg-red-600 text-white'
+          }`}
+        >
+          {toast.type === 'success' ? (
+            <CheckIcon className="w-5 h-5" />
+          ) : (
+            <ExclamationTriangleIcon className="w-5 h-5" />
+          )}
+          {toast.message}
+        </div>
+      )}
     </div>
   );
 }
