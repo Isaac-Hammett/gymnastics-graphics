@@ -196,6 +196,17 @@ When debugging source management issues:
 - **STATUS:** All P0-P3 implementation complete. Toast notification deployment pending MCP tool availability.
 - **NEXT:** When MCP tools are configured, deploy frontend using the artifacts in `/tmp/claude/`
 
+### 2026-01-20 (Deployment Attempt #6)
+- **BUILD:** Frontend rebuilt successfully: `index-Dp7oK54x.js`, `index-B5R_05oK.css`
+- **BUILD:** Artifacts created: `/tmp/claude/dist.tar.gz` (249KB), `/tmp/claude/overlays.tar.gz` (5.7KB)
+- **VERIFIED:** Production site responds HTTP 200
+- **ATTEMPTED:** Direct SCP upload - Permission denied (publickey)
+- **ATTEMPTED:** MCP tools via subagent - Error: No such tool available: mcp__playwright__browser_navigate
+- **BLOCKED:** MCP tools (ssh_upload_file, ssh_exec, playwright) still not available
+- **BLOCKED:** Direct SSH requires key not available in this session
+- **STATUS:** All P0-P3 implementation complete. Deployment blocked on MCP tool availability.
+- **NEXT:** Enable MCP tools in Claude Code settings, then deploy using artifacts in `/tmp/claude/`
+
 ---
 
 ## Verification URLs
