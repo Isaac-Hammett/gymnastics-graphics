@@ -40,7 +40,7 @@
 |---|------|--------|-------|
 | 13 | Add loading states to SourceEditor | **ALREADY EXISTS** | saving state with spinner exists |
 | 14 | Add error handling/toast on failure | PARTIAL | Error displayed in SourceEditor, no toast |
-| 15 | Add Playwright tests for source management | NOT STARTED | Automated verification |
+| 15 | Add Playwright tests for source management | **COMPLETE** | Tests in show-controller/e2e/source-management.spec.js |
 
 ---
 
@@ -109,6 +109,19 @@ When debugging source management issues:
 - **VERIFIED:** Coordinator running with new handler at line 3167
 - Commit: 6c16eec
 
+### 2026-01-20 (P3 #15: Playwright tests)
+- **ADDED:** Playwright test framework (`@playwright/test`) to show-controller
+- **ADDED:** `playwright.config.js` - Configured for production testing
+- **ADDED:** `e2e/source-management.spec.js` - Comprehensive E2E tests covering:
+  - TEST-35: Browser source URL editing
+  - TEST-36: SRT/Media source URL editing
+  - Transform controls (position, scale, crop)
+  - Transform presets (Fullscreen, Dual Left/Right, etc.)
+  - Delete input with confirmation dialog
+  - Error states when OBS disconnected
+- **ADDED:** npm scripts: `test:e2e`, `test:e2e:ui`, `test:e2e:report`
+- To run tests: `cd show-controller && npm run test:e2e`
+
 ---
 
 ## Verification URLs
@@ -130,6 +143,9 @@ Track files modified during implementation:
 | server/index.js | Added obs:removeInput handler | 6c16eec |
 | show-controller/src/context/OBSContext.jsx | Added removeInput method | 6c16eec |
 | show-controller/src/components/obs/SourceEditor.jsx | Added delete input button with confirmation | 6c16eec |
+| show-controller/playwright.config.js | Playwright configuration for E2E tests | (pending) |
+| show-controller/e2e/source-management.spec.js | Source management E2E test suite | (pending) |
+| show-controller/package.json | Added Playwright and test scripts | (pending) |
 
 ---
 
@@ -137,7 +153,11 @@ Track files modified during implementation:
 
 1. ~~**obs:removeInput handler** - Need to add handler to delete an input entirely from OBS~~ **DONE**
 2. ~~**Multi-client sync testing** - Verify changes broadcast to all connected clients~~ **DONE** (broadcastOBSState called after all operations)
-3. **Playwright tests** - Add automated tests for source management (P3)
+3. ~~**Playwright tests** - Add automated tests for source management (P3)~~ **DONE**
+
+### All P0-P3 tasks complete!
+
+Only remaining item is P3 #14 (PARTIAL): Add toast notifications for success/failure. This would require adding a toast library dependency.
 
 ---
 
