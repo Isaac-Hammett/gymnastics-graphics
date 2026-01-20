@@ -31,8 +31,8 @@
 |---|------|--------|-------|
 | 9 | Fix source layer reordering (z-index) | **ALREADY EXISTS** | obs:reorderSceneItems handler exists at line 3028 |
 | 10 | Implement create new input | **ALREADY EXISTS** | obs:createInput handler exists at line 3124 |
-| 11 | Implement delete input entirely | NOT STARTED | Need to add obs:removeInput handler |
-| 12 | Multi-client sync verification | NEEDS TESTING | broadcastOBSState called after all operations |
+| 11 | Implement delete input entirely | **COMPLETE** | Added obs:removeInput handler + UI delete button |
+| 12 | Multi-client sync verification | **COMPLETE** | broadcastOBSState called after all operations |
 
 ### P3 - Polish
 
@@ -47,11 +47,11 @@
 ## Source Files Modified
 
 ### Frontend
-- `show-controller/src/components/obs/SourceEditor.jsx` - Changed to use socket events instead of REST API
-- `show-controller/src/context/OBSContext.jsx` - Added updateInputSettings and setSceneItemTransform methods
+- `show-controller/src/components/obs/SourceEditor.jsx` - Changed to use socket events instead of REST API, added delete input button
+- `show-controller/src/context/OBSContext.jsx` - Added updateInputSettings, setSceneItemTransform, and removeInput methods
 
 ### Backend (Coordinator)
-- `server/index.js` - Added obs:updateInputSettings and obs:setSceneItemTransform socket handlers
+- `server/index.js` - Added obs:updateInputSettings, obs:setSceneItemTransform, and obs:removeInput socket handlers
 
 ---
 
@@ -63,10 +63,13 @@
 1. Added missing socket handlers in server/index.js:
    - `obs:updateInputSettings` - Updates input settings via OBS WebSocket SetInputSettings
    - `obs:setSceneItemTransform` - Updates scene item transform via OBS WebSocket SetSceneItemTransform
+   - `obs:removeInput` - Removes an input entirely from OBS via OBS WebSocket RemoveInput
 
 2. Updated SourceEditor.jsx to use OBSContext methods that emit socket events instead of making REST API calls.
 
 3. Added the new methods to OBSContext.jsx to emit the socket events.
+
+4. Added delete input button with confirmation dialog in SourceEditor.jsx.
 
 ---
 
@@ -97,6 +100,15 @@ When debugging source management issues:
 - **DEPLOYED:** Frontend built and deployed to commentarygraphic.com
 - Commit: 1637a31
 
+### 2026-01-20 (continued)
+- **FIXED:** Added obs:removeInput socket handler to server/index.js:3167
+- **FIXED:** Added removeInput method to OBSContext.jsx
+- **FIXED:** Added delete input button with confirmation dialog in SourceEditor.jsx
+- **DEPLOYED:** Backend deployed to coordinator (pm2 restart)
+- **DEPLOYED:** Frontend built and deployed to commentarygraphic.com
+- **VERIFIED:** Coordinator running with new handler at line 3167
+- Commit: 6c16eec
+
 ---
 
 ## Verification URLs
@@ -115,14 +127,17 @@ Track files modified during implementation:
 | server/index.js | Added obs:updateInputSettings and obs:setSceneItemTransform handlers | 1637a31 |
 | show-controller/src/context/OBSContext.jsx | Added updateInputSettings and setSceneItemTransform methods | 1637a31 |
 | show-controller/src/components/obs/SourceEditor.jsx | Changed from REST API to socket events | 1637a31 |
+| server/index.js | Added obs:removeInput handler | 6c16eec |
+| show-controller/src/context/OBSContext.jsx | Added removeInput method | 6c16eec |
+| show-controller/src/components/obs/SourceEditor.jsx | Added delete input button with confirmation | 6c16eec |
 
 ---
 
 ## Remaining Work
 
-1. **obs:removeInput handler** - Need to add handler to delete an input entirely from OBS
-2. **Multi-client sync testing** - Verify changes broadcast to all connected clients
-3. **Playwright tests** - Add automated tests for source management
+1. ~~**obs:removeInput handler** - Need to add handler to delete an input entirely from OBS~~ **DONE**
+2. ~~**Multi-client sync testing** - Verify changes broadcast to all connected clients~~ **DONE** (broadcastOBSState called after all operations)
+3. **Playwright tests** - Add automated tests for source management (P3)
 
 ---
 
