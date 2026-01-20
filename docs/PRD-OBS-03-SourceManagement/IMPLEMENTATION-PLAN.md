@@ -1,7 +1,7 @@
 # PRD-OBS-03: Source Management - Implementation Plan
 
 **Last Updated:** 2026-01-20
-**Status:** In Progress
+**Status:** ✅ Implementation Complete - Pending Deployment Verification
 
 ---
 
@@ -132,14 +132,21 @@ When debugging source management issues:
 - **COMMIT:** a5d8342
 - **PENDING:** Frontend deployment - requires MCP tools (ssh_upload_file, ssh_exec) which are not available in current session
 
-### Deployment Blocked
-MCP tools required for deployment are not available. To complete deployment:
-1. Ensure MCP tools are configured (ssh_upload_file, ssh_exec, Playwright)
-2. Run deployment commands per CLAUDE.md:
-   - Upload `/tmp/claude/dist.tar.gz` to `/tmp/dist.tar.gz` on 3.87.107.201
-   - Extract: `rm -rf /var/www/commentarygraphic/* && tar -xzf /tmp/dist.tar.gz -C /var/www/commentarygraphic/`
-   - Also deploy output.html and overlays directory
-3. Verify with Playwright at https://commentarygraphic.com/8kyf0rnl/obs-manager
+### Deployment Status
+
+**Frontend Deployment (Toast Notifications):**
+- Code committed: a5d8342
+- Build artifact: `/tmp/claude/dist.tar.gz` (built 2026-01-20)
+- **Status:** PENDING - MCP tools required
+
+**To complete deployment when MCP tools are available:**
+1. Upload `/tmp/claude/dist.tar.gz` to `/tmp/dist.tar.gz` on 3.87.107.201
+2. Extract: `rm -rf /var/www/commentarygraphic/* && tar -xzf /tmp/dist.tar.gz -C /var/www/commentarygraphic/`
+3. Deploy output.html: `cp /tmp/output.html /var/www/commentarygraphic/output.html`
+4. Deploy overlays: `cd /var/www/commentarygraphic && tar -xzf /tmp/overlays.tar.gz`
+5. Verify with Playwright at https://commentarygraphic.com/8kyf0rnl/obs-manager
+
+**Note:** Core source management functionality (P0-P2) was already deployed in earlier commits. Only the toast notification polish (P3 #14) is pending deployment.
 
 ---
 
