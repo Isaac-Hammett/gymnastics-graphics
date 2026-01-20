@@ -131,11 +131,11 @@ const TRANSFORM_PRESETS = {
 
 /**
  * Static scene definitions
+ * Updated to match template naming conventions (see server/config/sceneTemplates/)
  */
 const STATIC_SCENES = [
-  { name: 'Starting Soon', type: 'static' },
-  { name: 'BRB', type: 'static' },
-  { name: 'Thanks for Watching', type: 'static' }
+  { name: 'Stream Starting Soon', type: 'static' },
+  { name: 'End Stream', type: 'static' }
 ];
 
 /**
@@ -358,12 +358,14 @@ export class OBSSceneGenerator extends EventEmitter {
 
   /**
    * Create a single-camera scene
+   * Uses template naming: "Full Screen - Camera X"
    * @param {Object} camera - Camera configuration
    * @param {string} graphicsUrl - Graphics overlay URL
    * @returns {Promise<Object>} Result object
    */
   async createSingleCameraScene(camera, graphicsUrl) {
-    const sceneName = `Single - ${camera.name}`;
+    // Use template naming convention (e.g., "Full Screen - Camera A")
+    const sceneName = `Full Screen - ${camera.name}`;
 
     if (await this.sceneExists(sceneName)) {
       return { scene: sceneName, status: 'skipped', reason: 'exists' };
@@ -389,14 +391,91 @@ export class OBSSceneGenerator extends EventEmitter {
   }
 
   /**
+   * Create a replay scene
+   * Uses template naming: "Replay - Camera X"
+   * Replay scenes are fullscreen single-camera views intended for replay playback
+   * @param {Object} camera - Camera configuration
+   * @param {string} graphicsUrl - Graphics overlay URL
+   * @returns {Promise<Object>} Result object
+   */
+  async createReplayScene(camera, graphicsUrl) {
+    const sceneName = `Replay - ${camera.name}`;
+
+    if (await this.sceneExists(sceneName)) {
+      return { scene: sceneName, status: 'skipped', reason: 'exists' };
+    }
+
+    try {
+      await this.createScene(sceneName);
+      const inputName = `SRT - ${camera.name}`;
+
+      // Add camera source at fullscreen
+      await this.addSourceToScene(sceneName, inputName, TRANSFORM_PRESETS.fullscreen);
+
+      // Add graphics overlay
+      await this.addGraphicsOverlay(sceneName, graphicsUrl);
+
+      this.generatedScenes.add(sceneName);
+      this.emit('sceneCreated', { scene: sceneName, type: 'replay', cameras: [camera.id] });
+
+      return { scene: sceneName, status: 'created', type: 'replay' };
+    } catch (error) {
+      return { scene: sceneName, status: 'failed', error: error.message };
+    }
+  }
+
+  /**
+   * Create a dual-meet specific scene with featured camera position
+   * Uses template naming: "Dual View - Camera X - Left" or "Dual View - Camera X - Right"
+   * This is for dual meets where there are only 2 cameras, showing which camera is featured
+   * @param {Object} featuredCam - Featured camera configuration
+   * @param {Object} otherCam - Other camera configuration
+   * @param {string} position - 'Left' or 'Right' (position of featured camera)
+   * @param {string} graphicsUrl - Graphics overlay URL
+   * @returns {Promise<Object>} Result object
+   */
+  async createDualMeetScene(featuredCam, otherCam, position, graphicsUrl) {
+    const sceneName = `Dual View - ${featuredCam.name} - ${position}`;
+
+    if (await this.sceneExists(sceneName)) {
+      return { scene: sceneName, status: 'skipped', reason: 'exists' };
+    }
+
+    try {
+      await this.createScene(sceneName);
+
+      // Position cameras based on featured camera position
+      if (position === 'Left') {
+        await this.addSourceToScene(sceneName, `SRT - ${featuredCam.name}`, TRANSFORM_PRESETS.dualLeft);
+        await this.addSourceToScene(sceneName, `SRT - ${otherCam.name}`, TRANSFORM_PRESETS.dualRight);
+      } else {
+        await this.addSourceToScene(sceneName, `SRT - ${otherCam.name}`, TRANSFORM_PRESETS.dualLeft);
+        await this.addSourceToScene(sceneName, `SRT - ${featuredCam.name}`, TRANSFORM_PRESETS.dualRight);
+      }
+
+      // Add graphics overlay
+      await this.addGraphicsOverlay(sceneName, graphicsUrl);
+
+      this.generatedScenes.add(sceneName);
+      this.emit('sceneCreated', { scene: sceneName, type: 'dual-meet', cameras: [featuredCam.id, otherCam.id] });
+
+      return { scene: sceneName, status: 'created', type: 'dual-meet' };
+    } catch (error) {
+      return { scene: sceneName, status: 'failed', error: error.message };
+    }
+  }
+
+  /**
    * Create a dual-camera scene
+   * Uses template naming: "Dual View - Camera X & Camera Y"
    * @param {Object} cam1 - First camera configuration
    * @param {Object} cam2 - Second camera configuration
    * @param {string} graphicsUrl - Graphics overlay URL
    * @returns {Promise<Object>} Result object
    */
   async createDualCameraScene(cam1, cam2, graphicsUrl) {
-    const sceneName = `Dual - ${cam1.name} + ${cam2.name}`;
+    // Use template naming convention (e.g., "Dual View - Camera A & Camera B")
+    const sceneName = `Dual View - ${cam1.name} & ${cam2.name}`;
 
     if (await this.sceneExists(sceneName)) {
       return { scene: sceneName, status: 'skipped', reason: 'exists' };
@@ -425,6 +504,7 @@ export class OBSSceneGenerator extends EventEmitter {
 
   /**
    * Create a triple-camera scene
+   * Uses template naming: "Triple View - Camera X Y Z"
    * @param {Object} cam1 - Main (large) camera configuration
    * @param {Object} cam2 - Top-right camera configuration
    * @param {Object} cam3 - Bottom-right camera configuration
@@ -432,7 +512,8 @@ export class OBSSceneGenerator extends EventEmitter {
    * @returns {Promise<Object>} Result object
    */
   async createTriCameraScene(cam1, cam2, cam3, graphicsUrl) {
-    const sceneName = `Triple - ${cam1.name} + ${cam2.name} + ${cam3.name}`;
+    // Use template naming convention (e.g., "Triple View - Camera A B C")
+    const sceneName = `Triple View - ${cam1.name} ${cam2.name} ${cam3.name}`;
 
     if (await this.sceneExists(sceneName)) {
       return { scene: sceneName, status: 'skipped', reason: 'exists' };
@@ -464,6 +545,7 @@ export class OBSSceneGenerator extends EventEmitter {
 
   /**
    * Create a quad-camera scene
+   * Uses template naming: "Quad View"
    * @param {Array<Object>} cameras - Array of 4 camera configurations [TL, TR, BL, BR]
    * @param {string} graphicsUrl - Graphics overlay URL
    * @returns {Promise<Object>} Result object
@@ -474,7 +556,8 @@ export class OBSSceneGenerator extends EventEmitter {
     }
 
     const [camTL, camTR, camBL, camBR] = cameras;
-    const sceneName = `Quad - ${cameras.map(c => c.name).join(' + ')}`;
+    // Use template naming convention - just "Quad View" (no camera names)
+    const sceneName = 'Quad View';
 
     if (await this.sceneExists(sceneName)) {
       return { scene: sceneName, status: 'skipped', reason: 'exists' };
@@ -532,11 +615,13 @@ export class OBSSceneGenerator extends EventEmitter {
 
   /**
    * Create Graphics Fullscreen scene
+   * Uses template naming: "Web-graphics-only-no-video"
    * @param {string} graphicsUrl - Graphics overlay URL
    * @returns {Promise<Object>} Result object
    */
   async createGraphicsFullscreenScene(graphicsUrl) {
-    const sceneName = 'Graphics Fullscreen';
+    // Use template naming convention
+    const sceneName = 'Web-graphics-only-no-video';
 
     if (await this.sceneExists(sceneName)) {
       return { scene: sceneName, status: 'skipped', reason: 'exists' };
@@ -550,7 +635,7 @@ export class OBSSceneGenerator extends EventEmitter {
       await this.createScene(sceneName);
 
       // Create dedicated browser source for fullscreen graphics
-      const inputName = 'Graphics Fullscreen Source';
+      const inputName = 'Web Graphics Source';
       try {
         await this.obs.call('CreateInput', {
           sceneName: null,
@@ -587,7 +672,7 @@ export class OBSSceneGenerator extends EventEmitter {
    * @returns {Object} Preview of scenes to be created
    */
   previewScenes(options = {}) {
-    const { types = ['single', 'dual', 'triple', 'quad', 'static', 'graphics'] } = options;
+    const { types = ['single', 'dual', 'triple', 'quad', 'static', 'graphics', 'replay'] } = options;
     const preview = {
       single: [],
       dual: [],
@@ -595,45 +680,55 @@ export class OBSSceneGenerator extends EventEmitter {
       quad: [],
       static: [],
       graphics: [],
-      totals: { single: 0, dual: 0, triple: 0, quad: 0, static: 0, graphics: 0, total: 0 }
+      replay: [],
+      totals: { single: 0, dual: 0, triple: 0, quad: 0, static: 0, graphics: 0, replay: 0, total: 0 }
     };
 
-    // Single camera scenes
+    // Single camera scenes (template naming: "Full Screen - Camera X")
     if (types.includes('single')) {
       this.cameras.forEach(camera => {
-        preview.single.push(`Single - ${camera.name}`);
+        preview.single.push(`Full Screen - ${camera.name}`);
       });
       preview.totals.single = preview.single.length;
     }
 
     // Dual camera combinations
+    // For 2 cameras: use dual-meet naming (Camera X - Left/Right)
+    // For 3+ cameras: use combination naming (Camera X & Camera Y)
     if (types.includes('dual') && this.cameras.length >= 2) {
-      const dualCombos = getCombinations(this.cameras, 2);
-      dualCombos.forEach(([cam1, cam2]) => {
-        preview.dual.push(`Dual - ${cam1.name} + ${cam2.name}`);
-      });
+      if (this.cameras.length === 2) {
+        // Dual-meet style: "Dual View - Camera A - Left", "Dual View - Camera A - Right"
+        this.cameras.forEach(camera => {
+          preview.dual.push(`Dual View - ${camera.name} - Left`);
+          preview.dual.push(`Dual View - ${camera.name} - Right`);
+        });
+      } else {
+        // Quad/tri-meet style: "Dual View - Camera A & Camera B"
+        const dualCombos = getCombinations(this.cameras, 2);
+        dualCombos.forEach(([cam1, cam2]) => {
+          preview.dual.push(`Dual View - ${cam1.name} & ${cam2.name}`);
+        });
+      }
       preview.totals.dual = preview.dual.length;
     }
 
-    // Triple camera combinations
+    // Triple camera combinations (template naming: "Triple View - Camera X Y Z")
     if (types.includes('triple') && this.cameras.length >= 3) {
       const tripleCombos = getCombinations(this.cameras, 3);
       tripleCombos.forEach(([cam1, cam2, cam3]) => {
-        preview.triple.push(`Triple - ${cam1.name} + ${cam2.name} + ${cam3.name}`);
+        preview.triple.push(`Triple View - ${cam1.name} ${cam2.name} ${cam3.name}`);
       });
       preview.totals.triple = preview.triple.length;
     }
 
-    // Quad camera combinations
+    // Quad camera combinations (template naming: "Quad View")
     if (types.includes('quad') && this.cameras.length >= 4) {
-      const quadCombos = getCombinations(this.cameras, 4);
-      quadCombos.forEach(cameras => {
-        preview.quad.push(`Quad - ${cameras.map(c => c.name).join(' + ')}`);
-      });
-      preview.totals.quad = preview.quad.length;
+      // Only one Quad View scene regardless of camera count
+      preview.quad.push('Quad View');
+      preview.totals.quad = 1;
     }
 
-    // Static scenes
+    // Static scenes (template naming: "Stream Starting Soon", "End Stream")
     if (types.includes('static')) {
       STATIC_SCENES.forEach(scene => {
         preview.static.push(scene.name);
@@ -641,10 +736,18 @@ export class OBSSceneGenerator extends EventEmitter {
       preview.totals.static = preview.static.length;
     }
 
-    // Graphics fullscreen
+    // Graphics fullscreen (template naming: "Web-graphics-only-no-video")
     if (types.includes('graphics')) {
-      preview.graphics.push('Graphics Fullscreen');
+      preview.graphics.push('Web-graphics-only-no-video');
       preview.totals.graphics = 1;
+    }
+
+    // Replay scenes (template naming: "Replay - Camera X")
+    if (types.includes('replay')) {
+      this.cameras.forEach(camera => {
+        preview.replay.push(`Replay - ${camera.name}`);
+      });
+      preview.totals.replay = preview.replay.length;
     }
 
     preview.totals.total = Object.values(preview.totals).reduce((a, b) => a + b, 0) - preview.totals.total;
@@ -692,7 +795,25 @@ export class OBSSceneGenerator extends EventEmitter {
     }
 
     // Generate dual camera combinations
-    if (this.cameras.length >= 2) {
+    // For 2 cameras: use dual-meet naming (Camera X - Left/Right)
+    // For 3+ cameras: use combination naming (Camera X & Camera Y)
+    if (this.cameras.length === 2) {
+      // Dual-meet: create scenes for each camera in left and right positions
+      const [camA, camB] = this.cameras;
+      // Camera A - Left (Camera A on left, Camera B on right)
+      let result = await this.createDualMeetScene(camA, camB, 'Left', graphicsUrl);
+      this.categorizeResult(result, results);
+      // Camera A - Right (Camera B on left, Camera A on right)
+      result = await this.createDualMeetScene(camA, camB, 'Right', graphicsUrl);
+      this.categorizeResult(result, results);
+      // Camera B - Left (Camera B on left, Camera A on right)
+      result = await this.createDualMeetScene(camB, camA, 'Left', graphicsUrl);
+      this.categorizeResult(result, results);
+      // Camera B - Right (Camera A on left, Camera B on right)
+      result = await this.createDualMeetScene(camB, camA, 'Right', graphicsUrl);
+      this.categorizeResult(result, results);
+    } else if (this.cameras.length >= 3) {
+      // Tri/Quad-meet: create all camera pair combinations
       const dualCombos = getCombinations(this.cameras, 2);
       for (const [cam1, cam2] of dualCombos) {
         const result = await this.createDualCameraScene(cam1, cam2, graphicsUrl);
@@ -716,6 +837,12 @@ export class OBSSceneGenerator extends EventEmitter {
         const result = await this.createQuadCameraScene(cameras, graphicsUrl);
         this.categorizeResult(result, results);
       }
+    }
+
+    // Generate replay scenes
+    for (const camera of this.cameras) {
+      const result = await this.createReplayScene(camera, graphicsUrl);
+      this.categorizeResult(result, results);
     }
 
     // Generate graphics fullscreen scene

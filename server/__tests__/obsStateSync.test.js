@@ -516,27 +516,70 @@ describe('OBS State Sync Module', async () => {
       stateSync = new OBSStateSync(null, null, null);
     });
 
-    it('should categorize single camera scenes correctly', () => {
+    // Legacy naming patterns (still supported for backwards compatibility)
+    it('should categorize legacy single camera scenes correctly', () => {
       assert.strictEqual(stateSync.categorizeScene('Single - Camera 1'), 'generated-single');
       assert.strictEqual(stateSync.categorizeScene('single - Cam A'), 'generated-single');
     });
 
-    it('should categorize multi camera scenes correctly', () => {
+    it('should categorize legacy multi camera scenes correctly', () => {
       assert.strictEqual(stateSync.categorizeScene('Dual - Cam1/Cam2'), 'generated-multi');
       assert.strictEqual(stateSync.categorizeScene('dual - A/B'), 'generated-multi');
       assert.strictEqual(stateSync.categorizeScene('Triple - 1/2/3'), 'generated-multi');
       assert.strictEqual(stateSync.categorizeScene('Quad - A/B/C/D'), 'generated-multi');
     });
 
+    // Template naming patterns (from production templates)
+    it('should categorize Full Screen scenes as generated-single', () => {
+      assert.strictEqual(stateSync.categorizeScene('Full Screen - Camera A'), 'generated-single');
+      assert.strictEqual(stateSync.categorizeScene('Full Screen - Camera B'), 'generated-single');
+      assert.strictEqual(stateSync.categorizeScene('full screen - camera c'), 'generated-single');
+    });
+
+    it('should categorize Dual View scenes as generated-multi', () => {
+      // Dual meet style (left/right position)
+      assert.strictEqual(stateSync.categorizeScene('Dual View - Camera A - Left'), 'generated-multi');
+      assert.strictEqual(stateSync.categorizeScene('Dual View - Camera A - Right'), 'generated-multi');
+      // Quad meet style (camera combinations)
+      assert.strictEqual(stateSync.categorizeScene('Dual View - Camera A & Camera B'), 'generated-multi');
+      assert.strictEqual(stateSync.categorizeScene('Dual View - Camera C & Camera D'), 'generated-multi');
+    });
+
+    it('should categorize Triple View scenes as generated-multi', () => {
+      assert.strictEqual(stateSync.categorizeScene('Triple View - Camera A B C'), 'generated-multi');
+      assert.strictEqual(stateSync.categorizeScene('Triple View - Camera A B D'), 'generated-multi');
+      assert.strictEqual(stateSync.categorizeScene('triple view - cameras'), 'generated-multi');
+    });
+
+    it('should categorize Quad View scene as generated-multi', () => {
+      assert.strictEqual(stateSync.categorizeScene('Quad View'), 'generated-multi');
+      assert.strictEqual(stateSync.categorizeScene('quad view'), 'generated-multi');
+    });
+
+    it('should categorize Replay scenes as generated-single', () => {
+      assert.strictEqual(stateSync.categorizeScene('Replay - Camera A'), 'generated-single');
+      assert.strictEqual(stateSync.categorizeScene('Replay - Camera B'), 'generated-single');
+      assert.strictEqual(stateSync.categorizeScene('replay - camera c'), 'generated-single');
+    });
+
     it('should categorize static scenes correctly', () => {
+      // Legacy patterns
       assert.strictEqual(stateSync.categorizeScene('Starting Soon'), 'static');
       assert.strictEqual(stateSync.categorizeScene('BRB'), 'static');
       assert.strictEqual(stateSync.categorizeScene('Be Right Back'), 'static');
       assert.strictEqual(stateSync.categorizeScene('Thanks for Watching'), 'static');
+      // Template patterns
+      assert.strictEqual(stateSync.categorizeScene('Stream Starting Soon'), 'static');
+      assert.strictEqual(stateSync.categorizeScene('End Stream'), 'static');
     });
 
     it('should categorize graphics scenes correctly', () => {
+      // Legacy pattern
       assert.strictEqual(stateSync.categorizeScene('Graphics Fullscreen'), 'graphics');
+      // Template patterns
+      assert.strictEqual(stateSync.categorizeScene('Web-graphics-only-no-video'), 'graphics');
+      assert.strictEqual(stateSync.categorizeScene('web-graphics-only-no-video'), 'graphics');
+      assert.strictEqual(stateSync.categorizeScene('Graphics-only'), 'graphics');
     });
 
     it('should categorize unknown scenes as manual', () => {

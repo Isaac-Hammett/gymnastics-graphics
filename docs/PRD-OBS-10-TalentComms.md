@@ -1,7 +1,7 @@
 # PRD-OBS-10: Talent Communications
 
-**Version:** 1.0
-**Date:** 2026-01-18
+**Version:** 1.1
+**Date:** 2026-01-20
 **Status:** Ready for Implementation
 **Depends On:** PRD-OBS-01 (State Sync)
 **Blocks:** None
@@ -12,6 +12,11 @@
 
 Talent communication system - VDO.Ninja integration for remote commentators to see program output and send audio back. Discord fallback for when VDO.Ninja has issues.
 
+**Architecture Note:** See [README-OBS-Architecture.md](README-OBS-Architecture.md) for the full system architecture. Key points:
+- OBS runs on **competition VMs**, not the coordinator
+- Frontend communicates via **coordinator** (Socket.io), never directly to VMs
+- All talent comms configuration is stored in Firebase and managed through the coordinator
+
 ---
 
 ## Current State
@@ -19,7 +24,7 @@ Talent communication system - VDO.Ninja integration for remote commentators to s
 ### What Exists
 - `server/lib/talentCommsManager.js` (~200 lines) - VDO.Ninja URL generation
 - `show-controller/src/components/obs/TalentCommsPanel.jsx` - UI panel
-- Routes: GET/POST/PUT `/api/obs/talent-comms/*`
+- Socket events for talent comms (via coordinator)
 
 ### Test Results
 - Not tested yet (⏭️ SKIPPED)
@@ -29,19 +34,26 @@ Talent communication system - VDO.Ninja integration for remote commentators to s
 ## How VDO.Ninja Works
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     VDO.NINJA WORKFLOW                       │
-│                                                              │
-│  ┌─────────────┐       ┌─────────────┐       ┌───────────┐  │
-│  │     OBS     │◄────► │  VDO.Ninja  │◄─────►│  Talent   │  │
-│  │  (Browser   │ WebRTC│   (relay)   │ WebRTC│ (Browser) │  │
-│  │   Sources)  │       │             │       │           │  │
-│  └─────────────┘       └─────────────┘       └───────────┘  │
-│                                                              │
-│  Talent sees program output, talks back via microphone       │
-│  OBS captures talent audio via browser source                │
-└─────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────────┐
+│                          VDO.NINJA WORKFLOW                                 │
+│                                                                             │
+│  COMPETITION VM                                                             │
+│  ┌─────────────────────────────────────────────────────────────────┐       │
+│  │  ┌─────────────┐       ┌─────────────┐       ┌───────────┐      │       │
+│  │  │     OBS     │◄────► │  VDO.Ninja  │◄─────►│  Talent   │      │       │
+│  │  │  (Browser   │ WebRTC│   (cloud)   │ WebRTC│ (Browser) │      │       │
+│  │  │   Sources)  │       │             │       │           │      │       │
+│  │  └─────────────┘       └─────────────┘       └───────────┘      │       │
+│  │                                                                  │       │
+│  │  OBS runs headless on port :4455 (localhost only)               │       │
+│  └─────────────────────────────────────────────────────────────────┘       │
+│                                                                             │
+│  Talent sees program output, talks back via microphone                      │
+│  OBS captures talent audio via browser source                               │
+└────────────────────────────────────────────────────────────────────────────┘
 ```
+
+**Important:** The VDO.Ninja browser source runs inside OBS on the **competition VM**. The frontend never connects directly to OBS - it configures talent comms via the coordinator.
 
 ---
 
@@ -72,14 +84,17 @@ On competition assignment, generate unique room:
 - [ ] Regenerate URLs (new room ID)
 - [ ] Email URLs to talent (future feature)
 
-### 3. OBS Browser Sources
+### 3. OBS Browser Sources (Competition VM)
 
-Templates should include VDO.Ninja browser source:
+Templates should include VDO.Ninja browser source **in the OBS instance running on the competition VM**:
 
 **Source: "VDO Talent Audio"**
 - Type: `browser_source`
 - URL: `https://vdo.ninja/?scene&room={{talentComms.vdoNinja.roomId}}`
 - Purpose: Captures all talent audio into OBS
+- Location: Runs in OBS on the competition VM (not the coordinator)
+
+**Note:** The coordinator manages OBS on the VM via the OBS WebSocket protocol. When talent comms are configured, the coordinator instructs the VM's OBS to create/update this browser source.
 
 ### 4. Connection Status
 
@@ -92,24 +107,29 @@ Show whether talent is connected:
 
 ### 5. Discord Fallback
 
-When VDO.Ninja has issues, fall back to Discord:
+When VDO.Ninja has issues, fall back to Discord on the **competition VM**:
 
 **Fallback Steps:**
-1. Connect to VM via NoMachine (SSH tunnel)
+1. Connect to **competition VM** via NoMachine (SSH tunnel)
 2. Open Discord → Join voice channel
 3. OBS → Open Program Projector
 4. Discord → Go Live → Select Projector Window
 5. Talent joins Discord call, watches stream
 
-**Pre-configured on AMI:**
+**Pre-configured on Competition VM AMI (gymnastics-vm-v2.2):**
 - Discord installed and logged in
 - Audio routing configured (Discord → OBS)
 - NoMachine on localhost:4000
+- OBS Studio running headless on display :99
 
 **SSH Tunnel Command:**
 ```bash
-ssh -L 4000:localhost:4000 ubuntu@{vmAddress}
+# Get VM address from Firebase: competitions/{compId}/config/vmAddress
+# The vmAddress is in format IP:3003, use just the IP portion
+ssh -L 4000:localhost:4000 ubuntu@{vmIP}
 ```
+
+**Note:** The `vmAddress` in Firebase points to the competition VM where OBS runs. This is NOT the coordinator (api.commentarygraphic.com) - it's the specific VM assigned to this competition.
 
 ---
 
@@ -141,15 +161,56 @@ ssh -L 4000:localhost:4000 ubuntu@{vmAddress}
 
 ---
 
-## API Endpoints
+## Communication Interface
 
-| Method | Endpoint | Purpose |
-|--------|----------|---------|
-| GET | `/api/obs/talent-comms` | Get current config |
-| POST | `/api/obs/talent-comms/setup` | Generate VDO.Ninja room |
-| POST | `/api/obs/talent-comms/regenerate` | New room ID |
-| PUT | `/api/obs/talent-comms/method` | Switch vdo-ninja/discord |
-| GET | `/api/obs/talent-comms/status` | Connection status |
+### Socket.io Events (Frontend ↔ Coordinator)
+
+All talent comms operations go through the coordinator via Socket.io. **The frontend never talks directly to OBS or competition VMs.**
+
+**Frontend → Coordinator:**
+
+| Event | Payload | Purpose |
+|-------|---------|---------|
+| `talentComms:setup` | `{}` | Generate VDO.Ninja room |
+| `talentComms:regenerate` | `{}` | New room ID |
+| `talentComms:setMethod` | `{ method: 'vdo-ninja' \| 'discord' }` | Switch method |
+| `talentComms:getStatus` | `{}` | Request connection status |
+
+**Coordinator → Frontend:**
+
+| Event | Payload | Purpose |
+|-------|---------|---------|
+| `talentComms:config` | `{ roomId, urls, method, ... }` | Current config |
+| `talentComms:status` | `{ talent1: { connected, audioActive }, ... }` | Connection status |
+| `talentComms:error` | `{ message }` | Error notification |
+
+### Data Flow
+
+```
+Frontend                    Coordinator                   Competition VM
+   │                            │                              │
+   │  talentComms:setup         │                              │
+   │ ──────────────────────────>│                              │
+   │                            │  Generate room ID            │
+   │                            │  Store in Firebase           │
+   │                            │                              │
+   │                            │  CreateInput (browser_source)│
+   │                            │ ────────────────────────────>│
+   │                            │                              │  OBS creates
+   │                            │              success         │  VDO source
+   │                            │<─────────────────────────────│
+   │                            │                              │
+   │  talentComms:config        │                              │
+   │<───────────────────────────│                              │
+   │  (URLs for talent)         │                              │
+```
+
+### Firebase as Source of Truth
+
+Talent comms config is stored in Firebase (not just in memory):
+- Path: `competitions/{compId}/config/talentComms`
+- The coordinator reads/writes this path
+- Frontend reads from context (which syncs from Firebase)
 
 ---
 
@@ -239,3 +300,56 @@ test('can regenerate URLs', async () => {
 5. Discord fallback documented in UI
 6. Tests pass
 7. Code reviewed and merged
+
+---
+
+## Architecture Reference
+
+For complete architecture details, see [README-OBS-Architecture.md](README-OBS-Architecture.md).
+
+### Key Points for This Feature
+
+1. **Frontend communicates via coordinator** - All `talentComms:*` Socket.io events go to `api.commentarygraphic.com`, which routes to the correct competition VM.
+
+2. **OBS runs on competition VMs** - The VDO.Ninja browser source is created in OBS on the competition VM (e.g., `50.19.137.152`), not on the coordinator.
+
+3. **Firebase stores configuration** - Talent comms config lives at `competitions/{compId}/config/talentComms`. The coordinator manages this data.
+
+4. **VM address lookup** - When the frontend emits `talentComms:setup`, the coordinator:
+   - Looks up `competitions/{compId}/config/vmAddress` to find the VM
+   - Connects to that VM's OBS via `obsConnectionManager`
+   - Creates the VDO.Ninja browser source in OBS
+   - Stores the generated URLs in Firebase
+
+### What NOT to Do
+
+- ❌ Frontend connecting directly to `http://VM-IP:3003` for talent comms
+- ❌ Frontend connecting to OBS WebSocket at `ws://VM-IP:4455`
+- ❌ Frontend writing directly to Firebase OBS state
+- ❌ Assuming OBS runs on the coordinator
+
+### Correct Data Flow
+
+```
+User clicks "Setup"
+       │
+       ▼
+Frontend emits talentComms:setup via Socket.io
+       │
+       ▼ (WSS to api.commentarygraphic.com)
+Coordinator receives event
+       │
+       ├─► Generates VDO.Ninja room ID
+       │
+       ├─► Stores config in Firebase
+       │
+       ├─► Gets VM address for competition
+       │
+       └─► Sends CreateInput to VM's OBS (ws://VM-IP:4455)
+              │
+              ▼
+       VM OBS creates browser source
+              │
+              ▼
+       Coordinator emits talentComms:config back to frontend
+```

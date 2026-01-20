@@ -22,7 +22,8 @@ export const SCENE_CATEGORY = {
   GENERATED_MULTI: 'generated-multi',
   STATIC: 'static',
   GRAPHICS: 'graphics',
-  MANUAL: 'manual'
+  MANUAL: 'manual',
+  TEMPLATE: 'template'
 };
 
 /**
@@ -49,6 +50,9 @@ class OBSStateSync extends EventEmitter {
 
     // Initialization flag
     this._isInitialized = false;
+
+    // Template scenes list (loaded from Firebase)
+    this.templateScenes = [];
 
     console.log('[OBSStateSync] Instance created');
   }
@@ -125,6 +129,9 @@ class OBSStateSync extends EventEmitter {
       // Load cached state from Firebase
       await this._loadCachedState();
 
+      // Load template scenes from Firebase
+      await this._loadTemplateScenes();
+
       // Register all OBS WebSocket event handlers
       this.registerEventHandlers();
 
@@ -182,6 +189,85 @@ class OBSStateSync extends EventEmitter {
     } catch (error) {
       console.error('[OBSStateSync] Failed to load cached state:', error.message);
       // Continue with initial state
+    }
+  }
+
+  /**
+   * Load template scenes list from Firebase
+   * @private
+   */
+  async _loadTemplateScenes() {
+    if (!this._db || !this.competitionId) {
+      console.warn('[OBSStateSync] Cannot load template scenes - no database or competition ID');
+      return;
+    }
+
+    try {
+      const snapshot = await this._db
+        .ref(`competitions/${this.competitionId}/obs/templateScenes`)
+        .once('value');
+
+      const templateScenes = snapshot.val();
+
+      if (templateScenes && Array.isArray(templateScenes)) {
+        this.templateScenes = templateScenes;
+        console.log(`[OBSStateSync] Loaded ${this.templateScenes.length} template scenes from Firebase`);
+      } else {
+        this.templateScenes = [];
+        console.log('[OBSStateSync] No template scenes found, using empty list');
+      }
+    } catch (error) {
+      console.error('[OBSStateSync] Failed to load template scenes:', error.message);
+      this.templateScenes = [];
+    }
+  }
+
+  /**
+   * Add a scene to the template scenes list
+   * @param {string} sceneName - Name of the scene to add
+   */
+  async addTemplateScene(sceneName) {
+    if (!sceneName || this.templateScenes.includes(sceneName)) {
+      return;
+    }
+
+    this.templateScenes.push(sceneName);
+
+    // Save to Firebase
+    if (this._db && this.competitionId) {
+      try {
+        await this._db
+          .ref(`competitions/${this.competitionId}/obs/templateScenes`)
+          .set(this.templateScenes);
+        console.log(`[OBSStateSync] Added template scene: ${sceneName}`);
+      } catch (error) {
+        console.error('[OBSStateSync] Failed to save template scene:', error.message);
+      }
+    }
+  }
+
+  /**
+   * Remove a scene from the template scenes list
+   * @param {string} sceneName - Name of the scene to remove
+   */
+  async removeTemplateScene(sceneName) {
+    const index = this.templateScenes.indexOf(sceneName);
+    if (index === -1) {
+      return;
+    }
+
+    this.templateScenes.splice(index, 1);
+
+    // Save to Firebase
+    if (this._db && this.competitionId) {
+      try {
+        await this._db
+          .ref(`competitions/${this.competitionId}/obs/templateScenes`)
+          .set(this.templateScenes);
+        console.log(`[OBSStateSync] Removed template scene: ${sceneName}`);
+      } catch (error) {
+        console.error('[OBSStateSync] Failed to save template scenes:', error.message);
+      }
     }
   }
 
@@ -691,26 +777,49 @@ class OBSStateSync extends EventEmitter {
       return SCENE_CATEGORY.MANUAL;
     }
 
+    // Check if scene is in templateScenes list (from Firebase)
+    if (this.templateScenes && this.templateScenes.includes(sceneName)) {
+      return SCENE_CATEGORY.TEMPLATE;
+    }
+
     const name = sceneName.toLowerCase();
 
-    // Generated single-competitor scenes
-    if (name.startsWith('single - ')) {
+    // Generated single-camera scenes
+    // Template patterns: "Full Screen - Camera X", "Replay - Camera X"
+    // Legacy patterns: "Single - Camera X"
+    if (name.startsWith('full screen - ') ||
+        name.startsWith('replay - ') ||
+        name.startsWith('single - ')) {
       return SCENE_CATEGORY.GENERATED_SINGLE;
     }
 
-    // Generated multi-competitor scenes
-    if (name.startsWith('dual - ') || name.startsWith('triple - ') || name.startsWith('quad - ')) {
+    // Generated multi-camera scenes
+    // Template patterns: "Dual View - ...", "Triple View - ...", "Quad View"
+    // Legacy patterns: "Dual - ...", "Triple - ...", "Quad - ..."
+    if (name.startsWith('dual view') ||
+        name.startsWith('triple view') ||
+        name.startsWith('quad view') ||
+        name === 'quad view' ||
+        name.startsWith('dual - ') ||
+        name.startsWith('triple - ') ||
+        name.startsWith('quad - ')) {
       return SCENE_CATEGORY.GENERATED_MULTI;
     }
 
     // Static production scenes
-    const staticScenes = ['starting soon', 'brb', 'thanks for watching', 'be right back'];
+    // Template patterns: "Stream Starting Soon", "End Stream"
+    // Legacy patterns: "Starting Soon", "BRB", "Thanks for Watching", "Be Right Back"
+    const staticScenes = ['starting soon', 'brb', 'thanks for watching', 'be right back', 'end stream'];
     if (staticScenes.some(s => name.includes(s))) {
       return SCENE_CATEGORY.STATIC;
     }
 
-    // Graphics fullscreen
-    if (name.includes('graphics fullscreen')) {
+    // Graphics-only scenes
+    // Template pattern: "Web-graphics-only-no-video"
+    // Legacy pattern: "Graphics Fullscreen"
+    if (name.includes('graphics fullscreen') ||
+        name.includes('web-graphics-only') ||
+        name.includes('graphics-only')) {
       return SCENE_CATEGORY.GRAPHICS;
     }
 

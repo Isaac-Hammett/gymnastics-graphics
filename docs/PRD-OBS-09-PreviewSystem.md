@@ -163,15 +163,44 @@ Dedicated full-screen view for monitoring.
 
 ---
 
+## Architecture Constraints (CRITICAL)
+
+**See:** [README-OBS-Architecture.md](README-OBS-Architecture.md) for full details.
+
+### Frontend NEVER Talks Directly to OBS
+
+The frontend connects to the coordinator via Socket.io. The coordinator proxies all OBS commands to the appropriate competition VM. This solves the Mixed Content security issue (HTTPS page cannot connect to HTTP/WS endpoints).
+
+```
+Frontend → Socket.io → Coordinator → OBS WebSocket → Competition VM
+Frontend ← Socket.io ← Coordinator ← OBS WebSocket ← Competition VM
+```
+
+### Two OBS Subsystems
+
+| System | Used When | Purpose |
+|--------|-----------|---------|
+| `obsConnectionManager` | `compId !== 'local'` (production) | Per-competition OBS connections |
+| `obsStateSync` | `compId === 'local'` (local dev) | Single local OBS connection |
+
+Preview features MUST work with both systems.
+
+### Routing via compId
+
+All socket events are routed by the `compId` in the socket connection query. The coordinator uses this to determine which VM's OBS to communicate with.
+
+---
+
 ## Architecture Options
 
-### Option A: Screenshot Polling (Recommended for MVP)
-Simple polling approach - request screenshots at regular intervals.
+### Option A: Socket-Based Screenshot (Recommended for MVP)
+Screenshots requested via Socket.io, routed through coordinator to correct VM.
 
 **Pros:**
-- Simple to implement
-- Works with existing infrastructure
-- No additional server-side changes needed
+- Uses existing coordinator proxy infrastructure
+- Works in production (HTTPS → WSS → coordinator → VM)
+- Consistent with all other OBS commands
+- compId routing handled automatically
 
 **Cons:**
 - Latency (2+ seconds behind real-time)
@@ -180,15 +209,27 @@ Simple polling approach - request screenshots at regular intervals.
 
 **Implementation:**
 ```javascript
-// Client-side polling
+// Client-side polling via Socket.io (NOT REST)
 useEffect(() => {
-  const interval = setInterval(async () => {
-    const response = await fetch('/api/obs/preview/screenshot?imageWidth=640&imageHeight=360');
-    const data = await response.json();
-    setScreenshot(data.imageData);
+  const interval = setInterval(() => {
+    // Socket already connected to coordinator with compId
+    socket.emit('obs:requestScreenshot', {
+      imageWidth: 640,
+      imageHeight: 360,
+      imageFormat: 'jpg'
+    });
   }, 2000);
-  return () => clearInterval(interval);
-}, []);
+
+  // Receive screenshot data
+  socket.on('obs:screenshotData', (data) => {
+    setScreenshot(data.imageData);
+  });
+
+  return () => {
+    clearInterval(interval);
+    socket.off('obs:screenshotData');
+  };
+}, [socket]);
 ```
 
 ### Option B: WebRTC/NDI Streaming (Future Enhancement)
@@ -222,38 +263,85 @@ Route OBS virtual camera output through a relay service.
 
 ## Files to Modify
 
+### Frontend (show-controller/src/)
+
 | File | Action | Description |
 |------|--------|-------------|
-| `show-controller/src/components/obs/OBSCurrentOutput.jsx` | **CREATE** | New component for program output display |
-| `show-controller/src/components/obs/OBSPreviewPanel.jsx` | **CREATE** | Scene preview with hover thumbnails |
-| `show-controller/src/components/obs/StudioModePanel.jsx` | **CREATE** | Dual preview/program layout for studio mode |
-| `show-controller/src/pages/OBSManager.jsx` | **MODIFY** | Integrate new preview components |
-| `show-controller/src/context/OBSContext.jsx` | **MODIFY** | Add screenshot state, auto-refresh logic |
-| `show-controller/src/hooks/useAutoRefresh.js` | **CREATE** | Reusable auto-refresh hook with pause/resume |
-| `server/routes/obs.js` | **VERIFY** | Screenshot endpoints exist (lines 2031-2103) |
-| `server/lib/obsStateSync.js` | **VERIFY** | `takeScreenshot()` method implementation |
+| `components/obs/OBSCurrentOutput.jsx` | **CREATE** | New component for program output display |
+| `components/obs/OBSPreviewPanel.jsx` | **CREATE** | Scene preview with hover thumbnails |
+| `components/obs/StudioModePanel.jsx` | **CREATE** | Dual preview/program layout for studio mode |
+| `pages/OBSManager.jsx` | **MODIFY** | Integrate new preview components |
+| `context/OBSContext.jsx` | **MODIFY** | Add screenshot state, studio mode methods, socket event handlers |
+| `hooks/useAutoRefreshScreenshot.js` | **CREATE** | Socket-based auto-refresh hook with pause/resume |
+
+### Coordinator (server/)
+
+| File | Action | Description |
+|------|--------|-------------|
+| `server/index.js` | **MODIFY** | Add socket handlers for `obs:requestScreenshot`, studio mode events |
+| `server/lib/obsConnectionManager.js` | **VERIFY** | Can call `GetSourceScreenshot` on per-competition connections |
+| `server/lib/obsStateSync.js` | **VERIFY** | `takeScreenshot()` for local development |
+| `server/routes/obs.js` | **KEEP** | REST endpoints kept for local development fallback |
+
+### Key Implementation Requirement
+
+**The coordinator must route screenshot requests to the correct VM.** The flow is:
+
+1. Frontend emits `obs:requestScreenshot` via Socket.io
+2. Coordinator extracts `compId` from socket handshake query
+3. Coordinator gets OBS connection via `obsConnManager.getConnection(compId)`
+4. Coordinator calls `GetSourceScreenshot` on that connection
+5. Coordinator emits `obs:screenshotData` back to requesting client
 
 ---
 
-## API Endpoints
+## API Design
+
+### Socket Events (Production - Recommended)
+
+**All OBS operations in production MUST use Socket.io**, not REST APIs. The coordinator routes events to the correct VM based on the `compId` in the socket connection.
+
+#### Client → Coordinator (via Socket.io)
+
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `obs:requestScreenshot` | `{ sceneName?, imageWidth?, imageHeight?, imageFormat? }` | Request screenshot of program output or specific scene |
+| `obs:enableStudioMode` | - | Enter studio mode |
+| `obs:disableStudioMode` | - | Exit studio mode |
+| `obs:setPreviewScene` | `{ sceneName }` | Set preview scene (studio mode) |
+| `obs:transitionToProgram` | `{ transitionName? }` | Execute transition (studio mode) |
+
+#### Coordinator → Client (via Socket.io)
+
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `obs:screenshotData` | `{ success, imageData, sceneName?, timestamp }` | Screenshot response |
+| `obs:screenshotError` | `{ error, sceneName? }` | Screenshot failed |
+| `obs:studioModeChanged` | `{ enabled, previewScene, programScene }` | Studio mode state changed |
+| `obs:previewSceneChanged` | `{ sceneName }` | Preview scene changed |
+
+### REST Endpoints (Local Development Only)
+
+**⚠️ These endpoints only work for local development** (`compId === 'local'`). They talk to `obsStateSync`, not `obsConnectionManager`.
 
 | Method | Endpoint | Purpose | Status |
 |--------|----------|---------|--------|
-| GET | `/api/obs/preview/screenshot` | Current output screenshot | ✅ Exists |
-| GET | `/api/obs/preview/screenshot/:sceneName` | Scene screenshot | ✅ Exists |
-| GET | `/api/obs/studio-mode` | Get studio mode status | ✅ Exists |
-| PUT | `/api/obs/studio-mode` | Enable/disable studio mode | ✅ Exists |
-| PUT | `/api/obs/studio-mode/preview` | Set preview scene | ✅ Exists |
-| POST | `/api/obs/studio-mode/transition` | Execute transition | ✅ Exists |
-| GET | `/api/obs/stream/status` | Get stream stats (bitrate, dropped frames) | ✅ Exists |
+| GET | `/api/obs/preview/screenshot` | Current output screenshot | ✅ Exists (local only) |
+| GET | `/api/obs/preview/screenshot/:sceneName` | Scene screenshot | ✅ Exists (local only) |
+| GET | `/api/obs/studio-mode` | Get studio mode status | ✅ Exists (local only) |
+| PUT | `/api/obs/studio-mode` | Enable/disable studio mode | ✅ Exists (local only) |
+| PUT | `/api/obs/studio-mode/preview` | Set preview scene | ✅ Exists (local only) |
+| POST | `/api/obs/studio-mode/transition` | Execute transition | ✅ Exists (local only) |
+| GET | `/api/obs/stream/status` | Get stream stats | ✅ Exists (local only) |
 
-### Query Parameters for Screenshot
+### Screenshot Parameters
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `imageFormat` | string | `png` | Format: `png` or `jpg` |
 | `imageWidth` | number | 1920 | Output width in pixels |
 | `imageHeight` | number | 1080 | Output height in pixels |
+| `sceneName` | string | null | Specific scene to capture (null = program output) |
 
 **Recommended sizes:**
 - Thumbnail: 160x90 (fast, ~5KB)
@@ -400,57 +488,133 @@ Route OBS virtual camera output through a relay service.
 
 ---
 
-## Socket Events
+## Socket Events Flow
 
-### Client → Server
-| Event | Payload | Description |
-|-------|---------|-------------|
-| `obs:takeScreenshot` | `{ sceneName? }` | Request screenshot (downloads as file) |
-| `obs:enableStudioMode` | - | Enter studio mode |
-| `obs:disableStudioMode` | - | Exit studio mode |
-| `obs:setPreviewScene` | `{ sceneName }` | Set preview scene |
-| `obs:transitionToProgram` | - | Execute transition |
-| `obs:refreshState` | - | Request full state refresh |
+### Screenshot Request Flow (Production)
 
-### Server → Client
-| Event | Payload | Description |
-|-------|---------|-------------|
-| `obs:screenshotCaptured` | `{ imageData, sceneName, timestamp }` | Screenshot data (triggers download) |
-| `obs:studioModeChanged` | `{ enabled, previewScene, programScene }` | Studio mode state changed |
-| `obs:previewSceneChanged` | `{ sceneName }` | Preview scene changed |
-| `obs:error` | `{ message }` | Error occurred |
+```
+Frontend                    Coordinator                      Competition VM
+   │                            │                                 │
+   │ emit('obs:requestScreenshot', {   │                         │
+   │   imageWidth: 640,         │                                 │
+   │   imageHeight: 360         │                                 │
+   │ })                         │                                 │
+   │ ─────────────────────────► │                                 │
+   │                            │  // Get connection for compId   │
+   │                            │  const compObs = obsConnManager │
+   │                            │    .getConnection(compId)       │
+   │                            │                                 │
+   │                            │  compObs.call('GetSourceScreenshot', { │
+   │                            │    sourceName: currentScene,    │
+   │                            │    imageWidth: 640,             │
+   │                            │    imageHeight: 360             │
+   │                            │  })                             │
+   │                            │ ──────────────────────────────► │
+   │                            │                                 │
+   │                            │ ◄────── { imageData: base64 } ─ │
+   │                            │                                 │
+   │ ◄── emit('obs:screenshotData', {  │                         │
+   │       imageData: base64,   │                                 │
+   │       timestamp: Date.now()│                                 │
+   │     })                     │                                 │
+   │                            │                                 │
+```
+
+### Studio Mode Flow (Production)
+
+```
+Frontend                    Coordinator                      Competition VM
+   │                            │                                 │
+   │ emit('obs:enableStudioMode')      │                         │
+   │ ─────────────────────────► │                                 │
+   │                            │  compObs.call('SetStudioModeEnabled', │
+   │                            │    { studioModeEnabled: true }) │
+   │                            │ ──────────────────────────────► │
+   │                            │                                 │
+   │                            │ ◄── OBS Event: StudioModeStateChanged ─ │
+   │                            │                                 │
+   │ ◄── emit('obs:studioModeChanged', │                         │
+   │       { enabled: true,     │                                 │
+   │         previewScene,      │                                 │
+   │         programScene })    │                                 │
+   │                            │                                 │
+```
+
+See [README-OBS-Architecture.md](README-OBS-Architecture.md#socket-event-flow) for complete event flow documentation.
 
 ---
 
 ## Implementation Notes
 
-### useAutoRefresh Hook
+### useAutoRefreshScreenshot Hook (Socket-Based)
 ```javascript
-// show-controller/src/hooks/useAutoRefresh.js
-import { useState, useEffect, useCallback, useRef } from 'react';
+// show-controller/src/hooks/useAutoRefreshScreenshot.js
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useShow } from '../context/ShowContext';
 
-export function useAutoRefresh(fetchFn, intervalMs = 2000) {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(false);
+/**
+ * Auto-refresh screenshot via Socket.io
+ * @param {Object} options - Screenshot options
+ * @param {number} options.intervalMs - Refresh interval (default 2000)
+ * @param {string} options.sceneName - Optional scene name (null = current program)
+ * @param {number} options.imageWidth - Image width (default 640)
+ * @param {number} options.imageHeight - Image height (default 360)
+ */
+export function useAutoRefreshScreenshot(options = {}) {
+  const { socket } = useShow();
+  const {
+    intervalMs = 2000,
+    sceneName = null,
+    imageWidth = 640,
+    imageHeight = 360,
+    imageFormat = 'jpg'
+  } = options;
+
+  const [imageData, setImageData] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [isPaused, setIsPaused] = useState(false);
   const intervalRef = useRef(null);
 
-  const refresh = useCallback(async () => {
-    if (isPaused) return;
+  // Request screenshot via socket
+  const requestScreenshot = useCallback(() => {
+    if (!socket || isPaused) return;
     setLoading(true);
-    try {
-      const result = await fetchFn();
-      setData(result);
-      setLastUpdated(new Date());
-      setError(null);
-    } catch (err) {
-      setError(err.message);
-    } finally {
+    socket.emit('obs:requestScreenshot', {
+      sceneName,
+      imageWidth,
+      imageHeight,
+      imageFormat
+    });
+  }, [socket, isPaused, sceneName, imageWidth, imageHeight, imageFormat]);
+
+  // Listen for screenshot responses
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleData = (data) => {
+      if (data.success) {
+        setImageData(data.imageData);
+        setLastUpdated(new Date(data.timestamp));
+        setError(null);
+      }
       setLoading(false);
-    }
-  }, [fetchFn, isPaused]);
+    };
+
+    const handleError = (data) => {
+      setError(data.error);
+      setLoading(false);
+    };
+
+    socket.on('obs:screenshotData', handleData);
+    socket.on('obs:screenshotError', handleError);
+
+    return () => {
+      socket.off('obs:screenshotData', handleData);
+      socket.off('obs:screenshotError', handleError);
+    };
+  }, [socket]);
 
   // Pause when tab not visible
   useEffect(() => {
@@ -463,19 +627,28 @@ export function useAutoRefresh(fetchFn, intervalMs = 2000) {
 
   // Auto-refresh interval
   useEffect(() => {
-    refresh(); // Initial fetch
-    intervalRef.current = setInterval(refresh, intervalMs);
+    requestScreenshot(); // Initial request
+    intervalRef.current = setInterval(requestScreenshot, intervalMs);
     return () => clearInterval(intervalRef.current);
-  }, [refresh, intervalMs]);
+  }, [requestScreenshot, intervalMs]);
 
-  return { data, loading, error, lastUpdated, isPaused, setIsPaused, refresh };
+  return {
+    imageData,
+    loading,
+    error,
+    lastUpdated,
+    isPaused,
+    setIsPaused,
+    refresh: requestScreenshot
+  };
 }
 ```
 
-### Screenshot Fetching
+### Screenshot Fetching (via Socket.io)
 ```javascript
-// Fetch screenshot via REST API (not socket)
-const fetchScreenshot = async (sceneName = null, size = 'preview') => {
+// Request screenshot via Socket.io (production)
+// The socket is already connected to coordinator with compId in query
+const requestScreenshot = (socket, sceneName = null, size = 'preview') => {
   const sizes = {
     thumbnail: { w: 160, h: 90 },
     preview: { w: 640, h: 360 },
@@ -483,24 +656,82 @@ const fetchScreenshot = async (sceneName = null, size = 'preview') => {
   };
   const { w, h } = sizes[size];
 
-  const url = sceneName
-    ? `/api/obs/preview/screenshot/${encodeURIComponent(sceneName)}?imageWidth=${w}&imageHeight=${h}&imageFormat=jpg`
-    : `/api/obs/preview/screenshot?imageWidth=${w}&imageHeight=${h}&imageFormat=jpg`;
-
-  const response = await fetch(url);
-  if (!response.ok) throw new Error('Screenshot failed');
-  return response.json();
+  socket.emit('obs:requestScreenshot', {
+    sceneName,  // null = current program output
+    imageWidth: w,
+    imageHeight: h,
+    imageFormat: 'jpg'
+  });
 };
+
+// In OBSContext or component:
+useEffect(() => {
+  socket.on('obs:screenshotData', (data) => {
+    if (data.success) {
+      setScreenshot(data.imageData);
+      setLastUpdated(data.timestamp);
+    }
+  });
+
+  socket.on('obs:screenshotError', (data) => {
+    setError(data.error);
+  });
+
+  return () => {
+    socket.off('obs:screenshotData');
+    socket.off('obs:screenshotError');
+  };
+}, [socket]);
 ```
 
-### OBS WebSocket Call (Server Side)
+### OBS WebSocket Call (Server Side - Coordinator)
 ```javascript
-// Already implemented in obsStateSync.js
-const screenshot = await obs.call('GetSourceScreenshot', {
-  sourceName: sceneName || currentScene,
-  imageFormat: 'png',
-  imageWidth: 640,
-  imageHeight: 360
+// In server/index.js - socket handler for obs:requestScreenshot
+socket.on('obs:requestScreenshot', async (options = {}) => {
+  const { sceneName, imageWidth = 640, imageHeight = 360, imageFormat = 'jpg' } = options;
+  const clientCompId = socket.handshake?.query?.compId;
+
+  try {
+    // PRODUCTION: Use obsConnectionManager for competition-based connections
+    if (clientCompId && clientCompId !== 'local') {
+      const compObs = obsConnManager.getConnection(clientCompId);
+      if (!compObs) {
+        socket.emit('obs:screenshotError', { error: 'OBS not connected for this competition' });
+        return;
+      }
+
+      // Get current scene if no sceneName provided
+      const targetScene = sceneName || (await compObs.call('GetCurrentProgramScene')).currentProgramSceneName;
+
+      const result = await compObs.call('GetSourceScreenshot', {
+        sourceName: targetScene,
+        imageFormat,
+        imageWidth,
+        imageHeight
+      });
+
+      socket.emit('obs:screenshotData', {
+        success: true,
+        imageData: result.imageData,
+        sceneName: targetScene,
+        timestamp: Date.now()
+      });
+    }
+    // LOCAL DEV: Use obsStateSync
+    else if (obsStateSync && obsStateSync.isInitialized()) {
+      const result = await obsStateSync.takeScreenshot(sceneName, { imageWidth, imageHeight, imageFormat });
+      socket.emit('obs:screenshotData', {
+        success: true,
+        imageData: result.imageData,
+        sceneName: result.sceneName,
+        timestamp: Date.now()
+      });
+    } else {
+      socket.emit('obs:screenshotError', { error: 'OBS not connected' });
+    }
+  } catch (error) {
+    socket.emit('obs:screenshotError', { error: error.message, sceneName });
+  }
 });
 ```
 
@@ -543,75 +774,117 @@ const screenshot = await obs.call('GetSourceScreenshot', {
 
 ## Test Plan
 
-### Unit Tests
+### Unit Tests (Socket.io Based)
 
 ```javascript
-// TEST-41: Preview system - Screenshot API
-describe('Screenshot API', () => {
-  test('GET /api/obs/preview/screenshot returns base64 image', async () => {
-    const response = await fetch('/api/obs/preview/screenshot');
-    expect(response.ok).toBe(true);
-    const data = await response.json();
-    expect(data.success).toBe(true);
-    expect(data.imageData).toMatch(/^data:image\/(png|jpeg);base64,/);
+// TEST-41: Preview system - Screenshot via Socket.io
+describe('Screenshot Socket Events', () => {
+  let socket;
+
+  beforeEach(() => {
+    // Connect to coordinator with compId
+    socket = io('https://api.commentarygraphic.com', {
+      query: { compId: 'test-competition' }
+    });
   });
 
-  test('GET /api/obs/preview/screenshot/:sceneName returns scene screenshot', async () => {
-    const response = await fetch('/api/obs/preview/screenshot/Main%20Camera');
-    expect(response.ok).toBe(true);
-    const data = await response.json();
-    expect(data.sceneName).toBe('Main Camera');
+  afterEach(() => {
+    socket.disconnect();
   });
 
-  test('Screenshot with custom dimensions', async () => {
-    const response = await fetch('/api/obs/preview/screenshot?imageWidth=320&imageHeight=180');
-    expect(response.ok).toBe(true);
+  test('obs:requestScreenshot returns base64 image via obs:screenshotData', (done) => {
+    socket.on('obs:screenshotData', (data) => {
+      expect(data.success).toBe(true);
+      expect(data.imageData).toMatch(/^data:image\/(png|jpeg);base64,/);
+      expect(data.timestamp).toBeDefined();
+      done();
+    });
+
+    socket.emit('obs:requestScreenshot', {
+      imageWidth: 640,
+      imageHeight: 360,
+      imageFormat: 'jpg'
+    });
   });
 
-  test('Invalid scene returns 404', async () => {
-    const response = await fetch('/api/obs/preview/screenshot/NonexistentScene');
-    expect(response.status).toBe(404);
+  test('obs:requestScreenshot with sceneName returns specific scene', (done) => {
+    socket.on('obs:screenshotData', (data) => {
+      expect(data.success).toBe(true);
+      expect(data.sceneName).toBe('Main Camera');
+      done();
+    });
+
+    socket.emit('obs:requestScreenshot', {
+      sceneName: 'Main Camera',
+      imageWidth: 640,
+      imageHeight: 360
+    });
+  });
+
+  test('Invalid scene emits obs:screenshotError', (done) => {
+    socket.on('obs:screenshotError', (data) => {
+      expect(data.error).toContain('not found');
+      done();
+    });
+
+    socket.emit('obs:requestScreenshot', {
+      sceneName: 'NonexistentScene'
+    });
   });
 });
 ```
 
 ```javascript
-// TEST-42: Studio mode
-describe('Studio Mode', () => {
-  test('Enable studio mode', async () => {
-    const response = await fetch('/api/obs/studio-mode', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ enabled: true })
+// TEST-42: Studio mode via Socket.io
+describe('Studio Mode Socket Events', () => {
+  let socket;
+
+  beforeEach(() => {
+    socket = io('https://api.commentarygraphic.com', {
+      query: { compId: 'test-competition' }
     });
-    expect(response.ok).toBe(true);
-    const data = await response.json();
-    expect(data.studioModeEnabled).toBe(true);
   });
 
-  test('Set preview scene', async () => {
-    const response = await fetch('/api/obs/studio-mode/preview', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sceneName: 'Scene 2' })
-    });
-    expect(response.ok).toBe(true);
+  afterEach(() => {
+    socket.disconnect();
   });
 
-  test('Execute transition', async () => {
-    const response = await fetch('/api/obs/studio-mode/transition', {
-      method: 'POST'
+  test('obs:enableStudioMode triggers obs:studioModeChanged', (done) => {
+    socket.on('obs:studioModeChanged', (data) => {
+      expect(data.enabled).toBe(true);
+      expect(data.previewScene).toBeDefined();
+      expect(data.programScene).toBeDefined();
+      done();
     });
-    expect(response.ok).toBe(true);
+
+    socket.emit('obs:enableStudioMode');
   });
 
-  test('Disable studio mode', async () => {
-    const response = await fetch('/api/obs/studio-mode', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ enabled: false })
+  test('obs:setPreviewScene updates preview', (done) => {
+    socket.on('obs:previewSceneChanged', (data) => {
+      expect(data.sceneName).toBe('Scene 2');
+      done();
     });
-    expect(response.ok).toBe(true);
+
+    socket.emit('obs:setPreviewScene', { sceneName: 'Scene 2' });
+  });
+
+  test('obs:transitionToProgram executes transition', (done) => {
+    socket.on('obs:studioModeChanged', (data) => {
+      // After transition, the preview should become program
+      done();
+    });
+
+    socket.emit('obs:transitionToProgram');
+  });
+
+  test('obs:disableStudioMode exits studio mode', (done) => {
+    socket.on('obs:studioModeChanged', (data) => {
+      expect(data.enabled).toBe(false);
+      done();
+    });
+
+    socket.emit('obs:disableStudioMode');
   });
 });
 ```

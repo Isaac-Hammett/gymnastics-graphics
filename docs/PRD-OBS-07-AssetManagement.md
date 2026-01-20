@@ -1,7 +1,7 @@
 # PRD-OBS-07: Asset Management
 
-**Version:** 1.0
-**Date:** 2026-01-18
+**Version:** 1.1
+**Date:** 2026-01-20
 **Status:** Ready for Implementation
 **Depends On:** PRD-OBS-01 (State Sync)
 **Blocks:** PRD-OBS-08 (Templates)
@@ -10,7 +10,9 @@
 
 ## Overview
 
-Media asset management - upload, list, delete music, stingers, backgrounds, logos on the VM. **This feature is working** (TEST-43/44/45 passed).
+Media asset management - upload, list, delete music, stingers, backgrounds, logos on the competition VM. **This feature is working** (TEST-43/44/45 passed).
+
+**Important Architecture Note:** Assets are stored on competition VMs, NOT the coordinator. All asset operations flow through the coordinator which routes them to the correct VM based on `compId`. See [README-OBS-Architecture.md](README-OBS-Architecture.md) for the full connection architecture.
 
 ---
 
@@ -82,12 +84,46 @@ Stored in Firebase: `competitions/{compId}/obs/assets/manifest`
 | Backgrounds | 200 MB |
 | Logos | 10 MB |
 
-### 5. Upload via SSH
+### 5. Connection Architecture
 
-Assets are uploaded to VMs via SSH (using MCP tools):
-1. File uploaded to server temp directory
-2. SSH transfer to VM
-3. Manifest updated in Firebase
+**The frontend NEVER talks directly to the competition VM.** All requests flow through the coordinator:
+
+```
+Frontend                    Coordinator                   Competition VM
+   │                            │                              │
+   │  POST /api/obs/assets      │                              │
+   │  (with compId)             │                              │
+   │ ──────────────────────────>│                              │
+   │                            │  Look up vmAddress for       │
+   │                            │  compId in Firebase          │
+   │                            │                              │
+   │                            │  SSH/SCP to VM               │
+   │                            │ ────────────────────────────>│
+   │                            │                              │  Store file in
+   │                            │                              │  /var/www/assets/
+   │                            │  Success                     │
+   │                            │ <────────────────────────────│
+   │                            │                              │
+   │                            │  Update Firebase manifest    │
+   │                            │  competitions/{compId}/obs/  │
+   │                            │  assets/manifest             │
+   │  200 OK                    │                              │
+   │ <──────────────────────────│                              │
+```
+
+**Why this architecture:**
+- Competition VMs don't have public HTTPS (no SSL certs)
+- Browser Mixed Content security would block direct HTTP uploads from HTTPS frontend
+- Coordinator has SSL (api.commentarygraphic.com) and can proxy to VMs
+
+### 6. Upload Flow
+
+1. Frontend sends file to coordinator via REST API (includes `compId`)
+2. Coordinator looks up `vmAddress` for the competition in Firebase
+3. Coordinator saves file to temp directory
+4. Coordinator uses SSH/SCP to transfer file to competition VM
+5. Coordinator updates asset manifest in Firebase
+6. Coordinator returns success to frontend
 
 ---
 
@@ -103,13 +139,17 @@ Assets are uploaded to VMs via SSH (using MCP tools):
 
 ## API Endpoints
 
+**All endpoints are on the coordinator** (`api.commentarygraphic.com`), NOT direct to VMs.
+
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
-| GET | `/api/obs/assets` | List all assets |
-| GET | `/api/obs/assets/:type` | List by type |
-| POST | `/api/obs/assets/upload` | Upload asset |
-| DELETE | `/api/obs/assets/:type/:filename` | Delete asset |
-| GET | `/api/obs/assets/manifest` | Get manifest |
+| GET | `/api/obs/assets?compId={compId}` | List all assets for competition |
+| GET | `/api/obs/assets/:type?compId={compId}` | List by type |
+| POST | `/api/obs/assets/upload` | Upload asset (compId in body) |
+| DELETE | `/api/obs/assets/:type/:filename?compId={compId}` | Delete asset |
+| GET | `/api/obs/assets/manifest?compId={compId}` | Get manifest |
+
+**Note:** The `compId` parameter is required so the coordinator can route the request to the correct competition VM.
 
 ---
 
@@ -183,3 +223,27 @@ Assets are uploaded to VMs via SSH (using MCP tools):
 3. All asset types supported
 4. Size limits enforced
 5. Code reviewed and merged
+
+---
+
+## Common Mistakes to Avoid
+
+### Mistake 1: "Upload directly to the VM"
+
+**Wrong:** Frontend uploads file directly to `http://VM-IP:3003/upload`
+**Right:** Frontend uploads to `https://api.commentarygraphic.com/api/obs/assets/upload` with `compId`
+
+### Mistake 2: "Assets stored on coordinator"
+
+**Wrong:** Assets stored in `/var/www/assets/` on the coordinator VM
+**Right:** Assets stored on the **competition VM** at `/var/www/assets/`; coordinator just proxies
+
+### Mistake 3: "Omit compId from requests"
+
+**Wrong:** `GET /api/obs/assets` (no competition context)
+**Right:** `GET /api/obs/assets?compId=8kyf0rnl` (coordinator knows which VM to query)
+
+### Mistake 4: "Read assets from Firebase directly"
+
+**Wrong:** Frontend reads asset list from Firebase and assumes files exist
+**Right:** Frontend calls coordinator API, which verifies files exist on VM and returns manifest

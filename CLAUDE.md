@@ -2,10 +2,10 @@
 
 ## Git Workflow - IMPORTANT
 
-**Always work on `dev` branch** - Push to `dev` for development work.
+**Always work on `main` branch** - Push directly to `main` for production deployments.
 
-- `dev` branch: Active development (push freely)
-- `main` branch: Production (no longer uses Netlify)
+- `main` branch: Production - commit and push here so deployments to commentarygraphic.com are always in sync with the repo
+- `dev` branch: No longer used (legacy)
 
 ---
 

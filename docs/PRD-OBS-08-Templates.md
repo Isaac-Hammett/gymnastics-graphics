@@ -12,6 +12,8 @@
 
 OBS template system - save/load scene collections as reusable templates with variable substitution. **Template apply works**, but **template delete is BROKEN** (TEST-47 failed).
 
+> **Architecture Note:** All template operations flow through the **coordinator** (api.commentarygraphic.com). The frontend never connects directly to OBS or competition VMs. See [README-OBS-Architecture.md](README-OBS-Architecture.md) for details.
+
 ---
 
 ## Current State
@@ -84,12 +86,19 @@ Templates use variables that resolve at apply time:
 
 ### 4. Template Apply Flow
 
-1. Validate required assets exist on VM
-2. Resolve all variables
-3. Clear existing scenes (optional)
-4. Create scenes from template
-5. Apply transitions
-6. Update state cache
+```
+Frontend → Coordinator → Competition VM's OBS
+```
+
+1. Frontend emits `obs:applyTemplate` via Socket.io to coordinator
+2. Coordinator looks up VM for the competition (`vmAddress` in Firebase)
+3. Coordinator validates required assets exist on the target VM
+4. Coordinator resolves all variables for the competition context
+5. Coordinator sends OBS WebSocket commands to VM (ws://VM-IP:4455)
+6. Clear existing scenes (optional)
+7. Create scenes from template
+8. Apply transitions
+9. Coordinator broadcasts updated state to all frontend clients
 
 ### 5. Fix Template Delete
 
@@ -113,14 +122,25 @@ Templates use variables that resolve at apply time:
 
 ## API Endpoints
 
+> **Note:** In production, these endpoints are served by the **coordinator** at `https://api.commentarygraphic.com`. The frontend NEVER connects directly to competition VMs.
+
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
 | GET | `/api/obs/templates` | List templates |
 | GET | `/api/obs/templates/:templateId` | Get template |
 | POST | `/api/obs/templates` | Create template |
-| POST | `/api/obs/templates/:templateId/apply` | Apply template |
+| POST | `/api/obs/templates/:templateId/apply` | Apply template to competition VM |
 | PUT | `/api/obs/templates/:templateId` | Update metadata |
 | DELETE | `/api/obs/templates/:templateId` | **FIX: Delete** |
+
+**Apply Template Flow:**
+```
+Frontend → POST https://api.commentarygraphic.com/api/obs/templates/:id/apply
+         ↓
+Coordinator → ws://VM-IP:4455 (OBS WebSocket commands)
+         ↓
+Competition VM OBS applies template
+```
 
 ---
 
@@ -179,12 +199,23 @@ Templates use variables that resolve at apply time:
 ## Debugging Template Delete
 
 ### Test the API directly:
+
+**Production (via coordinator):**
 ```bash
 # List templates
-curl http://localhost:3000/api/obs/templates
+curl https://api.commentarygraphic.com/api/obs/templates
 
 # Delete template
-curl -X DELETE http://localhost:3000/api/obs/templates/gymnastics-standard-v2
+curl -X DELETE https://api.commentarygraphic.com/api/obs/templates/gymnastics-standard-v2
+```
+
+**Local development:**
+```bash
+# List templates (local server on port 3001)
+curl http://localhost:3001/api/obs/templates
+
+# Delete template
+curl -X DELETE http://localhost:3001/api/obs/templates/gymnastics-standard-v2
 ```
 
 ### Check Firebase Console:
@@ -192,10 +223,19 @@ curl -X DELETE http://localhost:3000/api/obs/templates/gymnastics-standard-v2
 2. Verify template exists before delete
 3. After delete, verify it's removed
 
+### Check Coordinator Logs:
+```bash
+# Via MCP tool
+ssh_exec target="coordinator" command="pm2 logs coordinator --lines 50"
+
+# Look for template-related errors
+```
+
 ### Common Issues:
 - Wrong Firebase path (`templates/obs/` vs `competitions/{compId}/obs/templates/`)
 - Template ID URL encoding issues
 - Missing error handling
+- Coordinator not forwarding request to correct VM
 
 ---
 
@@ -238,3 +278,15 @@ test('can delete template', async () => {
 3. Variable substitution works
 4. Missing asset validation works
 5. Code reviewed and merged
+
+---
+
+## Architecture Reference
+
+For complete details on how the frontend, coordinator, and competition VMs communicate, see [README-OBS-Architecture.md](README-OBS-Architecture.md).
+
+**Key points:**
+- Frontend connects to `api.commentarygraphic.com` (coordinator) via Socket.io
+- Coordinator maintains OBS WebSocket connections to competition VMs
+- OBS port 4455 is localhost-only on VMs (not publicly accessible)
+- Template operations are routed through the coordinator based on `compId`

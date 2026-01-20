@@ -550,8 +550,33 @@ curl https://api.commentarygraphic.com/api/coordinator/status
 
 ---
 
+## Scene Templates
+
+Production-ready OBS scene collection templates are available for generating competition scenes.
+
+**Location:** `server/config/sceneTemplates/`
+
+| Template | Competition Type | Scenes | Cameras |
+|----------|------------------|--------|---------|
+| `20260119-obs-template-ai-dual.json` | Dual meets (2 teams) | 9 | A, B |
+| `20260119-obs-template-ai-quad.json` | Quad meets (4 teams) | 22 | A, B, C, D |
+
+Both templates work for men's and women's competitions.
+
+**Scene types included:**
+- Static (Starting Soon, End Stream)
+- Full Screen (single camera)
+- Dual/Triple/Quad View (multi-camera layouts)
+- Replay scenes
+- Graphics-only (no video)
+
+For detailed scene breakdowns, see [PRD-OBS-02-SceneManagement](PRD-OBS-02-SceneManagement/PRD-OBS-02-SceneManagement.md#reference-scene-templates).
+
+---
+
 ## Related Documents
 
 - [PRD-OBS-00-Index.md](PRD-OBS-00-Index.md) - Overview of all OBS PRDs
+- [PRD-OBS-02-SceneManagement](PRD-OBS-02-SceneManagement/PRD-OBS-02-SceneManagement.md) - Scene management PRD
 - [SPEC-competition-vm-routing.md](SPEC-competition-vm-routing.md) - How routing works
 - [CLAUDE.md](../CLAUDE.md) - MCP tools and deployment instructions

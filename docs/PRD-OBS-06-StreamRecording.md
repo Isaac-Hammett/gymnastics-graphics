@@ -1,7 +1,7 @@
 # PRD-OBS-06: Stream & Recording Control
 
-**Version:** 1.0
-**Date:** 2026-01-18
+**Version:** 1.1
+**Date:** 2026-01-20
 **Status:** Ready for Implementation
 **Depends On:** PRD-OBS-01 (State Sync)
 **Blocks:** None
@@ -11,6 +11,8 @@
 ## Overview
 
 Stream configuration and control - set destination, stream key, start/stop streaming, recording control. **This feature is working** but needs verification.
+
+> **Architecture Note:** See [README-OBS-Architecture.md](README-OBS-Architecture.md) for the full connection architecture. The frontend NEVER connects directly to OBS or competition VMs. All commands flow through the coordinator.
 
 ---
 
@@ -89,17 +91,88 @@ Stream keys are sensitive and must not be exposed:
 
 ---
 
+## Connection Architecture
+
+```
+Frontend (Browser)
+    │
+    │ Socket.io (WSS to api.commentarygraphic.com)
+    │ Events: obs:startStream, obs:stopStream, obs:startRecording, etc.
+    ▼
+Coordinator (44.193.31.120)
+    │
+    │ OBS WebSocket (ws://VM-IP:4455)
+    │ OBS calls: StartStream, StopStream, StartRecord, etc.
+    ▼
+Competition VM (OBS Studio)
+```
+
+**Important:** The frontend emits Socket.io events to the coordinator. The coordinator then calls OBS WebSocket methods on the appropriate competition VM. The frontend does NOT make direct REST API calls to competition VMs.
+
+---
+
 ## Files Involved
 
 | File | Purpose |
 |------|---------|
-| `server/lib/obsStreamManager.js` | Stream/recording logic |
-| `server/routes/obs.js` | Stream endpoints |
+| `server/lib/obsStreamManager.js` | Stream/recording logic (local dev only) |
+| `server/lib/obsConnectionManager.js` | Per-competition OBS connections (production) |
+| `server/index.js` | Socket.io event handlers for stream/recording |
 | `show-controller/src/components/obs/StreamConfig.jsx` | Stream UI |
+| `show-controller/src/context/OBSContext.jsx` | Frontend state & event emitters |
 
 ---
 
-## API Endpoints
+## Socket.io Events
+
+### Frontend → Coordinator
+
+| Event | Payload | Purpose |
+|-------|---------|---------|
+| `obs:getStreamSettings` | `{}` | Request stream settings (key masked) |
+| `obs:setStreamSettings` | `{server, key, ...}` | Update stream settings |
+| `obs:startStream` | `{}` | Start streaming |
+| `obs:stopStream` | `{}` | Stop streaming |
+| `obs:getStreamStatus` | `{}` | Request stream stats |
+| `obs:startRecording` | `{}` | Start recording |
+| `obs:stopRecording` | `{}` | Stop recording |
+| `obs:pauseRecording` | `{}` | Pause recording |
+| `obs:resumeRecording` | `{}` | Resume recording |
+| `obs:getRecordingStatus` | `{}` | Request recording status |
+
+### Coordinator → Frontend
+
+| Event | Payload | Purpose |
+|-------|---------|---------|
+| `obs:streamSettings` | `{server, key: "****", ...}` | Stream settings response |
+| `obs:streamStatus` | `{active, timecode, kbps, ...}` | Stream status update |
+| `obs:streamStarted` | `{}` | Stream started confirmation |
+| `obs:streamStopped` | `{}` | Stream stopped confirmation |
+| `obs:recordingStatus` | `{active, paused, path, ...}` | Recording status update |
+| `obs:recordingStarted` | `{}` | Recording started confirmation |
+| `obs:recordingStopped` | `{path}` | Recording stopped, includes file path |
+
+### OBS WebSocket Calls (Coordinator → VM)
+
+The coordinator translates Socket.io events to OBS WebSocket calls:
+
+| Socket Event | OBS WebSocket Call |
+|--------------|-------------------|
+| `obs:startStream` | `StartStream` |
+| `obs:stopStream` | `StopStream` |
+| `obs:getStreamStatus` | `GetStreamStatus` |
+| `obs:setStreamSettings` | `SetStreamServiceSettings` |
+| `obs:startRecording` | `StartRecord` |
+| `obs:stopRecording` | `StopRecord` |
+| `obs:pauseRecording` | `PauseRecord` |
+| `obs:resumeRecording` | `ResumeRecord` |
+| `obs:getRecordingStatus` | `GetRecordStatus` |
+
+---
+
+## Legacy REST API Endpoints (Local Development Only)
+
+These endpoints are used for local development when connecting directly to a local OBS instance. In production, use Socket.io events instead.
 
 ### Stream
 | Method | Endpoint | Purpose |
@@ -180,6 +253,23 @@ Stream keys are sensitive and must not be exposed:
 
 ---
 
+## Multi-Competition Routing
+
+The coordinator maintains separate OBS connections for each competition. When the frontend emits a stream/recording event:
+
+1. **Frontend connects with compId:** `io('wss://api.commentarygraphic.com', { query: { compId: '8kyf0rnl' } })`
+2. **Coordinator extracts compId** from the socket connection
+3. **Coordinator looks up VM** for that competition via `obsConnectionManager.getConnection(compId)`
+4. **Coordinator calls OBS** on the correct VM: `compObs.call('StartStream')`
+5. **Response routed back** to only clients in that competition's room
+
+This ensures:
+- Competition A's stream controls don't affect Competition B
+- Each competition can stream to different destinations
+- Multiple operators can manage different competitions simultaneously
+
+---
+
 ## Test Plan
 
 ### Manual Tests
@@ -189,6 +279,12 @@ Stream keys are sensitive and must not be exposed:
 4. Verify stats update in real-time
 5. Stop stream → verify stopped
 6. Start recording → verify file created
+
+### Architecture Verification
+1. Open browser DevTools → Network → WS tab
+2. Verify Socket.io events go to `api.commentarygraphic.com` (NOT the VM IP)
+3. Verify events include compId in the connection
+4. Check coordinator logs: `pm2 logs coordinator` - should show stream commands being forwarded
 
 ### Security Test
 1. Inspect network requests
