@@ -3257,13 +3257,17 @@ io.on('connection', async (socket) => {
 
   // OBS State Sync: Refresh full state from OBS
   socket.on('obs:refreshState', async () => {
+    console.log(`[obs:refreshState] Request from client, compId: ${clientCompId || 'none'}`);
+
     // First, try competition-based OBS connection (via obsConnectionManager)
     if (clientCompId && clientCompId !== 'local') {
       const obsConnManager = getOBSConnectionManager();
       const connState = obsConnManager.getConnectionState(clientCompId);
+      console.log(`[obs:refreshState] Connection state for ${clientCompId}:`, connState ? { connected: connState.connected, error: connState.error } : 'null');
+
       if (connState && connState.connected) {
         try {
-          console.log(`[obs:refreshState] Client requested refresh for competition ${clientCompId}`);
+          console.log(`[obs:refreshState] Broadcasting full state for competition ${clientCompId}`);
           await broadcastOBSState(clientCompId, obsConnManager, io);
           return;
         } catch (error) {
@@ -3271,6 +3275,8 @@ io.on('connection', async (socket) => {
           socket.emit('error', { message: 'Failed to refresh OBS state' });
           return;
         }
+      } else {
+        console.log(`[obs:refreshState] OBS not connected for ${clientCompId}, falling back to local`);
       }
     }
 
