@@ -10,7 +10,7 @@
 
 ### 1. [DONE] Add Socket.io Handlers for Transition Events
 **Files Modified:**
-- `server/index.js` (lines 3500-3620)
+- `server/index.js` (lines 3520-3620)
 
 **Handlers Added:**
 - [x] `obs:getTransitions` - Returns list of available transitions
@@ -67,6 +67,16 @@
 
 ---
 
+## Deferred Items (Stinger Configuration)
+
+| # | Task | Status | Notes |
+|---|------|--------|-------|
+| 1 | Implement stinger path configuration | DEFERRED | Not needed for basic transitions |
+| 2 | Implement transition point configuration | DEFERRED | Not needed for basic transitions |
+| 3 | Test stinger transition plays correctly | DEFERRED | Will implement when stinger assets available |
+
+---
+
 ## Verification Results
 
 **Production URL:** https://commentarygraphic.com/8kyf0rnl/obs-manager
@@ -89,6 +99,8 @@
 [setTransitionDuration] Set duration to 500ms for 8kyf0rnl
 ```
 
+Screenshot: `docs/ralph-runner/screenshots/PRD-OBS-05-verification-transitions-tab.png`
+
 ---
 
 ## Bugs Found During Implementation
@@ -102,7 +114,7 @@ None - implementation completed successfully.
 | File | Purpose |
 |------|---------|
 | `server/index.js:2500` | broadcastOBSState with transitions |
-| `server/index.js:3500` | Socket.io transition handlers |
+| `server/index.js:3520` | Socket.io transition handlers |
 | `show-controller/src/context/OBSContext.jsx` | Frontend state management |
 | `show-controller/src/components/obs/TransitionPicker.jsx` | Transition UI component |
 | `show-controller/src/pages/OBSManager.jsx` | Integration point |
