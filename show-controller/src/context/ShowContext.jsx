@@ -113,6 +113,8 @@ export function ShowProvider({ children }) {
     newSocket.on('obs:connected', (data) => {
       console.log('ShowContext: OBS connected', data);
       setState(prev => ({ ...prev, obsConnected: true }));
+      // Force a full state refresh to get fresh scene list
+      newSocket.emit('obs:refreshState');
     });
 
     newSocket.on('obs:disconnected', (data) => {

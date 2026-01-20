@@ -1,8 +1,8 @@
 # PRD-OBS-01: State Sync Foundation
 
-**Version:** 1.5
+**Version:** 1.6
 **Date:** 2026-01-20
-**Status:** ✅ Complete
+**Status:** 🔧 In Progress (Critical Bugs)
 **Depends On:** None (Foundation)
 **Blocks:** All other OBS PRDs
 
@@ -417,6 +417,213 @@ obsConnManager.on('connectionClosed', ({ compId }) => {
 **Impact:** Functional - state persists and restores correctly. However, path doesn't match PRD specification and mixes concerns (`production/` vs `obs/`).
 
 **Proposed Fix:** Update `obsStateSync.js` to write to `obs/state` path, or update PRD to document current path as intentional.
+
+---
+
+## Critical Bugs (2026-01-20)
+
+These bugs were discovered during production testing and must be fixed before state sync can be considered complete.
+
+### Bug 1: Dual Source of Truth for Connection Status 🔴 CRITICAL
+
+**Severity:** Critical
+**Components:** `OBSContext.jsx`, `ShowContext.jsx`
+
+**Symptoms:**
+- ProducerView shows "OBS not connected" while OBS Manager shows "OBS Connected"
+- Switching scenes in OBS Manager finally makes ProducerView show correct status
+- State drifts between views over time
+
+**Root Cause:** Two React contexts maintain independent `obsConnected` state:
+
+| Context | How it gets connection status | Used by |
+|---------|------------------------------|---------|
+| `OBSContext` | Listens to `obs:connected`, `obs:disconnected` directly | OBS Manager |
+| `ShowContext` | Listens to `obs:stateUpdated` and extracts `connected` flag | ProducerView |
+
+When events fire, each context updates independently with no synchronization. Race conditions cause drift.
+
+**Evidence:**
+```javascript
+// OBSContext.jsx - maintains its own obsConnected
+const [obsConnected, setObsConnected] = useState(false);
+socket.on('obs:connected', () => setObsConnected(true));
+
+// ShowContext.jsx - maintains separate obsConnected
+const [state, setState] = useState({ obsConnected: false, ... });
+socket.on('obs:stateUpdated', (data) => {
+  setState(prev => ({ ...prev, obsConnected: data.connected }));
+});
+```
+
+---
+
+### Bug 2: Stale Scenes After Disconnect 🔴 CRITICAL
+
+**Severity:** Critical
+**Component:** `server/lib/obsStateSync.js`
+
+**Symptoms:**
+- After OBS disconnects, scene list shows "No scenes found"
+- Creating a new scene suddenly makes ALL existing scenes appear
+- Scenes from previous session appear after reconnect
+
+**Root Cause:** `onConnectionClosed()` does NOT clear the `scenes` array:
+
+```javascript
+// obsStateSync.js - onConnectionClosed()
+async onConnectionClosed() {
+  this.state.connected = false;
+  this.state.connectionError = 'Connection closed';
+  // MISSING: this.state.scenes = [];
+  // MISSING: this.state.inputs = [];
+  // MISSING: this.state.audioSources = [];
+  // MISSING: this.state.transitions = [];
+}
+```
+
+When OBS reconnects and refreshes state, the old cached scenes merge with new data, causing confusion.
+
+---
+
+### Bug 3: Random Disconnects Require Multiple Refreshes 🟡 MEDIUM
+
+**Severity:** Medium
+**Component:** `OBSContext.jsx`
+
+**Symptoms:**
+- OBS Manager randomly shows "Disconnected" even when OBS is running
+- Multiple page refreshes needed to restore correct state
+- Connection status flickers
+
+**Root Cause:** Event listener lifecycle issues. When socket reconnects, listeners may be in inconsistent state. The `obs:refreshState` request happens after listeners attach, but if socket drops before response, there's no retry mechanism.
+
+---
+
+## Fix Plan
+
+### Fix 1: Unified Connection Status (Single Source of Truth)
+
+**Decision:** Server-side `obsStateSync` is the single source of truth. Frontend reads from it, never maintains separate state.
+
+**Architecture:**
+```
+Server (obsStateSync.state.connected)
+         ↓
+    obs:stateUpdated event (includes connected flag)
+         ↓
+    ShowContext.obsConnected (reads from event)
+         ↓
+    OBSContext (reads from ShowContext, does NOT maintain own state)
+         ↓
+    All components read from one place
+```
+
+**Implementation:**
+
+1. **Remove duplicate state from OBSContext:**
+   ```javascript
+   // BEFORE: OBSContext maintains its own obsConnected
+   const [obsConnected, setObsConnected] = useState(false);
+
+   // AFTER: OBSContext reads from ShowContext
+   const { obsConnected } = useShow();
+   ```
+
+2. **ShowContext becomes the frontend source of truth:**
+   - Listens to `obs:connected`, `obs:disconnected`, `obs:stateUpdated`
+   - Updates `state.obsConnected` from any of these events
+   - All components read from ShowContext
+
+3. **OBSContext focuses only on OBS-specific state:**
+   - Scenes, inputs, transitions, audio sources
+   - Commands (createScene, switchScene, etc.)
+   - Does NOT track connection status
+
+**Files to Modify:**
+
+| File | Change |
+|------|--------|
+| `show-controller/src/context/OBSContext.jsx` | Remove `obsConnected` state, import from ShowContext |
+| `show-controller/src/context/ShowContext.jsx` | Ensure it handles all connection events |
+| `show-controller/src/components/OBSManager.jsx` | Read `obsConnected` from ShowContext instead of OBSContext |
+
+---
+
+### Fix 2: Clear State on Disconnect
+
+**Implementation:**
+
+In `server/lib/obsStateSync.js`, update `onConnectionClosed()`:
+
+```javascript
+async onConnectionClosed() {
+  console.log('[OBSStateSync] OBS connection closed');
+
+  // Clear all OBS-specific state
+  this.state.connected = false;
+  this.state.connectionError = 'Connection closed';
+  this.state.scenes = [];
+  this.state.inputs = [];
+  this.state.audioSources = [];
+  this.state.transitions = [];
+  this.state.currentScene = null;
+  this.state.currentProgramScene = null;
+
+  // Save and broadcast
+  await this._saveState();
+  this.broadcast('obs:disconnected', { connected: false });
+  this.broadcast('obs:stateUpdated', this.state);
+  this.emit('disconnected');
+}
+```
+
+**Files to Modify:**
+
+| File | Change |
+|------|--------|
+| `server/lib/obsStateSync.js` | Clear scenes/inputs/etc in `onConnectionClosed()` |
+
+---
+
+### Fix 3: Force State Refresh on Reconnect
+
+**Implementation:**
+
+When `obs:connected` is received on frontend, immediately request full state:
+
+```javascript
+// In ShowContext.jsx or OBSContext.jsx
+socket.on('obs:connected', () => {
+  setState(prev => ({ ...prev, obsConnected: true }));
+  // Immediately request fresh state
+  socket.emit('obs:refreshState');
+});
+```
+
+**Files to Modify:**
+
+| File | Change |
+|------|--------|
+| `show-controller/src/context/ShowContext.jsx` | Add `obs:refreshState` emit on connect |
+
+---
+
+## Implementation Order
+
+1. **Fix 2: Clear State on Disconnect** (server-side, low risk)
+2. **Fix 3: Force State Refresh on Reconnect** (frontend, low risk)
+3. **Fix 1: Unified Connection Status** (frontend refactor, higher risk)
+
+---
+
+## Acceptance Criteria (Updated)
+
+- [ ] ProducerView and OBS Manager always show same connection status
+- [ ] Disconnecting OBS clears scene list immediately
+- [ ] Reconnecting OBS shows fresh scene list (not cached)
+- [ ] No multiple page refreshes needed to restore state
+- [ ] Connection status updates within 1 second of actual state change
 
 ---
 
