@@ -279,6 +279,12 @@ export function OBSProvider({ children }) {
     socket?.emit('obs:createInput', { inputName, inputKind, inputSettings, sceneName });
   }, [socket]);
 
+  // Remove an input entirely from OBS (PRD-OBS-03: Source Management)
+  const removeInput = useCallback((inputName) => {
+    console.log('OBSContext: Removing input', inputName);
+    socket?.emit('obs:removeInput', { inputName });
+  }, [socket]);
+
   // Update input settings (PRD-OBS-03: Source Management)
   const updateInputSettings = useCallback((inputName, inputSettings) => {
     console.log('OBSContext: Updating input settings', inputName, inputSettings);
@@ -364,6 +370,7 @@ export function OBSProvider({ children }) {
     applyTransformPreset,
     addSourceToScene,
     createInput,
+    removeInput,
     updateInputSettings,
     setSceneItemTransform,
 

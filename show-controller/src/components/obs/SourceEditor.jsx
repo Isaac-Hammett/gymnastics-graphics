@@ -3,7 +3,8 @@ import {
   XMarkIcon,
   ArrowPathIcon,
   CheckIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
+  TrashIcon
 } from '@heroicons/react/24/outline';
 import { useOBS } from '../../context/OBSContext';
 import { useShow } from '../../context/ShowContext';
@@ -253,7 +254,7 @@ const INPUT_SETTINGS_CONFIG = {
  * - onUpdate: Callback when source is updated successfully
  */
 export default function SourceEditor({ source, sceneName, onClose, onUpdate }) {
-  const { obsConnected, updateInputSettings, setSceneItemTransform } = useOBS();
+  const { obsConnected, updateInputSettings, setSceneItemTransform, removeInput } = useOBS();
   const { socketUrl } = useShow();
 
   // Source information (handle multiple property name formats)
@@ -264,6 +265,8 @@ export default function SourceEditor({ source, sceneName, onClose, onUpdate }) {
   // State management
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [error, setError] = useState(null);
   const [settings, setSettings] = useState({});
   const [transform, setTransform] = useState({
@@ -396,6 +399,34 @@ export default function SourceEditor({ source, sceneName, onClose, onUpdate }) {
   const handleCancel = () => {
     if (onClose) {
       onClose();
+    }
+  };
+
+  // Handle delete input entirely
+  const handleDelete = async () => {
+    setDeleting(true);
+    setError(null);
+
+    try {
+      removeInput(sourceName);
+      console.log('SourceEditor: Deleted input', sourceName);
+
+      // Call onUpdate callback
+      if (onUpdate) {
+        onUpdate();
+      }
+
+      // Close editor after a brief delay
+      setTimeout(() => {
+        if (onClose) {
+          onClose();
+        }
+      }, 300);
+    } catch (err) {
+      console.error('Error deleting input:', err);
+      setError(err.message);
+      setDeleting(false);
+      setShowDeleteConfirm(false);
     }
   };
 
@@ -627,32 +658,91 @@ export default function SourceEditor({ source, sceneName, onClose, onUpdate }) {
           </div>
         )}
 
+        {/* Delete Confirmation Modal */}
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-60">
+            <div className="bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-red-900/30 rounded-full">
+                  <TrashIcon className="w-6 h-6 text-red-500" />
+                </div>
+                <h3 className="text-white font-semibold text-lg">Delete Input</h3>
+              </div>
+              <p className="text-gray-300 mb-2">
+                Are you sure you want to delete <span className="font-semibold text-white">{sourceName}</span>?
+              </p>
+              <p className="text-gray-400 text-sm mb-6">
+                This will remove the input from OBS entirely, including from all scenes where it is used. This action cannot be undone.
+              </p>
+              <div className="flex items-center justify-end gap-3">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={deleting}
+                  className="px-4 py-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded transition-colors disabled:opacity-50"
+                >
+                  {deleting ? (
+                    <>
+                      <ArrowPathIcon className="w-5 h-5 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <TrashIcon className="w-5 h-5" />
+                      Delete Input
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Footer Actions */}
-        <div className="flex items-center justify-end gap-3 mt-6 pt-6 border-t border-gray-700">
+        <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-700">
+          {/* Delete Button (left side) */}
           <button
-            onClick={handleCancel}
-            disabled={saving}
-            className="px-4 py-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded transition-colors disabled:opacity-50"
+            onClick={() => setShowDeleteConfirm(true)}
+            disabled={saving || loading || deleting}
+            className="flex items-center gap-2 px-4 py-2 text-red-400 hover:text-white hover:bg-red-900/30 rounded transition-colors disabled:opacity-50"
           >
-            Cancel
+            <TrashIcon className="w-5 h-5" />
+            Delete Input
           </button>
-          <button
-            onClick={handleSave}
-            disabled={saving || loading}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded transition-colors disabled:opacity-50"
-          >
-            {saving ? (
-              <>
-                <ArrowPathIcon className="w-5 h-5 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              <>
-                <CheckIcon className="w-5 h-5" />
-                Save Changes
-              </>
-            )}
-          </button>
+
+          {/* Save/Cancel buttons (right side) */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleCancel}
+              disabled={saving || deleting}
+              className="px-4 py-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded transition-colors disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving || loading || deleting}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded transition-colors disabled:opacity-50"
+            >
+              {saving ? (
+                <>
+                  <ArrowPathIcon className="w-5 h-5 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <CheckIcon className="w-5 h-5" />
+                  Save Changes
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>
