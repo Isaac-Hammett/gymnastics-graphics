@@ -3716,6 +3716,13 @@ function initializeOBSConnectionManager() {
     io.to(room).emit('obs:disconnected', { connected: false });
   });
 
+  // Handle unexpected connection loss (TCP close or heartbeat failure)
+  obsConnManager.on('connectionClosed', ({ compId }) => {
+    const room = `competition:${compId}`;
+    console.log(`[OBS] Connection closed for ${compId}, notifying clients`);
+    io.to(room).emit('obs:disconnected', { connected: false });
+  });
+
   obsConnManager.on('connectionError', ({ compId, error }) => {
     const room = `competition:${compId}`;
     io.to(room).emit('obs:error', { error });
