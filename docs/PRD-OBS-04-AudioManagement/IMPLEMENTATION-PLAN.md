@@ -1,7 +1,7 @@
 # PRD-OBS-04: Audio Management - Implementation Plan
 
 **Last Updated:** 2026-01-20
-**Status:** Coordinator Deploy Required
+**Status:** Deployed - Needs UI Verification
 
 ---
 
@@ -13,7 +13,7 @@
 - `obs:setVolume` - Calls OBS WebSocket `SetInputVolume` with volumeDb or volumeMul
 - `obs:setMute` - Calls OBS WebSocket `SetInputMute` with inputMuted boolean
 
-**NEXT STEP:** Deploy coordinator to production (`ssh_exec` to restart pm2 on coordinator server)
+**DEPLOYED:** 2026-01-20 - Coordinator restarted via `pm2 restart coordinator`
 
 ---
 
@@ -25,17 +25,17 @@
 |---|------|--------|-------|
 | 0.1 | Add missing `obs:setVolume` handler | ✅ DONE | server/index.js:3391 |
 | 0.2 | Add missing `obs:setMute` handler | ✅ DONE | server/index.js:3434 |
-| 0.3 | Deploy coordinator to production | NOT STARTED | MCP tools unavailable - do in next context |
+| 0.3 | Deploy coordinator to production | ✅ DONE | Deployed 2026-01-20 via SSH `pm2 restart coordinator` |
 
-### P1 - Verify Existing Functionality (BLOCKED on deploy)
+### P1 - Verify Existing Functionality (IN PROGRESS)
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 1 | Verify volume slider works | BLOCKED | Requires coordinator deploy |
-| 2 | Verify mute toggle works | BLOCKED | Requires coordinator deploy |
-| 3 | Verify monitor type dropdown works | BLOCKED | `obs:setMonitorType` exists at server/index.js:3467 |
+| 1 | Verify volume slider works | NOT STARTED | Needs Playwright MCP verification |
+| 2 | Verify mute toggle works | NOT STARTED | Needs Playwright MCP verification |
+| 3 | Verify monitor type dropdown works | NOT STARTED | `obs:setMonitorType` exists at server/index.js:3467 |
 
-### P2 - Verify Audio Presets (BLOCKED on P1)
+### P2 - Verify Audio Presets (After P1)
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
@@ -44,7 +44,7 @@
 | 6 | Verify delete preset works | NOT STARTED | Removed from Firebase |
 | 7 | Verify presets persist across refresh | NOT STARTED | Read from Firebase on load |
 
-### P3 - Multi-client Sync (BLOCKED on P1)
+### P3 - Multi-client Sync (After P1)
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
@@ -80,19 +80,22 @@
 
 ---
 
-## Deploy Instructions (for next context)
+## Deploy Instructions
+
+**Coordinator Server:** `44.193.31.120` (NOT 3.87.107.201, which is the frontend static server)
+**App Path:** `/opt/gymnastics-graphics/server/`
 
 ```bash
-# 1. SSH to coordinator and pull latest code
-ssh_exec target="3.87.107.201" command="cd /path/to/server && git pull origin main"
+# Via direct SSH (when MCP tools unavailable):
+ssh -i ~/.ssh/gymnastics-graphics-key-pair.pem ubuntu@44.193.31.120 "cd /opt/gymnastics-graphics && git pull origin main && pm2 restart coordinator"
 
-# 2. Restart coordinator with pm2
-ssh_exec target="3.87.107.201" command="pm2 restart coordinator"
+# Via MCP tools (when available):
+ssh_exec target="44.193.31.120" command="cd /opt/gymnastics-graphics && git pull origin main && pm2 restart coordinator"
 
-# 3. Verify coordinator is running
-ssh_exec target="3.87.107.201" command="pm2 status"
+# Verify coordinator is running:
+curl https://api.commentarygraphic.com/api/coordinator/status
 
-# 4. Verify via Playwright
+# Verify via Playwright:
 browser_navigate url="https://commentarygraphic.com/8kyf0rnl/obs-manager"
 browser_take_screenshot
 # Navigate to Audio tab and test volume slider
@@ -101,6 +104,12 @@ browser_take_screenshot
 ---
 
 ## Progress Log
+
+### 2026-01-20 - Context 3
+- **DEPLOYED:** Coordinator restarted via direct SSH to 44.193.31.120
+- **VERIFIED:** Coordinator API returns `status: "online"` with 10s uptime (freshly restarted)
+- **NEXT:** Use Playwright MCP to verify audio controls work in UI
+- MCP browser tools unavailable in this session - verification needed in next context
 
 ### 2026-01-20 - Context 2
 - **DISCOVERED:** `obs:setVolume` and `obs:setMute` handlers were missing from server
