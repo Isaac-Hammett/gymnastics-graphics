@@ -178,6 +178,14 @@ When debugging source management issues:
 - **BLOCKED:** Cannot complete deployment or Playwright verification
 - **STATUS:** All P0-P3 implementation complete. Toast notification deployment pending MCP tool availability.
 
+### 2026-01-20 (Deployment Attempt #4)
+- **BUILD:** Frontend rebuilt successfully: `index-Dp7oK54x.js`, `index-B5R_05oK.css`
+- **BUILD:** Artifacts created: `/tmp/claude/dist.tar.gz` (249KB), `/tmp/claude/overlays.tar.gz` (5.7KB)
+- **BLOCKED:** MCP tools (mcp__ssh__ssh_upload_file, mcp__ssh__ssh_exec, mcp__playwright__*) still not available
+- **BLOCKED:** Cannot upload to 3.87.107.201 or verify with Playwright
+- **STATUS:** All P0-P3 implementation complete. Toast notification deployment pending MCP tool availability.
+- **NEXT:** When MCP tools are available, upload dist.tar.gz, overlays.tar.gz, output.html to production and verify
+
 ---
 
 ## Verification URLs
