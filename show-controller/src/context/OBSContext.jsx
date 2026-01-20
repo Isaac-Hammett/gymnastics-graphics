@@ -279,6 +279,18 @@ export function OBSProvider({ children }) {
     socket?.emit('obs:createInput', { inputName, inputKind, inputSettings, sceneName });
   }, [socket]);
 
+  // Update input settings (PRD-OBS-03: Source Management)
+  const updateInputSettings = useCallback((inputName, inputSettings) => {
+    console.log('OBSContext: Updating input settings', inputName, inputSettings);
+    socket?.emit('obs:updateInputSettings', { inputName, inputSettings });
+  }, [socket]);
+
+  // Set scene item transform (PRD-OBS-03: Source Management)
+  const setSceneItemTransform = useCallback((sceneName, sceneItemId, transform) => {
+    console.log('OBSContext: Setting scene item transform', sceneName, sceneItemId, transform);
+    socket?.emit('obs:setSceneItemTransform', { sceneName, sceneItemId, transform });
+  }, [socket]);
+
   // Audio monitoring
   const setMonitorType = useCallback((inputName, monitorType) => {
     console.log('OBSContext: Set monitor type', inputName, monitorType);
@@ -352,6 +364,8 @@ export function OBSProvider({ children }) {
     applyTransformPreset,
     addSourceToScene,
     createInput,
+    updateInputSettings,
+    setSceneItemTransform,
 
     // Audio monitoring
     setMonitorType,
