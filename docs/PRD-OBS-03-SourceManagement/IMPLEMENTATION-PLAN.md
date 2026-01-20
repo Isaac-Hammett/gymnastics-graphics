@@ -1,7 +1,7 @@
 # PRD-OBS-03: Source Management - Implementation Plan
 
 **Last Updated:** 2026-01-20
-**Status:** ✅ Implementation Complete - Pending Deployment Verification
+**Status:** ✅ Implementation Complete - Deployment Blocked (MCP tools unavailable)
 
 ---
 
@@ -137,7 +137,12 @@ When debugging source management issues:
 **Frontend Deployment (Toast Notifications):**
 - Code committed: a5d8342
 - Build artifact: `/tmp/claude/dist.tar.gz` (built 2026-01-20)
-- **Status:** PENDING - MCP tools required
+- **Status:** BLOCKED - MCP tools (ssh_upload_file, ssh_exec, playwright) not available
+
+**Current Production State:**
+- Production URL: https://commentarygraphic.com/8kyf0rnl/obs-manager responds with HTTP 200
+- Production assets: `index-DYthXK9J.js`, `index-DPMesi3O.css`
+- Local build assets: `index-Dp7oK54x.js`, `index-B5R_05oK.css` (different hashes = not deployed)
 
 **To complete deployment when MCP tools are available:**
 1. Upload `/tmp/claude/dist.tar.gz` to `/tmp/dist.tar.gz` on 3.87.107.201
@@ -147,6 +152,13 @@ When debugging source management issues:
 5. Verify with Playwright at https://commentarygraphic.com/8kyf0rnl/obs-manager
 
 **Note:** Core source management functionality (P0-P2) was already deployed in earlier commits. Only the toast notification polish (P3 #14) is pending deployment.
+
+### 2026-01-20 (Deployment Attempt)
+- **ATTEMPTED:** Frontend deployment - MCP tools not available in this session
+- **VERIFIED:** Production site is accessible (HTTP 200)
+- **VERIFIED:** Production has older build (different asset hashes)
+- **BLOCKED:** Cannot deploy without ssh_upload_file and ssh_exec MCP tools
+- **BLOCKED:** Cannot run Playwright verification without playwright MCP tools
 
 ---
 
