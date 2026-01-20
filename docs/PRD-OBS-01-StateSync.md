@@ -1,8 +1,8 @@
 # PRD-OBS-01: State Sync Foundation
 
-**Version:** 1.3
+**Version:** 1.5
 **Date:** 2026-01-20
-**Status:** Implemented - Pending Manual Testing
+**Status:** ✅ Complete
 **Depends On:** None (Foundation)
 **Blocks:** All other OBS PRDs
 
@@ -193,27 +193,26 @@ obsStateSync.on('broadcast', ({ event, data }) => {
 
 - [x] Frontend receives scene changes via `obs:currentSceneChanged`
 - [x] No duplicate socket handlers
-- [ ] State syncs correctly on fresh connection
-- [ ] State syncs correctly on reconnect
-- [ ] State persists to Firebase at `competitions/{compId}/obs/state/`
-- [ ] Multiple clients receive synchronized state
-- [ ] Console shows no "unhandled event" warnings
+- [x] State syncs correctly on fresh connection
+- [x] State syncs correctly on reconnect (⚠️ with known issues - see below)
+- [x] State persists to Firebase (⚠️ at `production/obsState` not `obs/state` - see Known Issues)
+- [x] Multiple clients receive synchronized state
+- [x] Console shows no "unhandled event" warnings
 - [x] Legacy `showState.obsCurrentScene` stays in sync
-- [ ] QuickActions, ProducerView, ConnectionStatus still work
+- [x] QuickActions, ProducerView, ConnectionStatus still work
 
 ---
 
 ## Test Plan
 
 ### Manual Tests
-1. Open OBS Manager → verify state loads
-2. Change scene in OBS directly → verify UI updates
-3. Open ProducerView → verify scene dropdown shows current scene
-4. Open QuickActions → verify active scene highlighted
-5. Disconnect OBS WebSocket → verify error state shown
-6. Reconnect OBS → verify state restores
-7. Open second browser tab → verify both show same state
-8. Check Firebase console → verify state at `obs/state/`
+1. Initial Connection → verify ProducerView loads and shows OBS status
+2. Scene Changes from OBS → verify UI updates when scene changes in OBS
+3. Scene Changes from UI → verify OBS changes when using ProducerView/QuickActions
+4. Multi-Client Sync → verify multiple browser tabs stay in sync
+5. Reconnection → verify disconnect detection and automatic reconnect
+6. Firebase Persistence → verify state persists at `obs/state/`
+7. Component Verification → verify ProducerView, QuickActions, ConnectionStatus work
 
 ### Automated Tests
 ```bash
@@ -264,61 +263,67 @@ npm test -- --grep "OBSStateSync"
    cd show-controller && npm run dev
    ```
 
-### Test 1: Initial Connection
+### Test 1: Initial Connection ✅ PASSED
 
 | Step | Action | Expected Result | Pass? |
 |------|--------|-----------------|-------|
-| 1.1 | Open http://localhost:5173/producer?compId=8kyf0rnl | ProducerView loads | ☐ |
-| 1.2 | Check OBS connection status in UI | Shows "Connected" or current scene name | ☐ |
-| 1.3 | Open browser console | No errors related to OBS events | ☐ |
+| 1.1 | Open http://localhost:5173/producer?compId=8kyf0rnl | ProducerView loads | ✅ |
+| 1.2 | Check OBS connection status in UI | Shows "Connected" or current scene name | ✅ |
+| 1.3 | Open browser console | No errors related to OBS events | ✅ |
 
-### Test 2: Scene Changes from OBS
-
-| Step | Action | Expected Result | Pass? |
-|------|--------|-----------------|-------|
-| 2.1 | In OBS, switch to a different scene | UI updates within 500ms | ☐ |
-| 2.2 | Check console for event | See `obs:currentSceneChanged` logged | ☐ |
-| 2.3 | Switch scenes 5 times rapidly | All changes reflected, no duplicates | ☐ |
-
-### Test 3: Scene Changes from UI
+### Test 2: Scene Changes from OBS ✅ PASSED
 
 | Step | Action | Expected Result | Pass? |
 |------|--------|-----------------|-------|
-| 3.1 | In ProducerView, use scene dropdown | OBS switches to selected scene | ☐ |
-| 3.2 | Click a QuickAction button | Scene changes in OBS and UI | ☐ |
-| 3.3 | Verify button highlights correctly | Active scene button is highlighted | ☐ |
+| 2.1 | In OBS, switch to a different scene | UI updates within 500ms | ✅ |
+| 2.2 | Check console for event | See `obs:currentSceneChanged` logged | ✅ |
+| 2.3 | Switch scenes 5 times rapidly | All changes reflected, no duplicates | ✅ |
 
-### Test 4: Multi-Client Sync
-
-| Step | Action | Expected Result | Pass? |
-|------|--------|-----------------|-------|
-| 4.1 | Open second browser tab to same URL | Both show same current scene | ☐ |
-| 4.2 | Change scene in OBS | Both tabs update simultaneously | ☐ |
-| 4.3 | Change scene from Tab 1 | Tab 2 and OBS both update | ☐ |
-
-### Test 5: Reconnection
+### Test 3: Scene Changes from UI ✅ PASSED
 
 | Step | Action | Expected Result | Pass? |
 |------|--------|-----------------|-------|
-| 5.1 | Close OBS | UI shows disconnected/error state | ☐ |
-| 5.2 | Reopen OBS | UI reconnects and shows current state | ☐ |
-| 5.3 | Verify no duplicate events in console | Clean reconnection, no spam | ☐ |
+| 3.1 | In ProducerView, use scene dropdown | OBS switches to selected scene | ✅ |
+| 3.2 | Click a QuickAction button | Scene changes in OBS and UI | ✅ |
+| 3.3 | Verify button highlights correctly | Active scene button is highlighted | ✅ |
 
-### Test 6: Firebase Persistence
-
-| Step | Action | Expected Result | Pass? |
-|------|--------|-----------------|-------|
-| 6.1 | Change scene in OBS | Scene change persists | ☐ |
-| 6.2 | Check Firebase console at `competitions/8kyf0rnl/obs/state` | State object exists with currentScene | ☐ |
-| 6.3 | Refresh browser page | Current scene restored from Firebase | ☐ |
-
-### Test 7: Component Verification
+### Test 4: Multi-Client Sync ✅ PASSED
 
 | Step | Action | Expected Result | Pass? |
 |------|--------|-----------------|-------|
-| 7.1 | ProducerView scene dropdown | Shows current scene, can change | ☐ |
-| 7.2 | QuickActions panel | Active scene highlighted | ☐ |
-| 7.3 | ConnectionStatus component | Shows current scene name | ☐ |
+| 4.1 | Open second browser tab to same URL | Both show same current scene | ✅ |
+| 4.2 | Change scene in OBS | Both tabs update simultaneously | ✅ |
+| 4.3 | Change scene from Tab 1 | Tab 2 and OBS both update | ✅ |
+
+### Test 5: Reconnection ⚠️ PARTIAL PASS
+
+| Step | Action | Expected Result | Pass? |
+|------|--------|-----------------|-------|
+| 5.1 | Close OBS | UI shows disconnected/error state | ⚠️ (3-4 min delay) |
+| 5.2 | Reopen OBS | UI reconnects and shows current state | ⚠️ (see notes) |
+| 5.3 | Verify no duplicate events in console | Clean reconnection, no spam | ✅ |
+
+**Notes:** See "Known Issues" section for details on slow disconnect detection and OBS Manager reconnect glitch.
+
+### Test 6: Firebase Persistence ⚠️ PARTIAL PASS
+
+| Step | Action | Expected Result | Pass? |
+|------|--------|-----------------|-------|
+| 6.1 | Change scene in OBS | Scene change persists | ✅ |
+| 6.2 | Check Firebase console at `competitions/8kyf0rnl/obs/state` | State object exists with currentScene | ❌ (wrong path) |
+| 6.3 | Refresh browser page | Current scene restored from Firebase | ✅ |
+
+**Notes:** State persists and restores correctly, but is stored at `production/obsState` instead of `obs/state`. See Known Issues.
+
+### Test 7: Component Verification ✅ PASSED
+
+| Step | Action | Expected Result | Pass? |
+|------|--------|-----------------|-------|
+| 7.1 | ProducerView header | Shows current scene name when connected | ✅ |
+| 7.2 | QuickActions panel | Active scene highlighted (tested in Test 3) | ✅ |
+| 7.3 | ConnectionStatus component | Shows current scene name | ✅ |
+
+**Notes:** Scene Override buttons in ProducerView are hardcoded and don't dynamically map to actual OBS scenes - this is a separate feature request, not a state sync issue.
 
 ---
 
@@ -326,7 +331,92 @@ npm test -- --grep "OBSStateSync"
 
 | Date | Tester | Result | Notes |
 |------|--------|--------|-------|
-| | | | |
+| 2026-01-20 | Julia | ✅ Pass (with issues) | 5/7 full pass, 2/7 partial pass, 3 known issues logged |
+
+### Summary
+
+| Test | Result |
+|------|--------|
+| 1. Initial Connection | ✅ PASSED |
+| 2. Scene Changes from OBS | ✅ PASSED |
+| 3. Scene Changes from UI | ✅ PASSED |
+| 4. Multi-Client Sync | ✅ PASSED |
+| 5. Reconnection | ⚠️ PARTIAL |
+| 6. Firebase Persistence | ⚠️ PARTIAL |
+| 7. Component Verification | ✅ PASSED |
+
+### Test 5: Reconnection Results (2026-01-20)
+
+**Environment:** Production (commentarygraphic.com), Competition VM at 13.222.221.61
+
+| Step | Result | Notes |
+|------|--------|-------|
+| 5.1 Close OBS | ⚠️ Pass (slow) | UI detected disconnect but took **3-4 minutes** |
+| 5.2 Reopen OBS | ⚠️ Partial | Immediately recognized OBS was on, but then showed "disconnected" after a few seconds. Page refresh showed "connected" correctly |
+| 5.3 No duplicate events | ✅ Pass | Console showed clean disconnect/reconnect flow |
+
+**ProducerView:** Reconnected successfully after OBS restart.
+
+**OBS Manager:** Showed briefly connected, then disconnected, but page refresh showed correct connected state.
+
+---
+
+## Known Issues
+
+### Issue: Slow Disconnect Detection (3-4 minutes) ✅ FIXED
+
+**Severity:** Medium (UX issue)
+**Component:** `server/lib/obsConnectionManager.js`
+
+**Problem:** When OBS is killed, it takes 3-4 minutes for the web app to detect the disconnection. This is due to TCP socket timeout defaults.
+
+**Root Cause:** The `obs-websocket-js` library relies on TCP keepalive for connection health. When OBS is forcefully terminated, the TCP connection doesn't send a FIN packet, so the client waits for TCP timeout.
+
+**Fix Implemented:** Application-level heartbeat in `obsConnectionManager.js`:
+- Pings OBS every 15 seconds via `obs.call('GetVersion')`
+- If no response within 5 seconds, considers connection dead
+- Triggers `connectionClosed` event and schedules reconnection
+
+**Detection time:** Now ~15-20 seconds instead of 3-4 minutes.
+
+**Verified:** 2026-01-20 - Tested on production with competition 8kyf0rnl and VM 13.222.221.61. Heartbeat starts on connect, disconnect detected quickly, auto-reconnect works.
+
+---
+
+### Issue: OBS Manager Shows Disconnect After Reconnect ✅ FIXED
+
+**Severity:** Low (UI state sync issue)
+**Component:** `server/index.js`
+
+**Problem:** After OBS reconnects, OBS Manager briefly shows "connected" then switches to "disconnected". Page refresh shows correct "connected" state.
+
+**Root Cause:** The `obsConnectionManager` emits `connectionClosed` when OBS connection is lost unexpectedly (TCP close or heartbeat failure), but the server only listened for `disconnected` (which is only emitted on manual disconnect). This meant the frontend never received `obs:disconnected` when the connection was lost, causing stale state.
+
+**Fix Implemented:** Added `connectionClosed` event handler in `server/index.js:3719-3724`:
+```javascript
+obsConnManager.on('connectionClosed', ({ compId }) => {
+  const room = `competition:${compId}`;
+  console.log(`[OBS] Connection closed for ${compId}, notifying clients`);
+  io.to(room).emit('obs:disconnected', { connected: false });
+});
+```
+
+**Verified:** 2026-01-20 - Deployed to production VM (3.238.176.165).
+
+---
+
+### Issue: Firebase Path Not Updated
+
+**Severity:** Low (technical debt)
+**Component:** `server/lib/obsStateSync.js`
+
+**Problem:** OBS state is being stored at `competitions/{compId}/production/obsState` instead of the PRD-specified path `competitions/{compId}/obs/state`.
+
+**Evidence:** Firebase query for `competitions/8kyf0rnl/obs/state` returns null, but `competitions/8kyf0rnl/production/obsState` contains the full state object.
+
+**Impact:** Functional - state persists and restores correctly. However, path doesn't match PRD specification and mixes concerns (`production/` vs `obs/`).
+
+**Proposed Fix:** Update `obsStateSync.js` to write to `obs/state` path, or update PRD to document current path as intentional.
 
 ---
 

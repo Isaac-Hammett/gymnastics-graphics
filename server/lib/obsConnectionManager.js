@@ -30,6 +30,13 @@ class OBSConnectionManager extends EventEmitter {
     // Reconnect timers per competition
     this.reconnectTimers = new Map();
 
+    // Heartbeat timers per competition
+    this.heartbeatTimers = new Map();
+
+    // Heartbeat configuration
+    this.HEARTBEAT_INTERVAL = 15000; // 15 seconds
+    this.HEARTBEAT_TIMEOUT = 5000; // 5 seconds to respond
+
     // Default OBS WebSocket port
     this.OBS_PORT = 4455;
 
@@ -85,6 +92,9 @@ class OBSConnectionManager extends EventEmitter {
       });
 
       console.log(`[OBSConnectionManager] Connected to OBS for ${compId} at ${obsUrl}`);
+
+      // Start heartbeat monitoring
+      this._startHeartbeat(compId);
 
       // Emit connection event
       this.emit('connected', { compId, vmAddress });
@@ -143,6 +153,9 @@ class OBSConnectionManager extends EventEmitter {
   async disconnect(compId) {
     console.log(`[OBSConnectionManager] Disconnecting from OBS for ${compId}`);
 
+    // Stop heartbeat
+    this._stopHeartbeat(compId);
+
     // Clear reconnect timer
     const timer = this.reconnectTimers.get(compId);
     if (timer) {
@@ -180,6 +193,9 @@ class OBSConnectionManager extends EventEmitter {
     // Connection closed
     obs.on('ConnectionClosed', () => {
       console.log(`[OBSConnectionManager] OBS connection closed for ${compId}`);
+
+      // Stop heartbeat
+      this._stopHeartbeat(compId);
 
       this.connectionStates.set(compId, {
         connected: false,
@@ -267,10 +283,100 @@ class OBSConnectionManager extends EventEmitter {
   }
 
   /**
+   * Start heartbeat monitoring for a connection
+   * Pings OBS every HEARTBEAT_INTERVAL ms to detect dead connections
+   * @private
+   */
+  _startHeartbeat(compId) {
+    // Stop any existing heartbeat
+    this._stopHeartbeat(compId);
+
+    const obs = this.connections.get(compId);
+    if (!obs) {
+      return;
+    }
+
+    console.log(`[OBSConnectionManager] Starting heartbeat for ${compId} (interval: ${this.HEARTBEAT_INTERVAL}ms)`);
+
+    const heartbeat = setInterval(async () => {
+      const currentObs = this.connections.get(compId);
+      if (!currentObs || !this.isConnected(compId)) {
+        this._stopHeartbeat(compId);
+        return;
+      }
+
+      try {
+        // Create a timeout promise
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Heartbeat timeout')), this.HEARTBEAT_TIMEOUT);
+        });
+
+        // Race between the OBS call and timeout
+        await Promise.race([
+          currentObs.call('GetVersion'),
+          timeoutPromise
+        ]);
+
+        // Heartbeat successful - connection is alive
+      } catch (error) {
+        console.warn(`[OBSConnectionManager] Heartbeat failed for ${compId}: ${error.message}`);
+
+        // Stop heartbeat before triggering disconnect
+        this._stopHeartbeat(compId);
+
+        // Get vmAddress for reconnection
+        const state = this.connectionStates.get(compId);
+        const vmAddress = state?.vmAddress;
+
+        // Update connection state
+        this.connectionStates.set(compId, {
+          connected: false,
+          vmAddress: vmAddress,
+          connectedAt: null,
+          error: 'Connection lost (heartbeat failed)'
+        });
+
+        // Remove the dead connection
+        this.connections.delete(compId);
+
+        // Emit disconnect event
+        console.log(`[OBSConnectionManager] Connection dead for ${compId}, triggering reconnect`);
+        this.emit('connectionClosed', { compId });
+
+        // Schedule reconnect if we have the VM address
+        if (vmAddress) {
+          this._scheduleReconnect(compId, vmAddress);
+        }
+      }
+    }, this.HEARTBEAT_INTERVAL);
+
+    this.heartbeatTimers.set(compId, heartbeat);
+  }
+
+  /**
+   * Stop heartbeat monitoring for a connection
+   * @private
+   */
+  _stopHeartbeat(compId) {
+    const timer = this.heartbeatTimers.get(compId);
+    if (timer) {
+      clearInterval(timer);
+      this.heartbeatTimers.delete(compId);
+      console.log(`[OBSConnectionManager] Stopped heartbeat for ${compId}`);
+    }
+  }
+
+  /**
    * Shutdown all connections
    */
   async shutdown() {
     console.log('[OBSConnectionManager] Shutting down all connections');
+
+    // Stop all heartbeats
+    for (const [compId, timer] of this.heartbeatTimers) {
+      clearInterval(timer);
+    }
+    this.heartbeatTimers.clear();
 
     // Clear all reconnect timers
     for (const [compId, timer] of this.reconnectTimers) {
