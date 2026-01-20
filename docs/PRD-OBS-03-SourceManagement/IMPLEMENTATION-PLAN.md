@@ -130,7 +130,16 @@ When debugging source management issues:
 - **ADDED:** Toast UI component with green (success) / red (error) styling
 - **BUILD:** Frontend built successfully (`npm run build`)
 - **COMMIT:** a5d8342
-- **PENDING:** Frontend deployment - requires manual deploy per CLAUDE.md deploy instructions
+- **PENDING:** Frontend deployment - requires MCP tools (ssh_upload_file, ssh_exec) which are not available in current session
+
+### Deployment Blocked
+MCP tools required for deployment are not available. To complete deployment:
+1. Ensure MCP tools are configured (ssh_upload_file, ssh_exec, Playwright)
+2. Run deployment commands per CLAUDE.md:
+   - Upload `/tmp/claude/dist.tar.gz` to `/tmp/dist.tar.gz` on 3.87.107.201
+   - Extract: `rm -rf /var/www/commentarygraphic/* && tar -xzf /tmp/dist.tar.gz -C /var/www/commentarygraphic/`
+   - Also deploy output.html and overlays directory
+3. Verify with Playwright at https://commentarygraphic.com/8kyf0rnl/obs-manager
 
 ---
 
@@ -156,7 +165,7 @@ Track files modified during implementation:
 | show-controller/playwright.config.js | Playwright configuration for E2E tests | cb63bc7 |
 | show-controller/e2e/source-management.spec.js | Source management E2E test suite | cb63bc7 |
 | show-controller/package.json | Added Playwright and test scripts | cb63bc7 |
-| show-controller/src/components/obs/SourceEditor.jsx | Added toast notifications for success/error | (pending) |
+| show-controller/src/components/obs/SourceEditor.jsx | Added toast notifications for success/error | a5d8342 |
 
 ---
 
