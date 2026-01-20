@@ -2493,10 +2493,15 @@ io.on('connection', async (socket) => {
     const obsConnManager = getOBSConnectionManager();
     const connState = obsConnManager.getConnectionState(clientCompId);
     if (connState) {
+      // Send basic connection info immediately
       socket.emit('obs:stateUpdated', {
         connected: connState.connected,
         connectionError: connState.error
       });
+      // If connected, also broadcast full OBS state (scenes, current scene, etc.)
+      if (connState.connected) {
+        broadcastOBSState(clientCompId, obsConnManager, io);
+      }
     }
   } else if (obsStateSync && obsStateSync.isInitialized()) {
     // Fall back to local OBS state
