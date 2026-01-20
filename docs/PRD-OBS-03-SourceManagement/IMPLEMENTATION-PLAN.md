@@ -207,6 +207,32 @@ When debugging source management issues:
 - **STATUS:** All P0-P3 implementation complete. Deployment blocked on MCP tool availability.
 - **NEXT:** Enable MCP tools in Claude Code settings, then deploy using artifacts in `/tmp/claude/`
 
+### 2026-01-20 (Deployment Attempt #7)
+- **BUILD:** Frontend rebuilt successfully: `index-Dp7oK54x.js`, `index-B5R_05oK.css`
+- **BUILD:** Artifacts created: `/tmp/claude/dist.tar.gz` (249KB), `/tmp/claude/overlays.tar.gz` (5.7KB)
+- **VERIFIED:** Production site responds HTTP 200
+- **VERIFIED:** Production bundle: `index-DYthXK9J.js` (unchanged from previous attempts)
+- **ATTEMPTED:** MCP tools via subagent - ssh_upload_file and ssh_exec not available
+- **ATTEMPTED:** Playwright MCP tools - mcp__playwright__* not available
+- **BLOCKED:** MCP tools (ssh_upload_file, ssh_exec, playwright) still not available
+- **STATUS:** All P0-P3 implementation complete. Toast notification deployment pending MCP tool availability.
+- **NEXT:** User needs to configure MCP tools in Claude Code settings for deployment
+
+**Manual Deployment Commands (for user to run):**
+```bash
+# Step 1: Upload and extract dist
+scp /tmp/claude/dist.tar.gz ubuntu@3.87.107.201:/tmp/dist.tar.gz
+ssh ubuntu@3.87.107.201 "rm -rf /var/www/commentarygraphic/* && tar -xzf /tmp/dist.tar.gz -C /var/www/commentarygraphic/ && find /var/www/commentarygraphic -name '._*' -delete"
+
+# Step 2: Upload output.html
+scp /Users/juliacosmiano/code/gymnastics-graphics/output.html ubuntu@3.87.107.201:/tmp/output.html
+ssh ubuntu@3.87.107.201 "cp /tmp/output.html /var/www/commentarygraphic/output.html"
+
+# Step 3: Upload and extract overlays
+scp /tmp/claude/overlays.tar.gz ubuntu@3.87.107.201:/tmp/overlays.tar.gz
+ssh ubuntu@3.87.107.201 "cd /var/www/commentarygraphic && tar -xzf /tmp/overlays.tar.gz && find /var/www/commentarygraphic -name '._*' -delete"
+```
+
 ---
 
 ## Verification URLs
