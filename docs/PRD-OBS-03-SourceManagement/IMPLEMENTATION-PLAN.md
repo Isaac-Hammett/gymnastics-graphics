@@ -186,6 +186,16 @@ When debugging source management issues:
 - **STATUS:** All P0-P3 implementation complete. Toast notification deployment pending MCP tool availability.
 - **NEXT:** When MCP tools are available, upload dist.tar.gz, overlays.tar.gz, output.html to production and verify
 
+### 2026-01-20 (Deployment Attempt #5)
+- **BUILD:** Frontend rebuilt successfully: `index-Dp7oK54x.js`, `index-B5R_05oK.css`
+- **BUILD:** Artifacts created: `/tmp/claude/dist.tar.gz` (249KB), `/tmp/claude/overlays.tar.gz` (5.7KB)
+- **BLOCKED:** MCP tools still not available:
+  - `mcp__ssh__ssh_upload_file` - Error: No such tool available
+  - `mcp__ssh__ssh_exec` - Not available
+  - `mcp__playwright__browser_navigate` - Error: No such tool available
+- **STATUS:** All P0-P3 implementation complete. Toast notification deployment pending MCP tool availability.
+- **NEXT:** When MCP tools are configured, deploy frontend using the artifacts in `/tmp/claude/`
+
 ---
 
 ## Verification URLs

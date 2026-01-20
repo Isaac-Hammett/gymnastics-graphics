@@ -1,12 +1,12 @@
 #!/bin/bash
-# Ralph loop for PRD-OBS-02 Scene Management
+# Ralph loop for PRD-OBS-07 Asset Management
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 LOG_FILE="$SCRIPT_DIR/logs/claude-output.jsonl"
 mkdir -p "$SCRIPT_DIR/logs"
 
 while :; do
-    cat "$SCRIPT_DIR/prompt-OBS-02-scene-management.md" | \
+    cat "$SCRIPT_DIR/prompt-OBS-07-asset-management.md" | \
         claude -p --dangerously-skip-permissions --verbose --output-format stream-json 2>&1 | \
         tee -a "$LOG_FILE"
     say 'looping'

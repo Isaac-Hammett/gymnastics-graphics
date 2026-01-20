@@ -1,6 +1,6 @@
 # OBS Integration Tool - PRD Index
 
-**Last Updated:** 2026-01-18
+**Last Updated:** 2026-01-20
 **Original PRD:** `PRD-OBSIntegrationTool-2026-01-16.md`
 
 ---
@@ -9,22 +9,29 @@
 
 The comprehensive OBS Integration Tool PRD has been broken down into 10 smaller, focused PRDs. Each PRD is designed to be implemented and tested independently, with clear dependencies.
 
+Each PRD now has its own folder with:
+- `PRD-OBS-XX-FeatureName.md` - Requirements and acceptance criteria
+- `IMPLEMENTATION-PLAN.md` - Task breakdown (Claude updates this)
+- `prompt-OBS-XX-feature-name.md` - The prompt for the Ralph loop
+- `OBS-XX-feature-name-run.sh` - The loop script
+- `logs/` - Output log directory
+
 ---
 
 ## PRD Breakdown
 
 | PRD | Title | Status | Priority | Effort |
 |-----|-------|--------|----------|--------|
-| [01](PRD-OBS-01-StateSync.md) | State Sync Foundation | 🔴 Fix Required | P0 | Small |
-| [02](PRD-OBS-02-SceneManagement.md) | Scene Management | 🟢 Working | P1 | Verify |
-| [03](PRD-OBS-03-SourceManagement.md) | Source Management | 🔴 **BROKEN** | P0 | Medium |
-| [04](PRD-OBS-04-AudioManagement.md) | Audio Management | 🟢 Working | P1 | Verify |
-| [05](PRD-OBS-05-Transitions.md) | Transitions | 🟡 UI Missing | P2 | Medium |
-| [06](PRD-OBS-06-StreamRecording.md) | Stream & Recording | 🟢 Working | P1 | Verify |
-| [07](PRD-OBS-07-AssetManagement.md) | Asset Management | 🟢 Working | P1 | Verify |
-| [08](PRD-OBS-08-Templates.md) | Template System | 🟡 Delete Broken | P1 | Small |
-| [09](PRD-OBS-09-PreviewSystem.md) | Preview System | 🔴 **BROKEN** | P1 | Medium |
-| [10](PRD-OBS-10-TalentComms.md) | Talent Communications | 🟡 Untested | P2 | Verify |
+| [01](PRD-OBS-01-StateSync/) | State Sync Foundation | 🟢 COMPLETE | P0 | Small |
+| [02](PRD-OBS-02-SceneManagement/) | Scene Management | 🟢 Working | P1 | Verify |
+| [03](PRD-OBS-03-SourceManagement/) | Source Management | 🔴 **BROKEN** | P0 | Medium |
+| [04](PRD-OBS-04-AudioManagement/) | Audio Management | 🟢 Working | P1 | Verify |
+| [05](PRD-OBS-05-Transitions/) | Transitions | 🟡 UI Missing | P2 | Medium |
+| [06](PRD-OBS-06-StreamRecording/) | Stream & Recording | 🟢 Working | P1 | Verify |
+| [07](PRD-OBS-07-AssetManagement/) | Asset Management | 🟢 Working | P1 | Verify |
+| [08](PRD-OBS-08-Templates/) | Template System | 🟡 Delete Broken | P1 | Small |
+| [09](PRD-OBS-09-PreviewSystem/) | Preview System | 🔴 **BROKEN** | P1 | Medium |
+| [10](PRD-OBS-10-TalentComms/) | Talent Communications | 🟡 Untested | P2 | Verify |
 
 ---
 
