@@ -10,7 +10,7 @@
 
 ## Architecture Context
 
-> **IMPORTANT:** See [README-OBS-Architecture.md](README-OBS-Architecture.md) for full architecture details.
+> **IMPORTANT:** See [README-OBS-Architecture.md](../README-OBS-Architecture.md) for full architecture details.
 
 **Key architectural constraints:**
 
@@ -331,7 +331,7 @@ When source management code is fixed, deploy to the coordinator:
 
 ```bash
 # Via MCP tool (ssh_exec)
-ssh_exec target="coordinator" command="cd /opt/gymnastics-graphics && sudo git pull --rebase origin dev && pm2 restart coordinator"
+ssh_exec target="coordinator" command="cd /opt/gymnastics-graphics && sudo git pull --rebase origin main && pm2 restart coordinator"
 ```
 
 **Files that require coordinator deployment:**
@@ -382,8 +382,8 @@ ssh_exec target="coordinator" command="pm2 logs coordinator --lines 30 | grep -i
 
 ## Related Documents
 
-- [README-OBS-Architecture.md](README-OBS-Architecture.md) - Full architecture reference
-- [PRD-OBS-01-StateSync.md](PRD-OBS-01-StateSync.md) - State synchronization (dependency)
-- [PRD-OBS-02-SceneManagement.md](PRD-OBS-02-SceneManagement.md) - Scene management (dependency)
-- [PRD-OBS-06-StreamRecording.md](PRD-OBS-06-StreamRecording.md) - Similar control pattern for streaming
-- [PRD-OBS-08-Templates.md](PRD-OBS-08-Templates.md) - Scene templates (blocked by this)
+- [README-OBS-Architecture.md](../README-OBS-Architecture.md) - Full architecture reference
+- [PRD-OBS-01-StateSync.md](../PRD-OBS-01-StateSync.md) - State synchronization (dependency)
+- [PRD-OBS-02-SceneManagement](../PRD-OBS-02-SceneManagement/) - Scene management (dependency)
+- [PRD-OBS-06-StreamRecording.md](../PRD-OBS-06-StreamRecording.md) - Similar control pattern for streaming
+- [PRD-OBS-08-Templates.md](../PRD-OBS-08-Templates.md) - Scene templates (blocked by this)
