@@ -19,7 +19,7 @@ import { useShow } from '../../context/ShowContext';
  * Groups scenes by category and provides actions: Preview, Edit, Duplicate, Delete
  */
 export default function SceneList({ onEditScene, onSceneAction }) {
-  const { obsState, obsConnected, switchScene, setPreviewScene, createScene, refreshState, reorderScenes } = useOBS();
+  const { obsState, obsConnected, switchScene, setPreviewScene, createScene, deleteScene, refreshState, reorderScenes } = useOBS();
   const { socketUrl } = useShow();
   const [expandedCategories, setExpandedCategories] = useState({
     'generated-single': true,
@@ -33,6 +33,10 @@ export default function SceneList({ onEditScene, onSceneAction }) {
   const [newSceneName, setNewSceneName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [draggedScene, setDraggedScene] = useState(null);
+
+  // Delete confirmation popover state (inline, positioned near the delete button)
+  const [deletePopoverScene, setDeletePopoverScene] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Template-related state
   const [createMode, setCreateMode] = useState('blank'); // 'blank' or 'template'
@@ -77,20 +81,15 @@ export default function SceneList({ onEditScene, onSceneAction }) {
   ];
 
   // Group scenes by category
+  // Note: We trust the backend category and don't infer from scene names anymore.
+  // The coordinator (broadcastOBSState) sets the category based on:
+  // - Scene naming conventions (e.g., "Single - ", "Dual - ")
+  // - Template scenes stored in Firebase (competitions/{compId}/obs/templateScenes)
   const groupedScenes = categories.map(category => {
     const categoryScenes = scenes.filter(scene => {
-      // If scene has a category property, use it; otherwise try to infer from name
-      if (scene.category) {
-        return scene.category === category.id;
-      }
-      // Fallback: infer category from scene name
-      const sceneName = scene.sceneName || scene.name || '';
-      if (sceneName.startsWith('GS-')) return category.id === 'generated-single';
-      if (sceneName.startsWith('GM-')) return category.id === 'generated-multi';
-      if (sceneName.startsWith('STATIC-')) return category.id === 'static';
-      if (sceneName.startsWith('GFX-')) return category.id === 'graphics';
-      if (sceneName.startsWith('TEMPLATE-')) return category.id === 'template';
-      return category.id === 'manual';
+      // Trust the backend category, default to 'manual' if not set
+      const sceneCategory = scene.category || 'manual';
+      return sceneCategory === category.id;
     });
 
     return {
@@ -140,9 +139,38 @@ export default function SceneList({ onEditScene, onSceneAction }) {
   };
 
   const handleDelete = (sceneName) => {
-    if (onSceneAction) {
-      onSceneAction('delete', sceneName);
+    // Toggle inline delete popover for this scene
+    if (deletePopoverScene === sceneName) {
+      setDeletePopoverScene(null);
+    } else {
+      setDeletePopoverScene(sceneName);
     }
+  };
+
+  const confirmDelete = async (sceneName) => {
+    if (!sceneName) return;
+
+    setIsDeleting(true);
+    try {
+      deleteScene(sceneName);
+      // Notify parent if needed
+      if (onSceneAction) {
+        onSceneAction('delete', sceneName);
+      }
+      // Wait a moment for OBS to process, then refresh state
+      setTimeout(() => {
+        refreshState();
+      }, 500);
+      setDeletePopoverScene(null);
+    } catch (error) {
+      console.error('Failed to delete scene:', error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const cancelDelete = () => {
+    setDeletePopoverScene(null);
   };
 
   // Drag-and-drop handlers for scene reordering
@@ -331,6 +359,10 @@ export default function SceneList({ onEditScene, onSceneAction }) {
           onDrop={handleSceneDrop}
           onDragEnd={handleSceneDragEnd}
           draggedScene={draggedScene}
+          deletePopoverScene={deletePopoverScene}
+          onConfirmDelete={confirmDelete}
+          onCancelDelete={cancelDelete}
+          isDeleting={isDeleting}
         />
       ))}
     </div>
@@ -356,7 +388,11 @@ function CategoryGroup({
   onDragOver,
   onDrop,
   onDragEnd,
-  draggedScene
+  draggedScene,
+  deletePopoverScene,
+  onConfirmDelete,
+  onCancelDelete,
+  isDeleting
 }) {
   const colorClasses = {
     purple: 'bg-purple-600/20 text-purple-300 border-purple-500',
@@ -420,6 +456,10 @@ function CategoryGroup({
                 onDrop={(e) => onDrop(e, scene)}
                 onDragEnd={onDragEnd}
                 isDragging={draggedScene === scene}
+                showDeletePopover={deletePopoverScene === sceneName}
+                onConfirmDelete={() => onConfirmDelete(sceneName)}
+                onCancelDelete={onCancelDelete}
+                isDeleting={isDeleting}
               />
             );
           })}
@@ -449,7 +489,11 @@ function SceneCard({
   onDragOver,
   onDrop,
   onDragEnd,
-  isDragging
+  isDragging,
+  showDeletePopover,
+  onConfirmDelete,
+  onCancelDelete,
+  isDeleting
 }) {
   const borderClass = isActive
     ? 'border-green-500 bg-green-900/20'
@@ -492,7 +536,7 @@ function SceneCard({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-1 ml-3">
+        <div className="flex items-center gap-1 ml-3 relative">
           <button
             onClick={onPreview}
             className="p-2 text-gray-400 hover:text-blue-400 hover:bg-gray-700 rounded transition-colors"
@@ -523,16 +567,45 @@ function SceneCard({
           </button>
           <button
             onClick={onDelete}
-            className="p-2 text-gray-400 hover:text-red-400 hover:bg-gray-700 rounded transition-colors"
+            className={`p-2 hover:bg-gray-700 rounded transition-colors ${showDeletePopover ? 'text-red-400 bg-gray-700' : 'text-gray-400 hover:text-red-400'}`}
             title="Delete scene"
           >
             <TrashIcon className="w-5 h-5" />
           </button>
+
+          {/* Inline Delete Confirmation Popover */}
+          {showDeletePopover && (
+            <div className="absolute right-0 top-full mt-2 z-10 w-64 bg-gray-800 border border-gray-600 rounded-lg shadow-xl p-3">
+              <p className="text-white text-sm font-medium mb-1">
+                Delete "{sceneName}"?
+              </p>
+              <p className="text-gray-400 text-xs mb-3">
+                This scene has {sourceCount} {sourceCount === 1 ? 'source' : 'sources'}.
+              </p>
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={onCancelDelete}
+                  className="px-3 py-1 text-gray-400 hover:text-white text-sm transition-colors"
+                  disabled={isDeleting}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={onConfirmDelete}
+                  disabled={isDeleting}
+                  className="px-3 py-1 bg-red-600 hover:bg-red-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white text-sm font-medium rounded transition-colors"
+                >
+                  {isDeleting ? 'Deleting...' : 'Delete'}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
+
 
 /**
  * CreateSceneModal - Modal for creating a new scene (blank or from template)

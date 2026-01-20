@@ -247,12 +247,53 @@ export function isValidVmAddress(address) {
 }
 
 /**
+ * Check if we're in a secure (production) context
+ * @returns {boolean}
+ */
+function isSecureContext() {
+  return typeof window !== 'undefined' &&
+    (window.location.protocol === 'https:' || window.location.hostname === 'commentarygraphic.com');
+}
+
+/**
  * Check VM status by fetching /api/status endpoint
+ * In production (HTTPS), routes through the coordinator to avoid Mixed Content errors.
+ * In development (HTTP), calls the VM directly.
+ *
  * @param {string} vmAddress - The VM address (host:port format, no protocol)
  * @param {number} timeout - Timeout in milliseconds (default 5000)
- * @returns {Promise<{online: boolean, obsConnected?: boolean, error?: string}>}
+ * @param {string} compId - Competition ID (required for production routing)
+ * @returns {Promise<{online: boolean, obsConnected?: boolean, noVm?: boolean, error?: string}>}
  */
-export async function checkVmStatus(vmAddress, timeout = 5000) {
+export async function checkVmStatus(vmAddress, timeout = 5000, compId = null) {
+  // In production (HTTPS), route through coordinator to avoid Mixed Content
+  if (isSecureContext() && compId) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+    try {
+      const response = await fetch(`https://api.commentarygraphic.com/api/vm/${compId}/status`, {
+        signal: controller.signal,
+        headers: { 'Accept': 'application/json' },
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        return { online: false, error: `HTTP ${response.status}` };
+      }
+
+      return await response.json();
+    } catch (err) {
+      clearTimeout(timeoutId);
+      if (err.name === 'AbortError') {
+        return { online: false, error: 'Request timed out' };
+      }
+      return { online: false, error: err.message || 'Connection failed' };
+    }
+  }
+
+  // Development mode: call VM directly
   if (!isValidVmAddress(vmAddress)) {
     return { online: false, error: 'Invalid VM address format' };
   }

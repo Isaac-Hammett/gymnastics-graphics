@@ -1026,7 +1026,7 @@ describe('OBS State Sync Module', async () => {
           videoSettings: {}
         };
 
-        mockFirebase._setData('competitions/test-comp/production/obsState', cachedState);
+        mockFirebase._setData('competitions/test-comp/obs/state', cachedState);
 
         // Mock Firebase into the stateSync instance
         stateSync._db = mockFirebase.database();
@@ -1085,7 +1085,7 @@ describe('OBS State Sync Module', async () => {
 
         await stateSync._saveState();
 
-        const savedState = mockFirebase._getData('competitions/test-comp/production/obsState');
+        const savedState = mockFirebase._getData('competitions/test-comp/obs/state');
         assert.ok(savedState, 'State should be saved');
         assert.strictEqual(savedState.currentScene, 'Test Scene');
         assert.strictEqual(savedState.connected, true);
@@ -1095,7 +1095,7 @@ describe('OBS State Sync Module', async () => {
         const beforeSave = new Date().toISOString();
         await stateSync._saveState();
 
-        const savedState = mockFirebase._getData('competitions/test-comp/production/obsState');
+        const savedState = mockFirebase._getData('competitions/test-comp/obs/state');
         assert.ok(savedState.lastSync, 'lastSync should be set');
         assert.ok(savedState.lastSync >= beforeSave, 'lastSync should be recent');
       });
@@ -1106,7 +1106,7 @@ describe('OBS State Sync Module', async () => {
         // Should not throw, just log warning
         await stateSync._saveState();
 
-        const savedState = mockFirebase._getData('competitions/test-comp/production/obsState');
+        const savedState = mockFirebase._getData('competitions/test-comp/obs/state');
         assert.strictEqual(savedState, undefined, 'Should not save without db');
       });
 
@@ -1115,7 +1115,7 @@ describe('OBS State Sync Module', async () => {
 
         await stateSync._saveState();
 
-        const savedState = mockFirebase._getData('competitions/test-comp/production/obsState');
+        const savedState = mockFirebase._getData('competitions/test-comp/obs/state');
         assert.strictEqual(savedState, undefined, 'Should not save without competitionId');
       });
 
@@ -1153,7 +1153,7 @@ describe('OBS State Sync Module', async () => {
 
         await stateSync.refreshFullState();
 
-        const savedState = mockFirebase._getData('competitions/test-comp/production/obsState');
+        const savedState = mockFirebase._getData('competitions/test-comp/obs/state');
         assert.ok(savedState, 'State should be saved after refresh');
         assert.ok(savedState.lastSync, 'lastSync should be set');
       });
@@ -1164,7 +1164,7 @@ describe('OBS State Sync Module', async () => {
 
         await stateSync.onConnectionClosed();
 
-        const savedState = mockFirebase._getData('competitions/test-comp/production/obsState');
+        const savedState = mockFirebase._getData('competitions/test-comp/obs/state');
         assert.ok(savedState, 'State should be saved on disconnect');
         assert.strictEqual(savedState.connected, false);
         assert.strictEqual(savedState.connectionError, 'Connection closed');
@@ -1178,7 +1178,7 @@ describe('OBS State Sync Module', async () => {
 
         await stateSync.onConnectionError(new Error('Test connection error'));
 
-        const savedState = mockFirebase._getData('competitions/test-comp/production/obsState');
+        const savedState = mockFirebase._getData('competitions/test-comp/obs/state');
         assert.ok(savedState, 'State should be saved on error');
         assert.strictEqual(savedState.connected, false);
         assert.ok(savedState.connectionError.includes('Test connection error'));
@@ -1189,7 +1189,7 @@ describe('OBS State Sync Module', async () => {
 
         await stateSync.onCurrentProgramSceneChanged({ sceneName: 'New Scene' });
 
-        const savedState = mockFirebase._getData('competitions/test-comp/production/obsState');
+        const savedState = mockFirebase._getData('competitions/test-comp/obs/state');
         assert.ok(savedState, 'State should be saved on scene change');
         assert.strictEqual(savedState.currentScene, 'New Scene');
       });
@@ -1257,8 +1257,8 @@ describe('OBS State Sync Module', async () => {
         await stateSync._saveState();
 
         // Verify path structure
-        const savedState = mockFirebase._getData('competitions/pac12-2025/production/obsState');
-        assert.ok(savedState, 'Should save at competitions/{compId}/production/obsState');
+        const savedState = mockFirebase._getData('competitions/pac12-2025/obs/state');
+        assert.ok(savedState, 'Should save at competitions/{compId}/obs/state');
       });
     });
   });
