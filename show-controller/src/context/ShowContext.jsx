@@ -120,6 +120,17 @@ export function ShowProvider({ children }) {
       setState(prev => ({ ...prev, obsConnected: false }));
     });
 
+    // Also extract connection status from obs:stateUpdated (sent on initial connection)
+    newSocket.on('obs:stateUpdated', (data) => {
+      console.log('ShowContext: OBS state updated', data);
+      if (data?.connected !== undefined) {
+        setState(prev => ({ ...prev, obsConnected: data.connected }));
+      }
+      if (data?.currentScene) {
+        setState(prev => ({ ...prev, obsCurrentScene: data.currentScene }));
+      }
+    });
+
     newSocket.on('error', ({ message }) => {
       setError(message);
       setTimeout(() => setError(null), 3000);
