@@ -3388,6 +3388,81 @@ io.on('connection', async (socket) => {
     }
   });
 
+  // Set audio input volume (PRD-OBS-04: Audio Management)
+  socket.on('obs:setVolume', async ({ inputName, volumeDb, volumeMul }) => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can change volume' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      // Build payload - prefer volumeDb if provided, otherwise use volumeMul
+      const payload = { inputName };
+      if (volumeDb !== undefined) {
+        payload.inputVolumeDb = volumeDb;
+      } else if (volumeMul !== undefined) {
+        payload.inputVolumeMul = volumeMul;
+      } else {
+        socket.emit('error', { message: 'Must provide volumeDb or volumeMul' });
+        return;
+      }
+
+      await compObs.call('SetInputVolume', payload);
+      console.log(`[setVolume] Set ${inputName} volume to ${volumeDb !== undefined ? volumeDb + 'dB' : volumeMul} for ${clientCompId}`);
+      await broadcastOBSState(clientCompId, obsConnManager, io);
+    } catch (error) {
+      console.error(`[setVolume] Failed: ${error.message}`);
+      socket.emit('error', { message: `Failed to set volume: ${error.message}` });
+    }
+  });
+
+  // Set audio input mute state (PRD-OBS-04: Audio Management)
+  socket.on('obs:setMute', async ({ inputName, muted }) => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can mute/unmute audio' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      await compObs.call('SetInputMute', { inputName, inputMuted: muted });
+      console.log(`[setMute] Set ${inputName} muted=${muted} for ${clientCompId}`);
+      await broadcastOBSState(clientCompId, obsConnManager, io);
+    } catch (error) {
+      console.error(`[setMute] Failed: ${error.message}`);
+      socket.emit('error', { message: `Failed to set mute: ${error.message}` });
+    }
+  });
+
   // Set audio monitor type
   socket.on('obs:setMonitorType', async ({ inputName, monitorType }) => {
     const client = showState.connectedClients.find(c => c.id === socket.id);
