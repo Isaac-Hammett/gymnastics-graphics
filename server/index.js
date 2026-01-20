@@ -3704,6 +3704,64 @@ io.on('connection', async (socket) => {
   });
 
   // ============================================================================
+  // Preview System (PRD-OBS-09)
+  // ============================================================================
+
+  // Request screenshot for preview (with configurable options)
+  socket.on('obs:requestScreenshot', async (options = {}) => {
+    const { sceneName = null, imageWidth = 640, imageHeight = 360, imageFormat = 'jpg' } = options;
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+
+    // Allow any connected client to request screenshots (not just producers)
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('obs:screenshotError', { error: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('obs:screenshotError', { error: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      // Get target scene name - use provided sceneName or get current program scene
+      let targetScene = sceneName;
+      if (!targetScene) {
+        const { currentProgramSceneName } = await compObs.call('GetCurrentProgramScene');
+        targetScene = currentProgramSceneName;
+      }
+
+      // Take screenshot with specified options
+      const response = await compObs.call('GetSourceScreenshot', {
+        sourceName: targetScene,
+        imageFormat: imageFormat === 'jpg' ? 'jpeg' : imageFormat,
+        imageWidth,
+        imageHeight
+      });
+
+      console.log(`[requestScreenshot] Captured ${imageWidth}x${imageHeight} ${imageFormat} of ${targetScene} for ${clientCompId}`);
+
+      // Emit screenshot data back to the requesting client
+      socket.emit('obs:screenshotData', {
+        success: true,
+        imageData: response.imageData,
+        sceneName: targetScene,
+        timestamp: Date.now()
+      });
+    } catch (error) {
+      console.error(`[requestScreenshot] Failed: ${error.message}`);
+      socket.emit('obs:screenshotError', {
+        error: error.message,
+        sceneName
+      });
+    }
+  });
+
+  // ============================================================================
   // Stream & Recording Control (PRD-OBS-06)
   // ============================================================================
 

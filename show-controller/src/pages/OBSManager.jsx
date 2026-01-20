@@ -23,6 +23,7 @@ import StreamConfig from '../components/obs/StreamConfig';
 import AssetManager from '../components/obs/AssetManager';
 import TemplateManager from '../components/obs/TemplateManager';
 import TalentCommsPanel from '../components/obs/TalentCommsPanel';
+import OBSCurrentOutput from '../components/obs/OBSCurrentOutput';
 
 export default function OBSManager() {
   const { identify } = useShow();
@@ -192,12 +193,14 @@ export default function OBSManager() {
           error={connectionError}
         />
 
-        {/* Current Output Status */}
+        {/* Current Output Status - PRD-OBS-09: Preview System */}
         <OBSCurrentOutput
           connected={obsConnected}
           currentScene={obsState?.currentScene}
           isStreaming={isStreaming}
           isRecording={isRecording}
+          streamStatus={obsState?.streamStatus}
+          recordingStatus={obsState?.recordingStatus}
         />
 
         {/* Stream Control Buttons */}
@@ -453,49 +456,6 @@ function OBSConnectionStatus({ connected, error }) {
         <div>
           <div className="text-green-300 font-semibold">OBS Connected</div>
           <div className="text-green-200/80 text-sm">Connected to OBS Studio via WebSocket</div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/**
- * OBSCurrentOutput - Shows current scene name and stream status
- */
-function OBSCurrentOutput({ connected, currentScene, isStreaming, isRecording }) {
-  return (
-    <div className="bg-gray-800 rounded-xl p-4 mb-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <h2 className="text-white font-semibold mb-2">Current Output</h2>
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-gray-400 text-sm">Scene:</span>
-            <span className="text-white font-medium">
-              {connected ? (currentScene || 'No scene active') : 'Disconnected'}
-            </span>
-          </div>
-          <div className="flex gap-2">
-            {isStreaming && (
-              <span className="px-2 py-1 bg-red-600/20 border border-red-600 text-red-300 text-xs font-semibold rounded flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
-                LIVE
-              </span>
-            )}
-            {isRecording && (
-              <span className="px-2 py-1 bg-red-600/20 border border-red-600 text-red-300 text-xs font-semibold rounded flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                RECORDING
-              </span>
-            )}
-            {!isStreaming && !isRecording && connected && (
-              <span className="px-2 py-1 bg-gray-700 text-gray-400 text-xs font-semibold rounded">
-                Offline
-              </span>
-            )}
-          </div>
-        </div>
-        <div className="w-48 h-27 bg-gray-900 rounded-lg flex items-center justify-center text-gray-600 text-xs">
-          Preview placeholder
         </div>
       </div>
     </div>
