@@ -2498,6 +2498,23 @@ async function broadcastOBSState(compId, obsConnManager, io) {
       console.log(`[broadcastOBSState] Could not fetch inputs for ${compId}: ${audioError.message}`);
     }
 
+    // Fetch transitions (PRD-OBS-05: Transition Management)
+    let transitions = [];
+    let currentTransition = null;
+    let transitionDuration = 300;
+    try {
+      const transitionResponse = await compObs.call('GetSceneTransitionList');
+      transitions = (transitionResponse.transitions || []).map(t => ({
+        name: t.transitionName,
+        kind: t.transitionKind,
+        configurable: t.transitionConfigurable || false
+      }));
+      currentTransition = transitionResponse.currentSceneTransitionName;
+      transitionDuration = transitionResponse.currentSceneTransitionDuration || 300;
+    } catch (transitionError) {
+      console.log(`[broadcastOBSState] Could not fetch transitions for ${compId}: ${transitionError.message}`);
+    }
+
     // Broadcast full state
     const obsState = {
       connected: true,
@@ -2506,6 +2523,9 @@ async function broadcastOBSState(compId, obsConnManager, io) {
       currentScene,
       inputs,
       audioSources,
+      transitions,
+      currentTransition,
+      transitionDuration,
       isStreaming: false,
       isRecording: false
     };
@@ -3492,6 +3512,146 @@ io.on('connection', async (socket) => {
     } catch (error) {
       console.error(`[setMonitorType] Failed: ${error.message}`);
       socket.emit('error', { message: `Failed to set monitor type: ${error.message}` });
+    }
+  });
+
+  // ============================================================================
+  // Transition Management (PRD-OBS-05)
+  // ============================================================================
+
+  // Get available transitions
+  socket.on('obs:getTransitions', async () => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    const clientCompId = client?.compId;
+
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      const response = await compObs.call('GetSceneTransitionList');
+      const transitions = (response.transitions || []).map(t => ({
+        name: t.transitionName,
+        kind: t.transitionKind,
+        configurable: t.transitionConfigurable || false
+      }));
+      socket.emit('obs:transitionsList', {
+        transitions,
+        currentTransition: response.currentSceneTransitionName,
+        transitionDuration: response.currentSceneTransitionDuration || 300
+      });
+      console.log(`[getTransitions] Sent ${transitions.length} transitions for ${clientCompId}`);
+    } catch (error) {
+      console.error(`[getTransitions] Failed: ${error.message}`);
+      socket.emit('error', { message: `Failed to get transitions: ${error.message}` });
+    }
+  });
+
+  // Set current transition (PRD-OBS-05)
+  socket.on('obs:setCurrentTransition', async ({ transitionName }) => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can change transitions' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      await compObs.call('SetCurrentSceneTransition', { transitionName });
+      console.log(`[setCurrentTransition] Set transition to ${transitionName} for ${clientCompId}`);
+      await broadcastOBSState(clientCompId, obsConnManager, io);
+    } catch (error) {
+      console.error(`[setCurrentTransition] Failed: ${error.message}`);
+      socket.emit('error', { message: `Failed to set transition: ${error.message}` });
+    }
+  });
+
+  // Set transition duration (PRD-OBS-05)
+  socket.on('obs:setTransitionDuration', async ({ transitionDuration }) => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can change transition duration' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      await compObs.call('SetCurrentSceneTransitionDuration', { transitionDuration });
+      console.log(`[setTransitionDuration] Set duration to ${transitionDuration}ms for ${clientCompId}`);
+      await broadcastOBSState(clientCompId, obsConnManager, io);
+    } catch (error) {
+      console.error(`[setTransitionDuration] Failed: ${error.message}`);
+      socket.emit('error', { message: `Failed to set transition duration: ${error.message}` });
+    }
+  });
+
+  // Set transition settings (PRD-OBS-05)
+  socket.on('obs:setTransitionSettings', async ({ transitionName, transitionSettings }) => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can change transition settings' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      await compObs.call('SetCurrentSceneTransitionSettings', {
+        transitionSettings,
+        overlay: true
+      });
+      console.log(`[setTransitionSettings] Updated settings for ${transitionName} for ${clientCompId}`);
+      await broadcastOBSState(clientCompId, obsConnManager, io);
+    } catch (error) {
+      console.error(`[setTransitionSettings] Failed: ${error.message}`);
+      socket.emit('error', { message: `Failed to set transition settings: ${error.message}` });
     }
   });
 

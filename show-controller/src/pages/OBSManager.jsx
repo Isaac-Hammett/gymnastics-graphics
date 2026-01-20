@@ -18,6 +18,7 @@ import SceneEditor from '../components/obs/SceneEditor';
 import SourceEditor from '../components/obs/SourceEditor';
 import AudioMixer from '../components/obs/AudioMixer';
 import AudioPresetManager from '../components/obs/AudioPresetManager';
+import TransitionPicker from '../components/obs/TransitionPicker';
 import StreamConfig from '../components/obs/StreamConfig';
 import AssetManager from '../components/obs/AssetManager';
 import TemplateManager from '../components/obs/TemplateManager';
@@ -292,12 +293,7 @@ export default function OBSManager() {
               </div>
             </div>
           )}
-          {activeTab === 'transitions' && (
-            <div className="text-center text-gray-400 py-12">
-              <h3 className="text-xl font-semibold text-white mb-2">Transitions</h3>
-              <p>Transition controls coming soon</p>
-            </div>
-          )}
+          {activeTab === 'transitions' && <TransitionPicker />}
           {activeTab === 'stream' && <StreamConfig />}
           {activeTab === 'assets' && <AssetManager />}
           {activeTab === 'templates' && <TemplateManager />}
@@ -570,10 +566,15 @@ function SourceList({ inputs, onEditSource }) {
     image_source: 'Image Sources',
     vlc_source: 'VLC Sources',
     color_source: 'Color Sources',
+    color_source_v3: 'Color Sources',
     text_gdiplus: 'Text Sources',
+    text_ft2_source_v2: 'Text Sources',
     dshow_input: 'Video Capture Devices',
+    av_capture_input: 'Video Capture Devices',
     wasapi_input_capture: 'Audio Input Capture',
     wasapi_output_capture: 'Audio Output Capture',
+    coreaudio_input_capture: 'Audio Input Capture',
+    coreaudio_output_capture: 'Audio Output Capture',
     unknown: 'Other Sources'
   };
 
@@ -592,23 +593,27 @@ function SourceList({ inputs, onEditSource }) {
             {kindNames[kind] || kind}
           </h4>
           <div className="space-y-2">
-            {sources.map((source) => (
-              <div
-                key={source.inputName}
-                className="bg-gray-700 rounded-lg p-4 flex items-center justify-between hover:bg-gray-600 transition-colors"
-              >
-                <div className="flex-1">
-                  <div className="text-white font-medium">{source.inputName}</div>
-                  <div className="text-gray-400 text-sm">{source.inputKind}</div>
-                </div>
-                <button
-                  onClick={() => onEditSource(source)}
-                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded transition-colors"
+            {sources.map((source, idx) => {
+              const sourceName = source.inputName || source.name || `Source ${idx + 1}`;
+              const sourceKind = source.inputKind || source.kind || 'unknown';
+              return (
+                <div
+                  key={sourceName || idx}
+                  className="bg-gray-700 rounded-lg p-4 flex items-center justify-between hover:bg-gray-600 transition-colors"
                 >
-                  Edit
-                </button>
-              </div>
-            ))}
+                  <div className="flex-1">
+                    <div className="text-white font-medium">{sourceName}</div>
+                    <div className="text-gray-400 text-sm">{sourceKind}</div>
+                  </div>
+                  <button
+                    onClick={() => onEditSource(source)}
+                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded transition-colors"
+                  >
+                    Edit
+                  </button>
+                </div>
+              );
+            })}
           </div>
         </div>
       ))}

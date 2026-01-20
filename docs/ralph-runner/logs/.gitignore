@@ -1,0 +1,5 @@
+# Ignore all log files except this .gitignore
+*.log
+*.jsonl
+*.state
+!.gitignore
