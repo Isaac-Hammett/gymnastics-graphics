@@ -39,7 +39,7 @@
 | # | Task | Status | Notes |
 |---|------|--------|-------|
 | 13 | Add loading states to SourceEditor | **ALREADY EXISTS** | saving state with spinner exists |
-| 14 | Add error handling/toast on failure | PARTIAL | Error displayed in SourceEditor, no toast |
+| 14 | Add error handling/toast on failure | **COMPLETE** | Toast notifications for success/error on save/delete |
 | 15 | Add Playwright tests for source management | **COMPLETE** | Tests in show-controller/e2e/source-management.spec.js |
 
 ---
@@ -122,6 +122,14 @@ When debugging source management issues:
 - **ADDED:** npm scripts: `test:e2e`, `test:e2e:ui`, `test:e2e:report`
 - To run tests: `cd show-controller && npm run test:e2e`
 
+### 2026-01-20 (P3 #14: Toast notifications)
+- **ADDED:** Toast notification state and showToast helper to SourceEditor.jsx
+- **ADDED:** Success toast on save: "Source {name} updated successfully"
+- **ADDED:** Success toast on delete: "Input {name} deleted successfully"
+- **ADDED:** Error toast on failure with error message
+- **ADDED:** Toast UI component with green (success) / red (error) styling
+- **DEPLOYED:** Frontend built and deployed to commentarygraphic.com
+
 ---
 
 ## Verification URLs
@@ -143,9 +151,10 @@ Track files modified during implementation:
 | server/index.js | Added obs:removeInput handler | 6c16eec |
 | show-controller/src/context/OBSContext.jsx | Added removeInput method | 6c16eec |
 | show-controller/src/components/obs/SourceEditor.jsx | Added delete input button with confirmation | 6c16eec |
-| show-controller/playwright.config.js | Playwright configuration for E2E tests | (pending) |
-| show-controller/e2e/source-management.spec.js | Source management E2E test suite | (pending) |
-| show-controller/package.json | Added Playwright and test scripts | (pending) |
+| show-controller/playwright.config.js | Playwright configuration for E2E tests | cb63bc7 |
+| show-controller/e2e/source-management.spec.js | Source management E2E test suite | cb63bc7 |
+| show-controller/package.json | Added Playwright and test scripts | cb63bc7 |
+| show-controller/src/components/obs/SourceEditor.jsx | Added toast notifications for success/error | (pending) |
 
 ---
 
@@ -157,7 +166,7 @@ Track files modified during implementation:
 
 ### All P0-P3 tasks complete!
 
-Only remaining item is P3 #14 (PARTIAL): Add toast notifications for success/failure. This would require adding a toast library dependency.
+All tasks in this PRD have been implemented. No remaining work.
 
 ---
 
