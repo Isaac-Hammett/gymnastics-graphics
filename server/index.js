@@ -3703,6 +3703,349 @@ io.on('connection', async (socket) => {
     }
   });
 
+  // ============================================================================
+  // Stream & Recording Control (PRD-OBS-06)
+  // ============================================================================
+
+  // Start streaming
+  socket.on('obs:startStream', async () => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can start streaming' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      await compObs.call('StartStream');
+      console.log(`[startStream] Started streaming for ${clientCompId}`);
+      socket.emit('obs:streamStarted');
+      await broadcastOBSState(clientCompId, obsConnManager, io);
+    } catch (error) {
+      console.error(`[startStream] Failed: ${error.message}`);
+      socket.emit('error', { message: `Failed to start stream: ${error.message}` });
+    }
+  });
+
+  // Stop streaming
+  socket.on('obs:stopStream', async () => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can stop streaming' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      await compObs.call('StopStream');
+      console.log(`[stopStream] Stopped streaming for ${clientCompId}`);
+      socket.emit('obs:streamStopped');
+      await broadcastOBSState(clientCompId, obsConnManager, io);
+    } catch (error) {
+      console.error(`[stopStream] Failed: ${error.message}`);
+      socket.emit('error', { message: `Failed to stop stream: ${error.message}` });
+    }
+  });
+
+  // Get stream status
+  socket.on('obs:getStreamStatus', async () => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    const clientCompId = client?.compId;
+
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      const response = await compObs.call('GetStreamStatus');
+      socket.emit('obs:streamStatus', {
+        active: response.outputActive,
+        reconnecting: response.outputReconnecting || false,
+        timecode: response.outputTimecode || '00:00:00.000',
+        duration: response.outputDuration || 0,
+        bytes: response.outputBytes || 0,
+        skippedFrames: response.outputSkippedFrames || 0,
+        totalFrames: response.outputTotalFrames || 0
+      });
+      console.log(`[getStreamStatus] Sent stream status for ${clientCompId} (active: ${response.outputActive})`);
+    } catch (error) {
+      console.error(`[getStreamStatus] Failed: ${error.message}`);
+      socket.emit('error', { message: `Failed to get stream status: ${error.message}` });
+    }
+  });
+
+  // Get stream settings
+  socket.on('obs:getStreamSettings', async () => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    const clientCompId = client?.compId;
+
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      const response = await compObs.call('GetStreamServiceSettings');
+      // Mask the stream key
+      const settings = { ...response.streamServiceSettings };
+      if (settings.key) {
+        settings.key = '****' + settings.key.slice(-4);
+      }
+      socket.emit('obs:streamSettings', {
+        serviceType: response.streamServiceType,
+        settings
+      });
+      console.log(`[getStreamSettings] Sent stream settings for ${clientCompId}`);
+    } catch (error) {
+      console.error(`[getStreamSettings] Failed: ${error.message}`);
+      socket.emit('error', { message: `Failed to get stream settings: ${error.message}` });
+    }
+  });
+
+  // Set stream settings
+  socket.on('obs:setStreamSettings', async ({ serviceType, settings }) => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can change stream settings' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      await compObs.call('SetStreamServiceSettings', {
+        streamServiceType: serviceType,
+        streamServiceSettings: settings
+      });
+      console.log(`[setStreamSettings] Updated stream settings for ${clientCompId} (type: ${serviceType})`);
+      socket.emit('obs:streamSettingsUpdated', { success: true });
+    } catch (error) {
+      console.error(`[setStreamSettings] Failed: ${error.message}`);
+      socket.emit('error', { message: `Failed to set stream settings: ${error.message}` });
+    }
+  });
+
+  // Start recording
+  socket.on('obs:startRecording', async () => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can start recording' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      await compObs.call('StartRecord');
+      console.log(`[startRecording] Started recording for ${clientCompId}`);
+      socket.emit('obs:recordingStarted');
+      await broadcastOBSState(clientCompId, obsConnManager, io);
+    } catch (error) {
+      console.error(`[startRecording] Failed: ${error.message}`);
+      socket.emit('error', { message: `Failed to start recording: ${error.message}` });
+    }
+  });
+
+  // Stop recording
+  socket.on('obs:stopRecording', async () => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can stop recording' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      const result = await compObs.call('StopRecord');
+      console.log(`[stopRecording] Stopped recording for ${clientCompId}, file: ${result.outputPath}`);
+      socket.emit('obs:recordingStopped', { path: result.outputPath });
+      await broadcastOBSState(clientCompId, obsConnManager, io);
+    } catch (error) {
+      console.error(`[stopRecording] Failed: ${error.message}`);
+      socket.emit('error', { message: `Failed to stop recording: ${error.message}` });
+    }
+  });
+
+  // Pause recording
+  socket.on('obs:pauseRecording', async () => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can pause recording' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      await compObs.call('PauseRecord');
+      console.log(`[pauseRecording] Paused recording for ${clientCompId}`);
+      socket.emit('obs:recordingPaused');
+      await broadcastOBSState(clientCompId, obsConnManager, io);
+    } catch (error) {
+      console.error(`[pauseRecording] Failed: ${error.message}`);
+      socket.emit('error', { message: `Failed to pause recording: ${error.message}` });
+    }
+  });
+
+  // Resume recording
+  socket.on('obs:resumeRecording', async () => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can resume recording' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      await compObs.call('ResumeRecord');
+      console.log(`[resumeRecording] Resumed recording for ${clientCompId}`);
+      socket.emit('obs:recordingResumed');
+      await broadcastOBSState(clientCompId, obsConnManager, io);
+    } catch (error) {
+      console.error(`[resumeRecording] Failed: ${error.message}`);
+      socket.emit('error', { message: `Failed to resume recording: ${error.message}` });
+    }
+  });
+
+  // Get recording status
+  socket.on('obs:getRecordingStatus', async () => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    const clientCompId = client?.compId;
+
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      const response = await compObs.call('GetRecordStatus');
+      socket.emit('obs:recordingStatus', {
+        active: response.outputActive,
+        paused: response.outputPaused || false,
+        timecode: response.outputTimecode || '00:00:00.000',
+        duration: response.outputDuration || 0,
+        bytes: response.outputBytes || 0
+      });
+      console.log(`[getRecordingStatus] Sent recording status for ${clientCompId} (active: ${response.outputActive}, paused: ${response.outputPaused})`);
+    } catch (error) {
+      console.error(`[getRecordingStatus] Failed: ${error.message}`);
+      socket.emit('error', { message: `Failed to get recording status: ${error.message}` });
+    }
+  });
+
   // Toggle talent lock
   socket.on('lockTalent', ({ locked }) => {
     const client = showState.connectedClients.find(c => c.id === socket.id);

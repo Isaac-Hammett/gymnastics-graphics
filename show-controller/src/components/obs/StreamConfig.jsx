@@ -1,138 +1,158 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   ExclamationTriangleIcon,
   CheckCircleIcon,
   ArrowPathIcon,
   EyeIcon,
   EyeSlashIcon,
-  InformationCircleIcon
+  InformationCircleIcon,
+  PlayIcon,
+  StopIcon,
+  PauseIcon
 } from '@heroicons/react/24/outline';
 import { useOBS } from '../../context/OBSContext';
-import { useShow } from '../../context/ShowContext';
 
 /**
- * StreamConfig - Configure streaming settings
- * Allows users to select service (YouTube, Twitch, Custom RTMP) and enter stream key
+ * StreamConfig - Configure streaming and recording settings
+ * Uses Socket.io via OBSContext instead of REST API (PRD-OBS-06)
  */
 export default function StreamConfig() {
-  const { obsConnected } = useOBS();
-  const { socketUrl } = useShow();
+  const {
+    obsConnected,
+    obsState,
+    getStreamSettings,
+    setStreamSettings,
+    getStreamStatus,
+    startStream,
+    stopStream,
+    startRecording,
+    stopRecording,
+    pauseRecording,
+    resumeRecording,
+    getRecordingStatus
+  } = useOBS();
 
-  const [serviceType, setServiceType] = useState('youtube');
+  // Form state
+  const [serviceType, setServiceType] = useState('rtmp_common');
   const [streamKey, setStreamKey] = useState('');
   const [serverUrl, setServerUrl] = useState('');
   const [showKey, setShowKey] = useState(false);
 
+  // UI state
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
 
-  const [currentSettings, setCurrentSettings] = useState(null);
-  const [outputSettings, setOutputSettings] = useState(null);
+  // Derived state from obsState
+  const streamSettings = obsState?.streamSettings;
+  const streamStatus = obsState?.streamStatus;
+  const recordingStatus = obsState?.recordingStatus;
+  const isStreaming = obsState?.streaming || streamStatus?.active;
+  const isRecording = obsState?.recording || recordingStatus?.active;
+  const isRecordingPaused = obsState?.recordingPaused || recordingStatus?.paused;
 
-  // Fetch current stream settings on mount
+  // Fetch stream settings and status on mount and when obsConnected changes
   useEffect(() => {
     if (obsConnected) {
-      fetchStreamSettings();
-      fetchStreamStatus();
+      refreshData();
     }
   }, [obsConnected]);
 
-  const fetchStreamSettings = async () => {
+  // Update form when stream settings are received
+  useEffect(() => {
+    if (streamSettings) {
+      if (streamSettings.serviceType) {
+        setServiceType(streamSettings.serviceType);
+      }
+      if (streamSettings.settings?.server) {
+        setServerUrl(streamSettings.settings.server);
+      }
+    }
+  }, [streamSettings]);
+
+  const refreshData = useCallback(() => {
     setLoading(true);
     setError(null);
-    try {
-      const response = await fetch(`${socketUrl}/api/obs/stream/settings`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch stream settings: ${response.statusText}`);
-      }
-      const data = await response.json();
-      setCurrentSettings(data);
+    getStreamSettings();
+    getStreamStatus();
+    getRecordingStatus();
+    // Loading will be cleared when data arrives via socket events
+    setTimeout(() => setLoading(false), 1000);
+  }, [getStreamSettings, getStreamStatus, getRecordingStatus]);
 
-      // Populate form with current settings
-      if (data.serviceType) {
-        setServiceType(data.serviceType);
-      }
-      if (data.settings?.server) {
-        setServerUrl(data.settings.server);
-      }
-      // Stream key will be masked (e.g., ****xxxx) - don't populate field
-    } catch (err) {
-      console.error('Error fetching stream settings:', err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchStreamStatus = async () => {
-    try {
-      const response = await fetch(`${socketUrl}/api/obs/stream/status`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch stream status: ${response.statusText}`);
-      }
-      const data = await response.json();
-      setOutputSettings(data);
-    } catch (err) {
-      console.error('Error fetching stream status:', err);
-    }
-  };
-
-  const handleSave = async () => {
+  const handleSave = useCallback(() => {
     setError(null);
     setSuccess(false);
     setSaving(true);
 
     try {
       // Validate inputs
-      if (serviceType === 'custom' && !serverUrl.trim()) {
+      if (serviceType === 'rtmp_custom' && !serverUrl.trim()) {
         throw new Error('Server URL is required for custom RTMP');
       }
-      if (!streamKey.trim() && !currentSettings?.settings?.key) {
+      if (!streamKey.trim() && !streamSettings?.settings?.key) {
         throw new Error('Stream key is required');
       }
 
-      const payload = {
-        serviceType,
-        settings: {}
-      };
+      // Build settings object
+      const settings = {};
 
-      // Only include fields that have been modified
-      if (serviceType === 'custom' && serverUrl.trim()) {
-        payload.settings.server = serverUrl.trim();
+      // Add server URL for custom RTMP or YouTube/Twitch default servers
+      if (serviceType === 'rtmp_custom') {
+        settings.server = serverUrl.trim();
+      } else if (serviceType === 'rtmp_common') {
+        // Default YouTube server
+        settings.server = 'rtmps://a.rtmps.youtube.com/live2';
       }
+
+      // Only include key if a new one was entered
       if (streamKey.trim()) {
-        payload.settings.key = streamKey.trim();
+        settings.key = streamKey.trim();
       }
 
-      const response = await fetch(`${socketUrl}/api/obs/stream/settings`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
+      // Call socket method
+      setStreamSettings(serviceType, settings);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `Failed to update stream settings: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      setCurrentSettings(data);
       setSuccess(true);
       setStreamKey(''); // Clear the key field after saving
 
-      // Clear success message after 3 seconds
-      setTimeout(() => setSuccess(false), 3000);
+      // Refresh to get updated settings
+      setTimeout(() => {
+        getStreamSettings();
+        setSuccess(false);
+      }, 1500);
     } catch (err) {
       console.error('Error saving stream settings:', err);
       setError(err.message);
     } finally {
       setSaving(false);
     }
-  };
+  }, [serviceType, serverUrl, streamKey, streamSettings, setStreamSettings, getStreamSettings]);
+
+  const handleStartStream = useCallback(() => {
+    startStream();
+  }, [startStream]);
+
+  const handleStopStream = useCallback(() => {
+    stopStream();
+  }, [stopStream]);
+
+  const handleStartRecording = useCallback(() => {
+    startRecording();
+  }, [startRecording]);
+
+  const handleStopRecording = useCallback(() => {
+    stopRecording();
+  }, [stopRecording]);
+
+  const handlePauseRecording = useCallback(() => {
+    pauseRecording();
+  }, [pauseRecording]);
+
+  const handleResumeRecording = useCallback(() => {
+    resumeRecording();
+  }, [resumeRecording]);
 
   if (!obsConnected) {
     return (
@@ -146,16 +166,14 @@ export default function StreamConfig() {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-white font-semibold text-lg">Stream Configuration</h3>
-          <p className="text-gray-400 text-sm mt-1">Configure streaming service and output settings</p>
+          <h3 className="text-white font-semibold text-lg">Stream & Recording</h3>
+          <p className="text-gray-400 text-sm mt-1">Configure streaming service and control output</p>
         </div>
         <button
-          onClick={() => {
-            fetchStreamSettings();
-            fetchStreamStatus();
-          }}
+          onClick={refreshData}
           disabled={loading}
           className="flex items-center gap-2 px-3 py-1.5 bg-gray-700 border border-gray-600 rounded-lg text-gray-300 text-sm hover:bg-gray-600 disabled:opacity-50 transition-colors"
         >
@@ -186,8 +204,116 @@ export default function StreamConfig() {
         </div>
       )}
 
+      {/* Stream/Recording Controls */}
+      <div className="bg-gray-700 rounded-lg p-6">
+        <h4 className="text-white font-semibold mb-4">Output Controls</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Streaming Control */}
+          <div className="bg-gray-800 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <div className="text-white font-medium">Streaming</div>
+                <div className="text-sm text-gray-400">
+                  {isStreaming ? (
+                    <span className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                      LIVE {streamStatus?.timecode && `- ${streamStatus.timecode}`}
+                    </span>
+                  ) : (
+                    'Offline'
+                  )}
+                </div>
+              </div>
+              {isStreaming ? (
+                <button
+                  onClick={handleStopStream}
+                  className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors"
+                >
+                  <StopIcon className="w-4 h-4" />
+                  Stop
+                </button>
+              ) : (
+                <button
+                  onClick={handleStartStream}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors"
+                >
+                  <PlayIcon className="w-4 h-4" />
+                  Go Live
+                </button>
+              )}
+            </div>
+            {isStreaming && streamStatus && (
+              <div className="text-xs text-gray-400 space-y-1">
+                {streamStatus.skippedFrames > 0 && (
+                  <div className="text-yellow-400">Dropped frames: {streamStatus.skippedFrames}</div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Recording Control */}
+          <div className="bg-gray-800 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <div className="text-white font-medium">Recording</div>
+                <div className="text-sm text-gray-400">
+                  {isRecording ? (
+                    <span className="flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${isRecordingPaused ? 'bg-yellow-500' : 'bg-red-500 animate-pulse'}`}></span>
+                      {isRecordingPaused ? 'Paused' : 'Recording'} {recordingStatus?.timecode && `- ${recordingStatus.timecode}`}
+                    </span>
+                  ) : (
+                    'Stopped'
+                  )}
+                </div>
+              </div>
+              <div className="flex gap-2">
+                {isRecording ? (
+                  <>
+                    {isRecordingPaused ? (
+                      <button
+                        onClick={handleResumeRecording}
+                        className="flex items-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors"
+                      >
+                        <PlayIcon className="w-4 h-4" />
+                        Resume
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handlePauseRecording}
+                        className="flex items-center gap-2 px-3 py-2 bg-yellow-600 hover:bg-yellow-700 text-white font-medium rounded-lg transition-colors"
+                      >
+                        <PauseIcon className="w-4 h-4" />
+                        Pause
+                      </button>
+                    )}
+                    <button
+                      onClick={handleStopRecording}
+                      className="flex items-center gap-2 px-3 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors"
+                    >
+                      <StopIcon className="w-4 h-4" />
+                      Stop
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={handleStartRecording}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors"
+                  >
+                    <span className="w-3 h-3 rounded-full bg-white"></span>
+                    Record
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Stream Configuration Form */}
       <div className="bg-gray-700 rounded-lg p-6 space-y-6">
+        <h4 className="text-white font-semibold">Stream Settings</h4>
+
         {/* Service Type Selector */}
         <div>
           <label className="block text-white font-medium mb-2">
@@ -198,19 +324,17 @@ export default function StreamConfig() {
             onChange={(e) => setServiceType(e.target.value)}
             className="w-full px-3 py-2 bg-gray-800 text-white rounded border border-gray-600 focus:border-purple-500 focus:outline-none"
           >
-            <option value="youtube">YouTube</option>
-            <option value="twitch">Twitch</option>
-            <option value="custom">Custom RTMP</option>
+            <option value="rtmp_common">YouTube / Twitch (RTMP)</option>
+            <option value="rtmp_custom">Custom RTMP Server</option>
           </select>
           <p className="text-gray-400 text-sm mt-1">
-            {serviceType === 'youtube' && 'Stream to YouTube Live'}
-            {serviceType === 'twitch' && 'Stream to Twitch.tv'}
-            {serviceType === 'custom' && 'Stream to a custom RTMP server'}
+            {serviceType === 'rtmp_common' && 'Stream to YouTube or Twitch using their RTMP servers'}
+            {serviceType === 'rtmp_custom' && 'Stream to a custom RTMP server'}
           </p>
         </div>
 
         {/* Server URL (Custom RTMP only) */}
-        {serviceType === 'custom' && (
+        {serviceType === 'rtmp_custom' && (
           <div>
             <label className="block text-white font-medium mb-2">
               Server URL
@@ -238,7 +362,7 @@ export default function StreamConfig() {
               type={showKey ? 'text' : 'password'}
               value={streamKey}
               onChange={(e) => setStreamKey(e.target.value)}
-              placeholder={currentSettings?.settings?.key ? '••••••••' : 'Enter your stream key'}
+              placeholder={streamSettings?.settings?.key ? '••••••••' : 'Enter your stream key'}
               className="w-full px-3 py-2 pr-10 bg-gray-800 text-white rounded border border-gray-600 focus:border-purple-500 focus:outline-none"
             />
             <button
@@ -254,7 +378,7 @@ export default function StreamConfig() {
             </button>
           </div>
           <p className="text-gray-400 text-sm mt-1">
-            {currentSettings?.settings?.key
+            {streamSettings?.settings?.key
               ? 'Current key is set. Enter a new key to update it.'
               : 'Enter your stream key from your streaming platform'
             }
@@ -262,14 +386,14 @@ export default function StreamConfig() {
         </div>
 
         {/* Current Masked Key Display */}
-        {currentSettings?.settings?.key && (
+        {streamSettings?.settings?.key && (
           <div className="bg-gray-800 rounded-lg p-4 border border-gray-600">
             <div className="flex items-center gap-2 mb-2">
               <InformationCircleIcon className="w-5 h-5 text-blue-400" />
               <span className="text-white font-medium text-sm">Current Stream Key</span>
             </div>
             <code className="text-gray-300 text-sm font-mono">
-              {currentSettings.settings.key}
+              {streamSettings.settings.key}
             </code>
           </div>
         )}
@@ -278,32 +402,35 @@ export default function StreamConfig() {
         <div className="flex justify-end pt-4">
           <button
             onClick={handleSave}
-            disabled={saving || loading}
+            disabled={saving || loading || isStreaming}
             className="flex items-center gap-2 px-6 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:text-gray-500 text-white font-medium rounded-lg transition-colors"
           >
             {saving && <ArrowPathIcon className="w-5 h-5 animate-spin" />}
             {saving ? 'Saving...' : 'Save Settings'}
           </button>
         </div>
+        {isStreaming && (
+          <p className="text-yellow-400 text-sm text-right">Stop streaming to change settings</p>
+        )}
       </div>
 
-      {/* Output Settings Display (Read-only) */}
-      {outputSettings && (
+      {/* Stream Status Display */}
+      {(streamStatus || streamSettings) && (
         <div className="bg-gray-700 rounded-lg p-6 space-y-4">
           <div className="flex items-center gap-2 mb-4">
             <InformationCircleIcon className="w-6 h-6 text-blue-400" />
-            <h4 className="text-white font-semibold text-lg">Output Settings</h4>
+            <h4 className="text-white font-semibold text-lg">Stream Info</h4>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* Stream Status */}
             <div className="bg-gray-800 rounded-lg p-4">
               <div className="text-gray-400 text-sm mb-1">Status</div>
               <div className="text-white font-medium flex items-center gap-2">
-                {outputSettings.active ? (
+                {isStreaming ? (
                   <>
                     <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
-                    <span className="text-red-400">Streaming</span>
+                    <span className="text-red-400">LIVE</span>
                   </>
                 ) : (
                   <>
@@ -314,54 +441,45 @@ export default function StreamConfig() {
               </div>
             </div>
 
-            {/* Output Resolution */}
-            {outputSettings.outputWidth && outputSettings.outputHeight && (
-              <div className="bg-gray-800 rounded-lg p-4">
-                <div className="text-gray-400 text-sm mb-1">Output Resolution</div>
-                <div className="text-white font-medium">
-                  {outputSettings.outputWidth} x {outputSettings.outputHeight}
-                </div>
-              </div>
-            )}
-
-            {/* Output FPS */}
-            {outputSettings.fps && (
-              <div className="bg-gray-800 rounded-lg p-4">
-                <div className="text-gray-400 text-sm mb-1">FPS</div>
-                <div className="text-white font-medium">
-                  {outputSettings.fps} fps
-                </div>
-              </div>
-            )}
-
-            {/* Bitrate */}
-            {outputSettings.kbitsPerSec && (
-              <div className="bg-gray-800 rounded-lg p-4">
-                <div className="text-gray-400 text-sm mb-1">Bitrate</div>
-                <div className="text-white font-medium">
-                  {outputSettings.kbitsPerSec} kbps
-                </div>
-              </div>
-            )}
-
             {/* Stream Timecode */}
-            {outputSettings.active && outputSettings.timecode && (
+            {isStreaming && streamStatus?.timecode && (
               <div className="bg-gray-800 rounded-lg p-4">
                 <div className="text-gray-400 text-sm mb-1">Stream Duration</div>
                 <div className="text-white font-medium font-mono">
-                  {outputSettings.timecode}
+                  {streamStatus.timecode}
                 </div>
               </div>
             )}
 
             {/* Service Type */}
-            {currentSettings?.serviceType && (
+            {streamSettings?.serviceType && (
               <div className="bg-gray-800 rounded-lg p-4">
-                <div className="text-gray-400 text-sm mb-1">Service</div>
-                <div className="text-white font-medium capitalize">
-                  {currentSettings.serviceType === 'youtube' && 'YouTube Live'}
-                  {currentSettings.serviceType === 'twitch' && 'Twitch'}
-                  {currentSettings.serviceType === 'custom' && 'Custom RTMP'}
+                <div className="text-gray-400 text-sm mb-1">Service Type</div>
+                <div className="text-white font-medium">
+                  {streamSettings.serviceType === 'rtmp_common' && 'RTMP (YouTube/Twitch)'}
+                  {streamSettings.serviceType === 'rtmp_custom' && 'Custom RTMP'}
+                  {!['rtmp_common', 'rtmp_custom'].includes(streamSettings.serviceType) && streamSettings.serviceType}
+                </div>
+              </div>
+            )}
+
+            {/* Dropped Frames */}
+            {isStreaming && streamStatus?.skippedFrames !== undefined && (
+              <div className="bg-gray-800 rounded-lg p-4">
+                <div className="text-gray-400 text-sm mb-1">Dropped Frames</div>
+                <div className={`font-medium ${streamStatus.skippedFrames > 0 ? 'text-yellow-400' : 'text-green-400'}`}>
+                  {streamStatus.skippedFrames} / {streamStatus.totalFrames || 0}
+                </div>
+              </div>
+            )}
+
+            {/* Reconnecting Status */}
+            {streamStatus?.reconnecting && (
+              <div className="bg-gray-800 rounded-lg p-4">
+                <div className="text-gray-400 text-sm mb-1">Connection</div>
+                <div className="text-yellow-400 font-medium flex items-center gap-2">
+                  <ArrowPathIcon className="w-4 h-4 animate-spin" />
+                  Reconnecting...
                 </div>
               </div>
             )}
