@@ -28,6 +28,7 @@ export default function TemplateManager() {
   const [applying, setApplying] = useState(null);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [applyWarnings, setApplyWarnings] = useState([]); // Detailed errors/warnings from template apply
 
   // Modal states
   const [showApplyModal, setShowApplyModal] = useState(null);
@@ -94,6 +95,9 @@ export default function TemplateManager() {
       const inputsCreated = data.result?.inputsCreated || 0;
       const errors = data.result?.errors || [];
 
+      // Store warnings for detailed display
+      setApplyWarnings(errors);
+
       if (errors.length > 0) {
         setSuccess(`Template applied with warnings: ${scenesCreated} scenes, ${inputsCreated} inputs created. ${errors.length} items skipped.`);
       } else {
@@ -101,8 +105,11 @@ export default function TemplateManager() {
       }
       setShowApplyModal(null);
 
-      // Clear success message after 5 seconds
-      setTimeout(() => setSuccess(null), 5000);
+      // Clear success message after 8 seconds (longer to allow reading warnings)
+      setTimeout(() => {
+        setSuccess(null);
+        setApplyWarnings([]);
+      }, errors.length > 0 ? 10000 : 5000);
     } catch (err) {
       console.error('Error applying template:', err);
       setError(err.message);
@@ -252,18 +259,41 @@ export default function TemplateManager() {
 
       {/* Success Banner */}
       {success && (
-        <div className="bg-green-900/20 border border-green-700 rounded-lg p-4 flex items-start gap-3">
-          <CheckCircleIcon className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <div className="text-green-300 font-semibold">Success</div>
-            <div className="text-green-200/80 text-sm">{success}</div>
+        <div className={`${applyWarnings.length > 0 ? 'bg-yellow-900/20 border-yellow-700' : 'bg-green-900/20 border-green-700'} border rounded-lg p-4`}>
+          <div className="flex items-start gap-3">
+            {applyWarnings.length > 0 ? (
+              <ExclamationTriangleIcon className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+            ) : (
+              <CheckCircleIcon className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+            )}
+            <div className="flex-1">
+              <div className={`${applyWarnings.length > 0 ? 'text-yellow-300' : 'text-green-300'} font-semibold`}>
+                {applyWarnings.length > 0 ? 'Applied with Warnings' : 'Success'}
+              </div>
+              <div className={`${applyWarnings.length > 0 ? 'text-yellow-200/80' : 'text-green-200/80'} text-sm`}>{success}</div>
+            </div>
+            <button
+              onClick={() => { setSuccess(null); setApplyWarnings([]); }}
+              className={`${applyWarnings.length > 0 ? 'text-yellow-300 hover:text-yellow-100' : 'text-green-300 hover:text-green-100'}`}
+            >
+              <XMarkIcon className="w-5 h-5" />
+            </button>
           </div>
-          <button
-            onClick={() => setSuccess(null)}
-            className="text-green-300 hover:text-green-100"
-          >
-            <XMarkIcon className="w-5 h-5" />
-          </button>
+
+          {/* Detailed warnings list */}
+          {applyWarnings.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-yellow-700/50">
+              <div className="text-yellow-300 text-xs font-medium mb-2">Skipped Items:</div>
+              <div className="space-y-1 max-h-32 overflow-y-auto">
+                {applyWarnings.map((warning, idx) => (
+                  <div key={idx} className="text-yellow-200/70 text-xs flex items-start gap-2">
+                    <span className="text-yellow-500">•</span>
+                    <span>{typeof warning === 'string' ? warning : (warning.message || warning.error || JSON.stringify(warning))}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
