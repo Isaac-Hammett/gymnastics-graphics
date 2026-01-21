@@ -476,19 +476,45 @@ function TemplateCard({ template, onApply, onDelete, isApplying, isDeleting }) {
 }
 
 /**
+ * Get human-friendly source type name from OBS inputKind
+ */
+function getSourceTypeName(inputKind) {
+  const typeMap = {
+    'ffmpeg_source': 'Media Source',
+    'browser_source': 'Browser Source',
+    'image_source': 'Image',
+    'color_source': 'Color Source',
+    'text_gdiplus': 'Text (GDI+)',
+    'text_ft2_source': 'Text (FreeType 2)',
+    'dshow_input': 'Video Capture Device',
+    'wasapi_input_capture': 'Audio Input Capture',
+    'wasapi_output_capture': 'Audio Output Capture',
+    'monitor_capture': 'Display Capture',
+    'window_capture': 'Window Capture',
+    'game_capture': 'Game Capture',
+    'ndi_source': 'NDI Source',
+    'vlc_source': 'VLC Video Source'
+  };
+  return typeMap[inputKind] || inputKind || 'Source';
+}
+
+/**
  * ApplyTemplateModal - Confirmation dialog for applying templates
  */
 function ApplyTemplateModal({ template, onConfirm, onCancel, isApplying }) {
+  const scenes = template.scenes || [];
+  const inputs = template.inputs || [];
+
   return (
     <div
       className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
       onClick={onCancel}
     >
       <div
-        className="bg-gray-800 rounded-lg max-w-lg w-full"
+        className="bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-6">
+        <div className="p-6 overflow-y-auto">
           <div className="flex items-start gap-4 mb-4">
             <div className="w-10 h-10 rounded-full bg-purple-900/20 flex items-center justify-center flex-shrink-0">
               <InformationCircleIcon className="w-6 h-6 text-purple-400" />
@@ -496,22 +522,55 @@ function ApplyTemplateModal({ template, onConfirm, onCancel, isApplying }) {
             <div className="flex-1">
               <h3 className="text-white font-semibold text-lg mb-2">Apply Template</h3>
               <p className="text-gray-400 text-sm mb-4">
-                Are you sure you want to apply the template <span className="text-white font-medium">"{template.name}"</span>?
+                Apply <span className="text-white font-medium">"{template.name}"</span> to create scenes and sources in OBS.
               </p>
 
-              {/* Template Details */}
-              <div className="bg-gray-900 rounded-lg p-4 space-y-2 mb-4">
-                <div className="text-gray-300 text-sm">
-                  <span className="text-gray-500">Scenes:</span> {template.scenes?.length || template.scenesCount || 0}
+              {/* Template Preview */}
+              <div className="bg-gray-900 rounded-lg p-4 mb-4">
+                <div className="text-gray-300 text-sm font-medium mb-3">This will create:</div>
+
+                {/* Scenes List */}
+                <div className="mb-4">
+                  <div className="text-gray-400 text-xs font-medium uppercase tracking-wider mb-2">
+                    Scenes ({scenes.length})
+                  </div>
+                  <div className="space-y-1 max-h-40 overflow-y-auto">
+                    {scenes.map((scene, idx) => (
+                      <div key={idx} className="flex items-center gap-2 text-gray-300 text-sm">
+                        <span className="text-purple-400">•</span>
+                        <span>{scene.sceneName || scene}</span>
+                        {scene.items && scene.items.length > 0 && (
+                          <span className="text-gray-500 text-xs">({scene.items.length} items)</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                {template.requirements?.cameras && (
-                  <div className="text-gray-300 text-sm">
-                    <span className="text-gray-500">Cameras:</span> {template.requirements.cameras.length}
+
+                {/* Inputs List */}
+                {inputs.length > 0 && (
+                  <div>
+                    <div className="text-gray-400 text-xs font-medium uppercase tracking-wider mb-2">
+                      Inputs ({inputs.length})
+                    </div>
+                    <div className="space-y-1 max-h-32 overflow-y-auto">
+                      {inputs.map((input, idx) => (
+                        <div key={idx} className="flex items-center gap-2 text-gray-300 text-sm">
+                          <span className="text-blue-400">•</span>
+                          <span>{input.inputName}</span>
+                          <span className="text-gray-500 text-xs">({getSourceTypeName(input.inputKind)})</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
-                {template.requirements?.assets && template.requirements.assets.length > 0 && (
-                  <div className="text-gray-300 text-sm">
-                    <span className="text-gray-500">Assets:</span> {template.requirements.assets.join(', ')}
+
+                {/* Transitions */}
+                {template.transitions && (
+                  <div className="mt-3 pt-3 border-t border-gray-700">
+                    <div className="text-gray-400 text-xs">
+                      Transition: {template.transitions.currentTransitionName || 'Fade'} ({template.transitions.currentTransitionDuration || 300}ms)
+                    </div>
                   </div>
                 )}
               </div>
@@ -519,7 +578,7 @@ function ApplyTemplateModal({ template, onConfirm, onCancel, isApplying }) {
               <div className="bg-yellow-900/20 border border-yellow-700 rounded-lg p-3 flex items-start gap-2">
                 <ExclamationTriangleIcon className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
                 <div className="text-yellow-200 text-sm">
-                  This will create new scenes in OBS based on this template. Existing scenes will not be affected.
+                  Existing scenes with the same names will be skipped. Your current OBS setup will not be affected.
                 </div>
               </div>
             </div>

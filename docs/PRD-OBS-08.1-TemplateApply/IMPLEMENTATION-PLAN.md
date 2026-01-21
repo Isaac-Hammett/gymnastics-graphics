@@ -33,7 +33,7 @@
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 13 | Add template preview to ApplyTemplateModal | NOT STARTED | List scenes/inputs to be created |
+| 13 | Add template preview to ApplyTemplateModal | COMPLETE | Shows scenes list with item counts, inputs with source types |
 | 14 | Create template migration script | NOT STARTED | For updating legacy templates |
 
 ---
@@ -372,6 +372,18 @@ const result = await templateManager.applyTemplate(id, {
   - Supports error objects with `message`, `error`, or string format
   - **VERIFIED via Playwright**: Screenshot shows detailed warning list with all 12 skipped items
   - Screenshot: `screenshots/task12-detailed-errors-verified.png`
+
+- **Task 13 COMPLETE: Add template preview to ApplyTemplateModal**
+  - Enhanced ApplyTemplateModal to show detailed preview of what will be created
+  - Added scrollable scenes list showing scene names and item counts (e.g., "Full Screen - Camera A (5 items)")
+  - Added scrollable inputs list showing input names and human-friendly source types
+  - Created `getSourceTypeName()` helper to map OBS inputKind to readable names (e.g., "ffmpeg_source" → "Media Source")
+  - Shows transition settings if defined in template
+  - Updated warning text to clarify existing scenes are skipped, not affected
+  - Increased modal width to max-w-2xl to accommodate preview content
+  - Added max-height with overflow for long lists
+  - **VERIFIED via Playwright**: Modal shows 9 scenes with item counts, 12 inputs with source types, and transition info
+  - Screenshot: `screenshots/task13-template-preview-verified.png`
 
 ---
 
