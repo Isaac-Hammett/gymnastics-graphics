@@ -27,7 +27,7 @@
 |---|------|--------|-------|
 | 10 | Improve API error response with errorCode | COMPLETE | Added errorCode mapping and message field |
 | 11 | Add validation tests to obsTemplateManager.test.js | COMPLETE | 7 validation tests for legacy format rejection |
-| 12 | Show detailed errors in frontend | NOT STARTED | Display `result.errors` |
+| 12 | Show detailed errors in frontend | COMPLETE | Display `result.errors` in yellow warning banner with bullet list |
 
 ### P2 - Template Management Improvements
 
@@ -363,6 +363,15 @@ const result = await templateManager.applyTemplate(id, {
     7. `should provide helpful error message for legacy templates` - Verifies error message includes actionable guidance
   - Fixed 2 pre-existing tests that had empty scenes arrays (now invalid due to validation)
   - All 61 tests pass
+
+- **Task 12 COMPLETE: Show detailed errors in frontend**
+  - Added `applyWarnings` state to store error details from API response
+  - Modified success banner to display yellow "Applied with Warnings" style when errors exist
+  - Added scrollable "Skipped Items" section that lists all errors with bullet points
+  - Increased timeout to 10 seconds when warnings are present (vs 5 seconds for success)
+  - Supports error objects with `message`, `error`, or string format
+  - **VERIFIED via Playwright**: Screenshot shows detailed warning list with all 12 skipped items
+  - Screenshot: `screenshots/task12-detailed-errors-verified.png`
 
 ---
 
