@@ -349,6 +349,8 @@ const result = await templateManager.applyTemplate(id, {
     - Includes count of scenes, inputs, and transitions created
     - Shows warning count when items were skipped
     - Clear message when no changes needed (template already applied)
+  - **VERIFIED via Playwright**: Success message now shows "Template applied with warnings: 9 scenes, 0 inputs created. 12 items skipped."
+  - Commit: 3da4ef2
 
 ---
 
