@@ -198,6 +198,7 @@ This creates empty scenes that users can then populate with sources.
 - Identified root causes via Playwright testing and coordinator log analysis
 - Task 1: Verified already complete (response handling fixed in previous session)
 - Task 2: Fixed ApplyTemplateModal scene count to use `template.scenes?.length`
+- Deployed to production and verified via Playwright: Modal shows "Scenes: 9" correctly
 
 ---
 
@@ -212,4 +213,4 @@ This creates empty scenes that users can then populate with sources.
 
 | Commit | Description |
 |--------|-------------|
-| - | - |
+| 164d165 | PRD-OBS-08.1: Fix ApplyTemplateModal scene count display |
