@@ -223,6 +223,9 @@ This creates empty scenes that users can then populate with sources.
   - Root cause: HTTP routes used global `obs` variable instead of per-competition connection
   - Fix: Modified `server/routes/obs.js` to import `getOBSConnectionManager` and use `obsConnManager.getConnection(compId)` for template apply route
   - Deployed to coordinator via `git pull && pm2 restart coordinator`
+  - **VERIFIED via coordinator logs:** "Socket not identified" error no longer appears
+  - Logs show: `Template applied: 0 scenes, 0 inputs` (scenes already exist in OBS, so correctly skipped)
+  - Note: Playwright browser was locked during verification; used coordinator log analysis instead
 
 ---
 
