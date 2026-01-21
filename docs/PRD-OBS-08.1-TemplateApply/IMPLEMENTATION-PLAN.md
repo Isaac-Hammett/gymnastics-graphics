@@ -225,12 +225,44 @@ This creates empty scenes that users can then populate with sources.
 ## Known Issues (Blocking Full Functionality)
 
 ### Socket Not Identified Error
-**Status:** NEW BUG - Not in scope of this PRD
+**Status:** NEW BUG - Root cause identified
 **Symptom:** When applying templates, scenes fail to create with "Socket not identified" error
-**Root Cause:** OBS WebSocket connection state issue - the connection appears connected but scene creation calls fail
 **Impact:** Templates pass validation but scenes cannot actually be created in OBS
 **Workaround:** None currently - users must manually create scenes
-**Recommended Next Steps:** Create PRD-OBS-08.2 to investigate and fix the OBS WebSocket session/auth issue
+
+#### Root Cause Analysis
+
+The coordinator has **two different OBS connection mechanisms**:
+
+1. **Global `obs` variable** (in `server/index.js:76`)
+   - Single OBSWebSocket instance: `const obs = new OBSWebSocket()`
+   - Connects to `OBS_WEBSOCKET_URL` (typically localhost or a fixed URL)
+   - Passed to `setupOBSRoutes(app, obs, ...)` for HTTP API routes
+
+2. **OBSConnectionManager** (in `server/lib/obsConnectionManager.js`)
+   - Creates **per-competition OBS connections** to different VMs
+   - Used by Socket.IO handlers via `obsConnManager.getConnection(clientCompId)`
+   - Connects to each competition VM's OBS at `ws://{vmIp}:4455`
+
+**The Bug:** The HTTP routes (`/api/obs/templates/:id/apply`) use the **global `obs`** which is NOT connected to the competition VM's OBS. The Socket.IO handlers correctly use `obsConnectionManager` to get the per-competition connection, but the HTTP routes don't.
+
+#### How Templates Are Applied (Current Implementation)
+
+Templates are applied by making **individual OBS WebSocket API calls** to add scenes to the existing collection:
+- `obs.call('CreateScene', { sceneName })` - Creates each scene one at a time
+- `obs.call('CreateInput', {...})` - Creates inputs
+- `obs.call('CreateSceneItem', {...})` - Adds items to scenes
+
+This is **NOT** importing a scene collection JSON file - it's programmatically adding scenes via the WebSocket API.
+
+#### Fix Required
+
+Modify `server/routes/obs.js` to use `obsConnectionManager.getConnection(compId)` instead of the global `obs` variable. This requires:
+1. Getting the competition ID from the request (already available in some routes)
+2. Looking up the per-competition OBS connection from `obsConnectionManager`
+3. Passing that connection to `OBSTemplateManager` instead of the global `obs`
+
+**Recommended Next Steps:** Create PRD-OBS-08.2 to fix the OBS connection routing in HTTP routes
 
 ---
 
