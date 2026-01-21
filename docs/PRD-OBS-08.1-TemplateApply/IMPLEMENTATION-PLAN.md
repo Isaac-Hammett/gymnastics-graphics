@@ -25,7 +25,7 @@
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 10 | Improve API error response with errorCode | NOT STARTED | routes/obs.js |
+| 10 | Improve API error response with errorCode | COMPLETE | Added errorCode mapping and message field |
 | 11 | Add validation tests to obsTemplateManager.test.js | NOT STARTED | Test legacy format rejection |
 | 12 | Show detailed errors in frontend | NOT STARTED | Display `result.errors` |
 
@@ -334,6 +334,21 @@ const result = await templateManager.applyTemplate(id, {
   - Verified via Playwright: "Template applied with warnings: 9 scenes, 0 inputs created. 12 items skipped."
     - 9 scenes processed (skipped as they already exist - idempotent behavior working)
     - Inputs skipped because OBS WebSocket API requires scene context for CreateInput
+
+- **Task 10 COMPLETE: Improved API error response with errorCode**
+  - Modified `server/routes/obs.js` template apply route (~line 1700-1750)
+  - Added `errorCode` field to all error responses with specific codes:
+    - `TEMPLATE_NOT_FOUND` (404) - Template doesn't exist
+    - `INVALID_TEMPLATE_FORMAT` (400) - Legacy string array format
+    - `INVALID_TEMPLATE_STRUCTURE` (400) - Missing/empty scenes array
+    - `INVALID_SCENE_FORMAT` (400) - Scene missing sceneName property
+    - `TEMPLATE_REQUIREMENTS_NOT_MET` (400) - Missing required cameras/config
+    - `OBS_CONNECTION_ERROR` (503) - Socket not identified or disconnected
+    - `TEMPLATE_APPLY_ERROR` (500) - Generic fallback
+  - Added `message` field to success responses with detailed summary:
+    - Includes count of scenes, inputs, and transitions created
+    - Shows warning count when items were skipped
+    - Clear message when no changes needed (template already applied)
 
 ---
 
