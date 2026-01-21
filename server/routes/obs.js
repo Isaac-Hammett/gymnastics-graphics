@@ -24,6 +24,7 @@ import { OBSStreamManager } from '../lib/obsStreamManager.js';
 import { OBSAssetManager } from '../lib/obsAssetManager.js';
 import { OBSTemplateManager } from '../lib/obsTemplateManager.js';
 import { TalentCommsManager } from '../lib/talentCommsManager.js';
+import { getOBSConnectionManager } from '../lib/obsConnectionManager.js';
 import configLoader from '../lib/configLoader.js';
 import productionConfigService from '../lib/productionConfigService.js';
 import multer from 'multer';
@@ -1686,7 +1687,17 @@ export function setupOBSRoutes(app, obs, obsStateSyncOrGetter) {
 
       console.log(`[OBS Routes] POST /api/obs/templates/${id}/apply - Applying template with context`);
 
-      const templateManager = new OBSTemplateManager(obs, obsStateSync, productionConfigService);
+      // Get per-competition OBS connection instead of global obs instance
+      const obsConnManager = getOBSConnectionManager();
+      const compObs = obsConnManager.getConnection(compId);
+
+      if (!compObs) {
+        return res.status(503).json({
+          error: 'OBS not connected for this competition. Please check the VM is running and OBS is connected.'
+        });
+      }
+
+      const templateManager = new OBSTemplateManager(compObs, obsStateSync, productionConfigService);
       const result = await templateManager.applyTemplate(id, context);
 
       res.json({

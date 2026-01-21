@@ -219,13 +219,17 @@ This creates empty scenes that users can then populate with sources.
     - Error in coordinator logs: `[OBSTemplateManager] Failed to apply scene X: Socket not identified`
     - This is a separate OBS WebSocket authentication issue, not related to template format
     - Should be tracked as a new issue (PRD-OBS-08.2 or similar)
+- **FIXED Socket Not Identified bug:**
+  - Root cause: HTTP routes used global `obs` variable instead of per-competition connection
+  - Fix: Modified `server/routes/obs.js` to import `getOBSConnectionManager` and use `obsConnManager.getConnection(compId)` for template apply route
+  - Deployed to coordinator via `git pull && pm2 restart coordinator`
 
 ---
 
 ## Known Issues (Blocking Full Functionality)
 
 ### Socket Not Identified Error
-**Status:** NEW BUG - Root cause identified
+**Status:** FIXED - Deployed 2026-01-21
 **Symptom:** When applying templates, scenes fail to create with "Socket not identified" error
 **Impact:** Templates pass validation but scenes cannot actually be created in OBS
 **Workaround:** None currently - users must manually create scenes
@@ -262,7 +266,7 @@ Modify `server/routes/obs.js` to use `obsConnectionManager.getConnection(compId)
 2. Looking up the per-competition OBS connection from `obsConnectionManager`
 3. Passing that connection to `OBSTemplateManager` instead of the global `obs`
 
-**Recommended Next Steps:** Create PRD-OBS-08.2 to fix the OBS connection routing in HTTP routes
+**Fix Applied:** Modified `server/routes/obs.js` to use `obsConnectionManager.getConnection(compId)` instead of the global `obs` variable in the template apply route.
 
 ---
 
