@@ -1,13 +1,13 @@
 # OBS Integration Tool - PRD Index
 
-**Last Updated:** 2026-01-20
+**Last Updated:** 2026-01-21
 **Original PRD:** `PRD-OBSIntegrationTool-2026-01-16.md`
 
 ---
 
 ## Overview
 
-The comprehensive OBS Integration Tool PRD has been broken down into 10 smaller, focused PRDs. Each PRD is designed to be implemented and tested independently, with clear dependencies.
+The comprehensive OBS Integration Tool PRD has been broken down into 11 smaller, focused PRDs. Each PRD is designed to be implemented and tested independently, with clear dependencies.
 
 Each PRD now has its own folder with:
 - `PRD-OBS-XX-FeatureName.md` - Requirements and acceptance criteria
@@ -22,16 +22,18 @@ Each PRD now has its own folder with:
 
 | PRD | Title | Status | Priority | Effort |
 |-----|-------|--------|----------|--------|
-| [01](PRD-OBS-01-StateSync/) | State Sync Foundation | 🟢 COMPLETE | P0 | Small |
-| [02](PRD-OBS-02-SceneManagement/) | Scene Management | 🟢 Working | P1 | Verify |
-| [03](PRD-OBS-03-SourceManagement/) | Source Management | 🔴 **BROKEN** | P0 | Medium |
-| [04](PRD-OBS-04-AudioManagement/) | Audio Management | 🟢 Working | P1 | Verify |
-| [05](PRD-OBS-05-Transitions/) | Transitions | 🟡 UI Missing | P2 | Medium |
-| [06](PRD-OBS-06-StreamRecording/) | Stream & Recording | 🟢 Working | P1 | Verify |
-| [07](PRD-OBS-07-AssetManagement/) | Asset Management | 🟢 Working | P1 | Verify |
-| [08](PRD-OBS-08-Templates/) | Template System | 🟡 Delete Broken | P1 | Small |
-| [09](PRD-OBS-09-PreviewSystem/) | Preview System | 🔴 **BROKEN** | P1 | Medium |
-| [10](PRD-OBS-10-TalentComms/) | Talent Communications | 🟢 Working | P2 | Verified |
+| [01](PRD-OBS-01-StateSync/) | State Sync Foundation | 🟢 COMPLETE | P0 | Done |
+| [02](PRD-OBS-02-SceneManagement/) | Scene Management | 🟢 COMPLETE | P1 | Done |
+| [03](PRD-OBS-03-SourceManagement/) | Source Management | 🟢 COMPLETE | P0 | Done |
+| [04](PRD-OBS-04-AudioManagement/) | Audio Management | 🟢 COMPLETE | P1 | Done |
+| [05](PRD-OBS-05-Transitions/) | Transitions | 🟢 COMPLETE | P2 | Done |
+| [06](PRD-OBS-06-StreamRecording/) | Stream & Recording | 🟢 COMPLETE | P1 | Done |
+| [07](PRD-OBS-07-AssetManagement/) | Asset Management | 🟢 COMPLETE | P1 | Done |
+| [08](PRD-OBS-08-Templates/) | Template System | 🟢 COMPLETE | P1 | Done |
+| [08.1](PRD-OBS-08.1-TemplateApply/) | Template Apply Fix | 🔴 **BROKEN** | P0 | Medium |
+| [09](PRD-OBS-09-PreviewSystem/) | Preview System | 🟢 COMPLETE | P1 | Done |
+| [10](PRD-OBS-10-TalentComms/) | Talent Communications | 🟢 COMPLETE | P2 | Done |
+| [11](PRD-OBS-11-AdvancedFeatures/) | Advanced Features | 🟡 NOT STARTED | P2 | Large |
 
 ---
 
@@ -61,23 +63,23 @@ PRD-01: State Sync (FOUNDATION)
 
 ## Recommended Implementation Order
 
-### Phase A: Fix Foundation (Week 1)
-1. **PRD-01: State Sync** - Fix event naming, remove duplicates
-2. **PRD-03: Source Management** - Fix broken source editing (TEST-35/36)
+### Phase A: Core Features (COMPLETE ✅)
+1. **PRD-01: State Sync** - ✅ COMPLETE
+2. **PRD-02: Scene Management** - ✅ COMPLETE
+3. **PRD-03: Source Management** - ✅ COMPLETE
+4. **PRD-04: Audio Management** - ✅ COMPLETE
+5. **PRD-05: Transitions** - ✅ COMPLETE
+6. **PRD-06: Stream & Recording** - ✅ COMPLETE
+7. **PRD-07: Asset Management** - ✅ COMPLETE
+8. **PRD-08: Templates** - ✅ COMPLETE (delete works)
+9. **PRD-09: Preview System** - ✅ COMPLETE
+10. **PRD-10: Talent Comms** - ✅ COMPLETE
 
-### Phase B: Verify Working Features (Week 2)
-3. **PRD-02: Scene Management** - Verify after state sync fix
-4. **PRD-04: Audio Management** - Verify after state sync fix
-5. **PRD-06: Stream & Recording** - Verify functionality
-6. **PRD-07: Asset Management** - Already passing, quick verify
+### Phase B: Bug Fixes (IN PROGRESS)
+11. **PRD-08.1: Template Apply Fix** - 🔴 BROKEN - Templates don't create scenes
 
-### Phase C: Fix Broken Features (Week 3)
-7. **PRD-08: Templates** - Fix delete bug (TEST-47)
-8. **PRD-09: Preview System** - Fix broken preview (TEST-41/42)
-
-### Phase D: Complete Missing UI (Week 4)
-9. **PRD-05: Transitions** - Build TransitionPicker component
-10. **PRD-10: Talent Comms** - Test and verify VDO.Ninja flow
+### Phase C: Advanced Features (NOT STARTED)
+12. **PRD-11: Advanced Features** - Studio Mode, Scene Thumbnails, VU Meters, etc.
 
 ---
 
@@ -86,43 +88,42 @@ PRD-01: State Sync (FOUNDATION)
 ### Critical (Must Fix)
 | Issue | PRD | Test | Description |
 |-------|-----|------|-------------|
-| Event name mismatch | 01 | - | `sceneChanged` vs `obs:sceneChanged` |
-| Source editing broken | 03 | TEST-35, 36 | Browser/SRT source settings don't save |
-| Template delete broken | 08 | TEST-47 | Delete API not working |
-| Preview placeholder | 09 | TEST-41, 42 | UI shows hardcoded text |
+| Template Apply broken | 08.1 | - | Templates have wrong data structure, no scenes created |
 
 ### Medium (Should Fix)
 | Issue | PRD | Description |
 |-------|-----|-------------|
-| Duplicate socket handler | 01 | `obs:refreshState` appears twice |
-| No transitions UI | 05 | Shows "coming soon" placeholder |
+| Studio Mode | 11 | P0 feature in Advanced Features PRD |
+| Scene Thumbnails | 11 | P1 feature in Advanced Features PRD |
 
 ### Low (Nice to Have)
 | Issue | PRD | Description |
 |-------|-----|-------------|
-| Audio level meters | 04 | Real-time VU meters |
-| Screenshot auto-refresh | 09 | Periodic preview updates |
+| Audio level meters | 11 | Real-time VU meters (P2) |
+| Stinger transitions | 11 | Video file transitions (P2) |
+| Talent connection status | 11 | VDO.Ninja indicators (P3) |
+| Stream key encryption | 11 | Security hardening (P3) |
 
 ---
 
 ## Test Status Summary
 
 ### Passing Tests ✅
+- TEST-35: Browser source editing (fixed in PRD-03)
+- TEST-36: SRT/Media source editing (fixed in PRD-03)
+- TEST-41: Preview system (fixed in PRD-09)
 - TEST-43: Asset upload works (music file)
 - TEST-44: Asset delete works
 - TEST-45: Asset categories filter correctly
-- TEST-46: Template apply works
+- TEST-47: Template delete works (fixed in PRD-08)
 
 ### Failing Tests ❌
-- TEST-35: Browser source editing
-- TEST-36: SRT/Media source editing
-- TEST-41: Preview system
-- TEST-47: Template delete works
+- Template Apply: Shows success but creates 0 scenes (PRD-08.1)
 
 ### Skipped Tests ⏭️
-- TEST-42: Studio mode
-- Transition tests (placeholder)
-- Talent comms tests
+- TEST-42: Studio mode (PRD-11)
+- Live stream testing (requires valid stream key)
+- Stinger transitions (PRD-11)
 
 ---
 
@@ -135,31 +136,31 @@ PRD-01: State Sync (FOUNDATION)
 | `lib/obsConnectionManager.js` | 311 | Working |
 | `lib/obsSceneManager.js` | 219 | Working |
 | `lib/obsSceneGenerator.js` | 782 | Working |
-| `lib/obsSourceManager.js` | 596 | **Needs Fix** |
+| `lib/obsSourceManager.js` | 596 | Working |
 | `lib/obsAudioManager.js` | 486 | Working |
 | `lib/obsTransitionManager.js` | 172 | Working |
 | `lib/obsStreamManager.js` | 313 | Working |
 | `lib/obsAssetManager.js` | 504 | Working |
-| `lib/obsTemplateManager.js` | 652 | **Needs Fix** |
+| `lib/obsTemplateManager.js` | 652 | **Needs Fix (PRD-08.1)** |
 | `lib/talentCommsManager.js` | ~200 | Working |
-| `routes/obs.js` | 2,229 | Mostly Working |
+| `routes/obs.js` | 2,229 | Working |
 
 ### Frontend (show-controller/src/)
 | File | Status |
 |------|--------|
-| `context/OBSContext.jsx` | **Event names need fix** |
+| `context/OBSContext.jsx` | Working |
 | `pages/OBSManager.jsx` | Working |
 | `components/obs/SceneList.jsx` | Working |
 | `components/obs/SceneEditor.jsx` | Working |
-| `components/obs/SourceEditor.jsx` | **Needs Fix** |
+| `components/obs/SourceEditor.jsx` | Working |
 | `components/obs/AudioMixer.jsx` | Working |
 | `components/obs/AudioPresetManager.jsx` | Working |
 | `components/obs/StreamConfig.jsx` | Working |
 | `components/obs/AssetManager.jsx` | Working |
-| `components/obs/TemplateManager.jsx` | **Delete Broken** |
+| `components/obs/TemplateManager.jsx` | **Apply Broken (PRD-08.1)** |
 | `components/obs/TalentCommsPanel.jsx` | Working |
-| `components/obs/TransitionPicker.jsx` | **Missing** |
-| `components/obs/OBSCurrentOutput.jsx` | **Placeholder Only** |
+| `components/obs/TransitionPicker.jsx` | Working |
+| `components/obs/OBSCurrentOutput.jsx` | Working |
 
 ---
 

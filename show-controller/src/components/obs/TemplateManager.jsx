@@ -90,7 +90,15 @@ export default function TemplateManager() {
       }
 
       const data = await response.json();
-      setSuccess(`Template applied successfully: ${data.scenesCreated} scenes created`);
+      const scenesCreated = data.result?.scenesCreated || 0;
+      const inputsCreated = data.result?.inputsCreated || 0;
+      const errors = data.result?.errors || [];
+
+      if (errors.length > 0) {
+        setSuccess(`Template applied with warnings: ${scenesCreated} scenes, ${inputsCreated} inputs created. ${errors.length} items skipped.`);
+      } else {
+        setSuccess(`Template applied successfully: ${scenesCreated} scenes, ${inputsCreated} inputs created`);
+      }
       setShowApplyModal(null);
 
       // Clear success message after 5 seconds
@@ -464,7 +472,7 @@ function ApplyTemplateModal({ template, onConfirm, onCancel, isApplying }) {
               {/* Template Details */}
               <div className="bg-gray-900 rounded-lg p-4 space-y-2 mb-4">
                 <div className="text-gray-300 text-sm">
-                  <span className="text-gray-500">Scenes:</span> {template.scenesCount || 0}
+                  <span className="text-gray-500">Scenes:</span> {template.scenes?.length || template.scenesCount || 0}
                 </div>
                 {template.requirements?.cameras && (
                   <div className="text-gray-300 text-sm">
