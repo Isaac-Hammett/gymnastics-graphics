@@ -1,0 +1,1273 @@
+{
+  "id": "gymnastics-dual-v1",
+  "name": "Gymnastics Dual Meet",
+  "version": "2.0",
+  "description": "Standard dual meet setup with 2 cameras (A & B). Includes full screen, dual view, replay, and graphics-only scenes. Full source definitions with transforms.",
+  "meetTypes": [
+    "mens-dual",
+    "womens-dual"
+  ],
+  "createdAt": "2026-01-21T22:41:25.778Z",
+  "createdBy": "convertOBSTemplate.js",
+  "updatedAt": "2026-01-21T22:41:25.779Z",
+  "inputs": [
+    {
+      "inputName": "Background Loop",
+      "inputKind": "ffmpeg_source",
+      "inputSettings": {
+        "hw_decode": true,
+        "local_file": "/Users/juliacosmiano/Downloads/background simpson v2.m4v",
+        "looping": true,
+        "restart_on_activate": false
+      }
+    },
+    {
+      "inputName": "Camera A ",
+      "inputKind": "ffmpeg_source",
+      "inputSettings": {
+        "hw_decode": true,
+        "input_format": "mpegts",
+        "input": "{{cameras.cameraA.srtUrl}}",
+        "is_local_file": false,
+        "restart_on_activate": false
+      },
+      "volume": 0.13328729569911957
+    },
+    {
+      "inputName": "Camera B",
+      "inputKind": "ffmpeg_source",
+      "inputSettings": {
+        "hw_decode": true,
+        "input_format": "mpegts",
+        "input": "{{cameras.cameraB.srtUrl}}",
+        "is_local_file": false,
+        "clear_on_media_end": false,
+        "restart_on_activate": false
+      },
+      "muted": true
+    },
+    {
+      "inputName": "dual view overlay",
+      "inputKind": "browser_source",
+      "inputSettings": {
+        "url": "{{overlays.dualFrame}}",
+        "width": 1920,
+        "height": 1080
+      }
+    },
+    {
+      "inputName": "Music",
+      "inputKind": "ffmpeg_source",
+      "inputSettings": {
+        "hw_decode": true,
+        "local_file": "C:/Users/isaac/OneDrive/Desktop/Streaming/2025 Updated Templates/Master_assets/Dynamic Gaming Music  Phonk, EDM, D&B, Electronic  No Copyright Music for Streamers & Creators (1).mp3",
+        "looping": true,
+        "restart_on_activate": false
+      },
+      "volume": 0.11449405550956726
+    },
+    {
+      "inputName": "replay - cam 1",
+      "inputKind": "browser_source",
+      "inputSettings": {
+        "width": 1920,
+        "height": 1080,
+        "url": "{{replay.camera1Url}}",
+        "reroute_audio": true
+      },
+      "muted": true
+    },
+    {
+      "inputName": "replay - cam 2 ",
+      "inputKind": "browser_source",
+      "inputSettings": {
+        "url": "{{replay.camera2Url}}",
+        "width": 1920,
+        "height": 1080,
+        "reroute_audio": true
+      },
+      "muted": true
+    },
+    {
+      "inputName": "stream-starting-soon-locked-url",
+      "inputKind": "browser_source",
+      "inputSettings": {
+        "url": "{{overlays.streamStarting}}",
+        "width": 1920,
+        "height": 1080
+      }
+    },
+    {
+      "inputName": "Talent-1",
+      "inputKind": "browser_source",
+      "inputSettings": {
+        "url": "{{talentComms.talent1Url}}",
+        "width": 1920,
+        "height": 1080,
+        "reroute_audio": true
+      }
+    },
+    {
+      "inputName": "Talent-2",
+      "inputKind": "browser_source",
+      "inputSettings": {
+        "url": "{{talentComms.talent2Url}}",
+        "width": 1920,
+        "height": 1080,
+        "reroute_audio": true
+      }
+    },
+    {
+      "inputName": "thanks for watching",
+      "inputKind": "browser_source",
+      "inputSettings": {
+        "url": "{{overlays.streamEnding}}",
+        "width": 1920,
+        "height": 1080
+      }
+    },
+    {
+      "inputName": "Web Graphics Overlay",
+      "inputKind": "browser_source",
+      "inputSettings": {
+        "url": "{{graphicsOverlay.url}}",
+        "width": 1920,
+        "height": 1080,
+        "css": ""
+      }
+    }
+  ],
+  "scenes": [
+    {
+      "sceneName": "Stream Starting Soon",
+      "sceneIndex": 0,
+      "items": [
+        {
+          "sourceName": "Music",
+          "sceneItemId": 21,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 0,
+            "positionY": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        },
+        {
+          "sourceName": "Background Loop",
+          "sceneItemId": 18,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 0,
+            "positionY": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        },
+        {
+          "sourceName": "stream-starting-soon-locked-url",
+          "sceneItemId": 22,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 0,
+            "positionY": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        }
+      ]
+    },
+    {
+      "sceneName": "Full Screen - Camera A",
+      "sceneIndex": 1,
+      "items": [
+        {
+          "sourceName": "Talent-1",
+          "sceneItemId": 26,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 0,
+            "positionY": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        },
+        {
+          "sourceName": "Talent-2",
+          "sceneItemId": 25,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 0,
+            "positionY": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        },
+        {
+          "sourceName": "Background Loop",
+          "sceneItemId": 27,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 0,
+            "positionY": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        },
+        {
+          "sourceName": "Camera A ",
+          "sceneItemId": 20,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 0,
+            "positionY": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        },
+        {
+          "sourceName": "Web Graphics Overlay",
+          "sceneItemId": 18,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 0,
+            "positionY": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        }
+      ]
+    },
+    {
+      "sceneName": "Full Screen - Camera B",
+      "sceneIndex": 2,
+      "items": [
+        {
+          "sourceName": "Talent-1",
+          "sceneItemId": 14,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 0,
+            "positionY": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        },
+        {
+          "sourceName": "Talent-2",
+          "sceneItemId": 15,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 0,
+            "positionY": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        },
+        {
+          "sourceName": "Background Loop",
+          "sceneItemId": 16,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 0,
+            "positionY": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        },
+        {
+          "sourceName": "Camera A ",
+          "sceneItemId": 12,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 0,
+            "positionY": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        },
+        {
+          "sourceName": "Camera B",
+          "sceneItemId": 10,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 0,
+            "positionY": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "boundsType": "OBS_BOUNDS_STRETCH",
+            "boundsWidth": 1920,
+            "boundsHeight": 1080,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        },
+        {
+          "sourceName": "Web Graphics Overlay",
+          "sceneItemId": 13,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 0,
+            "positionY": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        }
+      ]
+    },
+    {
+      "sceneName": "Dual View - Camera A - Left",
+      "sceneIndex": 3,
+      "items": [
+        {
+          "sourceName": "Talent-1",
+          "sceneItemId": 14,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 0,
+            "positionY": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        },
+        {
+          "sourceName": "Talent-2",
+          "sceneItemId": 15,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 0,
+            "positionY": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        },
+        {
+          "sourceName": "Background Loop",
+          "sceneItemId": 1,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 0,
+            "positionY": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        },
+        {
+          "sourceName": "Camera B",
+          "sceneItemId": 3,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 960,
+            "positionY": 322,
+            "rotation": 0,
+            "scaleX": 0.47864583134651184,
+            "scaleY": 0.47870370745658875,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 21,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        },
+        {
+          "sourceName": "Camera A ",
+          "sceneItemId": 2,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 40,
+            "positionY": 322,
+            "rotation": 0,
+            "scaleX": 0.47864583134651184,
+            "scaleY": 0.47870370745658875,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 21,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        },
+        {
+          "sourceName": "dual view overlay",
+          "sceneItemId": 10,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 0,
+            "positionY": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        },
+        {
+          "sourceName": "Web Graphics Overlay",
+          "sceneItemId": 13,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 0,
+            "positionY": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        }
+      ]
+    },
+    {
+      "sceneName": "Dual View - Camera A - Right",
+      "sceneIndex": 4,
+      "items": [
+        {
+          "sourceName": "Talent-1",
+          "sceneItemId": 11,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 0,
+            "positionY": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        },
+        {
+          "sourceName": "Talent-2",
+          "sceneItemId": 12,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 0,
+            "positionY": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        },
+        {
+          "sourceName": "Background Loop",
+          "sceneItemId": 1,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 0,
+            "positionY": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        },
+        {
+          "sourceName": "Camera B",
+          "sceneItemId": 5,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 40,
+            "positionY": 322,
+            "rotation": 0,
+            "scaleX": 0.47864583134651184,
+            "scaleY": 0.47870370745658875,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 21,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        },
+        {
+          "sourceName": "Camera A ",
+          "sceneItemId": 6,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 960,
+            "positionY": 322,
+            "rotation": 0,
+            "scaleX": 0.47864583134651184,
+            "scaleY": 0.47870370745658875,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 21,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        },
+        {
+          "sourceName": "dual view overlay",
+          "sceneItemId": 9,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 0,
+            "positionY": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        },
+        {
+          "sourceName": "Web Graphics Overlay",
+          "sceneItemId": 10,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 0,
+            "positionY": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        }
+      ]
+    },
+    {
+      "sceneName": "Web-graphics-only-no-video",
+      "sceneIndex": 5,
+      "items": [
+        {
+          "sourceName": "Talent-1",
+          "sceneItemId": 7,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 0,
+            "positionY": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        },
+        {
+          "sourceName": "Talent-2",
+          "sceneItemId": 8,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 0,
+            "positionY": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        },
+        {
+          "sourceName": "Music",
+          "sceneItemId": 1,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 0,
+            "positionY": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        },
+        {
+          "sourceName": "Background Loop",
+          "sceneItemId": 2,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 0,
+            "positionY": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        },
+        {
+          "sourceName": "Web Graphics Overlay",
+          "sceneItemId": 6,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 0,
+            "positionY": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        }
+      ]
+    },
+    {
+      "sceneName": "Replay - Camera A",
+      "sceneIndex": 6,
+      "items": [
+        {
+          "sourceName": "Talent-1",
+          "sceneItemId": 1,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 0,
+            "positionY": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        },
+        {
+          "sourceName": "Talent-2",
+          "sceneItemId": 2,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 0,
+            "positionY": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        },
+        {
+          "sourceName": "Camera B",
+          "sceneItemId": 4,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 40,
+            "positionY": 322,
+            "rotation": 0,
+            "scaleX": 0.47864583134651184,
+            "scaleY": 0.47870370745658875,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 21,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        },
+        {
+          "sourceName": "Camera A ",
+          "sceneItemId": 5,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 960,
+            "positionY": 322,
+            "rotation": 0,
+            "scaleX": 0.47864583134651184,
+            "scaleY": 0.47870370745658875,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 21,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        },
+        {
+          "sourceName": "Background Loop",
+          "sceneItemId": 3,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 0,
+            "positionY": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        },
+        {
+          "sourceName": "replay - cam 1",
+          "sceneItemId": 8,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 0,
+            "positionY": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        }
+      ]
+    },
+    {
+      "sceneName": "Replay - Camera B",
+      "sceneIndex": 7,
+      "items": [
+        {
+          "sourceName": "Talent-1",
+          "sceneItemId": 1,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 0,
+            "positionY": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        },
+        {
+          "sourceName": "Talent-2",
+          "sceneItemId": 2,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 0,
+            "positionY": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        },
+        {
+          "sourceName": "Camera B",
+          "sceneItemId": 3,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 40,
+            "positionY": 322,
+            "rotation": 0,
+            "scaleX": 0.47864583134651184,
+            "scaleY": 0.47870370745658875,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 21,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        },
+        {
+          "sourceName": "Camera A ",
+          "sceneItemId": 4,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 960,
+            "positionY": 322,
+            "rotation": 0,
+            "scaleX": 0.47864583134651184,
+            "scaleY": 0.47870370745658875,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 21,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        },
+        {
+          "sourceName": "Background Loop",
+          "sceneItemId": 5,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 0,
+            "positionY": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        },
+        {
+          "sourceName": "replay - cam 2 ",
+          "sceneItemId": 6,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 0,
+            "positionY": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        }
+      ]
+    },
+    {
+      "sceneName": "End Stream",
+      "sceneIndex": 8,
+      "items": [
+        {
+          "sourceName": "Music",
+          "sceneItemId": 24,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 0,
+            "positionY": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        },
+        {
+          "sourceName": "Background Loop",
+          "sceneItemId": 20,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 0,
+            "positionY": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        },
+        {
+          "sourceName": "thanks for watching",
+          "sceneItemId": 25,
+          "sceneItemEnabled": true,
+          "sceneItemLocked": false,
+          "sceneItemTransform": {
+            "positionX": 0,
+            "positionY": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "cropLeft": 0,
+            "cropRight": 0,
+            "cropTop": 0,
+            "cropBottom": 0,
+            "boundsType": "OBS_BOUNDS_NONE",
+            "boundsWidth": 0,
+            "boundsHeight": 0,
+            "boundsAlignment": 0,
+            "alignment": 5
+          }
+        }
+      ]
+    }
+  ],
+  "transitions": {
+    "currentTransitionName": "final stinger",
+    "currentTransitionDuration": 950
+  },
+  "requirements": {
+    "cameras": [
+      "cameraA",
+      "cameraB"
+    ],
+    "browserSources": [
+      "dual view overlay",
+      "replay - cam 1",
+      "replay - cam 2 ",
+      "stream-starting-soon-locked-url",
+      "Talent-1",
+      "Talent-2",
+      "thanks for watching",
+      "Web Graphics Overlay"
+    ],
+    "mediaSources": []
+  }
+}
