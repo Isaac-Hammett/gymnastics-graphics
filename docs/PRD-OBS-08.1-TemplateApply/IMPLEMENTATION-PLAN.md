@@ -203,6 +203,8 @@ This creates empty scenes that users can then populate with sources.
   - Validates scenes array exists and is not empty
   - Rejects legacy string array format with clear error message
   - Validates scenes have required `sceneName` property
+  - Deployed to coordinator and verified via Playwright
+  - Error message displays correctly: "Template uses legacy format (scene names only). Please delete this template and re-save from a configured OBS instance."
 
 ---
 
@@ -218,3 +220,4 @@ This creates empty scenes that users can then populate with sources.
 | Commit | Description |
 |--------|-------------|
 | 164d165 | PRD-OBS-08.1: Fix ApplyTemplateModal scene count display |
+| 050069c | PRD-OBS-08.1: Add template format validation |
