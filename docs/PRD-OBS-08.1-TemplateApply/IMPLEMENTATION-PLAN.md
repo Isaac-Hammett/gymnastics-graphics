@@ -13,7 +13,7 @@
 |---|------|--------|-------|
 | 1 | Fix frontend response handling in TemplateManager.jsx | COMPLETE | Already fixed in previous session |
 | 2 | Fix ApplyTemplateModal scene count display | COMPLETE | Shows `template.scenes?.length` |
-| 3 | Add template format validation in obsTemplateManager.js | NOT STARTED | Reject legacy string arrays |
+| 3 | Add template format validation in obsTemplateManager.js | COMPLETE | Reject legacy string arrays |
 | 4 | Migrate `gymnastics-dual-v1` template to proper format | NOT STARTED | Full scene/input configs |
 | 5 | Migrate `gymnastics-quad-v1` template to proper format | NOT STARTED | Full scene/input configs |
 
@@ -199,6 +199,10 @@ This creates empty scenes that users can then populate with sources.
 - Task 1: Verified already complete (response handling fixed in previous session)
 - Task 2: Fixed ApplyTemplateModal scene count to use `template.scenes?.length`
 - Deployed to production and verified via Playwright: Modal shows "Scenes: 9" correctly
+- Task 3: Added template format validation in `obsTemplateManager.applyTemplate()`:
+  - Validates scenes array exists and is not empty
+  - Rejects legacy string array format with clear error message
+  - Validates scenes have required `sceneName` property
 
 ---
 

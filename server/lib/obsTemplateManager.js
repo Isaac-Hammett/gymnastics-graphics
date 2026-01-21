@@ -191,6 +191,28 @@ export class OBSTemplateManager {
         throw new Error(`Template not found: ${templateId}`);
       }
 
+      // Validate template has proper structure
+      if (!template.scenes || !Array.isArray(template.scenes)) {
+        throw new Error('Template has no scenes defined');
+      }
+
+      if (template.scenes.length === 0) {
+        throw new Error('Template has empty scenes array');
+      }
+
+      // Check if scenes are objects (proper format) or strings (legacy format)
+      const firstScene = template.scenes[0];
+      if (typeof firstScene === 'string') {
+        throw new Error(
+          'Template uses legacy format (scene names only). ' +
+          'Please delete this template and re-save from a configured OBS instance.'
+        );
+      }
+
+      if (!firstScene.sceneName) {
+        throw new Error('Template scenes missing required sceneName property');
+      }
+
       // Validate requirements
       const validationResult = await this.validateRequirements(template);
       if (!validationResult.valid) {
