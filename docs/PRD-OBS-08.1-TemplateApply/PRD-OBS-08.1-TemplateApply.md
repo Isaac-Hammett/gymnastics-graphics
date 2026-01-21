@@ -431,27 +431,97 @@ describe('applyTemplate validation', () => {
 
 ## Acceptance Criteria
 
-- [ ] Clicking "Apply" on a properly-formatted template creates scenes in OBS
-- [ ] Success message shows correct scene count (not "undefined")
-- [ ] Legacy templates show clear error message explaining the issue
-- [ ] Template modal shows preview of what will be created
-- [ ] Save Template captures full scene/input configuration
-- [ ] Pre-seeded templates updated with proper format
-- [ ] All existing template tests still pass
-- [ ] New validation tests pass
+### Phase 1 (COMPLETE)
+- [x] Clicking "Apply" on a properly-formatted template creates scenes in OBS
+- [x] Success message shows correct scene count (not "undefined")
+- [x] Legacy templates show clear error message explaining the issue
+- [x] Template modal shows preview of what will be created
+- [x] Save Template captures full scene/input configuration
+- [x] Pre-seeded templates updated with proper format
+- [x] All existing template tests still pass
+- [x] New validation tests pass
+
+### Phase 2 (IN PROGRESS)
+- [ ] **Inputs are created** with proper settings (cameras, overlays, talent audio)
+- [ ] **Scene items are positioned correctly** (transforms applied: position, scale, crop)
+- [ ] **Talent comms URLs are resolved** from competition config
+- [ ] **Volume and mute states** are applied to audio sources
+- [ ] Applied template matches the raw OBS JSON template exactly
+
+---
+
+## Phase 2: Complete Template Apply Implementation
+
+### Problem Statement
+
+The Firebase template contains complete data (12 inputs, 48 scene items with transforms), but `applyTemplate()` doesn't actually create them:
+
+1. **`_applyInput()` passes `sceneName: null`** - OBS rejects this
+2. **`_applyScene()` never applies transforms** - positions/scale are ignored
+3. **Context not populated server-side** - `{{talentComms.talent1Url}}` never resolved
+4. **Audio settings not applied** - volume/muted state ignored
+
+### Required Changes
+
+#### Issue #1: Fix Input Creation
+
+**Current (broken):**
+```javascript
+await this.obs.call('CreateInput', {
+  sceneName: null,  // OBS REJECTS THIS
+  inputName: input.inputName,
+  ...
+});
+```
+
+**Fix:** Create inputs within scene context when processing scene items.
+
+#### Issue #2: Apply Transforms
+
+**Missing:** After creating scene items, must call `SetSceneItemTransform`:
+```javascript
+await this.obs.call('SetSceneItemTransform', {
+  sceneName: scene.sceneName,
+  sceneItemId: sceneItemId,
+  sceneItemTransform: item.sceneItemTransform
+});
+```
+
+#### Issue #3: Auto-Populate Context
+
+**Current:** Route passes empty context from request body
+**Fix:** Server fetches from Firebase:
+- `cameras` from show config
+- `talentComms` from `competitions/{compId}/config/talentComms`
+- `graphicsOverlay` from show config
+- `overlays` URLs based on competition ID
+- `replay` URLs from show config
+- `assets` paths from show config
+
+#### Issue #4: Apply Audio Settings
+
+**Missing:** Apply volume and mute state after input creation:
+```javascript
+await this.obs.call('SetInputVolume', { inputName, inputVolumeDb: volume });
+await this.obs.call('SetInputMute', { inputName, inputMuted: muted });
+```
 
 ---
 
 ## Implementation Order
 
-1. **P0 Fix #1:** Fix frontend response handling (5 min)
-2. **P0 Fix #2:** Add template format validation with clear error (15 min)
-3. **P0 Fix #3:** Update pre-seeded templates in Firebase (30 min)
-4. **P1:** Improve error reporting in API (15 min)
-5. **P2:** Add template preview to modal (30 min)
-6. **Testing:** Manual + automated tests (30 min)
+### Phase 1 (COMPLETE)
+1. **P0 Fix #1:** Fix frontend response handling
+2. **P0 Fix #2:** Add template format validation with clear error
+3. **P0 Fix #3:** Update pre-seeded templates in Firebase
+4. **P1:** Improve error reporting in API
+5. **P2:** Add template preview to modal
 
-**Total Estimated Effort:** 2-3 hours
+### Phase 2 (IN PROGRESS)
+1. **Task 15:** Fix `_applyInput()` to create inputs with valid scene context
+2. **Task 16:** Fix `_applyScene()` to apply transforms after creating items
+3. **Task 17:** Auto-populate context server-side from competition config
+4. **Task 18:** Apply input settings (volume, muted state)
 
 ---
 

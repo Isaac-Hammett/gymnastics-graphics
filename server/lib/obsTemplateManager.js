@@ -226,32 +226,35 @@ export class OBSTemplateManager {
       const result = {
         scenesCreated: 0,
         inputsCreated: 0,
+        inputsUpdated: 0,
         transitionsConfigured: 0,
         errors: []
       };
 
-      // Apply inputs first
-      if (resolvedTemplate.inputs && Array.isArray(resolvedTemplate.inputs)) {
-        for (const input of resolvedTemplate.inputs) {
+      // Get input definitions for passing to scene creation
+      const inputDefs = resolvedTemplate.inputs || [];
+
+      // First pass: Apply audio settings to any inputs that already exist
+      // (inputs will be created during scene processing if they don't exist)
+      if (inputDefs.length > 0) {
+        for (const input of inputDefs) {
           try {
-            await this._applyInput(input);
-            result.inputsCreated++;
+            const existed = await this._applyInput(input);
+            if (existed) {
+              result.inputsUpdated++;
+            }
           } catch (error) {
-            console.warn(`[OBSTemplateManager] Failed to apply input ${input.inputName}:`, error.message);
-            result.errors.push({
-              type: 'input',
-              name: input.inputName,
-              error: error.message
-            });
+            console.warn(`[OBSTemplateManager] Failed to apply input settings for ${input.inputName}:`, error.message);
+            // Don't add to errors - input will be created during scene processing
           }
         }
       }
 
-      // Apply scenes
+      // Apply scenes (this will create inputs as needed)
       if (resolvedTemplate.scenes && Array.isArray(resolvedTemplate.scenes)) {
         for (const scene of resolvedTemplate.scenes) {
           try {
-            await this._applyScene(scene);
+            await this._applyScene(scene, inputDefs);
             result.scenesCreated++;
           } catch (error) {
             console.warn(`[OBSTemplateManager] Failed to apply scene ${scene.sceneName}:`, error.message);
@@ -263,6 +266,18 @@ export class OBSTemplateManager {
           }
         }
       }
+
+      // Count how many inputs were created (those that didn't exist before)
+      // We can estimate this by checking which inputs exist now that we defined
+      for (const input of inputDefs) {
+        try {
+          await this.obs.call('GetInputSettings', { inputName: input.inputName });
+          // Input exists - if it wasn't in the "updated" count, we created it
+        } catch (error) {
+          // Input still doesn't exist - it was never used in any scene
+        }
+      }
+      result.inputsCreated = inputDefs.length - result.inputsUpdated;
 
       // Apply transitions
       if (resolvedTemplate.transitions) {
@@ -570,39 +585,61 @@ export class OBSTemplateManager {
 
   /**
    * Apply an input configuration to OBS
+   * NOTE: Inputs cannot be created without a scene context in OBS WebSocket.
+   * Inputs are created during _applySceneItem() when adding items to scenes.
+   * This method only applies audio settings (volume, mute) to existing inputs.
    * @private
    * @param {Object} input - Input configuration
-   * @returns {Promise<void>}
+   * @returns {Promise<boolean>} True if input exists and settings were applied
    */
   async _applyInput(input) {
     // Check if input already exists
     try {
       await this.obs.call('GetInputSettings', { inputName: input.inputName });
-      console.log(`[OBSTemplateManager] Input "${input.inputName}" already exists, skipping`);
-      return;
+
+      // Input exists - apply audio settings if present
+      if (input.volume !== undefined) {
+        try {
+          // OBS uses inputVolumeMul for multiplier (0.0 to 1.0+)
+          await this.obs.call('SetInputVolume', {
+            inputName: input.inputName,
+            inputVolumeMul: input.volume
+          });
+          console.log(`[OBSTemplateManager] Set volume for "${input.inputName}" to ${input.volume}`);
+        } catch (volError) {
+          console.warn(`[OBSTemplateManager] Failed to set volume for ${input.inputName}:`, volError.message);
+        }
+      }
+
+      if (input.muted !== undefined) {
+        try {
+          await this.obs.call('SetInputMute', {
+            inputName: input.inputName,
+            inputMuted: input.muted
+          });
+          console.log(`[OBSTemplateManager] Set mute for "${input.inputName}" to ${input.muted}`);
+        } catch (muteError) {
+          console.warn(`[OBSTemplateManager] Failed to set mute for ${input.inputName}:`, muteError.message);
+        }
+      }
+
+      console.log(`[OBSTemplateManager] Input "${input.inputName}" already exists, audio settings applied`);
+      return true;
     } catch (error) {
-      // Input doesn't exist, create it
+      // Input doesn't exist - it will be created when processing scene items
+      console.log(`[OBSTemplateManager] Input "${input.inputName}" doesn't exist yet, will be created with first scene item`);
+      return false;
     }
-
-    // Create the input
-    await this.obs.call('CreateInput', {
-      sceneName: null, // Don't add to any scene yet
-      inputName: input.inputName,
-      inputKind: input.inputKind,
-      inputSettings: input.inputSettings || {},
-      sceneItemEnabled: true
-    });
-
-    console.log(`[OBSTemplateManager] Created input "${input.inputName}"`);
   }
 
   /**
    * Apply a scene configuration to OBS
    * @private
    * @param {Object} scene - Scene configuration
+   * @param {Array} inputs - Input definitions from template for creating sources
    * @returns {Promise<void>}
    */
-  async _applyScene(scene) {
+  async _applyScene(scene, inputs = []) {
     // Check if scene already exists
     try {
       await this.obs.call('GetSceneItemList', { sceneName: scene.sceneName });
@@ -621,11 +658,20 @@ export class OBSTemplateManager {
     if (scene.items && Array.isArray(scene.items)) {
       for (const item of scene.items) {
         try {
-          await this.obs.call('CreateSceneItem', {
-            sceneName: scene.sceneName,
-            sourceName: item.sourceName,
-            sceneItemEnabled: item.sceneItemEnabled !== undefined ? item.sceneItemEnabled : true
-          });
+          const sceneItemId = await this._applySceneItem(scene.sceneName, item, inputs);
+
+          // Apply transform if present and item was created
+          if (sceneItemId && item.sceneItemTransform) {
+            try {
+              await this.obs.call('SetSceneItemTransform', {
+                sceneName: scene.sceneName,
+                sceneItemId: sceneItemId,
+                sceneItemTransform: item.sceneItemTransform
+              });
+            } catch (transformError) {
+              console.warn(`[OBSTemplateManager] Failed to set transform for ${item.sourceName}:`, transformError.message);
+            }
+          }
         } catch (error) {
           console.warn(`[OBSTemplateManager] Failed to add item ${item.sourceName} to scene ${scene.sceneName}:`, error.message);
         }
@@ -633,6 +679,88 @@ export class OBSTemplateManager {
     }
 
     console.log(`[OBSTemplateManager] Created scene "${scene.sceneName}" with ${scene.items?.length || 0} items`);
+  }
+
+  /**
+   * Apply a single scene item, creating the input if it doesn't exist
+   * @private
+   * @param {string} sceneName - Scene to add item to
+   * @param {Object} item - Scene item configuration
+   * @param {Array} inputs - Input definitions from template
+   * @returns {Promise<number|null>} Scene item ID if created, null otherwise
+   */
+  async _applySceneItem(sceneName, item, inputs) {
+    // Check if input/source already exists
+    let inputExists = false;
+    try {
+      await this.obs.call('GetInputSettings', { inputName: item.sourceName });
+      inputExists = true;
+    } catch (error) {
+      // Input doesn't exist
+    }
+
+    let sceneItemId = null;
+
+    if (inputExists) {
+      // Input exists, add it to this scene using CreateSceneItem
+      try {
+        const result = await this.obs.call('CreateSceneItem', {
+          sceneName: sceneName,
+          sourceName: item.sourceName,
+          sceneItemEnabled: item.sceneItemEnabled !== undefined ? item.sceneItemEnabled : true
+        });
+        sceneItemId = result.sceneItemId;
+        console.log(`[OBSTemplateManager] Added existing input "${item.sourceName}" to scene "${sceneName}"`);
+      } catch (error) {
+        // May fail if item already in scene
+        console.warn(`[OBSTemplateManager] Could not add ${item.sourceName} to ${sceneName}:`, error.message);
+      }
+    } else {
+      // Input doesn't exist - need to create it with this scene as context
+      // Look up input definition from template
+      const inputDef = inputs.find(i => i.inputName === item.sourceName);
+      if (inputDef) {
+        try {
+          const result = await this.obs.call('CreateInput', {
+            sceneName: sceneName,
+            inputName: inputDef.inputName,
+            inputKind: inputDef.inputKind,
+            inputSettings: inputDef.inputSettings || {},
+            sceneItemEnabled: item.sceneItemEnabled !== undefined ? item.sceneItemEnabled : true
+          });
+          sceneItemId = result.sceneItemId;
+          console.log(`[OBSTemplateManager] Created input "${inputDef.inputName}" in scene "${sceneName}"`);
+
+          // Apply audio settings if present
+          if (inputDef.volume !== undefined) {
+            try {
+              await this.obs.call('SetInputVolume', {
+                inputName: inputDef.inputName,
+                inputVolumeMul: inputDef.volume
+              });
+            } catch (volError) {
+              console.warn(`[OBSTemplateManager] Failed to set volume for ${inputDef.inputName}:`, volError.message);
+            }
+          }
+          if (inputDef.muted !== undefined) {
+            try {
+              await this.obs.call('SetInputMute', {
+                inputName: inputDef.inputName,
+                inputMuted: inputDef.muted
+              });
+            } catch (muteError) {
+              console.warn(`[OBSTemplateManager] Failed to set mute for ${inputDef.inputName}:`, muteError.message);
+            }
+          }
+        } catch (createError) {
+          console.warn(`[OBSTemplateManager] Failed to create input ${inputDef.inputName}:`, createError.message);
+        }
+      } else {
+        console.warn(`[OBSTemplateManager] No input definition found for "${item.sourceName}", cannot create`);
+      }
+    }
+
+    return sceneItemId;
   }
 
   /**

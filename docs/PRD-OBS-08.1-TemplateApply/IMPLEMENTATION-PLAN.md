@@ -1,13 +1,13 @@
 # PRD-OBS-08.1: Template Apply Fix - Implementation Plan
 
 **Last Updated:** 2026-01-21
-**Status:** COMPLETE
+**Status:** IN PROGRESS
 
 ---
 
 ## Priority Order
 
-### P0 - Critical Fixes
+### P0 - Critical Fixes (Phase 1 - COMPLETE)
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
@@ -21,7 +21,7 @@
 | 8 | Template re-apply only creates missing scenes | VERIFIED | Already works - code is idempotent |
 | 9 | Scene deletion works reliably | VERIFIED | User confirmed working |
 
-### P1 - Validation & Error Handling
+### P1 - Validation & Error Handling (COMPLETE)
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
@@ -29,12 +29,21 @@
 | 11 | Add validation tests to obsTemplateManager.test.js | COMPLETE | 7 validation tests for legacy format rejection |
 | 12 | Show detailed errors in frontend | COMPLETE | Display `result.errors` in yellow warning banner with bullet list |
 
-### P2 - Template Management Improvements
+### P2 - Template Management Improvements (COMPLETE)
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
 | 13 | Add template preview to ApplyTemplateModal | COMPLETE | Shows scenes list with item counts, inputs with source types |
 | 14 | Create template migration script | COMPLETE | `convertOBSTemplate.js` converts raw OBS JSON; validation rejects legacy format with guidance |
+
+### P0 - Critical Fixes (Phase 2 - Template Apply Logic)
+
+| # | Task | Status | Notes |
+|---|------|--------|-------|
+| 15 | Fix `_applyInput()` to create inputs with valid scene context | COMPLETE | Creates inputs in scene context during `_applySceneItem()` |
+| 16 | Fix `_applyScene()` to apply transforms after creating items | COMPLETE | Calls `SetSceneItemTransform` after creating each scene item |
+| 17 | Auto-populate context server-side from competition config | COMPLETE | Fetches talentComms, builds graphicsOverlay/overlays URLs from compId |
+| 18 | Apply input settings (volume, muted state) | COMPLETE | Applied in `_applySceneItem()` after creating inputs |
 
 ---
 
@@ -393,7 +402,167 @@ const result = await templateManager.applyTemplate(id, {
   - Users with legacy templates receive actionable guidance: "Please delete this template and re-save from a configured OBS instance"
   - No additional script needed - the workflow guides users to re-capture templates from OBS
 
-**PRD-OBS-08.1 COMPLETE** - All 14 tasks implemented and verified.
+- **Tasks 15, 16, 18 COMPLETE: Input creation, transforms, and audio settings**
+  - Already implemented in `obsTemplateManager.js` from previous session:
+    - `_applyInput()` (lines 595-633): Only handles audio settings for existing inputs
+    - `_applySceneItem()` (lines 692-763): Creates inputs with scene context, applies volume/muted
+    - `_applyScene()` (lines 663-674): Applies `SetSceneItemTransform` after creating items
+  - Input creation uses `CreateInput` with valid `sceneName` parameter
+  - Transforms include position, scale, crop, bounds, and alignment
+  - Audio settings (volume multiplier, muted state) applied immediately after input creation
+
+- **Task 17 COMPLETE: Auto-populate context server-side from competition config**
+  - Modified `server/routes/obs.js` template apply route (~line 1673-1750)
+  - Server now auto-populates the full context from Firebase:
+    - `talentComms`: VDO.Ninja URLs from `competitions/{compId}/config/talentComms`
+    - `graphicsOverlay.url`: Built from compId as `https://commentarygraphic.com/output.html?compId={compId}&graphic=all`
+    - `overlays`: Built from compId for streamStarting, streamEnding, dualFrame
+    - `cameras`, `replay`, `assets`: Placeholder structure (needs additional config in Firebase)
+  - Frontend no longer needs to pass context - server fetches everything automatically
+  - Logs: `[OBS Routes] Context populated - talentComms: available/not configured, graphicsOverlay: {url}`
+
+---
+
+### Task 15: Fix `_applyInput()` to Create Inputs with Valid Scene Context
+
+**Problem:** The current `_applyInput()` method passes `sceneName: null` to OBS's `CreateInput` API:
+
+```javascript
+// Current broken code (line 588)
+await this.obs.call('CreateInput', {
+  sceneName: null,  // OBS REJECTS THIS
+  inputName: input.inputName,
+  inputKind: input.inputKind,
+  inputSettings: input.inputSettings || {},
+  sceneItemEnabled: true
+});
+```
+
+OBS WebSocket requires a valid scene name - you cannot create a "floating" input.
+
+**Solution:** Create inputs when processing scene items, not separately. Modify `_applyScene()` to:
+1. For each item in `scene.items`, check if the input exists
+2. If input doesn't exist: use `CreateInput` with the current scene as context
+3. If input exists: use `CreateSceneItem` to add existing input to scene
+
+**File:** `server/lib/obsTemplateManager.js`
+
+---
+
+### Task 16: Fix `_applyScene()` to Apply Transforms
+
+**Problem:** Even if scene items are created, the transforms (position, scale, crop) are never applied.
+
+The template has detailed transform data:
+```json
+{
+  "sourceName": "Camera A",
+  "sceneItemTransform": {
+    "positionX": 40,
+    "positionY": 322,
+    "scaleX": 0.478,
+    "scaleY": 0.478,
+    "cropBottom": 21
+  }
+}
+```
+
+But `_applyScene()` never calls `SetSceneItemTransform`.
+
+**Solution:** After creating each scene item, call `SetSceneItemTransform`:
+
+```javascript
+// After CreateSceneItem or CreateInput
+const sceneItemId = result.sceneItemId;
+if (item.sceneItemTransform) {
+  await this.obs.call('SetSceneItemTransform', {
+    sceneName: scene.sceneName,
+    sceneItemId: sceneItemId,
+    sceneItemTransform: item.sceneItemTransform
+  });
+}
+```
+
+**File:** `server/lib/obsTemplateManager.js`
+
+---
+
+### Task 17: Auto-Populate Context Server-Side
+
+**Problem:** The route expects the frontend to pass context in the request body, but it doesn't:
+
+```javascript
+// Current code (line 1686)
+const { context = {} } = req.body;  // Usually empty!
+```
+
+The template has variables like `{{talentComms.talent1Url}}` that never get resolved because the context is empty.
+
+**Solution:** Server should fetch context automatically:
+
+```javascript
+// In POST /api/obs/templates/:id/apply route
+const talentCommsManager = new TalentCommsManager(productionConfigService);
+const talentComms = await talentCommsManager.getTalentComms(compId);
+
+// Get show config for cameras and other settings
+const showConfig = await getShowConfig(compId);
+
+// Build full context
+const fullContext = {
+  ...context,  // Allow frontend to override if needed
+  cameras: showConfig?.cameras || {},
+  talentComms: talentComms || {},
+  graphicsOverlay: showConfig?.graphicsOverlay || {},
+  overlays: {
+    streamStarting: `https://commentarygraphic.com/overlays/stream-starting.html?compId=${compId}`,
+    streamEnding: `https://commentarygraphic.com/overlays/stream-ending.html?compId=${compId}`,
+    dualFrame: `https://commentarygraphic.com/overlays/dual-frame.html?compId=${compId}`
+  },
+  replay: showConfig?.replay || {},
+  assets: showConfig?.assets || {}
+};
+
+const result = await templateManager.applyTemplate(id, fullContext);
+```
+
+**File:** `server/routes/obs.js`
+
+---
+
+### Task 18: Apply Input Settings (Volume, Muted)
+
+**Problem:** The template contains volume and muted state for inputs:
+
+```json
+{
+  "inputName": "Camera A",
+  "volume": 0.133,
+  "muted": false
+}
+```
+
+But these are never applied when creating inputs.
+
+**Solution:** After creating an input, apply audio settings:
+
+```javascript
+if (input.volume !== undefined) {
+  await this.obs.call('SetInputVolume', {
+    inputName: input.inputName,
+    inputVolumeDb: input.volume  // or convert if needed
+  });
+}
+
+if (input.muted !== undefined) {
+  await this.obs.call('SetInputMute', {
+    inputName: input.inputName,
+    inputMuted: input.muted
+  });
+}
+```
+
+**File:** `server/lib/obsTemplateManager.js`
 
 ---
 
