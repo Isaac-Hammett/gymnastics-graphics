@@ -1,7 +1,7 @@
 # PRD-OBS-08.1: Template Apply Fix - Implementation Plan
 
 **Last Updated:** 2026-01-21
-**Status:** IN PROGRESS
+**Status:** PHASE 2 COMPLETE - All P0/P1/P2 tasks implemented and verified on production
 
 ---
 
@@ -420,6 +420,11 @@ const result = await templateManager.applyTemplate(id, {
     - `cameras`, `replay`, `assets`: Placeholder structure (needs additional config in Firebase)
   - Frontend no longer needs to pass context - server fetches everything automatically
   - Logs: `[OBS Routes] Context populated - talentComms: available/not configured, graphicsOverlay: {url}`
+  - **DEPLOYED & VERIFIED** on production (2026-01-21):
+    - Commit cba203e pushed to origin/main
+    - Coordinator restarted with new code
+    - Playwright verification: Template apply shows "Template applied successfully: 9 scenes, 12 inputs created"
+    - Coordinator logs confirm template processed: "Template applied: 9 scenes, 12 inputs, 1 transitions configured"
 
 ---
 
@@ -625,3 +630,4 @@ Modify `server/routes/obs.js` to use `obsConnectionManager.getConnection(compId)
 | 050069c | PRD-OBS-08.1: Add template format validation |
 | 25df0d1 | PRD-OBS-08.1: Migrate templates to proper format |
 | 2e9dcc6 | PRD-OBS-08.1: Add Task 7 - Template sources/inputs conversion |
+| cba203e | PRD-OBS-08.1: Task 17 - Auto-populate context server-side from competition config |
