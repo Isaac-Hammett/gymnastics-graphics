@@ -413,7 +413,9 @@ describe('OBSTemplateManager', () => {
         requirements: {
           cameras: ['Nonexistent Camera']
         },
-        scenes: [],
+        scenes: [
+          { sceneName: 'Test Scene', items: [] }
+        ],
         inputs: []
       };
       firebaseStore['templates/obs/template-1'] = testTemplate;
@@ -447,7 +449,9 @@ describe('OBSTemplateManager', () => {
         id: 'template-1',
         name: 'Test Template',
         requirements: {},
-        scenes: [],
+        scenes: [
+          { sceneName: 'Test Scene', items: [] }
+        ],
         inputs: [
           {
             inputName: '{{config.competition.name}} Camera',
@@ -472,6 +476,119 @@ describe('OBSTemplateManager', () => {
       // Verify the input was created with resolved name
       const calls = obs.getCallsTo('CreateInput');
       assert.ok(calls.length > 0);
+    });
+  });
+
+  describe('applyTemplate validation', () => {
+    it('should reject templates with string scene arrays (legacy format)', async () => {
+      const legacyTemplate = {
+        id: 'legacy',
+        name: 'Legacy Template',
+        scenes: ['Scene 1', 'Scene 2', 'Scene 3']  // Legacy format - strings instead of objects
+      };
+      firebaseStore['templates/obs/legacy'] = legacyTemplate;
+
+      await assert.rejects(
+        async () => await templateManager.applyTemplate('legacy'),
+        { message: /legacy format/ }
+      );
+    });
+
+    it('should reject templates with no scenes array', async () => {
+      const noScenesTemplate = {
+        id: 'no-scenes',
+        name: 'No Scenes Template'
+        // Missing scenes property entirely
+      };
+      firebaseStore['templates/obs/no-scenes'] = noScenesTemplate;
+
+      await assert.rejects(
+        async () => await templateManager.applyTemplate('no-scenes'),
+        { message: /no scenes defined/ }
+      );
+    });
+
+    it('should reject templates with non-array scenes', async () => {
+      const invalidScenesTemplate = {
+        id: 'invalid-scenes',
+        name: 'Invalid Scenes Template',
+        scenes: 'not an array'  // Invalid - should be array
+      };
+      firebaseStore['templates/obs/invalid-scenes'] = invalidScenesTemplate;
+
+      await assert.rejects(
+        async () => await templateManager.applyTemplate('invalid-scenes'),
+        { message: /no scenes defined/ }
+      );
+    });
+
+    it('should reject templates with empty scenes array', async () => {
+      const emptyScenesTemplate = {
+        id: 'empty-scenes',
+        name: 'Empty Scenes Template',
+        scenes: []  // Empty array
+      };
+      firebaseStore['templates/obs/empty-scenes'] = emptyScenesTemplate;
+
+      await assert.rejects(
+        async () => await templateManager.applyTemplate('empty-scenes'),
+        { message: /empty scenes array/ }
+      );
+    });
+
+    it('should reject templates with scenes missing sceneName property', async () => {
+      const missingSceneNameTemplate = {
+        id: 'missing-scene-name',
+        name: 'Missing Scene Name Template',
+        scenes: [
+          { items: [] }  // Missing sceneName property
+        ]
+      };
+      firebaseStore['templates/obs/missing-scene-name'] = missingSceneNameTemplate;
+
+      await assert.rejects(
+        async () => await templateManager.applyTemplate('missing-scene-name'),
+        { message: /missing required sceneName property/ }
+      );
+    });
+
+    it('should accept templates with proper scene objects', async () => {
+      const properTemplate = {
+        id: 'proper',
+        name: 'Proper Template',
+        requirements: {},
+        scenes: [
+          { sceneName: 'Scene 1', items: [] },
+          { sceneName: 'Scene 2', items: [] }
+        ],
+        inputs: []
+      };
+      firebaseStore['templates/obs/proper'] = properTemplate;
+
+      const result = await templateManager.applyTemplate('proper');
+
+      assert.ok(result);
+      assert.equal(typeof result.scenesCreated, 'number');
+      assert.ok(result.scenesCreated >= 0);
+    });
+
+    it('should provide helpful error message for legacy templates', async () => {
+      const legacyTemplate = {
+        id: 'legacy-helpful',
+        name: 'Legacy Template',
+        scenes: ['Full Screen', 'Picture in Picture']
+      };
+      firebaseStore['templates/obs/legacy-helpful'] = legacyTemplate;
+
+      try {
+        await templateManager.applyTemplate('legacy-helpful');
+        assert.fail('Should have thrown an error');
+      } catch (error) {
+        // Verify the error message is helpful
+        assert.ok(error.message.includes('legacy format'));
+        assert.ok(error.message.includes('delete this template'));
+        assert.ok(error.message.includes('re-save'));
+      }
     });
   });
 

@@ -26,7 +26,7 @@
 | # | Task | Status | Notes |
 |---|------|--------|-------|
 | 10 | Improve API error response with errorCode | COMPLETE | Added errorCode mapping and message field |
-| 11 | Add validation tests to obsTemplateManager.test.js | NOT STARTED | Test legacy format rejection |
+| 11 | Add validation tests to obsTemplateManager.test.js | COMPLETE | 7 validation tests for legacy format rejection |
 | 12 | Show detailed errors in frontend | NOT STARTED | Display `result.errors` |
 
 ### P2 - Template Management Improvements
@@ -351,6 +351,18 @@ const result = await templateManager.applyTemplate(id, {
     - Clear message when no changes needed (template already applied)
   - **VERIFIED via Playwright**: Success message now shows "Template applied with warnings: 9 scenes, 0 inputs created. 12 items skipped."
   - Commit: 3da4ef2
+
+- **Task 11 COMPLETE: Added validation tests to obsTemplateManager.test.js**
+  - Added 7 new tests in `applyTemplate validation` describe block:
+    1. `should reject templates with string scene arrays (legacy format)` - Tests rejection of legacy string arrays
+    2. `should reject templates with no scenes array` - Tests rejection of missing scenes property
+    3. `should reject templates with non-array scenes` - Tests rejection of invalid scenes type
+    4. `should reject templates with empty scenes array` - Tests rejection of empty scenes
+    5. `should reject templates with scenes missing sceneName property` - Tests rejection of malformed scene objects
+    6. `should accept templates with proper scene objects` - Tests successful apply with valid format
+    7. `should provide helpful error message for legacy templates` - Verifies error message includes actionable guidance
+  - Fixed 2 pre-existing tests that had empty scenes arrays (now invalid due to validation)
+  - All 61 tests pass
 
 ---
 
