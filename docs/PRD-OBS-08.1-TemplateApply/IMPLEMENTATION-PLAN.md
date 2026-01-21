@@ -16,21 +16,25 @@
 | 3 | Add template format validation in obsTemplateManager.js | COMPLETE | Reject legacy string arrays |
 | 4 | Migrate `gymnastics-dual-v1` template to proper format | COMPLETE | v1.1 with scene objects |
 | 5 | Migrate `gymnastics-quad-v1` template to proper format | COMPLETE | v1.1 with scene objects |
+| 6 | Fix Socket Not Identified error | COMPLETE | Use per-competition OBS connection |
+| 7 | Templates import sources/inputs with scenes | IN PROGRESS | Convert raw OBS JSON to Firebase format |
+| 8 | Template re-apply only creates missing scenes | VERIFIED | Already works - code is idempotent |
+| 9 | Scene deletion works reliably | VERIFIED | User confirmed working |
 
 ### P1 - Validation & Error Handling
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 6 | Improve API error response with errorCode | NOT STARTED | routes/obs.js |
-| 7 | Add validation tests to obsTemplateManager.test.js | NOT STARTED | Test legacy format rejection |
-| 8 | Show detailed errors in frontend | NOT STARTED | Display `result.errors` |
+| 10 | Improve API error response with errorCode | NOT STARTED | routes/obs.js |
+| 11 | Add validation tests to obsTemplateManager.test.js | NOT STARTED | Test legacy format rejection |
+| 12 | Show detailed errors in frontend | NOT STARTED | Display `result.errors` |
 
 ### P2 - Template Management Improvements
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 9 | Add template preview to ApplyTemplateModal | NOT STARTED | List scenes/inputs to be created |
-| 10 | Create template migration script | NOT STARTED | For updating legacy templates |
+| 13 | Add template preview to ApplyTemplateModal | NOT STARTED | List scenes/inputs to be created |
+| 14 | Create template migration script | NOT STARTED | For updating legacy templates |
 
 ---
 
@@ -187,6 +191,91 @@ if (!firstScene.sceneName) {
 ```
 
 This creates empty scenes that users can then populate with sources.
+
+---
+
+### Task 7: Templates Import Sources/Inputs with Scenes
+
+**Problem:** Firebase templates have scene names but missing:
+- `inputs[]` - source definitions (cameras, backgrounds, talent audio)
+- `items[]` in each scene - source references with positions/transforms
+
+**Source of Truth:** Raw OBS JSON templates at:
+- `docs/obs-templates-raw-json/20260119-obs-template-ai-dual.json`
+- `docs/obs-templates-raw-json/20260119-obs-template-ai-quad.json`
+
+These contain complete source definitions, scene items with positions, transforms, overlays, talent audio - everything properly layered.
+
+#### Implementation Steps
+
+**Step 1: Create conversion script**
+
+**File:** `server/scripts/convertOBSTemplate.js`
+
+Parse raw OBS JSON and convert to Firebase format:
+1. Extract non-scene sources → `inputs[]`
+2. Extract scenes (sources with `id: "scene"`) → `scenes[]`
+3. Map scene items with transforms
+4. Replace hardcoded URLs with variables
+
+**Step 2: Add URL variable placeholders**
+
+Replace hardcoded URLs with variables that get resolved at apply time:
+- `srt://stream1.virti.us:11001` → `{{cameras.cameraA.srtUrl}}`
+- `srt://stream1.virti.us:11002` → `{{cameras.cameraB.srtUrl}}`
+- VDO.Ninja talent URLs → `{{talentComms.talent1Url}}`, `{{talentComms.talent2Url}}`
+- Graphics overlay → `{{graphicsOverlay.url}}`
+
+**Step 3: Update Firebase templates**
+
+Run conversion and update:
+- `templates/obs/gymnastics-dual-v1` - full source/scene data with transforms
+- `templates/obs/gymnastics-quad-v1` - full source/scene data with transforms
+
+**Step 4: Update route to pass full context**
+
+**File:** `server/routes/obs.js`
+
+Pass competition config including talent comms:
+```javascript
+const talentComms = await getTalentComms(compId);
+const result = await templateManager.applyTemplate(id, {
+  cameras: showConfig.cameras,
+  talentComms: talentComms,
+  graphicsOverlay: showConfig.graphicsOverlay
+});
+```
+
+#### OBS Raw JSON → Firebase Format Mapping
+
+**OBS Raw JSON Structure:**
+```json
+{
+  "sources": [
+    { "name": "Camera A", "id": "ffmpeg_source", "settings": {...} },
+    { "name": "Talent-1", "id": "browser_source", "settings": {...} }
+  ],
+  "scene_order": [{ "name": "Full Screen - Camera A" }]
+  // Each scene is in sources[] with id: "scene" and settings.items[]
+}
+```
+
+**Target Firebase Format:**
+```json
+{
+  "inputs": [
+    { "inputName": "Camera A", "inputKind": "ffmpeg_source", "inputSettings": {...} }
+  ],
+  "scenes": [
+    {
+      "sceneName": "Full Screen - Camera A",
+      "items": [
+        { "sourceName": "Camera A", "sceneItemTransform": {...} }
+      ]
+    }
+  ]
+}
+```
 
 ---
 
