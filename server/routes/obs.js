@@ -1700,19 +1700,61 @@ export function setupOBSRoutes(app, obs, obsStateSyncOrGetter) {
       const templateManager = new OBSTemplateManager(compObs, obsStateSync, productionConfigService);
       const result = await templateManager.applyTemplate(id, context);
 
+      // Build success message
+      const messageParts = [];
+      if (result.scenesCreated > 0) messageParts.push(`${result.scenesCreated} scenes`);
+      if (result.inputsCreated > 0) messageParts.push(`${result.inputsCreated} inputs`);
+      if (result.transitionsConfigured > 0) messageParts.push(`${result.transitionsConfigured} transitions`);
+
+      const hasErrors = result.errors && result.errors.length > 0;
+      let message;
+      if (messageParts.length === 0) {
+        message = hasErrors
+          ? `Template applied with ${result.errors.length} errors`
+          : 'Template applied (no changes needed)';
+      } else {
+        message = hasErrors
+          ? `Template applied with warnings: ${messageParts.join(', ')} created. ${result.errors.length} items skipped.`
+          : `Template applied: ${messageParts.join(', ')} created`;
+      }
+
       res.json({
-        success: true,
-        result
+        success: !hasErrors || messageParts.length > 0,
+        result,
+        message
       });
     } catch (error) {
       console.error(`[OBS Routes] Error applying template ${req.params.id}:`, error.message);
+
+      // Map error messages to error codes
+      let errorCode = 'TEMPLATE_APPLY_ERROR';
+      let statusCode = 500;
+
       if (error.message.includes('not found')) {
-        return res.status(404).json({ error: error.message });
+        errorCode = 'TEMPLATE_NOT_FOUND';
+        statusCode = 404;
+      } else if (error.message.includes('legacy format')) {
+        errorCode = 'INVALID_TEMPLATE_FORMAT';
+        statusCode = 400;
+      } else if (error.message.includes('no scenes defined') || error.message.includes('empty scenes array')) {
+        errorCode = 'INVALID_TEMPLATE_STRUCTURE';
+        statusCode = 400;
+      } else if (error.message.includes('missing required sceneName')) {
+        errorCode = 'INVALID_SCENE_FORMAT';
+        statusCode = 400;
+      } else if (error.message.includes('requirements not met')) {
+        errorCode = 'TEMPLATE_REQUIREMENTS_NOT_MET';
+        statusCode = 400;
+      } else if (error.message.includes('Socket not identified') || error.message.includes('not connected')) {
+        errorCode = 'OBS_CONNECTION_ERROR';
+        statusCode = 503;
       }
-      if (error.message.includes('requirements not met')) {
-        return res.status(400).json({ error: error.message });
-      }
-      res.status(500).json({ error: error.message });
+
+      res.status(statusCode).json({
+        success: false,
+        error: error.message,
+        errorCode
+      });
     }
   });
 
