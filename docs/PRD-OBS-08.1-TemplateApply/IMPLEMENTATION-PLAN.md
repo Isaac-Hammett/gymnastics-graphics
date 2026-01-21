@@ -14,8 +14,8 @@
 | 1 | Fix frontend response handling in TemplateManager.jsx | COMPLETE | Already fixed in previous session |
 | 2 | Fix ApplyTemplateModal scene count display | COMPLETE | Shows `template.scenes?.length` |
 | 3 | Add template format validation in obsTemplateManager.js | COMPLETE | Reject legacy string arrays |
-| 4 | Migrate `gymnastics-dual-v1` template to proper format | NOT STARTED | Full scene/input configs |
-| 5 | Migrate `gymnastics-quad-v1` template to proper format | NOT STARTED | Full scene/input configs |
+| 4 | Migrate `gymnastics-dual-v1` template to proper format | COMPLETE | v1.1 with scene objects |
+| 5 | Migrate `gymnastics-quad-v1` template to proper format | COMPLETE | v1.1 with scene objects |
 
 ### P1 - Validation & Error Handling
 
@@ -205,6 +205,11 @@ This creates empty scenes that users can then populate with sources.
   - Validates scenes have required `sceneName` property
   - Deployed to coordinator and verified via Playwright
   - Error message displays correctly: "Template uses legacy format (scene names only). Please delete this template and re-save from a configured OBS instance."
+- Task 4 & 5: Migrated both pre-seeded templates to proper format:
+  - `gymnastics-dual-v1`: Updated to v1.1 with 9 scene objects (each with `sceneName`, `sceneIndex`, `items: []`)
+  - `gymnastics-quad-v1`: Updated to v1.1 with 22 scene objects
+  - Both now include `inputs: []` and `transitions` config
+  - Templates now pass validation and can be applied to OBS
 
 ---
 
