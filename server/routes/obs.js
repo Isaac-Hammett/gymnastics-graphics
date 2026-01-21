@@ -1668,7 +1668,7 @@ export function setupOBSRoutes(app, obs, obsStateSyncOrGetter) {
 
   /**
    * POST /api/obs/templates/:id/apply - Apply template to current OBS
-   * Body: { context: { cameras, assets, config } }
+   * Body: { context: { cameras, assets, config } } - optional, server auto-populates from competition config
    */
   app.post('/api/obs/templates/:id/apply', async (req, res) => {
     try {
@@ -1683,9 +1683,9 @@ export function setupOBSRoutes(app, obs, obsStateSyncOrGetter) {
       }
 
       const { id } = req.params;
-      const { context = {} } = req.body;
+      const { context: userContext = {} } = req.body;
 
-      console.log(`[OBS Routes] POST /api/obs/templates/${id}/apply - Applying template with context`);
+      console.log(`[OBS Routes] POST /api/obs/templates/${id}/apply - Applying template with auto-populated context`);
 
       // Get per-competition OBS connection instead of global obs instance
       const obsConnManager = getOBSConnectionManager();
@@ -1697,8 +1697,77 @@ export function setupOBSRoutes(app, obs, obsStateSyncOrGetter) {
         });
       }
 
+      // Auto-populate context from competition config
+      const database = productionConfigService.initialize();
+
+      // Fetch competition config for cameras, assets, etc.
+      const configSnapshot = await database.ref(`competitions/${compId}/config`).once('value');
+      const compConfig = configSnapshot.val() || {};
+
+      // Fetch talent comms configuration
+      const talentCommsManager = new TalentCommsManager(productionConfigService);
+      let talentComms = null;
+      try {
+        talentComms = await talentCommsManager.getTalentComms(compId);
+      } catch (err) {
+        console.warn(`[OBS Routes] Could not fetch talent comms for ${compId}:`, err.message);
+      }
+
+      // Build full context with all template variables
+      const fullContext = {
+        // Allow user context to override auto-populated values
+        ...userContext,
+
+        // Camera SRT URLs (placeholder - needs VM camera config)
+        cameras: {
+          cameraA: { srtUrl: compConfig.cameraA?.srtUrl || '' },
+          cameraB: { srtUrl: compConfig.cameraB?.srtUrl || '' },
+          ...userContext.cameras
+        },
+
+        // Talent comms URLs from VDO.Ninja config
+        talentComms: talentComms?.vdoNinja ? {
+          talent1Url: talentComms.vdoNinja.talentUrls?.['talent-1'] || '',
+          talent2Url: talentComms.vdoNinja.talentUrls?.['talent-2'] || '',
+          obsSceneUrl: talentComms.vdoNinja.obsSceneUrl || ''
+        } : {
+          talent1Url: '',
+          talent2Url: '',
+          obsSceneUrl: ''
+        },
+
+        // Graphics overlay URL
+        graphicsOverlay: {
+          url: `https://commentarygraphic.com/output.html?compId=${compId}&graphic=all`
+        },
+
+        // Overlay URLs based on competition ID
+        overlays: {
+          streamStarting: `https://commentarygraphic.com/overlays/stream-starting.html?compId=${compId}`,
+          streamEnding: `https://commentarygraphic.com/overlays/stream-ending.html?compId=${compId}`,
+          dualFrame: `https://commentarygraphic.com/overlays/dual-frame.html?compId=${compId}`,
+          ...userContext.overlays
+        },
+
+        // Replay URLs (placeholder - needs replay service config)
+        replay: {
+          camera1Url: compConfig.replay?.camera1Url || '',
+          camera2Url: compConfig.replay?.camera2Url || '',
+          ...userContext.replay
+        },
+
+        // Asset paths (placeholder - needs asset manifest)
+        assets: {
+          backgroundVideo: compConfig.assets?.backgroundVideo || '',
+          backgroundMusic: compConfig.assets?.backgroundMusic || '',
+          ...userContext.assets
+        }
+      };
+
+      console.log(`[OBS Routes] Context populated - talentComms: ${talentComms ? 'available' : 'not configured'}, graphicsOverlay: ${fullContext.graphicsOverlay.url}`);
+
       const templateManager = new OBSTemplateManager(compObs, obsStateSync, productionConfigService);
-      const result = await templateManager.applyTemplate(id, context);
+      const result = await templateManager.applyTemplate(id, fullContext);
 
       // Build success message
       const messageParts = [];
