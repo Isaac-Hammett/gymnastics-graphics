@@ -210,6 +210,27 @@ This creates empty scenes that users can then populate with sources.
   - `gymnastics-quad-v1`: Updated to v1.1 with 22 scene objects
   - Both now include `inputs: []` and `transitions` config
   - Templates now pass validation and can be applied to OBS
+- Deployed frontend to production (fixed cache issue with new JS bundle)
+- Verified via Playwright:
+  - ✅ Modal now shows "Scenes: 9" correctly
+  - ✅ Success message now shows proper format (not "undefined")
+  - ⚠️ NEW BUG DISCOVERED: OBS scene creation fails with "Socket not identified" error
+    - All 9 scenes fail to create
+    - Error in coordinator logs: `[OBSTemplateManager] Failed to apply scene X: Socket not identified`
+    - This is a separate OBS WebSocket authentication issue, not related to template format
+    - Should be tracked as a new issue (PRD-OBS-08.2 or similar)
+
+---
+
+## Known Issues (Blocking Full Functionality)
+
+### Socket Not Identified Error
+**Status:** NEW BUG - Not in scope of this PRD
+**Symptom:** When applying templates, scenes fail to create with "Socket not identified" error
+**Root Cause:** OBS WebSocket connection state issue - the connection appears connected but scene creation calls fail
+**Impact:** Templates pass validation but scenes cannot actually be created in OBS
+**Workaround:** None currently - users must manually create scenes
+**Recommended Next Steps:** Create PRD-OBS-08.2 to investigate and fix the OBS WebSocket session/auth issue
 
 ---
 
@@ -226,3 +247,4 @@ This creates empty scenes that users can then populate with sources.
 |--------|-------------|
 | 164d165 | PRD-OBS-08.1: Fix ApplyTemplateModal scene count display |
 | 050069c | PRD-OBS-08.1: Add template format validation |
+| 25df0d1 | PRD-OBS-08.1: Migrate templates to proper format |
