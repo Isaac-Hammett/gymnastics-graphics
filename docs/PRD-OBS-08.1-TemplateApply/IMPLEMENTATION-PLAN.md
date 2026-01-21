@@ -1,0 +1,215 @@
+# PRD-OBS-08.1: Template Apply Fix - Implementation Plan
+
+**Last Updated:** 2026-01-21
+**Status:** IN PROGRESS
+
+---
+
+## Priority Order
+
+### P0 - Critical Fixes
+
+| # | Task | Status | Notes |
+|---|------|--------|-------|
+| 1 | Fix frontend response handling in TemplateManager.jsx | COMPLETE | Already fixed in previous session |
+| 2 | Fix ApplyTemplateModal scene count display | COMPLETE | Shows `template.scenes?.length` |
+| 3 | Add template format validation in obsTemplateManager.js | NOT STARTED | Reject legacy string arrays |
+| 4 | Migrate `gymnastics-dual-v1` template to proper format | NOT STARTED | Full scene/input configs |
+| 5 | Migrate `gymnastics-quad-v1` template to proper format | NOT STARTED | Full scene/input configs |
+
+### P1 - Validation & Error Handling
+
+| # | Task | Status | Notes |
+|---|------|--------|-------|
+| 6 | Improve API error response with errorCode | NOT STARTED | routes/obs.js |
+| 7 | Add validation tests to obsTemplateManager.test.js | NOT STARTED | Test legacy format rejection |
+| 8 | Show detailed errors in frontend | NOT STARTED | Display `result.errors` |
+
+### P2 - Template Management Improvements
+
+| # | Task | Status | Notes |
+|---|------|--------|-------|
+| 9 | Add template preview to ApplyTemplateModal | NOT STARTED | List scenes/inputs to be created |
+| 10 | Create template migration script | NOT STARTED | For updating legacy templates |
+
+---
+
+## Source Files to Modify
+
+### Frontend
+| File | Changes | Lines |
+|------|---------|-------|
+| `show-controller/src/components/obs/TemplateManager.jsx` | Fix response handling, modal display | ~93, ~467 |
+
+### Backend
+| File | Changes | Lines |
+|------|---------|-------|
+| `server/lib/obsTemplateManager.js` | Add validation | ~180-200 |
+| `server/routes/obs.js` | Improve error response | ~1690-1705 |
+
+### Firebase
+| Path | Changes |
+|------|---------|
+| `templates/obs/gymnastics-dual-v1` | Migrate to full scene configs |
+| `templates/obs/gymnastics-quad-v1` | Migrate to full scene configs |
+
+### Tests
+| File | Changes |
+|------|---------|
+| `server/__tests__/obsTemplateManager.test.js` | Add validation tests |
+
+---
+
+## Detailed Task Breakdown
+
+### Task 1: Fix Frontend Response Handling
+
+**File:** `show-controller/src/components/obs/TemplateManager.jsx`
+
+**Line 93 - Change from:**
+```javascript
+setSuccess(`Template applied successfully: ${data.scenesCreated} scenes created`);
+```
+
+**To:**
+```javascript
+const scenesCreated = data.result?.scenesCreated || 0;
+const inputsCreated = data.result?.inputsCreated || 0;
+const errors = data.result?.errors || [];
+
+if (errors.length > 0) {
+  setSuccess(`Template applied with warnings: ${scenesCreated} scenes, ${inputsCreated} inputs created. ${errors.length} items skipped.`);
+} else {
+  setSuccess(`Template applied successfully: ${scenesCreated} scenes, ${inputsCreated} inputs created`);
+}
+```
+
+---
+
+### Task 2: Fix ApplyTemplateModal Scene Count
+
+**File:** `show-controller/src/components/obs/TemplateManager.jsx`
+
+**In ApplyTemplateModal (~line 467) - Change from:**
+```javascript
+<div className="text-gray-300 text-sm">
+  <span className="text-gray-500">Scenes:</span> {template.scenesCount || 0}
+</div>
+```
+
+**To:**
+```javascript
+<div className="text-gray-300 text-sm">
+  <span className="text-gray-500">Scenes:</span> {template.scenes?.length || template.scenesCount || 0}
+</div>
+```
+
+---
+
+### Task 3: Add Template Format Validation
+
+**File:** `server/lib/obsTemplateManager.js`
+
+**Add at start of `applyTemplate()` method (~line 186):**
+```javascript
+// Validate template has proper structure
+if (!template.scenes || !Array.isArray(template.scenes)) {
+  throw new Error('Template has no scenes defined');
+}
+
+if (template.scenes.length === 0) {
+  throw new Error('Template has empty scenes array');
+}
+
+// Check if scenes are objects (proper format) or strings (legacy format)
+const firstScene = template.scenes[0];
+if (typeof firstScene === 'string') {
+  throw new Error(
+    'Template uses legacy format (scene names only). ' +
+    'Please delete this template and re-save from a configured OBS instance.'
+  );
+}
+
+if (!firstScene.sceneName) {
+  throw new Error('Template scenes missing required sceneName property');
+}
+```
+
+---
+
+### Task 4 & 5: Migrate Templates to Proper Format
+
+**Approach:** Rather than manually creating huge JSON structures, use the "Save Template" feature from a properly configured OBS:
+
+1. Start OBS on a competition VM
+2. Configure scenes matching the dual meet template:
+   - Stream Starting Soon (empty or with background)
+   - Full Screen - Camera A (with SRT source + graphics overlay)
+   - Full Screen - Camera B
+   - Dual View - Camera A - Left
+   - Dual View - Camera A - Right
+   - Web-graphics-only-no-video
+   - Replay - Camera A
+   - Replay - Camera B
+   - End Stream
+3. Use the "Save Current as Template" button
+4. Export the Firebase data
+5. Update the pre-seeded templates
+
+**Alternative:** Create a minimal working template structure:
+
+```json
+{
+  "id": "gymnastics-dual-v1",
+  "name": "Gymnastics Dual Meet",
+  "version": "1.1",
+  "description": "Standard dual meet setup with 2 cameras",
+  "meetTypes": ["mens-dual", "womens-dual"],
+  "scenes": [
+    { "sceneName": "Stream Starting Soon", "items": [] },
+    { "sceneName": "Full Screen - Camera A", "items": [] },
+    { "sceneName": "Full Screen - Camera B", "items": [] },
+    { "sceneName": "Dual View - Camera A - Left", "items": [] },
+    { "sceneName": "Dual View - Camera A - Right", "items": [] },
+    { "sceneName": "Web-graphics-only-no-video", "items": [] },
+    { "sceneName": "Replay - Camera A", "items": [] },
+    { "sceneName": "Replay - Camera B", "items": [] },
+    { "sceneName": "End Stream", "items": [] }
+  ],
+  "inputs": [],
+  "transitions": {
+    "currentTransitionName": "Fade",
+    "currentTransitionDuration": 300
+  },
+  "createdAt": "2026-01-21T00:00:00Z",
+  "updatedAt": "2026-01-21T00:00:00Z"
+}
+```
+
+This creates empty scenes that users can then populate with sources.
+
+---
+
+## Progress Log
+
+### 2026-01-21
+- Created PRD-OBS-08.1-TemplateApply.md
+- Created IMPLEMENTATION-PLAN.md
+- Identified root causes via Playwright testing and coordinator log analysis
+- Task 1: Verified already complete (response handling fixed in previous session)
+- Task 2: Fixed ApplyTemplateModal scene count to use `template.scenes?.length`
+
+---
+
+## Verification URLs
+
+- **OBS Manager UI:** `https://commentarygraphic.com/8kyf0rnl/obs-manager`
+- **Coordinator Status:** `https://api.commentarygraphic.com/api/coordinator/status`
+
+---
+
+## Commits
+
+| Commit | Description |
+|--------|-------------|
+| - | - |
