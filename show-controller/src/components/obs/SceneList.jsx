@@ -19,7 +19,7 @@ import { useShow } from '../../context/ShowContext';
  * Groups scenes by category and provides actions: Preview, Edit, Duplicate, Delete
  */
 export default function SceneList({ onEditScene, onSceneAction }) {
-  const { obsState, obsConnected, switchScene, setPreviewScene, createScene, deleteScene, refreshState, reorderScenes } = useOBS();
+  const { obsState, obsConnected, switchScene, setPreviewScene, createScene, deleteScene, deleteAllScenes, refreshState, reorderScenes } = useOBS();
   const { socketUrl } = useShow();
   const [expandedCategories, setExpandedCategories] = useState({
     'generated-single': true,
@@ -37,6 +37,10 @@ export default function SceneList({ onEditScene, onSceneAction }) {
   // Delete confirmation popover state (inline, positioned near the delete button)
   const [deletePopoverScene, setDeletePopoverScene] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Delete all scenes modal state
+  const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
 
   // Template-related state
   const [createMode, setCreateMode] = useState('blank'); // 'blank' or 'template'
@@ -171,6 +175,23 @@ export default function SceneList({ onEditScene, onSceneAction }) {
 
   const cancelDelete = () => {
     setDeletePopoverScene(null);
+  };
+
+  // Delete all scenes handler
+  const handleDeleteAllScenes = async () => {
+    setIsDeletingAll(true);
+    try {
+      deleteAllScenes();
+      // Wait for OBS to process, then refresh state
+      setTimeout(() => {
+        refreshState();
+        setShowDeleteAllModal(false);
+      }, 1000);
+    } catch (error) {
+      console.error('Failed to delete all scenes:', error);
+    } finally {
+      setIsDeletingAll(false);
+    }
   };
 
   // Drag-and-drop handlers for scene reordering
@@ -312,6 +333,15 @@ export default function SceneList({ onEditScene, onSceneAction }) {
           <div className="text-sm text-gray-400">
             {studioModeEnabled ? 'Studio Mode Active' : 'Direct Mode'}
           </div>
+          {scenes.length > 0 && (
+            <button
+              onClick={() => setShowDeleteAllModal(true)}
+              className="flex items-center gap-1 px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <TrashIcon className="w-4 h-4" />
+              Delete All
+            </button>
+          )}
           <button
             onClick={() => setShowCreateModal(true)}
             className="flex items-center gap-1 px-3 py-1.5 bg-green-600 hover:bg-green-500 text-white text-sm font-medium rounded-lg transition-colors"
@@ -337,6 +367,17 @@ export default function SceneList({ onEditScene, onSceneAction }) {
           isLoadingTemplates={isLoadingTemplates}
           isCreating={isCreating}
           handleCreateScene={handleCreateScene}
+        />
+      )}
+
+      {/* Delete All Scenes Confirmation Modal */}
+      {showDeleteAllModal && (
+        <DeleteAllScenesModal
+          isOpen={showDeleteAllModal}
+          onClose={() => setShowDeleteAllModal(false)}
+          onConfirm={handleDeleteAllScenes}
+          sceneCount={scenes.length}
+          isDeleting={isDeletingAll}
         />
       )}
 
@@ -746,6 +787,71 @@ function CreateSceneModal({
             } disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors`}
           >
             {isCreating ? 'Creating...' : createMode === 'template' ? 'Create from Template' : 'Create'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * DeleteAllScenesModal - Confirmation modal for deleting all scenes
+ */
+function DeleteAllScenesModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  sceneCount,
+  isDeleting
+}) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-white font-semibold text-lg flex items-center gap-2">
+            <TrashIcon className="w-5 h-5 text-red-400" />
+            Delete All Scenes
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-white transition-colors"
+            disabled={isDeleting}
+          >
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="mb-6">
+          <div className="bg-red-900/20 border border-red-700 rounded-lg p-4 mb-4">
+            <p className="text-red-300 font-medium mb-2">
+              This will permanently delete all {sceneCount} scenes from OBS.
+            </p>
+            <p className="text-red-200/80 text-sm">
+              This action cannot be undone. A single empty scene will remain as OBS requires at least one scene.
+            </p>
+          </div>
+
+          <p className="text-gray-400 text-sm">
+            If you want to start fresh with a template, you can apply a template after deleting all scenes.
+          </p>
+        </div>
+
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            disabled={isDeleting}
+            className="px-4 py-2 text-gray-400 hover:text-white transition-colors disabled:text-gray-600"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={isDeleting}
+            className="px-4 py-2 bg-red-600 hover:bg-red-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
+          >
+            {isDeleting ? 'Deleting...' : `Delete All ${sceneCount} Scenes`}
           </button>
         </div>
       </div>

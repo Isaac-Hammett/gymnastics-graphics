@@ -2898,6 +2898,102 @@ io.on('connection', async (socket) => {
     }
   });
 
+  // Delete all scenes (producer only)
+  socket.on('obs:deleteAllScenes', async () => {
+    console.log(`[deleteAllScenes] Received request to delete all scenes`);
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can delete scenes' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      // Get all scenes
+      const sceneListResponse = await compObs.call('GetSceneList');
+      const scenes = sceneListResponse.scenes || [];
+      const currentScene = sceneListResponse.currentProgramSceneName;
+
+      if (scenes.length === 0) {
+        socket.emit('obs:deleteAllScenesResult', { success: true, deletedCount: 0, message: 'No scenes to delete' });
+        return;
+      }
+
+      // OBS requires at least one scene, so we need to create a temporary scene first
+      // if we're deleting everything
+      const tempSceneName = '__temp_delete_all__';
+      await compObs.call('CreateScene', { sceneName: tempSceneName });
+
+      // Switch to the temp scene so we can delete all others
+      await compObs.call('SetCurrentProgramScene', { sceneName: tempSceneName });
+
+      let deletedCount = 0;
+      const errors = [];
+
+      // Delete all original scenes
+      for (const scene of scenes) {
+        const sceneName = scene.sceneName || scene.name;
+        try {
+          await compObs.call('RemoveScene', { sceneName });
+          deletedCount++;
+          console.log(`[deleteAllScenes] Deleted scene: ${sceneName}`);
+        } catch (err) {
+          console.error(`[deleteAllScenes] Failed to delete scene ${sceneName}: ${err.message}`);
+          errors.push({ sceneName, error: err.message });
+        }
+      }
+
+      // Now delete the temp scene - this will fail because OBS requires at least one scene
+      // But that's actually what we want for a clean slate - one empty scene
+      // Rename the temp scene to something more user-friendly
+      try {
+        await compObs.call('SetSceneName', { sceneName: tempSceneName, newSceneName: 'Scene 1' });
+      } catch (err) {
+        // If rename fails, just leave it
+        console.warn(`[deleteAllScenes] Could not rename temp scene: ${err.message}`);
+      }
+
+      // Clear templateScenes list in Firebase
+      try {
+        const db = productionConfigService.getDb();
+        if (db) {
+          const templateScenesRef = db.ref(`competitions/${clientCompId}/obs/templateScenes`);
+          await templateScenesRef.set([]);
+          console.log(`[deleteAllScenes] Cleared templateScenes list`);
+        }
+      } catch (fbError) {
+        console.warn(`[deleteAllScenes] Could not clear templateScenes list: ${fbError.message}`);
+      }
+
+      console.log(`[deleteAllScenes] Deleted ${deletedCount} scenes for ${clientCompId}`);
+      socket.emit('obs:deleteAllScenesResult', {
+        success: errors.length === 0,
+        deletedCount,
+        errors: errors.length > 0 ? errors : undefined,
+        message: `Deleted ${deletedCount} scenes${errors.length > 0 ? ` with ${errors.length} errors` : ''}`
+      });
+
+      // Broadcast updated state to all clients in this competition
+      await broadcastOBSState(clientCompId, obsConnManager, io);
+    } catch (error) {
+      console.error(`[deleteAllScenes] Failed to delete all scenes: ${error.message}`);
+      socket.emit('error', { message: `Failed to delete all scenes: ${error.message}` });
+    }
+  });
+
   // Reorder scenes in OBS
   socket.on('obs:reorderScenes', async ({ sceneNames }) => {
     console.log(`[reorderScenes] Received request to reorder scenes:`, sceneNames);

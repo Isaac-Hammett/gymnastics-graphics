@@ -405,6 +405,11 @@ export function OBSProvider({ children }) {
     socket?.emit('obs:deleteScene', { sceneName });
   }, [socket]);
 
+  const deleteAllScenes = useCallback(() => {
+    console.log('OBSContext: Deleting all scenes');
+    socket?.emit('obs:deleteAllScenes');
+  }, [socket]);
+
   const duplicateScene = useCallback((sceneName, newSceneName) => {
     console.log('OBSContext: Duplicating scene', sceneName, 'to', newSceneName);
     socket?.emit('obs:duplicateScene', { sceneName, newSceneName });
@@ -548,6 +553,7 @@ export function OBSProvider({ children }) {
     // Scene CRUD actions
     createScene,
     deleteScene,
+    deleteAllScenes,
     duplicateScene,
     renameScene,
     reorderScenes,
