@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   ExclamationTriangleIcon,
   CheckCircleIcon,
@@ -8,14 +8,16 @@ import {
   MicrophoneIcon,
   UserGroupIcon,
   LinkIcon,
-  XMarkIcon
+  XMarkIcon,
+  SignalIcon,
+  SignalSlashIcon
 } from '@heroicons/react/24/outline';
 import { useOBS } from '../../context/OBSContext';
 import { useShow } from '../../context/ShowContext';
 
 /**
  * TalentCommsPanel - Manage talent communications (VDO.Ninja, Discord)
- * Shows connection URLs with copy-to-clipboard and status indicators
+ * Shows connection URLs with copy-to-clipboard and real-time status indicators
  */
 export default function TalentCommsPanel() {
   const { obsConnected } = useOBS();
@@ -29,12 +31,116 @@ export default function TalentCommsPanel() {
   const [success, setSuccess] = useState(null);
   const [copiedUrl, setCopiedUrl] = useState(null);
 
+  // Real-time connection status tracking
+  const [talentStatus, setTalentStatus] = useState({
+    'talent-1': { connected: false, audioActive: false, lastSeen: null },
+    'talent-2': { connected: false, audioActive: false, lastSeen: null }
+  });
+  const iframeRef = useRef(null);
+  const statusCheckIntervalRef = useRef(null);
+
   // Fetch current config on mount
   useEffect(() => {
     if (obsConnected) {
       fetchConfig();
     }
   }, [obsConnected]);
+
+  // Setup VDO.Ninja IFRAME API listener for connection status
+  useEffect(() => {
+    if (!config?.vdoNinja?.statusMonitorUrl) return;
+
+    const handleMessage = (event) => {
+      // Only accept messages from VDO.Ninja
+      if (!event.origin.includes('vdo.ninja')) return;
+
+      try {
+        const data = event.data;
+        if (!data || typeof data !== 'object') return;
+
+        // Handle connection events from VDO.Ninja IFRAME API
+        if (data.action === 'guest-connected' && data.streamID) {
+          const streamId = data.streamID.toLowerCase();
+          const talentKey = streamId.includes('talent1') ? 'talent-1' :
+                           streamId.includes('talent2') ? 'talent-2' : null;
+
+          if (talentKey) {
+            setTalentStatus(prev => ({
+              ...prev,
+              [talentKey]: {
+                ...prev[talentKey],
+                connected: true,
+                lastSeen: new Date().toISOString(),
+                label: data.value?.label || streamId
+              }
+            }));
+            console.log(`[TalentComms] ${talentKey} connected:`, data.streamID);
+          }
+        }
+
+        // Handle push-connection events (for detecting disconnects)
+        if (data.action === 'push-connection') {
+          const streamId = (data.streamID || '').toLowerCase();
+          const talentKey = streamId.includes('talent1') ? 'talent-1' :
+                           streamId.includes('talent2') ? 'talent-2' : null;
+
+          if (talentKey) {
+            setTalentStatus(prev => ({
+              ...prev,
+              [talentKey]: {
+                ...prev[talentKey],
+                connected: data.value === true,
+                lastSeen: data.value ? new Date().toISOString() : prev[talentKey].lastSeen
+              }
+            }));
+            console.log(`[TalentComms] ${talentKey} ${data.value ? 'connected' : 'disconnected'}`);
+          }
+        }
+
+        // Handle audio level events if available
+        if (data.action === 'loudness' && data.streamID) {
+          const streamId = data.streamID.toLowerCase();
+          const talentKey = streamId.includes('talent1') ? 'talent-1' :
+                           streamId.includes('talent2') ? 'talent-2' : null;
+
+          if (talentKey && typeof data.value === 'number') {
+            // Audio is considered active if level is above -50dB
+            const audioActive = data.value > -50;
+            setTalentStatus(prev => ({
+              ...prev,
+              [talentKey]: {
+                ...prev[talentKey],
+                audioActive,
+                audioLevel: data.value
+              }
+            }));
+          }
+        }
+      } catch (err) {
+        console.error('[TalentComms] Error processing VDO.Ninja message:', err);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+
+    // Periodic status check - send getDetails request to iframe every 10s
+    statusCheckIntervalRef.current = setInterval(() => {
+      if (iframeRef.current?.contentWindow) {
+        try {
+          iframeRef.current.contentWindow.postMessage({ getDetails: true }, '*');
+        } catch (err) {
+          // iframe might not be ready
+        }
+      }
+    }, 10000);
+
+    return () => {
+      window.removeEventListener('message', handleMessage);
+      if (statusCheckIntervalRef.current) {
+        clearInterval(statusCheckIntervalRef.current);
+      }
+    };
+  }, [config?.vdoNinja?.statusMonitorUrl]);
 
   const fetchConfig = async () => {
     setLoading(true);
@@ -86,6 +192,12 @@ export default function TalentCommsPanel() {
       setConfig(data.config || data);
       setSuccess('VDO.Ninja room created successfully');
 
+      // Reset talent status when new room is created
+      setTalentStatus({
+        'talent-1': { connected: false, audioActive: false, lastSeen: null },
+        'talent-2': { connected: false, audioActive: false, lastSeen: null }
+      });
+
       // Clear success message after 3 seconds
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
@@ -118,6 +230,12 @@ export default function TalentCommsPanel() {
       // API returns { success: true, config: {...} } - extract the config
       setConfig(data.config || data);
       setSuccess('URLs regenerated successfully');
+
+      // Reset talent status when URLs are regenerated
+      setTalentStatus({
+        'talent-1': { connected: false, audioActive: false, lastSeen: null },
+        'talent-2': { connected: false, audioActive: false, lastSeen: null }
+      });
 
       // Clear success message after 3 seconds
       setTimeout(() => setSuccess(null), 3000);
@@ -352,23 +470,63 @@ export default function TalentCommsPanel() {
             </div>
           ) : (
             <div className="space-y-4">
+              {/* Hidden iframe for status monitoring */}
+              {config.vdoNinja.statusMonitorUrl && (
+                <iframe
+                  ref={iframeRef}
+                  src={config.vdoNinja.statusMonitorUrl}
+                  style={{ display: 'none', width: 0, height: 0 }}
+                  allow="camera;microphone"
+                  title="VDO.Ninja Status Monitor"
+                />
+              )}
+
               {/* Room Info */}
               <div className="bg-gray-800 rounded-lg p-4 border border-gray-600">
                 <div className="text-gray-400 text-sm mb-1">Room ID</div>
                 <div className="text-white font-mono">{config.vdoNinja.roomId}</div>
               </div>
 
+              {/* Talent Connection Status */}
+              <div className="bg-gray-800 rounded-lg p-4 border border-gray-600">
+                <div className="flex items-center gap-2 mb-3">
+                  <SignalIcon className="w-5 h-5 text-gray-300" />
+                  <span className="text-white font-medium">Talent Connection Status</span>
+                </div>
+                <div className="space-y-3">
+                  {['talent-1', 'talent-2'].map(talentKey => {
+                    const status = talentStatus[talentKey];
+                    const label = talentKey === 'talent-1' ? 'Talent 1' : 'Talent 2';
+
+                    return (
+                      <TalentStatusIndicator
+                        key={talentKey}
+                        label={label}
+                        connected={status.connected}
+                        audioActive={status.audioActive}
+                        audioLevel={status.audioLevel}
+                        lastSeen={status.lastSeen}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* Talent URLs */}
-              {config.vdoNinja.talentUrls && Object.entries(config.vdoNinja.talentUrls).map(([role, url]) => (
-                <URLCard
-                  key={role}
-                  label={`${role.charAt(0).toUpperCase() + role.slice(1)} URL`}
-                  url={url}
-                  description={`Share this URL with the ${role}`}
-                  onCopy={() => handleCopyUrl(url, role)}
-                  isCopied={copiedUrl === role}
-                />
-              ))}
+              {config.vdoNinja.talentUrls && Object.entries(config.vdoNinja.talentUrls).map(([role, url]) => {
+                const status = talentStatus[role];
+                return (
+                  <URLCard
+                    key={role}
+                    label={`${role.charAt(0).toUpperCase() + role.slice(1).replace('-', ' ')} URL`}
+                    url={url}
+                    description={`Share this URL with ${role.replace('-', ' ')}`}
+                    onCopy={() => handleCopyUrl(url, role)}
+                    isCopied={copiedUrl === role}
+                    connected={status?.connected}
+                  />
+                );
+              })}
 
               {/* Director (Receive) URL */}
               {config.vdoNinja.directorUrl && (
@@ -380,27 +538,6 @@ export default function TalentCommsPanel() {
                   isCopied={copiedUrl === 'director'}
                   highlight
                 />
-              )}
-
-              {/* Connection Status */}
-              {config.vdoNinja.connections && config.vdoNinja.connections.length > 0 && (
-                <div className="bg-gray-800 rounded-lg p-4 border border-gray-600">
-                  <div className="flex items-center gap-2 mb-3">
-                    <CheckCircleIcon className="w-5 h-5 text-green-400" />
-                    <span className="text-white font-medium">Connected Talent</span>
-                  </div>
-                  <div className="space-y-2">
-                    {config.vdoNinja.connections.map(conn => (
-                      <div key={conn.id} className="flex items-center justify-between text-sm">
-                        <span className="text-gray-300">{conn.role || conn.id}</span>
-                        <span className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                          <span className="text-green-400">Connected</span>
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
               )}
             </div>
           )}
@@ -453,16 +590,100 @@ export default function TalentCommsPanel() {
 }
 
 /**
+ * TalentStatusIndicator - Shows connection and audio status for a single talent
+ */
+function TalentStatusIndicator({ label, connected, audioActive, audioLevel, lastSeen }) {
+  return (
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        {connected ? (
+          <div className="flex items-center gap-2">
+            <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
+            <SignalIcon className="w-4 h-4 text-green-400" />
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <div className="w-2.5 h-2.5 rounded-full bg-gray-500" />
+            <SignalSlashIcon className="w-4 h-4 text-gray-500" />
+          </div>
+        )}
+        <span className={`font-medium ${connected ? 'text-white' : 'text-gray-500'}`}>
+          {label}
+        </span>
+      </div>
+
+      <div className="flex items-center gap-4">
+        {/* Audio Level Indicator */}
+        <div className="flex items-center gap-2">
+          <MicrophoneIcon className={`w-4 h-4 ${audioActive ? 'text-green-400' : 'text-gray-500'}`} />
+          <AudioLevelMeter active={audioActive} level={audioLevel} />
+        </div>
+
+        {/* Connection Status Badge */}
+        <span className={`text-xs px-2 py-1 rounded ${
+          connected
+            ? 'bg-green-900/30 text-green-400 border border-green-700'
+            : 'bg-gray-800 text-gray-500 border border-gray-600'
+        }`}>
+          {connected ? 'Connected' : 'Disconnected'}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * AudioLevelMeter - Simple 5-bar audio level visualization
+ */
+function AudioLevelMeter({ active, level }) {
+  // Normalize level from dB (-60 to 0) to 0-5 bars
+  const normalizedLevel = level !== undefined
+    ? Math.max(0, Math.min(5, Math.round((level + 60) / 12)))
+    : 0;
+
+  return (
+    <div className="flex items-end gap-0.5 h-4">
+      {[1, 2, 3, 4, 5].map(bar => (
+        <div
+          key={bar}
+          className={`w-1 transition-all duration-75 ${
+            active && bar <= normalizedLevel
+              ? bar <= 3
+                ? 'bg-green-500'
+                : bar === 4
+                  ? 'bg-yellow-500'
+                  : 'bg-red-500'
+              : 'bg-gray-600'
+          }`}
+          style={{ height: `${bar * 3}px` }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/**
  * URLCard - Card component for displaying copyable URLs
  */
-function URLCard({ label, url, description, onCopy, isCopied, highlight }) {
+function URLCard({ label, url, description, onCopy, isCopied, highlight, connected }) {
   return (
     <div className={`bg-gray-800 rounded-lg p-4 border ${
       highlight ? 'border-purple-600 bg-purple-900/10' : 'border-gray-600'
     }`}>
       <div className="flex items-start justify-between gap-4 mb-2">
         <div className="flex-1">
-          <div className="text-gray-400 text-sm mb-1">{label}</div>
+          <div className="flex items-center gap-2">
+            <div className="text-gray-400 text-sm">{label}</div>
+            {connected !== undefined && (
+              <span className={`text-xs px-1.5 py-0.5 rounded ${
+                connected
+                  ? 'bg-green-900/30 text-green-400'
+                  : 'bg-gray-700 text-gray-500'
+              }`}>
+                {connected ? 'Connected' : 'Not connected'}
+              </span>
+            )}
+          </div>
           <div className="text-white font-mono text-sm break-all">{url}</div>
           {description && (
             <div className="text-gray-500 text-xs mt-2">{description}</div>
