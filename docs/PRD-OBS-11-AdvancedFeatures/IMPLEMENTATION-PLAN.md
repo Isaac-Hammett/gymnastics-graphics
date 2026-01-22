@@ -279,7 +279,7 @@
 
 | Commit | Description |
 |--------|-------------|
-| (pending) | PRD-OBS-11: Implement Stream Key Encryption (P3) |
+| 1764ff5 | PRD-OBS-11: Implement Stream Key Encryption (P3) |
 | 8a69f3b | PRD-OBS-11: Implement Talent Connection Status (P3) |
 | 9691855 | PRD-OBS-11: Implement Stinger Transitions (P2) |
 | c705da0 | PRD-OBS-11: Implement Template Auto-Loading (P1) |
