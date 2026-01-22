@@ -1,7 +1,7 @@
 # PRD-OBS-11: Advanced Features - Implementation Plan
 
 **Last Updated:** 2026-01-22
-**Status:** IN PROGRESS (P0 Complete, P1 Complete, P2 Complete)
+**Status:** IN PROGRESS (P0 Complete, P1 Complete, P2 Complete, P3 Talent Status Complete)
 
 ---
 
@@ -63,23 +63,25 @@
 | 30 | Integrate into TransitionPicker.jsx | COMPLETE | Shows "Configure Stinger" when stinger selected |
 | 31 | Deploy and verify | COMPLETE | Playwright MCP verified 2026-01-22 |
 
-### P3 - Talent Connection Status (NOT STARTED)
+### P3 - Talent Connection Status (COMPLETE)
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 32 | Research VDO.Ninja status API | NOT STARTED | May need iframe approach |
-| 33 | Add status polling to TalentCommsPanel | NOT STARTED | 5-10s interval |
-| 34 | Create StatusIndicator component | NOT STARTED | Connected/Disconnected |
-| 35 | Deploy and verify | NOT STARTED | With live VDO.Ninja room |
+| 32 | Research VDO.Ninja status API | COMPLETE | Used IFRAME API with postMessage events |
+| 33 | Add VDO.Ninja IFRAME monitoring | COMPLETE | Hidden iframe with &api parameter |
+| 34 | Create TalentStatusIndicator component | COMPLETE | Shows connected/disconnected + audio level |
+| 35 | Create AudioLevelMeter component | COMPLETE | 5-bar audio visualization |
+| 36 | Update URLCard with status badges | COMPLETE | "Connected" / "Not connected" badges |
+| 37 | Deploy and verify | COMPLETE | Playwright MCP verified 2026-01-22 |
 
 ### P3 - Stream Key Encryption (NOT STARTED)
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 36 | Create streamKeyEncryption.js utility | NOT STARTED | AES-256-GCM |
-| 37 | Add STREAM_KEY_SECRET env var | NOT STARTED | On coordinator |
-| 38 | Update stream settings handlers | NOT STARTED | Encrypt on save, decrypt on use |
-| 39 | Migrate existing keys | NOT STARTED | One-time script |
+| 38 | Create streamKeyEncryption.js utility | NOT STARTED | AES-256-GCM |
+| 39 | Add STREAM_KEY_SECRET env var | NOT STARTED | On coordinator |
+| 40 | Update stream settings handlers | NOT STARTED | Encrypt on save, decrypt on use |
+| 41 | Migrate existing keys | NOT STARTED | One-time script |
 
 ---
 
@@ -105,8 +107,9 @@
 - `show-controller/src/context/OBSContext.jsx` - Added getTransitionSettings method
 - `server/index.js` - Added obs:getTransitionSettings socket handler
 
-### To Modify
-- `show-controller/src/components/obs/TalentCommsPanel.jsx` - Status indicators
+### Modified (Talent Connection Status)
+- `show-controller/src/components/obs/TalentCommsPanel.jsx` - Real-time status indicators, IFRAME API monitoring
+- `server/lib/talentCommsManager.js` - Added statusMonitorUrl and apiKey to VDO.Ninja URL generation
 
 ### Already Modified (VU Meters)
 - `show-controller/src/components/obs/AudioMixer.jsx` - VU meters (VUMeter, StereoVUMeter, useAudioAlerts)
@@ -124,6 +127,26 @@
 ---
 
 ## Progress Log
+
+### 2026-01-22 (Talent Connection Status)
+- **P3 Talent Connection Status COMPLETE**
+  - Researched VDO.Ninja IFRAME API for detecting connection status
+  - Updated talentCommsManager.js to generate:
+    - statusMonitorUrl with &api and &cleanoutput parameters
+    - apiKey for IFRAME API authentication
+  - Updated TalentCommsPanel.jsx with:
+    - Hidden iframe loading VDO.Ninja director for status monitoring
+    - postMessage event listener for guest-connected, push-connection, loudness events
+    - TalentStatusIndicator component showing connection and audio status
+    - AudioLevelMeter component with 5-bar visualization (green/yellow/red)
+    - URLCard enhanced with "Connected" / "Not connected" badges
+  - Periodic status check every 10s via getDetails postMessage request
+  - Deployed to production and verified with Playwright
+  - All acceptance criteria met:
+    - Connection status shown for each talent (Talent 1, Talent 2)
+    - Audio activity indicator with 5-bar level meter
+    - Status updates automatically via IFRAME API events
+    - Note: Live VDO.Ninja room required for full real-time testing
 
 ### 2026-01-22 (Stinger Transitions)
 - **P2 Stinger Transitions COMPLETE**
@@ -236,6 +259,7 @@
 
 | Commit | Description |
 |--------|-------------|
+| 8a69f3b | PRD-OBS-11: Implement Talent Connection Status (P3) |
 | 9691855 | PRD-OBS-11: Implement Stinger Transitions (P2) |
 | c705da0 | PRD-OBS-11: Implement Template Auto-Loading (P1) |
 | 5dbf404 | PRD-OBS-11: Implement Scene Thumbnails (P1) |
