@@ -12,7 +12,7 @@
 | Task | Status | Notes |
 |------|--------|-------|
 | REGISTRY-CREATE | COMPLETE | Create graphicsRegistry.js with all ~45 graphic definitions and helper functions |
-| BUTTONS-MIGRATE | NOT STARTED | Update graphicButtons.js to derive from registry |
+| BUTTONS-MIGRATE | COMPLETE | Update graphicButtons.js to derive from registry |
 | CONTROL-MIGRATE | NOT STARTED | Update GraphicsControl.jsx with dynamic team names |
 | URLGEN-INMEET | NOT STARTED | Add In-Meet section to UrlGeneratorPage.jsx |
 | URLBUILD-REGISTRY | NOT STARTED | Update urlBuilder.js to use registry |
@@ -67,18 +67,23 @@ Create the core registry file with all graphic definitions and helper functions.
 
 #### Task BUTTONS-MIGRATE: Update graphicButtons.js
 
-**Status:** NOT STARTED
+**Status:** COMPLETE
 **File:** `show-controller/src/lib/graphicButtons.js`
 
 **Description:**
 Make graphicButtons.js derive from registry for backwards compatibility.
 
-**Checklist:**
-- [ ] Import from graphicsRegistry.js
-- [ ] Derive `graphicNames` from registry
-- [ ] Update `getPreMeetButtons` to delegate to registry
-- [ ] Update `getApparatusButtons` to delegate to registry
-- [ ] Keep all existing exports working
+**What was done:**
+- [x] Import from graphicsRegistry.js
+- [x] Derive `graphicNames` from registry via getAllGraphics()
+- [x] Update `getPreMeetButtons` to delegate to registry via getGraphicsForCompetition()
+- [x] Update `getLeaderboardButtons` to use getGraphicsByCategory('leaderboards')
+- [x] Update `getEventSummaryApparatusButtons` to use registry
+- [x] Derive `transparentGraphics` from registry
+- [x] Delegate `isTransparentGraphic()` to registry
+- [x] Derive `graphicButtons.frameOverlays`, `stream`, and `inMeet` from registry
+- [x] Keep all existing exports working (mensApparatus and womensApparatus remain hardcoded for title ordering)
+- [x] Build passes with no errors
 
 ---
 

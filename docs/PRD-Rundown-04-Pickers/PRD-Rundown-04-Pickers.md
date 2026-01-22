@@ -1,9 +1,9 @@
 # PRD-Rundown-04: Picker Components
 
-**Version:** 1.0
+**Version:** 1.1
 **Date:** 2026-01-22
 **Status:** Draft
-**Depends On:** PRD-Rundown-01-EditorPrototype
+**Depends On:** PRD-Rundown-01-EditorPrototype, **PRD-Graphics-Registry**
 **Blocks:** PRD-Rundown-03-SegmentDetail, PRD-Rundown-07-FrontendIntegration
 
 > **Master PRD:** [PRD-AdvancedRundownEditor-2026-01-22.md](../PRD-AdvancedRundownEditor-2026-01-22.md)
@@ -13,12 +13,16 @@
 
 ## Overview
 
-Picker components are reusable dropdown/selection components used in the SegmentDetail form. In the **prototype phase (Phase 0)**, these use hardcoded data. In **Phase 2**, they will be connected to real data sources (OBS via Socket.io, Graphics Registry from Firebase).
+Picker components are reusable dropdown/selection components used in the SegmentDetail form.
+
+**Key Dependencies:**
+- **GraphicsPicker** depends on [PRD-Graphics-Registry](../PRD-Graphics-Registry/PRD-Graphics-Registry.md) - the schema-driven graphics system
+- **ScenePicker** uses OBS scenes from competition setup (stored in Firebase, populated dynamically from OBS)
 
 This PRD covers four picker components:
-1. ScenePicker - OBS scene selection
+1. ScenePicker - OBS scene selection (from competition config)
 2. TransitionPicker - OBS transition type and duration
-3. GraphicsPicker - Graphics selection from registry
+3. GraphicsPicker - **Schema-driven** graphics selection from registry
 4. AudioPicker - Audio preset selection
 
 ---
@@ -27,6 +31,11 @@ This PRD covers four picker components:
 
 ### Purpose
 Select an OBS scene from available scenes.
+
+> **Note:** Scenes come dynamically from OBS during competition setup.
+> They are stored in Firebase under the competition config and loaded at runtime.
+> This picker does NOT control OBS - it just selects which scene should be used.
+> The Producer View handles actual OBS scene switching during the live show.
 
 ### Component API
 
@@ -152,22 +161,42 @@ const TRANSITIONS = [
 
 ---
 
-## 3. GraphicsPicker
+## 3. GraphicsPicker (Schema-Driven)
+
+> **Important:** This component depends on [PRD-Graphics-Registry](../PRD-Graphics-Registry/PRD-Graphics-Registry.md).
+> The GraphicsPicker reads graphic definitions and parameter schemas from the registry,
+> automatically rendering appropriate UI inputs for each graphic's parameters.
 
 ### Purpose
-Select a graphic from the graphics registry.
+Select a graphic from the graphics registry with **automatic parameter UI generation**.
+
+### Design Goals
+1. **Scalability** - Adding new graphics requires no changes to this component
+2. **Smart Recommendations** - Suggests graphics based on segment name keywords
+3. **Schema-Driven UI** - Parameter inputs generated from graphic's param schema
+4. **Competition-Aware** - Filters graphics and options based on competition type/gender
 
 ### Component API
 
 ```jsx
 <GraphicsPicker
-  value={string|null}                 // Selected graphic ID
-  onChange={(graphicId) => {}}        // Selection handler
-  graphics={[...]}                    // Available graphics (hardcoded for Phase 0)
-  triggerMode={string}                // "auto" | "cued" | "on-score" | "timed"
-  onTriggerModeChange={(mode) => {}}  // Trigger mode handler
-  duration={number|null}              // Graphic duration
-  onDurationChange={(duration) => {}} // Duration handler
+  // Competition context
+  compType="womens-quad"              // Competition type for filtering
+  teamNames={{ 1: 'UCLA', ... }}      // Team names for display and auto-fill
+  competitionConfig={...}             // Full competition config for param auto-fill
+
+  // Value (graphic + params)
+  value={{
+    graphicId: 'event-summary',       // Selected graphic ID (or null)
+    params: {                         // Graphic-specific parameters
+      summaryMode: 'rotation',
+      summaryRotation: 1,
+    },
+  }}
+  onChange={(value) => {}}            // Called with { graphicId, params }
+
+  // Optional
+  segmentName="Rotation 1 Summary"    // For smart recommendations
   disabled={boolean}                  // Disable picker
 />
 ```
@@ -175,69 +204,104 @@ Select a graphic from the graphics registry.
 ### UI Layout
 
 ```
-┌─ SELECT GRAPHIC ────────────────────────────────────────────────────────┐
-│                                                                          │
-│  Graphic        [UCLA Stats ▼]                                           │
-│                 ┌────────────────────────────────────────────────────┐  │
-│                 │ (None)                                              │  │
-│                 │ ─── Pre-Meet ──────────────────────────────────── │  │
-│                 │ Team Logos                                          │  │
-│                 │ Team Stats                                     ✓   │  │
-│                 │ ─── Event Frames ──────────────────────────────── │  │
-│                 │ Vault Frame                                         │  │
-│                 │ Uneven Bars Frame                                   │  │
-│                 │ Balance Beam Frame                                  │  │
-│                 │ Floor Frame                                         │  │
-│                 │ ─── Live/Triggered ────────────────────────────── │  │
-│                 │ Score Reveal                                        │  │
-│                 │ Now Competing                                       │  │
-│                 └────────────────────────────────────────────────────┘  │
-│                                                                          │
-│  Trigger Mode   [cued ▼]            Duration: [8] seconds                │
-│                 ┌──────────────┐                                         │
-│                 │ auto         │  Fires when segment starts              │
-│                 │ cued     ✓   │  Waits for manual trigger               │
-│                 │ on-score     │  Fires when score received              │
-│                 │ timed        │  Fires after delay                      │
-│                 └──────────────┘                                         │
-│                                                                          │
-└──────────────────────────────────────────────────────────────────────────┘
+┌─ GRAPHIC ──────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│  💡 Suggested: Event Summary (based on segment name)            [Use]       │
+│                                                                             │
+│  Graphic         [Event Summary ▼]                                          │
+│                  ┌────────────────────────────────────────────────────┐    │
+│                  │ (None)                                              │    │
+│                  │ ─── Pre-Meet ──────────────────────────────────── │    │
+│                  │ Team Logos                                          │    │
+│                  │ UCLA Coaches                                        │    │
+│                  │ Oregon Coaches                                      │    │
+│                  │ ─── Event Frames ──────────────────────────────── │    │
+│                  │ Vault Frame                                         │    │
+│                  │ Uneven Bars Frame                                   │    │
+│                  │ Balance Beam Frame                                  │    │
+│                  │ Floor Frame                                         │    │
+│                  │ ─── Event Summary ────────────────────────────── │    │
+│                  │ Event Summary                                   ✓   │    │
+│                  │ ─── Leaderboards ─────────────────────────────── │    │
+│                  │ VT Leaders                                          │    │
+│                  │ UB Leaders                                          │    │
+│                  └────────────────────────────────────────────────────┘    │
+│                                                                             │
+│  ┌─ Parameters (from schema) ─────────────────────────────────────────────┐│
+│  │                                                                         ││
+│  │  Mode           [By Rotation ▼]     ← enum param                        ││
+│  │                                                                         ││
+│  │  Rotation       [R1 ▼]              ← number param (dependsOn: mode)    ││
+│  │                                                                         ││
+│  │  Theme          [ESPN ▼]            ← enum param                        ││
+│  │                                                                         ││
+│  └─────────────────────────────────────────────────────────────────────────┘│
+│                                                                             │
+│  Note: Parameters with source: 'competition' are auto-filled and hidden    │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Hardcoded Data (Phase 0)
+### How It Works
 
-```javascript
-const DUMMY_GRAPHICS = [
-  { id: 'team-logos', name: 'Team Logos', category: 'pre-meet' },
-  { id: 'team-stats', name: 'Team Stats', category: 'pre-meet' },
-  { id: 'event-frame-vt', name: 'Vault Frame', category: 'event-frame' },
-  { id: 'event-frame-ub', name: 'Uneven Bars Frame', category: 'event-frame' },
-  { id: 'event-frame-bb', name: 'Balance Beam Frame', category: 'event-frame' },
-  { id: 'event-frame-fx', name: 'Floor Frame', category: 'event-frame' },
-  { id: 'score-reveal', name: 'Score Reveal', category: 'live' },
-  { id: 'now-competing', name: 'Now Competing', category: 'live' },
-];
+1. **Get Available Graphics**
+   ```javascript
+   import { getAllGraphicsForCompetition } from '@/lib/graphicsRegistry';
+   const graphics = getAllGraphicsForCompetition(compType, teamNames);
+   // Returns filtered list based on gender, team count
+   ```
 
-const CATEGORY_LABELS = {
-  'pre-meet': 'Pre-Meet',
-  'event-frame': 'Event Frames',
-  'live': 'Live/Triggered',
-};
+2. **Get Recommendation**
+   ```javascript
+   import { getRecommendedGraphic } from '@/lib/graphicsRegistry';
+   const suggestion = getRecommendedGraphic(segmentName, compType, teamNames);
+   // Returns { id: 'event-summary', label: 'Event Summary', confidence: 0.8 }
+   ```
 
-const TRIGGER_MODES = [
-  { value: 'auto', label: 'Auto', description: 'Fires when segment starts' },
-  { value: 'cued', label: 'Cued', description: 'Waits for manual trigger' },
-  { value: 'on-score', label: 'On Score', description: 'Fires when score received' },
-  { value: 'timed', label: 'Timed', description: 'Fires after delay' },
-];
-```
+3. **Get Parameter Schema**
+   ```javascript
+   import { getGraphicSchema } from '@/lib/graphicsRegistry';
+   const schema = getGraphicSchema(selectedGraphicId);
+   // Returns full graphic definition with params schema
+   ```
+
+4. **Render Parameter Inputs**
+   - For each param in `schema.params`:
+     - Skip if `source: 'competition'` (auto-filled)
+     - Skip if `dependsOn` condition not met
+     - Render input based on `type`:
+       - `enum` → dropdown
+       - `number` → number input
+       - `string` → text input
+       - `boolean` → checkbox
 
 ### Behavior
-- "(None)" option to clear selection
-- Graphics grouped by category
-- Trigger mode dropdown with descriptions
-- Duration input for graphic display time
-- Duration in seconds (not ms like transitions)
+- "(None)" option to clear graphic selection
+- Graphics grouped by category with headers
+- Smart recommendation shown when segment name matches keywords
+- Parameter inputs appear/disappear based on `dependsOn` conditions
+- Params with `source: 'competition'` are auto-filled and hidden
+- Dropdown options filtered by gender (e.g., no pommel horse for women's)
+- Team-specific graphics show actual team names (e.g., "UCLA Coaches" not "Team 1 Coaches")
+
+### Segment Data Structure
+
+When saved, a segment stores:
+
+```javascript
+{
+  graphic: {
+    graphicId: 'event-summary',
+    params: {
+      summaryMode: 'rotation',
+      summaryRotation: 1,
+      summaryTheme: 'espn',
+    },
+  },
+}
+```
+
+This is **abstract** - works in templates across different competitions.
 
 ---
 
@@ -404,12 +468,19 @@ All pickers share common styling:
 - [ ] Duration defaults to transition's defaultDuration
 - [ ] Calls `onTypeChange` and `onDurationChange` appropriately
 
-### GraphicsPicker
-- [ ] Dropdown shows graphics grouped by category
+### GraphicsPicker (Schema-Driven)
+- [ ] Reads graphics from `graphicsRegistry.js`
+- [ ] Dropdown shows graphics filtered by competition type/gender
+- [ ] Graphics grouped by category
+- [ ] Team-specific graphics show actual team names (e.g., "UCLA Coaches")
 - [ ] "(None)" option at top to clear selection
-- [ ] Trigger mode dropdown below graphic selection
-- [ ] Duration input for graphic display time
-- [ ] Calls appropriate change handlers
+- [ ] Smart recommendation shown based on segment name keywords
+- [ ] Parameter inputs rendered automatically from schema
+- [ ] `enum` params → dropdown
+- [ ] `number` params → number input with min/max
+- [ ] Params with `dependsOn` show/hide based on other param values
+- [ ] Params with `source: 'competition'` are auto-filled and hidden
+- [ ] Returns `{ graphicId, params }` on change
 
 ### AudioPicker
 - [ ] Dropdown shows all presets
@@ -419,24 +490,21 @@ All pickers share common styling:
 
 ---
 
-## Phase 2 Changes
-
-When integrating with real data (PRD-Rundown-07):
+## Data Sources
 
 | Picker | Data Source |
 |--------|-------------|
-| ScenePicker | `useOBS().obsState.scenes` via Socket.io |
-| TransitionPicker | `useOBS().obsState.transitions` via Socket.io |
-| GraphicsPicker | Firebase `system/graphics/registry` |
-| AudioPicker | Firebase audio presets |
-
-The component APIs will remain the same; only the data passed as props will change.
+| ScenePicker | Competition config in Firebase (populated from OBS during setup) |
+| TransitionPicker | Hardcoded options (Cut, Fade, Stinger) |
+| GraphicsPicker | `graphicsRegistry.js` (schema-driven) |
+| AudioPicker | Hardcoded presets (future: Firebase) |
 
 ---
 
 ## Dependencies
 
-- PRD-Rundown-01: Parent page provides data to pass as props
+- **PRD-Rundown-01**: Parent page provides competition context
+- **PRD-Graphics-Registry**: GraphicsPicker depends on the schema-driven registry
 
 ---
 
@@ -444,4 +512,4 @@ The component APIs will remain the same; only the data passed as props will chan
 
 After this PRD is complete:
 1. PRD-Rundown-03: SegmentDetail can integrate these pickers
-2. PRD-Rundown-07: Connect to real data sources
+2. PRD-Rundown-07: Connect to Firebase for persistence

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Autonomous loop for PRD-Rundown-05 ProducerPreview implementation
+# Autonomous loop for PRD-Rundown-05 Prototype implementation
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
@@ -17,13 +17,13 @@ for i in $(seq 1 $MAX_ITERATIONS); do
     echo "=== Iteration $i ($(date)) ===" | tee -a "$LOG_FILE"
 
     # Check if PRD is complete
-    if grep -q "Status: COMPLETE" "$SCRIPT_DIR/PLAN-Rundown-05-ProducerPreview-Implementation.md" 2>/dev/null; then
+    if grep -q "Status: COMPLETE" "$SCRIPT_DIR/PLAN-Rundown-05-Prototype-Implementation.md" 2>/dev/null; then
         echo "All tasks complete!" | tee -a "$LOG_FILE"
         say "All tasks complete"
         exit 0
     fi
 
-    cat "$SCRIPT_DIR/promptv2-Rundown-05-ProducerPreview.md" | \
+    cat "$SCRIPT_DIR/promptv2-Rundown-05-Prototype.md" | \
         claude -p --dangerously-skip-permissions --verbose --output-format stream-json \
         --mcp-config "$MCP_CONFIG" 2>&1 | \
         tee -a "$LOG_FILE"
