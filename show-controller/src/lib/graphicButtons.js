@@ -1,4 +1,13 @@
 // Graphics button definitions shared across the app
+// NOTE: This file now derives from graphicsRegistry.js as the single source of truth
+
+import {
+  GRAPHICS,
+  getAllGraphics,
+  getGraphicsByCategory,
+  getGraphicsForCompetition,
+  isTransparentGraphic as registryIsTransparentGraphic,
+} from './graphicsRegistry';
 
 /**
  * Generate pre-meet buttons dynamically based on team count
@@ -7,35 +16,33 @@
  * @returns {Array} Array of button definitions
  */
 export function getPreMeetButtons(teamCount = 2, teamNames = {}) {
-  const buttons = [
-    { id: 'logos', label: 'Team Logos', number: 1 },
-    { id: 'event-bar', label: 'Event Info', number: 2 },
-    { id: 'warm-up', label: 'Warm Up', number: 3 },
-    { id: 'hosts', label: 'Hosts', number: 4 },
-  ];
-
-  // Add team stats and coaches for each team
-  let buttonNum = 5;
+  // Build teamNames object from teamCount if not provided
+  const names = { ...teamNames };
   for (let i = 1; i <= teamCount; i++) {
-    const teamLabel = teamNames[i] || `Team ${i}`;
-    buttons.push({ id: `team${i}-stats`, label: `${teamLabel} Stats`, number: buttonNum++, team: i });
-    buttons.push({ id: `team${i}-coaches`, label: `${teamLabel} Coaches`, number: buttonNum++, team: i });
+    if (!names[i]) names[i] = `Team ${i}`;
   }
 
-  return buttons;
+  // Get pre-meet graphics from registry
+  const preMeetGraphics = getGraphicsForCompetition(null, names, 'pre-meet');
+
+  // Map to button format expected by existing code
+  let buttonNum = 1;
+  return preMeetGraphics.map(g => ({
+    id: g.id,
+    label: g.label,
+    number: buttonNum++,
+    ...(g.team ? { team: g.team } : {}),
+  }));
 }
 
 // Static pre-meet buttons (for backwards compatibility, defaults to 2 teams)
 export const graphicButtons = {
   preMeet: getPreMeetButtons(2),
-  frameOverlays: [
-    { id: 'frame-quad', label: 'Quad View', number: 21 },
-    { id: 'frame-tri-center', label: 'Tri Center', number: 22 },
-    { id: 'frame-tri-wide', label: 'Tri Wide', number: 23 },
-    { id: 'frame-team-header', label: 'Team Header Dual', number: 24 },
-    { id: 'frame-single', label: 'Single', number: 25 },
-    { id: 'frame-dual', label: 'Dual View', number: 26 },
-  ],
+  frameOverlays: getGraphicsByCategory('frame-overlays').map((g, i) => ({
+    id: g.id,
+    label: g.label,
+    number: 21 + i,
+  })),
   mensApparatus: [
     { id: 'floor', label: 'Floor Exercise', title: 'FLOOR EXERCISE', number: 8 },
     { id: 'pommel', label: 'Pommel Horse', title: 'POMMEL HORSE', number: 9 },
@@ -60,49 +67,28 @@ export const graphicButtons = {
     { id: 'lineups', label: 'Lineups', title: 'NEXT EVENT LINEUPS', number: 15 },
     { id: 'summary', label: 'Summary', title: 'EVENT SUMMARY', number: 16 },
   ],
-  stream: [
-    { id: 'stream-starting', label: 'Starting Soon', number: 19 },
-    { id: 'stream-thanks', label: 'Thanks', number: 20 },
-  ],
-  inMeet: [
-    { id: 'replay', label: 'Replay', number: 27 },
-  ],
+  stream: getGraphicsByCategory('stream').map((g, i) => ({
+    id: g.id,
+    label: g.label,
+    number: 19 + i,
+  })),
+  inMeet: getGraphicsByCategory('in-meet').map((g, i) => ({
+    id: g.id,
+    label: g.label,
+    number: 27 + i,
+  })),
 };
 
-export const graphicNames = {
-  'clear': 'None',
-  'logos': 'Team Logos',
-  'event-bar': 'Event Info',
-  'warm-up': 'Warm Up',
-  'hosts': 'Hosts',
-  'team1-stats': 'Team 1 Stats',
-  'team1-coaches': 'Team 1 Coaches',
-  'team2-stats': 'Team 2 Stats',
-  'team2-coaches': 'Team 2 Coaches',
-  'floor': 'Floor Exercise',
-  'pommel': 'Pommel Horse',
-  'rings': 'Still Rings',
-  'vault': 'Vault',
-  'pbars': 'Parallel Bars',
-  'hbar': 'High Bar',
-  'ubars': 'Uneven Bars',
-  'beam': 'Balance Beam',
-  'allaround': 'All Around',
-  'final': 'Final Scores',
-  'order': 'Competition Order',
-  'lineups': 'Lineups',
-  'summary': 'Event Summary',
-  'stream-starting': 'Stream Starting',
-  'stream-thanks': 'Thanks for Watching',
-  'event-frame': 'Event Frame',
-  'frame-quad': 'Quad View',
-  'frame-tri-center': 'Tri Center',
-  'frame-tri-wide': 'Tri Wide',
-  'frame-team-header': 'Team Header Dual',
-  'frame-single': 'Single Frame',
-  'frame-dual': 'Dual View',
-  'replay': 'Replay'
-};
+// Derive graphicNames from registry
+export const graphicNames = Object.fromEntries([
+  ['clear', 'None'],
+  ...getAllGraphics().map(g => [g.id, g.label]),
+  // Add team-specific entries for backwards compatibility
+  ...Array.from({ length: 6 }, (_, i) => [
+    [`team${i + 1}-stats`, `Team ${i + 1} Stats`],
+    [`team${i + 1}-coaches`, `Team ${i + 1} Coaches`],
+  ]).flat(),
+]);
 
 export const teamCounts = {
   'mens-dual': 2,
@@ -139,30 +125,19 @@ export const typeLabels = {
 
 export const eventFrameIds = ['floor', 'pommel', 'rings', 'vault', 'pbars', 'hbar', 'ubars', 'beam', 'allaround', 'final', 'order', 'lineups', 'summary'];
 
-// Base transparent graphics (without team-specific ones)
-const baseTransparentGraphics = ['event-bar', 'warm-up', 'replay', 'hosts', ...eventFrameIds];
-
-// Frame overlays are transparent (used as OBS overlays)
-const frameOverlayIds = ['frame-quad', 'frame-tri-center', 'frame-tri-wide', 'frame-team-header', 'frame-single', 'frame-dual'];
-
-// Generate transparent graphics list for all possible teams (up to 6)
-const teamTransparentGraphics = [];
-for (let i = 1; i <= 6; i++) {
-  teamTransparentGraphics.push(`team${i}-stats`, `team${i}-coaches`);
-}
-
-export const transparentGraphics = [...baseTransparentGraphics, ...frameOverlayIds, ...teamTransparentGraphics];
-
-/**
- * Check if a graphic should have transparent background
- * @param {string} graphicId - The graphic ID to check
- * @returns {boolean} True if the graphic should be transparent
- */
+// Delegate to registry for transparent graphic check
 export function isTransparentGraphic(graphicId) {
-  return transparentGraphics.includes(graphicId) ||
-         /^team\d+-(stats|coaches)$/.test(graphicId) ||
-         /^frame-/.test(graphicId);
+  return registryIsTransparentGraphic(graphicId);
 }
+
+// Keep transparentGraphics array for backwards compatibility (derived from registry)
+export const transparentGraphics = getAllGraphics()
+  .filter(g => g.transparent)
+  .map(g => g.id)
+  .concat(
+    // Add team-specific graphics
+    Array.from({ length: 6 }, (_, i) => [`team${i + 1}-stats`, `team${i + 1}-coaches`]).flat()
+  );
 
 export function getApparatusButtons(compType) {
   const isMens = compType?.startsWith('mens');
@@ -177,29 +152,16 @@ export function getApparatusButtons(compType) {
 export function getLeaderboardButtons(compType) {
   const isMens = compType?.startsWith('mens');
 
-  const mensLeaderboards = [
-    { id: 'leaderboard-fx', label: 'FX Leaders', event: 'floor' },
-    { id: 'leaderboard-ph', label: 'PH Leaders', event: 'pommel' },
-    { id: 'leaderboard-sr', label: 'SR Leaders', event: 'rings' },
-    { id: 'leaderboard-vt', label: 'VT Leaders', event: 'vault' },
-    { id: 'leaderboard-pb', label: 'PB Leaders', event: 'pBars' },
-    { id: 'leaderboard-hb', label: 'HB Leaders', event: 'hBar' },
-  ];
+  // Get leaderboard graphics from registry filtered by gender
+  const leaderboards = getGraphicsByCategory('leaderboards')
+    .filter(g => g.gender === 'both' || (isMens && g.gender === 'mens') || (!isMens && g.gender === 'womens'))
+    .map(g => ({
+      id: g.id,
+      label: g.label,
+      event: g.params?.leaderboardEvent?.default || g.id.replace('leaderboard-', ''),
+    }));
 
-  const womensLeaderboards = [
-    { id: 'leaderboard-vt', label: 'VT Leaders', event: 'vault' },
-    { id: 'leaderboard-ub', label: 'UB Leaders', event: 'bars' },
-    { id: 'leaderboard-bb', label: 'BB Leaders', event: 'beam' },
-    { id: 'leaderboard-fx', label: 'FX Leaders', event: 'floor' },
-  ];
-
-  const eventLeaderboards = isMens ? mensLeaderboards : womensLeaderboards;
-
-  // Add AA Leaders (always available)
-  return [
-    ...eventLeaderboards,
-    { id: 'leaderboard-aa', label: 'AA Leaders', event: 'all-around' },
-  ];
+  return leaderboards;
 }
 
 /**
@@ -230,23 +192,17 @@ export function getEventSummaryRotationButtons(compType) {
 export function getEventSummaryApparatusButtons(compType) {
   const isMens = compType?.startsWith('mens');
 
-  const mensApparatus = [
-    { id: 'summary-fx', label: 'FX', apparatus: 'fx' },
-    { id: 'summary-ph', label: 'PH', apparatus: 'ph' },
-    { id: 'summary-sr', label: 'SR', apparatus: 'sr' },
-    { id: 'summary-vt', label: 'VT', apparatus: 'vt' },
-    { id: 'summary-pb', label: 'PB', apparatus: 'pb' },
-    { id: 'summary-hb', label: 'HB', apparatus: 'hb' },
-  ];
+  // Get apparatus summary graphics from registry filtered by gender
+  const apparatusSummaries = getGraphicsByCategory('event-summary')
+    .filter(g => g.id.startsWith('summary-') && !g.id.match(/^summary-r\d+$/))
+    .filter(g => g.gender === 'both' || (isMens && g.gender === 'mens') || (!isMens && g.gender === 'womens'))
+    .map(g => ({
+      id: g.id,
+      label: g.label,
+      apparatus: g.params?.summaryApparatus?.default || g.id.replace('summary-', ''),
+    }));
 
-  const womensApparatus = [
-    { id: 'summary-vt', label: 'VT', apparatus: 'vt' },
-    { id: 'summary-ub', label: 'UB', apparatus: 'ub' },
-    { id: 'summary-bb', label: 'BB', apparatus: 'bb' },
-    { id: 'summary-fx', label: 'FX', apparatus: 'fx' },
-  ];
-
-  return isMens ? mensApparatus : womensApparatus;
+  return apparatusSummaries;
 }
 
 export function isMensCompetition(compType) {

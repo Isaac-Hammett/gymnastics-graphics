@@ -1,8 +1,8 @@
-# PRD-Rundown-05: Producer Preview (Phase 0B)
+# PRD-Rundown-05: Rundown Prototype (Phase 0B)
 
 **Version:** 1.0
 **Date:** 2026-01-22
-**Status:** Draft
+**Status:** NOT STARTED
 **Depends On:** PRD-Rundown-01 through PRD-Rundown-04 (Phase 0A complete)
 **Blocks:** PRD-Rundown-08-ProducerIntegration
 
@@ -13,7 +13,7 @@
 
 ## Overview
 
-This PRD covers Phase 0B: a **temporary test page** that composes existing Producer View components with the new rundown editing UI. This allows testing the combined UX before full integration.
+This PRD covers Phase 0B: a **workable prototype page** that composes existing Producer View components with the new rundown editing UI. This allows testing the combined UX before full integration.
 
 **Important Note:** The core Producer View components (`CurrentSegment.jsx`, `NextSegment.jsx`, `RunOfShow.jsx`) already exist and use `useTimesheet()` from the completed Timesheet Consolidation (PRD-Rundown-00). This phase primarily tests how the new editing features integrate with existing components.
 
@@ -22,7 +22,7 @@ This PRD covers Phase 0B: a **temporary test page** that composes existing Produ
 ## Scope
 
 ### In Scope
-- Temporary `RundownPreviewPage.jsx` at route `/{compId}/rundown-preview`
+- Prototype `RundownPrototypePage.jsx` at route `/{compId}/rundown-prototype`
 - Compose existing components: CurrentSegment, NextSegment, RunOfShow
 - Add inline segment editing capability
 - Add quick-add segment button
@@ -42,7 +42,7 @@ This PRD covers Phase 0B: a **temporary test page** that composes existing Produ
 ## Route
 
 ```
-/{compId}/rundown-preview
+/{compId}/rundown-prototype
 ```
 
 **Why a separate route:** Isolates the prototype from production ProducerPage, allowing focused UX testing without affecting live shows.
@@ -99,8 +99,8 @@ const {
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│  RUNDOWN PREVIEW (Test Page)                              [← Back]      │
-│  Testing rundown editing features                                        │
+│  RUNDOWN PROTOTYPE (Workable Prototype)                              [← Back]      │
+│  Workable prototype for rundown editing                                        │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                          │
 │  ┌─ NOW PLAYING ─────────────────────────────────────────────────────┐  │
@@ -231,8 +231,8 @@ const handleQuickAdd = () => {
 ## Component Structure
 
 ```
-RundownPreviewPage.jsx
-├── Header ("RUNDOWN PREVIEW", back button)
+RundownPrototypePage.jsx
+├── Header ("RUNDOWN PROTOTYPE", back button)
 ├── CurrentSegment (existing component)
 ├── NextSegment (existing component)
 ├── ShowProgress section
@@ -368,7 +368,7 @@ const InlineSegmentEditor = ({ segment, onSave, onCancel }) => {
 
 | File | Est. Lines | Purpose |
 |------|------------|---------|
-| `show-controller/src/pages/RundownPreviewPage.jsx` | 150-200 | Test page |
+| `show-controller/src/pages/RundownPrototypePage.jsx` | 150-200 | Test page |
 | `show-controller/src/components/rundown/InlineSegmentEditor.jsx` | 80-100 | Quick edit form |
 | `show-controller/src/components/rundown/InlineSegmentEditor.css` | 50 | Styling |
 
@@ -378,7 +378,7 @@ const InlineSegmentEditor = ({ segment, onSave, onCancel }) => {
 
 | File | Changes |
 |------|---------|
-| `show-controller/src/App.jsx` | Add route: `<Route path="/:compId/rundown-preview" element={<RundownPreviewPage />} />` |
+| `show-controller/src/App.jsx` | Add route: `<Route path="/:compId/rundown-prototype" element={<RundownPrototypePage />} />` |
 
 ---
 
@@ -403,7 +403,7 @@ const InlineSegmentEditor = ({ segment, onSave, onCancel }) => {
 - [ ] Toast shows on save
 
 ### Page Navigation
-- [ ] Route `/{compId}/rundown-preview` renders page
+- [ ] Route `/{compId}/rundown-prototype` renders page
 - [ ] Back button returns to previous page
 
 ---
@@ -411,7 +411,7 @@ const InlineSegmentEditor = ({ segment, onSave, onCancel }) => {
 ## Cleanup (Phase 3)
 
 After PRD-Rundown-08 (Producer Integration) is complete:
-- Remove `RundownPreviewPage.jsx`
+- Remove `RundownPrototypePage.jsx`
 - Remove route from `App.jsx`
 - The inline editing features will be integrated into the real ProducerPage
 

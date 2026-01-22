@@ -132,6 +132,14 @@ This is a searchable index of all project documentation. Search for keywords to 
 
 ## Graphics
 
+### [PRD-Graphics-Registry/PRD-Graphics-Registry.md](PRD-Graphics-Registry/PRD-Graphics-Registry.md)
+**Keywords:** graphics registry, schema-driven graphics, graphicsRegistry.js, add graphic, new graphic, graphic picker, graphic URL, graphic params
+**Summary:** PRD for the schema-driven graphics registry system. Single source of truth for all graphics.
+
+### [PRD-Graphics-Registry/GUIDE-Adding-New-Graphics.md](PRD-Graphics-Registry/GUIDE-Adding-New-Graphics.md)
+**Keywords:** add graphic, new graphic, create graphic, overlay HTML, graphic template, graphic checklist, graphic keywords, searchable graphic, graphic schema
+**Summary:** Step-by-step guide for adding new graphics to the system. Includes HTML templates, registry schema reference, and checklist.
+
 ### [GRAPHICS-INVENTORY.md](GRAPHICS-INVENTORY.md)
 **Keywords:** graphics list, graphic types, available graphics, graphic inventory, overlay list
 **Summary:** List of all available graphics and overlays.
@@ -229,6 +237,7 @@ This is a searchable index of all project documentation. Search for keywords to 
 | Understand OBS connection flow | [README-OBS-Architecture.md](README-OBS-Architecture.md) |
 | Deploy to production | [CLAUDE.md](../CLAUDE.md) |
 | Add a new team | [CLAUDE.md](../CLAUDE.md) (Adding a New Team section) |
+| **Add a new graphic** | [GUIDE-Adding-New-Graphics.md](PRD-Graphics-Registry/GUIDE-Adding-New-Graphics.md) |
 | Fix an OBS feature | [PRD-OBS-00-Index.md](PRD-OBS-00-Index.md) → specific PRD |
 | Work on rundown editor | [PRD-Rundown-00-Index.md](PRD-Rundown-00-Index.md) |
 | Set up a new VM | [vm-setup-guide.md](vm-setup-guide.md) |

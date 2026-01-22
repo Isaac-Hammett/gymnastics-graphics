@@ -13,7 +13,7 @@
 
 Read these files ONE AT A TIME. After EACH file, output the answers before reading the next file.
 
-- [ ] **1.1** Read PRD: `docs/PRD-Rundown-05-ProducerPreview/PRD-Rundown-05-ProducerPreview.md`
+- [ ] **1.1** Read PRD: `docs/PRD-Rundown-05-Prototype/PRD-Rundown-05-Prototype.md`
 
   **Output before continuing:**
   ```
@@ -23,7 +23,7 @@ Read these files ONE AT A TIME. After EACH file, output the answers before readi
   - Acceptance criteria count: [fill in]
   ```
 
-- [ ] **1.2** Read Implementation Plan: `docs/PRD-Rundown-05-ProducerPreview/PLAN-Rundown-05-ProducerPreview-Implementation.md`
+- [ ] **1.2** Read Implementation Plan: `docs/PRD-Rundown-05-Prototype/PLAN-Rundown-05-Prototype-Implementation.md`
 
   **Output before continuing:**
   ```
