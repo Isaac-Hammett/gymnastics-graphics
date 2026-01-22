@@ -1,9 +1,9 @@
 # Implementation Plan: Consolidate Timesheet Panel and Show Progress
 
-**Version:** 1.1
+**Version:** 1.2
 **Date:** 2026-01-22
 **PRD Reference:** [PRD-ConsolidateTimesheetShowProgress.md](PRD-ConsolidateTimesheetShowProgress.md)
-**Status:** 🟢 IN PROGRESS
+**Status:** ✅ COMPLETE
 
 ---
 
@@ -502,14 +502,21 @@ Task 3.1 will consolidate these panels and remove the segment progress bar.
 **Action:** Delete file entirely (or move to `_archive/` folder if desired).
 
 **Pre-deletion checklist:**
-- [ ] Verify no other files import TimesheetPanel
-- [ ] Verify all functionality migrated to main components
-- [ ] Test show flow end-to-end
+- [x] Verify no other files import TimesheetPanel
+- [x] Verify all functionality migrated to main components
+- [x] Test show flow end-to-end (build passes)
 
 **Acceptance Criteria:**
-- [ ] File deleted or archived
-- [ ] No import errors
-- [ ] No missing functionality
+- [x] File deleted or archived
+- [x] No import errors
+- [x] No missing functionality
+
+**Completed:** 2026-01-22
+
+**Implementation Notes:**
+- Verified no imports of TimesheetPanel existed (only a removal comment in ProducerView.jsx)
+- Deleted `show-controller/src/components/TimesheetPanel.jsx` (407 lines removed)
+- Build completed successfully with no errors
 
 ---
 
@@ -518,14 +525,23 @@ Task 3.1 will consolidate these panels and remove the segment progress bar.
 **File:** `show-controller/src/views/TalentView.jsx`
 
 **Check:**
-1. Does it use `showProgress` prop? → If yes, migrate to `useTimesheet()`
-2. Does CurrentSegment/NextSegment work correctly?
-3. Does the NEXT button work?
+1. Does it use `showProgress` prop? → Yes, for footer display - kept for backward compatibility
+2. Does CurrentSegment/NextSegment work correctly? → Yes, they use `useTimesheet()` now
+3. Does the NEXT button work? → Updated to use `useTimesheet().advance()` with hold segment support
 
 **Acceptance Criteria:**
-- [ ] Talent view renders correctly
-- [ ] Segment info displays correctly
-- [ ] NEXT button advances show
+- [x] Talent view renders correctly
+- [x] Segment info displays correctly
+- [x] NEXT button advances show (now using timesheet advance)
+
+**Completed:** 2026-01-22
+
+**Implementation Notes:**
+- Added `useTimesheet` hook import for `advance`, `isHoldSegment`, `canAdvanceHold`, `holdRemainingMs`
+- NEXT button now uses `timesheetAdvance('talent')` instead of legacy `advance()`
+- Added hold segment warning UI when `isHoldSegment && !canAdvanceHold`
+- NEXT button is now disabled during hold minimum period (consistent with ProducerView)
+- Added `ClockIcon` import for hold segment display
 
 ---
 
@@ -625,18 +641,18 @@ Keep `TimesheetPanel.jsx` in `_archive/` folder for 2 weeks before permanent del
 
 ## Success Criteria
 
-- [ ] Single "Start Show" button that works
-- [ ] Current segment displays with ms-precision timing
-- [ ] Progress bar shows segment progress (0-100%)
-- [ ] Hold segment warnings displayed with countdown
-- [ ] NEXT button disabled during hold minimum period
-- [ ] Next segment preview works
-- [ ] Segment list shows progress from timesheet
-- [ ] Stats (Status, Talent Lock, OBS) visible in sidebar
-- [ ] **No duplicate panels showing same information**
-- [ ] No REST API calls to broken endpoints
-- [ ] All data flows through socket events via ShowContext
-- [ ] No console errors
+- [x] Single "Start Show" button that works
+- [x] Current segment displays with ms-precision timing
+- [x] Progress bar shows segment progress (0-100%)
+- [x] Hold segment warnings displayed with countdown
+- [x] NEXT button disabled during hold minimum period
+- [x] Next segment preview works
+- [x] Segment list shows progress from timesheet
+- [x] Stats (Status, Talent Lock, OBS) visible in sidebar
+- [x] **No duplicate panels showing same information**
+- [x] No REST API calls to broken endpoints
+- [x] All data flows through socket events via ShowContext
+- [ ] No console errors (pending production verification)
 
 ---
 
