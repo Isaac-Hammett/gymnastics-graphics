@@ -1,5 +1,5 @@
-import { useShow } from '../context/ShowContext';
-import { PlayIcon, FilmIcon, PhotoIcon, MicrophoneIcon } from '@heroicons/react/24/outline';
+import { useTimesheet } from '../hooks/useTimesheet';
+import { PlayIcon, FilmIcon, PhotoIcon, MicrophoneIcon, ClockIcon } from '@heroicons/react/24/outline';
 
 function getSegmentIcon(type) {
   switch (type) {
@@ -9,14 +9,15 @@ function getSegmentIcon(type) {
       return <PhotoIcon className="w-5 h-5" />;
     case 'live':
       return <MicrophoneIcon className="w-5 h-5" />;
+    case 'hold':
+      return <ClockIcon className="w-5 h-5" />;
     default:
       return <PlayIcon className="w-5 h-5" />;
   }
 }
 
 export default function NextSegment() {
-  const { state } = useShow();
-  const { nextSegment } = state;
+  const { nextSegment, formatTime } = useTimesheet();
 
   if (!nextSegment) {
     return (
@@ -39,7 +40,7 @@ export default function NextSegment() {
           <div className="font-medium text-white">{nextSegment.name}</div>
           {nextSegment.duration && (
             <div className="text-sm text-zinc-500">
-              {Math.floor(nextSegment.duration / 60)}:{(nextSegment.duration % 60).toString().padStart(2, '0')} duration
+              {formatTime(nextSegment.duration * 1000)} duration
             </div>
           )}
         </div>
