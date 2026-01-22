@@ -98,11 +98,90 @@ socket.on('obs:transitionToProgram', async () => {
 - "TAKE" button to transition preview → program
 - "Exit Studio Mode" button
 - Auto-refresh both screenshots (configurable interval)
+- **Resizable screenshot windows** (see 1.5)
 
 #### 1.4 OBSManager Integration
 - Toggle button to enable/disable studio mode
 - When studio mode enabled, show StudioModePanel instead of regular OBSCurrentOutput
 - Persist studio mode preference in local storage
+
+#### 1.5 Resizable Screenshot Windows
+
+Allow users to adjust the size of the Preview and Program screenshot windows via a dropdown selector.
+
+##### Size Presets
+
+| Label | Dimensions | Aspect Ratio | Use Case |
+|-------|------------|--------------|----------|
+| Small | 320×180 | 16:9 | Compact view, limited screen space |
+| Medium (Default) | 640×360 | 16:9 | Standard production view |
+| Large | 960×540 | 16:9 | Detailed preview, large monitors |
+| Extra Large | 1280×720 | 16:9 | Full attention mode, dedicated monitor |
+
+##### UI Layout with Size Selector
+```
+┌─ STUDIO MODE ──────────────────────────────────────────────────────────────┐
+│                                                                             │
+│  Size: [Medium (640×360) ▼]                         [Exit Studio Mode]     │
+│                                                                             │
+│  ┌─ PREVIEW ──────────────────┐  ┌─ PROGRAM ──────────────────┐            │
+│  │                            │  │                            │            │
+│  │   [Screenshot]             │  │   [Screenshot]             │            │
+│  │                            │  │                            │            │
+│  │   Scene: Full Screen - A   │  │   Scene: Dual View - AB    │            │
+│  └────────────────────────────┘  └────────────────────────────┘            │
+│                                                                             │
+│  Preview Scene: [Dropdown ▼]              [ TAKE ]                          │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+##### Implementation
+
+**State:**
+```javascript
+const [screenshotSize, setScreenshotSize] = useState('medium'); // 'small' | 'medium' | 'large' | 'xlarge'
+
+const SIZE_PRESETS = {
+  small:  { width: 320,  height: 180, label: 'Small (320×180)' },
+  medium: { width: 640,  height: 360, label: 'Medium (640×360)' },
+  large:  { width: 960,  height: 540, label: 'Large (960×540)' },
+  xlarge: { width: 1280, height: 720, label: 'Extra Large (1280×720)' }
+};
+```
+
+**Size Selector Component:**
+```jsx
+<select
+  value={screenshotSize}
+  onChange={(e) => setScreenshotSize(e.target.value)}
+  className="bg-gray-700 text-white rounded px-3 py-1.5 border border-gray-600"
+>
+  {Object.entries(SIZE_PRESETS).map(([key, preset]) => (
+    <option key={key} value={key}>{preset.label}</option>
+  ))}
+</select>
+```
+
+**Screenshot Request:**
+```javascript
+// Request screenshot at selected size
+socket.emit('obs:requestScreenshot', {
+  width: SIZE_PRESETS[screenshotSize].width,
+  height: SIZE_PRESETS[screenshotSize].height,
+  source: 'program' // or 'preview'
+});
+```
+
+##### Persistence
+- Save selected size to `localStorage` key: `obs-studio-mode-screenshot-size`
+- Restore on component mount
+- Default to `'medium'` if no saved preference
+
+##### Responsive Behavior
+- On smaller screens (< 1400px width), automatically limit max size to "Large"
+- On mobile/tablet (< 900px width), automatically limit to "Small" or "Medium"
+- Stack preview/program vertically on very narrow screens
 
 ### Acceptance Criteria
 - [ ] Enable/disable studio mode works
@@ -110,6 +189,10 @@ socket.on('obs:transitionToProgram', async () => {
 - [ ] Preview scene can be changed via dropdown
 - [ ] "TAKE" button transitions preview to program
 - [ ] Multi-client sync works (all clients see mode changes)
+- [ ] Size dropdown allows selecting Small/Medium/Large/Extra Large
+- [ ] Screenshot size changes immediately when selection changes
+- [ ] Size preference persists across page reloads
+- [ ] Layout adapts responsively on smaller screens
 
 ---
 
