@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   ExclamationTriangleIcon,
   CheckCircleIcon,
@@ -9,18 +9,22 @@ import {
   PhotoIcon,
   InformationCircleIcon,
   XMarkIcon,
-  TrashIcon
+  TrashIcon,
+  StarIcon
 } from '@heroicons/react/24/outline';
+import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import { useOBS } from '../../context/OBSContext';
 import { useShow } from '../../context/ShowContext';
+import { useCompetition } from '../../context/CompetitionContext';
 
 /**
  * TemplateManager - Manage OBS scene templates
  * Allows applying pre-configured templates and saving current state as template
  */
 export default function TemplateManager() {
-  const { obsConnected } = useOBS();
-  const { compId, socketUrl } = useShow();
+  const { obsConnected, obsState, autoLoadEnabled, setAutoLoadTemplateEnabled, autoAppliedTemplate, getDefaultTemplate, resetAutoApplyState } = useOBS();
+  const { compId, socketUrl, socket } = useShow();
+  const { competitionConfig } = useCompetition();
 
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -29,6 +33,7 @@ export default function TemplateManager() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [applyWarnings, setApplyWarnings] = useState([]); // Detailed errors/warnings from template apply
+  const [settingDefault, setSettingDefault] = useState(null); // templateId being set as default
 
   // Modal states
   const [showApplyModal, setShowApplyModal] = useState(null);
@@ -38,9 +43,17 @@ export default function TemplateManager() {
   const [saveTemplateName, setSaveTemplateName] = useState('');
   const [saveTemplateDescription, setSaveTemplateDescription] = useState('');
   const [saveTemplateMeetTypes, setSaveTemplateMeetTypes] = useState([]);
+  const [showDefaultModal, setShowDefaultModal] = useState(null); // Template for default settings
 
   // Available meet types
   const meetTypes = ['mens-dual', 'womens-dual', 'mens-tri', 'womens-tri', 'mens-quad', 'womens-quad'];
+
+  // Current competition's meet type
+  const currentMeetType = competitionConfig?.compType || null;
+
+  // Auto-apply tracking
+  const hasAttemptedAutoApply = useRef(false);
+  const [autoApplyStatus, setAutoApplyStatus] = useState(null); // null, 'applying', 'applied', 'skipped', 'error'
 
   // Fetch templates on mount
   useEffect(() => {
@@ -48,6 +61,191 @@ export default function TemplateManager() {
       fetchTemplates();
     }
   }, [obsConnected]);
+
+  // PRD-OBS-11: Auto-apply default template when OBS connects with empty scenes
+  useEffect(() => {
+    // Don't auto-apply if:
+    // - Not connected
+    // - Already attempted
+    // - Auto-load disabled
+    // - No meet type configured
+    // - Already have scenes
+    if (!obsConnected || hasAttemptedAutoApply.current || !autoLoadEnabled || !currentMeetType) {
+      return;
+    }
+
+    // Check if OBS has scenes - only auto-apply to fresh OBS
+    const scenes = obsState?.scenes || [];
+    if (scenes.length > 0) {
+      console.log('TemplateManager: OBS has existing scenes, skipping auto-apply');
+      hasAttemptedAutoApply.current = true;
+      setAutoApplyStatus('skipped');
+      return;
+    }
+
+    // Mark as attempted to prevent re-runs
+    hasAttemptedAutoApply.current = true;
+
+    // Try to get and apply default template
+    const autoApplyDefaultTemplate = async () => {
+      setAutoApplyStatus('applying');
+
+      try {
+        // Get the default template for this meet type
+        const defaultTemplate = await getDefaultTemplate(currentMeetType);
+
+        if (!defaultTemplate) {
+          console.log(`TemplateManager: No default template for ${currentMeetType}`);
+          setAutoApplyStatus('skipped');
+          return;
+        }
+
+        console.log(`TemplateManager: Auto-applying template "${defaultTemplate.name}" for ${currentMeetType}`);
+
+        // Apply the template
+        const response = await fetch(`${socketUrl}/api/obs/templates/${defaultTemplate.id}/apply`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ competitionId: compId })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || `Failed to apply template: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        const scenesCreated = data.result?.scenesCreated || 0;
+
+        console.log(`TemplateManager: Auto-applied template "${defaultTemplate.name}" - ${scenesCreated} scenes created`);
+        setAutoApplyStatus('applied');
+        setSuccess(`Auto-loaded template "${defaultTemplate.name}" (${scenesCreated} scenes)`);
+        setTimeout(() => setSuccess(null), 8000);
+
+        // Notify other clients
+        if (socket) {
+          socket.emit('obs:templateAutoApplied', {
+            templateId: defaultTemplate.id,
+            competitionId: compId
+          });
+        }
+      } catch (err) {
+        console.error('TemplateManager: Failed to auto-apply template:', err);
+        setAutoApplyStatus('error');
+        // Don't show error to user for auto-apply failures - it's not critical
+      }
+    };
+
+    // Small delay to ensure OBS state is fully loaded
+    const timer = setTimeout(autoApplyDefaultTemplate, 1000);
+    return () => clearTimeout(timer);
+  }, [obsConnected, autoLoadEnabled, currentMeetType, obsState?.scenes?.length, socketUrl, compId, socket, getDefaultTemplate]);
+
+  // Reset auto-apply state when competition changes
+  useEffect(() => {
+    hasAttemptedAutoApply.current = false;
+    setAutoApplyStatus(null);
+    if (resetAutoApplyState) resetAutoApplyState();
+  }, [compId, resetAutoApplyState]);
+
+  // Listen for template default changes from other clients
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleTemplateDefaultChanged = (data) => {
+      console.log('TemplateManager: Template default changed', data);
+      // Refresh templates to get updated isDefaultFor
+      fetchTemplates();
+    };
+
+    socket.on('obs:templateDefaultChanged', handleTemplateDefaultChanged);
+
+    return () => {
+      socket.off('obs:templateDefaultChanged', handleTemplateDefaultChanged);
+    };
+  }, [socket]);
+
+  // Set a template as default for specified meet types
+  const handleSetTemplateDefault = useCallback(async (templateId, selectedMeetTypes) => {
+    if (!socket || !templateId || selectedMeetTypes.length === 0) return;
+
+    setSettingDefault(templateId);
+    setError(null);
+
+    return new Promise((resolve) => {
+      const handleSuccess = (data) => {
+        console.log('TemplateManager: Template default set', data);
+        setSuccess(`Template set as default for ${selectedMeetTypes.join(', ')}`);
+        setTimeout(() => setSuccess(null), 5000);
+        setSettingDefault(null);
+        fetchTemplates(); // Refresh to show updated defaults
+        resolve(true);
+      };
+
+      const handleError = (data) => {
+        console.error('TemplateManager: Failed to set template default', data);
+        setError(data.message || 'Failed to set template default');
+        setSettingDefault(null);
+        resolve(false);
+      };
+
+      // Listen for response
+      socket.once('obs:templateDefaultSet', handleSuccess);
+      socket.once('error', handleError);
+
+      // Send the request
+      socket.emit('obs:setTemplateDefault', { templateId, meetTypes: selectedMeetTypes });
+
+      // Timeout after 10 seconds
+      setTimeout(() => {
+        socket.off('obs:templateDefaultSet', handleSuccess);
+        socket.off('error', handleError);
+        setSettingDefault(null);
+        resolve(false);
+      }, 10000);
+    });
+  }, [socket]);
+
+  // Clear a template's default status for specified meet types
+  const handleClearTemplateDefault = useCallback(async (templateId, selectedMeetTypes) => {
+    if (!socket || !templateId || selectedMeetTypes.length === 0) return;
+
+    setSettingDefault(templateId);
+    setError(null);
+
+    return new Promise((resolve) => {
+      const handleSuccess = (data) => {
+        console.log('TemplateManager: Template default cleared', data);
+        setSuccess(`Default status cleared for ${selectedMeetTypes.join(', ')}`);
+        setTimeout(() => setSuccess(null), 5000);
+        setSettingDefault(null);
+        fetchTemplates(); // Refresh to show updated defaults
+        resolve(true);
+      };
+
+      const handleError = (data) => {
+        console.error('TemplateManager: Failed to clear template default', data);
+        setError(data.message || 'Failed to clear template default');
+        setSettingDefault(null);
+        resolve(false);
+      };
+
+      // Listen for response
+      socket.once('obs:templateDefaultCleared', handleSuccess);
+      socket.once('error', handleError);
+
+      // Send the request
+      socket.emit('obs:clearTemplateDefault', { templateId, meetTypes: selectedMeetTypes });
+
+      // Timeout after 10 seconds
+      setTimeout(() => {
+        socket.off('obs:templateDefaultCleared', handleSuccess);
+        socket.off('error', handleError);
+        setSettingDefault(null);
+        resolve(false);
+      }, 10000);
+    });
+  }, [socket]);
 
   const fetchTemplates = async () => {
     setLoading(true);
@@ -221,7 +419,17 @@ export default function TemplateManager() {
           <h3 className="text-white font-semibold text-lg">Template Manager</h3>
           <p className="text-gray-400 text-sm mt-1">Apply pre-configured scene templates or save current setup</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          {/* Auto-load toggle */}
+          <label className="flex items-center gap-2 cursor-pointer" title="Auto-load default template when OBS connects with no scenes">
+            <input
+              type="checkbox"
+              checked={autoLoadEnabled}
+              onChange={(e) => setAutoLoadTemplateEnabled(e.target.checked)}
+              className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500 focus:ring-offset-gray-800"
+            />
+            <span className="text-gray-400 text-sm">Auto-load</span>
+          </label>
           <button
             onClick={fetchTemplates}
             disabled={loading}
@@ -239,6 +447,14 @@ export default function TemplateManager() {
           </button>
         </div>
       </div>
+
+      {/* Auto-apply status banner */}
+      {autoApplyStatus === 'applying' && (
+        <div className="bg-blue-900/20 border border-blue-700 rounded-lg p-3 flex items-center gap-3">
+          <ArrowPathIcon className="w-5 h-5 text-blue-400 animate-spin" />
+          <div className="text-blue-300 text-sm">Auto-loading default template for {currentMeetType}...</div>
+        </div>
+      )}
 
       {/* Error Banner */}
       {error && (
@@ -325,8 +541,11 @@ export default function TemplateManager() {
                 template={template}
                 onApply={() => setShowApplyModal(template)}
                 onDelete={() => setShowDeleteModal(template)}
+                onSetDefault={() => setShowDefaultModal(template)}
                 isApplying={applying === template.id}
                 isDeleting={deleting === template.id}
+                isSettingDefault={settingDefault === template.id}
+                currentMeetType={currentMeetType}
               />
             ))}
           </div>
@@ -373,6 +592,24 @@ export default function TemplateManager() {
           isDeleting={deleting === showDeleteModal.id}
         />
       )}
+
+      {/* Set Default Template Modal */}
+      {showDefaultModal && (
+        <SetDefaultModal
+          template={showDefaultModal}
+          availableMeetTypes={meetTypes}
+          onSetDefault={async (selectedTypes) => {
+            const success = await handleSetTemplateDefault(showDefaultModal.id, selectedTypes);
+            if (success) setShowDefaultModal(null);
+          }}
+          onClearDefault={async (selectedTypes) => {
+            const success = await handleClearTemplateDefault(showDefaultModal.id, selectedTypes);
+            if (success) setShowDefaultModal(null);
+          }}
+          onCancel={() => setShowDefaultModal(null)}
+          isSettingDefault={settingDefault === showDefaultModal.id}
+        />
+      )}
     </div>
   );
 }
@@ -380,16 +617,27 @@ export default function TemplateManager() {
 /**
  * TemplateCard - Individual template card with metadata
  */
-function TemplateCard({ template, onApply, onDelete, isApplying, isDeleting }) {
+function TemplateCard({ template, onApply, onDelete, onSetDefault, isApplying, isDeleting, isSettingDefault, currentMeetType }) {
+  // Check if this template is default for the current meet type
+  const isDefaultForCurrentMeet = currentMeetType && template.isDefaultFor?.includes(currentMeetType);
+  const hasAnyDefaults = template.isDefaultFor && template.isDefaultFor.length > 0;
+
   return (
     <div className="bg-gray-800 rounded-lg p-4 hover:bg-gray-750 transition-colors">
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-2">
             <h5 className="text-white font-medium">{template.name}</h5>
-            {template.isDefault && (
-              <span className="px-2 py-0.5 bg-purple-600/20 border border-purple-600 text-purple-300 text-xs font-semibold rounded">
+            {isDefaultForCurrentMeet && (
+              <span className="flex items-center gap-1 px-2 py-0.5 bg-yellow-600/20 border border-yellow-600 text-yellow-300 text-xs font-semibold rounded">
+                <StarIconSolid className="w-3 h-3" />
                 DEFAULT
+              </span>
+            )}
+            {hasAnyDefaults && !isDefaultForCurrentMeet && (
+              <span className="flex items-center gap-1 px-2 py-0.5 bg-gray-600/20 border border-gray-500 text-gray-400 text-xs rounded">
+                <StarIcon className="w-3 h-3" />
+                Default for: {template.isDefaultFor.join(', ')}
               </span>
             )}
           </div>
@@ -402,9 +650,14 @@ function TemplateCard({ template, onApply, onDelete, isApplying, isDeleting }) {
             {template.meetTypes?.map(type => (
               <span
                 key={type}
-                className="px-2 py-1 bg-gray-700 text-gray-300 text-xs rounded border border-gray-600"
+                className={`px-2 py-1 text-xs rounded border ${
+                  template.isDefaultFor?.includes(type)
+                    ? 'bg-yellow-600/20 text-yellow-300 border-yellow-600/50'
+                    : 'bg-gray-700 text-gray-300 border-gray-600'
+                }`}
               >
                 {type}
+                {template.isDefaultFor?.includes(type) && ' ★'}
               </span>
             ))}
           </div>
@@ -436,38 +689,65 @@ function TemplateCard({ template, onApply, onDelete, isApplying, isDeleting }) {
                 <span>{template.scenesCount} scenes</span>
               </>
             )}
+            {template.scenes?.length > 0 && !template.scenesCount && (
+              <>
+                <span> • </span>
+                <span>{template.scenes.length} scenes</span>
+              </>
+            )}
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onApply}
-            disabled={isApplying || isDeleting}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:text-gray-500 text-white font-medium rounded-lg transition-colors whitespace-nowrap"
-          >
-            {isApplying ? (
-              <>
+        <div className="flex flex-col items-end gap-2">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onApply}
+              disabled={isApplying || isDeleting || isSettingDefault}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:text-gray-500 text-white font-medium rounded-lg transition-colors whitespace-nowrap"
+            >
+              {isApplying ? (
+                <>
+                  <ArrowPathIcon className="w-5 h-5 animate-spin" />
+                  Applying...
+                </>
+              ) : (
+                <>
+                  <DocumentDuplicateIcon className="w-5 h-5" />
+                  Apply
+                </>
+              )}
+            </button>
+            <button
+              onClick={onDelete}
+              disabled={isApplying || isDeleting || isSettingDefault}
+              className="flex items-center gap-2 px-3 py-2 bg-red-600/20 hover:bg-red-600/40 disabled:bg-gray-700 disabled:text-gray-500 text-red-400 hover:text-red-300 font-medium rounded-lg transition-colors border border-red-600/30"
+              title="Delete template"
+            >
+              {isDeleting ? (
                 <ArrowPathIcon className="w-5 h-5 animate-spin" />
-                Applying...
-              </>
-            ) : (
-              <>
-                <DocumentDuplicateIcon className="w-5 h-5" />
-                Apply
-              </>
-            )}
-          </button>
+              ) : (
+                <TrashIcon className="w-5 h-5" />
+              )}
+            </button>
+          </div>
           <button
-            onClick={onDelete}
-            disabled={isApplying || isDeleting}
-            className="flex items-center gap-2 px-3 py-2 bg-red-600/20 hover:bg-red-600/40 disabled:bg-gray-700 disabled:text-gray-500 text-red-400 hover:text-red-300 font-medium rounded-lg transition-colors border border-red-600/30"
-            title="Delete template"
+            onClick={onSetDefault}
+            disabled={isApplying || isDeleting || isSettingDefault}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+              hasAnyDefaults
+                ? 'bg-yellow-600/20 hover:bg-yellow-600/30 text-yellow-300 border border-yellow-600/30'
+                : 'bg-gray-700 hover:bg-gray-600 text-gray-300 border border-gray-600'
+            }`}
+            title="Set as default template for meet types"
           >
-            {isDeleting ? (
-              <ArrowPathIcon className="w-5 h-5 animate-spin" />
+            {isSettingDefault ? (
+              <ArrowPathIcon className="w-4 h-4 animate-spin" />
+            ) : hasAnyDefaults ? (
+              <StarIconSolid className="w-4 h-4" />
             ) : (
-              <TrashIcon className="w-5 h-5" />
+              <StarIcon className="w-4 h-4" />
             )}
+            {hasAnyDefaults ? 'Edit Defaults' : 'Set as Default'}
           </button>
         </div>
       </div>
@@ -782,6 +1062,142 @@ function DeleteTemplateModal({ template, onConfirm, onCancel, isDeleting }) {
                 <>
                   <TrashIcon className="w-5 h-5" />
                   Delete Template
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * SetDefaultModal - Configure which meet types this template is default for
+ */
+function SetDefaultModal({ template, availableMeetTypes, onSetDefault, onClearDefault, onCancel, isSettingDefault }) {
+  const [selectedTypes, setSelectedTypes] = useState(template.isDefaultFor || []);
+  const originalDefaults = template.isDefaultFor || [];
+
+  const toggleMeetType = (meetType) => {
+    setSelectedTypes(prev =>
+      prev.includes(meetType)
+        ? prev.filter(t => t !== meetType)
+        : [...prev, meetType]
+    );
+  };
+
+  // Only show meet types that are compatible with this template
+  const compatibleMeetTypes = availableMeetTypes.filter(
+    mt => template.meetTypes?.includes(mt)
+  );
+
+  const handleSave = () => {
+    // Find types to add (newly selected)
+    const typesToAdd = selectedTypes.filter(t => !originalDefaults.includes(t));
+    // Find types to remove (were selected, now not)
+    const typesToRemove = originalDefaults.filter(t => !selectedTypes.includes(t));
+
+    if (typesToAdd.length > 0) {
+      onSetDefault(typesToAdd);
+    }
+    if (typesToRemove.length > 0 && typesToAdd.length === 0) {
+      onClearDefault(typesToRemove);
+    }
+    if (typesToAdd.length === 0 && typesToRemove.length === 0) {
+      onCancel();
+    }
+  };
+
+  const hasChanges = JSON.stringify(selectedTypes.sort()) !== JSON.stringify(originalDefaults.sort());
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+      onClick={onCancel}
+    >
+      <div
+        className="bg-gray-800 rounded-lg max-w-lg w-full"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-6">
+          <div className="flex items-start gap-4 mb-4">
+            <div className="w-10 h-10 rounded-full bg-yellow-900/20 flex items-center justify-center flex-shrink-0">
+              <StarIconSolid className="w-6 h-6 text-yellow-400" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-white font-semibold text-lg mb-2">Set Default Template</h3>
+              <p className="text-gray-400 text-sm">
+                Select which meet types should auto-load <span className="text-white font-medium">"{template.name}"</span> when OBS connects.
+              </p>
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <label className="block text-white font-medium mb-3">
+              Auto-load for these meet types:
+            </label>
+
+            {compatibleMeetTypes.length === 0 ? (
+              <div className="text-gray-400 text-sm bg-gray-900 rounded-lg p-4">
+                This template has no compatible meet types configured.
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                {compatibleMeetTypes.map(type => (
+                  <button
+                    key={type}
+                    onClick={() => toggleMeetType(type)}
+                    disabled={isSettingDefault}
+                    className={`flex items-center justify-between px-3 py-2 rounded-lg font-medium text-sm transition-colors ${
+                      selectedTypes.includes(type)
+                        ? 'bg-yellow-600 text-white'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                  >
+                    <span>{type}</span>
+                    {selectedTypes.includes(type) && (
+                      <CheckCircleIcon className="w-5 h-5" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <p className="text-gray-500 text-xs mt-3">
+              Only one template can be default per meet type. Setting a new default will clear the previous one.
+            </p>
+          </div>
+
+          <div className="bg-blue-900/20 border border-blue-700 rounded-lg p-3 mb-4 flex items-start gap-2">
+            <InformationCircleIcon className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+            <div className="text-blue-200 text-sm">
+              Default templates auto-apply when OBS connects to a competition with no existing scenes.
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={onCancel}
+              disabled={isSettingDefault}
+              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-white rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={isSettingDefault || !hasChanges}
+              className="flex items-center gap-2 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-700 disabled:text-gray-500 text-white rounded-lg transition-colors"
+            >
+              {isSettingDefault ? (
+                <>
+                  <ArrowPathIcon className="w-5 h-5 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <StarIconSolid className="w-5 h-5" />
+                  Save Defaults
                 </>
               )}
             </button>

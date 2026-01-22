@@ -1,7 +1,10 @@
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { useShow } from './ShowContext';
 
 const OBSContext = createContext(null);
+
+// Local storage key for auto-load preference
+const AUTO_LOAD_TEMPLATE_KEY = 'obs-auto-load-template';
 
 // Initial state values
 const INITIAL_OBS_STATE = {
@@ -42,6 +45,14 @@ export function OBSProvider({ children }) {
   const [presets, setPresets] = useState([]);
   const [presetsLoading, setPresetsLoading] = useState(false);
   const [presetApplying, setPresetApplying] = useState(null); // presetId being applied
+
+  // PRD-OBS-11: Template auto-loading state
+  const [autoLoadEnabled, setAutoLoadEnabled] = useState(() => {
+    const stored = localStorage.getItem(AUTO_LOAD_TEMPLATE_KEY);
+    return stored === null ? true : stored === 'true';
+  });
+  const [autoAppliedTemplate, setAutoAppliedTemplate] = useState(null);
+  const hasAttemptedAutoApply = useRef(false);
 
   // obsConnected comes from obsState which is updated directly by obs:stateUpdated
   // This ensures OBSManager sees the connected state immediately when the event fires
@@ -279,6 +290,12 @@ export function OBSProvider({ children }) {
       }));
     };
 
+    // PRD-OBS-11: Template auto-applied notification
+    const handleTemplateAutoApplied = (data) => {
+      console.log('OBSContext: Template auto-applied', data);
+      setAutoAppliedTemplate(data.templateId);
+    };
+
     // Subscribe to all OBS events
     // Note: Event names must match server emissions in server/lib/obsStateSync.js
     socket.on('obs:stateUpdated', handleStateUpdate);
@@ -311,6 +328,8 @@ export function OBSProvider({ children }) {
     socket.on('obs:presetDeleted', handlePresetDeleted);
     // PRD-OBS-11: Studio mode events
     socket.on('obs:studioModeChanged', handleStudioModeChanged);
+    // PRD-OBS-11: Template auto-applied notification
+    socket.on('obs:templateAutoApplied', handleTemplateAutoApplied);
 
     // Request initial state
     socket.emit('obs:refreshState');
@@ -347,6 +366,8 @@ export function OBSProvider({ children }) {
       socket.off('obs:presetDeleted', handlePresetDeleted);
       // PRD-OBS-11: Studio mode events cleanup
       socket.off('obs:studioModeChanged', handleStudioModeChanged);
+      // PRD-OBS-11: Template auto-applied cleanup
+      socket.off('obs:templateAutoApplied', handleTemplateAutoApplied);
     };
   }, [socket, connected]);
 
@@ -635,6 +656,39 @@ export function OBSProvider({ children }) {
     socket?.emit('obs:disconnect');
   }, [socket]);
 
+  // PRD-OBS-11: Toggle auto-load template preference
+  const setAutoLoadTemplateEnabled = useCallback((enabled) => {
+    setAutoLoadEnabled(enabled);
+    localStorage.setItem(AUTO_LOAD_TEMPLATE_KEY, String(enabled));
+    console.log('OBSContext: Auto-load template', enabled ? 'enabled' : 'disabled');
+  }, []);
+
+  // PRD-OBS-11: Get default template for a meet type
+  const getDefaultTemplate = useCallback((meetType) => {
+    return new Promise((resolve, reject) => {
+      if (!socket) {
+        reject(new Error('Socket not connected'));
+        return;
+      }
+      console.log('OBSContext: Getting default template for', meetType);
+      socket.emit('obs:getDefaultTemplate', { meetType }, (response) => {
+        if (response.error) {
+          console.error('OBSContext: Failed to get default template:', response.error);
+          reject(new Error(response.error));
+        } else {
+          console.log('OBSContext: Default template result:', response.template?.name || 'none');
+          resolve(response.template);
+        }
+      });
+    });
+  }, [socket]);
+
+  // PRD-OBS-11: Reset auto-apply state (called when entering a new competition)
+  const resetAutoApplyState = useCallback(() => {
+    hasAttemptedAutoApply.current = false;
+    setAutoAppliedTemplate(null);
+  }, []);
+
   const value = {
     // State
     obsState,
@@ -720,7 +774,14 @@ export function OBSProvider({ children }) {
     // Connection actions
     refreshState,
     connectOBS,
-    disconnectOBS
+    disconnectOBS,
+
+    // PRD-OBS-11: Template auto-loading
+    autoLoadEnabled,
+    setAutoLoadTemplateEnabled,
+    autoAppliedTemplate,
+    getDefaultTemplate,
+    resetAutoApplyState
   };
 
   return (

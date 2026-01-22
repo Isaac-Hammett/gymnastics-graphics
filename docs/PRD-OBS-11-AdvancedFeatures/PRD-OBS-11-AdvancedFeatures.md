@@ -105,7 +105,56 @@ socket.on('obs:transitionToProgram', async () => {
 - When studio mode enabled, show StudioModePanel instead of regular OBSCurrentOutput
 - Persist studio mode preference in local storage
 
-#### 1.5 Resizable Screenshot Windows
+#### 1.5 Scene List Integration with Studio Mode
+
+The SceneList component must provide buttons to send scenes to Preview or Program based on whether Studio Mode is enabled.
+
+##### When Studio Mode is DISABLED (Normal Mode)
+Each scene card shows a single button:
+```
+┌─────────────────────────────────────────────────────────┐
+│ ┌──────────┐  Full Screen - Camera A           [LIVE]  │
+│ │ [thumb]  │  Category: generated-single               │
+│ │  80x45   │                         [▶ Go Live]       │
+│ └──────────┘                                            │
+└─────────────────────────────────────────────────────────┘
+```
+- **[▶ Go Live]** button: Switches scene directly to Program (calls `switchScene`)
+
+##### When Studio Mode is ENABLED
+Each scene card shows two buttons:
+```
+┌─────────────────────────────────────────────────────────┐
+│ ┌──────────┐  Full Screen - Camera A           [LIVE]  │
+│ │ [thumb]  │  Category: generated-single               │
+│ │  80x45   │                   [👁 Preview] [▶ Live]   │
+│ └──────────┘                                            │
+└─────────────────────────────────────────────────────────┘
+```
+- **[👁 Preview]** button: Sets scene as Preview scene (calls `setPreviewScene`)
+- **[▶ Live]** button: Switches scene directly to Program (calls `switchScene`)
+
+##### Visual Indicators
+- Scene currently on **Program**: Green border or "LIVE" badge
+- Scene currently on **Preview**: Yellow/amber border or "PREVIEW" badge
+- Both indicators can appear on different scenes simultaneously in Studio Mode
+
+##### Implementation Notes
+```javascript
+// In SceneList.jsx
+const { obsState, switchScene, setPreviewScene } = useOBS();
+const isStudioMode = obsState?.studioModeEnabled;
+
+// Button handlers
+const handleGoLive = (sceneName) => switchScene(sceneName);
+const handlePreview = (sceneName) => setPreviewScene(sceneName);
+
+// Determine scene status
+const isLive = scene.sceneName === obsState?.currentProgramSceneName;
+const isPreview = scene.sceneName === obsState?.previewSceneName;
+```
+
+#### 1.6 Resizable Screenshot Windows
 
 Allow users to adjust the size of the Preview and Program screenshot windows via a dropdown selector.
 
@@ -193,6 +242,12 @@ socket.emit('obs:requestScreenshot', {
 - [ ] Screenshot size changes immediately when selection changes
 - [ ] Size preference persists across page reloads
 - [ ] Layout adapts responsively on smaller screens
+- [ ] Scene List shows single "Go Live" button when Studio Mode disabled
+- [ ] Scene List shows "Preview" and "Live" buttons when Studio Mode enabled
+- [ ] Preview button sets scene as preview (yellow/amber indicator)
+- [ ] Live button switches scene to program (green indicator)
+- [ ] Current program scene shows "LIVE" badge
+- [ ] Current preview scene shows "PREVIEW" badge (Studio Mode only)
 
 ---
 

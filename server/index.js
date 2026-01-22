@@ -4379,6 +4379,194 @@ io.on('connection', async (socket) => {
   });
 
   // ============================================================================
+  // Template Auto-Loading (PRD-OBS-11)
+  // ============================================================================
+
+  // Set a template as default for specific meet types
+  socket.on('obs:setTemplateDefault', async ({ templateId, meetTypes }) => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can set template defaults' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    if (!templateId || !Array.isArray(meetTypes) || meetTypes.length === 0) {
+      socket.emit('error', { message: 'Template ID and meet types array are required' });
+      return;
+    }
+
+    try {
+      productionConfigService.initialize();
+      if (!productionConfigService.isAvailable()) {
+        socket.emit('error', { message: 'Firebase not available' });
+        return;
+      }
+
+      const database = productionConfigService.getDb();
+
+      // Get the template to verify it exists
+      const templateRef = database.ref(`templates/obs/${templateId}`);
+      const templateSnapshot = await templateRef.once('value');
+      const template = templateSnapshot.val();
+
+      if (!template) {
+        socket.emit('error', { message: `Template not found: ${templateId}` });
+        return;
+      }
+
+      // Clear this default from any other templates for the same meet types
+      const allTemplatesRef = database.ref('templates/obs');
+      const allTemplatesSnapshot = await allTemplatesRef.once('value');
+      const allTemplates = allTemplatesSnapshot.val() || {};
+
+      for (const [otherTemplateId, otherTemplate] of Object.entries(allTemplates)) {
+        if (otherTemplateId !== templateId && otherTemplate.isDefaultFor) {
+          // Remove overlapping meet types from other templates
+          const updatedIsDefaultFor = otherTemplate.isDefaultFor.filter(mt => !meetTypes.includes(mt));
+          if (updatedIsDefaultFor.length !== otherTemplate.isDefaultFor.length) {
+            await database.ref(`templates/obs/${otherTemplateId}/isDefaultFor`).set(
+              updatedIsDefaultFor.length > 0 ? updatedIsDefaultFor : null
+            );
+            console.log(`[setTemplateDefault] Cleared ${meetTypes.filter(mt => otherTemplate.isDefaultFor.includes(mt)).join(', ')} from ${otherTemplateId}`);
+          }
+        }
+      }
+
+      // Set the new default
+      const currentIsDefaultFor = template.isDefaultFor || [];
+      const newIsDefaultFor = [...new Set([...currentIsDefaultFor, ...meetTypes])];
+      await templateRef.update({
+        isDefaultFor: newIsDefaultFor,
+        updatedAt: new Date().toISOString()
+      });
+
+      console.log(`[setTemplateDefault] Set ${templateId} as default for ${meetTypes.join(', ')}`);
+
+      // Notify all clients in this competition room
+      io.to(`competition:${clientCompId}`).emit('obs:templateDefaultChanged', {
+        templateId,
+        meetTypes: newIsDefaultFor,
+        action: 'set'
+      });
+
+      socket.emit('obs:templateDefaultSet', { templateId, meetTypes: newIsDefaultFor });
+    } catch (error) {
+      console.error(`[setTemplateDefault] Failed: ${error.message}`);
+      socket.emit('error', { message: `Failed to set template default: ${error.message}` });
+    }
+  });
+
+  // Clear a template's default status for specific meet types
+  socket.on('obs:clearTemplateDefault', async ({ templateId, meetTypes }) => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can clear template defaults' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    if (!templateId || !Array.isArray(meetTypes) || meetTypes.length === 0) {
+      socket.emit('error', { message: 'Template ID and meet types array are required' });
+      return;
+    }
+
+    try {
+      productionConfigService.initialize();
+      if (!productionConfigService.isAvailable()) {
+        socket.emit('error', { message: 'Firebase not available' });
+        return;
+      }
+
+      const database = productionConfigService.getDb();
+      const templateRef = database.ref(`templates/obs/${templateId}`);
+      const templateSnapshot = await templateRef.once('value');
+      const template = templateSnapshot.val();
+
+      if (!template) {
+        socket.emit('error', { message: `Template not found: ${templateId}` });
+        return;
+      }
+
+      // Remove the specified meet types from isDefaultFor
+      const currentIsDefaultFor = template.isDefaultFor || [];
+      const newIsDefaultFor = currentIsDefaultFor.filter(mt => !meetTypes.includes(mt));
+
+      await templateRef.update({
+        isDefaultFor: newIsDefaultFor.length > 0 ? newIsDefaultFor : null,
+        updatedAt: new Date().toISOString()
+      });
+
+      console.log(`[clearTemplateDefault] Cleared ${meetTypes.join(', ')} from ${templateId}`);
+
+      // Notify all clients in this competition room
+      io.to(`competition:${clientCompId}`).emit('obs:templateDefaultChanged', {
+        templateId,
+        meetTypes: newIsDefaultFor,
+        action: 'clear'
+      });
+
+      socket.emit('obs:templateDefaultCleared', { templateId, meetTypes: newIsDefaultFor });
+    } catch (error) {
+      console.error(`[clearTemplateDefault] Failed: ${error.message}`);
+      socket.emit('error', { message: `Failed to clear template default: ${error.message}` });
+    }
+  });
+
+  // Get the default template for a specific meet type
+  socket.on('obs:getDefaultTemplate', async ({ meetType }, callback) => {
+    if (!meetType) {
+      if (callback) callback({ error: 'Meet type is required' });
+      return;
+    }
+
+    try {
+      productionConfigService.initialize();
+      if (!productionConfigService.isAvailable()) {
+        if (callback) callback({ error: 'Firebase not available' });
+        return;
+      }
+
+      const database = productionConfigService.getDb();
+      const templatesRef = database.ref('templates/obs');
+      const templatesSnapshot = await templatesRef.once('value');
+      const templates = templatesSnapshot.val() || {};
+
+      // Find templates that are default for this meet type
+      const defaultTemplates = Object.values(templates).filter(
+        t => t.isDefaultFor && t.isDefaultFor.includes(meetType)
+      );
+
+      if (defaultTemplates.length === 0) {
+        console.log(`[getDefaultTemplate] No default template for ${meetType}`);
+        if (callback) callback({ template: null });
+        return;
+      }
+
+      // If multiple defaults, use the most recently updated one
+      const defaultTemplate = defaultTemplates.sort((a, b) =>
+        new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt)
+      )[0];
+
+      console.log(`[getDefaultTemplate] Found default template "${defaultTemplate.name}" for ${meetType}`);
+      if (callback) callback({ template: defaultTemplate });
+    } catch (error) {
+      console.error(`[getDefaultTemplate] Failed: ${error.message}`);
+      if (callback) callback({ error: error.message });
+    }
+  });
+
+  // ============================================================================
   // Stream & Recording Control (PRD-OBS-06)
   // ============================================================================
 
