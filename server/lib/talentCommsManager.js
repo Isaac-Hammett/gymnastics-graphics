@@ -34,7 +34,8 @@ export const VDO_NINJA_BASE_URL = 'https://vdo.ninja';
  */
 function generateRoomId() {
   const randomBytes = crypto.randomBytes(6);
-  const roomId = `gym-${randomBytes.toString('hex')}`;
+  // VDO.Ninja only allows alphanumeric characters - hyphens get replaced with underscores
+  const roomId = `gym_${randomBytes.toString('hex')}`;
   return roomId;
 }
 
