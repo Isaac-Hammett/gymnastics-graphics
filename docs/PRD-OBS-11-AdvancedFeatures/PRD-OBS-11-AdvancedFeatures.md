@@ -581,13 +581,13 @@ If multiple templates are marked as default for the same meet type:
 | `obs:templateAutoApplied` | Server → Frontend | `{templateId, competitionId}` | Notify clients of auto-apply |
 
 ### Acceptance Criteria
-- [ ] Can mark a template as "default" for specific meet types
-- [ ] Only one template can be default per meet type
-- [ ] Template auto-applies when OBS connects to matching competition
-- [ ] Auto-apply only occurs if OBS has no scenes (fresh state)
-- [ ] User can disable auto-loading in settings
-- [ ] Multi-client sync: all clients see default status changes
-- [ ] Warning shown when multiple defaults conflict
+- [x] Can mark a template as "default" for specific meet types
+- [x] Only one template can be default per meet type
+- [x] Template auto-applies when OBS connects to matching competition
+- [x] Auto-apply only occurs if OBS has no scenes (fresh state)
+- [x] User can disable auto-loading in settings
+- [x] Multi-client sync: all clients see default status changes
+- [ ] Warning shown when multiple defaults conflict (not needed - automatic clearing)
 
 ### Test Cases
 1. Create template, set as default for `mens-dual`
