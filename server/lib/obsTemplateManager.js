@@ -251,11 +251,15 @@ export class OBSTemplateManager {
       }
 
       // Apply scenes (this will create inputs as needed)
+      let scenesProcessed = 0;
       if (resolvedTemplate.scenes && Array.isArray(resolvedTemplate.scenes)) {
         for (const scene of resolvedTemplate.scenes) {
           try {
-            await this._applyScene(scene, inputDefs);
-            result.scenesCreated++;
+            const wasCreated = await this._applyScene(scene, inputDefs);
+            if (wasCreated) {
+              result.scenesCreated++;
+            }
+            scenesProcessed++;
           } catch (error) {
             console.warn(`[OBSTemplateManager] Failed to apply scene ${scene.sceneName}:`, error.message);
             result.errors.push({
@@ -597,7 +601,20 @@ export class OBSTemplateManager {
     try {
       await this.obs.call('GetInputSettings', { inputName: input.inputName });
 
-      // Input exists - apply audio settings if present
+      // Input exists - update input settings (URL, etc.) if present
+      if (input.inputSettings && Object.keys(input.inputSettings).length > 0) {
+        try {
+          await this.obs.call('SetInputSettings', {
+            inputName: input.inputName,
+            inputSettings: input.inputSettings
+          });
+          console.log(`[OBSTemplateManager] Updated settings for "${input.inputName}"`);
+        } catch (settingsError) {
+          console.warn(`[OBSTemplateManager] Failed to update settings for ${input.inputName}:`, settingsError.message);
+        }
+      }
+
+      // Apply audio settings if present
       if (input.volume !== undefined) {
         try {
           // OBS uses inputVolumeMul for multiplier (0.0 to 1.0+)
@@ -623,7 +640,7 @@ export class OBSTemplateManager {
         }
       }
 
-      console.log(`[OBSTemplateManager] Input "${input.inputName}" already exists, audio settings applied`);
+      console.log(`[OBSTemplateManager] Input "${input.inputName}" already exists, settings applied`);
       return true;
     } catch (error) {
       // Input doesn't exist - it will be created when processing scene items
@@ -637,26 +654,39 @@ export class OBSTemplateManager {
    * @private
    * @param {Object} scene - Scene configuration
    * @param {Array} inputs - Input definitions from template for creating sources
-   * @returns {Promise<void>}
+   * @returns {Promise<boolean>} True if scene was created, false if it already existed
    */
   async _applyScene(scene, inputs = []) {
+    let sceneCreated = false;
+    let existingItems = [];
+
     // Check if scene already exists
     try {
-      await this.obs.call('GetSceneItemList', { sceneName: scene.sceneName });
-      console.log(`[OBSTemplateManager] Scene "${scene.sceneName}" already exists, skipping`);
-      return;
+      const existingScene = await this.obs.call('GetSceneItemList', { sceneName: scene.sceneName });
+      existingItems = existingScene.sceneItems || [];
+      console.log(`[OBSTemplateManager] Scene "${scene.sceneName}" already exists with ${existingItems.length} items, will add missing sources`);
     } catch (error) {
       // Scene doesn't exist, create it
+      await this.obs.call('CreateScene', {
+        sceneName: scene.sceneName
+      });
+      sceneCreated = true;
+      console.log(`[OBSTemplateManager] Created scene "${scene.sceneName}"`);
     }
 
-    // Create the scene
-    await this.obs.call('CreateScene', {
-      sceneName: scene.sceneName
-    });
+    // Get names of sources already in this scene
+    const existingSourceNames = new Set(existingItems.map(item => item.sourceName));
 
-    // Add scene items
+    // Add scene items (skip if source already exists in this scene)
+    let itemsAdded = 0;
     if (scene.items && Array.isArray(scene.items)) {
       for (const item of scene.items) {
+        // Skip if this source is already in the scene
+        if (existingSourceNames.has(item.sourceName)) {
+          console.log(`[OBSTemplateManager] Source "${item.sourceName}" already in scene "${scene.sceneName}", skipping`);
+          continue;
+        }
+
         try {
           const sceneItemId = await this._applySceneItem(scene.sceneName, item, inputs);
 
@@ -672,13 +702,23 @@ export class OBSTemplateManager {
               console.warn(`[OBSTemplateManager] Failed to set transform for ${item.sourceName}:`, transformError.message);
             }
           }
+
+          if (sceneItemId) {
+            itemsAdded++;
+          }
         } catch (error) {
           console.warn(`[OBSTemplateManager] Failed to add item ${item.sourceName} to scene ${scene.sceneName}:`, error.message);
         }
       }
     }
 
-    console.log(`[OBSTemplateManager] Created scene "${scene.sceneName}" with ${scene.items?.length || 0} items`);
+    if (sceneCreated) {
+      console.log(`[OBSTemplateManager] Scene "${scene.sceneName}" created with ${itemsAdded} items`);
+    } else if (itemsAdded > 0) {
+      console.log(`[OBSTemplateManager] Added ${itemsAdded} items to existing scene "${scene.sceneName}"`);
+    }
+
+    return sceneCreated;
   }
 
   /**
