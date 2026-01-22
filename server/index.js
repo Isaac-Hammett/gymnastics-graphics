@@ -3697,6 +3697,27 @@ io.on('connection', async (socket) => {
     }
   });
 
+  // Subscribe/unsubscribe from real-time audio level updates (Phase 2)
+  socket.on('obs:subscribeAudioLevels', ({ enabled }) => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    const clientCompId = client?.compId;
+
+    if (!clientCompId) {
+      console.log(`[subscribeAudioLevels] No compId for socket ${socket.id}`);
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+
+    if (enabled) {
+      obsConnManager.subscribeAudioLevels(clientCompId, socket.id);
+      console.log(`[subscribeAudioLevels] ${socket.id} subscribed to audio levels for ${clientCompId}`);
+    } else {
+      obsConnManager.unsubscribeAudioLevels(clientCompId, socket.id);
+      console.log(`[subscribeAudioLevels] ${socket.id} unsubscribed from audio levels for ${clientCompId}`);
+    }
+  });
+
   // ============================================================================
   // Transition Management (PRD-OBS-05)
   // ============================================================================
@@ -4739,6 +4760,11 @@ io.on('connection', async (socket) => {
   // Disconnect handling
   socket.on('disconnect', () => {
     console.log(`Client disconnected: ${socket.id}`);
+
+    // Clean up audio level subscriptions
+    const obsConnManager = getOBSConnectionManager();
+    obsConnManager.unsubscribeAudioLevelsAll(socket.id);
+
     showState.connectedClients = showState.connectedClients.filter(c => c.id !== socket.id);
     broadcastState();
   });
@@ -4835,6 +4861,12 @@ function initializeOBSConnectionManager() {
   obsConnManager.on('connectionError', ({ compId, error }) => {
     const room = `competition:${compId}`;
     io.to(room).emit('obs:error', { error });
+  });
+
+  // Forward audio levels to competition room (Phase 2 - Real-time audio meters)
+  obsConnManager.on('audioLevels', ({ compId, levels }) => {
+    const room = `competition:${compId}`;
+    io.to(room).emit('obs:audioLevels', levels);
   });
 
   console.log('[Server] OBS Connection Manager initialized');
