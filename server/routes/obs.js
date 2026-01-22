@@ -1726,9 +1726,11 @@ export function setupOBSRoutes(app, obs, obsStateSyncOrGetter) {
         },
 
         // Talent comms URLs from VDO.Ninja config
+        // - talentUrls are for talent to JOIN (push their video)
+        // - obsViewUrls are for OBS browser sources to VIEW individual talent feeds
         talentComms: talentComms?.vdoNinja ? {
-          talent1Url: talentComms.vdoNinja.talentUrls?.['talent-1'] || '',
-          talent2Url: talentComms.vdoNinja.talentUrls?.['talent-2'] || '',
+          talent1Url: talentComms.vdoNinja.obsViewUrls?.['talent-1'] || '',
+          talent2Url: talentComms.vdoNinja.obsViewUrls?.['talent-2'] || '',
           obsSceneUrl: talentComms.vdoNinja.obsSceneUrl || ''
         } : {
           talent1Url: '',

@@ -128,20 +128,24 @@ describe('TalentCommsManager', () => {
       const password = 'test-password';
       const urls = manager.generateVdoNinjaUrls(roomId, password);
 
-      assert.ok(urls.director);
-      assert.ok(urls.obsScene);
-      assert.ok(urls.talent1);
-      assert.ok(urls.talent2);
+      assert.ok(urls.directorUrl);
+      assert.ok(urls.obsSceneUrl);
+      assert.ok(urls.talentUrls['talent-1']);
+      assert.ok(urls.talentUrls['talent-2']);
+      assert.ok(urls.obsViewUrls['talent-1']);
+      assert.ok(urls.obsViewUrls['talent-2']);
     });
 
     it('should include room ID in all URLs', () => {
       const roomId = 'test-room-123';
       const urls = manager.generateVdoNinjaUrls(roomId);
 
-      assert.ok(urls.director.includes(roomId));
-      assert.ok(urls.obsScene.includes(roomId));
-      assert.ok(urls.talent1.includes(roomId));
-      assert.ok(urls.talent2.includes(roomId));
+      assert.ok(urls.directorUrl.includes(roomId));
+      assert.ok(urls.obsSceneUrl.includes(roomId));
+      assert.ok(urls.talentUrls['talent-1'].includes(roomId));
+      assert.ok(urls.talentUrls['talent-2'].includes(roomId));
+      assert.ok(urls.obsViewUrls['talent-1'].includes(roomId));
+      assert.ok(urls.obsViewUrls['talent-2'].includes(roomId));
     });
 
     it('should include password in director URL', () => {
@@ -149,7 +153,7 @@ describe('TalentCommsManager', () => {
       const password = 'test-password';
       const urls = manager.generateVdoNinjaUrls(roomId, password);
 
-      assert.ok(urls.director.includes(`password=${password}`));
+      assert.ok(urls.directorUrl.includes(`password=${password}`));
     });
 
     it('should format director URL correctly', () => {
@@ -157,29 +161,45 @@ describe('TalentCommsManager', () => {
       const password = 'test-password';
       const urls = manager.generateVdoNinjaUrls(roomId, password);
 
-      assert.equal(urls.director, `${VDO_NINJA_BASE_URL}/?director=${roomId}&password=${password}`);
+      assert.equal(urls.directorUrl, `${VDO_NINJA_BASE_URL}/?director=${roomId}&password=${password}`);
     });
 
     it('should format obsScene URL correctly', () => {
       const roomId = 'test-room-123';
-      const urls = manager.generateVdoNinjaUrls(roomId);
-
-      assert.equal(urls.obsScene, `${VDO_NINJA_BASE_URL}/?view=${roomId}&scene`);
+      const password = 'test-password';
+      const urls = manager.generateVdoNinjaUrls(roomId, password);
+      // obsSceneUrl includes hash derived from password
+      assert.ok(urls.obsSceneUrl.startsWith(`${VDO_NINJA_BASE_URL}/?view=${roomId}&scene&hash=`));
     });
 
-    it('should format talent URLs correctly', () => {
+    it('should format talent URLs correctly (for talent to join and push)', () => {
       const roomId = 'test-room-123';
-      const urls = manager.generateVdoNinjaUrls(roomId);
+      const password = 'test-password';
+      const urls = manager.generateVdoNinjaUrls(roomId, password);
 
-      assert.equal(urls.talent1, `${VDO_NINJA_BASE_URL}/?room=${roomId}&push=talent1`);
-      assert.equal(urls.talent2, `${VDO_NINJA_BASE_URL}/?room=${roomId}&push=talent2`);
+      // Talent URLs are for talent to join the room and push their video
+      assert.ok(urls.talentUrls['talent-1'].includes(`room=${roomId}`));
+      assert.ok(urls.talentUrls['talent-1'].includes('push=talent1'));
+      assert.ok(urls.talentUrls['talent-1'].includes('hash='));
+      assert.ok(urls.talentUrls['talent-2'].includes(`room=${roomId}`));
+      assert.ok(urls.talentUrls['talent-2'].includes('push=talent2'));
+    });
+
+    it('should format OBS view URLs correctly (for OBS to view talent feeds)', () => {
+      const roomId = 'test-room-123';
+      const password = 'test-password';
+      const urls = manager.generateVdoNinjaUrls(roomId, password);
+
+      // OBS view URLs are for OBS browser sources to view individual talent feeds
+      assert.equal(urls.obsViewUrls['talent-1'], `${VDO_NINJA_BASE_URL}/?view=talent1&solo&room=${roomId}&password=${password}`);
+      assert.equal(urls.obsViewUrls['talent-2'], `${VDO_NINJA_BASE_URL}/?view=talent2&solo&room=${roomId}&password=${password}`);
     });
 
     it('should generate password if not provided', () => {
       const roomId = 'test-room-123';
       const urls = manager.generateVdoNinjaUrls(roomId);
 
-      assert.ok(urls.director.includes('password='));
+      assert.ok(urls.directorUrl.includes('password='));
     });
 
     it('should require room ID', () => {
@@ -196,11 +216,9 @@ describe('TalentCommsManager', () => {
 
       assert.ok(result);
       assert.equal(result.method, 'vdo-ninja');
-      assert.ok(result.roomId);
-      assert.ok(result.password);
-      assert.ok(result.urls);
-      assert.ok(result.createdAt);
-      assert.ok(result.updatedAt);
+      assert.ok(result.vdoNinja); // VDO.Ninja config is nested
+      assert.ok(result.vdoNinja.roomId);
+      assert.ok(result.generatedAt);
     });
 
     it('should save configuration to Firebase', async () => {
@@ -214,20 +232,22 @@ describe('TalentCommsManager', () => {
     it('should generate all required URLs', async () => {
       const result = await manager.setupTalentComms('test-comp-123');
 
-      assert.ok(result.urls.director);
-      assert.ok(result.urls.obsScene);
-      assert.ok(result.urls.talent1);
-      assert.ok(result.urls.talent2);
+      assert.ok(result.vdoNinja.directorUrl);
+      assert.ok(result.vdoNinja.obsSceneUrl);
+      assert.ok(result.vdoNinja.talentUrls['talent-1']);
+      assert.ok(result.vdoNinja.talentUrls['talent-2']);
+      assert.ok(result.vdoNinja.obsViewUrls['talent-1']);
+      assert.ok(result.vdoNinja.obsViewUrls['talent-2']);
     });
 
     it('should overwrite existing configuration', async () => {
       // Create initial config
       await manager.setupTalentComms('test-comp-123');
-      const firstRoomId = firebaseStore['competitions/test-comp-123/config/talentComms'].roomId;
+      const firstRoomId = firebaseStore['competitions/test-comp-123/config/talentComms'].vdoNinja.roomId;
 
       // Setup again
       await manager.setupTalentComms('test-comp-123');
-      const secondRoomId = firebaseStore['competitions/test-comp-123/config/talentComms'].roomId;
+      const secondRoomId = firebaseStore['competitions/test-comp-123/config/talentComms'].vdoNinja.roomId;
 
       // Room IDs should be different
       assert.notEqual(firstRoomId, secondRoomId);
@@ -265,12 +285,12 @@ describe('TalentCommsManager', () => {
     it('should set timestamps correctly', async () => {
       const result = await manager.setupTalentComms('test-comp-123');
 
-      assert.ok(result.createdAt);
-      assert.ok(result.updatedAt);
+      assert.ok(result.generatedAt);
+      assert.ok(result.vdoNinja.generatedAt);
 
       // Should be valid ISO timestamps
-      assert.ok(new Date(result.createdAt).toISOString());
-      assert.ok(new Date(result.updatedAt).toISOString());
+      assert.ok(new Date(result.generatedAt).toISOString());
+      assert.ok(new Date(result.vdoNinja.generatedAt).toISOString());
     });
   });
 
@@ -282,11 +302,11 @@ describe('TalentCommsManager', () => {
 
     it('should regenerate URLs with new room ID', async () => {
       const originalConfig = firebaseStore['competitions/test-comp-123/config/talentComms'];
-      const originalRoomId = originalConfig.roomId;
+      const originalRoomId = originalConfig.vdoNinja.roomId;
 
       const result = await manager.regenerateUrls('test-comp-123');
 
-      assert.notEqual(result.roomId, originalRoomId);
+      assert.notEqual(result.vdoNinja.roomId, originalRoomId);
     });
 
     it('should preserve the method', async () => {
@@ -294,32 +314,32 @@ describe('TalentCommsManager', () => {
       assert.equal(result.method, 'vdo-ninja');
     });
 
-    it('should update the updatedAt timestamp', async () => {
+    it('should update the generatedAt timestamp', async () => {
       const originalConfig = firebaseStore['competitions/test-comp-123/config/talentComms'];
-      const originalTimestamp = originalConfig.updatedAt;
+      const originalTimestamp = originalConfig.vdoNinja.generatedAt;
 
       // Wait a tiny bit to ensure timestamp changes
       await new Promise(resolve => setTimeout(resolve, 10));
 
       const result = await manager.regenerateUrls('test-comp-123');
 
-      assert.notEqual(result.updatedAt, originalTimestamp);
+      assert.notEqual(result.vdoNinja.generatedAt, originalTimestamp);
     });
 
-    it('should preserve the createdAt timestamp', async () => {
+    it('should preserve the generatedAt timestamp at top level', async () => {
       const originalConfig = firebaseStore['competitions/test-comp-123/config/talentComms'];
-      const originalCreatedAt = originalConfig.createdAt;
+      const originalGeneratedAt = originalConfig.generatedAt;
 
       const result = await manager.regenerateUrls('test-comp-123');
 
-      assert.equal(result.createdAt, originalCreatedAt);
+      assert.equal(result.generatedAt, originalGeneratedAt);
     });
 
     it('should save updated config to Firebase', async () => {
       const result = await manager.regenerateUrls('test-comp-123');
 
       const config = firebaseStore['competitions/test-comp-123/config/talentComms'];
-      assert.equal(config.roomId, result.roomId);
+      assert.equal(config.vdoNinja.roomId, result.vdoNinja.roomId);
     });
 
     it('should require competition ID', async () => {
@@ -336,13 +356,11 @@ describe('TalentCommsManager', () => {
       );
     });
 
-    it('should generate new password', async () => {
-      const originalConfig = firebaseStore['competitions/test-comp-123/config/talentComms'];
-      const originalPassword = originalConfig.password;
-
+    it('should generate new URLs with obsViewUrls', async () => {
       const result = await manager.regenerateUrls('test-comp-123');
 
-      assert.notEqual(result.password, originalPassword);
+      assert.ok(result.vdoNinja.obsViewUrls['talent-1']);
+      assert.ok(result.vdoNinja.obsViewUrls['talent-2']);
     });
   });
 
@@ -354,7 +372,7 @@ describe('TalentCommsManager', () => {
 
       assert.ok(result);
       assert.equal(result.method, 'vdo-ninja');
-      assert.ok(result.roomId);
+      assert.ok(result.vdoNinja.roomId);
     });
 
     it('should return null if configuration does not exist', async () => {
@@ -375,11 +393,11 @@ describe('TalentCommsManager', () => {
       const result = await manager.getTalentComms('test-comp-123');
 
       assert.ok(result.method);
-      assert.ok(result.roomId);
-      assert.ok(result.password);
-      assert.ok(result.urls);
-      assert.ok(result.createdAt);
-      assert.ok(result.updatedAt);
+      assert.ok(result.vdoNinja.roomId);
+      assert.ok(result.vdoNinja.directorUrl);
+      assert.ok(result.vdoNinja.talentUrls);
+      assert.ok(result.vdoNinja.obsViewUrls);
+      assert.ok(result.generatedAt);
     });
   });
 
@@ -400,13 +418,12 @@ describe('TalentCommsManager', () => {
       assert.equal(result.method, 'vdo-ninja');
     });
 
-    it('should generate new room ID when switching methods', async () => {
-      const originalConfig = firebaseStore['competitions/test-comp-123/config/talentComms'];
-      const originalRoomId = originalConfig.roomId;
-
+    it('should clear vdoNinja config when switching to discord', async () => {
       const result = await manager.updateMethod('test-comp-123', 'discord');
 
-      assert.notEqual(result.roomId, originalRoomId);
+      // When switching to discord, vdoNinja is not included
+      assert.ok(!result.vdoNinja);
+      assert.ok(result.discord);
     });
 
     it('should return existing config if method is the same', async () => {
@@ -414,16 +431,16 @@ describe('TalentCommsManager', () => {
 
       const result = await manager.updateMethod('test-comp-123', 'vdo-ninja');
 
-      assert.equal(result.roomId, originalConfig.roomId);
+      assert.equal(result.vdoNinja.roomId, originalConfig.vdoNinja.roomId);
     });
 
-    it('should preserve createdAt timestamp', async () => {
+    it('should preserve generatedAt timestamp', async () => {
       const originalConfig = firebaseStore['competitions/test-comp-123/config/talentComms'];
-      const originalCreatedAt = originalConfig.createdAt;
+      const originalGeneratedAt = originalConfig.generatedAt;
 
       const result = await manager.updateMethod('test-comp-123', 'discord');
 
-      assert.equal(result.createdAt, originalCreatedAt);
+      assert.equal(result.generatedAt, originalGeneratedAt);
     });
 
     it('should require competition ID', async () => {
@@ -541,15 +558,15 @@ describe('TalentCommsManager', () => {
       // Setup
       const setupResult = await manager.setupTalentComms('test-comp-123');
       assert.equal(setupResult.method, 'vdo-ninja');
-      const originalRoomId = setupResult.roomId;
+      const originalRoomId = setupResult.vdoNinja.roomId;
 
       // Regenerate
       const regenResult = await manager.regenerateUrls('test-comp-123');
-      assert.notEqual(regenResult.roomId, originalRoomId);
+      assert.notEqual(regenResult.vdoNinja.roomId, originalRoomId);
 
       // Get
       const getResult = await manager.getTalentComms('test-comp-123');
-      assert.equal(getResult.roomId, regenResult.roomId);
+      assert.equal(getResult.vdoNinja.roomId, regenResult.vdoNinja.roomId);
 
       // Delete
       const deleteResult = await manager.deleteTalentComms('test-comp-123');
@@ -566,7 +583,7 @@ describe('TalentCommsManager', () => {
 
       let config = await manager.getTalentComms('test-comp-123');
       assert.equal(config.method, 'vdo-ninja');
-      assert.ok(config.urls.director);
+      assert.ok(config.vdoNinja.directorUrl);
 
       // Switch to discord
       await manager.updateMethod('test-comp-123', 'discord');
@@ -579,7 +596,7 @@ describe('TalentCommsManager', () => {
 
       config = await manager.getTalentComms('test-comp-123');
       assert.equal(config.method, 'vdo-ninja');
-      assert.ok(config.urls.director);
+      assert.ok(config.vdoNinja.directorUrl);
     });
 
     it('should handle multiple competitions independently', async () => {
@@ -591,7 +608,7 @@ describe('TalentCommsManager', () => {
       const config2 = await manager.getTalentComms('comp-2');
 
       // Should have different room IDs
-      assert.notEqual(config1.roomId, config2.roomId);
+      assert.notEqual(config1.vdoNinja.roomId, config2.vdoNinja.roomId);
 
       // Regenerate one shouldn't affect the other
       await manager.regenerateUrls('comp-1');
@@ -599,8 +616,8 @@ describe('TalentCommsManager', () => {
       const newConfig1 = await manager.getTalentComms('comp-1');
       const unchangedConfig2 = await manager.getTalentComms('comp-2');
 
-      assert.notEqual(newConfig1.roomId, config1.roomId);
-      assert.equal(unchangedConfig2.roomId, config2.roomId);
+      assert.notEqual(newConfig1.vdoNinja.roomId, config1.vdoNinja.roomId);
+      assert.equal(unchangedConfig2.vdoNinja.roomId, config2.vdoNinja.roomId);
     });
 
     it('should handle multiple regenerations', async () => {
@@ -611,7 +628,7 @@ describe('TalentCommsManager', () => {
       // Regenerate multiple times
       for (let i = 0; i < 5; i++) {
         const result = await manager.regenerateUrls('test-comp-123');
-        roomIds.add(result.roomId);
+        roomIds.add(result.vdoNinja.roomId);
       }
 
       // All room IDs should be unique
