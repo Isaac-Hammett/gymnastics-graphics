@@ -119,17 +119,22 @@ const nextSegment = state.nextSegment;
 ```javascript
 import { useTimesheet } from '../hooks/useTimesheet';
 
-const { nextSegment } = useTimesheet();
+const { nextSegment, formatTime } = useTimesheet();
 ```
 
 **Changes Required:**
 1. Replace `useShow()` with `useTimesheet()`
 2. Use `nextSegment` directly from hook
+3. Use `formatTime` helper for duration display (convert seconds to ms)
+4. Add `hold` segment type icon (ClockIcon)
 
 **Acceptance Criteria:**
-- [ ] Next segment displays correctly from timesheet data
-- [ ] Duration shows in formatted time
-- [ ] Auto-advance indicator shown when applicable
+- [x] Next segment displays correctly from timesheet data
+- [x] Duration shows in formatted time (using formatTime helper)
+- [x] Auto-advance indicator shown when applicable
+- [x] Hold segment type icon added
+
+**Completed:** 2026-01-22
 
 ---
 
