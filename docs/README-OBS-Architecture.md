@@ -631,6 +631,25 @@ If a PRD requires browser verification, ensure the prompt instructs the main age
 
 ---
 
+## Deploying Frontend Changes
+
+Use the deployment script to deploy frontend changes to production:
+
+```bash
+./scripts/deploy-frontend.sh
+```
+
+This script deploys all three required components:
+- **React SPA** (`show-controller/dist/`) - Main application
+- **Overlays** (`overlays/`) - Static HTML overlay files for OBS browser sources
+- **output.html** - Graphics renderer
+
+See [scripts/deploy-frontend.sh](../scripts/deploy-frontend.sh) for details.
+
+**Important:** The overlays directory is NOT part of the React build. If you only deploy the SPA, overlay URLs will return 404.
+
+---
+
 ## Related Documents
 
 - [PRD-OBS-00-Index.md](PRD-OBS-00-Index.md) - Overview of all OBS PRDs
@@ -638,3 +657,4 @@ If a PRD requires browser verification, ensure the prompt instructs the main age
 - [SPEC-competition-vm-routing.md](SPEC-competition-vm-routing.md) - How routing works
 - [CLAUDE.md](../CLAUDE.md) - MCP tools and deployment instructions
 - [ralph-runner/README.md](ralph-runner/README.md) - RALPH automated PRD runner
+- [scripts/deploy-frontend.sh](../scripts/deploy-frontend.sh) - Frontend deployment script
