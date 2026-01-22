@@ -10,6 +10,7 @@ import VMPoolPage from './pages/VMPoolPage';
 import SystemOfflinePage from './pages/SystemOfflinePage';
 import SetupGuidePage from './pages/SetupGuidePage';
 import OBSManager from './pages/OBSManager';
+import RundownEditorPage from './pages/RundownEditorPage';
 
 // Competition-bound layout
 import CompetitionLayout from './components/CompetitionLayout';
@@ -66,6 +67,7 @@ function App() {
           <Route path="camera-setup" element={<CameraSetupPage />} />
           <Route path="graphics" element={<ControllerPage />} />
           <Route path="obs-manager" element={<OBSManager />} />
+          <Route path="rundown" element={<RundownEditorPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
