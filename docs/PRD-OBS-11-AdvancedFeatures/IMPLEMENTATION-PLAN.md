@@ -1,7 +1,7 @@
 # PRD-OBS-11: Advanced Features - Implementation Plan
 
-**Last Updated:** 2026-01-21
-**Status:** IN PROGRESS (P0 Complete, P1 Complete, P2 Not Started)
+**Last Updated:** 2026-01-22
+**Status:** IN PROGRESS (P0 Complete, P1 Complete, P2 VU Meters Complete)
 
 ---
 
@@ -44,15 +44,15 @@
 | 21 | Add user preference to disable auto-loading | COMPLETE | localStorage + checkbox in header |
 | 22 | Deploy and verify | COMPLETE | Playwright MCP verified 2026-01-21 |
 
-### P2 - Real-time VU Meters (NOT STARTED)
+### P2 - Real-time VU Meters (COMPLETE)
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 23 | Subscribe to InputVolumeMeters OBS event | NOT STARTED | On OBS connect |
-| 24 | Add socket emission for level data | NOT STARTED | Throttled |
-| 25 | Create VUMeter component | NOT STARTED | Canvas or CSS bars |
-| 26 | Integrate into AudioMixer.jsx | NOT STARTED | Per audio source |
-| 27 | Deploy and verify | NOT STARTED | Playwright MCP |
+| 23 | Subscribe to InputVolumeMeters OBS event | COMPLETE | obsConnectionManager.js:90 (EventSubscription.InputVolumeMeters) |
+| 24 | Add socket emission for level data | COMPLETE | obsConnectionManager.js:437-487 (throttled ~15fps) |
+| 25 | Create VUMeter component | COMPLETE | AudioMixer.jsx:190-211 (VUMeter), :216-245 (StereoVUMeter) |
+| 26 | Integrate into AudioMixer.jsx | COMPLETE | AudioMixer.jsx:457-465, subscribeAudioLevels on mount |
+| 27 | Deploy and verify | COMPLETE | Playwright MCP verified 2026-01-22 |
 
 ### P2 - Stinger Transitions (NOT STARTED)
 
@@ -90,7 +90,6 @@
 - `show-controller/src/components/obs/SceneThumbnail.jsx` - Scene thumbnail with hover preview
 
 ### To Create
-- `show-controller/src/components/obs/VUMeter.jsx`
 - `show-controller/src/components/obs/StingerConfig.jsx`
 - `server/lib/streamKeyEncryption.js`
 
@@ -102,9 +101,14 @@
 - `show-controller/src/components/obs/TemplateManager.jsx` - Added Set as Default toggle, auto-apply logic, SetDefaultModal
 
 ### To Modify
-- `show-controller/src/components/obs/AudioMixer.jsx` - VU meters
 - `show-controller/src/components/obs/TransitionPicker.jsx` - Stinger config
 - `show-controller/src/components/obs/TalentCommsPanel.jsx` - Status indicators
+
+### Already Modified (VU Meters)
+- `show-controller/src/components/obs/AudioMixer.jsx` - VU meters (VUMeter, StereoVUMeter, useAudioAlerts)
+- `show-controller/src/context/OBSContext.jsx` - audioLevels state, subscribeAudioLevels, unsubscribeAudioLevels
+- `server/lib/obsConnectionManager.js` - InputVolumeMeters subscription, audio level forwarding
+- `server/index.js` - obs:subscribeAudioLevels handler, audioLevels event forwarding
 
 ---
 
@@ -116,6 +120,21 @@
 ---
 
 ## Progress Log
+
+### 2026-01-22 (Real-time VU Meters - Already Implemented)
+- **P2 Real-time VU Meters COMPLETE**
+  - Feature was already implemented in PRD-OBS-04 Phase 2 (Audio Mixer)
+  - InputVolumeMeters event subscription in obsConnectionManager.js:90
+  - Audio level forwarding with throttling (~15fps) in obsConnectionManager.js:437-487
+  - VUMeter and StereoVUMeter components in AudioMixer.jsx:190-245
+  - useAudioAlerts hook for silence/clipping detection in AudioMixer.jsx:75-180
+  - AudioMixer subscribes on mount via useOBS().subscribeAudioLevels()
+  - Verified on production with Playwright MCP - stereo L/R meters display correctly
+  - All acceptance criteria met:
+    - VU meters display for each audio source
+    - Levels update in real-time (throttled to ~15fps)
+    - Stereo L/R channels shown separately
+    - Audio alerts for silence, clipping, signal lost, unstable
 
 ### 2026-01-21 (Template Auto-Loading)
 - **P1 Template Auto-Loading COMPLETE**
