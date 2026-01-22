@@ -55,6 +55,16 @@ function generatePassword() {
 }
 
 /**
+ * Generate an API key for VDO.Ninja IFRAME API
+ * @private
+ * @returns {string} URL-safe API key
+ */
+function generateApiKey() {
+  const randomBytes = crypto.randomBytes(8);
+  return randomBytes.toString('hex');
+}
+
+/**
  * Generate VDO.Ninja hash from password
  * VDO.Ninja uses SHA-256 hash of (password + salt), truncated to 4 hex chars
  * @private
@@ -108,17 +118,22 @@ export class TalentCommsManager {
    * @param {string} password - Room password
    * @returns {Object} Object containing directorUrl, obsSceneUrl, and talentUrls (PRD-compliant)
    */
-  generateVdoNinjaUrls(roomId, password = null) {
+  generateVdoNinjaUrls(roomId, password = null, apiKey = null) {
     if (!roomId) {
       throw new Error('Room ID is required');
     }
 
     const pwd = password || generatePassword();
+    const api = apiKey || generateApiKey();
     // Generate hash from password for talent URLs (allows joining without exposing password)
     const hash = generateVdoNinjaHash(pwd);
 
     return {
-      directorUrl: `${VDO_NINJA_BASE_URL}/?director=${roomId}&password=${pwd}`,
+      // Director URL with &api for IFRAME API monitoring
+      directorUrl: `${VDO_NINJA_BASE_URL}/?director=${roomId}&password=${pwd}&api=${api}`,
+      // Separate status monitoring URL for hidden iframe (includes api key)
+      statusMonitorUrl: `${VDO_NINJA_BASE_URL}/?director=${roomId}&password=${pwd}&api=${api}&cleanoutput`,
+      apiKey: api, // Store API key for reference
       obsSceneUrl: `${VDO_NINJA_BASE_URL}/?view=${roomId}&scene&hash=${hash}`,
       // URLs for talent to JOIN the room (push their video)
       talentUrls: {
