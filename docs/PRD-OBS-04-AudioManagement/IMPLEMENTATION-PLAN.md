@@ -1,79 +1,151 @@
 # PRD-OBS-04: Audio Management - Implementation Plan
 
-**Last Updated:** 2026-01-20
-**Status:** ✅ P1 VERIFIED - Audio Controls Working in Production
+**Last Updated:** 2026-01-21
+**Status:** ✅ Phase 1 Complete, Phase 2 Backend Complete (P2.1-P2.2)
 
 ---
 
-## Critical Bug Fixed
+## Phase Summary
 
-**BUG FOUND:** The `obs:setVolume` and `obs:setMute` socket event handlers were **completely missing** from `server/index.js`. The frontend was emitting these events but the server had no handlers - audio controls could never have worked in production!
-
-**FIX APPLIED:** Added both handlers to `server/index.js:3391-3464`:
-- `obs:setVolume` - Calls OBS WebSocket `SetInputVolume` with volumeDb or volumeMul
-- `obs:setMute` - Calls OBS WebSocket `SetInputMute` with inputMuted boolean
-
-**DEPLOYED:** 2026-01-20 - Coordinator restarted via `pm2 restart coordinator`
+| Phase | Description | Status |
+|-------|-------------|--------|
+| Phase 1 | Basic audio controls (volume, mute, monitor type, presets) | ✅ Complete |
+| Phase 2 | Real-time audio levels & alerts | 🔲 Ready for Implementation |
+| Phase 3 | AI Auto-Mixing | 🔲 Future (depends on Phase 2) |
 
 ---
 
-## Priority Order
+## Phase 1: Basic Audio Controls (✅ COMPLETE)
 
-### P0 - Critical Bug Fix (DONE)
+### Critical Bug Fixed (2026-01-20)
 
-| # | Task | Status | Notes |
-|---|------|--------|-------|
-| 0.1 | Add missing `obs:setVolume` handler | ✅ DONE | server/index.js:3391 |
-| 0.2 | Add missing `obs:setMute` handler | ✅ DONE | server/index.js:3434 |
-| 0.3 | Deploy coordinator to production | ✅ DONE | Deployed 2026-01-20 via SSH `pm2 restart coordinator` |
+**BUG FOUND:** The `obs:setVolume` and `obs:setMute` socket event handlers were **completely missing** from `server/index.js`. The frontend was emitting these events but the server had no handlers.
 
-### P1 - Verify Existing Functionality (✅ VERIFIED)
+**FIX APPLIED:** Added both handlers. Current locations (updated 2026-01-21):
+- `obs:setVolume` - server/index.js:3594
+- `obs:setMute` - server/index.js:3637
+- `obs:setMonitorType` - server/index.js:3669
 
-| # | Task | Status | Notes |
-|---|------|--------|-------|
-| 1 | Verify volume slider works | ✅ CODE VERIFIED | Frontend: OBSContext.jsx:177, Backend: server/index.js:3392 |
-| 2 | Verify mute toggle works | ✅ CODE VERIFIED | Frontend: OBSContext.jsx:182, Backend: server/index.js:3435 |
-| 3 | Verify monitor type dropdown works | ✅ CODE VERIFIED | Frontend: OBSContext.jsx:303, Backend: server/index.js:3467 |
-| 4 | Live browser test with Playwright | ✅ VERIFIED | OBS Connected, Audio tab works, empty state displays correctly |
-
-### P2 - Verify Audio Presets (✅ UI VERIFIED)
+### P1.1 - Audio Controls (✅ VERIFIED)
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 4 | Verify save preset works | ✅ UI VERIFIED | "Save Current Mix" button visible |
-| 5 | Verify load preset applies all levels | ✅ UI VERIFIED | 5 presets visible with Apply buttons |
-| 6 | Verify delete preset works | ✅ UI VERIFIED | Delete buttons visible on all presets |
-| 7 | Verify presets persist across refresh | ✅ VERIFIED | Presets loaded from Firebase and displayed |
+| 1.1 | Volume slider | ✅ VERIFIED | Frontend: OBSContext.jsx:322, Backend: server/index.js:3594 |
+| 1.2 | Mute toggle | ✅ VERIFIED | Frontend: OBSContext.jsx:327, Backend: server/index.js:3637 |
+| 1.3 | Monitor type dropdown | ✅ VERIFIED | Frontend: OBSContext.jsx:504, Backend: server/index.js:3669 |
 
-### P3 - Multi-client Sync (After P1)
-
-| # | Task | Status | Notes |
-|---|------|--------|-------|
-| 8 | Verify volume changes sync to other clients | NOT STARTED | Via coordinator broadcast |
-| 9 | Verify mute changes sync to other clients | NOT STARTED | Via coordinator broadcast |
-
-### P4 - Nice to Have
+### P1.2 - Audio Presets (✅ UI VERIFIED)
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 10 | Implement real-time VU meters | NOT STARTED | Requires OBS WebSocket subscriptions |
+| 1.4 | Save preset | ✅ UI VERIFIED | "Save Current Mix" button visible |
+| 1.5 | Load preset | ✅ UI VERIFIED | 5 presets visible with Apply buttons |
+| 1.6 | Delete preset | ✅ UI VERIFIED | Delete buttons visible |
+| 1.7 | Presets persist | ✅ VERIFIED | Firebase persistence working |
+
+---
+
+## Phase 2: Real-time Audio Levels & Alerts (🔄 BACKEND COMPLETE)
+
+### P2.1 - Coordinator: InputVolumeMeters Subscription
+
+| # | Task | Status | File | Notes |
+|---|------|--------|------|-------|
+| 2.1 | Modify `connectToVM()` to subscribe to high-volume events | ✅ DONE | server/lib/obsConnectionManager.js:87 | Added `EventSubscription.InputVolumeMeters` to connect options |
+| 2.2 | Add `subscribeAudioLevels(compId, socketId)` method | ✅ DONE | server/lib/obsConnectionManager.js:410 | Track per-competition subscriptions |
+| 2.3 | Add `unsubscribeAudioLevels(compId, socketId)` method | ✅ DONE | server/lib/obsConnectionManager.js:427 | Cleanup on disconnect |
+| 2.4 | Add `_startAudioLevelForwarding(compId)` method | ✅ DONE | server/lib/obsConnectionManager.js:453 | Throttle 60fps → 15fps (66ms interval) |
+| 2.5 | Add `_stopAudioLevelForwarding(compId)` method | ✅ DONE | server/lib/obsConnectionManager.js:494 | Remove event listener |
+| 2.6 | Emit `audioLevels` event from obsConnectionManager | ✅ DONE | server/lib/obsConnectionManager.js:483 | EventEmitter pattern |
+
+**CRITICAL:** `InputVolumeMeters` is a high-volume event requiring explicit subscription:
+```javascript
+import OBSWebSocket, { EventSubscription } from 'obs-websocket-js';
+
+await obs.connect(obsUrl, password, {
+  eventSubscriptions: EventSubscription.All | EventSubscription.InputVolumeMeters,
+  rpcVersion: 1
+});
+```
+
+### P2.2 - Coordinator: Socket Handlers
+
+| # | Task | Status | File | Notes |
+|---|------|--------|------|-------|
+| 2.7 | Add `obs:subscribeAudioLevels` socket handler | ✅ DONE | server/index.js:3701 | Call obsConnManager.subscribeAudioLevels() |
+| 2.8 | Forward `audioLevels` events to competition room | ✅ DONE | server/index.js:4846 | In initializeOBSConnectionManager() |
+| 2.9 | Cleanup subscriptions on socket disconnect | ✅ DONE | server/index.js:4770 | Call unsubscribeAudioLevelsAll on disconnect |
+
+### P2.3 - Frontend: OBSContext
+
+| # | Task | Status | File | Notes |
+|---|------|--------|------|-------|
+| 2.10 | Add `audioLevels` state (Map) | 🔲 TODO | show-controller/src/context/OBSContext.jsx | `useState(new Map())` |
+| 2.11 | Add `obs:audioLevels` event listener | 🔲 TODO | show-controller/src/context/OBSContext.jsx | Update audioLevels state |
+| 2.12 | Emit `obs:subscribeAudioLevels` on mount | 🔲 TODO | show-controller/src/context/OBSContext.jsx | When Audio tab is active |
+| 2.13 | Export `audioLevels` from context | 🔲 TODO | show-controller/src/context/OBSContext.jsx | For AudioMixer to consume |
+
+### P2.4 - Frontend: VU Meters
+
+| # | Task | Status | File | Notes |
+|---|------|--------|------|-------|
+| 2.14 | Create `VUMeter` component | 🔲 TODO | show-controller/src/components/obs/AudioMixer.jsx | Animated level bar |
+| 2.15 | Add VU meter to each audio source | 🔲 TODO | show-controller/src/components/obs/AudioMixer.jsx | Below volume slider |
+| 2.16 | Color coding (green/yellow/red) | 🔲 TODO | show-controller/src/components/obs/AudioMixer.jsx | Based on dB level |
+
+### P2.5 - Frontend: Audio Alerts
+
+| # | Task | Status | File | Notes |
+|---|------|--------|------|-------|
+| 2.17 | Create `useAudioAlerts` hook | 🔲 TODO | show-controller/src/components/obs/AudioMixer.jsx | Track level history |
+| 2.18 | Silence alert (>10s below -50dB) | 🔲 TODO | AudioMixer.jsx | Yellow warning |
+| 2.19 | Clipping alert (>500ms above -3dB) | 🔲 TODO | AudioMixer.jsx | Red flashing |
+| 2.20 | Signal lost alert | 🔲 TODO | AudioMixer.jsx | Red "NO SIGNAL" badge |
+| 2.21 | Unstable alert (3+ drops in 30s) | 🔲 TODO | AudioMixer.jsx | Orange "UNSTABLE" |
+| 2.22 | Create `AudioAlert` component | 🔲 TODO | AudioMixer.jsx | Badge/icon display |
+| 2.23 | Per-source alert config in Firebase | 🔲 TODO | Firebase | Enable/disable per source |
+
+### P2.6 - Testing & Verification
+
+| # | Task | Status | Notes |
+|---|------|--------|-------|
+| 2.24 | Test VU meters with live audio | 🔲 TODO | Manual test with OBS audio sources |
+| 2.25 | Test alert triggers | 🔲 TODO | Simulate silence, clipping, signal loss |
+| 2.26 | Performance test (UI smoothness) | 🔲 TODO | Verify no jank at 15fps updates |
+| 2.27 | Multi-client test | 🔲 TODO | Verify all clients receive levels |
+| 2.28 | Deploy to production | 🔲 TODO | Deploy coordinator + frontend |
+
+---
+
+## Phase 3: AI Auto-Mixing (🔲 FUTURE)
+
+Depends on Phase 2 completion. See PRD for details on:
+- Voice Activity Detection (VAD)
+- Music Ducking
+- Multi-Talent Balancing
+- Configurable rules engine
 
 ---
 
 ## Source Files
 
-### Frontend (all verified working)
-- `show-controller/src/components/obs/AudioMixer.jsx` - Volume slider, mute toggle, monitor dropdown (231 lines, complete)
-- `show-controller/src/components/obs/AudioPresetManager.jsx` - Preset CRUD
-- `show-controller/src/context/OBSContext.jsx` - Socket event emission:
-  - Line 177: `socket?.emit('obs:setVolume', { inputName, volumeDb })`
-  - Line 182: `socket?.emit('obs:setMute', { inputName, muted })`
-  - Line 303: `socket?.emit('obs:setMonitorType', { inputName, monitorType })`
+### Frontend
+
+| File | Purpose | Key Lines |
+|------|---------|-----------|
+| `show-controller/src/components/obs/AudioMixer.jsx` | Volume slider, mute toggle, monitor dropdown, VU meters (Phase 2) | 231 lines |
+| `show-controller/src/components/obs/AudioPresetManager.jsx` | Preset CRUD | - |
+| `show-controller/src/context/OBSContext.jsx` | Socket event emission | setVolume:322, setMute:327, setMonitorType:504 |
 
 ### Backend (Coordinator)
-- `server/index.js:3392` - `obs:setVolume` handler → calls `SetInputVolume` with volumeDb or volumeMul
-- `server/index.js:3435` - `obs:setMute` handler → calls `SetInputMute` with inputMuted boolean
-- `server/index.js:3467` - `obs:setMonitorType` handler → calls `SetInputAudioMonitorType`
+
+| File | Handler | Line | OBS API Call |
+|------|---------|------|--------------|
+| server/index.js | `obs:setVolume` | 3594 | `SetInputVolume` |
+| server/index.js | `obs:setMute` | 3637 | `SetInputMute` |
+| server/index.js | `obs:setMonitorType` | 3669 | `SetInputAudioMonitorType` |
+| server/index.js | `obs:refreshState` | 4339 | Full state broadcast |
+| server/lib/obsConnectionManager.js | OBS connection manager | - | Per-competition connections |
 
 ---
 
@@ -86,70 +158,79 @@
 
 ## Deploy Instructions
 
-**Coordinator Server:** `44.193.31.120` (NOT 3.87.107.201, which is the frontend static server)
-**App Path:** `/opt/gymnastics-graphics/server/`
+### Coordinator (for Phase 2 backend changes)
+
+**Server:** `44.193.31.120` (api.commentarygraphic.com)
+**App Path:** `/opt/gymnastics-graphics/`
 
 ```bash
-# Via direct SSH (when MCP tools unavailable):
-ssh -i ~/.ssh/gymnastics-graphics-key-pair.pem ubuntu@44.193.31.120 "cd /opt/gymnastics-graphics && git pull origin main && pm2 restart coordinator"
+# Via MCP tools:
+ssh_exec target="coordinator" command="cd /opt/gymnastics-graphics && git pull origin main && pm2 restart coordinator"
 
-# Via MCP tools (when available):
-ssh_exec target="44.193.31.120" command="cd /opt/gymnastics-graphics && git pull origin main && pm2 restart coordinator"
+# Via direct SSH:
+ssh -i ~/.ssh/gymnastics-graphics-key-pair.pem ubuntu@44.193.31.120 \
+  "cd /opt/gymnastics-graphics && git pull origin main && pm2 restart coordinator"
 
-# Verify coordinator is running:
+# Verify:
 curl https://api.commentarygraphic.com/api/coordinator/status
+```
 
-# Verify via Playwright:
-browser_navigate url="https://commentarygraphic.com/8kyf0rnl/obs-manager"
-browser_take_screenshot
-# Navigate to Audio tab and test volume slider
+### Frontend (for Phase 2 UI changes)
+
+**Server:** `3.87.107.201` (commentarygraphic.com)
+
+```bash
+# Use deploy script:
+./scripts/deploy-frontend.sh
+
+# Or manually:
+cd show-controller && npm run build
+# Then upload dist/ to /var/www/commentarygraphic/
 ```
 
 ---
 
 ## Progress Log
 
-### 2026-01-20 - Context 5 (LIVE VERIFICATION COMPLETE)
+### 2026-01-21 - Phase 2 Backend Implementation (P2.1-P2.2)
+- **IMPLEMENTED:** `EventSubscription.InputVolumeMeters` subscription in `connectToVM()`
+- **IMPLEMENTED:** Audio level subscription methods (`subscribeAudioLevels`, `unsubscribeAudioLevels`, `unsubscribeAudioLevelsAll`)
+- **IMPLEMENTED:** Audio level forwarding with 66ms throttle (~15fps)
+- **IMPLEMENTED:** `obs:subscribeAudioLevels` socket handler
+- **IMPLEMENTED:** Audio levels event forwarding to competition room
+- **IMPLEMENTED:** Cleanup on socket disconnect
+- **FILES CHANGED:**
+  - `server/lib/obsConnectionManager.js` - Added audio level subscription system
+  - `server/index.js` - Added socket handler and disconnect cleanup
+- **NEXT:** Deploy to coordinator, then implement frontend (P2.3-P2.4)
+
+### 2026-01-21 - PRD & Plan Update
+- **PRD UPDATED:** Fixed line number references (handlers moved due to code changes)
+- **PRD UPDATED:** Added critical note about `InputVolumeMeters` high-volume event subscription
+- **PRD UPDATED:** Enhanced Phase 2 implementation code with subscription tracking
+- **PLAN UPDATED:** Restructured into Phase 1/2/3 with detailed task breakdown
+- **PLAN UPDATED:** Added 28 specific tasks for Phase 2 implementation
+
+### 2026-01-20 - Phase 1 Complete (LIVE VERIFICATION)
 - **PLAYWRIGHT TEST RESULTS:** Ran automated browser tests against production
 - **OBS Connection:** ✅ Connected to OBS Studio via WebSocket (50.19.137.152:3003)
 - **Audio Tab:** ✅ Visible and clickable, correctly highlighted when active
-- **Audio Mixer:** ✅ Displays "No Audio Sources" empty state correctly (OBS has no audio sources configured)
-- **Audio Presets:** ✅ All 5 presets visible with Apply/Delete buttons:
-  - Commentary Focus, Venue Focus, Music Bed, All Muted, Break Music
-- **Save Current Mix:** ✅ Button visible
+- **Audio Mixer:** ✅ Displays "No Audio Sources" empty state correctly
+- **Audio Presets:** ✅ All 5 presets visible with Apply/Delete buttons
 - **Console Errors:** ✅ 0 JavaScript errors
-- **Screenshot Evidence:** Saved to `show-controller/test-results/audio-*.png`
-- **STATUS:** P1 and P2 verification complete - Audio management working in production
+- **STATUS:** Phase 1 complete - Audio management working in production
 
-### 2026-01-20 - Context 4
-- **CODE VERIFIED:** All audio control handlers confirmed present:
-  - `obs:setVolume`: Frontend OBSContext.jsx:177 → Backend server/index.js:3392
-  - `obs:setMute`: Frontend OBSContext.jsx:182 → Backend server/index.js:3435
-  - `obs:setMonitorType`: Frontend OBSContext.jsx:303 → Backend server/index.js:3467
-- **AudioMixer.jsx VERIFIED:** Complete implementation with volume sliders, mute toggles, monitor dropdowns
-- **BLOCKED:** Playwright MCP tools unavailable - cannot perform live browser verification
-- **COORDINATOR STATUS:** Online with 2m 22s uptime, 3 connected clients
-- **NEXT:** Live browser test when Playwright MCP becomes available
-
-### 2026-01-20 - Context 3
-- **DEPLOYED:** Coordinator restarted via direct SSH to 44.193.31.120
-- **VERIFIED:** Coordinator API returns `status: "online"` with 10s uptime (freshly restarted)
-- **NEXT:** Use Playwright MCP to verify audio controls work in UI
-- MCP browser tools unavailable in this session - verification needed in next context
-
-### 2026-01-20 - Context 2
+### 2026-01-20 - Bug Fix Deployed
 - **DISCOVERED:** `obs:setVolume` and `obs:setMute` handlers were missing from server
 - **FIXED:** Added both handlers to server/index.js
-- **BLOCKED:** MCP tools (ssh_exec, browser_*) unavailable - cannot deploy or verify
-- Committed changes to main branch
-
-### 2026-01-20 - Context 1
-- Created implementation plan
+- **DEPLOYED:** Coordinator restarted via SSH
 
 ---
 
 ## Related Files Changed
 
-| File | Change Description | Commit |
-|------|-------------------|--------|
-| server/index.js | Added `obs:setVolume` and `obs:setMute` socket handlers | PRD-OBS-04: Add missing audio control handlers |
+| File | Change Description | Date |
+|------|-------------------|------|
+| server/index.js | Added `obs:setVolume` and `obs:setMute` socket handlers | 2026-01-20 |
+| docs/PRD-OBS-04-AudioManagement.md | Updated line numbers, added Phase 2 implementation details | 2026-01-21 |
+| docs/PRD-OBS-04-AudioManagement/IMPLEMENTATION-PLAN.md | Restructured for Phase 2 | 2026-01-21 |

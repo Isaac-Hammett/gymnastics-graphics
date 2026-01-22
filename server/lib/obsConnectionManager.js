@@ -11,7 +11,7 @@
  * @module obsConnectionManager
  */
 
-import OBSWebSocket from 'obs-websocket-js';
+import OBSWebSocket, { EventSubscription } from 'obs-websocket-js';
 import { EventEmitter } from 'events';
 
 /**
@@ -36,6 +36,11 @@ class OBSConnectionManager extends EventEmitter {
     // Heartbeat configuration
     this.HEARTBEAT_INTERVAL = 15000; // 15 seconds
     this.HEARTBEAT_TIMEOUT = 5000; // 5 seconds to respond
+
+    // Audio level subscription tracking
+    this.audioLevelSubscriptions = new Map(); // compId -> Set<socketId>
+    this.audioLevelHandlers = new Map(); // compId -> handler function
+    this.AUDIO_LEVEL_THROTTLE_MS = 66; // ~15fps (OBS sends at ~60fps)
 
     // Default OBS WebSocket port
     this.OBS_PORT = 4455;
@@ -79,8 +84,12 @@ class OBSConnectionManager extends EventEmitter {
     this._setupEventHandlers(obs, compId, vmAddress);
 
     try {
-      // Connect to OBS
-      await obs.connect(obsUrl, this.OBS_PASSWORD || undefined);
+      // Connect to OBS with InputVolumeMeters high-volume event subscription
+      // InputVolumeMeters is NOT included in EventSubscription.All - must be explicitly requested
+      await obs.connect(obsUrl, this.OBS_PASSWORD || undefined, {
+        eventSubscriptions: EventSubscription.All | EventSubscription.InputVolumeMeters,
+        rpcVersion: 1
+      });
 
       // Store connection
       this.connections.set(compId, obs);
@@ -366,11 +375,145 @@ class OBSConnectionManager extends EventEmitter {
     }
   }
 
+  // =============================================
+  // Audio Level Subscription Methods (Phase 2)
+  // =============================================
+
+  /**
+   * Subscribe a socket to receive audio level updates for a competition
+   * @param {string} compId - Competition ID
+   * @param {string} socketId - Socket ID of the subscriber
+   */
+  subscribeAudioLevels(compId, socketId) {
+    if (!this.audioLevelSubscriptions.has(compId)) {
+      this.audioLevelSubscriptions.set(compId, new Set());
+    }
+    this.audioLevelSubscriptions.get(compId).add(socketId);
+
+    console.log(`[OBSConnectionManager] Audio level subscription added: ${socketId} -> ${compId} (total: ${this.audioLevelSubscriptions.get(compId).size})`);
+
+    // Start forwarding if this is the first subscriber
+    if (this.audioLevelSubscriptions.get(compId).size === 1) {
+      this._startAudioLevelForwarding(compId);
+    }
+  }
+
+  /**
+   * Unsubscribe a socket from audio level updates
+   * @param {string} compId - Competition ID
+   * @param {string} socketId - Socket ID to unsubscribe
+   */
+  unsubscribeAudioLevels(compId, socketId) {
+    const subs = this.audioLevelSubscriptions.get(compId);
+    if (subs) {
+      subs.delete(socketId);
+      console.log(`[OBSConnectionManager] Audio level subscription removed: ${socketId} -> ${compId} (remaining: ${subs.size})`);
+
+      // Stop forwarding if no more subscribers
+      if (subs.size === 0) {
+        this._stopAudioLevelForwarding(compId);
+        this.audioLevelSubscriptions.delete(compId);
+      }
+    }
+  }
+
+  /**
+   * Unsubscribe a socket from all competitions (called on disconnect)
+   * @param {string} socketId - Socket ID to unsubscribe
+   */
+  unsubscribeAudioLevelsAll(socketId) {
+    for (const [compId, subs] of this.audioLevelSubscriptions) {
+      if (subs.has(socketId)) {
+        this.unsubscribeAudioLevels(compId, socketId);
+      }
+    }
+  }
+
+  /**
+   * Start forwarding audio levels from OBS to subscribers
+   * Throttles 60fps from OBS down to ~15fps
+   * @private
+   */
+  _startAudioLevelForwarding(compId) {
+    const obs = this.connections.get(compId);
+    if (!obs) {
+      console.warn(`[OBSConnectionManager] Cannot start audio forwarding: no connection for ${compId}`);
+      return;
+    }
+
+    // Don't start if already forwarding
+    if (this.audioLevelHandlers.has(compId)) {
+      return;
+    }
+
+    console.log(`[OBSConnectionManager] Starting audio level forwarding for ${compId} (throttle: ${this.AUDIO_LEVEL_THROTTLE_MS}ms)`);
+
+    let lastEmit = 0;
+
+    const handler = (data) => {
+      const now = Date.now();
+
+      // Throttle to reduce bandwidth
+      if (now - lastEmit < this.AUDIO_LEVEL_THROTTLE_MS) {
+        return;
+      }
+      lastEmit = now;
+
+      // Transform OBS data to our format
+      const levels = {
+        timestamp: now,
+        inputs: data.inputs.map(input => {
+          // Get max level across all channels for simple display
+          const allLevels = input.inputLevelsMul.flat();
+          const maxLevel = Math.max(...allLevels, 0.0001);
+
+          return {
+            inputName: input.inputName,
+            levelMul: maxLevel,
+            levelDb: 20 * Math.log10(maxLevel),
+            channels: input.inputLevelsMul.map(ch => ({
+              peak: ch[0] || 0,
+              rms: ch[1] || 0
+            }))
+          };
+        })
+      };
+
+      // Emit to server for forwarding to clients
+      this.emit('audioLevels', { compId, levels });
+    };
+
+    obs.on('InputVolumeMeters', handler);
+    this.audioLevelHandlers.set(compId, handler);
+  }
+
+  /**
+   * Stop forwarding audio levels for a competition
+   * @private
+   */
+  _stopAudioLevelForwarding(compId) {
+    const obs = this.connections.get(compId);
+    const handler = this.audioLevelHandlers.get(compId);
+
+    if (obs && handler) {
+      obs.off('InputVolumeMeters', handler);
+      console.log(`[OBSConnectionManager] Stopped audio level forwarding for ${compId}`);
+    }
+
+    this.audioLevelHandlers.delete(compId);
+  }
+
   /**
    * Shutdown all connections
    */
   async shutdown() {
     console.log('[OBSConnectionManager] Shutting down all connections');
+
+    // Stop all audio level forwarding
+    for (const compId of this.audioLevelHandlers.keys()) {
+      this._stopAudioLevelForwarding(compId);
+    }
+    this.audioLevelSubscriptions.clear();
 
     // Stop all heartbeats
     for (const [compId, timer] of this.heartbeatTimers) {
