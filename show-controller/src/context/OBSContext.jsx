@@ -506,6 +506,17 @@ export function OBSProvider({ children }) {
     socket?.emit('obs:getStreamStatus');
   }, [socket]);
 
+  // PRD-OBS-11: Stream key encryption/restore
+  const restoreStreamSettings = useCallback(() => {
+    console.log('OBSContext: Restoring stream settings from Firebase');
+    socket?.emit('obs:restoreStreamSettings');
+  }, [socket]);
+
+  const deleteStoredStreamKey = useCallback(() => {
+    console.log('OBSContext: Deleting stored stream key from Firebase');
+    socket?.emit('obs:deleteStoredStreamKey');
+  }, [socket]);
+
   const pauseRecording = useCallback(() => {
     console.log('OBSContext: Pausing recording');
     socket?.emit('obs:pauseRecording');
@@ -748,6 +759,8 @@ export function OBSProvider({ children }) {
     getStreamSettings,
     setStreamSettings,
     getStreamStatus,
+    restoreStreamSettings,
+    deleteStoredStreamKey,
 
     // Recording actions
     startRecording,

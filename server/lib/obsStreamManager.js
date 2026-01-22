@@ -17,52 +17,120 @@ import crypto from 'crypto';
 
 // Encryption key should be set via environment variable
 // In production, this would be managed via AWS Secrets Manager or similar
-const ENCRYPTION_KEY = process.env.STREAM_KEY_ENCRYPTION_KEY || 'gymnastics-graphics-default-key-32b';
-const ENCRYPTION_ALGORITHM = 'aes-256-cbc';
+const ENCRYPTION_KEY = process.env.STREAM_KEY_SECRET || process.env.STREAM_KEY_ENCRYPTION_KEY || 'gymnastics-graphics-default-key-32b';
+
+// AES-256-GCM provides authenticated encryption (integrity + confidentiality)
+const ENCRYPTION_ALGORITHM = 'aes-256-gcm';
+const IV_LENGTH = 12; // GCM standard IV length
+const AUTH_TAG_LENGTH = 16; // 128-bit auth tag
 
 /**
- * Encrypt a stream key for secure storage
+ * Encrypt a stream key for secure storage using AES-256-GCM
+ * Format: gcm:iv:authTag:ciphertext (all base64 encoded)
+ *
  * @param {string} plainKey - The plain text stream key
- * @returns {string} Encrypted and base64 encoded value
+ * @returns {string} Encrypted and base64 encoded value with auth tag
  */
 export function encryptStreamKey(plainKey) {
   if (!plainKey) return null;
 
   // Create a 32-byte key from the encryption key (for AES-256)
-  const key = crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32);
-  const iv = crypto.randomBytes(16);
-  const cipher = crypto.createCipheriv(ENCRYPTION_ALGORITHM, key, iv);
+  const key = crypto.scryptSync(ENCRYPTION_KEY, 'gymnastics-stream-key-salt', 32);
+  const iv = crypto.randomBytes(IV_LENGTH);
+  const cipher = crypto.createCipheriv(ENCRYPTION_ALGORITHM, key, iv, {
+    authTagLength: AUTH_TAG_LENGTH
+  });
 
   let encrypted = cipher.update(plainKey, 'utf8', 'base64');
   encrypted += cipher.final('base64');
 
-  // Prepend IV for decryption
-  return iv.toString('base64') + ':' + encrypted;
+  // Get authentication tag for integrity verification
+  const authTag = cipher.getAuthTag();
+
+  // Format: gcm:iv:authTag:ciphertext
+  return `gcm:${iv.toString('base64')}:${authTag.toString('base64')}:${encrypted}`;
 }
 
 /**
  * Decrypt a stream key from storage
+ * Supports both new GCM format and legacy CBC format for backward compatibility
+ *
  * @param {string} encryptedKey - The encrypted and base64 encoded value
  * @returns {string} Decrypted plain text stream key
  */
 export function decryptStreamKey(encryptedKey) {
   if (!encryptedKey) return null;
 
+  // Check for new GCM format: gcm:iv:authTag:ciphertext
+  if (encryptedKey.startsWith('gcm:')) {
+    return decryptStreamKeyGCM(encryptedKey);
+  }
+
+  // Fall back to legacy CBC format for backward compatibility
+  return decryptStreamKeyCBC(encryptedKey);
+}
+
+/**
+ * Decrypt using AES-256-GCM (new format)
+ * @private
+ */
+function decryptStreamKeyGCM(encryptedKey) {
+  const parts = encryptedKey.split(':');
+  if (parts.length !== 4 || parts[0] !== 'gcm') {
+    throw new Error('Invalid GCM encrypted key format');
+  }
+
+  const [, ivBase64, authTagBase64, ciphertext] = parts;
+  const iv = Buffer.from(ivBase64, 'base64');
+  const authTag = Buffer.from(authTagBase64, 'base64');
+
+  const key = crypto.scryptSync(ENCRYPTION_KEY, 'gymnastics-stream-key-salt', 32);
+  const decipher = crypto.createDecipheriv(ENCRYPTION_ALGORITHM, key, iv, {
+    authTagLength: AUTH_TAG_LENGTH
+  });
+  decipher.setAuthTag(authTag);
+
+  let decrypted = decipher.update(ciphertext, 'base64', 'utf8');
+  decrypted += decipher.final('utf8');
+
+  return decrypted;
+}
+
+/**
+ * Decrypt using legacy AES-256-CBC format (backward compatibility)
+ * @private
+ */
+function decryptStreamKeyCBC(encryptedKey) {
   const parts = encryptedKey.split(':');
   if (parts.length !== 2) {
-    throw new Error('Invalid encrypted key format');
+    throw new Error('Invalid CBC encrypted key format');
   }
 
   const iv = Buffer.from(parts[0], 'base64');
   const encrypted = parts[1];
 
+  // Use old salt for backward compatibility with existing keys
   const key = crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32);
-  const decipher = crypto.createDecipheriv(ENCRYPTION_ALGORITHM, key, iv);
+  const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
 
   let decrypted = decipher.update(encrypted, 'base64', 'utf8');
   decrypted += decipher.final('utf8');
 
   return decrypted;
+}
+
+/**
+ * Check if a key is encrypted (vs plaintext)
+ * @param {string} key - The key to check
+ * @returns {boolean} True if encrypted
+ */
+export function isEncryptedKey(key) {
+  if (!key) return false;
+  // GCM format: gcm:...
+  if (key.startsWith('gcm:')) return true;
+  // Legacy CBC format: base64:base64
+  const parts = key.split(':');
+  return parts.length === 2 && parts[0].length > 10;
 }
 
 /**

@@ -27,6 +27,7 @@ import { getOBSStateSync } from './lib/obsStateSync.js';
 import { setupOBSRoutes } from './routes/obs.js';
 import { getOBSConnectionManager } from './lib/obsConnectionManager.js';
 import { DEFAULT_PRESETS } from './lib/obsAudioManager.js';
+import { encryptStreamKey, decryptStreamKey, isEncryptedKey } from './lib/obsStreamManager.js';
 
 dotenv.config();
 
@@ -4769,10 +4770,121 @@ io.on('connection', async (socket) => {
         streamServiceSettings: settings
       });
       console.log(`[setStreamSettings] Updated stream settings for ${clientCompId} (type: ${serviceType})`);
+
+      // Store encrypted stream key in Firebase for backup/recovery
+      if (settings?.key && productionConfigService.isAvailable()) {
+        try {
+          const encryptedKey = encryptStreamKey(settings.key);
+          const db = productionConfigService.getDb();
+          if (db) {
+            await db.ref(`competitions/${clientCompId}/obs/streamConfig`).update({
+              streamKeyEncrypted: encryptedKey,
+              serviceType: serviceType,
+              server: settings.server || null,
+              lastUpdated: new Date().toISOString()
+            });
+            console.log(`[setStreamSettings] Stored encrypted stream key in Firebase for ${clientCompId}`);
+          }
+        } catch (fbError) {
+          // Don't fail the request if Firebase storage fails - OBS was still updated
+          console.warn(`[setStreamSettings] Failed to store encrypted key in Firebase: ${fbError.message}`);
+        }
+      }
+
       socket.emit('obs:streamSettingsUpdated', { success: true });
     } catch (error) {
       console.error(`[setStreamSettings] Failed: ${error.message}`);
       socket.emit('error', { message: `Failed to set stream settings: ${error.message}` });
+    }
+  });
+
+  // Restore stream settings from Firebase backup
+  socket.on('obs:restoreStreamSettings', async () => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can restore stream settings' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    if (!productionConfigService.isAvailable()) {
+      socket.emit('error', { message: 'Firebase not available' });
+      return;
+    }
+
+    try {
+      const db = productionConfigService.getDb();
+      const snapshot = await db.ref(`competitions/${clientCompId}/obs/streamConfig`).once('value');
+      const config = snapshot.val();
+
+      if (!config || !config.streamKeyEncrypted) {
+        socket.emit('error', { message: 'No stored stream configuration found' });
+        return;
+      }
+
+      // Decrypt the stream key
+      const decryptedKey = decryptStreamKey(config.streamKeyEncrypted);
+
+      // Build settings object
+      const settings = { key: decryptedKey };
+      if (config.server) {
+        settings.server = config.server;
+      }
+
+      // Apply to OBS
+      await compObs.call('SetStreamServiceSettings', {
+        streamServiceType: config.serviceType || 'rtmp_common',
+        streamServiceSettings: settings
+      });
+
+      console.log(`[restoreStreamSettings] Restored stream settings from Firebase for ${clientCompId}`);
+      socket.emit('obs:streamSettingsRestored', { success: true, lastUpdated: config.lastUpdated });
+    } catch (error) {
+      console.error(`[restoreStreamSettings] Failed: ${error.message}`);
+      socket.emit('error', { message: `Failed to restore stream settings: ${error.message}` });
+    }
+  });
+
+  // Delete stored stream key from Firebase
+  socket.on('obs:deleteStoredStreamKey', async () => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can delete stream keys' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    if (!productionConfigService.isAvailable()) {
+      socket.emit('error', { message: 'Firebase not available' });
+      return;
+    }
+
+    try {
+      const db = productionConfigService.getDb();
+      await db.ref(`competitions/${clientCompId}/obs/streamConfig/streamKeyEncrypted`).remove();
+      console.log(`[deleteStoredStreamKey] Deleted stored stream key for ${clientCompId}`);
+      socket.emit('obs:storedStreamKeyDeleted', { success: true });
+    } catch (error) {
+      console.error(`[deleteStoredStreamKey] Failed: ${error.message}`);
+      socket.emit('error', { message: `Failed to delete stored stream key: ${error.message}` });
     }
   });
 

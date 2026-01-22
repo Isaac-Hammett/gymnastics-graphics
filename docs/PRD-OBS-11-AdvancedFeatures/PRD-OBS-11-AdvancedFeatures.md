@@ -472,9 +472,9 @@ await obs.call('SetStreamServiceSettings', { ... });
 ```
 
 ### Acceptance Criteria
-- [ ] Stream keys encrypted in Firebase
-- [ ] Decryption works when starting stream
-- [ ] UI functionality unchanged
+- [x] Stream keys encrypted in Firebase
+- [x] Decryption works when starting stream
+- [x] UI functionality unchanged
 
 ---
 
