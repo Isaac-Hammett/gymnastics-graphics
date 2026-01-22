@@ -115,7 +115,7 @@ await obs.connect(obsUrl, password, {
 | 2.27 | Test alert triggers | 🔲 TODO | Simulate silence, clipping, signal loss |
 | 2.28 | Performance test (UI smoothness) | 🔲 TODO | Verify no jank at 15fps updates |
 | 2.29 | Multi-client test | 🔲 TODO | Verify all clients receive levels |
-| 2.30 | Deploy audio alerts to production | 🔲 TODO | Frontend deployment pending verification |
+| 2.30 | Deploy audio alerts to production | ✅ DONE | Frontend deployed and verified 2026-01-22 |
 
 ---
 
@@ -204,7 +204,8 @@ cd show-controller && npm run build
 - **DEFERRED:** Per-source alert config in Firebase (alerts enabled for all sources by default)
 - **FILES CHANGED:**
   - `show-controller/src/components/obs/AudioMixer.jsx` - Added useAudioAlerts hook, AudioAlert component
-- **NEXT:** Deploy to production and verify
+- **DEPLOYED:** Frontend built and uploaded to commentarygraphic.com
+- **VERIFIED:** Playwright verification 2026-01-22 - Audio tab loads with 12 sources, VU meters visible, no console errors
 
 ### 2026-01-22 - Phase 2 VU Meters Implementation (P2.4) ✅ VERIFIED
 - **IMPLEMENTED:** `VUMeter` component with color-coded level bar (green/yellow/red)
