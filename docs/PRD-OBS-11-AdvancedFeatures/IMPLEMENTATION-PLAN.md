@@ -1,13 +1,13 @@
 # PRD-OBS-11: Advanced Features - Implementation Plan
 
 **Last Updated:** 2026-01-22
-**Status:** IN PROGRESS (P0 + P1 Scene Thumbnails Complete)
+**Status:** IN PROGRESS (P0 Scene List buttons pending, P1 Scene Thumbnails Complete)
 
 ---
 
 ## Priority Order
 
-### P0 - Studio Mode (COMPLETE)
+### P0 - Studio Mode (IN PROGRESS - Scene List buttons missing)
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
@@ -19,7 +19,10 @@
 | 6 | Create StudioModePanel.jsx component | COMPLETE | Dual preview/program layout, resizable |
 | 7 | Add obs:studioModeChanged event handler | COMPLETE | OBSContext.jsx |
 | 8 | Integrate into OBSManager.jsx | COMPLETE | Toggle button, conditional render |
-| 9 | Deploy and verify | COMPLETE | Playwright MCP verified 2026-01-22 |
+| 9 | Deploy and verify StudioModePanel | COMPLETE | Playwright MCP verified 2026-01-22 |
+| 10 | Add Preview/Live buttons to SceneList | NOT STARTED | Show 2 buttons in Studio Mode, 1 button otherwise |
+| 11 | Add LIVE/PREVIEW badges to scene cards | NOT STARTED | Green for program, yellow for preview |
+| 12 | Deploy and verify Scene List integration | NOT STARTED | Playwright MCP |
 
 ### P1 - Scene Thumbnails (COMPLETE)
 
