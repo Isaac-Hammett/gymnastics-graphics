@@ -16,21 +16,107 @@ const MONITOR_TYPES = {
 };
 
 /**
+ * VUMeter - Real-time audio level meter with color coding
+ *
+ * Color zones:
+ * - Green: Normal levels (below -12dB)
+ * - Yellow: Hot levels (-12dB to -6dB)
+ * - Red: Clipping danger (above -6dB)
+ */
+function VUMeter({ levelDb, muted }) {
+  // Convert dB to percentage (0dB = 100%, -60dB = 0%)
+  // Using -60dB as floor since that's typical for audio meters
+  const percent = muted ? 0 : Math.max(0, Math.min(100, ((levelDb + 60) / 60) * 100));
+
+  // Determine color based on level
+  const getColor = () => {
+    if (muted) return 'bg-gray-600';
+    if (levelDb >= -6) return 'bg-red-500';      // Clipping danger
+    if (levelDb >= -12) return 'bg-yellow-500';  // Hot
+    return 'bg-green-500';                        // Normal
+  };
+
+  return (
+    <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+      <div
+        className={`h-full ${getColor()} transition-all duration-75`}
+        style={{ width: `${percent}%` }}
+      />
+    </div>
+  );
+}
+
+/**
+ * StereoVUMeter - Dual-channel VU meter for stereo sources
+ */
+function StereoVUMeter({ channels, muted }) {
+  // channels format: [{peak, rms}, {peak, rms}] for L/R
+  const leftChannel = channels?.[0];
+  const rightChannel = channels?.[1] || leftChannel; // Fallback to mono
+
+  const levelToDb = (mul) => {
+    if (!mul || mul <= 0) return -60;
+    return Math.max(-60, 20 * Math.log10(mul));
+  };
+
+  const leftDb = levelToDb(leftChannel?.peak);
+  const rightDb = levelToDb(rightChannel?.peak);
+
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center gap-2">
+        <span className="text-[10px] text-gray-500 w-3">L</span>
+        <div className="flex-1">
+          <VUMeter levelDb={leftDb} muted={muted} />
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="text-[10px] text-gray-500 w-3">R</span>
+        <div className="flex-1">
+          <VUMeter levelDb={rightDb} muted={muted} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
  * AudioMixer - Display and control audio sources with volume sliders, mute toggles, and monitor types
  *
  * Features:
  * - Volume sliders (-60dB to 0dB)
  * - Mute toggles
  * - Monitor type dropdown
- * - Real-time volume display
+ * - Real-time VU meters (Phase 2)
  * - Debounced volume updates to prevent flooding
  */
 export default function AudioMixer() {
-  const { obsState, obsConnected, setVolume, setMute, setMonitorType } = useOBS();
+  const {
+    obsState,
+    obsConnected,
+    setVolume,
+    setMute,
+    setMonitorType,
+    audioLevels,
+    subscribeAudioLevels,
+    unsubscribeAudioLevels
+  } = useOBS();
   const audioSources = obsState?.audioSources || [];
 
   // Debounce state for volume changes
   const [pendingVolumeChanges, setPendingVolumeChanges] = useState({});
+
+  // Subscribe to audio levels when component mounts and we're connected
+  useEffect(() => {
+    if (obsConnected && subscribeAudioLevels) {
+      subscribeAudioLevels();
+      return () => {
+        if (unsubscribeAudioLevels) {
+          unsubscribeAudioLevels();
+        }
+      };
+    }
+  }, [obsConnected, subscribeAudioLevels, unsubscribeAudioLevels]);
 
   // Debounce volume changes (500ms)
   useEffect(() => {
@@ -110,6 +196,7 @@ export default function AudioMixer() {
             onVolumeChange={handleVolumeChange}
             onMuteToggle={handleMuteToggle}
             onMonitorTypeChange={handleMonitorTypeChange}
+            levelData={audioLevels.get(source.inputName)}
           />
         ))}
       </div>
@@ -118,14 +205,15 @@ export default function AudioMixer() {
 }
 
 /**
- * AudioSourceControl - Individual audio source control with volume slider, mute, and monitor type
+ * AudioSourceControl - Individual audio source control with volume slider, mute, monitor type, and VU meter
  */
 function AudioSourceControl({
   source,
   pendingVolume,
   onVolumeChange,
   onMuteToggle,
-  onMonitorTypeChange
+  onMonitorTypeChange,
+  levelData
 }) {
   const inputName = source.inputName;
   const volumeDb = pendingVolume ?? source.volumeDb ?? -60;
@@ -135,14 +223,6 @@ function AudioSourceControl({
 
   // Convert dB to percentage for display
   const volumePercent = Math.round(volumeMul * 100);
-
-  // Get volume bar color based on level
-  const getVolumeBarColor = () => {
-    if (muted) return 'bg-gray-600';
-    if (volumeDb >= -6) return 'bg-red-500';
-    if (volumeDb >= -18) return 'bg-yellow-500';
-    return 'bg-green-500';
-  };
 
   return (
     <div className="bg-gray-700 rounded-lg p-4">
@@ -202,12 +282,14 @@ function AudioSourceControl({
         </div>
       </div>
 
-      {/* Volume Level Bar (visual meter) */}
-      <div className="mb-3 h-2 bg-gray-800 rounded-full overflow-hidden">
-        <div
-          className={`h-full transition-all duration-100 ${getVolumeBarColor()}`}
-          style={{ width: `${muted ? 0 : volumePercent}%` }}
-        />
+      {/* Real-time VU Meter */}
+      <div className="mb-3">
+        {levelData?.channels ? (
+          <StereoVUMeter channels={levelData.channels} muted={muted} />
+        ) : (
+          // Fallback: Show simple meter based on levelDb if available, or static bar
+          <VUMeter levelDb={levelData?.levelDb ?? -60} muted={muted} />
+        )}
       </div>
 
       {/* Monitor Type Dropdown */}
