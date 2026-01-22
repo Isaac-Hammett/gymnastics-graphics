@@ -91,7 +91,7 @@ describe('TalentCommsManager', () => {
     it('should generate a room ID with gym prefix', () => {
       const roomId = manager.generateRoomId();
       assert.ok(roomId);
-      assert.ok(roomId.startsWith('gym-'));
+      assert.ok(roomId.startsWith('gym_'));
     });
 
     it('should generate unique room IDs', () => {
@@ -102,13 +102,15 @@ describe('TalentCommsManager', () => {
 
     it('should generate room IDs of consistent format', () => {
       const roomId = manager.generateRoomId();
-      assert.match(roomId, /^gym-[a-f0-9]{12}$/);
+      // VDO.Ninja requires alphanumeric only - using underscore instead of hyphen
+      assert.match(roomId, /^gym_[a-f0-9]{12}$/);
     });
 
-    it('should generate URL-safe room IDs', () => {
+    it('should generate VDO.Ninja-compatible room IDs (alphanumeric + underscore only)', () => {
       const roomId = manager.generateRoomId();
-      // Should only contain alphanumeric and hyphens
-      assert.match(roomId, /^[a-z0-9-]+$/);
+      // VDO.Ninja only allows alphanumeric characters - hyphens get replaced with underscores
+      // So we use underscores from the start to avoid mismatches
+      assert.match(roomId, /^[a-z0-9_]+$/);
     });
 
     it('should generate multiple unique IDs in succession', () => {
