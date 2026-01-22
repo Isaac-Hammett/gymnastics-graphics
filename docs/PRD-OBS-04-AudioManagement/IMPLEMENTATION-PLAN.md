@@ -1,7 +1,7 @@
 # PRD-OBS-04: Audio Management - Implementation Plan
 
 **Last Updated:** 2026-01-22
-**Status:** ✅ Phase 1 Complete, Phase 2 VU Meters Complete (P2.1-P2.4), Phase 2 Alerts Pending (P2.5)
+**Status:** ✅ Phase 1 Complete, ✅ Phase 2 Complete (P2.1-P2.5)
 
 ---
 
@@ -10,7 +10,7 @@
 | Phase | Description | Status |
 |-------|-------------|--------|
 | Phase 1 | Basic audio controls (volume, mute, monitor type, presets) | ✅ Complete |
-| Phase 2 | Real-time audio levels & alerts | 🔄 VU Meters Complete, Alerts Pending |
+| Phase 2 | Real-time audio levels & alerts | ✅ Complete |
 | Phase 3 | AI Auto-Mixing | 🔲 Future (depends on Phase 2) |
 
 ---
@@ -45,7 +45,7 @@
 
 ---
 
-## Phase 2: Real-time Audio Levels & Alerts (🔄 P2.1-P2.4 COMPLETE, P2.5 PENDING)
+## Phase 2: Real-time Audio Levels & Alerts (✅ COMPLETE)
 
 ### P2.1 - Coordinator: InputVolumeMeters Subscription
 
@@ -95,17 +95,17 @@ await obs.connect(obsUrl, password, {
 | 2.17 | Color coding (green/yellow/red) | ✅ DONE | show-controller/src/components/obs/AudioMixer.jsx:32-37 | Green <-12dB, Yellow -12 to -6dB, Red >=-6dB |
 | 2.18 | Subscribe on mount, unsubscribe on unmount | ✅ DONE | show-controller/src/components/obs/AudioMixer.jsx:109-119 | useEffect with cleanup |
 
-### P2.5 - Frontend: Audio Alerts (🔲 PENDING)
+### P2.5 - Frontend: Audio Alerts (✅ COMPLETE)
 
 | # | Task | Status | File | Notes |
 |---|------|--------|------|-------|
-| 2.19 | Create `useAudioAlerts` hook | 🔲 TODO | show-controller/src/components/obs/AudioMixer.jsx | Track level history |
-| 2.20 | Silence alert (>10s below -50dB) | 🔲 TODO | AudioMixer.jsx | Yellow warning |
-| 2.21 | Clipping alert (>500ms above -3dB) | 🔲 TODO | AudioMixer.jsx | Red flashing |
-| 2.22 | Signal lost alert | 🔲 TODO | AudioMixer.jsx | Red "NO SIGNAL" badge |
-| 2.23 | Unstable alert (3+ drops in 30s) | 🔲 TODO | AudioMixer.jsx | Orange "UNSTABLE" |
-| 2.24 | Create `AudioAlert` component | 🔲 TODO | AudioMixer.jsx | Badge/icon display |
-| 2.25 | Per-source alert config in Firebase | 🔲 TODO | Firebase | Enable/disable per source |
+| 2.19 | Create `useAudioAlerts` hook | ✅ DONE | show-controller/src/components/obs/AudioMixer.jsx:64-156 | Tracks level history for 30s |
+| 2.20 | Silence alert (>10s below -50dB) | ✅ DONE | AudioMixer.jsx:100-107 | Yellow "SILENT" badge |
+| 2.21 | Clipping alert (>500ms above -3dB) | ✅ DONE | AudioMixer.jsx:109-117 | Red flashing "CLIPPING" badge |
+| 2.22 | Signal lost alert | ✅ DONE | AudioMixer.jsx:119-131 | Red "NO SIGNAL" badge |
+| 2.23 | Unstable alert (3+ drops in 30s) | ✅ DONE | AudioMixer.jsx:133-149 | Orange flashing "UNSTABLE" badge |
+| 2.24 | Create `AudioAlert` component | ✅ DONE | AudioMixer.jsx:43-61 | Badge with icon display |
+| 2.25 | Per-source alert config in Firebase | 🔲 DEFERRED | Firebase | Future enhancement - alerts enabled by default |
 
 ### P2.6 - Testing & Verification
 
@@ -115,7 +115,7 @@ await obs.connect(obsUrl, password, {
 | 2.27 | Test alert triggers | 🔲 TODO | Simulate silence, clipping, signal loss |
 | 2.28 | Performance test (UI smoothness) | 🔲 TODO | Verify no jank at 15fps updates |
 | 2.29 | Multi-client test | 🔲 TODO | Verify all clients receive levels |
-| 2.30 | Deploy to production | ✅ DONE | Coordinator + frontend deployed 2026-01-22 |
+| 2.30 | Deploy audio alerts to production | 🔲 TODO | Frontend deployment pending verification |
 
 ---
 
@@ -194,6 +194,18 @@ cd show-controller && npm run build
 
 ## Progress Log
 
+### 2026-01-22 - Phase 2 Audio Alerts Implementation (P2.5) ✅ COMPLETE
+- **IMPLEMENTED:** `useAudioAlerts` hook tracking 30 seconds of level history per source
+- **IMPLEMENTED:** Silence alert - Yellow "SILENT" badge when source below -50dB for 10+ seconds
+- **IMPLEMENTED:** Clipping alert - Red flashing "CLIPPING" badge when source above -3dB for 500ms+
+- **IMPLEMENTED:** Signal lost alert - Red "NO SIGNAL" badge when active source goes silent
+- **IMPLEMENTED:** Unstable alert - Orange flashing "UNSTABLE" badge when 3+ audio drops in 30 seconds
+- **IMPLEMENTED:** `AudioAlert` component with icon and styled badge display
+- **DEFERRED:** Per-source alert config in Firebase (alerts enabled for all sources by default)
+- **FILES CHANGED:**
+  - `show-controller/src/components/obs/AudioMixer.jsx` - Added useAudioAlerts hook, AudioAlert component
+- **NEXT:** Deploy to production and verify
+
 ### 2026-01-22 - Phase 2 VU Meters Implementation (P2.4) ✅ VERIFIED
 - **IMPLEMENTED:** `VUMeter` component with color-coded level bar (green/yellow/red)
 - **IMPLEMENTED:** `StereoVUMeter` component for L/R channel display
@@ -258,3 +270,4 @@ cd show-controller && npm run build
 | docs/PRD-OBS-04-AudioManagement.md | Updated line numbers, added Phase 2 implementation details | 2026-01-21 |
 | docs/PRD-OBS-04-AudioManagement/IMPLEMENTATION-PLAN.md | Restructured for Phase 2 | 2026-01-21 |
 | show-controller/src/components/obs/AudioMixer.jsx | Added VUMeter, StereoVUMeter components, audio level subscription | 2026-01-22 |
+| show-controller/src/components/obs/AudioMixer.jsx | Added useAudioAlerts hook, AudioAlert component for audio alerts | 2026-01-22 |

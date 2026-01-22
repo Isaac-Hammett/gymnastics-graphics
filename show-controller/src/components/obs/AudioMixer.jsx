@@ -1,8 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   SpeakerWaveIcon,
   SpeakerXMarkIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
+  ExclamationCircleIcon,
+  SignalSlashIcon
 } from '@heroicons/react/24/outline';
 import { useOBS } from '../../context/OBSContext';
 
@@ -14,6 +16,168 @@ const MONITOR_TYPES = {
   OBS_MONITORING_TYPE_MONITOR_ONLY: 'Monitor Only',
   OBS_MONITORING_TYPE_MONITOR_AND_OUTPUT: 'Monitor and Output'
 };
+
+/**
+ * Alert thresholds - can be made configurable per-source in Firebase
+ */
+const ALERT_THRESHOLDS = {
+  silenceDb: -50,           // Below this is considered silent
+  silenceTimeoutMs: 10000,  // 10 seconds of silence triggers alert
+  clippingDb: -3,           // Above this is clipping danger
+  clippingDurationMs: 500,  // 500ms of clipping triggers alert
+  signalLostTimeoutMs: 5000, // 5 seconds to detect signal loss
+  activeDb: -30,            // Above this is considered active audio
+  dropCountThreshold: 3,    // Number of drops to trigger unstable alert
+  historyLengthMs: 30000    // Keep 30 seconds of history for unstable detection
+};
+
+/**
+ * Alert types with styling
+ */
+const ALERT_STYLES = {
+  silence: { bg: 'bg-yellow-500', text: 'SILENT', icon: 'warning', animate: false },
+  clipping: { bg: 'bg-red-500', text: 'CLIPPING', icon: 'warning', animate: true },
+  signal_lost: { bg: 'bg-red-600', text: 'NO SIGNAL', icon: 'signal', animate: false },
+  unstable: { bg: 'bg-orange-500', text: 'UNSTABLE', icon: 'warning', animate: true }
+};
+
+/**
+ * AudioAlert - Displays alert badge for audio issues
+ */
+function AudioAlert({ alert }) {
+  if (!alert) return null;
+
+  const style = ALERT_STYLES[alert.type];
+  if (!style) return null;
+
+  const IconComponent = style.icon === 'signal' ? SignalSlashIcon : ExclamationCircleIcon;
+
+  return (
+    <span
+      className={`${style.bg} ${style.animate ? 'animate-pulse' : ''} text-white text-xs px-2 py-0.5 rounded font-bold inline-flex items-center gap-1`}
+      title={alert.details || style.text}
+    >
+      <IconComponent className="w-3 h-3" />
+      {style.text}
+    </span>
+  );
+}
+
+/**
+ * useAudioAlerts - Hook to track audio level history and detect alert conditions
+ *
+ * Detects:
+ * - Silence: Source below -50dB for 10+ seconds
+ * - Clipping: Source above -3dB for 500ms+
+ * - Signal Lost: Source was active, now silent for 5+ seconds
+ * - Unstable: Audio drops below -50dB then returns 3+ times in 30 seconds
+ */
+function useAudioAlerts(audioLevels) {
+  const levelHistoryRef = useRef(new Map()); // Map<inputName, Array<{levelDb, timestamp}>>
+  const [alerts, setAlerts] = useState(new Map());
+
+  useEffect(() => {
+    // Skip if no audio level data
+    if (!audioLevels || audioLevels.size === 0) return;
+
+    const now = Date.now();
+    const newAlerts = new Map();
+
+    audioLevels.forEach((levelData, inputName) => {
+      const levelDb = levelData?.levelDb ?? -60;
+
+      // Get or create history for this input
+      let history = levelHistoryRef.current.get(inputName) || [];
+
+      // Add current level to history
+      history.push({ levelDb, timestamp: now });
+
+      // Trim history to last 30 seconds
+      const cutoff = now - ALERT_THRESHOLDS.historyLengthMs;
+      history = history.filter(h => h.timestamp > cutoff);
+      levelHistoryRef.current.set(inputName, history);
+
+      // Need at least 1 second of history to detect alerts
+      if (history.length < 15) return; // ~1 second at 15fps
+
+      // --- Check for SILENCE (below -50dB for 10+ seconds) ---
+      const recentHistory = history.filter(h => h.timestamp > now - ALERT_THRESHOLDS.silenceTimeoutMs);
+      const allSilent = recentHistory.length > 0 && recentHistory.every(h => h.levelDb < ALERT_THRESHOLDS.silenceDb);
+
+      if (allSilent && recentHistory.length >= 150) { // ~10 seconds at 15fps
+        const silentDuration = now - recentHistory[0].timestamp;
+        newAlerts.set(inputName, {
+          type: 'silence',
+          details: `Silent for ${Math.round(silentDuration / 1000)}s`
+        });
+        return; // Don't check other alerts if silent
+      }
+
+      // --- Check for CLIPPING (above -3dB for 500ms+) ---
+      const recentClipping = history.filter(h => h.timestamp > now - ALERT_THRESHOLDS.clippingDurationMs);
+      const clippingCount = recentClipping.filter(h => h.levelDb > ALERT_THRESHOLDS.clippingDb).length;
+
+      if (clippingCount >= 7) { // ~500ms at 15fps
+        newAlerts.set(inputName, {
+          type: 'clipping',
+          details: `Peak: ${levelDb.toFixed(1)}dB`
+        });
+        return;
+      }
+
+      // --- Check for SIGNAL LOST (was active, now silent for 5+ seconds) ---
+      const oldHistory = history.filter(h => h.timestamp < now - ALERT_THRESHOLDS.signalLostTimeoutMs);
+      const recentForSignal = history.filter(h => h.timestamp > now - ALERT_THRESHOLDS.signalLostTimeoutMs);
+
+      const wasActive = oldHistory.some(h => h.levelDb > ALERT_THRESHOLDS.activeDb);
+      const nowSilent = recentForSignal.length >= 75 && recentForSignal.every(h => h.levelDb < ALERT_THRESHOLDS.silenceDb);
+
+      if (wasActive && nowSilent) {
+        newAlerts.set(inputName, {
+          type: 'signal_lost',
+          details: 'Audio signal lost'
+        });
+        return;
+      }
+
+      // --- Check for UNSTABLE (3+ drops in 30 seconds) ---
+      let dropCount = 0;
+      let wasAboveThreshold = false;
+
+      for (const h of history) {
+        const isAbove = h.levelDb > ALERT_THRESHOLDS.activeDb;
+        const isBelow = h.levelDb < ALERT_THRESHOLDS.silenceDb;
+
+        if (wasAboveThreshold && isBelow) {
+          dropCount++;
+        }
+        if (isAbove) wasAboveThreshold = true;
+        if (isBelow) wasAboveThreshold = false;
+      }
+
+      if (dropCount >= ALERT_THRESHOLDS.dropCountThreshold) {
+        newAlerts.set(inputName, {
+          type: 'unstable',
+          details: `${dropCount} drops in last 30s`
+        });
+      }
+    });
+
+    setAlerts(newAlerts);
+  }, [audioLevels]);
+
+  // Cleanup old entries when sources are removed
+  useEffect(() => {
+    const currentInputs = new Set(audioLevels.keys());
+    levelHistoryRef.current.forEach((_, inputName) => {
+      if (!currentInputs.has(inputName)) {
+        levelHistoryRef.current.delete(inputName);
+      }
+    });
+  }, [audioLevels]);
+
+  return alerts;
+}
 
 /**
  * VUMeter - Real-time audio level meter with color coding
@@ -106,6 +270,9 @@ export default function AudioMixer() {
   // Debounce state for volume changes
   const [pendingVolumeChanges, setPendingVolumeChanges] = useState({});
 
+  // Track audio alerts (silence, clipping, signal lost, unstable)
+  const audioAlerts = useAudioAlerts(audioLevels);
+
   // Subscribe to audio levels when component mounts and we're connected
   useEffect(() => {
     if (obsConnected && subscribeAudioLevels) {
@@ -197,6 +364,7 @@ export default function AudioMixer() {
             onMuteToggle={handleMuteToggle}
             onMonitorTypeChange={handleMonitorTypeChange}
             levelData={audioLevels.get(source.inputName)}
+            alert={audioAlerts.get(source.inputName)}
           />
         ))}
       </div>
@@ -213,7 +381,8 @@ function AudioSourceControl({
   onVolumeChange,
   onMuteToggle,
   onMonitorTypeChange,
-  levelData
+  levelData,
+  alert
 }) {
   const inputName = source.inputName;
   const volumeDb = pendingVolume ?? source.volumeDb ?? -60;
@@ -229,7 +398,10 @@ function AudioSourceControl({
       {/* Header Row */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex-1 min-w-0">
-          <div className="text-white font-medium truncate">{inputName}</div>
+          <div className="flex items-center gap-2">
+            <span className="text-white font-medium truncate">{inputName}</span>
+            <AudioAlert alert={alert} />
+          </div>
           <div className="text-xs text-gray-400">
             {volumeDb.toFixed(1)} dB ({volumePercent}%)
           </div>
