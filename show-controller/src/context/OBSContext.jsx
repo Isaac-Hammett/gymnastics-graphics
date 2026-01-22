@@ -270,6 +270,15 @@ export function OBSProvider({ children }) {
       setPresets(prev => prev.filter(p => p.id !== data.presetId));
     };
 
+    // PRD-OBS-11: Studio mode state changed handler
+    const handleStudioModeChanged = (data) => {
+      console.log('OBSContext: Studio mode changed', data);
+      setObsState(prev => ({
+        ...prev,
+        studioModeEnabled: data.studioModeEnabled
+      }));
+    };
+
     // Subscribe to all OBS events
     // Note: Event names must match server emissions in server/lib/obsStateSync.js
     socket.on('obs:stateUpdated', handleStateUpdate);
@@ -300,6 +309,8 @@ export function OBSProvider({ children }) {
     socket.on('obs:presetApplied', handlePresetApplied);
     socket.on('obs:presetSaved', handlePresetSaved);
     socket.on('obs:presetDeleted', handlePresetDeleted);
+    // PRD-OBS-11: Studio mode events
+    socket.on('obs:studioModeChanged', handleStudioModeChanged);
 
     // Request initial state
     socket.emit('obs:refreshState');
@@ -334,6 +345,8 @@ export function OBSProvider({ children }) {
       socket.off('obs:presetApplied', handlePresetApplied);
       socket.off('obs:presetSaved', handlePresetSaved);
       socket.off('obs:presetDeleted', handlePresetDeleted);
+      // PRD-OBS-11: Studio mode events cleanup
+      socket.off('obs:studioModeChanged', handleStudioModeChanged);
     };
   }, [socket, connected]);
 
