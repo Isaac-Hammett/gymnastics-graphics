@@ -9,7 +9,8 @@ import {
   XMarkIcon,
   Cog6ToothIcon,
   Bars3Icon,
-  DocumentTextIcon
+  DocumentTextIcon,
+  PlayIcon
 } from '@heroicons/react/24/outline';
 import { useOBS } from '../../context/OBSContext';
 import { useShow } from '../../context/ShowContext';
@@ -113,15 +114,18 @@ export default function SceneList({ onEditScene, onSceneAction }) {
   };
 
   // Handle scene actions
+  // PRD-OBS-11: Separate handlers for Preview and Go Live
   const handlePreview = (sceneName) => {
-    if (studioModeEnabled) {
-      setPreviewScene(sceneName);
-    } else {
-      // If studio mode is disabled, switch to scene directly
-      switchScene(sceneName);
-    }
+    setPreviewScene(sceneName);
     if (onSceneAction) {
       onSceneAction('preview', sceneName);
+    }
+  };
+
+  const handleGoLive = (sceneName) => {
+    switchScene(sceneName);
+    if (onSceneAction) {
+      onSceneAction('live', sceneName);
     }
   };
 
@@ -392,6 +396,7 @@ export default function SceneList({ onEditScene, onSceneAction }) {
           previewScene={previewScene}
           studioModeEnabled={studioModeEnabled}
           onPreview={handlePreview}
+          onGoLive={handleGoLive}
           onEdit={handleEdit}
           onRename={handleRename}
           onDuplicate={handleDuplicate}
@@ -422,6 +427,7 @@ function CategoryGroup({
   previewScene,
   studioModeEnabled,
   onPreview,
+  onGoLive,
   onEdit,
   onRename,
   onDuplicate,
@@ -489,6 +495,7 @@ function CategoryGroup({
                 isPreview={isPreview}
                 studioModeEnabled={studioModeEnabled}
                 onPreview={() => onPreview(sceneName)}
+                onGoLive={() => onGoLive(sceneName)}
                 onEdit={() => onEdit(sceneName)}
                 onRename={() => onRename(sceneName)}
                 onDuplicate={() => onDuplicate(sceneName)}
@@ -524,6 +531,7 @@ function SceneCard({
   isPreview,
   studioModeEnabled,
   onPreview,
+  onGoLive,
   onEdit,
   onRename,
   onDuplicate,
@@ -594,13 +602,57 @@ function SceneCard({
 
         {/* Action Buttons */}
         <div className="flex items-center gap-1 ml-3 relative">
-          <button
-            onClick={onPreview}
-            className="p-2 text-gray-400 hover:text-blue-400 hover:bg-gray-700 rounded transition-colors"
-            title={studioModeEnabled ? 'Set as preview' : 'Switch to scene'}
-          >
-            <EyeIcon className="w-5 h-5" />
-          </button>
+          {/* PRD-OBS-11: Scene List Integration with Studio Mode */}
+          {studioModeEnabled ? (
+            // Studio Mode: Show Preview and Live buttons
+            <>
+              <button
+                onClick={onPreview}
+                disabled={isPreview}
+                className={`flex items-center gap-1 px-2 py-1.5 rounded text-sm font-medium transition-colors ${
+                  isPreview
+                    ? 'bg-yellow-600/50 text-yellow-300 cursor-not-allowed'
+                    : 'bg-yellow-600 hover:bg-yellow-500 text-white'
+                }`}
+                title="Set as preview scene"
+              >
+                <EyeIcon className="w-4 h-4" />
+                Preview
+              </button>
+              <button
+                onClick={onGoLive}
+                disabled={isActive}
+                className={`flex items-center gap-1 px-2 py-1.5 rounded text-sm font-medium transition-colors ${
+                  isActive
+                    ? 'bg-green-600/50 text-green-300 cursor-not-allowed'
+                    : 'bg-green-600 hover:bg-green-500 text-white'
+                }`}
+                title="Switch to program (live)"
+              >
+                <PlayIcon className="w-4 h-4" />
+                Live
+              </button>
+            </>
+          ) : (
+            // Normal Mode: Single Go Live button
+            <button
+              onClick={onGoLive}
+              disabled={isActive}
+              className={`flex items-center gap-1 px-2 py-1.5 rounded text-sm font-medium transition-colors ${
+                isActive
+                  ? 'bg-green-600/50 text-green-300 cursor-not-allowed'
+                  : 'bg-green-600 hover:bg-green-500 text-white'
+              }`}
+              title="Switch to scene (go live)"
+            >
+              <PlayIcon className="w-4 h-4" />
+              Go Live
+            </button>
+          )}
+
+          {/* Separator */}
+          <div className="w-px h-6 bg-gray-600 mx-1" />
+
           <button
             onClick={onEdit}
             className="p-2 text-gray-400 hover:text-yellow-400 hover:bg-gray-700 rounded transition-colors"

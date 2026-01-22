@@ -233,21 +233,21 @@ socket.emit('obs:requestScreenshot', {
 - Stack preview/program vertically on very narrow screens
 
 ### Acceptance Criteria
-- [ ] Enable/disable studio mode works
-- [ ] Preview and program screenshots display correctly
-- [ ] Preview scene can be changed via dropdown
-- [ ] "TAKE" button transitions preview to program
-- [ ] Multi-client sync works (all clients see mode changes)
-- [ ] Size dropdown allows selecting Small/Medium/Large/Extra Large
-- [ ] Screenshot size changes immediately when selection changes
-- [ ] Size preference persists across page reloads
+- [x] Enable/disable studio mode works
+- [x] Preview and program screenshots display correctly
+- [x] Preview scene can be changed via dropdown
+- [x] "TAKE" button transitions preview to program
+- [x] Multi-client sync works (all clients see mode changes)
+- [x] Size dropdown allows selecting Small/Medium/Large/Extra Large
+- [x] Screenshot size changes immediately when selection changes
+- [x] Size preference persists across page reloads
 - [ ] Layout adapts responsively on smaller screens
-- [ ] Scene List shows single "Go Live" button when Studio Mode disabled
-- [ ] Scene List shows "Preview" and "Live" buttons when Studio Mode enabled
-- [ ] Preview button sets scene as preview (yellow/amber indicator)
-- [ ] Live button switches scene to program (green indicator)
-- [ ] Current program scene shows "LIVE" badge
-- [ ] Current preview scene shows "PREVIEW" badge (Studio Mode only)
+- [x] Scene List shows single "Go Live" button when Studio Mode disabled
+- [x] Scene List shows "Preview" and "Live" buttons when Studio Mode enabled
+- [x] Preview button sets scene as preview (yellow/amber indicator)
+- [x] Live button switches scene to program (green indicator)
+- [x] Current program scene shows "LIVE" badge
+- [x] Current preview scene shows "PREVIEW" badge (Studio Mode only)
 
 ---
 
