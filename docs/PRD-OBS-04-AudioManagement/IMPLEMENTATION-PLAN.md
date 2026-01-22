@@ -1,7 +1,7 @@
 # PRD-OBS-04: Audio Management - Implementation Plan
 
-**Last Updated:** 2026-01-21
-**Status:** ✅ Phase 1 Complete, Phase 2 Backend Complete (P2.1-P2.2), Phase 2 OBSContext Complete (P2.3)
+**Last Updated:** 2026-01-22
+**Status:** ✅ Phase 1 Complete, Phase 2 VU Meters Complete (P2.1-P2.4), Phase 2 Alerts Pending (P2.5)
 
 ---
 
@@ -10,7 +10,7 @@
 | Phase | Description | Status |
 |-------|-------------|--------|
 | Phase 1 | Basic audio controls (volume, mute, monitor type, presets) | ✅ Complete |
-| Phase 2 | Real-time audio levels & alerts | 🔲 Ready for Implementation |
+| Phase 2 | Real-time audio levels & alerts | 🔄 VU Meters Complete, Alerts Pending |
 | Phase 3 | AI Auto-Mixing | 🔲 Future (depends on Phase 2) |
 
 ---
@@ -45,7 +45,7 @@
 
 ---
 
-## Phase 2: Real-time Audio Levels & Alerts (🔄 P2.1-P2.3 COMPLETE)
+## Phase 2: Real-time Audio Levels & Alerts (🔄 P2.1-P2.4 COMPLETE, P2.5 PENDING)
 
 ### P2.1 - Coordinator: InputVolumeMeters Subscription
 
@@ -85,35 +85,37 @@ await obs.connect(obsUrl, password, {
 | 2.12 | Add `subscribeAudioLevels`/`unsubscribeAudioLevels` methods | ✅ DONE | show-controller/src/context/OBSContext.jsx:529-540 | Emits `obs:subscribeAudioLevels` |
 | 2.13 | Export `audioLevels` from context | ✅ DONE | show-controller/src/context/OBSContext.jsx:618-620 | For AudioMixer to consume |
 
-### P2.4 - Frontend: VU Meters
+### P2.4 - Frontend: VU Meters (✅ COMPLETE)
 
 | # | Task | Status | File | Notes |
 |---|------|--------|------|-------|
-| 2.14 | Create `VUMeter` component | 🔲 TODO | show-controller/src/components/obs/AudioMixer.jsx | Animated level bar |
-| 2.15 | Add VU meter to each audio source | 🔲 TODO | show-controller/src/components/obs/AudioMixer.jsx | Below volume slider |
-| 2.16 | Color coding (green/yellow/red) | 🔲 TODO | show-controller/src/components/obs/AudioMixer.jsx | Based on dB level |
+| 2.14 | Create `VUMeter` component | ✅ DONE | show-controller/src/components/obs/AudioMixer.jsx:26-47 | Mono level bar with color coding |
+| 2.15 | Create `StereoVUMeter` component | ✅ DONE | show-controller/src/components/obs/AudioMixer.jsx:52-80 | L/R channel meters |
+| 2.16 | Add VU meter to each audio source | ✅ DONE | show-controller/src/components/obs/AudioMixer.jsx:293-300 | Below volume slider |
+| 2.17 | Color coding (green/yellow/red) | ✅ DONE | show-controller/src/components/obs/AudioMixer.jsx:32-37 | Green <-12dB, Yellow -12 to -6dB, Red >=-6dB |
+| 2.18 | Subscribe on mount, unsubscribe on unmount | ✅ DONE | show-controller/src/components/obs/AudioMixer.jsx:109-119 | useEffect with cleanup |
 
-### P2.5 - Frontend: Audio Alerts
+### P2.5 - Frontend: Audio Alerts (🔲 PENDING)
 
 | # | Task | Status | File | Notes |
 |---|------|--------|------|-------|
-| 2.17 | Create `useAudioAlerts` hook | 🔲 TODO | show-controller/src/components/obs/AudioMixer.jsx | Track level history |
-| 2.18 | Silence alert (>10s below -50dB) | 🔲 TODO | AudioMixer.jsx | Yellow warning |
-| 2.19 | Clipping alert (>500ms above -3dB) | 🔲 TODO | AudioMixer.jsx | Red flashing |
-| 2.20 | Signal lost alert | 🔲 TODO | AudioMixer.jsx | Red "NO SIGNAL" badge |
-| 2.21 | Unstable alert (3+ drops in 30s) | 🔲 TODO | AudioMixer.jsx | Orange "UNSTABLE" |
-| 2.22 | Create `AudioAlert` component | 🔲 TODO | AudioMixer.jsx | Badge/icon display |
-| 2.23 | Per-source alert config in Firebase | 🔲 TODO | Firebase | Enable/disable per source |
+| 2.19 | Create `useAudioAlerts` hook | 🔲 TODO | show-controller/src/components/obs/AudioMixer.jsx | Track level history |
+| 2.20 | Silence alert (>10s below -50dB) | 🔲 TODO | AudioMixer.jsx | Yellow warning |
+| 2.21 | Clipping alert (>500ms above -3dB) | 🔲 TODO | AudioMixer.jsx | Red flashing |
+| 2.22 | Signal lost alert | 🔲 TODO | AudioMixer.jsx | Red "NO SIGNAL" badge |
+| 2.23 | Unstable alert (3+ drops in 30s) | 🔲 TODO | AudioMixer.jsx | Orange "UNSTABLE" |
+| 2.24 | Create `AudioAlert` component | 🔲 TODO | AudioMixer.jsx | Badge/icon display |
+| 2.25 | Per-source alert config in Firebase | 🔲 TODO | Firebase | Enable/disable per source |
 
 ### P2.6 - Testing & Verification
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 2.24 | Test VU meters with live audio | 🔲 TODO | Manual test with OBS audio sources |
-| 2.25 | Test alert triggers | 🔲 TODO | Simulate silence, clipping, signal loss |
-| 2.26 | Performance test (UI smoothness) | 🔲 TODO | Verify no jank at 15fps updates |
-| 2.27 | Multi-client test | 🔲 TODO | Verify all clients receive levels |
-| 2.28 | Deploy to production | 🔲 TODO | Deploy coordinator + frontend |
+| 2.26 | Test VU meters with live audio | ✅ VERIFIED | Playwright verification 2026-01-22 |
+| 2.27 | Test alert triggers | 🔲 TODO | Simulate silence, clipping, signal loss |
+| 2.28 | Performance test (UI smoothness) | 🔲 TODO | Verify no jank at 15fps updates |
+| 2.29 | Multi-client test | 🔲 TODO | Verify all clients receive levels |
+| 2.30 | Deploy to production | ✅ DONE | Coordinator + frontend deployed 2026-01-22 |
 
 ---
 
@@ -192,6 +194,18 @@ cd show-controller && npm run build
 
 ## Progress Log
 
+### 2026-01-22 - Phase 2 VU Meters Implementation (P2.4) ✅ VERIFIED
+- **IMPLEMENTED:** `VUMeter` component with color-coded level bar (green/yellow/red)
+- **IMPLEMENTED:** `StereoVUMeter` component for L/R channel display
+- **IMPLEMENTED:** VU meters rendered below volume slider for each audio source
+- **IMPLEMENTED:** Subscribe to audio levels on Audio tab mount, unsubscribe on unmount
+- **DEPLOYED:** Coordinator updated via `git pull && pm2 restart`
+- **DEPLOYED:** Frontend built and uploaded to commentarygraphic.com
+- **VERIFIED:** Playwright tests confirmed VU meters render with correct colors
+- **FILES CHANGED:**
+  - `show-controller/src/components/obs/AudioMixer.jsx` - Added VUMeter, StereoVUMeter components, subscription logic
+- **NEXT:** Implement audio alerts (P2.5)
+
 ### 2026-01-21 - Phase 2 OBSContext Implementation (P2.3)
 - **IMPLEMENTED:** `audioLevels` state (Map) in OBSContext
 - **IMPLEMENTED:** `obs:audioLevels` event listener
@@ -243,3 +257,4 @@ cd show-controller && npm run build
 | server/index.js | Added `obs:setVolume` and `obs:setMute` socket handlers | 2026-01-20 |
 | docs/PRD-OBS-04-AudioManagement.md | Updated line numbers, added Phase 2 implementation details | 2026-01-21 |
 | docs/PRD-OBS-04-AudioManagement/IMPLEMENTATION-PLAN.md | Restructured for Phase 2 | 2026-01-21 |
+| show-controller/src/components/obs/AudioMixer.jsx | Added VUMeter, StereoVUMeter components, audio level subscription | 2026-01-22 |
