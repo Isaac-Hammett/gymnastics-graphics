@@ -1,10 +1,71 @@
 # PRD: Advanced Rundown Editor
 
-**Version:** 1.0
-**Date:** 2026-01-16
+**Version:** 1.1
+**Date:** 2026-01-22
 **Project:** Gymnastics Graphics
 **Status:** Draft
 **Dependencies:** [PRD-OBSIntegrationTool-2026-01-16.md](./PRD-OBSIntegrationTool-2026-01-16.md)
+
+---
+
+## Completed Prerequisite: Timesheet Consolidation
+
+> **Reference:** [PRD-Rundown-00-Timesheet/PRD-ConsolidateTimesheetShowProgress.md](./PRD-Rundown-00-Timesheet/PRD-ConsolidateTimesheetShowProgress.md)
+> **Status:** ✅ COMPLETE (2026-01-22)
+
+The following consolidation work was completed prior to this PRD:
+
+| Component | Status | Hook Used |
+|-----------|--------|-----------|
+| `CurrentSegment.jsx` | ✅ Updated | `useTimesheet()` - ms-precision timing, progress bar, hold warnings |
+| `NextSegment.jsx` | ✅ Updated | `useTimesheet()` - next segment from timesheet |
+| `RunOfShow.jsx` | ✅ Updated | `useTimesheet()` - segment list with status |
+| `ProducerView.jsx` | ✅ Updated | `useTimesheet()` - show control buttons |
+| `TalentView.jsx` | ✅ Updated | `useTimesheet()` - advance with hold support |
+| `TimesheetPanel.jsx` | ✅ Deleted | N/A - functionality moved to main components |
+
+**Impact on this PRD:**
+- **Phase 0B is simplified** - Producer View components (`CurrentSegment`, `NextSegment`, `RunOfShow`) already exist and use `useTimesheet()`
+- **Phase 3 focuses on new features** - No need to re-wire timing/control; focus on segment CRUD integration and graphics pickers
+- **`useTimesheet()` is the single source of truth** for segment timing, progress, and show control
+
+**Key `useTimesheet()` exports now available:**
+```javascript
+const {
+  // Segment data
+  currentSegment,
+  nextSegment,
+  segments,
+  currentIndex,
+  totalSegments,
+
+  // Timing (milliseconds)
+  elapsed,
+  remaining,
+  progress,           // 0-1 for progress bar
+  elapsedFormatted,   // "MM:SS"
+  remainingFormatted, // "MM:SS"
+
+  // Hold segment support
+  isHoldSegment,
+  canAdvanceHold,
+  holdRemainingMs,
+
+  // Actions
+  start,
+  stop,
+  advance,
+  previous,
+  jumpTo,
+
+  // Helpers
+  formatTime,         // ms → "MM:SS"
+  isFirstSegment,
+  isLastSegment,
+  isRunning,
+  isPaused,
+} = useTimesheet();
+```
 
 ---
 
@@ -86,7 +147,32 @@ The Rundown Editor integrates with three dynamic systems that can change at runt
 
 ## 2. Dynamic Data Sources
 
-### 2.1 OBS Data (via Coordinator → obsConnectionManager)
+### 2.1 Segment/Timing Data (via useTimesheet)
+
+**Primary hook for segment and timing data:**
+```javascript
+import { useTimesheet } from '../hooks/useTimesheet';
+
+const {
+  currentSegment,     // Current segment object
+  nextSegment,        // Next segment object
+  segments,           // All segments array
+  currentIndex,       // Current segment index
+  elapsed,            // Milliseconds elapsed in current segment
+  remaining,          // Milliseconds remaining
+  progress,           // 0-1 progress value for progress bars
+  isHoldSegment,      // Whether current segment is a hold type
+  canAdvanceHold,     // Whether hold minimum duration has passed
+  advance,            // Function to advance to next segment
+  previous,           // Function to go to previous segment
+  jumpTo,             // Function to jump to specific segment
+  formatTime,         // Helper: ms → "MM:SS"
+} = useTimesheet();
+```
+
+**Important:** Do NOT use legacy `useShow()` for segment timing - it uses seconds precision. Always use `useTimesheet()` which provides millisecond precision and full hold segment support.
+
+### 2.2 OBS Data (via Coordinator → obsConnectionManager)
 
 **Important:** There are TWO OBS subsystems in the codebase:
 - `obsConnectionManager` - For production (manages per-competition OBS WebSocket connections via coordinator)
@@ -134,7 +220,7 @@ const obsData = {
 };
 ```
 
-### 2.2 Graphics Registry
+### 2.3 Graphics Registry
 
 Firebase Path: `system/graphics/registry`
 
@@ -220,7 +306,7 @@ Firebase Path: `system/graphics/registry`
 }
 ```
 
-### 2.3 Camera Config
+### 2.4 Camera Config
 
 Firebase Path: `competitions/{compId}/production/cameras`
 
@@ -629,6 +715,8 @@ Shows actual team names and filters by gender:
 ---
 
 ## 8. Producer View Integration
+
+> **Note:** The core Producer View components (`CurrentSegment`, `NextSegment`, `RunOfShow`) already exist and use `useTimesheet()` for timing and control. This section describes the **enhanced** UI that will be built on top of the existing components.
 
 ### Enhanced SHOW PROGRESS Panel
 
@@ -1311,37 +1399,53 @@ const DUMMY_GRAPHICS = [
 
 #### Phase 0B: Producer View Prototype
 
+> **Note:** This phase is **significantly simplified** due to the completed Timesheet Consolidation (PRD-Rundown-00-Timesheet). The core Producer View components already exist and use `useTimesheet()`.
+
 **Route:** `/{compId}/rundown-preview` (temporary test route)
 
-**Why a separate route:** This isolates the prototype from the production ProducerPage, allowing focused UX testing without affecting live shows. The route will be removed in Phase 3 when components are integrated into the real ProducerPage.
+**Why a separate route:** This isolates the prototype from the production ProducerPage, allowing focused UX testing of new rundown features without affecting live shows.
 
-**Components to build:**
+**Existing Components (from Timesheet Consolidation - NO NEW WORK NEEDED):**
+
+| Component | File | Status |
+|-----------|------|--------|
+| CurrentSegment | `components/CurrentSegment.jsx` | ✅ Already has progress bar, hold warnings, ms-precision timing |
+| NextSegment | `components/NextSegment.jsx` | ✅ Already uses `useTimesheet()` |
+| RunOfShow | `components/RunOfShow.jsx` | ✅ Already has segment list with status icons |
+
+**New Component to build (for rundown editor integration):**
 
 | Component | File | Behavior |
 |-----------|------|----------|
-| RundownPreviewPage | `pages/RundownPreviewPage.jsx` | Temporary test page layout |
-| NowPlaying | `components/rundown/NowPlaying.jsx` | Current segment with progress bar |
-| UpNext | `components/rundown/UpNext.jsx` | Next segment preview |
-| ShowProgress | `components/rundown/ShowProgress.jsx` | Scrollable segment list with status icons |
+| RundownPreviewPage | `pages/RundownPreviewPage.jsx` | Test page that composes existing components + adds segment editing UI |
 
-**Interactions (all local state):**
+**What RundownPreviewPage adds:**
+- Inline segment editing from the segment list
+- Quick-add segment button
+- Segment reordering UI preview
+- Graphics trigger preview
 
-| Action | Behavior |
-|--------|----------|
-| Click "Next" / Advance | Move currentIndex to next segment |
-| Progress bar fills | Based on elapsed time vs duration |
-| Overtime triggers | When elapsed > duration, show red pulsing indicator |
-| Segment status icons | ✅ completed, ▶️ current, ⬜ upcoming |
+**Interactions (leveraging existing timesheet functionality):**
 
-**Producer View Test Flow:**
+| Action | Implementation |
+|--------|----------------|
+| Click "Next" / Advance | Uses `useTimesheet().advance()` - already works |
+| Progress bar fills | Uses `useTimesheet().progress` - already works |
+| Overtime triggers | Already implemented in `CurrentSegment.jsx` |
+| Segment status icons | Already implemented in `RunOfShow.jsx` |
+| **NEW:** Click segment to edit | Opens inline editor |
+| **NEW:** Reorder segments | Uses ↑/↓ arrows |
+
+**Producer View Test Flow (existing functionality verification):**
 
 ```
-1. Page loads with segment 0 as current
-2. Timer starts counting up
-3. Progress bar fills as time elapses
-4. When duration exceeded → OVERTIME indicator appears (red, pulsing)
-5. Click "Advance" → segment 0 marked complete, segment 1 becomes current
-6. Repeat through all segments
+1. Page loads with segment 0 as current ✅ (already works via useTimesheet)
+2. Timer starts counting up ✅ (already works)
+3. Progress bar fills as time elapses ✅ (already works)
+4. When duration exceeded → OVERTIME indicator appears ✅ (already works)
+5. Click "Advance" → segment 0 marked complete ✅ (already works)
+6. NEW: Click segment in list → inline edit panel opens
+7. NEW: Modify segment → changes reflected in real-time
 ```
 
 #### Phase 0 Exit Criteria
@@ -1351,10 +1455,11 @@ const DUMMY_GRAPHICS = [
 - [ ] Rundown Editor: Can delete a segment with confirmation
 - [ ] Rundown Editor: Can reorder segments with ↑/↓ arrows
 - [ ] Rundown Editor: Can multi-select segments and see total duration
-- [ ] Producer View: NowPlaying shows current segment with progress bar
-- [ ] Producer View: UpNext shows next segment
-- [ ] Producer View: Can advance through segments
-- [ ] Producer View: Overtime indicator displays when segment runs long
+- [x] Producer View: NowPlaying shows current segment with progress bar *(already done)*
+- [x] Producer View: UpNext shows next segment *(already done)*
+- [x] Producer View: Can advance through segments *(already done)*
+- [x] Producer View: Overtime indicator displays when segment runs long *(already done)*
+- [ ] Producer View: Inline segment editing works
 - [ ] Stakeholder sign-off on UX before proceeding to Phase 1
 
 ---
@@ -1396,16 +1501,29 @@ const DUMMY_GRAPHICS = [
 
 ### Phase 3: Producer View Integration
 
-**Goal:** Connect Producer View components to live rundown and OBS.
+**Goal:** Extend Producer View with rundown editor features. Core timing/control is already done via Timesheet Consolidation.
+
+> **Note:** The following are **already complete** from PRD-Rundown-00-Timesheet:
+> - ✅ Live segment tracking via `useTimesheet()`
+> - ✅ Segment advance/previous controls
+> - ✅ Progress bar and timing display
+> - ✅ Hold segment support
+> - ✅ Real-time sync via socket events
+
+**New Features to Add:**
 
 | Task | Details |
 |------|---------|
-| Live segment tracking | Sync currentSegmentIndex to Firebase |
-| OBS scene switching | On segment advance, call `switchScene()` |
-| Graphics triggering | Fire graphics based on segment config |
-| Real-time sync | Multiple producers see same state |
+| Segment CRUD integration | Add/edit/delete segments from Producer View |
+| OBS scene switching | On segment advance, call `switchScene()` based on segment config |
+| Graphics triggering | Fire graphics based on segment `graphics.primary.triggerMode` |
+| Graphics picker integration | Allow selecting graphics for segments |
+| Inline segment editing | Quick-edit segment properties without leaving Producer View |
 
-**Modified:** `show-controller/src/pages/ProducerPage.jsx` - Integrate rundown components
+**Modified:** `show-controller/src/pages/ProducerPage.jsx` - Add segment editing UI, graphics triggers
+
+**Cleanup:**
+- Remove `/rundown-preview` temporary test route from App.jsx
 
 ---
 
@@ -1573,30 +1691,47 @@ interface GraphicParameter {
 
 ## File Manifest
 
+### Existing Files (from Timesheet Consolidation - NO CHANGES NEEDED)
+
+These components already exist and use `useTimesheet()`. They will be reused, not recreated:
+
+| File | Status | Notes |
+|------|--------|-------|
+| `show-controller/src/components/CurrentSegment.jsx` | ✅ Exists | Progress bar, hold warnings, ms-precision timing |
+| `show-controller/src/components/NextSegment.jsx` | ✅ Exists | Next segment from `useTimesheet()` |
+| `show-controller/src/components/RunOfShow.jsx` | ✅ Exists | Segment list with status icons |
+| `show-controller/src/hooks/useTimesheet.js` | ✅ Exists | Single source of truth for timing/control |
+| `show-controller/src/context/ShowContext.jsx` | ✅ Exists | Contains `timesheetState` from socket events |
+
 ### New Files
 
 | File | Phase | Est. Lines | Purpose |
 |------|-------|------------|---------|
 | `show-controller/src/pages/RundownEditorPage.jsx` | 0A | 300 | Main editor page (prototype) |
-| `show-controller/src/components/rundown/SegmentList.jsx` | 0A | 250 | Segment list with selection |
+| `show-controller/src/components/rundown/SegmentList.jsx` | 0A | 250 | Segment list with selection (for editor, separate from RunOfShow) |
 | `show-controller/src/components/rundown/SegmentDetail.jsx` | 0A | 300 | Detail panel form |
 | `show-controller/src/components/rundown/pickers/ScenePicker.jsx` | 0A | 100 | OBS scene dropdown (hardcoded) |
 | `show-controller/src/components/rundown/pickers/TransitionPicker.jsx` | 0A | 80 | Transition dropdown |
 | `show-controller/src/components/rundown/pickers/GraphicsPicker.jsx` | 0A | 120 | Graphics dropdown (hardcoded) |
 | `show-controller/src/components/rundown/pickers/AudioPicker.jsx` | 0A | 80 | Audio preset dropdown |
-| `show-controller/src/pages/RundownPreviewPage.jsx` | 0B | 200 | Temporary test page (removed in Phase 3) |
-| `show-controller/src/components/rundown/NowPlaying.jsx` | 0B | 150 | Current segment display |
-| `show-controller/src/components/rundown/UpNext.jsx` | 0B | 80 | Next segment preview |
-| `show-controller/src/components/rundown/ShowProgress.jsx` | 0B | 200 | Segment list with status |
+| `show-controller/src/pages/RundownPreviewPage.jsx` | 0B | 150 | Temporary test page (composes existing components, removed in Phase 3) |
 | `server/lib/rundownService.js` | 1 | 400 | Rundown business logic |
 | `server/lib/milestoneCalculator.js` | 1 | 150 | Milestone detection |
 | `server/lib/graphicsRegistry.js` | 1 | 200 | Graphics registry access |
 | `server/routes/rundown.js` | 1 | 300 | API routes |
-| `show-controller/src/hooks/useRundown.js` | 2 | 150 | Rundown data hook |
-| `show-controller/src/context/RundownContext.jsx` | 2 | 100 | Rundown state context |
+| `show-controller/src/hooks/useRundown.js` | 2 | 150 | Rundown CRUD operations hook |
+| `show-controller/src/context/RundownContext.jsx` | 2 | 100 | Rundown editor state context |
 | `show-controller/src/components/rundown/MilestoneTimeline.jsx` | 2 | 150 | Timeline component |
 | `show-controller/src/components/rundown/SelectionSummary.jsx` | 2 | 100 | Selection summary |
 | `server/lib/rundownTemplateService.js` | 4 | 250 | Template management |
+
+### Files NOT Created (Previously Planned, Now Unnecessary)
+
+| File | Reason |
+|------|--------|
+| ~~`NowPlaying.jsx`~~ | Use existing `CurrentSegment.jsx` |
+| ~~`UpNext.jsx`~~ | Use existing `NextSegment.jsx` |
+| ~~`ShowProgress.jsx`~~ | Use existing `RunOfShow.jsx` |
 
 ### Modified Files
 
@@ -1606,7 +1741,7 @@ interface GraphicParameter {
 | `show-controller/src/App.jsx` | 0B | Add `/rundown-preview` route for producer prototype |
 | `server/index.js` | 1 | Add rundown API routes |
 | `show-controller/src/components/rundown/pickers/*.jsx` | 2 | Replace hardcoded data with real sources |
-| `show-controller/src/pages/ProducerPage.jsx` | 3 | Integrate NowPlaying, UpNext, ShowProgress |
+| `show-controller/src/pages/ProducerPage.jsx` | 3 | Add segment editing UI, graphics trigger integration |
 | `show-controller/src/App.jsx` | 3 | Remove `/rundown-preview` route (no longer needed) |
 
 ---
@@ -1642,21 +1777,28 @@ interface GraphicParameter {
 
 This PRD depends on:
 
-1. **OBS Integration Tool** (PRD-OBSIntegrationTool-2026-01-16.md)
+1. **Timesheet Consolidation** ✅ COMPLETE ([PRD-Rundown-00-Timesheet](./PRD-Rundown-00-Timesheet/PRD-ConsolidateTimesheetShowProgress.md))
+   - `useTimesheet()` hook as single source of truth for segment timing and control
+   - `CurrentSegment.jsx`, `NextSegment.jsx`, `RunOfShow.jsx` already using `useTimesheet()`
+   - Show control buttons in `ProducerView.jsx` already wired to timesheet actions
+   - Hold segment support with `isHoldSegment`, `canAdvanceHold`, `holdRemainingMs`
+
+2. **OBS Integration Tool** (PRD-OBSIntegrationTool-2026-01-16.md)
    - OBS state via Socket.io events (obs:stateUpdated) for scene/transition/audio data
    - Audio presets for audio picker
 
-2. **OBS Architecture** (README-OBS-Architecture.md)
+3. **OBS Architecture** (README-OBS-Architecture.md)
    - Understanding that frontend connects to coordinator, NOT directly to VMs
    - OBS commands route: Frontend → Coordinator → Competition VM's OBS
    - Use Socket.io events (NOT REST APIs) for OBS operations
 
-3. **Graphics Registry** (to be created)
+4. **Graphics Registry** (to be created)
    - System-wide graphics definitions
    - Parameter schemas
 
-4. **Existing Infrastructure**
+5. **Existing Infrastructure**
    - Firebase Realtime Database
-   - Socket.io for real-time updates (including OBS state)
+   - Socket.io for real-time updates (including OBS state and timesheet state)
    - Competition context (determines which VM's OBS to connect to)
    - OBSContext for OBS state and commands
+   - ShowContext for timesheet state (via `timesheetState`)
