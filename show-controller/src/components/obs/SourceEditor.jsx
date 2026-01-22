@@ -7,7 +7,6 @@ import {
   TrashIcon
 } from '@heroicons/react/24/outline';
 import { useOBS } from '../../context/OBSContext';
-import { useShow } from '../../context/ShowContext';
 
 /**
  * Transform presets matching SceneEditor.jsx
@@ -254,13 +253,14 @@ const INPUT_SETTINGS_CONFIG = {
  * - onUpdate: Callback when source is updated successfully
  */
 export default function SourceEditor({ source, sceneName, onClose, onUpdate }) {
-  const { obsConnected, updateInputSettings, setSceneItemTransform, removeInput } = useOBS();
-  const { socketUrl } = useShow();
+  const { obsConnected, updateInputSettings, getInputSettings, setSceneItemTransform, removeInput } = useOBS();
 
   // Source information (handle multiple property name formats)
   const sourceName = source?.sourceName || source?.inputName || source?.name;
   const inputKind = source?.inputKind || source?.kind;
   const itemId = source?.sceneItemId || source?.id;
+
+  console.log('[SourceEditor] Mounted with:', { sourceName, inputKind, itemId });
 
   // State management
   const [loading, setLoading] = useState(true);
@@ -290,15 +290,12 @@ export default function SourceEditor({ source, sceneName, onClose, onUpdate }) {
       setError(null);
 
       try {
-        // Fetch current input settings
-        const response = await fetch(`${socketUrl}/api/obs/inputs/${encodeURIComponent(sourceName)}`);
-        if (response.ok) {
-          const data = await response.json();
-          setSettings(data.inputSettings || {});
-        } else {
-          // Fall back to empty settings if API fails
-          setSettings({});
-        }
+        // Fetch current input settings from OBS via socket (not REST API)
+        console.log('[SourceEditor] Fetching input settings via socket for:', sourceName);
+
+        const data = await getInputSettings(sourceName);
+        console.log('[SourceEditor] Received inputSettings:', data.inputSettings);
+        setSettings(data.inputSettings || {});
 
         // Load transform from source object
         const sourceTransform = source?.transform || source?.sceneItemTransform || {};
@@ -313,15 +310,29 @@ export default function SourceEditor({ source, sceneName, onClose, onUpdate }) {
           cropBottom: sourceTransform.cropBottom ?? sourceTransform.crop?.bottom ?? 0
         });
       } catch (err) {
-        console.error('Error loading source settings:', err);
-        setError(err.message);
+        console.error('[SourceEditor] Error loading source settings:', err);
+        setError(`Could not load current settings: ${err.message}`);
+        setSettings({});
+
+        // Still load transform even if settings failed
+        const sourceTransform = source?.transform || source?.sceneItemTransform || {};
+        setTransform({
+          positionX: sourceTransform.positionX ?? sourceTransform.x ?? 0,
+          positionY: sourceTransform.positionY ?? sourceTransform.y ?? 0,
+          scaleX: sourceTransform.scaleX ?? sourceTransform.scale?.x ?? 1.0,
+          scaleY: sourceTransform.scaleY ?? sourceTransform.scale?.y ?? 1.0,
+          cropLeft: sourceTransform.cropLeft ?? sourceTransform.crop?.left ?? 0,
+          cropRight: sourceTransform.cropRight ?? sourceTransform.crop?.right ?? 0,
+          cropTop: sourceTransform.cropTop ?? sourceTransform.crop?.top ?? 0,
+          cropBottom: sourceTransform.cropBottom ?? sourceTransform.crop?.bottom ?? 0
+        });
       } finally {
         setLoading(false);
       }
     };
 
     loadSettings();
-  }, [sourceName, source]);
+  }, [sourceName, source, getInputSettings]);
 
   // Get settings config for this input kind
   const settingsConfig = INPUT_SETTINGS_CONFIG[inputKind];
