@@ -26,6 +26,7 @@ import { getSelfStopService } from './lib/selfStop.js';
 import { getOBSStateSync } from './lib/obsStateSync.js';
 import { setupOBSRoutes } from './routes/obs.js';
 import { getOBSConnectionManager } from './lib/obsConnectionManager.js';
+import { DEFAULT_PRESETS } from './lib/obsAudioManager.js';
 
 dotenv.config();
 
@@ -3715,6 +3716,221 @@ io.on('connection', async (socket) => {
     } else {
       obsConnManager.unsubscribeAudioLevels(clientCompId, socket.id);
       console.log(`[subscribeAudioLevels] ${socket.id} unsubscribed from audio levels for ${clientCompId}`);
+    }
+  });
+
+  // ============================================================================
+  // Audio Preset Management (PRD-OBS-04 Phase 1.5)
+  // ============================================================================
+
+  // Apply an audio preset (default or user-created)
+  socket.on('obs:applyPreset', async ({ presetId }) => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    const clientCompId = client?.compId;
+
+    if (!clientCompId) {
+      socket.emit('obs:error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const connection = obsConnManager.getConnection(clientCompId);
+
+    if (!connection || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('obs:error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      console.log(`[applyPreset] Applying preset ${presetId} for ${clientCompId}`);
+
+      // 1. Check default presets first
+      let preset = DEFAULT_PRESETS[presetId];
+
+      // 2. If not default, load from Firebase
+      if (!preset && productionConfigService.isAvailable()) {
+        const db = productionConfigService.getDb();
+        const snapshot = await db.ref(`competitions/${clientCompId}/obs/presets/${presetId}`).once('value');
+        preset = snapshot.val();
+      }
+
+      if (!preset) {
+        socket.emit('obs:error', { message: `Preset not found: ${presetId}` });
+        return;
+      }
+
+      // 3. Apply each source setting via OBS WebSocket
+      const sources = Array.isArray(preset.sources) ? preset.sources : Object.values(preset.sources || {});
+      let applied = 0;
+      const errors = [];
+
+      for (const source of sources) {
+        try {
+          if (source.volumeDb !== undefined) {
+            await connection.call('SetInputVolume', {
+              inputName: source.inputName,
+              inputVolumeDb: source.volumeDb
+            });
+          }
+          if (source.muted !== undefined) {
+            await connection.call('SetInputMute', {
+              inputName: source.inputName,
+              inputMuted: source.muted
+            });
+          }
+          applied++;
+        } catch (err) {
+          console.warn(`[applyPreset] Failed to apply to ${source.inputName}: ${err.message}`);
+          errors.push({ inputName: source.inputName, error: err.message });
+        }
+      }
+
+      // 4. Broadcast state update to all clients
+      await broadcastOBSState(clientCompId, obsConnManager, io);
+
+      // 5. Send success response
+      socket.emit('obs:presetApplied', {
+        presetId,
+        presetName: preset.name,
+        applied,
+        total: sources.length,
+        errors
+      });
+
+      console.log(`[applyPreset] Applied preset "${preset.name}": ${applied}/${sources.length} sources for ${clientCompId}`);
+    } catch (error) {
+      console.error(`[applyPreset] Error applying preset ${presetId}:`, error.message);
+      socket.emit('obs:error', { message: `Failed to apply preset: ${error.message}` });
+    }
+  });
+
+  // List all audio presets (default + user-created)
+  socket.on('obs:listPresets', async () => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    const clientCompId = client?.compId;
+
+    if (!clientCompId) {
+      socket.emit('obs:error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    try {
+      console.log(`[listPresets] Listing presets for ${clientCompId}`);
+
+      // Get default presets
+      const defaultPresets = Object.values(DEFAULT_PRESETS).map(p => ({
+        ...p,
+        isDefault: true
+      }));
+
+      // Get user presets from Firebase
+      let userPresets = [];
+      if (productionConfigService.isAvailable()) {
+        const db = productionConfigService.getDb();
+        const snapshot = await db.ref(`competitions/${clientCompId}/obs/presets`).once('value');
+        const presetsData = snapshot.val();
+        if (presetsData) {
+          userPresets = Object.entries(presetsData).map(([id, preset]) => ({
+            ...preset,
+            id,
+            isDefault: false
+          }));
+        }
+      }
+
+      const allPresets = [...defaultPresets, ...userPresets];
+      socket.emit('obs:presetsList', { presets: allPresets });
+
+      console.log(`[listPresets] Sent ${allPresets.length} presets (${defaultPresets.length} default, ${userPresets.length} user) for ${clientCompId}`);
+    } catch (error) {
+      console.error(`[listPresets] Error listing presets:`, error.message);
+      socket.emit('obs:error', { message: `Failed to list presets: ${error.message}` });
+    }
+  });
+
+  // Save current audio mix as a new preset
+  socket.on('obs:savePreset', async ({ name, description, sources }) => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    const clientCompId = client?.compId;
+
+    if (!clientCompId) {
+      socket.emit('obs:error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    if (!productionConfigService.isAvailable()) {
+      socket.emit('obs:error', { message: 'Firebase not available' });
+      return;
+    }
+
+    if (!name || !sources || Object.keys(sources).length === 0) {
+      socket.emit('obs:error', { message: 'Name and sources are required' });
+      return;
+    }
+
+    try {
+      console.log(`[savePreset] Saving preset "${name}" for ${clientCompId}`);
+
+      const db = productionConfigService.getDb();
+      const presetId = `user-${Date.now()}`;
+
+      // Convert sources object to array format
+      const sourcesArray = Object.entries(sources).map(([inputName, settings]) => ({
+        inputName,
+        ...settings
+      }));
+
+      const preset = {
+        id: presetId,
+        name,
+        description: description || '',
+        sources: sourcesArray,
+        createdAt: new Date().toISOString(),
+        isDefault: false
+      };
+
+      await db.ref(`competitions/${clientCompId}/obs/presets/${presetId}`).set(preset);
+
+      socket.emit('obs:presetSaved', { preset });
+      console.log(`[savePreset] Saved preset "${name}" (${presetId}) for ${clientCompId}`);
+    } catch (error) {
+      console.error(`[savePreset] Error saving preset:`, error.message);
+      socket.emit('obs:error', { message: `Failed to save preset: ${error.message}` });
+    }
+  });
+
+  // Delete a user-created preset
+  socket.on('obs:deletePreset', async ({ presetId }) => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    const clientCompId = client?.compId;
+
+    if (!clientCompId) {
+      socket.emit('obs:error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    if (!productionConfigService.isAvailable()) {
+      socket.emit('obs:error', { message: 'Firebase not available' });
+      return;
+    }
+
+    // Prevent deletion of default presets
+    if (DEFAULT_PRESETS[presetId]) {
+      socket.emit('obs:error', { message: 'Cannot delete default presets' });
+      return;
+    }
+
+    try {
+      console.log(`[deletePreset] Deleting preset ${presetId} for ${clientCompId}`);
+
+      const db = productionConfigService.getDb();
+      await db.ref(`competitions/${clientCompId}/obs/presets/${presetId}`).remove();
+
+      socket.emit('obs:presetDeleted', { presetId });
+      console.log(`[deletePreset] Deleted preset ${presetId} for ${clientCompId}`);
+    } catch (error) {
+      console.error(`[deletePreset] Error deleting preset:`, error.message);
+      socket.emit('obs:error', { message: `Failed to delete preset: ${error.message}` });
     }
   });
 
