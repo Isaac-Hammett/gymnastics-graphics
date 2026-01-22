@@ -1,7 +1,7 @@
 # PRD-OBS-11: Advanced Features - Implementation Plan
 
-**Last Updated:** 2026-01-22
-**Status:** IN PROGRESS (P0 Complete, P1 Complete, P2 Complete, P3 Talent Status Complete)
+**Last Updated:** 2026-01-21
+**Status:** COMPLETE (All P0-P3 features implemented)
 
 ---
 
@@ -74,14 +74,17 @@
 | 36 | Update URLCard with status badges | COMPLETE | "Connected" / "Not connected" badges |
 | 37 | Deploy and verify | COMPLETE | Playwright MCP verified 2026-01-22 |
 
-### P3 - Stream Key Encryption (NOT STARTED)
+### P3 - Stream Key Encryption (COMPLETE)
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 38 | Create streamKeyEncryption.js utility | NOT STARTED | AES-256-GCM |
-| 39 | Add STREAM_KEY_SECRET env var | NOT STARTED | On coordinator |
-| 40 | Update stream settings handlers | NOT STARTED | Encrypt on save, decrypt on use |
-| 41 | Migrate existing keys | NOT STARTED | One-time script |
+| 38 | Upgrade encryption to AES-256-GCM | COMPLETE | obsStreamManager.js - authenticated encryption |
+| 39 | Add STREAM_KEY_SECRET env var | COMPLETE | server/.env.example documented |
+| 40 | Update stream settings handlers | COMPLETE | server/index.js - encrypt on save, store in Firebase |
+| 41 | Add restore/delete handlers | COMPLETE | obs:restoreStreamSettings, obs:deleteStoredStreamKey |
+| 42 | Add frontend context methods | COMPLETE | OBSContext.jsx - restoreStreamSettings, deleteStoredStreamKey |
+| 43 | Backward compatibility with CBC | COMPLETE | Automatic detection and decryption of legacy format |
+| 44 | Deploy and verify | COMPLETE | Coordinator deployed and tested |
 
 ---
 
@@ -92,12 +95,11 @@
 - `show-controller/src/components/obs/SceneThumbnail.jsx` - Scene thumbnail with hover preview
 - `show-controller/src/components/obs/StingerConfig.jsx` - Stinger transition configuration
 
-### To Create
-- `server/lib/streamKeyEncryption.js`
-
 ### Modified
-- `server/index.js` - Added studio mode socket handlers, obs:requestSceneThumbnail handler, template default handlers
-- `show-controller/src/context/OBSContext.jsx` - Added studioModeChanged handler, auto-load state and methods
+- `server/index.js` - Added studio mode socket handlers, obs:requestSceneThumbnail handler, template default handlers, stream key encryption handlers
+- `server/lib/obsStreamManager.js` - Upgraded to AES-256-GCM encryption with backward compatibility
+- `server/.env.example` - Added STREAM_KEY_SECRET documentation
+- `show-controller/src/context/OBSContext.jsx` - Added studioModeChanged handler, auto-load state and methods, stream key restore/delete methods
 - `show-controller/src/pages/OBSManager.jsx` - Added studio mode toggle and panel integration
 - `show-controller/src/components/obs/SceneList.jsx` - Added thumbnail display, Preview/Live buttons, LIVE/PREVIEW badges
 - `show-controller/src/components/obs/TemplateManager.jsx` - Added Set as Default toggle, auto-apply logic, SetDefaultModal
@@ -127,6 +129,24 @@
 ---
 
 ## Progress Log
+
+### 2026-01-21 (Stream Key Encryption)
+- **P3 Stream Key Encryption COMPLETE**
+  - Upgraded obsStreamManager.js encryption from AES-256-CBC to AES-256-GCM
+  - GCM provides authenticated encryption (integrity + confidentiality)
+  - New format: `gcm:iv:authTag:ciphertext` (all base64 encoded)
+  - Added backward compatibility for legacy CBC format (auto-detected)
+  - Added STREAM_KEY_SECRET env var documentation to server/.env.example
+  - Updated obs:setStreamSettings to encrypt and store key in Firebase
+  - Added obs:restoreStreamSettings handler to restore from Firebase backup
+  - Added obs:deleteStoredStreamKey handler to remove stored key
+  - Added restoreStreamSettings and deleteStoredStreamKey to OBSContext.jsx
+  - Tested encryption/decryption and backward compatibility
+  - All acceptance criteria met:
+    - Stream keys encrypted in Firebase using AES-256-GCM
+    - Decryption works when restoring stream settings
+    - UI functionality unchanged (encryption is transparent)
+    - Backward compatible with any existing CBC-encrypted keys
 
 ### 2026-01-22 (Talent Connection Status)
 - **P3 Talent Connection Status COMPLETE**
@@ -259,6 +279,7 @@
 
 | Commit | Description |
 |--------|-------------|
+| (pending) | PRD-OBS-11: Implement Stream Key Encryption (P3) |
 | 8a69f3b | PRD-OBS-11: Implement Talent Connection Status (P3) |
 | 9691855 | PRD-OBS-11: Implement Stinger Transitions (P2) |
 | c705da0 | PRD-OBS-11: Implement Template Auto-Loading (P1) |
