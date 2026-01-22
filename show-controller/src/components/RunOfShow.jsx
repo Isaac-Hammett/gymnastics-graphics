@@ -1,11 +1,10 @@
-import { useShow } from '../context/ShowContext';
+import { useTimesheet } from '../hooks/useTimesheet';
 import { CheckCircleIcon, PlayCircleIcon } from '@heroicons/react/24/solid';
 
 export default function RunOfShow({ onSegmentClick, clickable = false }) {
-  const { state } = useShow();
-  const { showConfig, currentSegmentIndex } = state;
+  const { segments, currentIndex, totalSegments, jumpTo, formatTime } = useTimesheet();
 
-  if (!showConfig?.segments) {
+  if (!segments || segments.length === 0) {
     return (
       <div className="bg-zinc-900 rounded-xl p-4 border border-zinc-800">
         <div className="text-zinc-500">No show loaded</div>
@@ -13,25 +12,35 @@ export default function RunOfShow({ onSegmentClick, clickable = false }) {
     );
   }
 
+  // Handle segment click - use timesheet jumpTo if clickable
+  const handleSegmentClick = (segmentId) => {
+    if (clickable) {
+      // Use timesheet jumpTo for segment navigation
+      jumpTo(segmentId, 'producer');
+      // Also call the optional callback if provided
+      onSegmentClick?.(segmentId);
+    }
+  };
+
   return (
     <div className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden">
       <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
         <div className="text-sm text-zinc-400 uppercase tracking-wide">Show Progress</div>
         <div className="text-sm text-zinc-500">
-          Segment {currentSegmentIndex + 1} of {showConfig.segments.length}
+          Segment {currentIndex + 1} of {totalSegments}
         </div>
       </div>
 
       <div className="max-h-80 overflow-y-auto">
-        {showConfig.segments.map((segment, index) => {
-          const isCompleted = index < currentSegmentIndex;
-          const isCurrent = index === currentSegmentIndex;
-          const isPending = index > currentSegmentIndex;
+        {segments.map((segment, index) => {
+          const isCompleted = index < currentIndex;
+          const isCurrent = index === currentIndex;
+          const isPending = index > currentIndex;
 
           return (
             <div
               key={segment.id}
-              onClick={() => clickable && onSegmentClick?.(segment.id)}
+              onClick={() => handleSegmentClick(segment.id)}
               className={`
                 flex items-center gap-3 px-4 py-3 border-b border-zinc-800 last:border-b-0
                 ${isCurrent ? 'bg-blue-500/10 border-l-2 border-l-blue-500' : ''}
@@ -63,7 +72,7 @@ export default function RunOfShow({ onSegmentClick, clickable = false }) {
 
               {segment.duration && (
                 <div className="text-xs text-zinc-500">
-                  {Math.floor(segment.duration / 60)}:{(segment.duration % 60).toString().padStart(2, '0')}
+                  {formatTime(segment.duration * 1000)}
                 </div>
               )}
 
