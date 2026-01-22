@@ -198,11 +198,23 @@ This is intentional - some actions are timesheet-specific, while others (pause, 
 - Show tooltip: "Wait for hold minimum duration"
 
 **Acceptance Criteria:**
-- [ ] Previous button disabled at first segment
-- [ ] NEXT button disabled during hold minimum period
-- [ ] Stop button added and functional
-- [ ] All buttons use timesheet actions
-- [ ] Single Start Show button (from timesheet)
+- [x] Previous button disabled at first segment
+- [x] NEXT button disabled during hold minimum period
+- [x] Stop button added and functional
+- [x] All buttons use timesheet actions
+- [x] Single Start Show button (from timesheet)
+
+**Completed:** 2026-01-22
+
+**Implementation Notes:**
+- Added `useTimesheet` hook import to ProducerView
+- Replaced `advance`, `previous`, `startShow` from `useShow()` with timesheet equivalents
+- Added `timesheetStart`, `timesheetStop`, `timesheetAdvance`, `timesheetPrevious` from `useTimesheet()`
+- Added `showIsActive` and `showIsPaused` state that combines timesheet and legacy state
+- Previous button now disabled when `isFirstSegment`
+- NEXT button now disabled when `isHoldSegment && !canAdvanceHold`
+- Added new Stop button using `timesheetStop`
+- Updated Show Stats panel to use combined state variables
 
 ---
 
