@@ -136,6 +136,12 @@ const { nextSegment, formatTime } = useTimesheet();
 
 **Completed:** 2026-01-22
 
+**Verification:** Deployed to production and verified via Playwright. The component correctly:
+- Displays next segment name ("Pommel Horse - Rotation 1")
+- Shows formatted duration ("00:05 duration") using `formatTime()` helper
+- Displays "Auto" badge for auto-advance segments
+- Uses socket-based timesheet data via `useTimesheet()` hook
+
 ---
 
 #### Task 1.3: Wire Show Control Buttons to Timesheet
