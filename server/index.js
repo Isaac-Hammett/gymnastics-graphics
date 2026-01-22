@@ -2488,12 +2488,41 @@ async function broadcastOBSState(compId, obsConnManager, io) {
         uuid: input.inputUuid
       }));
       // Also filter for audio sources separately
-      audioSources = inputs.filter(input =>
+      // Include sources that can produce audio: dedicated audio, media sources, and browser sources
+      const audioInputs = inputs.filter(input =>
         input.kind?.includes('audio') ||
         input.kind?.includes('wasapi') ||
         input.kind?.includes('pulse') ||
-        input.kind?.includes('coreaudio')
+        input.kind?.includes('coreaudio') ||
+        input.kind === 'ffmpeg_source' ||     // Media sources (video files, SRT streams)
+        input.kind === 'browser_source'        // Browser sources (VDO.Ninja talent)
       );
+
+      // Fetch volume/mute/monitor status for each audio source
+      audioSources = await Promise.all(audioInputs.map(async (input) => {
+        try {
+          const [volumeRes, muteRes, monitorRes] = await Promise.all([
+            compObs.call('GetInputVolume', { inputName: input.name }),
+            compObs.call('GetInputMute', { inputName: input.name }),
+            compObs.call('GetInputAudioMonitorType', { inputName: input.name })
+          ]);
+          return {
+            inputName: input.name,
+            kind: input.kind,
+            uuid: input.uuid,
+            volumeDb: volumeRes.inputVolumeDb ?? 0,
+            volumeMul: volumeRes.inputVolumeMul ?? 1,
+            muted: muteRes.inputMuted ?? false,
+            monitorType: monitorRes.monitorType ?? 'OBS_MONITORING_TYPE_NONE'
+          };
+        } catch (e) {
+          // Source might not have audio capabilities - skip it
+          console.log(`[broadcastOBSState] Skipping audio source ${input.name}: ${e.message}`);
+          return null;
+        }
+      }));
+      // Filter out nulls (sources that don't have audio)
+      audioSources = audioSources.filter(s => s !== null);
     } catch (audioError) {
       console.log(`[broadcastOBSState] Could not fetch inputs for ${compId}: ${audioError.message}`);
     }
