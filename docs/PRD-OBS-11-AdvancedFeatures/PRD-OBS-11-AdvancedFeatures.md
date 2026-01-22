@@ -302,13 +302,15 @@ Display small thumbnail previews for each scene in the scene list, allowing prod
 Display real-time audio level meters for each audio source, showing volume levels as they change.
 
 ### Current State
-- AudioMixer.jsx shows volume sliders and mute toggles
-- No real-time level visualization
+- AudioMixer.jsx shows volume sliders, mute toggles, AND real-time VU meters
+- VUMeter and StereoVUMeter components implemented
+- Audio level subscription via obsConnectionManager
+- useAudioAlerts hook for silence/clipping detection
 
 ### What's Missing
-- OBS WebSocket subscription for audio levels
-- VU meter visualization component
-- Real-time update mechanism
+- ~~OBS WebSocket subscription for audio levels~~ IMPLEMENTED
+- ~~VU meter visualization component~~ IMPLEMENTED
+- ~~Real-time update mechanism~~ IMPLEMENTED
 
 ### Requirements
 
@@ -334,10 +336,10 @@ OBS WebSocket can emit `InputVolumeMeters` events when subscribed. Need to:
 - Peak hold indicator (optional)
 
 ### Acceptance Criteria
-- [ ] VU meters display for each audio source
-- [ ] Levels update in real-time
-- [ ] Performance remains smooth with multiple sources
-- [ ] Peak indicator shows recent maximum (optional)
+- [x] VU meters display for each audio source
+- [x] Levels update in real-time
+- [x] Performance remains smooth with multiple sources
+- [x] Peak indicator shows recent maximum (optional) - alerts for silence/clipping/signal lost
 
 ---
 
