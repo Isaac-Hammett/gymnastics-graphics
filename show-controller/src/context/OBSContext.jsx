@@ -24,6 +24,9 @@ const INITIAL_OBS_STATE = {
   recordingStatus: null
 };
 
+// Initial audio levels state (PRD-OBS-04: Real-time Audio Levels)
+const INITIAL_AUDIO_LEVELS = new Map();
+
 export function OBSProvider({ children }) {
   // Get socket from ShowContext
   const { socket, connected } = useShow();
@@ -31,6 +34,9 @@ export function OBSProvider({ children }) {
   // State - obsConnected is derived from obsState.connected (set by obs:stateUpdated event)
   const [obsState, setObsState] = useState(INITIAL_OBS_STATE);
   const [connectionError, setConnectionError] = useState(null);
+
+  // PRD-OBS-04: Real-time audio levels state
+  const [audioLevels, setAudioLevels] = useState(INITIAL_AUDIO_LEVELS);
 
   // obsConnected comes from obsState which is updated directly by obs:stateUpdated
   // This ensures OBSManager sees the connected state immediately when the event fires
@@ -224,6 +230,14 @@ export function OBSProvider({ children }) {
       }));
     };
 
+    // PRD-OBS-04: Real-time audio levels handler
+    const handleAudioLevels = (data) => {
+      // Transform array of inputs into a Map keyed by inputName
+      setAudioLevels(new Map(
+        data.inputs.map(input => [input.inputName, input])
+      ));
+    };
+
     // Subscribe to all OBS events
     // Note: Event names must match server emissions in server/lib/obsStateSync.js
     socket.on('obs:stateUpdated', handleStateUpdate);
@@ -247,6 +261,8 @@ export function OBSProvider({ children }) {
     socket.on('obs:recordingStopped', handleRecordingStopped);
     socket.on('obs:recordingPaused', handleRecordingPaused);
     socket.on('obs:recordingResumed', handleRecordingResumed);
+    // PRD-OBS-04: Real-time audio levels
+    socket.on('obs:audioLevels', handleAudioLevels);
 
     // Request initial state
     socket.emit('obs:refreshState');
@@ -274,6 +290,8 @@ export function OBSProvider({ children }) {
       socket.off('obs:recordingStopped', handleRecordingStopped);
       socket.off('obs:recordingPaused', handleRecordingPaused);
       socket.off('obs:recordingResumed', handleRecordingResumed);
+      // PRD-OBS-04: Real-time audio levels cleanup
+      socket.off('obs:audioLevels', handleAudioLevels);
     };
   }, [socket, connected]);
 
@@ -506,6 +524,19 @@ export function OBSProvider({ children }) {
     socket?.emit('obs:setMonitorType', { inputName, monitorType });
   }, [socket]);
 
+  // PRD-OBS-04: Audio level subscription (for real-time VU meters)
+  const subscribeAudioLevels = useCallback(() => {
+    console.log('OBSContext: Subscribing to audio levels');
+    socket?.emit('obs:subscribeAudioLevels', { enabled: true });
+  }, [socket]);
+
+  const unsubscribeAudioLevels = useCallback(() => {
+    console.log('OBSContext: Unsubscribing from audio levels');
+    socket?.emit('obs:subscribeAudioLevels', { enabled: false });
+    // Clear audio levels when unsubscribing
+    setAudioLevels(new Map());
+  }, [socket]);
+
   // Screenshot capture
   const takeScreenshot = useCallback(() => {
     console.log('OBSContext: Taking screenshot');
@@ -593,6 +624,11 @@ export function OBSProvider({ children }) {
 
     // Audio monitoring
     setMonitorType,
+
+    // PRD-OBS-04: Real-time audio levels
+    audioLevels,
+    subscribeAudioLevels,
+    unsubscribeAudioLevels,
 
     // Screenshot capture
     takeScreenshot,
