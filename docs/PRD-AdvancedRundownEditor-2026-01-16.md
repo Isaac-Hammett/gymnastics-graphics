@@ -1311,12 +1311,15 @@ const DUMMY_GRAPHICS = [
 
 #### Phase 0B: Producer View Prototype
 
-**Location:** New components embedded in existing ProducerPage, or temporary test route `/{compId}/rundown-preview`
+**Route:** `/{compId}/rundown-preview` (temporary test route)
+
+**Why a separate route:** This isolates the prototype from the production ProducerPage, allowing focused UX testing without affecting live shows. The route will be removed in Phase 3 when components are integrated into the real ProducerPage.
 
 **Components to build:**
 
 | Component | File | Behavior |
 |-----------|------|----------|
+| RundownPreviewPage | `pages/RundownPreviewPage.jsx` | Temporary test page layout |
 | NowPlaying | `components/rundown/NowPlaying.jsx` | Current segment with progress bar |
 | UpNext | `components/rundown/UpNext.jsx` | Next segment preview |
 | ShowProgress | `components/rundown/ShowProgress.jsx` | Scrollable segment list with status icons |
@@ -1581,6 +1584,7 @@ interface GraphicParameter {
 | `show-controller/src/components/rundown/pickers/TransitionPicker.jsx` | 0A | 80 | Transition dropdown |
 | `show-controller/src/components/rundown/pickers/GraphicsPicker.jsx` | 0A | 120 | Graphics dropdown (hardcoded) |
 | `show-controller/src/components/rundown/pickers/AudioPicker.jsx` | 0A | 80 | Audio preset dropdown |
+| `show-controller/src/pages/RundownPreviewPage.jsx` | 0B | 200 | Temporary test page (removed in Phase 3) |
 | `show-controller/src/components/rundown/NowPlaying.jsx` | 0B | 150 | Current segment display |
 | `show-controller/src/components/rundown/UpNext.jsx` | 0B | 80 | Next segment preview |
 | `show-controller/src/components/rundown/ShowProgress.jsx` | 0B | 200 | Segment list with status |
@@ -1598,10 +1602,12 @@ interface GraphicParameter {
 
 | File | Phase | Changes |
 |------|-------|---------|
-| `show-controller/src/App.jsx` | 0A | Add `/rundown` route for prototype |
+| `show-controller/src/App.jsx` | 0A | Add `/rundown` route for editor prototype |
+| `show-controller/src/App.jsx` | 0B | Add `/rundown-preview` route for producer prototype |
 | `server/index.js` | 1 | Add rundown API routes |
 | `show-controller/src/components/rundown/pickers/*.jsx` | 2 | Replace hardcoded data with real sources |
 | `show-controller/src/pages/ProducerPage.jsx` | 3 | Integrate NowPlaying, UpNext, ShowProgress |
+| `show-controller/src/App.jsx` | 3 | Remove `/rundown-preview` route (no longer needed) |
 
 ---
 
