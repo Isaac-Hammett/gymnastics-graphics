@@ -1,6 +1,6 @@
 # OBS Architecture Reference for PRD Work
 
-**Last Updated:** 2026-01-20
+**Last Updated:** 2026-01-21
 
 This document explains the OBS integration architecture to provide context for anyone working on OBS-related PRDs. Understanding this architecture is critical for correctly designing and implementing OBS features.
 
@@ -313,6 +313,22 @@ Port 4455 is NOT exposed publicly. Only the Show Server on the same VM can acces
 **Wrong:** Frontend writes OBS state to Firebase
 **Right:** Only the coordinator writes OBS state (it's the source of truth for connections)
 
+### Mistake 5: "Use REST API for OBS operations"
+
+**Wrong:** Frontend calls REST API like `/api/obs/inputs/:inputName` to get OBS data
+**Right:** Frontend uses Socket.io events like `obs:getInputSettings` that route through obsConnectionManager
+
+**Why this matters:** REST API routes in `server/routes/obs.js` use `obsStateSync` which is for LOCAL development only. In production, OBS connections are managed per-competition by `obsConnectionManager`. REST calls to the coordinator will fail with "Socket not identified" because the coordinator doesn't have a local OBS connection.
+
+**Example fix (SourceEditor.jsx):**
+```javascript
+// WRONG - REST API fails in production
+const response = await fetch(`${socketUrl}/api/obs/inputs/${sourceName}`);
+
+// RIGHT - Socket event routes through obsConnectionManager
+const data = await getInputSettings(sourceName);  // Uses socket.emit('obs:getInputSettings', ...)
+```
+
 ---
 
 ## Debugging Checklist
@@ -417,6 +433,8 @@ UI re-renders with highlighted scene
 | `obs:toggleItemVisibility` | Show/hide source | index.js:2767 |
 | `obs:setVolume` | Set audio volume | index.js:2863 |
 | `obs:setMute` | Mute/unmute audio | index.js:2893 |
+| `obs:getInputSettings` | Get input settings (URL, etc.) | index.js:3348 |
+| `obs:updateInputSettings` | Update input settings | index.js:3316 |
 
 **Coordinator → Frontend:**
 
