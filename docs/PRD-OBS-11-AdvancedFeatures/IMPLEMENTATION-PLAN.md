@@ -1,7 +1,7 @@
 # PRD-OBS-11: Advanced Features - Implementation Plan
 
 **Last Updated:** 2026-01-22
-**Status:** IN PROGRESS (P0 Complete)
+**Status:** IN PROGRESS (P0 + P1 Scene Thumbnails Complete)
 
 ---
 
@@ -21,15 +21,15 @@
 | 8 | Integrate into OBSManager.jsx | COMPLETE | Toggle button, conditional render |
 | 9 | Deploy and verify | COMPLETE | Playwright MCP verified 2026-01-22 |
 
-### P1 - Scene Thumbnails (NOT STARTED)
+### P1 - Scene Thumbnails (COMPLETE)
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 10 | Add thumbnail request to scene list | NOT STARTED | On refresh |
-| 11 | Create SceneThumbnail component | NOT STARTED | 80x45 with fallback |
-| 12 | Update SceneList.jsx layout | NOT STARTED | Thumbnail in card |
-| 13 | Add hover preview (optional) | NOT STARTED | 320x180 tooltip |
-| 14 | Deploy and verify | NOT STARTED | Playwright MCP |
+| 10 | Add thumbnail request to scene list | COMPLETE | obs:requestSceneThumbnail socket event |
+| 11 | Create SceneThumbnail component | COMPLETE | 80x45 with placeholder fallback |
+| 12 | Update SceneList.jsx layout | COMPLETE | Thumbnail in scene card |
+| 13 | Add hover preview (optional) | COMPLETE | 320x180 tooltip on hover |
+| 14 | Deploy and verify | COMPLETE | Playwright MCP verified 2026-01-22 |
 
 ### P1 - Template Auto-Loading (NOT STARTED)
 
@@ -84,20 +84,20 @@
 
 ### Created
 - `show-controller/src/components/obs/StudioModePanel.jsx` - Studio mode dual preview/program panel
+- `show-controller/src/components/obs/SceneThumbnail.jsx` - Scene thumbnail with hover preview
 
 ### To Create
-- `show-controller/src/components/obs/SceneThumbnail.jsx`
 - `show-controller/src/components/obs/VUMeter.jsx`
 - `show-controller/src/components/obs/StingerConfig.jsx`
 - `server/lib/streamKeyEncryption.js`
 
 ### Modified
-- `server/index.js` - Added studio mode socket handlers, updated broadcastOBSState
+- `server/index.js` - Added studio mode socket handlers, obs:requestSceneThumbnail handler
 - `show-controller/src/context/OBSContext.jsx` - Added studioModeChanged handler
 - `show-controller/src/pages/OBSManager.jsx` - Added studio mode toggle and panel integration
+- `show-controller/src/components/obs/SceneList.jsx` - Added thumbnail display in scene cards
 
 ### To Modify
-- `show-controller/src/components/obs/SceneList.jsx` - Thumbnails
 - `show-controller/src/components/obs/AudioMixer.jsx` - VU meters
 - `show-controller/src/components/obs/TransitionPicker.jsx` - Stinger config
 - `show-controller/src/components/obs/TalentCommsPanel.jsx` - Status indicators
@@ -114,7 +114,21 @@
 
 ## Progress Log
 
-### 2026-01-22
+### 2026-01-22 (Scene Thumbnails)
+- **P1 Scene Thumbnails COMPLETE**
+  - Created SceneThumbnail.jsx component with 80x45 thumbnail display
+  - Added obs:requestSceneThumbnail socket handler on server (server/index.js:4198)
+  - Added hover preview functionality (320x180 on mouse hover)
+  - Updated SceneList.jsx to include thumbnails in scene cards
+  - Placeholder icon shown when thumbnail fails to load
+  - Deployed to production and verified with Playwright
+  - All acceptance criteria met:
+    - Scene cards show thumbnail previews
+    - Thumbnails load on scene list refresh
+    - Failed thumbnails show placeholder
+    - Hover preview shows larger image
+
+### 2026-01-22 (Studio Mode)
 - **P0 Studio Mode COMPLETE**
   - Added 4 socket handlers: enableStudioMode, disableStudioMode, setPreviewScene, transitionToProgram
   - Updated broadcastOBSState to fetch and include studioModeEnabled and previewScene
@@ -139,4 +153,5 @@
 
 | Commit | Description |
 |--------|-------------|
+| 5dbf404 | PRD-OBS-11: Implement Scene Thumbnails (P1) |
 | ecac5e0 | PRD-OBS-11: Implement Studio Mode (P0) |
