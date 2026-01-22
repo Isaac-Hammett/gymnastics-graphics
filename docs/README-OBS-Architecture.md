@@ -331,6 +331,38 @@ const data = await getInputSettings(sourceName);  // Uses socket.emit('obs:getIn
 
 ---
 
+## VDO.Ninja Talent URLs
+
+**Critical distinction:** There are TWO types of VDO.Ninja URLs for talent feeds:
+
+| URL Type | Purpose | Format |
+|----------|---------|--------|
+| **talentUrls** (push) | For talent to JOIN and broadcast their video | `?room={roomId}&hash={hash}&push=talent1` |
+| **obsViewUrls** (view) | For OBS browser sources to VIEW talent video | `?view=talent1&solo&room={roomId}&password={pwd}` |
+
+**Firebase path:** `competitions/{compId}/config/talentComms/vdoNinja/`
+- `talentUrls['talent-1']` - Push URL for talent 1
+- `obsViewUrls['talent-1']` - View URL for OBS to display talent 1
+
+**Common bug:** OBS template applies but talent video doesn't display.
+- **Cause:** Template was using `talentUrls` (push URLs) instead of `obsViewUrls` (view URLs)
+- **Fix:** Ensure `obsViewUrls` exists in Firebase and template context uses `talentComms.talent1Url` which maps to `obsViewUrls['talent-1']`
+
+**Template variable mapping (server/routes/obs.js):**
+```javascript
+talentComms: talentComms?.vdoNinja ? {
+  talent1Url: talentComms.vdoNinja.obsViewUrls?.['talent-1'] || '',  // VIEW URL for OBS
+  talent2Url: talentComms.vdoNinja.obsViewUrls?.['talent-2'] || '',  // VIEW URL for OBS
+  obsSceneUrl: talentComms.vdoNinja.obsSceneUrl || ''
+}
+```
+
+**Regenerating URLs:** When talent comms are regenerated via `TalentCommsManager.regenerateUrls()`, it creates both `talentUrls` AND `obsViewUrls`. If `obsViewUrls` is missing, either:
+1. Run regenerate again with latest code deployed
+2. Manually add to Firebase using the formula: `?view=talent1&solo&room={roomId}&password={password}`
+
+---
+
 ## Debugging Checklist
 
 When OBS features aren't working:
