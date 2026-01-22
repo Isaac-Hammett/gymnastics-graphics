@@ -120,9 +120,15 @@ export class TalentCommsManager {
     return {
       directorUrl: `${VDO_NINJA_BASE_URL}/?director=${roomId}&password=${pwd}`,
       obsSceneUrl: `${VDO_NINJA_BASE_URL}/?view=${roomId}&scene&hash=${hash}`,
+      // URLs for talent to JOIN the room (push their video)
       talentUrls: {
         'talent-1': `${VDO_NINJA_BASE_URL}/?room=${roomId}&hash=${hash}&push=talent1`,
         'talent-2': `${VDO_NINJA_BASE_URL}/?room=${roomId}&hash=${hash}&push=talent2`
+      },
+      // URLs for OBS to VIEW individual talent feeds (for browser sources)
+      obsViewUrls: {
+        'talent-1': `${VDO_NINJA_BASE_URL}/?view=talent1&solo&room=${roomId}&password=${pwd}`,
+        'talent-2': `${VDO_NINJA_BASE_URL}/?view=talent2&solo&room=${roomId}&password=${pwd}`
       }
     };
   }
