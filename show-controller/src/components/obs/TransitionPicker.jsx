@@ -1,15 +1,17 @@
 /**
- * TransitionPicker Component (PRD-OBS-05)
+ * TransitionPicker Component (PRD-OBS-05, PRD-OBS-11)
  *
  * UI for selecting and configuring OBS scene transitions.
  * Allows users to:
  * - View available transitions
  * - Select the current/default transition
  * - Set transition duration
+ * - Configure stinger transitions (PRD-OBS-11)
  */
 
 import { useState, useEffect } from 'react';
 import { useOBS } from '../../context/OBSContext';
+import StingerConfig from './StingerConfig';
 
 export default function TransitionPicker() {
   const {
@@ -22,6 +24,7 @@ export default function TransitionPicker() {
 
   const [duration, setDuration] = useState(300);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [showStingerConfig, setShowStingerConfig] = useState(false);
 
   // Extract transition data from obsState
   const transitions = obsState?.transitions || [];
@@ -99,10 +102,20 @@ export default function TransitionPicker() {
       'swipe_transition': 'Swipe effect',
       'slide_transition': 'Slide effect',
       'stinger_transition': 'Custom video transition',
+      'obs_stinger_transition': 'Custom video transition',
       'fade_to_color_transition': 'Fade to color'
     };
     return descriptions[kind] || kind || 'Transition';
   };
+
+  // Check if a transition is a stinger type
+  const isStingerTransition = (transition) => {
+    return transition?.kind === 'stinger_transition' ||
+           transition?.kind === 'obs_stinger_transition';
+  };
+
+  // Get current transition object
+  const currentTransitionObj = transitions.find(t => t.name === currentTransition);
 
   if (!obsConnected) {
     return (
@@ -191,6 +204,37 @@ export default function TransitionPicker() {
         </div>
       </div>
 
+      {/* Stinger Configuration (PRD-OBS-11) */}
+      {currentTransitionObj && isStingerTransition(currentTransitionObj) && (
+        <div className="space-y-2">
+          {showStingerConfig ? (
+            <StingerConfig
+              transitionName={currentTransition}
+              onClose={() => setShowStingerConfig(false)}
+            />
+          ) : (
+            <button
+              onClick={() => setShowStingerConfig(true)}
+              className="w-full bg-gray-700 hover:bg-gray-600 rounded-lg p-4 flex items-center justify-between transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div className="text-left">
+                  <span className="text-white font-medium">Configure Stinger</span>
+                  <p className="text-gray-400 text-sm">Set video file, transition point, and audio fade</p>
+                </div>
+              </div>
+              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Available Transitions List */}
       <div className="space-y-2">
         <h4 className="text-gray-300 font-medium text-sm uppercase tracking-wider">
@@ -203,6 +247,8 @@ export default function TransitionPicker() {
               onClick={() => {
                 if (transition.name !== currentTransition && !isUpdating) {
                   setCurrentTransition(transition.name);
+                  // Close stinger config when switching transitions
+                  setShowStingerConfig(false);
                 }
               }}
               className={`bg-gray-700 rounded-lg p-4 flex items-center justify-between cursor-pointer transition-colors ${
@@ -217,6 +263,11 @@ export default function TransitionPicker() {
                   {transition.name === currentTransition && (
                     <span className="px-2 py-0.5 bg-purple-600 text-white text-xs rounded">
                       Active
+                    </span>
+                  )}
+                  {isStingerTransition(transition) && (
+                    <span className="px-2 py-0.5 bg-orange-600/50 text-orange-200 text-xs rounded">
+                      Stinger
                     </span>
                   )}
                 </div>

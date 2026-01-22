@@ -4091,6 +4091,39 @@ io.on('connection', async (socket) => {
     }
   });
 
+  // Get transition settings (PRD-OBS-11: Stinger Transitions)
+  socket.on('obs:getTransitionSettings', async ({ transitionName }, callback) => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      if (callback) callback({ error: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      if (callback) callback({ error: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      const response = await compObs.call('GetCurrentSceneTransitionSettings');
+      console.log(`[getTransitionSettings] Retrieved settings for ${transitionName} for ${clientCompId}`);
+      if (callback) {
+        callback({
+          transitionName: response.transitionName,
+          transitionSettings: response.transitionSettings,
+          transitionKind: response.transitionKind
+        });
+      }
+    } catch (error) {
+      console.error(`[getTransitionSettings] Failed: ${error.message}`);
+      if (callback) callback({ error: `Failed to get transition settings: ${error.message}` });
+    }
+  });
+
   // Take screenshot of current output
   socket.on('obs:takeScreenshot', async () => {
     const client = showState.connectedClients.find(c => c.id === socket.id);

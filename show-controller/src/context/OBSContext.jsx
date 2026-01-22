@@ -413,6 +413,26 @@ export function OBSProvider({ children }) {
     socket?.emit('obs:setTransitionSettings', { transitionName, transitionSettings });
   }, [socket]);
 
+  // PRD-OBS-11: Get transition settings (for stinger configuration)
+  const getTransitionSettings = useCallback((transitionName) => {
+    return new Promise((resolve, reject) => {
+      if (!socket) {
+        reject(new Error('Socket not connected'));
+        return;
+      }
+      console.log('OBSContext: Getting transition settings for', transitionName);
+      socket.emit('obs:getTransitionSettings', { transitionName }, (response) => {
+        if (response.error) {
+          console.error('OBSContext: Failed to get transition settings:', response.error);
+          reject(new Error(response.error));
+        } else {
+          console.log('OBSContext: Received transition settings:', response);
+          resolve(response);
+        }
+      });
+    });
+  }, [socket]);
+
   const setVolume = useCallback((inputName, volumeDb) => {
     console.log('OBSContext: Setting volume', inputName, volumeDb);
     socket?.emit('obs:setVolume', { inputName, volumeDb });
@@ -706,6 +726,7 @@ export function OBSProvider({ children }) {
     setTransitionDuration,
     getTransitions,
     setTransitionSettings,
+    getTransitionSettings,
 
     // Audio actions
     setVolume,
