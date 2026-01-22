@@ -2960,7 +2960,21 @@ io.on('connection', async (socket) => {
       // But that's actually what we want for a clean slate - one empty scene
       // Rename the temp scene to something more user-friendly
       try {
-        await compObs.call('SetSceneName', { sceneName: tempSceneName, newSceneName: 'Scene 1' });
+        // Try "Scene 1", then "Scene 2", etc. until we find an available name
+        let renamed = false;
+        for (let i = 1; i <= 10 && !renamed; i++) {
+          try {
+            const newName = i === 1 ? 'Scene 1' : `Scene ${i}`;
+            await compObs.call('SetSceneName', { sceneName: tempSceneName, newSceneName: newName });
+            renamed = true;
+            console.log(`[deleteAllScenes] Renamed temp scene to: ${newName}`);
+          } catch (renameErr) {
+            // Scene name might already exist, try next number
+            if (i === 10) {
+              console.warn(`[deleteAllScenes] Could not rename temp scene after 10 attempts`);
+            }
+          }
+        }
       } catch (err) {
         // If rename fails, just leave it
         console.warn(`[deleteAllScenes] Could not rename temp scene: ${err.message}`);

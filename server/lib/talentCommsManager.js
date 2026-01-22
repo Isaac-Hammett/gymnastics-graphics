@@ -28,6 +28,11 @@ export const COMMS_METHODS = {
 export const VDO_NINJA_BASE_URL = 'https://vdo.ninja';
 
 /**
+ * VDO.Ninja salt for password hashing (domain-specific)
+ */
+const VDO_NINJA_SALT = 'vdo.ninja';
+
+/**
  * Generate a unique room ID
  * @private
  * @returns {string} URL-safe room ID
@@ -47,6 +52,19 @@ function generateRoomId() {
 function generatePassword() {
   const randomBytes = crypto.randomBytes(12);
   return randomBytes.toString('base64url');
+}
+
+/**
+ * Generate VDO.Ninja hash from password
+ * VDO.Ninja uses SHA-256 hash of (password + salt), truncated to 4 hex chars
+ * @private
+ * @param {string} password - Room password
+ * @returns {string} 4-character hex hash for use in URLs
+ */
+function generateVdoNinjaHash(password) {
+  const hash = crypto.createHash('sha256').update(password + VDO_NINJA_SALT).digest('hex');
+  // VDO.Ninja uses first 4 hex characters (2 bytes)
+  return hash.slice(0, 4);
 }
 
 /**
@@ -96,13 +114,15 @@ export class TalentCommsManager {
     }
 
     const pwd = password || generatePassword();
+    // Generate hash from password for talent URLs (allows joining without exposing password)
+    const hash = generateVdoNinjaHash(pwd);
 
     return {
       directorUrl: `${VDO_NINJA_BASE_URL}/?director=${roomId}&password=${pwd}`,
-      obsSceneUrl: `${VDO_NINJA_BASE_URL}/?view=${roomId}&scene`,
+      obsSceneUrl: `${VDO_NINJA_BASE_URL}/?view=${roomId}&scene&hash=${hash}`,
       talentUrls: {
-        'talent-1': `${VDO_NINJA_BASE_URL}/?room=${roomId}&push=talent1`,
-        'talent-2': `${VDO_NINJA_BASE_URL}/?room=${roomId}&push=talent2`
+        'talent-1': `${VDO_NINJA_BASE_URL}/?room=${roomId}&hash=${hash}&push=talent1`,
+        'talent-2': `${VDO_NINJA_BASE_URL}/?room=${roomId}&hash=${hash}&push=talent2`
       }
     };
   }
