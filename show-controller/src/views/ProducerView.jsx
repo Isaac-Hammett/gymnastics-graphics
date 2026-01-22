@@ -9,7 +9,7 @@ import RunOfShow from '../components/RunOfShow';
 import ConnectionStatus from '../components/ConnectionStatus';
 import GraphicsControl from '../components/GraphicsControl';
 import CameraRuntimePanel from '../components/CameraRuntimePanel';
-import TimesheetPanel from '../components/TimesheetPanel';
+// TimesheetPanel removed - functionality consolidated into main content area (PRD-Rundown-00)
 import OverrideLog from '../components/OverrideLog';
 import AlertPanel from '../components/AlertPanel';
 import { useAlerts } from '../hooks/useAlerts';
@@ -493,9 +493,6 @@ export default function ProducerView() {
 
           {/* Right Column - Status */}
           <div className="space-y-4">
-            {/* Timesheet Panel */}
-            <TimesheetPanel collapsed={false} />
-
             {/* Override Log */}
             <OverrideLog collapsed={true} defaultVisible={5} />
 
