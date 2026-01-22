@@ -38,6 +38,11 @@ export function OBSProvider({ children }) {
   // PRD-OBS-04: Real-time audio levels state
   const [audioLevels, setAudioLevels] = useState(INITIAL_AUDIO_LEVELS);
 
+  // PRD-OBS-04 Phase 1.5: Audio presets state
+  const [presets, setPresets] = useState([]);
+  const [presetsLoading, setPresetsLoading] = useState(false);
+  const [presetApplying, setPresetApplying] = useState(null); // presetId being applied
+
   // obsConnected comes from obsState which is updated directly by obs:stateUpdated
   // This ensures OBSManager sees the connected state immediately when the event fires
   const obsConnected = obsState?.connected ?? false;
@@ -238,6 +243,33 @@ export function OBSProvider({ children }) {
       ));
     };
 
+    // PRD-OBS-04 Phase 1.5: Audio preset event handlers
+    const handlePresetsList = (data) => {
+      console.log('OBSContext: Presets list received', data.presets?.length || 0);
+      setPresets(data.presets || []);
+      setPresetsLoading(false);
+    };
+
+    const handlePresetApplied = (data) => {
+      console.log('OBSContext: Preset applied', data.presetName, `(${data.applied}/${data.total})`);
+      setPresetApplying(null);
+      if (data.errors && data.errors.length > 0) {
+        console.warn('OBSContext: Some sources failed:', data.errors);
+      }
+    };
+
+    const handlePresetSaved = (data) => {
+      console.log('OBSContext: Preset saved', data.preset?.name);
+      // Refresh presets list
+      socket.emit('obs:listPresets');
+    };
+
+    const handlePresetDeleted = (data) => {
+      console.log('OBSContext: Preset deleted', data.presetId);
+      // Remove from local state
+      setPresets(prev => prev.filter(p => p.id !== data.presetId));
+    };
+
     // Subscribe to all OBS events
     // Note: Event names must match server emissions in server/lib/obsStateSync.js
     socket.on('obs:stateUpdated', handleStateUpdate);
@@ -263,6 +295,11 @@ export function OBSProvider({ children }) {
     socket.on('obs:recordingResumed', handleRecordingResumed);
     // PRD-OBS-04: Real-time audio levels
     socket.on('obs:audioLevels', handleAudioLevels);
+    // PRD-OBS-04 Phase 1.5: Audio preset events
+    socket.on('obs:presetsList', handlePresetsList);
+    socket.on('obs:presetApplied', handlePresetApplied);
+    socket.on('obs:presetSaved', handlePresetSaved);
+    socket.on('obs:presetDeleted', handlePresetDeleted);
 
     // Request initial state
     socket.emit('obs:refreshState');
@@ -292,6 +329,11 @@ export function OBSProvider({ children }) {
       socket.off('obs:recordingResumed', handleRecordingResumed);
       // PRD-OBS-04: Real-time audio levels cleanup
       socket.off('obs:audioLevels', handleAudioLevels);
+      // PRD-OBS-04 Phase 1.5: Audio preset events cleanup
+      socket.off('obs:presetsList', handlePresetsList);
+      socket.off('obs:presetApplied', handlePresetApplied);
+      socket.off('obs:presetSaved', handlePresetSaved);
+      socket.off('obs:presetDeleted', handlePresetDeleted);
     };
   }, [socket, connected]);
 
@@ -347,9 +389,31 @@ export function OBSProvider({ children }) {
     socket?.emit('obs:setMute', { inputName, muted });
   }, [socket]);
 
-  const loadPreset = useCallback((presetId) => {
-    console.log('OBSContext: Loading preset', presetId);
-    socket?.emit('obs:loadPreset', { presetId });
+  // Apply an audio preset (corrected event name for Phase 1.5)
+  const applyPreset = useCallback((presetId) => {
+    console.log('OBSContext: Applying preset', presetId);
+    socket?.emit('obs:applyPreset', { presetId });
+  }, [socket]);
+
+  // Alias for backwards compatibility
+  const loadPreset = applyPreset;
+
+  // List all audio presets (default + user-created)
+  const listPresets = useCallback(() => {
+    console.log('OBSContext: Listing presets');
+    socket?.emit('obs:listPresets');
+  }, [socket]);
+
+  // Save current audio mix as a new preset
+  const savePreset = useCallback((name, description, sources) => {
+    console.log('OBSContext: Saving preset', name);
+    socket?.emit('obs:savePreset', { name, description, sources });
+  }, [socket]);
+
+  // Delete a user-created preset
+  const deletePreset = useCallback((presetId) => {
+    console.log('OBSContext: Deleting preset', presetId);
+    socket?.emit('obs:deletePreset', { presetId });
   }, [socket]);
 
   const startStream = useCallback(() => {
@@ -580,8 +644,15 @@ export function OBSProvider({ children }) {
     setVolume,
     setMute,
 
-    // Preset actions
+    // Preset actions (PRD-OBS-04 Phase 1.5)
     loadPreset,
+    applyPreset,
+    listPresets,
+    savePreset,
+    deletePreset,
+    presets,
+    presetsLoading,
+    presetApplying,
 
     // Streaming actions
     startStream,

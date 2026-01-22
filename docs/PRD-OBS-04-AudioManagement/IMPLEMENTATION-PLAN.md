@@ -1,7 +1,7 @@
 # PRD-OBS-04: Audio Management - Implementation Plan
 
-**Last Updated:** 2026-01-21
-**Status:** ✅ Phase 1 Complete, ✅ Phase 2 Complete, 🔲 Phase 3 Future
+**Last Updated:** 2026-01-22
+**Status:** ⚠️ Phase 1.5 (Preset Fix) Required, ✅ Phase 2 Complete, 🔲 Phase 3 Future
 
 ---
 
@@ -9,13 +9,14 @@
 
 | Phase | Description | Status |
 |-------|-------------|--------|
-| Phase 1 | Basic audio controls (volume, mute, monitor type, presets) | ✅ Complete |
+| Phase 1 | Basic audio controls (volume, mute, monitor type) | ✅ Complete |
+| **Phase 1.5** | **Fix audio presets (Apply button broken)** | 🔴 **CRITICAL FIX REQUIRED** |
 | Phase 2 | Real-time audio levels & alerts | ✅ Complete |
 | Phase 3 | AI Auto-Mixing | 🔲 Future (depends on Phase 2) |
 
 ---
 
-## Phase 1: Basic Audio Controls (✅ COMPLETE)
+## Phase 1: Basic Audio Controls (✅ COMPLETE - Controls Only)
 
 ### Critical Bug Fixed (2026-01-20)
 
@@ -34,14 +35,164 @@
 | 1.2 | Mute toggle | ✅ VERIFIED | Frontend: OBSContext.jsx:327, Backend: server/index.js:3637 |
 | 1.3 | Monitor type dropdown | ✅ VERIFIED | Frontend: OBSContext.jsx:504, Backend: server/index.js:3669 |
 
-### P1.2 - Audio Presets (✅ UI VERIFIED)
+### P1.2 - Audio Presets (🔴 BROKEN - UI Shows But Apply Fails)
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 1.4 | Save preset | ✅ UI VERIFIED | "Save Current Mix" button visible |
-| 1.5 | Load preset | ✅ UI VERIFIED | 5 presets visible with Apply buttons |
-| 1.6 | Delete preset | ✅ UI VERIFIED | Delete buttons visible |
-| 1.7 | Presets persist | ✅ VERIFIED | Firebase persistence working |
+| 1.4 | Save preset | 🔴 BROKEN | REST API fails in production (needs Socket.io) |
+| 1.5 | Load preset | 🔴 BROKEN | "Failed to load preset: Not Found" error |
+| 1.6 | Delete preset | 🔴 BROKEN | REST API fails in production (needs Socket.io) |
+| 1.7 | Presets persist | 🔴 BROKEN | Default presets not saved to Firebase |
+
+**Root Cause:** See Phase 1.5 below for full analysis and fix requirements.
+
+---
+
+## Phase 1.5: Fix Audio Presets (🔴 CRITICAL FIX REQUIRED)
+
+**Bug Reported:** 2026-01-22
+**Error:** "Failed to load preset: Not Found" when clicking Apply on any preset
+
+### Root Cause Analysis
+
+1. **Frontend uses REST API** - `AudioPresetManager.jsx` calls `PUT /api/obs/audio/presets/:presetId` which only works in local dev mode
+2. **Default presets not in Firebase** - The 5 default presets are hardcoded in `DEFAULT_PRESETS` but `loadPreset()` only queries Firebase
+3. **No Socket.io handler** - `obs:loadPreset` is emitted by OBSContext but there's no handler in server/index.js
+
+### P1.5.1 - Backend: Add Socket.io Handlers (server/index.js)
+
+| # | Task | Status | File | Notes |
+|---|------|--------|------|-------|
+| 1.5.1 | Add `obs:applyPreset` socket handler | 🔲 TODO | server/index.js | Check DEFAULT_PRESETS first, then Firebase |
+| 1.5.2 | Add `obs:savePreset` socket handler | 🔲 TODO | server/index.js | Generate ID, save to Firebase |
+| 1.5.3 | Add `obs:deletePreset` socket handler | 🔲 TODO | server/index.js | Delete from Firebase (reject defaults) |
+| 1.5.4 | Add `obs:listPresets` socket handler | 🔲 TODO | server/index.js | Return combined default + user presets |
+| 1.5.5 | Import DEFAULT_PRESETS from obsAudioManager | 🔲 TODO | server/index.js | Reuse existing preset definitions |
+
+**obs:applyPreset Handler Implementation:**
+
+```javascript
+// server/index.js - Add after other obs: handlers (~line 3700)
+
+import { DEFAULT_PRESETS } from './lib/obsAudioManager.js';
+
+socket.on('obs:applyPreset', async ({ presetId }) => {
+  const compId = clientCompId;
+  if (!compId || compId === 'local') {
+    socket.emit('obs:error', { message: 'No competition active' });
+    return;
+  }
+
+  const obsConnManager = getOBSConnectionManager();
+  const connection = obsConnManager.getConnection(compId);
+  if (!connection) {
+    socket.emit('obs:error', { message: 'OBS not connected' });
+    return;
+  }
+
+  try {
+    console.log(`[Socket] Received obs:applyPreset: ${presetId} for ${compId}`);
+
+    // 1. Check default presets first
+    let preset = DEFAULT_PRESETS[presetId];
+
+    // 2. If not default, load from Firebase
+    if (!preset) {
+      const snapshot = await database.ref(`competitions/${compId}/obs/presets/${presetId}`).once('value');
+      preset = snapshot.val();
+    }
+
+    if (!preset) {
+      socket.emit('obs:error', { message: `Preset not found: ${presetId}` });
+      return;
+    }
+
+    // 3. Apply each source setting via OBS WebSocket
+    const sources = Array.isArray(preset.sources) ? preset.sources : Object.values(preset.sources || {});
+    let applied = 0;
+    const errors = [];
+
+    for (const source of sources) {
+      try {
+        if (source.volumeDb !== undefined) {
+          await connection.call('SetInputVolume', {
+            inputName: source.inputName,
+            inputVolumeDb: source.volumeDb
+          });
+        }
+        if (source.muted !== undefined) {
+          await connection.call('SetInputMute', {
+            inputName: source.inputName,
+            inputMuted: source.muted
+          });
+        }
+        applied++;
+      } catch (err) {
+        errors.push({ inputName: source.inputName, error: err.message });
+      }
+    }
+
+    // 4. Broadcast state update to all clients
+    await broadcastOBSState(compId, obsConnManager, io);
+
+    // 5. Send success response
+    socket.emit('obs:presetApplied', {
+      presetId,
+      presetName: preset.name,
+      applied,
+      total: sources.length,
+      errors
+    });
+
+    console.log(`[Socket] Applied preset "${preset.name}": ${applied}/${sources.length} sources`);
+  } catch (error) {
+    console.error(`[Socket] Error applying preset ${presetId}:`, error.message);
+    socket.emit('obs:error', { message: error.message });
+  }
+});
+```
+
+### P1.5.2 - Frontend: Update AudioPresetManager.jsx
+
+| # | Task | Status | File | Notes |
+|---|------|--------|------|-------|
+| 1.5.6 | Change `handleLoadPreset` to use Socket.io | 🔲 TODO | AudioPresetManager.jsx:60-83 | Replace REST call with `loadPreset(presetId)` |
+| 1.5.7 | Change `handleSavePreset` to use Socket.io | 🔲 TODO | AudioPresetManager.jsx:120-158 | Emit `obs:savePreset` instead of REST |
+| 1.5.8 | Change `handleDeletePreset` to use Socket.io | 🔲 TODO | AudioPresetManager.jsx:86-108 | Emit `obs:deletePreset` instead of REST |
+| 1.5.9 | Change `fetchPresets` to use Socket.io | 🔲 TODO | AudioPresetManager.jsx:40-57 | Emit `obs:listPresets` instead of REST |
+| 1.5.10 | Add event listeners for responses | 🔲 TODO | AudioPresetManager.jsx | Listen for `obs:presetApplied`, `obs:presetSaved`, etc. |
+
+### P1.5.3 - Frontend: Update OBSContext.jsx
+
+| # | Task | Status | File | Notes |
+|---|------|--------|------|-------|
+| 1.5.11 | Change `loadPreset` to emit `obs:applyPreset` | 🔲 TODO | OBSContext.jsx:350-353 | Rename event for clarity |
+| 1.5.12 | Add `savePreset` method | 🔲 TODO | OBSContext.jsx | Emit `obs:savePreset` |
+| 1.5.13 | Add `deletePreset` method | 🔲 TODO | OBSContext.jsx | Emit `obs:deletePreset` |
+| 1.5.14 | Add `listPresets` method | 🔲 TODO | OBSContext.jsx | Emit `obs:listPresets` |
+| 1.5.15 | Add event listeners for preset responses | 🔲 TODO | OBSContext.jsx | Handle success/error events |
+| 1.5.16 | Export new preset methods from context | 🔲 TODO | OBSContext.jsx | Make available to components |
+
+### P1.5.4 - Testing & Deployment
+
+| # | Task | Status | Notes |
+|---|------|--------|-------|
+| 1.5.17 | Test Apply on "Commentary Focus" preset | 🔲 TODO | Should change OBS volumes |
+| 1.5.18 | Test Apply on all 5 default presets | 🔲 TODO | All should work without error |
+| 1.5.19 | Test Save new custom preset | 🔲 TODO | Should appear in list, persist in Firebase |
+| 1.5.20 | Test Apply on saved custom preset | 🔲 TODO | Should work like default presets |
+| 1.5.21 | Test Delete custom preset | 🔲 TODO | Should remove from list and Firebase |
+| 1.5.22 | Test Delete default preset blocked | 🔲 TODO | Should show error |
+| 1.5.23 | Deploy coordinator changes | 🔲 TODO | `ssh_exec target="coordinator" command="cd /opt/gymnastics-graphics && git pull origin main && pm2 restart coordinator"` |
+| 1.5.24 | Deploy frontend changes | 🔲 TODO | `./scripts/deploy-frontend.sh` |
+| 1.5.25 | Playwright verification | 🔲 TODO | Verify presets work in production |
+
+### Implementation Priority
+
+1. **Start with backend** (P1.5.1) - Add `obs:applyPreset` handler first
+2. **Update OBSContext** (P1.5.3) - Add methods and event listeners
+3. **Update AudioPresetManager** (P1.5.2) - Switch from REST to Socket.io
+4. **Deploy and test** (P1.5.4)
 
 ---
 
@@ -193,6 +344,31 @@ cd show-controller && npm run build
 ---
 
 ## Progress Log
+
+### 2026-01-22 - Audio Presets Bug Discovered 🔴 CRITICAL
+
+**BUG REPORT:** "Apply" button on audio presets shows "Failed to load preset: Not Found"
+
+**Investigation Results:**
+1. Frontend `AudioPresetManager.jsx` uses REST API calls (`PUT /api/obs/audio/presets/:presetId`)
+2. REST API only works in local dev mode (requires local OBS connection)
+3. Default presets (Commentary Focus, etc.) are hardcoded in `DEFAULT_PRESETS` but `loadPreset()` only queries Firebase
+4. No `obs:applyPreset` socket handler exists in server/index.js
+
+**Files Affected:**
+- `show-controller/src/components/obs/AudioPresetManager.jsx` - Uses REST instead of Socket.io
+- `server/lib/obsAudioManager.js:342-368` - `loadPreset()` doesn't check DEFAULT_PRESETS
+- `server/index.js` - Missing socket handlers for presets
+- `show-controller/src/context/OBSContext.jsx:350-353` - Emits event with no backend handler
+
+**Firebase Status:** `competitions/8kyf0rnl/obs/presets` path does not exist (null)
+
+**PRD Updated:** Added "Known Issues" section with full root cause analysis and fix requirements
+**IMPLEMENTATION-PLAN Updated:** Added Phase 1.5 with 25 specific tasks for the fix
+
+**Next Steps:** Implement Phase 1.5 tasks to fix presets
+
+---
 
 ### 2026-01-22 - Final Phase 2 Verification ✅ COMPLETE
 - **VERIFIED:** Playwright verification of production at commentarygraphic.com/8kyf0rnl/obs-manager

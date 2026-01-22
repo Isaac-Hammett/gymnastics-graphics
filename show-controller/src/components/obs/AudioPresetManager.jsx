@@ -9,7 +9,6 @@ import {
   CheckIcon
 } from '@heroicons/react/24/outline';
 import { useOBS } from '../../context/OBSContext';
-import { useShow } from '../../context/ShowContext';
 
 /**
  * AudioPresetManager - Manage and load audio presets
@@ -20,91 +19,56 @@ import { useShow } from '../../context/ShowContext';
  * - Save current mix as new preset
  * - Delete user presets
  * - Show loading states
+ *
+ * PRD-OBS-04 Phase 1.5: Uses Socket.io instead of REST API for production compatibility
  */
 export default function AudioPresetManager() {
-  const { obsState, obsConnected, loadPreset } = useOBS();
-  const { socketUrl } = useShow();
+  const {
+    obsState,
+    obsConnected,
+    applyPreset,
+    listPresets,
+    savePreset: savePresetViaSocket,
+    deletePreset: deletePresetViaSocket,
+    presets,
+    presetsLoading,
+    presetApplying
+  } = useOBS();
 
-  // State
-  const [presets, setPresets] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // Local state
   const [error, setError] = useState(null);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [loadingPresetId, setLoadingPresetId] = useState(null);
 
-  // Fetch presets on mount
+  // Fetch presets on mount and when OBS connects
   useEffect(() => {
-    fetchPresets();
-  }, []);
-
-  const fetchPresets = async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch(`${socketUrl}/api/obs/audio/presets`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch presets: ${response.statusText}`);
-      }
-      const data = await response.json();
-      setPresets(data.presets || []);
-    } catch (err) {
-      console.error('Error fetching presets:', err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
+    if (obsConnected) {
+      listPresets();
     }
-  };
+  }, [obsConnected, listPresets]);
 
-  // Load/apply preset
-  const handleLoadPreset = async (presetId) => {
+  // Track which preset is being applied
+  useEffect(() => {
+    setLoadingPresetId(presetApplying);
+  }, [presetApplying]);
+
+  // Apply preset via Socket.io
+  const handleLoadPreset = (presetId) => {
     setLoadingPresetId(presetId);
     setError(null);
-
-    try {
-      const response = await fetch(`${socketUrl}/api/obs/audio/presets/${presetId}`, {
-        method: 'PUT'
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to load preset: ${response.statusText}`);
-      }
-
-      // Also emit socket event for real-time update
-      loadPreset(presetId);
-
-      // Show success briefly
-      setTimeout(() => setLoadingPresetId(null), 1000);
-    } catch (err) {
-      console.error('Error loading preset:', err);
-      setError(err.message);
-      setLoadingPresetId(null);
-    }
+    applyPreset(presetId);
+    // Clear loading state after a short delay (success handled by OBSContext)
+    setTimeout(() => setLoadingPresetId(null), 1500);
   };
 
-  // Delete preset
-  const handleDeletePreset = async (presetId, presetName) => {
+  // Delete preset via Socket.io
+  const handleDeletePreset = (presetId, presetName) => {
     if (!confirm(`Delete preset "${presetName}"?`)) {
       return;
     }
 
     setError(null);
-
-    try {
-      const response = await fetch(`${socketUrl}/api/obs/audio/presets/${presetId}`, {
-        method: 'DELETE'
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to delete preset: ${response.statusText}`);
-      }
-
-      // Refresh presets list
-      await fetchPresets();
-    } catch (err) {
-      console.error('Error deleting preset:', err);
-      setError(err.message);
-    }
+    deletePresetViaSocket(presetId);
   };
 
   // Open save modal
@@ -116,7 +80,7 @@ export default function AudioPresetManager() {
     setShowSaveModal(true);
   };
 
-  // Save current mix as new preset
+  // Save current mix as new preset via Socket.io
   const handleSavePreset = async (name, description) => {
     setError(null);
 
@@ -128,7 +92,7 @@ export default function AudioPresetManager() {
         throw new Error('No audio sources to save');
       }
 
-      // Format sources for API
+      // Format sources for socket event
       const sources = audioSources.reduce((acc, source) => {
         acc[source.inputName] = {
           volumeDb: source.volumeDb,
@@ -138,19 +102,10 @@ export default function AudioPresetManager() {
         return acc;
       }, {});
 
-      const response = await fetch(`${socketUrl}/api/obs/audio/presets`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, description, sources })
-      });
+      savePresetViaSocket(name, description, sources);
 
-      if (!response.ok) {
-        throw new Error(`Failed to save preset: ${response.statusText}`);
-      }
-
-      // Close modal and refresh presets
+      // Close modal (refresh handled by OBSContext event listener)
       setShowSaveModal(false);
-      await fetchPresets();
     } catch (err) {
       console.error('Error saving preset:', err);
       setError(err.message);
@@ -192,7 +147,7 @@ export default function AudioPresetManager() {
       )}
 
       {/* Loading State */}
-      {loading ? (
+      {presetsLoading ? (
         <div className="text-center text-gray-400 py-8">
           <ArrowPathIcon className="w-8 h-8 mx-auto mb-2 animate-spin" />
           <p className="text-sm">Loading presets...</p>
@@ -237,7 +192,9 @@ export default function AudioPresetManager() {
  */
 function PresetCard({ preset, isLoading, onLoad, onDelete }) {
   const isDefault = preset.isDefault ?? false;
-  const sourceCount = Object.keys(preset.sources || {}).length;
+  // Sources can be an array or object depending on whether it's a default or user preset
+  const sources = preset.sources || {};
+  const sourceCount = Array.isArray(sources) ? sources.length : Object.keys(sources).length;
 
   return (
     <div className="bg-gray-700 rounded-lg p-4">
