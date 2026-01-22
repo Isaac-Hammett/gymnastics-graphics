@@ -3345,6 +3345,39 @@ io.on('connection', async (socket) => {
     }
   });
 
+  // Get input settings (for SourceEditor to load current values)
+  socket.on('obs:getInputSettings', async ({ inputName }, callback) => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    const clientCompId = client?.compId;
+
+    if (!clientCompId) {
+      if (callback) callback({ error: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      if (callback) callback({ error: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      const response = await compObs.call('GetInputSettings', { inputName });
+      console.log(`[getInputSettings] Retrieved settings for ${inputName} for ${clientCompId}`);
+      if (callback) {
+        callback({
+          inputKind: response.inputKind,
+          inputSettings: response.inputSettings
+        });
+      }
+    } catch (error) {
+      console.error(`[getInputSettings] Failed: ${error.message}`);
+      if (callback) callback({ error: error.message });
+    }
+  });
+
   // Set scene item transform (PRD-OBS-03: Source Management)
   socket.on('obs:setSceneItemTransform', async ({ sceneName, sceneItemId, transform }) => {
     const client = showState.connectedClients.find(c => c.id === socket.id);

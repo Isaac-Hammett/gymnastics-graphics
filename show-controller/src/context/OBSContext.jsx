@@ -474,6 +474,26 @@ export function OBSProvider({ children }) {
     socket?.emit('obs:updateInputSettings', { inputName, inputSettings });
   }, [socket]);
 
+  // Get input settings (for SourceEditor to load current values)
+  const getInputSettings = useCallback((inputName) => {
+    return new Promise((resolve, reject) => {
+      if (!socket) {
+        reject(new Error('Socket not connected'));
+        return;
+      }
+      console.log('OBSContext: Getting input settings for', inputName);
+      socket.emit('obs:getInputSettings', { inputName }, (response) => {
+        if (response.error) {
+          console.error('OBSContext: Failed to get input settings:', response.error);
+          reject(new Error(response.error));
+        } else {
+          console.log('OBSContext: Received input settings:', response);
+          resolve(response);
+        }
+      });
+    });
+  }, [socket]);
+
   // Set scene item transform (PRD-OBS-03: Source Management)
   const setSceneItemTransform = useCallback((sceneName, sceneItemId, transform) => {
     console.log('OBSContext: Setting scene item transform', sceneName, sceneItemId, transform);
@@ -568,6 +588,7 @@ export function OBSProvider({ children }) {
     createInput,
     removeInput,
     updateInputSettings,
+    getInputSettings,
     setSceneItemTransform,
 
     // Audio monitoring
