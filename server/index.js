@@ -2935,7 +2935,13 @@ io.on('connection', async (socket) => {
       // OBS requires at least one scene, so we need to create a temporary scene first
       // if we're deleting everything
       const tempSceneName = '__temp_delete_all__';
-      await compObs.call('CreateScene', { sceneName: tempSceneName });
+
+      // Check if temp scene already exists (from a previous failed attempt)
+      const tempSceneExists = scenes.some(s => (s.sceneName || s.name) === tempSceneName);
+
+      if (!tempSceneExists) {
+        await compObs.call('CreateScene', { sceneName: tempSceneName });
+      }
 
       // Switch to the temp scene so we can delete all others
       await compObs.call('SetCurrentProgramScene', { sceneName: tempSceneName });
@@ -2943,9 +2949,13 @@ io.on('connection', async (socket) => {
       let deletedCount = 0;
       const errors = [];
 
-      // Delete all original scenes
+      // Delete all original scenes (skip the temp scene if it was pre-existing)
       for (const scene of scenes) {
         const sceneName = scene.sceneName || scene.name;
+        // Skip the temp scene - we'll rename it at the end
+        if (sceneName === tempSceneName) {
+          continue;
+        }
         try {
           await compObs.call('RemoveScene', { sceneName });
           deletedCount++;
