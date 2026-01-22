@@ -615,6 +615,23 @@ Modify `server/routes/obs.js` to use `obsConnectionManager.getConnection(compId)
 
 ---
 
+## Deployment
+
+Use the deployment script to deploy frontend changes to production:
+
+```bash
+./scripts/deploy-frontend.sh
+```
+
+This script deploys all three required components:
+- **React SPA** (`show-controller/dist/`) - Main application
+- **Overlays** (`overlays/`) - Static HTML overlay files for OBS browser sources
+- **output.html** - Graphics renderer
+
+See [scripts/deploy-frontend.sh](../../scripts/deploy-frontend.sh) for details.
+
+---
+
 ## Verification URLs
 
 - **OBS Manager UI:** `https://commentarygraphic.com/8kyf0rnl/obs-manager`
