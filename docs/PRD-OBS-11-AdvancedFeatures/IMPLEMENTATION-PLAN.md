@@ -1,13 +1,13 @@
 # PRD-OBS-11: Advanced Features - Implementation Plan
 
 **Last Updated:** 2026-01-21
-**Status:** IN PROGRESS (P0 Scene List buttons pending, P1 Complete)
+**Status:** IN PROGRESS (P0 Complete, P1 Complete, P2 Not Started)
 
 ---
 
 ## Priority Order
 
-### P0 - Studio Mode (IN PROGRESS - Scene List buttons missing)
+### P0 - Studio Mode (COMPLETE)
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
@@ -20,9 +20,9 @@
 | 7 | Add obs:studioModeChanged event handler | COMPLETE | OBSContext.jsx |
 | 8 | Integrate into OBSManager.jsx | COMPLETE | Toggle button, conditional render |
 | 9 | Deploy and verify StudioModePanel | COMPLETE | Playwright MCP verified 2026-01-22 |
-| 10 | Add Preview/Live buttons to SceneList | NOT STARTED | Show 2 buttons in Studio Mode, 1 button otherwise |
-| 11 | Add LIVE/PREVIEW badges to scene cards | NOT STARTED | Green for program, yellow for preview |
-| 12 | Deploy and verify Scene List integration | NOT STARTED | Playwright MCP |
+| 10 | Add Preview/Live buttons to SceneList | COMPLETE | Show 2 buttons in Studio Mode, 1 button otherwise |
+| 11 | Add LIVE/PREVIEW badges to scene cards | COMPLETE | Green for program, yellow for preview |
+| 12 | Deploy and verify Scene List integration | COMPLETE | Playwright MCP verified 2026-01-21 |
 
 ### P1 - Scene Thumbnails (COMPLETE)
 
@@ -98,7 +98,7 @@
 - `server/index.js` - Added studio mode socket handlers, obs:requestSceneThumbnail handler, template default handlers
 - `show-controller/src/context/OBSContext.jsx` - Added studioModeChanged handler, auto-load state and methods
 - `show-controller/src/pages/OBSManager.jsx` - Added studio mode toggle and panel integration
-- `show-controller/src/components/obs/SceneList.jsx` - Added thumbnail display in scene cards
+- `show-controller/src/components/obs/SceneList.jsx` - Added thumbnail display, Preview/Live buttons, LIVE/PREVIEW badges
 - `show-controller/src/components/obs/TemplateManager.jsx` - Added Set as Default toggle, auto-apply logic, SetDefaultModal
 
 ### To Modify
@@ -164,6 +164,22 @@
     - Preview scene can be changed via dropdown
     - Multi-client sync works (studioModeChanged events broadcast)
     - Size preference persists across page reloads
+
+### 2026-01-21 (Scene List Studio Mode Integration)
+- **P0 Studio Mode Scene List Integration COMPLETE**
+  - Updated SceneList.jsx with Preview/Live buttons for Studio Mode
+  - Single "Go Live" button in Direct Mode, two buttons (Preview + Live) in Studio Mode
+  - LIVE badge (green) for current program scene
+  - PREVIEW badge (yellow) for current preview scene (only in Studio Mode)
+  - Buttons disabled when scene is already in that state
+  - Deployed to production and verified with Playwright
+  - All acceptance criteria met:
+    - Scene List shows single "Go Live" button when Studio Mode disabled
+    - Scene List shows "Preview" and "Live" buttons when Studio Mode enabled
+    - Preview button sets scene as preview (yellow indicator)
+    - Live button switches scene to program (green indicator)
+    - Current program scene shows "LIVE" badge
+    - Current preview scene shows "PREVIEW" badge (Studio Mode only)
 
 ### 2026-01-20
 - Created PRD-OBS-11 consolidating all deferred features from OBS-01 through OBS-10
