@@ -1,16 +1,20 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useShow } from '../context/ShowContext';
+import { useTimesheet } from '../hooks/useTimesheet';
 import CurrentSegment from '../components/CurrentSegment';
 import NextSegment from '../components/NextSegment';
 import RunOfShow from '../components/RunOfShow';
 import QuickActions from '../components/QuickActions';
 import ConnectionStatus from '../components/ConnectionStatus';
-import { PlayIcon, LockClosedIcon } from '@heroicons/react/24/solid';
+import { PlayIcon, LockClosedIcon, ClockIcon } from '@heroicons/react/24/solid';
 
 export default function TalentView() {
-  const { state, advance, startShow, identify, error } = useShow();
+  const { state, startShow, identify, error } = useShow();
   const { showConfig, isPlaying, talentLocked, showProgress } = state;
+
+  // Use timesheet for advance/previous with hold segment support
+  const { advance: timesheetAdvance, isHoldSegment, canAdvanceHold, holdRemainingMs } = useTimesheet();
 
   useEffect(() => {
     identify('talent', 'Talent');
@@ -82,13 +86,26 @@ export default function TalentView() {
             {/* Next Segment Preview */}
             <NextSegment />
 
+            {/* Hold Segment Warning */}
+            {isHoldSegment && !canAdvanceHold && (
+              <div className="bg-yellow-500/20 border border-yellow-500 rounded-xl p-4 flex items-center gap-3">
+                <ClockIcon className="w-6 h-6 text-yellow-500" />
+                <div>
+                  <div className="text-yellow-300 font-semibold">Hold Segment</div>
+                  <div className="text-yellow-400 text-sm">
+                    Wait {Math.ceil(holdRemainingMs / 1000)}s before advancing
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Big Next Button */}
             <button
-              onClick={advance}
-              disabled={talentLocked}
+              onClick={() => timesheetAdvance('talent')}
+              disabled={talentLocked || (isHoldSegment && !canAdvanceHold)}
               className={`
                 w-full py-6 rounded-xl text-xl font-bold transition-all
-                ${talentLocked
+                ${talentLocked || (isHoldSegment && !canAdvanceHold)
                   ? 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
                   : 'bg-blue-600 hover:bg-blue-500 text-white active:scale-98'
                 }
@@ -98,6 +115,11 @@ export default function TalentView() {
                 <span className="flex items-center justify-center gap-2">
                   <LockClosedIcon className="w-6 h-6" />
                   Controls Locked
+                </span>
+              ) : isHoldSegment && !canAdvanceHold ? (
+                <span className="flex items-center justify-center gap-2">
+                  <ClockIcon className="w-6 h-6" />
+                  Hold - Wait {Math.ceil(holdRemainingMs / 1000)}s
                 </span>
               ) : (
                 <span className="flex items-center justify-center gap-2">
