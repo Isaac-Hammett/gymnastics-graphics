@@ -95,7 +95,13 @@ const {
 - [x] OBS scene name displayed
 - [x] Notes field displayed
 
-**Completed:** 2026-01-22 - Commit: (see git log)
+**Completed:** 2026-01-22 - Commit: 293dbcf
+
+**Verification:** Deployed to production and verified via Playwright. The component correctly:
+- Displays segment name, type, and OBS scene
+- Shows Elapsed/Remaining boxes (00:00 for live segments without fixed duration)
+- Notes section displays correctly
+- Socket-based timesheet data flows through `useTimesheet()` hook correctly
 
 ---
 
