@@ -510,25 +510,6 @@ export default function ProducerView() {
             {/* Web Graphics Control */}
             <GraphicsControl competitionId={compId} />
 
-            {/* OBS Status */}
-            <div className="bg-zinc-800 rounded-xl p-4">
-              <div className="text-sm text-zinc-400 uppercase tracking-wide mb-3">OBS Status</div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-zinc-400">Connection</span>
-                  <span className={obsConnected ? 'text-green-400' : 'text-red-400'}>
-                    {obsConnected ? 'Connected' : 'Disconnected'}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-zinc-400">Current Scene</span>
-                  <span className="text-white">{obsCurrentScene || '-'}</span>
-                </div>
-              </div>
-            </div>
-
             {/* Connected Clients */}
             <div className="bg-zinc-800 rounded-xl p-4">
               <div className="flex items-center gap-2 text-sm text-zinc-400 uppercase tracking-wide mb-3">
@@ -561,30 +542,11 @@ export default function ProducerView() {
               </div>
             </div>
 
-            {/* Show Stats */}
+            {/* Show Stats - Simplified per PRD-Rundown-00 */}
             <div className="bg-zinc-800 rounded-xl p-4">
-              <div className="text-sm text-zinc-400 uppercase tracking-wide mb-3">Show Progress</div>
+              <div className="text-sm text-zinc-400 uppercase tracking-wide mb-3">Show Stats</div>
 
-              <div className="space-y-3">
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-zinc-400">Segments</span>
-                    <span className="text-white">
-                      {showProgress.completed + 1} / {showProgress.total}
-                    </span>
-                  </div>
-                  <div className="h-2 bg-zinc-700 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-blue-500 transition-all"
-                      style={{
-                        width: `${showProgress.total > 0
-                          ? ((showProgress.completed + 1) / showProgress.total) * 100
-                          : 0}%`
-                      }}
-                    />
-                  </div>
-                </div>
-
+              <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-zinc-400">Status</span>
                   <span className={
@@ -600,6 +562,13 @@ export default function ProducerView() {
                   <span className="text-zinc-400">Talent Controls</span>
                   <span className={talentLocked ? 'text-red-400' : 'text-green-400'}>
                     {talentLocked ? 'Locked' : 'Unlocked'}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-zinc-400">OBS</span>
+                  <span className={obsConnected ? 'text-green-400' : 'text-red-400'}>
+                    {obsConnected ? 'Connected' : 'Disconnected'}
                   </span>
                 </div>
               </div>

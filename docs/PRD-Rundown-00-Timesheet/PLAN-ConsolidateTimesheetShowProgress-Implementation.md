@@ -269,9 +269,13 @@ This is intentional - some actions are timesheet-specific, while others (pause, 
 ```
 
 **Acceptance Criteria:**
-- [ ] Progress bar visible below segment info
-- [ ] Color transitions: blue → yellow → red
-- [ ] Percentage displayed
+- [x] Progress bar visible below segment info
+- [x] Color transitions: blue → yellow → red
+- [x] Percentage displayed
+
+**Completed:** 2026-01-22 (Implemented as part of Task 1.1)
+
+**Verification:** Progress bar component exists in CurrentSegment.jsx lines 89-102 with color coding via `getProgressColor()` function.
 
 ---
 
@@ -303,10 +307,14 @@ This is intentional - some actions are timesheet-specific, while others (pause, 
 ```
 
 **Acceptance Criteria:**
-- [ ] Yellow warning shows when hold min not met
-- [ ] Countdown updates in real-time
-- [ ] Green "ready" message shows when hold min is met
-- [ ] Both disappear when segment is not a hold type
+- [x] Yellow warning shows when hold min not met
+- [x] Countdown updates in real-time
+- [x] Green "ready" message shows when hold min is met
+- [x] Both disappear when segment is not a hold type
+
+**Completed:** 2026-01-22 (Implemented as part of Task 1.1)
+
+**Verification:** Hold segment warning UI exists in CurrentSegment.jsx lines 104-122.
 
 ---
 
@@ -331,9 +339,13 @@ This is intentional - some actions are timesheet-specific, while others (pause, 
 ```
 
 **Acceptance Criteria:**
-- [ ] Elapsed time shows in MM:SS format
-- [ ] Remaining time shows in MM:SS format
-- [ ] Remaining turns red when < 10 seconds
+- [x] Elapsed time shows in MM:SS format
+- [x] Remaining time shows in MM:SS format
+- [x] Remaining turns red when < 10 seconds
+
+**Completed:** 2026-01-22 (Implemented as part of Task 1.1)
+
+**Verification:** Elapsed/Remaining display exists in CurrentSegment.jsx lines 75-87 with red highlight when < 10 seconds.
 
 ---
 
@@ -358,11 +370,15 @@ This is intentional - some actions are timesheet-specific, while others (pause, 
 ```
 
 **Acceptance Criteria:**
-- [ ] "Ready to Start" message shown when show is stopped
-- [ ] Segment count displayed
-- [ ] Single "Start Show" button visible
-- [ ] Button calls `start()` from `useTimesheet()`
-- [ ] UI transitions to Now Playing when show starts
+- [x] "Ready to Start" message shown when show is stopped
+- [x] Segment count displayed
+- [x] Single "Start Show" button visible
+- [x] Button calls `start()` from `useTimesheet()`
+- [x] UI transitions to Now Playing when show starts
+
+**Completed:** 2026-01-22
+
+**Verification:** "Ready to Start" UI exists in ProducerView.jsx lines 293-307 with segment count and single Start Show button.
 
 ---
 
@@ -406,10 +422,18 @@ This is intentional - some actions are timesheet-specific, while others (pause, 
 - `talentLocked`, `obsConnected` from `useShow()` (state)
 
 **Acceptance Criteria:**
-- [ ] Status shows: Live / Paused / Ready
-- [ ] Talent lock status shows: Locked (red) / Unlocked (green)
-- [ ] OBS connection status shows: Connected (green) / Disconnected (red)
+- [x] Status shows: Live / Paused / Ready
+- [x] Talent lock status shows: Locked (red) / Unlocked (green)
+- [x] OBS connection status shows: Connected (green) / Disconnected (red)
 - [ ] Panel is compact (no segment count - that's in RunOfShow header)
+
+**Partially Completed:** 2026-01-22
+
+**Notes:** The Show Stats panel exists at lines 564-606 with Status and Talent Lock. However:
+1. It still includes Segment count progress bar (should be removed per R4)
+2. OBS Status is in a separate panel (lines 514-529) - should be consolidated
+
+Task 3.1 will consolidate these panels and remove the segment progress bar.
 
 ---
 
@@ -432,9 +456,17 @@ This is intentional - some actions are timesheet-specific, while others (pause, 
 ```
 
 **Acceptance Criteria:**
-- [ ] Show Progress panel removed from sidebar
+- [x] Show Progress panel removed from sidebar
 - [ ] Segment count visible in Run of Show header
-- [ ] Status/Talent Lock/OBS remain visible
+- [x] Status/Talent Lock/OBS remain visible
+
+**Completed:** 2026-01-22
+
+**Implementation Notes:**
+- Removed separate "OBS Status" panel (was at lines 514-529)
+- Replaced "Show Progress" panel with simplified "Show Stats" panel
+- New panel contains only: Status, Talent Controls, OBS connection status
+- Removed segment count progress bar (segment count will be added to RunOfShow header in Task 3.2)
 
 ---
 
