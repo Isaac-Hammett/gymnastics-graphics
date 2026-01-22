@@ -232,10 +232,18 @@ This is intentional - some actions are timesheet-specific, while others (pause, 
 **Action:** Remove this line and the import statement.
 
 **Acceptance Criteria:**
-- [ ] TimesheetPanel removed from sidebar
-- [ ] No duplicate "Now Playing" display
-- [ ] No duplicate "Up Next" display
-- [ ] No duplicate segment controls
+- [x] TimesheetPanel removed from sidebar
+- [x] No duplicate "Now Playing" display
+- [x] No duplicate "Up Next" display
+- [x] No duplicate segment controls
+
+**Completed:** 2026-01-22
+
+**Implementation Notes:**
+- Removed `import TimesheetPanel from '../components/TimesheetPanel';` (line 12)
+- Removed `<TimesheetPanel collapsed={false} />` from right sidebar (line 497)
+- Added comment explaining removal for future reference
+- TimesheetPanel.jsx file kept for now (will be archived in Task 3.3)
 
 ---
 

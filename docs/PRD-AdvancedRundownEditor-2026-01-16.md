@@ -27,10 +27,13 @@ This PRD defines the Advanced Rundown Editor, a comprehensive segment timing and
 9. [Template System](#9-template-system)
 10. [Real-Time Collaboration](#10-real-time-collaboration)
 11. [Import/Export](#11-importexport)
-12. [Data Models](#data-models)
-13. [API Specification](#api-specification)
-14. [File Manifest](#file-manifest)
-15. [Success Criteria](#success-criteria)
+12. [User Stories - Segment CRUD](#12-user-stories---segment-crud)
+13. [Resolved Design Questions](#13-resolved-design-questions)
+14. [Implementation Phases](#14-implementation-phases)
+15. [Data Models](#data-models)
+16. [API Specification](#api-specification)
+17. [File Manifest](#file-manifest)
+18. [Success Criteria](#success-criteria)
 
 ---
 
@@ -1229,6 +1232,196 @@ Selection: Segments 1, 3, 5 = 0:45 + 0:08 + 0:10 = 1:03 total
 
 ---
 
+## 14. Implementation Phases
+
+### Phase 0: UI Prototype (Static/Dummy)
+
+**Goal:** Validate UX by building clickable prototypes with hardcoded data before any backend work. This allows stakeholders to walk through all user stories and catch UX issues early.
+
+#### Phase 0A: Rundown Editor Prototype
+
+**Route:** `/{compId}/rundown`
+
+**Components to build:**
+
+| Component | File | Behavior |
+|-----------|------|----------|
+| RundownEditorPage | `pages/RundownEditorPage.jsx` | Main page layout with split panel |
+| SegmentList | `components/rundown/SegmentList.jsx` | Hardcoded 6-8 segments, local React state |
+| SegmentDetail | `components/rundown/SegmentDetail.jsx` | Form with all fields, pre-filled dummy data |
+| ScenePicker | `components/rundown/pickers/ScenePicker.jsx` | Hardcoded scene names (simulating OBS) |
+| TransitionPicker | `components/rundown/pickers/TransitionPicker.jsx` | Cut, Fade, Stinger options |
+| GraphicsPicker | `components/rundown/pickers/GraphicsPicker.jsx` | Hardcoded graphics list by category |
+| AudioPicker | `components/rundown/pickers/AudioPicker.jsx` | Hardcoded audio presets |
+
+**Interactions (all local state, no persistence):**
+
+| Action | Behavior |
+|--------|----------|
+| Click segment row | Select segment, show in detail panel |
+| + Add Segment | Insert new segment after selected (or at end) |
+| ↑/↓ arrows | Swap segment order in local state |
+| Delete button | Show confirmation dialog, remove from local state |
+| Save button | Show toast "Segment saved" (no actual persistence) |
+| Checkbox click | Toggle multi-select |
+| Shift+Click | Select range |
+
+**Hardcoded Test Data:**
+
+```javascript
+const DUMMY_SEGMENTS = [
+  { id: 'seg-001', name: 'Show Intro', type: 'video', duration: 45, scene: 'Starting Soon' },
+  { id: 'seg-002', name: 'Welcome & Host', type: 'live', duration: 30, scene: 'Talent Camera' },
+  { id: 'seg-003', name: 'Event Introduction', type: 'static', duration: 8, scene: 'Graphics Fullscreen' },
+  { id: 'seg-004', name: 'UCLA Introduction', type: 'live', duration: 10, scene: 'Single - Camera 2' },
+  { id: 'seg-005', name: 'Oregon Introduction', type: 'live', duration: 10, scene: 'Single - Camera 3' },
+  { id: 'seg-006', name: 'Utah Introduction', type: 'live', duration: 10, scene: 'Single - Camera 4' },
+  { id: 'seg-007', name: 'Floor - Rotation 1', type: 'live', duration: null, scene: 'Single - Camera 4' },
+];
+
+const DUMMY_SCENES = [
+  { name: 'Starting Soon', category: 'static' },
+  { name: 'BRB', category: 'static' },
+  { name: 'Thanks for Watching', category: 'static' },
+  { name: 'Single - Camera 1', category: 'single' },
+  { name: 'Single - Camera 2', category: 'single' },
+  { name: 'Single - Camera 3', category: 'single' },
+  { name: 'Single - Camera 4', category: 'single' },
+  { name: 'Dual - Cam1 + Cam2', category: 'multi' },
+  { name: 'Quad View', category: 'multi' },
+  { name: 'Talent Camera', category: 'manual' },
+  { name: 'Graphics Fullscreen', category: 'graphics' },
+];
+
+const DUMMY_GRAPHICS = [
+  { id: 'team-logos', name: 'Team Logos', category: 'pre-meet' },
+  { id: 'team-stats', name: 'Team Stats', category: 'pre-meet' },
+  { id: 'event-frame-vt', name: 'Vault Frame', category: 'event-frame' },
+  { id: 'event-frame-ub', name: 'Uneven Bars Frame', category: 'event-frame' },
+  { id: 'score-reveal', name: 'Score Reveal', category: 'live' },
+];
+```
+
+**Validates User Stories:**
+- US-01: Create a New Segment
+- US-02: Edit an Existing Segment
+- US-03: Delete a Segment
+- US-04: Reorder Segments
+- US-05: Bulk Selection
+
+#### Phase 0B: Producer View Prototype
+
+**Location:** New components embedded in existing ProducerPage, or temporary test route `/{compId}/rundown-preview`
+
+**Components to build:**
+
+| Component | File | Behavior |
+|-----------|------|----------|
+| NowPlaying | `components/rundown/NowPlaying.jsx` | Current segment with progress bar |
+| UpNext | `components/rundown/UpNext.jsx` | Next segment preview |
+| ShowProgress | `components/rundown/ShowProgress.jsx` | Scrollable segment list with status icons |
+
+**Interactions (all local state):**
+
+| Action | Behavior |
+|--------|----------|
+| Click "Next" / Advance | Move currentIndex to next segment |
+| Progress bar fills | Based on elapsed time vs duration |
+| Overtime triggers | When elapsed > duration, show red pulsing indicator |
+| Segment status icons | ✅ completed, ▶️ current, ⬜ upcoming |
+
+**Producer View Test Flow:**
+
+```
+1. Page loads with segment 0 as current
+2. Timer starts counting up
+3. Progress bar fills as time elapses
+4. When duration exceeded → OVERTIME indicator appears (red, pulsing)
+5. Click "Advance" → segment 0 marked complete, segment 1 becomes current
+6. Repeat through all segments
+```
+
+#### Phase 0 Exit Criteria
+
+- [ ] Rundown Editor: Can create a new segment with all required fields
+- [ ] Rundown Editor: Can edit any field on an existing segment
+- [ ] Rundown Editor: Can delete a segment with confirmation
+- [ ] Rundown Editor: Can reorder segments with ↑/↓ arrows
+- [ ] Rundown Editor: Can multi-select segments and see total duration
+- [ ] Producer View: NowPlaying shows current segment with progress bar
+- [ ] Producer View: UpNext shows next segment
+- [ ] Producer View: Can advance through segments
+- [ ] Producer View: Overtime indicator displays when segment runs long
+- [ ] Stakeholder sign-off on UX before proceeding to Phase 1
+
+---
+
+### Phase 1: Backend Services
+
+**Goal:** Build the server-side infrastructure for rundown persistence and milestone calculation.
+
+| File | Purpose |
+|------|---------|
+| `server/lib/rundownService.js` | CRUD operations for segments in Firebase |
+| `server/lib/milestoneCalculator.js` | Auto-detect milestones from segment list |
+| `server/lib/graphicsRegistry.js` | Access graphics registry from Firebase |
+| `server/routes/rundown.js` | REST API endpoints |
+
+**Modified:** `server/index.js` - Add rundown routes
+
+---
+
+### Phase 2: Frontend Integration
+
+**Goal:** Connect Phase 0 prototypes to real data sources.
+
+| Task | Details |
+|------|---------|
+| Replace hardcoded segments | Use `useRundown()` hook with Firebase |
+| Replace hardcoded scenes | Use `useOBS()` hook → `obsState.scenes` |
+| Replace hardcoded graphics | Fetch from graphics registry |
+| Wire save/delete | Call API endpoints, show real success/error |
+| Add RundownContext | Share rundown state across components |
+
+**New files:**
+- `show-controller/src/hooks/useRundown.js`
+- `show-controller/src/context/RundownContext.jsx`
+
+**Modified:** `show-controller/src/App.jsx` - Add rundown route
+
+---
+
+### Phase 3: Producer View Integration
+
+**Goal:** Connect Producer View components to live rundown and OBS.
+
+| Task | Details |
+|------|---------|
+| Live segment tracking | Sync currentSegmentIndex to Firebase |
+| OBS scene switching | On segment advance, call `switchScene()` |
+| Graphics triggering | Fire graphics based on segment config |
+| Real-time sync | Multiple producers see same state |
+
+**Modified:** `show-controller/src/pages/ProducerPage.jsx` - Integrate rundown components
+
+---
+
+### Phase 4: Templates & Advanced Features
+
+**Goal:** Add power-user features for reusability and collaboration.
+
+| Feature | Details |
+|---------|---------|
+| Template system | Save/load rundown templates by meet type |
+| Variable substitution | `{{team1.name}}` → actual team name |
+| CSV import/export | Bidirectional CSV support |
+| Real-time collaboration | Multi-user editing with conflict resolution |
+
+**New files:**
+- `server/lib/rundownTemplateService.js`
+
+---
+
 ## Data Models
 
 ### Segment
@@ -1381,33 +1574,34 @@ interface GraphicParameter {
 
 | File | Phase | Est. Lines | Purpose |
 |------|-------|------------|---------|
+| `show-controller/src/pages/RundownEditorPage.jsx` | 0A | 300 | Main editor page (prototype) |
+| `show-controller/src/components/rundown/SegmentList.jsx` | 0A | 250 | Segment list with selection |
+| `show-controller/src/components/rundown/SegmentDetail.jsx` | 0A | 300 | Detail panel form |
+| `show-controller/src/components/rundown/pickers/ScenePicker.jsx` | 0A | 100 | OBS scene dropdown (hardcoded) |
+| `show-controller/src/components/rundown/pickers/TransitionPicker.jsx` | 0A | 80 | Transition dropdown |
+| `show-controller/src/components/rundown/pickers/GraphicsPicker.jsx` | 0A | 120 | Graphics dropdown (hardcoded) |
+| `show-controller/src/components/rundown/pickers/AudioPicker.jsx` | 0A | 80 | Audio preset dropdown |
+| `show-controller/src/components/rundown/NowPlaying.jsx` | 0B | 150 | Current segment display |
+| `show-controller/src/components/rundown/UpNext.jsx` | 0B | 80 | Next segment preview |
+| `show-controller/src/components/rundown/ShowProgress.jsx` | 0B | 200 | Segment list with status |
 | `server/lib/rundownService.js` | 1 | 400 | Rundown business logic |
 | `server/lib/milestoneCalculator.js` | 1 | 150 | Milestone detection |
 | `server/lib/graphicsRegistry.js` | 1 | 200 | Graphics registry access |
-| `server/lib/rundownTemplateService.js` | 2 | 250 | Template management |
 | `server/routes/rundown.js` | 1 | 300 | API routes |
-| `show-controller/src/pages/RundownEditor.jsx` | 3 | 400 | Main editor page |
-| `show-controller/src/components/rundown/SegmentList.jsx` | 3 | 300 | Segment list |
-| `show-controller/src/components/rundown/SegmentDetail.jsx` | 3 | 350 | Detail panel |
-| `show-controller/src/components/rundown/MilestoneTimeline.jsx` | 3 | 150 | Timeline component |
-| `show-controller/src/components/rundown/SelectionSummary.jsx` | 3 | 100 | Selection summary |
-| `show-controller/src/components/rundown/pickers/ScenePicker.jsx` | 3 | 150 | OBS scene picker |
-| `show-controller/src/components/rundown/pickers/TransitionPicker.jsx` | 3 | 100 | Transition picker |
-| `show-controller/src/components/rundown/pickers/AudioPicker.jsx` | 3 | 120 | Audio preset picker |
-| `show-controller/src/components/rundown/pickers/GraphicsPicker.jsx` | 3 | 200 | Graphics picker |
-| `show-controller/src/components/rundown/NowPlaying.jsx` | 4 | 200 | Now playing component |
-| `show-controller/src/components/rundown/UpNext.jsx` | 4 | 100 | Up next component |
-| `show-controller/src/components/rundown/ShowProgress.jsx` | 4 | 250 | Progress list |
-| `show-controller/src/hooks/useRundown.js` | 3 | 150 | Rundown hook |
-| `show-controller/src/context/RundownContext.jsx` | 3 | 100 | Rundown context |
+| `show-controller/src/hooks/useRundown.js` | 2 | 150 | Rundown data hook |
+| `show-controller/src/context/RundownContext.jsx` | 2 | 100 | Rundown state context |
+| `show-controller/src/components/rundown/MilestoneTimeline.jsx` | 2 | 150 | Timeline component |
+| `show-controller/src/components/rundown/SelectionSummary.jsx` | 2 | 100 | Selection summary |
+| `server/lib/rundownTemplateService.js` | 4 | 250 | Template management |
 
 ### Modified Files
 
 | File | Phase | Changes |
 |------|-------|---------|
-| `server/index.js` | 1 | Add rundown routes |
-| `show-controller/src/App.jsx` | 3 | Add rundown route |
-| `show-controller/src/pages/ProducerPage.jsx` | 4 | Integrate rundown components |
+| `show-controller/src/App.jsx` | 0A | Add `/rundown` route for prototype |
+| `server/index.js` | 1 | Add rundown API routes |
+| `show-controller/src/components/rundown/pickers/*.jsx` | 2 | Replace hardcoded data with real sources |
+| `show-controller/src/pages/ProducerPage.jsx` | 3 | Integrate NowPlaying, UpNext, ShowProgress |
 
 ---
 
