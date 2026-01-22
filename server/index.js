@@ -4196,6 +4196,55 @@ io.on('connection', async (socket) => {
     }
   });
 
+  // Request scene thumbnail (PRD-OBS-11: Scene Thumbnails)
+  socket.on('obs:requestSceneThumbnail', async (options = {}) => {
+    const { sceneName, imageWidth = 80, imageHeight = 45, isHoverPreview = false } = options;
+
+    if (!sceneName) {
+      socket.emit('obs:sceneThumbnailError', { error: 'Scene name required', sceneName, isHoverPreview });
+      return;
+    }
+
+    // Get compId from socket handshake query
+    const clientCompId = socket.handshake?.query?.compId;
+    if (!clientCompId) {
+      socket.emit('obs:sceneThumbnailError', { error: 'No competition ID', sceneName, isHoverPreview });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('obs:sceneThumbnailError', { error: 'OBS not connected', sceneName, isHoverPreview });
+      return;
+    }
+
+    try {
+      const response = await compObs.call('GetSourceScreenshot', {
+        sourceName: sceneName,
+        imageFormat: 'jpeg',
+        imageWidth,
+        imageHeight
+      });
+
+      socket.emit('obs:sceneThumbnailData', {
+        success: true,
+        imageData: response.imageData,
+        sceneName,
+        isHoverPreview,
+        timestamp: Date.now()
+      });
+    } catch (error) {
+      console.error(`[requestSceneThumbnail] Failed for ${sceneName}: ${error.message}`);
+      socket.emit('obs:sceneThumbnailError', {
+        error: error.message,
+        sceneName,
+        isHoverPreview
+      });
+    }
+  });
+
   // ============================================================================
   // Studio Mode (PRD-OBS-11: Advanced Features)
   // ============================================================================

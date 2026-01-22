@@ -13,6 +13,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useOBS } from '../../context/OBSContext';
 import { useShow } from '../../context/ShowContext';
+import SceneThumbnail from './SceneThumbnail';
 
 /**
  * SceneList - Display and manage OBS scenes
@@ -512,6 +513,7 @@ function CategoryGroup({
 
 /**
  * SceneCard - Individual scene card with actions
+ * PRD-OBS-11: Added thumbnail support
  */
 function SceneCard({
   scene,
@@ -556,6 +558,20 @@ function SceneCard({
         <div className="flex-shrink-0 mr-2 cursor-grab active:cursor-grabbing">
           <Bars3Icon className="w-5 h-5 text-gray-500 hover:text-gray-300" />
         </div>
+
+        {/* Scene Thumbnail (PRD-OBS-11) */}
+        <div className="flex-shrink-0 mr-3">
+          <SceneThumbnail
+            sceneName={sceneName}
+            width={80}
+            height={45}
+            showHoverPreview={true}
+            hoverWidth={320}
+            hoverHeight={180}
+            className="border border-gray-600"
+          />
+        </div>
+
         {/* Scene Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
