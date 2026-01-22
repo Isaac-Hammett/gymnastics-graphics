@@ -9,7 +9,7 @@ mkdir -p "$SCRIPT_DIR/logs"
 # MCP config file for Playwright and gymnastics tools
 MCP_CONFIG="$PROJECT_ROOT/.mcp.json"
 
-MAX_ITERATIONS=50  # Safety limit
+MAX_ITERATIONS=40  # Safety limit
 
 cd "$PROJECT_ROOT"
 

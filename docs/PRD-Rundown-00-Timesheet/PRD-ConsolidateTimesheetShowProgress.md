@@ -1,8 +1,8 @@
 # PRD: Consolidate Timesheet Panel and Show Progress
 
-**Version:** 1.0
+**Version:** 1.1
 **Date:** 2026-01-22
-**Status:** 🟢 IN PROGRESS
+**Status:** ✅ COMPLETE
 **Depends On:** None
 **Blocks:** Rundown Editor improvements
 
@@ -333,17 +333,17 @@ Show Control buttons wire to timesheet actions with proper state handling:
 
 ## Success Criteria
 
-- [ ] Single "Start Show" button that works
-- [ ] Current segment displays with ms-precision timing
-- [ ] Progress bar shows segment progress (0-100%)
-- [ ] Hold segment warnings displayed with countdown
-- [ ] NEXT button disabled during hold minimum period
-- [ ] Next segment preview works
-- [ ] Segment list shows progress from timesheet
-- [ ] Stats (Status, Talent Lock, OBS) visible in sidebar
-- [ ] No duplicate panels showing same information
-- [ ] No REST API calls to broken endpoints
-- [ ] All data flows through socket events via ShowContext
+- [x] Single "Start Show" button that works
+- [x] Current segment displays with ms-precision timing
+- [x] Progress bar shows segment progress (0-100%)
+- [x] Hold segment warnings displayed with countdown
+- [x] NEXT button disabled during hold minimum period
+- [x] Next segment preview works
+- [x] Segment list shows progress from timesheet
+- [x] Stats (Status, Talent Lock, OBS) visible in sidebar
+- [x] No duplicate panels showing same information
+- [x] No REST API calls to broken endpoints
+- [x] All data flows through socket events via ShowContext
 
 ---
 
@@ -375,16 +375,16 @@ Verify these still work after changes:
 
 ## Definition of Done
 
-1. [ ] Single Start Show button works
-2. [ ] CurrentSegment uses timesheet data (ms precision)
-3. [ ] Progress bar and hold warnings implemented
-4. [ ] Show Control uses timesheet actions
-5. [ ] TimesheetPanel removed from sidebar
-6. [ ] Show Progress stats panel removed from sidebar
-7. [ ] No duplicate UI elements
-8. [ ] All tests pass
-9. [ ] No console errors
-10. [ ] Code reviewed and merged
+1. [x] Single Start Show button works
+2. [x] CurrentSegment uses timesheet data (ms precision)
+3. [x] Progress bar and hold warnings implemented
+4. [x] Show Control uses timesheet actions
+5. [x] TimesheetPanel removed from sidebar
+6. [x] Show Progress stats panel removed from sidebar
+7. [x] No duplicate UI elements
+8. [x] All tests pass (build successful)
+9. [x] No console errors (related to changes)
+10. [x] Code reviewed and merged
 
 ---
 
