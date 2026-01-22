@@ -2,7 +2,7 @@
 
 **Version:** 1.0
 **Date:** 2026-01-22
-**Status:** Draft
+**Status:** COMPLETE
 **Depends On:** None (Foundation)
 **Blocks:** PRD-Rundown-02, PRD-Rundown-03, PRD-Rundown-04
 
@@ -214,15 +214,15 @@ const filteredSegments = segments.filter(seg => {
 
 ## Acceptance Criteria
 
-- [ ] Route `/{compId}/rundown` renders RundownEditorPage
-- [ ] Page header shows "RUNDOWN EDITOR" and competition name placeholder
-- [ ] Toolbar renders with all buttons (+ Add Segment, Templates, Import CSV, Sync OBS)
-- [ ] Type filter dropdown shows all 6 segment types + "All Types"
-- [ ] Search input filters segment list by name
-- [ ] Split panel layout: SegmentList on left (~60%), SegmentDetail on right (~40%)
-- [ ] Placeholder text shown in SegmentDetail when no segment selected
-- [ ] "Coming soon" toast shown for unimplemented features
-- [ ] Page uses hardcoded DUMMY_SEGMENTS data
+- [x] Route `/{compId}/rundown` renders RundownEditorPage
+- [x] Page header shows "RUNDOWN EDITOR" and competition name placeholder
+- [x] Toolbar renders with all buttons (+ Add Segment, Templates, Import CSV, Sync OBS)
+- [x] Type filter dropdown shows all 6 segment types + "All Types"
+- [x] Search input filters segment list by name
+- [x] Split panel layout: SegmentList on left (~60%), SegmentDetail on right (~40%)
+- [x] Placeholder text shown in SegmentDetail when no segment selected
+- [x] "Coming soon" toast shown for unimplemented features
+- [x] Page uses hardcoded DUMMY_SEGMENTS data
 
 ---
 
