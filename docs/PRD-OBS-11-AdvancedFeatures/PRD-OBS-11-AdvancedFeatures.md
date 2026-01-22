@@ -432,9 +432,9 @@ Show connection status indicators for VDO.Ninja talent feeds - whether talent is
 - Poll every 5-10 seconds
 
 ### Acceptance Criteria
-- [ ] Connection status shown for each talent
-- [ ] Audio activity indicator
-- [ ] Status updates automatically
+- [x] Connection status shown for each talent
+- [x] Audio activity indicator
+- [x] Status updates automatically
 
 ---
 
