@@ -175,6 +175,6 @@
 
 | Commit | Description |
 |--------|-------------|
-| TBD | PRD-OBS-11: Implement Template Auto-Loading (P1) |
+| c705da0 | PRD-OBS-11: Implement Template Auto-Loading (P1) |
 | 5dbf404 | PRD-OBS-11: Implement Scene Thumbnails (P1) |
 | ecac5e0 | PRD-OBS-11: Implement Studio Mode (P0) |
