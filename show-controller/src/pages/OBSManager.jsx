@@ -9,7 +9,8 @@ import {
   ExclamationTriangleIcon,
   CheckCircleIcon,
   ArrowPathIcon,
-  XMarkIcon
+  XMarkIcon,
+  RectangleStackIcon
 } from '@heroicons/react/24/solid';
 import { useOBS } from '../context/OBSContext';
 import { useShow } from '../context/ShowContext';
@@ -24,6 +25,7 @@ import AssetManager from '../components/obs/AssetManager';
 import TemplateManager from '../components/obs/TemplateManager';
 import TalentCommsPanel from '../components/obs/TalentCommsPanel';
 import OBSCurrentOutput from '../components/obs/OBSCurrentOutput';
+import StudioModePanel from '../components/obs/StudioModePanel';
 
 export default function OBSManager() {
   const { identify } = useShow();
@@ -39,7 +41,9 @@ export default function OBSManager() {
     duplicateScene,
     deleteScene,
     renameScene,
-    takeScreenshot
+    takeScreenshot,
+    enableStudioMode,
+    disableStudioMode
   } = useOBS();
 
   const [activeTab, setActiveTab] = useState('scenes');
@@ -56,6 +60,16 @@ export default function OBSManager() {
   // Extract streaming and recording states
   const isStreaming = obsState?.streaming?.active || obsState?.streaming || false;
   const isRecording = obsState?.recording?.active || obsState?.recording || false;
+  const studioModeEnabled = obsState?.studioModeEnabled || false;
+
+  // Handle studio mode toggle
+  const handleStudioModeToggle = () => {
+    if (studioModeEnabled) {
+      disableStudioMode();
+    } else {
+      enableStudioMode();
+    }
+  };
 
   // Handle scene editing
   const handleEditScene = (sceneName) => {
@@ -193,15 +207,19 @@ export default function OBSManager() {
           error={connectionError}
         />
 
-        {/* Current Output Status - PRD-OBS-09: Preview System */}
-        <OBSCurrentOutput
-          connected={obsConnected}
-          currentScene={obsState?.currentScene}
-          isStreaming={isStreaming}
-          isRecording={isRecording}
-          streamStatus={obsState?.streamStatus}
-          recordingStatus={obsState?.recordingStatus}
-        />
+        {/* Current Output Status - PRD-OBS-09 & PRD-OBS-11: Preview System & Studio Mode */}
+        {studioModeEnabled ? (
+          <StudioModePanel onExit={disableStudioMode} />
+        ) : (
+          <OBSCurrentOutput
+            connected={obsConnected}
+            currentScene={obsState?.currentScene}
+            isStreaming={isStreaming}
+            isRecording={isRecording}
+            streamStatus={obsState?.streamStatus}
+            recordingStatus={obsState?.recordingStatus}
+          />
+        )}
 
         {/* Stream Control Buttons */}
         <div className="bg-gray-800 rounded-xl p-4 mb-6">
@@ -255,6 +273,21 @@ export default function OBSManager() {
             >
               <CameraIcon className="w-5 h-5" />
               Take Screenshot
+            </button>
+
+            {/* Studio Mode Toggle - PRD-OBS-11 */}
+            <button
+              onClick={handleStudioModeToggle}
+              disabled={!obsConnected}
+              className={`flex items-center gap-2 px-4 py-2 font-medium rounded-lg transition-colors ${
+                studioModeEnabled
+                  ? 'bg-yellow-600 hover:bg-yellow-500 text-white'
+                  : 'bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-600 text-white'
+              }`}
+              data-testid="studio-mode-toggle"
+            >
+              <RectangleStackIcon className="w-5 h-5" />
+              {studioModeEnabled ? 'Studio Mode ON' : 'Studio Mode'}
             </button>
           </div>
         </div>

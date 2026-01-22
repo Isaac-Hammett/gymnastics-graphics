@@ -2545,12 +2545,29 @@ async function broadcastOBSState(compId, obsConnManager, io) {
       console.log(`[broadcastOBSState] Could not fetch transitions for ${compId}: ${transitionError.message}`);
     }
 
+    // Fetch studio mode state (PRD-OBS-11: Advanced Features)
+    let studioModeEnabled = false;
+    let previewScene = null;
+    try {
+      const studioModeResponse = await compObs.call('GetStudioModeEnabled');
+      studioModeEnabled = studioModeResponse.studioModeEnabled || false;
+
+      if (studioModeEnabled) {
+        const previewResponse = await compObs.call('GetCurrentPreviewScene');
+        previewScene = previewResponse.currentPreviewSceneName || null;
+      }
+    } catch (studioError) {
+      console.log(`[broadcastOBSState] Could not fetch studio mode state for ${compId}: ${studioError.message}`);
+    }
+
     // Broadcast full state
     const obsState = {
       connected: true,
       connectionError: null,
       scenes,
       currentScene,
+      previewScene,
+      studioModeEnabled,
       inputs,
       audioSources,
       transitions,
@@ -2560,7 +2577,7 @@ async function broadcastOBSState(compId, obsConnManager, io) {
       isRecording: false
     };
 
-    console.log(`[broadcastOBSState] Broadcasting for ${compId}: ${scenes.length} scenes, current: ${currentScene}, inputs: ${inputs.length}`);
+    console.log(`[broadcastOBSState] Broadcasting for ${compId}: ${scenes.length} scenes, current: ${currentScene}, studioMode: ${studioModeEnabled}, inputs: ${inputs.length}`);
     io.to(room).emit('obs:stateUpdated', obsState);
   } catch (error) {
     console.error(`[broadcastOBSState] Failed to fetch state for ${compId}:`, error.message);
@@ -4176,6 +4193,139 @@ io.on('connection', async (socket) => {
         error: error.message,
         sceneName
       });
+    }
+  });
+
+  // ============================================================================
+  // Studio Mode (PRD-OBS-11: Advanced Features)
+  // ============================================================================
+
+  // Enable studio mode
+  socket.on('obs:enableStudioMode', async () => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can enable studio mode' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      await compObs.call('SetStudioModeEnabled', { studioModeEnabled: true });
+      console.log(`[enableStudioMode] Studio mode enabled for ${clientCompId}`);
+      await broadcastOBSState(clientCompId, obsConnManager, io);
+    } catch (error) {
+      console.error(`[enableStudioMode] Failed: ${error.message}`);
+      socket.emit('error', { message: `Failed to enable studio mode: ${error.message}` });
+    }
+  });
+
+  // Disable studio mode
+  socket.on('obs:disableStudioMode', async () => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can disable studio mode' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      await compObs.call('SetStudioModeEnabled', { studioModeEnabled: false });
+      console.log(`[disableStudioMode] Studio mode disabled for ${clientCompId}`);
+      await broadcastOBSState(clientCompId, obsConnManager, io);
+    } catch (error) {
+      console.error(`[disableStudioMode] Failed: ${error.message}`);
+      socket.emit('error', { message: `Failed to disable studio mode: ${error.message}` });
+    }
+  });
+
+  // Set preview scene (only works in studio mode)
+  socket.on('obs:setPreviewScene', async ({ sceneName }) => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can set preview scene' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      await compObs.call('SetCurrentPreviewScene', { sceneName });
+      console.log(`[setPreviewScene] Preview scene set to ${sceneName} for ${clientCompId}`);
+      // Broadcast updated state (will include new previewScene)
+      await broadcastOBSState(clientCompId, obsConnManager, io);
+    } catch (error) {
+      console.error(`[setPreviewScene] Failed: ${error.message}`);
+      socket.emit('error', { message: `Failed to set preview scene: ${error.message}` });
+    }
+  });
+
+  // Transition preview to program (only works in studio mode)
+  socket.on('obs:transitionToProgram', async () => {
+    const client = showState.connectedClients.find(c => c.id === socket.id);
+    if (client?.role !== 'producer') {
+      socket.emit('error', { message: 'Only producers can transition to program' });
+      return;
+    }
+
+    const clientCompId = client?.compId;
+    if (!clientCompId) {
+      socket.emit('error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const obsConnManager = getOBSConnectionManager();
+    const compObs = obsConnManager.getConnection(clientCompId);
+
+    if (!compObs || !obsConnManager.isConnected(clientCompId)) {
+      socket.emit('error', { message: 'OBS not connected for this competition' });
+      return;
+    }
+
+    try {
+      await compObs.call('TriggerStudioModeTransition');
+      console.log(`[transitionToProgram] Triggered transition for ${clientCompId}`);
+      // State will be updated by OBS events (CurrentProgramSceneChanged, etc.)
+    } catch (error) {
+      console.error(`[transitionToProgram] Failed: ${error.message}`);
+      socket.emit('error', { message: `Failed to transition: ${error.message}` });
     }
   });
 
