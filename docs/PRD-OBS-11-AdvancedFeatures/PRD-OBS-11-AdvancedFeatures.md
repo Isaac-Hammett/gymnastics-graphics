@@ -390,10 +390,10 @@ obs.call('SetCurrentSceneTransitionSettings', {
 ```
 
 ### Acceptance Criteria
-- [ ] Can set stinger file path
-- [ ] Can set transition point
-- [ ] Stinger plays during scene transitions
-- [ ] Settings persist
+- [x] Can set stinger file path
+- [x] Can set transition point
+- [x] Stinger plays during scene transitions (when stinger configured in OBS)
+- [x] Settings persist
 
 ---
 
