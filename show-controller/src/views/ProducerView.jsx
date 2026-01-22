@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useShow } from '../context/ShowContext';
 import { useCompetition } from '../context/CompetitionContext';
+import { useTimesheet } from '../hooks/useTimesheet';
 import CurrentSegment from '../components/CurrentSegment';
 import NextSegment from '../components/NextSegment';
 import RunOfShow from '../components/RunOfShow';
@@ -42,17 +43,28 @@ export default function ProducerView() {
   const {
     socket,
     state,
-    advance,
-    previous,
     jumpTo,
     overrideScene,
     lockTalent,
     togglePause,
-    startShow,
     resetShow,
     identify,
     error
   } = useShow();
+
+  // Use timesheet hook for show control actions
+  const {
+    start: timesheetStart,
+    stop: timesheetStop,
+    advance: timesheetAdvance,
+    previous: timesheetPrevious,
+    isRunning: timesheetIsRunning,
+    isPaused: timesheetIsPaused,
+    isHoldSegment,
+    canAdvanceHold,
+    isFirstSegment,
+    totalSegments
+  } = useTimesheet();
 
   const {
     showConfig,
@@ -64,6 +76,10 @@ export default function ProducerView() {
     connectedClients,
     showProgress
   } = state;
+
+  // Determine if show is active (use timesheet state if available, fallback to legacy)
+  const showIsActive = timesheetIsRunning || isPlaying;
+  const showIsPaused = timesheetIsPaused || isPaused;
 
   // Alerts state
   const {
@@ -274,15 +290,15 @@ export default function ProducerView() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Left Column - Show State */}
           <div className="lg:col-span-2 space-y-4">
-            {!isPlaying ? (
+            {!showIsActive ? (
               /* Start Show */
               <div className="bg-zinc-800 rounded-xl p-8 text-center">
                 <h2 className="text-2xl font-bold text-white mb-2">Ready to Start</h2>
                 <p className="text-zinc-400 mb-6">
-                  {showConfig?.segments?.length || 0} segments loaded
+                  {totalSegments || showConfig?.segments?.length || 0} segments loaded
                 </p>
                 <button
-                  onClick={startShow}
+                  onClick={timesheetStart}
                   className="inline-flex items-center gap-2 px-8 py-4 bg-green-600 hover:bg-green-500 text-white font-bold text-lg rounded-xl transition-colors"
                 >
                   <PlayIcon className="w-6 h-6" />
@@ -301,16 +317,28 @@ export default function ProducerView() {
 
                   <div className="flex flex-wrap gap-2">
                     <button
-                      onClick={previous}
-                      className="flex items-center gap-2 px-4 py-3 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors"
+                      onClick={() => timesheetPrevious('producer')}
+                      disabled={isFirstSegment}
+                      className={`flex items-center gap-2 px-4 py-3 rounded-lg transition-colors ${
+                        isFirstSegment
+                          ? 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
+                          : 'bg-zinc-700 hover:bg-zinc-600 text-white'
+                      }`}
+                      title={isFirstSegment ? 'Already at first segment' : 'Go to previous segment'}
                     >
                       <BackwardIcon className="w-5 h-5" />
                       Previous
                     </button>
 
                     <button
-                      onClick={advance}
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg transition-colors"
+                      onClick={() => timesheetAdvance('producer')}
+                      disabled={isHoldSegment && !canAdvanceHold}
+                      className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 font-bold rounded-lg transition-colors ${
+                        isHoldSegment && !canAdvanceHold
+                          ? 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
+                          : 'bg-blue-600 hover:bg-blue-500 text-white'
+                      }`}
+                      title={isHoldSegment && !canAdvanceHold ? 'Wait for hold minimum duration' : 'Advance to next segment'}
                     >
                       <ForwardIcon className="w-5 h-5" />
                       NEXT
@@ -319,12 +347,12 @@ export default function ProducerView() {
                     <button
                       onClick={togglePause}
                       className={`flex items-center gap-2 px-4 py-3 rounded-lg transition-colors ${
-                        isPaused
+                        showIsPaused
                           ? 'bg-green-600 hover:bg-green-500 text-white'
                           : 'bg-yellow-600 hover:bg-yellow-500 text-white'
                       }`}
                     >
-                      {isPaused ? (
+                      {showIsPaused ? (
                         <>
                           <PlayIcon className="w-5 h-5" />
                           Resume
@@ -366,6 +394,15 @@ export default function ProducerView() {
                     >
                       <ArrowPathIcon className="w-4 h-4" />
                       Reset Show
+                    </button>
+
+                    <button
+                      onClick={timesheetStop}
+                      className="flex items-center gap-2 px-4 py-2 bg-red-600/80 hover:bg-red-600 text-white rounded-lg transition-colors"
+                      title="Stop the show"
+                    >
+                      <StopIcon className="w-4 h-4" />
+                      Stop
                     </button>
                   </div>
                 </div>
@@ -554,11 +591,11 @@ export default function ProducerView() {
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-zinc-400">Status</span>
                   <span className={
-                    isPaused ? 'text-yellow-400' :
-                    isPlaying ? 'text-green-400' :
+                    showIsPaused ? 'text-yellow-400' :
+                    showIsActive ? 'text-green-400' :
                     'text-zinc-400'
                   }>
-                    {isPaused ? 'Paused' : isPlaying ? 'Live' : 'Ready'}
+                    {showIsPaused ? 'Paused' : showIsActive ? 'Live' : 'Ready'}
                   </span>
                 </div>
 

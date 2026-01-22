@@ -90,7 +90,7 @@ Routes without `compId` redirect to competition selector:
 │   │   ├── eventName
 │   │   ├── gender               # "mens" or "womens" - DRIVES APPARATUS
 │   │   ├── compType             # "mens-dual", "womens-quad", etc.
-│   │   ├── vmAddress            # NEW: "3.81.127.185:3003"
+│   │   ├── vmAddress            # NEW: "3.81.127.185:3003" (used by COORDINATOR, not frontend)
 │   │   └── team1Name - team6Name, venue, meetDate, etc.
 │   │
 │   ├── teamData/                 # EXISTING (from RTN enrichment)
@@ -122,6 +122,8 @@ Routes without `compId` redirect to competition selector:
 
 ### Connection Flow
 
+**IMPORTANT:** In production, the frontend NEVER connects directly to competition VMs. All traffic flows through the **coordinator** at `api.commentarygraphic.com`.
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                    Application Startup                          │
@@ -139,20 +141,26 @@ Routes without `compId` redirect to competition selector:
         compId=null     compId="local"   compId="xyz"
               │               │               │
               ▼               ▼               ▼
-        Redirect to     Use VITE_       Fetch from
-        /select         LOCAL_SERVER    Firebase
+        Redirect to     Use VITE_       Production:
+        /select         LOCAL_SERVER    api.commentarygraphic.com
                               │               │
                               └───────┬───────┘
                                       ▼
                             ┌─────────────────┐
                             │ Connect socket  │
-                            │ to vmAddress    │
+                            │ (with compId)   │
+                            └─────────────────┘
+                                      │
+                                      ▼ (In production only)
+                            ┌─────────────────┐
+                            │ Coordinator     │
+                            │ routes to VM    │
                             └─────────────────┘
                                       │
                                       ▼
                             ┌─────────────────┐
-                            │ Load production │
-                            │ config from VM  │
+                            │ OBS commands    │
+                            │ proxied to VM   │
                             └─────────────────┘
                                       │
                                       ▼
@@ -161,6 +169,8 @@ Routes without `compId` redirect to competition selector:
                             │ ProducerView    │
                             └─────────────────┘
 ```
+
+See [README-OBS-Architecture.md](README-OBS-Architecture.md) for the full connection architecture diagram.
 
 ### Context Provider Hierarchy
 
@@ -419,9 +429,9 @@ interface CompetitionContextValue {
   isLoading: boolean;
   error: CompetitionError | null;
 
-  // Derived URLs
-  socketUrl: string | null;      // `http://${vmAddress}`
-  websocketUrl: string | null;   // `ws://${vmAddress}`
+  // Derived URLs - IMPORTANT: See connection architecture below
+  socketUrl: string | null;      // Production: always api.commentarygraphic.com
+  websocketUrl: string | null;   // Production: always wss://api.commentarygraphic.com
 
   // Flags
   isLocalMode: boolean;
@@ -432,14 +442,33 @@ interface CompetitionContextValue {
 }
 ```
 
+**CRITICAL: Connection Architecture**
+
+In **production** (HTTPS), the frontend ALWAYS connects to the **coordinator** (`api.commentarygraphic.com`), NOT directly to VMs. The coordinator then proxies OBS commands to the appropriate competition VM.
+
+```
+Frontend → wss://api.commentarygraphic.com (with compId in query)
+                        ↓
+              Coordinator routes to VM
+                        ↓
+                ws://VM-IP:4455 (OBS WebSocket)
+```
+
+The `vmAddress` stored in Firebase is used by the **coordinator** to know which VM to route to, not by the frontend to connect directly.
+
+In **local development** (`compId="local"`), the frontend can connect directly to `VITE_LOCAL_SERVER`.
+
+See [README-OBS-Architecture.md](README-OBS-Architecture.md) for complete architecture details.
+
 **Acceptance Criteria:**
 - [ ] Extract `compId` from URL using React Router's `useParams()`
 - [ ] Handle special `compId="local"` → use `VITE_LOCAL_SERVER`
 - [ ] Subscribe to `competitions/{compId}/config` in Firebase (real-time)
 - [ ] Extract `vmAddress` and `gender` from config
-- [ ] Provide socket URLs to ShowContext
+- [ ] **Production:** Always return `api.commentarygraphic.com` as socketUrl (with compId query param)
+- [ ] **Local:** Return `VITE_LOCAL_SERVER` as socketUrl
 - [ ] Handle errors: invalid compId, missing vmAddress, VM unreachable
-- [ ] Reconnect when vmAddress changes in Firebase (live IP updates)
+- [ ] Reconnect when vmAddress changes in Firebase (coordinator handles routing)
 
 ### 3.2 Update App Router
 
@@ -563,13 +592,17 @@ interface CompetitionContextValue {
 
 **File:** `show-controller/src/context/ShowContext.jsx` (MODIFY)
 
+**CRITICAL:** The frontend uses Socket.io events for OBS commands, NOT REST API calls. REST API routes in `server/routes/obs.js` use `obsStateSync` which only works for LOCAL development. In production, OBS connections are managed per-competition by `obsConnectionManager`.
+
 **Changes Required:**
 - [ ] Import `useCompetition` from CompetitionContext
 - [ ] Remove hardcoded `VITE_SOCKET_SERVER` usage
 - [ ] Get `socketUrl` from CompetitionContext
+- [ ] **Pass `compId` in Socket.io query** - Coordinator uses this to route to correct VM
 - [ ] Only attempt socket connection when `socketUrl` is available
 - [ ] Disconnect and reconnect when `socketUrl` changes
 - [ ] Clear all state when competition changes
+- [ ] Use Socket.io events (not REST) for all OBS operations
 
 **Before:**
 ```javascript
@@ -579,12 +612,14 @@ const socket = io(SOCKET_URL);
 
 **After:**
 ```javascript
-const { socketUrl, compId } = useCompetition();
+const { socketUrl, compId, isLocalMode } = useCompetition();
 
 useEffect(() => {
   if (!socketUrl) return;
 
+  // CRITICAL: Pass compId so coordinator can route to correct VM
   const socket = io(socketUrl, {
+    query: { compId },  // Coordinator uses this for routing
     transports: ['websocket', 'polling'],
     reconnection: true,
   });
@@ -602,6 +637,20 @@ useEffect(() => {
 }, [socketUrl, compId]);
 ```
 
+**OBS Operations - Use Socket Events, NOT REST:**
+
+```javascript
+// WRONG - REST API fails in production
+const response = await fetch(`${socketUrl}/api/obs/inputs/${sourceName}`);
+
+// RIGHT - Socket event routes through obsConnectionManager
+socket.emit('obs:getInputSettings', { inputName: sourceName }, (data) => {
+  // Handle response
+});
+```
+
+See [README-OBS-Architecture.md](README-OBS-Architecture.md#socket-event-flow) for the complete list of socket events.
+
 ### 3.8 Update useCompetitions Hook
 
 **File:** `show-controller/src/hooks/useCompetitions.js` (MODIFY)
@@ -617,6 +666,8 @@ function isValidVmAddress(address) {
 }
 
 // Update VM address for a competition
+// NOTE: This address is used by the COORDINATOR to route traffic,
+// not by the frontend to connect directly.
 async function updateVmAddress(compId, vmAddress) {
   if (!isValidVmAddress(vmAddress)) {
     throw new Error('Invalid VM address format. Use host:port');
@@ -624,26 +675,33 @@ async function updateVmAddress(compId, vmAddress) {
   await update(ref(db, `competitions/${compId}/config`), { vmAddress });
 }
 
-// Check if VM is reachable
-async function checkVmStatus(vmAddress) {
+// Check VM status via coordinator API (not direct connection)
+async function checkVmStatus(compId) {
   try {
-    const response = await fetch(`http://${vmAddress}/api/status`, {
+    const response = await fetch(`https://api.commentarygraphic.com/api/coordinator/status`, {
       signal: AbortSignal.timeout(5000),
     });
     const data = await response.json();
-    return { online: true, obsConnected: data.obsConnected };
+    // Check if this competition's VM is connected
+    const vmStatus = data.connections?.find(c => c.compId === compId);
+    return {
+      online: vmStatus?.connected ?? false,
+      obsConnected: vmStatus?.obsConnected ?? false
+    };
   } catch {
     return { online: false, obsConnected: false };
   }
 }
 ```
 
+**IMPORTANT:** The `checkVmStatus` function queries the **coordinator**, not the VM directly. The frontend cannot reach VMs directly due to HTTPS/mixed content restrictions.
+
 **Acceptance Criteria:**
 - [ ] `isValidVmAddress('3.81.127.185:3003')` returns `true`
 - [ ] `isValidVmAddress('http://3.81.127.185:3003')` returns `false` (no protocol)
 - [ ] `isValidVmAddress('localhost')` returns `false` (needs port)
 - [ ] `updateVmAddress` validates before saving
-- [ ] `checkVmStatus` times out after 5 seconds
+- [ ] `checkVmStatus` queries coordinator API, not VM directly
 
 ---
 
@@ -947,16 +1005,154 @@ interface CompetitionConfig {
 }
 ```
 
-## Appendix B: Example URLs
+## Appendix B: Example URLs & Connection Flow
 
-| URL | Competition | View | VM Address (from Firebase) |
-|-----|-------------|------|---------------------------|
-| `/ucla-stanford-2026/producer` | ucla-stanford-2026 | Producer | 3.81.127.185:3003 |
-| `/ucla-stanford-2026/talent` | ucla-stanford-2026 | Talent | 3.81.127.185:3003 |
-| `/pac12-champs/producer` | pac12-champs | Producer | 54.209.98.89:3003 |
-| `/local/producer` | (local dev) | Producer | localhost:3003 |
-| `/select` | - | Selector | - |
+| URL | Competition | Frontend Connects To | Coordinator Routes To |
+|-----|-------------|---------------------|----------------------|
+| `/ucla-stanford-2026/producer` | ucla-stanford-2026 | `wss://api.commentarygraphic.com` | 3.81.127.185:3003 |
+| `/ucla-stanford-2026/talent` | ucla-stanford-2026 | `wss://api.commentarygraphic.com` | 3.81.127.185:3003 |
+| `/pac12-champs/producer` | pac12-champs | `wss://api.commentarygraphic.com` | 54.209.98.89:3003 |
+| `/local/producer` | (local dev) | `ws://localhost:3003` | N/A (direct) |
+| `/select` | - | - | - |
+
+**Key Point:** The "VM Address" in Firebase is used by the **coordinator** to know where to forward requests. The frontend always connects to `api.commentarygraphic.com` in production.
+
+---
+
+---
+
+## Appendix C: Related Documents & Architecture References
+
+### OBS Architecture
+
+This PRD's connection architecture MUST align with the OBS integration system. Key points:
+
+| Aspect | This PRD Says | OBS Architecture Confirms |
+|--------|---------------|---------------------------|
+| Frontend connects to | Coordinator (production) | ✅ Frontend → api.commentarygraphic.com |
+| vmAddress used by | Coordinator to route | ✅ Coordinator looks up VM for compId |
+| OBS commands sent via | Socket.io events | ✅ Never REST API in production |
+| OBS runs on | Competition VMs | ✅ Not coordinator |
+
+**Required Reading:** [README-OBS-Architecture.md](README-OBS-Architecture.md)
+
+#### VM Inventory Reference
+
+| VM Type | Purpose | Address |
+|---------|---------|---------|
+| Coordinator | Central hub, proxy OBS connections | 44.193.31.120 (api.commentarygraphic.com) |
+| Competition VMs | Run OBS Studio, Show Server | Dynamic IPs from VM pool |
+| Frontend Server | Static React SPA hosting | 3.87.107.201 (commentarygraphic.com) |
+
+#### Key Network Ports
+
+| Port | VM | Service | Access |
+|------|-----|---------|--------|
+| 443 | Coordinator | nginx (HTTPS) | Public |
+| 3001 | Coordinator | Node.js server | Internal (proxied via nginx) |
+| 3003 | Competition VM | Show Server | Public |
+| 4455 | Competition VM | OBS WebSocket | localhost only |
+| 9001-9010 | Competition VM | SRT camera inputs | Public |
+
+#### Socket Event Flow
+
+When the frontend connects with `compId`, the following sequence occurs:
+
+1. Frontend connects to `wss://api.commentarygraphic.com` with `{ query: { compId } }`
+2. Coordinator receives connection, joins socket to `competition:{compId}` room
+3. Coordinator looks up VM address from `competitions/{compId}/config/vmAddress`
+4. Coordinator establishes OBS WebSocket connection to VM if not already connected
+5. OBS commands from frontend are forwarded to the correct VM
+6. OBS events are broadcast back to all clients in the competition room
+
+**Key Socket Events (Frontend → Coordinator):**
+
+| Event | Purpose |
+|-------|---------|
+| `obs:refreshState` | Request full OBS state |
+| `switchScene` | Switch OBS scene |
+| `obs:createScene` | Create new scene |
+| `obs:toggleItemVisibility` | Show/hide source |
+| `obs:setVolume` | Set audio volume |
+| `obs:getInputSettings` | Get input settings |
+
+**Key Socket Events (Coordinator → Frontend):**
+
+| Event | Purpose |
+|-------|---------|
+| `obs:stateUpdated` | Full state update |
+| `obs:connected` | OBS connection established |
+| `obs:disconnected` | OBS connection lost |
+| `obs:currentSceneChanged` | Scene switched in OBS |
+
+### Advanced Rundown Editor Integration
+
+The `production/rundown/` path defined in this PRD's Firebase structure is consumed by the Advanced Rundown Editor. The editor also depends on:
+
+- **Graphics Registry:** `system/graphics/registry` - System-wide graphics definitions with categories (pre-meet, stream, event-frame, leaderboard, summary, live)
+- **OBS State Sync:** Scene/transition/audio data from OBS
+- **Camera Config:** `competitions/{compId}/production/cameras` - Camera assignments and SRT URLs
+
+**Related PRD:** [PRD-AdvancedRundownEditor-2026-01-16.md](PRD-AdvancedRundownEditor-2026-01-16.md)
+
+#### Rundown Segment Data Model
+
+Segments in `production/rundown/segments` follow this structure:
+
+```typescript
+interface Segment {
+  id: string;
+  name: string;
+  type: 'video' | 'live' | 'static' | 'break' | 'hold' | 'graphic';
+  timing: { duration: number; autoAdvance: boolean; };
+  obs: { sceneId: string; transition: { type: string; duration: number; }; };
+  camera?: { cameraId: string; intendedApparatus: string[]; };
+  audio: { preset: string; levels?: Record<string, number>; };
+  graphics: { primary?: GraphicConfig; secondary?: GraphicConfig[]; };
+  milestone?: { type: string; label: string; };
+  order: number;
+}
+```
+
+The rundown editor uses **milestones** to track key points in the show (show-start, first-routine, rotation-start, halftime-start, meet-end) for time calculations and selection summaries.
+
+### VDO.Ninja Talent Integration
+
+For talent communication via VDO.Ninja, note the distinction between URL types:
+
+| URL Type | Firebase Path | Purpose |
+|----------|---------------|---------|
+| `talentUrls` (push) | `config/talentComms/vdoNinja/talentUrls` | For talent to JOIN and broadcast |
+| `obsViewUrls` (view) | `config/talentComms/vdoNinja/obsViewUrls` | For OBS browser sources to VIEW |
+
+OBS templates must use `obsViewUrls`, not `talentUrls`, to display talent video feeds.
+
+### Key Architecture Constraints
+
+1. **No direct VM connections from frontend** - Always route through coordinator in production
+2. **Two OBS subsystems exist:**
+   - `obsConnectionManager` (production, per-competition) - Manages WebSocket connections to each competition's VM
+   - `obsStateSync` (local development only) - Single local OBS connection
+3. **Socket events for OBS operations** - REST API routes only work in local mode
+4. **compId in Socket.io query** - Required for coordinator to route correctly
+5. **MCP tools are main-conversation only** - Task subagents cannot access Playwright or gymnastics MCP tools
+
+### Deploying Changes
+
+#### Frontend Changes
+```bash
+./scripts/deploy-frontend.sh
+```
+Deploys React SPA, overlays directory, and output.html to commentarygraphic.com.
+
+#### Coordinator Changes
+```bash
+ssh_exec target="coordinator" command="cd /opt/gymnastics-graphics && sudo git pull --rebase origin main && pm2 restart coordinator"
+```
+
+Changes to `server/index.js`, `obsConnectionManager.js`, `vmPoolManager.js`, or `awsService.js` require coordinator deployment.
 
 ---
 
 *Generated with Claude Code - January 13, 2026*
+*Updated January 21, 2026 - Added OBS architecture alignment notes, socket events, VDO.Ninja, deployment instructions*

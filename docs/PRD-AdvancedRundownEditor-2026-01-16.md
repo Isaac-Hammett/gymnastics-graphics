@@ -36,42 +36,73 @@ This PRD defines the Advanced Rundown Editor, a comprehensive segment timing and
 
 ## 1. System Integration Overview
 
-The Rundown Editor integrates with three dynamic systems that can change at runtime:
+The Rundown Editor integrates with three dynamic systems that can change at runtime.
+
+**Important Architecture Note:** The frontend NEVER connects directly to OBS or competition VMs. All OBS data flows through the coordinator server via Socket.io. See [README-OBS-Architecture.md](README-OBS-Architecture.md) for the full connection architecture.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                        RUNDOWN EDITOR                                    │
+│                        (Frontend React)                                  │
 │                                                                          │
 │  Segment Configuration:                                                  │
-│  - OBS Scene (from OBS State Sync)                                      │
-│  - Graphic (from Graphics Registry)                                     │
-│  - Transition (from OBS State Sync)                                     │
-│  - Audio Mix (from OBS Audio Sources)                                   │
-│  - Camera (from Camera Config)                                          │
+│  - OBS Scene (via Socket.io → Coordinator → VM's OBS)                   │
+│  - Graphic (from Graphics Registry in Firebase)                         │
+│  - Transition (via Socket.io → Coordinator → VM's OBS)                  │
+│  - Audio Mix (via Socket.io → Coordinator → VM's OBS)                   │
+│  - Camera (from Firebase Camera Config)                                 │
 └─────────────────────────────────────────────────────────────────────────┘
           │                    │                    │
+          │ Socket.io          │ Firebase           │ Firebase
+          │ (all OBS cmds)     │                    │
           ▼                    ▼                    ▼
 ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
-│   OBS Studio    │  │ Graphics        │  │ Firebase        │
-│   (via OBS      │  │ Registry        │  │ Camera Config   │
-│   State Sync)   │  │                 │  │                 │
-│                 │  │                 │  │                 │
-│ - Scenes        │  │ - All graphics  │  │ - Camera list   │
-│ - Transitions   │  │ - Categories    │  │ - Apparatus     │
-│ - Audio sources │  │ - Parameters    │  │ - Health        │
-│ - Inputs        │  │                 │  │                 │
+│  COORDINATOR    │  │ Graphics        │  │ Firebase        │
+│  (api.commen-   │  │ Registry        │  │ Camera Config   │
+│  tarygraphic.   │  │                 │  │                 │
+│  com)           │  │                 │  │                 │
+│                 │  │ - All graphics  │  │ - Camera list   │
+│ Routes to VM:   │  │ - Categories    │  │ - Apparatus     │
+│ - Scenes        │  │ - Parameters    │  │ - Health        │
+│ - Transitions   │  │                 │  │                 │
+│ - Audio sources │  │                 │  │                 │
 └─────────────────┘  └─────────────────┘  └─────────────────┘
+          │
+          │ OBS WebSocket (ws://VM:4455)
+          ▼
+┌─────────────────┐
+│  COMPETITION VM │
+│  (OBS Studio)   │
+│  Per-comp OBS   │
+└─────────────────┘
 ```
 
-**Key Principle:** No hardcoded lists. Everything pulled dynamically from source systems.
+**Key Principle:** No hardcoded lists. Everything pulled dynamically from source systems. OBS data is accessed via Socket.io events (NOT REST APIs) through the coordinator.
 
 ---
 
 ## 2. Dynamic Data Sources
 
-### 2.1 OBS Data (via OBS State Sync Service)
+### 2.1 OBS Data (via Coordinator → obsConnectionManager)
 
-The Rundown Editor receives OBS data from the OBS State Sync Service (Phase 1 of OBS Integration Tool):
+**Important:** There are TWO OBS subsystems in the codebase:
+- `obsConnectionManager` - For production (manages per-competition OBS WebSocket connections via coordinator)
+- `obsStateSync` - For local development only (single local OBS connection)
+
+The Rundown Editor receives OBS data via Socket.io events from the coordinator, which manages connections to each competition's VM:
+
+**How to access OBS data (via OBSContext):**
+```javascript
+// RIGHT - Use Socket.io events via OBSContext
+import { useOBS } from '../context/OBSContext';
+const { obsState } = useOBS();
+const scenes = obsState.scenes;  // From obs:stateUpdated event
+
+// WRONG - REST APIs don't work in production
+// const response = await fetch(`${socketUrl}/api/obs/scenes`);
+```
+
+**OBS state structure (from obs:stateUpdated event):**
 
 ```javascript
 // From OBS State Sync
@@ -452,7 +483,7 @@ function calculateMilestones(segments) {
 
 ### 6.1 OBS Scene Picker
 
-Dynamically populated from OBS State Sync:
+Dynamically populated from OBS state via OBSContext (received via Socket.io from coordinator):
 
 ```
 ┌─ SELECT OBS SCENE ──────────────────────────────────────────────────────┐
@@ -802,6 +833,402 @@ Full rundown with all segment data in JSON format for backup/restore.
 
 ---
 
+## 12. User Stories - Segment CRUD
+
+### US-01: Create a New Segment
+
+**As a producer**, I need to add a new segment to the rundown so I can plan additional show content.
+
+#### Current State
+
+No rundown editor exists. Producers manually edit Firebase or use spreadsheets.
+
+#### Desired Behavior
+
+**Trigger:** Click "+ Add Segment" button (in toolbar OR at bottom of list)
+
+**Insert Position:** New segment inserted AFTER the currently selected segment. If no segment selected, insert at end.
+
+**Required Fields (must fill before save):**
+| Field | Type | Default | Validation |
+|-------|------|---------|------------|
+| `name` | text | "" | Required, non-empty |
+| `type` | select | "live" | Required, one of: video, live, static, break, hold, graphic |
+| `duration` | number | 30 | Required for all types except `hold` |
+| `obs.sceneId` | select | null | Required, must select from available OBS scenes |
+
+**Optional Fields (can leave empty):**
+| Field | Type | Default |
+|-------|------|---------|
+| `timing.autoAdvance` | boolean | true |
+| `graphics.primary` | object | null |
+| `audio.preset` | select | null |
+| `notes` | text | "" |
+
+#### UI Flow
+
+```
+1. User clicks "+ Add Segment" button
+   │
+   ▼
+2. New segment row appears in list (highlighted, unsaved state)
+   Detail panel opens on right with empty form
+   │
+   ▼
+3. User fills required fields:
+   ┌─ NEW SEGMENT ─────────────────────────────────────────┐
+   │                                                        │
+   │  Name:     [UCLA Introduction____________]  ← Required │
+   │                                                        │
+   │  Type:     [live ▼]                         ← Required │
+   │            ┌──────────────┐                            │
+   │            │ video        │                            │
+   │            │ live     ◄───│ ← Default selected         │
+   │            │ static       │                            │
+   │            │ break        │                            │
+   │            │ hold         │                            │
+   │            │ graphic      │                            │
+   │            └──────────────┘                            │
+   │                                                        │
+   │  Duration: [30] seconds                     ← Required │
+   │            (disabled if type=hold)                     │
+   │                                                        │
+   │  OBS Scene: [Select scene... ▼]             ← Required │
+   │             ┌────────────────────────┐                 │
+   │             │ ─ Single Camera ─      │                 │
+   │             │ Single - Camera 1      │                 │
+   │             │ Single - Camera 2      │                 │
+   │             │ ─ Static ─             │                 │
+   │             │ Starting Soon          │                 │
+   │             │ BRB                    │                 │
+   │             │ Thanks for Watching    │                 │
+   │             └────────────────────────┘                 │
+   │                                                        │
+   │  ─── Optional ─────────────────────────────────────── │
+   │                                                        │
+   │  Auto-advance: [✓]                                    │
+   │                                                        │
+   │  Graphic: [None ▼]                                    │
+   │                                                        │
+   │  Audio Preset: [None ▼]                               │
+   │                                                        │
+   │  Notes: [________________________________]            │
+   │         [________________________________]            │
+   │                                                        │
+   │           [Cancel]  [Save Segment]                    │
+   │                      ↑                                │
+   │                      Disabled until all required      │
+   │                      fields are filled                │
+   └────────────────────────────────────────────────────────┘
+   │
+   ▼
+4. User clicks "Save Segment"
+   - Segment saved to Firebase: competitions/{compId}/production/rundown/segments/{id}
+   - ID generated: seg-{timestamp}-{random4}
+   - order field set to insertPosition
+   - All segments after insertion point have order incremented
+   │
+   ▼
+5. Detail panel shows saved segment (editable)
+   Toast appears: "Segment saved"
+```
+
+#### Acceptance Criteria
+
+- [ ] "+ Add Segment" button visible in toolbar
+- [ ] "+ Add Segment" button visible at bottom of segment list
+- [ ] Clicking either button creates new segment after selected segment
+- [ ] If no segment selected, new segment added at end
+- [ ] Detail panel opens with empty form
+- [ ] Name field is required - Save disabled if empty
+- [ ] Type dropdown shows all 6 types: video, live, static, break, hold, graphic
+- [ ] Type defaults to "live"
+- [ ] Duration field required for all types except "hold"
+- [ ] Duration field disabled when type="hold"
+- [ ] OBS Scene dropdown populated from OBS state (via OBSContext)
+- [ ] OBS Scene is required - Save disabled if not selected
+- [ ] Save button disabled until all required fields filled
+- [ ] Cancel button discards unsaved segment
+- [ ] Save writes to Firebase path: `competitions/{compId}/production/rundown/segments/{id}`
+- [ ] Segment ID format: `seg-{timestamp}-{random4}`
+- [ ] Toast shows "Segment saved" on success
+- [ ] New segment appears in list at correct position
+
+---
+
+### US-02: Edit an Existing Segment
+
+**As a producer**, I need to modify segment details so I can adjust timing, scenes, or graphics.
+
+#### Trigger
+
+Click on any segment row in the segment list.
+
+#### UI Flow
+
+```
+1. User clicks segment row "UCLA Introduction"
+   │
+   ▼
+2. Row highlights as selected
+   Detail panel shows segment data (pre-filled)
+   │
+   ┌─ SEGMENT LIST ──────────────────┐  ┌─ DETAIL PANEL ──────────────────┐
+   │                                  │  │                                  │
+   │ ☐ 1  Show Intro         0:45    │  │  Editing: UCLA Introduction      │
+   │ ☐ 2  Welcome & Host     0:30    │  │                                  │
+   │ ☐ 3  Event Intro        0:08    │  │  Name: [UCLA Introduction____]   │
+   │ ☑ 4  UCLA Introduction  0:10  ← │  │                                  │
+   │ ☐ 5  Oregon Intro       0:10    │  │  Type: [live ▼]                  │
+   │                                  │  │                                  │
+   └──────────────────────────────────┘  │  Duration: [10] seconds          │
+                                         │                                  │
+                                         │  OBS Scene: [Single - Cam 2 ▼]   │
+                                         │                                  │
+                                         │  ... (other fields)              │
+                                         │                                  │
+                                         │        [Delete]  [Save Changes]  │
+                                         └──────────────────────────────────┘
+   │
+   ▼
+3. User modifies any field (e.g., changes duration from 10 to 15)
+   - "Save Changes" button becomes enabled
+   - Unsaved indicator appears (e.g., dot or asterisk)
+   │
+   ▼
+4. User clicks "Save Changes"
+   - Firebase updated at: competitions/{compId}/production/rundown/segments/{id}
+   - meta.modifiedAt updated
+   - Toast: "Changes saved"
+   │
+   ▼
+5. If user clicks different segment WITHOUT saving:
+   - Show confirmation: "You have unsaved changes. [Discard] [Save]"
+```
+
+#### Fields Editable
+
+| Field | UI Element | Notes |
+|-------|------------|-------|
+| `name` | Text input | Required |
+| `type` | Dropdown | Required, changing type may affect other fields |
+| `timing.duration` | Number input | Disabled for hold type |
+| `timing.autoAdvance` | Checkbox | |
+| `obs.sceneId` | Dropdown | From OBS state |
+| `obs.transition.type` | Dropdown | Cut, Fade, Stinger |
+| `obs.transition.duration` | Number input | Disabled for Cut |
+| `graphics.primary.graphicId` | Dropdown | From Graphics Registry |
+| `graphics.primary.triggerMode` | Dropdown | auto, cued, on-score, timed |
+| `audio.preset` | Dropdown | From audio presets |
+| `notes` | Textarea | Optional |
+
+#### Acceptance Criteria
+
+- [ ] Clicking segment row selects it and opens detail panel
+- [ ] Detail panel pre-fills all fields with segment data
+- [ ] All editable fields can be modified
+- [ ] "Save Changes" button disabled when no changes made
+- [ ] "Save Changes" button enabled after any field change
+- [ ] Unsaved changes indicator visible when changes pending
+- [ ] Save updates Firebase at correct path
+- [ ] `meta.modifiedAt` updated on save
+- [ ] Toast shows "Changes saved" on success
+- [ ] Switching segments with unsaved changes shows confirmation dialog
+- [ ] "Discard" in confirmation discards changes and switches
+- [ ] "Save" in confirmation saves then switches
+
+---
+
+### US-03: Delete a Segment
+
+**As a producer**, I need to remove a segment from the rundown when it's no longer needed.
+
+#### Trigger
+
+Click "Delete" button in the detail panel (segment must be selected).
+
+#### UI Flow
+
+```
+1. User selects segment "Event Intro" (row 3)
+   │
+   ▼
+2. Detail panel shows segment with [Delete] button
+   │
+   ▼
+3. User clicks [Delete]
+   │
+   ▼
+4. Confirmation dialog appears:
+   ┌─────────────────────────────────────────────┐
+   │                                             │
+   │  Delete Segment?                            │
+   │                                             │
+   │  Are you sure you want to delete            │
+   │  "Event Intro"?                             │
+   │                                             │
+   │  This action cannot be undone.              │
+   │                                             │
+   │              [Cancel]  [Delete]             │
+   │                         ↑                   │
+   │                         Red/destructive     │
+   └─────────────────────────────────────────────┘
+   │
+   ▼
+5. User clicks [Delete]
+   - Segment removed from Firebase
+   - All segments after deleted one have order decremented
+   - Detail panel clears (no selection)
+   - Toast: "Segment deleted"
+   │
+   ▼
+6. If user clicks [Cancel]
+   - Dialog closes
+   - No changes made
+```
+
+#### Acceptance Criteria
+
+- [ ] Delete button visible in detail panel when segment selected
+- [ ] Delete button shows confirmation dialog
+- [ ] Dialog shows segment name being deleted
+- [ ] Dialog has Cancel and Delete buttons
+- [ ] Delete button styled as destructive (red)
+- [ ] Cancel closes dialog with no changes
+- [ ] Delete removes segment from Firebase
+- [ ] Segments after deleted one have order updated
+- [ ] Detail panel clears after deletion
+- [ ] Toast shows "Segment deleted"
+- [ ] Segment list updates to reflect deletion
+
+---
+
+### US-04: Reorder Segments
+
+**As a producer**, I need to change segment order to adjust the show flow.
+
+#### UI Approach
+
+Arrow buttons (Up/Down) on each segment row - NO drag-and-drop.
+
+#### UI Layout
+
+```
+┌─ SEGMENT LIST ─────────────────────────────────────────────────────────────┐
+│                                                                             │
+│  ☐ │ ↑ ↓ │ # │ NAME                    │ TYPE   │ DUR  │ SCENE             │
+│ ───┼─────┼───┼─────────────────────────┼────────┼──────┼───────────────────│
+│  ☐ │ ░ ↓ │ 1 │ Show Intro              │ video  │ 0:45 │ Starting Soon     │
+│     │ ↑   │   │                         │        │      │                   │
+│     │ disabled (first)                  │        │      │                   │
+│ ───┼─────┼───┼─────────────────────────┼────────┼──────┼───────────────────│
+│  ☐ │ ↑ ↓ │ 2 │ Welcome & Host          │ live   │ 0:30 │ Talent Camera     │
+│ ───┼─────┼───┼─────────────────────────┼────────┼──────┼───────────────────│
+│  ☐ │ ↑ ↓ │ 3 │ Event Intro             │ static │ 0:08 │ Graphics FS       │
+│ ───┼─────┼───┼─────────────────────────┼────────┼──────┼───────────────────│
+│  ☑ │ ↑ ↓ │ 4 │ UCLA Introduction       │ live   │ 0:10 │ Single - Cam 2    │
+│     │     │   │ ← selected              │        │      │                   │
+│ ───┼─────┼───┼─────────────────────────┼────────┼──────┼───────────────────│
+│  ☐ │ ↑ ░ │ 5 │ Oregon Intro            │ live   │ 0:10 │ Single - Cam 3    │
+│     │   ↓ │   │                         │        │      │                   │
+│     │   disabled (last)                 │        │      │                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### Behavior
+
+**Move Up (↑ button):**
+1. Swap selected segment with the one above it
+2. Update `order` field for both segments
+3. Save to Firebase
+4. Selection follows the moved segment
+
+**Move Down (↓ button):**
+1. Swap selected segment with the one below it
+2. Update `order` field for both segments
+3. Save to Firebase
+4. Selection follows the moved segment
+
+**Button States:**
+- ↑ disabled on first segment
+- ↓ disabled on last segment
+- Both disabled when no segment selected
+
+#### Acceptance Criteria
+
+- [ ] Each segment row has ↑ and ↓ arrow buttons
+- [ ] ↑ button disabled on first segment (order=0)
+- [ ] ↓ button disabled on last segment
+- [ ] Clicking ↑ swaps segment with previous one
+- [ ] Clicking ↓ swaps segment with next one
+- [ ] Swap updates `order` field for both segments
+- [ ] Changes saved to Firebase immediately
+- [ ] Selection follows the moved segment
+- [ ] Segment numbers (#) update to reflect new order
+- [ ] No toast needed (immediate visual feedback)
+
+---
+
+### US-05: Bulk Selection (for future multi-select features)
+
+**As a producer**, I need to select multiple segments to calculate total duration or perform bulk actions.
+
+#### UI Layout
+
+```
+┌─ SEGMENT LIST ─────────────────────────────────────────────────────────────┐
+│                                                                             │
+│  [☐ Select All]  │  Selected: 3  │  Total: 0:53                            │
+│                                                                             │
+│  ☑ │ ↑ ↓ │ 1 │ Show Intro              │ video  │ 0:45 │ Starting Soon     │
+│  ☐ │ ↑ ↓ │ 2 │ Welcome & Host          │ live   │ 0:30 │ Talent Camera     │
+│  ☑ │ ↑ ↓ │ 3 │ Event Intro             │ static │ 0:08 │ Graphics FS       │
+│  ☐ │ ↑ ↓ │ 4 │ UCLA Introduction       │ live   │ 0:10 │ Single - Cam 2    │
+│  ☑ │ ↑ ↓ │ 5 │ Oregon Intro            │ live   │ 0:10 │ Single - Cam 3    │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Selection: Segments 1, 3, 5 = 0:45 + 0:08 + 0:10 = 1:03 total
+```
+
+#### Selection Mechanics
+
+| Action | Result |
+|--------|--------|
+| Click checkbox | Toggle single segment selection |
+| Shift+Click checkbox | Select range from last clicked |
+| Click "Select All" | Toggle all segments |
+| Click segment row (not checkbox) | Single-select for editing (clears multi-select) |
+
+#### Acceptance Criteria
+
+- [ ] Each row has a checkbox for multi-select
+- [ ] "Select All" checkbox in header
+- [ ] Selected count shown: "Selected: N"
+- [ ] Total duration of selected segments shown
+- [ ] Shift+Click selects range
+- [ ] Clicking row (not checkbox) clears multi-select and opens detail panel
+- [ ] Multi-select does NOT open detail panel
+
+---
+
+## 13. Resolved Design Questions
+
+| Question | Decision |
+|----------|----------|
+| OBS disconnected behavior | Show cached scenes with warning badge |
+| Hold segment duration | Simple hold (no duration), manual advance only |
+| Routing | Competition-bound: `/{compId}/rundown` |
+| Segment order start | 0 (array index based) |
+| Max segment name | 100 characters |
+| Reorder UX | Arrow buttons (Up/Down), no drag-and-drop |
+| Edit UX | Detail panel on right side |
+| Delete UX | Confirmation dialog required |
+| Add segment position | After selected segment (or at end if none selected) |
+| Real-time collaboration | Skip for Phase 1 (single-user editing) |
+
+---
+
 ## Data Models
 
 ### Segment
@@ -913,6 +1340,8 @@ interface GraphicParameter {
 
 ## API Specification
 
+**Important Note on OBS Operations:** Do NOT create REST endpoints for OBS scene/transition/audio operations. OBS data must be accessed via Socket.io events through OBSContext, which routes through the coordinator to the competition VM's OBS. REST calls would fail in production with "Socket not identified" errors. See [README-OBS-Architecture.md](README-OBS-Architecture.md#mistake-5-use-rest-api-for-obs-operations) for details.
+
 ### Rundown Endpoints
 
 | Method | Endpoint | Purpose |
@@ -1014,14 +1443,20 @@ interface GraphicParameter {
 This PRD depends on:
 
 1. **OBS Integration Tool** (PRD-OBSIntegrationTool-2026-01-16.md)
-   - OBS State Sync Service for scene/transition/audio data
+   - OBS state via Socket.io events (obs:stateUpdated) for scene/transition/audio data
    - Audio presets for audio picker
 
-2. **Graphics Registry** (to be created)
+2. **OBS Architecture** (README-OBS-Architecture.md)
+   - Understanding that frontend connects to coordinator, NOT directly to VMs
+   - OBS commands route: Frontend → Coordinator → Competition VM's OBS
+   - Use Socket.io events (NOT REST APIs) for OBS operations
+
+3. **Graphics Registry** (to be created)
    - System-wide graphics definitions
    - Parameter schemas
 
-3. **Existing Infrastructure**
+4. **Existing Infrastructure**
    - Firebase Realtime Database
-   - Socket.io for real-time updates
-   - Competition context
+   - Socket.io for real-time updates (including OBS state)
+   - Competition context (determines which VM's OBS to connect to)
+   - OBSContext for OBS state and commands
