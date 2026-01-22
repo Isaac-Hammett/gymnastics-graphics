@@ -457,7 +457,7 @@ Task 3.1 will consolidate these panels and remove the segment progress bar.
 
 **Acceptance Criteria:**
 - [x] Show Progress panel removed from sidebar
-- [ ] Segment count visible in Run of Show header
+- [x] Segment count visible in Run of Show header
 - [x] Status/Talent Lock/OBS remain visible
 
 **Completed:** 2026-01-22
@@ -481,9 +481,17 @@ Task 3.1 will consolidate these panels and remove the segment progress bar.
 4. Use `progress` for current segment progress indicator
 
 **Acceptance Criteria:**
-- [ ] Active segment highlighted using timesheet index
-- [ ] Segment times display correctly
-- [ ] Click-to-jump uses `jumpTo()` from timesheet
+- [x] Active segment highlighted using timesheet index
+- [x] Segment times display correctly
+- [x] Click-to-jump uses `jumpTo()` from timesheet
+
+**Completed:** 2026-01-22
+
+**Implementation Notes:**
+- Replaced `useShow()` import with `useTimesheet()` hook
+- Component now uses `segments`, `currentIndex`, `totalSegments`, `jumpTo`, and `formatTime` from timesheet
+- Click-to-jump now calls `jumpTo(segmentId, 'producer')` from timesheet instead of just the callback
+- Duration display uses `formatTime(segment.duration * 1000)` to convert seconds to milliseconds for consistent formatting
 
 ---
 
