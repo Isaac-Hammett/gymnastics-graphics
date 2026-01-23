@@ -14,7 +14,7 @@
 | REGISTRY-CREATE | COMPLETE | Create graphicsRegistry.js with all ~45 graphic definitions and helper functions |
 | BUTTONS-MIGRATE | COMPLETE | Update graphicButtons.js to derive from registry |
 | CONTROL-MIGRATE | COMPLETE | Update GraphicsControl.jsx with dynamic team names |
-| URLGEN-INMEET | NOT STARTED | Add In-Meet section to UrlGeneratorPage.jsx |
+| URLGEN-INMEET | COMPLETE | Add In-Meet section to UrlGeneratorPage.jsx |
 | URLBUILD-REGISTRY | NOT STARTED | Update urlBuilder.js to use registry |
 | MANAGER-ROUTE | NOT STARTED | Add /graphics-manager route to App.jsx |
 | MANAGER-PAGE | NOT STARTED | Create GraphicsManagerPage.jsx |
@@ -108,16 +108,17 @@ Remove hardcoded `baseGraphicButtons` and use registry with dynamic team names.
 
 #### Task URLGEN-INMEET: Update UrlGeneratorPage.jsx
 
-**Status:** NOT STARTED
+**Status:** COMPLETE
 **File:** `show-controller/src/pages/UrlGeneratorPage.jsx`
 
 **Description:**
 Add missing In-Meet section so replay graphic appears.
 
-**Checklist:**
-- [ ] Import `inMeet` or use `getGraphicsByCategory('in-meet')`
-- [ ] Add In-Meet section to sidebar
-- [ ] Verify replay graphic appears in URL Generator
+**What was done:**
+- [x] Use existing `graphicButtons.inMeet` from graphicButtons.js (which now derives from registry)
+- [x] Add In-Meet section to sidebar between Pre-Meet and Event Frames
+- [x] Add 'replay' to baseGraphicTitles for proper title display
+- [x] Build passes with no errors
 
 ---
 
