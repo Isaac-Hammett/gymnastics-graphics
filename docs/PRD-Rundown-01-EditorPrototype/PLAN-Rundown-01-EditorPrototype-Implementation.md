@@ -84,8 +84,8 @@ This implementation plan covers all phases of the Rundown Editor from the PRD. P
 | Task | Status | Notes |
 |------|--------|-------|
 | 4.1 Add total runtime display in header | COMPLETE | Added clock icon + runtime display in header with formatDuration |
-| 4.2 Add target duration input | NOT STARTED | User sets expected show length |
-| 4.3 Implement over/under indicator | NOT STARTED | Green/yellow/red based on target |
+| 4.2 Add target duration input | COMPLETE | Added toggle to show duration input, supports H:MM:SS, M:SS, or seconds formats |
+| 4.3 Implement over/under indicator | COMPLETE | Green (< 95%), yellow (95-100%), red (> 100%) color states with +/- time badge |
 | 4.4 Add running time column | NOT STARTED | Cumulative start time per segment |
 | 4.5 Auto-recalculate on duration change | NOT STARTED | Update all subsequent start times |
 | 4.6 Add buffer/pad time between segments | NOT STARTED | Optional gap that counts toward total |

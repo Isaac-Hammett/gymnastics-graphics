@@ -90,6 +90,8 @@ export default function RundownEditorPage() {
   const [showTemplateLibrary, setShowTemplateLibrary] = useState(false);
   const [templates, setTemplates] = useState([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [targetDuration, setTargetDuration] = useState(null); // Target show duration in seconds
+  const [showTargetInput, setShowTargetInput] = useState(false); // Toggle for target duration input
 
   // Filtered segments
   const filteredSegments = useMemo(() => {
@@ -109,6 +111,36 @@ export default function RundownEditorPage() {
   const totalRuntime = useMemo(() => {
     return segments.reduce((sum, seg) => sum + (seg.duration || 0), 0);
   }, [segments]);
+
+  // Calculate over/under and color state for target duration
+  const runtimeStatus = useMemo(() => {
+    if (!targetDuration) return null;
+
+    const diff = totalRuntime - targetDuration;
+    const percentOfTarget = (totalRuntime / targetDuration) * 100;
+
+    // Determine color state based on percentage of target
+    // Green: <= 95% of target
+    // Yellow: 95-100% of target (approaching limit)
+    // Red: > 100% of target (over)
+    let color;
+    if (percentOfTarget > 100) {
+      color = 'red';
+    } else if (percentOfTarget >= 95) {
+      color = 'yellow';
+    } else {
+      color = 'green';
+    }
+
+    return {
+      diff,
+      percentOfTarget,
+      color,
+      isOver: diff > 0,
+      isUnder: diff < 0,
+      isExact: diff === 0,
+    };
+  }, [totalRuntime, targetDuration]);
 
   // Toast helper
   function showToast(message) {
@@ -418,13 +450,99 @@ export default function RundownEditorPage() {
               <h1 className="text-xl font-bold text-white">RUNDOWN EDITOR</h1>
               <p className="text-sm text-zinc-500">{compId} - {DUMMY_COMPETITION.name}</p>
             </div>
-            {/* Total Runtime Display */}
-            <div className="flex items-center gap-2 px-3 py-2 bg-zinc-800/50 border border-zinc-700 rounded-lg">
-              <ClockIcon className="w-4 h-4 text-zinc-400" />
-              <div className="text-sm">
-                <span className="text-zinc-400">Runtime:</span>
-                <span className="ml-1.5 font-mono font-medium text-white">{formatDuration(totalRuntime)}</span>
+            {/* Total Runtime Display with Target Duration */}
+            <div className="flex items-center gap-2">
+              <div className={`flex items-center gap-2 px-3 py-2 border rounded-lg ${
+                runtimeStatus?.color === 'red'
+                  ? 'bg-red-500/10 border-red-500/50'
+                  : runtimeStatus?.color === 'yellow'
+                    ? 'bg-yellow-500/10 border-yellow-500/50'
+                    : runtimeStatus?.color === 'green'
+                      ? 'bg-green-500/10 border-green-500/50'
+                      : 'bg-zinc-800/50 border-zinc-700'
+              }`}>
+                <ClockIcon className={`w-4 h-4 ${
+                  runtimeStatus?.color === 'red'
+                    ? 'text-red-400'
+                    : runtimeStatus?.color === 'yellow'
+                      ? 'text-yellow-400'
+                      : runtimeStatus?.color === 'green'
+                        ? 'text-green-400'
+                        : 'text-zinc-400'
+                }`} />
+                <div className="text-sm">
+                  <span className="text-zinc-400">Runtime:</span>
+                  <span className={`ml-1.5 font-mono font-medium ${
+                    runtimeStatus?.color === 'red'
+                      ? 'text-red-300'
+                      : runtimeStatus?.color === 'yellow'
+                        ? 'text-yellow-300'
+                        : runtimeStatus?.color === 'green'
+                          ? 'text-green-300'
+                          : 'text-white'
+                  }`}>{formatDuration(totalRuntime)}</span>
+                  {targetDuration && (
+                    <span className="text-zinc-500 ml-1">/ {formatDuration(targetDuration)}</span>
+                  )}
+                </div>
+                {/* Over/Under Indicator */}
+                {runtimeStatus && (
+                  <span className={`px-1.5 py-0.5 text-xs font-medium rounded ${
+                    runtimeStatus.color === 'red'
+                      ? 'bg-red-500/20 text-red-300'
+                      : runtimeStatus.color === 'yellow'
+                        ? 'bg-yellow-500/20 text-yellow-300'
+                        : 'bg-green-500/20 text-green-300'
+                  }`}>
+                    {runtimeStatus.isOver
+                      ? `+${formatDuration(runtimeStatus.diff)}`
+                      : runtimeStatus.isUnder
+                        ? `-${formatDuration(Math.abs(runtimeStatus.diff))}`
+                        : 'On Target'}
+                  </span>
+                )}
               </div>
+
+              {/* Target Duration Input Toggle */}
+              {showTargetInput ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    placeholder="H:MM:SS"
+                    defaultValue={targetDuration ? formatDuration(targetDuration) : ''}
+                    onBlur={(e) => {
+                      const parsed = parseDuration(e.target.value);
+                      setTargetDuration(parsed);
+                      if (!parsed) setShowTargetInput(false);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        const parsed = parseDuration(e.target.value);
+                        setTargetDuration(parsed);
+                        setShowTargetInput(false);
+                      } else if (e.key === 'Escape') {
+                        setShowTargetInput(false);
+                      }
+                    }}
+                    className="w-24 px-2 py-1 text-sm font-mono bg-zinc-800 border border-zinc-600 rounded text-white focus:outline-none focus:border-blue-500"
+                    autoFocus
+                  />
+                  <button
+                    onClick={() => setShowTargetInput(false)}
+                    className="p-1 text-zinc-500 hover:text-zinc-300"
+                  >
+                    <XMarkIcon className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowTargetInput(true)}
+                  className="px-2 py-1 text-xs text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded transition-colors"
+                  title="Set target duration"
+                >
+                  {targetDuration ? 'Edit target' : '+ Target'}
+                </button>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -997,6 +1115,37 @@ function formatDuration(seconds) {
     return `${hours}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   }
   return `${minutes}:${String(secs).padStart(2, '0')}`;
+}
+
+// Parse duration string (H:MM:SS, M:SS, or just seconds) to seconds
+function parseDuration(str) {
+  if (!str || !str.trim()) return null;
+
+  const trimmed = str.trim();
+
+  // Try parsing as just a number (seconds)
+  if (/^\d+$/.test(trimmed)) {
+    return parseInt(trimmed, 10);
+  }
+
+  // Try parsing as M:SS or MM:SS
+  const minSecMatch = trimmed.match(/^(\d{1,2}):(\d{2})$/);
+  if (minSecMatch) {
+    const minutes = parseInt(minSecMatch[1], 10);
+    const seconds = parseInt(minSecMatch[2], 10);
+    return minutes * 60 + seconds;
+  }
+
+  // Try parsing as H:MM:SS
+  const hourMinSecMatch = trimmed.match(/^(\d{1,2}):(\d{2}):(\d{2})$/);
+  if (hourMinSecMatch) {
+    const hours = parseInt(hourMinSecMatch[1], 10);
+    const minutes = parseInt(hourMinSecMatch[2], 10);
+    const seconds = parseInt(hourMinSecMatch[3], 10);
+    return hours * 3600 + minutes * 60 + seconds;
+  }
+
+  return null;
 }
 
 // Save as Template Modal Component
