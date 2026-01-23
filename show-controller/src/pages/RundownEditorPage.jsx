@@ -516,6 +516,18 @@ export default function RundownEditorPage() {
     ));
   }
 
+  // Inline toggle for auto-advance (Phase 6: Task 57)
+  function handleInlineAutoAdvanceChange(segmentId) {
+    const segment = segments.find(s => s.id === segmentId);
+    if (segment?.locked) {
+      showToast('Cannot edit locked segment');
+      return;
+    }
+    setSegments(segments.map(seg =>
+      seg.id === segmentId ? { ...seg, autoAdvance: !seg.autoAdvance } : seg
+    ));
+  }
+
   // Toolbar button handlers
   function handleSave() {
     showToast('Rundown saved');
@@ -1265,6 +1277,7 @@ export default function RundownEditorPage() {
                                   onInlineSceneChange={handleInlineSceneChange}
                                   onInlineGraphicChange={handleInlineGraphicChange}
                                   onInlineDurationChange={handleInlineDurationChange}
+                                  onInlineAutoAdvanceChange={handleInlineAutoAdvanceChange}
                                   onMoveUp={handleMoveUp}
                                   onMoveDown={handleMoveDown}
                                   onDuplicate={handleDuplicateSegment}
@@ -1303,6 +1316,7 @@ export default function RundownEditorPage() {
                         onInlineSceneChange={handleInlineSceneChange}
                         onInlineGraphicChange={handleInlineGraphicChange}
                         onInlineDurationChange={handleInlineDurationChange}
+                        onInlineAutoAdvanceChange={handleInlineAutoAdvanceChange}
                         onMoveUp={handleMoveUp}
                         onMoveDown={handleMoveDown}
                         onDuplicate={handleDuplicateSegment}
@@ -1564,6 +1578,7 @@ function SegmentRow({
   onInlineSceneChange,
   onInlineGraphicChange,
   onInlineDurationChange,
+  onInlineAutoAdvanceChange,
   onMoveUp,
   onMoveDown,
   onDuplicate,
@@ -1773,6 +1788,21 @@ function SegmentRow({
           className={`w-16 px-2 py-1 text-xs font-mono bg-zinc-800 border border-zinc-700 rounded text-zinc-300 text-center focus:outline-none focus:border-blue-500 ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
           title={isLocked ? 'Segment is locked' : 'Duration in seconds'}
         />
+
+        {/* Inline Auto-Advance Toggle (Phase 6: Task 57) */}
+        <button
+          onClick={(e) => { e.stopPropagation(); onInlineAutoAdvanceChange(segment.id); }}
+          disabled={isLocked}
+          className={`flex items-center gap-1 px-2 py-1 text-xs rounded border transition-colors ${
+            segment.autoAdvance
+              ? 'bg-green-500/20 text-green-400 border-green-500/40 hover:bg-green-500/30'
+              : 'bg-zinc-800 text-zinc-500 border-zinc-700 hover:bg-zinc-700 hover:text-zinc-400'
+          } ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+          title={isLocked ? 'Segment is locked' : (segment.autoAdvance ? 'Auto-advance ON - click to disable' : 'Auto-advance OFF - click to enable')}
+        >
+          <span className={`w-2 h-2 rounded-full ${segment.autoAdvance ? 'bg-green-400' : 'bg-zinc-600'}`} />
+          <span className="font-medium">Auto</span>
+        </button>
 
         {/* Spacer */}
         <div className="flex-1" />

@@ -48,7 +48,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | 3 | Multi-Select & Summary | ✅ COMPLETE | 38-43 |
 | 4 | Reordering & Organization | ✅ COMPLETE | 44-48 |
 | 5 | Segment Management | ✅ COMPLETE | 49-54 |
-| 6 | Timing Modes | 🔄 IN PROGRESS | 55-57 |
+| 6 | Timing Modes | ✅ COMPLETE | 55-57 |
 | 7 | Templates & Presets | 🔲 NOT STARTED | 58-62 |
 | 8 | Collaboration | 🔲 NOT STARTED | 63-69 |
 | 9 | Data & Reporting | 🔲 NOT STARTED | 70-74 |
@@ -154,13 +154,13 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 53: Add notes field to segment | COMPLETE | Notes textarea in Edit panel, character count, internal production notes |
 | Task 54: Show notes indicator on row | COMPLETE | ChatBubbleLeftIcon badge on segment row when notes exist, tooltip shows notes content
 
-### Phase 6: Timing Modes 🔄 IN PROGRESS
+### Phase 6: Timing Modes ✅ COMPLETE
 
 | Task | Status | Notes |
 |------|--------|-------|
 | Task 55: Add timing mode selector | COMPLETE | Added TIMING_MODES constant, timingMode field to segments, selector in Edit panel with descriptions |
 | Task 56: Show timing mode badge on row | COMPLETE | Orange "MANUAL" badge for manual mode, indigo "→" for follows-previous mode |
-| Task 57: Surface auto-advance toggle inline | NOT STARTED | Quick toggle on segment row |
+| Task 57: Surface auto-advance toggle inline | COMPLETE | Green/gray "Auto" button on segment row, toggles autoAdvance field, respects lock status |
 
 ### Phase 7: Templates & Presets 🔲 NOT STARTED
 
