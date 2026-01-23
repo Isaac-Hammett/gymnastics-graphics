@@ -53,15 +53,22 @@ const DUMMY_SCENES = [
   { name: 'Quad View', category: 'multi' },
 ];
 
-// Hardcoded test data per PRD (updated with graphic field structure for Phase 0B, bufferAfter for Phase 1, locked/optional/notes for Phase 5)
+// Timing mode options (Phase 6: Task 55)
+const TIMING_MODES = [
+  { value: 'fixed', label: 'Fixed Duration', description: 'Segment has set duration, auto-advances when complete' },
+  { value: 'manual', label: 'Manual', description: 'Segment waits for manual trigger to advance' },
+  { value: 'follows-previous', label: 'Follows Previous', description: 'Segment starts immediately when previous ends (no gap)' },
+];
+
+// Hardcoded test data per PRD (updated with graphic field structure for Phase 0B, bufferAfter for Phase 1, locked/optional/notes for Phase 5, timingMode for Phase 6)
 const DUMMY_SEGMENTS = [
-  { id: 'seg-001', name: 'Show Intro', type: 'video', duration: 45, scene: 'Starting Soon', graphic: null, autoAdvance: true, bufferAfter: 0, locked: false, optional: false, notes: '' },
-  { id: 'seg-002', name: 'Team Logos', type: 'static', duration: 10, scene: 'Graphics Fullscreen', graphic: { graphicId: 'logos', params: {} }, autoAdvance: true, bufferAfter: 5, locked: true, optional: false, notes: 'Show all 4 team logos in quad layout' },
-  { id: 'seg-003', name: 'UCLA Coaches', type: 'live', duration: 15, scene: 'Single - Camera 2', graphic: { graphicId: 'team-coaches', params: { teamSlot: 1 } }, autoAdvance: true, bufferAfter: 0, locked: false, optional: false, notes: '' },
-  { id: 'seg-004', name: 'Oregon Coaches', type: 'live', duration: 15, scene: 'Single - Camera 3', graphic: { graphicId: 'team-coaches', params: { teamSlot: 2 } }, autoAdvance: true, bufferAfter: 10, locked: false, optional: false, notes: 'First year head coach - mention in intro' },
-  { id: 'seg-005', name: 'Rotation 1 Summary', type: 'static', duration: 20, scene: 'Graphics Fullscreen', graphic: { graphicId: 'event-summary', params: { summaryMode: 'rotation', summaryRotation: 1, summaryTheme: 'espn' } }, autoAdvance: true, bufferAfter: 0, locked: false, optional: false, notes: '' },
-  { id: 'seg-006', name: 'Floor - Rotation 1', type: 'live', duration: null, scene: 'Quad View', graphic: { graphicId: 'floor', params: {} }, autoAdvance: false, bufferAfter: 0, locked: false, optional: false, notes: '' },
-  { id: 'seg-007', name: 'Commercial Break', type: 'break', duration: 120, scene: 'Starting Soon', graphic: null, autoAdvance: true, bufferAfter: 0, locked: false, optional: true, notes: 'Check with director before taking break' }, // Example optional segment
+  { id: 'seg-001', name: 'Show Intro', type: 'video', duration: 45, scene: 'Starting Soon', graphic: null, autoAdvance: true, bufferAfter: 0, locked: false, optional: false, notes: '', timingMode: 'fixed' },
+  { id: 'seg-002', name: 'Team Logos', type: 'static', duration: 10, scene: 'Graphics Fullscreen', graphic: { graphicId: 'logos', params: {} }, autoAdvance: true, bufferAfter: 5, locked: true, optional: false, notes: 'Show all 4 team logos in quad layout', timingMode: 'fixed' },
+  { id: 'seg-003', name: 'UCLA Coaches', type: 'live', duration: 15, scene: 'Single - Camera 2', graphic: { graphicId: 'team-coaches', params: { teamSlot: 1 } }, autoAdvance: true, bufferAfter: 0, locked: false, optional: false, notes: '', timingMode: 'follows-previous' },
+  { id: 'seg-004', name: 'Oregon Coaches', type: 'live', duration: 15, scene: 'Single - Camera 3', graphic: { graphicId: 'team-coaches', params: { teamSlot: 2 } }, autoAdvance: true, bufferAfter: 10, locked: false, optional: false, notes: 'First year head coach - mention in intro', timingMode: 'fixed' },
+  { id: 'seg-005', name: 'Rotation 1 Summary', type: 'static', duration: 20, scene: 'Graphics Fullscreen', graphic: { graphicId: 'event-summary', params: { summaryMode: 'rotation', summaryRotation: 1, summaryTheme: 'espn' } }, autoAdvance: true, bufferAfter: 0, locked: false, optional: false, notes: '', timingMode: 'fixed' },
+  { id: 'seg-006', name: 'Floor - Rotation 1', type: 'live', duration: null, scene: 'Quad View', graphic: { graphicId: 'floor', params: {} }, autoAdvance: false, bufferAfter: 0, locked: false, optional: false, notes: '', timingMode: 'manual' },
+  { id: 'seg-007', name: 'Commercial Break', type: 'break', duration: 120, scene: 'Starting Soon', graphic: null, autoAdvance: true, bufferAfter: 0, locked: false, optional: true, notes: 'Check with director before taking break', timingMode: 'fixed' }, // Example optional segment
 ];
 
 // Segment type options
@@ -376,6 +383,7 @@ export default function RundownEditorPage() {
       locked: false,
       optional: false,
       notes: '',
+      timingMode: 'manual', // Default to manual for new segments (Phase 6: Task 55)
     };
 
     // Insert after selected segment, or at end
@@ -424,7 +432,7 @@ export default function RundownEditorPage() {
     const newId = `seg-${timestamp}`;
 
     // Create duplicate with "(copy)" appended to name
-    // Note: duplicated segments are unlocked by default but preserve optional status and notes
+    // Note: duplicated segments are unlocked by default but preserve optional status, notes, and timingMode
     const duplicatedSegment = {
       ...segmentToDuplicate,
       id: newId,
@@ -432,6 +440,7 @@ export default function RundownEditorPage() {
       locked: false, // Duplicated segments are always unlocked
       optional: segmentToDuplicate.optional || false, // Preserve optional status
       notes: segmentToDuplicate.notes || '', // Preserve notes (Phase 5: Task 8.5)
+      timingMode: segmentToDuplicate.timingMode || 'manual', // Preserve timing mode (Phase 6: Task 55)
       // Deep copy graphic object if it exists
       graphic: segmentToDuplicate.graphic
         ? { ...segmentToDuplicate.graphic, params: { ...segmentToDuplicate.graphic.params } }
@@ -563,6 +572,7 @@ export default function RundownEditorPage() {
       bufferAfter: seg.bufferAfter || 0,
       optional: seg.optional || false,
       notes: seg.notes || '', // Preserve notes (Phase 5: Task 8.5)
+      timingMode: seg.timingMode || 'manual', // Preserve timing mode (Phase 6: Task 55)
     }));
   }
 
@@ -648,6 +658,7 @@ export default function RundownEditorPage() {
       locked: false, // Segments from templates start unlocked
       optional: seg.optional || false,
       notes: seg.notes || '', // Preserve notes (Phase 5: Task 8.5)
+      timingMode: seg.timingMode || 'manual', // Preserve timing mode (Phase 6: Task 55)
     }));
   }
 
@@ -2090,6 +2101,27 @@ function SegmentDetailPanel({ segment, onSave, onDelete, onCancel }) {
               })}
             />
           )}
+        </div>
+
+        {/* Timing Mode Selector (Phase 6: Task 55) */}
+        <div>
+          <label className="block text-xs text-zinc-400 mb-1.5">
+            Timing Mode
+            <span className="ml-1.5 text-zinc-600 font-normal">— how segment timing behaves</span>
+          </label>
+          <select
+            value={formData.timingMode || 'manual'}
+            onChange={(e) => setFormData({ ...formData, timingMode: e.target.value })}
+            className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+          >
+            {TIMING_MODES.map(mode => (
+              <option key={mode.value} value={mode.value}>{mode.label}</option>
+            ))}
+          </select>
+          {/* Show description for selected timing mode */}
+          <div className="mt-1.5 text-xs text-zinc-500">
+            {TIMING_MODES.find(m => m.value === (formData.timingMode || 'manual'))?.description}
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
