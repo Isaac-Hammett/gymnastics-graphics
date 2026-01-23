@@ -14,6 +14,7 @@ import {
   BookmarkIcon,
   XMarkIcon,
   ClockIcon,
+  PencilIcon,
 } from '@heroicons/react/24/outline';
 import { getGraphicsForCompetition, getCategories, getRecommendedGraphic, getGraphicById, GRAPHICS } from '../lib/graphicsRegistry';
 import { db, ref, set, get, push, remove } from '../lib/firebase';
@@ -225,6 +226,33 @@ export default function RundownEditorPage() {
   function handleCancelEdit() {
     setSelectedSegmentId(null);
     setSelectedSegmentIds([]);
+  }
+
+  // Inline update handlers for segment fields (Phase 2: Inline Editing)
+  function handleInlineSceneChange(segmentId, scene) {
+    setSegments(segments.map(seg =>
+      seg.id === segmentId ? { ...seg, scene } : seg
+    ));
+  }
+
+  function handleInlineGraphicChange(segmentId, graphicId) {
+    setSegments(segments.map(seg => {
+      if (seg.id !== segmentId) return seg;
+      if (!graphicId) {
+        return { ...seg, graphic: null };
+      }
+      // Preserve existing params if same graphic, otherwise reset
+      const existingParams = seg.graphic?.graphicId === graphicId
+        ? seg.graphic.params
+        : {};
+      return { ...seg, graphic: { graphicId, params: existingParams } };
+    }));
+  }
+
+  function handleInlineDurationChange(segmentId, duration) {
+    setSegments(segments.map(seg =>
+      seg.id === segmentId ? { ...seg, duration } : seg
+    ));
   }
 
   // Toolbar button handlers
@@ -668,12 +696,13 @@ export default function RundownEditorPage() {
                   const originalIndex = segments.findIndex(s => s.id === segment.id);
                   const isSelected = selectedSegmentId === segment.id;
                   const isMultiSelected = selectedSegmentIds.includes(segment.id);
+                  const groupedScenes = getGroupedScenes();
+                  const groupedGraphics = getGroupedGraphics();
 
                   return (
                     <div
                       key={segment.id}
-                      onClick={() => handleSelectSegment(segment.id)}
-                      className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                      className={`p-3 rounded-lg border transition-colors ${
                         isSelected
                           ? 'bg-blue-600/20 border-blue-500'
                           : isMultiSelected
@@ -681,64 +710,133 @@ export default function RundownEditorPage() {
                             : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'
                       }`}
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <span className="text-xs text-zinc-500 font-mono w-6">
-                            {String(originalIndex + 1).padStart(2, '0')}
-                          </span>
-                          {/* Running Time Column - shows cumulative start time */}
-                          <span className="text-xs text-zinc-400 font-mono w-12 text-right" title="Start time">
-                            {formatDuration(segmentStartTimes[segment.id] || 0)}
-                          </span>
-                          <div>
-                            <div className="text-white font-medium">{segment.name}</div>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className={`px-2 py-0.5 text-xs rounded border ${TYPE_COLORS[segment.type] || 'bg-zinc-700 text-zinc-400 border-zinc-600'}`}>
-                                {segment.type}
+                      {/* Row 1: Segment number, start time, name, type badge */}
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="text-xs text-zinc-500 font-mono w-6">
+                          {String(originalIndex + 1).padStart(2, '0')}
+                        </span>
+                        {/* Running Time Column - shows cumulative start time */}
+                        <span className="text-xs text-zinc-400 font-mono w-12 text-right" title="Start time">
+                          {formatDuration(segmentStartTimes[segment.id] || 0)}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-white font-medium truncate">{segment.name}</span>
+                            <span className={`px-2 py-0.5 text-xs rounded border shrink-0 ${TYPE_COLORS[segment.type] || 'bg-zinc-700 text-zinc-400 border-zinc-600'}`}>
+                              {segment.type}
+                            </span>
+                            {segment.graphic?.graphicId && (
+                              <span
+                                className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded bg-pink-500/20 text-pink-400 border border-pink-500/30 shrink-0"
+                                title={`Graphic: ${segment.graphic.graphicId}`}
+                              >
+                                <PhotoIcon className="w-3 h-3" />
                               </span>
-                              <span className="text-xs text-zinc-500">
-                                {segment.duration ? `${segment.duration}s` : 'Manual'}
+                            )}
+                            {segment.bufferAfter > 0 && (
+                              <span
+                                className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 border-dashed shrink-0"
+                                title={`${segment.bufferAfter}s buffer after this segment`}
+                              >
+                                +{segment.bufferAfter}s
                               </span>
-                              {segment.scene && (
-                                <span className="text-xs text-zinc-500">
-                                  • {segment.scene}
-                                </span>
-                              )}
-                              {segment.graphic?.graphicId && (
-                                <span
-                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded bg-pink-500/20 text-pink-400 border border-pink-500/30"
-                                  title={`Graphic: ${segment.graphic.graphicId}`}
-                                >
-                                  <PhotoIcon className="w-3 h-3" />
-                                </span>
-                              )}
-                              {segment.bufferAfter > 0 && (
-                                <span
-                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 border-dashed"
-                                  title={`${segment.bufferAfter}s buffer after this segment`}
-                                >
-                                  +{segment.bufferAfter}s
-                                </span>
-                              )}
-                            </div>
+                            )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleMoveUp(originalIndex); }}
-                            disabled={originalIndex === 0}
-                            className="p-1 text-zinc-500 hover:text-zinc-300 disabled:opacity-30 disabled:cursor-not-allowed"
-                          >
-                            <ChevronUpIcon className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleMoveDown(originalIndex); }}
-                            disabled={originalIndex === segments.length - 1}
-                            className="p-1 text-zinc-500 hover:text-zinc-300 disabled:opacity-30 disabled:cursor-not-allowed"
-                          >
-                            <ChevronDownIcon className="w-4 h-4" />
-                          </button>
-                        </div>
+                      </div>
+
+                      {/* Row 2: Inline editable fields - OBS Scene, Graphic, Duration, Edit button, Reorder */}
+                      <div className="flex items-center gap-2 ml-[4.5rem]">
+                        {/* Inline OBS Scene Dropdown */}
+                        <select
+                          value={segment.scene || ''}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            handleInlineSceneChange(segment.id, e.target.value);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="px-2 py-1 text-xs bg-zinc-800 border border-zinc-700 rounded text-zinc-300 focus:outline-none focus:border-blue-500 max-w-[140px] truncate"
+                          title={segment.scene || 'No scene selected'}
+                        >
+                          <option value="">Scene...</option>
+                          {Object.entries(groupedScenes).map(([category, scenes]) => (
+                            <optgroup key={category} label={SCENE_CATEGORY_LABELS[category] || category}>
+                              {scenes.map(scene => (
+                                <option key={scene.name} value={scene.name}>
+                                  {scene.name}
+                                </option>
+                              ))}
+                            </optgroup>
+                          ))}
+                        </select>
+
+                        {/* Inline Graphic Dropdown */}
+                        <select
+                          value={segment.graphic?.graphicId || ''}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            handleInlineGraphicChange(segment.id, e.target.value);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="px-2 py-1 text-xs bg-zinc-800 border border-zinc-700 rounded text-zinc-300 focus:outline-none focus:border-blue-500 max-w-[140px] truncate"
+                          title={segment.graphic?.graphicId || 'No graphic selected'}
+                        >
+                          <option value="">Graphic...</option>
+                          {Object.entries(groupedGraphics).map(([category, graphics]) => (
+                            <optgroup key={category} label={GRAPHICS_CATEGORY_LABELS[category] || category}>
+                              {graphics.map(graphic => (
+                                <option key={graphic.id} value={graphic.id}>
+                                  {graphic.label}
+                                </option>
+                              ))}
+                            </optgroup>
+                          ))}
+                        </select>
+
+                        {/* Inline Duration Input */}
+                        <input
+                          type="text"
+                          value={segment.duration !== null ? `${segment.duration}s` : ''}
+                          placeholder="Manual"
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            const val = e.target.value.replace(/[^\d]/g, '');
+                            handleInlineDurationChange(segment.id, val ? Number(val) : null);
+                          }}
+                          className="w-16 px-2 py-1 text-xs font-mono bg-zinc-800 border border-zinc-700 rounded text-zinc-300 text-center focus:outline-none focus:border-blue-500"
+                          title="Duration in seconds"
+                        />
+
+                        {/* Spacer */}
+                        <div className="flex-1" />
+
+                        {/* Edit Button - opens full detail panel */}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleSelectSegment(segment.id); }}
+                          className="p-1 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-700 rounded transition-colors"
+                          title="Edit segment details"
+                        >
+                          <PencilIcon className="w-4 h-4" />
+                        </button>
+
+                        {/* Reorder buttons */}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleMoveUp(originalIndex); }}
+                          disabled={originalIndex === 0}
+                          className="p-1 text-zinc-500 hover:text-zinc-300 disabled:opacity-30 disabled:cursor-not-allowed"
+                          title="Move up"
+                        >
+                          <ChevronUpIcon className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleMoveDown(originalIndex); }}
+                          disabled={originalIndex === segments.length - 1}
+                          className="p-1 text-zinc-500 hover:text-zinc-300 disabled:opacity-30 disabled:cursor-not-allowed"
+                          title="Move down"
+                        >
+                          <ChevronDownIcon className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
                   );
