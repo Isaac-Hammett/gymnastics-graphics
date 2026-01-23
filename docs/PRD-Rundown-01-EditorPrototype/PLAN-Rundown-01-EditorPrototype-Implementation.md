@@ -22,7 +22,7 @@ This implementation plan covers all phases of the Rundown Editor from the PRD. P
 | 0C | Templates (Basic) | ✅ COMPLETE | 3.1-3.5 |
 | 1 | Timing & Display | ✅ COMPLETE | 4.1-4.6 |
 | 2 | Inline Editing | ✅ COMPLETE | 5.1-5.4 |
-| 3 | Multi-Select & Summary | 🔲 NOT STARTED | 6.1-6.6 |
+| 3 | Multi-Select & Summary | ✅ COMPLETE | 6.1-6.6 |
 | 4 | Reordering & Organization | 🔲 NOT STARTED | 7.1-7.5 |
 | 5 | Segment Management | 🔲 NOT STARTED | 8.1-8.6 |
 | 6 | Timing Modes | 🔲 NOT STARTED | 9.1-9.3 |
@@ -99,16 +99,16 @@ This implementation plan covers all phases of the Rundown Editor from the PRD. P
 | 5.3 Add inline duration input | COMPLETE | Text input with "s" suffix display, numeric-only entry |
 | 5.4 Keep edit button for full panel | COMPLETE | Pencil icon opens detail panel for all fields |
 
-### Phase 3: Multi-Select & Summary 🔲 NOT STARTED
+### Phase 3: Multi-Select & Summary ✅ COMPLETE
 
 | Task | Status | Notes |
 |------|--------|-------|
-| 6.1 Add checkbox to segment rows | NOT STARTED | For multi-selection |
-| 6.2 Implement Shift+click range select | NOT STARTED | Select all between clicks |
-| 6.3 Implement Ctrl/Cmd+click toggle | NOT STARTED | Add/remove individual selection |
-| 6.4 Create Selection Summary sidebar | NOT STARTED | Shows when 2+ segments selected |
-| 6.5 Add editable durations in summary | NOT STARTED | Edit each selected segment's duration |
-| 6.6 Implement bulk actions | NOT STARTED | Bulk edit type, scene, graphic, delete |
+| 6.1 Add checkbox to segment rows | COMPLETE | Checkbox with click, shift+click, ctrl+click support |
+| 6.2 Implement Shift+click range select | COMPLETE | Selects all segments between last selected and current |
+| 6.3 Implement Ctrl/Cmd+click toggle | COMPLETE | Toggles individual segment selection |
+| 6.4 Create Selection Summary sidebar | COMPLETE | Shows when 2+ segments selected, replaces detail panel |
+| 6.5 Add editable durations in summary | COMPLETE | Each segment has inline duration input, total updates live |
+| 6.6 Implement bulk actions | COMPLETE | Bulk edit type, scene, graphic with dropdowns; bulk delete with confirmation |
 
 ### Phase 4: Reordering & Organization 🔲 NOT STARTED
 

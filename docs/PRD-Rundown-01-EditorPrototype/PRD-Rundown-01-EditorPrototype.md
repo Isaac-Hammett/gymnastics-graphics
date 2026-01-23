@@ -65,7 +65,7 @@ The **Producer View** (separate page) uses this rundown as the "script" to contr
 | 0C | Templates (Basic) | ✅ COMPLETE | Save/load rundowns as templates |
 | 1 | Timing & Display | ✅ COMPLETE | Runtime totals, running time, buffers |
 | 2 | Inline Editing | ✅ COMPLETE | Edit fields directly on segment rows |
-| 3 | Multi-Select & Summary | 🔲 PLANNED | Bulk selection with summary sidebar |
+| 3 | Multi-Select & Summary | ✅ COMPLETE | Bulk selection with summary sidebar |
 | 4 | Reordering & Organization | 🔲 PLANNED | Drag-drop, grouping, nesting |
 | 5 | Segment Management | 🔲 PLANNED | Duplicate, lock, conditional, notes |
 | 6 | Timing Modes | 🔲 PLANNED | Fixed/manual/follows-previous modes |
@@ -1069,15 +1069,15 @@ const filteredSegments = segments.filter(seg => {
 - [x] Changes auto-save on selection
 - [x] Edit button opens full detail panel
 
-### Phase 3: Multi-Select & Summary
+### Phase 3: Multi-Select & Summary ✅ COMPLETE
 
-- [ ] Checkbox on each segment row
-- [ ] Shift+click for range selection
-- [ ] Ctrl/Cmd+click for toggle selection
-- [ ] Selection Summary sidebar appears for 2+ selections
-- [ ] Summary shows editable durations per segment
-- [ ] Total duration updates in real-time
-- [ ] Bulk actions available (edit type, scene, graphic, delete)
+- [x] Checkbox on each segment row
+- [x] Shift+click for range selection
+- [x] Ctrl/Cmd+click for toggle selection
+- [x] Selection Summary sidebar appears for 2+ selections
+- [x] Summary shows editable durations per segment
+- [x] Total duration updates in real-time
+- [x] Bulk actions available (edit type, scene, graphic, delete)
 
 ### Phase 4: Reordering & Organization
 
