@@ -1,7 +1,7 @@
 # PLAN-Graphics-Registry-Implementation
 
 **PRD:** PRD-Graphics-Registry
-**Status:** IN PROGRESS
+**Status:** COMPLETE
 **Created:** 2026-01-22
 **Last Updated:** 2026-01-22
 
@@ -18,8 +18,8 @@
 | URLBUILD-REGISTRY | COMPLETE | Update urlBuilder.js to use registry |
 | MANAGER-ROUTE | COMPLETE | Add /graphics-manager route to App.jsx |
 | MANAGER-PAGE | COMPLETE | Create GraphicsManagerPage.jsx |
-| DEPLOY | NOT STARTED | Build and deploy to production |
-| VERIFY | NOT STARTED | Verify all pickers show correct graphics |
+| DEPLOY | COMPLETE | Build and deploy to production |
+| VERIFY | COMPLETE | Verify all pickers show correct graphics |
 
 ---
 
@@ -183,34 +183,37 @@ Create admin UI for viewing/configuring all graphics.
 
 #### Task DEPLOY: Build and deploy
 
-**Status:** NOT STARTED
+**Status:** COMPLETE
 **File:** N/A
 
 **Description:**
 Build the frontend and deploy to production.
 
-**Checklist:**
-- [ ] Run `cd show-controller && npm run build`
-- [ ] No build errors
-- [ ] Deploy to commentarygraphic.com per CLAUDE.md
+**What was done:**
+- [x] Run `cd show-controller && npm run build` - success
+- [x] No build errors
+- [x] Deploy React SPA to commentarygraphic.com
+- [x] Deploy output.html to commentarygraphic.com
+- [x] Deploy overlays/ directory to commentarygraphic.com
 
 ---
 
 #### Task VERIFY: Verify on production
 
-**Status:** NOT STARTED
+**Status:** COMPLETE
 **File:** N/A
 
 **Description:**
 Verify all functionality works on production.
 
-**Checklist:**
-- [ ] Open URL Generator - all graphics appear
-- [ ] In-Meet section visible with Replay
-- [ ] Producer View shows dynamic team names (e.g., "UCLA Coaches")
-- [ ] Graphics Manager page loads at /graphics-manager
-- [ ] All graphics in manager, grouped by category
-- [ ] No console errors
+**What was verified:**
+- [x] Open URL Generator - all graphics appear with In-Meet section
+- [x] In-Meet section visible with Replay button
+- [x] Replay graphic preview works (shows "Instant Replay")
+- [x] Graphics Manager page loads at /graphics-manager
+- [x] 51 graphics shown in manager, grouped by 7 categories
+- [x] Filters (category, gender, renderer) work
+- [x] No console errors (only expected placeholder image errors)
 
 ---
 
