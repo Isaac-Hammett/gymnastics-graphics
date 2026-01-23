@@ -1,15 +1,43 @@
 # PLAN-Rundown-01-EditorPrototype-Implementation
 
 **PRD:** PRD-Rundown-01-EditorPrototype
-**Status:** COMPLETE
+**Status:** PROTOTYPE COMPLETE, FEATURES IN PROGRESS
 **Created:** 2026-01-22
-**Last Updated:** 2026-01-23 (Phase 0B COMPLETE)
+**Last Updated:** 2026-01-23 (v3.2 - post-show analytics moved to PRD-05)
 
 ---
 
-## Task Summary
+## Overview
 
-### Phase 0A: Basic Page Structure (COMPLETE)
+This implementation plan covers all phases of the Rundown Editor from the PRD. Prototype phases (0A, 0B) are complete and deployed. Future phases add timing, inline editing, multi-select, collaboration, and advanced features.
+
+---
+
+## Phase Summary
+
+| Phase | Name | Status | Tasks |
+|-------|------|--------|-------|
+| 0A | Basic Page Structure | ✅ COMPLETE | 1.1-1.11 |
+| 0B | Graphics & Scene Integration | ✅ COMPLETE | 2.1-2.11 |
+| 0C | Templates (Basic) | ✅ COMPLETE | 3.1-3.5 |
+| 1 | Timing & Display | 🔲 NOT STARTED | 4.1-4.6 |
+| 2 | Inline Editing | 🔲 NOT STARTED | 5.1-5.4 |
+| 3 | Multi-Select & Summary | 🔲 NOT STARTED | 6.1-6.6 |
+| 4 | Reordering & Organization | 🔲 NOT STARTED | 7.1-7.5 |
+| 5 | Segment Management | 🔲 NOT STARTED | 8.1-8.6 |
+| 6 | Timing Modes | 🔲 NOT STARTED | 9.1-9.3 |
+| 7 | Templates & Presets | 🔲 NOT STARTED | 10.1-10.5 |
+| 8 | Collaboration | 🔲 NOT STARTED | 11.1-11.7 |
+| 9 | Data & Reporting | 🔲 NOT STARTED | 12.1-12.5 |
+| 10 | Visual & UX | 🔲 NOT STARTED | 13.1-13.7 |
+| 11 | Quality of Life | 🔲 NOT STARTED | 14.1-14.5 |
+| 12 | Advanced Planning | 🔲 NOT STARTED | 15.1-15.10 |
+
+---
+
+## Task Summary by Phase
+
+### Phase 0A: Basic Page Structure ✅ COMPLETE
 
 | Task | Status | Notes |
 |------|--------|-------|
@@ -25,7 +53,7 @@
 | 1.10 Add toast notifications | COMPLETE | Simple toast system with 3s timeout |
 | 1.11 Verify Phase 0A acceptance criteria | COMPLETE | All 9 criteria verified on production |
 
-### Phase 0B: Graphics & Scene Integration (CURRENT)
+### Phase 0B: Graphics & Scene Integration ✅ COMPLETE
 
 | Task | Status | Notes |
 |------|--------|-------|
@@ -41,9 +69,152 @@
 | 2.10 Add graphic indicator to segment list | COMPLETE | Pink badge with PhotoIcon when graphic assigned |
 | 2.11 Verify Phase 0B acceptance criteria | COMPLETE | All 11 criteria verified on production |
 
+### Phase 0C: Templates (Basic) ✅ COMPLETE
+
+| Task | Status | Notes |
+|------|--------|-------|
+| 3.1 Design template data structure | COMPLETE | Firebase schema documented below |
+| 3.2 Add "Save as Template" button | COMPLETE | Button + modal + Firebase save implemented |
+| 3.3 Create template library modal | COMPLETE | List templates with load/delete, compatibility check |
+| 3.4 Implement "Load Template" functionality | COMPLETE | Load from Firebase, resolve team placeholders |
+| 3.5 Abstract team references | COMPLETE | Done as part of 3.2 (abstractTeamReferences function) |
+
+### Phase 1: Timing & Display 🔲 NOT STARTED
+
+| Task | Status | Notes |
+|------|--------|-------|
+| 4.1 Add total runtime display in header | NOT STARTED | Sum of all segment durations |
+| 4.2 Add target duration input | NOT STARTED | User sets expected show length |
+| 4.3 Implement over/under indicator | NOT STARTED | Green/yellow/red based on target |
+| 4.4 Add running time column | NOT STARTED | Cumulative start time per segment |
+| 4.5 Auto-recalculate on duration change | NOT STARTED | Update all subsequent start times |
+| 4.6 Add buffer/pad time between segments | NOT STARTED | Optional gap that counts toward total |
+
+### Phase 2: Inline Editing 🔲 NOT STARTED
+
+| Task | Status | Notes |
+|------|--------|-------|
+| 5.1 Add inline OBS Scene dropdown | NOT STARTED | Editable directly on segment row |
+| 5.2 Add inline Graphic dropdown | NOT STARTED | Editable directly on segment row |
+| 5.3 Add inline duration input | NOT STARTED | Click to edit, blur/Enter to save |
+| 5.4 Keep edit button for full panel | NOT STARTED | Opens detail panel for all fields |
+
+### Phase 3: Multi-Select & Summary 🔲 NOT STARTED
+
+| Task | Status | Notes |
+|------|--------|-------|
+| 6.1 Add checkbox to segment rows | NOT STARTED | For multi-selection |
+| 6.2 Implement Shift+click range select | NOT STARTED | Select all between clicks |
+| 6.3 Implement Ctrl/Cmd+click toggle | NOT STARTED | Add/remove individual selection |
+| 6.4 Create Selection Summary sidebar | NOT STARTED | Shows when 2+ segments selected |
+| 6.5 Add editable durations in summary | NOT STARTED | Edit each selected segment's duration |
+| 6.6 Implement bulk actions | NOT STARTED | Bulk edit type, scene, graphic, delete |
+
+### Phase 4: Reordering & Organization 🔲 NOT STARTED
+
+| Task | Status | Notes |
+|------|--------|-------|
+| 7.1 Add drag handle to segment rows | NOT STARTED | Left side of each row |
+| 7.2 Implement drag-and-drop reordering | NOT STARTED | Visual drop indicator |
+| 7.3 Keep arrow buttons functional | NOT STARTED | Up/down for precise reordering |
+| 7.4 Create segment grouping UI | NOT STARTED | Named collapsible groups |
+| 7.5 Show combined duration for groups | NOT STARTED | When collapsed |
+
+### Phase 5: Segment Management 🔲 NOT STARTED
+
+| Task | Status | Notes |
+|------|--------|-------|
+| 8.1 Add duplicate segment button | NOT STARTED | Creates copy after original |
+| 8.2 Implement segment locking | NOT STARTED | Prevent accidental edits |
+| 8.3 Add lock/unlock toggle UI | NOT STARTED | Visual indicator, click to toggle |
+| 8.4 Add conditional/optional toggle | NOT STARTED | Mark segments as backup |
+| 8.5 Add notes field to segment | NOT STARTED | Internal production notes |
+| 8.6 Show notes indicator on row | NOT STARTED | Icon when notes exist |
+
+### Phase 6: Timing Modes 🔲 NOT STARTED
+
+| Task | Status | Notes |
+|------|--------|-------|
+| 9.1 Add timing mode selector | NOT STARTED | Fixed/Manual/Follows Previous |
+| 9.2 Show timing mode badge on row | NOT STARTED | Visual indicator |
+| 9.3 Surface auto-advance toggle inline | NOT STARTED | Quick toggle on segment row |
+
+### Phase 7: Templates & Presets 🔲 NOT STARTED
+
+| Task | Status | Notes |
+|------|--------|-------|
+| 10.1 Save segment as template | NOT STARTED | Reusable segment configurations |
+| 10.2 Create segment template library | NOT STARTED | Accessible from Add Segment |
+| 10.3 Save full rundown as template | NOT STARTED | Entire show structure |
+| 10.4 Template management UI | NOT STARTED | Edit, delete, organize templates |
+| 10.5 Add recurrence pattern option | NOT STARTED | Repeat segment N times |
+
+### Phase 8: Collaboration 🔲 NOT STARTED
+
+| Task | Status | Notes |
+|------|--------|-------|
+| 11.1 Real-time sync with Firebase | NOT STARTED | Multiple users see same data |
+| 11.2 Add presence indicators | NOT STARTED | Show who is viewing/editing |
+| 11.3 Implement cursor/selection sharing | NOT STARTED | See other users' selections |
+| 11.4 Add role-based permissions | NOT STARTED | Owner, Producer, Editor, Viewer |
+| 11.5 Implement change history log | NOT STARTED | Track all edits with timestamp |
+| 11.6 Add version rollback | NOT STARTED | Restore previous state |
+| 11.7 Add approval workflow | NOT STARTED | Draft → In Review → Approved → Locked |
+
+### Phase 9: Data & Reporting 🔲 NOT STARTED
+
+> **Note:** Post-show analytics (actual vs planned, deviation logs) moved to PRD-05.
+
+| Task | Status | Notes |
+|------|--------|-------|
+| 12.1 Export to PDF | NOT STARTED | Print-friendly layout |
+| 12.2 Export to CSV | NOT STARTED | Spreadsheet format |
+| 12.3 Export to JSON | NOT STARTED | Backup/API integration |
+| 12.4 Import from CSV | NOT STARTED | Field mapping UI, validation |
+| 12.5 Import from JSON | NOT STARTED | Backup restore, preview |
+
+### Phase 10: Visual & UX 🔲 NOT STARTED
+
+| Task | Status | Notes |
+|------|--------|-------|
+| 13.1 Create timeline view | NOT STARTED | Gantt-style horizontal bars |
+| 13.2 Toggle between list and timeline | NOT STARTED | View switcher in toolbar |
+| 13.3 Add color coding by type | NOT STARTED | Row backgrounds by segment type |
+| 13.4 Make colors customizable | NOT STARTED | User preference |
+| 13.5 Add compact view toggle | NOT STARTED | Single line per segment |
+| 13.6 Add dark/light mode toggle | NOT STARTED | Theme preference |
+| 13.7 Create print-friendly view | NOT STARTED | Clean layout for paper |
+
+### Phase 11: Quality of Life 🔲 NOT STARTED
+
+| Task | Status | Notes |
+|------|--------|-------|
+| 14.1 Implement keyboard navigation | NOT STARTED | Arrow keys to navigate segments |
+| 14.2 Add keyboard shortcuts | NOT STARTED | Ctrl+D duplicate, Ctrl+N new, etc. |
+| 14.3 Implement undo/redo | NOT STARTED | 20+ levels of history |
+| 14.4 Add search by segment name | NOT STARTED | Already exists, enhance |
+| 14.5 Add filter by scene/graphic | NOT STARTED | Additional filter options |
+
+### Phase 12: Advanced Planning 🔲 NOT STARTED
+
+> **Note:** Live execution features (AI talking points, live scores, teleprompter display, audio triggering) moved to PRD-05.
+
+| Task | Status | Notes |
+|------|--------|-------|
+| 15.1 AI context analysis | NOT STARTED | Analyze competition metadata, roster, dates |
+| 15.2 AI segment suggestions - context | NOT STARTED | Senior meet, rivalry, championship triggers |
+| 15.3 AI segment suggestions - roster | NOT STARTED | Seniors, All-Americans, milestones, injuries |
+| 15.4 AI segment order suggestions | NOT STARTED | Best practices for segment placement |
+| 15.5 AI suggestions panel UI | NOT STARTED | Non-intrusive display, one-click add, dismiss |
+| 15.6 Add segment script field | NOT STARTED | Rich text for pre-planning notes |
+| 15.7 Add audio cue planning fields | NOT STARTED | Song name, in/out timestamps |
+| 15.8 Add talent assignment | NOT STARTED | Who is on camera, schedule view |
+| 15.9 Add equipment tracking | NOT STARTED | Camera, mic per segment, conflicts |
+| 15.10 Add sponsor/ad tracking | NOT STARTED | Commercial obligations, fulfillment |
+
 ---
 
-## Detailed Tasks
+## Detailed Tasks (Completed Phases)
 
 ### Task 1.1: Create RundownEditorPage.jsx
 
@@ -238,8 +409,6 @@ Verify all Phase 0A acceptance criteria from PRD are met.
 **Production URL:** https://commentarygraphic.com/8kyf0rnl/rundown
 
 ---
-
-## Phase 0B Detailed Tasks
 
 ### Task 2.1: Add competition context data
 
@@ -520,6 +689,106 @@ Verify all Phase 0B acceptance criteria from PRD are met.
 
 ---
 
+### Task 3.1: Design template data structure
+
+**Status:** COMPLETE
+**File:** N/A (design task - documented here)
+
+**Description:**
+Define Firebase path and schema for rundown templates.
+
+**Checklist:**
+- [x] Define Firebase path structure
+- [x] Define template metadata schema
+- [x] Define abstract segment schema (team1, team2 instead of specific teams)
+- [x] Define compatibility rules for template application
+- [x] Document team reference abstraction strategy
+
+**Firebase Path:**
+```
+rundownTemplates/
+  {templateId}/
+    metadata/
+      id: "dual-meet-standard"
+      name: "Standard Dual Meet"
+      description: "Basic dual meet format with intros, rotations, and breaks"
+      competitionTypes: ["womens-dual", "mens-dual"]  # Array of compatible types
+      teamCount: 2
+      createdAt: "2026-01-23T..."
+      updatedAt: "2026-01-23T..."
+      createdBy: "user@example.com"  # Optional, for multi-user
+      estimatedDuration: 7200        # Total runtime in seconds (optional)
+    segments/
+      - id: "tpl-001"
+        name: "Show Intro"
+        type: "video"
+        duration: 45
+        scene: "Starting Soon"
+        graphic: null
+        autoAdvance: true
+      - id: "tpl-002"
+        name: "Team Logos"
+        type: "static"
+        duration: 10
+        scene: "Graphics Fullscreen"
+        graphic:
+          graphicId: "logos"
+          params: {}
+        autoAdvance: true
+      - id: "tpl-003"
+        name: "{team1} Coaches"           # Template variable
+        type: "live"
+        duration: 15
+        scene: "Single - Camera 2"
+        graphic:
+          graphicId: "team-coaches"
+          params:
+            teamSlot: 1                    # Abstract slot, not specific team
+        autoAdvance: true
+      - id: "tpl-004"
+        name: "{team2} Coaches"
+        type: "live"
+        duration: 15
+        scene: "Single - Camera 3"
+        graphic:
+          graphicId: "team-coaches"
+          params:
+            teamSlot: 2
+        autoAdvance: true
+```
+
+**Template Variable Syntax:**
+- `{team1}`, `{team2}`, `{team3}`, `{team4}` - Replaced with actual team names when loaded
+- Variables in segment names are replaced during template application
+- Graphic params use `teamSlot: N` which the graphics system already handles
+
+**Compatibility Rules:**
+1. `competitionTypes` array determines which competitions can use the template
+2. `teamCount` must match or be less than competition's team count
+3. Women's templates can only be used for women's competitions (event filtering)
+4. Men's templates can only be used for men's competitions (event filtering)
+
+**Abstraction Strategy:**
+When saving a rundown as a template:
+1. Replace team names in segment names with `{teamN}` placeholders
+2. Ensure graphic params use `teamSlot: N` not specific team names
+3. Remove competition-specific IDs, generate new template IDs
+4. Store compatible competition types based on source competition
+
+When loading a template:
+1. Check compatibility with current competition
+2. Replace `{teamN}` placeholders with actual team names
+3. Generate new segment IDs for the rundown
+4. Preserve graphic `teamSlot` params (graphics system handles resolution)
+
+**Implementation Notes:**
+- For prototype, templates stored in Firebase
+- Template IDs use kebab-case (e.g., "dual-meet-standard")
+- Segment IDs within templates use "tpl-" prefix
+- When applied to competition, segments get new "seg-" prefixed IDs
+
+---
+
 ## Bugs & Issues
 
 | Bug ID | Description | Status | Task |
@@ -530,19 +799,47 @@ Verify all Phase 0B acceptance criteria from PRD are met.
 
 ## Notes
 
-- This is a UI prototype phase - no backend/Firebase integration
-- SegmentList and SegmentDetail will be proper components in PRD-02 and PRD-03
-- For this phase, use inline placeholder components
+### General
+- Prototype phases complete - page is live at `/{compId}/rundown`
+- SegmentList and SegmentDetail are inline components, will be extracted in future phases
 - Used simple local state toast pattern (matching UrlGeneratorPage.jsx)
-- Phase 0B depends on PRD-Graphics-Registry being complete (provides graphicsRegistry.js)
 - Smart recommendations use keyword matching - can be refined based on user feedback
-- Parameter inputs are dynamically generated from graphic schema definitions
+
+### Dependencies
+- **Phase 0B** depends on PRD-Graphics-Registry (provides graphicsRegistry.js)
+- **Phase 0C** (templates) will require Firebase schema design
+- **Phase 8** (collaboration) will require significant Firebase/real-time infrastructure
+
+### Architecture Considerations
+- Consider extracting components to separate files when adding inline editing (Phase 2)
+- Multi-select (Phase 3) may benefit from a selection context/hook
+- Timeline view (Phase 10) may need a dedicated library (e.g., react-dnd, vis-timeline)
+- Collaboration (Phase 8) will need conflict resolution strategy
+- AI Segment Recommendations (Phase 12) will need:
+  - Competition context resolver (date analysis, special designations)
+  - Roster data integration (seniors, All-Americans, milestones)
+  - Suggestion engine with confidence scoring
+  - Learning from user patterns (optional, if collaboration enabled)
+
+### Features Moved to PRD-05 (Show Controller)
+The following features belong in live execution or post-show:
+- AI Talking Points (real-time commentator context)
+- Live Score Integration (auto-update graphics during show)
+- Teleprompter Display (talent-facing view during broadcast)
+- Audio Cue Triggering (playback control during show)
+- Current Time Indicator (timeline view during live show)
+- Convert Optional Segments (promote conditional segments during show)
+- Historical Analytics (actual vs planned trends across shows)
+- Comparison View (planned vs actual durations post-show)
+- Deviation Log (auto-recorded during show execution)
 
 ---
 
 ## Completion Criteria
 
-**Phase 0A:** All tasks 1.1-1.11 COMPLETE ✅
-**Phase 0B:** All tasks 2.1-2.11 COMPLETE (required for PRD completion)
+**Prototype (0A + 0B):** ✅ COMPLETE
+**Full Editor (0C + Phases 1-12):** 🔲 IN PROGRESS
 
-PRD Status → COMPLETE when both Phase 0A and Phase 0B are verified
+PRD Status:
+- "PROTOTYPE COMPLETE" when Phase 0A + 0B verified
+- "COMPLETE" when all phases verified (long-term goal)
