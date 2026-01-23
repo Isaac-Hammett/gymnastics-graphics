@@ -13,7 +13,7 @@
 |------|--------|-------|
 | REGISTRY-CREATE | COMPLETE | Create graphicsRegistry.js with all ~45 graphic definitions and helper functions |
 | BUTTONS-MIGRATE | COMPLETE | Update graphicButtons.js to derive from registry |
-| CONTROL-MIGRATE | NOT STARTED | Update GraphicsControl.jsx with dynamic team names |
+| CONTROL-MIGRATE | COMPLETE | Update GraphicsControl.jsx with dynamic team names |
 | URLGEN-INMEET | NOT STARTED | Add In-Meet section to UrlGeneratorPage.jsx |
 | URLBUILD-REGISTRY | NOT STARTED | Update urlBuilder.js to use registry |
 | MANAGER-ROUTE | NOT STARTED | Add /graphics-manager route to App.jsx |
@@ -89,17 +89,20 @@ Make graphicButtons.js derive from registry for backwards compatibility.
 
 #### Task CONTROL-MIGRATE: Update GraphicsControl.jsx
 
-**Status:** NOT STARTED
+**Status:** COMPLETE
 **File:** `show-controller/src/components/GraphicsControl.jsx`
 
 **Description:**
 Remove hardcoded `baseGraphicButtons` and use registry with dynamic team names.
 
-**Checklist:**
-- [ ] Import from graphicsRegistry.js
-- [ ] Remove hardcoded `baseGraphicButtons` array
-- [ ] Use `getGraphicsForCompetition()` with team names from config
-- [ ] Verify "UCLA Coaches" shows instead of "Team 1 Coaches"
+**What was done:**
+- [x] Import `getGraphicsForCompetition` and `getGraphicsByCategory` from graphicsRegistry.js
+- [x] Remove hardcoded `baseGraphicButtons` array (was lines 8-36)
+- [x] Add `CATEGORY_TO_SECTION` mapping for display purposes
+- [x] Update `graphicButtons` useMemo to call `getGraphicsForCompetition(config?.compType, teamNames)`
+- [x] Build team names from config (`config.team1Name`, etc.)
+- [x] Buttons now show dynamic team names (e.g., "UCLA Coaches" instead of "Team 1 Coaches")
+- [x] Build passes with no errors
 
 ---
 

@@ -3,37 +3,15 @@ import { Link } from 'react-router-dom';
 import { db, ref, set, onValue } from '../lib/firebase';
 import { PhotoIcon, XMarkIcon, ClipboardDocumentIcon, CheckIcon, Cog6ToothIcon } from '@heroicons/react/24/solid';
 import useEventConfig from '../hooks/useEventConfig';
+import { getGraphicsForCompetition, getGraphicsByCategory } from '../lib/graphicsRegistry';
 
-// Base graphic buttons (non-event-specific)
-const baseGraphicButtons = [
-  { id: 'logos', label: 'Team Logos', section: 'Pre-Meet' },
-  { id: 'event-bar', label: 'Event Info', section: 'Pre-Meet' },
-  { id: 'warm-up', label: 'Warm Up', section: 'Pre-Meet' },
-  { id: 'hosts', label: 'Hosts', section: 'Pre-Meet' },
-  { id: 'team1-stats', label: 'Team 1 Stats', section: 'Pre-Meet', team: 1 },
-  { id: 'team1-coaches', label: 'Team 1 Coaches', section: 'Pre-Meet', team: 1 },
-  { id: 'team2-stats', label: 'Team 2 Stats', section: 'Pre-Meet', team: 2 },
-  { id: 'team2-coaches', label: 'Team 2 Coaches', section: 'Pre-Meet', team: 2 },
-  { id: 'team3-stats', label: 'Team 3 Stats', section: 'Pre-Meet', team: 3 },
-  { id: 'team3-coaches', label: 'Team 3 Coaches', section: 'Pre-Meet', team: 3 },
-  { id: 'team4-stats', label: 'Team 4 Stats', section: 'Pre-Meet', team: 4 },
-  { id: 'team4-coaches', label: 'Team 4 Coaches', section: 'Pre-Meet', team: 4 },
-  { id: 'team5-stats', label: 'Team 5 Stats', section: 'Pre-Meet', team: 5 },
-  { id: 'team5-coaches', label: 'Team 5 Coaches', section: 'Pre-Meet', team: 5 },
-  { id: 'team6-stats', label: 'Team 6 Stats', section: 'Pre-Meet', team: 6 },
-  { id: 'team6-coaches', label: 'Team 6 Coaches', section: 'Pre-Meet', team: 6 },
-  { id: 'stream-starting', label: 'Starting Soon', section: 'Stream' },
-  { id: 'stream-thanks', label: 'Thanks', section: 'Stream' },
-  // Frame Overlays for OBS
-  { id: 'frame-quad', label: 'Quad View', section: 'Frame Overlays' },
-  { id: 'frame-tri-center', label: 'Tri Center', section: 'Frame Overlays' },
-  { id: 'frame-tri-wide', label: 'Tri Wide', section: 'Frame Overlays' },
-  { id: 'frame-team-header', label: 'Team Header Dual', section: 'Frame Overlays' },
-  { id: 'frame-single', label: 'Single', section: 'Frame Overlays' },
-  { id: 'frame-dual', label: 'Dual View', section: 'Frame Overlays' },
-  // In-Meet graphics
-  { id: 'replay', label: 'Replay', section: 'In-Meet' },
-];
+// Category to section mapping for display
+const CATEGORY_TO_SECTION = {
+  'pre-meet': 'Pre-Meet',
+  'in-meet': 'In-Meet',
+  'frame-overlays': 'Frame Overlays',
+  'stream': 'Stream',
+};
 
 // Event button mapping for different genders (uses eventConfig IDs)
 // These map internal event IDs to display-friendly button configs
@@ -150,8 +128,29 @@ export default function GraphicsControl({ competitionId }) {
   // Get gender-specific event configuration
   const { events, eventIds, rotationCount, gender } = useEventConfig(config?.compType);
 
-  // Build dynamic graphic buttons based on competition gender
+  // Build dynamic graphic buttons based on competition gender and team names
   const graphicButtons = useMemo(() => {
+    const maxTeams = teamCounts[config?.compType] || 2;
+
+    // Build team names object from config
+    const teamNames = {};
+    for (let i = 1; i <= maxTeams; i++) {
+      teamNames[i] = config?.[`team${i}Name`] || `Team ${i}`;
+    }
+
+    // Get graphics from registry with dynamic labels
+    const registryGraphics = getGraphicsForCompetition(config?.compType, teamNames);
+
+    // Build base graphic buttons from registry (pre-meet, in-meet, frame-overlays, stream)
+    const baseGraphicButtons = registryGraphics
+      .filter(g => ['pre-meet', 'in-meet', 'frame-overlays', 'stream'].includes(g.category))
+      .map(g => ({
+        id: g.id,
+        label: g.label,
+        section: CATEGORY_TO_SECTION[g.category] || g.category,
+        team: g.team,
+      }));
+
     // Build event buttons from gender-specific events
     const eventButtons = eventIds
       .map(eventId => eventButtonConfig[eventId])
@@ -171,7 +170,7 @@ export default function GraphicsControl({ competitionId }) {
       ...leaderboardButtons,
       ...commonLeaderboardButtons.map(btn => ({ ...btn, section: 'Leaderboards' })),
     ];
-  }, [eventIds]);
+  }, [eventIds, config]);
 
   // Build apparatus buttons for Event Summary (gender-specific)
   const apparatusButtons = useMemo(() => {
