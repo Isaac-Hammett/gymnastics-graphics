@@ -3,7 +3,7 @@
 **PRD:** PRD-Rundown-01-EditorPrototype
 **Status:** PROTOTYPE COMPLETE, FEATURES IN PROGRESS
 **Created:** 2026-01-22
-**Last Updated:** 2026-01-23 (v3.5 - Task 60 marked complete - already done in Phase 0C)
+**Last Updated:** 2026-01-23 (v3.6 - Task 61 complete - Template management UI with edit functionality)
 
 ---
 
@@ -169,7 +169,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 58: Save segment as template | COMPLETE | Added SaveSegmentTemplateModal, bookmark button on SegmentRow, saves to Firebase segmentTemplates path with category tags. Note: Firebase rules need update for client write access. |
 | Task 59: Create segment template library | COMPLETE | Added SegmentTemplateLibraryModal with category filtering, split Add Segment button with dropdown for "New Blank Segment" and "From Template..." options, loads templates from Firebase segmentTemplates path |
 | Task 60: Save full rundown as template | COMPLETE | Already implemented in Phase 0C (Task 3.2). "Save as Template" button in toolbar opens SaveTemplateModal, saves to Firebase rundownTemplates path with team abstraction. |
-| Task 61: Template management UI | NOT STARTED | Edit, delete, organize templates |
+| Task 61: Template management UI | COMPLETE | Added EditTemplateModal and EditSegmentTemplateModal, edit buttons (pencil icon) on template cards in both TemplateLibraryModal and SegmentTemplateLibraryModal, update handlers use Firebase update() for partial updates |
 | Task 62: Add recurrence pattern option | NOT STARTED | Repeat segment N times |
 
 ### Phase 8: Collaboration 🔲 NOT STARTED
