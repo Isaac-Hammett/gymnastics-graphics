@@ -341,6 +341,38 @@ export default function RundownEditorPage() {
     }
   }
 
+  // Duplicate segment (Phase 5: Task 8.1)
+  function handleDuplicateSegment(id) {
+    const segmentToDuplicate = segments.find(seg => seg.id === id);
+    if (!segmentToDuplicate) return;
+
+    // Generate new ID
+    const timestamp = Date.now();
+    const newId = `seg-${timestamp}`;
+
+    // Create duplicate with "(copy)" appended to name
+    const duplicatedSegment = {
+      ...segmentToDuplicate,
+      id: newId,
+      name: `${segmentToDuplicate.name} (copy)`,
+      // Deep copy graphic object if it exists
+      graphic: segmentToDuplicate.graphic
+        ? { ...segmentToDuplicate.graphic, params: { ...segmentToDuplicate.graphic.params } }
+        : null,
+    };
+
+    // Insert after the original segment
+    const originalIndex = segments.findIndex(seg => seg.id === id);
+    const newSegments = [...segments];
+    newSegments.splice(originalIndex + 1, 0, duplicatedSegment);
+    setSegments(newSegments);
+
+    // Select the duplicated segment
+    setSelectedSegmentId(newId);
+    setSelectedSegmentIds([]);
+    showToast('Segment duplicated');
+  }
+
   function handleCancelEdit() {
     setSelectedSegmentId(null);
     setSelectedSegmentIds([]);
@@ -1084,6 +1116,7 @@ export default function RundownEditorPage() {
                                   onInlineDurationChange={handleInlineDurationChange}
                                   onMoveUp={handleMoveUp}
                                   onMoveDown={handleMoveDown}
+                                  onDuplicate={handleDuplicateSegment}
                                   inGroup={true}
                                   groupColor={groupColor}
                                 />
@@ -1120,6 +1153,7 @@ export default function RundownEditorPage() {
                         onInlineDurationChange={handleInlineDurationChange}
                         onMoveUp={handleMoveUp}
                         onMoveDown={handleMoveDown}
+                        onDuplicate={handleDuplicateSegment}
                         inGroup={false}
                         groupColor={null}
                       />
@@ -1379,6 +1413,7 @@ function SegmentRow({
   onInlineDurationChange,
   onMoveUp,
   onMoveDown,
+  onDuplicate,
   inGroup,
   groupColor,
 }) {
@@ -1545,6 +1580,15 @@ function SegmentRow({
           title="Edit segment details"
         >
           <PencilIcon className="w-4 h-4" />
+        </button>
+
+        {/* Duplicate Button (Phase 5: Task 8.1) */}
+        <button
+          onClick={(e) => { e.stopPropagation(); onDuplicate(segment.id); }}
+          className="p-1 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-700 rounded transition-colors"
+          title="Duplicate segment"
+        >
+          <DocumentDuplicateIcon className="w-4 h-4" />
         </button>
 
         {/* Reorder buttons */}
