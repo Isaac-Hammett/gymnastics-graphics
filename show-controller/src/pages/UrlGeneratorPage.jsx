@@ -64,6 +64,8 @@ const baseGraphicTitles = {
   summary: 'Event Summary',
   starting: 'Stream Starting Soon',
   thanks: 'Thanks for Watching',
+  // In-Meet
+  replay: 'Instant Replay',
   // Frame Overlays
   'frame-quad': 'Quad View',
   'frame-tri-center': 'Tri Center',
@@ -334,6 +336,19 @@ export default function UrlGeneratorPage() {
             <GraphicSidebarButton
               key={btn.id}
               {...btn}
+              active={currentGraphic === btn.id}
+              onClick={() => setCurrentGraphic(btn.id)}
+            />
+          ))}
+        </GraphicSection>
+
+        <GraphicSection title="In-Meet">
+          {graphicButtons.inMeet.map((btn) => (
+            <GraphicSidebarButton
+              key={btn.id}
+              id={btn.id}
+              label={btn.label}
+              number={btn.number}
               active={currentGraphic === btn.id}
               onClick={() => setCurrentGraphic(btn.id)}
             />
