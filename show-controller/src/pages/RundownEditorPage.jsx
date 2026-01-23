@@ -26,7 +26,7 @@ import {
   ArrowPathRoundedSquareIcon,
 } from '@heroicons/react/24/outline';
 import { getGraphicsForCompetition, getCategories, getRecommendedGraphic, getGraphicById, GRAPHICS } from '../lib/graphicsRegistry';
-import { db, ref, set, get, push, remove, update } from '../lib/firebase';
+import { db, ref, set, get, push, remove, update, onValue } from '../lib/firebase';
 
 // Hardcoded competition context per PRD (Phase 0B)
 const DUMMY_COMPETITION = {
@@ -136,6 +136,8 @@ export default function RundownEditorPage() {
   const [showEditSegmentTemplateModal, setShowEditSegmentTemplateModal] = useState(false); // Edit segment template modal (Phase 7: Task 61)
   const [segmentTemplateToEdit, setSegmentTemplateToEdit] = useState(null); // Segment template being edited (Phase 7: Task 61)
   const [showRecurrenceModal, setShowRecurrenceModal] = useState(false); // Recurrence pattern modal (Phase 7: Task 62)
+  const [isLoadingRundown, setIsLoadingRundown] = useState(true); // Loading state for Firebase sync (Phase 8: Task 63)
+  const [isSyncing, setIsSyncing] = useState(false); // Indicates if currently syncing to Firebase (Phase 8: Task 63)
 
   // Filtered segments
   const filteredSegments = useMemo(() => {
@@ -219,6 +221,86 @@ export default function RundownEditorPage() {
   function showToast(message) {
     setToast(message);
     setTimeout(() => setToast(''), 3000);
+  }
+
+  // Firebase real-time sync for rundown segments (Phase 8: Task 63)
+  // This useEffect sets up a listener that syncs segments bidirectionally with Firebase
+  useEffect(() => {
+    if (!compId) return;
+
+    const rundownRef = ref(db, `competitions/${compId}/rundown/segments`);
+    const groupsRef = ref(db, `competitions/${compId}/rundown/groups`);
+
+    setIsLoadingRundown(true);
+
+    // Subscribe to segments changes
+    const unsubscribeSegments = onValue(rundownRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        // Firebase stores arrays as objects with numeric keys, convert back to array
+        const segmentArray = Array.isArray(data)
+          ? data.filter(Boolean) // Filter out any null entries
+          : Object.values(data);
+        setSegments(segmentArray);
+      } else {
+        // No data in Firebase yet, initialize with dummy data and save to Firebase
+        setSegments(DUMMY_SEGMENTS);
+        // Save initial data to Firebase
+        set(rundownRef, DUMMY_SEGMENTS).catch(err => {
+          console.error('Error initializing rundown in Firebase:', err);
+        });
+      }
+      setIsLoadingRundown(false);
+    }, (error) => {
+      console.error('Error loading rundown from Firebase:', error);
+      showToast('Error loading rundown');
+      setIsLoadingRundown(false);
+    });
+
+    // Subscribe to groups changes
+    const unsubscribeGroups = onValue(groupsRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        const groupsArray = Array.isArray(data)
+          ? data.filter(Boolean)
+          : Object.values(data);
+        setGroups(groupsArray);
+      } else {
+        setGroups([]);
+      }
+    }, (error) => {
+      console.error('Error loading groups from Firebase:', error);
+    });
+
+    // Cleanup listeners on unmount
+    return () => {
+      unsubscribeSegments();
+      unsubscribeGroups();
+    };
+  }, [compId]);
+
+  // Helper function to sync segments to Firebase (Phase 8: Task 63)
+  // This is called by all segment-modifying handlers
+  async function syncSegmentsToFirebase(newSegments) {
+    if (!compId) return;
+    setIsSyncing(true);
+    try {
+      await set(ref(db, `competitions/${compId}/rundown/segments`), newSegments);
+    } catch (error) {
+      console.error('Error syncing segments to Firebase:', error);
+      showToast('Error saving changes');
+    }
+    setIsSyncing(false);
+  }
+
+  // Helper function to sync groups to Firebase (Phase 8: Task 63)
+  async function syncGroupsToFirebase(newGroups) {
+    if (!compId) return;
+    try {
+      await set(ref(db, `competitions/${compId}/rundown/groups`), newGroups);
+    } catch (error) {
+      console.error('Error syncing groups to Firebase:', error);
+    }
   }
 
   // Close Add Segment dropdown when clicking outside (Phase 7: Task 59)
@@ -313,9 +395,10 @@ export default function RundownEditorPage() {
 
     if (window.confirm(message)) {
       // Only delete unlocked segments
-      setSegments(segments.filter(seg =>
+      const newSegments = segments.filter(seg =>
         !selectedSegmentIds.includes(seg.id) || seg.locked
-      ));
+      );
+      syncSegmentsToFirebase(newSegments);
       setSelectedSegmentIds([]);
       showToast(`${deleteCount} segment(s) deleted${lockedCount > 0 ? `, ${lockedCount} locked skipped` : ''}`);
     }
@@ -325,12 +408,13 @@ export default function RundownEditorPage() {
   // Respects locked segments (Phase 5: Task 8.2)
   function handleBulkEditType(newType) {
     let updatedCount = 0;
-    setSegments(segments.map(seg => {
+    const newSegments = segments.map(seg => {
       if (!selectedSegmentIds.includes(seg.id)) return seg;
       if (seg.locked) return seg; // Skip locked segments
       updatedCount++;
       return { ...seg, type: newType };
-    }));
+    });
+    syncSegmentsToFirebase(newSegments);
     const lockedCount = selectedSegmentIds.length - updatedCount;
     showToast(`Updated type for ${updatedCount} segment(s)${lockedCount > 0 ? `, ${lockedCount} locked skipped` : ''}`);
   }
@@ -339,12 +423,13 @@ export default function RundownEditorPage() {
   // Respects locked segments (Phase 5: Task 8.2)
   function handleBulkEditScene(newScene) {
     let updatedCount = 0;
-    setSegments(segments.map(seg => {
+    const newSegments = segments.map(seg => {
       if (!selectedSegmentIds.includes(seg.id)) return seg;
       if (seg.locked) return seg; // Skip locked segments
       updatedCount++;
       return { ...seg, scene: newScene };
-    }));
+    });
+    syncSegmentsToFirebase(newSegments);
     const lockedCount = selectedSegmentIds.length - updatedCount;
     showToast(`Updated scene for ${updatedCount} segment(s)${lockedCount > 0 ? `, ${lockedCount} locked skipped` : ''}`);
   }
@@ -353,7 +438,7 @@ export default function RundownEditorPage() {
   // Respects locked segments (Phase 5: Task 8.2)
   function handleBulkEditGraphic(graphicId) {
     let updatedCount = 0;
-    setSegments(segments.map(seg => {
+    const newSegments = segments.map(seg => {
       if (!selectedSegmentIds.includes(seg.id)) return seg;
       if (seg.locked) return seg; // Skip locked segments
       updatedCount++;
@@ -361,7 +446,8 @@ export default function RundownEditorPage() {
         return { ...seg, graphic: null };
       }
       return { ...seg, graphic: { graphicId, params: {} } };
-    }));
+    });
+    syncSegmentsToFirebase(newSegments);
     const lockedCount = selectedSegmentIds.length - updatedCount;
     showToast(`Updated graphic for ${updatedCount} segment(s)${lockedCount > 0 ? `, ${lockedCount} locked skipped` : ''}`);
   }
@@ -374,9 +460,10 @@ export default function RundownEditorPage() {
       showToast('Cannot edit locked segment');
       return;
     }
-    setSegments(segments.map(seg =>
+    const newSegments = segments.map(seg =>
       seg.id === segmentId ? { ...seg, duration } : seg
-    ));
+    );
+    syncSegmentsToFirebase(newSegments);
   }
 
   function handleReorder(fromIndex, toIndex) {
@@ -389,11 +476,12 @@ export default function RundownEditorPage() {
     const newSegments = [...segments];
     const [removed] = newSegments.splice(fromIndex, 1);
     newSegments.splice(toIndex, 0, removed);
-    setSegments(newSegments);
+    syncSegmentsToFirebase(newSegments);
   }
 
   function handleAddSegment() {
-    const newId = `seg-${String(segments.length + 1).padStart(3, '0')}`;
+    // Use timestamp for unique ID to avoid collisions with multiple users
+    const newId = `seg-${Date.now()}`;
     const newSegment = {
       id: newId,
       name: 'New Segment',
@@ -410,23 +498,25 @@ export default function RundownEditorPage() {
     };
 
     // Insert after selected segment, or at end
+    let newSegments;
     if (selectedSegmentId) {
       const index = segments.findIndex(s => s.id === selectedSegmentId);
-      const newSegments = [...segments];
+      newSegments = [...segments];
       newSegments.splice(index + 1, 0, newSegment);
-      setSegments(newSegments);
     } else {
-      setSegments([...segments, newSegment]);
+      newSegments = [...segments, newSegment];
     }
+    syncSegmentsToFirebase(newSegments);
 
     setSelectedSegmentId(newId);
     showToast('Segment added');
   }
 
   function handleSaveSegment(updatedSegment) {
-    setSegments(segments.map(seg =>
+    const newSegments = segments.map(seg =>
       seg.id === updatedSegment.id ? updatedSegment : seg
-    ));
+    );
+    syncSegmentsToFirebase(newSegments);
     showToast('Segment saved');
   }
 
@@ -437,7 +527,8 @@ export default function RundownEditorPage() {
       return;
     }
     if (window.confirm('Are you sure you want to delete this segment?')) {
-      setSegments(segments.filter(seg => seg.id !== id));
+      const newSegments = segments.filter(seg => seg.id !== id);
+      syncSegmentsToFirebase(newSegments);
       if (selectedSegmentId === id) {
         setSelectedSegmentId(null);
       }
@@ -474,7 +565,7 @@ export default function RundownEditorPage() {
     const originalIndex = segments.findIndex(seg => seg.id === id);
     const newSegments = [...segments];
     newSegments.splice(originalIndex + 1, 0, duplicatedSegment);
-    setSegments(newSegments);
+    syncSegmentsToFirebase(newSegments);
 
     // Select the duplicated segment
     setSelectedSegmentId(newId);
@@ -489,10 +580,11 @@ export default function RundownEditorPage() {
 
   // Toggle segment lock status (Phase 5: Task 8.2, 8.3)
   function handleToggleLock(id) {
-    setSegments(segments.map(seg =>
-      seg.id === id ? { ...seg, locked: !seg.locked } : seg
-    ));
     const segment = segments.find(s => s.id === id);
+    const newSegments = segments.map(seg =>
+      seg.id === id ? { ...seg, locked: !seg.locked } : seg
+    );
+    syncSegmentsToFirebase(newSegments);
     showToast(segment?.locked ? 'Segment unlocked' : 'Segment locked');
   }
 
@@ -504,9 +596,10 @@ export default function RundownEditorPage() {
       showToast('Cannot edit locked segment');
       return;
     }
-    setSegments(segments.map(seg =>
+    const newSegments = segments.map(seg =>
       seg.id === segmentId ? { ...seg, scene } : seg
-    ));
+    );
+    syncSegmentsToFirebase(newSegments);
   }
 
   function handleInlineGraphicChange(segmentId, graphicId) {
@@ -515,7 +608,7 @@ export default function RundownEditorPage() {
       showToast('Cannot edit locked segment');
       return;
     }
-    setSegments(segments.map(seg => {
+    const newSegments = segments.map(seg => {
       if (seg.id !== segmentId) return seg;
       if (!graphicId) {
         return { ...seg, graphic: null };
@@ -525,7 +618,8 @@ export default function RundownEditorPage() {
         ? seg.graphic.params
         : {};
       return { ...seg, graphic: { graphicId, params: existingParams } };
-    }));
+    });
+    syncSegmentsToFirebase(newSegments);
   }
 
   function handleInlineDurationChange(segmentId, duration) {
@@ -534,9 +628,10 @@ export default function RundownEditorPage() {
       showToast('Cannot edit locked segment');
       return;
     }
-    setSegments(segments.map(seg =>
+    const newSegments = segments.map(seg =>
       seg.id === segmentId ? { ...seg, duration } : seg
-    ));
+    );
+    syncSegmentsToFirebase(newSegments);
   }
 
   // Inline toggle for auto-advance (Phase 6: Task 57)
@@ -546,9 +641,10 @@ export default function RundownEditorPage() {
       showToast('Cannot edit locked segment');
       return;
     }
-    setSegments(segments.map(seg =>
+    const newSegments = segments.map(seg =>
       seg.id === segmentId ? { ...seg, autoAdvance: !seg.autoAdvance } : seg
-    ));
+    );
+    syncSegmentsToFirebase(newSegments);
   }
 
   // Toolbar button handlers
@@ -735,7 +831,7 @@ export default function RundownEditorPage() {
 
       // Create new segments from template
       const newSegments = createSegmentsFromTemplate(templateData.segments, teams);
-      setSegments(newSegments);
+      syncSegmentsToFirebase(newSegments);
       setSelectedSegmentId(null);
       setShowTemplateLibrary(false);
       showToast(`Loaded template: ${templateData.metadata.name}`);
@@ -893,14 +989,15 @@ export default function RundownEditorPage() {
     };
 
     // Insert after selected segment, or at end
+    let newSegments;
     if (selectedSegmentId) {
       const index = segments.findIndex(s => s.id === selectedSegmentId);
-      const newSegments = [...segments];
+      newSegments = [...segments];
       newSegments.splice(index + 1, 0, newSegment);
-      setSegments(newSegments);
     } else {
-      setSegments([...segments, newSegment]);
+      newSegments = [...segments, newSegment];
     }
+    syncSegmentsToFirebase(newSegments);
 
     setSelectedSegmentId(newId);
     setShowSegmentTemplateLibrary(false);
@@ -982,14 +1079,15 @@ export default function RundownEditorPage() {
     }
 
     // Insert after selected segment, or at end
+    let finalSegments;
     if (selectedSegmentId) {
       const index = segments.findIndex(s => s.id === selectedSegmentId);
-      const updatedSegments = [...segments];
-      updatedSegments.splice(index + 1, 0, ...newSegments);
-      setSegments(updatedSegments);
+      finalSegments = [...segments];
+      finalSegments.splice(index + 1, 0, ...newSegments);
     } else {
-      setSegments([...segments, ...newSegments]);
+      finalSegments = [...segments, ...newSegments];
     }
+    syncSegmentsToFirebase(finalSegments);
 
     // Select the first new segment
     setSelectedSegmentId(newSegments[0].id);
@@ -1015,11 +1113,13 @@ export default function RundownEditorPage() {
     };
 
     // Assign segments to the group
-    setSegments(segments.map(seg =>
+    const newSegments = segments.map(seg =>
       selectedSegmentIds.includes(seg.id) ? { ...seg, groupId: newGroupId } : seg
-    ));
+    );
+    syncSegmentsToFirebase(newSegments);
 
-    setGroups([...groups, newGroup]);
+    const newGroups = [...groups, newGroup];
+    syncGroupsToFirebase(newGroups);
     setSelectedSegmentIds([]);
     setShowCreateGroupModal(false);
     showToast(`Created group "${groupName}" with ${selectedSegmentIds.length} segment(s)`);
@@ -1027,25 +1127,29 @@ export default function RundownEditorPage() {
 
   // Toggle group collapse state
   function handleToggleGroupCollapse(groupId) {
-    setGroups(groups.map(g =>
+    const newGroups = groups.map(g =>
       g.id === groupId ? { ...g, collapsed: !g.collapsed } : g
-    ));
+    );
+    syncGroupsToFirebase(newGroups);
   }
 
   // Remove a group (ungroups the segments, doesn't delete them)
   function handleUngroupSegments(groupId) {
-    setSegments(segments.map(seg =>
+    const newSegments = segments.map(seg =>
       seg.groupId === groupId ? { ...seg, groupId: null } : seg
-    ));
-    setGroups(groups.filter(g => g.id !== groupId));
+    );
+    syncSegmentsToFirebase(newSegments);
+    const newGroups = groups.filter(g => g.id !== groupId);
+    syncGroupsToFirebase(newGroups);
     showToast('Group removed');
   }
 
   // Rename a group
   function handleRenameGroup(groupId, newName) {
-    setGroups(groups.map(g =>
+    const newGroups = groups.map(g =>
       g.id === groupId ? { ...g, name: newName } : g
-    ));
+    );
+    syncGroupsToFirebase(newGroups);
   }
 
   // Get segments in a specific group
@@ -1190,7 +1294,13 @@ export default function RundownEditorPage() {
               Back
             </Link>
             <div>
-              <h1 className="text-xl font-bold text-white">RUNDOWN EDITOR</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-bold text-white">RUNDOWN EDITOR</h1>
+                {/* Sync indicator (Phase 8: Task 63) */}
+                {isSyncing && (
+                  <ArrowPathIcon className="w-4 h-4 text-blue-400 animate-spin" title="Syncing..." />
+                )}
+              </div>
               <p className="text-sm text-zinc-500">{compId} - {DUMMY_COMPETITION.name}</p>
             </div>
             {/* Total Runtime Display with Target Duration */}
@@ -1487,7 +1597,12 @@ export default function RundownEditorPage() {
                 <span className="w-12 text-right">Start</span>
               </div>
             </div>
-            {filteredSegments.length === 0 ? (
+            {isLoadingRundown ? (
+              <div className="text-center py-12 text-zinc-500">
+                <ArrowPathIcon className="w-6 h-6 animate-spin mx-auto mb-2" />
+                <div>Loading rundown...</div>
+              </div>
+            ) : filteredSegments.length === 0 ? (
               <div className="text-center py-12 text-zinc-500">
                 {searchQuery || filterType !== 'all'
                   ? 'No segments match your filter'
