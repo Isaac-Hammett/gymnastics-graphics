@@ -20,7 +20,7 @@ This implementation plan covers all phases of the Rundown Editor from the PRD. P
 | 0A | Basic Page Structure | ✅ COMPLETE | 1.1-1.11 |
 | 0B | Graphics & Scene Integration | ✅ COMPLETE | 2.1-2.11 |
 | 0C | Templates (Basic) | ✅ COMPLETE | 3.1-3.5 |
-| 1 | Timing & Display | 🔲 NOT STARTED | 4.1-4.6 |
+| 1 | Timing & Display | 🟡 IN PROGRESS | 4.1-4.6 |
 | 2 | Inline Editing | 🔲 NOT STARTED | 5.1-5.4 |
 | 3 | Multi-Select & Summary | 🔲 NOT STARTED | 6.1-6.6 |
 | 4 | Reordering & Organization | 🔲 NOT STARTED | 7.1-7.5 |
@@ -79,11 +79,11 @@ This implementation plan covers all phases of the Rundown Editor from the PRD. P
 | 3.4 Implement "Load Template" functionality | COMPLETE | Load from Firebase, resolve team placeholders |
 | 3.5 Abstract team references | COMPLETE | Done as part of 3.2 (abstractTeamReferences function) |
 
-### Phase 1: Timing & Display 🔲 NOT STARTED
+### Phase 1: Timing & Display 🟡 IN PROGRESS
 
 | Task | Status | Notes |
 |------|--------|-------|
-| 4.1 Add total runtime display in header | NOT STARTED | Sum of all segment durations |
+| 4.1 Add total runtime display in header | COMPLETE | Added clock icon + runtime display in header with formatDuration |
 | 4.2 Add target duration input | NOT STARTED | User sets expected show length |
 | 4.3 Implement over/under indicator | NOT STARTED | Green/yellow/red based on target |
 | 4.4 Add running time column | NOT STARTED | Cumulative start time per segment |

@@ -13,6 +13,7 @@ import {
   PhotoIcon,
   BookmarkIcon,
   XMarkIcon,
+  ClockIcon,
 } from '@heroicons/react/24/outline';
 import { getGraphicsForCompetition, getCategories, getRecommendedGraphic, getGraphicById, GRAPHICS } from '../lib/graphicsRegistry';
 import { db, ref, set, get, push, remove } from '../lib/firebase';
@@ -103,6 +104,11 @@ export default function RundownEditorPage() {
   const selectedSegment = useMemo(() => {
     return segments.find(seg => seg.id === selectedSegmentId) || null;
   }, [segments, selectedSegmentId]);
+
+  // Calculate total runtime (sum of all segment durations)
+  const totalRuntime = useMemo(() => {
+    return segments.reduce((sum, seg) => sum + (seg.duration || 0), 0);
+  }, [segments]);
 
   // Toast helper
   function showToast(message) {
@@ -411,6 +417,14 @@ export default function RundownEditorPage() {
             <div>
               <h1 className="text-xl font-bold text-white">RUNDOWN EDITOR</h1>
               <p className="text-sm text-zinc-500">{compId} - {DUMMY_COMPETITION.name}</p>
+            </div>
+            {/* Total Runtime Display */}
+            <div className="flex items-center gap-2 px-3 py-2 bg-zinc-800/50 border border-zinc-700 rounded-lg">
+              <ClockIcon className="w-4 h-4 text-zinc-400" />
+              <div className="text-sm">
+                <span className="text-zinc-400">Runtime:</span>
+                <span className="ml-1.5 font-mono font-medium text-white">{formatDuration(totalRuntime)}</span>
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-3">
