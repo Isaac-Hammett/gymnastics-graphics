@@ -24,9 +24,10 @@ import {
   LockOpenIcon,
   ChatBubbleLeftIcon,
   ArrowPathRoundedSquareIcon,
+  UserIcon,
 } from '@heroicons/react/24/outline';
 import { getGraphicsForCompetition, getCategories, getRecommendedGraphic, getGraphicById, GRAPHICS } from '../lib/graphicsRegistry';
-import { db, ref, set, get, push, remove, update, onValue } from '../lib/firebase';
+import { db, ref, set, get, push, remove, update, onValue, onDisconnect } from '../lib/firebase';
 
 // Hardcoded competition context per PRD (Phase 0B)
 const DUMMY_COMPETITION = {
@@ -138,6 +139,8 @@ export default function RundownEditorPage() {
   const [showRecurrenceModal, setShowRecurrenceModal] = useState(false); // Recurrence pattern modal (Phase 7: Task 62)
   const [isLoadingRundown, setIsLoadingRundown] = useState(true); // Loading state for Firebase sync (Phase 8: Task 63)
   const [isSyncing, setIsSyncing] = useState(false); // Indicates if currently syncing to Firebase (Phase 8: Task 63)
+  const [presenceList, setPresenceList] = useState([]); // List of users currently viewing (Phase 8: Task 64)
+  const [mySessionId] = useState(() => `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`); // Unique session ID (Phase 8: Task 64)
 
   // Filtered segments
   const filteredSegments = useMemo(() => {
@@ -278,6 +281,73 @@ export default function RundownEditorPage() {
       unsubscribeGroups();
     };
   }, [compId]);
+
+  // Firebase presence tracking for multi-user awareness (Phase 8: Task 64)
+  // This useEffect manages the current user's presence and subscribes to other users' presence
+  useEffect(() => {
+    if (!compId) return;
+
+    const presenceRef = ref(db, `competitions/${compId}/rundown/presence/${mySessionId}`);
+    const allPresenceRef = ref(db, `competitions/${compId}/rundown/presence`);
+
+    // Generate a random color for this user's avatar
+    const userColors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-amber-500', 'bg-rose-500', 'bg-cyan-500', 'bg-indigo-500', 'bg-pink-500'];
+    const userColor = userColors[Math.floor(Math.random() * userColors.length)];
+
+    // Set this user's presence data
+    const presenceData = {
+      sessionId: mySessionId,
+      joinedAt: Date.now(),
+      lastActivity: Date.now(),
+      color: userColor,
+      // In the future, this could include user name/email from auth
+      displayName: `User ${mySessionId.slice(-4).toUpperCase()}`,
+    };
+
+    // Write presence and set up auto-cleanup on disconnect
+    set(presenceRef, presenceData).catch(err => {
+      console.error('Error setting presence:', err);
+    });
+
+    // Set up onDisconnect to remove presence when user leaves
+    onDisconnect(presenceRef).remove().catch(err => {
+      console.error('Error setting onDisconnect:', err);
+    });
+
+    // Update lastActivity periodically to indicate user is still active
+    const activityInterval = setInterval(() => {
+      update(presenceRef, { lastActivity: Date.now() }).catch(() => {
+        // Ignore errors from activity updates
+      });
+    }, 30000); // Update every 30 seconds
+
+    // Subscribe to all users' presence
+    const unsubscribePresence = onValue(allPresenceRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        const presenceArray = Object.values(data).filter(p => {
+          // Filter out stale presence (older than 2 minutes with no activity)
+          const isRecent = Date.now() - p.lastActivity < 120000;
+          return isRecent;
+        });
+        setPresenceList(presenceArray);
+      } else {
+        setPresenceList([]);
+      }
+    }, (error) => {
+      console.error('Error loading presence:', error);
+    });
+
+    // Cleanup on unmount
+    return () => {
+      clearInterval(activityInterval);
+      unsubscribePresence();
+      // Remove presence when leaving
+      remove(presenceRef).catch(() => {
+        // Ignore errors during cleanup
+      });
+    };
+  }, [compId, mySessionId]);
 
   // Helper function to sync segments to Firebase (Phase 8: Task 63)
   // This is called by all segment-modifying handlers
@@ -1299,6 +1369,35 @@ export default function RundownEditorPage() {
                 {/* Sync indicator (Phase 8: Task 63) */}
                 {isSyncing && (
                   <ArrowPathIcon className="w-4 h-4 text-blue-400 animate-spin" title="Syncing..." />
+                )}
+                {/* Presence indicators (Phase 8: Task 64) */}
+                {presenceList.length > 0 && (
+                  <div className="flex items-center gap-1 ml-2">
+                    <div className="flex -space-x-2">
+                      {presenceList.slice(0, 5).map((user) => (
+                        <div
+                          key={user.sessionId}
+                          className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-medium text-white border-2 border-zinc-900 ${user.color} ${
+                            user.sessionId === mySessionId ? 'ring-2 ring-white/30' : ''
+                          }`}
+                          title={user.sessionId === mySessionId ? `${user.displayName} (you)` : user.displayName}
+                        >
+                          {user.displayName.slice(-2)}
+                        </div>
+                      ))}
+                      {presenceList.length > 5 && (
+                        <div
+                          className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-medium text-zinc-300 bg-zinc-700 border-2 border-zinc-900"
+                          title={`${presenceList.length - 5} more users`}
+                        >
+                          +{presenceList.length - 5}
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-xs text-zinc-500 ml-1">
+                      {presenceList.length === 1 ? '1 viewer' : `${presenceList.length} viewers`}
+                    </span>
+                  </div>
                 )}
               </div>
               <p className="text-sm text-zinc-500">{compId} - {DUMMY_COMPETITION.name}</p>
