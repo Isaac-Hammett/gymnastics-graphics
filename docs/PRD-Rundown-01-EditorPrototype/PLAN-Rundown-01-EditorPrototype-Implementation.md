@@ -3,7 +3,7 @@
 **PRD:** PRD-Rundown-01-EditorPrototype
 **Status:** IN PROGRESS
 **Created:** 2026-01-22
-**Last Updated:** 2026-01-23
+**Last Updated:** 2026-01-23 (Task 2.2 complete)
 
 ---
 
@@ -261,17 +261,24 @@ Add hardcoded competition and scene data for prototyping.
 
 ### Task 2.2: Implement Scene picker dropdown
 
-**Status:** PENDING
+**Status:** COMPLETE
 **File:** `show-controller/src/pages/RundownEditorPage.jsx`
 
 **Description:**
 Add Scene picker dropdown to SegmentDetail panel.
 
 **Checklist:**
-- [ ] Add Scene dropdown in SegmentDetail panel
-- [ ] Group scenes by category with section headers
-- [ ] Wire selection to segment.scene field
-- [ ] Show current selection when editing existing segment
+- [x] Add Scene dropdown in SegmentDetail panel
+- [x] Group scenes by category with section headers
+- [x] Wire selection to segment.scene field
+- [x] Show current selection when editing existing segment
+
+**Implementation Notes:**
+- Added `SCENE_CATEGORY_LABELS` constant for readable category headers
+- Added `getGroupedScenes()` helper function to organize scenes by category
+- Used HTML `<optgroup>` for grouped dropdown sections
+- Added "(No scene selected)" as first option
+- Scene picker has subtle visual distinction with border/background styling
 
 ---
 

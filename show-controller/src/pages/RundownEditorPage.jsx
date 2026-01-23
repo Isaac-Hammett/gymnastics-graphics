@@ -402,9 +402,31 @@ export default function RundownEditorPage() {
   );
 }
 
+// Scene category labels for display
+const SCENE_CATEGORY_LABELS = {
+  static: 'Static Scenes',
+  manual: 'Manual Control',
+  graphics: 'Graphics',
+  single: 'Single Camera',
+  multi: 'Multi-Camera',
+};
+
+// Group scenes by category
+function getGroupedScenes() {
+  const groups = {};
+  DUMMY_SCENES.forEach(scene => {
+    if (!groups[scene.category]) {
+      groups[scene.category] = [];
+    }
+    groups[scene.category].push(scene);
+  });
+  return groups;
+}
+
 // Placeholder SegmentDetail panel component
 function SegmentDetailPanel({ segment, onSave, onDelete, onCancel }) {
   const [formData, setFormData] = useState(segment);
+  const groupedScenes = getGroupedScenes();
 
   // Reset form when segment changes
   useState(() => {
@@ -439,39 +461,51 @@ function SegmentDetailPanel({ segment, onSave, onDelete, onCancel }) {
           />
         </div>
 
-        <div>
-          <label className="block text-xs text-zinc-400 mb-1.5">Type</label>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs text-zinc-400 mb-1.5">Type</label>
+            <select
+              value={formData.type}
+              onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+            >
+              {SEGMENT_TYPES.filter(t => t.value !== 'all').map(type => (
+                <option key={type.value} value={type.value}>{type.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs text-zinc-400 mb-1.5">Duration (seconds)</label>
+            <input
+              type="number"
+              value={formData.duration || ''}
+              onChange={(e) => setFormData({ ...formData, duration: e.target.value ? Number(e.target.value) : null })}
+              placeholder="Manual"
+              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+            />
+          </div>
+        </div>
+
+        {/* OBS Scene Picker - grouped by category */}
+        <div className="border border-zinc-700 rounded-lg p-3 bg-zinc-800/50">
+          <label className="block text-xs text-zinc-400 mb-2 uppercase tracking-wide">OBS Scene</label>
           <select
-            value={formData.type}
-            onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-            className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
-          >
-            {SEGMENT_TYPES.filter(t => t.value !== 'all').map(type => (
-              <option key={type.value} value={type.value}>{type.label}</option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-xs text-zinc-400 mb-1.5">Duration (seconds)</label>
-          <input
-            type="number"
-            value={formData.duration || ''}
-            onChange={(e) => setFormData({ ...formData, duration: e.target.value ? Number(e.target.value) : null })}
-            placeholder="Leave empty for manual advance"
-            className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
-          />
-        </div>
-
-        <div>
-          <label className="block text-xs text-zinc-400 mb-1.5">OBS Scene</label>
-          <input
-            type="text"
             value={formData.scene}
             onChange={(e) => setFormData({ ...formData, scene: e.target.value })}
-            placeholder="Enter scene name"
-            className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
-          />
+            className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+          >
+            <option value="">(No scene selected)</option>
+            {Object.entries(groupedScenes).map(([category, scenes]) => (
+              <optgroup key={category} label={SCENE_CATEGORY_LABELS[category] || category}>
+                {scenes.map(scene => (
+                  <option key={scene.name} value={scene.name}>
+                    {scene.name}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
         </div>
 
         <div className="flex items-center gap-2">
