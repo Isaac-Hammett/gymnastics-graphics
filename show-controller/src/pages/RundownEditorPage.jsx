@@ -220,6 +220,38 @@ export default function RundownEditorPage() {
     };
   }, [totalRuntime, targetDuration]);
 
+  // Compute which segments other users have selected (Phase 8: Task 65)
+  // Returns a map of segmentId -> array of users who have that segment selected
+  const otherUsersSelections = useMemo(() => {
+    const selections = {};
+    presenceList.forEach(user => {
+      // Skip current user's selections
+      if (user.sessionId === mySessionId) return;
+
+      // Add single selection
+      if (user.selectedSegmentId) {
+        if (!selections[user.selectedSegmentId]) {
+          selections[user.selectedSegmentId] = [];
+        }
+        selections[user.selectedSegmentId].push(user);
+      }
+
+      // Add multi-selections
+      if (user.selectedSegmentIds && Array.isArray(user.selectedSegmentIds)) {
+        user.selectedSegmentIds.forEach(segId => {
+          if (!selections[segId]) {
+            selections[segId] = [];
+          }
+          // Avoid duplicates if segId equals selectedSegmentId
+          if (!selections[segId].some(u => u.sessionId === user.sessionId)) {
+            selections[segId].push(user);
+          }
+        });
+      }
+    });
+    return selections;
+  }, [presenceList, mySessionId]);
+
   // Toast helper
   function showToast(message) {
     setToast(message);
@@ -302,6 +334,9 @@ export default function RundownEditorPage() {
       color: userColor,
       // In the future, this could include user name/email from auth
       displayName: `User ${mySessionId.slice(-4).toUpperCase()}`,
+      // Selection state for cursor/selection sharing (Phase 8: Task 65)
+      selectedSegmentId: null,
+      selectedSegmentIds: [],
     };
 
     // Write presence and set up auto-cleanup on disconnect
@@ -348,6 +383,23 @@ export default function RundownEditorPage() {
       });
     };
   }, [compId, mySessionId]);
+
+  // Sync selection state to presence (Phase 8: Task 65)
+  // This useEffect updates the current user's presence with their selection
+  useEffect(() => {
+    if (!compId) return;
+
+    const presenceRef = ref(db, `competitions/${compId}/rundown/presence/${mySessionId}`);
+
+    // Update selection in presence data
+    update(presenceRef, {
+      selectedSegmentId: selectedSegmentId || null,
+      selectedSegmentIds: selectedSegmentIds || [],
+      lastActivity: Date.now(),
+    }).catch(() => {
+      // Ignore errors - presence update is not critical
+    });
+  }, [compId, mySessionId, selectedSegmentId, selectedSegmentIds]);
 
   // Helper function to sync segments to Firebase (Phase 8: Task 63)
   // This is called by all segment-modifying handlers
@@ -1779,6 +1831,7 @@ export default function RundownEditorPage() {
                                   draggedSegmentId={draggedSegmentId}
                                   dragOverIndex={dragOverIndex}
                                   segmentStartTimes={segmentStartTimes}
+                                  otherUsersSelections={otherUsersSelections}
                                   onDragStart={handleDragStart}
                                   onDragEnd={handleDragEnd}
                                   onDragOver={handleDragOver}
@@ -1819,6 +1872,7 @@ export default function RundownEditorPage() {
                         draggedSegmentId={draggedSegmentId}
                         dragOverIndex={dragOverIndex}
                         segmentStartTimes={segmentStartTimes}
+                        otherUsersSelections={otherUsersSelections}
                         onDragStart={handleDragStart}
                         onDragEnd={handleDragEnd}
                         onDragOver={handleDragOver}
@@ -2139,6 +2193,7 @@ function SegmentRow({
   draggedSegmentId,
   dragOverIndex,
   segmentStartTimes,
+  otherUsersSelections,
   onDragStart,
   onDragEnd,
   onDragOver,
@@ -2166,6 +2221,9 @@ function SegmentRow({
   const groupedScenes = getGroupedScenes();
   const groupedGraphics = getGroupedGraphics();
 
+  // Get other users who have this segment selected (Phase 8: Task 65)
+  const otherUsersHere = otherUsersSelections?.[segment.id] || [];
+
   return (
     <div
       id={`segment-${segment.id}`}
@@ -2186,9 +2244,11 @@ function SegmentRow({
                 ? 'bg-zinc-800 border-blue-500/50'
                 : isDragging
                   ? 'bg-zinc-800 border-zinc-600 opacity-50'
-                  : inGroup
-                    ? `bg-zinc-900/50 border-zinc-800/50 hover:border-zinc-700`
-                    : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'
+                  : otherUsersHere.length > 0
+                    ? `bg-zinc-900 border-l-2 ${otherUsersHere[0].color.replace('bg-', 'border-')} border-t-zinc-800 border-r-zinc-800 border-b-zinc-800`
+                    : inGroup
+                      ? `bg-zinc-900/50 border-zinc-800/50 hover:border-zinc-700`
+                      : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'
       }`}
     >
       {/* Row 1: Drag handle, checkbox, segment number, start time, name, type badge */}
@@ -2290,6 +2350,27 @@ function SegmentRow({
               >
                 →
               </span>
+            )}
+            {/* Other users' selection indicator (Phase 8: Task 65) */}
+            {otherUsersHere.length > 0 && (
+              <div
+                className="inline-flex items-center gap-0.5 ml-auto shrink-0"
+                title={`Selected by: ${otherUsersHere.map(u => u.displayName).join(', ')}`}
+              >
+                {otherUsersHere.slice(0, 3).map((user) => (
+                  <div
+                    key={user.sessionId}
+                    className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-medium text-white ${user.color} ring-1 ring-zinc-900`}
+                  >
+                    {user.displayName.slice(-2)}
+                  </div>
+                ))}
+                {otherUsersHere.length > 3 && (
+                  <span className="text-[10px] text-zinc-400 ml-0.5">
+                    +{otherUsersHere.length - 3}
+                  </span>
+                )}
+              </div>
             )}
           </div>
         </div>
