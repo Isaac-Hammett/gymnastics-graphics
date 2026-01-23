@@ -21,7 +21,7 @@ This implementation plan covers all phases of the Rundown Editor from the PRD. P
 | 0B | Graphics & Scene Integration | ✅ COMPLETE | 2.1-2.11 |
 | 0C | Templates (Basic) | ✅ COMPLETE | 3.1-3.5 |
 | 1 | Timing & Display | ✅ COMPLETE | 4.1-4.6 |
-| 2 | Inline Editing | 🔲 NOT STARTED | 5.1-5.4 |
+| 2 | Inline Editing | ✅ COMPLETE | 5.1-5.4 |
 | 3 | Multi-Select & Summary | 🔲 NOT STARTED | 6.1-6.6 |
 | 4 | Reordering & Organization | 🔲 NOT STARTED | 7.1-7.5 |
 | 5 | Segment Management | 🔲 NOT STARTED | 8.1-8.6 |
@@ -90,14 +90,14 @@ This implementation plan covers all phases of the Rundown Editor from the PRD. P
 | 4.5 Auto-recalculate on duration change | COMPLETE | Handled automatically via useMemo dependency on segments array |
 | 4.6 Add buffer/pad time between segments | COMPLETE | Added bufferAfter field to segments with UI in detail panel and visual indicator in list |
 
-### Phase 2: Inline Editing 🔲 NOT STARTED
+### Phase 2: Inline Editing ✅ COMPLETE
 
 | Task | Status | Notes |
 |------|--------|-------|
-| 5.1 Add inline OBS Scene dropdown | NOT STARTED | Editable directly on segment row |
-| 5.2 Add inline Graphic dropdown | NOT STARTED | Editable directly on segment row |
-| 5.3 Add inline duration input | NOT STARTED | Click to edit, blur/Enter to save |
-| 5.4 Keep edit button for full panel | NOT STARTED | Opens detail panel for all fields |
+| 5.1 Add inline OBS Scene dropdown | COMPLETE | Grouped dropdown on segment row, auto-saves on change |
+| 5.2 Add inline Graphic dropdown | COMPLETE | Grouped dropdown on segment row, auto-saves on change |
+| 5.3 Add inline duration input | COMPLETE | Text input with "s" suffix display, numeric-only entry |
+| 5.4 Keep edit button for full panel | COMPLETE | Pencil icon opens detail panel for all fields |
 
 ### Phase 3: Multi-Select & Summary 🔲 NOT STARTED
 

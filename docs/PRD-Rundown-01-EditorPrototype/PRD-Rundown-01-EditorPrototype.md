@@ -64,7 +64,7 @@ The **Producer View** (separate page) uses this rundown as the "script" to contr
 | 0B | Graphics & Scene Integration | ✅ COMPLETE | Pickers, smart recommendations, params |
 | 0C | Templates (Basic) | ✅ COMPLETE | Save/load rundowns as templates |
 | 1 | Timing & Display | ✅ COMPLETE | Runtime totals, running time, buffers |
-| 2 | Inline Editing | 🔲 PLANNED | Edit fields directly on segment rows |
+| 2 | Inline Editing | ✅ COMPLETE | Edit fields directly on segment rows |
 | 3 | Multi-Select & Summary | 🔲 PLANNED | Bulk selection with summary sidebar |
 | 4 | Reordering & Organization | 🔲 PLANNED | Drag-drop, grouping, nesting |
 | 5 | Segment Management | 🔲 PLANNED | Duplicate, lock, conditional, notes |
@@ -1061,13 +1061,13 @@ const filteredSegments = segments.filter(seg => {
 - [x] Buffer time can be added between segments
 - [x] Buffer contributes to total runtime
 
-### Phase 2: Inline Editing
+### Phase 2: Inline Editing ✅ COMPLETE
 
-- [ ] OBS Scene dropdown editable inline on segment row
-- [ ] Graphic dropdown editable inline on segment row
-- [ ] Duration editable inline on segment row
-- [ ] Changes auto-save on selection
-- [ ] Edit button opens full detail panel
+- [x] OBS Scene dropdown editable inline on segment row
+- [x] Graphic dropdown editable inline on segment row
+- [x] Duration editable inline on segment row
+- [x] Changes auto-save on selection
+- [x] Edit button opens full detail panel
 
 ### Phase 3: Multi-Select & Summary
 
