@@ -3,7 +3,7 @@
 **PRD:** PRD-Rundown-01-EditorPrototype
 **Status:** PROTOTYPE COMPLETE, FEATURES IN PROGRESS
 **Created:** 2026-01-22
-**Last Updated:** 2026-01-23 (v4.3 - Task 68 complete - Version rollback)
+**Last Updated:** 2026-01-23 (v4.4 - Task 69 complete - Approval workflow)
 
 ---
 
@@ -50,7 +50,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | 5 | Segment Management | ✅ COMPLETE | 49-54 |
 | 6 | Timing Modes | ✅ COMPLETE | 55-57 |
 | 7 | Templates & Presets | ✅ COMPLETE | 58-62 |
-| 8 | Collaboration | 🟡 IN PROGRESS | 63-69 |
+| 8 | Collaboration | ✅ COMPLETE | 63-69 |
 | 9 | Data & Reporting | 🔲 NOT STARTED | 70-74 |
 | 10 | Visual & UX | 🔲 NOT STARTED | 75-81 |
 | 11 | Quality of Life | 🔲 NOT STARTED | 82-86 |
@@ -172,7 +172,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 61: Template management UI | COMPLETE | Added EditTemplateModal and EditSegmentTemplateModal, edit buttons (pencil icon) on template cards in both TemplateLibraryModal and SegmentTemplateLibraryModal, update handlers use Firebase update() for partial updates |
 | Task 62: Add recurrence pattern option | COMPLETE | "Repeat Segment..." option in Add Segment dropdown, RecurrencePatternModal with name pattern ({n} placeholder), count, type, duration; creates multiple segments with auto-incremented names |
 
-### Phase 8: Collaboration 🟡 IN PROGRESS
+### Phase 8: Collaboration ✅ COMPLETE
 
 | Task | Status | Notes |
 |------|--------|-------|
@@ -182,7 +182,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 66: Add role-based permissions | COMPLETE | USER_ROLES constant with canEdit/canLock/canApprove permissions, role selector dropdown in header, checkPermission() helper for all edit handlers, role synced to presence for display, viewers blocked from all edit operations |
 | Task 67: Implement change history log | COMPLETE | logChange() helper writes to Firebase history, syncSegmentsToFirebase/syncGroupsToFirebase updated to log actions, ChangeHistoryModal displays history with relative timestamps, color-coded action types (green=add, red=delete, amber=lock), user info with role, History button in header |
 | Task 68: Add version rollback | COMPLETE | logChange() updated to store snapshots (segments + groups), syncSegmentsToFirebase/syncGroupsToFirebase pass snapshots, ChangeHistoryModal shows "Restore" button for entries with snapshots, RestoreConfirmModal for confirmation, handleInitiateRestore/handleConfirmRestore handlers, skipSnapshot flag prevents circular references |
-| Task 69: Add approval workflow | NOT STARTED | Draft → In Review → Approved → Locked |
+| Task 69: Add approval workflow | COMPLETE | APPROVAL_STATUSES constant (draft, in-review, approved, locked), approvalStatus state synced to Firebase, status badge in header with dropdown menu, checkPermission() extended for approval status restrictions, workflow actions (submitForReview, approve, reject, lock, unlock, returnToDraft), RejectReasonModal for rejection with required reason, status logged to change history |
 
 ### Phase 9: Data & Reporting 🔲 NOT STARTED
 

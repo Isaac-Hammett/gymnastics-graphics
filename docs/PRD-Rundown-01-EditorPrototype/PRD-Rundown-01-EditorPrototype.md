@@ -70,7 +70,7 @@ The **Producer View** (separate page) uses this rundown as the "script" to contr
 | 5 | Segment Management | ✅ COMPLETE | Duplicate, lock, conditional, notes |
 | 6 | Timing Modes | ✅ COMPLETE | Fixed/manual/follows-previous modes |
 | 7 | Templates & Presets | ✅ COMPLETE | Segment templates, recurrence |
-| 8 | Collaboration | 🔲 PLANNED | Multi-user, permissions, versioning |
+| 8 | Collaboration | ✅ COMPLETE | Multi-user, permissions, versioning |
 | 9 | Data & Reporting | 🔲 PLANNED | Export, import rundowns |
 | 10 | Visual & UX | 🔲 PLANNED | Timeline view, theming, print |
 | 11 | Quality of Life | 🔲 PLANNED | Keyboard shortcuts, undo/redo |
@@ -1114,14 +1114,14 @@ const filteredSegments = segments.filter(seg => {
 - [x] Load template for new rundown
 - [x] Recurrence pattern option
 
-### Phase 8: Collaboration
+### Phase 8: Collaboration ✅ COMPLETE
 
-- [ ] Multiple users can edit simultaneously
-- [ ] Presence indicators shown
-- [ ] Change history logged
-- [ ] Version rollback available
-- [ ] Comment threads on segments
-- [ ] Approval workflow statuses
+- [x] Multiple users can edit simultaneously
+- [x] Presence indicators shown
+- [x] Change history logged
+- [x] Version rollback available
+- [ ] Comment threads on segments (deferred to PRD-05)
+- [x] Approval workflow statuses
 
 ### Phase 9: Data & Reporting
 

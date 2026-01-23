@@ -69,9 +69,51 @@ const TIMING_MODES = [
 const USER_ROLES = [
   { id: 'viewer', label: 'Viewer', description: 'View only, no edits', canEdit: false, canLock: false, canApprove: false },
   { id: 'editor', label: 'Editor', description: 'Edit segments, cannot lock or approve', canEdit: true, canLock: false, canApprove: false },
-  { id: 'producer', label: 'Producer', description: 'Edit all segments, lock/unlock, approve', canEdit: true, canLock: true, canApprove: false },
+  { id: 'producer', label: 'Producer', description: 'Edit all segments, lock/unlock, approve', canEdit: true, canLock: true, canApprove: true },
   { id: 'owner', label: 'Owner', description: 'Full access, manage permissions', canEdit: true, canLock: true, canApprove: true },
 ];
+
+// Approval workflow statuses (Phase 8: Task 69)
+// Defines the rundown approval states and their behaviors
+const APPROVAL_STATUSES = [
+  {
+    id: 'draft',
+    label: 'Draft',
+    description: 'Work in progress, fully editable',
+    color: 'bg-zinc-500/20 text-zinc-300 border-zinc-500/40',
+    icon: 'pencil',
+    allowEdits: true,
+  },
+  {
+    id: 'in-review',
+    label: 'In Review',
+    description: 'Submitted for approval, limited edits',
+    color: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+    icon: 'clock',
+    allowEdits: false, // Only producers/owners can edit when in review
+  },
+  {
+    id: 'approved',
+    label: 'Approved',
+    description: 'Reviewed and approved, locked for edits',
+    color: 'bg-green-500/20 text-green-300 border-green-500/40',
+    icon: 'check',
+    allowEdits: false,
+  },
+  {
+    id: 'locked',
+    label: 'Locked',
+    description: 'Final version, no edits allowed',
+    color: 'bg-red-500/20 text-red-300 border-red-500/40',
+    icon: 'lock',
+    allowEdits: false,
+  },
+];
+
+// Get approval status by ID
+function getApprovalStatusById(statusId) {
+  return APPROVAL_STATUSES.find(s => s.id === statusId) || APPROVAL_STATUSES[0]; // Default to draft
+}
 
 // Get role by ID
 function getRoleById(roleId) {
@@ -172,6 +214,10 @@ export default function RundownEditorPage() {
   const [loadingHistory, setLoadingHistory] = useState(false); // Loading state for history (Phase 8: Task 67)
   const [showRestoreConfirmModal, setShowRestoreConfirmModal] = useState(false); // Confirm restore modal (Phase 8: Task 68)
   const [entryToRestore, setEntryToRestore] = useState(null); // History entry to restore (Phase 8: Task 68)
+  const [approvalStatus, setApprovalStatus] = useState('draft'); // Rundown approval status (Phase 8: Task 69)
+  const [showApprovalMenu, setShowApprovalMenu] = useState(false); // Toggle approval actions dropdown (Phase 8: Task 69)
+  const [showRejectModal, setShowRejectModal] = useState(false); // Reject with reason modal (Phase 8: Task 69)
+  const [rejectReason, setRejectReason] = useState(''); // Reason for rejection (Phase 8: Task 69)
 
   // Filtered segments
   const filteredSegments = useMemo(() => {
@@ -293,9 +339,14 @@ export default function RundownEditorPage() {
   const currentRole = useMemo(() => getRoleById(myRole), [myRole]);
   const canEdit = currentRole.canEdit;
   const canLock = currentRole.canLock;
+  const canApprove = currentRole.canApprove; // Phase 8: Task 69
 
-  // Check if action is allowed based on role
+  // Get current approval status object (Phase 8: Task 69)
+  const currentApprovalStatus = useMemo(() => getApprovalStatusById(approvalStatus), [approvalStatus]);
+
+  // Check if action is allowed based on role and approval status (Phase 8: Task 66 & 69)
   function checkPermission(action, showWarning = true) {
+    // Check role permissions first
     if (action === 'edit' && !canEdit) {
       if (showWarning) showToast('Permission denied: Viewers cannot edit');
       return false;
@@ -303,6 +354,29 @@ export default function RundownEditorPage() {
     if (action === 'lock' && !canLock) {
       if (showWarning) showToast('Permission denied: Only producers and owners can lock/unlock');
       return false;
+    }
+    if (action === 'approve' && !canApprove) {
+      if (showWarning) showToast('Permission denied: Only producers and owners can approve/reject');
+      return false;
+    }
+
+    // Check approval status permissions (Phase 8: Task 69)
+    if (action === 'edit') {
+      // Locked status: no edits allowed
+      if (approvalStatus === 'locked') {
+        if (showWarning) showToast('Rundown is locked. Unlock to make changes.');
+        return false;
+      }
+      // Approved status: only owners can edit
+      if (approvalStatus === 'approved' && myRole !== 'owner') {
+        if (showWarning) showToast('Rundown is approved. Only owners can edit.');
+        return false;
+      }
+      // In Review status: only producers and owners can edit
+      if (approvalStatus === 'in-review' && !canLock) {
+        if (showWarning) showToast('Rundown is in review. Only producers and owners can edit.');
+        return false;
+      }
     }
     return true;
   }
@@ -314,6 +388,7 @@ export default function RundownEditorPage() {
 
     const rundownRef = ref(db, `competitions/${compId}/rundown/segments`);
     const groupsRef = ref(db, `competitions/${compId}/rundown/groups`);
+    const statusRef = ref(db, `competitions/${compId}/rundown/approvalStatus`); // Phase 8: Task 69
 
     setIsLoadingRundown(true);
 
@@ -341,6 +416,17 @@ export default function RundownEditorPage() {
       setIsLoadingRundown(false);
     });
 
+    // Subscribe to approval status changes (Phase 8: Task 69)
+    const unsubscribeStatus = onValue(statusRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setApprovalStatus(snapshot.val());
+      } else {
+        setApprovalStatus('draft');
+      }
+    }, (error) => {
+      console.error('Error loading approval status from Firebase:', error);
+    });
+
     // Subscribe to groups changes
     const unsubscribeGroups = onValue(groupsRef, (snapshot) => {
       if (snapshot.exists()) {
@@ -360,6 +446,7 @@ export default function RundownEditorPage() {
     return () => {
       unsubscribeSegments();
       unsubscribeGroups();
+      unsubscribeStatus();
     };
   }, [compId]);
 
@@ -631,6 +718,137 @@ export default function RundownEditorPage() {
     setEntryToRestore(null);
   }
 
+  // Approval workflow handlers (Phase 8: Task 69)
+
+  // Sync approval status to Firebase
+  async function syncApprovalStatusToFirebase(newStatus, action = null, details = {}) {
+    if (!compId) return;
+    try {
+      await set(ref(db, `competitions/${compId}/rundown/approvalStatus`), newStatus);
+      // Log the change
+      if (action) {
+        await logChange(action, {
+          newStatus,
+          ...details,
+        });
+      }
+    } catch (error) {
+      console.error('Error syncing approval status to Firebase:', error);
+      showToast('Error updating approval status');
+    }
+  }
+
+  // Submit rundown for review
+  function handleSubmitForReview() {
+    if (!checkPermission('edit')) return;
+    if (approvalStatus !== 'draft') {
+      showToast('Only draft rundowns can be submitted for review');
+      return;
+    }
+    syncApprovalStatusToFirebase('in-review', 'Submit for review', {
+      previousStatus: approvalStatus,
+      segmentCount: segments.length,
+    });
+    setShowApprovalMenu(false);
+    showToast('Rundown submitted for review');
+  }
+
+  // Approve the rundown
+  function handleApprove() {
+    if (!checkPermission('approve')) return;
+    if (approvalStatus !== 'in-review') {
+      showToast('Only rundowns in review can be approved');
+      return;
+    }
+    syncApprovalStatusToFirebase('approved', 'Approve rundown', {
+      previousStatus: approvalStatus,
+    });
+    setShowApprovalMenu(false);
+    showToast('Rundown approved');
+  }
+
+  // Open reject modal (requires reason)
+  function handleOpenRejectModal() {
+    if (!checkPermission('approve')) return;
+    if (approvalStatus !== 'in-review') {
+      showToast('Only rundowns in review can be rejected');
+      return;
+    }
+    setRejectReason('');
+    setShowRejectModal(true);
+    setShowApprovalMenu(false);
+  }
+
+  // Confirm rejection with reason
+  function handleConfirmReject() {
+    if (!rejectReason.trim()) {
+      showToast('Please provide a reason for rejection');
+      return;
+    }
+    syncApprovalStatusToFirebase('draft', 'Reject rundown', {
+      previousStatus: approvalStatus,
+      reason: rejectReason.trim(),
+    });
+    setShowRejectModal(false);
+    setRejectReason('');
+    showToast('Rundown rejected and returned to draft');
+  }
+
+  // Cancel rejection
+  function handleCancelReject() {
+    setShowRejectModal(false);
+    setRejectReason('');
+  }
+
+  // Lock the rundown (from approved status)
+  function handleLockRundown() {
+    if (!checkPermission('lock')) return;
+    if (approvalStatus !== 'approved') {
+      showToast('Only approved rundowns can be locked');
+      return;
+    }
+    syncApprovalStatusToFirebase('locked', 'Lock rundown', {
+      previousStatus: approvalStatus,
+    });
+    setShowApprovalMenu(false);
+    showToast('Rundown locked');
+  }
+
+  // Unlock the rundown (only owners)
+  function handleUnlockRundown() {
+    if (myRole !== 'owner') {
+      showToast('Only owners can unlock rundowns');
+      return;
+    }
+    // Ask for confirmation
+    if (!window.confirm('Unlock this rundown? It will return to draft status and can be edited.')) {
+      return;
+    }
+    syncApprovalStatusToFirebase('draft', 'Unlock rundown', {
+      previousStatus: approvalStatus,
+    });
+    setShowApprovalMenu(false);
+    showToast('Rundown unlocked and returned to draft');
+  }
+
+  // Return to draft (from in-review or approved, not locked)
+  function handleReturnToDraft() {
+    if (!checkPermission('approve')) return;
+    if (approvalStatus === 'draft') {
+      showToast('Rundown is already a draft');
+      return;
+    }
+    if (approvalStatus === 'locked') {
+      showToast('Locked rundowns must be unlocked first');
+      return;
+    }
+    syncApprovalStatusToFirebase('draft', 'Return to draft', {
+      previousStatus: approvalStatus,
+    });
+    setShowApprovalMenu(false);
+    showToast('Rundown returned to draft');
+  }
+
   // Close Add Segment dropdown when clicking outside (Phase 7: Task 59)
   useEffect(() => {
     function handleClickOutside(event) {
@@ -641,10 +859,14 @@ export default function RundownEditorPage() {
       if (showRoleSelector && !event.target.closest('.role-selector-dropdown')) {
         setShowRoleSelector(false);
       }
+      // Close approval menu when clicking outside (Phase 8: Task 69)
+      if (showApprovalMenu && !event.target.closest('.approval-menu-dropdown')) {
+        setShowApprovalMenu(false);
+      }
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showAddSegmentMenu, showRoleSelector]);
+  }, [showAddSegmentMenu, showRoleSelector, showApprovalMenu]);
 
   // Event handlers per PRD
   function handleSelectSegment(id) {
@@ -1810,6 +2032,134 @@ export default function RundownEditorPage() {
                     </div>
                   )}
                 </div>
+                {/* Approval Status Indicator with Actions (Phase 8: Task 69) */}
+                <div className="relative ml-2 approval-menu-dropdown">
+                  <button
+                    onClick={() => setShowApprovalMenu(!showApprovalMenu)}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-full border transition-colors ${currentApprovalStatus.color}`}
+                    title={`Status: ${currentApprovalStatus.label} - ${currentApprovalStatus.description}`}
+                  >
+                    {currentApprovalStatus.icon === 'pencil' && (
+                      <PencilIcon className="w-3 h-3" />
+                    )}
+                    {currentApprovalStatus.icon === 'clock' && (
+                      <ClockIcon className="w-3 h-3" />
+                    )}
+                    {currentApprovalStatus.icon === 'check' && (
+                      <ShieldCheckIcon className="w-3 h-3" />
+                    )}
+                    {currentApprovalStatus.icon === 'lock' && (
+                      <LockClosedIcon className="w-3 h-3" />
+                    )}
+                    <span>{currentApprovalStatus.label}</span>
+                    <ChevronDownIcon className="w-3 h-3" />
+                  </button>
+                  {showApprovalMenu && (
+                    <div className="absolute top-full left-0 mt-1 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl z-50 min-w-[200px]">
+                      <div className="p-2 border-b border-zinc-700">
+                        <div className="text-xs text-zinc-500">Current Status</div>
+                        <div className={`text-sm font-medium mt-0.5 ${
+                          approvalStatus === 'draft' ? 'text-zinc-300' :
+                          approvalStatus === 'in-review' ? 'text-amber-300' :
+                          approvalStatus === 'approved' ? 'text-green-300' :
+                          'text-red-300'
+                        }`}>
+                          {currentApprovalStatus.label}
+                        </div>
+                        <div className="text-xs text-zinc-500 mt-0.5">{currentApprovalStatus.description}</div>
+                      </div>
+                      <div className="p-1">
+                        {/* Draft actions */}
+                        {approvalStatus === 'draft' && (
+                          <button
+                            onClick={handleSubmitForReview}
+                            disabled={!canEdit}
+                            className="w-full text-left px-3 py-2 rounded text-sm flex items-center gap-2 hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <ClockIcon className="w-4 h-4 text-amber-400" />
+                            <span>Submit for Review</span>
+                          </button>
+                        )}
+                        {/* In Review actions */}
+                        {approvalStatus === 'in-review' && (
+                          <>
+                            {canApprove && (
+                              <>
+                                <button
+                                  onClick={handleApprove}
+                                  className="w-full text-left px-3 py-2 rounded text-sm flex items-center gap-2 hover:bg-zinc-700 transition-colors"
+                                >
+                                  <CheckIcon className="w-4 h-4 text-green-400" />
+                                  <span>Approve</span>
+                                </button>
+                                <button
+                                  onClick={handleOpenRejectModal}
+                                  className="w-full text-left px-3 py-2 rounded text-sm flex items-center gap-2 hover:bg-zinc-700 transition-colors"
+                                >
+                                  <XMarkIcon className="w-4 h-4 text-red-400" />
+                                  <span>Reject...</span>
+                                </button>
+                              </>
+                            )}
+                            {canApprove && (
+                              <button
+                                onClick={handleReturnToDraft}
+                                className="w-full text-left px-3 py-2 rounded text-sm flex items-center gap-2 hover:bg-zinc-700 transition-colors"
+                              >
+                                <PencilIcon className="w-4 h-4 text-zinc-400" />
+                                <span>Return to Draft</span>
+                              </button>
+                            )}
+                          </>
+                        )}
+                        {/* Approved actions */}
+                        {approvalStatus === 'approved' && (
+                          <>
+                            {canLock && (
+                              <button
+                                onClick={handleLockRundown}
+                                className="w-full text-left px-3 py-2 rounded text-sm flex items-center gap-2 hover:bg-zinc-700 transition-colors"
+                              >
+                                <LockClosedIcon className="w-4 h-4 text-red-400" />
+                                <span>Lock Rundown</span>
+                              </button>
+                            )}
+                            {canApprove && (
+                              <button
+                                onClick={handleReturnToDraft}
+                                className="w-full text-left px-3 py-2 rounded text-sm flex items-center gap-2 hover:bg-zinc-700 transition-colors"
+                              >
+                                <PencilIcon className="w-4 h-4 text-zinc-400" />
+                                <span>Return to Draft</span>
+                              </button>
+                            )}
+                          </>
+                        )}
+                        {/* Locked actions */}
+                        {approvalStatus === 'locked' && myRole === 'owner' && (
+                          <button
+                            onClick={handleUnlockRundown}
+                            className="w-full text-left px-3 py-2 rounded text-sm flex items-center gap-2 hover:bg-zinc-700 transition-colors"
+                          >
+                            <LockOpenIcon className="w-4 h-4 text-amber-400" />
+                            <span>Unlock Rundown</span>
+                          </button>
+                        )}
+                        {/* No actions available message */}
+                        {approvalStatus === 'locked' && myRole !== 'owner' && (
+                          <div className="px-3 py-2 text-xs text-zinc-500">
+                            Only owners can unlock
+                          </div>
+                        )}
+                        {approvalStatus === 'in-review' && !canApprove && (
+                          <div className="px-3 py-2 text-xs text-zinc-500">
+                            Waiting for approval...
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
               <p className="text-sm text-zinc-500">{compId} - {DUMMY_COMPETITION.name}</p>
             </div>
@@ -2424,6 +2774,16 @@ export default function RundownEditorPage() {
           entry={entryToRestore}
           onConfirm={handleConfirmRestore}
           onCancel={handleCancelRestore}
+        />
+      )}
+
+      {/* Reject Reason Modal (Phase 8: Task 69) */}
+      {showRejectModal && (
+        <RejectReasonModal
+          reason={rejectReason}
+          setReason={setRejectReason}
+          onConfirm={handleConfirmReject}
+          onCancel={handleCancelReject}
         />
       )}
     </div>
@@ -4662,6 +5022,62 @@ function RestoreConfirmModal({ entry, onConfirm, onCancel }) {
             className="flex-1 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-500 transition-colors"
           >
             Restore Version
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Reject Reason Modal (Phase 8: Task 69)
+// Modal for entering rejection reason when rejecting a rundown
+function RejectReasonModal({ reason, setReason, onConfirm, onCancel }) {
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60]">
+      <div className="bg-zinc-900 border border-zinc-700 rounded-xl w-full max-w-md mx-4 shadow-2xl">
+        <div className="p-4 border-b border-zinc-800">
+          <h2 className="text-lg font-bold text-white">Reject Rundown</h2>
+        </div>
+
+        <div className="p-4 space-y-4">
+          <p className="text-zinc-300 text-sm">
+            Please provide a reason for rejecting this rundown. This will be logged in the change history.
+          </p>
+
+          <div>
+            <label className="block text-sm font-medium text-zinc-400 mb-1.5">
+              Rejection Reason <span className="text-red-400">*</span>
+            </label>
+            <textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Enter the reason for rejection..."
+              rows={3}
+              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-red-500 resize-none"
+              autoFocus
+            />
+          </div>
+
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
+            <div className="text-amber-400 text-sm">
+              The rundown will be returned to draft status and can be edited again.
+            </div>
+          </div>
+        </div>
+
+        <div className="p-4 border-t border-zinc-800 flex gap-3">
+          <button
+            onClick={onCancel}
+            className="flex-1 px-4 py-2 bg-zinc-800 text-zinc-300 rounded-lg hover:bg-zinc-700 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={!reason.trim()}
+            className="flex-1 px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Reject
           </button>
         </div>
       </div>
