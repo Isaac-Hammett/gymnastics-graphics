@@ -1125,8 +1125,8 @@ const filteredSegments = segments.filter(seg => {
 
 ### Phase 9: Data & Reporting
 
-- [ ] Export to PDF
-- [ ] Export to CSV
+- [x] Export to PDF
+- [x] Export to CSV
 - [ ] Export to JSON
 - [ ] Import from CSV with field mapping
 - [ ] Import from JSON (backup restore)
