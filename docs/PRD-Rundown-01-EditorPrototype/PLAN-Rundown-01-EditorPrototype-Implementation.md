@@ -3,7 +3,7 @@
 **PRD:** PRD-Rundown-01-EditorPrototype
 **Status:** IN PROGRESS
 **Created:** 2026-01-22
-**Last Updated:** 2026-01-23 (Task 2.2 complete)
+**Last Updated:** 2026-01-23 (Task 2.3 complete)
 
 ---
 
@@ -30,8 +30,8 @@
 | Task | Status | Notes |
 |------|--------|-------|
 | 2.1 Add competition context data | COMPLETE | DUMMY_COMPETITION, DUMMY_SCENES constants added |
-| 2.2 Implement Scene picker dropdown | PENDING | Grouped by category (static, manual, graphics, single, multi) |
-| 2.3 Implement Graphic picker dropdown | PENDING | Reads from graphicsRegistry.js |
+| 2.2 Implement Scene picker dropdown | COMPLETE | Grouped by category (static, manual, graphics, single, multi) |
+| 2.3 Implement Graphic picker dropdown | COMPLETE | Reads from graphicsRegistry.js, grouped by category |
 | 2.4 Filter graphics by competition type | PENDING | Use getAllGraphicsForCompetition() |
 | 2.5 Display team names in graphic options | PENDING | "UCLA Coaches" not "Team 1 Coaches" |
 | 2.6 Implement smart recommendations | PENDING | Suggest graphics based on segment name keywords |
@@ -284,18 +284,27 @@ Add Scene picker dropdown to SegmentDetail panel.
 
 ### Task 2.3: Implement Graphic picker dropdown
 
-**Status:** PENDING
+**Status:** COMPLETE
 **File:** `show-controller/src/pages/RundownEditorPage.jsx`
 
 **Description:**
 Add Graphic picker dropdown that reads from graphicsRegistry.js.
 
 **Checklist:**
-- [ ] Import graphicsRegistry or use getAllGraphicsForCompetition()
-- [ ] Add Graphic dropdown in SegmentDetail panel
-- [ ] Include "(None)" as first option
-- [ ] Group graphics by category with section headers
-- [ ] Wire selection to segment.graphic.graphicId field
+- [x] Import graphicsRegistry or use getAllGraphicsForCompetition()
+- [x] Add Graphic dropdown in SegmentDetail panel
+- [x] Include "(None)" as first option
+- [x] Group graphics by category with section headers
+- [x] Wire selection to segment.graphic.graphicId field
+
+**Implementation Notes:**
+- Added import for `getGraphicsForCompetition` and `getCategories` from graphicsRegistry
+- Added `GRAPHICS_CATEGORY_LABELS` constant for readable category headers
+- Added `getTeamNames()` helper to extract team names from DUMMY_COMPETITION
+- Added `getGroupedGraphics()` helper to get graphics filtered by competition type and grouped by category
+- Added `handleGraphicChange()` in SegmentDetailPanel to handle graphic selection
+- Graphic picker uses same visual style as Scene picker (bordered section with grouped dropdown)
+- Shows selected graphic ID for debugging purposes
 
 ---
 
