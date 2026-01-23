@@ -26,6 +26,7 @@ import {
   ArrowPathRoundedSquareIcon,
   UserIcon,
   ShieldCheckIcon,
+  DocumentTextIcon,
 } from '@heroicons/react/24/outline';
 import { getGraphicsForCompetition, getCategories, getRecommendedGraphic, getGraphicById, GRAPHICS } from '../lib/graphicsRegistry';
 import { db, ref, set, get, push, remove, update, onValue, onDisconnect } from '../lib/firebase';
@@ -166,6 +167,9 @@ export default function RundownEditorPage() {
   const [mySessionId] = useState(() => `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`); // Unique session ID (Phase 8: Task 64)
   const [myRole, setMyRole] = useState('editor'); // Current user's role (Phase 8: Task 66) - default to editor for prototype
   const [showRoleSelector, setShowRoleSelector] = useState(false); // Toggle role selector dropdown (Phase 8: Task 66)
+  const [showHistoryModal, setShowHistoryModal] = useState(false); // Toggle change history modal (Phase 8: Task 67)
+  const [changeHistory, setChangeHistory] = useState([]); // Change history entries (Phase 8: Task 67)
+  const [loadingHistory, setLoadingHistory] = useState(false); // Loading state for history (Phase 8: Task 67)
 
   // Filtered segments
   const filteredSegments = useMemo(() => {
@@ -447,13 +451,45 @@ export default function RundownEditorPage() {
     });
   }, [compId, mySessionId, selectedSegmentId, selectedSegmentIds, myRole]);
 
+  // Helper function to log a change to Firebase history (Phase 8: Task 67)
+  // Creates an entry in competitions/{compId}/rundown/history
+  async function logChange(action, details = {}) {
+    if (!compId) return;
+
+    const historyEntry = {
+      id: `hist-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      action,
+      details,
+      timestamp: Date.now(),
+      user: {
+        sessionId: mySessionId,
+        displayName: presenceList.find(p => p.sessionId === mySessionId)?.displayName || `User ${mySessionId.slice(-4).toUpperCase()}`,
+        role: myRole,
+      },
+    };
+
+    try {
+      // Use push to add to history array (keeps last 100 entries via Firebase rules or client-side cleanup)
+      const historyRef = ref(db, `competitions/${compId}/rundown/history`);
+      await push(historyRef, historyEntry);
+    } catch (error) {
+      console.error('Error logging change to history:', error);
+      // Don't show toast for history errors - non-critical
+    }
+  }
+
   // Helper function to sync segments to Firebase (Phase 8: Task 63)
   // This is called by all segment-modifying handlers
-  async function syncSegmentsToFirebase(newSegments) {
+  // Updated to accept optional action description for history logging (Phase 8: Task 67)
+  async function syncSegmentsToFirebase(newSegments, action = null, details = {}) {
     if (!compId) return;
     setIsSyncing(true);
     try {
       await set(ref(db, `competitions/${compId}/rundown/segments`), newSegments);
+      // Log the change if action is provided
+      if (action) {
+        await logChange(action, details);
+      }
     } catch (error) {
       console.error('Error syncing segments to Firebase:', error);
       showToast('Error saving changes');
@@ -462,13 +498,47 @@ export default function RundownEditorPage() {
   }
 
   // Helper function to sync groups to Firebase (Phase 8: Task 63)
-  async function syncGroupsToFirebase(newGroups) {
+  // Updated to accept optional action description for history logging (Phase 8: Task 67)
+  async function syncGroupsToFirebase(newGroups, action = null, details = {}) {
     if (!compId) return;
     try {
       await set(ref(db, `competitions/${compId}/rundown/groups`), newGroups);
+      // Log the change if action is provided
+      if (action) {
+        await logChange(action, details);
+      }
     } catch (error) {
       console.error('Error syncing groups to Firebase:', error);
     }
+  }
+
+  // Load change history from Firebase (Phase 8: Task 67)
+  async function loadChangeHistory() {
+    if (!compId) return;
+    setLoadingHistory(true);
+    try {
+      const historyRef = ref(db, `competitions/${compId}/rundown/history`);
+      const snapshot = await get(historyRef);
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        const historyArray = Object.values(data)
+          .sort((a, b) => b.timestamp - a.timestamp) // Most recent first
+          .slice(0, 100); // Limit to last 100 entries
+        setChangeHistory(historyArray);
+      } else {
+        setChangeHistory([]);
+      }
+    } catch (error) {
+      console.error('Error loading change history:', error);
+      showToast('Error loading history');
+    }
+    setLoadingHistory(false);
+  }
+
+  // Handle opening history modal (Phase 8: Task 67)
+  function handleOpenHistory() {
+    setShowHistoryModal(true);
+    loadChangeHistory();
   }
 
   // Close Add Segment dropdown when clicking outside (Phase 7: Task 59)
@@ -567,11 +637,18 @@ export default function RundownEditorPage() {
       : `Are you sure you want to delete ${deleteCount} segment(s)?`;
 
     if (window.confirm(message)) {
+      // Get names of segments being deleted for history
+      const deletedSegmentNames = segments
+        .filter(seg => selectedSegmentIds.includes(seg.id) && !seg.locked)
+        .map(seg => seg.name);
       // Only delete unlocked segments
       const newSegments = segments.filter(seg =>
         !selectedSegmentIds.includes(seg.id) || seg.locked
       );
-      syncSegmentsToFirebase(newSegments);
+      syncSegmentsToFirebase(newSegments, 'Bulk delete segments', {
+        segmentCount: deleteCount,
+        segmentNames: deletedSegmentNames.slice(0, 5), // Limit to first 5 for brevity
+      });
       setSelectedSegmentIds([]);
       showToast(`${deleteCount} segment(s) deleted${lockedCount > 0 ? `, ${lockedCount} locked skipped` : ''}`);
     }
@@ -588,7 +665,10 @@ export default function RundownEditorPage() {
       updatedCount++;
       return { ...seg, type: newType };
     });
-    syncSegmentsToFirebase(newSegments);
+    syncSegmentsToFirebase(newSegments, 'Bulk edit type', {
+      segmentCount: updatedCount,
+      newType,
+    });
     const lockedCount = selectedSegmentIds.length - updatedCount;
     showToast(`Updated type for ${updatedCount} segment(s)${lockedCount > 0 ? `, ${lockedCount} locked skipped` : ''}`);
   }
@@ -604,7 +684,10 @@ export default function RundownEditorPage() {
       updatedCount++;
       return { ...seg, scene: newScene };
     });
-    syncSegmentsToFirebase(newSegments);
+    syncSegmentsToFirebase(newSegments, 'Bulk edit scene', {
+      segmentCount: updatedCount,
+      newScene,
+    });
     const lockedCount = selectedSegmentIds.length - updatedCount;
     showToast(`Updated scene for ${updatedCount} segment(s)${lockedCount > 0 ? `, ${lockedCount} locked skipped` : ''}`);
   }
@@ -623,7 +706,10 @@ export default function RundownEditorPage() {
       }
       return { ...seg, graphic: { graphicId, params: {} } };
     });
-    syncSegmentsToFirebase(newSegments);
+    syncSegmentsToFirebase(newSegments, 'Bulk edit graphic', {
+      segmentCount: updatedCount,
+      graphicId: graphicId || 'None',
+    });
     const lockedCount = selectedSegmentIds.length - updatedCount;
     showToast(`Updated graphic for ${updatedCount} segment(s)${lockedCount > 0 ? `, ${lockedCount} locked skipped` : ''}`);
   }
@@ -655,7 +741,11 @@ export default function RundownEditorPage() {
     const newSegments = [...segments];
     const [removed] = newSegments.splice(fromIndex, 1);
     newSegments.splice(toIndex, 0, removed);
-    syncSegmentsToFirebase(newSegments);
+    syncSegmentsToFirebase(newSegments, 'Reorder segment', {
+      segmentName: segmentToMove.name,
+      fromPosition: fromIndex + 1,
+      toPosition: toIndex + 1,
+    });
   }
 
   function handleAddSegment() {
@@ -680,14 +770,20 @@ export default function RundownEditorPage() {
 
     // Insert after selected segment, or at end
     let newSegments;
+    let position;
     if (selectedSegmentId) {
       const index = segments.findIndex(s => s.id === selectedSegmentId);
+      position = index + 2;
       newSegments = [...segments];
       newSegments.splice(index + 1, 0, newSegment);
     } else {
+      position = segments.length + 1;
       newSegments = [...segments, newSegment];
     }
-    syncSegmentsToFirebase(newSegments);
+    syncSegmentsToFirebase(newSegments, 'Add segment', {
+      segmentName: newSegment.name,
+      position,
+    });
 
     setSelectedSegmentId(newId);
     showToast('Segment added');
@@ -696,11 +792,32 @@ export default function RundownEditorPage() {
   function handleSaveSegment(updatedSegment) {
     // Check role permissions (Phase 8: Task 66)
     if (!checkPermission('edit')) return;
+    const oldSegment = segments.find(seg => seg.id === updatedSegment.id);
     const newSegments = segments.map(seg =>
       seg.id === updatedSegment.id ? updatedSegment : seg
     );
-    syncSegmentsToFirebase(newSegments);
+    syncSegmentsToFirebase(newSegments, 'Edit segment', {
+      segmentName: updatedSegment.name,
+      changes: getSegmentChanges(oldSegment, updatedSegment),
+    });
     showToast('Segment saved');
+  }
+
+  // Helper to describe what changed in a segment (Phase 8: Task 67)
+  function getSegmentChanges(oldSeg, newSeg) {
+    if (!oldSeg) return ['Created'];
+    const changes = [];
+    if (oldSeg.name !== newSeg.name) changes.push(`name: "${oldSeg.name}" → "${newSeg.name}"`);
+    if (oldSeg.type !== newSeg.type) changes.push(`type: ${oldSeg.type} → ${newSeg.type}`);
+    if (oldSeg.duration !== newSeg.duration) changes.push(`duration: ${oldSeg.duration || 'none'}s → ${newSeg.duration || 'none'}s`);
+    if (oldSeg.scene !== newSeg.scene) changes.push(`scene: "${oldSeg.scene || 'none'}" → "${newSeg.scene || 'none'}"`);
+    if (oldSeg.graphic?.graphicId !== newSeg.graphic?.graphicId) {
+      changes.push(`graphic: ${oldSeg.graphic?.graphicId || 'none'} → ${newSeg.graphic?.graphicId || 'none'}`);
+    }
+    if (oldSeg.timingMode !== newSeg.timingMode) changes.push(`timing: ${oldSeg.timingMode} → ${newSeg.timingMode}`);
+    if (oldSeg.optional !== newSeg.optional) changes.push(`optional: ${newSeg.optional ? 'yes' : 'no'}`);
+    if (oldSeg.locked !== newSeg.locked) changes.push(`locked: ${newSeg.locked ? 'yes' : 'no'}`);
+    return changes.length > 0 ? changes : ['No changes'];
   }
 
   function handleDeleteSegment(id) {
@@ -713,7 +830,9 @@ export default function RundownEditorPage() {
     }
     if (window.confirm('Are you sure you want to delete this segment?')) {
       const newSegments = segments.filter(seg => seg.id !== id);
-      syncSegmentsToFirebase(newSegments);
+      syncSegmentsToFirebase(newSegments, 'Delete segment', {
+        segmentName: segment.name,
+      });
       if (selectedSegmentId === id) {
         setSelectedSegmentId(null);
       }
@@ -752,7 +871,10 @@ export default function RundownEditorPage() {
     const originalIndex = segments.findIndex(seg => seg.id === id);
     const newSegments = [...segments];
     newSegments.splice(originalIndex + 1, 0, duplicatedSegment);
-    syncSegmentsToFirebase(newSegments);
+    syncSegmentsToFirebase(newSegments, 'Duplicate segment', {
+      originalName: segmentToDuplicate.name,
+      newName: duplicatedSegment.name,
+    });
 
     // Select the duplicated segment
     setSelectedSegmentId(newId);
@@ -770,10 +892,13 @@ export default function RundownEditorPage() {
   function handleToggleLock(id) {
     if (!checkPermission('lock')) return;
     const segment = segments.find(s => s.id === id);
+    const newLocked = !segment?.locked;
     const newSegments = segments.map(seg =>
-      seg.id === id ? { ...seg, locked: !seg.locked } : seg
+      seg.id === id ? { ...seg, locked: newLocked } : seg
     );
-    syncSegmentsToFirebase(newSegments);
+    syncSegmentsToFirebase(newSegments, newLocked ? 'Lock segment' : 'Unlock segment', {
+      segmentName: segment?.name,
+    });
     showToast(segment?.locked ? 'Segment unlocked' : 'Segment locked');
   }
 
@@ -1280,7 +1405,11 @@ export default function RundownEditorPage() {
     } else {
       finalSegments = [...segments, ...newSegments];
     }
-    syncSegmentsToFirebase(finalSegments);
+    syncSegmentsToFirebase(finalSegments, 'Create recurring segments', {
+      pattern: namePattern,
+      count,
+      segmentNames: newSegments.map(s => s.name).slice(0, 3),
+    });
 
     // Select the first new segment
     setSelectedSegmentId(newSegments[0].id);
@@ -1307,19 +1436,23 @@ export default function RundownEditorPage() {
     };
 
     // Assign segments to the group
+    const segmentCount = selectedSegmentIds.length;
     const newSegments = segments.map(seg =>
       selectedSegmentIds.includes(seg.id) ? { ...seg, groupId: newGroupId } : seg
     );
-    syncSegmentsToFirebase(newSegments);
+    syncSegmentsToFirebase(newSegments, 'Create group', {
+      groupName,
+      segmentCount,
+    });
 
     const newGroups = [...groups, newGroup];
     syncGroupsToFirebase(newGroups);
     setSelectedSegmentIds([]);
     setShowCreateGroupModal(false);
-    showToast(`Created group "${groupName}" with ${selectedSegmentIds.length} segment(s)`);
+    showToast(`Created group "${groupName}" with ${segmentCount} segment(s)`);
   }
 
-  // Toggle group collapse state
+  // Toggle group collapse state - no history needed (UI preference)
   function handleToggleGroupCollapse(groupId) {
     const newGroups = groups.map(g =>
       g.id === groupId ? { ...g, collapsed: !g.collapsed } : g
@@ -1330,10 +1463,15 @@ export default function RundownEditorPage() {
   // Remove a group (ungroups the segments, doesn't delete them)
   function handleUngroupSegments(groupId) {
     if (!checkPermission('edit')) return;
+    const group = groups.find(g => g.id === groupId);
+    const segmentCount = segments.filter(s => s.groupId === groupId).length;
     const newSegments = segments.map(seg =>
       seg.groupId === groupId ? { ...seg, groupId: null } : seg
     );
-    syncSegmentsToFirebase(newSegments);
+    syncSegmentsToFirebase(newSegments, 'Remove group', {
+      groupName: group?.name || 'Unknown',
+      segmentCount,
+    });
     const newGroups = groups.filter(g => g.id !== groupId);
     syncGroupsToFirebase(newGroups);
     showToast('Group removed');
@@ -1342,10 +1480,15 @@ export default function RundownEditorPage() {
   // Rename a group
   function handleRenameGroup(groupId, newName) {
     if (!checkPermission('edit')) return;
+    const group = groups.find(g => g.id === groupId);
+    const oldName = group?.name || 'Unknown';
     const newGroups = groups.map(g =>
       g.id === groupId ? { ...g, name: newName } : g
     );
-    syncGroupsToFirebase(newGroups);
+    syncGroupsToFirebase(newGroups, 'Rename group', {
+      oldName,
+      newName,
+    });
   }
 
   // Get segments in a specific group
@@ -1709,6 +1852,15 @@ export default function RundownEditorPage() {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            {/* History button (Phase 8: Task 67) */}
+            <button
+              onClick={handleOpenHistory}
+              className="flex items-center gap-1.5 px-3 py-2 bg-zinc-800 border border-zinc-700 text-zinc-300 text-sm rounded-lg hover:bg-zinc-700 transition-colors"
+              title="View change history"
+            >
+              <DocumentTextIcon className="w-4 h-4" />
+              History
+            </button>
             <button
               onClick={handleSave}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition-colors"
@@ -2161,6 +2313,16 @@ export default function RundownEditorPage() {
         <RecurrencePatternModal
           onCreate={handleCreateRecurringSegments}
           onCancel={() => setShowRecurrenceModal(false)}
+        />
+      )}
+
+      {/* Change History Modal (Phase 8: Task 67) */}
+      {showHistoryModal && (
+        <ChangeHistoryModal
+          history={changeHistory}
+          loading={loadingHistory}
+          onRefresh={loadChangeHistory}
+          onCancel={() => setShowHistoryModal(false)}
         />
       )}
     </div>
@@ -4157,6 +4319,168 @@ function RecurrencePatternModal({ onCreate, onCancel }) {
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+}
+
+// Change History Modal (Phase 8: Task 67)
+// Displays a log of all changes made to the rundown
+function ChangeHistoryModal({ history, loading, onRefresh, onCancel }) {
+  // Format timestamp to readable date/time
+  function formatTimestamp(timestamp) {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    // Show relative time for recent changes
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+
+    // Show date for older changes
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  }
+
+  // Get icon and color for action type
+  function getActionStyle(action) {
+    if (action.includes('Delete') || action.includes('Remove')) {
+      return { color: 'text-red-400', bgColor: 'bg-red-500/10' };
+    }
+    if (action.includes('Add') || action.includes('Create') || action.includes('Duplicate')) {
+      return { color: 'text-green-400', bgColor: 'bg-green-500/10' };
+    }
+    if (action.includes('Lock')) {
+      return { color: 'text-amber-400', bgColor: 'bg-amber-500/10' };
+    }
+    if (action.includes('Unlock')) {
+      return { color: 'text-blue-400', bgColor: 'bg-blue-500/10' };
+    }
+    return { color: 'text-zinc-400', bgColor: 'bg-zinc-500/10' };
+  }
+
+  // Format details object into readable strings
+  function formatDetails(details) {
+    if (!details) return null;
+    const items = [];
+
+    if (details.segmentName) items.push(details.segmentName);
+    if (details.segmentCount) items.push(`${details.segmentCount} segment(s)`);
+    if (details.groupName) items.push(`"${details.groupName}"`);
+    if (details.newType) items.push(`type: ${details.newType}`);
+    if (details.newScene) items.push(`scene: ${details.newScene}`);
+    if (details.graphicId) items.push(`graphic: ${details.graphicId}`);
+    if (details.fromPosition && details.toPosition) {
+      items.push(`#${details.fromPosition} → #${details.toPosition}`);
+    }
+    if (details.changes && details.changes.length > 0 && details.changes[0] !== 'No changes') {
+      items.push(...details.changes.slice(0, 2)); // Show first 2 changes
+      if (details.changes.length > 2) items.push(`+${details.changes.length - 2} more`);
+    }
+    if (details.segmentNames && details.segmentNames.length > 0) {
+      items.push(details.segmentNames.slice(0, 2).join(', '));
+      if (details.segmentNames.length > 2) items.push(`+${details.segmentNames.length - 2} more`);
+    }
+
+    return items.length > 0 ? items : null;
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+      <div className="bg-zinc-900 border border-zinc-700 rounded-xl w-full max-w-lg mx-4 shadow-2xl max-h-[80vh] flex flex-col">
+        <div className="flex items-center justify-between p-4 border-b border-zinc-800">
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg font-bold text-white">Change History</h2>
+            <button
+              onClick={onRefresh}
+              className="p-1.5 text-zinc-400 hover:text-zinc-200 rounded-lg hover:bg-zinc-800 transition-colors"
+              title="Refresh history"
+            >
+              <ArrowPathIcon className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
+          <button
+            onClick={onCancel}
+            className="p-1 text-zinc-400 hover:text-zinc-200 rounded-lg hover:bg-zinc-800 transition-colors"
+          >
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-4 overflow-y-auto flex-1">
+          {loading ? (
+            <div className="text-center py-8 text-zinc-500">
+              <ArrowPathIcon className="w-6 h-6 animate-spin mx-auto mb-2" />
+              Loading history...
+            </div>
+          ) : history.length === 0 ? (
+            <div className="text-center py-8">
+              <DocumentTextIcon className="w-8 h-8 text-zinc-600 mx-auto mb-2" />
+              <div className="text-zinc-500 mb-1">No changes recorded yet</div>
+              <div className="text-xs text-zinc-600">
+                Changes to segments will appear here.
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {history.map((entry) => {
+                const style = getActionStyle(entry.action);
+                const details = formatDetails(entry.details);
+                return (
+                  <div
+                    key={entry.id}
+                    className={`p-3 rounded-lg border border-zinc-800 ${style.bgColor} transition-colors`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className={`font-medium text-sm ${style.color}`}>
+                          {entry.action}
+                        </div>
+                        {details && (
+                          <div className="text-xs text-zinc-400 mt-0.5 truncate">
+                            {details.join(' • ')}
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <div className="text-xs text-zinc-500">
+                          {formatTimestamp(entry.timestamp)}
+                        </div>
+                        <div className="text-xs text-zinc-600 mt-0.5">
+                          {entry.user?.displayName || 'Unknown'}
+                          <span className="ml-1 text-zinc-700">({entry.user?.role || 'viewer'})</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="p-4 border-t border-zinc-800">
+          <div className="flex items-center justify-between">
+            <div className="text-xs text-zinc-500">
+              {history.length > 0 ? `${history.length} change${history.length !== 1 ? 's' : ''} shown` : ''}
+            </div>
+            <button
+              onClick={onCancel}
+              className="px-4 py-2 bg-zinc-800 text-zinc-300 rounded-lg hover:bg-zinc-700 transition-colors text-sm"
+            >
+              Close
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
