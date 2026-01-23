@@ -1687,6 +1687,23 @@ function SegmentRow({
                 <ChatBubbleLeftIcon className="w-3 h-3" />
               </span>
             )}
+            {/* Timing mode badge (Phase 6: Task 56) */}
+            {segment.timingMode === 'manual' && (
+              <span
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded bg-orange-500/20 text-orange-400 border border-orange-500/30 shrink-0 font-medium"
+                title="Manual timing - requires manual trigger to advance"
+              >
+                MANUAL
+              </span>
+            )}
+            {segment.timingMode === 'follows-previous' && (
+              <span
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 shrink-0"
+                title="Follows previous - starts immediately when previous segment ends"
+              >
+                →
+              </span>
+            )}
           </div>
         </div>
       </div>

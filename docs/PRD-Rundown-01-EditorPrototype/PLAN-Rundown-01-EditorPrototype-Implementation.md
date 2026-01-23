@@ -159,7 +159,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task | Status | Notes |
 |------|--------|-------|
 | Task 55: Add timing mode selector | COMPLETE | Added TIMING_MODES constant, timingMode field to segments, selector in Edit panel with descriptions |
-| Task 56: Show timing mode badge on row | NOT STARTED | Visual indicator |
+| Task 56: Show timing mode badge on row | COMPLETE | Orange "MANUAL" badge for manual mode, indigo "→" for follows-previous mode |
 | Task 57: Surface auto-advance toggle inline | NOT STARTED | Quick toggle on segment row |
 
 ### Phase 7: Templates & Presets 🔲 NOT STARTED
