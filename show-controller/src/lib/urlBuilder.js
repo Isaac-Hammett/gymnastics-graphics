@@ -6,6 +6,8 @@
  * Local: Uses window.location.origin
  */
 
+import { getGraphicById, isTransparentGraphic as registryIsTransparent } from './graphicsRegistry';
+
 /**
  * Get the base URL for graphics
  * Uses current origin for local development, can be overridden for production
@@ -563,8 +565,76 @@ export async function copyToClipboard(text) {
  * @returns {string} HTML file path
  */
 export function getGraphicPath(graphicId) {
+  // Check registry first
+  const graphic = getGraphicById(graphicId);
+  if (graphic?.file) {
+    return graphic.file;
+  }
+  // Fallback to old mapping
   return GRAPHIC_PATHS[graphicId] || `${graphicId}.html`;
 }
+
+/**
+ * Build URL from registry schema (for simple overlay graphics)
+ * This function uses the registry schema to build URLs for graphics that follow
+ * the standard pattern: overlays/{file}?{params}
+ *
+ * Complex graphics (leaderboards, event-summary, etc.) still use their dedicated
+ * builder functions as they have special logic.
+ *
+ * @param {string} graphicId - Graphic ID
+ * @param {Object} formData - Form data with values
+ * @param {number} teamCount - Number of teams
+ * @param {Object} [options] - Additional options
+ * @returns {string|null} URL or null if graphic not found or not supported
+ */
+export function buildGraphicUrlFromRegistry(graphicId, formData, teamCount, options = {}) {
+  const graphic = getGraphicById(graphicId);
+  if (!graphic) return null;
+
+  const base = options.baseUrl || getBaseURL();
+
+  // Only handle simple overlay graphics for now
+  // Complex graphics (leaderboards, event-summary) use dedicated builders
+  if (graphic.renderer !== 'overlay') return null;
+
+  const params = new URLSearchParams();
+
+  // Build params from schema
+  if (graphic.params) {
+    for (const [paramKey, paramSchema] of Object.entries(graphic.params)) {
+      let value = null;
+
+      if (paramSchema.source === 'competition') {
+        // Auto-fill from formData based on param name
+        // Handle team-specific params like team1Logo
+        if (paramKey in formData) {
+          value = formData[paramKey];
+        }
+      } else if (paramSchema.default !== undefined) {
+        // Use default value
+        value = paramSchema.default;
+      }
+
+      if (value !== null && value !== undefined && value !== '') {
+        params.set(paramKey, value);
+      }
+    }
+  }
+
+  const queryString = params.toString();
+  const path = graphic.file.endsWith('.html')
+    ? `overlays/${graphic.file}`
+    : `overlays/${graphic.file}.html`;
+
+  return queryString ? `${base}/${path}?${queryString}` : `${base}/${path}`;
+}
+
+/**
+ * Check if a graphic is transparent based on registry
+ * Re-exports the registry function for backwards compatibility
+ */
+export { registryIsTransparent as isTransparentGraphicFromRegistry };
 
 export default {
   getBaseURL,
@@ -579,6 +649,7 @@ export default {
   buildLeaderboardURL,
   buildEventSummaryURL,
   generateGraphicURL,
+  buildGraphicUrlFromRegistry,
   copyToClipboard,
   getGraphicPath,
 };

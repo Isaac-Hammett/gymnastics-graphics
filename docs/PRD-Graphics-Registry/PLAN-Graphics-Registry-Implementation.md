@@ -15,7 +15,7 @@
 | BUTTONS-MIGRATE | COMPLETE | Update graphicButtons.js to derive from registry |
 | CONTROL-MIGRATE | COMPLETE | Update GraphicsControl.jsx with dynamic team names |
 | URLGEN-INMEET | COMPLETE | Add In-Meet section to UrlGeneratorPage.jsx |
-| URLBUILD-REGISTRY | NOT STARTED | Update urlBuilder.js to use registry |
+| URLBUILD-REGISTRY | COMPLETE | Update urlBuilder.js to use registry |
 | MANAGER-ROUTE | NOT STARTED | Add /graphics-manager route to App.jsx |
 | MANAGER-PAGE | NOT STARTED | Create GraphicsManagerPage.jsx |
 | DEPLOY | NOT STARTED | Build and deploy to production |
@@ -124,16 +124,19 @@ Add missing In-Meet section so replay graphic appears.
 
 #### Task URLBUILD-REGISTRY: Update urlBuilder.js
 
-**Status:** NOT STARTED
+**Status:** COMPLETE
 **File:** `show-controller/src/lib/urlBuilder.js`
 
 **Description:**
 Refactor to use registry schema for URL generation.
 
-**Checklist:**
-- [ ] Import from graphicsRegistry.js
-- [ ] Add `buildGraphicUrlFromRegistry()` function
-- [ ] Gradually migrate switch/case to registry-based
+**What was done:**
+- [x] Import `getGraphicById` and `isTransparentGraphic` from graphicsRegistry.js
+- [x] Add `buildGraphicUrlFromRegistry()` function for simple overlay graphics
+- [x] Update `getGraphicPath()` to check registry first before falling back to old mapping
+- [x] Export `isTransparentGraphicFromRegistry` for backwards compatibility
+- [x] Complex graphics (leaderboards, event-summary) still use dedicated builders
+- [x] Build passes with no errors
 
 ---
 
