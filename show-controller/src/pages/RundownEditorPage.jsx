@@ -170,6 +170,8 @@ export default function RundownEditorPage() {
   const [showHistoryModal, setShowHistoryModal] = useState(false); // Toggle change history modal (Phase 8: Task 67)
   const [changeHistory, setChangeHistory] = useState([]); // Change history entries (Phase 8: Task 67)
   const [loadingHistory, setLoadingHistory] = useState(false); // Loading state for history (Phase 8: Task 67)
+  const [showRestoreConfirmModal, setShowRestoreConfirmModal] = useState(false); // Confirm restore modal (Phase 8: Task 68)
+  const [entryToRestore, setEntryToRestore] = useState(null); // History entry to restore (Phase 8: Task 68)
 
   // Filtered segments
   const filteredSegments = useMemo(() => {
@@ -453,7 +455,8 @@ export default function RundownEditorPage() {
 
   // Helper function to log a change to Firebase history (Phase 8: Task 67)
   // Creates an entry in competitions/{compId}/rundown/history
-  async function logChange(action, details = {}) {
+  // Updated (Phase 8: Task 68) - Now stores snapshots for rollback capability
+  async function logChange(action, details = {}, snapshotData = null) {
     if (!compId) return;
 
     const historyEntry = {
@@ -468,6 +471,12 @@ export default function RundownEditorPage() {
       },
     };
 
+    // If snapshot data is provided, store it for rollback capability (Phase 8: Task 68)
+    // Snapshots include current state BEFORE the change was made
+    if (snapshotData) {
+      historyEntry.snapshot = snapshotData;
+    }
+
     try {
       // Use push to add to history array (keeps last 100 entries via Firebase rules or client-side cleanup)
       const historyRef = ref(db, `competitions/${compId}/rundown/history`);
@@ -481,14 +490,22 @@ export default function RundownEditorPage() {
   // Helper function to sync segments to Firebase (Phase 8: Task 63)
   // This is called by all segment-modifying handlers
   // Updated to accept optional action description for history logging (Phase 8: Task 67)
-  async function syncSegmentsToFirebase(newSegments, action = null, details = {}) {
+  // Updated (Phase 8: Task 68) - Now creates snapshot before change for rollback
+  async function syncSegmentsToFirebase(newSegments, action = null, details = {}, skipSnapshot = false) {
     if (!compId) return;
     setIsSyncing(true);
     try {
       await set(ref(db, `competitions/${compId}/rundown/segments`), newSegments);
       // Log the change if action is provided
       if (action) {
-        await logChange(action, details);
+        // Create snapshot of state BEFORE change for rollback (Phase 8: Task 68)
+        // We store the CURRENT state (which is about to become the "before" state)
+        // Skip snapshot for restore operations to prevent circular references
+        const snapshotData = skipSnapshot ? null : {
+          segments: segments, // Current segments before update
+          groups: groups,     // Current groups
+        };
+        await logChange(action, details, snapshotData);
       }
     } catch (error) {
       console.error('Error syncing segments to Firebase:', error);
@@ -499,13 +516,20 @@ export default function RundownEditorPage() {
 
   // Helper function to sync groups to Firebase (Phase 8: Task 63)
   // Updated to accept optional action description for history logging (Phase 8: Task 67)
-  async function syncGroupsToFirebase(newGroups, action = null, details = {}) {
+  // Updated (Phase 8: Task 68) - Now creates snapshot before change for rollback
+  async function syncGroupsToFirebase(newGroups, action = null, details = {}, skipSnapshot = false) {
     if (!compId) return;
     try {
       await set(ref(db, `competitions/${compId}/rundown/groups`), newGroups);
       // Log the change if action is provided
       if (action) {
-        await logChange(action, details);
+        // Create snapshot of state BEFORE change for rollback (Phase 8: Task 68)
+        // Skip snapshot for restore operations to prevent circular references
+        const snapshotData = skipSnapshot ? null : {
+          segments: segments,
+          groups: groups,
+        };
+        await logChange(action, details, snapshotData);
       }
     } catch (error) {
       console.error('Error syncing groups to Firebase:', error);
@@ -539,6 +563,72 @@ export default function RundownEditorPage() {
   function handleOpenHistory() {
     setShowHistoryModal(true);
     loadChangeHistory();
+  }
+
+  // Handle initiating a restore from history (Phase 8: Task 68)
+  // This opens the confirmation modal before actually restoring
+  function handleInitiateRestore(entry) {
+    if (!entry.snapshot) {
+      showToast('This entry has no snapshot to restore');
+      return;
+    }
+    // Check permissions - only editors and above can restore
+    if (!checkPermission('edit')) {
+      showToast('Viewers cannot restore versions');
+      return;
+    }
+    setEntryToRestore(entry);
+    setShowRestoreConfirmModal(true);
+  }
+
+  // Handle confirming and executing the restore (Phase 8: Task 68)
+  async function handleConfirmRestore() {
+    if (!entryToRestore?.snapshot) {
+      showToast('No snapshot to restore');
+      setShowRestoreConfirmModal(false);
+      setEntryToRestore(null);
+      return;
+    }
+
+    const { segments: snapshotSegments, groups: snapshotGroups } = entryToRestore.snapshot;
+
+    try {
+      // Restore segments (use skipSnapshot=true to avoid nested snapshots, but still log)
+      if (snapshotSegments && Array.isArray(snapshotSegments)) {
+        setSegments(snapshotSegments);
+        await syncSegmentsToFirebase(
+          snapshotSegments,
+          'Restore to previous version',
+          {
+            restoredFrom: entryToRestore.action,
+            restoredTimestamp: entryToRestore.timestamp,
+            segmentCount: snapshotSegments.length,
+          },
+          true // skipSnapshot - restore logs itself but doesn't store another snapshot
+        );
+      }
+
+      // Restore groups if present
+      if (snapshotGroups && Array.isArray(snapshotGroups)) {
+        setGroups(snapshotGroups);
+        await syncGroupsToFirebase(snapshotGroups, null, {}, true); // Don't double-log
+      }
+
+      showToast('Restored to previous version');
+      setShowRestoreConfirmModal(false);
+      setEntryToRestore(null);
+      // Refresh history to show the restore action
+      loadChangeHistory();
+    } catch (error) {
+      console.error('Error restoring version:', error);
+      showToast('Error restoring version');
+    }
+  }
+
+  // Handle canceling the restore (Phase 8: Task 68)
+  function handleCancelRestore() {
+    setShowRestoreConfirmModal(false);
+    setEntryToRestore(null);
   }
 
   // Close Add Segment dropdown when clicking outside (Phase 7: Task 59)
@@ -2323,6 +2413,17 @@ export default function RundownEditorPage() {
           loading={loadingHistory}
           onRefresh={loadChangeHistory}
           onCancel={() => setShowHistoryModal(false)}
+          onRestore={handleInitiateRestore}
+          canRestore={checkPermission('edit')}
+        />
+      )}
+
+      {/* Restore Confirm Modal (Phase 8: Task 68) */}
+      {showRestoreConfirmModal && (
+        <RestoreConfirmModal
+          entry={entryToRestore}
+          onConfirm={handleConfirmRestore}
+          onCancel={handleCancelRestore}
         />
       )}
     </div>
@@ -4326,7 +4427,8 @@ function RecurrencePatternModal({ onCreate, onCancel }) {
 
 // Change History Modal (Phase 8: Task 67)
 // Displays a log of all changes made to the rundown
-function ChangeHistoryModal({ history, loading, onRefresh, onCancel }) {
+// Updated (Phase 8: Task 68) - Added onRestore callback and restore button for rollback
+function ChangeHistoryModal({ history, loading, onRefresh, onCancel, onRestore, canRestore }) {
   // Format timestamp to readable date/time
   function formatTimestamp(timestamp) {
     const date = new Date(timestamp);
@@ -4459,6 +4561,16 @@ function ChangeHistoryModal({ history, loading, onRefresh, onCancel }) {
                           {entry.user?.displayName || 'Unknown'}
                           <span className="ml-1 text-zinc-700">({entry.user?.role || 'viewer'})</span>
                         </div>
+                        {/* Restore button - only shown if entry has snapshot (Phase 8: Task 68) */}
+                        {entry.snapshot && canRestore && (
+                          <button
+                            onClick={() => onRestore(entry)}
+                            className="mt-1.5 px-2 py-0.5 text-xs bg-blue-600/20 text-blue-400 rounded hover:bg-blue-600/30 transition-colors border border-blue-500/30"
+                            title="Restore to state before this change"
+                          >
+                            Restore
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -4480,6 +4592,77 @@ function ChangeHistoryModal({ history, loading, onRefresh, onCancel }) {
               Close
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Restore Confirm Modal (Phase 8: Task 68)
+// Confirmation dialog before restoring to a previous version
+function RestoreConfirmModal({ entry, onConfirm, onCancel }) {
+  if (!entry) return null;
+
+  // Format timestamp for display
+  const restoreDate = new Date(entry.timestamp);
+  const formattedDate = restoreDate.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+
+  // Count segments/groups in snapshot
+  const segmentCount = entry.snapshot?.segments?.length || 0;
+  const groupCount = entry.snapshot?.groups?.length || 0;
+
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60]">
+      <div className="bg-zinc-900 border border-zinc-700 rounded-xl w-full max-w-md mx-4 shadow-2xl">
+        <div className="p-4 border-b border-zinc-800">
+          <h2 className="text-lg font-bold text-white">Restore to Previous Version?</h2>
+        </div>
+
+        <div className="p-4 space-y-4">
+          <p className="text-zinc-300 text-sm">
+            This will restore the rundown to the state <strong>before</strong> the following change was made:
+          </p>
+
+          <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-3">
+            <div className="font-medium text-amber-400 text-sm">{entry.action}</div>
+            <div className="text-xs text-zinc-500 mt-1">
+              {formattedDate} by {entry.user?.displayName || 'Unknown'}
+            </div>
+          </div>
+
+          <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
+            <div className="text-blue-400 text-sm font-medium mb-1">Snapshot contents:</div>
+            <div className="text-xs text-zinc-400">
+              {segmentCount} segment{segmentCount !== 1 ? 's' : ''}
+              {groupCount > 0 && `, ${groupCount} group${groupCount !== 1 ? 's' : ''}`}
+            </div>
+          </div>
+
+          <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+            <div className="text-red-400 text-sm">
+              Warning: This will overwrite all current segments and groups. This action cannot be undone.
+            </div>
+          </div>
+        </div>
+
+        <div className="p-4 border-t border-zinc-800 flex gap-3">
+          <button
+            onClick={onCancel}
+            className="flex-1 px-4 py-2 bg-zinc-800 text-zinc-300 rounded-lg hover:bg-zinc-700 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex-1 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-500 transition-colors"
+          >
+            Restore Version
+          </button>
         </div>
       </div>
     </div>
