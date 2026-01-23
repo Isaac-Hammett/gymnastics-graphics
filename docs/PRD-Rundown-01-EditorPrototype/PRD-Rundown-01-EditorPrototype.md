@@ -69,7 +69,7 @@ The **Producer View** (separate page) uses this rundown as the "script" to contr
 | 4 | Reordering & Organization | ✅ COMPLETE | Drag-drop, grouping, nesting |
 | 5 | Segment Management | ✅ COMPLETE | Duplicate, lock, conditional, notes |
 | 6 | Timing Modes | ✅ COMPLETE | Fixed/manual/follows-previous modes |
-| 7 | Templates & Presets | 🔲 PLANNED | Segment templates, recurrence |
+| 7 | Templates & Presets | ✅ COMPLETE | Segment templates, recurrence |
 | 8 | Collaboration | 🔲 PLANNED | Multi-user, permissions, versioning |
 | 9 | Data & Reporting | 🔲 PLANNED | Export, import rundowns |
 | 10 | Visual & UX | 🔲 PLANNED | Timeline view, theming, print |
@@ -1106,13 +1106,13 @@ const filteredSegments = segments.filter(seg => {
 - [x] Visual indicator of timing mode
 - [x] Manual segments show "MANUAL" badge
 
-### Phase 7: Templates & Presets
+### Phase 7: Templates & Presets ✅ COMPLETE
 
-- [ ] Save segment as template
-- [ ] Template library accessible
-- [ ] Save full rundown as template
-- [ ] Load template for new rundown
-- [ ] Recurrence pattern option
+- [x] Save segment as template
+- [x] Template library accessible
+- [x] Save full rundown as template
+- [x] Load template for new rundown
+- [x] Recurrence pattern option
 
 ### Phase 8: Collaboration
 

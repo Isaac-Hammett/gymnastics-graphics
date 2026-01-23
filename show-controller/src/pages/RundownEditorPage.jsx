@@ -23,6 +23,7 @@ import {
   LockClosedIcon,
   LockOpenIcon,
   ChatBubbleLeftIcon,
+  ArrowPathRoundedSquareIcon,
 } from '@heroicons/react/24/outline';
 import { getGraphicsForCompetition, getCategories, getRecommendedGraphic, getGraphicById, GRAPHICS } from '../lib/graphicsRegistry';
 import { db, ref, set, get, push, remove, update } from '../lib/firebase';
@@ -134,6 +135,7 @@ export default function RundownEditorPage() {
   const [templateToEdit, setTemplateToEdit] = useState(null); // Rundown template being edited (Phase 7: Task 61)
   const [showEditSegmentTemplateModal, setShowEditSegmentTemplateModal] = useState(false); // Edit segment template modal (Phase 7: Task 61)
   const [segmentTemplateToEdit, setSegmentTemplateToEdit] = useState(null); // Segment template being edited (Phase 7: Task 61)
+  const [showRecurrenceModal, setShowRecurrenceModal] = useState(false); // Recurrence pattern modal (Phase 7: Task 62)
 
   // Filtered segments
   const filteredSegments = useMemo(() => {
@@ -950,6 +952,51 @@ export default function RundownEditorPage() {
     }
   }
 
+  // Create repeated segments with recurrence pattern (Phase 7: Task 62)
+  function handleCreateRecurringSegments(namePattern, count, type, duration, scene) {
+    if (!namePattern.trim() || count < 1) return;
+
+    const baseTimestamp = Date.now();
+    const newSegments = [];
+
+    for (let i = 1; i <= count; i++) {
+      // Replace {n} or {N} with the current number in the name pattern
+      const segmentName = namePattern.replace(/\{[nN]\}/g, String(i));
+
+      const newSegment = {
+        id: `seg-${baseTimestamp}-${i}`,
+        name: segmentName,
+        type: type || 'live',
+        duration: duration || null,
+        scene: scene || '',
+        graphic: null,
+        autoAdvance: duration ? true : false,
+        bufferAfter: 0,
+        locked: false,
+        optional: false,
+        notes: '',
+        timingMode: duration ? 'fixed' : 'manual',
+      };
+
+      newSegments.push(newSegment);
+    }
+
+    // Insert after selected segment, or at end
+    if (selectedSegmentId) {
+      const index = segments.findIndex(s => s.id === selectedSegmentId);
+      const updatedSegments = [...segments];
+      updatedSegments.splice(index + 1, 0, ...newSegments);
+      setSegments(updatedSegments);
+    } else {
+      setSegments([...segments, ...newSegments]);
+    }
+
+    // Select the first new segment
+    setSelectedSegmentId(newSegments[0].id);
+    setShowRecurrenceModal(false);
+    showToast(`Created ${count} segment(s)`);
+  }
+
   // Group management functions (Phase 4: Tasks 7.4, 7.5)
 
   // Create a new group from selected segments
@@ -1332,6 +1379,17 @@ export default function RundownEditorPage() {
                     <BookmarkIcon className="w-4 h-4" />
                     From Template...
                   </button>
+                  <div className="border-t border-zinc-700 my-1" />
+                  <button
+                    onClick={() => {
+                      setShowRecurrenceModal(true);
+                      setShowAddSegmentMenu(false);
+                    }}
+                    className="w-full px-3 py-2 text-sm text-left text-zinc-300 hover:bg-zinc-700 transition-colors flex items-center gap-2"
+                  >
+                    <ArrowPathRoundedSquareIcon className="w-4 h-4" />
+                    Repeat Segment...
+                  </button>
                 </div>
               )}
             </div>
@@ -1701,6 +1759,14 @@ export default function RundownEditorPage() {
             setShowEditSegmentTemplateModal(false);
             setSegmentTemplateToEdit(null);
           }}
+        />
+      )}
+
+      {/* Recurrence Pattern Modal (Phase 7: Task 62) */}
+      {showRecurrenceModal && (
+        <RecurrencePatternModal
+          onCreate={handleCreateRecurringSegments}
+          onCancel={() => setShowRecurrenceModal(false)}
         />
       )}
     </div>
@@ -3534,6 +3600,139 @@ function EditSegmentTemplateModal({ template, onSave, onCancel }) {
               className="flex-1 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {saving ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// Recurrence Pattern Modal Component (Phase 7: Task 62)
+function RecurrencePatternModal({ onCreate, onCancel }) {
+  const [namePattern, setNamePattern] = useState('Rotation {n}');
+  const [count, setCount] = useState(6);
+  const [segmentType, setSegmentType] = useState('live');
+  const [duration, setDuration] = useState('');
+
+  // Generate preview of segment names
+  const preview = useMemo(() => {
+    const names = [];
+    for (let i = 1; i <= Math.min(count, 8); i++) {
+      names.push(namePattern.replace(/\{[nN]\}/g, String(i)));
+    }
+    if (count > 8) {
+      names.push('...');
+    }
+    return names;
+  }, [namePattern, count]);
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    if (!namePattern.trim() || count < 1) return;
+
+    const parsedDuration = duration ? parseInt(duration, 10) || null : null;
+    onCreate(namePattern.trim(), count, segmentType, parsedDuration, '');
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+      <div className="bg-zinc-900 border border-zinc-700 rounded-xl w-full max-w-md mx-4 shadow-2xl">
+        <div className="flex items-center justify-between p-4 border-b border-zinc-800">
+          <h2 className="text-lg font-bold text-white">Create Repeated Segments</h2>
+          <button
+            onClick={onCancel}
+            className="p-1 text-zinc-400 hover:text-zinc-200 rounded-lg hover:bg-zinc-800 transition-colors"
+          >
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+          <div>
+            <label className="block text-xs text-zinc-400 mb-1.5">Name Pattern *</label>
+            <input
+              type="text"
+              value={namePattern}
+              onChange={(e) => setNamePattern(e.target.value)}
+              placeholder="e.g., Rotation {n}"
+              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+              autoFocus
+            />
+            <div className="text-xs text-zinc-500 mt-1">
+              Use <code className="px-1 bg-zinc-800 rounded">{'{n}'}</code> for the segment number
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs text-zinc-400 mb-1.5">Number of Segments *</label>
+              <input
+                type="number"
+                min="1"
+                max="50"
+                value={count}
+                onChange={(e) => setCount(Math.min(50, Math.max(1, parseInt(e.target.value) || 1)))}
+                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-zinc-400 mb-1.5">Duration (seconds)</label>
+              <input
+                type="number"
+                min="0"
+                value={duration}
+                onChange={(e) => setDuration(e.target.value)}
+                placeholder="Manual"
+                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs text-zinc-400 mb-1.5">Segment Type</label>
+            <select
+              value={segmentType}
+              onChange={(e) => setSegmentType(e.target.value)}
+              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+            >
+              <option value="live">Live</option>
+              <option value="static">Static</option>
+              <option value="video">Video</option>
+              <option value="break">Break</option>
+              <option value="hold">Hold</option>
+              <option value="graphic">Graphic</option>
+            </select>
+          </div>
+
+          <div className="p-3 bg-zinc-800/50 rounded-lg border border-zinc-700">
+            <div className="text-xs text-zinc-400 mb-2">Preview ({count} segments):</div>
+            <div className="flex flex-wrap gap-1.5">
+              {preview.map((name, i) => (
+                <span
+                  key={i}
+                  className="px-2 py-0.5 text-xs bg-zinc-700 text-zinc-300 rounded"
+                >
+                  {name}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="flex-1 px-4 py-2 bg-zinc-800 text-zinc-300 rounded-lg hover:bg-zinc-700 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={!namePattern.trim() || count < 1}
+              className="flex-1 px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Create {count} Segment{count !== 1 ? 's' : ''}
             </button>
           </div>
         </form>

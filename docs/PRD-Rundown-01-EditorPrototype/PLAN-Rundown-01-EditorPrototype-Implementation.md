@@ -3,7 +3,7 @@
 **PRD:** PRD-Rundown-01-EditorPrototype
 **Status:** PROTOTYPE COMPLETE, FEATURES IN PROGRESS
 **Created:** 2026-01-22
-**Last Updated:** 2026-01-23 (v3.6 - Task 61 complete - Template management UI with edit functionality)
+**Last Updated:** 2026-01-23 (v3.7 - Task 62 complete - Recurrence pattern for repeated segments)
 
 ---
 
@@ -49,7 +49,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | 4 | Reordering & Organization | ✅ COMPLETE | 44-48 |
 | 5 | Segment Management | ✅ COMPLETE | 49-54 |
 | 6 | Timing Modes | ✅ COMPLETE | 55-57 |
-| 7 | Templates & Presets | 🔄 IN PROGRESS | 58-62 |
+| 7 | Templates & Presets | ✅ COMPLETE | 58-62 |
 | 8 | Collaboration | 🔲 NOT STARTED | 63-69 |
 | 9 | Data & Reporting | 🔲 NOT STARTED | 70-74 |
 | 10 | Visual & UX | 🔲 NOT STARTED | 75-81 |
@@ -162,7 +162,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 56: Show timing mode badge on row | COMPLETE | Orange "MANUAL" badge for manual mode, indigo "→" for follows-previous mode |
 | Task 57: Surface auto-advance toggle inline | COMPLETE | Green/gray "Auto" button on segment row, toggles autoAdvance field, respects lock status |
 
-### Phase 7: Templates & Presets 🔄 IN PROGRESS
+### Phase 7: Templates & Presets ✅ COMPLETE
 
 | Task | Status | Notes |
 |------|--------|-------|
@@ -170,7 +170,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 59: Create segment template library | COMPLETE | Added SegmentTemplateLibraryModal with category filtering, split Add Segment button with dropdown for "New Blank Segment" and "From Template..." options, loads templates from Firebase segmentTemplates path |
 | Task 60: Save full rundown as template | COMPLETE | Already implemented in Phase 0C (Task 3.2). "Save as Template" button in toolbar opens SaveTemplateModal, saves to Firebase rundownTemplates path with team abstraction. |
 | Task 61: Template management UI | COMPLETE | Added EditTemplateModal and EditSegmentTemplateModal, edit buttons (pencil icon) on template cards in both TemplateLibraryModal and SegmentTemplateLibraryModal, update handlers use Firebase update() for partial updates |
-| Task 62: Add recurrence pattern option | NOT STARTED | Repeat segment N times |
+| Task 62: Add recurrence pattern option | COMPLETE | "Repeat Segment..." option in Add Segment dropdown, RecurrencePatternModal with name pattern ({n} placeholder), count, type, duration; creates multiple segments with auto-incremented names |
 
 ### Phase 8: Collaboration 🔲 NOT STARTED
 
