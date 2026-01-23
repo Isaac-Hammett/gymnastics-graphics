@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   PlusIcon,
@@ -562,7 +562,7 @@ function SegmentDetailPanel({ segment, onSave, onDelete, onCancel }) {
   const groupedGraphics = getGroupedGraphics();
 
   // Reset form when segment changes
-  useState(() => {
+  useEffect(() => {
     setFormData(segment);
   }, [segment]);
 
