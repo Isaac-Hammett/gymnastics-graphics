@@ -9,8 +9,10 @@ import {
   TrashIcon,
   ChevronUpIcon,
   ChevronDownIcon,
+  LightBulbIcon,
+  PhotoIcon,
 } from '@heroicons/react/24/outline';
-import { getGraphicsForCompetition, getCategories } from '../lib/graphicsRegistry';
+import { getGraphicsForCompetition, getCategories, getRecommendedGraphic, getGraphicById, GRAPHICS } from '../lib/graphicsRegistry';
 
 // Hardcoded competition context per PRD (Phase 0B)
 const DUMMY_COMPETITION = {
@@ -345,6 +347,14 @@ export default function RundownEditorPage() {
                                   • {segment.scene}
                                 </span>
                               )}
+                              {segment.graphic?.graphicId && (
+                                <span
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded bg-pink-500/20 text-pink-400 border border-pink-500/30"
+                                  title={`Graphic: ${segment.graphic.graphicId}`}
+                                >
+                                  <PhotoIcon className="w-3 h-3" />
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -460,6 +470,91 @@ function getGroupedGraphics() {
   return groups;
 }
 
+// Get the base graphic ID from an expanded team graphic ID
+// e.g., "team1-stats" -> "team-stats", "team2-coaches" -> "team-coaches"
+function getBaseGraphicId(graphicId) {
+  const teamMatch = graphicId.match(/^team\d+-(.+)$/);
+  if (teamMatch) {
+    return `team-${teamMatch[1]}`;
+  }
+  return graphicId;
+}
+
+// Get user-editable params for a graphic (excluding auto-filled competition params)
+function getUserEditableParams(graphicId) {
+  const baseId = getBaseGraphicId(graphicId);
+  const graphic = GRAPHICS[baseId];
+  if (!graphic?.params) return [];
+
+  const editableParams = [];
+  for (const [key, schema] of Object.entries(graphic.params)) {
+    // Skip params that are auto-filled from competition config
+    if (schema.source === 'competition') continue;
+    // Skip teamSlot for now - it's handled by the graphic ID expansion (team1-coaches, team2-coaches, etc.)
+    if (key === 'teamSlot') continue;
+
+    editableParams.push({ key, ...schema });
+  }
+  return editableParams;
+}
+
+// Component for rendering parameter inputs based on graphic schema
+function GraphicParamInputs({ graphicId, params, onChange }) {
+  const editableParams = getUserEditableParams(graphicId);
+
+  if (editableParams.length === 0) {
+    return null;
+  }
+
+  const handleParamChange = (key, value) => {
+    onChange({ ...params, [key]: value });
+  };
+
+  return (
+    <div className="mt-3 pt-3 border-t border-zinc-700">
+      <div className="text-xs text-zinc-500 mb-2">Parameters</div>
+      <div className="space-y-3">
+        {editableParams.map(param => (
+          <div key={param.key}>
+            <label className="block text-xs text-zinc-400 mb-1">
+              {param.label || param.key}
+            </label>
+            {param.type === 'enum' && param.options ? (
+              <select
+                value={params[param.key] || param.default || ''}
+                onChange={(e) => handleParamChange(param.key, e.target.value)}
+                className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+              >
+                {param.options.map(option => (
+                  <option key={option} value={option}>
+                    {option.charAt(0).toUpperCase() + option.slice(1)}
+                  </option>
+                ))}
+              </select>
+            ) : param.type === 'number' ? (
+              <input
+                type="number"
+                value={params[param.key] ?? param.default ?? ''}
+                min={param.min}
+                max={param.max}
+                onChange={(e) => handleParamChange(param.key, e.target.value ? Number(e.target.value) : null)}
+                className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+              />
+            ) : (
+              <input
+                type="text"
+                value={params[param.key] || param.default || ''}
+                onChange={(e) => handleParamChange(param.key, e.target.value)}
+                className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+              />
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // Placeholder SegmentDetail panel component
 function SegmentDetailPanel({ segment, onSave, onDelete, onCancel }) {
   const [formData, setFormData] = useState(segment);
@@ -470,6 +565,18 @@ function SegmentDetailPanel({ segment, onSave, onDelete, onCancel }) {
   useState(() => {
     setFormData(segment);
   }, [segment]);
+
+  // Get smart recommendation based on segment name
+  const recommendation = getRecommendedGraphic(
+    formData.name,
+    DUMMY_COMPETITION.type,
+    getTeamNames()
+  );
+
+  // Only show recommendation if confidence is high enough and graphic isn't already selected
+  const showRecommendation = recommendation &&
+    recommendation.confidence >= 0.2 &&
+    formData.graphic?.graphicId !== recommendation.id;
 
   // Handle graphic selection change
   function handleGraphicChange(graphicId) {
@@ -565,6 +672,26 @@ function SegmentDetailPanel({ segment, onSave, onDelete, onCancel }) {
         {/* Graphic Picker - grouped by category */}
         <div className="border border-zinc-700 rounded-lg p-3 bg-zinc-800/50">
           <label className="block text-xs text-zinc-400 mb-2 uppercase tracking-wide">Graphic</label>
+
+          {/* Smart Recommendation */}
+          {showRecommendation && (
+            <div className="mb-3 p-2 bg-amber-500/10 border border-amber-500/30 rounded-lg flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <LightBulbIcon className="w-4 h-4 text-amber-400" />
+                <span className="text-sm text-amber-300">
+                  Suggested: <span className="font-medium">{recommendation.label}</span>
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleGraphicChange(recommendation.id)}
+                className="px-2 py-1 text-xs font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded hover:bg-amber-500/30 transition-colors"
+              >
+                Use
+              </button>
+            </div>
+          )}
+
           <select
             value={formData.graphic?.graphicId || ''}
             onChange={(e) => handleGraphicChange(e.target.value)}
@@ -581,10 +708,16 @@ function SegmentDetailPanel({ segment, onSave, onDelete, onCancel }) {
               </optgroup>
             ))}
           </select>
+          {/* Parameter Inputs - shown when graphic is selected */}
           {formData.graphic?.graphicId && (
-            <div className="mt-2 text-xs text-zinc-500">
-              Selected: {formData.graphic.graphicId}
-            </div>
+            <GraphicParamInputs
+              graphicId={formData.graphic.graphicId}
+              params={formData.graphic.params || {}}
+              onChange={(newParams) => setFormData({
+                ...formData,
+                graphic: { ...formData.graphic, params: newParams }
+              })}
+            />
           )}
         </div>
 
