@@ -25,7 +25,7 @@ import {
   ChatBubbleLeftIcon,
 } from '@heroicons/react/24/outline';
 import { getGraphicsForCompetition, getCategories, getRecommendedGraphic, getGraphicById, GRAPHICS } from '../lib/graphicsRegistry';
-import { db, ref, set, get, push, remove } from '../lib/firebase';
+import { db, ref, set, get, push, remove, update } from '../lib/firebase';
 
 // Hardcoded competition context per PRD (Phase 0B)
 const DUMMY_COMPETITION = {
@@ -130,6 +130,10 @@ export default function RundownEditorPage() {
   const [segmentTemplates, setSegmentTemplates] = useState([]); // Segment templates from Firebase (Phase 7: Task 59)
   const [loadingSegmentTemplates, setLoadingSegmentTemplates] = useState(false); // Loading state for segment templates (Phase 7: Task 59)
   const [showAddSegmentMenu, setShowAddSegmentMenu] = useState(false); // Dropdown for Add Segment options (Phase 7: Task 59)
+  const [showEditTemplateModal, setShowEditTemplateModal] = useState(false); // Edit rundown template modal (Phase 7: Task 61)
+  const [templateToEdit, setTemplateToEdit] = useState(null); // Rundown template being edited (Phase 7: Task 61)
+  const [showEditSegmentTemplateModal, setShowEditSegmentTemplateModal] = useState(false); // Edit segment template modal (Phase 7: Task 61)
+  const [segmentTemplateToEdit, setSegmentTemplateToEdit] = useState(null); // Segment template being edited (Phase 7: Task 61)
 
   // Filtered segments
   const filteredSegments = useMemo(() => {
@@ -752,6 +756,36 @@ export default function RundownEditorPage() {
     }
   }
 
+  // Open edit modal for rundown template (Phase 7: Task 61)
+  function handleEditTemplate(template) {
+    setTemplateToEdit(template);
+    setShowEditTemplateModal(true);
+  }
+
+  // Update rundown template in Firebase (Phase 7: Task 61)
+  async function handleUpdateTemplate(templateId, updatedData) {
+    try {
+      const updates = {
+        'metadata/name': updatedData.name,
+        'metadata/description': updatedData.description || '',
+        'metadata/updatedAt': new Date().toISOString(),
+      };
+      await update(ref(db, `rundownTemplates/${templateId}`), updates);
+      // Update local state
+      setTemplates(templates.map(t =>
+        t.id === templateId
+          ? { ...t, name: updatedData.name, description: updatedData.description }
+          : t
+      ));
+      setShowEditTemplateModal(false);
+      setTemplateToEdit(null);
+      showToast('Template updated');
+    } catch (error) {
+      console.error('Error updating template:', error);
+      showToast('Error updating template');
+    }
+  }
+
   function handleImportCSV() {
     showToast('Coming soon');
   }
@@ -882,6 +916,37 @@ export default function RundownEditorPage() {
     } catch (error) {
       console.error('Error deleting segment template:', error);
       showToast('Error deleting segment template');
+    }
+  }
+
+  // Open edit modal for segment template (Phase 7: Task 61)
+  function handleEditSegmentTemplate(template) {
+    setSegmentTemplateToEdit(template);
+    setShowEditSegmentTemplateModal(true);
+  }
+
+  // Update segment template in Firebase (Phase 7: Task 61)
+  async function handleUpdateSegmentTemplate(templateId, updatedData) {
+    try {
+      const updates = {
+        name: updatedData.name,
+        description: updatedData.description || '',
+        category: updatedData.category || 'general',
+        updatedAt: new Date().toISOString(),
+      };
+      await update(ref(db, `segmentTemplates/${templateId}`), updates);
+      // Update local state
+      setSegmentTemplates(segmentTemplates.map(t =>
+        t.id === templateId
+          ? { ...t, ...updates }
+          : t
+      ));
+      setShowEditSegmentTemplateModal(false);
+      setSegmentTemplateToEdit(null);
+      showToast('Segment template updated');
+    } catch (error) {
+      console.error('Error updating segment template:', error);
+      showToast('Error updating segment template');
     }
   }
 
@@ -1576,6 +1641,7 @@ export default function RundownEditorPage() {
           loading={loadingTemplates}
           onLoad={handleLoadTemplate}
           onDelete={handleDeleteTemplate}
+          onEdit={handleEditTemplate}
           onCancel={() => setShowTemplateLibrary(false)}
           isCompatible={isTemplateCompatible}
         />
@@ -1609,7 +1675,32 @@ export default function RundownEditorPage() {
           loading={loadingSegmentTemplates}
           onAdd={handleAddSegmentFromTemplate}
           onDelete={handleDeleteSegmentTemplate}
+          onEdit={handleEditSegmentTemplate}
           onCancel={() => setShowSegmentTemplateLibrary(false)}
+        />
+      )}
+
+      {/* Edit Rundown Template Modal (Phase 7: Task 61) */}
+      {showEditTemplateModal && templateToEdit && (
+        <EditTemplateModal
+          template={templateToEdit}
+          onSave={handleUpdateTemplate}
+          onCancel={() => {
+            setShowEditTemplateModal(false);
+            setTemplateToEdit(null);
+          }}
+        />
+      )}
+
+      {/* Edit Segment Template Modal (Phase 7: Task 61) */}
+      {showEditSegmentTemplateModal && segmentTemplateToEdit && (
+        <EditSegmentTemplateModal
+          template={segmentTemplateToEdit}
+          onSave={handleUpdateSegmentTemplate}
+          onCancel={() => {
+            setShowEditSegmentTemplateModal(false);
+            setSegmentTemplateToEdit(null);
+          }}
         />
       )}
     </div>
@@ -2577,7 +2668,7 @@ function SaveTemplateModal({ onSave, onCancel, segmentCount, totalDuration }) {
 }
 
 // Template Library Modal Component
-function TemplateLibraryModal({ templates, loading, onLoad, onDelete, onCancel, isCompatible }) {
+function TemplateLibraryModal({ templates, loading, onLoad, onDelete, onEdit, onCancel, isCompatible }) {
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
       <div className="bg-zinc-900 border border-zinc-700 rounded-xl w-full max-w-lg mx-4 shadow-2xl max-h-[80vh] flex flex-col">
@@ -2650,6 +2741,13 @@ function TemplateLibraryModal({ templates, loading, onLoad, onDelete, onCancel, 
                           className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                           Load
+                        </button>
+                        <button
+                          onClick={() => onEdit(template)}
+                          className="p-1.5 text-zinc-500 hover:text-blue-400 rounded-lg hover:bg-zinc-700 transition-colors"
+                          title="Edit template"
+                        >
+                          <PencilIcon className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => onDelete(template.id)}
@@ -3052,7 +3150,7 @@ function SelectionSummaryPanel({
 }
 
 // Segment Template Library Modal Component (Phase 7: Task 59)
-function SegmentTemplateLibraryModal({ templates, loading, onAdd, onDelete, onCancel }) {
+function SegmentTemplateLibraryModal({ templates, loading, onAdd, onDelete, onEdit, onCancel }) {
   const [selectedCategory, setSelectedCategory] = useState('all');
 
   // Filter templates by category
@@ -3140,6 +3238,7 @@ function SegmentTemplateLibraryModal({ templates, loading, onAdd, onDelete, onCa
                           template={template}
                           onAdd={onAdd}
                           onDelete={onDelete}
+                          onEdit={onEdit}
                         />
                       ))}
                     </div>
@@ -3154,6 +3253,7 @@ function SegmentTemplateLibraryModal({ templates, loading, onAdd, onDelete, onCa
                       template={template}
                       onAdd={onAdd}
                       onDelete={onDelete}
+                      onEdit={onEdit}
                     />
                   ))}
                 </div>
@@ -3173,7 +3273,7 @@ function SegmentTemplateLibraryModal({ templates, loading, onAdd, onDelete, onCa
 }
 
 // Individual Segment Template Card (Phase 7: Task 59)
-function SegmentTemplateCard({ template, onAdd, onDelete }) {
+function SegmentTemplateCard({ template, onAdd, onDelete, onEdit }) {
   return (
     <div className="p-3 bg-zinc-800/50 border border-zinc-700 rounded-lg hover:border-zinc-600 transition-colors">
       <div className="flex items-start justify-between gap-3">
@@ -3218,6 +3318,13 @@ function SegmentTemplateCard({ template, onAdd, onDelete }) {
             Add
           </button>
           <button
+            onClick={() => onEdit(template)}
+            className="p-1.5 text-zinc-500 hover:text-blue-400 rounded-lg hover:bg-zinc-700 transition-colors"
+            title="Edit template"
+          >
+            <PencilIcon className="w-4 h-4" />
+          </button>
+          <button
             onClick={() => onDelete(template.id)}
             className="p-1.5 text-zinc-500 hover:text-red-400 rounded-lg hover:bg-zinc-700 transition-colors"
             title="Delete template"
@@ -3225,6 +3332,211 @@ function SegmentTemplateCard({ template, onAdd, onDelete }) {
             <TrashIcon className="w-4 h-4" />
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// Edit Rundown Template Modal Component (Phase 7: Task 61)
+function EditTemplateModal({ template, onSave, onCancel }) {
+  const [templateName, setTemplateName] = useState(template.name || '');
+  const [templateDescription, setTemplateDescription] = useState(template.description || '');
+  const [saving, setSaving] = useState(false);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!templateName.trim()) return;
+
+    setSaving(true);
+    await onSave(template.id, {
+      name: templateName.trim(),
+      description: templateDescription.trim(),
+    });
+    setSaving(false);
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+      <div className="bg-zinc-900 border border-zinc-700 rounded-xl w-full max-w-md mx-4 shadow-2xl">
+        <div className="flex items-center justify-between p-4 border-b border-zinc-800">
+          <h2 className="text-lg font-bold text-white">Edit Template</h2>
+          <button
+            onClick={onCancel}
+            className="p-1 text-zinc-400 hover:text-zinc-200 rounded-lg hover:bg-zinc-800 transition-colors"
+          >
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+          <div>
+            <label className="block text-xs text-zinc-400 mb-1.5">Template Name *</label>
+            <input
+              type="text"
+              value={templateName}
+              onChange={(e) => setTemplateName(e.target.value)}
+              placeholder="e.g., Standard Dual Meet"
+              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+              autoFocus
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs text-zinc-400 mb-1.5">Description (optional)</label>
+            <textarea
+              value={templateDescription}
+              onChange={(e) => setTemplateDescription(e.target.value)}
+              placeholder="e.g., Basic dual meet format with intros, rotations, and breaks"
+              rows={3}
+              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500 resize-none"
+            />
+          </div>
+
+          <div className="p-3 bg-zinc-800/50 rounded-lg border border-zinc-700">
+            <div className="text-xs text-zinc-400 mb-2">Template info:</div>
+            <div className="flex items-center gap-4 text-sm text-zinc-300">
+              <span>{template.teamCount || '?'} teams</span>
+              <span className="text-zinc-600">•</span>
+              <span>{formatDuration(template.estimatedDuration)} total</span>
+            </div>
+            {template.competitionTypes && (
+              <div className="text-xs text-zinc-500 mt-2">
+                Compatible with: {template.competitionTypes.join(', ')}
+              </div>
+            )}
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="flex-1 px-4 py-2 bg-zinc-800 text-zinc-300 rounded-lg hover:bg-zinc-700 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={!templateName.trim() || saving}
+              className="flex-1 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {saving ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// Edit Segment Template Modal Component (Phase 7: Task 61)
+function EditSegmentTemplateModal({ template, onSave, onCancel }) {
+  const [templateName, setTemplateName] = useState(template.name || '');
+  const [templateDescription, setTemplateDescription] = useState(template.description || '');
+  const [categoryTag, setCategoryTag] = useState(template.category || 'general');
+  const [saving, setSaving] = useState(false);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!templateName.trim()) return;
+
+    setSaving(true);
+    await onSave(template.id, {
+      name: templateName.trim(),
+      description: templateDescription.trim(),
+      category: categoryTag,
+    });
+    setSaving(false);
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+      <div className="bg-zinc-900 border border-zinc-700 rounded-xl w-full max-w-md mx-4 shadow-2xl">
+        <div className="flex items-center justify-between p-4 border-b border-zinc-800">
+          <h2 className="text-lg font-bold text-white">Edit Segment Template</h2>
+          <button
+            onClick={onCancel}
+            className="p-1 text-zinc-400 hover:text-zinc-200 rounded-lg hover:bg-zinc-800 transition-colors"
+          >
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+          <div>
+            <label className="block text-xs text-zinc-400 mb-1.5">Template Name *</label>
+            <input
+              type="text"
+              value={templateName}
+              onChange={(e) => setTemplateName(e.target.value)}
+              placeholder="e.g., Team Coaches Intro"
+              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+              autoFocus
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs text-zinc-400 mb-1.5">Category</label>
+            <select
+              value={categoryTag}
+              onChange={(e) => setCategoryTag(e.target.value)}
+              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+            >
+              {SEGMENT_TEMPLATE_CATEGORIES.map(cat => (
+                <option key={cat.id} value={cat.id}>{cat.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs text-zinc-400 mb-1.5">Description (optional)</label>
+            <textarea
+              value={templateDescription}
+              onChange={(e) => setTemplateDescription(e.target.value)}
+              placeholder="e.g., Standard coaches introduction with graphic overlay"
+              rows={2}
+              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500 resize-none"
+            />
+          </div>
+
+          <div className="p-3 bg-zinc-800/50 rounded-lg border border-zinc-700">
+            <div className="text-xs text-zinc-400 mb-2">Segment configuration:</div>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div className="text-zinc-500">Type:</div>
+              <div className="text-zinc-300">{template.segment?.type || 'unknown'}</div>
+              <div className="text-zinc-500">Duration:</div>
+              <div className="text-zinc-300">{template.segment?.duration ? `${template.segment.duration}s` : 'Manual'}</div>
+              {template.segment?.scene && (
+                <>
+                  <div className="text-zinc-500">Scene:</div>
+                  <div className="text-zinc-300 truncate">{template.segment.scene}</div>
+                </>
+              )}
+              {template.segment?.graphic?.graphicId && (
+                <>
+                  <div className="text-zinc-500">Graphic:</div>
+                  <div className="text-zinc-300 truncate">{template.segment.graphic.graphicId}</div>
+                </>
+              )}
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="flex-1 px-4 py-2 bg-zinc-800 text-zinc-300 rounded-lg hover:bg-zinc-700 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={!templateName.trim() || saving}
+              className="flex-1 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {saving ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
