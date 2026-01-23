@@ -20,6 +20,8 @@ import {
   Bars3Icon,
   FolderIcon,
   FolderOpenIcon,
+  LockClosedIcon,
+  LockOpenIcon,
 } from '@heroicons/react/24/outline';
 import { getGraphicsForCompetition, getCategories, getRecommendedGraphic, getGraphicById, GRAPHICS } from '../lib/graphicsRegistry';
 import { db, ref, set, get, push, remove } from '../lib/firebase';
@@ -50,15 +52,15 @@ const DUMMY_SCENES = [
   { name: 'Quad View', category: 'multi' },
 ];
 
-// Hardcoded test data per PRD (updated with graphic field structure for Phase 0B, bufferAfter for Phase 1)
+// Hardcoded test data per PRD (updated with graphic field structure for Phase 0B, bufferAfter for Phase 1, locked for Phase 5)
 const DUMMY_SEGMENTS = [
-  { id: 'seg-001', name: 'Show Intro', type: 'video', duration: 45, scene: 'Starting Soon', graphic: null, autoAdvance: true, bufferAfter: 0 },
-  { id: 'seg-002', name: 'Team Logos', type: 'static', duration: 10, scene: 'Graphics Fullscreen', graphic: { graphicId: 'logos', params: {} }, autoAdvance: true, bufferAfter: 5 },
-  { id: 'seg-003', name: 'UCLA Coaches', type: 'live', duration: 15, scene: 'Single - Camera 2', graphic: { graphicId: 'team-coaches', params: { teamSlot: 1 } }, autoAdvance: true, bufferAfter: 0 },
-  { id: 'seg-004', name: 'Oregon Coaches', type: 'live', duration: 15, scene: 'Single - Camera 3', graphic: { graphicId: 'team-coaches', params: { teamSlot: 2 } }, autoAdvance: true, bufferAfter: 10 },
-  { id: 'seg-005', name: 'Rotation 1 Summary', type: 'static', duration: 20, scene: 'Graphics Fullscreen', graphic: { graphicId: 'event-summary', params: { summaryMode: 'rotation', summaryRotation: 1, summaryTheme: 'espn' } }, autoAdvance: true, bufferAfter: 0 },
-  { id: 'seg-006', name: 'Floor - Rotation 1', type: 'live', duration: null, scene: 'Quad View', graphic: { graphicId: 'floor', params: {} }, autoAdvance: false, bufferAfter: 0 },
-  { id: 'seg-007', name: 'Commercial Break', type: 'break', duration: 120, scene: 'Starting Soon', graphic: null, autoAdvance: true, bufferAfter: 0 },
+  { id: 'seg-001', name: 'Show Intro', type: 'video', duration: 45, scene: 'Starting Soon', graphic: null, autoAdvance: true, bufferAfter: 0, locked: false },
+  { id: 'seg-002', name: 'Team Logos', type: 'static', duration: 10, scene: 'Graphics Fullscreen', graphic: { graphicId: 'logos', params: {} }, autoAdvance: true, bufferAfter: 5, locked: true },
+  { id: 'seg-003', name: 'UCLA Coaches', type: 'live', duration: 15, scene: 'Single - Camera 2', graphic: { graphicId: 'team-coaches', params: { teamSlot: 1 } }, autoAdvance: true, bufferAfter: 0, locked: false },
+  { id: 'seg-004', name: 'Oregon Coaches', type: 'live', duration: 15, scene: 'Single - Camera 3', graphic: { graphicId: 'team-coaches', params: { teamSlot: 2 } }, autoAdvance: true, bufferAfter: 10, locked: false },
+  { id: 'seg-005', name: 'Rotation 1 Summary', type: 'static', duration: 20, scene: 'Graphics Fullscreen', graphic: { graphicId: 'event-summary', params: { summaryMode: 'rotation', summaryRotation: 1, summaryTheme: 'espn' } }, autoAdvance: true, bufferAfter: 0, locked: false },
+  { id: 'seg-006', name: 'Floor - Rotation 1', type: 'live', duration: null, scene: 'Quad View', graphic: { graphicId: 'floor', params: {} }, autoAdvance: false, bufferAfter: 0, locked: false },
+  { id: 'seg-007', name: 'Commercial Break', type: 'break', duration: 120, scene: 'Starting Soon', graphic: null, autoAdvance: true, bufferAfter: 0, locked: false },
 ];
 
 // Segment type options
@@ -246,51 +248,100 @@ export default function RundownEditorPage() {
   }
 
   // Bulk delete selected segments (Task 6.6)
+  // Respects locked segments (Phase 5: Task 8.2)
   function handleBulkDelete() {
     if (selectedSegmentIds.length === 0) return;
-    if (window.confirm(`Are you sure you want to delete ${selectedSegmentIds.length} segment(s)?`)) {
-      setSegments(segments.filter(seg => !selectedSegmentIds.includes(seg.id)));
+
+    // Check for locked segments
+    const lockedCount = selectedSegmentIds.filter(id =>
+      segments.find(s => s.id === id)?.locked
+    ).length;
+
+    if (lockedCount === selectedSegmentIds.length) {
+      showToast('All selected segments are locked');
+      return;
+    }
+
+    const deleteCount = selectedSegmentIds.length - lockedCount;
+    const message = lockedCount > 0
+      ? `Delete ${deleteCount} segment(s)? (${lockedCount} locked segment(s) will be skipped)`
+      : `Are you sure you want to delete ${deleteCount} segment(s)?`;
+
+    if (window.confirm(message)) {
+      // Only delete unlocked segments
+      setSegments(segments.filter(seg =>
+        !selectedSegmentIds.includes(seg.id) || seg.locked
+      ));
       setSelectedSegmentIds([]);
-      showToast(`${selectedSegmentIds.length} segment(s) deleted`);
+      showToast(`${deleteCount} segment(s) deleted${lockedCount > 0 ? `, ${lockedCount} locked skipped` : ''}`);
     }
   }
 
   // Bulk edit type for selected segments (Task 6.6)
+  // Respects locked segments (Phase 5: Task 8.2)
   function handleBulkEditType(newType) {
-    setSegments(segments.map(seg =>
-      selectedSegmentIds.includes(seg.id) ? { ...seg, type: newType } : seg
-    ));
-    showToast(`Updated type for ${selectedSegmentIds.length} segment(s)`);
+    let updatedCount = 0;
+    setSegments(segments.map(seg => {
+      if (!selectedSegmentIds.includes(seg.id)) return seg;
+      if (seg.locked) return seg; // Skip locked segments
+      updatedCount++;
+      return { ...seg, type: newType };
+    }));
+    const lockedCount = selectedSegmentIds.length - updatedCount;
+    showToast(`Updated type for ${updatedCount} segment(s)${lockedCount > 0 ? `, ${lockedCount} locked skipped` : ''}`);
   }
 
   // Bulk edit scene for selected segments (Task 6.6)
+  // Respects locked segments (Phase 5: Task 8.2)
   function handleBulkEditScene(newScene) {
-    setSegments(segments.map(seg =>
-      selectedSegmentIds.includes(seg.id) ? { ...seg, scene: newScene } : seg
-    ));
-    showToast(`Updated scene for ${selectedSegmentIds.length} segment(s)`);
+    let updatedCount = 0;
+    setSegments(segments.map(seg => {
+      if (!selectedSegmentIds.includes(seg.id)) return seg;
+      if (seg.locked) return seg; // Skip locked segments
+      updatedCount++;
+      return { ...seg, scene: newScene };
+    }));
+    const lockedCount = selectedSegmentIds.length - updatedCount;
+    showToast(`Updated scene for ${updatedCount} segment(s)${lockedCount > 0 ? `, ${lockedCount} locked skipped` : ''}`);
   }
 
   // Bulk edit graphic for selected segments (Task 6.6)
+  // Respects locked segments (Phase 5: Task 8.2)
   function handleBulkEditGraphic(graphicId) {
+    let updatedCount = 0;
     setSegments(segments.map(seg => {
       if (!selectedSegmentIds.includes(seg.id)) return seg;
+      if (seg.locked) return seg; // Skip locked segments
+      updatedCount++;
       if (!graphicId) {
         return { ...seg, graphic: null };
       }
       return { ...seg, graphic: { graphicId, params: {} } };
     }));
-    showToast(`Updated graphic for ${selectedSegmentIds.length} segment(s)`);
+    const lockedCount = selectedSegmentIds.length - updatedCount;
+    showToast(`Updated graphic for ${updatedCount} segment(s)${lockedCount > 0 ? `, ${lockedCount} locked skipped` : ''}`);
   }
 
   // Update duration for a segment in multi-select (Task 6.5)
+  // Respects locked segments (Phase 5: Task 8.2)
   function handleMultiSelectDurationChange(segmentId, duration) {
+    const segment = segments.find(s => s.id === segmentId);
+    if (segment?.locked) {
+      showToast('Cannot edit locked segment');
+      return;
+    }
     setSegments(segments.map(seg =>
       seg.id === segmentId ? { ...seg, duration } : seg
     ));
   }
 
   function handleReorder(fromIndex, toIndex) {
+    // Check if the segment being moved is locked (Phase 5: Task 8.2)
+    const segmentToMove = segments[fromIndex];
+    if (segmentToMove?.locked) {
+      showToast('Cannot move locked segment');
+      return;
+    }
     const newSegments = [...segments];
     const [removed] = newSegments.splice(fromIndex, 1);
     newSegments.splice(toIndex, 0, removed);
@@ -308,6 +359,7 @@ export default function RundownEditorPage() {
       graphic: null,
       autoAdvance: false,
       bufferAfter: 0,
+      locked: false,
     };
 
     // Insert after selected segment, or at end
@@ -332,6 +384,11 @@ export default function RundownEditorPage() {
   }
 
   function handleDeleteSegment(id) {
+    const segment = segments.find(s => s.id === id);
+    if (segment?.locked) {
+      showToast('Cannot delete locked segment');
+      return;
+    }
     if (window.confirm('Are you sure you want to delete this segment?')) {
       setSegments(segments.filter(seg => seg.id !== id));
       if (selectedSegmentId === id) {
@@ -351,10 +408,12 @@ export default function RundownEditorPage() {
     const newId = `seg-${timestamp}`;
 
     // Create duplicate with "(copy)" appended to name
+    // Note: duplicated segments are unlocked by default
     const duplicatedSegment = {
       ...segmentToDuplicate,
       id: newId,
       name: `${segmentToDuplicate.name} (copy)`,
+      locked: false, // Duplicated segments are always unlocked
       // Deep copy graphic object if it exists
       graphic: segmentToDuplicate.graphic
         ? { ...segmentToDuplicate.graphic, params: { ...segmentToDuplicate.graphic.params } }
@@ -378,14 +437,34 @@ export default function RundownEditorPage() {
     setSelectedSegmentIds([]);
   }
 
+  // Toggle segment lock status (Phase 5: Task 8.2, 8.3)
+  function handleToggleLock(id) {
+    setSegments(segments.map(seg =>
+      seg.id === id ? { ...seg, locked: !seg.locked } : seg
+    ));
+    const segment = segments.find(s => s.id === id);
+    showToast(segment?.locked ? 'Segment unlocked' : 'Segment locked');
+  }
+
   // Inline update handlers for segment fields (Phase 2: Inline Editing)
+  // These handlers check for locked status (Phase 5: Task 8.2)
   function handleInlineSceneChange(segmentId, scene) {
+    const segment = segments.find(s => s.id === segmentId);
+    if (segment?.locked) {
+      showToast('Cannot edit locked segment');
+      return;
+    }
     setSegments(segments.map(seg =>
       seg.id === segmentId ? { ...seg, scene } : seg
     ));
   }
 
   function handleInlineGraphicChange(segmentId, graphicId) {
+    const segment = segments.find(s => s.id === segmentId);
+    if (segment?.locked) {
+      showToast('Cannot edit locked segment');
+      return;
+    }
     setSegments(segments.map(seg => {
       if (seg.id !== segmentId) return seg;
       if (!graphicId) {
@@ -400,6 +479,11 @@ export default function RundownEditorPage() {
   }
 
   function handleInlineDurationChange(segmentId, duration) {
+    const segment = segments.find(s => s.id === segmentId);
+    if (segment?.locked) {
+      showToast('Cannot edit locked segment');
+      return;
+    }
     setSegments(segments.map(seg =>
       seg.id === segmentId ? { ...seg, duration } : seg
     ));
@@ -1117,6 +1201,7 @@ export default function RundownEditorPage() {
                                   onMoveUp={handleMoveUp}
                                   onMoveDown={handleMoveDown}
                                   onDuplicate={handleDuplicateSegment}
+                                  onToggleLock={handleToggleLock}
                                   inGroup={true}
                                   groupColor={groupColor}
                                 />
@@ -1154,6 +1239,7 @@ export default function RundownEditorPage() {
                         onMoveUp={handleMoveUp}
                         onMoveDown={handleMoveDown}
                         onDuplicate={handleDuplicateSegment}
+                        onToggleLock={handleToggleLock}
                         inGroup={false}
                         groupColor={null}
                       />
@@ -1414,6 +1500,7 @@ function SegmentRow({
   onMoveUp,
   onMoveDown,
   onDuplicate,
+  onToggleLock,
   inGroup,
   groupColor,
 }) {
@@ -1421,30 +1508,33 @@ function SegmentRow({
   const isMultiSelected = selectedSegmentIds.includes(segment.id);
   const isDraggedOver = dragOverIndex === originalIndex && draggedSegmentId !== segment.id;
   const isDragging = draggedSegmentId === segment.id;
+  const isLocked = segment.locked;
   const groupedScenes = getGroupedScenes();
   const groupedGraphics = getGroupedGraphics();
 
   return (
     <div
       id={`segment-${segment.id}`}
-      draggable
-      onDragStart={(e) => onDragStart(e, segment.id)}
+      draggable={!isLocked}
+      onDragStart={(e) => isLocked ? e.preventDefault() : onDragStart(e, segment.id)}
       onDragEnd={onDragEnd}
       onDragOver={(e) => onDragOver(e, originalIndex)}
       onDragLeave={onDragLeave}
       onDrop={(e) => onDrop(e, originalIndex)}
       className={`p-3 rounded-lg border transition-all ${
-        isDraggedOver
-          ? 'border-t-2 border-t-blue-500 border-blue-500/50 bg-blue-600/10'
-          : isSelected
-            ? 'bg-blue-600/20 border-blue-500'
-            : isMultiSelected
-              ? 'bg-zinc-800 border-blue-500/50'
-              : isDragging
-                ? 'bg-zinc-800 border-zinc-600 opacity-50'
-                : inGroup
-                  ? `bg-zinc-900/50 border-zinc-800/50 hover:border-zinc-700`
-                  : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'
+        isLocked
+          ? 'bg-zinc-900/50 border-zinc-700/50 opacity-75'
+          : isDraggedOver
+            ? 'border-t-2 border-t-blue-500 border-blue-500/50 bg-blue-600/10'
+            : isSelected
+              ? 'bg-blue-600/20 border-blue-500'
+              : isMultiSelected
+                ? 'bg-zinc-800 border-blue-500/50'
+                : isDragging
+                  ? 'bg-zinc-800 border-zinc-600 opacity-50'
+                  : inGroup
+                    ? `bg-zinc-900/50 border-zinc-800/50 hover:border-zinc-700`
+                    : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'
       }`}
     >
       {/* Row 1: Drag handle, checkbox, segment number, start time, name, type badge */}
@@ -1483,10 +1573,19 @@ function SegmentRow({
         </span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-white font-medium truncate">{segment.name}</span>
+            <span className={`font-medium truncate ${isLocked ? 'text-zinc-400' : 'text-white'}`}>{segment.name}</span>
             <span className={`px-2 py-0.5 text-xs rounded border shrink-0 ${TYPE_COLORS[segment.type] || 'bg-zinc-700 text-zinc-400 border-zinc-600'}`}>
               {segment.type}
             </span>
+            {/* Lock indicator badge (Phase 5: Task 8.3) */}
+            {isLocked && (
+              <span
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded bg-zinc-600/30 text-zinc-400 border border-zinc-600/50 shrink-0"
+                title="Segment is locked"
+              >
+                <LockClosedIcon className="w-3 h-3" />
+              </span>
+            )}
             {segment.graphic?.graphicId && (
               <span
                 className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded bg-pink-500/20 text-pink-400 border border-pink-500/30 shrink-0"
@@ -1517,8 +1616,9 @@ function SegmentRow({
             onInlineSceneChange(segment.id, e.target.value);
           }}
           onClick={(e) => e.stopPropagation()}
-          className="px-2 py-1 text-xs bg-zinc-800 border border-zinc-700 rounded text-zinc-300 focus:outline-none focus:border-blue-500 max-w-[140px] truncate"
-          title={segment.scene || 'No scene selected'}
+          disabled={isLocked}
+          className={`px-2 py-1 text-xs bg-zinc-800 border border-zinc-700 rounded text-zinc-300 focus:outline-none focus:border-blue-500 max-w-[140px] truncate ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+          title={isLocked ? 'Segment is locked' : (segment.scene || 'No scene selected')}
         >
           <option value="">Scene...</option>
           {Object.entries(groupedScenes).map(([category, scenes]) => (
@@ -1540,8 +1640,9 @@ function SegmentRow({
             onInlineGraphicChange(segment.id, e.target.value);
           }}
           onClick={(e) => e.stopPropagation()}
-          className="px-2 py-1 text-xs bg-zinc-800 border border-zinc-700 rounded text-zinc-300 focus:outline-none focus:border-blue-500 max-w-[140px] truncate"
-          title={segment.graphic?.graphicId || 'No graphic selected'}
+          disabled={isLocked}
+          className={`px-2 py-1 text-xs bg-zinc-800 border border-zinc-700 rounded text-zinc-300 focus:outline-none focus:border-blue-500 max-w-[140px] truncate ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+          title={isLocked ? 'Segment is locked' : (segment.graphic?.graphicId || 'No graphic selected')}
         >
           <option value="">Graphic...</option>
           {Object.entries(groupedGraphics).map(([category, graphics]) => (
@@ -1566,12 +1667,26 @@ function SegmentRow({
             const val = e.target.value.replace(/[^\d]/g, '');
             onInlineDurationChange(segment.id, val ? Number(val) : null);
           }}
-          className="w-16 px-2 py-1 text-xs font-mono bg-zinc-800 border border-zinc-700 rounded text-zinc-300 text-center focus:outline-none focus:border-blue-500"
-          title="Duration in seconds"
+          disabled={isLocked}
+          className={`w-16 px-2 py-1 text-xs font-mono bg-zinc-800 border border-zinc-700 rounded text-zinc-300 text-center focus:outline-none focus:border-blue-500 ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+          title={isLocked ? 'Segment is locked' : 'Duration in seconds'}
         />
 
         {/* Spacer */}
         <div className="flex-1" />
+
+        {/* Lock Toggle Button (Phase 5: Task 8.3) */}
+        <button
+          onClick={(e) => { e.stopPropagation(); onToggleLock(segment.id); }}
+          className={`p-1 rounded transition-colors ${
+            isLocked
+              ? 'text-amber-400 hover:text-amber-300 hover:bg-amber-500/20'
+              : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-700'
+          }`}
+          title={isLocked ? 'Unlock segment' : 'Lock segment'}
+        >
+          {isLocked ? <LockClosedIcon className="w-4 h-4" /> : <LockOpenIcon className="w-4 h-4" />}
+        </button>
 
         {/* Edit Button - opens full detail panel */}
         <button
@@ -1594,17 +1709,17 @@ function SegmentRow({
         {/* Reorder buttons */}
         <button
           onClick={(e) => { e.stopPropagation(); onMoveUp(originalIndex); }}
-          disabled={originalIndex === 0}
-          className="p-1 text-zinc-500 hover:text-zinc-300 disabled:opacity-30 disabled:cursor-not-allowed"
-          title="Move up"
+          disabled={originalIndex === 0 || isLocked}
+          className={`p-1 text-zinc-500 hover:text-zinc-300 disabled:opacity-30 disabled:cursor-not-allowed ${isLocked ? 'cursor-not-allowed' : ''}`}
+          title={isLocked ? 'Segment is locked' : 'Move up'}
         >
           <ChevronUpIcon className="w-4 h-4" />
         </button>
         <button
           onClick={(e) => { e.stopPropagation(); onMoveDown(originalIndex); }}
-          disabled={originalIndex === segments.length - 1}
-          className="p-1 text-zinc-500 hover:text-zinc-300 disabled:opacity-30 disabled:cursor-not-allowed"
-          title="Move down"
+          disabled={originalIndex === segments.length - 1 || isLocked}
+          className={`p-1 text-zinc-500 hover:text-zinc-300 disabled:opacity-30 disabled:cursor-not-allowed ${isLocked ? 'cursor-not-allowed' : ''}`}
+          title={isLocked ? 'Segment is locked' : 'Move down'}
         >
           <ChevronDownIcon className="w-4 h-4" />
         </button>
@@ -1742,17 +1857,35 @@ function SegmentDetailPanel({ segment, onSave, onDelete, onCancel }) {
     onSave(formData);
   }
 
+  const isLocked = segment.locked;
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-bold text-white">Edit Segment</h2>
         <button
           onClick={onDelete}
-          className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-lg transition-colors"
+          disabled={isLocked}
+          className={`p-2 rounded-lg transition-colors ${
+            isLocked
+              ? 'text-zinc-600 cursor-not-allowed'
+              : 'text-red-400 hover:text-red-300 hover:bg-red-500/20'
+          }`}
+          title={isLocked ? 'Cannot delete locked segment' : 'Delete segment'}
         >
           <TrashIcon className="w-5 h-5" />
         </button>
       </div>
+
+      {/* Locked segment warning (Phase 5: Task 8.2) */}
+      {isLocked && (
+        <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg flex items-center gap-2">
+          <LockClosedIcon className="w-4 h-4 text-amber-400 shrink-0" />
+          <span className="text-sm text-amber-300">
+            This segment is locked. Unlock it to make changes.
+          </span>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
