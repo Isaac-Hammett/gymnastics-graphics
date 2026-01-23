@@ -44,15 +44,15 @@ const DUMMY_SCENES = [
   { name: 'Quad View', category: 'multi' },
 ];
 
-// Hardcoded test data per PRD (updated with graphic field structure for Phase 0B)
+// Hardcoded test data per PRD (updated with graphic field structure for Phase 0B, bufferAfter for Phase 1)
 const DUMMY_SEGMENTS = [
-  { id: 'seg-001', name: 'Show Intro', type: 'video', duration: 45, scene: 'Starting Soon', graphic: null, autoAdvance: true },
-  { id: 'seg-002', name: 'Team Logos', type: 'static', duration: 10, scene: 'Graphics Fullscreen', graphic: { graphicId: 'logos', params: {} }, autoAdvance: true },
-  { id: 'seg-003', name: 'UCLA Coaches', type: 'live', duration: 15, scene: 'Single - Camera 2', graphic: { graphicId: 'team-coaches', params: { teamSlot: 1 } }, autoAdvance: true },
-  { id: 'seg-004', name: 'Oregon Coaches', type: 'live', duration: 15, scene: 'Single - Camera 3', graphic: { graphicId: 'team-coaches', params: { teamSlot: 2 } }, autoAdvance: true },
-  { id: 'seg-005', name: 'Rotation 1 Summary', type: 'static', duration: 20, scene: 'Graphics Fullscreen', graphic: { graphicId: 'event-summary', params: { summaryMode: 'rotation', summaryRotation: 1, summaryTheme: 'espn' } }, autoAdvance: true },
-  { id: 'seg-006', name: 'Floor - Rotation 1', type: 'live', duration: null, scene: 'Quad View', graphic: { graphicId: 'floor', params: {} }, autoAdvance: false },
-  { id: 'seg-007', name: 'Commercial Break', type: 'break', duration: 120, scene: 'Starting Soon', graphic: null, autoAdvance: true },
+  { id: 'seg-001', name: 'Show Intro', type: 'video', duration: 45, scene: 'Starting Soon', graphic: null, autoAdvance: true, bufferAfter: 0 },
+  { id: 'seg-002', name: 'Team Logos', type: 'static', duration: 10, scene: 'Graphics Fullscreen', graphic: { graphicId: 'logos', params: {} }, autoAdvance: true, bufferAfter: 5 },
+  { id: 'seg-003', name: 'UCLA Coaches', type: 'live', duration: 15, scene: 'Single - Camera 2', graphic: { graphicId: 'team-coaches', params: { teamSlot: 1 } }, autoAdvance: true, bufferAfter: 0 },
+  { id: 'seg-004', name: 'Oregon Coaches', type: 'live', duration: 15, scene: 'Single - Camera 3', graphic: { graphicId: 'team-coaches', params: { teamSlot: 2 } }, autoAdvance: true, bufferAfter: 10 },
+  { id: 'seg-005', name: 'Rotation 1 Summary', type: 'static', duration: 20, scene: 'Graphics Fullscreen', graphic: { graphicId: 'event-summary', params: { summaryMode: 'rotation', summaryRotation: 1, summaryTheme: 'espn' } }, autoAdvance: true, bufferAfter: 0 },
+  { id: 'seg-006', name: 'Floor - Rotation 1', type: 'live', duration: null, scene: 'Quad View', graphic: { graphicId: 'floor', params: {} }, autoAdvance: false, bufferAfter: 0 },
+  { id: 'seg-007', name: 'Commercial Break', type: 'break', duration: 120, scene: 'Starting Soon', graphic: null, autoAdvance: true, bufferAfter: 0 },
 ];
 
 // Segment type options
@@ -107,18 +107,19 @@ export default function RundownEditorPage() {
     return segments.find(seg => seg.id === selectedSegmentId) || null;
   }, [segments, selectedSegmentId]);
 
-  // Calculate total runtime (sum of all segment durations)
+  // Calculate total runtime (sum of all segment durations + buffer times)
   const totalRuntime = useMemo(() => {
-    return segments.reduce((sum, seg) => sum + (seg.duration || 0), 0);
+    return segments.reduce((sum, seg) => sum + (seg.duration || 0) + (seg.bufferAfter || 0), 0);
   }, [segments]);
 
   // Calculate cumulative start times for each segment (for running time column)
+  // Includes buffer times from previous segments
   const segmentStartTimes = useMemo(() => {
     const startTimes = {};
     let cumulativeTime = 0;
     segments.forEach(seg => {
       startTimes[seg.id] = cumulativeTime;
-      cumulativeTime += seg.duration || 0;
+      cumulativeTime += (seg.duration || 0) + (seg.bufferAfter || 0);
     });
     return startTimes;
   }, [segments]);
@@ -187,6 +188,7 @@ export default function RundownEditorPage() {
       scene: '',
       graphic: null,
       autoAdvance: false,
+      bufferAfter: 0,
     };
 
     // Insert after selected segment, or at end
@@ -278,6 +280,7 @@ export default function RundownEditorPage() {
       scene: seg.scene,
       graphic: seg.graphic,
       autoAdvance: seg.autoAdvance,
+      bufferAfter: seg.bufferAfter || 0,
     }));
   }
 
@@ -359,6 +362,7 @@ export default function RundownEditorPage() {
       scene: seg.scene,
       graphic: seg.graphic,
       autoAdvance: seg.autoAdvance,
+      bufferAfter: seg.bufferAfter || 0,
     }));
   }
 
@@ -708,6 +712,14 @@ export default function RundownEditorPage() {
                                   <PhotoIcon className="w-3 h-3" />
                                 </span>
                               )}
+                              {segment.bufferAfter > 0 && (
+                                <span
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 border-dashed"
+                                  title={`${segment.bufferAfter}s buffer after this segment`}
+                                >
+                                  +{segment.bufferAfter}s
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -1021,6 +1033,27 @@ function SegmentDetailPanel({ segment, onSave, onDelete, onCancel }) {
               className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
             />
           </div>
+        </div>
+
+        {/* Buffer/Pad Time */}
+        <div>
+          <label className="block text-xs text-zinc-400 mb-1.5">
+            Buffer After (seconds)
+            <span className="ml-1.5 text-zinc-600 font-normal">— gap before next segment</span>
+          </label>
+          <input
+            type="number"
+            min="0"
+            value={formData.bufferAfter || ''}
+            onChange={(e) => setFormData({ ...formData, bufferAfter: e.target.value ? Number(e.target.value) : 0 })}
+            placeholder="0"
+            className="w-32 px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+          />
+          {formData.bufferAfter > 0 && (
+            <div className="mt-1 text-xs text-amber-400/70">
+              +{formData.bufferAfter}s buffer adds to total runtime
+            </div>
+          )}
         </div>
 
         {/* OBS Scene Picker - grouped by category */}
