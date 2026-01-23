@@ -112,6 +112,17 @@ export default function RundownEditorPage() {
     return segments.reduce((sum, seg) => sum + (seg.duration || 0), 0);
   }, [segments]);
 
+  // Calculate cumulative start times for each segment (for running time column)
+  const segmentStartTimes = useMemo(() => {
+    const startTimes = {};
+    let cumulativeTime = 0;
+    segments.forEach(seg => {
+      startTimes[seg.id] = cumulativeTime;
+      cumulativeTime += seg.duration || 0;
+    });
+    return startTimes;
+  }, [segments]);
+
   // Calculate over/under and color state for target duration
   const runtimeStatus = useMemo(() => {
     if (!targetDuration) return null;
@@ -631,8 +642,15 @@ export default function RundownEditorPage() {
         {/* Segment List (left panel ~60%) */}
         <div className="w-3/5 border-r border-zinc-800 overflow-y-auto">
           <div className="p-4">
-            <div className="text-xs text-zinc-500 uppercase tracking-wide mb-3">
-              Segments ({filteredSegments.length})
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-xs text-zinc-500 uppercase tracking-wide">
+                Segments ({filteredSegments.length})
+              </div>
+              {/* Column headers for running time */}
+              <div className="flex items-center gap-3 text-xs text-zinc-600 uppercase tracking-wide">
+                <span className="w-6">#</span>
+                <span className="w-12 text-right">Start</span>
+              </div>
             </div>
             {filteredSegments.length === 0 ? (
               <div className="text-center py-12 text-zinc-500">
@@ -663,6 +681,10 @@ export default function RundownEditorPage() {
                         <div className="flex items-center gap-3">
                           <span className="text-xs text-zinc-500 font-mono w-6">
                             {String(originalIndex + 1).padStart(2, '0')}
+                          </span>
+                          {/* Running Time Column - shows cumulative start time */}
+                          <span className="text-xs text-zinc-400 font-mono w-12 text-right" title="Start time">
+                            {formatDuration(segmentStartTimes[segment.id] || 0)}
                           </span>
                           <div>
                             <div className="text-white font-medium">{segment.name}</div>

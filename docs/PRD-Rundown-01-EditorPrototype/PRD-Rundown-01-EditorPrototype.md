@@ -1053,11 +1053,11 @@ const filteredSegments = segments.filter(seg => {
 
 ### Phase 1: Timing & Display
 
-- [ ] Total runtime displayed in header
-- [ ] Target duration input available
-- [ ] Over/under indicator with color states
-- [ ] Running time column shows cumulative start times
-- [ ] Start times auto-update on duration changes
+- [x] Total runtime displayed in header
+- [x] Target duration input available
+- [x] Over/under indicator with color states
+- [x] Running time column shows cumulative start times
+- [x] Start times auto-update on duration changes
 - [ ] Buffer time can be added between segments
 - [ ] Buffer contributes to total runtime
 
