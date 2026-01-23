@@ -23,7 +23,7 @@ This implementation plan covers all phases of the Rundown Editor from the PRD. P
 | 1 | Timing & Display | ✅ COMPLETE | 4.1-4.6 |
 | 2 | Inline Editing | ✅ COMPLETE | 5.1-5.4 |
 | 3 | Multi-Select & Summary | ✅ COMPLETE | 6.1-6.6 |
-| 4 | Reordering & Organization | 🔲 NOT STARTED | 7.1-7.5 |
+| 4 | Reordering & Organization | 🔄 IN PROGRESS | 7.1-7.5 |
 | 5 | Segment Management | 🔲 NOT STARTED | 8.1-8.6 |
 | 6 | Timing Modes | 🔲 NOT STARTED | 9.1-9.3 |
 | 7 | Templates & Presets | 🔲 NOT STARTED | 10.1-10.5 |
@@ -110,13 +110,13 @@ This implementation plan covers all phases of the Rundown Editor from the PRD. P
 | 6.5 Add editable durations in summary | COMPLETE | Each segment has inline duration input, total updates live |
 | 6.6 Implement bulk actions | COMPLETE | Bulk edit type, scene, graphic with dropdowns; bulk delete with confirmation |
 
-### Phase 4: Reordering & Organization 🔲 NOT STARTED
+### Phase 4: Reordering & Organization 🔄 IN PROGRESS
 
 | Task | Status | Notes |
 |------|--------|-------|
-| 7.1 Add drag handle to segment rows | NOT STARTED | Left side of each row |
-| 7.2 Implement drag-and-drop reordering | NOT STARTED | Visual drop indicator |
-| 7.3 Keep arrow buttons functional | NOT STARTED | Up/down for precise reordering |
+| 7.1 Add drag handle to segment rows | COMPLETE | Bars3Icon on left side of each row |
+| 7.2 Implement drag-and-drop reordering | COMPLETE | Native HTML5 drag/drop with visual drop indicator |
+| 7.3 Keep arrow buttons functional | COMPLETE | Already implemented (arrow buttons remain functional) |
 | 7.4 Create segment grouping UI | NOT STARTED | Named collapsible groups |
 | 7.5 Show combined duration for groups | NOT STARTED | When collapsed |
 

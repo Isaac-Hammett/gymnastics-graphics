@@ -16,6 +16,7 @@ import {
   ClockIcon,
   PencilIcon,
   CheckIcon,
+  Bars3Icon,
 } from '@heroicons/react/24/outline';
 import { getGraphicsForCompetition, getCategories, getRecommendedGraphic, getGraphicById, GRAPHICS } from '../lib/graphicsRegistry';
 import { db, ref, set, get, push, remove } from '../lib/firebase';
@@ -95,6 +96,8 @@ export default function RundownEditorPage() {
   const [targetDuration, setTargetDuration] = useState(null); // Target show duration in seconds
   const [showTargetInput, setShowTargetInput] = useState(false); // Toggle for target duration input
   const [lastSelectedIndex, setLastSelectedIndex] = useState(null); // For Shift+click range selection
+  const [draggedSegmentId, setDraggedSegmentId] = useState(null); // Currently dragged segment (Phase 4)
+  const [dragOverIndex, setDragOverIndex] = useState(null); // Index being dragged over (Phase 4)
 
   // Filtered segments
   const filteredSegments = useMemo(() => {
@@ -576,6 +579,61 @@ export default function RundownEditorPage() {
     }
   }
 
+  // Drag and drop handlers (Phase 4: Task 7.2)
+  function handleDragStart(e, segmentId) {
+    setDraggedSegmentId(segmentId);
+    e.dataTransfer.effectAllowed = 'move';
+    // Add a slight delay for visual feedback
+    setTimeout(() => {
+      const element = document.getElementById(`segment-${segmentId}`);
+      if (element) {
+        element.style.opacity = '0.5';
+      }
+    }, 0);
+  }
+
+  function handleDragEnd(e) {
+    // Reset opacity
+    if (draggedSegmentId) {
+      const element = document.getElementById(`segment-${draggedSegmentId}`);
+      if (element) {
+        element.style.opacity = '1';
+      }
+    }
+    setDraggedSegmentId(null);
+    setDragOverIndex(null);
+  }
+
+  function handleDragOver(e, index) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverIndex(index);
+  }
+
+  function handleDragLeave(e) {
+    // Only clear if leaving the segment row entirely (not entering a child)
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      setDragOverIndex(null);
+    }
+  }
+
+  function handleDrop(e, targetIndex) {
+    e.preventDefault();
+    if (draggedSegmentId === null) return;
+
+    const sourceIndex = segments.findIndex(s => s.id === draggedSegmentId);
+    if (sourceIndex === -1 || sourceIndex === targetIndex) {
+      setDraggedSegmentId(null);
+      setDragOverIndex(null);
+      return;
+    }
+
+    // Perform the reorder
+    handleReorder(sourceIndex, targetIndex);
+    setDraggedSegmentId(null);
+    setDragOverIndex(null);
+  }
+
   return (
     <div className="min-h-screen bg-zinc-950 flex flex-col">
       {/* Header */}
@@ -804,6 +862,7 @@ export default function RundownEditorPage() {
               </div>
               {/* Column headers for running time */}
               <div className="flex items-center gap-3 text-xs text-zinc-600 uppercase tracking-wide">
+                <span className="w-4"></span> {/* Drag handle column */}
                 <span className="w-5"></span> {/* Checkbox column */}
                 <span className="w-6">#</span>
                 <span className="w-12 text-right">Start</span>
@@ -824,20 +883,41 @@ export default function RundownEditorPage() {
                   const groupedScenes = getGroupedScenes();
                   const groupedGraphics = getGroupedGraphics();
 
+                  const isDraggedOver = dragOverIndex === originalIndex && draggedSegmentId !== segment.id;
+                  const isDragging = draggedSegmentId === segment.id;
+
                   return (
                     <div
                       key={segment.id}
                       id={`segment-${segment.id}`}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, segment.id)}
+                      onDragEnd={handleDragEnd}
+                      onDragOver={(e) => handleDragOver(e, originalIndex)}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => handleDrop(e, originalIndex)}
                       className={`p-3 rounded-lg border transition-all ${
-                        isSelected
-                          ? 'bg-blue-600/20 border-blue-500'
-                          : isMultiSelected
-                            ? 'bg-zinc-800 border-blue-500/50'
-                            : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'
+                        isDraggedOver
+                          ? 'border-t-2 border-t-blue-500 border-blue-500/50 bg-blue-600/10'
+                          : isSelected
+                            ? 'bg-blue-600/20 border-blue-500'
+                            : isMultiSelected
+                              ? 'bg-zinc-800 border-blue-500/50'
+                              : isDragging
+                                ? 'bg-zinc-800 border-zinc-600 opacity-50'
+                                : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'
                       }`}
                     >
-                      {/* Row 1: Checkbox, segment number, start time, name, type badge */}
+                      {/* Row 1: Drag handle, checkbox, segment number, start time, name, type badge */}
                       <div className="flex items-center gap-3 mb-2">
+                        {/* Drag handle for reordering (Task 7.1) */}
+                        <div
+                          className="cursor-grab active:cursor-grabbing text-zinc-600 hover:text-zinc-400 transition-colors shrink-0 touch-none"
+                          title="Drag to reorder"
+                          onMouseDown={(e) => e.stopPropagation()}
+                        >
+                          <Bars3Icon className="w-4 h-4" />
+                        </div>
                         {/* Checkbox for multi-select (Task 6.1) */}
                         <div
                           onClick={(e) => {
@@ -889,7 +969,7 @@ export default function RundownEditorPage() {
                       </div>
 
                       {/* Row 2: Inline editable fields - OBS Scene, Graphic, Duration, Edit button, Reorder */}
-                      <div className="flex items-center gap-2 ml-[4.5rem]">
+                      <div className="flex items-center gap-2 ml-[5.5rem]">
                         {/* Inline OBS Scene Dropdown */}
                         <select
                           value={segment.scene || ''}
