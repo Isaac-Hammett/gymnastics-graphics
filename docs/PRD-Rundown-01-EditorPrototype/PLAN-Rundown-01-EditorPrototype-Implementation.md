@@ -24,7 +24,7 @@ This implementation plan covers all phases of the Rundown Editor from the PRD. P
 | 2 | Inline Editing | ✅ COMPLETE | 5.1-5.4 |
 | 3 | Multi-Select & Summary | ✅ COMPLETE | 6.1-6.6 |
 | 4 | Reordering & Organization | ✅ COMPLETE | 7.1-7.5 |
-| 5 | Segment Management | 🔲 NOT STARTED | 8.1-8.6 |
+| 5 | Segment Management | 🔄 IN PROGRESS | 8.1-8.6 |
 | 6 | Timing Modes | 🔲 NOT STARTED | 9.1-9.3 |
 | 7 | Templates & Presets | 🔲 NOT STARTED | 10.1-10.5 |
 | 8 | Collaboration | 🔲 NOT STARTED | 11.1-11.7 |
@@ -120,11 +120,11 @@ This implementation plan covers all phases of the Rundown Editor from the PRD. P
 | 7.4 Create segment grouping UI | COMPLETE | Named collapsible groups with color coding, create from selection |
 | 7.5 Show combined duration for groups | COMPLETE | Duration shown in group header, emphasized when collapsed |
 
-### Phase 5: Segment Management 🔲 NOT STARTED
+### Phase 5: Segment Management 🔄 IN PROGRESS
 
 | Task | Status | Notes |
 |------|--------|-------|
-| 8.1 Add duplicate segment button | NOT STARTED | Creates copy after original |
+| 8.1 Add duplicate segment button | COMPLETE | DocumentDuplicateIcon button on row, handleDuplicateSegment function |
 | 8.2 Implement segment locking | NOT STARTED | Prevent accidental edits |
 | 8.3 Add lock/unlock toggle UI | NOT STARTED | Visual indicator, click to toggle |
 | 8.4 Add conditional/optional toggle | NOT STARTED | Mark segments as backup |
