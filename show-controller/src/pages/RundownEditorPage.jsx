@@ -15,6 +15,7 @@ import {
   XMarkIcon,
   ClockIcon,
   PencilIcon,
+  CheckIcon,
 } from '@heroicons/react/24/outline';
 import { getGraphicsForCompetition, getCategories, getRecommendedGraphic, getGraphicById, GRAPHICS } from '../lib/graphicsRegistry';
 import { db, ref, set, get, push, remove } from '../lib/firebase';
@@ -93,6 +94,7 @@ export default function RundownEditorPage() {
   const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [targetDuration, setTargetDuration] = useState(null); // Target show duration in seconds
   const [showTargetInput, setShowTargetInput] = useState(false); // Toggle for target duration input
+  const [lastSelectedIndex, setLastSelectedIndex] = useState(null); // For Shift+click range selection
 
   // Filtered segments
   const filteredSegments = useMemo(() => {
@@ -103,10 +105,15 @@ export default function RundownEditorPage() {
     });
   }, [segments, filterType, searchQuery]);
 
-  // Get selected segment for detail panel
+  // Get selected segment for detail panel (single selection)
   const selectedSegment = useMemo(() => {
     return segments.find(seg => seg.id === selectedSegmentId) || null;
   }, [segments, selectedSegmentId]);
+
+  // Get selected segments for multi-select summary
+  const selectedSegments = useMemo(() => {
+    return segments.filter(seg => selectedSegmentIds.includes(seg.id));
+  }, [segments, selectedSegmentIds]);
 
   // Calculate total runtime (sum of all segment durations + buffer times)
   const totalRuntime = useMemo(() => {
@@ -165,11 +172,104 @@ export default function RundownEditorPage() {
   function handleSelectSegment(id) {
     setSelectedSegmentId(id);
     setSelectedSegmentIds([]); // Clear multi-select
+    // Update last selected index for shift-click
+    const index = segments.findIndex(s => s.id === id);
+    setLastSelectedIndex(index);
   }
 
   function handleMultiSelect(ids) {
     setSelectedSegmentIds(ids);
     setSelectedSegmentId(null);
+  }
+
+  // Handle checkbox toggle for multi-select (Task 6.1-6.3)
+  function handleCheckboxChange(segmentId, event) {
+    const index = segments.findIndex(s => s.id === segmentId);
+
+    if (event.shiftKey && lastSelectedIndex !== null) {
+      // Shift+click: range selection (Task 6.2)
+      const start = Math.min(lastSelectedIndex, index);
+      const end = Math.max(lastSelectedIndex, index);
+      const rangeIds = segments.slice(start, end + 1).map(s => s.id);
+      // Merge with existing selection, avoiding duplicates
+      const newSelection = [...new Set([...selectedSegmentIds, ...rangeIds])];
+      setSelectedSegmentIds(newSelection);
+      setSelectedSegmentId(null);
+    } else if (event.ctrlKey || event.metaKey) {
+      // Ctrl/Cmd+click: toggle individual selection (Task 6.3)
+      if (selectedSegmentIds.includes(segmentId)) {
+        setSelectedSegmentIds(selectedSegmentIds.filter(id => id !== segmentId));
+      } else {
+        setSelectedSegmentIds([...selectedSegmentIds, segmentId]);
+        setSelectedSegmentId(null);
+      }
+      setLastSelectedIndex(index);
+    } else {
+      // Regular click: toggle selection
+      if (selectedSegmentIds.includes(segmentId)) {
+        setSelectedSegmentIds(selectedSegmentIds.filter(id => id !== segmentId));
+      } else {
+        setSelectedSegmentIds([...selectedSegmentIds, segmentId]);
+        setSelectedSegmentId(null);
+      }
+      setLastSelectedIndex(index);
+    }
+  }
+
+  // Select all segments
+  function handleSelectAll() {
+    setSelectedSegmentIds(filteredSegments.map(s => s.id));
+    setSelectedSegmentId(null);
+  }
+
+  // Deselect all segments
+  function handleDeselectAll() {
+    setSelectedSegmentIds([]);
+  }
+
+  // Bulk delete selected segments (Task 6.6)
+  function handleBulkDelete() {
+    if (selectedSegmentIds.length === 0) return;
+    if (window.confirm(`Are you sure you want to delete ${selectedSegmentIds.length} segment(s)?`)) {
+      setSegments(segments.filter(seg => !selectedSegmentIds.includes(seg.id)));
+      setSelectedSegmentIds([]);
+      showToast(`${selectedSegmentIds.length} segment(s) deleted`);
+    }
+  }
+
+  // Bulk edit type for selected segments (Task 6.6)
+  function handleBulkEditType(newType) {
+    setSegments(segments.map(seg =>
+      selectedSegmentIds.includes(seg.id) ? { ...seg, type: newType } : seg
+    ));
+    showToast(`Updated type for ${selectedSegmentIds.length} segment(s)`);
+  }
+
+  // Bulk edit scene for selected segments (Task 6.6)
+  function handleBulkEditScene(newScene) {
+    setSegments(segments.map(seg =>
+      selectedSegmentIds.includes(seg.id) ? { ...seg, scene: newScene } : seg
+    ));
+    showToast(`Updated scene for ${selectedSegmentIds.length} segment(s)`);
+  }
+
+  // Bulk edit graphic for selected segments (Task 6.6)
+  function handleBulkEditGraphic(graphicId) {
+    setSegments(segments.map(seg => {
+      if (!selectedSegmentIds.includes(seg.id)) return seg;
+      if (!graphicId) {
+        return { ...seg, graphic: null };
+      }
+      return { ...seg, graphic: { graphicId, params: {} } };
+    }));
+    showToast(`Updated graphic for ${selectedSegmentIds.length} segment(s)`);
+  }
+
+  // Update duration for a segment in multi-select (Task 6.5)
+  function handleMultiSelectDurationChange(segmentId, duration) {
+    setSegments(segments.map(seg =>
+      seg.id === segmentId ? { ...seg, duration } : seg
+    ));
   }
 
   function handleReorder(fromIndex, toIndex) {
@@ -675,11 +775,36 @@ export default function RundownEditorPage() {
         <div className="w-3/5 border-r border-zinc-800 overflow-y-auto">
           <div className="p-4">
             <div className="flex items-center justify-between mb-3">
-              <div className="text-xs text-zinc-500 uppercase tracking-wide">
-                Segments ({filteredSegments.length})
+              <div className="flex items-center gap-3">
+                <div className="text-xs text-zinc-500 uppercase tracking-wide">
+                  Segments ({filteredSegments.length})
+                </div>
+                {/* Select All / Deselect All buttons */}
+                {filteredSegments.length > 0 && (
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={handleSelectAll}
+                      className="px-2 py-0.5 text-xs text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded transition-colors"
+                    >
+                      Select All
+                    </button>
+                    {selectedSegmentIds.length > 0 && (
+                      <>
+                        <span className="text-zinc-700">|</span>
+                        <button
+                          onClick={handleDeselectAll}
+                          className="px-2 py-0.5 text-xs text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded transition-colors"
+                        >
+                          Deselect ({selectedSegmentIds.length})
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
               {/* Column headers for running time */}
               <div className="flex items-center gap-3 text-xs text-zinc-600 uppercase tracking-wide">
+                <span className="w-5"></span> {/* Checkbox column */}
                 <span className="w-6">#</span>
                 <span className="w-12 text-right">Start</span>
               </div>
@@ -702,7 +827,8 @@ export default function RundownEditorPage() {
                   return (
                     <div
                       key={segment.id}
-                      className={`p-3 rounded-lg border transition-colors ${
+                      id={`segment-${segment.id}`}
+                      className={`p-3 rounded-lg border transition-all ${
                         isSelected
                           ? 'bg-blue-600/20 border-blue-500'
                           : isMultiSelected
@@ -710,8 +836,25 @@ export default function RundownEditorPage() {
                             : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'
                       }`}
                     >
-                      {/* Row 1: Segment number, start time, name, type badge */}
+                      {/* Row 1: Checkbox, segment number, start time, name, type badge */}
                       <div className="flex items-center gap-3 mb-2">
+                        {/* Checkbox for multi-select (Task 6.1) */}
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCheckboxChange(segment.id, e);
+                          }}
+                          className={`w-5 h-5 rounded border flex items-center justify-center cursor-pointer transition-colors shrink-0 ${
+                            isMultiSelected
+                              ? 'bg-blue-600 border-blue-500'
+                              : 'bg-zinc-800 border-zinc-600 hover:border-zinc-500'
+                          }`}
+                          title="Click to select, Shift+click for range, Ctrl+click to toggle"
+                        >
+                          {isMultiSelected && (
+                            <CheckIcon className="w-3 h-3 text-white" />
+                          )}
+                        </div>
                         <span className="text-xs text-zinc-500 font-mono w-6">
                           {String(originalIndex + 1).padStart(2, '0')}
                         </span>
@@ -846,10 +989,31 @@ export default function RundownEditorPage() {
           </div>
         </div>
 
-        {/* Segment Detail (right panel ~40%) */}
+        {/* Segment Detail / Selection Summary (right panel ~40%) */}
         <div className="w-2/5 overflow-y-auto">
           <div className="p-4">
-            {selectedSegment ? (
+            {/* Selection Summary shown when 2+ segments selected (Task 6.4) */}
+            {selectedSegmentIds.length >= 2 ? (
+              <SelectionSummaryPanel
+                selectedSegments={selectedSegments}
+                segments={segments}
+                onDurationChange={handleMultiSelectDurationChange}
+                onBulkDelete={handleBulkDelete}
+                onBulkEditType={handleBulkEditType}
+                onBulkEditScene={handleBulkEditScene}
+                onBulkEditGraphic={handleBulkEditGraphic}
+                onClose={handleDeselectAll}
+                onScrollToSegment={(id) => {
+                  // Scroll to segment and flash highlight
+                  const element = document.getElementById(`segment-${id}`);
+                  if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    element.classList.add('ring-2', 'ring-blue-400');
+                    setTimeout(() => element.classList.remove('ring-2', 'ring-blue-400'), 1500);
+                  }
+                }}
+              />
+            ) : selectedSegment ? (
               <SegmentDetailPanel
                 segment={selectedSegment}
                 onSave={handleSaveSegment}
@@ -860,6 +1024,7 @@ export default function RundownEditorPage() {
               <div className="text-center py-20 text-zinc-500">
                 <div className="text-lg mb-2">No segment selected</div>
                 <div className="text-sm">Select a segment from the list to edit its details</div>
+                <div className="text-xs text-zinc-600 mt-2">Use checkboxes to select multiple segments</div>
               </div>
             )}
           </div>
@@ -1483,6 +1648,247 @@ function TemplateLibraryModal({ templates, loading, onLoad, onDelete, onCancel, 
             Loading a template will replace your current rundown. Make sure to save first if needed.
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// Selection Summary Panel Component (Phase 3: Multi-Select, Tasks 6.4-6.6)
+function SelectionSummaryPanel({
+  selectedSegments,
+  segments,
+  onDurationChange,
+  onBulkDelete,
+  onBulkEditType,
+  onBulkEditScene,
+  onBulkEditGraphic,
+  onClose,
+  onScrollToSegment
+}) {
+  const [showBulkTypeDropdown, setShowBulkTypeDropdown] = useState(false);
+  const [showBulkSceneDropdown, setShowBulkSceneDropdown] = useState(false);
+  const [showBulkGraphicDropdown, setShowBulkGraphicDropdown] = useState(false);
+
+  const groupedScenes = getGroupedScenes();
+  const groupedGraphics = getGroupedGraphics();
+
+  // Calculate total duration of selected segments
+  const totalSelectedDuration = selectedSegments.reduce(
+    (sum, seg) => sum + (seg.duration || 0),
+    0
+  );
+
+  return (
+    <div>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-bold text-white">Selection Summary</h2>
+        <button
+          onClick={onClose}
+          className="p-1 text-zinc-400 hover:text-zinc-200 rounded-lg hover:bg-zinc-800 transition-colors"
+          title="Clear selection"
+        >
+          <XMarkIcon className="w-5 h-5" />
+        </button>
+      </div>
+
+      {/* Selection count */}
+      <div className="text-sm text-zinc-400 mb-4">
+        {selectedSegments.length} segments selected
+      </div>
+
+      {/* Selected segments list with editable durations (Task 6.5) */}
+      <div className="space-y-2 mb-4 max-h-[calc(100vh-400px)] overflow-y-auto">
+        {selectedSegments.map(segment => {
+          const originalIndex = segments.findIndex(s => s.id === segment.id);
+          return (
+            <div
+              key={segment.id}
+              className="p-2 bg-zinc-800/50 border border-zinc-700 rounded-lg"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <button
+                    onClick={() => onScrollToSegment(segment.id)}
+                    className="text-sm text-white font-medium hover:text-blue-400 transition-colors text-left truncate block w-full"
+                    title="Click to scroll to segment"
+                  >
+                    {String(originalIndex + 1).padStart(2, '0')} {segment.name}
+                  </button>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className={`px-1.5 py-0.5 text-xs rounded border ${TYPE_COLORS[segment.type] || 'bg-zinc-700 text-zinc-400 border-zinc-600'}`}>
+                      {segment.type}
+                    </span>
+                    {segment.scene && (
+                      <span className="text-xs text-zinc-500 truncate">
+                        {segment.scene}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                {/* Editable duration input (Task 6.5) */}
+                <div className="shrink-0">
+                  <input
+                    type="text"
+                    value={segment.duration !== null ? `${segment.duration}s` : ''}
+                    placeholder="—"
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/[^\d]/g, '');
+                      onDurationChange(segment.id, val ? Number(val) : null);
+                    }}
+                    className="w-16 px-2 py-1 text-xs font-mono text-right bg-zinc-900 border border-zinc-700 rounded text-zinc-300 focus:outline-none focus:border-blue-500"
+                    title="Duration in seconds"
+                  />
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Total duration line */}
+      <div className="flex items-center justify-between py-3 border-t border-zinc-700">
+        <span className="text-sm text-zinc-400">Total</span>
+        <span className="text-sm font-mono font-medium text-white">
+          {formatDuration(totalSelectedDuration)}
+        </span>
+      </div>
+
+      {/* Bulk Actions (Task 6.6) */}
+      <div className="pt-4 border-t border-zinc-700 space-y-2">
+        {/* Bulk Edit Type */}
+        <div className="relative">
+          <button
+            onClick={() => {
+              setShowBulkTypeDropdown(!showBulkTypeDropdown);
+              setShowBulkSceneDropdown(false);
+              setShowBulkGraphicDropdown(false);
+            }}
+            className="w-full px-3 py-2 text-sm text-left bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-300 hover:bg-zinc-700 transition-colors flex items-center justify-between"
+          >
+            <span>Bulk Edit Type</span>
+            <ChevronDownIcon className="w-4 h-4" />
+          </button>
+          {showBulkTypeDropdown && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl z-10 overflow-hidden">
+              {SEGMENT_TYPES.filter(t => t.value !== 'all').map(type => (
+                <button
+                  key={type.value}
+                  onClick={() => {
+                    onBulkEditType(type.value);
+                    setShowBulkTypeDropdown(false);
+                  }}
+                  className="w-full px-3 py-2 text-sm text-left text-zinc-300 hover:bg-zinc-700 transition-colors"
+                >
+                  {type.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Bulk Edit Scene */}
+        <div className="relative">
+          <button
+            onClick={() => {
+              setShowBulkSceneDropdown(!showBulkSceneDropdown);
+              setShowBulkTypeDropdown(false);
+              setShowBulkGraphicDropdown(false);
+            }}
+            className="w-full px-3 py-2 text-sm text-left bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-300 hover:bg-zinc-700 transition-colors flex items-center justify-between"
+          >
+            <span>Bulk Edit Scene</span>
+            <ChevronDownIcon className="w-4 h-4" />
+          </button>
+          {showBulkSceneDropdown && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl z-10 max-h-48 overflow-y-auto">
+              <button
+                onClick={() => {
+                  onBulkEditScene('');
+                  setShowBulkSceneDropdown(false);
+                }}
+                className="w-full px-3 py-2 text-sm text-left text-zinc-500 hover:bg-zinc-700 transition-colors"
+              >
+                (Clear scene)
+              </button>
+              {Object.entries(groupedScenes).map(([category, scenes]) => (
+                <div key={category}>
+                  <div className="px-3 py-1 text-xs text-zinc-500 bg-zinc-900 uppercase">
+                    {SCENE_CATEGORY_LABELS[category] || category}
+                  </div>
+                  {scenes.map(scene => (
+                    <button
+                      key={scene.name}
+                      onClick={() => {
+                        onBulkEditScene(scene.name);
+                        setShowBulkSceneDropdown(false);
+                      }}
+                      className="w-full px-3 py-2 text-sm text-left text-zinc-300 hover:bg-zinc-700 transition-colors"
+                    >
+                      {scene.name}
+                    </button>
+                  ))}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Bulk Edit Graphic */}
+        <div className="relative">
+          <button
+            onClick={() => {
+              setShowBulkGraphicDropdown(!showBulkGraphicDropdown);
+              setShowBulkTypeDropdown(false);
+              setShowBulkSceneDropdown(false);
+            }}
+            className="w-full px-3 py-2 text-sm text-left bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-300 hover:bg-zinc-700 transition-colors flex items-center justify-between"
+          >
+            <span>Bulk Edit Graphic</span>
+            <ChevronDownIcon className="w-4 h-4" />
+          </button>
+          {showBulkGraphicDropdown && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl z-10 max-h-48 overflow-y-auto">
+              <button
+                onClick={() => {
+                  onBulkEditGraphic('');
+                  setShowBulkGraphicDropdown(false);
+                }}
+                className="w-full px-3 py-2 text-sm text-left text-zinc-500 hover:bg-zinc-700 transition-colors"
+              >
+                (Clear graphic)
+              </button>
+              {Object.entries(groupedGraphics).map(([category, graphics]) => (
+                <div key={category}>
+                  <div className="px-3 py-1 text-xs text-zinc-500 bg-zinc-900 uppercase">
+                    {GRAPHICS_CATEGORY_LABELS[category] || category}
+                  </div>
+                  {graphics.map(graphic => (
+                    <button
+                      key={graphic.id}
+                      onClick={() => {
+                        onBulkEditGraphic(graphic.id);
+                        setShowBulkGraphicDropdown(false);
+                      }}
+                      className="w-full px-3 py-2 text-sm text-left text-zinc-300 hover:bg-zinc-700 transition-colors"
+                    >
+                      {graphic.label}
+                    </button>
+                  ))}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Delete All button */}
+        <button
+          onClick={onBulkDelete}
+          className="w-full px-3 py-2 text-sm bg-red-600/20 border border-red-600/50 text-red-400 rounded-lg hover:bg-red-600/30 transition-colors flex items-center justify-center gap-2"
+        >
+          <TrashIcon className="w-4 h-4" />
+          Delete {selectedSegments.length} Segment{selectedSegments.length !== 1 ? 's' : ''}
+        </button>
       </div>
     </div>
   );

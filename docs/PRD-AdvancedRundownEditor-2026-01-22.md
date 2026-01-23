@@ -1,9 +1,9 @@
 # PRD: Advanced Rundown Editor
 
-**Version:** 1.1
-**Date:** 2026-01-22
+**Version:** 1.2
+**Date:** 2026-01-23
 **Project:** Gymnastics Graphics
-**Status:** Draft
+**Status:** IN PROGRESS
 **Dependencies:** [PRD-OBSIntegrationTool-2026-01-16.md](./PRD-OBSIntegrationTool-2026-01-16.md)
 
 ---
@@ -714,8 +714,10 @@ Shows actual team names and filters by gender:
 
 ---
 
-## 8. Producer View Integration
+## 8. Rundown Prototype / Producer View Integration
 
+> **Detailed Reference:** [PRD-Rundown-05-Prototype](./PRD-Rundown-05-Prototype/PRD-Rundown-05-Prototype.md)
+>
 > **Note:** The core Producer View components (`CurrentSegment`, `NextSegment`, `RunOfShow`) already exist and use `useTimesheet()` for timing and control. This section describes the **enhanced** UI that will be built on top of the existing components.
 
 ### Enhanced SHOW PROGRESS Panel
@@ -1326,82 +1328,42 @@ Selection: Segments 1, 3, 5 = 0:45 + 0:08 + 0:10 = 1:03 total
 
 **Goal:** Validate UX by building clickable prototypes with hardcoded data before any backend work. This allows stakeholders to walk through all user stories and catch UX issues early.
 
-#### Phase 0A: Rundown Editor Prototype
+> **Detailed Reference:** [PRD-Rundown-01-EditorPrototype](./PRD-Rundown-01-EditorPrototype/PRD-Rundown-01-EditorPrototype.md)
+
+#### Editor Prototype Phases
+
+| Phase | Name | Status | Description |
+|-------|------|--------|-------------|
+| 0A | Basic Page Structure | ✅ COMPLETE | Core page layout, routing, segment CRUD |
+| 0B | Graphics & Scene Integration | ✅ COMPLETE | Pickers, smart recommendations, params |
+| 0C | Templates (Basic) | 🔲 PLANNED | Save/load rundowns as templates |
+| 1 | Timing & Display | ✅ COMPLETE | Runtime totals, running time, buffers |
+| 2 | Inline Editing | ✅ COMPLETE | Edit fields directly on segment rows |
+| 3 | Multi-Select & Summary | 🔲 PLANNED | Bulk selection with summary sidebar |
+| 4-12 | Advanced Features | 🔲 PLANNED | See PRD-Rundown-01 for full roadmap |
 
 **Route:** `/{compId}/rundown`
 
-**Components to build:**
+**Completed Features:**
+- Main `RundownEditorPage.jsx` with split panel layout
+- Segment CRUD operations (create, edit, delete, reorder)
+- Graphics picker using schema-driven registry
+- OBS scene picker with category grouping
+- Smart recommendations based on segment names
+- Total runtime display with target duration
+- Over/under indicator with color states
+- Running time column with cumulative start times
+- Buffer/pad time between segments
+- Inline editable fields (OBS scene, graphic, duration)
 
-| Component | File | Behavior |
-|-----------|------|----------|
-| RundownEditorPage | `pages/RundownEditorPage.jsx` | Main page layout with split panel |
-| SegmentList | `components/rundown/SegmentList.jsx` | Hardcoded 6-8 segments, local React state |
-| SegmentDetail | `components/rundown/SegmentDetail.jsx` | Form with all fields, pre-filled dummy data |
-| ScenePicker | `components/rundown/pickers/ScenePicker.jsx` | Hardcoded scene names (simulating OBS) |
-| TransitionPicker | `components/rundown/pickers/TransitionPicker.jsx` | Cut, Fade, Stinger options |
-| GraphicsPicker | `components/rundown/pickers/GraphicsPicker.jsx` | Hardcoded graphics list by category |
-| AudioPicker | `components/rundown/pickers/AudioPicker.jsx` | Hardcoded audio presets |
+#### Phase 0B: Rundown Prototype (Producer View)
 
-**Interactions (all local state, no persistence):**
+> **Detailed Reference:** [PRD-Rundown-05-Prototype](./PRD-Rundown-05-Prototype/PRD-Rundown-05-Prototype.md)
+> **Status:** NOT STARTED
 
-| Action | Behavior |
-|--------|----------|
-| Click segment row | Select segment, show in detail panel |
-| + Add Segment | Insert new segment after selected (or at end) |
-| ↑/↓ arrows | Swap segment order in local state |
-| Delete button | Show confirmation dialog, remove from local state |
-| Save button | Show toast "Segment saved" (no actual persistence) |
-| Checkbox click | Toggle multi-select |
-| Shift+Click | Select range |
+This phase creates a workable prototype page that composes existing Producer View components with the new rundown editing UI. This allows testing the combined UX before full integration.
 
-**Hardcoded Test Data:**
-
-```javascript
-const DUMMY_SEGMENTS = [
-  { id: 'seg-001', name: 'Show Intro', type: 'video', duration: 45, scene: 'Starting Soon' },
-  { id: 'seg-002', name: 'Welcome & Host', type: 'live', duration: 30, scene: 'Talent Camera' },
-  { id: 'seg-003', name: 'Event Introduction', type: 'static', duration: 8, scene: 'Graphics Fullscreen' },
-  { id: 'seg-004', name: 'UCLA Introduction', type: 'live', duration: 10, scene: 'Single - Camera 2' },
-  { id: 'seg-005', name: 'Oregon Introduction', type: 'live', duration: 10, scene: 'Single - Camera 3' },
-  { id: 'seg-006', name: 'Utah Introduction', type: 'live', duration: 10, scene: 'Single - Camera 4' },
-  { id: 'seg-007', name: 'Floor - Rotation 1', type: 'live', duration: null, scene: 'Single - Camera 4' },
-];
-
-const DUMMY_SCENES = [
-  { name: 'Starting Soon', category: 'static' },
-  { name: 'BRB', category: 'static' },
-  { name: 'Thanks for Watching', category: 'static' },
-  { name: 'Single - Camera 1', category: 'single' },
-  { name: 'Single - Camera 2', category: 'single' },
-  { name: 'Single - Camera 3', category: 'single' },
-  { name: 'Single - Camera 4', category: 'single' },
-  { name: 'Dual - Cam1 + Cam2', category: 'multi' },
-  { name: 'Quad View', category: 'multi' },
-  { name: 'Talent Camera', category: 'manual' },
-  { name: 'Graphics Fullscreen', category: 'graphics' },
-];
-
-const DUMMY_GRAPHICS = [
-  { id: 'team-logos', name: 'Team Logos', category: 'pre-meet' },
-  { id: 'team-stats', name: 'Team Stats', category: 'pre-meet' },
-  { id: 'event-frame-vt', name: 'Vault Frame', category: 'event-frame' },
-  { id: 'event-frame-ub', name: 'Uneven Bars Frame', category: 'event-frame' },
-  { id: 'score-reveal', name: 'Score Reveal', category: 'live' },
-];
-```
-
-**Validates User Stories:**
-- US-01: Create a New Segment
-- US-02: Edit an Existing Segment
-- US-03: Delete a Segment
-- US-04: Reorder Segments
-- US-05: Bulk Selection
-
-#### Phase 0B: Producer View Prototype
-
-> **Note:** This phase is **significantly simplified** due to the completed Timesheet Consolidation (PRD-Rundown-00-Timesheet). The core Producer View components already exist and use `useTimesheet()`.
-
-**Route:** `/{compId}/rundown-preview` (temporary test route)
+**Route:** `/{compId}/rundown-prototype` (temporary test route)
 
 **Why a separate route:** This isolates the prototype from the production ProducerPage, allowing focused UX testing of new rundown features without affecting live shows.
 
@@ -1413,53 +1375,39 @@ const DUMMY_GRAPHICS = [
 | NextSegment | `components/NextSegment.jsx` | ✅ Already uses `useTimesheet()` |
 | RunOfShow | `components/RunOfShow.jsx` | ✅ Already has segment list with status icons |
 
-**New Component to build (for rundown editor integration):**
+**New Component to build:**
 
 | Component | File | Behavior |
 |-----------|------|----------|
-| RundownPreviewPage | `pages/RundownPreviewPage.jsx` | Test page that composes existing components + adds segment editing UI |
+| RundownPrototypePage | `pages/RundownPrototypePage.jsx` | Test page that composes existing components + adds segment editing UI |
+| InlineSegmentEditor | `components/rundown/InlineSegmentEditor.jsx` | Quick edit form for segments |
 
-**What RundownPreviewPage adds:**
+**What RundownPrototypePage adds:**
+- Edit mode toggle to show/hide edit buttons
 - Inline segment editing from the segment list
 - Quick-add segment button
 - Segment reordering UI preview
-- Graphics trigger preview
+- Controls panel (Previous, Stop, Start, Next)
 
-**Interactions (leveraging existing timesheet functionality):**
-
-| Action | Implementation |
-|--------|----------------|
-| Click "Next" / Advance | Uses `useTimesheet().advance()` - already works |
-| Progress bar fills | Uses `useTimesheet().progress` - already works |
-| Overtime triggers | Already implemented in `CurrentSegment.jsx` |
-| Segment status icons | Already implemented in `RunOfShow.jsx` |
-| **NEW:** Click segment to edit | Opens inline editor |
-| **NEW:** Reorder segments | Uses ↑/↓ arrows |
-
-**Producer View Test Flow (existing functionality verification):**
-
-```
-1. Page loads with segment 0 as current ✅ (already works via useTimesheet)
-2. Timer starts counting up ✅ (already works)
-3. Progress bar fills as time elapses ✅ (already works)
-4. When duration exceeded → OVERTIME indicator appears ✅ (already works)
-5. Click "Advance" → segment 0 marked complete ✅ (already works)
-6. NEW: Click segment in list → inline edit panel opens
-7. NEW: Modify segment → changes reflected in real-time
-```
+**Cleanup:** This route is **removed** in Phase 3 (PRD-Rundown-08) after full Producer View integration.
 
 #### Phase 0 Exit Criteria
 
-- [ ] Rundown Editor: Can create a new segment with all required fields
-- [ ] Rundown Editor: Can edit any field on an existing segment
-- [ ] Rundown Editor: Can delete a segment with confirmation
-- [ ] Rundown Editor: Can reorder segments with ↑/↓ arrows
-- [ ] Rundown Editor: Can multi-select segments and see total duration
+- [x] Editor: Can create a new segment with all required fields *(done)*
+- [x] Editor: Can edit any field on an existing segment *(done)*
+- [x] Editor: Can delete a segment with confirmation *(done)*
+- [x] Editor: Can reorder segments with ↑/↓ arrows *(done)*
+- [ ] Editor: Can multi-select segments and see total duration
+- [x] Editor: Total runtime display with over/under indicator *(done)*
+- [x] Editor: Running time column shows cumulative start times *(done)*
+- [x] Editor: Buffer time between segments *(done)*
+- [x] Editor: Inline editing of duration, scene, graphic *(done)*
 - [x] Producer View: NowPlaying shows current segment with progress bar *(already done)*
 - [x] Producer View: UpNext shows next segment *(already done)*
 - [x] Producer View: Can advance through segments *(already done)*
 - [x] Producer View: Overtime indicator displays when segment runs long *(already done)*
-- [ ] Producer View: Inline segment editing works
+- [ ] Rundown Prototype: Edit mode toggle works
+- [ ] Rundown Prototype: Inline segment editing works
 - [ ] Stakeholder sign-off on UX before proceeding to Phase 1
 
 ---
@@ -1523,7 +1471,7 @@ const DUMMY_GRAPHICS = [
 **Modified:** `show-controller/src/pages/ProducerPage.jsx` - Add segment editing UI, graphics triggers
 
 **Cleanup:**
-- Remove `/rundown-preview` temporary test route from App.jsx
+- Remove `/rundown-prototype` temporary test route from App.jsx
 
 ---
 
@@ -1705,25 +1653,24 @@ These components already exist and use `useTimesheet()`. They will be reused, no
 
 ### New Files
 
-| File | Phase | Est. Lines | Purpose |
-|------|-------|------------|---------|
-| `show-controller/src/pages/RundownEditorPage.jsx` | 0A | 300 | Main editor page (prototype) |
-| `show-controller/src/components/rundown/SegmentList.jsx` | 0A | 250 | Segment list with selection (for editor, separate from RunOfShow) |
-| `show-controller/src/components/rundown/SegmentDetail.jsx` | 0A | 300 | Detail panel form |
-| `show-controller/src/components/rundown/pickers/ScenePicker.jsx` | 0A | 100 | OBS scene dropdown (hardcoded) |
-| `show-controller/src/components/rundown/pickers/TransitionPicker.jsx` | 0A | 80 | Transition dropdown |
-| `show-controller/src/components/rundown/pickers/GraphicsPicker.jsx` | 0A | 120 | Graphics dropdown (hardcoded) |
-| `show-controller/src/components/rundown/pickers/AudioPicker.jsx` | 0A | 80 | Audio preset dropdown |
-| `show-controller/src/pages/RundownPreviewPage.jsx` | 0B | 150 | Temporary test page (composes existing components, removed in Phase 3) |
-| `server/lib/rundownService.js` | 1 | 400 | Rundown business logic |
-| `server/lib/milestoneCalculator.js` | 1 | 150 | Milestone detection |
-| `server/lib/graphicsRegistry.js` | 1 | 200 | Graphics registry access |
-| `server/routes/rundown.js` | 1 | 300 | API routes |
-| `show-controller/src/hooks/useRundown.js` | 2 | 150 | Rundown CRUD operations hook |
-| `show-controller/src/context/RundownContext.jsx` | 2 | 100 | Rundown editor state context |
-| `show-controller/src/components/rundown/MilestoneTimeline.jsx` | 2 | 150 | Timeline component |
-| `show-controller/src/components/rundown/SelectionSummary.jsx` | 2 | 100 | Selection summary |
-| `server/lib/rundownTemplateService.js` | 4 | 250 | Template management |
+| File | Phase | Status | Purpose |
+|------|-------|--------|---------|
+| `show-controller/src/pages/RundownEditorPage.jsx` | 0A | ✅ Created | Main editor page |
+| `show-controller/src/components/rundown/SegmentList.jsx` | 0A | ✅ Created | Segment list with selection |
+| `show-controller/src/components/rundown/SegmentDetail.jsx` | 0A | ✅ Created | Detail panel form |
+| `show-controller/src/components/rundown/pickers/ScenePicker.jsx` | 0B | ✅ Created | OBS scene dropdown |
+| `show-controller/src/components/rundown/pickers/GraphicsPicker.jsx` | 0B | ✅ Created | Graphics dropdown with schema-driven registry |
+| `show-controller/src/pages/RundownPrototypePage.jsx` | 0B-Proto | 🔲 Planned | Temporary test page (removed in Phase 3) |
+| `show-controller/src/components/rundown/InlineSegmentEditor.jsx` | 0B-Proto | 🔲 Planned | Quick edit form for Producer View |
+| `server/lib/rundownService.js` | 1 | 🔲 Planned | Rundown business logic |
+| `server/lib/milestoneCalculator.js` | 1 | 🔲 Planned | Milestone detection |
+| `server/lib/graphicsRegistry.js` | 1 | 🔲 Planned | Graphics registry access |
+| `server/routes/rundown.js` | 1 | 🔲 Planned | API routes |
+| `show-controller/src/hooks/useRundown.js` | 2 | 🔲 Planned | Rundown CRUD operations hook |
+| `show-controller/src/context/RundownContext.jsx` | 2 | 🔲 Planned | Rundown editor state context |
+| `show-controller/src/components/rundown/MilestoneTimeline.jsx` | 2 | 🔲 Planned | Timeline component |
+| `show-controller/src/components/rundown/SelectionSummary.jsx` | 2 | 🔲 Planned | Selection summary |
+| `server/lib/rundownTemplateService.js` | 4 | 🔲 Planned | Template management |
 
 ### Files NOT Created (Previously Planned, Now Unnecessary)
 
@@ -1735,14 +1682,14 @@ These components already exist and use `useTimesheet()`. They will be reused, no
 
 ### Modified Files
 
-| File | Phase | Changes |
-|------|-------|---------|
-| `show-controller/src/App.jsx` | 0A | Add `/rundown` route for editor prototype |
-| `show-controller/src/App.jsx` | 0B | Add `/rundown-preview` route for producer prototype |
-| `server/index.js` | 1 | Add rundown API routes |
-| `show-controller/src/components/rundown/pickers/*.jsx` | 2 | Replace hardcoded data with real sources |
-| `show-controller/src/pages/ProducerPage.jsx` | 3 | Add segment editing UI, graphics trigger integration |
-| `show-controller/src/App.jsx` | 3 | Remove `/rundown-preview` route (no longer needed) |
+| File | Phase | Status | Changes |
+|------|-------|--------|---------|
+| `show-controller/src/App.jsx` | 0A | ✅ Done | Add `/rundown` route for editor prototype |
+| `show-controller/src/App.jsx` | 0B-Proto | 🔲 Planned | Add `/rundown-prototype` route for rundown prototype |
+| `server/index.js` | 1 | 🔲 Planned | Add rundown API routes |
+| `show-controller/src/components/rundown/pickers/*.jsx` | 2 | 🔲 Planned | Replace hardcoded data with real sources |
+| `show-controller/src/pages/ProducerPage.jsx` | 3 | 🔲 Planned | Add segment editing UI, graphics trigger integration |
+| `show-controller/src/App.jsx` | 3 | 🔲 Planned | Remove `/rundown-prototype` route (no longer needed) |
 
 ---
 
@@ -1802,3 +1749,15 @@ This PRD depends on:
    - Competition context (determines which VM's OBS to connect to)
    - OBSContext for OBS state and commands
    - ShowContext for timesheet state (via `timesheetState`)
+
+---
+
+## Sub-PRD Status
+
+| PRD | Name | Status | Description |
+|-----|------|--------|-------------|
+| PRD-Rundown-00 | Timesheet Consolidation | ✅ COMPLETE | useTimesheet() hook, timing/control |
+| PRD-Rundown-01 | Editor Prototype | ✅ PHASE 2 COMPLETE | Rundown Editor UI (Phase 0A/0B/1/2 done) |
+| PRD-Rundown-05 | Rundown Prototype | 🔲 NOT STARTED | Producer View with inline editing |
+| PRD-Rundown-06 | Backend Services | 🔲 PLANNED | Server-side rundown persistence |
+| PRD-Rundown-08 | Producer Integration | 🔲 PLANNED | Full Producer View integration |
