@@ -3,7 +3,7 @@
 **PRD:** PRD-Rundown-01-EditorPrototype
 **Status:** PROTOTYPE COMPLETE, FEATURES IN PROGRESS
 **Created:** 2026-01-22
-**Last Updated:** 2026-01-23 (v4.1 - Task 66 complete - Role-based permissions)
+**Last Updated:** 2026-01-23 (v4.3 - Task 68 complete - Version rollback)
 
 ---
 
@@ -180,8 +180,8 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 64: Add presence indicators | COMPLETE | Firebase presence tracking with onDisconnect cleanup, colored avatars showing all viewers, stale presence filtered (2min timeout), activity heartbeat every 30s |
 | Task 65: Implement cursor/selection sharing | COMPLETE | Presence data extended with selectedSegmentId/selectedSegmentIds, synced via useEffect on selection change, otherUsersSelections useMemo computes per-segment user list, SegmentRow shows colored avatar indicators + left border highlight for segments selected by others |
 | Task 66: Add role-based permissions | COMPLETE | USER_ROLES constant with canEdit/canLock/canApprove permissions, role selector dropdown in header, checkPermission() helper for all edit handlers, role synced to presence for display, viewers blocked from all edit operations |
-| Task 67: Implement change history log | NOT STARTED | Track all edits with timestamp |
-| Task 68: Add version rollback | NOT STARTED | Restore previous state |
+| Task 67: Implement change history log | COMPLETE | logChange() helper writes to Firebase history, syncSegmentsToFirebase/syncGroupsToFirebase updated to log actions, ChangeHistoryModal displays history with relative timestamps, color-coded action types (green=add, red=delete, amber=lock), user info with role, History button in header |
+| Task 68: Add version rollback | COMPLETE | logChange() updated to store snapshots (segments + groups), syncSegmentsToFirebase/syncGroupsToFirebase pass snapshots, ChangeHistoryModal shows "Restore" button for entries with snapshots, RestoreConfirmModal for confirmation, handleInitiateRestore/handleConfirmRestore handlers, skipSnapshot flag prevents circular references |
 | Task 69: Add approval workflow | NOT STARTED | Draft → In Review → Approved → Locked |
 
 ### Phase 9: Data & Reporting 🔲 NOT STARTED
