@@ -124,6 +124,8 @@ export default function RundownEditorPage() {
   const [groups, setGroups] = useState([]); // Segment groups (Phase 4: Task 7.4)
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false); // Create group modal (Phase 4: Task 7.4)
   const [excludeOptionalFromRuntime, setExcludeOptionalFromRuntime] = useState(false); // Exclude optional segments from total runtime (Phase 5: Task 8.4)
+  const [showSaveSegmentTemplateModal, setShowSaveSegmentTemplateModal] = useState(false); // Save segment as template modal (Phase 7: Task 58)
+  const [segmentToSaveAsTemplate, setSegmentToSaveAsTemplate] = useState(null); // Segment being saved as template (Phase 7: Task 58)
 
   // Filtered segments
   const filteredSegments = useMemo(() => {
@@ -743,6 +745,57 @@ export default function RundownEditorPage() {
     showToast('Coming soon');
   }
 
+  // Save segment as template handler (Phase 7: Task 58)
+  function handleSaveSegmentAsTemplate(segmentId) {
+    const segment = segments.find(s => s.id === segmentId);
+    if (!segment) return;
+    setSegmentToSaveAsTemplate(segment);
+    setShowSaveSegmentTemplateModal(true);
+  }
+
+  // Save segment template to Firebase (Phase 7: Task 58)
+  async function handleSaveSegmentTemplate(templateName, templateDescription, categoryTag) {
+    if (!segmentToSaveAsTemplate) return;
+
+    try {
+      const templateId = `seg-tpl-${Date.now()}`;
+      const teams = DUMMY_COMPETITION.teams;
+
+      // Abstract team references in segment name
+      const abstractedName = abstractTeamReferences(segmentToSaveAsTemplate.name, teams);
+
+      const templateData = {
+        id: templateId,
+        name: templateName,
+        description: templateDescription,
+        category: categoryTag || 'general',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        // The segment configuration
+        segment: {
+          name: abstractedName,
+          type: segmentToSaveAsTemplate.type,
+          duration: segmentToSaveAsTemplate.duration,
+          scene: segmentToSaveAsTemplate.scene,
+          graphic: segmentToSaveAsTemplate.graphic,
+          autoAdvance: segmentToSaveAsTemplate.autoAdvance,
+          bufferAfter: segmentToSaveAsTemplate.bufferAfter || 0,
+          optional: segmentToSaveAsTemplate.optional || false,
+          notes: segmentToSaveAsTemplate.notes || '',
+          timingMode: segmentToSaveAsTemplate.timingMode || 'manual',
+        },
+      };
+
+      await set(ref(db, `segmentTemplates/${templateId}`), templateData);
+      setShowSaveSegmentTemplateModal(false);
+      setSegmentToSaveAsTemplate(null);
+      showToast(`Segment template "${templateName}" saved!`);
+    } catch (error) {
+      console.error('Error saving segment template:', error);
+      showToast('Error saving segment template');
+    }
+  }
+
   // Group management functions (Phase 4: Tasks 7.4, 7.5)
 
   // Create a new group from selected segments
@@ -1282,6 +1335,7 @@ export default function RundownEditorPage() {
                                   onMoveDown={handleMoveDown}
                                   onDuplicate={handleDuplicateSegment}
                                   onToggleLock={handleToggleLock}
+                                  onSaveAsTemplate={handleSaveSegmentAsTemplate}
                                   inGroup={true}
                                   groupColor={groupColor}
                                 />
@@ -1321,6 +1375,7 @@ export default function RundownEditorPage() {
                         onMoveDown={handleMoveDown}
                         onDuplicate={handleDuplicateSegment}
                         onToggleLock={handleToggleLock}
+                        onSaveAsTemplate={handleSaveSegmentAsTemplate}
                         inGroup={false}
                         groupColor={null}
                       />
@@ -1410,6 +1465,18 @@ export default function RundownEditorPage() {
           onCreate={handleCreateGroup}
           onCancel={() => setShowCreateGroupModal(false)}
           selectedCount={selectedSegmentIds.length}
+        />
+      )}
+
+      {/* Save Segment as Template Modal (Phase 7: Task 58) */}
+      {showSaveSegmentTemplateModal && segmentToSaveAsTemplate && (
+        <SaveSegmentTemplateModal
+          segment={segmentToSaveAsTemplate}
+          onSave={handleSaveSegmentTemplate}
+          onCancel={() => {
+            setShowSaveSegmentTemplateModal(false);
+            setSegmentToSaveAsTemplate(null);
+          }}
         />
       )}
     </div>
@@ -1583,6 +1650,7 @@ function SegmentRow({
   onMoveDown,
   onDuplicate,
   onToggleLock,
+  onSaveAsTemplate,
   inGroup,
   groupColor,
 }) {
@@ -1836,6 +1904,15 @@ function SegmentRow({
           title="Duplicate segment"
         >
           <DocumentDuplicateIcon className="w-4 h-4" />
+        </button>
+
+        {/* Save as Template Button (Phase 7: Task 58) */}
+        <button
+          onClick={(e) => { e.stopPropagation(); onSaveAsTemplate(segment.id); }}
+          className="p-1 text-zinc-500 hover:text-purple-400 hover:bg-purple-500/20 rounded transition-colors"
+          title="Save segment as template"
+        >
+          <BookmarkIcon className="w-4 h-4" />
         </button>
 
         {/* Reorder buttons */}
@@ -2462,6 +2539,129 @@ function TemplateLibraryModal({ templates, loading, onLoad, onDelete, onCancel, 
             Loading a template will replace your current rundown. Make sure to save first if needed.
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// Segment template categories (Phase 7: Task 58)
+const SEGMENT_TEMPLATE_CATEGORIES = [
+  { id: 'general', label: 'General' },
+  { id: 'intro', label: 'Intro / Opening' },
+  { id: 'team', label: 'Team Segments' },
+  { id: 'rotation', label: 'Rotations' },
+  { id: 'break', label: 'Breaks / Transitions' },
+  { id: 'outro', label: 'Outro / Closing' },
+];
+
+// Save Segment as Template Modal Component (Phase 7: Task 58)
+function SaveSegmentTemplateModal({ segment, onSave, onCancel }) {
+  const [templateName, setTemplateName] = useState(segment.name || '');
+  const [templateDescription, setTemplateDescription] = useState('');
+  const [categoryTag, setCategoryTag] = useState('general');
+  const [saving, setSaving] = useState(false);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!templateName.trim()) return;
+
+    setSaving(true);
+    await onSave(templateName.trim(), templateDescription.trim(), categoryTag);
+    setSaving(false);
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+      <div className="bg-zinc-900 border border-zinc-700 rounded-xl w-full max-w-md mx-4 shadow-2xl">
+        <div className="flex items-center justify-between p-4 border-b border-zinc-800">
+          <h2 className="text-lg font-bold text-white">Save Segment as Template</h2>
+          <button
+            onClick={onCancel}
+            className="p-1 text-zinc-400 hover:text-zinc-200 rounded-lg hover:bg-zinc-800 transition-colors"
+          >
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+          <div>
+            <label className="block text-xs text-zinc-400 mb-1.5">Template Name *</label>
+            <input
+              type="text"
+              value={templateName}
+              onChange={(e) => setTemplateName(e.target.value)}
+              placeholder="e.g., Team Coaches Intro"
+              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+              autoFocus
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs text-zinc-400 mb-1.5">Category</label>
+            <select
+              value={categoryTag}
+              onChange={(e) => setCategoryTag(e.target.value)}
+              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+            >
+              {SEGMENT_TEMPLATE_CATEGORIES.map(cat => (
+                <option key={cat.id} value={cat.id}>{cat.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs text-zinc-400 mb-1.5">Description (optional)</label>
+            <textarea
+              value={templateDescription}
+              onChange={(e) => setTemplateDescription(e.target.value)}
+              placeholder="e.g., Standard coaches introduction with graphic overlay"
+              rows={2}
+              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500 resize-none"
+            />
+          </div>
+
+          <div className="p-3 bg-zinc-800/50 rounded-lg border border-zinc-700">
+            <div className="text-xs text-zinc-400 mb-2">Segment configuration:</div>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div className="text-zinc-500">Type:</div>
+              <div className="text-zinc-300">{segment.type}</div>
+              <div className="text-zinc-500">Duration:</div>
+              <div className="text-zinc-300">{segment.duration ? `${segment.duration}s` : 'Manual'}</div>
+              {segment.scene && (
+                <>
+                  <div className="text-zinc-500">Scene:</div>
+                  <div className="text-zinc-300 truncate">{segment.scene}</div>
+                </>
+              )}
+              {segment.graphic?.graphicId && (
+                <>
+                  <div className="text-zinc-500">Graphic:</div>
+                  <div className="text-zinc-300 truncate">{segment.graphic.graphicId}</div>
+                </>
+              )}
+            </div>
+            <div className="text-xs text-zinc-500 mt-2">
+              Team names will be converted to placeholders for reuse.
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="flex-1 px-4 py-2 bg-zinc-800 text-zinc-300 rounded-lg hover:bg-zinc-700 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={!templateName.trim() || saving}
+              className="flex-1 px-4 py-2 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {saving ? 'Saving...' : 'Save Template'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
