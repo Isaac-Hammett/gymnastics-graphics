@@ -127,7 +127,7 @@ This implementation plan covers all phases of the Rundown Editor from the PRD. P
 | 8.1 Add duplicate segment button | COMPLETE | DocumentDuplicateIcon button on row, handleDuplicateSegment function |
 | 8.2 Implement segment locking | COMPLETE | Added `locked` field to segments, all edit/move/delete handlers check locked status |
 | 8.3 Add lock/unlock toggle UI | COMPLETE | LockClosedIcon/LockOpenIcon toggle button, visual indicator badge, muted styling when locked |
-| 8.4 Add conditional/optional toggle | NOT STARTED | Mark segments as backup |
+| 8.4 Add conditional/optional toggle | COMPLETE | Added `optional` field, checkbox in Edit panel, "optional" badge on row, toggle to exclude from runtime |
 | 8.5 Add notes field to segment | NOT STARTED | Internal production notes |
 | 8.6 Show notes indicator on row | NOT STARTED | Icon when notes exist |
 

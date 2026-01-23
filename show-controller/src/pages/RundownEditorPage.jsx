@@ -52,15 +52,15 @@ const DUMMY_SCENES = [
   { name: 'Quad View', category: 'multi' },
 ];
 
-// Hardcoded test data per PRD (updated with graphic field structure for Phase 0B, bufferAfter for Phase 1, locked for Phase 5)
+// Hardcoded test data per PRD (updated with graphic field structure for Phase 0B, bufferAfter for Phase 1, locked and optional for Phase 5)
 const DUMMY_SEGMENTS = [
-  { id: 'seg-001', name: 'Show Intro', type: 'video', duration: 45, scene: 'Starting Soon', graphic: null, autoAdvance: true, bufferAfter: 0, locked: false },
-  { id: 'seg-002', name: 'Team Logos', type: 'static', duration: 10, scene: 'Graphics Fullscreen', graphic: { graphicId: 'logos', params: {} }, autoAdvance: true, bufferAfter: 5, locked: true },
-  { id: 'seg-003', name: 'UCLA Coaches', type: 'live', duration: 15, scene: 'Single - Camera 2', graphic: { graphicId: 'team-coaches', params: { teamSlot: 1 } }, autoAdvance: true, bufferAfter: 0, locked: false },
-  { id: 'seg-004', name: 'Oregon Coaches', type: 'live', duration: 15, scene: 'Single - Camera 3', graphic: { graphicId: 'team-coaches', params: { teamSlot: 2 } }, autoAdvance: true, bufferAfter: 10, locked: false },
-  { id: 'seg-005', name: 'Rotation 1 Summary', type: 'static', duration: 20, scene: 'Graphics Fullscreen', graphic: { graphicId: 'event-summary', params: { summaryMode: 'rotation', summaryRotation: 1, summaryTheme: 'espn' } }, autoAdvance: true, bufferAfter: 0, locked: false },
-  { id: 'seg-006', name: 'Floor - Rotation 1', type: 'live', duration: null, scene: 'Quad View', graphic: { graphicId: 'floor', params: {} }, autoAdvance: false, bufferAfter: 0, locked: false },
-  { id: 'seg-007', name: 'Commercial Break', type: 'break', duration: 120, scene: 'Starting Soon', graphic: null, autoAdvance: true, bufferAfter: 0, locked: false },
+  { id: 'seg-001', name: 'Show Intro', type: 'video', duration: 45, scene: 'Starting Soon', graphic: null, autoAdvance: true, bufferAfter: 0, locked: false, optional: false },
+  { id: 'seg-002', name: 'Team Logos', type: 'static', duration: 10, scene: 'Graphics Fullscreen', graphic: { graphicId: 'logos', params: {} }, autoAdvance: true, bufferAfter: 5, locked: true, optional: false },
+  { id: 'seg-003', name: 'UCLA Coaches', type: 'live', duration: 15, scene: 'Single - Camera 2', graphic: { graphicId: 'team-coaches', params: { teamSlot: 1 } }, autoAdvance: true, bufferAfter: 0, locked: false, optional: false },
+  { id: 'seg-004', name: 'Oregon Coaches', type: 'live', duration: 15, scene: 'Single - Camera 3', graphic: { graphicId: 'team-coaches', params: { teamSlot: 2 } }, autoAdvance: true, bufferAfter: 10, locked: false, optional: false },
+  { id: 'seg-005', name: 'Rotation 1 Summary', type: 'static', duration: 20, scene: 'Graphics Fullscreen', graphic: { graphicId: 'event-summary', params: { summaryMode: 'rotation', summaryRotation: 1, summaryTheme: 'espn' } }, autoAdvance: true, bufferAfter: 0, locked: false, optional: false },
+  { id: 'seg-006', name: 'Floor - Rotation 1', type: 'live', duration: null, scene: 'Quad View', graphic: { graphicId: 'floor', params: {} }, autoAdvance: false, bufferAfter: 0, locked: false, optional: false },
+  { id: 'seg-007', name: 'Commercial Break', type: 'break', duration: 120, scene: 'Starting Soon', graphic: null, autoAdvance: true, bufferAfter: 0, locked: false, optional: true }, // Example optional segment
 ];
 
 // Segment type options
@@ -115,6 +115,7 @@ export default function RundownEditorPage() {
   const [dragOverIndex, setDragOverIndex] = useState(null); // Index being dragged over (Phase 4)
   const [groups, setGroups] = useState([]); // Segment groups (Phase 4: Task 7.4)
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false); // Create group modal (Phase 4: Task 7.4)
+  const [excludeOptionalFromRuntime, setExcludeOptionalFromRuntime] = useState(false); // Exclude optional segments from total runtime (Phase 5: Task 8.4)
 
   // Filtered segments
   const filteredSegments = useMemo(() => {
@@ -136,8 +137,20 @@ export default function RundownEditorPage() {
   }, [segments, selectedSegmentIds]);
 
   // Calculate total runtime (sum of all segment durations + buffer times)
+  // Optionally excludes optional segments when excludeOptionalFromRuntime is true
   const totalRuntime = useMemo(() => {
-    return segments.reduce((sum, seg) => sum + (seg.duration || 0) + (seg.bufferAfter || 0), 0);
+    return segments.reduce((sum, seg) => {
+      // Skip optional segments if the toggle is enabled
+      if (excludeOptionalFromRuntime && seg.optional) return sum;
+      return sum + (seg.duration || 0) + (seg.bufferAfter || 0);
+    }, 0);
+  }, [segments, excludeOptionalFromRuntime]);
+
+  // Count of optional segments and their total duration (for display)
+  const optionalSegmentsInfo = useMemo(() => {
+    const optionalSegs = segments.filter(seg => seg.optional);
+    const optionalDuration = optionalSegs.reduce((sum, seg) => sum + (seg.duration || 0) + (seg.bufferAfter || 0), 0);
+    return { count: optionalSegs.length, duration: optionalDuration };
   }, [segments]);
 
   // Calculate cumulative start times for each segment (for running time column)
@@ -360,6 +373,7 @@ export default function RundownEditorPage() {
       autoAdvance: false,
       bufferAfter: 0,
       locked: false,
+      optional: false,
     };
 
     // Insert after selected segment, or at end
@@ -408,12 +422,13 @@ export default function RundownEditorPage() {
     const newId = `seg-${timestamp}`;
 
     // Create duplicate with "(copy)" appended to name
-    // Note: duplicated segments are unlocked by default
+    // Note: duplicated segments are unlocked by default but preserve optional status
     const duplicatedSegment = {
       ...segmentToDuplicate,
       id: newId,
       name: `${segmentToDuplicate.name} (copy)`,
       locked: false, // Duplicated segments are always unlocked
+      optional: segmentToDuplicate.optional || false, // Preserve optional status
       // Deep copy graphic object if it exists
       graphic: segmentToDuplicate.graphic
         ? { ...segmentToDuplicate.graphic, params: { ...segmentToDuplicate.graphic.params } }
@@ -543,6 +558,7 @@ export default function RundownEditorPage() {
       graphic: seg.graphic,
       autoAdvance: seg.autoAdvance,
       bufferAfter: seg.bufferAfter || 0,
+      optional: seg.optional || false,
     }));
   }
 
@@ -625,6 +641,8 @@ export default function RundownEditorPage() {
       graphic: seg.graphic,
       autoAdvance: seg.autoAdvance,
       bufferAfter: seg.bufferAfter || 0,
+      locked: false, // Segments from templates start unlocked
+      optional: seg.optional || false,
     }));
   }
 
@@ -945,6 +963,39 @@ export default function RundownEditorPage() {
                   </span>
                 )}
               </div>
+
+              {/* Optional Segments Info & Toggle (Phase 5: Task 8.4) */}
+              {optionalSegmentsInfo.count > 0 && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setExcludeOptionalFromRuntime(!excludeOptionalFromRuntime)}
+                    className={`flex items-center gap-1.5 px-2 py-1 text-xs rounded border transition-colors ${
+                      excludeOptionalFromRuntime
+                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                        : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:border-zinc-600'
+                    }`}
+                    title={excludeOptionalFromRuntime
+                      ? 'Optional segments excluded from runtime - click to include'
+                      : 'Click to exclude optional segments from runtime'}
+                  >
+                    <span className={`w-3 h-3 rounded border flex items-center justify-center ${
+                      excludeOptionalFromRuntime
+                        ? 'bg-amber-500 border-amber-400'
+                        : 'border-zinc-500'
+                    }`}>
+                      {excludeOptionalFromRuntime && (
+                        <CheckIcon className="w-2 h-2 text-zinc-900" />
+                      )}
+                    </span>
+                    <span>
+                      {optionalSegmentsInfo.count} optional
+                      <span className="text-zinc-500 ml-1">
+                        ({formatDuration(optionalSegmentsInfo.duration)})
+                      </span>
+                    </span>
+                  </button>
+                </div>
+              )}
 
               {/* Target Duration Input Toggle */}
               {showTargetInput ? (
@@ -1586,6 +1637,15 @@ function SegmentRow({
                 <LockClosedIcon className="w-3 h-3" />
               </span>
             )}
+            {/* Optional/Conditional indicator badge (Phase 5: Task 8.4) */}
+            {segment.optional && (
+              <span
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded bg-amber-500/10 text-amber-400 border border-dashed border-amber-500/40 shrink-0"
+                title="Optional segment (if time permits)"
+              >
+                optional
+              </span>
+            )}
             {segment.graphic?.graphicId && (
               <span
                 className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded bg-pink-500/20 text-pink-400 border border-pink-500/30 shrink-0"
@@ -2027,6 +2087,21 @@ function SegmentDetailPanel({ segment, onSave, onDelete, onCancel }) {
             className="w-4 h-4 rounded border-zinc-700 bg-zinc-800 text-blue-600 focus:ring-blue-500"
           />
           <label htmlFor="autoAdvance" className="text-sm text-zinc-300">Auto-advance when duration ends</label>
+        </div>
+
+        {/* Conditional/Optional Toggle (Phase 5: Task 8.4) */}
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="optional"
+            checked={formData.optional || false}
+            onChange={(e) => setFormData({ ...formData, optional: e.target.checked })}
+            className="w-4 h-4 rounded border-zinc-700 bg-zinc-800 text-amber-600 focus:ring-amber-500"
+          />
+          <label htmlFor="optional" className="text-sm text-zinc-300">
+            Optional/backup segment
+            <span className="text-xs text-zinc-500 ml-1">(if time permits)</span>
+          </label>
         </div>
 
         <div className="flex gap-3 pt-4">
