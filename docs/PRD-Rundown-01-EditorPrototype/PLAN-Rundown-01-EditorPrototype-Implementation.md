@@ -3,7 +3,7 @@
 **PRD:** PRD-Rundown-01-EditorPrototype
 **Status:** PROTOTYPE COMPLETE, FEATURES IN PROGRESS
 **Created:** 2026-01-22
-**Last Updated:** 2026-01-23 (v3.2 - post-show analytics moved to PRD-05)
+**Last Updated:** 2026-01-23 (v3.4 - Task 59 complete)
 
 ---
 
@@ -49,7 +49,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | 4 | Reordering & Organization | ✅ COMPLETE | 44-48 |
 | 5 | Segment Management | ✅ COMPLETE | 49-54 |
 | 6 | Timing Modes | ✅ COMPLETE | 55-57 |
-| 7 | Templates & Presets | 🔲 NOT STARTED | 58-62 |
+| 7 | Templates & Presets | 🔄 IN PROGRESS | 58-62 |
 | 8 | Collaboration | 🔲 NOT STARTED | 63-69 |
 | 9 | Data & Reporting | 🔲 NOT STARTED | 70-74 |
 | 10 | Visual & UX | 🔲 NOT STARTED | 75-81 |
@@ -162,12 +162,12 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 56: Show timing mode badge on row | COMPLETE | Orange "MANUAL" badge for manual mode, indigo "→" for follows-previous mode |
 | Task 57: Surface auto-advance toggle inline | COMPLETE | Green/gray "Auto" button on segment row, toggles autoAdvance field, respects lock status |
 
-### Phase 7: Templates & Presets 🔲 NOT STARTED
+### Phase 7: Templates & Presets 🔄 IN PROGRESS
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Task 58: Save segment as template | NOT STARTED | Reusable segment configurations |
-| Task 59: Create segment template library | NOT STARTED | Accessible from Add Segment |
+| Task 58: Save segment as template | COMPLETE | Added SaveSegmentTemplateModal, bookmark button on SegmentRow, saves to Firebase segmentTemplates path with category tags. Note: Firebase rules need update for client write access. |
+| Task 59: Create segment template library | COMPLETE | Added SegmentTemplateLibraryModal with category filtering, split Add Segment button with dropdown for "New Blank Segment" and "From Template..." options, loads templates from Firebase segmentTemplates path |
 | Task 60: Save full rundown as template | NOT STARTED | Entire show structure |
 | Task 61: Template management UI | NOT STARTED | Edit, delete, organize templates |
 | Task 62: Add recurrence pattern option | NOT STARTED | Repeat segment N times |

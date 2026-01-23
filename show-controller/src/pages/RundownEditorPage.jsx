@@ -126,6 +126,10 @@ export default function RundownEditorPage() {
   const [excludeOptionalFromRuntime, setExcludeOptionalFromRuntime] = useState(false); // Exclude optional segments from total runtime (Phase 5: Task 8.4)
   const [showSaveSegmentTemplateModal, setShowSaveSegmentTemplateModal] = useState(false); // Save segment as template modal (Phase 7: Task 58)
   const [segmentToSaveAsTemplate, setSegmentToSaveAsTemplate] = useState(null); // Segment being saved as template (Phase 7: Task 58)
+  const [showSegmentTemplateLibrary, setShowSegmentTemplateLibrary] = useState(false); // Segment template library modal (Phase 7: Task 59)
+  const [segmentTemplates, setSegmentTemplates] = useState([]); // Segment templates from Firebase (Phase 7: Task 59)
+  const [loadingSegmentTemplates, setLoadingSegmentTemplates] = useState(false); // Loading state for segment templates (Phase 7: Task 59)
+  const [showAddSegmentMenu, setShowAddSegmentMenu] = useState(false); // Dropdown for Add Segment options (Phase 7: Task 59)
 
   // Filtered segments
   const filteredSegments = useMemo(() => {
@@ -210,6 +214,17 @@ export default function RundownEditorPage() {
     setToast(message);
     setTimeout(() => setToast(''), 3000);
   }
+
+  // Close Add Segment dropdown when clicking outside (Phase 7: Task 59)
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (showAddSegmentMenu && !event.target.closest('.add-segment-dropdown')) {
+        setShowAddSegmentMenu(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showAddSegmentMenu]);
 
   // Event handlers per PRD
   function handleSelectSegment(id) {
@@ -796,6 +811,80 @@ export default function RundownEditorPage() {
     }
   }
 
+  // Load segment templates from Firebase (Phase 7: Task 59)
+  async function handleOpenSegmentTemplateLibrary() {
+    setShowSegmentTemplateLibrary(true);
+    setLoadingSegmentTemplates(true);
+    setShowAddSegmentMenu(false);
+    try {
+      const snapshot = await get(ref(db, 'segmentTemplates'));
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        const templateList = Object.values(data);
+        setSegmentTemplates(templateList);
+      } else {
+        setSegmentTemplates([]);
+      }
+    } catch (error) {
+      console.error('Error loading segment templates:', error);
+      showToast('Error loading segment templates');
+    }
+    setLoadingSegmentTemplates(false);
+  }
+
+  // Add a segment from a template (Phase 7: Task 59)
+  function handleAddSegmentFromTemplate(template) {
+    const teams = DUMMY_COMPETITION.teams;
+    const timestamp = Date.now();
+    const newId = `seg-${timestamp}`;
+
+    // Resolve team references in segment name
+    const resolvedName = resolveTeamReferences(template.segment.name, teams);
+
+    const newSegment = {
+      id: newId,
+      name: resolvedName,
+      type: template.segment.type,
+      duration: template.segment.duration,
+      scene: template.segment.scene || '',
+      graphic: template.segment.graphic,
+      autoAdvance: template.segment.autoAdvance || false,
+      bufferAfter: template.segment.bufferAfter || 0,
+      locked: false,
+      optional: template.segment.optional || false,
+      notes: template.segment.notes || '',
+      timingMode: template.segment.timingMode || 'manual',
+    };
+
+    // Insert after selected segment, or at end
+    if (selectedSegmentId) {
+      const index = segments.findIndex(s => s.id === selectedSegmentId);
+      const newSegments = [...segments];
+      newSegments.splice(index + 1, 0, newSegment);
+      setSegments(newSegments);
+    } else {
+      setSegments([...segments, newSegment]);
+    }
+
+    setSelectedSegmentId(newId);
+    setShowSegmentTemplateLibrary(false);
+    showToast(`Added segment from template: ${template.name}`);
+  }
+
+  // Delete a segment template from Firebase (Phase 7: Task 59)
+  async function handleDeleteSegmentTemplate(templateId) {
+    if (!window.confirm('Are you sure you want to delete this segment template?')) return;
+
+    try {
+      await remove(ref(db, `segmentTemplates/${templateId}`));
+      setSegmentTemplates(segmentTemplates.filter(t => t.id !== templateId));
+      showToast('Segment template deleted');
+    } catch (error) {
+      console.error('Error deleting segment template:', error);
+      showToast('Error deleting segment template');
+    }
+  }
+
   // Group management functions (Phase 4: Tasks 7.4, 7.5)
 
   // Create a new group from selected segments
@@ -1141,13 +1230,46 @@ export default function RundownEditorPage() {
       <div className="border-b border-zinc-800 px-6 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <button
-              onClick={handleAddSegment}
-              className="flex items-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-500 text-white text-sm font-medium rounded-lg transition-colors"
-            >
-              <PlusIcon className="w-4 h-4" />
-              Add Segment
-            </button>
+            {/* Add Segment Dropdown (Phase 7: Task 59) */}
+            <div className="relative add-segment-dropdown">
+              <div className="flex">
+                <button
+                  onClick={handleAddSegment}
+                  className="flex items-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-500 text-white text-sm font-medium rounded-l-lg transition-colors"
+                >
+                  <PlusIcon className="w-4 h-4" />
+                  Add Segment
+                </button>
+                <button
+                  onClick={() => setShowAddSegmentMenu(!showAddSegmentMenu)}
+                  className="px-2 py-2 bg-green-600 hover:bg-green-500 text-white text-sm font-medium rounded-r-lg border-l border-green-500 transition-colors"
+                  title="More add options"
+                >
+                  <ChevronDownIcon className="w-4 h-4" />
+                </button>
+              </div>
+              {showAddSegmentMenu && (
+                <div className="absolute top-full left-0 mt-1 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl z-20 w-48 overflow-hidden">
+                  <button
+                    onClick={() => {
+                      handleAddSegment();
+                      setShowAddSegmentMenu(false);
+                    }}
+                    className="w-full px-3 py-2 text-sm text-left text-zinc-300 hover:bg-zinc-700 transition-colors flex items-center gap-2"
+                  >
+                    <PlusIcon className="w-4 h-4" />
+                    New Blank Segment
+                  </button>
+                  <button
+                    onClick={handleOpenSegmentTemplateLibrary}
+                    className="w-full px-3 py-2 text-sm text-left text-zinc-300 hover:bg-zinc-700 transition-colors flex items-center gap-2"
+                  >
+                    <BookmarkIcon className="w-4 h-4" />
+                    From Template...
+                  </button>
+                </div>
+              )}
+            </div>
             <button
               onClick={handleTemplates}
               className="flex items-center gap-2 px-3 py-2 bg-zinc-800 border border-zinc-700 text-zinc-300 text-sm rounded-lg hover:bg-zinc-700 transition-colors"
@@ -1477,6 +1599,17 @@ export default function RundownEditorPage() {
             setShowSaveSegmentTemplateModal(false);
             setSegmentToSaveAsTemplate(null);
           }}
+        />
+      )}
+
+      {/* Segment Template Library Modal (Phase 7: Task 59) */}
+      {showSegmentTemplateLibrary && (
+        <SegmentTemplateLibraryModal
+          templates={segmentTemplates}
+          loading={loadingSegmentTemplates}
+          onAdd={handleAddSegmentFromTemplate}
+          onDelete={handleDeleteSegmentTemplate}
+          onCancel={() => setShowSegmentTemplateLibrary(false)}
         />
       )}
     </div>
@@ -2913,6 +3046,185 @@ function SelectionSummaryPanel({
           <TrashIcon className="w-4 h-4" />
           Delete {selectedSegments.length} Segment{selectedSegments.length !== 1 ? 's' : ''}
         </button>
+      </div>
+    </div>
+  );
+}
+
+// Segment Template Library Modal Component (Phase 7: Task 59)
+function SegmentTemplateLibraryModal({ templates, loading, onAdd, onDelete, onCancel }) {
+  const [selectedCategory, setSelectedCategory] = useState('all');
+
+  // Filter templates by category
+  const filteredTemplates = selectedCategory === 'all'
+    ? templates
+    : templates.filter(t => t.category === selectedCategory);
+
+  // Group templates by category for display
+  const templatesByCategory = filteredTemplates.reduce((acc, template) => {
+    const cat = template.category || 'general';
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(template);
+    return acc;
+  }, {});
+
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+      <div className="bg-zinc-900 border border-zinc-700 rounded-xl w-full max-w-lg mx-4 shadow-2xl max-h-[80vh] flex flex-col">
+        <div className="flex items-center justify-between p-4 border-b border-zinc-800">
+          <h2 className="text-lg font-bold text-white">Segment Template Library</h2>
+          <button
+            onClick={onCancel}
+            className="p-1 text-zinc-400 hover:text-zinc-200 rounded-lg hover:bg-zinc-800 transition-colors"
+          >
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Category Filter */}
+        <div className="px-4 pt-3 pb-2 border-b border-zinc-800">
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setSelectedCategory('all')}
+              className={`px-2.5 py-1 text-xs rounded-full transition-colors ${
+                selectedCategory === 'all'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-zinc-800 text-zinc-400 hover:text-zinc-300'
+              }`}
+            >
+              All
+            </button>
+            {SEGMENT_TEMPLATE_CATEGORIES.map(cat => (
+              <button
+                key={cat.id}
+                onClick={() => setSelectedCategory(cat.id)}
+                className={`px-2.5 py-1 text-xs rounded-full transition-colors ${
+                  selectedCategory === cat.id
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-zinc-800 text-zinc-400 hover:text-zinc-300'
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="p-4 overflow-y-auto flex-1">
+          {loading ? (
+            <div className="text-center py-8 text-zinc-500">
+              Loading templates...
+            </div>
+          ) : filteredTemplates.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="text-zinc-500 mb-2">
+                {selectedCategory === 'all' ? 'No segment templates saved yet' : 'No templates in this category'}
+              </div>
+              <div className="text-xs text-zinc-600">
+                Use the bookmark icon on any segment to save it as a template.
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {selectedCategory === 'all' ? (
+                // Show grouped by category when "All" is selected
+                Object.entries(templatesByCategory).map(([category, categoryTemplates]) => (
+                  <div key={category}>
+                    <div className="text-xs text-zinc-500 uppercase tracking-wide mb-2">
+                      {SEGMENT_TEMPLATE_CATEGORIES.find(c => c.id === category)?.label || 'General'}
+                    </div>
+                    <div className="space-y-2">
+                      {categoryTemplates.map(template => (
+                        <SegmentTemplateCard
+                          key={template.id}
+                          template={template}
+                          onAdd={onAdd}
+                          onDelete={onDelete}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                // Show flat list when category is selected
+                <div className="space-y-2">
+                  {filteredTemplates.map(template => (
+                    <SegmentTemplateCard
+                      key={template.id}
+                      template={template}
+                      onAdd={onAdd}
+                      onDelete={onDelete}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="p-4 border-t border-zinc-800">
+          <div className="text-xs text-zinc-500">
+            Click "Add" to insert the template as a new segment in your rundown.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Individual Segment Template Card (Phase 7: Task 59)
+function SegmentTemplateCard({ template, onAdd, onDelete }) {
+  return (
+    <div className="p-3 bg-zinc-800/50 border border-zinc-700 rounded-lg hover:border-zinc-600 transition-colors">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="font-medium text-white truncate">{template.name}</span>
+            <span className={`px-1.5 py-0.5 text-xs rounded border ${TYPE_COLORS[template.segment?.type] || 'bg-zinc-700 text-zinc-400 border-zinc-600'}`}>
+              {template.segment?.type || 'unknown'}
+            </span>
+          </div>
+          {template.description && (
+            <div className="text-sm text-zinc-500 mb-2 line-clamp-1">
+              {template.description}
+            </div>
+          )}
+          <div className="flex items-center gap-3 text-xs text-zinc-500">
+            {template.segment?.duration && (
+              <span>{template.segment.duration}s</span>
+            )}
+            {template.segment?.scene && (
+              <>
+                <span className="text-zinc-700">•</span>
+                <span className="truncate">{template.segment.scene}</span>
+              </>
+            )}
+            {template.segment?.graphic?.graphicId && (
+              <>
+                <span className="text-zinc-700">•</span>
+                <span className="inline-flex items-center gap-1 text-pink-400">
+                  <PhotoIcon className="w-3 h-3" />
+                  {template.segment.graphic.graphicId}
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => onAdd(template)}
+            className="px-3 py-1.5 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-500 transition-colors"
+          >
+            Add
+          </button>
+          <button
+            onClick={() => onDelete(template.id)}
+            className="p-1.5 text-zinc-500 hover:text-red-400 rounded-lg hover:bg-zinc-700 transition-colors"
+            title="Delete template"
+          >
+            <TrashIcon className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     </div>
   );
