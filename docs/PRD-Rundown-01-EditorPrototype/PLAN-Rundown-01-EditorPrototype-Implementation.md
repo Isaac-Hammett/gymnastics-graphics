@@ -3,7 +3,7 @@
 **PRD:** PRD-Rundown-01-EditorPrototype
 **Status:** PROTOTYPE COMPLETE, FEATURES IN PROGRESS
 **Created:** 2026-01-22
-**Last Updated:** 2026-01-23 (v3.8 - Task 63 complete - Real-time sync with Firebase)
+**Last Updated:** 2026-01-23 (v3.9 - Task 64 complete - Presence indicators)
 
 ---
 
@@ -177,7 +177,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task | Status | Notes |
 |------|--------|-------|
 | Task 63: Real-time sync with Firebase | COMPLETE | Firebase onValue listener for segments/groups, syncSegmentsToFirebase/syncGroupsToFirebase helpers, loading and syncing indicators |
-| Task 64: Add presence indicators | NOT STARTED | Show who is viewing/editing |
+| Task 64: Add presence indicators | COMPLETE | Firebase presence tracking with onDisconnect cleanup, colored avatars showing all viewers, stale presence filtered (2min timeout), activity heartbeat every 30s |
 | Task 65: Implement cursor/selection sharing | NOT STARTED | See other users' selections |
 | Task 66: Add role-based permissions | NOT STARTED | Owner, Producer, Editor, Viewer |
 | Task 67: Implement change history log | NOT STARTED | Track all edits with timestamp |
