@@ -13,25 +13,48 @@ This implementation plan covers all phases of the Rundown Editor from the PRD. P
 
 ---
 
+## ⚠️ IMPORTANT: Task Execution Rules
+
+**ONE TASK = ONE ITERATION**
+
+Each row in the task tables below is ONE task. Complete exactly ONE task per iteration:
+
+1. Pick the first NOT STARTED or IN PROGRESS task
+2. Implement that ONE task
+3. Commit, deploy, verify
+4. STOP - the next iteration will handle the next task
+
+**Do NOT:**
+- Complete multiple tasks in one iteration
+- Batch "related" tasks together
+- Complete an entire phase in one iteration
+
+**Task Numbering:**
+- Tasks are numbered sequentially: Task 1, Task 2, ... Task 96
+- Each task number is unique and independent
+- Example: "Task 53" is ONE task, not a subtask
+
+---
+
 ## Phase Summary
 
 | Phase | Name | Status | Tasks |
 |-------|------|--------|-------|
-| 0A | Basic Page Structure | ✅ COMPLETE | 1.1-1.11 |
-| 0B | Graphics & Scene Integration | ✅ COMPLETE | 2.1-2.11 |
-| 0C | Templates (Basic) | ✅ COMPLETE | 3.1-3.5 |
-| 1 | Timing & Display | ✅ COMPLETE | 4.1-4.6 |
-| 2 | Inline Editing | ✅ COMPLETE | 5.1-5.4 |
-| 3 | Multi-Select & Summary | ✅ COMPLETE | 6.1-6.6 |
-| 4 | Reordering & Organization | ✅ COMPLETE | 7.1-7.5 |
-| 5 | Segment Management | 🔄 IN PROGRESS | 8.1-8.6 |
-| 6 | Timing Modes | 🔲 NOT STARTED | 9.1-9.3 |
-| 7 | Templates & Presets | 🔲 NOT STARTED | 10.1-10.5 |
-| 8 | Collaboration | 🔲 NOT STARTED | 11.1-11.7 |
-| 9 | Data & Reporting | 🔲 NOT STARTED | 12.1-12.5 |
-| 10 | Visual & UX | 🔲 NOT STARTED | 13.1-13.7 |
-| 11 | Quality of Life | 🔲 NOT STARTED | 14.1-14.5 |
-| 12 | Advanced Planning | 🔲 NOT STARTED | 15.1-15.10 |
+| 0A | Basic Page Structure | ✅ COMPLETE | 1-11 |
+| 0B | Graphics & Scene Integration | ✅ COMPLETE | 12-22 |
+| 0C | Templates (Basic) | ✅ COMPLETE | 23-27 |
+| 1 | Timing & Display | ✅ COMPLETE | 28-33 |
+| 2 | Inline Editing | ✅ COMPLETE | 34-37 |
+| 3 | Multi-Select & Summary | ✅ COMPLETE | 38-43 |
+| 4 | Reordering & Organization | ✅ COMPLETE | 44-48 |
+| 5 | Segment Management | ✅ COMPLETE | 49-54 |
+| 6 | Timing Modes | 🔲 NOT STARTED | 55-57 |
+| 7 | Templates & Presets | 🔲 NOT STARTED | 58-62 |
+| 8 | Collaboration | 🔲 NOT STARTED | 63-69 |
+| 9 | Data & Reporting | 🔲 NOT STARTED | 70-74 |
+| 10 | Visual & UX | 🔲 NOT STARTED | 75-81 |
+| 11 | Quality of Life | 🔲 NOT STARTED | 82-86 |
+| 12 | Advanced Planning | 🔲 NOT STARTED | 87-96 |
 
 ---
 
@@ -120,46 +143,46 @@ This implementation plan covers all phases of the Rundown Editor from the PRD. P
 | 7.4 Create segment grouping UI | COMPLETE | Named collapsible groups with color coding, create from selection |
 | 7.5 Show combined duration for groups | COMPLETE | Duration shown in group header, emphasized when collapsed |
 
-### Phase 5: Segment Management 🔄 IN PROGRESS
+### Phase 5: Segment Management ✅ COMPLETE
 
 | Task | Status | Notes |
 |------|--------|-------|
-| 8.1 Add duplicate segment button | COMPLETE | DocumentDuplicateIcon button on row, handleDuplicateSegment function |
-| 8.2 Implement segment locking | COMPLETE | Added `locked` field to segments, all edit/move/delete handlers check locked status |
-| 8.3 Add lock/unlock toggle UI | COMPLETE | LockClosedIcon/LockOpenIcon toggle button, visual indicator badge, muted styling when locked |
-| 8.4 Add conditional/optional toggle | COMPLETE | Added `optional` field, checkbox in Edit panel, "optional" badge on row, toggle to exclude from runtime |
-| 8.5 Add notes field to segment | NOT STARTED | Internal production notes |
-| 8.6 Show notes indicator on row | NOT STARTED | Icon when notes exist |
+| Task 49: Add duplicate segment button | COMPLETE | DocumentDuplicateIcon button on row, handleDuplicateSegment function |
+| Task 50: Implement segment locking | COMPLETE | Added `locked` field to segments, all edit/move/delete handlers check locked status |
+| Task 51: Add lock/unlock toggle UI | COMPLETE | LockClosedIcon/LockOpenIcon toggle button, visual indicator badge, muted styling when locked |
+| Task 52: Add conditional/optional toggle | COMPLETE | Added `optional` field, checkbox in Edit panel, "optional" badge on row, toggle to exclude from runtime |
+| Task 53: Add notes field to segment | COMPLETE | Notes textarea in Edit panel, character count, internal production notes |
+| Task 54: Show notes indicator on row | COMPLETE | ChatBubbleLeftIcon badge on segment row when notes exist, tooltip shows notes content
 
 ### Phase 6: Timing Modes 🔲 NOT STARTED
 
 | Task | Status | Notes |
 |------|--------|-------|
-| 9.1 Add timing mode selector | NOT STARTED | Fixed/Manual/Follows Previous |
-| 9.2 Show timing mode badge on row | NOT STARTED | Visual indicator |
-| 9.3 Surface auto-advance toggle inline | NOT STARTED | Quick toggle on segment row |
+| Task 55: Add timing mode selector | NOT STARTED | Fixed/Manual/Follows Previous |
+| Task 56: Show timing mode badge on row | NOT STARTED | Visual indicator |
+| Task 57: Surface auto-advance toggle inline | NOT STARTED | Quick toggle on segment row |
 
 ### Phase 7: Templates & Presets 🔲 NOT STARTED
 
 | Task | Status | Notes |
 |------|--------|-------|
-| 10.1 Save segment as template | NOT STARTED | Reusable segment configurations |
-| 10.2 Create segment template library | NOT STARTED | Accessible from Add Segment |
-| 10.3 Save full rundown as template | NOT STARTED | Entire show structure |
-| 10.4 Template management UI | NOT STARTED | Edit, delete, organize templates |
-| 10.5 Add recurrence pattern option | NOT STARTED | Repeat segment N times |
+| Task 58: Save segment as template | NOT STARTED | Reusable segment configurations |
+| Task 59: Create segment template library | NOT STARTED | Accessible from Add Segment |
+| Task 60: Save full rundown as template | NOT STARTED | Entire show structure |
+| Task 61: Template management UI | NOT STARTED | Edit, delete, organize templates |
+| Task 62: Add recurrence pattern option | NOT STARTED | Repeat segment N times |
 
 ### Phase 8: Collaboration 🔲 NOT STARTED
 
 | Task | Status | Notes |
 |------|--------|-------|
-| 11.1 Real-time sync with Firebase | NOT STARTED | Multiple users see same data |
-| 11.2 Add presence indicators | NOT STARTED | Show who is viewing/editing |
-| 11.3 Implement cursor/selection sharing | NOT STARTED | See other users' selections |
-| 11.4 Add role-based permissions | NOT STARTED | Owner, Producer, Editor, Viewer |
-| 11.5 Implement change history log | NOT STARTED | Track all edits with timestamp |
-| 11.6 Add version rollback | NOT STARTED | Restore previous state |
-| 11.7 Add approval workflow | NOT STARTED | Draft → In Review → Approved → Locked |
+| Task 63: Real-time sync with Firebase | NOT STARTED | Multiple users see same data |
+| Task 64: Add presence indicators | NOT STARTED | Show who is viewing/editing |
+| Task 65: Implement cursor/selection sharing | NOT STARTED | See other users' selections |
+| Task 66: Add role-based permissions | NOT STARTED | Owner, Producer, Editor, Viewer |
+| Task 67: Implement change history log | NOT STARTED | Track all edits with timestamp |
+| Task 68: Add version rollback | NOT STARTED | Restore previous state |
+| Task 69: Add approval workflow | NOT STARTED | Draft → In Review → Approved → Locked |
 
 ### Phase 9: Data & Reporting 🔲 NOT STARTED
 
@@ -167,33 +190,33 @@ This implementation plan covers all phases of the Rundown Editor from the PRD. P
 
 | Task | Status | Notes |
 |------|--------|-------|
-| 12.1 Export to PDF | NOT STARTED | Print-friendly layout |
-| 12.2 Export to CSV | NOT STARTED | Spreadsheet format |
-| 12.3 Export to JSON | NOT STARTED | Backup/API integration |
-| 12.4 Import from CSV | NOT STARTED | Field mapping UI, validation |
-| 12.5 Import from JSON | NOT STARTED | Backup restore, preview |
+| Task 70: Export to PDF | NOT STARTED | Print-friendly layout |
+| Task 71: Export to CSV | NOT STARTED | Spreadsheet format |
+| Task 72: Export to JSON | NOT STARTED | Backup/API integration |
+| Task 73: Import from CSV | NOT STARTED | Field mapping UI, validation |
+| Task 74: Import from JSON | NOT STARTED | Backup restore, preview |
 
 ### Phase 10: Visual & UX 🔲 NOT STARTED
 
 | Task | Status | Notes |
 |------|--------|-------|
-| 13.1 Create timeline view | NOT STARTED | Gantt-style horizontal bars |
-| 13.2 Toggle between list and timeline | NOT STARTED | View switcher in toolbar |
-| 13.3 Add color coding by type | NOT STARTED | Row backgrounds by segment type |
-| 13.4 Make colors customizable | NOT STARTED | User preference |
-| 13.5 Add compact view toggle | NOT STARTED | Single line per segment |
-| 13.6 Add dark/light mode toggle | NOT STARTED | Theme preference |
-| 13.7 Create print-friendly view | NOT STARTED | Clean layout for paper |
+| Task 75: Create timeline view | NOT STARTED | Gantt-style horizontal bars |
+| Task 76: Toggle between list and timeline | NOT STARTED | View switcher in toolbar |
+| Task 77: Add color coding by type | NOT STARTED | Row backgrounds by segment type |
+| Task 78: Make colors customizable | NOT STARTED | User preference |
+| Task 79: Add compact view toggle | NOT STARTED | Single line per segment |
+| Task 80: Add dark/light mode toggle | NOT STARTED | Theme preference |
+| Task 81: Create print-friendly view | NOT STARTED | Clean layout for paper |
 
 ### Phase 11: Quality of Life 🔲 NOT STARTED
 
 | Task | Status | Notes |
 |------|--------|-------|
-| 14.1 Implement keyboard navigation | NOT STARTED | Arrow keys to navigate segments |
-| 14.2 Add keyboard shortcuts | NOT STARTED | Ctrl+D duplicate, Ctrl+N new, etc. |
-| 14.3 Implement undo/redo | NOT STARTED | 20+ levels of history |
-| 14.4 Add search by segment name | NOT STARTED | Already exists, enhance |
-| 14.5 Add filter by scene/graphic | NOT STARTED | Additional filter options |
+| Task 82: Implement keyboard navigation | NOT STARTED | Arrow keys to navigate segments |
+| Task 83: Add keyboard shortcuts | NOT STARTED | Ctrl+D duplicate, Ctrl+N new, etc. |
+| Task 84: Implement undo/redo | NOT STARTED | 20+ levels of history |
+| Task 85: Add search by segment name | NOT STARTED | Already exists, enhance |
+| Task 86: Add filter by scene/graphic | NOT STARTED | Additional filter options |
 
 ### Phase 12: Advanced Planning 🔲 NOT STARTED
 
@@ -201,16 +224,16 @@ This implementation plan covers all phases of the Rundown Editor from the PRD. P
 
 | Task | Status | Notes |
 |------|--------|-------|
-| 15.1 AI context analysis | NOT STARTED | Analyze competition metadata, roster, dates |
-| 15.2 AI segment suggestions - context | NOT STARTED | Senior meet, rivalry, championship triggers |
-| 15.3 AI segment suggestions - roster | NOT STARTED | Seniors, All-Americans, milestones, injuries |
-| 15.4 AI segment order suggestions | NOT STARTED | Best practices for segment placement |
-| 15.5 AI suggestions panel UI | NOT STARTED | Non-intrusive display, one-click add, dismiss |
-| 15.6 Add segment script field | NOT STARTED | Rich text for pre-planning notes |
-| 15.7 Add audio cue planning fields | NOT STARTED | Song name, in/out timestamps |
-| 15.8 Add talent assignment | NOT STARTED | Who is on camera, schedule view |
-| 15.9 Add equipment tracking | NOT STARTED | Camera, mic per segment, conflicts |
-| 15.10 Add sponsor/ad tracking | NOT STARTED | Commercial obligations, fulfillment |
+| Task 87: AI context analysis | NOT STARTED | Analyze competition metadata, roster, dates |
+| Task 88: AI segment suggestions - context | NOT STARTED | Senior meet, rivalry, championship triggers |
+| Task 89: AI segment suggestions - roster | NOT STARTED | Seniors, All-Americans, milestones, injuries |
+| Task 90: AI segment order suggestions | NOT STARTED | Best practices for segment placement |
+| Task 91: AI suggestions panel UI | NOT STARTED | Non-intrusive display, one-click add, dismiss |
+| Task 92: Add segment script field | NOT STARTED | Rich text for pre-planning notes |
+| Task 93: Add audio cue planning fields | NOT STARTED | Song name, in/out timestamps |
+| Task 94: Add talent assignment | NOT STARTED | Who is on camera, schedule view |
+| Task 95: Add equipment tracking | NOT STARTED | Camera, mic per segment, conflicts |
+| Task 96: Add sponsor/ad tracking | NOT STARTED | Commercial obligations, fulfillment |
 
 ---
 

@@ -1,11 +1,22 @@
 # PRD-Rundown-01 Implementation Workflow
 
 ## RULES
-- Complete each phase FULLY before moving to the next
+
+⚠️ **MOST IMPORTANT RULE: Implement EXACTLY ONE TASK per iteration.**
+
+- ONE task = one iteration. After completing ONE task, commit, deploy, verify, then STOP.
+- The bash loop will restart you for the next task. Do NOT continue to additional tasks.
+- Complete each workflow phase (1-7) FULLY before moving to the next phase
 - Mark checkboxes [x] as you complete each step
 - DO NOT parallelize file reads - read sequentially, one at a time
 - After each phase, output the checkpoint summary before continuing
 - If verification fails, record bug and STOP (handle in next context window)
+
+**What counts as ONE task?**
+- A single row in the Implementation Plan (e.g., "Task 53: Add notes field to segment")
+- Each task has a unique whole number (Task 53, Task 54, etc.)
+- NOT a phase (a phase contains multiple tasks)
+- NOT multiple related tasks
 
 ---
 
@@ -44,37 +55,52 @@ Read these files ONE AT A TIME. After EACH file, output the answers before readi
 
 ---
 
-## Phase 2: Select Next Task
+## Phase 2: Select ONE Task
 
-- [ ] **2.1** From the Implementation Plan, identify the FIRST task that is:
+- [ ] **2.1** From the Implementation Plan, identify the FIRST SINGLE task that is:
   - Status = "IN PROGRESS", OR
   - Status = "NOT STARTED" (if none are IN PROGRESS)
 
+  **Select ONLY ONE task.** Example: "Task 53: Add notes field to segment" - not "Phase 5" or "Tasks 53 and 54".
+
 - [ ] **2.2** Output your selection:
   ```
-  ✓ 2.2 Task Selected
-  - Task ID: [fill in]
-  - Task name: [fill in]
-  - Reason: First incomplete task in priority order
+  ✓ 2.2 ONE Task Selected
+  - Task ID: [e.g., Task 53]
+  - Task name: [e.g., Add notes field to segment]
+  - This is ONE task, not multiple: [yes]
   - Files to modify: [fill in]
   ```
 
 ---
 
-## Phase 3: Implement
+## Phase 3: Implement ONE TASK ONLY
 
-- [ ] **3.1** Implement the selected task
-- [ ] **3.2** Update Implementation Plan:
+⚠️ **CRITICAL: You must implement EXACTLY ONE task, then STOP and proceed to Phase 4.**
+
+Do NOT:
+- Implement multiple tasks
+- Start the "next" task after finishing one
+- Batch related tasks together
+- Continue to other tasks in the same phase
+
+- [ ] **3.1** Implement ONLY the single task identified in step 2.2
+- [ ] **3.2** STOP coding. Do not implement any other tasks.
+- [ ] **3.3** Update Implementation Plan for THIS ONE TASK:
   - Mark task status (IN PROGRESS → COMPLETE)
-  - Add any notes about changes made
-  - Add any new bugs discovered
+  - Add notes about changes made
+  - Add any bugs discovered
 
   **Output:**
   ```
-  ✓ 3.2 Implementation Complete
+  ✓ 3.3 ONE Task Implementation Complete
+  - Task completed: [Task ID only]
   - Changes made: [brief summary]
   - Bugs found: [none / list]
+  - Next task: [will be handled in NEXT iteration]
   ```
+
+⚠️ **STOP HERE. Proceed to Phase 4 (Commit). Do NOT implement more tasks.**
 
 ---
 
