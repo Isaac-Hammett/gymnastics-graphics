@@ -67,7 +67,7 @@ The **Producer View** (separate page) uses this rundown as the "script" to contr
 | 2 | Inline Editing | ✅ COMPLETE | Edit fields directly on segment rows |
 | 3 | Multi-Select & Summary | ✅ COMPLETE | Bulk selection with summary sidebar |
 | 4 | Reordering & Organization | ✅ COMPLETE | Drag-drop, grouping, nesting |
-| 5 | Segment Management | 🔲 PLANNED | Duplicate, lock, conditional, notes |
+| 5 | Segment Management | ✅ COMPLETE | Duplicate, lock, conditional, notes |
 | 6 | Timing Modes | 🔲 PLANNED | Fixed/manual/follows-previous modes |
 | 7 | Templates & Presets | 🔲 PLANNED | Segment templates, recurrence |
 | 8 | Collaboration | 🔲 PLANNED | Multi-user, permissions, versioning |
@@ -1089,16 +1089,16 @@ const filteredSegments = segments.filter(seg => {
 - [x] Groups collapsible
 - [x] Groups show combined duration
 
-### Phase 5: Segment Management
+### Phase 5: Segment Management ✅ COMPLETE
 
-- [ ] Duplicate segment button available
-- [ ] Duplicated segments appear after original
-- [ ] Lock toggle on segments
-- [ ] Locked segments cannot be edited
-- [ ] Conditional/optional toggle available
-- [ ] Optional segments visually distinct
-- [ ] Notes field in Edit panel
-- [ ] Notes indicator on segment row
+- [x] Duplicate segment button available
+- [x] Duplicated segments appear after original
+- [x] Lock toggle on segments
+- [x] Locked segments cannot be edited
+- [x] Conditional/optional toggle available
+- [x] Optional segments visually distinct
+- [x] Notes field in Edit panel
+- [x] Notes indicator on segment row
 
 ### Phase 6: Timing Modes
 
