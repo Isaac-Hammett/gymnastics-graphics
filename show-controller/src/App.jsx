@@ -11,6 +11,7 @@ import SystemOfflinePage from './pages/SystemOfflinePage';
 import SetupGuidePage from './pages/SetupGuidePage';
 import OBSManager from './pages/OBSManager';
 import RundownEditorPage from './pages/RundownEditorPage';
+import GraphicsManagerPage from './pages/GraphicsManagerPage';
 
 // Competition-bound layout
 import CompetitionLayout from './components/CompetitionLayout';
@@ -39,6 +40,7 @@ function App() {
         <Route path="/controller" element={<ControllerPage />} />
         <Route path="/url-generator" element={<UrlGeneratorPage />} />
         <Route path="/media-manager" element={<MediaManagerPage />} />
+        <Route path="/graphics-manager" element={<GraphicsManagerPage />} />
         <Route path="/import" element={<ImportView />} />
 
         {/* Admin routes - use _admin prefix to avoid /:compId catching it */}

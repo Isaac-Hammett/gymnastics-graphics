@@ -16,8 +16,8 @@
 | CONTROL-MIGRATE | COMPLETE | Update GraphicsControl.jsx with dynamic team names |
 | URLGEN-INMEET | COMPLETE | Add In-Meet section to UrlGeneratorPage.jsx |
 | URLBUILD-REGISTRY | COMPLETE | Update urlBuilder.js to use registry |
-| MANAGER-ROUTE | NOT STARTED | Add /graphics-manager route to App.jsx |
-| MANAGER-PAGE | NOT STARTED | Create GraphicsManagerPage.jsx |
+| MANAGER-ROUTE | COMPLETE | Add /graphics-manager route to App.jsx |
+| MANAGER-PAGE | COMPLETE | Create GraphicsManagerPage.jsx |
 | DEPLOY | NOT STARTED | Build and deploy to production |
 | VERIFY | NOT STARTED | Verify all pickers show correct graphics |
 
@@ -144,32 +144,38 @@ Refactor to use registry schema for URL generation.
 
 #### Task MANAGER-ROUTE: Add route for Graphics Manager
 
-**Status:** NOT STARTED
+**Status:** COMPLETE
 **File:** `show-controller/src/App.jsx`
 
 **Description:**
 Add route for the Graphics Manager page.
 
-**Checklist:**
-- [ ] Import GraphicsManagerPage
-- [ ] Add route: `<Route path="/graphics-manager" element={<GraphicsManagerPage />} />`
+**What was done:**
+- [x] Import GraphicsManagerPage
+- [x] Add route: `<Route path="/graphics-manager" element={<GraphicsManagerPage />} />`
+- [x] Build passes with no errors
 
 ---
 
 #### Task MANAGER-PAGE: Create GraphicsManagerPage.jsx
 
-**Status:** NOT STARTED
+**Status:** COMPLETE
 **File:** `show-controller/src/pages/GraphicsManagerPage.jsx`
 
 **Description:**
 Create admin UI for viewing/configuring all graphics.
 
-**Features:**
-- [ ] List all graphics grouped by category
-- [ ] Show id, label, gender, renderer for each graphic
-- [ ] Filter by category, gender, renderer type
-- [ ] Search by id or label
-- [ ] Preview button to test graphic
+**What was done:**
+- [x] List all graphics grouped by category (7 categories)
+- [x] Show id, label, gender, renderer, file for each graphic in table view
+- [x] Filter by category, gender, renderer type
+- [x] Search by id, label, or keywords
+- [x] Preview button opens side panel with:
+  - Live preview iframe with test data
+  - Details (id, category, gender, renderer, file, transparent, keywords, params)
+  - Open Full Size button
+  - Link to URL Generator
+- [x] Build passes with no errors
 
 ---
 
