@@ -25,6 +25,7 @@ import {
   ChatBubbleLeftIcon,
   ArrowPathRoundedSquareIcon,
   UserIcon,
+  ShieldCheckIcon,
 } from '@heroicons/react/24/outline';
 import { getGraphicsForCompetition, getCategories, getRecommendedGraphic, getGraphicById, GRAPHICS } from '../lib/graphicsRegistry';
 import { db, ref, set, get, push, remove, update, onValue, onDisconnect } from '../lib/firebase';
@@ -61,6 +62,28 @@ const TIMING_MODES = [
   { value: 'manual', label: 'Manual', description: 'Segment waits for manual trigger to advance' },
   { value: 'follows-previous', label: 'Follows Previous', description: 'Segment starts immediately when previous ends (no gap)' },
 ];
+
+// User roles for collaboration (Phase 8: Task 66)
+// Higher index = higher privilege
+const USER_ROLES = [
+  { id: 'viewer', label: 'Viewer', description: 'View only, no edits', canEdit: false, canLock: false, canApprove: false },
+  { id: 'editor', label: 'Editor', description: 'Edit segments, cannot lock or approve', canEdit: true, canLock: false, canApprove: false },
+  { id: 'producer', label: 'Producer', description: 'Edit all segments, lock/unlock, approve', canEdit: true, canLock: true, canApprove: false },
+  { id: 'owner', label: 'Owner', description: 'Full access, manage permissions', canEdit: true, canLock: true, canApprove: true },
+];
+
+// Get role by ID
+function getRoleById(roleId) {
+  return USER_ROLES.find(r => r.id === roleId) || USER_ROLES[0]; // Default to viewer
+}
+
+// Role badge colors for presence indicators
+const ROLE_COLORS = {
+  owner: 'ring-amber-400',
+  producer: 'ring-purple-400',
+  editor: 'ring-blue-400',
+  viewer: 'ring-zinc-400',
+};
 
 // Hardcoded test data per PRD (updated with graphic field structure for Phase 0B, bufferAfter for Phase 1, locked/optional/notes for Phase 5, timingMode for Phase 6)
 const DUMMY_SEGMENTS = [
@@ -141,6 +164,8 @@ export default function RundownEditorPage() {
   const [isSyncing, setIsSyncing] = useState(false); // Indicates if currently syncing to Firebase (Phase 8: Task 63)
   const [presenceList, setPresenceList] = useState([]); // List of users currently viewing (Phase 8: Task 64)
   const [mySessionId] = useState(() => `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`); // Unique session ID (Phase 8: Task 64)
+  const [myRole, setMyRole] = useState('editor'); // Current user's role (Phase 8: Task 66) - default to editor for prototype
+  const [showRoleSelector, setShowRoleSelector] = useState(false); // Toggle role selector dropdown (Phase 8: Task 66)
 
   // Filtered segments
   const filteredSegments = useMemo(() => {
@@ -258,6 +283,24 @@ export default function RundownEditorPage() {
     setTimeout(() => setToast(''), 3000);
   }
 
+  // Permission check helpers (Phase 8: Task 66)
+  const currentRole = useMemo(() => getRoleById(myRole), [myRole]);
+  const canEdit = currentRole.canEdit;
+  const canLock = currentRole.canLock;
+
+  // Check if action is allowed based on role
+  function checkPermission(action, showWarning = true) {
+    if (action === 'edit' && !canEdit) {
+      if (showWarning) showToast('Permission denied: Viewers cannot edit');
+      return false;
+    }
+    if (action === 'lock' && !canLock) {
+      if (showWarning) showToast('Permission denied: Only producers and owners can lock/unlock');
+      return false;
+    }
+    return true;
+  }
+
   // Firebase real-time sync for rundown segments (Phase 8: Task 63)
   // This useEffect sets up a listener that syncs segments bidirectionally with Firebase
   useEffect(() => {
@@ -337,6 +380,8 @@ export default function RundownEditorPage() {
       // Selection state for cursor/selection sharing (Phase 8: Task 65)
       selectedSegmentId: null,
       selectedSegmentIds: [],
+      // Role for permission control (Phase 8: Task 66)
+      role: myRole,
     };
 
     // Write presence and set up auto-cleanup on disconnect
@@ -384,22 +429,23 @@ export default function RundownEditorPage() {
     };
   }, [compId, mySessionId]);
 
-  // Sync selection state to presence (Phase 8: Task 65)
-  // This useEffect updates the current user's presence with their selection
+  // Sync selection state and role to presence (Phase 8: Task 65 & 66)
+  // This useEffect updates the current user's presence with their selection and role
   useEffect(() => {
     if (!compId) return;
 
     const presenceRef = ref(db, `competitions/${compId}/rundown/presence/${mySessionId}`);
 
-    // Update selection in presence data
+    // Update selection and role in presence data
     update(presenceRef, {
       selectedSegmentId: selectedSegmentId || null,
       selectedSegmentIds: selectedSegmentIds || [],
+      role: myRole,
       lastActivity: Date.now(),
     }).catch(() => {
       // Ignore errors - presence update is not critical
     });
-  }, [compId, mySessionId, selectedSegmentId, selectedSegmentIds]);
+  }, [compId, mySessionId, selectedSegmentId, selectedSegmentIds, myRole]);
 
   // Helper function to sync segments to Firebase (Phase 8: Task 63)
   // This is called by all segment-modifying handlers
@@ -431,10 +477,14 @@ export default function RundownEditorPage() {
       if (showAddSegmentMenu && !event.target.closest('.add-segment-dropdown')) {
         setShowAddSegmentMenu(false);
       }
+      // Close role selector when clicking outside (Phase 8: Task 66)
+      if (showRoleSelector && !event.target.closest('.role-selector-dropdown')) {
+        setShowRoleSelector(false);
+      }
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showAddSegmentMenu]);
+  }, [showAddSegmentMenu, showRoleSelector]);
 
   // Event handlers per PRD
   function handleSelectSegment(id) {
@@ -496,9 +546,10 @@ export default function RundownEditorPage() {
   }
 
   // Bulk delete selected segments (Task 6.6)
-  // Respects locked segments (Phase 5: Task 8.2)
+  // Respects locked segments (Phase 5: Task 8.2) and role permissions (Phase 8: Task 66)
   function handleBulkDelete() {
     if (selectedSegmentIds.length === 0) return;
+    if (!checkPermission('edit')) return;
 
     // Check for locked segments
     const lockedCount = selectedSegmentIds.filter(id =>
@@ -527,8 +578,9 @@ export default function RundownEditorPage() {
   }
 
   // Bulk edit type for selected segments (Task 6.6)
-  // Respects locked segments (Phase 5: Task 8.2)
+  // Respects locked segments (Phase 5: Task 8.2) and role permissions (Phase 8: Task 66)
   function handleBulkEditType(newType) {
+    if (!checkPermission('edit')) return;
     let updatedCount = 0;
     const newSegments = segments.map(seg => {
       if (!selectedSegmentIds.includes(seg.id)) return seg;
@@ -542,8 +594,9 @@ export default function RundownEditorPage() {
   }
 
   // Bulk edit scene for selected segments (Task 6.6)
-  // Respects locked segments (Phase 5: Task 8.2)
+  // Respects locked segments (Phase 5: Task 8.2) and role permissions (Phase 8: Task 66)
   function handleBulkEditScene(newScene) {
+    if (!checkPermission('edit')) return;
     let updatedCount = 0;
     const newSegments = segments.map(seg => {
       if (!selectedSegmentIds.includes(seg.id)) return seg;
@@ -557,8 +610,9 @@ export default function RundownEditorPage() {
   }
 
   // Bulk edit graphic for selected segments (Task 6.6)
-  // Respects locked segments (Phase 5: Task 8.2)
+  // Respects locked segments (Phase 5: Task 8.2) and role permissions (Phase 8: Task 66)
   function handleBulkEditGraphic(graphicId) {
+    if (!checkPermission('edit')) return;
     let updatedCount = 0;
     const newSegments = segments.map(seg => {
       if (!selectedSegmentIds.includes(seg.id)) return seg;
@@ -575,8 +629,9 @@ export default function RundownEditorPage() {
   }
 
   // Update duration for a segment in multi-select (Task 6.5)
-  // Respects locked segments (Phase 5: Task 8.2)
+  // Respects locked segments (Phase 5: Task 8.2) and role permissions (Phase 8: Task 66)
   function handleMultiSelectDurationChange(segmentId, duration) {
+    if (!checkPermission('edit')) return;
     const segment = segments.find(s => s.id === segmentId);
     if (segment?.locked) {
       showToast('Cannot edit locked segment');
@@ -589,6 +644,8 @@ export default function RundownEditorPage() {
   }
 
   function handleReorder(fromIndex, toIndex) {
+    // Check role permissions (Phase 8: Task 66)
+    if (!checkPermission('edit')) return;
     // Check if the segment being moved is locked (Phase 5: Task 8.2)
     const segmentToMove = segments[fromIndex];
     if (segmentToMove?.locked) {
@@ -602,6 +659,8 @@ export default function RundownEditorPage() {
   }
 
   function handleAddSegment() {
+    // Check role permissions (Phase 8: Task 66)
+    if (!checkPermission('edit')) return;
     // Use timestamp for unique ID to avoid collisions with multiple users
     const newId = `seg-${Date.now()}`;
     const newSegment = {
@@ -635,6 +694,8 @@ export default function RundownEditorPage() {
   }
 
   function handleSaveSegment(updatedSegment) {
+    // Check role permissions (Phase 8: Task 66)
+    if (!checkPermission('edit')) return;
     const newSegments = segments.map(seg =>
       seg.id === updatedSegment.id ? updatedSegment : seg
     );
@@ -643,6 +704,8 @@ export default function RundownEditorPage() {
   }
 
   function handleDeleteSegment(id) {
+    // Check role permissions (Phase 8: Task 66)
+    if (!checkPermission('edit')) return;
     const segment = segments.find(s => s.id === id);
     if (segment?.locked) {
       showToast('Cannot delete locked segment');
@@ -660,6 +723,8 @@ export default function RundownEditorPage() {
 
   // Duplicate segment (Phase 5: Task 8.1)
   function handleDuplicateSegment(id) {
+    // Check role permissions (Phase 8: Task 66)
+    if (!checkPermission('edit')) return;
     const segmentToDuplicate = segments.find(seg => seg.id === id);
     if (!segmentToDuplicate) return;
 
@@ -701,7 +766,9 @@ export default function RundownEditorPage() {
   }
 
   // Toggle segment lock status (Phase 5: Task 8.2, 8.3)
+  // Only producers and owners can lock/unlock (Phase 8: Task 66)
   function handleToggleLock(id) {
+    if (!checkPermission('lock')) return;
     const segment = segments.find(s => s.id === id);
     const newSegments = segments.map(seg =>
       seg.id === id ? { ...seg, locked: !seg.locked } : seg
@@ -711,8 +778,9 @@ export default function RundownEditorPage() {
   }
 
   // Inline update handlers for segment fields (Phase 2: Inline Editing)
-  // These handlers check for locked status (Phase 5: Task 8.2)
+  // These handlers check for locked status (Phase 5: Task 8.2) and role permissions (Phase 8: Task 66)
   function handleInlineSceneChange(segmentId, scene) {
+    if (!checkPermission('edit')) return;
     const segment = segments.find(s => s.id === segmentId);
     if (segment?.locked) {
       showToast('Cannot edit locked segment');
@@ -725,6 +793,7 @@ export default function RundownEditorPage() {
   }
 
   function handleInlineGraphicChange(segmentId, graphicId) {
+    if (!checkPermission('edit')) return;
     const segment = segments.find(s => s.id === segmentId);
     if (segment?.locked) {
       showToast('Cannot edit locked segment');
@@ -745,6 +814,7 @@ export default function RundownEditorPage() {
   }
 
   function handleInlineDurationChange(segmentId, duration) {
+    if (!checkPermission('edit')) return;
     const segment = segments.find(s => s.id === segmentId);
     if (segment?.locked) {
       showToast('Cannot edit locked segment');
@@ -758,6 +828,7 @@ export default function RundownEditorPage() {
 
   // Inline toggle for auto-advance (Phase 6: Task 57)
   function handleInlineAutoAdvanceChange(segmentId) {
+    if (!checkPermission('edit')) return;
     const segment = segments.find(s => s.id === segmentId);
     if (segment?.locked) {
       showToast('Cannot edit locked segment');
@@ -1221,6 +1292,7 @@ export default function RundownEditorPage() {
 
   // Create a new group from selected segments
   function handleCreateGroup(groupName, colorId) {
+    if (!checkPermission('edit')) return;
     if (selectedSegmentIds.length < 1) return;
 
     const newGroupId = `group-${Date.now()}`;
@@ -1257,6 +1329,7 @@ export default function RundownEditorPage() {
 
   // Remove a group (ungroups the segments, doesn't delete them)
   function handleUngroupSegments(groupId) {
+    if (!checkPermission('edit')) return;
     const newSegments = segments.map(seg =>
       seg.groupId === groupId ? { ...seg, groupId: null } : seg
     );
@@ -1268,6 +1341,7 @@ export default function RundownEditorPage() {
 
   // Rename a group
   function handleRenameGroup(groupId, newName) {
+    if (!checkPermission('edit')) return;
     const newGroups = groups.map(g =>
       g.id === groupId ? { ...g, name: newName } : g
     );
@@ -1422,21 +1496,25 @@ export default function RundownEditorPage() {
                 {isSyncing && (
                   <ArrowPathIcon className="w-4 h-4 text-blue-400 animate-spin" title="Syncing..." />
                 )}
-                {/* Presence indicators (Phase 8: Task 64) */}
+                {/* Presence indicators with roles (Phase 8: Task 64 & 66) */}
                 {presenceList.length > 0 && (
                   <div className="flex items-center gap-1 ml-2">
                     <div className="flex -space-x-2">
-                      {presenceList.slice(0, 5).map((user) => (
-                        <div
-                          key={user.sessionId}
-                          className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-medium text-white border-2 border-zinc-900 ${user.color} ${
-                            user.sessionId === mySessionId ? 'ring-2 ring-white/30' : ''
-                          }`}
-                          title={user.sessionId === mySessionId ? `${user.displayName} (you)` : user.displayName}
-                        >
-                          {user.displayName.slice(-2)}
-                        </div>
-                      ))}
+                      {presenceList.slice(0, 5).map((user) => {
+                        const userRole = getRoleById(user.role || 'viewer');
+                        const roleColor = ROLE_COLORS[user.role] || ROLE_COLORS.viewer;
+                        return (
+                          <div
+                            key={user.sessionId}
+                            className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-medium text-white border-2 border-zinc-900 ${user.color} ${
+                              user.sessionId === mySessionId ? `ring-2 ${roleColor}` : ''
+                            }`}
+                            title={`${user.displayName}${user.sessionId === mySessionId ? ' (you)' : ''} - ${userRole.label}`}
+                          >
+                            {user.displayName.slice(-2)}
+                          </div>
+                        );
+                      })}
                       {presenceList.length > 5 && (
                         <div
                           className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-medium text-zinc-300 bg-zinc-700 border-2 border-zinc-900"
@@ -1451,6 +1529,54 @@ export default function RundownEditorPage() {
                     </span>
                   </div>
                 )}
+                {/* Role Selector (Phase 8: Task 66) */}
+                <div className="relative ml-2 role-selector-dropdown">
+                  <button
+                    onClick={() => setShowRoleSelector(!showRoleSelector)}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-full border transition-colors ${
+                      myRole === 'owner' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' :
+                      myRole === 'producer' ? 'bg-purple-500/20 text-purple-300 border-purple-500/40' :
+                      myRole === 'editor' ? 'bg-blue-500/20 text-blue-300 border-blue-500/40' :
+                      'bg-zinc-700/50 text-zinc-400 border-zinc-600'
+                    }`}
+                    title={`Your role: ${currentRole.label} - ${currentRole.description}`}
+                  >
+                    <UserIcon className="w-3 h-3" />
+                    <span>{currentRole.label}</span>
+                    <ChevronDownIcon className="w-3 h-3" />
+                  </button>
+                  {showRoleSelector && (
+                    <div className="absolute top-full left-0 mt-1 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl z-50 min-w-[180px]">
+                      <div className="p-1">
+                        {USER_ROLES.map(role => (
+                          <button
+                            key={role.id}
+                            onClick={() => {
+                              setMyRole(role.id);
+                              setShowRoleSelector(false);
+                            }}
+                            className={`w-full text-left px-3 py-2 rounded text-sm flex items-center justify-between hover:bg-zinc-700 transition-colors ${
+                              myRole === role.id ? 'bg-zinc-700' : ''
+                            }`}
+                          >
+                            <div>
+                              <div className={`font-medium ${
+                                role.id === 'owner' ? 'text-amber-300' :
+                                role.id === 'producer' ? 'text-purple-300' :
+                                role.id === 'editor' ? 'text-blue-300' :
+                                'text-zinc-400'
+                              }`}>{role.label}</div>
+                              <div className="text-xs text-zinc-500">{role.description}</div>
+                            </div>
+                            {myRole === role.id && (
+                              <CheckIcon className="w-4 h-4 text-green-400" />
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
               <p className="text-sm text-zinc-500">{compId} - {DUMMY_COMPETITION.name}</p>
             </div>

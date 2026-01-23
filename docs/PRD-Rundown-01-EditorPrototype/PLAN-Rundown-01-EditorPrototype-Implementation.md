@@ -3,7 +3,7 @@
 **PRD:** PRD-Rundown-01-EditorPrototype
 **Status:** PROTOTYPE COMPLETE, FEATURES IN PROGRESS
 **Created:** 2026-01-22
-**Last Updated:** 2026-01-23 (v4.0 - Task 65 complete - Cursor/selection sharing)
+**Last Updated:** 2026-01-23 (v4.1 - Task 66 complete - Role-based permissions)
 
 ---
 
@@ -179,7 +179,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 63: Real-time sync with Firebase | COMPLETE | Firebase onValue listener for segments/groups, syncSegmentsToFirebase/syncGroupsToFirebase helpers, loading and syncing indicators |
 | Task 64: Add presence indicators | COMPLETE | Firebase presence tracking with onDisconnect cleanup, colored avatars showing all viewers, stale presence filtered (2min timeout), activity heartbeat every 30s |
 | Task 65: Implement cursor/selection sharing | COMPLETE | Presence data extended with selectedSegmentId/selectedSegmentIds, synced via useEffect on selection change, otherUsersSelections useMemo computes per-segment user list, SegmentRow shows colored avatar indicators + left border highlight for segments selected by others |
-| Task 66: Add role-based permissions | NOT STARTED | Owner, Producer, Editor, Viewer |
+| Task 66: Add role-based permissions | COMPLETE | USER_ROLES constant with canEdit/canLock/canApprove permissions, role selector dropdown in header, checkPermission() helper for all edit handlers, role synced to presence for display, viewers blocked from all edit operations |
 | Task 67: Implement change history log | NOT STARTED | Track all edits with timestamp |
 | Task 68: Add version rollback | NOT STARTED | Restore previous state |
 | Task 69: Add approval workflow | NOT STARTED | Draft → In Review → Approved → Locked |
