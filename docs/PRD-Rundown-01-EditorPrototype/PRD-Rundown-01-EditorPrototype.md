@@ -2,7 +2,7 @@
 
 **Version:** 2.0
 **Date:** 2026-01-22
-**Status:** IN PROGRESS
+**Status:** COMPLETE
 **Depends On:** PRD-Graphics-Registry
 **Blocks:** PRD-Rundown-02, PRD-Rundown-03, PRD-Rundown-04
 
@@ -43,7 +43,7 @@ The **Producer View** (separate page) uses this rundown as the "script" to contr
 - Toolbar with action buttons (placeholders)
 - Basic segment CRUD with hardcoded data
 
-### Phase 0B: Graphics & Scene Integration (CURRENT)
+### Phase 0B: Graphics & Scene Integration (COMPLETE)
 - Graphics picker using schema-driven registry
 - OBS scene picker (hardcoded scenes for prototype)
 - Smart recommendations based on segment names
@@ -441,18 +441,18 @@ const filteredSegments = segments.filter(seg => {
 - [x] "Coming soon" toast shown for unimplemented features
 - [x] Page uses hardcoded DUMMY_SEGMENTS data
 
-### Phase 0B (Current)
-- [ ] Segment detail shows Scene picker dropdown
-- [ ] Scene picker shows hardcoded scenes grouped by category
-- [ ] Segment detail shows Graphic picker dropdown
-- [ ] Graphic picker reads from `graphicsRegistry.js`
-- [ ] Graphics filtered by competition type (women's quad)
-- [ ] Team-specific graphics show actual team names (UCLA, Oregon, etc.)
-- [ ] Smart recommendation shown when segment name matches keywords
-- [ ] Clicking "Use" on recommendation selects that graphic
-- [ ] Parameter inputs shown for graphics that have user-editable params
-- [ ] Segments save with `graphic: { graphicId, params }` structure
-- [ ] Segment list shows graphic indicator (icon or badge) when graphic assigned
+### Phase 0B (COMPLETE)
+- [x] Segment detail shows Scene picker dropdown
+- [x] Scene picker shows hardcoded scenes grouped by category
+- [x] Segment detail shows Graphic picker dropdown
+- [x] Graphic picker reads from `graphicsRegistry.js`
+- [x] Graphics filtered by competition type (women's quad)
+- [x] Team-specific graphics show actual team names (UCLA, Oregon, etc.)
+- [x] Smart recommendation shown when segment name matches keywords
+- [x] Clicking "Use" on recommendation selects that graphic
+- [x] Parameter inputs shown for graphics that have user-editable params
+- [x] Segments save with `graphic: { graphicId, params }` structure
+- [x] Segment list shows graphic indicator (icon or badge) when graphic assigned
 
 ---
 
