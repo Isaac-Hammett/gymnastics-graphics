@@ -10,6 +10,7 @@ import {
   ChevronUpIcon,
   ChevronDownIcon,
 } from '@heroicons/react/24/outline';
+import { getGraphicsForCompetition, getCategories } from '../lib/graphicsRegistry';
 
 // Hardcoded competition context per PRD (Phase 0B)
 const DUMMY_COMPETITION = {
@@ -411,6 +412,17 @@ const SCENE_CATEGORY_LABELS = {
   multi: 'Multi-Camera',
 };
 
+// Graphics category labels for display
+const GRAPHICS_CATEGORY_LABELS = {
+  'pre-meet': 'Pre-Meet',
+  'in-meet': 'In-Meet',
+  'event-frames': 'Event Frames',
+  'frame-overlays': 'Frame Overlays',
+  'leaderboards': 'Leaderboards',
+  'event-summary': 'Event Summary',
+  'stream': 'Stream',
+};
+
 // Group scenes by category
 function getGroupedScenes() {
   const groups = {};
@@ -423,15 +435,57 @@ function getGroupedScenes() {
   return groups;
 }
 
+// Get team names from DUMMY_COMPETITION for graphics filtering
+function getTeamNames() {
+  const teamNames = {};
+  Object.entries(DUMMY_COMPETITION.teams).forEach(([num, team]) => {
+    teamNames[num] = team.name;
+  });
+  return teamNames;
+}
+
+// Get graphics grouped by category for the dropdown
+function getGroupedGraphics() {
+  const compType = DUMMY_COMPETITION.type;
+  const teamNames = getTeamNames();
+  const graphics = getGraphicsForCompetition(compType, teamNames);
+
+  const groups = {};
+  graphics.forEach(graphic => {
+    if (!groups[graphic.category]) {
+      groups[graphic.category] = [];
+    }
+    groups[graphic.category].push(graphic);
+  });
+  return groups;
+}
+
 // Placeholder SegmentDetail panel component
 function SegmentDetailPanel({ segment, onSave, onDelete, onCancel }) {
   const [formData, setFormData] = useState(segment);
   const groupedScenes = getGroupedScenes();
+  const groupedGraphics = getGroupedGraphics();
 
   // Reset form when segment changes
   useState(() => {
     setFormData(segment);
   }, [segment]);
+
+  // Handle graphic selection change
+  function handleGraphicChange(graphicId) {
+    if (!graphicId) {
+      setFormData({ ...formData, graphic: null });
+    } else {
+      // Preserve existing params if same graphic, otherwise reset
+      const existingParams = formData.graphic?.graphicId === graphicId
+        ? formData.graphic.params
+        : {};
+      setFormData({
+        ...formData,
+        graphic: { graphicId, params: existingParams }
+      });
+    }
+  }
 
   function handleSubmit(e) {
     e.preventDefault();
@@ -506,6 +560,32 @@ function SegmentDetailPanel({ segment, onSave, onDelete, onCancel }) {
               </optgroup>
             ))}
           </select>
+        </div>
+
+        {/* Graphic Picker - grouped by category */}
+        <div className="border border-zinc-700 rounded-lg p-3 bg-zinc-800/50">
+          <label className="block text-xs text-zinc-400 mb-2 uppercase tracking-wide">Graphic</label>
+          <select
+            value={formData.graphic?.graphicId || ''}
+            onChange={(e) => handleGraphicChange(e.target.value)}
+            className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+          >
+            <option value="">(None)</option>
+            {Object.entries(groupedGraphics).map(([category, graphics]) => (
+              <optgroup key={category} label={GRAPHICS_CATEGORY_LABELS[category] || category}>
+                {graphics.map(graphic => (
+                  <option key={graphic.id} value={graphic.id}>
+                    {graphic.label}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+          {formData.graphic?.graphicId && (
+            <div className="mt-2 text-xs text-zinc-500">
+              Selected: {formData.graphic.graphicId}
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-2">
