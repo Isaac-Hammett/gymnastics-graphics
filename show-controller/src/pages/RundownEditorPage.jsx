@@ -28,6 +28,7 @@ import {
   ShieldCheckIcon,
   DocumentTextIcon,
   PrinterIcon,
+  TableCellsIcon,
 } from '@heroicons/react/24/outline';
 import { getGraphicsForCompetition, getCategories, getRecommendedGraphic, getGraphicById, GRAPHICS } from '../lib/graphicsRegistry';
 import { db, ref, set, get, push, remove, update, onValue, onDisconnect } from '../lib/firebase';
@@ -1283,8 +1284,86 @@ export default function RundownEditorPage() {
     showToast('Rundown saved');
   }
 
+  // Export rundown to CSV (Phase 9: Task 71)
   function handleExportCSV() {
-    showToast('Coming soon');
+    // CSV headers
+    const headers = [
+      '#',
+      'Start Time',
+      'Name',
+      'Type',
+      'Duration (s)',
+      'Duration',
+      'OBS Scene',
+      'Graphic',
+      'Auto-Advance',
+      'Timing Mode',
+      'Optional',
+      'Locked',
+      'Buffer After (s)',
+      'Notes'
+    ];
+
+    // Build CSV rows
+    const rows = segments.map((seg, index) => {
+      const startTime = formatDuration(segmentStartTimes[seg.id] || 0);
+      const duration = seg.duration ? formatDuration(seg.duration) : 'MANUAL';
+      const durationSeconds = seg.duration || 0;
+      const graphicId = seg.graphic?.graphicId || '';
+      const timingMode = seg.timingMode || 'fixed';
+
+      return [
+        String(index + 1).padStart(2, '0'),
+        startTime,
+        seg.name,
+        seg.type,
+        durationSeconds,
+        duration,
+        seg.scene || '',
+        graphicId,
+        seg.autoAdvance ? 'Yes' : 'No',
+        timingMode,
+        seg.optional ? 'Yes' : 'No',
+        seg.locked ? 'Yes' : 'No',
+        seg.bufferAfter || 0,
+        seg.notes || ''
+      ];
+    });
+
+    // Escape CSV field values (handle commas, quotes, newlines)
+    const escapeCSV = (value) => {
+      const str = String(value);
+      if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
+    // Build CSV content
+    const csvContent = [
+      headers.map(escapeCSV).join(','),
+      ...rows.map(row => row.map(escapeCSV).join(','))
+    ].join('\n');
+
+    // Create download link
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+
+    // Generate filename with competition name and date
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
+    const sanitizedName = DUMMY_COMPETITION.name.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+    link.download = `rundown-${sanitizedName}-${dateStr}.csv`;
+
+    // Trigger download
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    showToast('CSV exported');
   }
 
   // Export rundown to PDF using browser print dialog (Phase 9: Task 70)
@@ -2590,8 +2669,9 @@ export default function RundownEditorPage() {
             </button>
             <button
               onClick={handleExportCSV}
-              className="px-4 py-2 bg-zinc-800 border border-zinc-700 text-zinc-300 text-sm rounded-lg hover:bg-zinc-700 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-zinc-800 border border-zinc-700 text-zinc-300 text-sm rounded-lg hover:bg-zinc-700 transition-colors"
             >
+              <TableCellsIcon className="w-4 h-4" />
               Export CSV
             </button>
           </div>
