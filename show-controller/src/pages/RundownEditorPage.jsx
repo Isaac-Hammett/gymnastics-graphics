@@ -27,6 +27,7 @@ import {
   UserIcon,
   ShieldCheckIcon,
   DocumentTextIcon,
+  PrinterIcon,
 } from '@heroicons/react/24/outline';
 import { getGraphicsForCompetition, getCategories, getRecommendedGraphic, getGraphicById, GRAPHICS } from '../lib/graphicsRegistry';
 import { db, ref, set, get, push, remove, update, onValue, onDisconnect } from '../lib/firebase';
@@ -1286,6 +1287,279 @@ export default function RundownEditorPage() {
     showToast('Coming soon');
   }
 
+  // Export rundown to PDF using browser print dialog (Phase 9: Task 70)
+  function handleExportPDF() {
+    // Generate print-friendly HTML
+    const printContent = generatePrintableRundown();
+
+    // Open a new window for printing
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    if (!printWindow) {
+      showToast('Please allow popups to export PDF');
+      return;
+    }
+
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+
+    // Wait for content to load then trigger print
+    printWindow.onload = function() {
+      printWindow.focus();
+      printWindow.print();
+    };
+  }
+
+  // Generate print-friendly HTML for PDF export (Phase 9: Task 70)
+  function generatePrintableRundown() {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    const timeStr = now.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    // Build rows for each segment (optionally within groups)
+    let segmentRows = '';
+    let segmentNumber = 1;
+
+    // Simple flat list (groups support can be added later)
+    segments.forEach((seg) => {
+      const startTime = formatDuration(segmentStartTimes[seg.id] || 0);
+      const duration = seg.duration ? formatDuration(seg.duration) : 'MANUAL';
+      const typeBadge = seg.type.toUpperCase();
+      const optionalClass = seg.optional ? 'optional' : '';
+      const lockedClass = seg.locked ? 'locked' : '';
+      const notes = seg.notes ? `<div class="notes">${seg.notes}</div>` : '';
+      const graphicInfo = seg.graphic?.graphicId ? `<span class="graphic">${seg.graphic.graphicId}</span>` : '';
+      const sceneInfo = seg.scene ? `<span class="scene">${seg.scene}</span>` : '';
+
+      segmentRows += `
+        <tr class="${optionalClass} ${lockedClass}">
+          <td class="num">${String(segmentNumber).padStart(2, '0')}</td>
+          <td class="start">${startTime}</td>
+          <td class="name">
+            ${seg.name}
+            ${seg.optional ? '<span class="optional-badge">OPTIONAL</span>' : ''}
+            ${seg.locked ? '<span class="locked-badge">LOCKED</span>' : ''}
+            ${notes}
+          </td>
+          <td class="type"><span class="type-badge type-${seg.type}">${typeBadge}</span></td>
+          <td class="duration">${duration}</td>
+          <td class="scene">${sceneInfo}</td>
+          <td class="graphic">${graphicInfo}</td>
+        </tr>
+      `;
+      segmentNumber++;
+    });
+
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Rundown - ${DUMMY_COMPETITION.name}</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 11px;
+      line-height: 1.4;
+      color: #1a1a1a;
+      padding: 20px;
+    }
+    .header {
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid #333;
+    }
+    .header h1 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+    .header .competition {
+      font-size: 18px;
+      color: #555;
+      margin-bottom: 10px;
+    }
+    .header .meta {
+      display: flex;
+      gap: 30px;
+      font-size: 12px;
+      color: #666;
+    }
+    .header .meta span {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .header .meta strong {
+      color: #333;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+    th, td {
+      padding: 8px 10px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+    th {
+      background: #f5f5f5;
+      font-weight: 600;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #555;
+      border-bottom: 2px solid #ccc;
+    }
+    .num {
+      width: 40px;
+      text-align: center;
+      font-weight: 600;
+      color: #888;
+    }
+    .start {
+      width: 70px;
+      font-family: monospace;
+      font-size: 11px;
+    }
+    .name {
+      min-width: 200px;
+      font-weight: 500;
+    }
+    .type {
+      width: 80px;
+    }
+    .duration {
+      width: 70px;
+      font-family: monospace;
+      font-size: 11px;
+      text-align: center;
+    }
+    .scene {
+      width: 120px;
+      font-size: 10px;
+      color: #666;
+    }
+    .graphic {
+      width: 100px;
+      font-size: 10px;
+      color: #666;
+    }
+    .type-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 9px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .type-video { background: #e9d5ff; color: #7c3aed; }
+    .type-live { background: #d1fae5; color: #059669; }
+    .type-static { background: #dbeafe; color: #2563eb; }
+    .type-break { background: #fef3c7; color: #d97706; }
+    .type-hold { background: #fed7aa; color: #ea580c; }
+    .type-graphic { background: #fce7f3; color: #db2777; }
+    .optional-badge {
+      display: inline-block;
+      margin-left: 8px;
+      padding: 1px 4px;
+      font-size: 8px;
+      font-weight: 600;
+      background: #fef3c7;
+      color: #92400e;
+      border-radius: 2px;
+    }
+    .locked-badge {
+      display: inline-block;
+      margin-left: 8px;
+      padding: 1px 4px;
+      font-size: 8px;
+      font-weight: 600;
+      background: #fee2e2;
+      color: #991b1b;
+      border-radius: 2px;
+    }
+    tr.optional {
+      background: #fffbeb;
+    }
+    tr.locked td {
+      color: #888;
+    }
+    .notes {
+      margin-top: 4px;
+      font-size: 10px;
+      font-style: italic;
+      color: #666;
+      padding-left: 10px;
+      border-left: 2px solid #ddd;
+    }
+    .footer {
+      margin-top: 30px;
+      padding-top: 15px;
+      border-top: 1px solid #ddd;
+      font-size: 10px;
+      color: #888;
+      display: flex;
+      justify-content: space-between;
+    }
+    @media print {
+      body { padding: 0; }
+      .header { page-break-after: avoid; }
+      tr { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>RUNDOWN</h1>
+    <div class="competition">${DUMMY_COMPETITION.name}</div>
+    <div class="meta">
+      <span><strong>Total Runtime:</strong> ${formatDuration(totalRuntime)}</span>
+      ${targetDuration ? `<span><strong>Target:</strong> ${formatDuration(targetDuration)}</span>` : ''}
+      <span><strong>Segments:</strong> ${segments.length}</span>
+      ${optionalSegmentsInfo.count > 0 ? `<span><strong>Optional:</strong> ${optionalSegmentsInfo.count} (${formatDuration(optionalSegmentsInfo.duration)})</span>` : ''}
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th class="num">#</th>
+        <th class="start">Start</th>
+        <th class="name">Segment</th>
+        <th class="type">Type</th>
+        <th class="duration">Duration</th>
+        <th class="scene">Scene</th>
+        <th class="graphic">Graphic</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${segmentRows}
+    </tbody>
+  </table>
+
+  <div class="footer">
+    <span>Generated: ${dateStr} at ${timeStr}</span>
+    <span>commentarygraphic.com</span>
+  </div>
+</body>
+</html>
+    `;
+  }
+
   async function handleTemplates() {
     setShowTemplateLibrary(true);
     setLoadingTemplates(true);
@@ -2306,6 +2580,13 @@ export default function RundownEditorPage() {
               className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition-colors"
             >
               Save
+            </button>
+            <button
+              onClick={handleExportPDF}
+              className="flex items-center gap-2 px-4 py-2 bg-zinc-800 border border-zinc-700 text-zinc-300 text-sm rounded-lg hover:bg-zinc-700 transition-colors"
+            >
+              <PrinterIcon className="w-4 h-4" />
+              Export PDF
             </button>
             <button
               onClick={handleExportCSV}

@@ -3,7 +3,7 @@
 **PRD:** PRD-Rundown-01-EditorPrototype
 **Status:** PROTOTYPE COMPLETE, FEATURES IN PROGRESS
 **Created:** 2026-01-22
-**Last Updated:** 2026-01-23 (v4.4 - Task 69 complete - Approval workflow)
+**Last Updated:** 2026-01-23 (v4.5 - Task 70 complete - Export to PDF)
 
 ---
 
@@ -184,13 +184,13 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 68: Add version rollback | COMPLETE | logChange() updated to store snapshots (segments + groups), syncSegmentsToFirebase/syncGroupsToFirebase pass snapshots, ChangeHistoryModal shows "Restore" button for entries with snapshots, RestoreConfirmModal for confirmation, handleInitiateRestore/handleConfirmRestore handlers, skipSnapshot flag prevents circular references |
 | Task 69: Add approval workflow | COMPLETE | APPROVAL_STATUSES constant (draft, in-review, approved, locked), approvalStatus state synced to Firebase, status badge in header with dropdown menu, checkPermission() extended for approval status restrictions, workflow actions (submitForReview, approve, reject, lock, unlock, returnToDraft), RejectReasonModal for rejection with required reason, status logged to change history |
 
-### Phase 9: Data & Reporting 🔲 NOT STARTED
+### Phase 9: Data & Reporting 🚧 IN PROGRESS
 
 > **Note:** Post-show analytics (actual vs planned, deviation logs) moved to PRD-05.
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Task 70: Export to PDF | NOT STARTED | Print-friendly layout |
+| Task 70: Export to PDF | COMPLETE | handleExportPDF function generates print-friendly HTML, opens in new window with print dialog, includes segment details, start times, notes, optional/locked badges |
 | Task 71: Export to CSV | NOT STARTED | Spreadsheet format |
 | Task 72: Export to JSON | NOT STARTED | Backup/API integration |
 | Task 73: Import from CSV | NOT STARTED | Field mapping UI, validation |
