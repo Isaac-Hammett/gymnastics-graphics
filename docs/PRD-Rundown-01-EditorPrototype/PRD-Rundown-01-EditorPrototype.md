@@ -62,8 +62,8 @@ The **Producer View** (separate page) uses this rundown as the "script" to contr
 |-------|------|--------|-------------|
 | 0A | Basic Page Structure | ✅ COMPLETE | Core page layout, routing, segment CRUD |
 | 0B | Graphics & Scene Integration | ✅ COMPLETE | Pickers, smart recommendations, params |
-| 0C | Templates (Basic) | 🔲 PLANNED | Save/load rundowns as templates |
-| 1 | Timing & Display | 🔲 PLANNED | Runtime totals, running time, buffers |
+| 0C | Templates (Basic) | ✅ COMPLETE | Save/load rundowns as templates |
+| 1 | Timing & Display | ✅ COMPLETE | Runtime totals, running time, buffers |
 | 2 | Inline Editing | 🔲 PLANNED | Edit fields directly on segment rows |
 | 3 | Multi-Select & Summary | 🔲 PLANNED | Bulk selection with summary sidebar |
 | 4 | Reordering & Organization | 🔲 PLANNED | Drag-drop, grouping, nesting |
@@ -1051,15 +1051,15 @@ const filteredSegments = segments.filter(seg => {
 - [x] Segments save with `graphic: { graphicId, params }` structure
 - [x] Segment list shows graphic indicator (icon or badge) when graphic assigned
 
-### Phase 1: Timing & Display
+### Phase 1: Timing & Display ✅ COMPLETE
 
 - [x] Total runtime displayed in header
 - [x] Target duration input available
 - [x] Over/under indicator with color states
 - [x] Running time column shows cumulative start times
 - [x] Start times auto-update on duration changes
-- [ ] Buffer time can be added between segments
-- [ ] Buffer contributes to total runtime
+- [x] Buffer time can be added between segments
+- [x] Buffer contributes to total runtime
 
 ### Phase 2: Inline Editing
 
