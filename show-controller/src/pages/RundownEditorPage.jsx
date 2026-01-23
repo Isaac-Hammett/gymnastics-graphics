@@ -11,8 +11,11 @@ import {
   ChevronDownIcon,
   LightBulbIcon,
   PhotoIcon,
+  BookmarkIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline';
 import { getGraphicsForCompetition, getCategories, getRecommendedGraphic, getGraphicById, GRAPHICS } from '../lib/graphicsRegistry';
+import { db, ref, set, get, push, remove } from '../lib/firebase';
 
 // Hardcoded competition context per PRD (Phase 0B)
 const DUMMY_COMPETITION = {
@@ -82,6 +85,10 @@ export default function RundownEditorPage() {
   const [filterType, setFilterType] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [toast, setToast] = useState('');
+  const [showSaveTemplateModal, setShowSaveTemplateModal] = useState(false);
+  const [showTemplateLibrary, setShowTemplateLibrary] = useState(false);
+  const [templates, setTemplates] = useState([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
 
   // Filtered segments
   const filteredSegments = useMemo(() => {
@@ -178,8 +185,193 @@ export default function RundownEditorPage() {
     showToast('Coming soon');
   }
 
-  function handleTemplates() {
-    showToast('Coming soon');
+  async function handleTemplates() {
+    setShowTemplateLibrary(true);
+    setLoadingTemplates(true);
+    try {
+      const snapshot = await get(ref(db, 'rundownTemplates'));
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        const templateList = Object.values(data).map(t => t.metadata);
+        setTemplates(templateList);
+      } else {
+        setTemplates([]);
+      }
+    } catch (error) {
+      console.error('Error loading templates:', error);
+      showToast('Error loading templates');
+    }
+    setLoadingTemplates(false);
+  }
+
+  function handleSaveAsTemplate() {
+    setShowSaveTemplateModal(true);
+  }
+
+  // Abstract team references in segment name
+  // e.g., "UCLA Coaches" -> "{team1} Coaches" if UCLA is team 1
+  function abstractTeamReferences(segmentName, teams) {
+    let abstractedName = segmentName;
+    Object.entries(teams).forEach(([slot, team]) => {
+      const regex = new RegExp(team.name, 'gi');
+      abstractedName = abstractedName.replace(regex, `{team${slot}}`);
+    });
+    return abstractedName;
+  }
+
+  // Create template segments from current rundown
+  function createTemplateSegments(currentSegments, teams) {
+    return currentSegments.map((seg, index) => ({
+      id: `tpl-${String(index + 1).padStart(3, '0')}`,
+      name: abstractTeamReferences(seg.name, teams),
+      type: seg.type,
+      duration: seg.duration,
+      scene: seg.scene,
+      graphic: seg.graphic,
+      autoAdvance: seg.autoAdvance,
+    }));
+  }
+
+  // Determine competition types compatible with this template
+  function getCompatibleTypes(compType) {
+    // Extract gender and team count
+    const isWomens = compType.startsWith('womens-');
+    const isMens = compType.startsWith('mens-');
+    const teamCount = compType.includes('dual') ? 2 :
+                      compType.includes('tri') ? 3 :
+                      compType.includes('quad') ? 4 :
+                      compType.includes('-5') ? 5 :
+                      compType.includes('-6') ? 6 : 2;
+
+    // Templates are compatible with same gender, same or more teams
+    const types = [];
+    const genderPrefix = isWomens ? 'womens-' : isMens ? 'mens-' : '';
+
+    if (teamCount <= 2) types.push(`${genderPrefix}dual`);
+    if (teamCount <= 3) types.push(`${genderPrefix}tri`);
+    if (teamCount <= 4) types.push(`${genderPrefix}quad`);
+    if (teamCount <= 5) types.push(`${genderPrefix}5`);
+    if (teamCount <= 6) types.push(`${genderPrefix}6`);
+
+    return types;
+  }
+
+  // Calculate total duration
+  function calculateTotalDuration(segs) {
+    return segs.reduce((sum, seg) => sum + (seg.duration || 0), 0);
+  }
+
+  async function handleSaveTemplate(templateName, templateDescription) {
+    try {
+      const templateId = templateName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      const teams = DUMMY_COMPETITION.teams;
+
+      const templateData = {
+        metadata: {
+          id: templateId,
+          name: templateName,
+          description: templateDescription,
+          competitionTypes: getCompatibleTypes(DUMMY_COMPETITION.type),
+          teamCount: Object.keys(teams).length,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          estimatedDuration: calculateTotalDuration(segments),
+        },
+        segments: createTemplateSegments(segments, teams),
+      };
+
+      await set(ref(db, `rundownTemplates/${templateId}`), templateData);
+      setShowSaveTemplateModal(false);
+      showToast(`Template "${templateName}" saved!`);
+    } catch (error) {
+      console.error('Error saving template:', error);
+      showToast('Error saving template');
+    }
+  }
+
+  // Resolve team references in segment name
+  // e.g., "{team1} Coaches" -> "UCLA Coaches" using actual competition teams
+  function resolveTeamReferences(segmentName, teams) {
+    let resolvedName = segmentName;
+    Object.entries(teams).forEach(([slot, team]) => {
+      const placeholder = new RegExp(`\\{team${slot}\\}`, 'gi');
+      resolvedName = resolvedName.replace(placeholder, team.name);
+    });
+    return resolvedName;
+  }
+
+  // Create rundown segments from template
+  function createSegmentsFromTemplate(templateSegments, teams) {
+    return templateSegments.map((seg, index) => ({
+      id: `seg-${String(index + 1).padStart(3, '0')}`,
+      name: resolveTeamReferences(seg.name, teams),
+      type: seg.type,
+      duration: seg.duration,
+      scene: seg.scene,
+      graphic: seg.graphic,
+      autoAdvance: seg.autoAdvance,
+    }));
+  }
+
+  // Check if template is compatible with current competition
+  function isTemplateCompatible(template) {
+    const compType = DUMMY_COMPETITION.type;
+    const teamCount = Object.keys(DUMMY_COMPETITION.teams).length;
+
+    // Check competition type compatibility
+    if (template.competitionTypes && !template.competitionTypes.includes(compType)) {
+      // Also check for gender match
+      const isWomensComp = compType.startsWith('womens-');
+      const isMensComp = compType.startsWith('mens-');
+      const hasCompatibleGender = template.competitionTypes.some(t =>
+        (isWomensComp && t.startsWith('womens-')) ||
+        (isMensComp && t.startsWith('mens-'))
+      );
+      if (!hasCompatibleGender) return false;
+    }
+
+    // Check team count compatibility
+    if (template.teamCount && template.teamCount > teamCount) {
+      return false;
+    }
+
+    return true;
+  }
+
+  async function handleLoadTemplate(templateId) {
+    try {
+      const snapshot = await get(ref(db, `rundownTemplates/${templateId}`));
+      if (!snapshot.exists()) {
+        showToast('Template not found');
+        return;
+      }
+
+      const templateData = snapshot.val();
+      const teams = DUMMY_COMPETITION.teams;
+
+      // Create new segments from template
+      const newSegments = createSegmentsFromTemplate(templateData.segments, teams);
+      setSegments(newSegments);
+      setSelectedSegmentId(null);
+      setShowTemplateLibrary(false);
+      showToast(`Loaded template: ${templateData.metadata.name}`);
+    } catch (error) {
+      console.error('Error loading template:', error);
+      showToast('Error loading template');
+    }
+  }
+
+  async function handleDeleteTemplate(templateId) {
+    if (!window.confirm('Are you sure you want to delete this template?')) return;
+
+    try {
+      await remove(ref(db, `rundownTemplates/${templateId}`));
+      setTemplates(templates.filter(t => t.id !== templateId));
+      showToast('Template deleted');
+    } catch (error) {
+      console.error('Error deleting template:', error);
+      showToast('Error deleting template');
+    }
   }
 
   function handleImportCSV() {
@@ -255,6 +447,13 @@ export default function RundownEditorPage() {
             >
               <DocumentDuplicateIcon className="w-4 h-4" />
               Templates
+            </button>
+            <button
+              onClick={handleSaveAsTemplate}
+              className="flex items-center gap-2 px-3 py-2 bg-zinc-800 border border-zinc-700 text-zinc-300 text-sm rounded-lg hover:bg-zinc-700 transition-colors"
+            >
+              <BookmarkIcon className="w-4 h-4" />
+              Save as Template
             </button>
             <button
               onClick={handleImportCSV}
@@ -408,6 +607,28 @@ export default function RundownEditorPage() {
         <div className="fixed bottom-5 right-5 px-5 py-3 bg-green-500 text-white rounded-lg font-medium shadow-lg z-50">
           {toast}
         </div>
+      )}
+
+      {/* Save as Template Modal */}
+      {showSaveTemplateModal && (
+        <SaveTemplateModal
+          onSave={handleSaveTemplate}
+          onCancel={() => setShowSaveTemplateModal(false)}
+          segmentCount={segments.length}
+          totalDuration={calculateTotalDuration(segments)}
+        />
+      )}
+
+      {/* Template Library Modal */}
+      {showTemplateLibrary && (
+        <TemplateLibraryModal
+          templates={templates}
+          loading={loadingTemplates}
+          onLoad={handleLoadTemplate}
+          onDelete={handleDeleteTemplate}
+          onCancel={() => setShowTemplateLibrary(false)}
+          isCompatible={isTemplateCompatible}
+        />
       )}
     </div>
   );
@@ -748,6 +969,205 @@ function SegmentDetailPanel({ segment, onSave, onDelete, onCancel }) {
           </button>
         </div>
       </form>
+    </div>
+  );
+}
+
+// Format duration in seconds to readable format
+function formatDuration(seconds) {
+  if (!seconds) return '0:00';
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  }
+  return `${minutes}:${String(secs).padStart(2, '0')}`;
+}
+
+// Save as Template Modal Component
+function SaveTemplateModal({ onSave, onCancel, segmentCount, totalDuration }) {
+  const [templateName, setTemplateName] = useState('');
+  const [templateDescription, setTemplateDescription] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!templateName.trim()) return;
+
+    setSaving(true);
+    await onSave(templateName.trim(), templateDescription.trim());
+    setSaving(false);
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+      <div className="bg-zinc-900 border border-zinc-700 rounded-xl w-full max-w-md mx-4 shadow-2xl">
+        <div className="flex items-center justify-between p-4 border-b border-zinc-800">
+          <h2 className="text-lg font-bold text-white">Save as Template</h2>
+          <button
+            onClick={onCancel}
+            className="p-1 text-zinc-400 hover:text-zinc-200 rounded-lg hover:bg-zinc-800 transition-colors"
+          >
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+          <div>
+            <label className="block text-xs text-zinc-400 mb-1.5">Template Name *</label>
+            <input
+              type="text"
+              value={templateName}
+              onChange={(e) => setTemplateName(e.target.value)}
+              placeholder="e.g., Standard Dual Meet"
+              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+              autoFocus
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs text-zinc-400 mb-1.5">Description (optional)</label>
+            <textarea
+              value={templateDescription}
+              onChange={(e) => setTemplateDescription(e.target.value)}
+              placeholder="e.g., Basic dual meet format with intros, rotations, and breaks"
+              rows={3}
+              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500 resize-none"
+            />
+          </div>
+
+          <div className="p-3 bg-zinc-800/50 rounded-lg border border-zinc-700">
+            <div className="text-xs text-zinc-400 mb-2">Template will include:</div>
+            <div className="flex items-center gap-4 text-sm text-zinc-300">
+              <span>{segmentCount} segments</span>
+              <span className="text-zinc-600">•</span>
+              <span>{formatDuration(totalDuration)} total</span>
+            </div>
+            <div className="text-xs text-zinc-500 mt-2">
+              Team names will be converted to placeholders for reuse with any competition.
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="flex-1 px-4 py-2 bg-zinc-800 text-zinc-300 rounded-lg hover:bg-zinc-700 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={!templateName.trim() || saving}
+              className="flex-1 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {saving ? 'Saving...' : 'Save Template'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// Template Library Modal Component
+function TemplateLibraryModal({ templates, loading, onLoad, onDelete, onCancel, isCompatible }) {
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+      <div className="bg-zinc-900 border border-zinc-700 rounded-xl w-full max-w-lg mx-4 shadow-2xl max-h-[80vh] flex flex-col">
+        <div className="flex items-center justify-between p-4 border-b border-zinc-800">
+          <h2 className="text-lg font-bold text-white">Template Library</h2>
+          <button
+            onClick={onCancel}
+            className="p-1 text-zinc-400 hover:text-zinc-200 rounded-lg hover:bg-zinc-800 transition-colors"
+          >
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-4 overflow-y-auto flex-1">
+          {loading ? (
+            <div className="text-center py-8 text-zinc-500">
+              Loading templates...
+            </div>
+          ) : templates.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="text-zinc-500 mb-2">No templates saved yet</div>
+              <div className="text-xs text-zinc-600">
+                Use "Save as Template" to save your current rundown structure for reuse.
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {templates.map(template => {
+                const compatible = isCompatible(template);
+                return (
+                  <div
+                    key={template.id}
+                    className={`p-3 rounded-lg border transition-colors ${
+                      compatible
+                        ? 'bg-zinc-800/50 border-zinc-700 hover:border-zinc-600'
+                        : 'bg-zinc-800/30 border-zinc-800 opacity-60'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-white truncate">{template.name}</span>
+                          {!compatible && (
+                            <span className="px-1.5 py-0.5 text-xs bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 rounded">
+                              Incompatible
+                            </span>
+                          )}
+                        </div>
+                        {template.description && (
+                          <div className="text-sm text-zinc-500 mt-1 line-clamp-2">
+                            {template.description}
+                          </div>
+                        )}
+                        <div className="flex items-center gap-3 mt-2 text-xs text-zinc-500">
+                          <span>{template.teamCount || '?'} teams</span>
+                          <span className="text-zinc-700">•</span>
+                          <span>{formatDuration(template.estimatedDuration)}</span>
+                          {template.competitionTypes && (
+                            <>
+                              <span className="text-zinc-700">•</span>
+                              <span className="truncate">{template.competitionTypes.join(', ')}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => onLoad(template.id)}
+                          disabled={!compatible}
+                          className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          Load
+                        </button>
+                        <button
+                          onClick={() => onDelete(template.id)}
+                          className="p-1.5 text-zinc-500 hover:text-red-400 rounded-lg hover:bg-zinc-700 transition-colors"
+                          title="Delete template"
+                        >
+                          <TrashIcon className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="p-4 border-t border-zinc-800">
+          <div className="text-xs text-zinc-500">
+            Loading a template will replace your current rundown. Make sure to save first if needed.
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
