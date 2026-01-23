@@ -11,15 +11,41 @@ import {
   ChevronDownIcon,
 } from '@heroicons/react/24/outline';
 
-// Hardcoded test data per PRD
+// Hardcoded competition context per PRD (Phase 0B)
+const DUMMY_COMPETITION = {
+  id: 'pac12-2025',
+  name: "Women's Quad Meet",
+  type: 'womens-quad',
+  teams: {
+    1: { name: 'UCLA', logo: 'https://media.virti.us/upload/images/team/ucla-logo.png' },
+    2: { name: 'Oregon', logo: 'https://media.virti.us/upload/images/team/oregon-logo.png' },
+    3: { name: 'Utah', logo: 'https://media.virti.us/upload/images/team/utah-logo.png' },
+    4: { name: 'Arizona', logo: 'https://media.virti.us/upload/images/team/arizona-logo.png' },
+  },
+};
+
+// Hardcoded OBS scenes per PRD (Phase 0B)
+const DUMMY_SCENES = [
+  { name: 'Starting Soon', category: 'static' },
+  { name: 'Talent Camera', category: 'manual' },
+  { name: 'Graphics Fullscreen', category: 'graphics' },
+  { name: 'Single - Camera 1', category: 'single' },
+  { name: 'Single - Camera 2', category: 'single' },
+  { name: 'Single - Camera 3', category: 'single' },
+  { name: 'Single - Camera 4', category: 'single' },
+  { name: 'Dual View', category: 'multi' },
+  { name: 'Quad View', category: 'multi' },
+];
+
+// Hardcoded test data per PRD (updated with graphic field structure for Phase 0B)
 const DUMMY_SEGMENTS = [
-  { id: 'seg-001', name: 'Show Intro', type: 'video', duration: 45, scene: 'Starting Soon', autoAdvance: true },
-  { id: 'seg-002', name: 'Welcome & Host', type: 'live', duration: 30, scene: 'Talent Camera', autoAdvance: true },
-  { id: 'seg-003', name: 'Event Introduction', type: 'static', duration: 8, scene: 'Graphics Fullscreen', autoAdvance: true },
-  { id: 'seg-004', name: 'UCLA Introduction', type: 'live', duration: 10, scene: 'Single - Camera 2', autoAdvance: true },
-  { id: 'seg-005', name: 'Oregon Introduction', type: 'live', duration: 10, scene: 'Single - Camera 3', autoAdvance: true },
-  { id: 'seg-006', name: 'Utah Introduction', type: 'live', duration: 10, scene: 'Single - Camera 4', autoAdvance: true },
-  { id: 'seg-007', name: 'Floor - Rotation 1', type: 'live', duration: null, scene: 'Single - Camera 4', autoAdvance: false },
+  { id: 'seg-001', name: 'Show Intro', type: 'video', duration: 45, scene: 'Starting Soon', graphic: null, autoAdvance: true },
+  { id: 'seg-002', name: 'Team Logos', type: 'static', duration: 10, scene: 'Graphics Fullscreen', graphic: { graphicId: 'logos', params: {} }, autoAdvance: true },
+  { id: 'seg-003', name: 'UCLA Coaches', type: 'live', duration: 15, scene: 'Single - Camera 2', graphic: { graphicId: 'team-coaches', params: { teamSlot: 1 } }, autoAdvance: true },
+  { id: 'seg-004', name: 'Oregon Coaches', type: 'live', duration: 15, scene: 'Single - Camera 3', graphic: { graphicId: 'team-coaches', params: { teamSlot: 2 } }, autoAdvance: true },
+  { id: 'seg-005', name: 'Rotation 1 Summary', type: 'static', duration: 20, scene: 'Graphics Fullscreen', graphic: { graphicId: 'event-summary', params: { summaryMode: 'rotation', summaryRotation: 1, summaryTheme: 'espn' } }, autoAdvance: true },
+  { id: 'seg-006', name: 'Floor - Rotation 1', type: 'live', duration: null, scene: 'Quad View', graphic: { graphicId: 'floor', params: {} }, autoAdvance: false },
+  { id: 'seg-007', name: 'Commercial Break', type: 'break', duration: 120, scene: 'Starting Soon', graphic: null, autoAdvance: true },
 ];
 
 // Segment type options
@@ -100,6 +126,7 @@ export default function RundownEditorPage() {
       type: 'live',
       duration: null,
       scene: '',
+      graphic: null,
       autoAdvance: false,
     };
 
@@ -188,7 +215,7 @@ export default function RundownEditorPage() {
             </Link>
             <div>
               <h1 className="text-xl font-bold text-white">RUNDOWN EDITOR</h1>
-              <p className="text-sm text-zinc-500">{compId} - Women's Quad Meet (Placeholder)</p>
+              <p className="text-sm text-zinc-500">{compId} - {DUMMY_COMPETITION.name}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
