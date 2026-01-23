@@ -3,7 +3,7 @@
 **PRD:** PRD-Rundown-01-EditorPrototype
 **Status:** IN PROGRESS
 **Created:** 2026-01-22
-**Last Updated:** 2026-01-23 (Tasks 2.4-2.10 complete)
+**Last Updated:** 2026-01-23 (Phase 0B COMPLETE)
 
 ---
 
@@ -39,7 +39,7 @@
 | 2.8 Implement parameter inputs | COMPLETE | Dynamic form fields from graphic schema |
 | 2.9 Update segment save with graphic structure | COMPLETE | Save `graphic: { graphicId, params }` |
 | 2.10 Add graphic indicator to segment list | COMPLETE | Pink badge with PhotoIcon when graphic assigned |
-| 2.11 Verify Phase 0B acceptance criteria | PENDING | All 11 criteria from PRD |
+| 2.11 Verify Phase 0B acceptance criteria | COMPLETE | All 11 criteria verified on production |
 
 ---
 
@@ -487,24 +487,36 @@ Show visual indicator when segment has graphic assigned.
 
 ### Task 2.11: Verify Phase 0B acceptance criteria
 
-**Status:** PENDING
+**Status:** COMPLETE
 **File:** N/A (verification task)
 
 **Description:**
 Verify all Phase 0B acceptance criteria from PRD are met.
 
 **Checklist:**
-- [ ] Segment detail shows Scene picker dropdown
-- [ ] Scene picker shows hardcoded scenes grouped by category
-- [ ] Segment detail shows Graphic picker dropdown
-- [ ] Graphic picker reads from graphicsRegistry.js
-- [ ] Graphics filtered by competition type (women's quad)
-- [ ] Team-specific graphics show actual team names (UCLA, Oregon, etc.)
-- [ ] Smart recommendation shown when segment name matches keywords
-- [ ] Clicking "Use" on recommendation selects that graphic
-- [ ] Parameter inputs shown for graphics that have user-editable params
-- [ ] Segments save with `graphic: { graphicId, params }` structure
-- [ ] Segment list shows graphic indicator (icon or badge) when graphic assigned
+- [x] Segment detail shows Scene picker dropdown
+- [x] Scene picker shows hardcoded scenes grouped by category
+- [x] Segment detail shows Graphic picker dropdown
+- [x] Graphic picker reads from graphicsRegistry.js
+- [x] Graphics filtered by competition type (women's quad)
+- [x] Team-specific graphics show actual team names (UCLA, Oregon, etc.)
+- [x] Smart recommendation shown when segment name matches keywords
+- [x] Clicking "Use" on recommendation selects that graphic
+- [x] Parameter inputs shown for graphics that have user-editable params
+- [x] Segments save with `graphic: { graphicId, params }` structure
+- [x] Segment list shows graphic indicator (icon or badge) when graphic assigned
+
+**Verification Date:** 2026-01-23
+**Production URL:** https://commentarygraphic.com/8kyf0rnl/rundown
+
+**Verification Notes:**
+- All criteria verified on production
+- BUG-001 found: Form not resetting when switching segments (useState vs useEffect)
+- BUG-001 fixed and deployed
+- No console errors (only expected OBS disconnection when VM not running)
+- Smart recommendations working: "UCLA Coaches" → "Suggested: UCLA Coaches", "Rotation 1 Summary" → "Suggested: R1"
+- "Use" button correctly applies recommended graphic
+- Graphic indicators (pink badges) showing correctly on segment list
 
 ---
 
@@ -512,7 +524,7 @@ Verify all Phase 0B acceptance criteria from PRD are met.
 
 | Bug ID | Description | Status | Task |
 |--------|-------------|--------|------|
-| (none) | | | |
+| BUG-001 | Form not resetting when switching segments (useState should be useEffect) | FIXED | 2.11 |
 
 ---
 
