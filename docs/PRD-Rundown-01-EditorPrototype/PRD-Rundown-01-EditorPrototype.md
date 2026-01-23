@@ -66,7 +66,7 @@ The **Producer View** (separate page) uses this rundown as the "script" to contr
 | 1 | Timing & Display | ✅ COMPLETE | Runtime totals, running time, buffers |
 | 2 | Inline Editing | ✅ COMPLETE | Edit fields directly on segment rows |
 | 3 | Multi-Select & Summary | ✅ COMPLETE | Bulk selection with summary sidebar |
-| 4 | Reordering & Organization | 🔲 PLANNED | Drag-drop, grouping, nesting |
+| 4 | Reordering & Organization | ✅ COMPLETE | Drag-drop, grouping, nesting |
 | 5 | Segment Management | 🔲 PLANNED | Duplicate, lock, conditional, notes |
 | 6 | Timing Modes | 🔲 PLANNED | Fixed/manual/follows-previous modes |
 | 7 | Templates & Presets | 🔲 PLANNED | Segment templates, recurrence |
@@ -1079,15 +1079,15 @@ const filteredSegments = segments.filter(seg => {
 - [x] Total duration updates in real-time
 - [x] Bulk actions available (edit type, scene, graphic, delete)
 
-### Phase 4: Reordering & Organization
+### Phase 4: Reordering & Organization ✅ COMPLETE
 
-- [ ] Drag handle on segment rows
-- [ ] Drag-and-drop reordering works
-- [ ] Drop indicator shows during drag
-- [ ] Arrow buttons still functional
-- [ ] Segment groups can be created
-- [ ] Groups collapsible
-- [ ] Groups show combined duration
+- [x] Drag handle on segment rows
+- [x] Drag-and-drop reordering works
+- [x] Drop indicator shows during drag
+- [x] Arrow buttons still functional
+- [x] Segment groups can be created
+- [x] Groups collapsible
+- [x] Groups show combined duration
 
 ### Phase 5: Segment Management
 

@@ -1,6 +1,6 @@
 # PRD: Advanced Rundown Editor
 
-**Version:** 1.2
+**Version:** 1.3
 **Date:** 2026-01-23
 **Project:** Gymnastics Graphics
 **Status:** IN PROGRESS
@@ -530,6 +530,8 @@ function calculateMilestones(segments) {
 
 ## 5. Multi-Select Time Calculation
 
+> **Status:** ✅ CORE COMPLETE (Phase 3) — Basic multi-select with selection summary implemented. Advanced features (milestone selection, target milestone comparison) planned for future phases.
+
 ### 5.1 Selection Mechanics
 
 | Action | Result |
@@ -569,6 +571,8 @@ function calculateMilestones(segments) {
 ---
 
 ## 6. Pickers
+
+> **Status:** ✅ COMPLETE (Phase 0B) — OBS Scene Picker and Graphics Picker implemented with category grouping, smart recommendations, and schema-driven parameter inputs.
 
 ### 6.1 OBS Scene Picker
 
@@ -656,6 +660,8 @@ Shows actual team names and filters by gender:
 ---
 
 ## 7. Dedicated Rundown Editor Page
+
+> **Status:** ✅ COMPLETE — RundownEditorPage implemented with all Phase 0-3 features. See [PRD-Rundown-01](./PRD-Rundown-01-EditorPrototype/PRD-Rundown-01-EditorPrototype.md) for detailed implementation status.
 
 ### Route
 
@@ -787,6 +793,8 @@ Shows actual team names and filters by gender:
 ---
 
 ## 9. Template System
+
+> **Status:** ✅ BASIC COMPLETE (Phase 0C) — Save/load rundowns as templates implemented. Advanced features (variable substitution, auto-load on competition setup) planned for Phase 7.
 
 ### 9.1 Rundown Template Structure
 
@@ -928,13 +936,16 @@ Full rundown with all segment data in JSON format for backup/restore.
 
 ## 12. User Stories - Segment CRUD
 
-### US-01: Create a New Segment
+> **Status:** ✅ ALL COMPLETE (Phase 0A) — All segment CRUD user stories implemented in the Editor Prototype.
+
+### US-01: Create a New Segment ✅
 
 **As a producer**, I need to add a new segment to the rundown so I can plan additional show content.
 
 #### Current State
 
-No rundown editor exists. Producers manually edit Firebase or use spreadsheets.
+~~No rundown editor exists. Producers manually edit Firebase or use spreadsheets.~~
+**IMPLEMENTED:** RundownEditorPage provides full segment creation with all required fields.
 
 #### Desired Behavior
 
@@ -1049,7 +1060,7 @@ No rundown editor exists. Producers manually edit Firebase or use spreadsheets.
 
 ---
 
-### US-02: Edit an Existing Segment
+### US-02: Edit an Existing Segment ✅
 
 **As a producer**, I need to modify segment details so I can adjust timing, scenes, or graphics.
 
@@ -1132,7 +1143,7 @@ Click on any segment row in the segment list.
 
 ---
 
-### US-03: Delete a Segment
+### US-03: Delete a Segment ✅
 
 **As a producer**, I need to remove a segment from the rundown when it's no longer needed.
 
@@ -1196,7 +1207,7 @@ Click "Delete" button in the detail panel (segment must be selected).
 
 ---
 
-### US-04: Reorder Segments
+### US-04: Reorder Segments ✅
 
 **As a producer**, I need to change segment order to adjust the show flow.
 
@@ -1262,7 +1273,7 @@ Arrow buttons (Up/Down) on each segment row - NO drag-and-drop.
 
 ---
 
-### US-05: Bulk Selection (for future multi-select features)
+### US-05: Bulk Selection ✅
 
 **As a producer**, I need to select multiple segments to calculate total duration or perform bulk actions.
 
@@ -1336,11 +1347,19 @@ Selection: Segments 1, 3, 5 = 0:45 + 0:08 + 0:10 = 1:03 total
 |-------|------|--------|-------------|
 | 0A | Basic Page Structure | ✅ COMPLETE | Core page layout, routing, segment CRUD |
 | 0B | Graphics & Scene Integration | ✅ COMPLETE | Pickers, smart recommendations, params |
-| 0C | Templates (Basic) | 🔲 PLANNED | Save/load rundowns as templates |
+| 0C | Templates (Basic) | ✅ COMPLETE | Save/load rundowns as templates |
 | 1 | Timing & Display | ✅ COMPLETE | Runtime totals, running time, buffers |
 | 2 | Inline Editing | ✅ COMPLETE | Edit fields directly on segment rows |
-| 3 | Multi-Select & Summary | 🔲 PLANNED | Bulk selection with summary sidebar |
-| 4-12 | Advanced Features | 🔲 PLANNED | See PRD-Rundown-01 for full roadmap |
+| 3 | Multi-Select & Summary | ✅ COMPLETE | Bulk selection with summary sidebar |
+| 4 | Reordering & Organization | 🔲 PLANNED | Drag-drop, grouping, nesting |
+| 5 | Segment Management | 🔲 PLANNED | Duplicate, lock, conditional, notes |
+| 6 | Timing Modes | 🔲 PLANNED | Fixed/manual/follows-previous modes |
+| 7 | Templates & Presets | 🔲 PLANNED | Segment templates, recurrence |
+| 8 | Collaboration | 🔲 PLANNED | Multi-user, permissions, versioning |
+| 9 | Data & Reporting | 🔲 PLANNED | Export, import rundowns |
+| 10 | Visual & UX | 🔲 PLANNED | Timeline view, theming, print |
+| 11 | Quality of Life | 🔲 PLANNED | Keyboard shortcuts, undo/redo |
+| 12 | Advanced Planning | 🔲 PLANNED | AI suggestions, talent, equipment, sponsors |
 
 **Route:** `/{compId}/rundown`
 
@@ -1350,11 +1369,15 @@ Selection: Segments 1, 3, 5 = 0:45 + 0:08 + 0:10 = 1:03 total
 - Graphics picker using schema-driven registry
 - OBS scene picker with category grouping
 - Smart recommendations based on segment names
+- Save/load rundowns as templates (Phase 0C)
 - Total runtime display with target duration
 - Over/under indicator with color states
 - Running time column with cumulative start times
 - Buffer/pad time between segments
 - Inline editable fields (OBS scene, graphic, duration)
+- Multi-select with checkboxes (click, Shift+click, Ctrl/Cmd+click)
+- Selection Summary sidebar with editable durations
+- Bulk actions (edit type, scene, graphic, delete)
 
 #### Phase 0B: Rundown Prototype (Producer View)
 
@@ -1397,18 +1420,20 @@ This phase creates a workable prototype page that composes existing Producer Vie
 - [x] Editor: Can edit any field on an existing segment *(done)*
 - [x] Editor: Can delete a segment with confirmation *(done)*
 - [x] Editor: Can reorder segments with ↑/↓ arrows *(done)*
-- [ ] Editor: Can multi-select segments and see total duration
+- [x] Editor: Can multi-select segments and see total duration *(done)*
+- [x] Editor: Selection Summary sidebar with bulk actions *(done)*
 - [x] Editor: Total runtime display with over/under indicator *(done)*
 - [x] Editor: Running time column shows cumulative start times *(done)*
 - [x] Editor: Buffer time between segments *(done)*
 - [x] Editor: Inline editing of duration, scene, graphic *(done)*
+- [x] Editor: Save/load rundowns as templates *(done)*
 - [x] Producer View: NowPlaying shows current segment with progress bar *(already done)*
 - [x] Producer View: UpNext shows next segment *(already done)*
 - [x] Producer View: Can advance through segments *(already done)*
 - [x] Producer View: Overtime indicator displays when segment runs long *(already done)*
 - [ ] Rundown Prototype: Edit mode toggle works
 - [ ] Rundown Prototype: Inline segment editing works
-- [ ] Stakeholder sign-off on UX before proceeding to Phase 1
+- [ ] Stakeholder sign-off on UX before proceeding to backend work
 
 ---
 
@@ -1757,7 +1782,7 @@ This PRD depends on:
 | PRD | Name | Status | Description |
 |-----|------|--------|-------------|
 | PRD-Rundown-00 | Timesheet Consolidation | ✅ COMPLETE | useTimesheet() hook, timing/control |
-| PRD-Rundown-01 | Editor Prototype | ✅ PHASE 2 COMPLETE | Rundown Editor UI (Phase 0A/0B/1/2 done) |
+| PRD-Rundown-01 | Editor Prototype | ✅ PHASE 3 COMPLETE | Rundown Editor UI (Phase 0A/0B/0C/1/2/3 done) |
 | PRD-Rundown-05 | Rundown Prototype | 🔲 NOT STARTED | Producer View with inline editing |
 | PRD-Rundown-06 | Backend Services | 🔲 PLANNED | Server-side rundown persistence |
 | PRD-Rundown-08 | Producer Integration | 🔲 PLANNED | Full Producer View integration |

@@ -9,6 +9,7 @@ import {
   TrashIcon,
   ChevronUpIcon,
   ChevronDownIcon,
+  ChevronRightIcon,
   LightBulbIcon,
   PhotoIcon,
   BookmarkIcon,
@@ -17,6 +18,8 @@ import {
   PencilIcon,
   CheckIcon,
   Bars3Icon,
+  FolderIcon,
+  FolderOpenIcon,
 } from '@heroicons/react/24/outline';
 import { getGraphicsForCompetition, getCategories, getRecommendedGraphic, getGraphicById, GRAPHICS } from '../lib/graphicsRegistry';
 import { db, ref, set, get, push, remove } from '../lib/firebase';
@@ -79,6 +82,16 @@ const TYPE_COLORS = {
   graphic: 'bg-pink-500/20 text-pink-400 border-pink-500/30',
 };
 
+// Group color options for segment grouping (Phase 4: Task 7.4)
+const GROUP_COLORS = [
+  { id: 'blue', bg: 'bg-blue-500/10', border: 'border-blue-500/30', text: 'text-blue-400', header: 'bg-blue-500/20' },
+  { id: 'green', bg: 'bg-green-500/10', border: 'border-green-500/30', text: 'text-green-400', header: 'bg-green-500/20' },
+  { id: 'purple', bg: 'bg-purple-500/10', border: 'border-purple-500/30', text: 'text-purple-400', header: 'bg-purple-500/20' },
+  { id: 'amber', bg: 'bg-amber-500/10', border: 'border-amber-500/30', text: 'text-amber-400', header: 'bg-amber-500/20' },
+  { id: 'rose', bg: 'bg-rose-500/10', border: 'border-rose-500/30', text: 'text-rose-400', header: 'bg-rose-500/20' },
+  { id: 'cyan', bg: 'bg-cyan-500/10', border: 'border-cyan-500/30', text: 'text-cyan-400', header: 'bg-cyan-500/20' },
+];
+
 export default function RundownEditorPage() {
   const { compId } = useParams();
 
@@ -98,6 +111,8 @@ export default function RundownEditorPage() {
   const [lastSelectedIndex, setLastSelectedIndex] = useState(null); // For Shift+click range selection
   const [draggedSegmentId, setDraggedSegmentId] = useState(null); // Currently dragged segment (Phase 4)
   const [dragOverIndex, setDragOverIndex] = useState(null); // Index being dragged over (Phase 4)
+  const [groups, setGroups] = useState([]); // Segment groups (Phase 4: Task 7.4)
+  const [showCreateGroupModal, setShowCreateGroupModal] = useState(false); // Create group modal (Phase 4: Task 7.4)
 
   // Filtered segments
   const filteredSegments = useMemo(() => {
@@ -566,6 +581,117 @@ export default function RundownEditorPage() {
     showToast('Coming soon');
   }
 
+  // Group management functions (Phase 4: Tasks 7.4, 7.5)
+
+  // Create a new group from selected segments
+  function handleCreateGroup(groupName, colorId) {
+    if (selectedSegmentIds.length < 1) return;
+
+    const newGroupId = `group-${Date.now()}`;
+    const color = GROUP_COLORS.find(c => c.id === colorId) || GROUP_COLORS[0];
+
+    // Create the group
+    const newGroup = {
+      id: newGroupId,
+      name: groupName,
+      colorId: color.id,
+      collapsed: false,
+    };
+
+    // Assign segments to the group
+    setSegments(segments.map(seg =>
+      selectedSegmentIds.includes(seg.id) ? { ...seg, groupId: newGroupId } : seg
+    ));
+
+    setGroups([...groups, newGroup]);
+    setSelectedSegmentIds([]);
+    setShowCreateGroupModal(false);
+    showToast(`Created group "${groupName}" with ${selectedSegmentIds.length} segment(s)`);
+  }
+
+  // Toggle group collapse state
+  function handleToggleGroupCollapse(groupId) {
+    setGroups(groups.map(g =>
+      g.id === groupId ? { ...g, collapsed: !g.collapsed } : g
+    ));
+  }
+
+  // Remove a group (ungroups the segments, doesn't delete them)
+  function handleUngroupSegments(groupId) {
+    setSegments(segments.map(seg =>
+      seg.groupId === groupId ? { ...seg, groupId: null } : seg
+    ));
+    setGroups(groups.filter(g => g.id !== groupId));
+    showToast('Group removed');
+  }
+
+  // Rename a group
+  function handleRenameGroup(groupId, newName) {
+    setGroups(groups.map(g =>
+      g.id === groupId ? { ...g, name: newName } : g
+    ));
+  }
+
+  // Get segments in a specific group
+  function getGroupSegments(groupId) {
+    return segments.filter(seg => seg.groupId === groupId);
+  }
+
+  // Calculate total duration for a group (Task 7.5)
+  function getGroupDuration(groupId) {
+    return getGroupSegments(groupId).reduce(
+      (sum, seg) => sum + (seg.duration || 0) + (seg.bufferAfter || 0),
+      0
+    );
+  }
+
+  // Get the group for a segment
+  function getGroupForSegment(segmentId) {
+    const segment = segments.find(s => s.id === segmentId);
+    if (!segment?.groupId) return null;
+    return groups.find(g => g.id === segment.groupId) || null;
+  }
+
+  // Get group color styling
+  function getGroupColor(groupId) {
+    const group = groups.find(g => g.id === groupId);
+    return GROUP_COLORS.find(c => c.id === group?.colorId) || GROUP_COLORS[0];
+  }
+
+  // Organize segments into groups and ungrouped for rendering
+  const organizedSegments = useMemo(() => {
+    const result = [];
+    const processedGroupIds = new Set();
+
+    filteredSegments.forEach((segment) => {
+      if (segment.groupId) {
+        // If this segment belongs to a group we haven't processed yet
+        if (!processedGroupIds.has(segment.groupId)) {
+          processedGroupIds.add(segment.groupId);
+          const group = groups.find(g => g.id === segment.groupId);
+          if (group) {
+            // Get all segments in this group (maintaining original order)
+            const groupSegs = filteredSegments.filter(s => s.groupId === segment.groupId);
+            result.push({
+              type: 'group',
+              group,
+              segments: groupSegs,
+            });
+          }
+        }
+        // Skip individual segments that are part of a group (they're included above)
+      } else {
+        // Ungrouped segment
+        result.push({
+          type: 'segment',
+          segment,
+        });
+      }
+    });
+
+    return result;
+  }, [filteredSegments, groups]);
+
   // Move segment up/down
   function handleMoveUp(index) {
     if (index > 0) {
@@ -876,193 +1002,129 @@ export default function RundownEditorPage() {
               </div>
             ) : (
               <div className="space-y-2">
-                {filteredSegments.map((segment, index) => {
-                  const originalIndex = segments.findIndex(s => s.id === segment.id);
-                  const isSelected = selectedSegmentId === segment.id;
-                  const isMultiSelected = selectedSegmentIds.includes(segment.id);
-                  const groupedScenes = getGroupedScenes();
-                  const groupedGraphics = getGroupedGraphics();
+                {organizedSegments.map((item) => {
+                  if (item.type === 'group') {
+                    // Render a group with its segments
+                    const { group, segments: groupSegs } = item;
+                    const groupColor = getGroupColor(group.id);
+                    const groupDuration = getGroupDuration(group.id);
 
-                  const isDraggedOver = dragOverIndex === originalIndex && draggedSegmentId !== segment.id;
-                  const isDragging = draggedSegmentId === segment.id;
-
-                  return (
-                    <div
-                      key={segment.id}
-                      id={`segment-${segment.id}`}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, segment.id)}
-                      onDragEnd={handleDragEnd}
-                      onDragOver={(e) => handleDragOver(e, originalIndex)}
-                      onDragLeave={handleDragLeave}
-                      onDrop={(e) => handleDrop(e, originalIndex)}
-                      className={`p-3 rounded-lg border transition-all ${
-                        isDraggedOver
-                          ? 'border-t-2 border-t-blue-500 border-blue-500/50 bg-blue-600/10'
-                          : isSelected
-                            ? 'bg-blue-600/20 border-blue-500'
-                            : isMultiSelected
-                              ? 'bg-zinc-800 border-blue-500/50'
-                              : isDragging
-                                ? 'bg-zinc-800 border-zinc-600 opacity-50'
-                                : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'
-                      }`}
-                    >
-                      {/* Row 1: Drag handle, checkbox, segment number, start time, name, type badge */}
-                      <div className="flex items-center gap-3 mb-2">
-                        {/* Drag handle for reordering (Task 7.1) */}
+                    return (
+                      <div
+                        key={group.id}
+                        className={`rounded-lg border ${groupColor.border} ${groupColor.bg} overflow-hidden`}
+                      >
+                        {/* Group Header */}
                         <div
-                          className="cursor-grab active:cursor-grabbing text-zinc-600 hover:text-zinc-400 transition-colors shrink-0 touch-none"
-                          title="Drag to reorder"
-                          onMouseDown={(e) => e.stopPropagation()}
+                          className={`flex items-center gap-2 px-3 py-2 ${groupColor.header} cursor-pointer`}
+                          onClick={() => handleToggleGroupCollapse(group.id)}
                         >
-                          <Bars3Icon className="w-4 h-4" />
-                        </div>
-                        {/* Checkbox for multi-select (Task 6.1) */}
-                        <div
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleCheckboxChange(segment.id, e);
-                          }}
-                          className={`w-5 h-5 rounded border flex items-center justify-center cursor-pointer transition-colors shrink-0 ${
-                            isMultiSelected
-                              ? 'bg-blue-600 border-blue-500'
-                              : 'bg-zinc-800 border-zinc-600 hover:border-zinc-500'
-                          }`}
-                          title="Click to select, Shift+click for range, Ctrl+click to toggle"
-                        >
-                          {isMultiSelected && (
-                            <CheckIcon className="w-3 h-3 text-white" />
+                          {/* Collapse/Expand Icon */}
+                          <button className={`p-0.5 ${groupColor.text}`}>
+                            {group.collapsed ? (
+                              <ChevronRightIcon className="w-4 h-4" />
+                            ) : (
+                              <ChevronDownIcon className="w-4 h-4" />
+                            )}
+                          </button>
+                          {/* Folder Icon */}
+                          {group.collapsed ? (
+                            <FolderIcon className={`w-4 h-4 ${groupColor.text}`} />
+                          ) : (
+                            <FolderOpenIcon className={`w-4 h-4 ${groupColor.text}`} />
                           )}
+                          {/* Group Name */}
+                          <span className={`text-sm font-medium ${groupColor.text}`}>{group.name}</span>
+                          {/* Segment Count */}
+                          <span className="text-xs text-zinc-500">
+                            ({groupSegs.length} segment{groupSegs.length !== 1 ? 's' : ''})
+                          </span>
+                          {/* Group Duration (Task 7.5) - always visible, emphasized when collapsed */}
+                          <span className={`ml-auto text-xs font-mono ${group.collapsed ? groupColor.text + ' font-medium' : 'text-zinc-500'}`}>
+                            {formatDuration(groupDuration)}
+                          </span>
+                          {/* Ungroup Button */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleUngroupSegments(group.id);
+                            }}
+                            className="p-1 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-700/50 rounded transition-colors"
+                            title="Ungroup segments"
+                          >
+                            <XMarkIcon className="w-3.5 h-3.5" />
+                          </button>
                         </div>
-                        <span className="text-xs text-zinc-500 font-mono w-6">
-                          {String(originalIndex + 1).padStart(2, '0')}
-                        </span>
-                        {/* Running Time Column - shows cumulative start time */}
-                        <span className="text-xs text-zinc-400 font-mono w-12 text-right" title="Start time">
-                          {formatDuration(segmentStartTimes[segment.id] || 0)}
-                        </span>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-white font-medium truncate">{segment.name}</span>
-                            <span className={`px-2 py-0.5 text-xs rounded border shrink-0 ${TYPE_COLORS[segment.type] || 'bg-zinc-700 text-zinc-400 border-zinc-600'}`}>
-                              {segment.type}
-                            </span>
-                            {segment.graphic?.graphicId && (
-                              <span
-                                className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded bg-pink-500/20 text-pink-400 border border-pink-500/30 shrink-0"
-                                title={`Graphic: ${segment.graphic.graphicId}`}
-                              >
-                                <PhotoIcon className="w-3 h-3" />
-                              </span>
-                            )}
-                            {segment.bufferAfter > 0 && (
-                              <span
-                                className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 border-dashed shrink-0"
-                                title={`${segment.bufferAfter}s buffer after this segment`}
-                              >
-                                +{segment.bufferAfter}s
-                              </span>
-                            )}
+
+                        {/* Group Segments (hidden when collapsed) */}
+                        {!group.collapsed && (
+                          <div className="p-2 space-y-1">
+                            {groupSegs.map((segment) => {
+                              const originalIndex = segments.findIndex(s => s.id === segment.id);
+                              return (
+                                <SegmentRow
+                                  key={segment.id}
+                                  segment={segment}
+                                  originalIndex={originalIndex}
+                                  segments={segments}
+                                  selectedSegmentId={selectedSegmentId}
+                                  selectedSegmentIds={selectedSegmentIds}
+                                  draggedSegmentId={draggedSegmentId}
+                                  dragOverIndex={dragOverIndex}
+                                  segmentStartTimes={segmentStartTimes}
+                                  onDragStart={handleDragStart}
+                                  onDragEnd={handleDragEnd}
+                                  onDragOver={handleDragOver}
+                                  onDragLeave={handleDragLeave}
+                                  onDrop={handleDrop}
+                                  onCheckboxChange={handleCheckboxChange}
+                                  onSelectSegment={handleSelectSegment}
+                                  onInlineSceneChange={handleInlineSceneChange}
+                                  onInlineGraphicChange={handleInlineGraphicChange}
+                                  onInlineDurationChange={handleInlineDurationChange}
+                                  onMoveUp={handleMoveUp}
+                                  onMoveDown={handleMoveDown}
+                                  inGroup={true}
+                                  groupColor={groupColor}
+                                />
+                              );
+                            })}
                           </div>
-                        </div>
+                        )}
                       </div>
-
-                      {/* Row 2: Inline editable fields - OBS Scene, Graphic, Duration, Edit button, Reorder */}
-                      <div className="flex items-center gap-2 ml-[5.5rem]">
-                        {/* Inline OBS Scene Dropdown */}
-                        <select
-                          value={segment.scene || ''}
-                          onChange={(e) => {
-                            e.stopPropagation();
-                            handleInlineSceneChange(segment.id, e.target.value);
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                          className="px-2 py-1 text-xs bg-zinc-800 border border-zinc-700 rounded text-zinc-300 focus:outline-none focus:border-blue-500 max-w-[140px] truncate"
-                          title={segment.scene || 'No scene selected'}
-                        >
-                          <option value="">Scene...</option>
-                          {Object.entries(groupedScenes).map(([category, scenes]) => (
-                            <optgroup key={category} label={SCENE_CATEGORY_LABELS[category] || category}>
-                              {scenes.map(scene => (
-                                <option key={scene.name} value={scene.name}>
-                                  {scene.name}
-                                </option>
-                              ))}
-                            </optgroup>
-                          ))}
-                        </select>
-
-                        {/* Inline Graphic Dropdown */}
-                        <select
-                          value={segment.graphic?.graphicId || ''}
-                          onChange={(e) => {
-                            e.stopPropagation();
-                            handleInlineGraphicChange(segment.id, e.target.value);
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                          className="px-2 py-1 text-xs bg-zinc-800 border border-zinc-700 rounded text-zinc-300 focus:outline-none focus:border-blue-500 max-w-[140px] truncate"
-                          title={segment.graphic?.graphicId || 'No graphic selected'}
-                        >
-                          <option value="">Graphic...</option>
-                          {Object.entries(groupedGraphics).map(([category, graphics]) => (
-                            <optgroup key={category} label={GRAPHICS_CATEGORY_LABELS[category] || category}>
-                              {graphics.map(graphic => (
-                                <option key={graphic.id} value={graphic.id}>
-                                  {graphic.label}
-                                </option>
-                              ))}
-                            </optgroup>
-                          ))}
-                        </select>
-
-                        {/* Inline Duration Input */}
-                        <input
-                          type="text"
-                          value={segment.duration !== null ? `${segment.duration}s` : ''}
-                          placeholder="Manual"
-                          onClick={(e) => e.stopPropagation()}
-                          onChange={(e) => {
-                            e.stopPropagation();
-                            const val = e.target.value.replace(/[^\d]/g, '');
-                            handleInlineDurationChange(segment.id, val ? Number(val) : null);
-                          }}
-                          className="w-16 px-2 py-1 text-xs font-mono bg-zinc-800 border border-zinc-700 rounded text-zinc-300 text-center focus:outline-none focus:border-blue-500"
-                          title="Duration in seconds"
-                        />
-
-                        {/* Spacer */}
-                        <div className="flex-1" />
-
-                        {/* Edit Button - opens full detail panel */}
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleSelectSegment(segment.id); }}
-                          className="p-1 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-700 rounded transition-colors"
-                          title="Edit segment details"
-                        >
-                          <PencilIcon className="w-4 h-4" />
-                        </button>
-
-                        {/* Reorder buttons */}
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleMoveUp(originalIndex); }}
-                          disabled={originalIndex === 0}
-                          className="p-1 text-zinc-500 hover:text-zinc-300 disabled:opacity-30 disabled:cursor-not-allowed"
-                          title="Move up"
-                        >
-                          <ChevronUpIcon className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleMoveDown(originalIndex); }}
-                          disabled={originalIndex === segments.length - 1}
-                          className="p-1 text-zinc-500 hover:text-zinc-300 disabled:opacity-30 disabled:cursor-not-allowed"
-                          title="Move down"
-                        >
-                          <ChevronDownIcon className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  );
+                    );
+                  } else {
+                    // Render an ungrouped segment
+                    const { segment } = item;
+                    const originalIndex = segments.findIndex(s => s.id === segment.id);
+                    return (
+                      <SegmentRow
+                        key={segment.id}
+                        segment={segment}
+                        originalIndex={originalIndex}
+                        segments={segments}
+                        selectedSegmentId={selectedSegmentId}
+                        selectedSegmentIds={selectedSegmentIds}
+                        draggedSegmentId={draggedSegmentId}
+                        dragOverIndex={dragOverIndex}
+                        segmentStartTimes={segmentStartTimes}
+                        onDragStart={handleDragStart}
+                        onDragEnd={handleDragEnd}
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                        onCheckboxChange={handleCheckboxChange}
+                        onSelectSegment={handleSelectSegment}
+                        onInlineSceneChange={handleInlineSceneChange}
+                        onInlineGraphicChange={handleInlineGraphicChange}
+                        onInlineDurationChange={handleInlineDurationChange}
+                        onMoveUp={handleMoveUp}
+                        onMoveDown={handleMoveDown}
+                        inGroup={false}
+                        groupColor={null}
+                      />
+                    );
+                  }
                 })}
               </div>
             )}
@@ -1082,6 +1144,7 @@ export default function RundownEditorPage() {
                 onBulkEditType={handleBulkEditType}
                 onBulkEditScene={handleBulkEditScene}
                 onBulkEditGraphic={handleBulkEditGraphic}
+                onCreateGroup={() => setShowCreateGroupModal(true)}
                 onClose={handleDeselectAll}
                 onScrollToSegment={(id) => {
                   // Scroll to segment and flash highlight
@@ -1137,6 +1200,15 @@ export default function RundownEditorPage() {
           onDelete={handleDeleteTemplate}
           onCancel={() => setShowTemplateLibrary(false)}
           isCompatible={isTemplateCompatible}
+        />
+      )}
+
+      {/* Create Group Modal (Phase 4: Task 7.4) */}
+      {showCreateGroupModal && (
+        <CreateGroupModal
+          onCreate={handleCreateGroup}
+          onCancel={() => setShowCreateGroupModal(false)}
+          selectedCount={selectedSegmentIds.length}
         />
       )}
     </div>
@@ -1280,6 +1352,303 @@ function GraphicParamInputs({ graphicId, params, onChange }) {
             )}
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+// Segment Row Component - extracted for use in both grouped and ungrouped contexts
+function SegmentRow({
+  segment,
+  originalIndex,
+  segments,
+  selectedSegmentId,
+  selectedSegmentIds,
+  draggedSegmentId,
+  dragOverIndex,
+  segmentStartTimes,
+  onDragStart,
+  onDragEnd,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  onCheckboxChange,
+  onSelectSegment,
+  onInlineSceneChange,
+  onInlineGraphicChange,
+  onInlineDurationChange,
+  onMoveUp,
+  onMoveDown,
+  inGroup,
+  groupColor,
+}) {
+  const isSelected = selectedSegmentId === segment.id;
+  const isMultiSelected = selectedSegmentIds.includes(segment.id);
+  const isDraggedOver = dragOverIndex === originalIndex && draggedSegmentId !== segment.id;
+  const isDragging = draggedSegmentId === segment.id;
+  const groupedScenes = getGroupedScenes();
+  const groupedGraphics = getGroupedGraphics();
+
+  return (
+    <div
+      id={`segment-${segment.id}`}
+      draggable
+      onDragStart={(e) => onDragStart(e, segment.id)}
+      onDragEnd={onDragEnd}
+      onDragOver={(e) => onDragOver(e, originalIndex)}
+      onDragLeave={onDragLeave}
+      onDrop={(e) => onDrop(e, originalIndex)}
+      className={`p-3 rounded-lg border transition-all ${
+        isDraggedOver
+          ? 'border-t-2 border-t-blue-500 border-blue-500/50 bg-blue-600/10'
+          : isSelected
+            ? 'bg-blue-600/20 border-blue-500'
+            : isMultiSelected
+              ? 'bg-zinc-800 border-blue-500/50'
+              : isDragging
+                ? 'bg-zinc-800 border-zinc-600 opacity-50'
+                : inGroup
+                  ? `bg-zinc-900/50 border-zinc-800/50 hover:border-zinc-700`
+                  : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'
+      }`}
+    >
+      {/* Row 1: Drag handle, checkbox, segment number, start time, name, type badge */}
+      <div className="flex items-center gap-3 mb-2">
+        {/* Drag handle for reordering (Task 7.1) */}
+        <div
+          className="cursor-grab active:cursor-grabbing text-zinc-600 hover:text-zinc-400 transition-colors shrink-0 touch-none"
+          title="Drag to reorder"
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          <Bars3Icon className="w-4 h-4" />
+        </div>
+        {/* Checkbox for multi-select (Task 6.1) */}
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+            onCheckboxChange(segment.id, e);
+          }}
+          className={`w-5 h-5 rounded border flex items-center justify-center cursor-pointer transition-colors shrink-0 ${
+            isMultiSelected
+              ? 'bg-blue-600 border-blue-500'
+              : 'bg-zinc-800 border-zinc-600 hover:border-zinc-500'
+          }`}
+          title="Click to select, Shift+click for range, Ctrl+click to toggle"
+        >
+          {isMultiSelected && (
+            <CheckIcon className="w-3 h-3 text-white" />
+          )}
+        </div>
+        <span className="text-xs text-zinc-500 font-mono w-6">
+          {String(originalIndex + 1).padStart(2, '0')}
+        </span>
+        {/* Running Time Column - shows cumulative start time */}
+        <span className="text-xs text-zinc-400 font-mono w-12 text-right" title="Start time">
+          {formatDuration(segmentStartTimes[segment.id] || 0)}
+        </span>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-white font-medium truncate">{segment.name}</span>
+            <span className={`px-2 py-0.5 text-xs rounded border shrink-0 ${TYPE_COLORS[segment.type] || 'bg-zinc-700 text-zinc-400 border-zinc-600'}`}>
+              {segment.type}
+            </span>
+            {segment.graphic?.graphicId && (
+              <span
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded bg-pink-500/20 text-pink-400 border border-pink-500/30 shrink-0"
+                title={`Graphic: ${segment.graphic.graphicId}`}
+              >
+                <PhotoIcon className="w-3 h-3" />
+              </span>
+            )}
+            {segment.bufferAfter > 0 && (
+              <span
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 border-dashed shrink-0"
+                title={`${segment.bufferAfter}s buffer after this segment`}
+              >
+                +{segment.bufferAfter}s
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Row 2: Inline editable fields - OBS Scene, Graphic, Duration, Edit button, Reorder */}
+      <div className="flex items-center gap-2 ml-[5.5rem]">
+        {/* Inline OBS Scene Dropdown */}
+        <select
+          value={segment.scene || ''}
+          onChange={(e) => {
+            e.stopPropagation();
+            onInlineSceneChange(segment.id, e.target.value);
+          }}
+          onClick={(e) => e.stopPropagation()}
+          className="px-2 py-1 text-xs bg-zinc-800 border border-zinc-700 rounded text-zinc-300 focus:outline-none focus:border-blue-500 max-w-[140px] truncate"
+          title={segment.scene || 'No scene selected'}
+        >
+          <option value="">Scene...</option>
+          {Object.entries(groupedScenes).map(([category, scenes]) => (
+            <optgroup key={category} label={SCENE_CATEGORY_LABELS[category] || category}>
+              {scenes.map(scene => (
+                <option key={scene.name} value={scene.name}>
+                  {scene.name}
+                </option>
+              ))}
+            </optgroup>
+          ))}
+        </select>
+
+        {/* Inline Graphic Dropdown */}
+        <select
+          value={segment.graphic?.graphicId || ''}
+          onChange={(e) => {
+            e.stopPropagation();
+            onInlineGraphicChange(segment.id, e.target.value);
+          }}
+          onClick={(e) => e.stopPropagation()}
+          className="px-2 py-1 text-xs bg-zinc-800 border border-zinc-700 rounded text-zinc-300 focus:outline-none focus:border-blue-500 max-w-[140px] truncate"
+          title={segment.graphic?.graphicId || 'No graphic selected'}
+        >
+          <option value="">Graphic...</option>
+          {Object.entries(groupedGraphics).map(([category, graphics]) => (
+            <optgroup key={category} label={GRAPHICS_CATEGORY_LABELS[category] || category}>
+              {graphics.map(graphic => (
+                <option key={graphic.id} value={graphic.id}>
+                  {graphic.label}
+                </option>
+              ))}
+            </optgroup>
+          ))}
+        </select>
+
+        {/* Inline Duration Input */}
+        <input
+          type="text"
+          value={segment.duration !== null ? `${segment.duration}s` : ''}
+          placeholder="Manual"
+          onClick={(e) => e.stopPropagation()}
+          onChange={(e) => {
+            e.stopPropagation();
+            const val = e.target.value.replace(/[^\d]/g, '');
+            onInlineDurationChange(segment.id, val ? Number(val) : null);
+          }}
+          className="w-16 px-2 py-1 text-xs font-mono bg-zinc-800 border border-zinc-700 rounded text-zinc-300 text-center focus:outline-none focus:border-blue-500"
+          title="Duration in seconds"
+        />
+
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* Edit Button - opens full detail panel */}
+        <button
+          onClick={(e) => { e.stopPropagation(); onSelectSegment(segment.id); }}
+          className="p-1 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-700 rounded transition-colors"
+          title="Edit segment details"
+        >
+          <PencilIcon className="w-4 h-4" />
+        </button>
+
+        {/* Reorder buttons */}
+        <button
+          onClick={(e) => { e.stopPropagation(); onMoveUp(originalIndex); }}
+          disabled={originalIndex === 0}
+          className="p-1 text-zinc-500 hover:text-zinc-300 disabled:opacity-30 disabled:cursor-not-allowed"
+          title="Move up"
+        >
+          <ChevronUpIcon className="w-4 h-4" />
+        </button>
+        <button
+          onClick={(e) => { e.stopPropagation(); onMoveDown(originalIndex); }}
+          disabled={originalIndex === segments.length - 1}
+          className="p-1 text-zinc-500 hover:text-zinc-300 disabled:opacity-30 disabled:cursor-not-allowed"
+          title="Move down"
+        >
+          <ChevronDownIcon className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Create Group Modal Component (Phase 4: Task 7.4)
+function CreateGroupModal({ onCreate, onCancel, selectedCount }) {
+  const [groupName, setGroupName] = useState('');
+  const [selectedColor, setSelectedColor] = useState(GROUP_COLORS[0].id);
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    if (!groupName.trim()) return;
+    onCreate(groupName.trim(), selectedColor);
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+      <div className="bg-zinc-900 border border-zinc-700 rounded-xl w-full max-w-md mx-4 shadow-2xl">
+        <div className="flex items-center justify-between p-4 border-b border-zinc-800">
+          <h2 className="text-lg font-bold text-white">Create Group</h2>
+          <button
+            onClick={onCancel}
+            className="p-1 text-zinc-400 hover:text-zinc-200 rounded-lg hover:bg-zinc-800 transition-colors"
+          >
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+          <div>
+            <label className="block text-xs text-zinc-400 mb-1.5">Group Name *</label>
+            <input
+              type="text"
+              value={groupName}
+              onChange={(e) => setGroupName(e.target.value)}
+              placeholder="e.g., Rotation 1, Opening Sequence"
+              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+              autoFocus
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs text-zinc-400 mb-2">Color</label>
+            <div className="flex gap-2">
+              {GROUP_COLORS.map(color => (
+                <button
+                  key={color.id}
+                  type="button"
+                  onClick={() => setSelectedColor(color.id)}
+                  className={`w-8 h-8 rounded-full ${color.header} border-2 transition-all ${
+                    selectedColor === color.id
+                      ? `${color.border} ring-2 ring-offset-2 ring-offset-zinc-900 ring-${color.id}-500/50`
+                      : 'border-transparent hover:border-zinc-600'
+                  }`}
+                  title={color.id.charAt(0).toUpperCase() + color.id.slice(1)}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="p-3 bg-zinc-800/50 rounded-lg border border-zinc-700">
+            <div className="text-sm text-zinc-300">
+              <FolderIcon className="w-4 h-4 inline mr-2" />
+              {selectedCount} segment{selectedCount !== 1 ? 's' : ''} will be added to this group
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="flex-1 px-4 py-2 bg-zinc-800 text-zinc-300 rounded-lg hover:bg-zinc-700 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={!groupName.trim()}
+              className="flex-1 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Create Group
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
@@ -1742,6 +2111,7 @@ function SelectionSummaryPanel({
   onBulkEditType,
   onBulkEditScene,
   onBulkEditGraphic,
+  onCreateGroup,
   onClose,
   onScrollToSegment
 }) {
@@ -1960,6 +2330,15 @@ function SelectionSummaryPanel({
             </div>
           )}
         </div>
+
+        {/* Group Selected button (Phase 4: Task 7.4) */}
+        <button
+          onClick={onCreateGroup}
+          className="w-full px-3 py-2 text-sm bg-blue-600/20 border border-blue-600/50 text-blue-400 rounded-lg hover:bg-blue-600/30 transition-colors flex items-center justify-center gap-2"
+        >
+          <FolderIcon className="w-4 h-4" />
+          Group {selectedSegments.length} Segment{selectedSegments.length !== 1 ? 's' : ''}
+        </button>
 
         {/* Delete All button */}
         <button
