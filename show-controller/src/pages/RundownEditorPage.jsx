@@ -5818,6 +5818,10 @@ function SegmentRow({
   historicalAverageSec, // Phase J: Task 41 - Historical average duration in seconds
   aiPrediction, // Phase J: Task 42 - AI-powered timing prediction { predictedDurationSec, confidence, source }
   hasEquipmentConflict = false, // Phase G: Task 69 - Equipment conflict detection
+  wallClockTime, // Phase K: Task 82 - Wall-clock time for this segment (Date object)
+  displayTimezones = [], // Phase K: Task 82 - Array of timezone IDs to display (e.g., ['America/Los_Angeles', 'America/New_York'])
+  timezoneConfig, // Phase K: Task 82 - Full timezone config object (for use24HourFormat)
+  isAnchorSegment = false, // Phase K: Task 83 - Whether this segment is the anchor segment
 }) {
   const isSelected = selectedSegmentId === segment.id;
   const isMultiSelected = selectedSegmentIds.includes(segment.id);
@@ -6003,6 +6007,22 @@ function SegmentRow({
         <span className="text-xs text-zinc-400 font-mono w-12 text-right" title="Start time">
           {formatDuration(segmentStartTimes[segment.id] || 0)}
         </span>
+        {/* Phase K: Task 82 - Timezone columns (wall-clock times) */}
+        {displayTimezones.length > 0 && wallClockTime && (
+          <div className="flex items-center gap-1 shrink-0">
+            {displayTimezones.map((tz, tzIndex) => (
+              <span
+                key={tz}
+                className={`text-xs font-mono w-16 text-right ${
+                  tzIndex === 0 ? 'text-teal-400' : 'text-zinc-500'
+                }`}
+                title={tz}
+              >
+                {formatTimeInTimezone(wallClockTime, tz, timezoneConfig?.use24HourFormat)}
+              </span>
+            ))}
+          </div>
+        )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className={`font-medium truncate ${isLocked ? 'text-zinc-400' : 'text-white'}`}>{segment.name}</span>
