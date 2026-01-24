@@ -422,6 +422,118 @@ export default function RundownEditorPage() {
     return result;
   }, [timingAnalyticsData]);
 
+  // AI-powered timing predictions based on historical data (Phase J: Task 42)
+  // For segments without direct historical data, predicts duration based on:
+  // 1. Similar segment names (fuzzy matching)
+  // 2. Same segment type averages
+  // 3. Overall show averages
+  const aiTimingPredictions = useMemo(() => {
+    if (!timingAnalyticsData || timingAnalyticsData.length === 0 || !segments) return {};
+
+    // Collect all historical timing data with segment metadata
+    const historicalData = [];
+    const typeAverages = {}; // { type: { totalMs, count } }
+    let overallTotal = 0;
+    let overallCount = 0;
+
+    timingAnalyticsData.forEach(run => {
+      if (!run.segments) return;
+      run.segments.forEach(seg => {
+        if (!seg.actualDurationMs) return;
+
+        historicalData.push({
+          name: seg.segmentName || '',
+          type: seg.segmentType || 'unknown',
+          durationMs: seg.actualDurationMs,
+          durationSec: Math.round(seg.actualDurationMs / 1000),
+        });
+
+        // Track type averages
+        const segType = seg.segmentType || 'unknown';
+        if (!typeAverages[segType]) {
+          typeAverages[segType] = { totalMs: 0, count: 0 };
+        }
+        typeAverages[segType].totalMs += seg.actualDurationMs;
+        typeAverages[segType].count++;
+
+        // Track overall
+        overallTotal += seg.actualDurationMs;
+        overallCount++;
+      });
+    });
+
+    // Calculate type average durations
+    const typeAvgDurations = {};
+    Object.entries(typeAverages).forEach(([type, data]) => {
+      if (data.count > 0) {
+        typeAvgDurations[type] = Math.round(data.totalMs / data.count / 1000);
+      }
+    });
+
+    const overallAvg = overallCount > 0 ? Math.round(overallTotal / overallCount / 1000) : 30;
+
+    // Helper: find similar segment names using simple word matching
+    const findSimilarSegments = (name) => {
+      if (!name) return [];
+      const words = name.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+      if (words.length === 0) return [];
+
+      return historicalData.filter(hist => {
+        const histWords = hist.name.toLowerCase().split(/\s+/);
+        // Check if any significant words match
+        return words.some(w => histWords.some(hw => hw.includes(w) || w.includes(hw)));
+      });
+    };
+
+    // Generate predictions for each current segment
+    const predictions = {};
+
+    segments.forEach(segment => {
+      // Skip if we already have direct historical data
+      if (segmentHistoricalAverages[segment.id] !== undefined) {
+        return;
+      }
+
+      let prediction = null;
+      let confidence = 'low';
+      let source = '';
+
+      // Strategy 1: Find similar named segments
+      const similarSegments = findSimilarSegments(segment.name);
+      if (similarSegments.length >= 2) {
+        const avgDuration = Math.round(
+          similarSegments.reduce((sum, s) => sum + s.durationSec, 0) / similarSegments.length
+        );
+        prediction = avgDuration;
+        confidence = similarSegments.length >= 5 ? 'high' : 'medium';
+        source = `similar (${similarSegments.length} matches)`;
+      }
+      // Strategy 2: Use type average
+      else if (segment.type && typeAvgDurations[segment.type]) {
+        prediction = typeAvgDurations[segment.type];
+        confidence = typeAverages[segment.type].count >= 5 ? 'medium' : 'low';
+        source = `${segment.type} avg`;
+      }
+      // Strategy 3: Fallback to overall average
+      else if (overallCount > 0) {
+        prediction = overallAvg;
+        confidence = 'low';
+        source = 'overall avg';
+      }
+
+      if (prediction !== null) {
+        predictions[segment.id] = {
+          predictedDurationSec: prediction,
+          confidence,
+          source,
+          matchCount: similarSegments.length,
+        };
+      }
+    });
+
+    return predictions;
+  }, [timingAnalyticsData, segments, segmentHistoricalAverages]);
+
   // Apply theme class to body and persist preference (Phase 10: Task 80)
   useEffect(() => {
     localStorage.setItem('rundown-theme-dark', JSON.stringify(darkMode));
@@ -4734,6 +4846,7 @@ export default function RundownEditorPage() {
                                   groupedScenes={groupedScenes}
                                   groupedGraphics={groupedGraphics}
                                   historicalAverageSec={segmentHistoricalAverages[segment.id]}
+                                  aiPrediction={aiTimingPredictions[segment.id]}
                                 />
                               );
                             })}
@@ -4781,6 +4894,7 @@ export default function RundownEditorPage() {
                         groupedScenes={groupedScenes}
                         groupedGraphics={groupedGraphics}
                         historicalAverageSec={segmentHistoricalAverages[segment.id]}
+                        aiPrediction={aiTimingPredictions[segment.id]}
                       />
                     );
                   }
@@ -4830,6 +4944,7 @@ export default function RundownEditorPage() {
                 compType={liveCompType}
                 teamNames={liveTeamNames}
                 historicalAverageSec={segmentHistoricalAverages[selectedSegment.id]}
+                aiPrediction={aiTimingPredictions[selectedSegment.id]}
               />
             ) : (
               <div className="text-center py-20 text-zinc-500">
@@ -5235,6 +5350,7 @@ function SegmentRow({
   groupedScenes,
   groupedGraphics,
   historicalAverageSec, // Phase J: Task 41 - Historical average duration in seconds
+  aiPrediction, // Phase J: Task 42 - AI-powered timing prediction { predictedDurationSec, confidence, source }
 }) {
   const isSelected = selectedSegmentId === segment.id;
   const isMultiSelected = selectedSegmentIds.includes(segment.id);
@@ -5322,12 +5438,12 @@ function SegmentRow({
           {segment.optional && (
             <span className="text-[10px] text-amber-400 shrink-0" title="Optional">opt</span>
           )}
-          {/* Duration with historical average (Phase J: Task 41) */}
+          {/* Duration with historical average (Phase J: Task 41) or AI prediction (Phase J: Task 42) */}
           <div className="flex items-center gap-1 shrink-0">
             <span className="text-xs font-mono text-zinc-400 text-right" title="Duration">
               {segment.duration !== null ? `${segment.duration}s` : 'Manual'}
             </span>
-            {historicalAverageSec !== undefined && (
+            {historicalAverageSec !== undefined ? (
               <span
                 className={`text-[9px] font-mono ${
                   segment.duration !== null && historicalAverageSec !== segment.duration
@@ -5339,6 +5455,17 @@ function SegmentRow({
                 title={`Historical average: ${historicalAverageSec}s`}
               >
                 (~{historicalAverageSec})
+              </span>
+            ) : aiPrediction && (
+              <span
+                className={`text-[9px] font-mono flex items-center gap-0.5 ${
+                  aiPrediction.confidence === 'high' ? 'text-purple-400' :
+                  aiPrediction.confidence === 'medium' ? 'text-purple-400/70' : 'text-purple-400/50'
+                }`}
+                title={`AI predicted: ${aiPrediction.predictedDurationSec}s (${aiPrediction.source}, ${aiPrediction.confidence} confidence)`}
+              >
+                <SparklesIcon className="w-2.5 h-2.5" />
+                {aiPrediction.predictedDurationSec}s
               </span>
             )}
           </div>
@@ -5604,8 +5731,8 @@ function SegmentRow({
             className={`w-16 px-2 py-1 text-xs font-mono bg-zinc-800 border border-zinc-700 rounded text-zinc-300 text-center focus:outline-none focus:border-blue-500 ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
             title={isLocked ? 'Segment is locked' : 'Duration in seconds'}
           />
-          {/* Historical average indicator (Phase J: Task 41) */}
-          {historicalAverageSec !== undefined && (
+          {/* Historical average indicator (Phase J: Task 41) or AI prediction (Phase J: Task 42) */}
+          {historicalAverageSec !== undefined ? (
             <span
               className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
                 segment.duration !== null && historicalAverageSec !== segment.duration
@@ -5622,6 +5749,25 @@ function SegmentRow({
             >
               ~{historicalAverageSec}s
             </span>
+          ) : aiPrediction && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onInlineDurationChange(segment.id, aiPrediction.predictedDurationSec);
+              }}
+              disabled={isLocked}
+              className={`text-[10px] font-mono px-1.5 py-0.5 rounded flex items-center gap-1 transition-colors ${
+                aiPrediction.confidence === 'high'
+                  ? 'text-purple-400 bg-purple-500/10 border border-purple-500/30 hover:bg-purple-500/20'
+                  : aiPrediction.confidence === 'medium'
+                    ? 'text-purple-400/80 bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20'
+                    : 'text-purple-400/60 bg-purple-500/5 border border-purple-500/10 hover:bg-purple-500/10'
+              } ${isLocked ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+              title={`AI predicted: ${aiPrediction.predictedDurationSec}s (${aiPrediction.source}, ${aiPrediction.confidence} confidence). Click to apply.`}
+            >
+              <SparklesIcon className="w-3 h-3" />
+              {aiPrediction.predictedDurationSec}s
+            </button>
           )}
         </div>
 
@@ -6018,7 +6164,7 @@ function CreateGroupModal({ onCreate, onCancel, selectedCount }) {
 }
 
 // Placeholder SegmentDetail panel component
-function SegmentDetailPanel({ segment, onSave, onDelete, onCancel, groupedScenes, groupedGraphics, compType, teamNames, historicalAverageSec }) {
+function SegmentDetailPanel({ segment, onSave, onDelete, onCancel, groupedScenes, groupedGraphics, compType, teamNames, historicalAverageSec, aiPrediction }) {
   const [formData, setFormData] = useState(segment);
 
   // Reset form when segment changes
@@ -6123,6 +6269,41 @@ function SegmentDetailPanel({ segment, onSave, onDelete, onCancel, groupedScenes
               placeholder="Manual"
               className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
             />
+            {/* Historical average or AI prediction (Phase J: Tasks 41-42) */}
+            {historicalAverageSec !== undefined ? (
+              <div className={`mt-1.5 text-xs flex items-center gap-1.5 ${
+                formData.duration !== null && historicalAverageSec !== formData.duration
+                  ? historicalAverageSec > formData.duration
+                    ? 'text-amber-400' : 'text-green-400'
+                  : 'text-zinc-500'
+              }`}>
+                <ClockIcon className="w-3.5 h-3.5" />
+                Historical average: {historicalAverageSec}s
+                {formData.duration !== null && (
+                  <span className="text-zinc-500">
+                    ({historicalAverageSec > formData.duration ? '+' : ''}{historicalAverageSec - formData.duration}s vs planned)
+                  </span>
+                )}
+              </div>
+            ) : aiPrediction && (
+              <div className="mt-1.5 flex items-center gap-2">
+                <div className={`text-xs flex items-center gap-1.5 ${
+                  aiPrediction.confidence === 'high' ? 'text-purple-400' :
+                  aiPrediction.confidence === 'medium' ? 'text-purple-400/80' : 'text-purple-400/60'
+                }`}>
+                  <SparklesIcon className="w-3.5 h-3.5" />
+                  AI prediction: {aiPrediction.predictedDurationSec}s
+                  <span className="text-zinc-500">({aiPrediction.source})</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, duration: aiPrediction.predictedDurationSec })}
+                  className="text-[10px] px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 transition-colors"
+                >
+                  Apply
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
