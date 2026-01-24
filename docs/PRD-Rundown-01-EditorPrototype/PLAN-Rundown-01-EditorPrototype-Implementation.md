@@ -3,7 +3,7 @@
 **PRD:** PRD-Rundown-01-EditorPrototype
 **Status:** PROTOTYPE COMPLETE, FEATURES IN PROGRESS
 **Created:** 2026-01-22
-**Last Updated:** 2026-01-23 (v5.16 - Task 93 complete - Add audio cue planning fields)
+**Last Updated:** 2026-01-23 (v5.17 - Task 94 complete - Add talent assignment)
 
 ---
 
@@ -231,7 +231,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 91: AI suggestions panel UI | COMPLETE | Implemented as part of Task 88 - non-intrusive panel below toolbar, one-click add, dismiss/reset functionality |
 | Task 92: Add segment script field | COMPLETE | Added `script` field to segments with markdown-style support hints, word/character count, emerald-colored indicator on segment row |
 | Task 93: Add audio cue planning fields | COMPLETE | Added `audioCue` field with songName, inPoint, outPoint. Form UI in Edit panel with clear button. Purple-colored indicator on segment row shows song name and timestamps in tooltip. |
-| Task 94: Add talent assignment | NOT STARTED | Who is on camera, schedule view |
+| Task 94: Add talent assignment | COMPLETE | Added `talent` field (array of talent IDs) to segments, DUMMY_TALENT roster constant with 5 talent members, multi-select UI in Edit panel, rose-colored indicator on segment row showing talent count, TalentScheduleModal with per-talent segment view, conflict detection for overlapping segments, export talent schedule feature |
 | Task 95: Add equipment tracking | NOT STARTED | Camera, mic per segment, conflicts |
 | Task 96: Add sponsor/ad tracking | NOT STARTED | Commercial obligations, fulfillment |
 

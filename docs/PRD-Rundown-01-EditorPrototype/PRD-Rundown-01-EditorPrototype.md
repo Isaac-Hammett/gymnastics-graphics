@@ -1154,7 +1154,7 @@ const filteredSegments = segments.filter(seg => {
 - [x] One-click to add AI-suggested segment
 - [x] Segment script field with rich text
 - [x] Audio cue planning fields
-- [ ] Talent assignment per segment
+- [x] Talent assignment per segment
 - [ ] Equipment tracking per segment
 - [ ] Sponsor/ad inventory tracking
 

@@ -580,21 +580,29 @@ When Producer loads rundown for abc123:
 └───────────────────────┘    └────────────────────────────────────────────────┘
 ```
 
-### 4.2 Socket Events
+### 4.4 Socket Events
 
 | Event | Direction | Purpose |
 |-------|-----------|---------|
 | `loadRundown` | Client → Server | Request to load rundown from Firebase |
-| `timesheetState` | Server → Client | Full state update |
-| `timesheetTick` | Server → Client | Real-time timing updates |
-| `timesheetSegmentActivated` | Server → Client | Segment changed |
+| `timesheetState` | Server → Client (room) | Full state update (to competition room) |
+| `timesheetTick` | Server → Client (room) | Real-time timing updates |
+| `timesheetSegmentActivated` | Server → Client (room) | Segment changed |
 
-### 4.3 Key Files
+### 4.5 Key Files
 
+#### Server Infrastructure
 | File | Purpose |
 |------|---------|
-| `server/lib/timesheetEngine.js` | Show execution engine |
-| `server/index.js` | Socket handlers, API routes |
+| `server/index.js` | Coordinator entry point, socket handlers |
+| `server/lib/timesheetEngine.js` | Show execution engine (needs refactoring) |
+| `server/lib/obsConnectionManager.js` | Per-competition OBS WebSocket connections |
+| `server/lib/vmPoolManager.js` | EC2 VM assignment and lifecycle |
+| `server/lib/productionConfigService.js` | Firebase Admin initialization |
+
+#### Client Application
+| File | Purpose |
+|------|---------|
 | `show-controller/src/hooks/useTimesheet.js` | Client hook for timesheet state |
 | `show-controller/src/context/ShowContext.jsx` | Shared state, socket connection |
 | `show-controller/src/pages/RundownEditorPage.jsx` | Rundown planning UI |
@@ -627,23 +635,30 @@ When Producer loads rundown for abc123:
 ### 5.2 Immediate Priority: Phase A (Connect Editor to Engine)
 
 ```
+Step 0: Refactor TimesheetEngine for Multi-Competition (PREREQUISITE)
+├── A.0.1: Update constructor to accept compId, obsConnectionManager
+├── A.0.2: Create timesheetEngines Map in server/index.js
+├── A.0.3: Update _applyTransitionAndSwitchScene() for per-competition OBS
+├── A.0.4: Update _playVideo() for per-competition OBS
+├── A.0.5: Update _applyAudioOverrides() for per-competition OBS
+├── A.0.6: Update broadcasts to target competition room
+└── A.0.7: Pass Firebase Admin instance to engine
+
 Step 1: Verify Current State
 ├── A.5.1: Check if scene picker uses OBS state
 ├── A.5.2: Check if graphics picker uses registry
 └── A.5.3: Document any hardcoded data
 
-Step 2: Wire Firebase to Engine
-└── A.5: Pass Firebase to TimesheetEngine constructor
-
-Step 3: Build Load Rundown
+Step 2: Build Load Rundown
 ├── A.1: Add loadRundown socket handler on server
 ├── A.2: Add loadRundown action in ShowContext
 ├── A.3: Add "Load Rundown" button in Producer View
 └── A.4: Create segment mapper
 
-Step 4: Polish
+Step 3: Polish
 ├── A.6: Rundown status indicator
 ├── Testing: Verify segments load correctly
+├── Testing: Verify OBS scene switching works via obsConnectionManager
 └── Testing: Verify show execution works with loaded rundown
 ```
 
@@ -717,18 +732,28 @@ Deferred until earlier phases are complete and in use.
 | **Timesheet** | The execution UI in Producer View |
 | **Load Rundown** | Action to fetch segments from Firebase and load into Timesheet Engine |
 | **Hold Segment** | A segment that waits for manual advance (no auto-advance) |
+| **Coordinator** | Central server (`api.commentarygraphic.com`) that manages all competitions |
+| **Competition VM** | EC2 instance assigned to a competition, runs OBS and Show Server |
+| **obsConnectionManager** | Server module that manages per-competition OBS WebSocket connections |
+| **Competition Room** | Socket.io room (`competition:{compId}`) for isolated broadcasts |
+| **timesheetEngines Map** | Server-side Map holding per-competition TimesheetEngine instances |
 
 ---
 
 ## 8. Success Criteria
 
 ### Phase A Complete When:
+- [ ] TimesheetEngine refactored to accept compId and obsConnectionManager
+- [ ] Per-competition engine instances stored in timesheetEngines Map
+- [ ] Engine routes OBS calls through obsConnectionManager.getConnection(compId)
+- [ ] Engine broadcasts only to competition room (io.to('competition:${compId}'))
 - [ ] Producer can click "Load Rundown" and segments appear in Timesheet
 - [ ] "Start Show" begins execution with loaded segments
 - [ ] Segment progression works (auto-advance and manual)
-- [ ] OBS scene switching works when segment changes
+- [ ] OBS scene switching works when segment changes (via per-competition OBS)
 - [ ] Graphics firing works when segment has a graphic
 - [ ] Changes made in Rundown Editor can be re-loaded
+- [ ] Two competitions can run independently without interference
 
 ### Phase B Complete When:
 - [ ] Talent View accessible at `/{compId}/talent`
@@ -780,6 +805,8 @@ Deferred until earlier phases are complete and in use.
 
 | Question | Status | Decision |
 |----------|--------|----------|
+| Should TimesheetEngine be single instance or per-competition? | **Decided** | Per-competition instances in `timesheetEngines` Map |
+| How should engine access OBS? | **Decided** | Via `obsConnectionManager.getConnection(compId)` |
 | Should Talent View have its own route or be a mode in Producer View? | Decided | Separate route (`/{compId}/talent`) |
 | How to handle rundown changes during live show? | Addressed | Phase I covers this - warning + reload option |
 | Quick scenes configuration - per-competition or global? | Open | Likely per-competition in Firebase |
@@ -805,28 +832,72 @@ The original plan had 10+ sub-PRDs with overlapping scope. This consolidated doc
 
 ## Appendix B: Code Audit Results (2026-01-23)
 
-### TimesheetEngine Initialization
-**File:** `server/index.js` lines 250-255
+### TimesheetEngine Initialization - NEEDS REFACTORING
+
+**Current (Wrong):** `server/index.js` lines 250-255
 ```javascript
+// Single global instance with single OBS connection
+let timesheetEngine;  // One engine for all competitions
+
 function initializeTimesheetEngine() {
   timesheetEngine = new TimesheetEngine({
     showConfig,
-    obs,
+    obs,        // ❌ Single OBS - doesn't work for multi-competition
     io
     // MISSING: firebase - needed for _triggerGraphic()
+    // MISSING: compId - engine doesn't know which competition
+    // MISSING: obsConnectionManager - should use per-competition OBS
   });
-  // ... event handlers
 }
 ```
 
-### TimesheetEngine Methods That Need OBS/Firebase
+**Required (Correct):**
+```javascript
+// Map of per-competition engine instances
+const timesheetEngines = new Map();  // compId → TimesheetEngine
 
-| Method | Dependency | Status |
-|--------|------------|--------|
-| `_applyTransitionAndSwitchScene()` | `this.obs` | ⚠️ OBS must be connected |
-| `_triggerGraphic()` | `this.firebase`, `this.io` | ❌ Firebase not provided |
-| `_playVideo()` | `this.obs` | ⚠️ OBS must be connected |
-| `_applyAudioOverrides()` | `this.obs` | ⚠️ OBS must be connected |
+function getOrCreateEngine(compId, obsConnectionManager, firebase, io) {
+  if (!timesheetEngines.has(compId)) {
+    const engine = new TimesheetEngine({
+      compId,
+      obsConnectionManager,  // ✅ Get OBS via .getConnection(compId)
+      firebase,              // ✅ For graphics triggering
+      io                     // ✅ Broadcasts to competition room
+    });
+    timesheetEngines.set(compId, engine);
+    wireEngineEvents(engine, compId, io);  // Broadcast to room
+  }
+  return timesheetEngines.get(compId);
+}
+```
+
+### TimesheetEngine Methods That Need Updates
+
+| Method | Current | Required Change |
+|--------|---------|-----------------|
+| `_applyTransitionAndSwitchScene()` | `this.obs.call(...)` | `this.obsConnectionManager.getConnection(this.compId).call(...)` |
+| `_triggerGraphic()` | `this.firebase` (never provided) | Pass Firebase Admin in constructor |
+| `_playVideo()` | `this.obs.call(...)` | Use per-competition OBS |
+| `_applyAudioOverrides()` | `this.obs.call(...)` | Use per-competition OBS |
+| Event broadcasts | `this.io.emit(...)` | `this.io.to('competition:${this.compId}').emit(...)` |
+
+### Production Infrastructure Reference
+
+**Key files for understanding the production OBS routing:**
+
+| File | Purpose |
+|------|---------|
+| `server/lib/obsConnectionManager.js` | Per-competition OBS WebSocket connections |
+| `server/lib/vmPoolManager.js` | VM assignment and lifecycle |
+| `server/index.js:2589-2647` | Socket connection handling, OBS routing |
+
+**obsConnectionManager API:**
+```javascript
+obsConnectionManager.connectToVM(compId, vmAddress)  // Connect to competition's VM
+obsConnectionManager.getConnection(compId)            // Get OBS WebSocket for competition
+obsConnectionManager.isConnected(compId)              // Check if connected
+obsConnectionManager.getConnectionState(compId)       // Get full state
+```
 
 ### Graphics Registry
 **File:** `show-controller/src/lib/graphicsRegistry.js`
