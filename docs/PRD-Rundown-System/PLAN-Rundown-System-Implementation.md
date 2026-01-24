@@ -52,7 +52,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | A | Connect Editor to Engine | P0 | COMPLETE | 1-16 |
 | H | Rehearsal Mode | P1 | COMPLETE | 17-21 |
 | B | Talent View | P1 | COMPLETE | 22-27 |
-| I | Live Rundown Sync | P2 | IN PROGRESS | 28-37 |
+| I | Live Rundown Sync | P2 | COMPLETE | 28-37 |
 | J | Segment Timing Analytics | P2 | NOT STARTED | 38-42 |
 | D | AI Suggestions - Planning | P2 | NOT STARTED | 43-48 |
 | E | Script & Talent Flow | P2 | NOT STARTED | 49-54 |
@@ -106,7 +106,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 26 | Notes display | COMPLETE | `CurrentSegment.jsx` shows notes in styled box at bottom of segment card |
 | Task 27 | Add `/talent` route | COMPLETE | Route exists at `App.jsx:68` as `<Route path="talent" element={<TalentView />} />` |
 
-### Phase I: Live Rundown Sync (P2) - IN PROGRESS
+### Phase I: Live Rundown Sync (P2) - COMPLETE (10/10)
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
@@ -119,7 +119,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 34 | Confirmation dialog with change summary | COMPLETE | Added modal dialog in ProducerView.jsx with: change summary (added/removed/modified/reordered counts), current position info, warning if current segment affected, Cancel/Reload Now buttons |
 | Task 35 | Handle deleted current segment | COMPLETE | Added `_currentSegmentDeleted` flag to TimesheetEngine; `updateConfig()` detects deleted segment and emits `currentSegmentDeleted` event; `getState()` includes `currentSegmentDeleted` field; `advance()` handles jumping from deleted segment; server broadcasts `timesheetCurrentSegmentDeleted` event; ProducerView shows red warning banner when current segment deleted |
 | Task 36 | Handle reordered past segments | COMPLETE | Added filtering in `subscribeToRundownChanges()` to ignore reordered/modified segments where both old and new positions are before current segment; logs filtered segments for debugging |
-| Task 37 | Handle ID conflicts | NOT STARTED | |
+| Task 37 | Handle ID conflicts | COMPLETE | Added `detectDuplicateIds()` and `deduplicateSegmentsById()` functions to segmentMapper.js; integrated duplicate ID detection into `loadRundown` handler and `subscribeToRundownChanges()` listener; added logging when segments move positions via ID-based matching in `updateConfig()` |
 
 ### Phase J: Segment Timing Analytics (P2) - NOT STARTED
 
