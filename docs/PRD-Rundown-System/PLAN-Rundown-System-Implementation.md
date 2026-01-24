@@ -180,7 +180,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
 | Task 67 | Add equipment fields to segment data model | COMPLETE | Added equipment field (array of equipment IDs) to segment creation in RundownEditorPage.jsx (4 places), added to segmentMapper.js (editor↔engine mapping), added to compareSegments fieldsToCompare |
-| Task 68 | Generate equipment schedule report | NOT STARTED | |
+| Task 68 | Generate equipment schedule report | COMPLETE | Already implemented as EquipmentScheduleModal in RundownEditorPage.jsx (Phase 12: Task 95); includes equipment usage per segment view, export to text file, grouped by equipment type (cameras, microphones, other) |
 | Task 69 | Detect equipment conflicts | NOT STARTED | |
 | Task 70 | Add sponsor fields to segment data model | NOT STARTED | |
 | Task 71 | Generate sponsor fulfillment report | NOT STARTED | |
