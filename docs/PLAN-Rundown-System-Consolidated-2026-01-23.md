@@ -1,8 +1,9 @@
 # Rundown System - Consolidated Plan
 
-**Version:** 1.0
+**Version:** 2.0
 **Date:** 2026-01-23
 **Status:** ACTIVE - Single Source of Truth
+**Last Audit:** 2026-01-23 (Reality check performed)
 
 ---
 
@@ -79,7 +80,7 @@ Rundown Editor = planning UI    useTimesheet = client hook
 │                                                                              │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
-                                    │ "Load Rundown" (not yet implemented)
+                                    │ "Load Rundown" (NOT YET IMPLEMENTED)
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                              EXECUTION                                       │
@@ -116,81 +117,118 @@ Rundown Editor = planning UI    useTimesheet = client hook
 
 ---
 
-## 2. What Exists Today
+## 2. What Exists Today (Reality Check 2026-01-23)
 
-### 2.1 Completed Components
+### 2.1 Component Status - CORRECTED
 
-| Component | Status | Description |
-|-----------|--------|-------------|
-| **Timesheet Engine** | ✅ Complete | `server/lib/timesheetEngine.js` - full execution engine with segment progression, OBS switching, graphics firing, hold segments |
-| **useTimesheet Hook** | ✅ Complete | `hooks/useTimesheet.js` - client hook providing all timing state and actions |
-| **Producer View** | ✅ Complete | Full production control with Timesheet UI |
-| **Timesheet UI** | ✅ Complete | Now Playing, Up Next, Show Control, Show Progress - all using `useTimesheet()` |
-| **Rundown Editor** | ✅ Phases 0-8 Complete | UI for creating/editing segments with graphics picker, templates, collaboration features |
+| Component | Claimed Status | **Actual Status** | Notes |
+|-----------|----------------|-------------------|-------|
+| **Timesheet Engine** | ✅ Complete | ⚠️ **CODE EXISTS, NOT FULLY WIRED** | ~1200 lines of code, but missing Firebase connection |
+| **useTimesheet Hook** | ✅ Complete | ✅ **WORKS** | Client hook consumes socket events correctly |
+| **Timesheet UI** | ✅ Complete | ✅ **WORKS** | CurrentSegment, NextSegment, RunOfShow use `useTimesheet()` |
+| **Producer View** | ✅ Complete | ✅ **WORKS** | Full production control with Timesheet UI |
+| **Rundown Editor** | ✅ Phases 0-8 Complete | ⚠️ **UI EXISTS, PICKERS NEED VERIFICATION** | Need to verify scene/graphics pickers connect to real data |
+| **Graphics Registry** | Not mentioned | ✅ **EXISTS** | `graphicsRegistry.js`, `GraphicsManagerPage.jsx` |
 
-### 2.2 Rundown Editor Features (Completed)
+### 2.2 Timesheet Engine - What's Actually Implemented
 
-From `RundownEditorPage.jsx`:
+**File:** `server/lib/timesheetEngine.js` (~1187 lines)
 
-| Phase | Features | Status |
-|-------|----------|--------|
-| 0A | Page structure, segment CRUD | ✅ Done |
-| 0B | Graphics picker, scene picker | ✅ Done |
-| 0C | Template save/load | ✅ Done |
-| 1 | Timing display, runtime totals | ✅ Done |
-| 2 | Inline editing | ✅ Done |
-| 3 | Multi-select, bulk actions | ✅ Done |
-| 4 | Drag-drop reordering, grouping | ✅ Done |
-| 5 | Duplicate, lock, optional toggles | ✅ Done |
-| 6 | Timing modes (fixed/manual/follows-previous) | ✅ Done |
-| 7 | Segment templates, recurrence | ✅ Done |
-| 8 | Collaboration (presence, roles, approval workflow) | ✅ Done |
+| Feature | Code Exists | Actually Works |
+|---------|-------------|----------------|
+| Segment progression | ✅ | ⚠️ Needs segments loaded first |
+| Auto-advance | ✅ | ⚠️ Needs segments loaded first |
+| Hold segments | ✅ | ⚠️ Needs segments loaded first |
+| OBS scene switching | ✅ `_applyTransitionAndSwitchScene()` | ⚠️ Needs OBS connected |
+| Graphics triggering | ✅ `_triggerGraphic()` | ❌ **Only socket.io, no Firebase** |
+| Video playback | ✅ `_playVideo()` | ⚠️ Needs OBS connected |
+| Audio overrides | ✅ `_applyAudioOverrides()` | ⚠️ Needs OBS connected |
+| History/override logging | ✅ | ✅ |
 
-### 2.3 Missing: The Bridge
+**Critical Gap:** Server initialization (line 251-255 of `server/index.js`):
+```javascript
+timesheetEngine = new TimesheetEngine({
+  showConfig,
+  obs,
+  io
+  // MISSING: firebase  <-- Graphics can't write to Firebase
+});
+```
 
-**The gap:** There is no connection between the Rundown Editor and the Timesheet Engine.
+### 2.3 What's Missing
 
-- Rundown Editor saves segments to Firebase
-- Timesheet Engine has its own `showConfig.segments`
-- No "Load Rundown" action exists to bridge them
+#### Gap 1: No "Load Rundown" Bridge
+- Rundown Editor saves to Firebase: `competitions/{compId}/production/rundown/segments`
+- Timesheet Engine uses: `showConfig.segments` (hardcoded/empty)
+- **No way to load from one to the other**
+
+#### Gap 2: Firebase Not Passed to Engine
+- `_triggerGraphic()` method checks for `this.firebase` but it's never provided
+- Graphics only fire via socket.io, not direct Firebase writes
+- This may cause issues with graphics rendering
+
+#### Gap 3: Picker Data Sources Unverified
+- Scene picker: Should pull from OBS state sync - **needs verification**
+- Graphics picker: Should pull from Graphics Registry - **needs verification**
+
+#### Gap 4: No Talent View
+- Route doesn't exist
+- No simplified commentator interface
+
+#### Gap 5: No AI Context
+- Not started at all
 
 ---
 
 ## 3. What Needs to Be Built
 
-### 3.1 Phase A: Connect Rundown to Timesheet Engine
+### 3.1 Phase A: Connect Rundown to Timesheet Engine (P0)
 
 **Goal:** Enable Producer to load a rundown from Firebase into the Timesheet Engine for execution.
 
-| Task | Description | Priority |
-|------|-------------|----------|
-| A.1 | Add `loadRundown` socket handler on server | P0 |
-| A.2 | Add `loadRundown` action in ShowContext | P0 |
-| A.3 | Add "Load Rundown" button in Producer View | P0 |
-| A.4 | Create segment mapper (Editor format → Engine format) | P0 |
-| A.5 | Show rundown status indicator (loaded, modified, etc.) | P1 |
+| Task | Description | Priority | Status |
+|------|-------------|----------|--------|
+| A.1 | Add `loadRundown` socket handler on server | P0 | Not Started |
+| A.2 | Add `loadRundown` action in ShowContext | P0 | Not Started |
+| A.3 | Add "Load Rundown" button in Producer View | P0 | Not Started |
+| A.4 | Create segment mapper (Editor format → Engine format) | P0 | Not Started |
+| A.5 | Pass Firebase to TimesheetEngine constructor | P0 | Not Started |
+| A.6 | Show rundown status indicator (loaded, modified, etc.) | P1 | Not Started |
 
 **Segment Mapping Required:**
 
-| Editor Field | Engine Field |
-|--------------|--------------|
-| `scene` | `obsScene` |
-| `graphic.graphicId` | `graphic` |
-| `graphic.params` | `graphicData` |
-| `timingMode` | Affects `autoAdvance` |
+| Editor Field | Engine Field | Notes |
+|--------------|--------------|-------|
+| `id` | `id` | Direct copy |
+| `name` | `name` | Direct copy |
+| `type` | `type` | Direct copy |
+| `duration` | `duration` | In seconds |
+| `scene` | `obsScene` | OBS scene name |
+| `graphic.graphicId` | `graphic` | Graphic identifier |
+| `graphic.params` | `graphicData` | Graphic parameters |
+| `timingMode` | `autoAdvance` | 'fixed' → true, 'manual' → false |
+| `notes` | `notes` | Direct copy |
 
-### 3.2 Phase B: Talent View
+### 3.2 Phase A.5: Verify Pickers Connect to Real Data (P0)
+
+| Task | Description | Priority | Status |
+|------|-------------|----------|--------|
+| A.5.1 | Verify Rundown Editor scene picker uses OBS state | P0 | Not Verified |
+| A.5.2 | Verify Rundown Editor graphics picker uses Graphics Registry | P0 | Not Verified |
+| A.5.3 | Fix any hardcoded picker data | P0 | Unknown |
+
+### 3.3 Phase B: Talent View (P1)
 
 **Goal:** Create a simplified view for commentators.
 
-| Task | Description | Priority |
-|------|-------------|----------|
-| B.1 | Create `TalentView.jsx` page | P1 |
-| B.2 | Current segment with prominent time remaining | P1 |
-| B.3 | Scene switching buttons | P1 |
-| B.4 | Next segment preview | P1 |
-| B.5 | Notes display | P1 |
-| B.6 | Add `/talent` route | P1 |
+| Task | Description | Priority | Status |
+|------|-------------|----------|--------|
+| B.1 | Create `TalentView.jsx` page | P1 | Not Started |
+| B.2 | Current segment with prominent time remaining | P1 | Not Started |
+| B.3 | Scene switching buttons | P1 | Not Started |
+| B.4 | Next segment preview | P1 | Not Started |
+| B.5 | Notes display | P1 | Not Started |
+| B.6 | Add `/talent` route | P1 | Not Started |
 
 **Talent View Layout:**
 
@@ -222,18 +260,18 @@ From `RundownEditorPage.jsx`:
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### 3.3 Phase C: AI Context (Future)
+### 3.4 Phase C: AI Context (P2/P3 - Future)
 
 **Goal:** Enrich segments with live stats, talking points, and alerts.
 
-| Task | Description | Priority |
-|------|-------------|----------|
-| C.1 | Create AIContextService stub | P2 |
-| C.2 | Add `aiContextUpdated` socket event | P2 |
-| C.3 | Create `useAIContext` hook | P2 |
-| C.4 | Integrate with Virtius API for live stats | P3 |
-| C.5 | Generate talking points | P3 |
-| C.6 | Detect career highs, records | P3 |
+| Task | Description | Priority | Status |
+|------|-------------|----------|--------|
+| C.1 | Create AIContextService stub | P2 | Not Started |
+| C.2 | Add `aiContextUpdated` socket event | P2 | Not Started |
+| C.3 | Create `useAIContext` hook | P2 | Not Started |
+| C.4 | Integrate with Virtius API for live stats | P3 | Not Started |
+| C.5 | Generate talking points | P3 | Not Started |
+| C.6 | Detect career highs, records | P3 | Not Started |
 
 ---
 
@@ -272,13 +310,13 @@ From `RundownEditorPage.jsx`:
 │  Firebase             │    │  SERVER (Coordinator)                          │
 │                       │    │                                                │
 │  competitions/        │    │  ┌──────────────────────────────────────────┐ │
-│    {compId}/          │    │  │  Timesheet Engine (timesheetEngine.js)        │ │
+│    {compId}/          │    │  │  Timesheet Engine (timesheetEngine.js)   │ │
 │      production/      │◄───┼──│                                          │ │
 │        rundown/       │    │  │  - segments[]                            │ │
 │          segments/    │    │  │  - currentIndex                          │ │
 │                       │    │  │  - start/stop/advance/previous           │ │
 │                       │    │  │  - OBS scene switching                   │ │
-│                       │    │  │  - Graphics firing                       │ │
+│                       │    │  │  - Graphics firing (socket.io only!)     │ │
 │                       │    │  │                                          │ │
 │                       │    │  │  loadRundown(compId):                    │ │
 │                       │    │  │    1. Fetch from Firebase                │ │
@@ -311,6 +349,8 @@ From `RundownEditorPage.jsx`:
 | `show-controller/src/components/CurrentSegment.jsx` | Now Playing display |
 | `show-controller/src/components/NextSegment.jsx` | Up Next display |
 | `show-controller/src/components/RunOfShow.jsx` | Show Progress list |
+| `show-controller/src/lib/graphicsRegistry.js` | Graphics definitions |
+| `show-controller/src/pages/GraphicsManagerPage.jsx` | Graphics admin UI |
 
 ---
 
@@ -319,14 +359,22 @@ From `RundownEditorPage.jsx`:
 ### 5.1 Immediate Priority: Phase A (Connect Editor to Engine)
 
 ```
-Week 1: Core Connection
-├── A.1: Add loadRundown socket handler
+Step 1: Verify Current State
+├── A.5.1: Check if scene picker uses OBS state
+├── A.5.2: Check if graphics picker uses registry
+└── A.5.3: Document any hardcoded data
+
+Step 2: Wire Firebase to Engine
+└── A.5: Pass Firebase to TimesheetEngine constructor
+
+Step 3: Build Load Rundown
+├── A.1: Add loadRundown socket handler on server
 ├── A.2: Add loadRundown action in ShowContext
 ├── A.3: Add "Load Rundown" button in Producer View
 └── A.4: Create segment mapper
 
-Week 2: Polish
-├── A.5: Rundown status indicator
+Step 4: Polish
+├── A.6: Rundown status indicator
 ├── Testing: Verify segments load correctly
 └── Testing: Verify show execution works with loaded rundown
 ```
@@ -334,14 +382,9 @@ Week 2: Polish
 ### 5.2 Next: Phase B (Talent View)
 
 ```
-Week 3: Talent View
 ├── B.1: Create TalentView.jsx page
 ├── B.2-B.5: Build UI components
 └── B.6: Add route
-
-Week 4: Testing & Polish
-├── Test with real show
-└── Gather feedback
 ```
 
 ### 5.3 Future: Phase C (AI Context)
@@ -384,7 +427,9 @@ The following documents are now superseded by this plan:
 ### Phase A Complete When:
 - [ ] Producer can click "Load Rundown" and segments appear in Timesheet
 - [ ] "Start Show" begins execution with loaded segments
-- [ ] Segment progression, OBS switching, graphics firing all work
+- [ ] Segment progression works (auto-advance and manual)
+- [ ] OBS scene switching works when segment changes
+- [ ] Graphics firing works when segment has a graphic
 - [ ] Changes made in Rundown Editor can be re-loaded
 
 ### Phase B Complete When:
@@ -407,10 +452,11 @@ The following documents are now superseded by this plan:
 | Should Talent View have its own route or be a mode in Producer View? | Decided | Separate route (`/{compId}/talent`) |
 | How to handle rundown changes during live show? | Open | Need to decide: block changes, allow with warning, or hot-reload? |
 | Quick scenes configuration - per-competition or global? | Open | Likely per-competition in Firebase |
+| Should graphics fire via Firebase or socket.io? | Open | Currently socket.io only - may need both |
 
 ---
 
-## Appendix: Historical Context
+## Appendix A: Historical Context
 
 This system evolved through multiple PRD iterations:
 
@@ -419,3 +465,41 @@ This system evolved through multiple PRD iterations:
 3. **PRD-Rundown-Engine-Architecture** (Jan 2026) - Proposed connecting Editor to Engine
 
 The original plan had 10+ sub-PRDs with overlapping scope. This consolidated document simplifies to 3 clear phases (A, B, C) with the Rundown Editor prototype already complete.
+
+---
+
+## Appendix B: Code Audit Results (2026-01-23)
+
+### TimesheetEngine Initialization
+**File:** `server/index.js` lines 250-255
+```javascript
+function initializeTimesheetEngine() {
+  timesheetEngine = new TimesheetEngine({
+    showConfig,
+    obs,
+    io
+    // MISSING: firebase - needed for _triggerGraphic()
+  });
+  // ... event handlers
+}
+```
+
+### TimesheetEngine Methods That Need OBS/Firebase
+
+| Method | Dependency | Status |
+|--------|------------|--------|
+| `_applyTransitionAndSwitchScene()` | `this.obs` | ⚠️ OBS must be connected |
+| `_triggerGraphic()` | `this.firebase`, `this.io` | ❌ Firebase not provided |
+| `_playVideo()` | `this.obs` | ⚠️ OBS must be connected |
+| `_applyAudioOverrides()` | `this.obs` | ⚠️ OBS must be connected |
+
+### Graphics Registry
+**File:** `show-controller/src/lib/graphicsRegistry.js`
+- ✅ Exists with full graphics definitions
+- ✅ Helper functions: `getAllGraphics()`, `getGraphicById()`, etc.
+- ⚠️ Need to verify Rundown Editor uses this
+
+### Graphics Manager
+**File:** `show-controller/src/pages/GraphicsManagerPage.jsx`
+- ✅ Exists as admin UI
+- ✅ Route should be `/graphics-manager`

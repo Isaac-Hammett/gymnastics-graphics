@@ -33,6 +33,8 @@ import {
   ChartBarIcon,
   SwatchIcon,
   QueueListIcon,
+  MoonIcon,
+  SunIcon,
 } from '@heroicons/react/24/outline';
 import { getGraphicsForCompetition, getCategories, getRecommendedGraphic, getGraphicById, GRAPHICS } from '../lib/graphicsRegistry';
 import { db, ref, set, get, push, remove, update, onValue, onDisconnect } from '../lib/firebase';
@@ -292,6 +294,11 @@ export default function RundownEditorPage() {
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'timeline' (Phase 10: Task 75)
   const [timelineZoom, setTimelineZoom] = useState(100); // Zoom level percentage for timeline view (Phase 10: Task 75)
   const [compactView, setCompactView] = useState(false); // Compact view toggle (Phase 10: Task 79)
+  const [darkMode, setDarkMode] = useState(() => {
+    // Load theme preference from localStorage, default to dark (true)
+    const saved = localStorage.getItem('rundown-theme-dark');
+    return saved !== null ? JSON.parse(saved) : true;
+  }); // Dark/light mode toggle (Phase 10: Task 80)
   const [showColorSettingsModal, setShowColorSettingsModal] = useState(false); // Color settings modal (Phase 10: Task 78)
   const [customTypeColors, setCustomTypeColors] = useState(() => {
     // Load custom colors from localStorage, or use null to indicate defaults
@@ -303,6 +310,20 @@ export default function RundownEditorPage() {
   const TYPE_ROW_COLORS = useMemo(() => {
     return getTypeRowColors(customTypeColors);
   }, [customTypeColors]);
+
+  // Apply theme class to body and persist preference (Phase 10: Task 80)
+  useEffect(() => {
+    localStorage.setItem('rundown-theme-dark', JSON.stringify(darkMode));
+    if (darkMode) {
+      document.body.classList.remove('theme-light');
+    } else {
+      document.body.classList.add('theme-light');
+    }
+    // Cleanup on unmount
+    return () => {
+      document.body.classList.remove('theme-light');
+    };
+  }, [darkMode]);
 
   // Filtered segments
   const filteredSegments = useMemo(() => {
@@ -3336,6 +3357,18 @@ export default function RundownEditorPage() {
               title="Customize type colors"
             >
               <SwatchIcon className="w-4 h-4" />
+            </button>
+            {/* Dark/Light Mode Toggle (Phase 10: Task 80) */}
+            <button
+              onClick={() => setDarkMode(!darkMode)}
+              className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
+                darkMode
+                  ? 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:text-zinc-300 hover:bg-zinc-700'
+                  : 'bg-amber-500/20 text-amber-400 border-amber-500/40 hover:bg-amber-500/30'
+              }`}
+              title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {darkMode ? <MoonIcon className="w-4 h-4" /> : <SunIcon className="w-4 h-4" />}
             </button>
           </div>
         </div>
