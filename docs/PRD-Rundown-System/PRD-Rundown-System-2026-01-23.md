@@ -230,7 +230,7 @@ Producers can create rundowns but cannot execute them. There's no bridge between
 
 ### Phase J Complete When:
 - [x] Actual segment durations logged during show
-- [ ] Historical timing data available in Rundown Editor
+- [x] Historical timing data available in Rundown Editor
 
 ---
 

@@ -390,6 +390,38 @@ export default function RundownEditorPage() {
     return getTypeRowColors(customTypeColors);
   }, [customTypeColors]);
 
+  // Compute historical segment averages from timing analytics data (Phase J: Task 41)
+  // Returns a map of segmentId -> averageActualSeconds (rounded)
+  const segmentHistoricalAverages = useMemo(() => {
+    if (!timingAnalyticsData || timingAnalyticsData.length === 0) return {};
+
+    const averages = {};
+
+    // Collect all timing data by segment ID
+    timingAnalyticsData.forEach(run => {
+      if (!run.segments) return;
+      run.segments.forEach(seg => {
+        if (!seg.segmentId || !seg.actualDurationMs) return;
+        if (!averages[seg.segmentId]) {
+          averages[seg.segmentId] = { durations: [], count: 0 };
+        }
+        averages[seg.segmentId].durations.push(seg.actualDurationMs);
+        averages[seg.segmentId].count++;
+      });
+    });
+
+    // Calculate average in seconds for each segment
+    const result = {};
+    Object.entries(averages).forEach(([segId, data]) => {
+      if (data.durations.length > 0) {
+        const avgMs = data.durations.reduce((a, b) => a + b, 0) / data.durations.length;
+        result[segId] = Math.round(avgMs / 1000); // Convert to seconds, rounded
+      }
+    });
+
+    return result;
+  }, [timingAnalyticsData]);
+
   // Apply theme class to body and persist preference (Phase 10: Task 80)
   useEffect(() => {
     localStorage.setItem('rundown-theme-dark', JSON.stringify(darkMode));
@@ -946,6 +978,10 @@ export default function RundownEditorPage() {
     }, (error) => {
       console.error('Error loading groups from Firebase:', error);
     });
+
+    // Load timing analytics for historical averages (Phase J: Task 41)
+    // This allows segment rows to show average actual durations from past runs
+    loadTimingAnalytics();
 
     // Cleanup listeners on unmount
     return () => {
@@ -4697,6 +4733,7 @@ export default function RundownEditorPage() {
                                   compactView={compactView}
                                   groupedScenes={groupedScenes}
                                   groupedGraphics={groupedGraphics}
+                                  historicalAverageSec={segmentHistoricalAverages[segment.id]}
                                 />
                               );
                             })}
@@ -4743,6 +4780,7 @@ export default function RundownEditorPage() {
                         compactView={compactView}
                         groupedScenes={groupedScenes}
                         groupedGraphics={groupedGraphics}
+                        historicalAverageSec={segmentHistoricalAverages[segment.id]}
                       />
                     );
                   }
@@ -4791,6 +4829,7 @@ export default function RundownEditorPage() {
                 groupedGraphics={groupedGraphics}
                 compType={liveCompType}
                 teamNames={liveTeamNames}
+                historicalAverageSec={segmentHistoricalAverages[selectedSegment.id]}
               />
             ) : (
               <div className="text-center py-20 text-zinc-500">
@@ -5195,6 +5234,7 @@ function SegmentRow({
   compactView = false,
   groupedScenes,
   groupedGraphics,
+  historicalAverageSec, // Phase J: Task 41 - Historical average duration in seconds
 }) {
   const isSelected = selectedSegmentId === segment.id;
   const isMultiSelected = selectedSegmentIds.includes(segment.id);
@@ -5282,10 +5322,26 @@ function SegmentRow({
           {segment.optional && (
             <span className="text-[10px] text-amber-400 shrink-0" title="Optional">opt</span>
           )}
-          {/* Duration */}
-          <span className="text-xs font-mono text-zinc-400 w-12 text-right shrink-0" title="Duration">
-            {segment.duration !== null ? `${segment.duration}s` : 'Manual'}
-          </span>
+          {/* Duration with historical average (Phase J: Task 41) */}
+          <div className="flex items-center gap-1 shrink-0">
+            <span className="text-xs font-mono text-zinc-400 text-right" title="Duration">
+              {segment.duration !== null ? `${segment.duration}s` : 'Manual'}
+            </span>
+            {historicalAverageSec !== undefined && (
+              <span
+                className={`text-[9px] font-mono ${
+                  segment.duration !== null && historicalAverageSec !== segment.duration
+                    ? historicalAverageSec > segment.duration
+                      ? 'text-amber-400'
+                      : 'text-green-400'
+                    : 'text-zinc-500'
+                }`}
+                title={`Historical average: ${historicalAverageSec}s`}
+              >
+                (~{historicalAverageSec})
+              </span>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -5532,21 +5588,42 @@ function SegmentRow({
           ))}
         </select>
 
-        {/* Inline Duration Input */}
-        <input
-          type="text"
-          value={segment.duration !== null ? `${segment.duration}s` : ''}
-          placeholder="Manual"
-          onClick={(e) => e.stopPropagation()}
-          onChange={(e) => {
-            e.stopPropagation();
-            const val = e.target.value.replace(/[^\d]/g, '');
-            onInlineDurationChange(segment.id, val ? Number(val) : null);
-          }}
-          disabled={isLocked}
-          className={`w-16 px-2 py-1 text-xs font-mono bg-zinc-800 border border-zinc-700 rounded text-zinc-300 text-center focus:outline-none focus:border-blue-500 ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
-          title={isLocked ? 'Segment is locked' : 'Duration in seconds'}
-        />
+        {/* Inline Duration Input with Historical Average (Phase J: Task 41) */}
+        <div className="flex items-center gap-1">
+          <input
+            type="text"
+            value={segment.duration !== null ? `${segment.duration}s` : ''}
+            placeholder="Manual"
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => {
+              e.stopPropagation();
+              const val = e.target.value.replace(/[^\d]/g, '');
+              onInlineDurationChange(segment.id, val ? Number(val) : null);
+            }}
+            disabled={isLocked}
+            className={`w-16 px-2 py-1 text-xs font-mono bg-zinc-800 border border-zinc-700 rounded text-zinc-300 text-center focus:outline-none focus:border-blue-500 ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+            title={isLocked ? 'Segment is locked' : 'Duration in seconds'}
+          />
+          {/* Historical average indicator (Phase J: Task 41) */}
+          {historicalAverageSec !== undefined && (
+            <span
+              className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
+                segment.duration !== null && historicalAverageSec !== segment.duration
+                  ? historicalAverageSec > segment.duration
+                    ? 'text-amber-400 bg-amber-500/10 border border-amber-500/30' // Actual runs longer than planned
+                    : 'text-green-400 bg-green-500/10 border border-green-500/30' // Actual runs shorter than planned
+                  : 'text-zinc-500 bg-zinc-800 border border-zinc-700' // Matches or no planned duration
+              }`}
+              title={`Historical average: ${historicalAverageSec}s${
+                segment.duration !== null
+                  ? ` (${historicalAverageSec > segment.duration ? '+' : ''}${historicalAverageSec - segment.duration}s)`
+                  : ''
+              }`}
+            >
+              ~{historicalAverageSec}s
+            </span>
+          )}
+        </div>
 
         {/* Inline Auto-Advance Toggle (Phase 6: Task 57) */}
         <button
@@ -5941,7 +6018,7 @@ function CreateGroupModal({ onCreate, onCancel, selectedCount }) {
 }
 
 // Placeholder SegmentDetail panel component
-function SegmentDetailPanel({ segment, onSave, onDelete, onCancel, groupedScenes, groupedGraphics, compType, teamNames }) {
+function SegmentDetailPanel({ segment, onSave, onDelete, onCancel, groupedScenes, groupedGraphics, compType, teamNames, historicalAverageSec }) {
   const [formData, setFormData] = useState(segment);
 
   // Reset form when segment changes
