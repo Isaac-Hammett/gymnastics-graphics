@@ -53,7 +53,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | H | Rehearsal Mode | P1 | COMPLETE | 17-21 |
 | B | Talent View | P1 | COMPLETE | 22-27 |
 | I | Live Rundown Sync | P2 | COMPLETE | 28-37 |
-| J | Segment Timing Analytics | P2 | IN PROGRESS | 38-42 |
+| J | Segment Timing Analytics | P2 | COMPLETE | 38-42 |
 | D | AI Suggestions - Planning | P2 | NOT STARTED | 43-48 |
 | E | Script & Talent Flow | P2 | NOT STARTED | 49-54 |
 | C | AI Context - Live Execution | P3 | NOT STARTED | 55-62 |
@@ -121,7 +121,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 36 | Handle reordered past segments | COMPLETE | Added filtering in `subscribeToRundownChanges()` to ignore reordered/modified segments where both old and new positions are before current segment; logs filtered segments for debugging |
 | Task 37 | Handle ID conflicts | COMPLETE | Added `detectDuplicateIds()` and `deduplicateSegmentsById()` functions to segmentMapper.js; integrated duplicate ID detection into `loadRundown` handler and `subscribeToRundownChanges()` listener; added logging when segments move positions via ID-based matching in `updateConfig()` |
 
-### Phase J: Segment Timing Analytics (P2) - IN PROGRESS (4/5)
+### Phase J: Segment Timing Analytics (P2) - COMPLETE (5/5)
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
@@ -129,7 +129,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 39 | Store timing data in Firebase post-show | COMPLETE | Fixed show completion flow: added `_completeShow()` method to TimesheetEngine that emits `showComplete` event when last segment auto-advances; this ensures `showStopped` is also emitted for analytics saving. Added `timesheetShowComplete` socket event and client handler. Now timing data is saved whether show ends naturally or via manual stop. |
 | Task 40 | Create timing analytics dashboard | COMPLETE | Added TimingAnalyticsModal to RundownEditorPage with: summary stats (shows/rehearsals count, avg variance), segment averages table (planned vs actual across all runs), and expandable run history showing per-segment timing details. Loads data from Firebase `competitions/{compId}/production/rundown/analytics`. Button added to toolbar with ChartBarIcon. |
 | Task 41 | Show historical average in Rundown Editor | COMPLETE | Added call to `loadTimingAnalytics()` in component mount useEffect so historical averages are available when rendering segment rows. UI already existed in SegmentRow component (both compact and expanded views) showing ~Xs indicator next to duration field. Color-coded: amber if actual runs longer than planned, green if shorter, gray if matches. |
-| Task 42 | AI-powered timing predictions based on history | NOT STARTED | |
+| Task 42 | AI-powered timing predictions based on history | COMPLETE | Added `aiTimingPredictions` computed value in RundownEditorPage that analyzes historical timing data by segment name similarity and type averages. Shows purple sparkle indicator with confidence level (high/medium/low) for segments without direct historical data. Click-to-apply feature in both inline view and detail panel. |
 
 ### Phase D: AI Suggestions - Planning (P2) - NOT STARTED
 
