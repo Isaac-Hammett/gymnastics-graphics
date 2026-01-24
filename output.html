@@ -4484,8 +4484,9 @@
         if (!response.ok) throw new Error('Failed to fetch');
         const data = await response.json();
 
-        // Build team logo map from teams data
+        // Build team logo and team name maps from teams data
         const teamLogos = {};
+        const teamNames = {};  // Map tricode -> proper team name
         if (data.meet?.teams) {
           data.meet.teams.forEach(team => {
             if (team.tricode && team.logo) {
@@ -4494,13 +4495,26 @@
             if (team.short_name && team.logo) {
               teamLogos[team.short_name] = team.logo;
             }
+            // Map tricode to team name for AA where team_name might be wrong
+            if (team.tricode) {
+              teamNames[team.tricode] = team.short_name || team.tricode;
+            }
+            if (team.short_name) {
+              teamNames[team.short_name] = team.short_name;
+            }
           });
         }
 
+        // Check if this is All Around (AA doesn't have D/E scores)
+        const isAllAround = eventName === 'All Around';
+
         // Find the event results
         const eventResults = data.meet?.event_results?.find(e => e.event_name === eventName);
-        if (!eventResults || !eventResults.gymnasts) {
-          contentEl.innerHTML = '<div class="leaderboard-error">No results found for this event</div>';
+        if (!eventResults || !eventResults.gymnasts || eventResults.gymnasts.length === 0) {
+          const errorMsg = isAllAround
+            ? 'No All Around results available yet. AA scores require completing all events.'
+            : 'No results found for this event';
+          contentEl.innerHTML = `<div class="leaderboard-error">${errorMsg}</div>`;
           return;
         }
 
@@ -4560,23 +4574,24 @@
         // Calculate diff from leader (scores are strings in API)
         const topScore = parseFloat(gymnasts[0]?.final_score) || 0;
 
-        // Build table HTML - columns vary by gender
+        // Build table HTML - columns vary by gender and event type
         // Men's: #, Name, Team, Apparatus, Score, Diff., Exec., SB
         // Women's: #, Name, Team, Apparatus, Score, Diff. (no Exec or SB)
+        // All Around: #, Name, Team, Score only (no Diff/Exec/SB - they don't apply to AA totals)
         const isWomens = gender === 'womens';
 
         let tableHtml = `
-          <table class="leaderboard-table${isWomens ? ' leaderboard-womens' : ''}">
+          <table class="leaderboard-table${isWomens ? ' leaderboard-womens' : ''}${isAllAround ? ' leaderboard-aa' : ''}">
             <thead>
               <tr>
                 <th class="col-rank">#</th>
                 <th class="col-name">Name</th>
                 <th class="col-team">Team</th>
-                <th class="col-apparatus">Apparatus</th>
+                ${isAllAround ? '' : '<th class="col-apparatus">Apparatus</th>'}
                 <th class="col-score">Score</th>
-                <th class="col-diff">Diff.</th>
-                ${isWomens ? '' : '<th class="col-exec">Exec.</th>'}
-                ${isWomens ? '' : '<th class="col-sb">SB</th>'}
+                ${isAllAround ? '' : '<th class="col-diff">Diff.</th>'}
+                ${isWomens || isAllAround ? '' : '<th class="col-exec">Exec.</th>'}
+                ${isWomens || isAllAround ? '' : '<th class="col-sb">SB</th>'}
               </tr>
             </thead>
             <tbody>
@@ -4630,19 +4645,19 @@
           const dScoreStr = dScore > 0 ? dScore.toFixed(1) : '-';
           const eScoreStr = eScore > 0 ? eScore.toFixed(3) : '-';
 
-          // Use team_name for the team column (short_name is the team abbreviation)
-          const teamName = g.team_name || g.short_name || '';
+          // Use tricode to look up team name from teams data (more reliable than g.team_name which may contain competition name for AA)
+          const teamName = teamNames[teamKey] || g.team_name || g.short_name || '';
 
           tableHtml += `
             <tr>
               <td class="col-rank">${rankHtml}</td>
               <td class="col-name">${placeIndicator}${g.full_name || g.last_name || 'Unknown'}</td>
               <td class="col-team">${logoHtml}${teamName}</td>
-              <td class="col-apparatus"><span class="apparatus-badge">${shortCode}</span></td>
+              ${isAllAround ? '' : `<td class="col-apparatus"><span class="apparatus-badge">${shortCode}</span></td>`}
               <td class="col-score">${score.toFixed(3)}</td>
-              <td class="col-diff">${dScoreStr}</td>
-              ${isWomens ? '' : `<td class="col-exec">${eScoreStr}</td>`}
-              ${isWomens ? '' : `<td class="col-sb">${stickHtml}</td>`}
+              ${isAllAround ? '' : `<td class="col-diff">${dScoreStr}</td>`}
+              ${isWomens || isAllAround ? '' : `<td class="col-exec">${eScoreStr}</td>`}
+              ${isWomens || isAllAround ? '' : `<td class="col-sb">${stickHtml}</td>`}
             </tr>
           `;
         });
