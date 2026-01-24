@@ -29,6 +29,8 @@ import {
   DocumentTextIcon,
   PrinterIcon,
   TableCellsIcon,
+  Bars4Icon,
+  ChartBarIcon,
 } from '@heroicons/react/24/outline';
 import { getGraphicsForCompetition, getCategories, getRecommendedGraphic, getGraphicById, GRAPHICS } from '../lib/graphicsRegistry';
 import { db, ref, set, get, push, remove, update, onValue, onDisconnect } from '../lib/firebase';
@@ -225,6 +227,8 @@ export default function RundownEditorPage() {
   const [importCSVMapping, setImportCSVMapping] = useState({}); // Field mapping for CSV import (Phase 9: Task 73)
   const [showImportJSONModal, setShowImportJSONModal] = useState(false); // JSON import modal (Phase 9: Task 74)
   const [importJSONData, setImportJSONData] = useState(null); // Parsed JSON data for import (Phase 9: Task 74)
+  const [viewMode, setViewMode] = useState('list'); // 'list' or 'timeline' (Phase 10: Task 75)
+  const [timelineZoom, setTimelineZoom] = useState(100); // Zoom level percentage for timeline view (Phase 10: Task 75)
 
   // Filtered segments
   const filteredSegments = useMemo(() => {
@@ -3190,14 +3194,55 @@ export default function RundownEditorPage() {
                 className="pl-9 pr-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-300 text-sm focus:outline-none focus:border-blue-500 w-64"
               />
             </div>
+            {/* View Toggle (Phase 10: Task 75) */}
+            <div className="flex items-center border border-zinc-700 rounded-lg overflow-hidden">
+              <button
+                onClick={() => setViewMode('list')}
+                className={`px-3 py-2 text-sm transition-colors ${
+                  viewMode === 'list'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-zinc-800 text-zinc-400 hover:text-zinc-300 hover:bg-zinc-700'
+                }`}
+                title="List View"
+              >
+                <Bars4Icon className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setViewMode('timeline')}
+                className={`px-3 py-2 text-sm transition-colors ${
+                  viewMode === 'timeline'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-zinc-800 text-zinc-400 hover:text-zinc-300 hover:bg-zinc-700'
+                }`}
+                title="Timeline View"
+              >
+                <ChartBarIcon className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Main Content - Split Panel */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Segment List (left panel ~60%) */}
+        {/* Segment List / Timeline (left panel ~60%) */}
         <div className="w-3/5 border-r border-zinc-800 overflow-y-auto">
+          {viewMode === 'timeline' ? (
+            // Timeline View (Phase 10: Task 75)
+            <TimelineView
+              segments={filteredSegments}
+              segmentStartTimes={segmentStartTimes}
+              totalRuntime={totalRuntime}
+              selectedSegmentId={selectedSegmentId}
+              selectedSegmentIds={selectedSegmentIds}
+              onSelectSegment={handleSelectSegment}
+              isLoading={isLoadingRundown}
+              searchQuery={searchQuery}
+              filterType={filterType}
+              zoom={timelineZoom}
+              onZoomChange={setTimelineZoom}
+            />
+          ) : (
           <div className="p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
@@ -3385,6 +3430,7 @@ export default function RundownEditorPage() {
               </div>
             )}
           </div>
+          )}
         </div>
 
         {/* Segment Detail / Selection Summary (right panel ~40%) */}
@@ -4055,6 +4101,233 @@ function SegmentRow({
         >
           <ChevronDownIcon className="w-4 h-4" />
         </button>
+      </div>
+    </div>
+  );
+}
+
+// Timeline View Component (Phase 10: Task 75)
+// Gantt-style horizontal timeline showing segment durations proportionally
+function TimelineView({
+  segments,
+  segmentStartTimes,
+  totalRuntime,
+  selectedSegmentId,
+  selectedSegmentIds,
+  onSelectSegment,
+  isLoading,
+  searchQuery,
+  filterType,
+  zoom,
+  onZoomChange,
+}) {
+  // Timeline bar colors by segment type
+  const TIMELINE_COLORS = {
+    video: 'bg-purple-500 hover:bg-purple-400',
+    live: 'bg-green-500 hover:bg-green-400',
+    static: 'bg-blue-500 hover:bg-blue-400',
+    break: 'bg-yellow-500 hover:bg-yellow-400',
+    hold: 'bg-orange-500 hover:bg-orange-400',
+    graphic: 'bg-pink-500 hover:bg-pink-400',
+  };
+
+  // Calculate the width percentage for a segment based on its duration
+  const getBarWidth = (duration) => {
+    if (!totalRuntime || !duration) return 0;
+    return (duration / totalRuntime) * 100;
+  };
+
+  // Calculate the left position percentage for a segment
+  const getBarLeft = (segmentId) => {
+    if (!totalRuntime) return 0;
+    const startTime = segmentStartTimes[segmentId] || 0;
+    return (startTime / totalRuntime) * 100;
+  };
+
+  // Time markers for the timeline header
+  const timeMarkers = useMemo(() => {
+    if (!totalRuntime) return [];
+    const markers = [];
+    // Create markers at regular intervals
+    const interval = totalRuntime > 3600 ? 600 : totalRuntime > 600 ? 120 : 30; // 10min, 2min, or 30sec intervals
+    for (let t = 0; t <= totalRuntime; t += interval) {
+      markers.push({
+        time: t,
+        position: (t / totalRuntime) * 100,
+      });
+    }
+    return markers;
+  }, [totalRuntime]);
+
+  // Format time for markers
+  const formatTimeMarker = (seconds) => {
+    if (seconds >= 3600) {
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      return `${h}:${m.toString().padStart(2, '0')}`;
+    } else {
+      const m = Math.floor(seconds / 60);
+      const s = seconds % 60;
+      return `${m}:${s.toString().padStart(2, '0')}`;
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="p-4">
+        <div className="text-center py-12 text-zinc-500">
+          <ArrowPathIcon className="w-6 h-6 animate-spin mx-auto mb-2" />
+          <div>Loading rundown...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (segments.length === 0) {
+    return (
+      <div className="p-4">
+        <div className="text-center py-12 text-zinc-500">
+          {searchQuery || filterType !== 'all'
+            ? 'No segments match your filter'
+            : 'No segments yet. Click "Add Segment" to get started.'}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-4">
+      {/* Timeline Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="text-xs text-zinc-500 uppercase tracking-wide">
+          Timeline ({segments.length} segments)
+        </div>
+        {/* Zoom Controls */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-zinc-500">Zoom:</span>
+          <input
+            type="range"
+            min="50"
+            max="200"
+            value={zoom}
+            onChange={(e) => onZoomChange(Number(e.target.value))}
+            className="w-24 h-1 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+          />
+          <span className="text-xs text-zinc-400 w-8">{zoom}%</span>
+        </div>
+      </div>
+
+      {/* Time Scale Header */}
+      <div className="relative h-6 mb-2 border-b border-zinc-700">
+        {timeMarkers.map((marker) => (
+          <div
+            key={marker.time}
+            className="absolute text-[10px] text-zinc-500 transform -translate-x-1/2"
+            style={{ left: `${marker.position}%` }}
+          >
+            {formatTimeMarker(marker.time)}
+          </div>
+        ))}
+      </div>
+
+      {/* Timeline Container */}
+      <div
+        className="relative overflow-x-auto"
+        style={{ minWidth: `${zoom}%` }}
+      >
+        {/* Grid lines */}
+        <div className="absolute inset-0 pointer-events-none">
+          {timeMarkers.map((marker) => (
+            <div
+              key={marker.time}
+              className="absolute top-0 bottom-0 w-px bg-zinc-800"
+              style={{ left: `${marker.position}%` }}
+            />
+          ))}
+        </div>
+
+        {/* Segment Bars */}
+        <div className="space-y-1">
+          {segments.map((segment, index) => {
+            const isSelected = selectedSegmentId === segment.id;
+            const isMultiSelected = selectedSegmentIds.includes(segment.id);
+            const barWidth = getBarWidth(segment.duration || 30); // Default 30s for null duration
+            const barLeft = getBarLeft(segment.id);
+            const typeColor = TIMELINE_COLORS[segment.type] || 'bg-zinc-500 hover:bg-zinc-400';
+
+            return (
+              <div
+                key={segment.id}
+                className="relative h-8 flex items-center"
+              >
+                {/* Segment Number Label */}
+                <div className="absolute left-0 w-8 text-xs text-zinc-500 font-mono">
+                  {String(index + 1).padStart(2, '0')}
+                </div>
+
+                {/* Bar Container */}
+                <div className="ml-10 flex-1 relative h-6">
+                  {/* Segment Bar */}
+                  <button
+                    onClick={() => onSelectSegment(segment.id)}
+                    className={`absolute h-full rounded transition-all cursor-pointer flex items-center ${typeColor} ${
+                      isSelected || isMultiSelected
+                        ? 'ring-2 ring-blue-400 ring-offset-1 ring-offset-zinc-950'
+                        : ''
+                    } ${segment.optional ? 'opacity-60' : ''} ${
+                      segment.locked ? 'opacity-80' : ''
+                    }`}
+                    style={{
+                      left: `${barLeft}%`,
+                      width: `${Math.max(barWidth, 1)}%`, // Minimum 1% width for visibility
+                      minWidth: '20px', // Minimum pixel width for very short segments
+                    }}
+                    title={`${segment.name} (${formatDuration(segment.duration || 0)})`}
+                  >
+                    {/* Segment Name (truncated) */}
+                    <span className="px-2 text-xs text-white truncate font-medium">
+                      {segment.name}
+                    </span>
+
+                    {/* Lock indicator */}
+                    {segment.locked && (
+                      <LockClosedIcon className="w-3 h-3 text-white/70 mr-1 flex-shrink-0" />
+                    )}
+                  </button>
+
+                  {/* Buffer visualization */}
+                  {segment.bufferAfter > 0 && (
+                    <div
+                      className="absolute h-full bg-zinc-700/50 border-l border-dashed border-zinc-600"
+                      style={{
+                        left: `${barLeft + barWidth}%`,
+                        width: `${getBarWidth(segment.bufferAfter)}%`,
+                      }}
+                      title={`Buffer: ${formatDuration(segment.bufferAfter)}`}
+                    />
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Legend */}
+      <div className="mt-6 pt-4 border-t border-zinc-800">
+        <div className="text-xs text-zinc-500 mb-2">Legend:</div>
+        <div className="flex flex-wrap gap-3">
+          {Object.entries(TIMELINE_COLORS).map(([type, colorClass]) => (
+            <div key={type} className="flex items-center gap-1.5">
+              <div className={`w-3 h-3 rounded ${colorClass.split(' ')[0]}`} />
+              <span className="text-xs text-zinc-400 capitalize">{type}</span>
+            </div>
+          ))}
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 bg-zinc-700/50 border border-dashed border-zinc-600 rounded" />
+            <span className="text-xs text-zinc-400">Buffer</span>
+          </div>
+        </div>
       </div>
     </div>
   );
