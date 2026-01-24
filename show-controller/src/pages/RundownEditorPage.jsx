@@ -172,13 +172,13 @@ const ROLE_COLORS = {
 
 // Hardcoded test data per PRD (updated with graphic field structure for Phase 0B, bufferAfter for Phase 1, locked/optional/notes for Phase 5, timingMode for Phase 6, script for Phase 12, audioCue for Phase 12 Task 93, talent for Phase 12 Task 94)
 const DUMMY_SEGMENTS = [
-  { id: 'seg-001', name: 'Show Intro', type: 'video', duration: 45, scene: 'Starting Soon', graphic: null, autoAdvance: true, bufferAfter: 0, locked: false, optional: false, notes: '', script: '', timingMode: 'fixed', audioCue: { songName: 'ESPN Theme', inPoint: '0:00', outPoint: '0:45' }, talent: ['talent-4'], equipment: ['cam-1', 'mic-1'] },
-  { id: 'seg-002', name: 'Team Logos', type: 'static', duration: 10, scene: 'Graphics Fullscreen', graphic: { graphicId: 'logos', params: {} }, autoAdvance: true, bufferAfter: 5, locked: true, optional: false, notes: 'Show all 4 team logos in quad layout', script: '', timingMode: 'fixed', audioCue: null, talent: [], equipment: [] },
-  { id: 'seg-003', name: 'UCLA Coaches', type: 'live', duration: 15, scene: 'Single - Camera 2', graphic: { graphicId: 'team-coaches', params: { teamSlot: 1 } }, autoAdvance: true, bufferAfter: 0, locked: false, optional: false, notes: '', script: '- Welcome viewers to today\'s competition\n- Introduce the UCLA coaching staff\n- **Head Coach Chris Waller** - 10th season\n- Mention last season\'s Pac-12 Championship victory', timingMode: 'follows-previous', audioCue: null, talent: ['talent-1', 'talent-2'], equipment: ['cam-2', 'mic-1', 'mic-2'] },
-  { id: 'seg-004', name: 'Oregon Coaches', type: 'live', duration: 15, scene: 'Single - Camera 3', graphic: { graphicId: 'team-coaches', params: { teamSlot: 2 } }, autoAdvance: true, bufferAfter: 10, locked: false, optional: false, notes: 'First year head coach - mention in intro', script: '', timingMode: 'fixed', audioCue: null, talent: ['talent-1', 'talent-2'], equipment: ['cam-2', 'mic-1', 'mic-2'] },
-  { id: 'seg-005', name: 'Rotation 1 Summary', type: 'static', duration: 20, scene: 'Graphics Fullscreen', graphic: { graphicId: 'event-summary', params: { summaryMode: 'rotation', summaryRotation: 1, summaryTheme: 'espn' } }, autoAdvance: true, bufferAfter: 0, locked: false, optional: false, notes: '', script: '', timingMode: 'fixed', audioCue: null, talent: [], equipment: [] },
-  { id: 'seg-006', name: 'Floor - Rotation 1', type: 'live', duration: null, scene: 'Quad View', graphic: { graphicId: 'floor', params: {} }, autoAdvance: false, bufferAfter: 0, locked: false, optional: false, notes: '', script: '', timingMode: 'manual', audioCue: { songName: 'Floor Background Music', inPoint: '0:00', outPoint: '' }, talent: ['talent-1', 'talent-2', 'talent-3'], equipment: ['cam-1', 'cam-2', 'cam-3', 'cam-4', 'mic-1', 'mic-2', 'mic-3'] },
-  { id: 'seg-007', name: 'Commercial Break', type: 'break', duration: 120, scene: 'Starting Soon', graphic: null, autoAdvance: true, bufferAfter: 0, locked: false, optional: true, notes: 'Check with director before taking break', script: '', timingMode: 'fixed', audioCue: null, talent: [], equipment: [] }, // Example optional segment
+  { id: 'seg-001', name: 'Show Intro', type: 'video', duration: 45, scene: 'Starting Soon', graphic: null, autoAdvance: true, bufferAfter: 0, locked: false, optional: false, notes: '', script: '', timingMode: 'fixed', audioCue: { songName: 'ESPN Theme', inPoint: '0:00', outPoint: '0:45' }, talent: ['talent-4'], equipment: ['cam-1', 'mic-1'], sponsor: { name: 'State Farm', logo: 'state-farm-logo.png', tier: 'presenting' } },
+  { id: 'seg-002', name: 'Team Logos', type: 'static', duration: 10, scene: 'Graphics Fullscreen', graphic: { graphicId: 'logos', params: {} }, autoAdvance: true, bufferAfter: 5, locked: true, optional: false, notes: 'Show all 4 team logos in quad layout', script: '', timingMode: 'fixed', audioCue: null, talent: [], equipment: [], sponsor: null },
+  { id: 'seg-003', name: 'UCLA Coaches', type: 'live', duration: 15, scene: 'Single - Camera 2', graphic: { graphicId: 'team-coaches', params: { teamSlot: 1 } }, autoAdvance: true, bufferAfter: 0, locked: false, optional: false, notes: '', script: '- Welcome viewers to today\'s competition\n- Introduce the UCLA coaching staff\n- **Head Coach Chris Waller** - 10th season\n- Mention last season\'s Pac-12 Championship victory', timingMode: 'follows-previous', audioCue: null, talent: ['talent-1', 'talent-2'], equipment: ['cam-2', 'mic-1', 'mic-2'], sponsor: null },
+  { id: 'seg-004', name: 'Oregon Coaches', type: 'live', duration: 15, scene: 'Single - Camera 3', graphic: { graphicId: 'team-coaches', params: { teamSlot: 2 } }, autoAdvance: true, bufferAfter: 10, locked: false, optional: false, notes: 'First year head coach - mention in intro', script: '', timingMode: 'fixed', audioCue: null, talent: ['talent-1', 'talent-2'], equipment: ['cam-2', 'mic-1', 'mic-2'], sponsor: null },
+  { id: 'seg-005', name: 'Rotation 1 Summary', type: 'static', duration: 20, scene: 'Graphics Fullscreen', graphic: { graphicId: 'event-summary', params: { summaryMode: 'rotation', summaryRotation: 1, summaryTheme: 'espn' } }, autoAdvance: true, bufferAfter: 0, locked: false, optional: false, notes: '', script: '', timingMode: 'fixed', audioCue: null, talent: [], equipment: [], sponsor: { name: 'Nike', logo: 'nike-logo.png', tier: 'official' } },
+  { id: 'seg-006', name: 'Floor - Rotation 1', type: 'live', duration: null, scene: 'Quad View', graphic: { graphicId: 'floor', params: {} }, autoAdvance: false, bufferAfter: 0, locked: false, optional: false, notes: '', script: '', timingMode: 'manual', audioCue: { songName: 'Floor Background Music', inPoint: '0:00', outPoint: '' }, talent: ['talent-1', 'talent-2', 'talent-3'], equipment: ['cam-1', 'cam-2', 'cam-3', 'cam-4', 'mic-1', 'mic-2', 'mic-3'], sponsor: null },
+  { id: 'seg-007', name: 'Commercial Break', type: 'break', duration: 120, scene: 'Starting Soon', graphic: null, autoAdvance: true, bufferAfter: 0, locked: false, optional: true, notes: 'Check with director before taking break', script: '', timingMode: 'fixed', audioCue: null, talent: [], equipment: [], sponsor: null }, // Example optional segment
 ];
 
 // Segment type options
@@ -2195,6 +2195,7 @@ export default function RundownEditorPage() {
       timingMode: 'manual', // Default to manual for new segments (Phase 6: Task 55)
       audioCue: null, // Phase F: Task 63 - audio cue for segment start
       equipment: [], // Phase G: Task 67 - equipment assignment for segments
+      sponsor: null, // Phase G: Task 70 - sponsor assignment for segments
     };
 
     // Insert after selected segment, or at end
@@ -2235,6 +2236,7 @@ export default function RundownEditorPage() {
       talent: suggestion.segment.talent || [], // Phase E: Task 52 - talent assignment for segments
       audioCue: suggestion.segment.audioCue || null, // Phase F: Task 63
       equipment: suggestion.segment.equipment || [], // Phase G: Task 67 - equipment assignment for segments
+      sponsor: suggestion.segment.sponsor || null, // Phase G: Task 70 - sponsor assignment for segments
     };
 
     let newSegments;
@@ -3696,6 +3698,7 @@ export default function RundownEditorPage() {
       timingMode: template.segment.timingMode || 'manual',
       audioCue: template.segment.audioCue || null, // Phase F: Task 63 - audio cue for segment start
       equipment: template.segment.equipment || [], // Phase G: Task 67 - equipment assignment for segments
+      sponsor: template.segment.sponsor || null, // Phase G: Task 70 - sponsor assignment for segments
     };
 
     // Insert after selected segment, or at end
@@ -3787,6 +3790,7 @@ export default function RundownEditorPage() {
         timingMode: duration ? 'fixed' : 'manual',
         audioCue: null, // Phase F: Task 63
         equipment: [], // Phase G: Task 67 - equipment assignment for segments
+        sponsor: null, // Phase G: Task 70 - sponsor assignment for segments
       };
 
       newSegments.push(newSegment);
