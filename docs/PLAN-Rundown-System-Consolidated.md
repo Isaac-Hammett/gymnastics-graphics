@@ -21,18 +21,41 @@ This document consolidates all rundown-related PRDs into a single source of trut
 
 ## 1. Naming Conventions
 
-### 1.1 Core Concepts
+> **IMPORTANT:** Names match the actual code files. Do not use different names.
 
-| Term | Definition | Location |
-|------|------------|----------|
-| **Rundown** | The planned show structure - a list of segments with timing, scenes, graphics | Firebase: `competitions/{compId}/production/rundown/segments` |
-| **Rundown Editor** | UI for creating and editing the Rundown (planning tool) | Route: `/{compId}/rundown` |
-| **Show Engine** | Server-side execution engine that runs the show | `server/lib/timesheetEngine.js` |
-| **Timesheet** | The execution UI in Producer View showing live show progress | Components in Producer View |
+### 1.1 Two Systems: Rundown (Planning) vs Timesheet (Execution)
+
+```
+RUNDOWN (planning)              TIMESHEET (execution)
+──────────────────              ─────────────────────
+Rundown = segment data          Timesheet Engine = server execution
+Rundown Editor = planning UI    useTimesheet = client hook
+                                Timesheet UI = Producer View display
+```
+
+### 1.2 Core Concepts
+
+| Term | Definition | Code Location |
+|------|------------|---------------|
+| **Rundown** | The segment list data (planning) | Firebase: `competitions/{compId}/production/rundown/segments` |
+| **Rundown Editor** | UI for creating/editing segments | `RundownEditorPage.jsx`, Route: `/{compId}/rundown` |
+| **Timesheet Engine** | Server-side execution engine | `server/lib/timesheetEngine.js` |
+| **useTimesheet** | Client hook for execution state | `hooks/useTimesheet.js` |
+| **Timesheet UI** | Execution display in Producer View | `CurrentSegment.jsx`, `NextSegment.jsx`, `RunOfShow.jsx` |
 | **Producer View** | Full production control page | Route: `/{compId}/producer` |
 | **Talent View** | Simplified view for commentators (planned) | Route: `/{compId}/talent` |
 
-### 1.2 Timesheet UI Components (in Producer View)
+### 1.3 Socket Events (all prefixed with `timesheet`)
+
+| Event | Purpose |
+|-------|---------|
+| `timesheetState` | Full state update |
+| `timesheetTick` | Real-time timing updates |
+| `timesheetSegmentActivated` | Segment changed |
+| `timesheetShowStarted` | Show started |
+| `timesheetShowStopped` | Show stopped |
+
+### 1.4 Timesheet UI Components (in Producer View)
 
 | Component | What It Shows | File |
 |-----------|---------------|------|
@@ -41,7 +64,7 @@ This document consolidates all rundown-related PRDs into a single source of trut
 | **Show Control** | Previous/Next/Pause buttons | Part of `ProducerView.jsx` |
 | **Show Progress** | Segment list with completion status | `RunOfShow.jsx` |
 
-### 1.3 Data Flow
+### 1.5 Data Flow
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -61,7 +84,7 @@ This document consolidates all rundown-related PRDs into a single source of trut
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                              EXECUTION                                       │
 │                                                                              │
-│   Show Engine (server/lib/timesheetEngine.js)                               │
+│   Timesheet Engine (server/lib/timesheetEngine.js)                          │
 │   - Runs segments with timing                                                │
 │   - Fires OBS scene changes                                                  │
 │   - Triggers graphics                                                        │
@@ -99,7 +122,7 @@ This document consolidates all rundown-related PRDs into a single source of trut
 
 | Component | Status | Description |
 |-----------|--------|-------------|
-| **Show Engine** | ✅ Complete | `server/lib/timesheetEngine.js` - full execution engine with segment progression, OBS switching, graphics firing, hold segments |
+| **Timesheet Engine** | ✅ Complete | `server/lib/timesheetEngine.js` - full execution engine with segment progression, OBS switching, graphics firing, hold segments |
 | **useTimesheet Hook** | ✅ Complete | `hooks/useTimesheet.js` - client hook providing all timing state and actions |
 | **Producer View** | ✅ Complete | Full production control with Timesheet UI |
 | **Timesheet UI** | ✅ Complete | Now Playing, Up Next, Show Control, Show Progress - all using `useTimesheet()` |
@@ -125,19 +148,19 @@ From `RundownEditorPage.jsx`:
 
 ### 2.3 Missing: The Bridge
 
-**The gap:** There is no connection between the Rundown Editor and the Show Engine.
+**The gap:** There is no connection between the Rundown Editor and the Timesheet Engine.
 
 - Rundown Editor saves segments to Firebase
-- Show Engine has its own `showConfig.segments`
+- Timesheet Engine has its own `showConfig.segments`
 - No "Load Rundown" action exists to bridge them
 
 ---
 
 ## 3. What Needs to Be Built
 
-### 3.1 Phase A: Connect Rundown Editor to Show Engine
+### 3.1 Phase A: Connect Rundown to Timesheet Engine
 
-**Goal:** Enable Producer to load a rundown from the Editor and execute it.
+**Goal:** Enable Producer to load a rundown from Firebase into the Timesheet Engine for execution.
 
 | Task | Description | Priority |
 |------|-------------|----------|
@@ -249,7 +272,7 @@ From `RundownEditorPage.jsx`:
 │  Firebase             │    │  SERVER (Coordinator)                          │
 │                       │    │                                                │
 │  competitions/        │    │  ┌──────────────────────────────────────────┐ │
-│    {compId}/          │    │  │  Show Engine (timesheetEngine.js)        │ │
+│    {compId}/          │    │  │  Timesheet Engine (timesheetEngine.js)        │ │
 │      production/      │◄───┼──│                                          │ │
 │        rundown/       │    │  │  - segments[]                            │ │
 │          segments/    │    │  │  - currentIndex                          │ │
@@ -349,9 +372,9 @@ The following documents are now superseded by this plan:
 |------|---------|
 | **Segment** | A unit of show content (e.g., "UCLA Introduction", "Rotation 1 Start") |
 | **Rundown** | The complete list of segments for a show |
-| **Show Engine** | Server-side code that executes the show (formerly called "TimesheetEngine") |
+| **Timesheet Engine** | Server-side code that executes the show (`timesheetEngine.js`) |
 | **Timesheet** | The execution UI in Producer View |
-| **Load Rundown** | Action to fetch segments from Firebase and load into Show Engine |
+| **Load Rundown** | Action to fetch segments from Firebase and load into Timesheet Engine |
 | **Hold Segment** | A segment that waits for manual advance (no auto-advance) |
 
 ---
