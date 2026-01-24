@@ -59,7 +59,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | C | AI Context - Live Execution | P3 | COMPLETE | 55-62 |
 | F | Audio Cue Integration | P3 | COMPLETE | 63-66 |
 | G | Production Tracking | P3 | COMPLETE | 67-71 |
-| K | Timezone Display | P2 | IN PROGRESS | 72-88 (13/17) |
+| K | Timezone Display | P2 | IN PROGRESS | 72-88 (14/17) |
 
 ---
 
@@ -203,7 +203,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 82 | Render timezone columns in SegmentRow | COMPLETE | Added wallClockTime, displayTimezones, timezoneConfig, isAnchorSegment props to SegmentRow; renders timezone columns after offset column with w-16 width; primary TZ in teal, others in zinc-500 |
 | Task 83 | Add anchor segment visual indicator (badge) | COMPLETE | Added amber "Anchor" badge with BookmarkIcon in both compact and expanded views of SegmentRow; tooltip explains anchor purpose |
 | Task 84 | Add column header row with TZ abbreviations | COMPLETE | Added header row showing TZ abbreviations (PST, EST, etc.) using getTimezoneAbbreviation(); primary TZ in teal-500, others in zinc-600; only displays when allDisplayTimezones.length > 0; uses anchor datetime for DST-aware abbreviations |
-| Task 85 | Include timezoneConfig in JSON export | NOT STARTED | Add to exportData.rundown.timezoneConfig |
+| Task 85 | Include timezoneConfig in JSON export | COMPLETE | Added timezoneConfig field to rundown object in handleExportJSON() |
 | Task 86 | Handle timezoneConfig in JSON import | NOT STARTED | Restore timezoneConfig from imported JSON; sync to Firebase |
 | Task 87 | Add timezone columns to CSV export | NOT STARTED | Include wall-clock time columns for each configured timezone |
 | Task 88 | Add timezone presets and edge case handling | NOT STARTED | US Full, US Coasts presets; handle deleted anchor, midnight crossing |

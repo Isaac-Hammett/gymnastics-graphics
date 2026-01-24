@@ -122,14 +122,14 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
-| Task 35 | Create venue data model in Firebase | NOT STARTED | `teamsDatabase/venues/{venue-key}` |
-| Task 36 | Create `SiteEvaluationPage.jsx` | NOT STARTED | View/edit venue info |
-| Task 37 | Add basic venue info form | NOT STARTED | Name, address, capacity |
-| Task 38 | Add internet specs section | NOT STARTED | Type, SSID, speed, notes |
-| Task 39 | Add camera positions CRUD | NOT STARTED | Position name, apparatus, location, angle |
-| Task 40 | Add image upload for camera positions | NOT STARTED | Upload to storage, link to position |
-| Task 41 | Add venue images gallery | NOT STARTED | Overview, 360, equipment photos |
-| Task 42 | Add known issues list | NOT STARTED | Lessons learned, warnings |
+| Task 38 | Create venue data model in Firebase | NOT STARTED | `teamsDatabase/venues/{venue-key}` |
+| Task 39 | Create `SiteEvaluationPage.jsx` | NOT STARTED | View/edit venue info |
+| Task 40 | Add basic venue info form | NOT STARTED | Name, address, capacity |
+| Task 41 | Add internet specs section | NOT STARTED | Type, SSID, speed, notes |
+| Task 42 | Add camera positions CRUD | NOT STARTED | Position name, apparatus, location, angle |
+| Task 43 | Add image upload for camera positions | NOT STARTED | Upload to storage, link to position |
+| Task 44 | Add venue images gallery | NOT STARTED | Overview, 360, equipment photos |
+| Task 45 | Add known issues list | NOT STARTED | Lessons learned, warnings |
 
 ---
 
@@ -137,12 +137,12 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
-| Task 43 | Link competition to venue | NOT STARTED | Venue selector in competition config |
-| Task 44 | Pre-populate camera config from venue | NOT STARTED | On competition create, suggest cameras |
-| Task 45 | Show venue info in checklist | NOT STARTED | Site eval summary panel |
-| Task 46 | Auto-validate site eval checklist items | NOT STARTED | Site eval exists → items complete |
-| Task 47 | Add "View Site Eval" link from checklist | NOT STARTED | Navigate to venue page |
-| Task 48 | Export camera config from site eval | NOT STARTED | Generate JSON for camera-setup page |
+| Task 46 | Link competition to venue | NOT STARTED | Venue selector in competition config |
+| Task 47 | Pre-populate camera config from venue | NOT STARTED | On competition create, suggest cameras |
+| Task 48 | Show venue info in checklist | NOT STARTED | Site eval summary panel |
+| Task 49 | Auto-validate site eval checklist items | NOT STARTED | Site eval exists → items complete |
+| Task 50 | Add "View Site Eval" link from checklist | NOT STARTED | Navigate to venue page |
+| Task 51 | Export camera config from site eval | NOT STARTED | Generate JSON for camera-setup page |
 
 ---
 
@@ -230,6 +230,46 @@ Main checklist page component with layout.
 
 ---
 
+### Task 8: Wire manual item toggle with rollback
+
+**Description:**
+Implement optimistic updates with error rollback for checklist item toggles.
+
+**Behavior:**
+1. User clicks checkbox → immediately update local state (optimistic)
+2. Write to Firebase in background
+3. On success: state already reflects change, no action needed
+4. On failure: revert local state to previous value, show error toast
+
+**Implementation:**
+```javascript
+const toggleItem = useCallback(async (itemId) => {
+  const previousState = checklistState?.items?.[itemId]?.checked ?? false;
+
+  // Optimistic update
+  setLocalChecklistState(prev => ({
+    ...prev,
+    items: { ...prev.items, [itemId]: { checked: !previousState } }
+  }));
+
+  try {
+    await set(ref(db, `competitions/${compId}/checklist/items/${itemId}`), {
+      checked: !previousState,
+      checkedAt: new Date().toISOString()
+    });
+  } catch (error) {
+    // Rollback on failure
+    setLocalChecklistState(prev => ({
+      ...prev,
+      items: { ...prev.items, [itemId]: { checked: previousState } }
+    }));
+    toast.error('Failed to update checklist item');
+  }
+}, [compId, checklistState]);
+```
+
+---
+
 ### Task 17: Create `TeamContactsPanel.jsx`
 
 **File:** `show-controller/src/components/TeamContactsPanel.jsx`
@@ -244,20 +284,89 @@ Panel showing contacts for competition teams with CRUD.
 - Add/Edit contact button
 - Modal for contact form
 
+**Contact Roles:**
+- head-coach
+- assistant-coach
+- sid (Sports Information Director)
+- camera-op-primary
+- camera-op-backup
+- venue-operations
+- scoring-operations
+
+---
+
+### Task 27: Add skeleton loading states
+
+**Description:**
+Add loading UI for initial page load and refresh operations.
+
+**Components:**
+1. **Initial load skeleton:**
+   - Progress bar placeholder (gray animated bar)
+   - Phase tabs skeleton
+   - 3-4 category skeletons with 4-5 item lines each
+
+2. **Refresh indicator:**
+   - Subtle spinner in header during background refresh
+   - Don't replace content during refresh (already showing data)
+
+**Pattern:** Use Tailwind's `animate-pulse` on gray backgrounds.
+
+---
+
+### Task 28: Add keyboard accessibility
+
+**Description:**
+Ensure checklist is fully keyboard navigable per WCAG guidelines.
+
+**Requirements:**
+- Tab key navigates between interactive elements (checkboxes, buttons, links)
+- Space bar toggles checkbox when focused
+- Enter key activates buttons/links
+- Visible focus indicators (ring-2 ring-blue-500)
+- Category collapse/expand via Enter or Space
+- Skip to main content link (optional)
+
+**Implementation:**
+- Checkboxes: native `<input type="checkbox">` or proper ARIA roles
+- Focus visible: `focus-visible:ring-2 focus-visible:ring-blue-500`
+- Category headers: `role="button"` with `tabIndex={0}` and keyboard handler
+
+---
+
+### Task 29: Ensure responsive design
+
+**Description:**
+Make checklist usable on tablets and mobile devices for on-site producers.
+
+**Breakpoints:**
+- **Desktop (≥1024px):** Two-column layout (checklist + contacts sidebar)
+- **Tablet (768-1023px):** Contacts panel collapses to expandable drawer
+- **Mobile (<768px):** Single column, contacts accessible via button/modal
+
+**Key considerations:**
+- Touch targets minimum 44x44px
+- Phase tabs scrollable horizontally on small screens
+- Category sections full-width on mobile
+- Progress bar simplified on mobile (percentage only, no detailed stats)
+
 ---
 
 ## Verification Checklist
 
 ### Phase 1 Complete When:
 - [ ] Checklist page loads at `/{compId}/checklist`
-- [ ] All 4 phases visible with correct categories
+- [ ] All 4 phases visible with ~72 curated items
 - [ ] Auto-validated items show real-time status
-- [ ] Manual items can be toggled
-- [ ] State persists to Firebase
+- [ ] Manual items can be toggled with optimistic updates
+- [ ] State persists to Firebase with error rollback
 - [ ] Notes can be added/edited
-- [ ] Team contacts panel shows/edits contacts
+- [ ] Team contacts panel shows/edits all 7 contact roles
 - [ ] Contacts persist at `teamsDatabase/contacts/{team-key}`
 - [ ] Navigation links work from CompetitionSelector and Header
+- [ ] Skeleton loading states display during initial load
+- [ ] Fully keyboard accessible (tab, space, enter)
+- [ ] Responsive design works on tablet (768px+) and mobile
 
 ### Phase 2 Complete When:
 - [ ] Templates stored in Firebase
@@ -275,10 +384,18 @@ Panel showing contacts for competition teams with CRUD.
 
 ## Notes
 
+### MVP Scope
+The MVP includes 72 curated checklist items (not the full 130+ from the Google Sheets master). Items were selected for criticality and auto-validation potential. The full list remains available in the original spreadsheet for reference.
+
 ### Dependencies
 - Phase 1A must complete before 1B, 1C, 1D
 - Phase 1 must complete before Phase 2 or 3
 - Phase 3A must complete before 3B
+
+### Design Considerations
+- **Responsive:** Must work on tablets for on-site producers
+- **Accessible:** Full keyboard navigation, proper focus indicators
+- **Performance:** Optimistic updates with rollback, skeleton loading
 
 ### Key Files Reference
 

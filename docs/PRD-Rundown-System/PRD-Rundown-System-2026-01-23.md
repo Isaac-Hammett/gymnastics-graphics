@@ -276,7 +276,7 @@ Producers can create rundowns but cannot execute them. There's no bridge between
 - [ ] Producer can set anchor segment and anchor datetime
 - [ ] Producer can configure primary timezone and additional display timezones
 - [ ] Segment list displays wall-clock times in all configured timezones
-- [ ] Anchor segment shows visual "Anchor" badge
+- [x] Anchor segment shows visual "Anchor" badge
 - [ ] Pre-anchor segment times calculated backwards from anchor
 - [ ] Timezone columns included in CSV/JSON export
 - [ ] Timezone configuration persists across page refresh
