@@ -46,6 +46,7 @@ const TRANSITION_TYPES = {
  * - 'holdMaxReached': Emitted when hold segment exceeds maxDuration
  * - 'overrideRecorded': Emitted when a manual override is logged
  * - 'stateChanged': Emitted when engine state changes
+ * - 'audioCueTriggered': Emitted when an audio cue starts (Phase F)
  */
 class TimesheetEngine extends EventEmitter {
   /**
@@ -588,6 +589,9 @@ class TimesheetEngine extends EventEmitter {
     // Apply audio overrides if defined
     await this._applyAudioOverrides(segment);
 
+    // Play audio cue if defined (Phase F: Task 64)
+    await this._playAudioCue(segment);
+
     this.emit('segmentActivated', {
       timestamp: Date.now(),
       segmentIndex: index,
@@ -903,6 +907,93 @@ class TimesheetEngine extends EventEmitter {
       this.emit('error', {
         type: 'obs_video',
         message: `Failed to play video ${segment.videoFile}: ${error.message}`,
+        segmentId: segment.id
+      });
+    }
+  }
+
+  /**
+   * Play audio cue via OBS media source (Phase F: Task 64)
+   * @param {Object} segment - Segment with audioCue configuration
+   * @private
+   */
+  async _playAudioCue(segment) {
+    if (!segment.audioCue || !segment.audioCue.songName) return;
+
+    // In rehearsal mode, skip actual audio playback but still emit event
+    if (this._isRehearsalMode) {
+      console.log(`[Timesheet${this.compId ? ':' + this.compId : ''}] REHEARSAL: Skipping audio cue "${segment.audioCue.songName}"`);
+      this.emit('audioCueTriggered', {
+        segmentId: segment.id,
+        audioCue: segment.audioCue,
+        timestamp: Date.now(),
+        rehearsalMode: true
+      });
+      return;
+    }
+
+    // Get OBS connection - prefer per-competition connection via obsConnectionManager
+    let obsConnection = null;
+    if (this.obsConnectionManager && this.compId) {
+      obsConnection = this.obsConnectionManager.getConnection(this.compId);
+      if (!obsConnection) {
+        this.emit('error', {
+          type: 'obs_audio_cue',
+          message: `No OBS connection found for competition ${this.compId}`,
+          segmentId: segment.id
+        });
+        return;
+      }
+    } else if (this.obs) {
+      // Fallback to legacy single OBS connection
+      obsConnection = this.obs;
+    } else {
+      // No OBS connection available
+      return;
+    }
+
+    // Use configured audio source or default name
+    const sourceName = this.showConfig.audioConfig?.musicSource?.sourceName || 'Music Player';
+    const { songName, inPoint, outPoint } = segment.audioCue;
+
+    try {
+      // Get current settings
+      const { inputSettings } = await obsConnection.call('GetInputSettings', {
+        inputName: sourceName
+      });
+
+      // Build new settings with the song file
+      // Song name is expected to be a file path or name that OBS can resolve
+      const newSettings = {
+        ...inputSettings,
+        local_file: songName,
+        is_local_file: true
+      };
+
+      // Update with new file path
+      await obsConnection.call('SetInputSettings', {
+        inputName: sourceName,
+        inputSettings: newSettings
+      });
+
+      // Restart the media source to play from beginning
+      await obsConnection.call('TriggerMediaInputAction', {
+        inputName: sourceName,
+        mediaAction: 'OBS_WEBSOCKET_MEDIA_INPUT_ACTION_RESTART'
+      });
+
+      console.log(`[Timesheet${this.compId ? ':' + this.compId : ''}] Audio cue started: "${songName}" (in: ${inPoint || 'start'}, out: ${outPoint || 'end'})`);
+
+      this.emit('audioCueTriggered', {
+        segmentId: segment.id,
+        audioCue: segment.audioCue,
+        sourceName,
+        timestamp: Date.now()
+      });
+    } catch (error) {
+      this.emit('error', {
+        type: 'obs_audio_cue',
+        message: `Failed to play audio cue "${songName}": ${error.message}`,
         segmentId: segment.id
       });
     }

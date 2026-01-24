@@ -338,6 +338,12 @@ function initializeTimesheetEngine() {
     io.emit('timesheetVideoStarted', data);
   });
 
+  // Phase F: Task 64 - Audio cue triggered event (legacy)
+  timesheetEngine.on('audioCueTriggered', (data) => {
+    console.log(`Timesheet: Audio cue triggered - "${data.audioCue?.songName}"`);
+    io.emit('timesheetAudioCueTriggered', data);
+  });
+
   timesheetEngine.on('breakStarted', (data) => {
     console.log(`Timesheet: Break started - ${data.segmentId}`);
     io.emit('timesheetBreakStarted', data);
@@ -607,6 +613,12 @@ function getOrCreateEngine(compId, obsConnectionManager, firebase, socketIo) {
 
   engine.on('videoStarted', (data) => {
     socketIo.to(roomName).emit('timesheetVideoStarted', data);
+  });
+
+  // Phase F: Task 64 - Audio cue triggered event
+  engine.on('audioCueTriggered', (data) => {
+    console.log(`[Timesheet:${compId}] Audio cue triggered: "${data.audioCue?.songName}"`);
+    socketIo.to(roomName).emit('timesheetAudioCueTriggered', data);
   });
 
   engine.on('breakStarted', (data) => {

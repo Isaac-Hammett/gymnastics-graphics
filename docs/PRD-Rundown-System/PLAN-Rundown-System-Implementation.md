@@ -166,12 +166,12 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 61 | Display AI context in Talent View | COMPLETE | Added collapsible AI Talking Points panel in TalentView.jsx with: useAIContext hook integration, priority-colored talking points (critical=red, high=orange, normal=purple), milestones section with trophy icons, refresh button, empty/loading states, expand/collapse toggle with counts |
 | Task 62 | Display AI context in Producer View | COMPLETE | Added collapsible AI Talking Points panel in ProducerView.jsx right column; uses useAIContext hook; shows milestones, priority points, and regular talking points; styled consistently with TalentView but adapted for compact sidebar layout; max-height with scroll for long content; only visible when AI service is running |
 
-### Phase F: Audio Cue Integration (P3) - IN PROGRESS (1/4)
+### Phase F: Audio Cue Integration (P3) - IN PROGRESS (2/4)
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
 | Task 63 | Add audio cue fields to segment data model | COMPLETE | Added audioCue field (songName, inPoint, outPoint) to segment creation in RundownEditorPage.jsx (3 places), added to segmentMapper.js (editor↔engine mapping), added to compareSegments fieldsToCompare |
-| Task 64 | Pipe audio cues through Timesheet Engine | NOT STARTED | |
+| Task 64 | Pipe audio cues through Timesheet Engine | COMPLETE | Added `_playAudioCue()` method to TimesheetEngine that plays audio via OBS media source; handles rehearsal mode skipping; emits `audioCueTriggered` event; wired event to `timesheetAudioCueTriggered` socket broadcast in server/index.js for both legacy and multi-competition engines |
 | Task 65 | Trigger audio playback on segment start | NOT STARTED | |
 | Task 66 | Add audio control to Producer View | NOT STARTED | |
 
