@@ -226,7 +226,7 @@ Producers can create rundowns but cannot execute them. There's no bridge between
 - [x] "Reload Rundown" updates segments without losing current position
 - [x] Confirmation dialog shows summary of changes (added/removed/modified segments)
 - [x] Deleted current segment is handled gracefully (stay on it, warn producer)
-- [ ] Past segments (already completed) are not affected by reload
+- [x] Past segments (already completed) are not affected by reload
 
 ### Phase J Complete When:
 - [ ] Actual segment durations logged during show
