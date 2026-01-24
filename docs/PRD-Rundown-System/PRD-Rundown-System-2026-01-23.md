@@ -211,9 +211,9 @@ Producers can create rundowns but cannot execute them. There's no bridge between
 - [ ] Two competitions can run independently without interference
 
 ### Phase H Complete When:
-- [ ] Rehearsal mode runs full show without firing OBS/graphics
-- [ ] "REHEARSAL" indicator visible in all views
-- [ ] Timing proceeds normally for practice
+- [x] Rehearsal mode runs full show without firing OBS/graphics
+- [x] "REHEARSAL" indicator visible in all views
+- [x] Timing proceeds normally for practice
 
 ### Phase B Complete When:
 - [ ] Talent View accessible at `/{compId}/talent`
