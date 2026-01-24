@@ -37,9 +37,11 @@ import {
   SunIcon,
   ArrowUturnLeftIcon,
   ArrowUturnRightIcon,
+  SparklesIcon,
 } from '@heroicons/react/24/outline';
 import { getGraphicsForCompetition, getCategories, getRecommendedGraphic, getGraphicById, GRAPHICS } from '../lib/graphicsRegistry';
 import { db, ref, set, get, push, remove, update, onValue, onDisconnect } from '../lib/firebase';
+import { analyzeCompetitionContext } from '../lib/aiContextAnalyzer';
 
 // Hardcoded competition context per PRD (Phase 0B)
 const DUMMY_COMPETITION = {
@@ -319,6 +321,11 @@ export default function RundownEditorPage() {
   const [redoStack, setRedoStack] = useState([]); // Stack of undone states
   const [isUndoRedoOperation, setIsUndoRedoOperation] = useState(false); // Flag to prevent undo during undo/redo
 
+  // AI Suggestions state (Phase 12: Task 88)
+  const [showAISuggestions, setShowAISuggestions] = useState(false); // Toggle AI suggestions panel
+  const [aiSuggestions, setAISuggestions] = useState([]); // List of AI-generated segment suggestions
+  const [dismissedSuggestions, setDismissedSuggestions] = useState([]); // IDs of dismissed suggestions
+
   // Computed type row colors using customTypeColors (Phase 10: Task 78)
   const TYPE_ROW_COLORS = useMemo(() => {
     return getTypeRowColors(customTypeColors);
@@ -337,6 +344,199 @@ export default function RundownEditorPage() {
       document.body.classList.remove('theme-light');
     };
   }, [darkMode]);
+
+  // Generate AI segment suggestions based on competition context (Phase 12: Task 88)
+  // Analyzes competition metadata, date, and existing segments to suggest relevant segments
+  useEffect(() => {
+    // Build competition config for the analyzer from DUMMY_COMPETITION
+    // In production, this would come from Firebase
+    const competitionConfig = {
+      id: DUMMY_COMPETITION.id,
+      eventName: DUMMY_COMPETITION.name,
+      compType: DUMMY_COMPETITION.type,
+      // Map teams to the format expected by the analyzer
+      team1Name: DUMMY_COMPETITION.teams[1]?.name,
+      team2Name: DUMMY_COMPETITION.teams[2]?.name,
+      team3Name: DUMMY_COMPETITION.teams[3]?.name,
+      team4Name: DUMMY_COMPETITION.teams[4]?.name,
+    };
+
+    // Analyze competition context
+    const context = analyzeCompetitionContext({
+      competition: competitionConfig,
+      teamData: null, // Would be loaded from Firebase in production
+      date: new Date(), // Use current date for analysis
+    });
+
+    // Generate suggestions from triggers
+    const suggestions = generateContextSuggestions(context, segments, dismissedSuggestions);
+    setAISuggestions(suggestions);
+  }, [segments, dismissedSuggestions]);
+
+  // Generate segment suggestions based on context triggers (Phase 12: Task 88)
+  function generateContextSuggestions(context, existingSegments, dismissed) {
+    const suggestions = [];
+    const existingNames = existingSegments.map(s => s.name.toLowerCase());
+
+    // Helper to check if a suggestion already exists
+    const segmentExists = (namePattern) => {
+      const pattern = namePattern.toLowerCase();
+      return existingNames.some(name => name.includes(pattern) || pattern.includes(name));
+    };
+
+    // Helper to create a unique suggestion ID
+    const createSuggestionId = (type, detail = '') => `${type}-${detail}`.replace(/\s+/g, '-').toLowerCase();
+
+    // Process triggers and generate suggestions
+    for (const trigger of context.triggers) {
+      const suggestionId = createSuggestionId(trigger.type, trigger.name || trigger.championshipType || '');
+
+      // Skip dismissed suggestions
+      if (dismissed.includes(suggestionId)) continue;
+
+      switch (trigger.type) {
+        case 'senior_meet':
+          // Suggest senior recognition segment
+          if (!segmentExists('senior') && !segmentExists('recognition')) {
+            suggestions.push({
+              id: suggestionId,
+              type: 'senior_meet',
+              title: 'Senior Recognition',
+              description: `This appears to be a senior meet. Add a Senior Recognition segment to honor graduating athletes?`,
+              priority: trigger.priority,
+              confidence: trigger.confidence,
+              segment: {
+                name: 'Senior Recognition',
+                type: 'live',
+                duration: 120,
+                scene: 'Talent Camera',
+                graphic: null,
+                autoAdvance: false,
+                timingMode: 'manual',
+                notes: `${trigger.seniorCount || 'Multiple'} seniors to recognize`,
+              },
+            });
+          }
+          break;
+
+        case 'rivalry':
+          // Suggest rivalry history segment
+          if (!segmentExists('rivalry') && !segmentExists('history')) {
+            const rivalTeams = trigger.teams?.join(' vs ') || 'Rivalry';
+            suggestions.push({
+              id: suggestionId,
+              type: 'rivalry',
+              title: 'Rivalry History',
+              description: `${rivalTeams} is a classic rivalry matchup. Add a Rivalry History segment with historical matchup stats?`,
+              priority: trigger.priority,
+              confidence: trigger.confidence,
+              segment: {
+                name: `${rivalTeams} Rivalry History`,
+                type: 'static',
+                duration: 30,
+                scene: 'Graphics Fullscreen',
+                graphic: null,
+                autoAdvance: true,
+                timingMode: 'fixed',
+                notes: 'Historical head-to-head record and notable moments',
+              },
+            });
+          }
+          break;
+
+        case 'championship':
+          // Suggest trophy/awards presentation segment
+          if (!segmentExists('trophy') && !segmentExists('presentation') && !segmentExists('award')) {
+            const champType = trigger.championshipType === 'ncaa' ? 'NCAA Championship' :
+                              trigger.championshipType === 'regional' ? 'Regional Championship' :
+                              trigger.championshipType === 'conference' ? 'Conference Championship' :
+                              'Championship';
+            suggestions.push({
+              id: suggestionId,
+              type: 'championship',
+              title: 'Trophy Presentation',
+              description: `This is a ${champType} meet. Add a Trophy/Awards Presentation segment?`,
+              priority: trigger.priority,
+              confidence: trigger.confidence,
+              segment: {
+                name: 'Trophy Presentation',
+                type: 'live',
+                duration: 180,
+                scene: 'Talent Camera',
+                graphic: null,
+                autoAdvance: false,
+                timingMode: 'manual',
+                notes: `${champType} awards ceremony`,
+              },
+            });
+          }
+          break;
+
+        case 'season_opener':
+          // Suggest season opener/welcome back segment
+          if (!segmentExists('season opener') && !segmentExists('welcome back') && !segmentExists('opening')) {
+            suggestions.push({
+              id: suggestionId,
+              type: 'season_opener',
+              title: 'Season Opener',
+              description: 'This appears to be a season opener. Add a Welcome Back / Season Opener segment?',
+              priority: trigger.priority,
+              confidence: trigger.confidence,
+              segment: {
+                name: 'Season Opener Welcome',
+                type: 'live',
+                duration: 60,
+                scene: 'Talent Camera',
+                graphic: null,
+                autoAdvance: true,
+                timingMode: 'fixed',
+                notes: 'Welcome back fans, preview the season ahead',
+              },
+            });
+          }
+          break;
+
+        case 'holiday':
+          // Suggest holiday-themed segment
+          const holidayName = trigger.name;
+          if (!segmentExists(holidayName)) {
+            suggestions.push({
+              id: suggestionId,
+              type: 'holiday',
+              title: `${holidayName} Theme`,
+              description: `${holidayName} is ${trigger.data?.daysAway === 0 ? 'today' : 'coming up'}. Add a holiday-themed intro or segment?`,
+              priority: trigger.priority,
+              confidence: 0.6,
+              segment: {
+                name: `${holidayName} Intro`,
+                type: 'video',
+                duration: 15,
+                scene: 'Graphics Fullscreen',
+                graphic: null,
+                autoAdvance: true,
+                timingMode: 'fixed',
+                notes: `Holiday-themed intro for ${holidayName}`,
+              },
+            });
+          }
+          break;
+
+        default:
+          // Skip other trigger types for now (handled in Task 89)
+          break;
+      }
+    }
+
+    // Sort by priority (high first) then by confidence
+    const priorityOrder = { high: 0, medium: 1, low: 2 };
+    suggestions.sort((a, b) => {
+      const priorityDiff = (priorityOrder[a.priority] || 2) - (priorityOrder[b.priority] || 2);
+      if (priorityDiff !== 0) return priorityDiff;
+      return (b.confidence || 0) - (a.confidence || 0);
+    });
+
+    return suggestions;
+  }
 
   // Filtered segments
   const filteredSegments = useMemo(() => {
@@ -1509,6 +1709,47 @@ export default function RundownEditorPage() {
 
     setSelectedSegmentId(newId);
     showToast('Segment added');
+  }
+
+  // Add segment from AI suggestion (Phase 12: Task 88)
+  function handleAddFromSuggestion(suggestion) {
+    // Check role permissions
+    if (!checkPermission('edit')) return;
+    pushUndoState('Add suggested segment');
+
+    const newId = `seg-${Date.now()}`;
+    const newSegment = {
+      id: newId,
+      ...suggestion.segment,
+      bufferAfter: suggestion.segment.bufferAfter || 0,
+      locked: false,
+      optional: false,
+    };
+
+    // Add at end of rundown
+    const newSegments = [...segments, newSegment];
+    syncSegmentsToFirebase(newSegments, 'Add AI-suggested segment', {
+      segmentName: newSegment.name,
+      suggestionType: suggestion.type,
+    });
+
+    setSelectedSegmentId(newId);
+    showToast(`Added: ${newSegment.name}`);
+
+    // Auto-dismiss the suggestion after adding
+    setDismissedSuggestions(prev => [...prev, suggestion.id]);
+  }
+
+  // Dismiss an AI suggestion (Phase 12: Task 88)
+  function handleDismissSuggestion(suggestionId) {
+    setDismissedSuggestions(prev => [...prev, suggestionId]);
+    showToast('Suggestion dismissed');
+  }
+
+  // Clear all dismissed suggestions to regenerate (Phase 12: Task 88)
+  function handleResetSuggestions() {
+    setDismissedSuggestions([]);
+    showToast('Suggestions refreshed');
   }
 
   function handleSaveSegment(updatedSegment) {
@@ -3757,6 +3998,26 @@ export default function RundownEditorPage() {
               <ArrowPathIcon className="w-4 h-4" />
               Sync OBS
             </button>
+            {/* AI Suggestions Button (Phase 12: Task 88) */}
+            <button
+              onClick={() => setShowAISuggestions(!showAISuggestions)}
+              className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
+                showAISuggestions
+                  ? 'bg-purple-600 text-white'
+                  : aiSuggestions.length > 0
+                    ? 'bg-purple-500/20 border border-purple-500/40 text-purple-300 hover:bg-purple-500/30'
+                    : 'bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700'
+              }`}
+              title={`AI Suggestions${aiSuggestions.length > 0 ? ` (${aiSuggestions.length})` : ''}`}
+            >
+              <SparklesIcon className="w-4 h-4" />
+              AI Suggestions
+              {aiSuggestions.length > 0 && !showAISuggestions && (
+                <span className="ml-1 px-1.5 py-0.5 bg-purple-500 text-white text-xs rounded-full">
+                  {aiSuggestions.length}
+                </span>
+              )}
+            </button>
           </div>
           <div className="flex items-center gap-3">
             <select
@@ -3909,6 +4170,92 @@ export default function RundownEditorPage() {
           </div>
         </div>
       </div>
+
+      {/* AI Suggestions Panel (Phase 12: Task 88) */}
+      {showAISuggestions && (
+        <div className="border-b border-zinc-800 bg-purple-500/5">
+          <div className="px-6 py-3">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <SparklesIcon className="w-5 h-5 text-purple-400" />
+                <h3 className="text-sm font-medium text-purple-300">AI Segment Suggestions</h3>
+                <span className="text-xs text-zinc-500">
+                  Based on competition context
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                {dismissedSuggestions.length > 0 && (
+                  <button
+                    onClick={handleResetSuggestions}
+                    className="px-2 py-1 text-xs text-zinc-400 hover:text-zinc-300 bg-zinc-800 border border-zinc-700 rounded hover:bg-zinc-700 transition-colors"
+                  >
+                    Reset Dismissed
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowAISuggestions(false)}
+                  className="p-1 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded transition-colors"
+                >
+                  <XMarkIcon className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+            {aiSuggestions.length === 0 ? (
+              <div className="text-center py-4 text-zinc-500 text-sm">
+                No suggestions available for this competition.
+                {dismissedSuggestions.length > 0 && (
+                  <span className="block text-xs mt-1">
+                    ({dismissedSuggestions.length} suggestion{dismissedSuggestions.length !== 1 ? 's' : ''} dismissed)
+                  </span>
+                )}
+              </div>
+            ) : (
+              <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
+                {aiSuggestions.map((suggestion) => (
+                  <div
+                    key={suggestion.id}
+                    className="p-3 bg-zinc-900/50 border border-purple-500/20 rounded-lg hover:border-purple-500/40 transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-purple-300">{suggestion.title}</span>
+                          {suggestion.priority === 'high' && (
+                            <span className="px-1.5 py-0.5 text-xs bg-purple-500/20 text-purple-300 rounded">
+                              Recommended
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-zinc-400 mt-1">{suggestion.description}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-zinc-500">
+                      <span>
+                        {suggestion.segment.type} • {suggestion.segment.duration ? `${suggestion.segment.duration}s` : 'Manual'}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleDismissSuggestion(suggestion.id)}
+                          className="px-2 py-1 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-700 rounded transition-colors"
+                          title="Dismiss"
+                        >
+                          Dismiss
+                        </button>
+                        <button
+                          onClick={() => handleAddFromSuggestion(suggestion)}
+                          className="px-2 py-1 bg-purple-600 text-white rounded hover:bg-purple-500 transition-colors"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Main Content - Split Panel */}
       <div className="flex-1 flex overflow-hidden">

@@ -3,7 +3,7 @@
 **PRD:** PRD-Rundown-01-EditorPrototype
 **Status:** PROTOTYPE COMPLETE, FEATURES IN PROGRESS
 **Created:** 2026-01-22
-**Last Updated:** 2026-01-23 (v5.11 - Task 87 complete - AI context analysis)
+**Last Updated:** 2026-01-23 (v5.12 - Task 88 complete - AI context-based segment suggestions)
 
 ---
 
@@ -225,10 +225,10 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task | Status | Notes |
 |------|--------|-------|
 | Task 87: AI context analysis | COMPLETE | Created aiContextAnalyzer.js with date analysis (holidays, season opener), competition analysis (rivalry, championship, senior meet detection), roster analysis (seniors, notable athletes), and suggestion triggers for Tasks 88-91 |
-| Task 88: AI segment suggestions - context | NOT STARTED | Senior meet, rivalry, championship triggers |
+| Task 88: AI segment suggestions - context | COMPLETE | Added AI suggestions panel with context-based triggers (senior meet, rivalry, championship, season opener, holiday). Suggestions show in collapsible panel with one-click add and dismiss functionality. |
 | Task 89: AI segment suggestions - roster | NOT STARTED | Seniors, All-Americans, milestones, injuries |
 | Task 90: AI segment order suggestions | NOT STARTED | Best practices for segment placement |
-| Task 91: AI suggestions panel UI | NOT STARTED | Non-intrusive display, one-click add, dismiss |
+| Task 91: AI suggestions panel UI | COMPLETE | Implemented as part of Task 88 - non-intrusive panel below toolbar, one-click add, dismiss/reset functionality |
 | Task 92: Add segment script field | NOT STARTED | Rich text for pre-planning notes |
 | Task 93: Add audio cue planning fields | NOT STARTED | Song name, in/out timestamps |
 | Task 94: Add talent assignment | NOT STARTED | Who is on camera, schedule view |
