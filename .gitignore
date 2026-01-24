@@ -6,6 +6,10 @@ node_modules/
 .env.local
 .env.*.local
 
+# Firebase service account (credentials - never commit!)
+firebase-service-account.json
+*-service-account*.json
+
 # Build output
 show-controller/dist/
 

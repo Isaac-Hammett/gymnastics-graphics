@@ -149,6 +149,32 @@ New VMs launched by VM Pool Manager use this AMI automatically.
 
 ---
 
+## Firebase Service Account
+
+The coordinator requires a Firebase Admin SDK service account to manage the VM pool.
+
+| Property | Value |
+|----------|-------|
+| Path on coordinator | `/opt/gymnastics-graphics/firebase-service-account.json` |
+| Local backup | `~/.config/firebase/gymnastics-graphics-prod-sa.json` |
+| Env var | `GOOGLE_APPLICATION_CREDENTIALS` (set in ecosystem.config.js) |
+
+**If VM pool stops working**, check if this file exists:
+```bash
+ssh_exec target="coordinator" command="ls -la /opt/gymnastics-graphics/firebase-service-account.json"
+```
+
+**To restore:**
+```bash
+# Upload from local backup
+ssh_upload_file target="coordinator" localPath="~/.config/firebase/gymnastics-graphics-prod-sa.json" remotePath="/opt/gymnastics-graphics/firebase-service-account.json"
+
+# Restart coordinator
+ssh_exec target="coordinator" command="pm2 restart coordinator"
+```
+
+---
+
 ## Quick Debugging
 
 | Symptom | Check |
@@ -157,3 +183,4 @@ New VMs launched by VM Pool Manager use this AMI automatically.
 | Competition not loading | Is VM assigned? Check `competitions/{compId}/config/vmAddress` in Firebase |
 | OBS not responding | Is OBS running on VM? `ssh_exec target={IP} command="systemctl status obs"` |
 | Graphics not showing | Is `output.html` deployed? Check `https://commentarygraphic.com/output.html?graphic=logos` |
+| VM pool not working | Check Firebase credentials: `ls /opt/gymnastics-graphics/firebase-service-account.json` |
