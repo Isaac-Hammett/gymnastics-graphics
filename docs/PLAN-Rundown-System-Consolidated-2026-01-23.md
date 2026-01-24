@@ -1,9 +1,9 @@
 # Rundown System - Consolidated Plan
 
-**Version:** 3.0
+**Version:** 3.1
 **Date:** 2026-01-23
 **Status:** ACTIVE - Single Source of Truth
-**Last Audit:** 2026-01-23 (Reality check performed, improvements added)
+**Last Audit:** 2026-01-23 (Architecture clarified for multi-competition support)
 
 ---
 
@@ -139,43 +139,79 @@ Rundown Editor = planning UI    useTimesheet = client hook
 | Segment progression | ✅ | ⚠️ Needs segments loaded first |
 | Auto-advance | ✅ | ⚠️ Needs segments loaded first |
 | Hold segments | ✅ | ⚠️ Needs segments loaded first |
-| OBS scene switching | ✅ `_applyTransitionAndSwitchScene()` | ⚠️ Needs OBS connected |
+| OBS scene switching | ✅ `_applyTransitionAndSwitchScene()` | ❌ **Uses single OBS, not per-competition** |
 | Graphics triggering | ✅ `_triggerGraphic()` | ❌ **Only socket.io, no Firebase** |
-| Video playback | ✅ `_playVideo()` | ⚠️ Needs OBS connected |
-| Audio overrides | ✅ `_applyAudioOverrides()` | ⚠️ Needs OBS connected |
+| Video playback | ✅ `_playVideo()` | ❌ **Uses single OBS, not per-competition** |
+| Audio overrides | ✅ `_applyAudioOverrides()` | ❌ **Uses single OBS, not per-competition** |
 | History/override logging | ✅ | ✅ |
 
-**Critical Gap:** Server initialization (line 251-255 of `server/index.js`):
+**Critical Gap #1 - Single Global Instance:** Server initialization (line 251-255 of `server/index.js`):
 ```javascript
 timesheetEngine = new TimesheetEngine({
   showConfig,
-  obs,
+  obs,           // ❌ Single OBS instance - doesn't work for multi-competition
   io
   // MISSING: firebase  <-- Graphics can't write to Firebase
+  // MISSING: compId    <-- Engine doesn't know which competition it serves
+  // MISSING: obsConnectionManager <-- Should use per-competition OBS connections
 });
 ```
 
+**Critical Gap #2 - Architecture Mismatch:** The current engine assumes a single OBS connection, but the production system uses `obsConnectionManager` which maintains **per-competition OBS connections** to each competition's VM.
+
 ### 2.3 What's Missing
 
-#### Gap 1: No "Load Rundown" Bridge
+#### Gap 1: TimesheetEngine Not Competition-Aware (CRITICAL)
+The current TimesheetEngine is designed as a single global instance, but production requires **per-competition execution**:
+
+```
+CURRENT (Wrong):
+┌─────────────────────────────────────────┐
+│  Single TimesheetEngine                 │
+│  └── Single OBS connection              │
+│      (can only control one competition) │
+└─────────────────────────────────────────┘
+
+NEEDED (Correct):
+┌─────────────────────────────────────────┐
+│  Competition A (compId: abc123)         │
+│  ├── VM: 50.19.137.152                  │
+│  ├── OBS: obsConnectionManager.get('abc123') │
+│  ├── Rundown: competitions/abc123/production/rundown/segments │
+│  └── TimesheetEngine instance for abc123│
+├─────────────────────────────────────────┤
+│  Competition B (compId: xyz789)         │
+│  ├── VM: 54.210.98.89                   │
+│  ├── OBS: obsConnectionManager.get('xyz789') │
+│  ├── Rundown: competitions/xyz789/production/rundown/segments │
+│  └── TimesheetEngine instance for xyz789│
+└─────────────────────────────────────────┘
+```
+
+**Required changes:**
+- TimesheetEngine must accept `compId` and `obsConnectionManager` (not a single `obs`)
+- Create a `Map<compId, TimesheetEngine>` to hold per-competition instances
+- Engine methods must route OBS calls through `obsConnectionManager.getConnection(compId)`
+
+#### Gap 2: No "Load Rundown" Bridge
 - Rundown Editor saves to Firebase: `competitions/{compId}/production/rundown/segments`
 - Timesheet Engine uses: `showConfig.segments` (hardcoded/empty)
 - **No way to load from one to the other**
 
-#### Gap 2: Firebase Not Passed to Engine
+#### Gap 3: Firebase Not Passed to Engine
 - `_triggerGraphic()` method checks for `this.firebase` but it's never provided
 - Graphics only fire via socket.io, not direct Firebase writes
 - This may cause issues with graphics rendering
 
-#### Gap 3: Picker Data Sources Unverified
+#### Gap 4: Picker Data Sources Unverified
 - Scene picker: Should pull from OBS state sync - **needs verification**
 - Graphics picker: Should pull from Graphics Registry - **needs verification**
 
-#### Gap 4: No Talent View
+#### Gap 5: No Talent View
 - Route doesn't exist
 - No simplified commentator interface
 
-#### Gap 5: No AI Context
+#### Gap 6: No AI Context
 - Not started at all
 
 ---
@@ -204,13 +240,55 @@ timesheetEngine = new TimesheetEngine({
 
 **Goal:** Enable Producer to load a rundown from Firebase into the Timesheet Engine for execution.
 
+#### A.0: Refactor TimesheetEngine for Multi-Competition (PREREQUISITE)
+
+The engine must be updated to work with the production infrastructure before any other Phase A work.
+
 | Task | Description | Priority | Status |
 |------|-------------|----------|--------|
-| A.1 | Add `loadRundown` socket handler on server | P0 | Not Started |
+| A.0.1 | Update TimesheetEngine constructor to accept `compId` and `obsConnectionManager` | P0 | Not Started |
+| A.0.2 | Create `timesheetEngines` Map in server/index.js to hold per-competition instances | P0 | Not Started |
+| A.0.3 | Update `_applyTransitionAndSwitchScene()` to use `obsConnectionManager.getConnection(this.compId)` | P0 | Not Started |
+| A.0.4 | Update `_playVideo()` to use per-competition OBS connection | P0 | Not Started |
+| A.0.5 | Update `_applyAudioOverrides()` to use per-competition OBS connection | P0 | Not Started |
+| A.0.6 | Update all socket event broadcasts to target competition room: `io.to('competition:${compId}')` | P0 | Not Started |
+| A.0.7 | Pass Firebase Admin instance to engine for `_triggerGraphic()` | P0 | Not Started |
+
+**New Constructor Signature:**
+```javascript
+// OLD (single competition):
+new TimesheetEngine({ showConfig, obs, io })
+
+// NEW (multi-competition):
+new TimesheetEngine({
+  compId,                    // Which competition this engine serves
+  obsConnectionManager,      // Get per-competition OBS via .getConnection(compId)
+  firebase,                  // Firebase Admin for graphics triggering
+  io                         // Socket.io server (broadcasts to competition room)
+})
+```
+
+**OBS Call Pattern Change:**
+```javascript
+// OLD:
+await this.obs.call('SetCurrentProgramScene', { sceneName });
+
+// NEW:
+const obs = this.obsConnectionManager.getConnection(this.compId);
+if (obs && this.obsConnectionManager.isConnected(this.compId)) {
+  await obs.call('SetCurrentProgramScene', { sceneName });
+}
+```
+
+#### A.1-A.6: Build Load Rundown Feature
+
+| Task | Description | Priority | Status |
+|------|-------------|----------|--------|
+| A.1 | Add `loadRundown` socket handler on server (creates/updates engine for compId) | P0 | Not Started |
 | A.2 | Add `loadRundown` action in ShowContext | P0 | Not Started |
 | A.3 | Add "Load Rundown" button in Producer View | P0 | Not Started |
 | A.4 | Create segment mapper (Editor format → Engine format) | P0 | Not Started |
-| A.5 | Pass Firebase to TimesheetEngine constructor | P0 | Not Started |
+| A.5 | Verify Firebase is passed to engine (done in A.0.7) | P0 | Not Started |
 | A.6 | Show rundown status indicator (loaded, modified, etc.) | P1 | Not Started |
 
 **Segment Mapping Required:**
@@ -401,11 +479,67 @@ timesheetEngine = new TimesheetEngine({
 
 ## 4. Architecture
 
-### 4.1 System Components
+### 4.1 Infrastructure Overview
+
+The system uses a **Coordinator** pattern where the central server manages multiple simultaneous competitions, each with its own VM and OBS instance.
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  COORDINATOR (api.commentarygraphic.com - 44.193.31.120)                     │
+│                                                                               │
+│  ┌─────────────────────────────────────────────────────────────────────────┐ │
+│  │  obsConnectionManager (per-competition OBS connections)                  │ │
+│  │  ├── compId: abc123 → OBS WebSocket to VM 50.19.137.152:4455           │ │
+│  │  ├── compId: xyz789 → OBS WebSocket to VM 54.210.98.89:4455            │ │
+│  │  └── compId: def456 → OBS WebSocket to VM 52.91.123.45:4455            │ │
+│  └─────────────────────────────────────────────────────────────────────────┘ │
+│                                                                               │
+│  ┌─────────────────────────────────────────────────────────────────────────┐ │
+│  │  timesheetEngines Map (per-competition show execution)                   │ │
+│  │  ├── compId: abc123 → TimesheetEngine instance                          │ │
+│  │  ├── compId: xyz789 → TimesheetEngine instance                          │ │
+│  │  └── compId: def456 → TimesheetEngine instance                          │ │
+│  └─────────────────────────────────────────────────────────────────────────┘ │
+│                                                                               │
+│  Socket.io rooms: competition:abc123, competition:xyz789, etc.               │
+└──────────────────────────────────────────────────────────────────────────────┘
+                    │                                    │
+                    │ OBS WebSocket (ws://)              │ Socket.io (wss://)
+                    ▼                                    ▼
+┌─────────────────────────┐                 ┌─────────────────────────┐
+│  Competition VM         │                 │  Frontend Clients       │
+│  (e.g., 50.19.137.152)  │                 │  (commentarygraphic.com)│
+│  ├── OBS :4455          │                 │                         │
+│  └── Show Server :3003  │                 │  Connects with compId   │
+└─────────────────────────┘                 │  in socket query        │
+                                            └─────────────────────────┘
+```
+
+### 4.2 Per-Competition Data Flow
+
+Each competition has isolated resources:
+
+```
+Competition abc123:
+├── Firebase: competitions/abc123/production/rundown/segments
+├── VM: 50.19.137.152 (assigned via vmPoolManager)
+├── OBS: obsConnectionManager.getConnection('abc123')
+├── Engine: timesheetEngines.get('abc123')
+└── Socket Room: competition:abc123
+
+When Producer loads rundown for abc123:
+1. Client emits: loadRundown({ compId: 'abc123' })
+2. Server fetches: Firebase competitions/abc123/production/rundown/segments
+3. Server creates/updates: timesheetEngines.set('abc123', new TimesheetEngine({...}))
+4. Engine uses: obsConnectionManager.getConnection('abc123') for OBS calls
+5. Engine broadcasts to: io.to('competition:abc123').emit('timesheetState', ...)
+```
+
+### 4.3 Client Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  CLIENT (React SPA)                                                          │
+│  CLIENT (React SPA at commentarygraphic.com)                                 │
 │                                                                              │
 │  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐          │
 │  │ Rundown Editor   │  │ Producer View    │  │ Talent View      │          │
@@ -420,34 +554,29 @@ timesheetEngine = new TimesheetEngine({
 │           │                     │                     │                     │
 │           │            ┌────────┴─────────────────────┴────────┐            │
 │           │            │           ShowContext                  │            │
-│           │            │  - timesheetState                      │            │
-│           │            │  - socket connection                   │            │
-│           │            │  - loadRundown() action               │            │
+│           │            │  - timesheetState (from server)        │            │
+│           │            │  - socket connection (with compId)     │            │
+│           │            │  - loadRundown() action                │            │
 │           │            └────────────────┬───────────────────────┘            │
 │           │                             │                                    │
-│           │ Firebase                    │ Socket.io                          │
-│           │ (direct)                    │                                    │
+│           │ Firebase (direct)           │ Socket.io (with compId query)      │
+│           │                             │                                    │
 └───────────┼─────────────────────────────┼────────────────────────────────────┘
             │                             │
             ▼                             ▼
 ┌───────────────────────┐    ┌────────────────────────────────────────────────┐
-│  Firebase             │    │  SERVER (Coordinator)                          │
+│  Firebase             │    │  COORDINATOR (api.commentarygraphic.com)       │
 │                       │    │                                                │
-│  competitions/        │    │  ┌──────────────────────────────────────────┐ │
-│    {compId}/          │    │  │  Timesheet Engine (timesheetEngine.js)   │ │
-│      production/      │◄───┼──│                                          │ │
-│        rundown/       │    │  │  - segments[]                            │ │
-│          segments/    │    │  │  - currentIndex                          │ │
-│                       │    │  │  - start/stop/advance/previous           │ │
-│                       │    │  │  - OBS scene switching                   │ │
-│                       │    │  │  - Graphics firing (socket.io only!)     │ │
-│                       │    │  │                                          │ │
-│                       │    │  │  loadRundown(compId):                    │ │
-│                       │    │  │    1. Fetch from Firebase                │ │
-│                       │    │  │    2. Map to engine format               │ │
-│                       │    │  │    3. Update showConfig.segments         │ │
-│                       │    │  └──────────────────────────────────────────┘ │
-│                       │    │                                                │
+│  competitions/        │    │  On socket connection with compId:             │
+│    {compId}/          │    │  1. Join room: competition:{compId}            │
+│      production/      │◄───┼──│  2. Connect OBS: obsConnManager.connectToVM()│
+│        rundown/       │    │  3. Get/create engine: timesheetEngines.get()  │
+│          segments/    │    │                                                │
+│                       │    │  loadRundown handler:                          │
+│                       │    │  1. Fetch segments from Firebase               │
+│                       │    │  2. Map to engine format                       │
+│                       │    │  3. Load into per-competition engine           │
+│                       │    │  4. Broadcast to competition room              │
 └───────────────────────┘    └────────────────────────────────────────────────┘
 ```
 
