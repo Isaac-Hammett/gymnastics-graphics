@@ -121,14 +121,14 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 36 | Handle reordered past segments | COMPLETE | Added filtering in `subscribeToRundownChanges()` to ignore reordered/modified segments where both old and new positions are before current segment; logs filtered segments for debugging |
 | Task 37 | Handle ID conflicts | COMPLETE | Added `detectDuplicateIds()` and `deduplicateSegmentsById()` functions to segmentMapper.js; integrated duplicate ID detection into `loadRundown` handler and `subscribeToRundownChanges()` listener; added logging when segments move positions via ID-based matching in `updateConfig()` |
 
-### Phase J: Segment Timing Analytics (P2) - IN PROGRESS (3/5)
+### Phase J: Segment Timing Analytics (P2) - IN PROGRESS (4/5)
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
 | Task 38 | Log actual segment durations during show | COMPLETE | Real-time segment timing logged to Firebase on segmentCompleted; run record created on showStarted with status tracking; final analytics merged on showStopped |
 | Task 39 | Store timing data in Firebase post-show | COMPLETE | Fixed show completion flow: added `_completeShow()` method to TimesheetEngine that emits `showComplete` event when last segment auto-advances; this ensures `showStopped` is also emitted for analytics saving. Added `timesheetShowComplete` socket event and client handler. Now timing data is saved whether show ends naturally or via manual stop. |
 | Task 40 | Create timing analytics dashboard | COMPLETE | Added TimingAnalyticsModal to RundownEditorPage with: summary stats (shows/rehearsals count, avg variance), segment averages table (planned vs actual across all runs), and expandable run history showing per-segment timing details. Loads data from Firebase `competitions/{compId}/production/rundown/analytics`. Button added to toolbar with ChartBarIcon. |
-| Task 41 | Show historical average in Rundown Editor | NOT STARTED | |
+| Task 41 | Show historical average in Rundown Editor | COMPLETE | Added call to `loadTimingAnalytics()` in component mount useEffect so historical averages are available when rendering segment rows. UI already existed in SegmentRow component (both compact and expanded views) showing ~Xs indicator next to duration field. Color-coded: amber if actual runs longer than planned, green if shorter, gray if matches. |
 | Task 42 | AI-powered timing predictions based on history | NOT STARTED | |
 
 ### Phase D: AI Suggestions - Planning (P2) - NOT STARTED
