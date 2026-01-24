@@ -153,7 +153,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 53 | Create talent schedule view | COMPLETE | Already implemented as TalentScheduleModal in RundownEditorPage.jsx (Phase 12: Task 94); includes talent-per-segment view, conflict detection, and export functionality |
 | Task 54 | Show "you're on camera" indicator in Talent View | COMPLETE | Added talentId query param support (e.g., ?talentId=talent-1); prominent red "ON CAMERA" banner when talent is assigned to current segment; identity banner shows when viewing but not on camera; uses TALENT_ROSTER for talent lookup |
 
-### Phase C: AI Context - Live Execution (P3) - IN PROGRESS (5/8)
+### Phase C: AI Context - Live Execution (P3) - IN PROGRESS (6/8)
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
@@ -163,7 +163,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 58 | Integrate with Virtius API for live stats | COMPLETE | Added `fetchLiveScores()` with caching, `_fetchVirtiusSession()`, `_parseVirtiusData()` for API integration; extracts teams, scores, event results; auto-loads sessionId from competition config; generates score-based talking points; added `getTeamStandings()`, `getEventScores()`, `getAthleteScore()` helpers |
 | Task 59 | Generate talking points in real-time | COMPLETE | Added intelligent context-aware talking point generation based on segment patterns (rotation, event, team intro, interview, scoring, opening, closing, break), team data (seniors, freshmen, coaches, rankings), event expertise tips, and matchup analysis. Enhanced `_getBasicTalkingPoints()` with pattern-matching via `_analyzeSegmentName()` and specialized generators for each segment type. |
 | Task 60 | Detect career highs, records during show | COMPLETE | Implemented `checkCareerHigh()` and `checkRecords()` methods in AIContextService. Added `scanForAchievements()` to detect career highs, season highs, meet highs, and broken/tied records from live scores. Stores achievements in Firebase (`competitions/{compId}/production/achievements` and `athleteStats/{key}/careerBests`). Broadcasts `aiAchievementsDetected` events. Added `_getAchievementTalkingPoints()` for CRITICAL priority alerts. |
-| Task 61 | Display AI context in Talent View | NOT STARTED | |
+| Task 61 | Display AI context in Talent View | COMPLETE | Added collapsible AI Talking Points panel in TalentView.jsx with: useAIContext hook integration, priority-colored talking points (critical=red, high=orange, normal=purple), milestones section with trophy icons, refresh button, empty/loading states, expand/collapse toggle with counts |
 | Task 62 | Display AI context in Producer View | NOT STARTED | |
 
 ### Phase F: Audio Cue Integration (P3) - NOT STARTED

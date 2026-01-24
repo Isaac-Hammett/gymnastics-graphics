@@ -1,13 +1,14 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useShow } from '../context/ShowContext';
 import { useTimesheet } from '../hooks/useTimesheet';
+import { useAIContext } from '../hooks/useAIContext';
 import CurrentSegment from '../components/CurrentSegment';
 import NextSegment from '../components/NextSegment';
 import RunOfShow from '../components/RunOfShow';
 import QuickActions from '../components/QuickActions';
 import ConnectionStatus from '../components/ConnectionStatus';
-import { PlayIcon, LockClosedIcon, ClockIcon, DocumentTextIcon, VideoCameraIcon } from '@heroicons/react/24/solid';
+import { PlayIcon, LockClosedIcon, ClockIcon, DocumentTextIcon, VideoCameraIcon, SparklesIcon, ChevronDownIcon, ChevronUpIcon, StarIcon, TrophyIcon, ArrowPathIcon, ExclamationTriangleIcon } from '@heroicons/react/24/solid';
 
 // Talent roster - shared with RundownEditorPage
 // TODO: In future, this should be fetched from Firebase based on competition config
@@ -25,6 +26,21 @@ export default function TalentView() {
 
   // Use timesheet for advance/previous with hold segment support
   const { advance: timesheetAdvance, isHoldSegment, canAdvanceHold, holdRemainingMs, currentSegment } = useTimesheet();
+
+  // AI Context for talking points and milestones
+  const {
+    talkingPoints,
+    highPriorityPoints,
+    milestones,
+    hasContext,
+    isLoading: aiLoading,
+    isRunning: aiRunning,
+    refresh: refreshAI,
+    error: aiError
+  } = useAIContext();
+
+  // State for AI panel expansion
+  const [aiPanelExpanded, setAIPanelExpanded] = useState(true);
 
   // Get talent ID from URL query param (e.g., ?talentId=talent-1)
   const [searchParams] = useSearchParams();
@@ -144,6 +160,150 @@ export default function TalentView() {
                     {currentSegment.script}
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* AI Context Panel - Talking Points & Milestones */}
+            {aiRunning && (
+              <div className="bg-zinc-900 rounded-xl border-2 border-purple-500/30 overflow-hidden">
+                {/* Header - always visible */}
+                <button
+                  onClick={() => setAIPanelExpanded(!aiPanelExpanded)}
+                  className="w-full bg-purple-500/10 px-4 py-2 flex items-center justify-between border-b border-purple-500/30 hover:bg-purple-500/20 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <SparklesIcon className="w-5 h-5 text-purple-400" />
+                    <span className="text-sm font-medium text-purple-400 uppercase tracking-wide">AI Talking Points</span>
+                    {hasContext && (
+                      <span className="bg-purple-500/30 text-purple-300 text-xs px-2 py-0.5 rounded-full">
+                        {talkingPoints.length}
+                      </span>
+                    )}
+                    {highPriorityPoints.length > 0 && (
+                      <span className="bg-red-500/30 text-red-300 text-xs px-2 py-0.5 rounded-full animate-pulse">
+                        {highPriorityPoints.length} priority
+                      </span>
+                    )}
+                    {milestones.length > 0 && (
+                      <span className="bg-yellow-500/30 text-yellow-300 text-xs px-2 py-0.5 rounded-full">
+                        <TrophyIcon className="w-3 h-3 inline mr-1" />
+                        {milestones.length}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {aiLoading && (
+                      <ArrowPathIcon className="w-4 h-4 text-purple-400 animate-spin" />
+                    )}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); refreshAI(); }}
+                      className="p-1 hover:bg-purple-500/20 rounded transition-colors"
+                      title="Refresh AI context"
+                    >
+                      <ArrowPathIcon className={`w-4 h-4 text-purple-400 ${aiLoading ? 'animate-spin' : ''}`} />
+                    </button>
+                    {aiPanelExpanded ? (
+                      <ChevronUpIcon className="w-5 h-5 text-purple-400" />
+                    ) : (
+                      <ChevronDownIcon className="w-5 h-5 text-purple-400" />
+                    )}
+                  </div>
+                </button>
+
+                {/* Content - collapsible */}
+                {aiPanelExpanded && (
+                  <div className="p-4 space-y-4">
+                    {/* Error state */}
+                    {aiError && (
+                      <div className="flex items-center gap-2 text-red-400 text-sm bg-red-500/10 px-3 py-2 rounded-lg">
+                        <ExclamationTriangleIcon className="w-4 h-4" />
+                        {aiError}
+                      </div>
+                    )}
+
+                    {/* Milestones Alert - Critical priority */}
+                    {milestones.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="text-xs font-medium text-yellow-400 uppercase tracking-wide flex items-center gap-1">
+                          <TrophyIcon className="w-4 h-4" />
+                          Milestones & Records
+                        </div>
+                        {milestones.map((milestone, idx) => (
+                          <div
+                            key={idx}
+                            className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 flex items-start gap-3"
+                          >
+                            <StarIcon className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+                            <div>
+                              <div className="text-yellow-200 font-medium">{milestone.title || milestone.type}</div>
+                              {milestone.description && (
+                                <div className="text-yellow-300/80 text-sm mt-1">{milestone.description}</div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* High Priority Talking Points */}
+                    {highPriorityPoints.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="text-xs font-medium text-red-400 uppercase tracking-wide">Priority Points</div>
+                        {highPriorityPoints.map((point, idx) => (
+                          <div
+                            key={point.id || idx}
+                            className={`rounded-lg p-3 border-l-4 ${
+                              point.priority === 'critical'
+                                ? 'bg-red-500/10 border-red-500 text-red-200'
+                                : 'bg-orange-500/10 border-orange-500 text-orange-200'
+                            }`}
+                          >
+                            <div className="text-base leading-relaxed">{point.text}</div>
+                            {point.source && (
+                              <div className="text-xs opacity-60 mt-1">{point.source}</div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Regular Talking Points */}
+                    {talkingPoints.filter(p => p.priority !== 'critical' && p.priority !== 'high').length > 0 && (
+                      <div className="space-y-2">
+                        <div className="text-xs font-medium text-purple-400 uppercase tracking-wide">Talking Points</div>
+                        {talkingPoints
+                          .filter(p => p.priority !== 'critical' && p.priority !== 'high')
+                          .map((point, idx) => (
+                            <div
+                              key={point.id || idx}
+                              className="bg-zinc-800/50 rounded-lg p-3 border-l-4 border-purple-500/50"
+                            >
+                              <div className="text-zinc-200 text-base leading-relaxed">{point.text}</div>
+                              {point.source && (
+                                <div className="text-xs text-zinc-500 mt-1">{point.source}</div>
+                              )}
+                            </div>
+                          ))}
+                      </div>
+                    )}
+
+                    {/* Empty state */}
+                    {!hasContext && !aiLoading && !aiError && (
+                      <div className="text-center text-zinc-500 py-4">
+                        <SparklesIcon className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm">No talking points for this segment</p>
+                      </div>
+                    )}
+
+                    {/* Loading state */}
+                    {aiLoading && !hasContext && (
+                      <div className="text-center text-purple-400 py-4">
+                        <ArrowPathIcon className="w-8 h-8 mx-auto mb-2 animate-spin" />
+                        <p className="text-sm">Loading talking points...</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
