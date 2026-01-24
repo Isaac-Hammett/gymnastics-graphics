@@ -564,33 +564,53 @@ class TimesheetEngine extends EventEmitter {
    * @private
    */
   async _applyTransitionAndSwitchScene(segment, transition) {
-    if (!this.obs || !segment.obsScene) {
+    if (!segment.obsScene) {
+      return;
+    }
+
+    // Get OBS connection - prefer per-competition connection via obsConnectionManager
+    let obsConnection = null;
+    if (this.obsConnectionManager && this.compId) {
+      obsConnection = this.obsConnectionManager.getConnection(this.compId);
+      if (!obsConnection) {
+        this.emit('error', {
+          type: 'obs_scene_switch',
+          message: `No OBS connection found for competition ${this.compId}`,
+          segmentId: segment.id
+        });
+        return;
+      }
+    } else if (this.obs) {
+      // Fallback to legacy single OBS connection
+      obsConnection = this.obs;
+    } else {
+      // No OBS connection available
       return;
     }
 
     try {
       if (transition.type === TRANSITION_TYPES.FADE && transition.durationMs > 0) {
         // Use SetCurrentSceneTransitionDuration and then switch
-        await this.obs.call('SetCurrentSceneTransitionDuration', {
+        await obsConnection.call('SetCurrentSceneTransitionDuration', {
           transitionDuration: transition.durationMs
         });
-        await this.obs.call('SetCurrentSceneTransition', {
+        await obsConnection.call('SetCurrentSceneTransition', {
           transitionName: 'Fade'
         });
       } else if (transition.type === TRANSITION_TYPES.STINGER) {
         // Use stinger transition if configured
-        await this.obs.call('SetCurrentSceneTransition', {
+        await obsConnection.call('SetCurrentSceneTransition', {
           transitionName: transition.transitionName || 'Stinger'
         });
       } else {
         // Cut transition (instant)
-        await this.obs.call('SetCurrentSceneTransition', {
+        await obsConnection.call('SetCurrentSceneTransition', {
           transitionName: 'Cut'
         });
       }
 
       // Switch to the scene
-      await this.obs.call('SetCurrentProgramScene', {
+      await obsConnection.call('SetCurrentProgramScene', {
         sceneName: segment.obsScene
       });
 

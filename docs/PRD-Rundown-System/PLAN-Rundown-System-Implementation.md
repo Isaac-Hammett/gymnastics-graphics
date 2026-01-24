@@ -1,9 +1,9 @@
 # PLAN-Rundown-System-Implementation
 
 **PRD:** [PRD-Rundown-System-2026-01-23.md](./PRD-Rundown-System-2026-01-23.md)
-**Status:** NOT STARTED
+**Status:** IN PROGRESS
 **Created:** 2026-01-23
-**Last Updated:** 2026-01-23
+**Last Updated:** 2026-01-24
 
 ---
 
@@ -49,7 +49,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 
 | Phase | Name | Priority | Status | Tasks |
 |-------|------|----------|--------|-------|
-| A | Connect Editor to Engine | P0 | NOT STARTED | 1-16 |
+| A | Connect Editor to Engine | P0 | IN PROGRESS | 1-16 |
 | H | Rehearsal Mode | P1 | NOT STARTED | 17-21 |
 | B | Talent View | P1 | NOT STARTED | 22-27 |
 | I | Live Rundown Sync | P2 | NOT STARTED | 28-37 |
@@ -64,13 +64,13 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 
 ## Task Summary by Phase
 
-### Phase A: Connect Editor to Engine (P0) - NOT STARTED
+### Phase A: Connect Editor to Engine (P0) - IN PROGRESS (3/16 complete)
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
 | Task 1 | Update TimesheetEngine constructor to accept `compId` and `obsConnectionManager` | COMPLETE | Commit 9d0267c |
 | Task 2 | Create `timesheetEngines` Map in server/index.js | COMPLETE | Added Map, getOrCreateEngine, getEngine, removeEngine functions |
-| Task 3 | Update `_applyTransitionAndSwitchScene()` to use `obsConnectionManager.getConnection(this.compId)` | NOT STARTED | |
+| Task 3 | Update `_applyTransitionAndSwitchScene()` to use `obsConnectionManager.getConnection(this.compId)` | COMPLETE | Updated to get OBS connection from obsConnectionManager using compId, with fallback to legacy this.obs |
 | Task 4 | Update `_playVideo()` to use per-competition OBS connection | NOT STARTED | |
 | Task 5 | Update `_applyAudioOverrides()` to use per-competition OBS connection | NOT STARTED | |
 | Task 6 | Update all socket event broadcasts to target competition room | NOT STARTED | |
@@ -232,16 +232,21 @@ Create a Map to store per-competition TimesheetEngine instances, replacing the s
 
 ### Task 3: Update _applyTransitionAndSwitchScene()
 
-**Status:** NOT STARTED
+**Status:** COMPLETE
 **File:** `server/lib/timesheetEngine.js`
 
 **Description:**
 Update the scene switching method to use per-competition OBS connection via obsConnectionManager.
 
 **Checklist:**
-- [ ] Replace `this.obs.call(...)` with `this.obsConnectionManager.getConnection(this.compId).call(...)`
-- [ ] Handle case when connection doesn't exist
-- [ ] Add error handling for disconnected state
+- [x] Replace `this.obs.call(...)` with `this.obsConnectionManager.getConnection(this.compId).call(...)`
+- [x] Handle case when connection doesn't exist
+- [x] Add error handling for disconnected state
+
+**Implementation Notes:**
+- Updated method to first check for `obsConnectionManager` + `compId` (preferred)
+- Added fallback to legacy `this.obs` for backward compatibility
+- Emits error event with `type: 'obs_scene_switch'` when no connection found for competition
 
 ---
 
