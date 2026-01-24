@@ -1155,7 +1155,7 @@ const filteredSegments = segments.filter(seg => {
 - [x] Segment script field with rich text
 - [x] Audio cue planning fields
 - [x] Talent assignment per segment
-- [ ] Equipment tracking per segment
+- [x] Equipment tracking per segment
 - [ ] Sponsor/ad inventory tracking
 
 ---
