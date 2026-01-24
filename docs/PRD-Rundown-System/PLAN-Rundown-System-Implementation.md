@@ -55,7 +55,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | I | Live Rundown Sync | P2 | COMPLETE | 28-37 |
 | J | Segment Timing Analytics | P2 | COMPLETE | 38-42 |
 | D | AI Suggestions - Planning | P2 | COMPLETE | 43-48 |
-| E | Script & Talent Flow | P2 | IN PROGRESS | 49-54 |
+| E | Script & Talent Flow | P2 | COMPLETE | 49-54 |
 | C | AI Context - Live Execution | P3 | NOT STARTED | 55-62 |
 | F | Audio Cue Integration | P3 | NOT STARTED | 63-66 |
 | G | Production Tracking | P3 | NOT STARTED | 67-71 |
@@ -142,7 +142,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 47 | Add `getAISuggestions` API endpoint | COMPLETE | Added `getAISuggestions` and `getAISuggestionCount` socket handlers in server/index.js; handlers emit `aiSuggestionsResult` and `aiSuggestionCountResult` events; accepts `compId` and `options` parameters; logs suggestion generation |
 | Task 48 | Wire Rundown Editor to display suggestions | COMPLETE | Added `getAISuggestions` function to ShowContext with promise-based API; added socket listener for `aiSuggestionsResult`; updated RundownEditorPage to use server-side suggestions with fallback to client-side; added loading state, error handling, context display, and refresh button; transformed server suggestions to UI format; filtered by dismissed and existing segments |
 
-### Phase E: Script & Talent Flow (P2) - IN PROGRESS (3/6)
+### Phase E: Script & Talent Flow (P2) - COMPLETE (6/6)
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
@@ -151,7 +151,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 51 | Display script in Talent View (teleprompter-style) | COMPLETE | Added teleprompter-style script panel in TalentView.jsx between CurrentSegment and NextSegment; uses large text (text-xl), blue accent border, DocumentTextIcon header; only shows when currentSegment.script has content; uses whitespace-pre-wrap for line breaks |
 | Task 52 | Add talent assignment to segment data model | COMPLETE | Added `talent: []` to segment creation in 3 places in RundownEditorPage.jsx; added talent field to segmentMapper.js for both editor→engine and engine→editor mappings; added talent to compareSegments fieldsToCompare |
 | Task 53 | Create talent schedule view | COMPLETE | Already implemented as TalentScheduleModal in RundownEditorPage.jsx (Phase 12: Task 94); includes talent-per-segment view, conflict detection, and export functionality |
-| Task 54 | Show "you're on camera" indicator in Talent View | NOT STARTED | |
+| Task 54 | Show "you're on camera" indicator in Talent View | COMPLETE | Added talentId query param support (e.g., ?talentId=talent-1); prominent red "ON CAMERA" banner when talent is assigned to current segment; identity banner shows when viewing but not on camera; uses TALENT_ROSTER for talent lookup |
 
 ### Phase C: AI Context - Live Execution (P3) - NOT STARTED
 

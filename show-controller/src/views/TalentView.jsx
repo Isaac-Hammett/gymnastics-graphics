@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useShow } from '../context/ShowContext';
 import { useTimesheet } from '../hooks/useTimesheet';
 import CurrentSegment from '../components/CurrentSegment';
@@ -7,7 +7,17 @@ import NextSegment from '../components/NextSegment';
 import RunOfShow from '../components/RunOfShow';
 import QuickActions from '../components/QuickActions';
 import ConnectionStatus from '../components/ConnectionStatus';
-import { PlayIcon, LockClosedIcon, ClockIcon, DocumentTextIcon } from '@heroicons/react/24/solid';
+import { PlayIcon, LockClosedIcon, ClockIcon, DocumentTextIcon, VideoCameraIcon } from '@heroicons/react/24/solid';
+
+// Talent roster - shared with RundownEditorPage
+// TODO: In future, this should be fetched from Firebase based on competition config
+const TALENT_ROSTER = [
+  { id: 'talent-1', name: 'John Smith', role: 'Lead Commentator', abbreviation: 'JS' },
+  { id: 'talent-2', name: 'Sarah Johnson', role: 'Color Analyst', abbreviation: 'SJ' },
+  { id: 'talent-3', name: 'Mike Davis', role: 'Sideline Reporter', abbreviation: 'MD' },
+  { id: 'talent-4', name: 'Emily Chen', role: 'Host', abbreviation: 'EC' },
+  { id: 'talent-5', name: 'Alex Rodriguez', role: 'Analyst', abbreviation: 'AR' },
+];
 
 export default function TalentView() {
   const { state, startShow, identify, error } = useShow();
@@ -15,6 +25,22 @@ export default function TalentView() {
 
   // Use timesheet for advance/previous with hold segment support
   const { advance: timesheetAdvance, isHoldSegment, canAdvanceHold, holdRemainingMs, currentSegment } = useTimesheet();
+
+  // Get talent ID from URL query param (e.g., ?talentId=talent-1)
+  const [searchParams] = useSearchParams();
+  const talentId = searchParams.get('talentId');
+
+  // Find the current talent from roster
+  const currentTalent = useMemo(() => {
+    if (!talentId) return null;
+    return TALENT_ROSTER.find(t => t.id === talentId) || null;
+  }, [talentId]);
+
+  // Check if current talent is assigned to the current segment
+  const isOnCamera = useMemo(() => {
+    if (!talentId || !currentSegment?.talent) return false;
+    return currentSegment.talent.includes(talentId);
+  }, [talentId, currentSegment?.talent]);
 
   useEffect(() => {
     identify('talent', 'Talent');
@@ -48,6 +74,29 @@ export default function TalentView() {
       {error && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50">
           {error}
+        </div>
+      )}
+
+      {/* ON CAMERA Indicator - prominent when talent is assigned to current segment */}
+      {isPlaying && isOnCamera && (
+        <div className="bg-red-600 border-b-4 border-red-400 px-4 py-4 animate-pulse">
+          <div className="max-w-4xl mx-auto flex items-center justify-center gap-3 text-white">
+            <VideoCameraIcon className="w-8 h-8" />
+            <span className="text-2xl font-bold uppercase tracking-wider">ON CAMERA</span>
+            {currentTalent && (
+              <span className="text-lg opacity-90">- {currentTalent.name}</span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Talent Identity Banner - show when talent is identified but not on camera */}
+      {isPlaying && currentTalent && !isOnCamera && (
+        <div className="bg-zinc-800/50 border-b border-zinc-700 px-4 py-2">
+          <div className="max-w-4xl mx-auto flex items-center justify-center gap-2 text-zinc-400 text-sm">
+            <span>Viewing as: <span className="text-zinc-200 font-medium">{currentTalent.name}</span></span>
+            <span className="text-zinc-600">({currentTalent.role})</span>
+          </div>
         </div>
       )}
 
