@@ -225,7 +225,7 @@ function validateEngineSegments(segments) {
   };
 }
 
-module.exports = {
+export {
   mapEditorToEngine,
   mapEditorSegmentsToEngine,
   mapEngineToEditor,
