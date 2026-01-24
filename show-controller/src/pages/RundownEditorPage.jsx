@@ -1004,6 +1004,62 @@ export default function RundownEditorPage() {
     return startTimes;
   }, [segments]);
 
+  // Detect equipment conflicts - equipment assigned to overlapping segments (Phase G: Task 69)
+  // This is computed at component level so conflicts are visible in toolbar, segment rows, and detail panel
+  const equipmentConflicts = useMemo(() => {
+    const conflictList = [];
+    const segmentsByEquipment = {};
+
+    // Build equipment schedule - which segments each piece of equipment is used in
+    segments.forEach((segment, index) => {
+      if (segment.equipment?.length > 0) {
+        segment.equipment.forEach(eqId => {
+          if (!segmentsByEquipment[eqId]) {
+            segmentsByEquipment[eqId] = [];
+          }
+          segmentsByEquipment[eqId].push({
+            ...segment,
+            index,
+            startTime: segmentStartTimes[segment.id] || 0,
+          });
+        });
+      }
+    });
+
+    // Check for overlapping segments per equipment
+    Object.entries(segmentsByEquipment).forEach(([eqId, segs]) => {
+      for (let i = 0; i < segs.length; i++) {
+        for (let j = i + 1; j < segs.length; j++) {
+          const seg1 = segs[i];
+          const seg2 = segs[j];
+          const seg1End = seg1.startTime + (seg1.duration || 0);
+          // Check if segments overlap (back-to-back is not a conflict)
+          if (seg1End > seg2.startTime && seg1.startTime < seg2.startTime + (seg2.duration || 0)) {
+            const equipment = DUMMY_EQUIPMENT.find(e => e.id === eqId);
+            conflictList.push({
+              equipmentId: eqId,
+              equipmentName: equipment?.name || eqId,
+              segment1: seg1,
+              segment2: seg2,
+            });
+          }
+        }
+      }
+    });
+
+    return conflictList;
+  }, [segments, segmentStartTimes]);
+
+  // Create a Set of segment IDs that have equipment conflicts for quick lookup
+  const segmentsWithEquipmentConflicts = useMemo(() => {
+    const segmentIds = new Set();
+    equipmentConflicts.forEach(conflict => {
+      segmentIds.add(conflict.segment1.id);
+      segmentIds.add(conflict.segment2.id);
+    });
+    return segmentIds;
+  }, [equipmentConflicts]);
+
   // Calculate over/under and color state for target duration
   const runtimeStatus = useMemo(() => {
     if (!targetDuration) return null;
@@ -4656,13 +4712,24 @@ export default function RundownEditorPage() {
             >
               <UserIcon className="w-4 h-4" />
             </button>
-            {/* Equipment Schedule Button (Phase 12: Task 95) */}
+            {/* Equipment Schedule Button (Phase 12: Task 95, Phase G: Task 69 - conflict badge) */}
             <button
               onClick={() => setShowEquipmentScheduleModal(true)}
-              className="px-3 py-2 text-sm rounded-lg border transition-colors bg-zinc-800 text-zinc-400 border-zinc-700 hover:text-zinc-300 hover:bg-zinc-700"
-              title="View equipment schedule"
+              className={`relative px-3 py-2 text-sm rounded-lg border transition-colors ${
+                equipmentConflicts.length > 0
+                  ? 'bg-red-500/20 text-red-400 border-red-500/50 hover:bg-red-500/30'
+                  : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:text-zinc-300 hover:bg-zinc-700'
+              }`}
+              title={equipmentConflicts.length > 0
+                ? `View equipment schedule (${equipmentConflicts.length} conflict${equipmentConflicts.length !== 1 ? 's' : ''})`
+                : 'View equipment schedule'}
             >
               <VideoCameraIcon className="w-4 h-4" />
+              {equipmentConflicts.length > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] flex items-center justify-center text-[10px] font-bold bg-red-500 text-white rounded-full px-1">
+                  {equipmentConflicts.length}
+                </span>
+              )}
             </button>
             {/* Timing Analytics Button (Phase J: Task 40) */}
             <button
@@ -4985,6 +5052,7 @@ export default function RundownEditorPage() {
                                   groupedGraphics={groupedGraphics}
                                   historicalAverageSec={segmentHistoricalAverages[segment.id]}
                                   aiPrediction={aiTimingPredictions[segment.id]}
+                                  hasEquipmentConflict={segmentsWithEquipmentConflicts.has(segment.id)}
                                 />
                               );
                             })}
@@ -5033,6 +5101,7 @@ export default function RundownEditorPage() {
                         groupedGraphics={groupedGraphics}
                         historicalAverageSec={segmentHistoricalAverages[segment.id]}
                         aiPrediction={aiTimingPredictions[segment.id]}
+                        hasEquipmentConflict={segmentsWithEquipmentConflicts.has(segment.id)}
                       />
                     );
                   }
@@ -5083,6 +5152,9 @@ export default function RundownEditorPage() {
                 teamNames={liveTeamNames}
                 historicalAverageSec={segmentHistoricalAverages[selectedSegment.id]}
                 aiPrediction={aiTimingPredictions[selectedSegment.id]}
+                equipmentConflictsForSegment={equipmentConflicts.filter(
+                  c => c.segment1.id === selectedSegment.id || c.segment2.id === selectedSegment.id
+                )}
               />
             ) : (
               <div className="text-center py-20 text-zinc-500">
@@ -5489,6 +5561,7 @@ function SegmentRow({
   groupedGraphics,
   historicalAverageSec, // Phase J: Task 41 - Historical average duration in seconds
   aiPrediction, // Phase J: Task 42 - AI-powered timing prediction { predictedDurationSec, confidence, source }
+  hasEquipmentConflict = false, // Phase G: Task 69 - Equipment conflict detection
 }) {
   const isSelected = selectedSegmentId === segment.id;
   const isMultiSelected = selectedSegmentIds.includes(segment.id);
@@ -5751,13 +5824,23 @@ function SegmentRow({
                 <span className="text-[10px]">{segment.talent.length}</span>
               </span>
             )}
-            {/* Equipment indicator (Phase 12: Task 95) */}
+            {/* Equipment indicator (Phase 12: Task 95, Phase G: Task 69 - conflict warning) */}
             {segment.equipment?.length > 0 && (
               <span
-                className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 shrink-0 cursor-help"
-                title={`Equipment: ${segment.equipment.map(eId => DUMMY_EQUIPMENT.find(e => e.id === eId)?.name || eId).join(', ')}`}
+                className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded shrink-0 cursor-help ${
+                  hasEquipmentConflict
+                    ? 'bg-red-500/20 text-red-400 border border-red-500/50 animate-pulse'
+                    : 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
+                }`}
+                title={hasEquipmentConflict
+                  ? `⚠ Equipment conflict! ${segment.equipment.map(eId => DUMMY_EQUIPMENT.find(e => e.id === eId)?.name || eId).join(', ')}`
+                  : `Equipment: ${segment.equipment.map(eId => DUMMY_EQUIPMENT.find(e => e.id === eId)?.name || eId).join(', ')}`}
               >
-                <VideoCameraIcon className="w-3 h-3" />
+                {hasEquipmentConflict ? (
+                  <ExclamationTriangleIcon className="w-3 h-3" />
+                ) : (
+                  <VideoCameraIcon className="w-3 h-3" />
+                )}
                 <span className="text-[10px]">{segment.equipment.length}</span>
               </span>
             )}
@@ -6302,7 +6385,7 @@ function CreateGroupModal({ onCreate, onCancel, selectedCount }) {
 }
 
 // Placeholder SegmentDetail panel component
-function SegmentDetailPanel({ segment, onSave, onDelete, onCancel, groupedScenes, groupedGraphics, compType, teamNames, historicalAverageSec, aiPrediction }) {
+function SegmentDetailPanel({ segment, onSave, onDelete, onCancel, groupedScenes, groupedGraphics, compType, teamNames, historicalAverageSec, aiPrediction, equipmentConflictsForSegment = [] }) {
   const [formData, setFormData] = useState(segment);
 
   // Reset form when segment changes
@@ -6757,13 +6840,39 @@ function SegmentDetailPanel({ segment, onSave, onDelete, onCancel, groupedScenes
           </div>
         </div>
 
-        {/* Equipment Assignment (Phase 12: Task 95) */}
+        {/* Equipment Assignment (Phase 12: Task 95, Phase G: Task 69 - conflict warning) */}
         <div className="border-t border-zinc-700/50 pt-4">
           <label className="block text-xs text-zinc-400 mb-2 flex items-center gap-1.5">
             <VideoCameraIcon className="w-3.5 h-3.5" />
             Equipment Assignment
             <span className="ml-1 text-zinc-600 font-normal">— cameras, mics, and other gear for this segment</span>
           </label>
+          {/* Equipment Conflict Warning (Phase G: Task 69) */}
+          {equipmentConflictsForSegment.length > 0 && (
+            <div className="mb-3 p-2.5 rounded-lg bg-red-500/10 border border-red-500/30">
+              <div className="flex items-start gap-2">
+                <ExclamationTriangleIcon className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs font-medium text-red-400 mb-1">
+                    Equipment Conflict{equipmentConflictsForSegment.length !== 1 ? 's' : ''} Detected
+                  </div>
+                  <ul className="text-[11px] text-red-300/80 space-y-0.5">
+                    {equipmentConflictsForSegment.map((conflict, idx) => {
+                      const otherSegment = conflict.segment1.id === segment.id ? conflict.segment2 : conflict.segment1;
+                      return (
+                        <li key={idx} className="flex items-start gap-1">
+                          <span className="text-red-400">•</span>
+                          <span>
+                            <strong>{conflict.equipmentName}</strong> overlaps with "{otherSegment.name}"
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="space-y-3">
             {/* Equipment by type */}
             {['camera', 'microphone', 'other'].map((eqType) => {
