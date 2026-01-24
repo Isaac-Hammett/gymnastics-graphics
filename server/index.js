@@ -5367,6 +5367,99 @@ io.on('connection', async (socket) => {
   // Timesheet Engine Socket Events
   // ============================================
 
+  // Load rundown from Firebase into the timesheet engine (Task 8)
+  socket.on('loadRundown', async ({ compId }) => {
+    // Use compId from payload, fallback to socket's competition
+    const targetCompId = compId || clientCompId;
+
+    if (!targetCompId) {
+      socket.emit('loadRundownResult', {
+        success: false,
+        error: 'No competition ID provided'
+      });
+      return;
+    }
+
+    try {
+      console.log(`[Timesheet] Loading rundown for competition: ${targetCompId}`);
+
+      // Get Firebase database
+      const db = productionConfigService.getDb();
+      if (!db) {
+        socket.emit('loadRundownResult', {
+          success: false,
+          error: 'Firebase not initialized'
+        });
+        return;
+      }
+
+      // Fetch segments from Firebase
+      const segmentsPath = `competitions/${targetCompId}/production/rundown/segments`;
+      const snapshot = await db.ref(segmentsPath).once('value');
+      const segmentsData = snapshot.val();
+
+      if (!segmentsData) {
+        socket.emit('loadRundownResult', {
+          success: false,
+          error: 'No rundown found for this competition'
+        });
+        return;
+      }
+
+      // Convert Firebase object to array (if stored as object with keys)
+      let segments = [];
+      if (Array.isArray(segmentsData)) {
+        segments = segmentsData;
+      } else if (typeof segmentsData === 'object') {
+        // Firebase sometimes stores arrays as objects with numeric keys
+        segments = Object.values(segmentsData);
+      }
+
+      if (segments.length === 0) {
+        socket.emit('loadRundownResult', {
+          success: false,
+          error: 'Rundown has no segments'
+        });
+        return;
+      }
+
+      console.log(`[Timesheet] Found ${segments.length} segments for competition: ${targetCompId}`);
+
+      // Get or create the timesheet engine for this competition
+      const obsConnManager = getOBSConnectionManager();
+      const engine = getOrCreateEngine(targetCompId, obsConnManager, db, io);
+
+      // Update the engine's show config with the loaded segments
+      engine.updateConfig({ segments });
+
+      console.log(`[Timesheet] Rundown loaded successfully for competition: ${targetCompId}`);
+
+      // Get the updated state to broadcast
+      const state = engine.getState();
+
+      // Send success result to the requesting client
+      socket.emit('loadRundownResult', {
+        success: true,
+        segmentCount: segments.length,
+        compId: targetCompId
+      });
+
+      // Broadcast the updated state to all clients in the competition room
+      const roomName = `competition:${targetCompId}`;
+      io.to(roomName).emit('timesheetState', {
+        ...state,
+        segments // Include full segments array in state broadcast
+      });
+
+    } catch (error) {
+      console.error(`[Timesheet] Error loading rundown for ${targetCompId}:`, error.message);
+      socket.emit('loadRundownResult', {
+        success: false,
+        error: `Failed to load rundown: ${error.message}`
+      });
+    }
+  });
+
   // Start show via timesheet engine
   socket.on('startTimesheetShow', async () => {
     if (!timesheetEngine) {

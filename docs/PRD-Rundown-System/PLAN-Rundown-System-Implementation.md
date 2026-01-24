@@ -64,7 +64,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 
 ## Task Summary by Phase
 
-### Phase A: Connect Editor to Engine (P0) - IN PROGRESS (7/16 complete)
+### Phase A: Connect Editor to Engine (P0) - IN PROGRESS (8/16 complete)
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
@@ -75,7 +75,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 5 | Update `_applyAudioOverrides()` to use per-competition OBS connection | COMPLETE | Updated to use obsConnectionManager.getConnection(compId) with fallback to legacy this.obs |
 | Task 6 | Update all socket event broadcasts to target competition room | COMPLETE | Updated `_triggerGraphic()` to use `io.to('competition:${compId}').emit()` with fallback to legacy broadcast. All other socket events are already routed through EventEmitter handlers in server/index.js `getOrCreateEngine()` which already use room-based broadcasting. |
 | Task 7 | Pass Firebase Admin instance to engine for `_triggerGraphic()` | COMPLETE | Updated `_triggerGraphic()` to handle both Firebase db and Admin app; added JSDoc example to `getOrCreateEngine()` |
-| Task 8 | Add `loadRundown` socket handler on server | NOT STARTED | |
+| Task 8 | Add `loadRundown` socket handler on server | COMPLETE | Added handler that fetches segments from Firebase and loads into engine via updateConfig() |
 | Task 9 | Add `loadRundown` action in ShowContext | NOT STARTED | |
 | Task 10 | Add "Load Rundown" button in Producer View | NOT STARTED | |
 | Task 11 | Create segment mapper (Editor format → Engine format) | NOT STARTED | |
@@ -334,19 +334,26 @@ Pass Firebase Admin instance to engine constructor for `_triggerGraphic()` funct
 
 ### Task 8: Add loadRundown socket handler
 
-**Status:** NOT STARTED
+**Status:** COMPLETE
 **File:** `server/index.js`
 
 **Description:**
 Add socket handler for `loadRundown` event that creates/retrieves engine and loads segments from Firebase.
 
 **Checklist:**
-- [ ] Add `socket.on('loadRundown', ...)` handler
-- [ ] Extract `compId` from payload
-- [ ] Call `getOrCreateEngine()` to get engine instance
-- [ ] Fetch segments from Firebase path: `competitions/{compId}/production/rundown/segments`
-- [ ] Call engine's load method with segments
-- [ ] Emit `timesheetState` with loaded segments
+- [x] Add `socket.on('loadRundown', ...)` handler
+- [x] Extract `compId` from payload
+- [x] Call `getOrCreateEngine()` to get engine instance
+- [x] Fetch segments from Firebase path: `competitions/{compId}/production/rundown/segments`
+- [x] Call engine's load method with segments
+- [x] Emit `timesheetState` with loaded segments
+
+**Implementation Notes:**
+- Handler accepts `compId` from payload or falls back to socket's `clientCompId`
+- Fetches segments from Firebase, handles both array and object formats
+- Uses `engine.updateConfig({ segments })` to load segments into the engine
+- Emits `loadRundownResult` to requesting client with success/error
+- Broadcasts `timesheetState` with full segments array to competition room
 
 ---
 
