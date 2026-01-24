@@ -64,7 +64,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 
 ## Task Summary by Phase
 
-### Phase A: Connect Editor to Engine (P0) - IN PROGRESS (13/16 complete)
+### Phase A: Connect Editor to Engine (P0) - IN PROGRESS (14/16 complete)
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
@@ -81,7 +81,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 11 | Create segment mapper (Editor format → Engine format) | COMPLETE | Created segmentMapper.js with mapping and validation functions; integrated into loadRundown handler |
 | Task 12 | Verify Firebase is passed to engine | COMPLETE | Added logging in getOrCreateEngine and _triggerGraphic to confirm Firebase instance and usage |
 | Task 13 | Show rundown status indicator (loaded, modified, etc.) | COMPLETE | Added status badge in header: green "X segments" when loaded, gray "No Rundown" when idle |
-| Task 14 | Verify Rundown Editor scene picker uses OBS state | NOT STARTED | |
+| Task 14 | Verify Rundown Editor scene picker uses OBS state | COMPLETE | Scene picker uses hardcoded DUMMY_SCENES (lines 63-73). OBSContext provides obsState.scenes from live OBS. RundownEditorPage does NOT import useOBS. Task 16 will wire live data. |
 | Task 15 | Verify Rundown Editor graphics picker uses Graphics Registry | NOT STARTED | |
 | Task 16 | Fix any hardcoded picker data | NOT STARTED | |
 
@@ -475,16 +475,22 @@ Add status indicator showing rundown state (idle, loaded, modified).
 
 ### Task 14: Verify scene picker uses OBS state
 
-**Status:** NOT STARTED
+**Status:** COMPLETE
 **File:** `show-controller/src/pages/RundownEditorPage.jsx`
 
 **Description:**
 Verify that the scene picker dropdown loads scenes from OBS connection state rather than hardcoded data.
 
 **Checklist:**
-- [ ] Check current implementation of scene picker
-- [ ] If hardcoded, plan integration with OBS scene list
-- [ ] Document current state
+- [x] Check current implementation of scene picker
+- [x] If hardcoded, plan integration with OBS scene list
+- [x] Document current state
+
+**Verification Results:**
+- Scene picker uses hardcoded `DUMMY_SCENES` (lines 63-73 in RundownEditorPage.jsx)
+- `OBSContext` provides `obsState.scenes` from live OBS connection via `obs:stateUpdated` event
+- `RundownEditorPage.jsx` does NOT import `useOBS` from OBSContext
+- **Recommendation:** Task 16 will replace `DUMMY_SCENES` with live `obsState.scenes` from `useOBS()`
 
 ---
 
