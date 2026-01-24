@@ -2876,6 +2876,7 @@ export default function RundownEditorPage() {
         totalRuntime: totalRuntime,
         targetDuration: targetDuration,
         approvalStatus: approvalStatus,
+        timezoneConfig: timezoneConfig || null, // Phase K: Task 85 - Include timezone configuration
         segments: segments.map((seg, index) => ({
           ...seg,
           order: index + 1,
