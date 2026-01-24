@@ -35,6 +35,8 @@ import {
   QueueListIcon,
   MoonIcon,
   SunIcon,
+  ArrowUturnLeftIcon,
+  ArrowUturnRightIcon,
 } from '@heroicons/react/24/outline';
 import { getGraphicsForCompetition, getCategories, getRecommendedGraphic, getGraphicById, GRAPHICS } from '../lib/graphicsRegistry';
 import { db, ref, set, get, push, remove, update, onValue, onDisconnect } from '../lib/firebase';
@@ -306,6 +308,14 @@ export default function RundownEditorPage() {
     const saved = localStorage.getItem(`rundown-type-colors-${compId}`);
     return saved ? JSON.parse(saved) : null;
   }); // Custom type colors (Phase 10: Task 78)
+
+  // Undo/Redo state (Phase 11: Task 84)
+  // Stores snapshots of {segments, groups} state for undo/redo operations
+  // Maximum 25 levels of undo history
+  const MAX_UNDO_HISTORY = 25;
+  const [undoStack, setUndoStack] = useState([]); // Stack of previous states
+  const [redoStack, setRedoStack] = useState([]); // Stack of undone states
+  const [isUndoRedoOperation, setIsUndoRedoOperation] = useState(false); // Flag to prevent undo during undo/redo
 
   // Computed type row colors using customTypeColors (Phase 10: Task 78)
   const TYPE_ROW_COLORS = useMemo(() => {
@@ -745,6 +755,27 @@ export default function RundownEditorPage() {
 
       const { key, ctrlKey, metaKey, shiftKey } = event;
       const isMod = ctrlKey || metaKey; // Ctrl on Windows/Linux, Cmd on Mac
+
+      // Handle Ctrl/Cmd + Z - Undo (Phase 11: Task 84)
+      if (isMod && key === 'z' && !shiftKey) {
+        event.preventDefault();
+        handleUndo();
+        return;
+      }
+
+      // Handle Ctrl/Cmd + Shift + Z - Redo (Phase 11: Task 84)
+      if (isMod && key === 'z' && shiftKey) {
+        event.preventDefault();
+        handleRedo();
+        return;
+      }
+
+      // Handle Ctrl/Cmd + Y - Redo (alternative) (Phase 11: Task 84)
+      if (isMod && key === 'y') {
+        event.preventDefault();
+        handleRedo();
+        return;
+      }
 
       // Handle Ctrl/Cmd + S - Save rundown (Phase 11: Task 83)
       if (isMod && key === 's') {
@@ -1313,6 +1344,7 @@ export default function RundownEditorPage() {
       : `Are you sure you want to delete ${deleteCount} segment(s)?`;
 
     if (window.confirm(message)) {
+      pushUndoState('Bulk delete segments'); // Phase 11: Task 84
       // Get names of segments being deleted for history
       const deletedSegmentNames = segments
         .filter(seg => selectedSegmentIds.includes(seg.id) && !seg.locked)
@@ -1334,6 +1366,7 @@ export default function RundownEditorPage() {
   // Respects locked segments (Phase 5: Task 8.2) and role permissions (Phase 8: Task 66)
   function handleBulkEditType(newType) {
     if (!checkPermission('edit')) return;
+    pushUndoState('Bulk edit type'); // Phase 11: Task 84
     let updatedCount = 0;
     const newSegments = segments.map(seg => {
       if (!selectedSegmentIds.includes(seg.id)) return seg;
@@ -1353,6 +1386,7 @@ export default function RundownEditorPage() {
   // Respects locked segments (Phase 5: Task 8.2) and role permissions (Phase 8: Task 66)
   function handleBulkEditScene(newScene) {
     if (!checkPermission('edit')) return;
+    pushUndoState('Bulk edit scene'); // Phase 11: Task 84
     let updatedCount = 0;
     const newSegments = segments.map(seg => {
       if (!selectedSegmentIds.includes(seg.id)) return seg;
@@ -1372,6 +1406,7 @@ export default function RundownEditorPage() {
   // Respects locked segments (Phase 5: Task 8.2) and role permissions (Phase 8: Task 66)
   function handleBulkEditGraphic(graphicId) {
     if (!checkPermission('edit')) return;
+    pushUndoState('Bulk edit graphic'); // Phase 11: Task 84
     let updatedCount = 0;
     const newSegments = segments.map(seg => {
       if (!selectedSegmentIds.includes(seg.id)) return seg;
@@ -1399,6 +1434,7 @@ export default function RundownEditorPage() {
       showToast('Cannot edit locked segment');
       return;
     }
+    pushUndoState('Change duration'); // Phase 11: Task 84
     const newSegments = segments.map(seg =>
       seg.id === segmentId ? { ...seg, duration } : seg
     );
@@ -1414,6 +1450,7 @@ export default function RundownEditorPage() {
       showToast('Cannot move locked segment');
       return;
     }
+    pushUndoState('Reorder segment'); // Phase 11: Task 84
     const newSegments = [...segments];
     const [removed] = newSegments.splice(fromIndex, 1);
     newSegments.splice(toIndex, 0, removed);
@@ -1427,6 +1464,7 @@ export default function RundownEditorPage() {
   function handleAddSegment() {
     // Check role permissions (Phase 8: Task 66)
     if (!checkPermission('edit')) return;
+    pushUndoState('Add segment'); // Phase 11: Task 84
     // Use timestamp for unique ID to avoid collisions with multiple users
     const newId = `seg-${Date.now()}`;
     const newSegment = {
@@ -1468,6 +1506,7 @@ export default function RundownEditorPage() {
   function handleSaveSegment(updatedSegment) {
     // Check role permissions (Phase 8: Task 66)
     if (!checkPermission('edit')) return;
+    pushUndoState('Edit segment'); // Phase 11: Task 84
     const oldSegment = segments.find(seg => seg.id === updatedSegment.id);
     const newSegments = segments.map(seg =>
       seg.id === updatedSegment.id ? updatedSegment : seg
@@ -1496,6 +1535,110 @@ export default function RundownEditorPage() {
     return changes.length > 0 ? changes : ['No changes'];
   }
 
+  // Push current state to undo stack before making changes (Phase 11: Task 84)
+  // Call this BEFORE any state modification to enable undo
+  function pushUndoState(actionDescription = 'Action') {
+    // Don't push during undo/redo operations
+    if (isUndoRedoOperation) return;
+
+    const snapshot = {
+      segments: JSON.parse(JSON.stringify(segments)), // Deep copy
+      groups: JSON.parse(JSON.stringify(groups)),
+      description: actionDescription,
+      timestamp: Date.now(),
+    };
+
+    setUndoStack(prevStack => {
+      const newStack = [...prevStack, snapshot];
+      // Limit stack size
+      if (newStack.length > MAX_UNDO_HISTORY) {
+        return newStack.slice(-MAX_UNDO_HISTORY);
+      }
+      return newStack;
+    });
+
+    // Clear redo stack when new action is performed
+    setRedoStack([]);
+  }
+
+  // Undo the last action (Phase 11: Task 84)
+  function handleUndo() {
+    if (undoStack.length === 0) {
+      showToast('Nothing to undo');
+      return;
+    }
+
+    // Check permissions
+    if (!checkPermission('edit')) return;
+
+    setIsUndoRedoOperation(true);
+
+    // Pop from undo stack
+    const previousState = undoStack[undoStack.length - 1];
+    setUndoStack(prevStack => prevStack.slice(0, -1));
+
+    // Push current state to redo stack
+    const currentSnapshot = {
+      segments: JSON.parse(JSON.stringify(segments)),
+      groups: JSON.parse(JSON.stringify(groups)),
+      description: 'Current state',
+      timestamp: Date.now(),
+    };
+    setRedoStack(prevStack => [...prevStack, currentSnapshot]);
+
+    // Restore previous state
+    setSegments(previousState.segments);
+    setGroups(previousState.groups);
+
+    // Sync to Firebase (skip adding to history since this is undo)
+    syncSegmentsToFirebase(previousState.segments, 'Undo: ' + previousState.description, {}, true);
+    syncGroupsToFirebase(previousState.groups, null, {}, true);
+
+    showToast('Undone: ' + previousState.description);
+
+    // Reset flag after state updates
+    setTimeout(() => setIsUndoRedoOperation(false), 100);
+  }
+
+  // Redo the last undone action (Phase 11: Task 84)
+  function handleRedo() {
+    if (redoStack.length === 0) {
+      showToast('Nothing to redo');
+      return;
+    }
+
+    // Check permissions
+    if (!checkPermission('edit')) return;
+
+    setIsUndoRedoOperation(true);
+
+    // Pop from redo stack
+    const nextState = redoStack[redoStack.length - 1];
+    setRedoStack(prevStack => prevStack.slice(0, -1));
+
+    // Push current state to undo stack
+    const currentSnapshot = {
+      segments: JSON.parse(JSON.stringify(segments)),
+      groups: JSON.parse(JSON.stringify(groups)),
+      description: 'Redone state',
+      timestamp: Date.now(),
+    };
+    setUndoStack(prevStack => [...prevStack, currentSnapshot]);
+
+    // Restore next state
+    setSegments(nextState.segments);
+    setGroups(nextState.groups);
+
+    // Sync to Firebase (skip adding to history since this is redo)
+    syncSegmentsToFirebase(nextState.segments, 'Redo action', {}, true);
+    syncGroupsToFirebase(nextState.groups, null, {}, true);
+
+    showToast('Redone');
+
+    // Reset flag after state updates
+    setTimeout(() => setIsUndoRedoOperation(false), 100);
+  }
+
   function handleDeleteSegment(id) {
     // Check role permissions (Phase 8: Task 66)
     if (!checkPermission('edit')) return;
@@ -1505,6 +1648,7 @@ export default function RundownEditorPage() {
       return;
     }
     if (window.confirm('Are you sure you want to delete this segment?')) {
+      pushUndoState('Delete segment'); // Phase 11: Task 84
       const newSegments = segments.filter(seg => seg.id !== id);
       syncSegmentsToFirebase(newSegments, 'Delete segment', {
         segmentName: segment.name,
@@ -1522,6 +1666,8 @@ export default function RundownEditorPage() {
     if (!checkPermission('edit')) return;
     const segmentToDuplicate = segments.find(seg => seg.id === id);
     if (!segmentToDuplicate) return;
+
+    pushUndoState('Duplicate segment'); // Phase 11: Task 84
 
     // Generate new ID
     const timestamp = Date.now();
@@ -1569,6 +1715,7 @@ export default function RundownEditorPage() {
     if (!checkPermission('lock')) return;
     const segment = segments.find(s => s.id === id);
     const newLocked = !segment?.locked;
+    pushUndoState(newLocked ? 'Lock segment' : 'Unlock segment'); // Phase 11: Task 84
     const newSegments = segments.map(seg =>
       seg.id === id ? { ...seg, locked: newLocked } : seg
     );
@@ -1587,6 +1734,7 @@ export default function RundownEditorPage() {
       showToast('Cannot edit locked segment');
       return;
     }
+    pushUndoState('Change scene'); // Phase 11: Task 84
     const newSegments = segments.map(seg =>
       seg.id === segmentId ? { ...seg, scene } : seg
     );
@@ -1600,6 +1748,7 @@ export default function RundownEditorPage() {
       showToast('Cannot edit locked segment');
       return;
     }
+    pushUndoState('Change graphic'); // Phase 11: Task 84
     const newSegments = segments.map(seg => {
       if (seg.id !== segmentId) return seg;
       if (!graphicId) {
@@ -1621,6 +1770,7 @@ export default function RundownEditorPage() {
       showToast('Cannot edit locked segment');
       return;
     }
+    pushUndoState('Change duration'); // Phase 11: Task 84
     const newSegments = segments.map(seg =>
       seg.id === segmentId ? { ...seg, duration } : seg
     );
@@ -1635,6 +1785,7 @@ export default function RundownEditorPage() {
       showToast('Cannot edit locked segment');
       return;
     }
+    pushUndoState('Toggle auto-advance'); // Phase 11: Task 84
     const newSegments = segments.map(seg =>
       seg.id === segmentId ? { ...seg, autoAdvance: !seg.autoAdvance } : seg
     );
@@ -3441,6 +3592,33 @@ export default function RundownEditorPage() {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            {/* Undo/Redo buttons (Phase 11: Task 84) */}
+            <div className="flex items-center border border-zinc-700 rounded-lg overflow-hidden">
+              <button
+                onClick={handleUndo}
+                disabled={undoStack.length === 0}
+                className={`px-2.5 py-2 text-sm transition-colors ${
+                  undoStack.length === 0
+                    ? 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
+                    : 'bg-zinc-800 text-zinc-400 hover:text-zinc-300 hover:bg-zinc-700'
+                }`}
+                title={`Undo${undoStack.length > 0 ? ` (${undoStack.length})` : ''} (Ctrl+Z)`}
+              >
+                <ArrowUturnLeftIcon className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleRedo}
+                disabled={redoStack.length === 0}
+                className={`px-2.5 py-2 text-sm transition-colors border-l border-zinc-700 ${
+                  redoStack.length === 0
+                    ? 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
+                    : 'bg-zinc-800 text-zinc-400 hover:text-zinc-300 hover:bg-zinc-700'
+                }`}
+                title={`Redo${redoStack.length > 0 ? ` (${redoStack.length})` : ''} (Ctrl+Shift+Z)`}
+              >
+                <ArrowUturnRightIcon className="w-4 h-4" />
+              </button>
+            </div>
             {/* History button (Phase 8: Task 67) */}
             <button
               onClick={handleOpenHistory}
