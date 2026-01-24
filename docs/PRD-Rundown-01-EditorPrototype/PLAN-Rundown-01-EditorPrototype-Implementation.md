@@ -3,7 +3,7 @@
 **PRD:** PRD-Rundown-01-EditorPrototype
 **Status:** PROTOTYPE COMPLETE, FEATURES IN PROGRESS
 **Created:** 2026-01-22
-**Last Updated:** 2026-01-23 (v4.6 - Task 71 complete - Export to CSV)
+**Last Updated:** 2026-01-23 (v4.7 - Task 72 complete - Export to JSON)
 
 ---
 
@@ -192,7 +192,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 |------|--------|-------|
 | Task 70: Export to PDF | COMPLETE | handleExportPDF function generates print-friendly HTML, opens in new window with print dialog, includes segment details, start times, notes, optional/locked badges |
 | Task 71: Export to CSV | COMPLETE | handleExportCSV function generates CSV with all segment fields (number, start time, name, type, duration, scene, graphic, timing mode, flags, notes), proper CSV escaping for commas/quotes/newlines, triggers browser download with dated filename |
-| Task 72: Export to JSON | NOT STARTED | Backup/API integration |
+| Task 72: Export to JSON | COMPLETE | handleExportJSON function exports full rundown data (competition info, segments with all fields and computed start times, groups, metadata), pretty-printed JSON format, triggers browser download with dated filename |
 | Task 73: Import from CSV | NOT STARTED | Field mapping UI, validation |
 | Task 74: Import from JSON | NOT STARTED | Backup restore, preview |
 

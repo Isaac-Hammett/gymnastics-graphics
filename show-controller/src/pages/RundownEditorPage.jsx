@@ -1366,6 +1366,55 @@ export default function RundownEditorPage() {
     showToast('CSV exported');
   }
 
+  // Export rundown to JSON for backup/API integration (Phase 9: Task 72)
+  function handleExportJSON() {
+    // Build export object with all rundown data
+    const exportData = {
+      version: '1.0',
+      exportedAt: new Date().toISOString(),
+      competition: {
+        id: compId,
+        name: DUMMY_COMPETITION.name,
+        type: DUMMY_COMPETITION.type,
+        teams: DUMMY_COMPETITION.teams,
+      },
+      rundown: {
+        totalRuntime: totalRuntime,
+        targetDuration: targetDuration,
+        approvalStatus: approvalStatus,
+        segments: segments.map((seg, index) => ({
+          ...seg,
+          order: index + 1,
+          startTime: segmentStartTimes[seg.id] || 0,
+        })),
+        groups: groups,
+      },
+    };
+
+    // Create JSON content with pretty formatting
+    const jsonContent = JSON.stringify(exportData, null, 2);
+
+    // Create download link
+    const blob = new Blob([jsonContent], { type: 'application/json;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+
+    // Generate filename with competition name and date
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
+    const sanitizedName = DUMMY_COMPETITION.name.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+    link.download = `rundown-${sanitizedName}-${dateStr}.json`;
+
+    // Trigger download
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    showToast('JSON exported');
+  }
+
   // Export rundown to PDF using browser print dialog (Phase 9: Task 70)
   function handleExportPDF() {
     // Generate print-friendly HTML
@@ -2673,6 +2722,13 @@ export default function RundownEditorPage() {
             >
               <TableCellsIcon className="w-4 h-4" />
               Export CSV
+            </button>
+            <button
+              onClick={handleExportJSON}
+              className="flex items-center gap-2 px-4 py-2 bg-zinc-800 border border-zinc-700 text-zinc-300 text-sm rounded-lg hover:bg-zinc-700 transition-colors"
+            >
+              <ArrowDownTrayIcon className="w-4 h-4" />
+              Export JSON
             </button>
           </div>
         </div>
