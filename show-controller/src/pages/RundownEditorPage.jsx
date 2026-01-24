@@ -41,7 +41,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { getGraphicsForCompetition, getCategories, getRecommendedGraphic, getGraphicById, GRAPHICS } from '../lib/graphicsRegistry';
 import { db, ref, set, get, push, remove, update, onValue, onDisconnect } from '../lib/firebase';
-import { analyzeCompetitionContext } from '../lib/aiContextAnalyzer';
+import { analyzeCompetitionContext, analyzeSegmentOrder, analyzeCompetitionFormat } from '../lib/aiContextAnalyzer';
 
 // Hardcoded competition context per PRD (Phase 0B)
 const DUMMY_COMPETITION = {
@@ -603,6 +603,48 @@ export default function RundownEditorPage() {
         default:
           // Unknown trigger type - skip
           break;
+      }
+    }
+
+    // Phase 12: Task 90 - AI Segment Order Suggestions
+    // Analyze segment order and add suggestions for improvements
+    const orderSuggestions = analyzeSegmentOrder(existingSegments, context.format);
+    for (const orderSuggestion of orderSuggestions) {
+      const suggestionId = createSuggestionId('order', orderSuggestion.ruleId);
+
+      // Skip dismissed suggestions
+      if (dismissed.includes(suggestionId)) continue;
+
+      if (orderSuggestion.suggestNew) {
+        // Suggest adding a new segment
+        suggestions.push({
+          id: suggestionId,
+          type: 'segment_order',
+          title: orderSuggestion.ruleName,
+          description: `${orderSuggestion.message}. ${orderSuggestion.suggestion}`,
+          priority: orderSuggestion.priority,
+          confidence: 0.75,
+          isOrderSuggestion: true,
+          segment: {
+            ...orderSuggestion.suggestNew,
+            autoAdvance: orderSuggestion.suggestNew.autoAdvance ?? true,
+          },
+          targetPosition: orderSuggestion.targetPosition,
+        });
+      } else if (orderSuggestion.affectedSegments?.length > 0) {
+        // Suggest moving an existing segment
+        suggestions.push({
+          id: suggestionId,
+          type: 'segment_order',
+          title: orderSuggestion.ruleName,
+          description: `${orderSuggestion.message}. ${orderSuggestion.suggestion}`,
+          priority: orderSuggestion.priority,
+          confidence: 0.7,
+          isOrderSuggestion: true,
+          isMoveAction: true, // Flag that this is a move, not add
+          affectedSegments: orderSuggestion.affectedSegments,
+          targetPosition: orderSuggestion.targetPosition,
+        });
       }
     }
 
@@ -1790,7 +1832,7 @@ export default function RundownEditorPage() {
     showToast('Segment added');
   }
 
-  // Add segment from AI suggestion (Phase 12: Task 88)
+  // Add segment from AI suggestion (Phase 12: Task 88, enhanced in Task 90)
   function handleAddFromSuggestion(suggestion) {
     // Check role permissions
     if (!checkPermission('edit')) return;
@@ -1805,15 +1847,29 @@ export default function RundownEditorPage() {
       optional: false,
     };
 
-    // Add at end of rundown
-    const newSegments = [...segments, newSegment];
+    let newSegments;
+
+    // Phase 12: Task 90 - If suggestion has targetPosition, insert at that position
+    if (typeof suggestion.targetPosition === 'number' && suggestion.targetPosition >= 0) {
+      const insertIndex = Math.min(suggestion.targetPosition, segments.length);
+      newSegments = [
+        ...segments.slice(0, insertIndex),
+        newSegment,
+        ...segments.slice(insertIndex),
+      ];
+    } else {
+      // Add at end of rundown (default behavior)
+      newSegments = [...segments, newSegment];
+    }
+
     syncSegmentsToFirebase(newSegments, 'Add AI-suggested segment', {
       segmentName: newSegment.name,
       suggestionType: suggestion.type,
+      ...(suggestion.targetPosition !== undefined && { insertedAtPosition: suggestion.targetPosition }),
     });
 
     setSelectedSegmentId(newId);
-    showToast(`Added: ${newSegment.name}`);
+    showToast(`Added: ${newSegment.name}${suggestion.targetPosition !== undefined ? ` at position ${suggestion.targetPosition + 1}` : ''}`);
 
     // Auto-dismiss the suggestion after adding
     setDismissedSuggestions(prev => [...prev, suggestion.id]);
@@ -4293,13 +4349,24 @@ export default function RundownEditorPage() {
                 {aiSuggestions.map((suggestion) => (
                   <div
                     key={suggestion.id}
-                    className="p-3 bg-zinc-900/50 border border-purple-500/20 rounded-lg hover:border-purple-500/40 transition-colors"
+                    className={`p-3 bg-zinc-900/50 border rounded-lg hover:border-purple-500/40 transition-colors ${
+                      suggestion.isOrderSuggestion
+                        ? 'border-amber-500/20 hover:border-amber-500/40'
+                        : 'border-purple-500/20'
+                    }`}
                   >
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-purple-300">{suggestion.title}</span>
-                          {suggestion.priority === 'high' && (
+                          <span className={`text-sm font-medium ${
+                            suggestion.isOrderSuggestion ? 'text-amber-300' : 'text-purple-300'
+                          }`}>{suggestion.title}</span>
+                          {suggestion.isOrderSuggestion && (
+                            <span className="px-1.5 py-0.5 text-xs bg-amber-500/20 text-amber-300 rounded">
+                              Order
+                            </span>
+                          )}
+                          {suggestion.priority === 'high' && !suggestion.isOrderSuggestion && (
                             <span className="px-1.5 py-0.5 text-xs bg-purple-500/20 text-purple-300 rounded">
                               Recommended
                             </span>
@@ -4310,7 +4377,12 @@ export default function RundownEditorPage() {
                     </div>
                     <div className="flex items-center justify-between text-xs text-zinc-500">
                       <span>
-                        {suggestion.segment.type} • {suggestion.segment.duration ? `${suggestion.segment.duration}s` : 'Manual'}
+                        {suggestion.isMoveAction
+                          ? 'Reorder suggestion'
+                          : suggestion.segment?.type
+                            ? `${suggestion.segment.type} • ${suggestion.segment.duration ? `${suggestion.segment.duration}s` : 'Manual'}`
+                            : 'Suggestion'
+                        }
                       </span>
                       <div className="flex items-center gap-1">
                         <button
@@ -4320,12 +4392,23 @@ export default function RundownEditorPage() {
                         >
                           Dismiss
                         </button>
-                        <button
-                          onClick={() => handleAddFromSuggestion(suggestion)}
-                          className="px-2 py-1 bg-purple-600 text-white rounded hover:bg-purple-500 transition-colors"
-                        >
-                          Add
-                        </button>
+                        {!suggestion.isMoveAction && suggestion.segment && (
+                          <button
+                            onClick={() => handleAddFromSuggestion(suggestion)}
+                            className={`px-2 py-1 text-white rounded transition-colors ${
+                              suggestion.isOrderSuggestion
+                                ? 'bg-amber-600 hover:bg-amber-500'
+                                : 'bg-purple-600 hover:bg-purple-500'
+                            }`}
+                          >
+                            Add
+                          </button>
+                        )}
+                        {suggestion.isMoveAction && (
+                          <span className="px-2 py-1 text-amber-400 text-xs italic">
+                            Review manually
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
