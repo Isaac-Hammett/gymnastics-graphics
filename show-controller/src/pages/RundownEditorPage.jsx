@@ -38,6 +38,7 @@ import {
   ArrowUturnLeftIcon,
   ArrowUturnRightIcon,
   SparklesIcon,
+  MusicalNoteIcon,
 } from '@heroicons/react/24/outline';
 import { getGraphicsForCompetition, getCategories, getRecommendedGraphic, getGraphicById, GRAPHICS } from '../lib/graphicsRegistry';
 import { db, ref, set, get, push, remove, update, onValue, onDisconnect } from '../lib/firebase';
@@ -140,15 +141,15 @@ const ROLE_COLORS = {
   viewer: 'ring-zinc-400',
 };
 
-// Hardcoded test data per PRD (updated with graphic field structure for Phase 0B, bufferAfter for Phase 1, locked/optional/notes for Phase 5, timingMode for Phase 6, script for Phase 12)
+// Hardcoded test data per PRD (updated with graphic field structure for Phase 0B, bufferAfter for Phase 1, locked/optional/notes for Phase 5, timingMode for Phase 6, script for Phase 12, audioCue for Phase 12 Task 93)
 const DUMMY_SEGMENTS = [
-  { id: 'seg-001', name: 'Show Intro', type: 'video', duration: 45, scene: 'Starting Soon', graphic: null, autoAdvance: true, bufferAfter: 0, locked: false, optional: false, notes: '', script: '', timingMode: 'fixed' },
-  { id: 'seg-002', name: 'Team Logos', type: 'static', duration: 10, scene: 'Graphics Fullscreen', graphic: { graphicId: 'logos', params: {} }, autoAdvance: true, bufferAfter: 5, locked: true, optional: false, notes: 'Show all 4 team logos in quad layout', script: '', timingMode: 'fixed' },
-  { id: 'seg-003', name: 'UCLA Coaches', type: 'live', duration: 15, scene: 'Single - Camera 2', graphic: { graphicId: 'team-coaches', params: { teamSlot: 1 } }, autoAdvance: true, bufferAfter: 0, locked: false, optional: false, notes: '', script: '- Welcome viewers to today\'s competition\n- Introduce the UCLA coaching staff\n- **Head Coach Chris Waller** - 10th season\n- Mention last season\'s Pac-12 Championship victory', timingMode: 'follows-previous' },
-  { id: 'seg-004', name: 'Oregon Coaches', type: 'live', duration: 15, scene: 'Single - Camera 3', graphic: { graphicId: 'team-coaches', params: { teamSlot: 2 } }, autoAdvance: true, bufferAfter: 10, locked: false, optional: false, notes: 'First year head coach - mention in intro', script: '', timingMode: 'fixed' },
-  { id: 'seg-005', name: 'Rotation 1 Summary', type: 'static', duration: 20, scene: 'Graphics Fullscreen', graphic: { graphicId: 'event-summary', params: { summaryMode: 'rotation', summaryRotation: 1, summaryTheme: 'espn' } }, autoAdvance: true, bufferAfter: 0, locked: false, optional: false, notes: '', script: '', timingMode: 'fixed' },
-  { id: 'seg-006', name: 'Floor - Rotation 1', type: 'live', duration: null, scene: 'Quad View', graphic: { graphicId: 'floor', params: {} }, autoAdvance: false, bufferAfter: 0, locked: false, optional: false, notes: '', script: '', timingMode: 'manual' },
-  { id: 'seg-007', name: 'Commercial Break', type: 'break', duration: 120, scene: 'Starting Soon', graphic: null, autoAdvance: true, bufferAfter: 0, locked: false, optional: true, notes: 'Check with director before taking break', script: '', timingMode: 'fixed' }, // Example optional segment
+  { id: 'seg-001', name: 'Show Intro', type: 'video', duration: 45, scene: 'Starting Soon', graphic: null, autoAdvance: true, bufferAfter: 0, locked: false, optional: false, notes: '', script: '', timingMode: 'fixed', audioCue: { songName: 'ESPN Theme', inPoint: '0:00', outPoint: '0:45' } },
+  { id: 'seg-002', name: 'Team Logos', type: 'static', duration: 10, scene: 'Graphics Fullscreen', graphic: { graphicId: 'logos', params: {} }, autoAdvance: true, bufferAfter: 5, locked: true, optional: false, notes: 'Show all 4 team logos in quad layout', script: '', timingMode: 'fixed', audioCue: null },
+  { id: 'seg-003', name: 'UCLA Coaches', type: 'live', duration: 15, scene: 'Single - Camera 2', graphic: { graphicId: 'team-coaches', params: { teamSlot: 1 } }, autoAdvance: true, bufferAfter: 0, locked: false, optional: false, notes: '', script: '- Welcome viewers to today\'s competition\n- Introduce the UCLA coaching staff\n- **Head Coach Chris Waller** - 10th season\n- Mention last season\'s Pac-12 Championship victory', timingMode: 'follows-previous', audioCue: null },
+  { id: 'seg-004', name: 'Oregon Coaches', type: 'live', duration: 15, scene: 'Single - Camera 3', graphic: { graphicId: 'team-coaches', params: { teamSlot: 2 } }, autoAdvance: true, bufferAfter: 10, locked: false, optional: false, notes: 'First year head coach - mention in intro', script: '', timingMode: 'fixed', audioCue: null },
+  { id: 'seg-005', name: 'Rotation 1 Summary', type: 'static', duration: 20, scene: 'Graphics Fullscreen', graphic: { graphicId: 'event-summary', params: { summaryMode: 'rotation', summaryRotation: 1, summaryTheme: 'espn' } }, autoAdvance: true, bufferAfter: 0, locked: false, optional: false, notes: '', script: '', timingMode: 'fixed', audioCue: null },
+  { id: 'seg-006', name: 'Floor - Rotation 1', type: 'live', duration: null, scene: 'Quad View', graphic: { graphicId: 'floor', params: {} }, autoAdvance: false, bufferAfter: 0, locked: false, optional: false, notes: '', script: '', timingMode: 'manual', audioCue: { songName: 'Floor Background Music', inPoint: '0:00', outPoint: '' } },
+  { id: 'seg-007', name: 'Commercial Break', type: 'break', duration: 120, scene: 'Starting Soon', graphic: null, autoAdvance: true, bufferAfter: 0, locked: false, optional: true, notes: 'Check with director before taking break', script: '', timingMode: 'fixed', audioCue: null }, // Example optional segment
 ];
 
 // Segment type options
@@ -5238,6 +5239,15 @@ function SegmentRow({
                 <DocumentTextIcon className="w-3 h-3" />
               </span>
             )}
+            {/* Audio cue indicator (Phase 12: Task 93) */}
+            {segment.audioCue?.songName && (
+              <span
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded bg-purple-500/20 text-purple-400 border border-purple-500/30 shrink-0 cursor-help"
+                title={`Audio: ${segment.audioCue.songName}${segment.audioCue.inPoint || segment.audioCue.outPoint ? ` (${segment.audioCue.inPoint || '0:00'} - ${segment.audioCue.outPoint || 'end'})` : ''}`}
+              >
+                <MusicalNoteIcon className="w-3 h-3" />
+              </span>
+            )}
             {/* Timing mode badge (Phase 6: Task 56) */}
             {segment.timingMode === 'manual' && (
               <span
@@ -6040,6 +6050,64 @@ function SegmentDetailPanel({ segment, onSave, onDelete, onCancel }) {
               </span>
             </div>
           )}
+        </div>
+
+        {/* Audio Cue Planning (Phase 12: Task 93) */}
+        <div className="border-t border-zinc-700/50 pt-4">
+          <label className="block text-xs text-zinc-400 mb-2 flex items-center gap-1.5">
+            <MusicalNoteIcon className="w-3.5 h-3.5" />
+            Audio Cue
+            <span className="ml-1 text-zinc-600 font-normal">— music/sound for this segment</span>
+          </label>
+          <div className="space-y-2">
+            <input
+              type="text"
+              value={formData.audioCue?.songName || ''}
+              onChange={(e) => setFormData({
+                ...formData,
+                audioCue: { ...(formData.audioCue || {}), songName: e.target.value }
+              })}
+              placeholder="Song name or file reference"
+              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+            />
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <label className="block text-[10px] text-zinc-500 mb-1">In Point</label>
+                <input
+                  type="text"
+                  value={formData.audioCue?.inPoint || ''}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    audioCue: { ...(formData.audioCue || {}), inPoint: e.target.value }
+                  })}
+                  placeholder="0:00"
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500 font-mono"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block text-[10px] text-zinc-500 mb-1">Out Point</label>
+                <input
+                  type="text"
+                  value={formData.audioCue?.outPoint || ''}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    audioCue: { ...(formData.audioCue || {}), outPoint: e.target.value }
+                  })}
+                  placeholder="0:00"
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500 font-mono"
+                />
+              </div>
+            </div>
+            {formData.audioCue?.songName && (
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, audioCue: null })}
+                className="text-xs text-zinc-500 hover:text-red-400 transition-colors"
+              >
+                Clear audio cue
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="flex gap-3 pt-4">

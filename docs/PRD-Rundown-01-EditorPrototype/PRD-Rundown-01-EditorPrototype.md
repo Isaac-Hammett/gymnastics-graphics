@@ -1149,11 +1149,11 @@ const filteredSegments = segments.filter(seg => {
 
 ### Phase 12: Advanced Planning
 
-- [ ] AI suggests segments based on competition context (senior meet, rivalry, etc.)
-- [ ] AI suggests segment order improvements
-- [ ] One-click to add AI-suggested segment
-- [ ] Segment script field with rich text
-- [ ] Audio cue planning fields
+- [x] AI suggests segments based on competition context (senior meet, rivalry, etc.)
+- [x] AI suggests segment order improvements
+- [x] One-click to add AI-suggested segment
+- [x] Segment script field with rich text
+- [x] Audio cue planning fields
 - [ ] Talent assignment per segment
 - [ ] Equipment tracking per segment
 - [ ] Sponsor/ad inventory tracking

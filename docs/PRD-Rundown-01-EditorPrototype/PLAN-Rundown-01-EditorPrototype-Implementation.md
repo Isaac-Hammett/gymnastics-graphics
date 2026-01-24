@@ -3,7 +3,7 @@
 **PRD:** PRD-Rundown-01-EditorPrototype
 **Status:** PROTOTYPE COMPLETE, FEATURES IN PROGRESS
 **Created:** 2026-01-22
-**Last Updated:** 2026-01-23 (v5.15 - Task 92 complete - Add segment script field)
+**Last Updated:** 2026-01-23 (v5.16 - Task 93 complete - Add audio cue planning fields)
 
 ---
 
@@ -230,7 +230,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 90: AI segment order suggestions | COMPLETE | Added analyzeSegmentOrder() function to aiContextAnalyzer.js with 5 order rules: team intros before competition, break for long shows, rotation summaries, leaderboard placement, senior recognition timing. Order suggestions displayed in AI panel with amber styling. Suggestions can add segments at specific positions. |
 | Task 91: AI suggestions panel UI | COMPLETE | Implemented as part of Task 88 - non-intrusive panel below toolbar, one-click add, dismiss/reset functionality |
 | Task 92: Add segment script field | COMPLETE | Added `script` field to segments with markdown-style support hints, word/character count, emerald-colored indicator on segment row |
-| Task 93: Add audio cue planning fields | NOT STARTED | Song name, in/out timestamps |
+| Task 93: Add audio cue planning fields | COMPLETE | Added `audioCue` field with songName, inPoint, outPoint. Form UI in Edit panel with clear button. Purple-colored indicator on segment row shows song name and timestamps in tooltip. |
 | Task 94: Add talent assignment | NOT STARTED | Who is on camera, schedule view |
 | Task 95: Add equipment tracking | NOT STARTED | Camera, mic per segment, conflicts |
 | Task 96: Add sponsor/ad tracking | NOT STARTED | Commercial obligations, fulfillment |
