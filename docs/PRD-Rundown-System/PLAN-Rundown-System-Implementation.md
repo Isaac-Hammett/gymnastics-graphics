@@ -64,7 +64,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 
 ## Task Summary by Phase
 
-### Phase A: Connect Editor to Engine (P0) - IN PROGRESS (14/16 complete)
+### Phase A: Connect Editor to Engine (P0) - IN PROGRESS (15/16 complete)
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
@@ -82,7 +82,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 12 | Verify Firebase is passed to engine | COMPLETE | Added logging in getOrCreateEngine and _triggerGraphic to confirm Firebase instance and usage |
 | Task 13 | Show rundown status indicator (loaded, modified, etc.) | COMPLETE | Added status badge in header: green "X segments" when loaded, gray "No Rundown" when idle |
 | Task 14 | Verify Rundown Editor scene picker uses OBS state | COMPLETE | Scene picker uses hardcoded DUMMY_SCENES (lines 63-73). OBSContext provides obsState.scenes from live OBS. RundownEditorPage does NOT import useOBS. Task 16 will wire live data. |
-| Task 15 | Verify Rundown Editor graphics picker uses Graphics Registry | NOT STARTED | |
+| Task 15 | Verify Rundown Editor graphics picker uses Graphics Registry | COMPLETE | Uses graphicsRegistry.js with getGraphicsForCompetition(). Filters by compType/gender. Note: Uses DUMMY_COMPETITION.type - Task 16 will wire live data. |
 | Task 16 | Fix any hardcoded picker data | NOT STARTED | |
 
 ### Phase H: Rehearsal Mode (P1) - NOT STARTED
@@ -496,16 +496,24 @@ Verify that the scene picker dropdown loads scenes from OBS connection state rat
 
 ### Task 15: Verify graphics picker uses Registry
 
-**Status:** NOT STARTED
+**Status:** COMPLETE
 **File:** `show-controller/src/pages/RundownEditorPage.jsx`
 
 **Description:**
 Verify that the graphics picker dropdown uses graphicsRegistry.js.
 
 **Checklist:**
-- [ ] Check current implementation of graphics picker
-- [ ] Verify graphicsRegistry.js is imported and used
-- [ ] Confirm graphics filtered by competition type
+- [x] Check current implementation of graphics picker
+- [x] Verify graphicsRegistry.js is imported and used
+- [x] Confirm graphics filtered by competition type
+
+**Verification Results:**
+- Graphics picker imports from `graphicsRegistry.js` (line 45)
+- `getGroupedGraphics()` uses `getGraphicsForCompetition(compType, teamNames)` (line 4961)
+- Graphics filtered by competition type and gender via `isGraphicAvailable()`
+- Per-team graphics expanded dynamically (team1-stats, team2-stats, etc.)
+- Category labels hardcoded but match registry categories - acceptable pattern
+- **Note:** Uses `DUMMY_COMPETITION.type` for filtering. Task 16 should use real competition data.
 
 ---
 
