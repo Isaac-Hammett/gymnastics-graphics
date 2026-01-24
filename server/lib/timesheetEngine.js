@@ -669,7 +669,7 @@ class TimesheetEngine extends EventEmitter {
 
       case SEGMENT_TYPES.VIDEO:
         // Video segment - set video file and play
-        if (segment.videoFile && this.obs) {
+        if (segment.videoFile) {
           await this._playVideo(segment);
         }
         break;
@@ -730,18 +730,38 @@ class TimesheetEngine extends EventEmitter {
    * @private
    */
   async _playVideo(segment) {
-    if (!this.obs || !segment.videoFile) return;
+    if (!segment.videoFile) return;
+
+    // Get OBS connection - prefer per-competition connection via obsConnectionManager
+    let obsConnection = null;
+    if (this.obsConnectionManager && this.compId) {
+      obsConnection = this.obsConnectionManager.getConnection(this.compId);
+      if (!obsConnection) {
+        this.emit('error', {
+          type: 'obs_video',
+          message: `No OBS connection found for competition ${this.compId}`,
+          segmentId: segment.id
+        });
+        return;
+      }
+    } else if (this.obs) {
+      // Fallback to legacy single OBS connection
+      obsConnection = this.obs;
+    } else {
+      // No OBS connection available
+      return;
+    }
 
     const sourceName = segment.videoSource || 'Video Player';
 
     try {
       // Get current settings
-      const { inputSettings } = await this.obs.call('GetInputSettings', {
+      const { inputSettings } = await obsConnection.call('GetInputSettings', {
         inputName: sourceName
       });
 
       // Update with new file path
-      await this.obs.call('SetInputSettings', {
+      await obsConnection.call('SetInputSettings', {
         inputName: sourceName,
         inputSettings: {
           ...inputSettings,
@@ -751,7 +771,7 @@ class TimesheetEngine extends EventEmitter {
       });
 
       // Restart the media source to play from beginning
-      await this.obs.call('TriggerMediaInputAction', {
+      await obsConnection.call('TriggerMediaInputAction', {
         inputName: sourceName,
         mediaAction: 'OBS_WEBSOCKET_MEDIA_INPUT_ACTION_RESTART'
       });
