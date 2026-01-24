@@ -710,7 +710,7 @@ function subscribeToRundownChanges(compId, db, initialSegments) {
     console.log(`[Timesheet] Removed existing rundown listener for competition: ${compId}`);
   }
 
-  const segmentsPath = `competitions/${compId}/production/rundown/segments`;
+  const segmentsPath = `competitions/${compId}/rundown/segments`;
   const segmentsRef = db.ref(segmentsPath);
 
   // Store the initial segments for comparison (Task 29 will use this)
@@ -5801,7 +5801,7 @@ io.on('connection', async (socket) => {
       }
 
       // Fetch segments from Firebase
-      const segmentsPath = `competitions/${targetCompId}/production/rundown/segments`;
+      const segmentsPath = `competitions/${targetCompId}/rundown/segments`;
       const snapshot = await db.ref(segmentsPath).once('value');
       const segmentsData = snapshot.val();
 
