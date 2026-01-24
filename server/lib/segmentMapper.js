@@ -38,6 +38,7 @@ function mapEditorToEngine(editorSegment) {
     duration: editorSegment.duration,
     notes: editorSegment.notes || '',
     script: editorSegment.script || '', // Phase E: Task 49 - script for talent/teleprompter
+    talent: editorSegment.talent || [], // Phase E: Task 52 - talent assignment for segments
 
     // Mapped fields
     obsScene: editorSegment.scene || null,
@@ -104,6 +105,7 @@ function mapEngineToEditor(engineSegment) {
     duration: engineSegment.duration,
     notes: engineSegment.notes || '',
     script: engineSegment.script || '', // Phase E: Task 49 - script for talent/teleprompter
+    talent: engineSegment.talent || [], // Phase E: Task 52 - talent assignment for segments
 
     // Mapped fields
     scene: engineSegment.obsScene || '',
@@ -269,7 +271,7 @@ function compareSegments(oldSegment, newSegment) {
 
   // Fields to compare (both direct and mapped)
   const fieldsToCompare = [
-    'name', 'type', 'duration', 'notes', 'script',
+    'name', 'type', 'duration', 'notes', 'script', 'talent',
     'scene', 'obsScene',
     'graphic', 'graphicData',
     'timingMode', 'autoAdvance',

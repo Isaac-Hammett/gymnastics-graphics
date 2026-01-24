@@ -142,14 +142,14 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 47 | Add `getAISuggestions` API endpoint | COMPLETE | Added `getAISuggestions` and `getAISuggestionCount` socket handlers in server/index.js; handlers emit `aiSuggestionsResult` and `aiSuggestionCountResult` events; accepts `compId` and `options` parameters; logs suggestion generation |
 | Task 48 | Wire Rundown Editor to display suggestions | COMPLETE | Added `getAISuggestions` function to ShowContext with promise-based API; added socket listener for `aiSuggestionsResult`; updated RundownEditorPage to use server-side suggestions with fallback to client-side; added loading state, error handling, context display, and refresh button; transformed server suggestions to UI format; filtered by dismissed and existing segments |
 
-### Phase E: Script & Talent Flow (P2) - IN PROGRESS (2/6)
+### Phase E: Script & Talent Flow (P2) - IN PROGRESS (3/6)
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
 | Task 49 | Add script field to segment data model | COMPLETE | Added `script: ''` to segment creation in 5 places in RundownEditorPage.jsx; added script field to segmentMapper.js for both editor→engine and engine→editor mappings; added script to compareSegments fieldsToCompare |
 | Task 50 | Pipe script field through Timesheet Engine | COMPLETE | Script field already flows through engine via generic segment handling; TimesheetEngine spreads full segment objects in `getState()` (lines 1061-1063) and `segmentActivated` events (line 594); no explicit handling needed since engine preserves all segment fields; script accessible via `currentSegment.script` in client hooks |
 | Task 51 | Display script in Talent View (teleprompter-style) | COMPLETE | Added teleprompter-style script panel in TalentView.jsx between CurrentSegment and NextSegment; uses large text (text-xl), blue accent border, DocumentTextIcon header; only shows when currentSegment.script has content; uses whitespace-pre-wrap for line breaks |
-| Task 52 | Add talent assignment to segment data model | NOT STARTED | |
+| Task 52 | Add talent assignment to segment data model | COMPLETE | Added `talent: []` to segment creation in 3 places in RundownEditorPage.jsx; added talent field to segmentMapper.js for both editor→engine and engine→editor mappings; added talent to compareSegments fieldsToCompare |
 | Task 53 | Create talent schedule view | NOT STARTED | |
 | Task 54 | Show "you're on camera" indicator in Talent View | NOT STARTED | |
 

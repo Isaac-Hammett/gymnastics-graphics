@@ -2135,6 +2135,7 @@ export default function RundownEditorPage() {
       optional: false,
       notes: '',
       script: '', // Phase E: Task 49 - script field for commentator talking points
+      talent: [], // Phase E: Task 52 - talent assignment for segments
       timingMode: 'manual', // Default to manual for new segments (Phase 6: Task 55)
     };
 
@@ -2172,6 +2173,8 @@ export default function RundownEditorPage() {
       bufferAfter: suggestion.segment.bufferAfter || 0,
       locked: false,
       optional: false,
+      script: suggestion.segment.script || '', // Phase E: Task 49
+      talent: suggestion.segment.talent || [], // Phase E: Task 52 - talent assignment for segments
     };
 
     let newSegments;
@@ -3717,6 +3720,7 @@ export default function RundownEditorPage() {
         optional: false,
         notes: '',
         script: '', // Phase E: Task 49
+        talent: [], // Phase E: Task 52 - talent assignment for segments
         timingMode: duration ? 'fixed' : 'manual',
       };
 
