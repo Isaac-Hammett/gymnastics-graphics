@@ -59,7 +59,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | C | AI Context - Live Execution | P3 | COMPLETE | 55-62 |
 | F | Audio Cue Integration | P3 | COMPLETE | 63-66 |
 | G | Production Tracking | P3 | COMPLETE | 67-71 |
-| K | Timezone Display | P2 | IN PROGRESS | 72-88 (14/17) |
+| K | Timezone Display | P2 | IN PROGRESS | 72-88 (15/17) |
 
 ---
 
@@ -186,7 +186,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 70 | Add sponsor fields to segment data model | COMPLETE | Added sponsor field ({ name, logo, tier } or null) to segment creation in RundownEditorPage.jsx (4 places), added to segmentMapper.js (editor↔engine mapping), added to compareSegments fieldsToCompare |
 | Task 71 | Generate sponsor fulfillment report | COMPLETE | Added SponsorFulfillmentModal with: sponsor listing by tier (presenting/title/official/supporting), segment placements, airtime totals, export to text file |
 
-### Phase K: Timezone Display (P2) - IN PROGRESS (13/17)
+### Phase K: Timezone Display (P2) - IN PROGRESS (15/17)
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
@@ -204,7 +204,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 83 | Add anchor segment visual indicator (badge) | COMPLETE | Added amber "Anchor" badge with BookmarkIcon in both compact and expanded views of SegmentRow; tooltip explains anchor purpose |
 | Task 84 | Add column header row with TZ abbreviations | COMPLETE | Added header row showing TZ abbreviations (PST, EST, etc.) using getTimezoneAbbreviation(); primary TZ in teal-500, others in zinc-600; only displays when allDisplayTimezones.length > 0; uses anchor datetime for DST-aware abbreviations |
 | Task 85 | Include timezoneConfig in JSON export | COMPLETE | Added timezoneConfig field to rundown object in handleExportJSON() |
-| Task 86 | Handle timezoneConfig in JSON import | NOT STARTED | Restore timezoneConfig from imported JSON; sync to Firebase |
+| Task 86 | Handle timezoneConfig in JSON import | COMPLETE | Added importTimezoneConfig state and checkbox to ImportJSONModal; calls saveTimezoneConfig() when option enabled and data present |
 | Task 87 | Add timezone columns to CSV export | NOT STARTED | Include wall-clock time columns for each configured timezone |
 | Task 88 | Add timezone presets and edge case handling | NOT STARTED | US Full, US Coasts presets; handle deleted anchor, midnight crossing |
 
