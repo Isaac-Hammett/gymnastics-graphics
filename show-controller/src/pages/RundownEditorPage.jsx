@@ -362,6 +362,51 @@ function formatTimeInTimezone(date, timezone, use24HourFormat = false) {
   }
 }
 
+// Extract timezone abbreviation from IANA timezone identifier
+// Uses Intl.DateTimeFormat with timeZoneName option to get localized abbreviation
+//
+// Parameters:
+//   timezone: IANA timezone identifier (e.g., "America/Los_Angeles", "America/New_York")
+//   date: Optional Date object to use (affects DST abbreviation). Defaults to current date.
+//
+// Returns:
+//   Timezone abbreviation (e.g., "PST", "EST", "PDT", "EDT", "MT", "CT")
+//   Returns empty string if timezone is invalid or not provided
+//
+// Examples:
+//   getTimezoneAbbreviation('America/Los_Angeles')  // "PST" (winter) or "PDT" (summer)
+//   getTimezoneAbbreviation('America/New_York')     // "EST" (winter) or "EDT" (summer)
+//   getTimezoneAbbreviation('America/Chicago')      // "CST" or "CDT"
+//   getTimezoneAbbreviation('America/Denver')       // "MST" or "MDT"
+//   getTimezoneAbbreviation('Europe/London')        // "GMT" or "BST"
+//
+// Note: The abbreviation may change based on DST. For consistent display,
+// pass the anchor date to ensure abbreviations match the show date.
+function getTimezoneAbbreviation(timezone, date = new Date()) {
+  if (!timezone) {
+    return '';
+  }
+
+  try {
+    // Create a formatter that only outputs the timezone name
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      timeZoneName: 'short'
+    });
+
+    // Format returns something like "1/15/2026, PST"
+    // Extract just the timezone part
+    const parts = formatter.formatToParts(date);
+    const tzPart = parts.find(part => part.type === 'timeZoneName');
+
+    return tzPart ? tzPart.value : '';
+  } catch (error) {
+    // Invalid timezone identifier
+    console.warn(`getTimezoneAbbreviation: Invalid timezone "${timezone}"`, error);
+    return '';
+  }
+}
+
 // Group color options for segment grouping (Phase 4: Task 7.4)
 const GROUP_COLORS = [
   { id: 'blue', bg: 'bg-blue-500/10', border: 'border-blue-500/30', text: 'text-blue-400', header: 'bg-blue-500/20' },
