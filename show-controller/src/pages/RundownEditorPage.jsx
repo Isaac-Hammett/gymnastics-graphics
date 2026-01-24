@@ -647,8 +647,9 @@ export default function RundownEditorPage() {
     });
   }, [compId, mySessionId, selectedSegmentId, selectedSegmentIds, myRole]);
 
-  // Keyboard navigation for segment list (Phase 11: Task 82)
-  // Arrow keys navigate between segments, Escape clears selection
+  // Keyboard navigation and shortcuts for segment list (Phase 11: Task 82, Task 83)
+  // Task 82: Arrow keys navigate between segments, Escape clears selection
+  // Task 83: Additional shortcuts for common actions
   // Helper to scroll a segment into view
   function scrollToSegment(segmentId) {
     // Small delay to ensure the segment row has been rendered/selected
@@ -666,6 +667,67 @@ export default function RundownEditorPage() {
     scrollToSegment(segmentId);
   }
 
+  // Helper to extend selection (for Shift+Arrow keys) (Phase 11: Task 83)
+  function extendSelection(direction) {
+    if (filteredSegments.length === 0) return;
+
+    // If nothing is selected, start with the first or last segment
+    if (!selectedSegmentId && selectedSegmentIds.length === 0) {
+      const startId = direction === 'up'
+        ? filteredSegments[filteredSegments.length - 1].id
+        : filteredSegments[0].id;
+      setSelectedSegmentIds([startId]);
+      setSelectedSegmentId(null);
+      scrollToSegment(startId);
+      return;
+    }
+
+    // If single selection, convert to multi-select and extend
+    if (selectedSegmentId && selectedSegmentIds.length === 0) {
+      const currentIndex = filteredSegments.findIndex(s => s.id === selectedSegmentId);
+      if (direction === 'up' && currentIndex > 0) {
+        const prevId = filteredSegments[currentIndex - 1].id;
+        setSelectedSegmentIds([prevId, selectedSegmentId]);
+        setSelectedSegmentId(null);
+        scrollToSegment(prevId);
+      } else if (direction === 'down' && currentIndex < filteredSegments.length - 1) {
+        const nextId = filteredSegments[currentIndex + 1].id;
+        setSelectedSegmentIds([selectedSegmentId, nextId]);
+        setSelectedSegmentId(null);
+        scrollToSegment(nextId);
+      }
+      return;
+    }
+
+    // If multi-selection, extend from the end
+    if (selectedSegmentIds.length > 0) {
+      // Find the bounds of current selection
+      const selectedIndices = selectedSegmentIds
+        .map(id => filteredSegments.findIndex(s => s.id === id))
+        .filter(idx => idx !== -1)
+        .sort((a, b) => a - b);
+
+      if (selectedIndices.length === 0) return;
+
+      const minIndex = selectedIndices[0];
+      const maxIndex = selectedIndices[selectedIndices.length - 1];
+
+      if (direction === 'up' && minIndex > 0) {
+        const newId = filteredSegments[minIndex - 1].id;
+        if (!selectedSegmentIds.includes(newId)) {
+          setSelectedSegmentIds([newId, ...selectedSegmentIds]);
+          scrollToSegment(newId);
+        }
+      } else if (direction === 'down' && maxIndex < filteredSegments.length - 1) {
+        const newId = filteredSegments[maxIndex + 1].id;
+        if (!selectedSegmentIds.includes(newId)) {
+          setSelectedSegmentIds([...selectedSegmentIds, newId]);
+          scrollToSegment(newId);
+        }
+      }
+    }
+  }
+
   useEffect(() => {
     function handleKeyDown(event) {
       // Don't handle keyboard navigation if user is typing in an input field
@@ -681,7 +743,87 @@ export default function RundownEditorPage() {
       // Don't handle if a modal is open (check for common modal classes)
       if (document.querySelector('.fixed.inset-0.bg-black')) return;
 
-      const { key } = event;
+      const { key, ctrlKey, metaKey, shiftKey } = event;
+      const isMod = ctrlKey || metaKey; // Ctrl on Windows/Linux, Cmd on Mac
+
+      // Handle Ctrl/Cmd + S - Save rundown (Phase 11: Task 83)
+      if (isMod && key === 's') {
+        event.preventDefault();
+        handleSave();
+        return;
+      }
+
+      // Handle Ctrl/Cmd + D - Duplicate selected segment (Phase 11: Task 83)
+      if (isMod && key === 'd') {
+        event.preventDefault();
+        if (selectedSegmentId) {
+          handleDuplicateSegment(selectedSegmentId);
+        } else if (selectedSegmentIds.length === 1) {
+          handleDuplicateSegment(selectedSegmentIds[0]);
+        } else if (selectedSegmentIds.length > 1) {
+          showToast('Select a single segment to duplicate');
+        } else {
+          showToast('No segment selected');
+        }
+        return;
+      }
+
+      // Handle Ctrl/Cmd + N - Add new segment (Phase 11: Task 83)
+      if (isMod && key === 'n') {
+        event.preventDefault();
+        handleAddSegment();
+        return;
+      }
+
+      // Handle Ctrl/Cmd + A - Select all segments (Phase 11: Task 83)
+      if (isMod && key === 'a') {
+        event.preventDefault();
+        handleSelectAll();
+        return;
+      }
+
+      // Handle Delete / Backspace - Delete selected segment(s) (Phase 11: Task 83)
+      if (key === 'Delete' || key === 'Backspace') {
+        event.preventDefault();
+        if (selectedSegmentIds.length > 0) {
+          handleBulkDelete();
+        } else if (selectedSegmentId) {
+          handleDeleteSegment(selectedSegmentId);
+        }
+        return;
+      }
+
+      // Handle Enter - Open Edit Segment panel (Phase 11: Task 83)
+      if (key === 'Enter') {
+        event.preventDefault();
+        // If a single segment is selected, ensure the detail panel is open
+        // (it should already be open when selectedSegmentId is set, but this confirms intent)
+        if (selectedSegmentId) {
+          // The detail panel is already visible when selectedSegmentId is set
+          // Focus could be moved to the first input in the panel if needed
+          showToast('Editing segment');
+        } else if (selectedSegmentIds.length === 1) {
+          // Convert multi-select of 1 to single selection to open edit panel
+          handleSelectSegment(selectedSegmentIds[0]);
+        } else if (selectedSegmentIds.length > 1) {
+          showToast('Select a single segment to edit');
+        }
+        return;
+      }
+
+      // Handle Shift + Arrow Up - Extend selection upward (Phase 11: Task 83)
+      if (shiftKey && key === 'ArrowUp') {
+        event.preventDefault();
+        extendSelection('up');
+        return;
+      }
+
+      // Handle Shift + Arrow Down - Extend selection downward (Phase 11: Task 83)
+      if (shiftKey && key === 'ArrowDown') {
+        event.preventDefault();
+        extendSelection('down');
+        return;
+      }
 
       // Handle Arrow Up - navigate to previous segment
       if (key === 'ArrowUp') {
