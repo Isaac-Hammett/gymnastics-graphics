@@ -270,6 +270,19 @@ export function ShowProvider({ children }) {
       }));
     });
 
+    // Task 39: Handle show completion (all segments finished naturally)
+    newSocket.on('timesheetShowComplete', (data) => {
+      console.log(`Timesheet show COMPLETE - ${data.segmentsCompleted} segments finished naturally`);
+      setTimesheetState(prev => ({
+        ...prev,
+        state: 'complete',
+        isRunning: false,
+        isPaused: false,
+        showComplete: true,
+        completedNaturally: true
+      }));
+    });
+
     newSocket.on('timesheetStateChanged', ({ state: engineState }) => {
       console.log(`Timesheet state changed: ${engineState}`);
       setTimesheetState(prev => ({

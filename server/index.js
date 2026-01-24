@@ -539,6 +539,13 @@ function getOrCreateEngine(compId, obsConnectionManager, firebase, socketIo) {
     socketIo.to(roomName).emit('timesheetState', engine.getState());
   });
 
+  // Task 39: Handle show completion (all segments finished naturally)
+  engine.on('showComplete', (data) => {
+    console.log(`[Timesheet:${compId}] Show COMPLETE - all ${data.segmentsCompleted} segments finished`);
+    socketIo.to(roomName).emit('timesheetShowComplete', data);
+    socketIo.to(roomName).emit('timesheetState', engine.getState());
+  });
+
   engine.on('holdStarted', (data) => {
     console.log(`[Timesheet:${compId}] Hold started - ${data.segmentId}`);
     socketIo.to(roomName).emit('timesheetHoldStarted', data);
