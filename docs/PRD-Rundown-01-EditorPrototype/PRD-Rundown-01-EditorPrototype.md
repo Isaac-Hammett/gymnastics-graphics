@@ -1134,10 +1134,10 @@ const filteredSegments = segments.filter(seg => {
 
 ### Phase 10: Visual & UX
 
-- [ ] Timeline view toggle
-- [ ] Color coding by segment type
-- [ ] Compact view toggle
-- [ ] Dark/light mode toggle
+- [x] Timeline view toggle
+- [x] Color coding by segment type
+- [x] Compact view toggle
+- [x] Dark/light mode toggle
 - [ ] Print-friendly view
 
 ### Phase 11: Quality of Life

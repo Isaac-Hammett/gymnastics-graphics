@@ -3,7 +3,7 @@
 **PRD:** PRD-Rundown-01-EditorPrototype
 **Status:** PROTOTYPE COMPLETE, FEATURES IN PROGRESS
 **Created:** 2026-01-22
-**Last Updated:** 2026-01-23 (v5.3 - Task 79 complete - Compact view toggle)
+**Last Updated:** 2026-01-23 (v5.4 - Task 80 complete - Dark/light mode toggle)
 
 ---
 
@@ -205,7 +205,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 77: Add color coding by type | COMPLETE | TYPE_ROW_COLORS constant added, segment rows have colored left border + subtle background tint by type |
 | Task 78: Make colors customizable | COMPLETE | ColorSettingsModal with 16 color options, localStorage persistence per competition, SwatchIcon button in toolbar |
 | Task 79: Add compact view toggle | COMPLETE | QueueListIcon toggle button in toolbar (only visible in list view), compactView state, SegmentRow renders compact single-line with: number, name, type badge, lock/optional indicators, duration |
-| Task 80: Add dark/light mode toggle | NOT STARTED | Theme preference |
+| Task 80: Add dark/light mode toggle | COMPLETE | MoonIcon/SunIcon toggle button in toolbar, darkMode state with localStorage persistence, theme-light CSS class on body, CSS variable overrides in index.css for light theme backgrounds, text, and borders |
 | Task 81: Create print-friendly view | NOT STARTED | Clean layout for paper |
 
 ### Phase 11: Quality of Life 🔲 NOT STARTED
