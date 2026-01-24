@@ -394,6 +394,10 @@ export default function RundownEditorPage() {
   const [timingAnalyticsData, setTimingAnalyticsData] = useState([]); // Past run analytics from Firebase
   const [loadingTimingAnalytics, setLoadingTimingAnalytics] = useState(false); // Loading state for analytics
 
+  // Timezone Display state (Phase K: Task 72)
+  // Stores timezone configuration for wall-clock time display
+  const [timezoneConfig, setTimezoneConfig] = useState(null); // Timezone configuration from Firebase
+
   // Computed type row colors using customTypeColors (Phase 10: Task 78)
   const TYPE_ROW_COLORS = useMemo(() => {
     return getTypeRowColors(customTypeColors);
@@ -1237,6 +1241,19 @@ export default function RundownEditorPage() {
       console.error('Error loading groups from Firebase:', error);
     });
 
+    // Subscribe to timezone configuration changes (Phase K: Task 72)
+    // Timezone config stores anchor segment, anchor datetime, and timezone display settings
+    const timezoneConfigRef = ref(db, `competitions/${compId}/rundown/timezoneConfig`);
+    const unsubscribeTimezoneConfig = onValue(timezoneConfigRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setTimezoneConfig(snapshot.val());
+      } else {
+        setTimezoneConfig(null);
+      }
+    }, (error) => {
+      console.error('Error loading timezone config from Firebase:', error);
+    });
+
     // Load timing analytics for historical averages (Phase J: Task 41)
     // This allows segment rows to show average actual durations from past runs
     loadTimingAnalytics();
@@ -1246,6 +1263,7 @@ export default function RundownEditorPage() {
       unsubscribeSegments();
       unsubscribeGroups();
       unsubscribeStatus();
+      unsubscribeTimezoneConfig();
     };
   }, [compId]);
 
@@ -1697,6 +1715,23 @@ export default function RundownEditorPage() {
       }
     } catch (error) {
       console.error('Error syncing groups to Firebase:', error);
+    }
+  }
+
+  // Helper function to save timezone config to Firebase (Phase K: Task 72)
+  // Saves anchor segment, anchor datetime, and timezone display settings
+  async function saveTimezoneConfig(newConfig) {
+    if (!compId) return;
+    try {
+      const configWithTimestamp = {
+        ...newConfig,
+        updatedAt: new Date().toISOString(),
+      };
+      await set(ref(db, `competitions/${compId}/rundown/timezoneConfig`), configWithTimestamp);
+      showToast('Timezone configuration saved');
+    } catch (error) {
+      console.error('Error saving timezone config to Firebase:', error);
+      showToast('Error saving timezone configuration');
     }
   }
 

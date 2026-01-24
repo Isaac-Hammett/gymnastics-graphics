@@ -182,6 +182,37 @@ Producers can create rundowns but cannot execute them. There's no bridge between
 
 ---
 
+### Story 9: Producer Views Wall-Clock Times Across Timezones
+
+**As a** Producer planning a broadcast with teams and crew across different timezones
+**I want to** see segment start times displayed in multiple timezones
+**So that** I can coordinate timing with remote talent, production crew, and broadcast partners
+
+**Flow:**
+1. Open Rundown Editor
+2. Click "Timezone" button in toolbar
+3. Set anchor segment (e.g., "Rotation 1") and anchor time (e.g., "11:05 AM")
+4. Select primary timezone (e.g., "Pacific Time")
+5. Add additional display timezones (e.g., "Mountain", "Central", "Eastern")
+6. Save configuration
+7. Segment list now shows wall-clock times in all selected timezones
+8. Anchor segment highlighted with "Anchor" badge
+9. Pre-anchor segments show earlier times (calculated backwards)
+10. Post-anchor segments show later times (calculated forwards)
+
+**Example Display:**
+```
+#   Offset    PT        MT        CT        ET        Segment
+1   0:00      10:45 AM  11:45 AM  12:45 PM  1:45 PM   Pre-Show Graphics
+2   0:15      11:00 AM  12:00 PM  1:00 PM   2:00 PM   Welcome
+3   0:20      11:05 AM  12:05 PM  1:05 PM   2:05 PM   Rotation 1 [Anchor]
+4   0:36      11:21 AM  12:21 PM  1:21 PM   2:21 PM   Rotation 1 Ends
+```
+
+**Status:** ❌ Not implemented (Phase K)
+
+---
+
 ## 4. Phase Overview
 
 | Phase | Name | Priority | Goal |
@@ -196,6 +227,7 @@ Producers can create rundowns but cannot execute them. There's no bridge between
 | **C** | AI Context (Live) | P3 | Real-time talking points during show |
 | **F** | Audio Cue Integration | P3 | Trigger audio from segments |
 | **G** | Production Tracking | P3 | Equipment and sponsor reports |
+| **K** | Timezone Display | P2 | Wall-clock times in multiple timezones |
 
 ---
 
@@ -238,6 +270,16 @@ Producers can create rundowns but cannot execute them. There's no bridge between
 - [x] Talent assignment field added to segment data model
 - [x] Talent schedule view available in Rundown Editor
 - [x] "You're on camera" indicator shows in Talent View when talent is assigned to current segment
+
+### Phase K Complete When:
+- [ ] Timezone configuration stored per-rundown in Firebase
+- [ ] Producer can set anchor segment and anchor datetime
+- [ ] Producer can configure primary timezone and additional display timezones
+- [ ] Segment list displays wall-clock times in all configured timezones
+- [ ] Anchor segment shows visual "Anchor" badge
+- [ ] Pre-anchor segment times calculated backwards from anchor
+- [ ] Timezone columns included in CSV/JSON export
+- [ ] Timezone configuration persists across page refresh
 
 ---
 

@@ -692,6 +692,76 @@ OBS operation failed (non-fatal).
 
 ---
 
+### Phase K: Timezone Display (P2)
+
+Display wall-clock times in multiple timezone columns with anchor-based calculation.
+
+#### K.1-K.4: Core Infrastructure
+
+- [ ] **K.1** Add `timezoneConfig` state + Firebase listener at `rundown/timezoneConfig`
+- [ ] **K.2** Create `calculateWallClockTimes()` utility (anchor-based forward/backward calculation)
+- [ ] **K.3** Create `formatTimeInTimezone()` using `Intl.DateTimeFormat`
+- [ ] **K.4** Create `getTimezoneAbbreviation()` helper
+
+#### K.5-K.9: Configuration UI
+
+- [ ] **K.5** Create `TimezoneConfigModal` component
+- [ ] **K.6** Add timezone config button to toolbar (globe icon)
+- [ ] **K.7** Add anchor segment dropdown in modal
+- [ ] **K.8** Add date/time picker for anchor datetime
+- [ ] **K.9** Add timezone multi-select with presets (US Full, US Coasts, etc.)
+
+#### K.10-K.13: Display Integration
+
+- [ ] **K.10** Pass timezone props to SegmentRow (wallClockTime, displayTimezones, isAnchorSegment)
+- [ ] **K.11** Render timezone columns in SegmentRow (w-16 fixed width)
+- [ ] **K.12** Add anchor segment visual indicator (amber "Anchor" badge)
+- [ ] **K.13** Add column header row with TZ abbreviations
+
+#### K.14-K.17: Export/Import & Polish
+
+- [ ] **K.14** Include timezoneConfig in JSON export
+- [ ] **K.15** Handle timezoneConfig in JSON import
+- [ ] **K.16** Add timezone columns to CSV export
+- [ ] **K.17** Add timezone presets and edge case handling (deleted anchor, midnight crossing)
+
+#### Firebase Schema
+
+```
+competitions/{compId}/rundown/timezoneConfig
+{
+  anchorSegmentId: "seg-003",              // Segment that defines the anchor time
+  anchorDateTime: "2026-03-15T11:05:00",   // ISO datetime (local to primary TZ)
+  primaryTimezone: "America/Los_Angeles",   // IANA timezone identifier
+  displayTimezones: [                       // Additional timezones to display
+    "America/Denver",
+    "America/Chicago",
+    "America/New_York"
+  ],
+  use24HourFormat: false,                   // 12h vs 24h format
+  updatedAt: "2026-01-24T10:00:00Z"
+}
+```
+
+#### Time Calculation Logic
+
+```javascript
+// Calculate wall-clock times from anchor segment
+const anchorDateTime = new Date(timezoneConfig.anchorDateTime);
+const anchorOffsetSeconds = segmentStartTimes[anchorSegmentId] || 0;
+
+// Calculate absolute show start by subtracting anchor's offset
+const showStartMs = anchorDateTime.getTime() - (anchorOffsetSeconds * 1000);
+
+// For each segment: wallClockTime = showStart + segmentOffset
+segments.forEach(seg => {
+  const offsetSeconds = segmentStartTimes[seg.id] || 0;
+  wallClockTimes[seg.id] = new Date(showStartMs + (offsetSeconds * 1000));
+});
+```
+
+---
+
 ## 9. Error Handling
 
 ### 9.1 OBS Connection Failures
@@ -861,4 +931,5 @@ obsConnectionManager.getConnectionState(compId)       // Get full state
 ```
 competitions/{compId}/production/rundown/segments    # Rundown data
 competitions/{compId}/production/rundown/metadata    # Rundown metadata
+competitions/{compId}/rundown/timezoneConfig         # Timezone display configuration (Phase K)
 ```
