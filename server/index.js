@@ -120,6 +120,10 @@ const timesheetEngines = new Map();
 // Legacy single-engine reference (for backward compatibility during transition)
 let timesheetEngine = null;
 
+// Firebase rundown listeners (per-competition, for live sync - Phase I)
+// Stores { unsubscribe: Function, lastSegments: Array } per compId
+const rundownListeners = new Map();
+
 // OBS State Sync
 let obsStateSync = null;
 
@@ -573,6 +577,99 @@ function removeEngine(compId) {
     timesheetEngines.delete(compId);
     console.log(`[Timesheet] Engine removed for competition: ${compId} (remaining engines: ${timesheetEngines.size})`);
   }
+
+  // Clean up Firebase rundown listener (Phase I - Task 28)
+  const listener = rundownListeners.get(compId);
+  if (listener && listener.unsubscribe) {
+    listener.unsubscribe();
+    rundownListeners.delete(compId);
+    console.log(`[Timesheet] Rundown listener removed for competition: ${compId}`);
+  }
+}
+
+/**
+ * Subscribe to Firebase rundown/segments changes for live sync (Phase I - Task 28)
+ * Sets up a listener that detects when the rundown is modified in Firebase
+ * @param {string} compId - Competition ID
+ * @param {Object} db - Firebase database instance
+ * @param {Array} initialSegments - The initially loaded segments (for comparison)
+ */
+function subscribeToRundownChanges(compId, db, initialSegments) {
+  if (!compId || !db) {
+    console.warn('[Timesheet] Cannot subscribe to rundown changes: missing compId or db');
+    return;
+  }
+
+  // Remove existing listener if any (e.g., on reload)
+  const existingListener = rundownListeners.get(compId);
+  if (existingListener && existingListener.unsubscribe) {
+    existingListener.unsubscribe();
+    console.log(`[Timesheet] Removed existing rundown listener for competition: ${compId}`);
+  }
+
+  const segmentsPath = `competitions/${compId}/production/rundown/segments`;
+  const segmentsRef = db.ref(segmentsPath);
+
+  // Store the initial segments for comparison (Task 29 will use this)
+  const listenerData = {
+    lastSegments: initialSegments,
+    unsubscribe: null
+  };
+
+  // Set up the Firebase listener
+  const onValueCallback = (snapshot) => {
+    const newSegmentsData = snapshot.val();
+
+    // Skip the initial callback (we already have this data from loadRundown)
+    if (!listenerData.hasReceivedInitial) {
+      listenerData.hasReceivedInitial = true;
+      console.log(`[Timesheet] Rundown listener initialized for competition: ${compId}`);
+      return;
+    }
+
+    // Convert Firebase data to array
+    let newSegments = [];
+    if (newSegmentsData) {
+      if (Array.isArray(newSegmentsData)) {
+        newSegments = newSegmentsData;
+      } else if (typeof newSegmentsData === 'object') {
+        newSegments = Object.values(newSegmentsData);
+      }
+    }
+
+    console.log(`[Timesheet] Rundown changed in Firebase for competition: ${compId} (${newSegments.length} segments)`);
+
+    // Store the new segments for the next comparison
+    // Task 29 will implement the deep diff and emit rundownModified event
+    listenerData.lastSegments = newSegments;
+
+    // Emit a debug event for now (Task 30 will emit the actual rundownModified event)
+    const engine = getEngine(compId);
+    if (engine) {
+      // Log that we detected a change - Task 29/30 will handle the actual diff and notification
+      console.log(`[Timesheet] Rundown modification detected for engine: ${compId}`);
+    }
+  };
+
+  // Start listening
+  segmentsRef.on('value', onValueCallback);
+
+  // Store the unsubscribe function
+  listenerData.unsubscribe = () => {
+    segmentsRef.off('value', onValueCallback);
+  };
+
+  rundownListeners.set(compId, listenerData);
+  console.log(`[Timesheet] Subscribed to rundown changes for competition: ${compId}`);
+}
+
+/**
+ * Get the current rundown listener data for a competition
+ * @param {string} compId - Competition ID
+ * @returns {Object|null} Listener data with lastSegments, or null if not found
+ */
+function getRundownListener(compId) {
+  return rundownListeners.get(compId) || null;
 }
 
 // Initialize OBS State Sync
@@ -5519,6 +5616,9 @@ io.on('connection', async (socket) => {
       engine.updateConfig({ segments: engineSegments });
 
       console.log(`[Timesheet] Rundown loaded successfully for competition: ${targetCompId}`);
+
+      // Subscribe to Firebase rundown changes for live sync (Phase I - Task 28)
+      subscribeToRundownChanges(targetCompId, db, segments);
 
       // Get the updated state to broadcast
       const state = engine.getState();
