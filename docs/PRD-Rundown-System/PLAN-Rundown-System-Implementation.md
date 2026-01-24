@@ -64,7 +64,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 
 ## Task Summary by Phase
 
-### Phase A: Connect Editor to Engine (P0) - IN PROGRESS (11/16 complete)
+### Phase A: Connect Editor to Engine (P0) - IN PROGRESS (12/16 complete)
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
@@ -79,7 +79,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 9 | Add `loadRundown` action in ShowContext | COMPLETE | Added loadRundown function, loadRundownResult handler, rundownLoaded state |
 | Task 10 | Add "Load Rundown" button in Producer View | COMPLETE | Added button with loading state, toast feedback, and disabled Start Show until rundown loaded |
 | Task 11 | Create segment mapper (Editor format → Engine format) | COMPLETE | Created segmentMapper.js with mapping and validation functions; integrated into loadRundown handler |
-| Task 12 | Verify Firebase is passed to engine | NOT STARTED | |
+| Task 12 | Verify Firebase is passed to engine | COMPLETE | Added logging in getOrCreateEngine and _triggerGraphic to confirm Firebase instance and usage |
 | Task 13 | Show rundown status indicator (loaded, modified, etc.) | NOT STARTED | |
 | Task 14 | Verify Rundown Editor scene picker uses OBS state | NOT STARTED | |
 | Task 15 | Verify Rundown Editor graphics picker uses Graphics Registry | NOT STARTED | |
@@ -432,16 +432,22 @@ Create utility to map Rundown Editor segment format to Timesheet Engine format.
 
 ### Task 12: Verify Firebase passed to engine
 
-**Status:** NOT STARTED
-**File:** `server/index.js`
+**Status:** COMPLETE
+**File:** `server/index.js`, `server/lib/timesheetEngine.js`
 
 **Description:**
 Verify Firebase Admin is correctly passed and usable in engine.
 
 **Checklist:**
-- [ ] Add logging to confirm Firebase instance received
-- [ ] Test that `_triggerGraphic()` can write to Firebase
-- [ ] Handle missing Firebase gracefully
+- [x] Add logging to confirm Firebase instance received
+- [x] Test that `_triggerGraphic()` can write to Firebase
+- [x] Handle missing Firebase gracefully
+
+**Implementation Notes:**
+- Added logging in `getOrCreateEngine()` (server/index.js:377-378) to confirm Firebase and OBS Connection Manager are passed
+- Added logging in `_triggerGraphic()` (timesheetEngine.js:713-716) to log when graphics are triggered via Firebase
+- Added console.warn when Firebase is not available (timesheetEngine.js:723) to handle missing Firebase gracefully
+- Firebase write errors are already handled with try/catch and emit an 'error' event
 
 ---
 
