@@ -34,3 +34,4 @@ Thumbs.db
 # Screenshots (test artifacts)
 screenshots/
 ralph-wigg/screenshots/
+docs/PRD-Rundown-01-EditorPrototype/logs/claude-output.jsonl
