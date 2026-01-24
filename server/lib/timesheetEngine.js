@@ -98,6 +98,12 @@ class TimesheetEngine extends EventEmitter {
 
     // Track if holdMaxReached has been emitted for current segment
     this._holdMaxReachedEmitted = false;
+
+    // Track if current segment was deleted during hot reload (Task 35)
+    // When true, the current segment no longer exists in the rundown
+    // The engine stays on the stale segment until manual advance
+    this._currentSegmentDeleted = false;
+    this._deletedSegmentOriginalIndex = -1; // Remember position for next advance
   }
 
   /**
@@ -1007,7 +1013,10 @@ class TimesheetEngine extends EventEmitter {
       // Hold segment state
       isHoldSegment: isHold,
       canAdvanceHold: this.canAdvanceHold(),
-      holdRemainingMs: isHold ? this.getHoldRemainingMs() : 0
+      holdRemainingMs: isHold ? this.getHoldRemainingMs() : 0,
+      // Deleted segment state (Task 35)
+      currentSegmentDeleted: this._currentSegmentDeleted,
+      deletedSegmentOriginalIndex: this._deletedSegmentOriginalIndex
     };
   }
 
@@ -1034,15 +1043,35 @@ class TimesheetEngine extends EventEmitter {
   updateConfig(showConfig) {
     const wasRunning = this._isRunning;
     const currentSegmentId = this._currentSegment?.id;
+    const previousIndex = this._currentSegmentIndex;
 
     this.showConfig = showConfig;
+
+    // Reset deleted segment flag by default
+    this._currentSegmentDeleted = false;
+    this._deletedSegmentOriginalIndex = -1;
 
     // If running, try to maintain position by segment ID
     if (wasRunning && currentSegmentId) {
       const newIndex = this.segments.findIndex(s => s.id === currentSegmentId);
       if (newIndex >= 0) {
+        // Segment still exists - update to its new position
         this._currentSegmentIndex = newIndex;
         this._currentSegment = this.segments[newIndex];
+      } else {
+        // Current segment was deleted (Task 35)
+        // Keep the stale segment data for display, but mark it as deleted
+        this._currentSegmentDeleted = true;
+        this._deletedSegmentOriginalIndex = previousIndex;
+
+        console.log(`[Timesheet${this.compId ? ':' + this.compId : ''}] Current segment '${currentSegmentId}' was deleted from rundown. Staying on stale segment until manual advance.`);
+
+        this.emit('currentSegmentDeleted', {
+          segmentId: currentSegmentId,
+          segmentName: this._currentSegment?.name,
+          originalIndex: previousIndex,
+          timestamp: Date.now()
+        });
       }
     }
   }
@@ -1099,7 +1128,28 @@ class TimesheetEngine extends EventEmitter {
       return false;
     }
 
-    const nextIndex = this._currentSegmentIndex + 1;
+    // Determine next index based on whether current segment was deleted (Task 35)
+    let nextIndex;
+    if (this._currentSegmentDeleted) {
+      // Current segment was deleted - find next valid segment after original position
+      // Use the deleted segment's original index to determine where to go next
+      nextIndex = this._deletedSegmentOriginalIndex;
+      // Ensure we're within bounds - if original position is beyond current segments,
+      // go to last segment
+      if (nextIndex >= this.segments.length) {
+        nextIndex = this.segments.length - 1;
+      }
+
+      console.log(`[Timesheet${this.compId ? ':' + this.compId : ''}] Advancing from deleted segment - jumping to index ${nextIndex}`);
+
+      // Clear the deleted flag since we're moving to a valid segment
+      this._currentSegmentDeleted = false;
+      this._deletedSegmentOriginalIndex = -1;
+    } else {
+      // Normal advance - go to next index
+      nextIndex = this._currentSegmentIndex + 1;
+    }
+
     if (nextIndex >= this.segments.length) {
       this.emit('error', {
         type: 'advance_failed',
@@ -1108,8 +1158,8 @@ class TimesheetEngine extends EventEmitter {
       return false;
     }
 
-    // For hold segments, check minDuration
-    if (this._currentSegment?.type === SEGMENT_TYPES.HOLD && !this.canAdvanceHold()) {
+    // For hold segments, check minDuration (skip this check if current segment was deleted)
+    if (!this._currentSegmentDeleted && this._currentSegment?.type === SEGMENT_TYPES.HOLD && !this.canAdvanceHold()) {
       this.emit('error', {
         type: 'advance_blocked',
         message: `Cannot advance: hold segment requires ${this.getHoldRemainingMs()}ms more`,
@@ -1124,7 +1174,8 @@ class TimesheetEngine extends EventEmitter {
       fromSegmentId: this._currentSegment?.id,
       fromSegmentIndex: this._currentSegmentIndex,
       toSegmentIndex: nextIndex,
-      toSegmentId: this.segments[nextIndex]?.id
+      toSegmentId: this.segments[nextIndex]?.id,
+      wasDeletedSegment: this._currentSegmentDeleted
     });
 
     // Activate next segment

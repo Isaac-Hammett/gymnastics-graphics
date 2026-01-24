@@ -546,6 +546,14 @@ function getOrCreateEngine(compId, obsConnectionManager, firebase, socketIo) {
     socketIo.to(roomName).emit('timesheetState', engine.getState());
   });
 
+  // Task 35: Handle deleted current segment
+  engine.on('currentSegmentDeleted', (data) => {
+    console.log(`[Timesheet:${compId}] Current segment deleted: ${data.segmentName} (${data.segmentId})`);
+    socketIo.to(roomName).emit('timesheetCurrentSegmentDeleted', data);
+    // Also broadcast updated state so UI can show the warning
+    socketIo.to(roomName).emit('timesheetState', engine.getState());
+  });
+
   timesheetEngines.set(compId, engine);
   console.log(`[Timesheet] Engine created for competition: ${compId} (total engines: ${timesheetEngines.size})`);
 
