@@ -45,6 +45,8 @@ import {
 import { getGraphicsForCompetition, getCategories, getRecommendedGraphic, getGraphicById, GRAPHICS } from '../lib/graphicsRegistry';
 import { db, ref, set, get, push, remove, update, onValue, onDisconnect } from '../lib/firebase';
 import { analyzeCompetitionContext, analyzeSegmentOrder, analyzeCompetitionFormat } from '../lib/aiContextAnalyzer';
+import { useCompetition } from '../context/CompetitionContext';
+import { useOBS } from '../context/OBSContext';
 
 // Hardcoded competition context per PRD (Phase 0B)
 const DUMMY_COMPETITION = {
@@ -271,6 +273,25 @@ const GROUP_COLORS = [
 
 export default function RundownEditorPage() {
   const { compId } = useParams();
+
+  // Get live data from contexts (Task 16: Replace hardcoded picker data)
+  const { competitionConfig } = useCompetition();
+  const { obsState } = useOBS();
+
+  // Derive scenes and competition data from live sources
+  // Falls back to DUMMY_SCENES and DUMMY_COMPETITION when live data unavailable
+  const liveScenes = obsState?.scenes?.length > 0 ? obsState.scenes : null;
+  const liveCompType = competitionConfig?.compType || null;
+  const liveTeamNames = useMemo(() => {
+    if (competitionConfig) {
+      return getTeamNames(competitionConfig, null);
+    }
+    return getTeamNames(null, DUMMY_COMPETITION.teams);
+  }, [competitionConfig]);
+
+  // Memoize grouped scenes and graphics for pickers (Task 16)
+  const groupedScenes = useMemo(() => getGroupedScenes(liveScenes), [liveScenes]);
+  const groupedGraphics = useMemo(() => getGroupedGraphics(liveCompType, liveTeamNames), [liveCompType, liveTeamNames]);
 
   // State management per PRD
   const [segments, setSegments] = useState(DUMMY_SEGMENTS);
@@ -4630,6 +4651,8 @@ export default function RundownEditorPage() {
                                   customTypeColors={customTypeColors}
                                   TYPE_ROW_COLORS={TYPE_ROW_COLORS}
                                   compactView={compactView}
+                                  groupedScenes={groupedScenes}
+                                  groupedGraphics={groupedGraphics}
                                 />
                               );
                             })}
@@ -4674,6 +4697,8 @@ export default function RundownEditorPage() {
                         customTypeColors={customTypeColors}
                         TYPE_ROW_COLORS={TYPE_ROW_COLORS}
                         compactView={compactView}
+                        groupedScenes={groupedScenes}
+                        groupedGraphics={groupedGraphics}
                       />
                     );
                   }
@@ -4709,6 +4734,8 @@ export default function RundownEditorPage() {
                   }
                 }}
                 customTypeColors={customTypeColors}
+                groupedScenes={groupedScenes}
+                groupedGraphics={groupedGraphics}
               />
             ) : selectedSegment ? (
               <SegmentDetailPanel
@@ -4716,6 +4743,10 @@ export default function RundownEditorPage() {
                 onSave={handleSaveSegment}
                 onDelete={() => handleDeleteSegment(selectedSegment.id)}
                 onCancel={handleCancelEdit}
+                groupedScenes={groupedScenes}
+                groupedGraphics={groupedGraphics}
+                compType={liveCompType}
+                teamNames={liveTeamNames}
               />
             ) : (
               <div className="text-center py-20 text-zinc-500">
@@ -4934,31 +4965,51 @@ const GRAPHICS_CATEGORY_LABELS = {
 };
 
 // Group scenes by category
-function getGroupedScenes() {
+// @param scenes - Array of scene objects with { sceneName, category } from OBS, or { name, category } for fallback
+function getGroupedScenes(scenes) {
   const groups = {};
-  DUMMY_SCENES.forEach(scene => {
-    if (!groups[scene.category]) {
-      groups[scene.category] = [];
+  (scenes || DUMMY_SCENES).forEach(scene => {
+    // Handle both OBS format (sceneName) and legacy format (name)
+    const sceneName = scene.sceneName || scene.name;
+    const category = scene.category || 'manual';
+    if (!groups[category]) {
+      groups[category] = [];
     }
-    groups[scene.category].push(scene);
+    // Normalize to consistent format for the picker
+    groups[category].push({ name: sceneName, category });
   });
   return groups;
 }
 
-// Get team names from DUMMY_COMPETITION for graphics filtering
-function getTeamNames() {
+// Get team names from competition config for graphics filtering
+// @param competitionConfig - Competition config object from Firebase (has team1Name, team2Name, etc.)
+// @param fallbackTeams - Fallback teams object (used for DUMMY_COMPETITION compatibility)
+function getTeamNames(competitionConfig, fallbackTeams) {
   const teamNames = {};
-  Object.entries(DUMMY_COMPETITION.teams).forEach(([num, team]) => {
-    teamNames[num] = team.name;
-  });
+  if (competitionConfig) {
+    // Extract team names from Firebase competition config format
+    for (let i = 1; i <= 6; i++) {
+      const name = competitionConfig[`team${i}Name`];
+      if (name) {
+        teamNames[i] = name;
+      }
+    }
+    return teamNames;
+  }
+  // Fallback to legacy format
+  if (fallbackTeams) {
+    Object.entries(fallbackTeams).forEach(([num, team]) => {
+      teamNames[num] = team.name;
+    });
+  }
   return teamNames;
 }
 
 // Get graphics grouped by category for the dropdown
-function getGroupedGraphics() {
-  const compType = DUMMY_COMPETITION.type;
-  const teamNames = getTeamNames();
-  const graphics = getGraphicsForCompetition(compType, teamNames);
+// @param compType - Competition type (e.g., 'womens-dual', 'mens-quad')
+// @param teamNames - Object mapping slot numbers to team names
+function getGroupedGraphics(compType, teamNames) {
+  const graphics = getGraphicsForCompetition(compType || DUMMY_COMPETITION.type, teamNames || getTeamNames(null, DUMMY_COMPETITION.teams));
 
   const groups = {};
   graphics.forEach(graphic => {
@@ -5087,14 +5138,14 @@ function SegmentRow({
   customTypeColors,
   TYPE_ROW_COLORS,
   compactView = false,
+  groupedScenes,
+  groupedGraphics,
 }) {
   const isSelected = selectedSegmentId === segment.id;
   const isMultiSelected = selectedSegmentIds.includes(segment.id);
   const isDraggedOver = dragOverIndex === originalIndex && draggedSegmentId !== segment.id;
   const isDragging = draggedSegmentId === segment.id;
   const isLocked = segment.locked;
-  const groupedScenes = getGroupedScenes();
-  const groupedGraphics = getGroupedGraphics();
 
   // Get other users who have this segment selected (Phase 8: Task 65)
   const otherUsersHere = otherUsersSelections?.[segment.id] || [];
@@ -5835,10 +5886,8 @@ function CreateGroupModal({ onCreate, onCancel, selectedCount }) {
 }
 
 // Placeholder SegmentDetail panel component
-function SegmentDetailPanel({ segment, onSave, onDelete, onCancel }) {
+function SegmentDetailPanel({ segment, onSave, onDelete, onCancel, groupedScenes, groupedGraphics, compType, teamNames }) {
   const [formData, setFormData] = useState(segment);
-  const groupedScenes = getGroupedScenes();
-  const groupedGraphics = getGroupedGraphics();
 
   // Reset form when segment changes
   useEffect(() => {
@@ -5848,8 +5897,8 @@ function SegmentDetailPanel({ segment, onSave, onDelete, onCancel }) {
   // Get smart recommendation based on segment name
   const recommendation = getRecommendedGraphic(
     formData.name,
-    DUMMY_COMPETITION.type,
-    getTeamNames()
+    compType || DUMMY_COMPETITION.type,
+    teamNames || getTeamNames(null, DUMMY_COMPETITION.teams)
   );
 
   // Only show recommendation if confidence is high enough and graphic isn't already selected
@@ -6719,13 +6768,12 @@ function SelectionSummaryPanel({
   onClose,
   onScrollToSegment,
   customTypeColors,
+  groupedScenes,
+  groupedGraphics,
 }) {
   const [showBulkTypeDropdown, setShowBulkTypeDropdown] = useState(false);
   const [showBulkSceneDropdown, setShowBulkSceneDropdown] = useState(false);
   const [showBulkGraphicDropdown, setShowBulkGraphicDropdown] = useState(false);
-
-  const groupedScenes = getGroupedScenes();
-  const groupedGraphics = getGroupedGraphics();
 
   // Calculate total duration of selected segments
   const totalSelectedDuration = selectedSegments.reduce(
