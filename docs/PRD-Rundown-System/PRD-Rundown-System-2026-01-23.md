@@ -216,10 +216,10 @@ Producers can create rundowns but cannot execute them. There's no bridge between
 - [x] Timing proceeds normally for practice
 
 ### Phase B Complete When:
-- [ ] Talent View accessible at `/{compId}/talent`
-- [ ] Shows current segment with prominent time remaining
-- [ ] Scene switching buttons work
-- [ ] Notes visible to talent
+- [x] Talent View accessible at `/{compId}/talent`
+- [x] Shows current segment with prominent time remaining
+- [x] Scene switching buttons work
+- [x] Notes visible to talent
 
 ### Phase I Complete When:
 - [ ] Producer sees "Rundown Modified" warning badge when rundown changes during show

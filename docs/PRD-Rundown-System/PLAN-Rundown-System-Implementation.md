@@ -51,7 +51,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 |-------|------|----------|--------|-------|
 | A | Connect Editor to Engine | P0 | COMPLETE | 1-16 |
 | H | Rehearsal Mode | P1 | COMPLETE | 17-21 |
-| B | Talent View | P1 | NOT STARTED | 22-27 |
+| B | Talent View | P1 | COMPLETE | 22-27 |
 | I | Live Rundown Sync | P2 | NOT STARTED | 28-37 |
 | J | Segment Timing Analytics | P2 | NOT STARTED | 38-42 |
 | D | AI Suggestions - Planning | P2 | NOT STARTED | 43-48 |
@@ -95,16 +95,16 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 20 | Show "REHEARSAL" indicator in all views | COMPLETE | Added purple "REHEARSAL MODE" banner in ProducerView, rehearsal toggle button, `setRehearsalMode` socket handler, `rehearsalModeChanged` event wiring |
 | Task 21 | Log timing data for post-rehearsal analysis | COMPLETE | Added timing analytics logging in `showStopped` event handler; saves segment history, overrides, and summary to Firebase at `competitions/{compId}/production/rundown/analytics/{runId}` |
 
-### Phase B: Talent View (P1) - NOT STARTED
+### Phase B: Talent View (P1) - COMPLETE (6/6)
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
-| Task 22 | Create `TalentView.jsx` page | NOT STARTED | |
-| Task 23 | Current segment with prominent time remaining | NOT STARTED | |
-| Task 24 | Scene switching buttons | NOT STARTED | |
-| Task 25 | Next segment preview | NOT STARTED | |
-| Task 26 | Notes display | NOT STARTED | |
-| Task 27 | Add `/talent` route | NOT STARTED | |
+| Task 22 | Create `TalentView.jsx` page | COMPLETE | Already existed at `show-controller/src/views/TalentView.jsx` with full implementation |
+| Task 23 | Current segment with prominent time remaining | COMPLETE | `CurrentSegment.jsx` has large timer display (elapsed/remaining with font-mono text-2xl) |
+| Task 24 | Scene switching buttons | COMPLETE | `QuickActions.jsx` component included in TalentView with apparatus cameras and quick actions |
+| Task 25 | Next segment preview | COMPLETE | `NextSegment.jsx` component included showing name, duration, type icon, auto-advance indicator |
+| Task 26 | Notes display | COMPLETE | `CurrentSegment.jsx` shows notes in styled box at bottom of segment card |
+| Task 27 | Add `/talent` route | COMPLETE | Route exists at `App.jsx:68` as `<Route path="talent" element={<TalentView />} />` |
 
 ### Phase I: Live Rundown Sync (P2) - NOT STARTED
 
