@@ -3,7 +3,7 @@
 **PRD:** PRD-Rundown-01-EditorPrototype
 **Status:** PROTOTYPE COMPLETE, FEATURES IN PROGRESS
 **Created:** 2026-01-22
-**Last Updated:** 2026-01-23 (v5.12 - Task 88 complete - AI context-based segment suggestions)
+**Last Updated:** 2026-01-23 (v5.13 - Task 89 complete - AI roster-based segment suggestions)
 
 ---
 
@@ -226,7 +226,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 |------|--------|-------|
 | Task 87: AI context analysis | COMPLETE | Created aiContextAnalyzer.js with date analysis (holidays, season opener), competition analysis (rivalry, championship, senior meet detection), roster analysis (seniors, notable athletes), and suggestion triggers for Tasks 88-91 |
 | Task 88: AI segment suggestions - context | COMPLETE | Added AI suggestions panel with context-based triggers (senior meet, rivalry, championship, season opener, holiday). Suggestions show in collapsible panel with one-click add and dismiss functionality. |
-| Task 89: AI segment suggestions - roster | NOT STARTED | Seniors, All-Americans, milestones, injuries |
+| Task 89: AI segment suggestions - roster | COMPLETE | Added roster-based triggers: All-American features (medium priority), hometown athlete stories (low priority), per-team senior spotlights with senior count and names. Updated aiContextAnalyzer.js to generate senior_spotlights triggers grouped by team. |
 | Task 90: AI segment order suggestions | NOT STARTED | Best practices for segment placement |
 | Task 91: AI suggestions panel UI | COMPLETE | Implemented as part of Task 88 - non-intrusive panel below toolbar, one-click add, dismiss/reset functionality |
 | Task 92: Add segment script field | NOT STARTED | Rich text for pre-planning notes |

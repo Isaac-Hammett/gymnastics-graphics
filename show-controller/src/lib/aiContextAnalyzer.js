@@ -629,6 +629,35 @@ function buildSuggestionTriggers({
     }
   }
 
+  // Individual senior spotlight triggers (Phase 12: Task 89)
+  // Only suggest if there are seniors and we have multiple teams
+  if (allSeniors.length > 0 && teams.length >= 1) {
+    // Group seniors by team for team-level suggestions
+    const seniorsByTeam = {};
+    for (const senior of allSeniors) {
+      const teamKey = senior.team || 'Unknown';
+      if (!seniorsByTeam[teamKey]) {
+        seniorsByTeam[teamKey] = [];
+      }
+      seniorsByTeam[teamKey].push(senior);
+    }
+
+    // Create per-team senior spotlights suggestions
+    for (const [teamName, seniors] of Object.entries(seniorsByTeam)) {
+      if (seniors.length > 0) {
+        triggers.push({
+          type: 'senior_spotlights',
+          priority: seniorMeet.likely ? 'high' : 'medium',
+          team: teamName,
+          teamSlot: seniors[0]?.teamSlot,
+          seniors: seniors,
+          seniorCount: seniors.length,
+          seniorNames: seniors.map(s => s.fullName).filter(Boolean),
+        });
+      }
+    }
+  }
+
   // Team count triggers
   if (teams.length >= 4) {
     triggers.push({
