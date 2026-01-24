@@ -272,14 +272,14 @@ Producers can create rundowns but cannot execute them. There's no bridge between
 - [x] "You're on camera" indicator shows in Talent View when talent is assigned to current segment
 
 ### Phase K Complete When:
-- [ ] Timezone configuration stored per-rundown in Firebase
-- [ ] Producer can set anchor segment and anchor datetime
-- [ ] Producer can configure primary timezone and additional display timezones
-- [ ] Segment list displays wall-clock times in all configured timezones
+- [x] Timezone configuration stored per-rundown in Firebase
+- [x] Producer can set anchor segment and anchor datetime
+- [x] Producer can configure primary timezone and additional display timezones
+- [x] Segment list displays wall-clock times in all configured timezones
 - [x] Anchor segment shows visual "Anchor" badge
-- [ ] Pre-anchor segment times calculated backwards from anchor
-- [ ] Timezone columns included in CSV/JSON export
-- [ ] Timezone configuration persists across page refresh
+- [x] Pre-anchor segment times calculated backwards from anchor
+- [x] Timezone columns included in CSV/JSON export
+- [x] Timezone configuration persists across page refresh
 
 ---
 
