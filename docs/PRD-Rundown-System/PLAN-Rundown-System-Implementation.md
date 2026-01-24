@@ -569,6 +569,47 @@ Replace any hardcoded picker data with live data sources.
 
 | Bug ID | Description | Status | Task |
 |--------|-------------|--------|------|
+| BUG-001 | "No Rundown" state not updating after Load Rundown | FIXED | Post-Phase A |
+
+### BUG-001: rundownLoaded flag overwritten by timesheetState broadcast
+
+**Reported:** 2026-01-24
+**Fixed:** 2026-01-24 (Commit f4ff612)
+**File:** `show-controller/src/context/ShowContext.jsx`
+
+**Symptoms:**
+- After clicking "Load Rundown", Show Progress panel correctly shows segments
+- But header still shows "No Rundown" badge
+- "No rundown loaded" text persists
+- "Start Show" button remains disabled
+
+**Root Cause:**
+The `timesheetState` socket handler (line 219-222) did a complete state overwrite:
+```javascript
+setTimesheetState(state);  // OVERWRITES everything
+```
+
+When the server emits `loadRundownResult` followed immediately by `timesheetState`:
+1. `loadRundownResult` sets `rundownLoaded: true`
+2. `timesheetState` overwrites entire state, losing the flag
+
+The server's `engine.getState()` doesn't include `rundownLoaded` (it's a client-side flag), so the broadcast from the server clobbered the value set by `loadRundownResult`.
+
+**Fix:**
+Changed the `timesheetState` handler to merge instead of overwrite:
+```javascript
+setTimesheetState(prev => ({
+  ...prev,   // Preserve client-side flags (rundownLoaded, etc.)
+  ...state   // Merge server state
+}));
+```
+
+This is consistent with how other handlers (`timesheetTick`, `rehearsalModeChanged`, etc.) already work.
+
+**Verification:**
+- After fix, "7 segments" badge appears in header
+- "Start Show" button is enabled
+- Show Progress panel displays correctly
 
 ---
 
