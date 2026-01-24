@@ -59,7 +59,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | C | AI Context - Live Execution | P3 | COMPLETE | 55-62 |
 | F | Audio Cue Integration | P3 | COMPLETE | 63-66 |
 | G | Production Tracking | P3 | COMPLETE | 67-71 |
-| K | Timezone Display | P2 | IN PROGRESS | 72-88 (5/17) |
+| K | Timezone Display | P2 | IN PROGRESS | 72-88 (6/17) |
 
 ---
 
@@ -186,7 +186,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 70 | Add sponsor fields to segment data model | COMPLETE | Added sponsor field ({ name, logo, tier } or null) to segment creation in RundownEditorPage.jsx (4 places), added to segmentMapper.js (editor↔engine mapping), added to compareSegments fieldsToCompare |
 | Task 71 | Generate sponsor fulfillment report | COMPLETE | Added SponsorFulfillmentModal with: sponsor listing by tier (presenting/title/official/supporting), segment placements, airtime totals, export to text file |
 
-### Phase K: Timezone Display (P2) - IN PROGRESS (4/17)
+### Phase K: Timezone Display (P2) - IN PROGRESS (6/17)
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
@@ -195,7 +195,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 74 | Create `formatTimeInTimezone()` using Intl.DateTimeFormat | COMPLETE | Added utility function using Intl.DateTimeFormat with timezone, 12h/24h support, error handling for invalid timezones |
 | Task 75 | Create `getTimezoneAbbreviation()` helper | COMPLETE | Added utility function using Intl.DateTimeFormat with timeZoneName: 'short' and formatToParts(); handles DST via optional date param; returns abbreviations like PST, EST, CDT, etc. |
 | Task 76 | Create `TimezoneConfigModal` component | COMPLETE | Added modal with anchor segment dropdown, date/time picker, primary/additional timezone selection, presets (US Full, US Coasts, etc.), 24h format toggle, and live preview |
-| Task 77 | Add timezone config button to toolbar | NOT STARTED | Globe icon button that opens TimezoneConfigModal; shows current timezone when configured |
+| Task 77 | Add timezone config button to toolbar | COMPLETE | Added GlobeAltIcon button to toolbar that opens TimezoneConfigModal; button shows teal highlight when timezone is configured; tooltip shows current primary timezone |
 | Task 78 | Add anchor segment dropdown in modal | NOT STARTED | Dropdown listing all segments to select as anchor point |
 | Task 79 | Add date/time picker for anchor datetime | NOT STARTED | Date input + time input for setting anchor segment's wall-clock time |
 | Task 80 | Add timezone multi-select in modal | NOT STARTED | Primary timezone dropdown + additional timezones checklist with common presets |
