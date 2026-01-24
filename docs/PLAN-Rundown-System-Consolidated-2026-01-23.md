@@ -182,6 +182,24 @@ timesheetEngine = new TimesheetEngine({
 
 ## 3. What Needs to Be Built
 
+### Phase Overview
+
+| Phase | Name | Priority | Description |
+|-------|------|----------|-------------|
+| **A** | Connect Editor to Engine | P0 | Load rundown from Firebase into Timesheet Engine |
+| **A.5** | Verify Pickers | P0 | Ensure scene/graphics pickers use real data |
+| **B** | Talent View | P1 | Simplified view for commentators |
+| **C** | AI Context (Live) | P2/P3 | Real-time talking points, career high alerts |
+| **D** | AI Suggestions (Planning) | P2 | Suggest segments based on competition context |
+| **E** | Script & Talent Flow | P2 | Pipe scripts and talent data to execution views |
+| **F** | Audio Cue Integration | P3 | Trigger audio playback from segment cues |
+| **G** | Production Tracking | P3 | Equipment and sponsor tracking reports |
+| **H** | Rehearsal Mode | P1 | Dry run without firing OBS/graphics |
+| **I** | Live Rundown Sync | P2 | Hot-reload rundown changes during show |
+| **J** | Segment Timing Analytics | P2 | Track actual vs planned timing |
+
+> **Relationship to PRD-01:** PRD-Rundown-01-EditorPrototype builds the **UI** for many of these features (script fields, talent assignment, AI suggestions panel). This consolidated plan ensures the **data flows correctly** from Editor → Engine → Views.
+
 ### 3.1 Phase A: Connect Rundown to Timesheet Engine (P0)
 
 **Goal:** Enable Producer to load a rundown from Firebase into the Timesheet Engine for execution.
@@ -536,17 +554,25 @@ Deferred until earlier phases are complete and in use.
 
 ---
 
-## 6. Deprecated Documents
+## 6. Related & Deprecated Documents
 
-The following documents are now superseded by this plan:
+### Active Documents
+
+| Document | Status | Purpose |
+|----------|--------|---------|
+| `docs/PRD-Rundown-01-EditorPrototype/` | **ACTIVE** | UI implementation for Rundown Editor (Phases 0-12) |
+| This document | **ACTIVE** | System integration (Phases A-J) |
+
+> **How they relate:** PRD-01 builds the UI. This plan ensures data flows to execution.
+
+### Deprecated Documents
 
 | Document | Status |
 |----------|--------|
 | `docs/PRD-Rundown-00-Index.md` | DEPRECATED |
 | `docs/PRD-Rundown-INDEX.md` | DEPRECATED |
-| `docs/PRD-AdvancedRundownEditor-2026-01-22.md` | DEPRECATED (use for historical reference only) |
+| `docs/PRD-AdvancedRundownEditor-2026-01-22.md` | DEPRECATED (historical reference only) |
 | `docs/PRD-Rundown-Engine-Architecture-2026-01-23.md` | MERGED into this document |
-| `docs/PRD-Rundown-01-EditorPrototype/` | COMPLETED - keep for reference |
 | `docs/PRD-Rundown-05-Prototype/` | DEPRECATED - approach changed |
 | `docs/PRD-Rundown-00-Timesheet/` | COMPLETED - keep for reference |
 
@@ -582,9 +608,42 @@ The following documents are now superseded by this plan:
 - [ ] Notes visible to talent
 
 ### Phase C Complete When:
-- [ ] AI context populated for each segment
+- [ ] AI context populated for each segment during live show
 - [ ] Talking points display in both Producer and Talent views
 - [ ] Career high alerts appear in real-time
+
+### Phase D Complete When:
+- [ ] AI suggestions appear in Rundown Editor based on competition context
+- [ ] One-click to add suggested segment
+- [ ] Suggestions update when competition metadata changes
+
+### Phase E Complete When:
+- [ ] Script field data flows from Editor to Talent View
+- [ ] Talent assignments visible in Talent View
+- [ ] "You're on camera" indicator works
+
+### Phase F Complete When:
+- [ ] Audio cues trigger on segment start
+- [ ] Audio control available in Producer View
+
+### Phase G Complete When:
+- [ ] Equipment schedule report generates correctly
+- [ ] Sponsor fulfillment report generates correctly
+
+### Phase H Complete When:
+- [ ] Rehearsal mode runs full show without firing OBS/graphics
+- [ ] REHEARSAL indicator visible in all views
+- [ ] Timing data logged for analysis
+
+### Phase I Complete When:
+- [ ] Producer sees warning when rundown modified during show
+- [ ] "Reload Rundown" updates segments without losing position
+- [ ] Option to block edits during live show works
+
+### Phase J Complete When:
+- [ ] Actual segment durations logged during show
+- [ ] Historical timing data available in Rundown Editor
+- [ ] Timing predictions suggest realistic durations
 
 ---
 
@@ -593,9 +652,13 @@ The following documents are now superseded by this plan:
 | Question | Status | Decision |
 |----------|--------|----------|
 | Should Talent View have its own route or be a mode in Producer View? | Decided | Separate route (`/{compId}/talent`) |
-| How to handle rundown changes during live show? | Open | Need to decide: block changes, allow with warning, or hot-reload? |
+| How to handle rundown changes during live show? | Addressed | Phase I covers this - warning + reload option |
 | Quick scenes configuration - per-competition or global? | Open | Likely per-competition in Firebase |
 | Should graphics fire via Firebase or socket.io? | Open | Currently socket.io only - may need both |
+| AI service provider for suggestions/context? | Open | Claude API, OpenAI, or custom rules engine? |
+| Audio playback mechanism? | Open | OBS media source, separate audio player, or browser audio? |
+| Talent View mobile optimization? | Open | Responsive design or separate mobile app? |
+| Rehearsal mode - same view or separate route? | Open | Likely same views with "REHEARSAL" badge |
 
 ---
 
