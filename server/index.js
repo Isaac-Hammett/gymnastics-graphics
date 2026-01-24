@@ -408,10 +408,74 @@ function getOrCreateEngine(compId, obsConnectionManager, firebase, socketIo) {
     socketIo.to(roomName).emit('timesheetState', engine.getState());
   });
 
-  engine.on('showStopped', (data) => {
+  engine.on('showStopped', async (data) => {
     console.log(`[Timesheet:${compId}] Show stopped`);
     socketIo.to(roomName).emit('timesheetShowStopped', data);
     socketIo.to(roomName).emit('timesheetState', engine.getState());
+
+    // Save timing analytics to Firebase for post-show/rehearsal analysis
+    if (firebase && compId) {
+      try {
+        const history = engine.getHistory();
+        const overrides = engine.getOverrides();
+        const isRehearsal = engine.isRehearsalMode;
+
+        // Calculate timing analytics
+        const analytics = {
+          runId: `run-${Date.now()}`,
+          compId,
+          isRehearsal,
+          startedAt: data.timestamp - data.showDurationMs,
+          stoppedAt: data.timestamp,
+          showDurationMs: data.showDurationMs,
+          segmentsCompleted: data.segmentsCompleted,
+          overrideCount: data.overrideCount,
+          segments: history.map(h => ({
+            segmentId: h.segmentId,
+            segmentName: h.segmentName,
+            segmentIndex: h.segmentIndex,
+            actualDurationMs: h.durationMs,
+            plannedDurationMs: h.plannedDurationMs,
+            durationDeltaMs: h.plannedDurationMs ? h.durationMs - h.plannedDurationMs : null,
+            endReason: h.endReason,
+            startTime: h.startTime,
+            endTime: h.endTime
+          })),
+          overrides: overrides.map(o => ({
+            type: o.type,
+            timestamp: o.timestamp,
+            segmentId: o.segmentId,
+            segmentIndex: o.segmentIndex,
+            details: {
+              fromSegmentId: o.fromSegmentId,
+              toSegmentId: o.toSegmentId,
+              advancedBy: o.advancedBy,
+              triggeredBy: o.triggeredBy
+            }
+          })),
+          summary: {
+            totalPlannedDurationMs: history.reduce((sum, h) => sum + (h.plannedDurationMs || 0), 0),
+            totalActualDurationMs: history.reduce((sum, h) => sum + (h.durationMs || 0), 0),
+            autoAdvanceCount: history.filter(h => h.endReason === 'auto_advanced').length,
+            manualAdvanceCount: history.filter(h => h.endReason === 'advanced').length,
+            averageDurationDeltaMs: (() => {
+              const segmentsWithPlanned = history.filter(h => h.plannedDurationMs);
+              if (segmentsWithPlanned.length === 0) return null;
+              const totalDelta = segmentsWithPlanned.reduce((sum, h) => sum + (h.durationMs - h.plannedDurationMs), 0);
+              return Math.round(totalDelta / segmentsWithPlanned.length);
+            })()
+          }
+        };
+
+        // Save to Firebase - use unique run ID to preserve history
+        const db = typeof firebase.ref === 'function' ? firebase : firebase.database();
+        const analyticsPath = `competitions/${compId}/production/rundown/analytics/${analytics.runId}`;
+        await db.ref(analyticsPath).set(analytics);
+        console.log(`[Timesheet:${compId}] Timing analytics saved to ${analyticsPath} (${isRehearsal ? 'REHEARSAL' : 'LIVE'})`);
+      } catch (error) {
+        console.error(`[Timesheet:${compId}] Failed to save timing analytics:`, error.message);
+      }
+    }
   });
 
   engine.on('stateChanged', (data) => {
