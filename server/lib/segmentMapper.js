@@ -43,6 +43,7 @@ function mapEditorToEngine(editorSegment) {
     talent: editorSegment.talent || [], // Phase E: Task 52 - talent assignment for segments
     audioCue: editorSegment.audioCue || null, // Phase F: Task 63 - audio cue for segment start
     equipment: editorSegment.equipment || [], // Phase G: Task 67 - equipment assignment for segments
+    sponsor: editorSegment.sponsor || null, // Phase G: Task 70 - sponsor assignment for segments
 
     // Mapped fields
     obsScene: editorSegment.scene || null,
@@ -112,6 +113,7 @@ function mapEngineToEditor(engineSegment) {
     talent: engineSegment.talent || [], // Phase E: Task 52 - talent assignment for segments
     audioCue: engineSegment.audioCue || null, // Phase F: Task 63 - audio cue for segment start
     equipment: engineSegment.equipment || [], // Phase G: Task 67 - equipment assignment for segments
+    sponsor: engineSegment.sponsor || null, // Phase G: Task 70 - sponsor assignment for segments
 
     // Mapped fields
     scene: engineSegment.obsScene || '',
@@ -277,7 +279,7 @@ function compareSegments(oldSegment, newSegment) {
 
   // Fields to compare (both direct and mapped)
   const fieldsToCompare = [
-    'name', 'type', 'duration', 'notes', 'script', 'talent', 'audioCue', 'equipment',
+    'name', 'type', 'duration', 'notes', 'script', 'talent', 'audioCue', 'equipment', 'sponsor',
     'scene', 'obsScene',
     'graphic', 'graphicData',
     'timingMode', 'autoAdvance',
