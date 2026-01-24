@@ -153,7 +153,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 53 | Create talent schedule view | COMPLETE | Already implemented as TalentScheduleModal in RundownEditorPage.jsx (Phase 12: Task 94); includes talent-per-segment view, conflict detection, and export functionality |
 | Task 54 | Show "you're on camera" indicator in Talent View | COMPLETE | Added talentId query param support (e.g., ?talentId=talent-1); prominent red "ON CAMERA" banner when talent is assigned to current segment; identity banner shows when viewing but not on camera; uses TALENT_ROSTER for talent lookup |
 
-### Phase C: AI Context - Live Execution (P3) - IN PROGRESS (4/8)
+### Phase C: AI Context - Live Execution (P3) - IN PROGRESS (5/8)
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
