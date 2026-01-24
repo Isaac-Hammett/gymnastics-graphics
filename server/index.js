@@ -28,7 +28,7 @@ import { setupOBSRoutes } from './routes/obs.js';
 import { getOBSConnectionManager } from './lib/obsConnectionManager.js';
 import { DEFAULT_PRESETS } from './lib/obsAudioManager.js';
 import { encryptStreamKey, decryptStreamKey, isEncryptedKey } from './lib/obsStreamManager.js';
-import { mapEditorSegmentsToEngine, validateEngineSegments, diffSegments } from './lib/segmentMapper.js';
+import { mapEditorSegmentsToEngine, validateEngineSegments, diffSegments, detectDuplicateIds, deduplicateSegmentsById } from './lib/segmentMapper.js';
 
 dotenv.config();
 
@@ -646,6 +646,19 @@ function subscribeToRundownChanges(compId, db, initialSegments) {
     }
 
     console.log(`[Timesheet] Rundown changed in Firebase for competition: ${compId} (${newSegments.length} segments)`);
+
+    // Task 37: Detect and handle duplicate segment IDs in incoming data
+    const duplicateCheck = detectDuplicateIds(newSegments);
+    if (duplicateCheck.hasDuplicates) {
+      console.warn(`[Timesheet] WARNING: Duplicate segment IDs in Firebase change for ${compId}:`);
+      duplicateCheck.duplicates.forEach(dup => {
+        console.warn(`  - ID "${dup.id}" appears ${dup.indices.length} times`);
+      });
+
+      // Deduplicate - keep only the first occurrence of each ID
+      const { segments: dedupedSegments } = deduplicateSegmentsById(newSegments);
+      newSegments = dedupedSegments;
+    }
 
     // Compare new segments to last known segments using deep diff
     const diff = diffSegments(listenerData.lastSegments, newSegments);
@@ -5723,6 +5736,22 @@ io.on('connection', async (socket) => {
       }
 
       console.log(`[Timesheet] Found ${segments.length} segments for competition: ${targetCompId}`);
+
+      // Task 37: Detect and handle duplicate segment IDs
+      const duplicateCheck = detectDuplicateIds(segments);
+      if (duplicateCheck.hasDuplicates) {
+        console.warn(`[Timesheet] WARNING: Duplicate segment IDs detected for ${targetCompId}:`);
+        duplicateCheck.duplicates.forEach(dup => {
+          console.warn(`  - ID "${dup.id}" appears ${dup.indices.length} times at indices: ${dup.indices.join(', ')} (names: ${dup.names.join(', ')})`);
+        });
+
+        // Deduplicate - keep only the first occurrence of each ID
+        const { segments: dedupedSegments, removed } = deduplicateSegmentsById(segments);
+        if (removed.length > 0) {
+          console.warn(`[Timesheet] Removed ${removed.length} duplicate segment(s) - keeping first occurrence of each ID`);
+          segments = dedupedSegments;
+        }
+      }
 
       // Map Editor segments to Engine format (Task 11)
       const engineSegments = mapEditorSegmentsToEngine(segments);

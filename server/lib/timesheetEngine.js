@@ -1051,13 +1051,19 @@ class TimesheetEngine extends EventEmitter {
     this._currentSegmentDeleted = false;
     this._deletedSegmentOriginalIndex = -1;
 
-    // If running, try to maintain position by segment ID
+    // If running, try to maintain position by segment ID (Task 37: ID-based matching)
     if (wasRunning && currentSegmentId) {
       const newIndex = this.segments.findIndex(s => s.id === currentSegmentId);
       if (newIndex >= 0) {
         // Segment still exists - update to its new position
+        const oldIndex = previousIndex;
         this._currentSegmentIndex = newIndex;
         this._currentSegment = this.segments[newIndex];
+
+        // Log if the segment moved to a different position (Task 37)
+        if (oldIndex !== newIndex) {
+          console.log(`[Timesheet${this.compId ? ':' + this.compId : ''}] Current segment '${currentSegmentId}' moved from index ${oldIndex} to ${newIndex} - position updated`);
+        }
       } else {
         // Current segment was deleted (Task 35)
         // Keep the stale segment data for display, but mark it as deleted

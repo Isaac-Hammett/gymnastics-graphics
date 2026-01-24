@@ -287,6 +287,84 @@ function compareSegments(oldSegment, newSegment) {
 }
 
 /**
+ * Detect duplicate segment IDs in an array
+ * @param {Array} segments - Array of segments to check
+ * @returns {{ hasDuplicates: boolean, duplicates: Array<{ id: string, indices: number[], names: string[] }> }}
+ */
+function detectDuplicateIds(segments) {
+  if (!Array.isArray(segments)) {
+    return { hasDuplicates: false, duplicates: [] };
+  }
+
+  // Count occurrences of each ID
+  const idOccurrences = new Map();
+  segments.forEach((seg, index) => {
+    if (!seg || !seg.id) return;
+
+    if (!idOccurrences.has(seg.id)) {
+      idOccurrences.set(seg.id, { indices: [], names: [] });
+    }
+    idOccurrences.get(seg.id).indices.push(index);
+    idOccurrences.get(seg.id).names.push(seg.name || 'Unnamed');
+  });
+
+  // Find duplicates (IDs that appear more than once)
+  const duplicates = [];
+  for (const [id, data] of idOccurrences) {
+    if (data.indices.length > 1) {
+      duplicates.push({
+        id,
+        indices: data.indices,
+        names: data.names
+      });
+    }
+  }
+
+  return {
+    hasDuplicates: duplicates.length > 0,
+    duplicates
+  };
+}
+
+/**
+ * Deduplicate segments by ID, keeping only the first occurrence of each ID
+ * This is a safety measure to handle corrupted data gracefully
+ * @param {Array} segments - Array of segments that may contain duplicates
+ * @returns {{ segments: Array, removed: Array<{ id: string, index: number, name: string }> }}
+ */
+function deduplicateSegmentsById(segments) {
+  if (!Array.isArray(segments)) {
+    return { segments: [], removed: [] };
+  }
+
+  const seenIds = new Set();
+  const deduped = [];
+  const removed = [];
+
+  segments.forEach((seg, index) => {
+    if (!seg || !seg.id) {
+      // Keep segments without IDs (shouldn't happen, but be safe)
+      deduped.push(seg);
+      return;
+    }
+
+    if (seenIds.has(seg.id)) {
+      // Duplicate - record but skip
+      removed.push({
+        id: seg.id,
+        index,
+        name: seg.name || 'Unnamed'
+      });
+    } else {
+      seenIds.add(seg.id);
+      deduped.push(seg);
+    }
+  });
+
+  return { segments: deduped, removed };
+}
+
+/**
  * Compare two arrays of segments and produce a diff summary
  *
  * @param {Array} oldSegments - Previously loaded segments
@@ -403,5 +481,7 @@ export {
   validateEngineSegments,
   deepEqual,
   compareSegments,
-  diffSegments
+  diffSegments,
+  detectDuplicateIds,
+  deduplicateSegmentsById
 };
