@@ -5901,6 +5901,16 @@ function SegmentRow({
           <span className={`px-1.5 py-0.5 text-[10px] rounded border shrink-0 ${getTypeBadgeColor(segment.type, customTypeColors)}`}>
             {segment.type}
           </span>
+          {/* Phase K: Task 83 - Anchor segment badge (compact) */}
+          {isAnchorSegment && (
+            <span
+              className="inline-flex items-center gap-0.5 px-1 py-0.5 text-[10px] rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 shrink-0"
+              title="Anchor segment - wall-clock times are calculated from this segment"
+            >
+              <BookmarkIcon className="w-2.5 h-2.5" />
+              Anchor
+            </span>
+          )}
           {/* Lock indicator (compact) */}
           {isLocked && (
             <LockClosedIcon className="w-3 h-3 text-zinc-500 shrink-0" title="Locked" />
@@ -6045,6 +6055,16 @@ function SegmentRow({
                 title="Optional segment (if time permits)"
               >
                 optional
+              </span>
+            )}
+            {/* Phase K: Task 83 - Anchor segment badge */}
+            {isAnchorSegment && (
+              <span
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 shrink-0"
+                title="Anchor segment - wall-clock times are calculated from this segment"
+              >
+                <BookmarkIcon className="w-3 h-3" />
+                Anchor
               </span>
             )}
             {segment.graphic?.graphicId && (

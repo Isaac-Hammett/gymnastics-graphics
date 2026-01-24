@@ -59,7 +59,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | C | AI Context - Live Execution | P3 | COMPLETE | 55-62 |
 | F | Audio Cue Integration | P3 | COMPLETE | 63-66 |
 | G | Production Tracking | P3 | COMPLETE | 67-71 |
-| K | Timezone Display | P2 | IN PROGRESS | 72-88 (11/17) |
+| K | Timezone Display | P2 | IN PROGRESS | 72-88 (12/17) |
 
 ---
 
@@ -186,7 +186,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 70 | Add sponsor fields to segment data model | COMPLETE | Added sponsor field ({ name, logo, tier } or null) to segment creation in RundownEditorPage.jsx (4 places), added to segmentMapper.js (editor↔engine mapping), added to compareSegments fieldsToCompare |
 | Task 71 | Generate sponsor fulfillment report | COMPLETE | Added SponsorFulfillmentModal with: sponsor listing by tier (presenting/title/official/supporting), segment placements, airtime totals, export to text file |
 
-### Phase K: Timezone Display (P2) - IN PROGRESS (10/17)
+### Phase K: Timezone Display (P2) - IN PROGRESS (11/17)
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
@@ -201,7 +201,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 80 | Add timezone multi-select in modal | COMPLETE | Already implemented in Task 76 - TimezoneConfigModal includes primary dropdown + additional checkboxes + presets at lines 10595-10663 |
 | Task 81 | Pass timezone props to SegmentRow | COMPLETE | Added useMemo for wallClockTimes and allDisplayTimezones; passed wallClockTime, displayTimezones, timezoneConfig, isAnchorSegment props to both SegmentRow invocations |
 | Task 82 | Render timezone columns in SegmentRow | COMPLETE | Added wallClockTime, displayTimezones, timezoneConfig, isAnchorSegment props to SegmentRow; renders timezone columns after offset column with w-16 width; primary TZ in teal, others in zinc-500 |
-| Task 83 | Add anchor segment visual indicator (badge) | NOT STARTED | Amber "Anchor" badge with BookmarkIcon on anchor segment row |
+| Task 83 | Add anchor segment visual indicator (badge) | COMPLETE | Added amber "Anchor" badge with BookmarkIcon in both compact and expanded views of SegmentRow; tooltip explains anchor purpose |
 | Task 84 | Add column header row with TZ abbreviations | NOT STARTED | Header row above segment list showing timezone column labels |
 | Task 85 | Include timezoneConfig in JSON export | NOT STARTED | Add to exportData.rundown.timezoneConfig |
 | Task 86 | Handle timezoneConfig in JSON import | NOT STARTED | Restore timezoneConfig from imported JSON; sync to Firebase |
