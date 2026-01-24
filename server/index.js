@@ -687,7 +687,27 @@ function subscribeToRundownChanges(compId, db, initialSegments) {
 
         console.log(`[Timesheet] Affects current: ${affectsCurrent}, affects upcoming: ${affectsUpcoming}`);
 
-        // Task 30 will emit the rundownModified socket event here
+        // Emit rundownModified socket event to all clients in this competition room
+        const rundownModifiedEvent = {
+          added: diff.added.map(s => s.id),
+          removed: diff.removed.map(s => s.id),
+          modified: diff.modified.map(s => s.id),
+          reordered: diff.reordered.map(s => s.id),
+          affectsCurrent,
+          affectsUpcoming,
+          summary: diff.summary,
+          timestamp: new Date().toISOString(),
+          // Include detailed change info for confirmation dialog
+          details: {
+            added: diff.added.map(s => ({ id: s.id, name: s.name })),
+            removed: diff.removed.map(s => ({ id: s.id, name: s.name })),
+            modified: diff.modified.map(s => ({ id: s.id, name: s.name, changedFields: s.changedFields })),
+            reordered: diff.reordered.map(s => ({ id: s.id, name: s.name, oldIndex: s.oldIndex, newIndex: s.newIndex }))
+          }
+        };
+
+        io.to(`competition:${compId}`).emit('rundownModified', rundownModifiedEvent);
+        console.log(`[Timesheet] Emitted rundownModified event to competition:${compId}`);
       }
     } else {
       console.log(`[Timesheet] Rundown content unchanged for ${compId} (false positive from Firebase)`);

@@ -112,7 +112,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 |------|-------------|--------|-------|
 | Task 28 | Subscribe to Firebase `rundown/segments` changes on server | COMPLETE | Added `rundownListeners` Map, `subscribeToRundownChanges()` function, cleanup in `removeEngine()`, called from `loadRundown` handler |
 | Task 29 | Compare incoming segments to loaded segments (deep diff) | COMPLETE | Added `deepEqual()`, `compareSegments()`, and `diffSegments()` functions to segmentMapper.js; integrated diff into `subscribeToRundownChanges()` which now logs added/removed/modified/reordered segments with field-level details |
-| Task 30 | Emit `rundownModified` socket event with change summary | NOT STARTED | |
+| Task 30 | Emit `rundownModified` socket event with change summary | COMPLETE | Emits to `competition:${compId}` room with: segment IDs for added/removed/modified/reordered, affectsCurrent/affectsUpcoming flags, summary text, timestamp, and detailed change info for confirmation dialog |
 | Task 31 | Add `rundownModified` state to `useTimesheet` hook | NOT STARTED | |
 | Task 32 | Show "Rundown Modified" warning badge in Producer View | NOT STARTED | |
 | Task 33 | Add "Reload Rundown" button (appears when modified) | NOT STARTED | |
