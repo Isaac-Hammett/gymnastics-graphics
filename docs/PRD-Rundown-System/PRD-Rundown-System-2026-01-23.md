@@ -229,7 +229,7 @@ Producers can create rundowns but cannot execute them. There's no bridge between
 - [x] Past segments (already completed) are not affected by reload
 
 ### Phase J Complete When:
-- [ ] Actual segment durations logged during show
+- [x] Actual segment durations logged during show
 - [ ] Historical timing data available in Rundown Editor
 
 ---

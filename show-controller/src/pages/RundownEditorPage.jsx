@@ -380,6 +380,11 @@ export default function RundownEditorPage() {
   // Equipment Schedule state (Phase 12: Task 95)
   const [showEquipmentScheduleModal, setShowEquipmentScheduleModal] = useState(false); // Equipment schedule view modal
 
+  // Timing Analytics state (Phase J: Task 40)
+  const [showTimingAnalyticsModal, setShowTimingAnalyticsModal] = useState(false); // Timing analytics dashboard modal
+  const [timingAnalyticsData, setTimingAnalyticsData] = useState([]); // Past run analytics from Firebase
+  const [loadingTimingAnalytics, setLoadingTimingAnalytics] = useState(false); // Loading state for analytics
+
   // Computed type row colors using customTypeColors (Phase 10: Task 78)
   const TYPE_ROW_COLORS = useMemo(() => {
     return getTypeRowColors(customTypeColors);
@@ -1428,6 +1433,37 @@ export default function RundownEditorPage() {
   function handleOpenHistory() {
     setShowHistoryModal(true);
     loadChangeHistory();
+  }
+
+  // Load timing analytics from Firebase (Phase J: Task 40)
+  async function loadTimingAnalytics() {
+    if (!compId) return;
+    setLoadingTimingAnalytics(true);
+    try {
+      const analyticsRef = ref(db, `competitions/${compId}/production/rundown/analytics`);
+      const snapshot = await get(analyticsRef);
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        const analyticsArray = Object.entries(data)
+          .map(([runId, runData]) => ({ runId, ...runData }))
+          .filter(run => run.status === 'completed') // Only show completed runs
+          .sort((a, b) => (b.startedAt || 0) - (a.startedAt || 0)) // Most recent first
+          .slice(0, 20); // Limit to last 20 runs
+        setTimingAnalyticsData(analyticsArray);
+      } else {
+        setTimingAnalyticsData([]);
+      }
+    } catch (error) {
+      console.error('Error loading timing analytics:', error);
+      showToast('Error loading analytics');
+    }
+    setLoadingTimingAnalytics(false);
+  }
+
+  // Handle opening timing analytics modal (Phase J: Task 40)
+  function handleOpenTimingAnalytics() {
+    setShowTimingAnalyticsModal(true);
+    loadTimingAnalytics();
   }
 
   // Handle initiating a restore from history (Phase 8: Task 68)
@@ -4372,6 +4408,14 @@ export default function RundownEditorPage() {
             >
               <VideoCameraIcon className="w-4 h-4" />
             </button>
+            {/* Timing Analytics Button (Phase J: Task 40) */}
+            <button
+              onClick={handleOpenTimingAnalytics}
+              className="px-3 py-2 text-sm rounded-lg border transition-colors bg-zinc-800 text-zinc-400 border-zinc-700 hover:text-zinc-300 hover:bg-zinc-700"
+              title="View timing analytics"
+            >
+              <ChartBarIcon className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </div>
@@ -4938,6 +4982,17 @@ export default function RundownEditorPage() {
           segments={segments}
           segmentStartTimes={segmentStartTimes}
           onClose={() => setShowEquipmentScheduleModal(false)}
+        />
+      )}
+
+      {/* Timing Analytics Modal (Phase J: Task 40) */}
+      {showTimingAnalyticsModal && (
+        <TimingAnalyticsModal
+          analyticsData={timingAnalyticsData}
+          segments={segments}
+          loading={loadingTimingAnalytics}
+          onRefresh={loadTimingAnalytics}
+          onClose={() => setShowTimingAnalyticsModal(false)}
         />
       )}
     </div>
@@ -8983,6 +9038,362 @@ function EquipmentScheduleModal({ segments, segmentStartTimes, onClose }) {
           <button
             onClick={onClose}
             className="px-4 py-2 bg-cyan-600 text-white font-medium rounded-lg hover:bg-cyan-500 transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Timing Analytics Modal (Phase J: Task 40)
+// Displays historical timing data from past shows/rehearsals
+function TimingAnalyticsModal({ analyticsData, segments, loading, onRefresh, onClose }) {
+  // State for expanded run details
+  const [expandedRunId, setExpandedRunId] = useState(null);
+
+  // Calculate segment averages across all runs
+  const segmentAverages = useMemo(() => {
+    if (!analyticsData || analyticsData.length === 0) return {};
+
+    const averages = {};
+
+    // Collect all timing data by segment ID
+    analyticsData.forEach(run => {
+      if (!run.segments) return;
+      run.segments.forEach(seg => {
+        if (!seg.segmentId) return;
+        if (!averages[seg.segmentId]) {
+          averages[seg.segmentId] = {
+            segmentId: seg.segmentId,
+            segmentName: seg.segmentName,
+            plannedDurations: [],
+            actualDurations: [],
+            runCount: 0,
+          };
+        }
+        if (seg.actualDurationMs) {
+          averages[seg.segmentId].actualDurations.push(seg.actualDurationMs);
+          averages[seg.segmentId].runCount++;
+        }
+        if (seg.plannedDurationMs) {
+          averages[seg.segmentId].plannedDurations.push(seg.plannedDurationMs);
+        }
+      });
+    });
+
+    // Calculate averages
+    Object.values(averages).forEach(avg => {
+      if (avg.actualDurations.length > 0) {
+        avg.averageActualMs = Math.round(
+          avg.actualDurations.reduce((a, b) => a + b, 0) / avg.actualDurations.length
+        );
+      }
+      if (avg.plannedDurations.length > 0) {
+        avg.averagePlannedMs = Math.round(
+          avg.plannedDurations.reduce((a, b) => a + b, 0) / avg.plannedDurations.length
+        );
+      }
+      if (avg.averageActualMs && avg.averagePlannedMs) {
+        avg.averageDeltaMs = avg.averageActualMs - avg.averagePlannedMs;
+      }
+    });
+
+    return averages;
+  }, [analyticsData]);
+
+  // Format milliseconds to readable duration
+  function formatMs(ms) {
+    if (!ms && ms !== 0) return '-';
+    const totalSecs = Math.round(ms / 1000);
+    const mins = Math.floor(totalSecs / 60);
+    const secs = totalSecs % 60;
+    return `${mins}:${String(secs).padStart(2, '0')}`;
+  }
+
+  // Format delta (show + or - prefix)
+  function formatDelta(ms) {
+    if (!ms && ms !== 0) return '-';
+    const prefix = ms > 0 ? '+' : '';
+    return prefix + formatMs(Math.abs(ms));
+  }
+
+  // Format timestamp to date/time
+  function formatTimestamp(timestamp) {
+    if (!timestamp) return '-';
+    const date = new Date(timestamp);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  }
+
+  // Get color for delta (red for over, green for under)
+  function getDeltaColor(deltaMs) {
+    if (!deltaMs && deltaMs !== 0) return 'text-zinc-400';
+    if (deltaMs > 5000) return 'text-red-400'; // Over by 5+ seconds
+    if (deltaMs < -5000) return 'text-green-400'; // Under by 5+ seconds
+    return 'text-amber-400'; // Close to target
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+      <div className="bg-zinc-900 border border-zinc-700 rounded-xl w-full max-w-4xl max-h-[85vh] shadow-2xl flex flex-col">
+        {/* Header */}
+        <div className="p-4 border-b border-zinc-800 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+              <ChartBarIcon className="w-5 h-5 text-blue-400" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-white">Timing Analytics</h2>
+              <p className="text-sm text-zinc-400">Compare planned vs actual segment durations</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onRefresh}
+              className="p-2 hover:bg-zinc-800 rounded-lg transition-colors"
+              title="Refresh analytics"
+            >
+              <ArrowPathIcon className={`w-5 h-5 text-zinc-400 ${loading ? 'animate-spin' : ''}`} />
+            </button>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-zinc-800 rounded-lg transition-colors"
+            >
+              <XMarkIcon className="w-5 h-5 text-zinc-400" />
+            </button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto">
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="flex flex-col items-center gap-3">
+                <ArrowPathIcon className="w-8 h-8 text-zinc-500 animate-spin" />
+                <span className="text-zinc-400">Loading analytics...</span>
+              </div>
+            </div>
+          ) : analyticsData.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <ChartBarIcon className="w-12 h-12 text-zinc-600 mb-4" />
+              <h3 className="text-lg font-medium text-zinc-300 mb-2">No Analytics Data</h3>
+              <p className="text-zinc-500 max-w-md">
+                Run a show or rehearsal to start collecting timing data.
+                Analytics will show how actual durations compare to planned durations.
+              </p>
+            </div>
+          ) : (
+            <div className="p-4 space-y-6">
+              {/* Summary Section */}
+              <div>
+                <h3 className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-3">
+                  Overall Summary ({analyticsData.length} run{analyticsData.length !== 1 ? 's' : ''})
+                </h3>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-4">
+                    <div className="text-xs text-zinc-500 mb-1">Total Shows</div>
+                    <div className="text-2xl font-bold text-white">
+                      {analyticsData.filter(r => !r.isRehearsal).length}
+                    </div>
+                  </div>
+                  <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-4">
+                    <div className="text-xs text-zinc-500 mb-1">Total Rehearsals</div>
+                    <div className="text-2xl font-bold text-purple-400">
+                      {analyticsData.filter(r => r.isRehearsal).length}
+                    </div>
+                  </div>
+                  <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-4">
+                    <div className="text-xs text-zinc-500 mb-1">Avg Duration Variance</div>
+                    <div className={`text-2xl font-bold ${
+                      analyticsData[0]?.summary?.averageDurationDeltaMs > 0
+                        ? 'text-red-400'
+                        : 'text-green-400'
+                    }`}>
+                      {analyticsData[0]?.summary?.averageDurationDeltaMs
+                        ? formatDelta(analyticsData[0].summary.averageDurationDeltaMs)
+                        : '-'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Segment Averages Section */}
+              {Object.keys(segmentAverages).length > 0 && (
+                <div>
+                  <h3 className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-3">
+                    Segment Timing Averages
+                  </h3>
+                  <div className="bg-zinc-800/30 border border-zinc-700 rounded-lg overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-zinc-800 text-zinc-400 text-xs uppercase">
+                          <th className="text-left p-3 font-medium">Segment</th>
+                          <th className="text-right p-3 font-medium">Planned</th>
+                          <th className="text-right p-3 font-medium">Avg Actual</th>
+                          <th className="text-right p-3 font-medium">Variance</th>
+                          <th className="text-right p-3 font-medium">Runs</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-700/50">
+                        {Object.values(segmentAverages)
+                          .sort((a, b) => (b.runCount || 0) - (a.runCount || 0))
+                          .slice(0, 15)
+                          .map(seg => (
+                            <tr key={seg.segmentId} className="hover:bg-zinc-800/50">
+                              <td className="p-3 text-white truncate max-w-[200px]" title={seg.segmentName}>
+                                {seg.segmentName || seg.segmentId}
+                              </td>
+                              <td className="p-3 text-right text-zinc-400 font-mono">
+                                {formatMs(seg.averagePlannedMs)}
+                              </td>
+                              <td className="p-3 text-right text-white font-mono">
+                                {formatMs(seg.averageActualMs)}
+                              </td>
+                              <td className={`p-3 text-right font-mono ${getDeltaColor(seg.averageDeltaMs)}`}>
+                                {formatDelta(seg.averageDeltaMs)}
+                              </td>
+                              <td className="p-3 text-right text-zinc-500">
+                                {seg.runCount}
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Run History Section */}
+              <div>
+                <h3 className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-3">
+                  Run History
+                </h3>
+                <div className="space-y-2">
+                  {analyticsData.map(run => (
+                    <div
+                      key={run.runId}
+                      className="bg-zinc-800/30 border border-zinc-700 rounded-lg overflow-hidden"
+                    >
+                      {/* Run Header */}
+                      <button
+                        onClick={() => setExpandedRunId(expandedRunId === run.runId ? null : run.runId)}
+                        className="w-full p-3 flex items-center justify-between hover:bg-zinc-800/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          {run.isRehearsal ? (
+                            <span className="px-2 py-0.5 text-xs font-medium bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded">
+                              REHEARSAL
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30 rounded">
+                              LIVE
+                            </span>
+                          )}
+                          <span className="text-white font-medium">
+                            {formatTimestamp(run.startedAt)}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-4 text-sm">
+                          <span className="text-zinc-400">
+                            {run.segmentsCompleted || run.segments?.length || 0} segments
+                          </span>
+                          <span className="text-zinc-400 font-mono">
+                            {formatMs(run.showDurationMs)}
+                          </span>
+                          {run.summary?.averageDurationDeltaMs !== undefined && (
+                            <span className={`font-mono ${getDeltaColor(run.summary.averageDurationDeltaMs)}`}>
+                              {formatDelta(run.summary.averageDurationDeltaMs)} avg
+                            </span>
+                          )}
+                          <ChevronRightIcon
+                            className={`w-4 h-4 text-zinc-500 transition-transform ${
+                              expandedRunId === run.runId ? 'rotate-90' : ''
+                            }`}
+                          />
+                        </div>
+                      </button>
+
+                      {/* Run Details (expanded) */}
+                      {expandedRunId === run.runId && run.segments && (
+                        <div className="border-t border-zinc-700 bg-zinc-900/50">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="text-zinc-500 text-xs uppercase">
+                                <th className="text-left p-3 font-medium">#</th>
+                                <th className="text-left p-3 font-medium">Segment</th>
+                                <th className="text-right p-3 font-medium">Planned</th>
+                                <th className="text-right p-3 font-medium">Actual</th>
+                                <th className="text-right p-3 font-medium">Δ</th>
+                                <th className="text-left p-3 font-medium">End</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-zinc-800">
+                              {run.segments.map((seg, idx) => (
+                                <tr key={seg.segmentId || idx} className="hover:bg-zinc-800/30">
+                                  <td className="p-3 text-zinc-500">{idx + 1}</td>
+                                  <td className="p-3 text-white truncate max-w-[180px]" title={seg.segmentName}>
+                                    {seg.segmentName || seg.segmentId}
+                                  </td>
+                                  <td className="p-3 text-right text-zinc-400 font-mono">
+                                    {formatMs(seg.plannedDurationMs)}
+                                  </td>
+                                  <td className="p-3 text-right text-white font-mono">
+                                    {formatMs(seg.actualDurationMs)}
+                                  </td>
+                                  <td className={`p-3 text-right font-mono ${getDeltaColor(seg.durationDeltaMs)}`}>
+                                    {formatDelta(seg.durationDeltaMs)}
+                                  </td>
+                                  <td className="p-3 text-zinc-500 text-xs">
+                                    {seg.endReason === 'auto_advanced' ? 'auto' :
+                                     seg.endReason === 'advanced' ? 'manual' :
+                                     seg.endReason || '-'}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                          {/* Run Summary */}
+                          {run.summary && (
+                            <div className="p-3 border-t border-zinc-800 flex gap-6 text-xs text-zinc-400">
+                              <span>
+                                <span className="text-zinc-500">Total Planned:</span>{' '}
+                                <span className="text-white font-mono">{formatMs(run.summary.totalPlannedDurationMs)}</span>
+                              </span>
+                              <span>
+                                <span className="text-zinc-500">Total Actual:</span>{' '}
+                                <span className="text-white font-mono">{formatMs(run.summary.totalActualDurationMs)}</span>
+                              </span>
+                              <span>
+                                <span className="text-zinc-500">Auto:</span>{' '}
+                                <span className="text-white">{run.summary.autoAdvanceCount || 0}</span>
+                              </span>
+                              <span>
+                                <span className="text-zinc-500">Manual:</span>{' '}
+                                <span className="text-white">{run.summary.manualAdvanceCount || 0}</span>
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="p-4 border-t border-zinc-800 flex gap-3 justify-end shrink-0">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-500 transition-colors"
           >
             Close
           </button>
