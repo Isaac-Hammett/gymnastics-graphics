@@ -3783,6 +3783,10 @@ export default function RundownEditorPage() {
           setApprovalStatus(importJSONData.rundown.approvalStatus);
         }
       }
+      // Phase K: Task 86 - Optionally restore timezone configuration
+      if (options.importTimezoneConfig && importJSONData.rundown.timezoneConfig) {
+        saveTimezoneConfig(importJSONData.rundown.timezoneConfig);
+      }
       showToast(`Imported ${importedSegments.length} segments (replaced)`);
     } else {
       setSegments([...segments, ...importedSegments]);
@@ -8902,10 +8906,12 @@ function ImportJSONModal({ data, onConfirm, onCancel }) {
   const [importMode, setImportMode] = useState('replace'); // 'append' or 'replace' (default to replace for backup restore)
   const [importGroups, setImportGroups] = useState(true); // Whether to import groups
   const [importSettings, setImportSettings] = useState(true); // Whether to import settings (targetDuration, approvalStatus)
+  const [importTimezoneConfig, setImportTimezoneConfig] = useState(true); // Whether to import timezone configuration (Phase K: Task 86)
   const [preserveIds, setPreserveIds] = useState(true); // Whether to preserve segment IDs
 
   const segments = data?.rundown?.segments || [];
   const groups = data?.rundown?.groups || [];
+  const timezoneConfig = data?.rundown?.timezoneConfig || null; // Phase K: Task 86
   const competition = data?.competition || {};
 
   // Format duration for display
@@ -9071,6 +9077,17 @@ function ImportJSONModal({ data, onConfirm, onCancel }) {
                     <span className="text-zinc-300 text-sm">Import settings</span>
                   </label>
                 )}
+                {importMode === 'replace' && timezoneConfig && (
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={importTimezoneConfig}
+                      onChange={(e) => setImportTimezoneConfig(e.target.checked)}
+                      className="w-4 h-4 text-teal-600 bg-zinc-800 border-zinc-600 rounded focus:ring-teal-500"
+                    />
+                    <span className="text-zinc-300 text-sm">Import timezone config</span>
+                  </label>
+                )}
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
@@ -9093,7 +9110,7 @@ function ImportJSONModal({ data, onConfirm, onCancel }) {
             Cancel
           </button>
           <button
-            onClick={() => onConfirm(importMode, { importGroups, importSettings, preserveIds })}
+            onClick={() => onConfirm(importMode, { importGroups, importSettings, importTimezoneConfig, preserveIds })}
             className="flex-1 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-500 transition-colors flex items-center justify-center gap-2"
           >
             <ArrowDownTrayIcon className="w-4 h-4" />
