@@ -150,7 +150,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 50 | Pipe script field through Timesheet Engine | COMPLETE | Script field already flows through engine via generic segment handling; TimesheetEngine spreads full segment objects in `getState()` (lines 1061-1063) and `segmentActivated` events (line 594); no explicit handling needed since engine preserves all segment fields; script accessible via `currentSegment.script` in client hooks |
 | Task 51 | Display script in Talent View (teleprompter-style) | COMPLETE | Added teleprompter-style script panel in TalentView.jsx between CurrentSegment and NextSegment; uses large text (text-xl), blue accent border, DocumentTextIcon header; only shows when currentSegment.script has content; uses whitespace-pre-wrap for line breaks |
 | Task 52 | Add talent assignment to segment data model | COMPLETE | Added `talent: []` to segment creation in 3 places in RundownEditorPage.jsx; added talent field to segmentMapper.js for both editor→engine and engine→editor mappings; added talent to compareSegments fieldsToCompare |
-| Task 53 | Create talent schedule view | NOT STARTED | |
+| Task 53 | Create talent schedule view | COMPLETE | Already implemented as TalentScheduleModal in RundownEditorPage.jsx (Phase 12: Task 94); includes talent-per-segment view, conflict detection, and export functionality |
 | Task 54 | Show "you're on camera" indicator in Talent View | NOT STARTED | |
 
 ### Phase C: AI Context - Live Execution (P3) - NOT STARTED
