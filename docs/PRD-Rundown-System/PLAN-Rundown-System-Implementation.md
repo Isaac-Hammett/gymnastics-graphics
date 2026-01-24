@@ -92,7 +92,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 17 | Add rehearsal mode toggle to Timesheet Engine | COMPLETE | Added `_isRehearsalMode` property, `isRehearsalMode` getter, `setRehearsalMode()` method, included in `getState()`, emits `rehearsalModeChanged` event |
 | Task 18 | Skip OBS scene changes in rehearsal mode | COMPLETE | Added early-return check in `_applyTransitionAndSwitchScene()` that skips OBS calls when `_isRehearsalMode` is true; still emits `sceneChanged` event with `rehearsalMode: true` for UI updates |
 | Task 19 | Skip graphics firing in rehearsal mode | COMPLETE | Added early-return check in `_triggerGraphic()` that skips Firebase writes and socket.io broadcasts when `_isRehearsalMode` is true; still emits `graphicTriggered` event with `rehearsalMode: true` for UI updates |
-| Task 20 | Show "REHEARSAL" indicator in all views | NOT STARTED | |
+| Task 20 | Show "REHEARSAL" indicator in all views | COMPLETE | Added purple "REHEARSAL MODE" banner in ProducerView, rehearsal toggle button, `setRehearsalMode` socket handler, `rehearsalModeChanged` event wiring |
 | Task 21 | Log timing data for post-rehearsal analysis | NOT STARTED | |
 
 ### Phase B: Talent View (P1) - NOT STARTED

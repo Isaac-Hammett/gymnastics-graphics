@@ -31,7 +31,8 @@ import {
   ComputerDesktopIcon,
   ArrowDownTrayIcon,
   DocumentTextIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  BeakerIcon
 } from '@heroicons/react/24/solid';
 
 // Health status colors for quick camera buttons
@@ -56,7 +57,8 @@ export default function ProducerView() {
     identify,
     error,
     loadRundown,
-    timesheetState
+    timesheetState,
+    setRehearsalMode
   } = useShow();
 
   // Use timesheet hook for show control actions
@@ -358,6 +360,17 @@ export default function ProducerView() {
         </div>
       )}
 
+      {/* REHEARSAL Mode Banner - always visible when rehearsal mode is active */}
+      {timesheetState?.isRehearsalMode && (
+        <div className="bg-purple-500/20 border-b border-purple-500/40 px-4 py-3">
+          <div className="max-w-6xl mx-auto flex items-center justify-center gap-3">
+            <BeakerIcon className="w-5 h-5 text-purple-400" />
+            <span className="text-purple-300 font-bold tracking-wider">REHEARSAL MODE</span>
+            <span className="text-purple-400/70 text-sm">— OBS scene changes and graphics are disabled</span>
+          </div>
+        </div>
+      )}
+
       {/* Main Content */}
       <main className="max-w-6xl mx-auto p-4">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -386,6 +399,22 @@ export default function ProducerView() {
                   >
                     <ArrowDownTrayIcon className={`w-5 h-5 ${isLoadingRundown ? 'animate-pulse' : ''}`} />
                     {isLoadingRundown ? 'Loading...' : timesheetState?.rundownLoaded ? 'Reload Rundown' : 'Load Rundown'}
+                  </button>
+                  {/* Rehearsal Mode Toggle */}
+                  <button
+                    onClick={() => setRehearsalMode(!timesheetState?.isRehearsalMode)}
+                    disabled={!timesheetState?.rundownLoaded}
+                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                      !timesheetState?.rundownLoaded
+                        ? 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
+                        : timesheetState?.isRehearsalMode
+                        ? 'bg-purple-600 hover:bg-purple-500 text-white'
+                        : 'bg-zinc-700 hover:bg-zinc-600 text-zinc-300'
+                    }`}
+                    title={timesheetState?.isRehearsalMode ? 'Disable rehearsal mode' : 'Enable rehearsal mode (skips OBS/graphics)'}
+                  >
+                    <BeakerIcon className="w-4 h-4" />
+                    {timesheetState?.isRehearsalMode ? 'Rehearsal Mode ON' : 'Rehearsal Mode'}
                   </button>
                   <button
                     onClick={timesheetStart}

@@ -36,7 +36,8 @@ const INITIAL_TIMESHEET_STATE = {
   canAdvanceHold: false,
   holdRemainingMs: 0,
   segments: [],
-  rundownLoaded: false
+  rundownLoaded: false,
+  isRehearsalMode: false
 };
 
 export function ShowProvider({ children }) {
@@ -344,6 +345,15 @@ export function ShowProvider({ children }) {
       }
     });
 
+    // Rehearsal mode changed handler
+    newSocket.on('rehearsalModeChanged', ({ isRehearsalMode }) => {
+      console.log(`Rehearsal mode changed: ${isRehearsalMode}`);
+      setTimesheetState(prev => ({
+        ...prev,
+        isRehearsalMode
+      }));
+    });
+
     setSocket(newSocket);
 
     return () => {
@@ -461,6 +471,11 @@ export function ShowProvider({ children }) {
     setOverrideLog([]);
   }, []);
 
+  const setRehearsalMode = useCallback((enabled) => {
+    console.log(`ShowContext: Setting rehearsal mode to ${enabled} for competition`, compId);
+    socket?.emit('setRehearsalMode', { enabled, compId });
+  }, [socket, compId]);
+
   const value = {
     // Connection info
     socketUrl,
@@ -505,7 +520,8 @@ export function ShowProvider({ children }) {
     overrideTimesheetScene,
     overrideTimesheetCamera,
     getTimesheetOverrides,
-    clearOverrideLog
+    clearOverrideLog,
+    setRehearsalMode
   };
 
   return (

@@ -471,6 +471,13 @@ function getOrCreateEngine(compId, obsConnectionManager, firebase, socketIo) {
     socketIo.to(roomName).emit('timesheetError', data);
   });
 
+  engine.on('rehearsalModeChanged', (data) => {
+    console.log(`[Timesheet:${compId}] Rehearsal mode changed: ${data.isRehearsalMode}`);
+    socketIo.to(roomName).emit('rehearsalModeChanged', data);
+    // Also broadcast updated state
+    socketIo.to(roomName).emit('timesheetState', engine.getState());
+  });
+
   timesheetEngines.set(compId, engine);
   console.log(`[Timesheet] Engine created for competition: ${compId} (total engines: ${timesheetEngines.size})`);
 
@@ -5473,6 +5480,26 @@ io.on('connection', async (socket) => {
         error: `Failed to load rundown: ${error.message}`
       });
     }
+  });
+
+  // Set rehearsal mode for the timesheet engine (Task 20)
+  socket.on('setRehearsalMode', ({ enabled, compId }) => {
+    // Use compId from payload, fallback to socket's competition
+    const targetCompId = compId || clientCompId;
+
+    if (!targetCompId) {
+      socket.emit('error', { message: 'No competition ID provided for rehearsal mode' });
+      return;
+    }
+
+    const engine = getEngine(targetCompId);
+    if (!engine) {
+      socket.emit('error', { message: `No timesheet engine found for competition: ${targetCompId}` });
+      return;
+    }
+
+    engine.setRehearsalMode(enabled);
+    console.log(`Socket: Rehearsal mode ${enabled ? 'enabled' : 'disabled'} for competition ${targetCompId}`);
   });
 
   // Start show via timesheet engine
