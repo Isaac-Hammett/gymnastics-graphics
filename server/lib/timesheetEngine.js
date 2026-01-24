@@ -41,7 +41,8 @@ const TRANSITION_TYPES = {
  * - 'segmentActivated': Emitted when a segment becomes active
  * - 'segmentCompleted': Emitted when a segment finishes
  * - 'showStarted': Emitted when show begins
- * - 'showStopped': Emitted when show ends
+ * - 'showStopped': Emitted when show ends (manual stop or natural completion)
+ * - 'showComplete': Emitted when show ends naturally (all segments finished)
  * - 'holdMaxReached': Emitted when hold segment exceeds maxDuration
  * - 'overrideRecorded': Emitted when a manual override is logged
  * - 'stateChanged': Emitted when engine state changes
@@ -457,8 +458,66 @@ class TimesheetEngine extends EventEmitter {
       timestamp: Date.now()
     });
 
+    // Check if we've reached the end of the show
+    if (nextIndex >= this.segments.length) {
+      // Task 39: Show completed naturally - record final segment and stop
+      // This ensures timing analytics are saved when show completes (not just manual stop)
+      this._completeShow();
+      return;
+    }
+
     // Activate next segment
     await this._activateSegment(nextIndex, 'auto');
+  }
+
+  /**
+   * Complete the show (all segments finished naturally)
+   * Similar to stop() but specifically for natural completion
+   * @private
+   */
+  _completeShow() {
+    if (!this._isRunning) {
+      return;
+    }
+
+    // Record final segment in history as completed naturally
+    if (this._currentSegment) {
+      this._recordHistory('auto_advanced');
+    }
+
+    this._isRunning = false;
+    this._state = ENGINE_STATE.STOPPED;
+    this._stopTick();
+
+    const showDurationMs = Date.now() - this._showStartTime;
+
+    // Emit showComplete for natural completion (allows UI to distinguish from manual stop)
+    this.emit('showComplete', {
+      timestamp: Date.now(),
+      showDurationMs,
+      segmentsCompleted: this._history.length,
+      overrideCount: this._overrides.length,
+      completedNaturally: true
+    });
+
+    // Also emit showStopped for compatibility with existing analytics handler
+    this.emit('showStopped', {
+      timestamp: Date.now(),
+      showDurationMs,
+      segmentsCompleted: this._history.length,
+      overrideCount: this._overrides.length
+    });
+
+    this.emit('stateChanged', {
+      previousState: ENGINE_STATE.RUNNING,
+      newState: ENGINE_STATE.STOPPED
+    });
+
+    // Reset state
+    this._currentSegmentIndex = -1;
+    this._currentSegment = null;
+    this._segmentStartTime = null;
+    this._showStartTime = null;
   }
 
   /**
