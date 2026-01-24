@@ -6,15 +6,15 @@ These documents were archived on 2026-01-23 when the Rundown System documentatio
 
 The original approach had 10+ separate PRDs with overlapping scope. These were consolidated into:
 
-- `docs/PRD-Rundown-System-2026-01-23.md` - Requirements
-- `docs/PLAN-Rundown-System-2026-01-23.md` - Implementation plan
+- `docs/PRD-Rundown-System/PRD-Rundown-System-2026-01-23.md` - Requirements
+- `docs/PRD-Rundown-System/PLAN-Rundown-System-2026-01-23.md` - Implementation plan
 
 ## Active Documents (NOT here)
 
 | Document | Location |
 |----------|----------|
-| PRD (requirements) | `docs/PRD-Rundown-System-2026-01-23.md` |
-| Implementation Plan | `docs/PLAN-Rundown-System-2026-01-23.md` |
+| PRD (requirements) | `docs/PRD-Rundown-System/PRD-Rundown-System-2026-01-23.md` |
+| Implementation Plan | `docs/PRD-Rundown-System/PLAN-Rundown-System-2026-01-23.md` |
 | Editor UI PRD | `docs/PRD-Rundown-01-EditorPrototype/` |
 
 ## What's In This Archive
