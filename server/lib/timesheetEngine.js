@@ -56,6 +56,7 @@ class TimesheetEngine extends EventEmitter {
    * @param {Object} options.obs - OBS WebSocket controller (optional, legacy - prefer obsConnectionManager)
    * @param {Object} options.firebase - Firebase database (from productionConfigService.getDb()) or Firebase Admin app (optional)
    * @param {Object} options.io - Socket.io server for broadcasting (optional)
+   * @param {boolean} options.isRehearsalMode - Whether to run in rehearsal mode (skips OBS/graphics, default false)
    */
   constructor(options = {}) {
     super();
@@ -68,6 +69,9 @@ class TimesheetEngine extends EventEmitter {
     this.obs = options.obs || null;
     this.firebase = options.firebase || null;
     this.io = options.io || null;
+
+    // Rehearsal mode - when enabled, OBS scene changes and graphics firing are skipped
+    this._isRehearsalMode = options.isRehearsalMode || false;
 
     // Core state
     this._state = ENGINE_STATE.STOPPED;
@@ -118,6 +122,14 @@ class TimesheetEngine extends EventEmitter {
    */
   get isRunning() {
     return this._isRunning;
+  }
+
+  /**
+   * Check if engine is in rehearsal mode
+   * @returns {boolean} True if in rehearsal mode
+   */
+  get isRehearsalMode() {
+    return this._isRehearsalMode;
   }
 
   /**
@@ -954,6 +966,7 @@ class TimesheetEngine extends EventEmitter {
     return {
       state: this._state,
       isRunning: this._isRunning,
+      isRehearsalMode: this._isRehearsalMode,
       currentSegmentIndex: this._currentSegmentIndex,
       currentSegment: this._currentSegment ? { ...this._currentSegment } : null,
       nextSegment: this.nextSegment ? { ...this.nextSegment } : null,
@@ -1006,6 +1019,26 @@ class TimesheetEngine extends EventEmitter {
         this._currentSegmentIndex = newIndex;
         this._currentSegment = this.segments[newIndex];
       }
+    }
+  }
+
+  /**
+   * Set rehearsal mode on or off
+   * In rehearsal mode, OBS scene changes and graphics firing are skipped,
+   * but timing proceeds normally for practice.
+   * @param {boolean} enabled - Whether to enable rehearsal mode
+   */
+  setRehearsalMode(enabled) {
+    const wasRehearsalMode = this._isRehearsalMode;
+    this._isRehearsalMode = !!enabled;
+
+    if (wasRehearsalMode !== this._isRehearsalMode) {
+      this.emit('rehearsalModeChanged', {
+        isRehearsalMode: this._isRehearsalMode,
+        timestamp: Date.now()
+      });
+
+      console.log(`[Timesheet${this.compId ? ':' + this.compId : ''}] Rehearsal mode ${this._isRehearsalMode ? 'ENABLED' : 'DISABLED'}`);
     }
   }
 
