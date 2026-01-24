@@ -3,7 +3,7 @@
 **PRD:** PRD-Rundown-01-EditorPrototype
 **Status:** PROTOTYPE COMPLETE, FEATURES IN PROGRESS
 **Created:** 2026-01-22
-**Last Updated:** 2026-01-23 (v5.1 - Task 77 complete - Color coding by segment type)
+**Last Updated:** 2026-01-23 (v5.3 - Task 79 complete - Compact view toggle)
 
 ---
 
@@ -203,8 +203,8 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 75: Create timeline view | COMPLETE | TimelineView component with Gantt-style horizontal bars, zoom control, time markers, legend, buffer visualization, segment click selection |
 | Task 76: Toggle between list and timeline | COMPLETE | View toggle buttons in toolbar (Bars4Icon for list, ChartBarIcon for timeline), viewMode state controls which view is rendered |
 | Task 77: Add color coding by type | COMPLETE | TYPE_ROW_COLORS constant added, segment rows have colored left border + subtle background tint by type |
-| Task 78: Make colors customizable | NOT STARTED | User preference |
-| Task 79: Add compact view toggle | NOT STARTED | Single line per segment |
+| Task 78: Make colors customizable | COMPLETE | ColorSettingsModal with 16 color options, localStorage persistence per competition, SwatchIcon button in toolbar |
+| Task 79: Add compact view toggle | COMPLETE | QueueListIcon toggle button in toolbar (only visible in list view), compactView state, SegmentRow renders compact single-line with: number, name, type badge, lock/optional indicators, duration |
 | Task 80: Add dark/light mode toggle | NOT STARTED | Theme preference |
 | Task 81: Create print-friendly view | NOT STARTED | Clean layout for paper |
 

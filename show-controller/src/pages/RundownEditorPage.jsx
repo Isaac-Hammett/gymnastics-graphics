@@ -32,6 +32,7 @@ import {
   Bars4Icon,
   ChartBarIcon,
   SwatchIcon,
+  QueueListIcon,
 } from '@heroicons/react/24/outline';
 import { getGraphicsForCompetition, getCategories, getRecommendedGraphic, getGraphicById, GRAPHICS } from '../lib/graphicsRegistry';
 import { db, ref, set, get, push, remove, update, onValue, onDisconnect } from '../lib/firebase';
@@ -290,6 +291,7 @@ export default function RundownEditorPage() {
   const [importJSONData, setImportJSONData] = useState(null); // Parsed JSON data for import (Phase 9: Task 74)
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'timeline' (Phase 10: Task 75)
   const [timelineZoom, setTimelineZoom] = useState(100); // Zoom level percentage for timeline view (Phase 10: Task 75)
+  const [compactView, setCompactView] = useState(false); // Compact view toggle (Phase 10: Task 79)
   const [showColorSettingsModal, setShowColorSettingsModal] = useState(false); // Color settings modal (Phase 10: Task 78)
   const [customTypeColors, setCustomTypeColors] = useState(() => {
     // Load custom colors from localStorage, or use null to indicate defaults
@@ -3309,6 +3311,20 @@ export default function RundownEditorPage() {
                 <ChartBarIcon className="w-4 h-4" />
               </button>
             </div>
+            {/* Compact View Toggle (Phase 10: Task 79) */}
+            {viewMode === 'list' && (
+              <button
+                onClick={() => setCompactView(!compactView)}
+                className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
+                  compactView
+                    ? 'bg-blue-600/20 text-blue-400 border-blue-500/40 hover:bg-blue-600/30'
+                    : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:text-zinc-300 hover:bg-zinc-700'
+                }`}
+                title={compactView ? 'Switch to expanded view' : 'Switch to compact view'}
+              >
+                <QueueListIcon className="w-4 h-4" />
+              </button>
+            )}
             {/* Color Settings Button (Phase 10: Task 78) */}
             <button
               onClick={() => setShowColorSettingsModal(true)}
@@ -3486,6 +3502,7 @@ export default function RundownEditorPage() {
                                   groupColor={groupColor}
                                   customTypeColors={customTypeColors}
                                   TYPE_ROW_COLORS={TYPE_ROW_COLORS}
+                                  compactView={compactView}
                                 />
                               );
                             })}
@@ -3529,6 +3546,7 @@ export default function RundownEditorPage() {
                         groupColor={null}
                         customTypeColors={customTypeColors}
                         TYPE_ROW_COLORS={TYPE_ROW_COLORS}
+                        compactView={compactView}
                       />
                     );
                   }
@@ -3915,6 +3933,7 @@ function SegmentRow({
   groupColor,
   customTypeColors,
   TYPE_ROW_COLORS,
+  compactView = false,
 }) {
   const isSelected = selectedSegmentId === segment.id;
   const isMultiSelected = selectedSegmentIds.includes(segment.id);
@@ -3927,6 +3946,93 @@ function SegmentRow({
   // Get other users who have this segment selected (Phase 8: Task 65)
   const otherUsersHere = otherUsersSelections?.[segment.id] || [];
 
+  // Compact View: Single line per segment showing only number, name, type badge, duration
+  if (compactView) {
+    return (
+      <div
+        id={`segment-${segment.id}`}
+        draggable={!isLocked}
+        onDragStart={(e) => isLocked ? e.preventDefault() : onDragStart(e, segment.id)}
+        onDragEnd={onDragEnd}
+        onDragOver={(e) => onDragOver(e, originalIndex)}
+        onDragLeave={onDragLeave}
+        onDrop={(e) => onDrop(e, originalIndex)}
+        onClick={() => onSelectSegment(segment.id)}
+        className={`px-2 py-1.5 rounded border-l-2 border transition-all cursor-pointer ${
+          isLocked
+            ? 'bg-zinc-900/50 border-zinc-700/50 border-l-zinc-600 opacity-75'
+            : isDraggedOver
+              ? 'border-t-2 border-t-blue-500 border-blue-500/50 border-l-blue-500 bg-blue-600/10'
+              : isSelected
+                ? `border-blue-500 ${TYPE_ROW_COLORS[segment.type]?.border || 'border-l-blue-500'} ${TYPE_ROW_COLORS[segment.type]?.bg || ''} bg-blend-overlay bg-blue-600/20`
+                : isMultiSelected
+                  ? `border-blue-500/50 ${TYPE_ROW_COLORS[segment.type]?.border || 'border-l-blue-500/50'} ${TYPE_ROW_COLORS[segment.type]?.bg || 'bg-zinc-800'}`
+                  : isDragging
+                    ? `border-zinc-600 ${TYPE_ROW_COLORS[segment.type]?.border || 'border-l-zinc-600'} bg-zinc-800 opacity-50`
+                    : otherUsersHere.length > 0
+                      ? `${TYPE_ROW_COLORS[segment.type]?.bg || 'bg-zinc-900'} border-l-2 ${otherUsersHere[0].color.replace('bg-', 'border-')} border-t-zinc-800 border-r-zinc-800 border-b-zinc-800 hover:bg-zinc-800`
+                      : inGroup
+                        ? `${TYPE_ROW_COLORS[segment.type]?.bg || 'bg-zinc-900/50'} ${TYPE_ROW_COLORS[segment.type]?.border || 'border-l-zinc-800/50'} border-zinc-800/50 hover:border-zinc-700 hover:bg-zinc-800/50`
+                        : `${TYPE_ROW_COLORS[segment.type]?.bg || 'bg-zinc-900'} ${TYPE_ROW_COLORS[segment.type]?.border || 'border-l-zinc-800'} border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800`
+        }`}
+      >
+        <div className="flex items-center gap-2">
+          {/* Drag handle (compact) */}
+          <div
+            className="cursor-grab active:cursor-grabbing text-zinc-600 hover:text-zinc-400 transition-colors shrink-0 touch-none"
+            title="Drag to reorder"
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Bars3Icon className="w-3 h-3" />
+          </div>
+          {/* Checkbox (compact) */}
+          <div
+            onClick={(e) => {
+              e.stopPropagation();
+              onCheckboxChange(segment.id, e);
+            }}
+            className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition-colors shrink-0 ${
+              isMultiSelected
+                ? 'bg-blue-600 border-blue-500'
+                : 'bg-zinc-800 border-zinc-600 hover:border-zinc-500'
+            }`}
+            title="Click to select, Shift+click for range, Ctrl+click to toggle"
+          >
+            {isMultiSelected && (
+              <CheckIcon className="w-2.5 h-2.5 text-white" />
+            )}
+          </div>
+          {/* Segment number */}
+          <span className="text-xs text-zinc-500 font-mono w-5 text-right shrink-0">
+            {String(originalIndex + 1).padStart(2, '0')}
+          </span>
+          {/* Segment name */}
+          <span className={`text-sm truncate flex-1 min-w-0 ${isLocked ? 'text-zinc-400' : 'text-white'}`}>
+            {segment.name}
+          </span>
+          {/* Type badge (compact) */}
+          <span className={`px-1.5 py-0.5 text-[10px] rounded border shrink-0 ${getTypeBadgeColor(segment.type, customTypeColors)}`}>
+            {segment.type}
+          </span>
+          {/* Lock indicator (compact) */}
+          {isLocked && (
+            <LockClosedIcon className="w-3 h-3 text-zinc-500 shrink-0" title="Locked" />
+          )}
+          {/* Optional indicator (compact) */}
+          {segment.optional && (
+            <span className="text-[10px] text-amber-400 shrink-0" title="Optional">opt</span>
+          )}
+          {/* Duration */}
+          <span className="text-xs font-mono text-zinc-400 w-12 text-right shrink-0" title="Duration">
+            {segment.duration !== null ? `${segment.duration}s` : 'Manual'}
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  // Expanded View (default): Full segment row with all inline fields
   return (
     <div
       id={`segment-${segment.id}`}
