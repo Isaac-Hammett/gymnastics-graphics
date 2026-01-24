@@ -64,7 +64,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 
 ## Task Summary by Phase
 
-### Phase A: Connect Editor to Engine (P0) - IN PROGRESS (8/16 complete)
+### Phase A: Connect Editor to Engine (P0) - IN PROGRESS (9/16 complete)
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
@@ -76,7 +76,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 6 | Update all socket event broadcasts to target competition room | COMPLETE | Updated `_triggerGraphic()` to use `io.to('competition:${compId}').emit()` with fallback to legacy broadcast. All other socket events are already routed through EventEmitter handlers in server/index.js `getOrCreateEngine()` which already use room-based broadcasting. |
 | Task 7 | Pass Firebase Admin instance to engine for `_triggerGraphic()` | COMPLETE | Updated `_triggerGraphic()` to handle both Firebase db and Admin app; added JSDoc example to `getOrCreateEngine()` |
 | Task 8 | Add `loadRundown` socket handler on server | COMPLETE | Added handler that fetches segments from Firebase and loads into engine via updateConfig() |
-| Task 9 | Add `loadRundown` action in ShowContext | NOT STARTED | |
+| Task 9 | Add `loadRundown` action in ShowContext | COMPLETE | Added loadRundown function, loadRundownResult handler, rundownLoaded state |
 | Task 10 | Add "Load Rundown" button in Producer View | NOT STARTED | |
 | Task 11 | Create segment mapper (Editor format → Engine format) | NOT STARTED | |
 | Task 12 | Verify Firebase is passed to engine | NOT STARTED | |
@@ -359,16 +359,23 @@ Add socket handler for `loadRundown` event that creates/retrieves engine and loa
 
 ### Task 9: Add loadRundown action in ShowContext
 
-**Status:** NOT STARTED
+**Status:** COMPLETE
 **File:** `show-controller/src/context/ShowContext.jsx`
 
 **Description:**
 Add `loadRundown` action to emit the socket event from client.
 
 **Checklist:**
-- [ ] Add `loadRundown` function that emits `loadRundown` event
-- [ ] Pass `compId` from context
-- [ ] Export function from context
+- [x] Add `loadRundown` function that emits `loadRundown` event
+- [x] Pass `compId` from context
+- [x] Export function from context
+
+**Implementation Notes:**
+- Added `loadRundown` function at line 423-426 using useCallback
+- Function emits `loadRundown` event with `{ compId }` payload
+- Added `loadRundownResult` socket handler at line 332-345 to handle server response
+- Added `rundownLoaded` and `segments` fields to INITIAL_TIMESHEET_STATE
+- Exported `loadRundown` in context value object at line 499
 
 ---
 
