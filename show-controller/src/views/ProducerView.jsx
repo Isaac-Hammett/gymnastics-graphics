@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useShow } from '../context/ShowContext';
 import { useCompetition } from '../context/CompetitionContext';
+import { useOBS } from '../context/OBSContext';
 import { useTimesheet } from '../hooks/useTimesheet';
 import { useAIContext } from '../hooks/useAIContext';
 import CurrentSegment from '../components/CurrentSegment';
@@ -39,7 +40,10 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   TrophyIcon,
-  StarIcon
+  StarIcon,
+  MusicalNoteIcon,
+  SpeakerWaveIcon,
+  SpeakerXMarkIcon
 } from '@heroicons/react/24/solid';
 
 // Health status colors for quick camera buttons
@@ -82,8 +86,12 @@ export default function ProducerView() {
     isFirstSegment,
     totalSegments,
     rundownModified,
-    rundownModifiedSummary
+    rundownModifiedSummary,
+    currentSegment
   } = useTimesheet();
+
+  // OBS context for audio control
+  const { obsState, setMute } = useOBS();
 
   const {
     showConfig,
@@ -136,6 +144,7 @@ export default function ProducerView() {
   const [isReloadingRundown, setIsReloadingRundown] = useState(false);
   const [loadRundownToast, setLoadRundownToast] = useState(null); // { type: 'success' | 'error', message: string }
   const [showReloadConfirmation, setShowReloadConfirmation] = useState(false); // Confirmation dialog state
+  const [activeAudioCue, setActiveAudioCue] = useState(null); // { songName, segmentId, sourceName, timestamp }
 
   // Server URL for REST API calls
   const serverUrl = import.meta.env.PROD
@@ -196,6 +205,36 @@ export default function ProducerView() {
     };
   }, [socket]);
 
+  // Subscribe to audio cue events (Phase F: Task 66)
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleAudioCueTriggered = (data) => {
+      console.log('[ProducerView] Audio cue triggered:', data);
+      setActiveAudioCue({
+        songName: data.audioCue?.songName,
+        segmentId: data.segmentId,
+        sourceName: data.sourceName || 'Music Player',
+        timestamp: data.timestamp,
+        rehearsalMode: data.rehearsalMode || false
+      });
+    };
+
+    socket.on('timesheetAudioCueTriggered', handleAudioCueTriggered);
+
+    return () => {
+      socket.off('timesheetAudioCueTriggered', handleAudioCueTriggered);
+    };
+  }, [socket]);
+
+  // Clear audio cue when segment changes
+  useEffect(() => {
+    // When segment changes, clear the active audio cue if it belongs to a different segment
+    if (currentSegment && activeAudioCue && activeAudioCue.segmentId !== currentSegment.id) {
+      setActiveAudioCue(null);
+    }
+  }, [currentSegment, activeAudioCue]);
+
   // Quick camera switch function
   const switchToCamera = useCallback((cameraId) => {
     if (socket) {
@@ -214,6 +253,19 @@ export default function ProducerView() {
     const health = cameraHealth.find(c => c.cameraId === cameraId);
     return health?.cameraName || cameraId;
   }, [cameraHealth]);
+
+  // Get audio source mute state from OBS (Phase F: Task 66)
+  const getAudioSourceMuted = useCallback((sourceName) => {
+    const audioSource = obsState?.audioSources?.find(s => s.inputName === sourceName);
+    return audioSource?.muted ?? false;
+  }, [obsState?.audioSources]);
+
+  // Toggle mute for audio cue source
+  const toggleAudioCueMute = useCallback(() => {
+    if (!activeAudioCue?.sourceName) return;
+    const currentMuted = getAudioSourceMuted(activeAudioCue.sourceName);
+    setMute(activeAudioCue.sourceName, !currentMuted);
+  }, [activeAudioCue?.sourceName, getAudioSourceMuted, setMute]);
 
   // Handle load rundown button click
   const handleLoadRundown = useCallback(() => {
@@ -735,6 +787,61 @@ export default function ProducerView() {
                     </button>
                   </div>
                 </div>
+
+                {/* Audio Cue Control Panel (Phase F: Task 66) */}
+                {(activeAudioCue || currentSegment?.audioCue?.songName) && (
+                  <div className="bg-zinc-800 rounded-xl p-4">
+                    <div className="flex items-center gap-2 text-sm text-zinc-400 uppercase tracking-wide mb-3">
+                      <MusicalNoteIcon className="w-4 h-4" />
+                      Audio Cue
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      {/* Audio info */}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className={`w-2 h-2 rounded-full ${activeAudioCue?.rehearsalMode ? 'bg-purple-500' : 'bg-green-500'} animate-pulse`} />
+                          <span className="text-white font-medium">
+                            {activeAudioCue?.songName || currentSegment?.audioCue?.songName}
+                          </span>
+                        </div>
+                        {activeAudioCue?.rehearsalMode && (
+                          <div className="text-xs text-purple-400 mt-1">Rehearsal mode - audio skipped</div>
+                        )}
+                        {!activeAudioCue?.rehearsalMode && activeAudioCue?.sourceName && (
+                          <div className="text-xs text-zinc-500 mt-1">
+                            Source: {activeAudioCue.sourceName}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Mute toggle - only show if not in rehearsal mode */}
+                      {!activeAudioCue?.rehearsalMode && activeAudioCue?.sourceName && (
+                        <button
+                          onClick={toggleAudioCueMute}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                            getAudioSourceMuted(activeAudioCue.sourceName)
+                              ? 'bg-red-600 hover:bg-red-500 text-white'
+                              : 'bg-zinc-700 hover:bg-zinc-600 text-zinc-300'
+                          }`}
+                          title={getAudioSourceMuted(activeAudioCue.sourceName) ? 'Unmute audio' : 'Mute audio'}
+                        >
+                          {getAudioSourceMuted(activeAudioCue.sourceName) ? (
+                            <>
+                              <SpeakerXMarkIcon className="w-4 h-4" />
+                              Muted
+                            </>
+                          ) : (
+                            <>
+                              <SpeakerWaveIcon className="w-4 h-4" />
+                              Playing
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* Quick Camera Buttons - wired to runtime state */}
                 {cameraHealth.length > 0 && (
