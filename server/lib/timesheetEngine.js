@@ -719,6 +719,19 @@ class TimesheetEngine extends EventEmitter {
   async _triggerGraphic(segment) {
     if (!segment.graphic) return;
 
+    // In rehearsal mode, skip actual graphic firing but still emit event
+    if (this._isRehearsalMode) {
+      console.log(`[Timesheet${this.compId ? ':' + this.compId : ''}] REHEARSAL: Skipping graphic "${segment.graphic}"`);
+      this.emit('graphicTriggered', {
+        graphic: segment.graphic,
+        data: segment.graphicData || {},
+        segmentId: segment.id,
+        timestamp: Date.now(),
+        rehearsalMode: true
+      });
+      return;
+    }
+
     const graphicData = {
       graphic: segment.graphic,
       data: segment.graphicData || {},
