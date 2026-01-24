@@ -218,7 +218,11 @@ export function ShowProvider({ children }) {
     // Timesheet events
     newSocket.on('timesheetState', (state) => {
       console.log('Timesheet state:', state);
-      setTimesheetState(state);
+      // Merge server state with existing client-side state to preserve flags like rundownLoaded
+      setTimesheetState(prev => ({
+        ...prev,
+        ...state
+      }));
     });
 
     newSocket.on('timesheetTick', (tickData) => {
