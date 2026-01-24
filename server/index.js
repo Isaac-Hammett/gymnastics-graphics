@@ -29,6 +29,7 @@ import { getOBSConnectionManager } from './lib/obsConnectionManager.js';
 import { DEFAULT_PRESETS } from './lib/obsAudioManager.js';
 import { encryptStreamKey, decryptStreamKey, isEncryptedKey } from './lib/obsStreamManager.js';
 import { mapEditorSegmentsToEngine, validateEngineSegments, diffSegments, detectDuplicateIds, deduplicateSegmentsById } from './lib/segmentMapper.js';
+import aiSuggestionService from './lib/aiSuggestionService.js';
 
 dotenv.config();
 
@@ -5858,6 +5859,73 @@ io.on('connection', async (socket) => {
       socket.emit('loadRundownResult', {
         success: false,
         error: `Failed to load rundown: ${error.message}`
+      });
+    }
+  });
+
+  // Get AI-generated segment suggestions for rundown planning (Task 47)
+  socket.on('getAISuggestions', async ({ compId, options = {} }) => {
+    // Use compId from payload, fallback to socket's competition
+    const targetCompId = compId || clientCompId;
+
+    if (!targetCompId) {
+      socket.emit('aiSuggestionsResult', {
+        success: false,
+        error: 'No competition ID provided'
+      });
+      return;
+    }
+
+    try {
+      console.log(`[AISuggestions] Generating suggestions for competition: ${targetCompId}`);
+      console.log(`[AISuggestions] Options:`, JSON.stringify(options));
+
+      // Call the AI suggestion service
+      const result = await aiSuggestionService.generateSuggestions(targetCompId, options);
+
+      if (result.success) {
+        console.log(`[AISuggestions] Generated ${result.suggestions.length} suggestions for ${targetCompId}`);
+        console.log(`[AISuggestions] By category:`, JSON.stringify(result.meta.byCategory));
+      } else {
+        console.warn(`[AISuggestions] Failed for ${targetCompId}: ${result.error}`);
+      }
+
+      // Send result back to the requesting client
+      socket.emit('aiSuggestionsResult', result);
+
+    } catch (error) {
+      console.error(`[AISuggestions] Error generating suggestions for ${targetCompId}:`, error.message);
+      socket.emit('aiSuggestionsResult', {
+        success: false,
+        error: `Failed to generate suggestions: ${error.message}`
+      });
+    }
+  });
+
+  // Get AI suggestion count (quick estimate without full generation)
+  socket.on('getAISuggestionCount', async ({ compId }) => {
+    // Use compId from payload, fallback to socket's competition
+    const targetCompId = compId || clientCompId;
+
+    if (!targetCompId) {
+      socket.emit('aiSuggestionCountResult', {
+        success: false,
+        error: 'No competition ID provided'
+      });
+      return;
+    }
+
+    try {
+      const result = await aiSuggestionService.getSuggestionCount(targetCompId);
+      socket.emit('aiSuggestionCountResult', {
+        success: true,
+        ...result,
+        compId: targetCompId
+      });
+    } catch (error) {
+      socket.emit('aiSuggestionCountResult', {
+        success: false,
+        error: error.message
       });
     }
   });
