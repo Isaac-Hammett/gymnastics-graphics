@@ -37,7 +37,9 @@ const INITIAL_TIMESHEET_STATE = {
   holdRemainingMs: 0,
   segments: [],
   rundownLoaded: false,
-  isRehearsalMode: false
+  isRehearsalMode: false,
+  rundownModified: false,
+  rundownModifiedSummary: null
 };
 
 export function ShowProvider({ children }) {
@@ -336,7 +338,9 @@ export function ShowProvider({ children }) {
         console.log(`Rundown loaded successfully: ${segmentCount} segments`);
         setTimesheetState(prev => ({
           ...prev,
-          rundownLoaded: true
+          rundownLoaded: true,
+          rundownModified: false,
+          rundownModifiedSummary: null
         }));
       } else {
         console.error(`Failed to load rundown: ${loadError}`);
@@ -351,6 +355,16 @@ export function ShowProvider({ children }) {
       setTimesheetState(prev => ({
         ...prev,
         isRehearsalMode
+      }));
+    });
+
+    // Rundown modified handler (Phase I - Live Rundown Sync)
+    newSocket.on('rundownModified', (summary) => {
+      console.log('Rundown modified:', summary);
+      setTimesheetState(prev => ({
+        ...prev,
+        rundownModified: true,
+        rundownModifiedSummary: summary
       }));
     });
 
@@ -476,6 +490,14 @@ export function ShowProvider({ children }) {
     socket?.emit('setRehearsalMode', { enabled, compId });
   }, [socket, compId]);
 
+  const clearRundownModified = useCallback(() => {
+    setTimesheetState(prev => ({
+      ...prev,
+      rundownModified: false,
+      rundownModifiedSummary: null
+    }));
+  }, []);
+
   const value = {
     // Connection info
     socketUrl,
@@ -521,7 +543,8 @@ export function ShowProvider({ children }) {
     overrideTimesheetCamera,
     getTimesheetOverrides,
     clearOverrideLog,
-    setRehearsalMode
+    setRehearsalMode,
+    clearRundownModified
   };
 
   return (

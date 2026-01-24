@@ -27,6 +27,7 @@ export function useTimesheet() {
     overrideTimesheetScene,
     overrideTimesheetCamera,
     clearOverrideLog,
+    clearRundownModified,
     state
   } = useShow();
 
@@ -133,6 +134,22 @@ export function useTimesheet() {
   const engineState = useMemo(() => {
     return timesheetState.state || 'stopped';
   }, [timesheetState.state]);
+
+  /**
+   * Whether the rundown has been modified since loading
+   * @type {boolean}
+   */
+  const rundownModified = useMemo(() => {
+    return timesheetState.rundownModified || false;
+  }, [timesheetState.rundownModified]);
+
+  /**
+   * Summary of rundown modifications (added, removed, modified segments)
+   * @type {Object|null}
+   */
+  const rundownModifiedSummary = useMemo(() => {
+    return timesheetState.rundownModifiedSummary || null;
+  }, [timesheetState.rundownModifiedSummary]);
 
   /**
    * Format milliseconds as MM:SS
@@ -407,6 +424,18 @@ export function useTimesheet() {
      */
     timesheetState,
 
+    /**
+     * Whether the rundown has been modified since loading
+     * @type {boolean}
+     */
+    rundownModified,
+
+    /**
+     * Summary of rundown modifications (added, removed, modified, reordered segments)
+     * @type {Object|null}
+     */
+    rundownModifiedSummary,
+
     // Actions
     /**
      * Start the timesheet show
@@ -455,6 +484,12 @@ export function useTimesheet() {
      * @type {function(): void}
      */
     clearOverrideLog,
+
+    /**
+     * Clear rundown modified state
+     * @type {function(): void}
+     */
+    clearRundownModified,
 
     // Helpers
     /**
