@@ -223,6 +223,8 @@ export default function RundownEditorPage() {
   const [showImportCSVModal, setShowImportCSVModal] = useState(false); // CSV import modal (Phase 9: Task 73)
   const [importCSVData, setImportCSVData] = useState(null); // Parsed CSV data for import (Phase 9: Task 73)
   const [importCSVMapping, setImportCSVMapping] = useState({}); // Field mapping for CSV import (Phase 9: Task 73)
+  const [showImportJSONModal, setShowImportJSONModal] = useState(false); // JSON import modal (Phase 9: Task 74)
+  const [importJSONData, setImportJSONData] = useState(null); // Parsed JSON data for import (Phase 9: Task 74)
 
   // Filtered segments
   const filteredSegments = useMemo(() => {
@@ -2125,6 +2127,144 @@ export default function RundownEditorPage() {
     setImportCSVMapping({});
   }
 
+  // Import rundown from JSON backup (Phase 9: Task 74)
+  function handleImportJSON() {
+    // Create hidden file input and trigger click
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json,application/json';
+    input.onchange = async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+
+        // Validate JSON structure
+        const validationErrors = validateJSONImport(data);
+        if (validationErrors.length > 0) {
+          showToast(`Invalid JSON: ${validationErrors[0]}`);
+          return;
+        }
+
+        setImportJSONData(data);
+        setShowImportJSONModal(true);
+      } catch (error) {
+        console.error('Error parsing JSON:', error);
+        showToast('Error parsing JSON file');
+      }
+    };
+    input.click();
+  }
+
+  // Validate JSON import structure (Phase 9: Task 74)
+  function validateJSONImport(data) {
+    const errors = [];
+
+    if (!data) {
+      errors.push('File is empty');
+      return errors;
+    }
+
+    // Check for required top-level fields
+    if (!data.rundown) {
+      errors.push('Missing "rundown" section');
+      return errors;
+    }
+
+    if (!data.rundown.segments || !Array.isArray(data.rundown.segments)) {
+      errors.push('Missing or invalid "segments" array');
+      return errors;
+    }
+
+    if (data.rundown.segments.length === 0) {
+      errors.push('No segments found in the file');
+      return errors;
+    }
+
+    // Check each segment has required fields
+    for (let i = 0; i < data.rundown.segments.length; i++) {
+      const seg = data.rundown.segments[i];
+      if (!seg.name || typeof seg.name !== 'string') {
+        errors.push(`Segment ${i + 1} is missing a valid name`);
+        break;
+      }
+    }
+
+    return errors;
+  }
+
+  // Confirm JSON import (Phase 9: Task 74)
+  function handleConfirmJSONImport(mode, options = {}) {
+    if (!importJSONData?.rundown?.segments) {
+      showToast('No segments to import');
+      return;
+    }
+
+    // Process segments from JSON
+    const importedSegments = importJSONData.rundown.segments.map((seg, index) => ({
+      // Use existing id or generate new one
+      id: options.preserveIds && seg.id ? seg.id : `seg-import-${Date.now()}-${index}`,
+      name: seg.name || `Segment ${index + 1}`,
+      type: seg.type || 'live',
+      duration: typeof seg.duration === 'number' ? seg.duration : null,
+      scene: seg.scene || '',
+      graphic: seg.graphic || null,
+      autoAdvance: typeof seg.autoAdvance === 'boolean' ? seg.autoAdvance : true,
+      optional: typeof seg.optional === 'boolean' ? seg.optional : false,
+      locked: typeof seg.locked === 'boolean' ? seg.locked : false,
+      notes: seg.notes || '',
+      timingMode: seg.timingMode || 'fixed',
+      bufferAfter: typeof seg.bufferAfter === 'number' ? seg.bufferAfter : 0,
+    }));
+
+    // Process groups if importing them
+    let importedGroups = [];
+    if (options.importGroups && importJSONData.rundown.groups) {
+      importedGroups = importJSONData.rundown.groups.map((group, index) => ({
+        id: options.preserveIds && group.id ? group.id : `group-import-${Date.now()}-${index}`,
+        name: group.name || `Group ${index + 1}`,
+        segmentIds: group.segmentIds || [],
+        color: group.color || 'zinc',
+        collapsed: typeof group.collapsed === 'boolean' ? group.collapsed : false,
+      }));
+    }
+
+    if (mode === 'replace') {
+      setSegments(importedSegments);
+      if (options.importGroups) {
+        setGroups(importedGroups);
+      }
+      // Optionally restore other settings
+      if (options.importSettings) {
+        if (importJSONData.rundown.targetDuration) {
+          setTargetDuration(importJSONData.rundown.targetDuration);
+          setShowTargetDuration(true);
+        }
+        if (importJSONData.rundown.approvalStatus) {
+          setApprovalStatus(importJSONData.rundown.approvalStatus);
+        }
+      }
+      showToast(`Imported ${importedSegments.length} segments (replaced)`);
+    } else {
+      setSegments([...segments, ...importedSegments]);
+      if (options.importGroups && importedGroups.length > 0) {
+        setGroups([...groups, ...importedGroups]);
+      }
+      showToast(`Imported ${importedSegments.length} segments (appended)`);
+    }
+
+    setShowImportJSONModal(false);
+    setImportJSONData(null);
+  }
+
+  // Cancel JSON import (Phase 9: Task 74)
+  function handleCancelJSONImport() {
+    setShowImportJSONModal(false);
+    setImportJSONData(null);
+  }
+
   function handleSyncOBS() {
     showToast('Coming soon');
   }
@@ -3016,6 +3156,13 @@ export default function RundownEditorPage() {
               Import CSV
             </button>
             <button
+              onClick={handleImportJSON}
+              className="flex items-center gap-2 px-3 py-2 bg-zinc-800 border border-zinc-700 text-zinc-300 text-sm rounded-lg hover:bg-zinc-700 transition-colors"
+            >
+              <ArrowDownTrayIcon className="w-4 h-4" />
+              Import JSON
+            </button>
+            <button
               onClick={handleSyncOBS}
               className="flex items-center gap-2 px-3 py-2 bg-zinc-800 border border-zinc-700 text-zinc-300 text-sm rounded-lg hover:bg-zinc-700 transition-colors"
             >
@@ -3417,6 +3564,15 @@ export default function RundownEditorPage() {
           setMapping={setImportCSVMapping}
           onConfirm={handleConfirmCSVImport}
           onCancel={handleCancelCSVImport}
+        />
+      )}
+
+      {/* Import JSON Modal (Phase 9: Task 74) */}
+      {showImportJSONModal && importJSONData && (
+        <ImportJSONModal
+          data={importJSONData}
+          onConfirm={handleConfirmJSONImport}
+          onCancel={handleCancelJSONImport}
         />
       )}
     </div>
@@ -5903,6 +6059,214 @@ function ImportCSVModal({ data, mapping, setMapping, onConfirm, onCancel }) {
           >
             <ArrowDownTrayIcon className="w-4 h-4" />
             Import {data.rows.length} Segments
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Import JSON Modal Component (Phase 9: Task 74)
+function ImportJSONModal({ data, onConfirm, onCancel }) {
+  const [importMode, setImportMode] = useState('replace'); // 'append' or 'replace' (default to replace for backup restore)
+  const [importGroups, setImportGroups] = useState(true); // Whether to import groups
+  const [importSettings, setImportSettings] = useState(true); // Whether to import settings (targetDuration, approvalStatus)
+  const [preserveIds, setPreserveIds] = useState(true); // Whether to preserve segment IDs
+
+  const segments = data?.rundown?.segments || [];
+  const groups = data?.rundown?.groups || [];
+  const competition = data?.competition || {};
+
+  // Format duration for display
+  function formatDurationPreview(seconds) {
+    if (!seconds && seconds !== 0) return '-';
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+      <div className="bg-zinc-900 border border-zinc-700 rounded-xl w-full max-w-3xl mx-4 shadow-2xl max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between p-4 border-b border-zinc-800">
+          <div>
+            <h2 className="text-lg font-bold text-white">Import JSON Backup</h2>
+            <p className="text-xs text-zinc-500 mt-0.5">
+              {segments.length} segments{groups.length > 0 && `, ${groups.length} groups`}
+              {competition.name && ` from "${competition.name}"`}
+            </p>
+          </div>
+          <button
+            onClick={onCancel}
+            className="p-1 text-zinc-400 hover:text-zinc-200 rounded-lg hover:bg-zinc-800 transition-colors"
+          >
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-4 overflow-y-auto flex-1 space-y-6">
+          {/* File Info Section */}
+          {data.version && (
+            <div className="bg-zinc-800/50 rounded-lg p-3">
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <span className="text-zinc-500">Format Version:</span>
+                  <span className="text-zinc-300 ml-2">{data.version}</span>
+                </div>
+                {data.exportedAt && (
+                  <div>
+                    <span className="text-zinc-500">Exported:</span>
+                    <span className="text-zinc-300 ml-2">
+                      {new Date(data.exportedAt).toLocaleString()}
+                    </span>
+                  </div>
+                )}
+                {competition.type && (
+                  <div>
+                    <span className="text-zinc-500">Competition Type:</span>
+                    <span className="text-zinc-300 ml-2">{competition.type}</span>
+                  </div>
+                )}
+                {data.rundown?.totalRuntime && (
+                  <div>
+                    <span className="text-zinc-500">Total Runtime:</span>
+                    <span className="text-zinc-300 ml-2">
+                      {formatDurationPreview(data.rundown.totalRuntime)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Preview Section */}
+          <div>
+            <h3 className="text-sm font-medium text-white mb-3">Segments Preview (First 5)</h3>
+            <div className="border border-zinc-700 rounded-lg overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-zinc-800">
+                    <tr>
+                      <th className="px-3 py-2 text-left text-zinc-400 font-medium">#</th>
+                      <th className="px-3 py-2 text-left text-zinc-400 font-medium">Name</th>
+                      <th className="px-3 py-2 text-left text-zinc-400 font-medium">Type</th>
+                      <th className="px-3 py-2 text-left text-zinc-400 font-medium">Duration</th>
+                      <th className="px-3 py-2 text-left text-zinc-400 font-medium">Scene</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-800">
+                    {segments.slice(0, 5).map((seg, idx) => (
+                      <tr key={seg.id || idx} className="hover:bg-zinc-800/50">
+                        <td className="px-3 py-2 text-zinc-500">{seg.order || idx + 1}</td>
+                        <td className="px-3 py-2 text-zinc-300 max-w-[200px] truncate">{seg.name}</td>
+                        <td className="px-3 py-2 text-zinc-400">{seg.type || '-'}</td>
+                        <td className="px-3 py-2 text-zinc-400">
+                          {seg.duration ? formatDurationPreview(seg.duration) : '-'}
+                        </td>
+                        <td className="px-3 py-2 text-zinc-400 max-w-[150px] truncate">
+                          {seg.scene || '-'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {segments.length > 5 && (
+                <div className="p-2 bg-zinc-800/50 text-center text-zinc-500 text-sm">
+                  ... and {segments.length - 5} more segments
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Import Options Section */}
+          <div>
+            <h3 className="text-sm font-medium text-white mb-3">Import Options</h3>
+            <div className="space-y-3">
+              {/* Import Mode */}
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="importMode"
+                    value="replace"
+                    checked={importMode === 'replace'}
+                    onChange={(e) => setImportMode(e.target.value)}
+                    className="w-4 h-4 text-blue-600 bg-zinc-800 border-zinc-600 focus:ring-blue-500"
+                  />
+                  <span className="text-zinc-300 text-sm">Replace all segments</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="importMode"
+                    value="append"
+                    checked={importMode === 'append'}
+                    onChange={(e) => setImportMode(e.target.value)}
+                    className="w-4 h-4 text-blue-600 bg-zinc-800 border-zinc-600 focus:ring-blue-500"
+                  />
+                  <span className="text-zinc-300 text-sm">Append to existing segments</span>
+                </label>
+              </div>
+              {importMode === 'replace' && (
+                <div className="p-2 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                  <span className="text-amber-400 text-xs">Warning: This will remove all existing segments</span>
+                </div>
+              )}
+
+              {/* Additional Options */}
+              <div className="grid grid-cols-2 gap-3 pt-2 border-t border-zinc-800">
+                {groups.length > 0 && (
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={importGroups}
+                      onChange={(e) => setImportGroups(e.target.checked)}
+                      className="w-4 h-4 text-blue-600 bg-zinc-800 border-zinc-600 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-zinc-300 text-sm">
+                      Import groups ({groups.length})
+                    </span>
+                  </label>
+                )}
+                {importMode === 'replace' && (data.rundown?.targetDuration || data.rundown?.approvalStatus) && (
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={importSettings}
+                      onChange={(e) => setImportSettings(e.target.checked)}
+                      className="w-4 h-4 text-blue-600 bg-zinc-800 border-zinc-600 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-zinc-300 text-sm">Import settings</span>
+                  </label>
+                )}
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={preserveIds}
+                    onChange={(e) => setPreserveIds(e.target.checked)}
+                    className="w-4 h-4 text-blue-600 bg-zinc-800 border-zinc-600 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-zinc-300 text-sm">Preserve segment IDs</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-4 border-t border-zinc-800 flex gap-3">
+          <button
+            onClick={onCancel}
+            className="flex-1 px-4 py-2 bg-zinc-800 text-zinc-300 rounded-lg hover:bg-zinc-700 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => onConfirm(importMode, { importGroups, importSettings, preserveIds })}
+            className="flex-1 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-500 transition-colors flex items-center justify-center gap-2"
+          >
+            <ArrowDownTrayIcon className="w-4 h-4" />
+            Import {segments.length} Segments
           </button>
         </div>
       </div>

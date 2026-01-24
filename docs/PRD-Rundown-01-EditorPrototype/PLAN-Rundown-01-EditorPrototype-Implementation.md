@@ -3,7 +3,7 @@
 **PRD:** PRD-Rundown-01-EditorPrototype
 **Status:** PROTOTYPE COMPLETE, FEATURES IN PROGRESS
 **Created:** 2026-01-22
-**Last Updated:** 2026-01-23 (v4.8 - Task 73 complete - Import from CSV)
+**Last Updated:** 2026-01-23 (v4.9 - Task 74 complete - Import from JSON)
 
 ---
 
@@ -51,7 +51,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | 6 | Timing Modes | ✅ COMPLETE | 55-57 |
 | 7 | Templates & Presets | ✅ COMPLETE | 58-62 |
 | 8 | Collaboration | ✅ COMPLETE | 63-69 |
-| 9 | Data & Reporting | 🔲 NOT STARTED | 70-74 |
+| 9 | Data & Reporting | ✅ COMPLETE | 70-74 |
 | 10 | Visual & UX | 🔲 NOT STARTED | 75-81 |
 | 11 | Quality of Life | 🔲 NOT STARTED | 82-86 |
 | 12 | Advanced Planning | 🔲 NOT STARTED | 87-96 |
@@ -184,7 +184,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 68: Add version rollback | COMPLETE | logChange() updated to store snapshots (segments + groups), syncSegmentsToFirebase/syncGroupsToFirebase pass snapshots, ChangeHistoryModal shows "Restore" button for entries with snapshots, RestoreConfirmModal for confirmation, handleInitiateRestore/handleConfirmRestore handlers, skipSnapshot flag prevents circular references |
 | Task 69: Add approval workflow | COMPLETE | APPROVAL_STATUSES constant (draft, in-review, approved, locked), approvalStatus state synced to Firebase, status badge in header with dropdown menu, checkPermission() extended for approval status restrictions, workflow actions (submitForReview, approve, reject, lock, unlock, returnToDraft), RejectReasonModal for rejection with required reason, status logged to change history |
 
-### Phase 9: Data & Reporting 🚧 IN PROGRESS
+### Phase 9: Data & Reporting ✅ COMPLETE
 
 > **Note:** Post-show analytics (actual vs planned, deviation logs) moved to PRD-05.
 
@@ -194,7 +194,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 71: Export to CSV | COMPLETE | handleExportCSV function generates CSV with all segment fields (number, start time, name, type, duration, scene, graphic, timing mode, flags, notes), proper CSV escaping for commas/quotes/newlines, triggers browser download with dated filename |
 | Task 72: Export to JSON | COMPLETE | handleExportJSON function exports full rundown data (competition info, segments with all fields and computed start times, groups, metadata), pretty-printed JSON format, triggers browser download with dated filename |
 | Task 73: Import from CSV | COMPLETE | Hidden file input triggers file picker, parseCSV handles quoted values, autoDetectCSVMapping auto-maps columns by header keywords, ImportCSVModal shows field mapping UI with preview, append/replace modes, validation for required Name field |
-| Task 74: Import from JSON | NOT STARTED | Backup restore, preview |
+| Task 74: Import from JSON | COMPLETE | handleImportJSON opens file picker for .json files, validateJSONImport validates structure, ImportJSONModal shows preview with file info/segments/options, supports append/replace modes, import groups option, import settings option (targetDuration, approvalStatus), preserve IDs option |
 
 ### Phase 10: Visual & UX 🔲 NOT STARTED
 

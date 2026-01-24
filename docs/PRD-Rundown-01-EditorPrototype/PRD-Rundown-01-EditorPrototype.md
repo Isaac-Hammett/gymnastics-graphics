@@ -71,7 +71,7 @@ The **Producer View** (separate page) uses this rundown as the "script" to contr
 | 6 | Timing Modes | ✅ COMPLETE | Fixed/manual/follows-previous modes |
 | 7 | Templates & Presets | ✅ COMPLETE | Segment templates, recurrence |
 | 8 | Collaboration | ✅ COMPLETE | Multi-user, permissions, versioning |
-| 9 | Data & Reporting | 🔲 PLANNED | Export, import rundowns |
+| 9 | Data & Reporting | ✅ COMPLETE | Export, import rundowns |
 | 10 | Visual & UX | 🔲 PLANNED | Timeline view, theming, print |
 | 11 | Quality of Life | 🔲 PLANNED | Keyboard shortcuts, undo/redo |
 | 12 | Advanced Planning | 🔲 PLANNED | AI suggestions, talent, equipment, sponsors |
@@ -1129,7 +1129,7 @@ const filteredSegments = segments.filter(seg => {
 - [x] Export to CSV
 - [x] Export to JSON
 - [x] Import from CSV with field mapping
-- [ ] Import from JSON (backup restore)
+- [x] Import from JSON (backup restore)
 - [x] Import preview and validation
 
 ### Phase 10: Visual & UX
