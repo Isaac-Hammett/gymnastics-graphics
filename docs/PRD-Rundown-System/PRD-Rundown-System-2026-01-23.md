@@ -222,10 +222,10 @@ Producers can create rundowns but cannot execute them. There's no bridge between
 - [x] Notes visible to talent
 
 ### Phase I Complete When:
-- [ ] Producer sees "Rundown Modified" warning badge when rundown changes during show
-- [ ] "Reload Rundown" updates segments without losing current position
-- [ ] Confirmation dialog shows summary of changes (added/removed/modified segments)
-- [ ] Deleted current segment is handled gracefully (stay on it, warn producer)
+- [x] Producer sees "Rundown Modified" warning badge when rundown changes during show
+- [x] "Reload Rundown" updates segments without losing current position
+- [x] Confirmation dialog shows summary of changes (added/removed/modified segments)
+- [x] Deleted current segment is handled gracefully (stay on it, warn producer)
 - [ ] Past segments (already completed) are not affected by reload
 
 ### Phase J Complete When:
