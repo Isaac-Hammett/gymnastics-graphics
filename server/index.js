@@ -650,43 +650,97 @@ function subscribeToRundownChanges(compId, db, initialSegments) {
     // Compare new segments to last known segments using deep diff
     const diff = diffSegments(listenerData.lastSegments, newSegments);
 
-    if (diff.hasChanges) {
-      console.log(`[Timesheet] Rundown diff for ${compId}: ${diff.summary}`);
-      if (diff.added.length > 0) {
-        console.log(`  Added: ${diff.added.map(s => s.name).join(', ')}`);
+    // Get the engine to check current position for filtering past segment changes (Task 36)
+    const engine = getEngine(compId);
+    const state = engine?.getState();
+    const currentIndex = state?.currentSegmentIndex ?? -1;
+    const currentSegmentId = state?.currentSegmentId;
+
+    // Task 36: Filter out changes to past segments (already completed)
+    // Past segments are those where BOTH old and new positions are before the current segment
+    // These changes don't affect the current show execution
+    const isPastSegment = (seg) => {
+      // For reordered: both old and new index must be before current
+      if (seg.oldIndex !== undefined && seg.newIndex !== undefined) {
+        return seg.oldIndex < currentIndex && seg.newIndex < currentIndex;
       }
-      if (diff.removed.length > 0) {
-        console.log(`  Removed: ${diff.removed.map(s => s.name).join(', ')}`);
+      // For modified: newIndex must be before current (unless it's the current segment)
+      if (seg.newIndex !== undefined) {
+        return seg.newIndex < currentIndex && seg.id !== currentSegmentId;
       }
-      if (diff.modified.length > 0) {
-        console.log(`  Modified: ${diff.modified.map(s => `${s.name} (${s.changedFields.join(', ')})`).join(', ')}`);
+      // For removed: index must be before current (unless it was the current segment)
+      if (seg.index !== undefined) {
+        return seg.index < currentIndex && seg.id !== currentSegmentId;
       }
-      if (diff.reordered.length > 0) {
-        console.log(`  Reordered: ${diff.reordered.map(s => `${s.name} (${s.oldIndex} → ${s.newIndex})`).join(', ')}`);
+      return false;
+    };
+
+    // Filter out past segment changes
+    const filteredReordered = diff.reordered.filter(s => !isPastSegment(s));
+    const filteredModified = diff.modified.filter(s => !isPastSegment(s));
+
+    // Log what was filtered out for debugging
+    const pastReordered = diff.reordered.filter(s => isPastSegment(s));
+    const pastModified = diff.modified.filter(s => isPastSegment(s));
+
+    if (pastReordered.length > 0 || pastModified.length > 0) {
+      console.log(`[Timesheet] Ignoring changes to past segments (Task 36):`);
+      if (pastReordered.length > 0) {
+        console.log(`  Past reordered (ignored): ${pastReordered.map(s => s.name).join(', ')}`);
+      }
+      if (pastModified.length > 0) {
+        console.log(`  Past modified (ignored): ${pastModified.map(s => s.name).join(', ')}`);
+      }
+    }
+
+    // Create filtered diff with updated hasChanges
+    const filteredDiff = {
+      ...diff,
+      reordered: filteredReordered,
+      modified: filteredModified,
+      hasChanges: diff.added.length > 0 || diff.removed.length > 0 ||
+                  filteredModified.length > 0 || filteredReordered.length > 0
+    };
+
+    // Rebuild summary for filtered diff
+    const summaryParts = [];
+    if (filteredDiff.added.length > 0) summaryParts.push(`${filteredDiff.added.length} added`);
+    if (filteredDiff.removed.length > 0) summaryParts.push(`${filteredDiff.removed.length} removed`);
+    if (filteredDiff.modified.length > 0) summaryParts.push(`${filteredDiff.modified.length} modified`);
+    if (filteredDiff.reordered.length > 0) summaryParts.push(`${filteredDiff.reordered.length} reordered`);
+    filteredDiff.summary = summaryParts.length > 0 ? summaryParts.join(', ') : 'No changes';
+
+    if (filteredDiff.hasChanges) {
+      console.log(`[Timesheet] Rundown diff for ${compId}: ${filteredDiff.summary}`);
+      if (filteredDiff.added.length > 0) {
+        console.log(`  Added: ${filteredDiff.added.map(s => s.name).join(', ')}`);
+      }
+      if (filteredDiff.removed.length > 0) {
+        console.log(`  Removed: ${filteredDiff.removed.map(s => s.name).join(', ')}`);
+      }
+      if (filteredDiff.modified.length > 0) {
+        console.log(`  Modified: ${filteredDiff.modified.map(s => `${s.name} (${s.changedFields.join(', ')})`).join(', ')}`);
+      }
+      if (filteredDiff.reordered.length > 0) {
+        console.log(`  Reordered: ${filteredDiff.reordered.map(s => `${s.name} (${s.oldIndex} → ${s.newIndex})`).join(', ')}`);
       }
 
-      // Store the diff result for Task 30 to emit as socket event
-      listenerData.lastDiff = diff;
+      // Store the filtered diff result
+      listenerData.lastDiff = filteredDiff;
 
-      // Get the engine to check current position
-      const engine = getEngine(compId);
       if (engine) {
-        const state = engine.getState();
-        const currentSegmentId = state.currentSegmentId;
-
         // Determine if changes affect current or upcoming segments
-        const affectsCurrent = diff.removed.some(s => s.id === currentSegmentId) ||
-                              diff.modified.some(s => s.id === currentSegmentId);
+        const affectsCurrent = filteredDiff.removed.some(s => s.id === currentSegmentId) ||
+                              filteredDiff.modified.some(s => s.id === currentSegmentId);
 
         // Segments after current position are "upcoming"
-        const currentIndex = state.currentSegmentIndex ?? -1;
-        const affectsUpcoming = diff.added.length > 0 ||
-                               diff.modified.some(s => s.newIndex > currentIndex) ||
-                               diff.reordered.some(s => s.newIndex > currentIndex);
+        const affectsUpcoming = filteredDiff.added.length > 0 ||
+                               filteredDiff.modified.some(s => s.newIndex > currentIndex) ||
+                               filteredDiff.reordered.some(s => s.newIndex > currentIndex);
 
         // Store extended diff info
         listenerData.lastDiff = {
-          ...diff,
+          ...filteredDiff,
           affectsCurrent,
           affectsUpcoming,
           currentSegmentId,
@@ -697,20 +751,20 @@ function subscribeToRundownChanges(compId, db, initialSegments) {
 
         // Emit rundownModified socket event to all clients in this competition room
         const rundownModifiedEvent = {
-          added: diff.added.map(s => s.id),
-          removed: diff.removed.map(s => s.id),
-          modified: diff.modified.map(s => s.id),
-          reordered: diff.reordered.map(s => s.id),
+          added: filteredDiff.added.map(s => s.id),
+          removed: filteredDiff.removed.map(s => s.id),
+          modified: filteredDiff.modified.map(s => s.id),
+          reordered: filteredDiff.reordered.map(s => s.id),
           affectsCurrent,
           affectsUpcoming,
-          summary: diff.summary,
+          summary: filteredDiff.summary,
           timestamp: new Date().toISOString(),
           // Include detailed change info for confirmation dialog
           details: {
-            added: diff.added.map(s => ({ id: s.id, name: s.name })),
-            removed: diff.removed.map(s => ({ id: s.id, name: s.name })),
-            modified: diff.modified.map(s => ({ id: s.id, name: s.name, changedFields: s.changedFields })),
-            reordered: diff.reordered.map(s => ({ id: s.id, name: s.name, oldIndex: s.oldIndex, newIndex: s.newIndex }))
+            added: filteredDiff.added.map(s => ({ id: s.id, name: s.name })),
+            removed: filteredDiff.removed.map(s => ({ id: s.id, name: s.name })),
+            modified: filteredDiff.modified.map(s => ({ id: s.id, name: s.name, changedFields: s.changedFields })),
+            reordered: filteredDiff.reordered.map(s => ({ id: s.id, name: s.name, oldIndex: s.oldIndex, newIndex: s.newIndex }))
           }
         };
 
@@ -718,7 +772,7 @@ function subscribeToRundownChanges(compId, db, initialSegments) {
         console.log(`[Timesheet] Emitted rundownModified event to competition:${compId}`);
       }
     } else {
-      console.log(`[Timesheet] Rundown content unchanged for ${compId} (false positive from Firebase)`);
+      console.log(`[Timesheet] Rundown content unchanged for ${compId} (no relevant changes after filtering past segments)`);
     }
 
     // Store the new segments for the next comparison
