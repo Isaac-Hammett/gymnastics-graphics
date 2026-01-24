@@ -5164,12 +5164,28 @@ export default function RundownEditorPage() {
                   </div>
                 )}
               </div>
-              {/* Column headers for running time */}
+              {/* Column headers for running time and timezone columns */}
               <div className="flex items-center gap-3 text-xs text-zinc-600 uppercase tracking-wide">
                 <span className="w-4"></span> {/* Drag handle column */}
                 <span className="w-5"></span> {/* Checkbox column */}
                 <span className="w-6">#</span>
-                <span className="w-12 text-right">Start</span>
+                <span className="w-12 text-right">Offset</span>
+                {/* Phase K: Task 84 - Timezone column headers */}
+                {allDisplayTimezones.length > 0 && (
+                  <div className="flex items-center gap-1 shrink-0">
+                    {allDisplayTimezones.map((tz, tzIndex) => (
+                      <span
+                        key={tz}
+                        className={`w-16 text-right ${
+                          tzIndex === 0 ? 'text-teal-500' : 'text-zinc-600'
+                        }`}
+                        title={tz}
+                      >
+                        {getTimezoneAbbreviation(tz, timezoneConfig?.anchorDateTime ? new Date(timezoneConfig.anchorDateTime) : new Date())}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
             {isLoadingRundown ? (
