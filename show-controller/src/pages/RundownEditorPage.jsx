@@ -42,6 +42,7 @@ import {
   VideoCameraIcon,
   WrenchScrewdriverIcon,
   StarIcon,
+  GlobeAltIcon,
 } from '@heroicons/react/24/outline';
 import { getGraphicsForCompetition, getCategories, getRecommendedGraphic, getGraphicById, GRAPHICS } from '../lib/graphicsRegistry';
 import { db, ref, set, get, push, remove, update, onValue, onDisconnect } from '../lib/firebase';
@@ -541,6 +542,7 @@ export default function RundownEditorPage() {
   // Timezone Display state (Phase K: Task 72)
   // Stores timezone configuration for wall-clock time display
   const [timezoneConfig, setTimezoneConfig] = useState(null); // Timezone configuration from Firebase
+  const [showTimezoneConfigModal, setShowTimezoneConfigModal] = useState(false); // Timezone config modal (Phase K: Task 76)
 
   // Computed type row colors using customTypeColors (Phase 10: Task 78)
   const TYPE_ROW_COLORS = useMemo(() => {
@@ -5561,6 +5563,16 @@ export default function RundownEditorPage() {
           onClose={() => setShowTimingAnalyticsModal(false)}
         />
       )}
+
+      {/* Timezone Config Modal (Phase K: Task 76) */}
+      {showTimezoneConfigModal && (
+        <TimezoneConfigModal
+          timezoneConfig={timezoneConfig}
+          segments={segments}
+          onSave={saveTimezoneConfig}
+          onClose={() => setShowTimezoneConfigModal(false)}
+        />
+      )}
     </div>
   );
 }
@@ -10378,6 +10390,349 @@ function TimingAnalyticsModal({ analyticsData, segments, loading, onRefresh, onC
           >
             Close
           </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Common US timezone presets (Phase K: Task 76)
+const TIMEZONE_PRESETS = {
+  'US Full': ['America/Los_Angeles', 'America/Denver', 'America/Chicago', 'America/New_York'],
+  'US Coasts': ['America/Los_Angeles', 'America/New_York'],
+  'US Mountain-East': ['America/Denver', 'America/Chicago', 'America/New_York'],
+  'US Pacific-Mountain': ['America/Los_Angeles', 'America/Denver'],
+};
+
+// All available timezones for selection (Phase K: Task 76)
+const AVAILABLE_TIMEZONES = [
+  { id: 'America/Los_Angeles', label: 'Pacific Time (PT)', region: 'US' },
+  { id: 'America/Denver', label: 'Mountain Time (MT)', region: 'US' },
+  { id: 'America/Chicago', label: 'Central Time (CT)', region: 'US' },
+  { id: 'America/New_York', label: 'Eastern Time (ET)', region: 'US' },
+  { id: 'America/Anchorage', label: 'Alaska Time (AKT)', region: 'US' },
+  { id: 'Pacific/Honolulu', label: 'Hawaii Time (HT)', region: 'US' },
+  { id: 'Europe/London', label: 'London (GMT/BST)', region: 'Europe' },
+  { id: 'Europe/Paris', label: 'Paris (CET/CEST)', region: 'Europe' },
+  { id: 'Asia/Tokyo', label: 'Tokyo (JST)', region: 'Asia' },
+  { id: 'Australia/Sydney', label: 'Sydney (AEST/AEDT)', region: 'Australia' },
+];
+
+// Timezone Configuration Modal (Phase K: Task 76)
+// Full configuration interface with sections for anchor, timezones, and format options
+function TimezoneConfigModal({ timezoneConfig, segments, onSave, onClose }) {
+  // Local state for form fields - initialize from existing config or defaults
+  const [anchorSegmentId, setAnchorSegmentId] = useState(timezoneConfig?.anchorSegmentId || '');
+  const [anchorDate, setAnchorDate] = useState(() => {
+    // Extract date part from anchorDateTime (YYYY-MM-DD)
+    if (timezoneConfig?.anchorDateTime) {
+      return timezoneConfig.anchorDateTime.split('T')[0];
+    }
+    // Default to today
+    return new Date().toISOString().split('T')[0];
+  });
+  const [anchorTime, setAnchorTime] = useState(() => {
+    // Extract time part from anchorDateTime (HH:MM)
+    if (timezoneConfig?.anchorDateTime) {
+      const timePart = timezoneConfig.anchorDateTime.split('T')[1];
+      if (timePart) {
+        return timePart.substring(0, 5); // Get HH:MM
+      }
+    }
+    // Default to noon
+    return '12:00';
+  });
+  const [primaryTimezone, setPrimaryTimezone] = useState(
+    timezoneConfig?.primaryTimezone || 'America/Los_Angeles'
+  );
+  const [displayTimezones, setDisplayTimezones] = useState(
+    timezoneConfig?.displayTimezones || []
+  );
+  const [use24HourFormat, setUse24HourFormat] = useState(
+    timezoneConfig?.use24HourFormat || false
+  );
+
+  // Toggle a timezone in the displayTimezones array
+  function toggleTimezone(tzId) {
+    setDisplayTimezones(prev => {
+      if (prev.includes(tzId)) {
+        return prev.filter(id => id !== tzId);
+      } else {
+        return [...prev, tzId];
+      }
+    });
+  }
+
+  // Apply a preset to displayTimezones
+  function applyPreset(presetName) {
+    const presetTimezones = TIMEZONE_PRESETS[presetName];
+    if (presetTimezones) {
+      // Set primary to first timezone in preset
+      setPrimaryTimezone(presetTimezones[0]);
+      // Set display timezones to remaining timezones
+      setDisplayTimezones(presetTimezones.slice(1));
+    }
+  }
+
+  // Handle save
+  function handleSave() {
+    // Build anchorDateTime from date and time
+    const anchorDateTime = anchorDate && anchorTime
+      ? `${anchorDate}T${anchorTime}:00`
+      : null;
+
+    const newConfig = {
+      anchorSegmentId: anchorSegmentId || null,
+      anchorDateTime,
+      primaryTimezone,
+      displayTimezones,
+      use24HourFormat,
+    };
+
+    onSave(newConfig);
+    onClose();
+  }
+
+  // Handle clear/reset
+  function handleClear() {
+    setAnchorSegmentId('');
+    setAnchorDate(new Date().toISOString().split('T')[0]);
+    setAnchorTime('12:00');
+    setPrimaryTimezone('America/Los_Angeles');
+    setDisplayTimezones([]);
+    setUse24HourFormat(false);
+  }
+
+  // Get the anchor segment name for display
+  const anchorSegmentName = segments.find(s => s.id === anchorSegmentId)?.name || '';
+
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+      <div className="bg-zinc-900 border border-zinc-700 rounded-xl w-full max-w-lg max-h-[85vh] shadow-2xl flex flex-col">
+        {/* Header */}
+        <div className="p-4 border-b border-zinc-800 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-cyan-500/20 flex items-center justify-center">
+              <GlobeAltIcon className="w-5 h-5 text-cyan-400" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-white">Timezone Display</h2>
+              <p className="text-sm text-zinc-400">Configure wall-clock time columns</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-zinc-800 rounded-lg transition-colors"
+          >
+            <XMarkIcon className="w-5 h-5 text-zinc-400" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-6">
+          {/* Anchor Section */}
+          <div className="space-y-3">
+            <h3 className="text-xs font-medium text-zinc-400 uppercase tracking-wider flex items-center gap-2">
+              <BookmarkIcon className="w-4 h-4" />
+              Anchor Point
+            </h3>
+            <p className="text-xs text-zinc-500">
+              Set a reference segment and its wall-clock time. All other segment times will be calculated relative to this anchor.
+            </p>
+
+            {/* Anchor Segment Dropdown */}
+            <div>
+              <label className="block text-sm text-zinc-400 mb-1">Anchor Segment</label>
+              <select
+                value={anchorSegmentId}
+                onChange={(e) => setAnchorSegmentId(e.target.value)}
+                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              >
+                <option value="">Select a segment...</option>
+                {segments.map((segment, idx) => (
+                  <option key={segment.id} value={segment.id}>
+                    {idx + 1}. {segment.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Anchor Date and Time */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm text-zinc-400 mb-1">Date</label>
+                <input
+                  type="date"
+                  value={anchorDate}
+                  onChange={(e) => setAnchorDate(e.target.value)}
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-zinc-400 mb-1">Time ({getTimezoneAbbreviation(primaryTimezone)})</label>
+                <input
+                  type="time"
+                  value={anchorTime}
+                  onChange={(e) => setAnchorTime(e.target.value)}
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Primary Timezone Section */}
+          <div className="space-y-3">
+            <h3 className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
+              Primary Timezone
+            </h3>
+            <p className="text-xs text-zinc-500">
+              The anchor time is set in this timezone. This will be the leftmost time column.
+            </p>
+            <select
+              value={primaryTimezone}
+              onChange={(e) => setPrimaryTimezone(e.target.value)}
+              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+            >
+              {AVAILABLE_TIMEZONES.map((tz) => (
+                <option key={tz.id} value={tz.id}>
+                  {tz.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Display Timezones Section */}
+          <div className="space-y-3">
+            <h3 className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
+              Additional Timezones
+            </h3>
+            <p className="text-xs text-zinc-500">
+              Select additional timezones to display in columns.
+            </p>
+
+            {/* Presets */}
+            <div className="flex gap-2 flex-wrap">
+              {Object.keys(TIMEZONE_PRESETS).map((presetName) => (
+                <button
+                  key={presetName}
+                  onClick={() => applyPreset(presetName)}
+                  className="px-3 py-1 text-xs bg-zinc-800 border border-zinc-700 rounded-full hover:bg-zinc-700 transition-colors text-zinc-300"
+                >
+                  {presetName}
+                </button>
+              ))}
+            </div>
+
+            {/* Timezone Checkboxes */}
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+              {AVAILABLE_TIMEZONES
+                .filter(tz => tz.id !== primaryTimezone) // Don't show primary in additional list
+                .map((tz) => (
+                  <label
+                    key={tz.id}
+                    className="flex items-center gap-3 p-2 bg-zinc-800/50 rounded-lg cursor-pointer hover:bg-zinc-800 transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={displayTimezones.includes(tz.id)}
+                      onChange={() => toggleTimezone(tz.id)}
+                      className="w-4 h-4 rounded border-zinc-600 bg-zinc-700 text-cyan-500 focus:ring-cyan-500 focus:ring-offset-zinc-900"
+                    />
+                    <div className="flex-1">
+                      <span className="text-white text-sm">{tz.label}</span>
+                      <span className="text-zinc-500 text-xs ml-2">{tz.region}</span>
+                    </div>
+                    <span className="text-xs text-zinc-500 font-mono">
+                      {getTimezoneAbbreviation(tz.id)}
+                    </span>
+                  </label>
+                ))}
+            </div>
+          </div>
+
+          {/* Format Options Section */}
+          <div className="space-y-3">
+            <h3 className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
+              Format Options
+            </h3>
+
+            {/* 24-hour format toggle */}
+            <label className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg cursor-pointer hover:bg-zinc-800 transition-colors">
+              <input
+                type="checkbox"
+                checked={use24HourFormat}
+                onChange={(e) => setUse24HourFormat(e.target.checked)}
+                className="w-4 h-4 rounded border-zinc-600 bg-zinc-700 text-cyan-500 focus:ring-cyan-500 focus:ring-offset-zinc-900"
+              />
+              <div className="flex-1">
+                <span className="text-white text-sm font-medium">Use 24-hour format</span>
+                <p className="text-xs text-zinc-500">Display times as 14:30 instead of 2:30 PM</p>
+              </div>
+            </label>
+          </div>
+
+          {/* Preview Section */}
+          {anchorSegmentId && (
+            <div className="space-y-3">
+              <h3 className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                Preview
+              </h3>
+              <div className="p-3 bg-zinc-800/50 border border-zinc-700 rounded-lg">
+                <div className="text-sm text-zinc-300 mb-2">
+                  <span className="text-zinc-500">Anchor:</span> {anchorSegmentName}
+                </div>
+                <div className="flex gap-4 text-sm font-mono">
+                  <div>
+                    <span className="text-zinc-500">{getTimezoneAbbreviation(primaryTimezone)}:</span>{' '}
+                    <span className="text-cyan-400">
+                      {formatTimeInTimezone(
+                        new Date(`${anchorDate}T${anchorTime}:00`),
+                        primaryTimezone,
+                        use24HourFormat
+                      )}
+                    </span>
+                  </div>
+                  {displayTimezones.map((tzId) => (
+                    <div key={tzId}>
+                      <span className="text-zinc-500">{getTimezoneAbbreviation(tzId)}:</span>{' '}
+                      <span className="text-white">
+                        {formatTimeInTimezone(
+                          new Date(`${anchorDate}T${anchorTime}:00`),
+                          tzId,
+                          use24HourFormat
+                        )}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="p-4 border-t border-zinc-800 flex gap-3 justify-between shrink-0">
+          <button
+            onClick={handleClear}
+            className="px-4 py-2 text-zinc-400 hover:text-zinc-200 transition-colors text-sm"
+          >
+            Clear All
+          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-zinc-800 text-zinc-300 rounded-lg hover:bg-zinc-700 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              className="px-4 py-2 bg-cyan-600 text-white font-medium rounded-lg hover:bg-cyan-500 transition-colors flex items-center gap-2"
+            >
+              <CheckIcon className="w-5 h-5" />
+              Save Configuration
+            </button>
+          </div>
         </div>
       </div>
     </div>
