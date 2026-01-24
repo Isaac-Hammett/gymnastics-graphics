@@ -2137,6 +2137,7 @@ export default function RundownEditorPage() {
       script: '', // Phase E: Task 49 - script field for commentator talking points
       talent: [], // Phase E: Task 52 - talent assignment for segments
       timingMode: 'manual', // Default to manual for new segments (Phase 6: Task 55)
+      audioCue: null, // Phase F: Task 63 - audio cue for segment start
     };
 
     // Insert after selected segment, or at end
@@ -2175,6 +2176,7 @@ export default function RundownEditorPage() {
       optional: false,
       script: suggestion.segment.script || '', // Phase E: Task 49
       talent: suggestion.segment.talent || [], // Phase E: Task 52 - talent assignment for segments
+      audioCue: suggestion.segment.audioCue || null, // Phase F: Task 63
     };
 
     let newSegments;
@@ -3722,6 +3724,7 @@ export default function RundownEditorPage() {
         script: '', // Phase E: Task 49
         talent: [], // Phase E: Task 52 - talent assignment for segments
         timingMode: duration ? 'fixed' : 'manual',
+        audioCue: null, // Phase F: Task 63
       };
 
       newSegments.push(newSegment);

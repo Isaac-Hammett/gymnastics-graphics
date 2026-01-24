@@ -12,12 +12,14 @@
  *   - graphic: { graphicId: string, params: object } | null
  *   - timingMode: 'fixed' | 'manual'
  *   - autoAdvance: boolean (legacy, may exist)
+ *   - audioCue: { songName: string, inPoint: string, outPoint: string } | null (Phase F)
  *
  * Engine Format (used by TimesheetEngine):
  *   - obsScene: OBS scene name
  *   - graphic: string (graphic identifier)
  *   - graphicData: object (graphic parameters)
  *   - autoAdvance: boolean
+ *   - audioCue: { songName: string, inPoint: string, outPoint: string } | null (Phase F)
  */
 
 /**
@@ -39,6 +41,7 @@ function mapEditorToEngine(editorSegment) {
     notes: editorSegment.notes || '',
     script: editorSegment.script || '', // Phase E: Task 49 - script for talent/teleprompter
     talent: editorSegment.talent || [], // Phase E: Task 52 - talent assignment for segments
+    audioCue: editorSegment.audioCue || null, // Phase F: Task 63 - audio cue for segment start
 
     // Mapped fields
     obsScene: editorSegment.scene || null,
@@ -106,6 +109,7 @@ function mapEngineToEditor(engineSegment) {
     notes: engineSegment.notes || '',
     script: engineSegment.script || '', // Phase E: Task 49 - script for talent/teleprompter
     talent: engineSegment.talent || [], // Phase E: Task 52 - talent assignment for segments
+    audioCue: engineSegment.audioCue || null, // Phase F: Task 63 - audio cue for segment start
 
     // Mapped fields
     scene: engineSegment.obsScene || '',
@@ -271,7 +275,7 @@ function compareSegments(oldSegment, newSegment) {
 
   // Fields to compare (both direct and mapped)
   const fieldsToCompare = [
-    'name', 'type', 'duration', 'notes', 'script', 'talent',
+    'name', 'type', 'duration', 'notes', 'script', 'talent', 'audioCue',
     'scene', 'obsScene',
     'graphic', 'graphicData',
     'timingMode', 'autoAdvance',
