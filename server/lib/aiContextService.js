@@ -279,6 +279,7 @@ class AIContextService {
       athleteContext: [],
       scoreContext: null,
       milestones: [],
+      achievements: [],
       liveScores: null,
     };
 
@@ -294,6 +295,14 @@ class AIContextService {
       // Add score-based talking points
       const scorePoints = this._getScoreBasedTalkingPoints(liveScores, segment);
       context.talkingPoints.push(...scorePoints);
+
+      // Scan for career highs and records (Task 60)
+      const achievements = await this.scanForAchievements();
+      context.achievements = achievements;
+
+      // Add achievement-based talking points
+      const achievementPoints = this._getAchievementTalkingPoints(achievements);
+      context.talkingPoints.push(...achievementPoints);
     }
 
     // Generate basic talking points based on segment type
@@ -310,6 +319,64 @@ class AIContextService {
     context.talkingPoints = context.talkingPoints.slice(0, this.config.maxTalkingPoints);
 
     return context;
+  }
+
+  /**
+   * Generate talking points from detected achievements
+   *
+   * @param {Array} achievements - Detected achievements
+   * @returns {Array} Achievement-based talking points
+   */
+  _getAchievementTalkingPoints(achievements) {
+    const points = [];
+
+    for (const achievement of achievements) {
+      const eventName = EVENT_FULL_NAMES[achievement.event] || achievement.event;
+
+      if (achievement.type === 'career_high') {
+        points.push({
+          id: `career-high-${achievement.athleteName}-${Date.now()}`,
+          type: CONTEXT_TYPES.SCORE,
+          priority: PRIORITY.CRITICAL,
+          text: `🎉 CAREER HIGH! ${achievement.athleteName} just scored ${achievement.score.toFixed(3)} on ${eventName} - beats previous best of ${achievement.previousHigh?.toFixed(3)} by ${achievement.improvement}!`,
+          source: 'achievement-detection',
+          data: achievement,
+        });
+      } else if (achievement.type === 'season_high') {
+        points.push({
+          id: `season-high-${achievement.athleteName}-${Date.now()}`,
+          type: CONTEXT_TYPES.SCORE,
+          priority: PRIORITY.HIGH,
+          text: `⭐ SEASON HIGH! ${achievement.athleteName} scores ${achievement.score.toFixed(3)} on ${eventName} - their best of the season!`,
+          source: 'achievement-detection',
+          data: achievement,
+        });
+      } else if (achievement.type === 'record_broken') {
+        const record = achievement.records[0];
+        const recordType = record.type === 'school' ? 'SCHOOL RECORD' : 'MEET RECORD';
+        points.push({
+          id: `record-${achievement.athleteName}-${Date.now()}`,
+          type: CONTEXT_TYPES.MILESTONE,
+          priority: PRIORITY.CRITICAL,
+          text: `🏆 NEW ${recordType}! ${achievement.athleteName} breaks the ${eventName} record with ${achievement.score.toFixed(3)}! Previous record: ${record.previousScore.toFixed(3)} by ${record.previousHolder}`,
+          source: 'achievement-detection',
+          data: achievement,
+        });
+      } else if (achievement.type === 'record_tied') {
+        const record = achievement.tiedRecords[0];
+        const recordType = record.type === 'school' ? 'school record' : 'meet record';
+        points.push({
+          id: `record-tied-${achievement.athleteName}-${Date.now()}`,
+          type: CONTEXT_TYPES.MILESTONE,
+          priority: PRIORITY.HIGH,
+          text: `📊 ${achievement.athleteName} TIES the ${recordType} on ${eventName} with ${achievement.score.toFixed(3)}!`,
+          source: 'achievement-detection',
+          data: achievement,
+        });
+      }
+    }
+
+    return points;
   }
 
   /**
@@ -1271,11 +1338,16 @@ class AIContextService {
   }
 
   // ==========================================================================
-  // Career High / Record Detection (Stub - to be implemented in Task 60)
+  // Career High / Record Detection (Task 60)
   // ==========================================================================
 
   /**
-   * Check if a score is a career high
+   * Check if a score is a career high for an athlete
+   *
+   * Compares against:
+   * 1. Stored career bests in Firebase (athleteStats/{athleteId}/careerBests)
+   * 2. Season bests from current show's score tracking
+   * 3. Previous scores in current meet
    *
    * @param {string} athleteName - Athlete name
    * @param {string} event - Event code (FX, VT, etc.)
@@ -1283,31 +1355,464 @@ class AIContextService {
    * @returns {Promise<Object>} Career high check result
    */
   async checkCareerHigh(athleteName, event, score) {
-    // STUB: Will implement career high detection in Task 60
-    console.log(`[AIContextService] checkCareerHigh stub called for ${athleteName}`);
-    return {
-      isCareerHigh: false,
-      previousHigh: null,
-      message: 'Career high detection pending (Task 60)',
-    };
+    if (!athleteName || !event || typeof score !== 'number') {
+      return { isCareerHigh: false, reason: 'invalid_input' };
+    }
+
+    try {
+      // Get athlete's stored career bests
+      const careerBests = await this._getAthleteCareerBests(athleteName);
+      const previousHigh = careerBests?.[event] || null;
+
+      // Check if this is a career high
+      const isCareerHigh = previousHigh === null || score > previousHigh;
+      const isSeasonHigh = await this._checkSeasonHigh(athleteName, event, score);
+      const isMeetHigh = this._checkMeetHigh(athleteName, event, score);
+
+      // Determine the type of achievement
+      let achievementType = null;
+      if (isCareerHigh && previousHigh !== null) {
+        achievementType = 'career_high';
+      } else if (isSeasonHigh) {
+        achievementType = 'season_high';
+      } else if (isMeetHigh) {
+        achievementType = 'meet_high';
+      }
+
+      const result = {
+        isCareerHigh: isCareerHigh && previousHigh !== null,
+        isSeasonHigh,
+        isMeetHigh,
+        achievementType,
+        previousHigh,
+        improvement: previousHigh ? (score - previousHigh).toFixed(3) : null,
+        score,
+        event,
+        athleteName,
+      };
+
+      // If this is a notable achievement, store it and generate alert
+      if (achievementType) {
+        await this._recordAchievement(result);
+      }
+
+      return result;
+    } catch (error) {
+      console.error(`[AIContextService] Error checking career high:`, error);
+      return { isCareerHigh: false, error: error.message };
+    }
   }
 
   /**
    * Detect if a score breaks any records
    *
+   * Checks against:
+   * 1. School records (stored in Firebase)
+   * 2. Meet records (if available)
+   * 3. Venue records (if available)
+   *
    * @param {string} athleteName - Athlete name
    * @param {string} event - Event code
    * @param {number} score - Score to check
+   * @param {string} teamTricode - Team tricode for school record lookup
    * @returns {Promise<Object>} Record check result
    */
-  async checkRecords(athleteName, event, score) {
-    // STUB: Will implement record detection in Task 60
-    console.log(`[AIContextService] checkRecords stub called for ${athleteName}`);
-    return {
-      breaksRecord: false,
-      records: [],
-      message: 'Record detection pending (Task 60)',
-    };
+  async checkRecords(athleteName, event, score, teamTricode = null) {
+    if (!athleteName || !event || typeof score !== 'number') {
+      return { breaksRecord: false, reason: 'invalid_input' };
+    }
+
+    const brokenRecords = [];
+
+    try {
+      // Check school record
+      const schoolRecord = await this._getSchoolRecord(teamTricode, event);
+      if (schoolRecord && score > schoolRecord.score) {
+        brokenRecords.push({
+          type: 'school',
+          previousScore: schoolRecord.score,
+          previousHolder: schoolRecord.holder,
+          previousDate: schoolRecord.date,
+          improvement: (score - schoolRecord.score).toFixed(3),
+        });
+      }
+
+      // Check meet record (from current competition config)
+      const meetRecord = await this._getMeetRecord(event);
+      if (meetRecord && score > meetRecord.score) {
+        brokenRecords.push({
+          type: 'meet',
+          previousScore: meetRecord.score,
+          previousHolder: meetRecord.holder,
+          previousYear: meetRecord.year,
+          improvement: (score - meetRecord.score).toFixed(3),
+        });
+      }
+
+      // Check if this ties a record (within 0.001)
+      const tiedRecords = [];
+      if (schoolRecord && Math.abs(score - schoolRecord.score) < 0.001) {
+        tiedRecords.push({ type: 'school', score: schoolRecord.score });
+      }
+      if (meetRecord && Math.abs(score - meetRecord.score) < 0.001) {
+        tiedRecords.push({ type: 'meet', score: meetRecord.score });
+      }
+
+      const result = {
+        breaksRecord: brokenRecords.length > 0,
+        tiesRecord: tiedRecords.length > 0,
+        records: brokenRecords,
+        tiedRecords,
+        athleteName,
+        event,
+        score,
+      };
+
+      // If a record is broken, record it
+      if (brokenRecords.length > 0) {
+        await this._recordBrokenRecord(result);
+      }
+
+      return result;
+    } catch (error) {
+      console.error(`[AIContextService] Error checking records:`, error);
+      return { breaksRecord: false, error: error.message };
+    }
+  }
+
+  /**
+   * Scan recent scores for career highs and records
+   * Called during context updates to detect achievements in live scores
+   *
+   * @returns {Promise<Array>} List of detected achievements
+   */
+  async scanForAchievements() {
+    const achievements = [];
+
+    if (!this._virtiusData?.available || !this._virtiusData.recentScores) {
+      return achievements;
+    }
+
+    // Get team tricodes for record lookups
+    const teamTricodes = this._virtiusData.teams?.map(t => t.tricode) || [];
+
+    for (const scoreData of this._virtiusData.recentScores) {
+      // Skip if already processed
+      const scoreKey = `${scoreData.athlete}-${scoreData.event}-${scoreData.score}`;
+      if (this._processedScores?.has(scoreKey)) {
+        continue;
+      }
+
+      // Mark as processed
+      if (!this._processedScores) {
+        this._processedScores = new Set();
+      }
+      this._processedScores.add(scoreKey);
+
+      // Check for career high
+      const careerResult = await this.checkCareerHigh(
+        scoreData.athlete,
+        scoreData.event,
+        scoreData.score
+      );
+
+      if (careerResult.achievementType) {
+        achievements.push({
+          type: careerResult.achievementType,
+          ...careerResult,
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      // Check for records
+      const teamTricode = scoreData.team || teamTricodes[0];
+      const recordResult = await this.checkRecords(
+        scoreData.athlete,
+        scoreData.event,
+        scoreData.score,
+        teamTricode
+      );
+
+      if (recordResult.breaksRecord) {
+        achievements.push({
+          type: 'record_broken',
+          ...recordResult,
+          timestamp: new Date().toISOString(),
+        });
+      } else if (recordResult.tiesRecord) {
+        achievements.push({
+          type: 'record_tied',
+          ...recordResult,
+          timestamp: new Date().toISOString(),
+        });
+      }
+    }
+
+    // Store achievements in current context
+    if (achievements.length > 0) {
+      this._recentAchievements = [
+        ...achievements,
+        ...(this._recentAchievements || []).slice(0, 20), // Keep last 20
+      ];
+
+      // Broadcast achievements
+      this._broadcastAchievements(achievements);
+    }
+
+    return achievements;
+  }
+
+  /**
+   * Get athlete's career bests from Firebase or cache
+   *
+   * @param {string} athleteName - Athlete name
+   * @returns {Promise<Object|null>} Career bests by event
+   */
+  async _getAthleteCareerBests(athleteName) {
+    if (!athleteName) return null;
+
+    // Check cache first
+    if (!this._careerBestsCache) {
+      this._careerBestsCache = new Map();
+    }
+
+    const cacheKey = athleteName.toLowerCase().trim();
+    if (this._careerBestsCache.has(cacheKey)) {
+      return this._careerBestsCache.get(cacheKey);
+    }
+
+    // Try to load from Firebase
+    const db = getDb();
+    if (db) {
+      try {
+        const athleteKey = this._normalizeNameForKey(athleteName);
+        const snapshot = await db.ref(`athleteStats/${athleteKey}/careerBests`).once('value');
+        const careerBests = snapshot.val();
+
+        if (careerBests) {
+          this._careerBestsCache.set(cacheKey, careerBests);
+          return careerBests;
+        }
+      } catch (error) {
+        console.warn(`[AIContextService] Error loading career bests:`, error);
+      }
+    }
+
+    // Try to get from team data roster (some rosters include season bests)
+    const rosterBests = this._getAthleteFromRoster(athleteName);
+    if (rosterBests?.seasonBests) {
+      this._careerBestsCache.set(cacheKey, rosterBests.seasonBests);
+      return rosterBests.seasonBests;
+    }
+
+    return null;
+  }
+
+  /**
+   * Check if score is a season high
+   *
+   * @param {string} athleteName - Athlete name
+   * @param {string} event - Event code
+   * @param {number} score - Score to check
+   * @returns {Promise<boolean>} True if season high
+   */
+  async _checkSeasonHigh(athleteName, event, score) {
+    // Check session-tracked scores
+    if (!this._sessionScores) {
+      this._sessionScores = new Map();
+    }
+
+    const key = `${athleteName.toLowerCase()}-${event}`;
+    const previousBest = this._sessionScores.get(key) || 0;
+
+    if (score > previousBest) {
+      this._sessionScores.set(key, score);
+      return previousBest > 0; // Only true if there was a previous score
+    }
+
+    return false;
+  }
+
+  /**
+   * Check if score is the athlete's meet high
+   *
+   * @param {string} athleteName - Athlete name
+   * @param {string} event - Event code
+   * @param {number} score - Score to check
+   * @returns {boolean} True if meet high
+   */
+  _checkMeetHigh(athleteName, event, score) {
+    if (!this._virtiusData?.eventResults) return false;
+
+    const eventData = this._virtiusData.eventResults[event];
+    if (!eventData?.gymnasts) return false;
+
+    // Find all scores by this athlete on this event
+    const athleteScores = eventData.gymnasts.filter(
+      g => g.name?.toLowerCase().includes(athleteName.toLowerCase()) ||
+           athleteName.toLowerCase().includes(g.lastName?.toLowerCase() || '')
+    );
+
+    // If only one score, it's their meet high by default
+    if (athleteScores.length <= 1) return false;
+
+    // Check if current score is highest
+    const maxPreviousScore = Math.max(...athleteScores.map(s => s.score || 0));
+    return score >= maxPreviousScore;
+  }
+
+  /**
+   * Get school record for an event
+   *
+   * @param {string} teamTricode - Team tricode
+   * @param {string} event - Event code
+   * @returns {Promise<Object|null>} School record data
+   */
+  async _getSchoolRecord(teamTricode, event) {
+    if (!teamTricode) return null;
+
+    const db = getDb();
+    if (!db) return null;
+
+    try {
+      const snapshot = await db.ref(`schoolRecords/${teamTricode}/${event}`).once('value');
+      return snapshot.val();
+    } catch (error) {
+      console.warn(`[AIContextService] Error loading school record:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Get meet record for an event
+   *
+   * @param {string} event - Event code
+   * @returns {Promise<Object|null>} Meet record data
+   */
+  async _getMeetRecord(event) {
+    if (!this._competitionConfig?.meetRecords) return null;
+    return this._competitionConfig.meetRecords[event] || null;
+  }
+
+  /**
+   * Record an achievement to Firebase
+   *
+   * @param {Object} achievement - Achievement data
+   */
+  async _recordAchievement(achievement) {
+    const db = getDb();
+    if (!db || !this.compId) return;
+
+    try {
+      const achievementData = {
+        ...achievement,
+        compId: this.compId,
+        recordedAt: new Date().toISOString(),
+      };
+
+      // Store in competition's achievements
+      await db.ref(`competitions/${this.compId}/production/achievements`).push(achievementData);
+
+      // Update athlete's career best if applicable
+      if (achievement.isCareerHigh) {
+        const athleteKey = this._normalizeNameForKey(achievement.athleteName);
+        await db.ref(`athleteStats/${athleteKey}/careerBests/${achievement.event}`).set(achievement.score);
+      }
+
+      console.log(`[AIContextService] Recorded achievement: ${achievement.achievementType} for ${achievement.athleteName}`);
+    } catch (error) {
+      console.warn(`[AIContextService] Error recording achievement:`, error);
+    }
+  }
+
+  /**
+   * Record a broken record to Firebase
+   *
+   * @param {Object} recordData - Record data
+   */
+  async _recordBrokenRecord(recordData) {
+    const db = getDb();
+    if (!db || !this.compId) return;
+
+    try {
+      // Store in competition's broken records
+      await db.ref(`competitions/${this.compId}/production/brokenRecords`).push({
+        ...recordData,
+        compId: this.compId,
+        recordedAt: new Date().toISOString(),
+      });
+
+      console.log(`[AIContextService] Recorded broken record for ${recordData.athleteName}`);
+    } catch (error) {
+      console.warn(`[AIContextService] Error recording broken record:`, error);
+    }
+  }
+
+  /**
+   * Broadcast achievements to connected clients
+   *
+   * @param {Array} achievements - Achievements to broadcast
+   */
+  _broadcastAchievements(achievements) {
+    if (!this.io || !this.compId || !achievements.length) return;
+
+    this.io.to(`competition:${this.compId}`).emit('aiAchievementsDetected', {
+      compId: this.compId,
+      achievements,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Get athlete data from loaded roster
+   *
+   * @param {string} athleteName - Athlete name to find
+   * @returns {Object|null} Athlete data from roster
+   */
+  _getAthleteFromRoster(athleteName) {
+    if (!this._teamData) return null;
+
+    const normalized = athleteName.toLowerCase().trim();
+
+    for (const teamKey of ['team1', 'team2']) {
+      const roster = this._teamData[teamKey]?.roster;
+      if (!roster) continue;
+
+      const athlete = roster.find(a =>
+        a.fullName?.toLowerCase() === normalized ||
+        `${a.firstName} ${a.lastName}`.toLowerCase() === normalized ||
+        a.lastName?.toLowerCase() === normalized.split(' ').pop()
+      );
+
+      if (athlete) {
+        return { ...athlete, teamKey };
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Normalize athlete name to Firebase-safe key
+   *
+   * @param {string} name - Athlete name
+   * @returns {string} Normalized key
+   */
+  _normalizeNameForKey(name) {
+    return name
+      .toLowerCase()
+      .trim()
+      .replace(/[.#$[\]]/g, '')
+      .replace(/\s+/g, '-');
+  }
+
+  /**
+   * Get recent achievements
+   *
+   * @returns {Array} Recent achievements
+   */
+  getRecentAchievements() {
+    return this._recentAchievements || [];
   }
 
   // ==========================================================================
@@ -1424,6 +1929,11 @@ class AIContextService {
           ? new Date(this._virtiusLastFetch).toISOString()
           : null,
         available: this._virtiusData?.available || false,
+      },
+      achievements: {
+        recentCount: this._recentAchievements?.length || 0,
+        processedScoresCount: this._processedScores?.size || 0,
+        careerBestsCacheSize: this._careerBestsCache?.size || 0,
       },
     };
   }
