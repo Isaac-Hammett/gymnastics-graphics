@@ -19,6 +19,40 @@
 import { getDb } from './productionConfigService.js';
 
 // ============================================================================
+// Virtius API Configuration
+// ============================================================================
+
+const VIRTIUS_API_BASE = 'https://api.virti.us';
+
+/**
+ * Event code mappings between different systems
+ */
+const EVENT_MAPPINGS = {
+  // Virtius event names to short codes
+  virtiusToShort: {
+    FLOOR: 'FX',
+    HORSE: 'PH',
+    RINGS: 'SR',
+    VAULT: 'VT',
+    PBARS: 'PB',
+    BAR: 'HB',
+    BARS: 'UB',
+    BEAM: 'BB',
+  },
+  // Short codes to display names
+  shortToDisplay: {
+    FX: 'Floor Exercise',
+    PH: 'Pommel Horse',
+    SR: 'Still Rings',
+    VT: 'Vault',
+    PB: 'Parallel Bars',
+    HB: 'High Bar',
+    UB: 'Uneven Bars',
+    BB: 'Balance Beam',
+  },
+};
+
+// ============================================================================
 // Constants
 // ============================================================================
 
@@ -92,6 +126,12 @@ class AIContextService {
     this._competitionConfig = null;
     this._teamData = null;
     this._athleteStats = null;
+
+    // Virtius API state
+    this._virtiusSessionId = null;
+    this._virtiusData = null;
+    this._virtiusLastFetch = null;
+    this._virtiusCacheMs = 10000; // Refresh Virtius data every 10 seconds
   }
 
   // ==========================================================================
@@ -203,7 +243,6 @@ class AIContextService {
    * @returns {Promise<Object>} Generated context
    */
   async _generateSegmentContext(segment) {
-    // STUB: Basic structure - will be enhanced in Task 59
     const context = {
       segmentId: segment.id,
       segmentName: segment.name,
@@ -212,13 +251,103 @@ class AIContextService {
       athleteContext: [],
       scoreContext: null,
       milestones: [],
+      liveScores: null,
     };
 
+    // Fetch live scores from Virtius
+    const liveScores = await this.fetchLiveScores();
+    if (liveScores.available) {
+      context.liveScores = {
+        teams: liveScores.teams,
+        currentRotation: liveScores.currentRotation,
+        recentScores: liveScores.recentScores,
+      };
+
+      // Add score-based talking points
+      const scorePoints = this._getScoreBasedTalkingPoints(liveScores, segment);
+      context.talkingPoints.push(...scorePoints);
+    }
+
     // Generate basic talking points based on segment type
-    const points = this._getBasicTalkingPoints(segment);
-    context.talkingPoints = points;
+    const basicPoints = this._getBasicTalkingPoints(segment);
+    context.talkingPoints.push(...basicPoints);
+
+    // Sort talking points by priority
+    context.talkingPoints.sort((a, b) => {
+      const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+      return (priorityOrder[a.priority] || 3) - (priorityOrder[b.priority] || 3);
+    });
+
+    // Limit to max configured talking points
+    context.talkingPoints = context.talkingPoints.slice(0, this.config.maxTalkingPoints);
 
     return context;
+  }
+
+  /**
+   * Generate talking points based on live score data
+   *
+   * @param {Object} liveScores - Live scores from Virtius
+   * @param {Object} segment - Current segment
+   * @returns {Array} Score-based talking points
+   */
+  _getScoreBasedTalkingPoints(liveScores, segment) {
+    const points = [];
+
+    // Add team standings talking point
+    if (liveScores.teams?.length >= 2) {
+      const [leader, second] = liveScores.teams;
+      const margin = ((leader.score || 0) - (second.score || 0)).toFixed(3);
+
+      if (margin > 0) {
+        points.push({
+          id: `standings-${Date.now()}`,
+          type: CONTEXT_TYPES.SCORE,
+          priority: margin > 1 ? PRIORITY.MEDIUM : PRIORITY.HIGH,
+          text: `${leader.name} leads ${second.name} by ${margin} points`,
+          source: 'live-scores',
+          data: { leader, second, margin: parseFloat(margin) },
+        });
+      } else if (margin === '0.000') {
+        points.push({
+          id: `standings-tied-${Date.now()}`,
+          type: CONTEXT_TYPES.SCORE,
+          priority: PRIORITY.HIGH,
+          text: `${leader.name} and ${second.name} are TIED at ${leader.score?.toFixed(3)}`,
+          source: 'live-scores',
+          data: { leader, second, tied: true },
+        });
+      }
+    }
+
+    // Highlight recent high scores
+    if (liveScores.recentScores?.length > 0) {
+      const topScore = liveScores.recentScores[0];
+      if (topScore.score >= 9.9) {
+        points.push({
+          id: `high-score-${Date.now()}`,
+          type: CONTEXT_TYPES.SCORE,
+          priority: topScore.score >= 10.0 ? PRIORITY.CRITICAL : PRIORITY.HIGH,
+          text: `${topScore.athlete} (${topScore.team}) just scored ${topScore.score.toFixed(3)} on ${topScore.eventDisplay}!`,
+          source: 'live-scores',
+          data: topScore,
+        });
+      }
+    }
+
+    // Add rotation context
+    if (liveScores.currentRotation) {
+      points.push({
+        id: `rotation-${Date.now()}`,
+        type: CONTEXT_TYPES.SEGMENT,
+        priority: PRIORITY.LOW,
+        text: `Currently in rotation ${liveScores.currentRotation}`,
+        source: 'live-scores',
+        data: { rotation: liveScores.currentRotation },
+      });
+    }
+
+    return points;
   }
 
   /**
@@ -258,21 +387,334 @@ class AIContextService {
   }
 
   // ==========================================================================
-  // Live Stats Integration (Stub - to be implemented in Task 58)
+  // Live Stats Integration (Task 58: Virtius API Integration)
   // ==========================================================================
 
   /**
    * Fetch live scores from Virtius API
    *
-   * @returns {Promise<Object>} Live score data
+   * Caches results for `_virtiusCacheMs` milliseconds to avoid hammering the API.
+   *
+   * @param {boolean} forceRefresh - Force a fresh fetch, ignoring cache
+   * @returns {Promise<Object>} Live score data with structure:
+   *   {
+   *     available: boolean,
+   *     sessionId: string,
+   *     meet: { name, date, location, sex },
+   *     teams: [{ name, tricode, logo, score, rank }],
+   *     currentRotation: number,
+   *     eventResults: { [eventName]: { gymnasts: [...], teamScores: {...} } },
+   *     recentScores: [{ athlete, team, event, score, timestamp }],
+   *     fetchedAt: ISO timestamp
+   *   }
    */
-  async fetchLiveScores() {
-    // STUB: Will integrate with Virtius API in Task 58
-    console.log(`[AIContextService] fetchLiveScores stub called`);
+  async fetchLiveScores(forceRefresh = false) {
+    // Check if we have a session ID
+    if (!this._virtiusSessionId) {
+      // Try to get it from competition config
+      await this._loadVirtiusSessionId();
+    }
+
+    if (!this._virtiusSessionId) {
+      return {
+        available: false,
+        reason: 'no_session_id',
+        message: 'No Virtius session ID configured for this competition',
+      };
+    }
+
+    // Check cache
+    const now = Date.now();
+    if (
+      !forceRefresh &&
+      this._virtiusData &&
+      this._virtiusLastFetch &&
+      now - this._virtiusLastFetch < this._virtiusCacheMs
+    ) {
+      return this._virtiusData;
+    }
+
+    try {
+      const data = await this._fetchVirtiusSession(this._virtiusSessionId);
+      const parsedData = this._parseVirtiusData(data);
+
+      // Cache the parsed data
+      this._virtiusData = parsedData;
+      this._virtiusLastFetch = now;
+
+      console.log(`[AIContextService] Fetched live scores for session ${this._virtiusSessionId}`);
+      return parsedData;
+    } catch (error) {
+      console.error(`[AIContextService] Error fetching Virtius data:`, error);
+      return {
+        available: false,
+        reason: 'fetch_error',
+        message: error.message,
+        sessionId: this._virtiusSessionId,
+      };
+    }
+  }
+
+  /**
+   * Load Virtius session ID from competition config
+   */
+  async _loadVirtiusSessionId() {
+    if (this._competitionConfig?.virtiusSessionId) {
+      this._virtiusSessionId = this._competitionConfig.virtiusSessionId;
+      return;
+    }
+
+    // Try to load from Firebase
+    const db = getDb();
+    if (!db || !this.compId) return;
+
+    try {
+      const snapshot = await db.ref(`competitions/${this.compId}/config/virtiusSessionId`).once('value');
+      const sessionId = snapshot.val();
+      if (sessionId) {
+        this._virtiusSessionId = sessionId;
+        console.log(`[AIContextService] Loaded Virtius session ID: ${sessionId}`);
+      }
+    } catch (error) {
+      console.error(`[AIContextService] Error loading Virtius session ID:`, error);
+    }
+  }
+
+  /**
+   * Fetch raw data from Virtius API
+   *
+   * @param {string} sessionId - Virtius session ID
+   * @returns {Promise<Object>} Raw Virtius API response
+   */
+  async _fetchVirtiusSession(sessionId) {
+    const url = `${VIRTIUS_API_BASE}/session/${sessionId}/json`;
+
+    const response = await fetch(url, {
+      headers: {
+        Accept: 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error(`Virtius session not found: ${sessionId}`);
+      }
+      throw new Error(`Virtius API error: ${response.status} ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Parse raw Virtius data into a structured format for the AI context
+   *
+   * @param {Object} rawData - Raw Virtius API response
+   * @returns {Object} Parsed score data
+   */
+  _parseVirtiusData(rawData) {
+    const meet = rawData.meet || {};
+    const teams = meet.teams || [];
+    const eventResults = meet.event_results || [];
+
+    // Parse teams with their current scores
+    const parsedTeams = teams
+      .sort((a, b) => (a.team_order || 0) - (b.team_order || 0))
+      .map((team, index) => ({
+        name: team.name || team.short_name,
+        tricode: team.tricode,
+        logo: team.logo,
+        score: team.total_score || team.score || 0,
+        rank: index + 1,
+        teamOrder: team.team_order,
+      }));
+
+    // Sort by score to get actual rankings
+    const sortedByScore = [...parsedTeams].sort((a, b) => (b.score || 0) - (a.score || 0));
+    sortedByScore.forEach((team, idx) => {
+      team.rank = idx + 1;
+    });
+
+    // Parse event results
+    const parsedEventResults = {};
+    for (const event of eventResults) {
+      const eventName = event.event_name;
+      const shortCode = EVENT_MAPPINGS.virtiusToShort[eventName] || eventName;
+
+      parsedEventResults[shortCode] = {
+        eventName,
+        displayName: EVENT_MAPPINGS.shortToDisplay[shortCode] || eventName,
+        gymnasts: (event.gymnasts || []).map((g) => ({
+          name: g.full_name || g.name,
+          firstName: g.first_name,
+          lastName: g.last_name,
+          team: g.team || g.team_name,
+          tricode: g.tricode,
+          score: g.score || g.total_score,
+          rank: g.rank || g.place,
+          difficulty: g.d_score,
+          execution: g.e_score,
+          startValue: g.start_value,
+          deductions: g.deductions,
+        })),
+        teamScores: {},
+      };
+
+      // Aggregate team scores for this event
+      for (const g of event.gymnasts || []) {
+        const teamKey = g.tricode || g.team;
+        if (teamKey && g.score) {
+          if (!parsedEventResults[shortCode].teamScores[teamKey]) {
+            parsedEventResults[shortCode].teamScores[teamKey] = {
+              total: 0,
+              count: 0,
+              scores: [],
+            };
+          }
+          parsedEventResults[shortCode].teamScores[teamKey].total += g.score;
+          parsedEventResults[shortCode].teamScores[teamKey].count += 1;
+          parsedEventResults[shortCode].teamScores[teamKey].scores.push(g.score);
+        }
+      }
+    }
+
+    // Calculate current rotation based on event results
+    const currentRotation = this._inferCurrentRotation(eventResults, teams.length);
+
+    // Get recent scores (last 5 scored routines across all events)
+    const recentScores = this._extractRecentScores(eventResults);
+
     return {
-      available: false,
-      message: 'Virtius API integration pending (Task 58)',
+      available: true,
+      sessionId: this._virtiusSessionId,
+      meet: {
+        name: meet.name,
+        date: meet.date,
+        location: meet.location,
+        sex: meet.sex,
+        gender: meet.sex === 'women' ? 'womens' : 'mens',
+      },
+      teams: parsedTeams,
+      currentRotation,
+      eventResults: parsedEventResults,
+      recentScores,
+      fetchedAt: new Date().toISOString(),
     };
+  }
+
+  /**
+   * Infer current rotation based on completed events
+   *
+   * @param {Array} eventResults - Event results from Virtius
+   * @param {number} teamCount - Number of teams
+   * @returns {number} Estimated current rotation (1-based)
+   */
+  _inferCurrentRotation(eventResults, teamCount) {
+    // Count events with at least one score
+    let eventsWithScores = 0;
+    for (const event of eventResults) {
+      const hasScores = (event.gymnasts || []).some((g) => g.score > 0);
+      if (hasScores) eventsWithScores++;
+    }
+
+    // For dual meets (2 teams), there are 6 rotations (men) or 4 rotations (women)
+    // Each team does one event per rotation
+    // So eventsWithScores roughly corresponds to rotations completed
+    if (eventsWithScores === 0) return 1;
+
+    // If all events have scores, we're likely at the end
+    if (eventsWithScores >= eventResults.length) {
+      return eventResults.length;
+    }
+
+    // Otherwise, estimate based on events completed
+    return Math.min(eventsWithScores + 1, eventResults.length);
+  }
+
+  /**
+   * Extract recent scores from event results
+   *
+   * @param {Array} eventResults - Event results from Virtius
+   * @returns {Array} Recent scores sorted by most recent first
+   */
+  _extractRecentScores(eventResults) {
+    const allScores = [];
+
+    for (const event of eventResults) {
+      const shortCode = EVENT_MAPPINGS.virtiusToShort[event.event_name] || event.event_name;
+
+      for (const g of event.gymnasts || []) {
+        if (g.score > 0) {
+          allScores.push({
+            athlete: g.full_name || g.name,
+            team: g.tricode || g.team,
+            event: shortCode,
+            eventDisplay: EVENT_MAPPINGS.shortToDisplay[shortCode] || event.event_name,
+            score: g.score,
+            rank: g.rank || g.place,
+            // We don't have timestamps from Virtius, so use order in results
+            order: g.rank || 999,
+          });
+        }
+      }
+    }
+
+    // Sort by event order (later events = more recent) then by rank
+    // This is a heuristic since Virtius doesn't provide timestamps
+    allScores.sort((a, b) => {
+      // Scores are typically added in order, so later events are more recent
+      return b.order - a.order;
+    });
+
+    // Return last 10 scores
+    return allScores.slice(0, 10);
+  }
+
+  /**
+   * Get current team standings from live scores
+   *
+   * @returns {Promise<Array>} Team standings array
+   */
+  async getTeamStandings() {
+    const scores = await this.fetchLiveScores();
+    if (!scores.available) {
+      return [];
+    }
+
+    return scores.teams.sort((a, b) => (b.score || 0) - (a.score || 0));
+  }
+
+  /**
+   * Get scores for a specific event
+   *
+   * @param {string} eventCode - Event code (FX, PH, SR, VT, PB, HB, UB, BB)
+   * @returns {Promise<Object>} Event scores and rankings
+   */
+  async getEventScores(eventCode) {
+    const scores = await this.fetchLiveScores();
+    if (!scores.available) {
+      return null;
+    }
+
+    return scores.eventResults[eventCode] || null;
+  }
+
+  /**
+   * Get athlete's score on a specific event
+   *
+   * @param {string} athleteName - Athlete name to search for
+   * @param {string} eventCode - Event code
+   * @returns {Promise<Object|null>} Athlete's score or null
+   */
+  async getAthleteScore(athleteName, eventCode) {
+    const eventScores = await this.getEventScores(eventCode);
+    if (!eventScores) return null;
+
+    const normalized = athleteName.toLowerCase().trim();
+    return (
+      eventScores.gymnasts.find(
+        (g) => g.name?.toLowerCase().includes(normalized) || normalized.includes(g.lastName?.toLowerCase())
+      ) || null
+    );
   }
 
   // ==========================================================================
@@ -360,6 +802,12 @@ class AIContextService {
       const teamDataSnapshot = await db.ref(`competitions/${this.compId}/teamData`).once('value');
       this._teamData = teamDataSnapshot.val();
 
+      // Extract Virtius session ID if available
+      if (this._competitionConfig?.virtiusSessionId) {
+        this._virtiusSessionId = this._competitionConfig.virtiusSessionId;
+        console.log(`[AIContextService] Found Virtius session ID: ${this._virtiusSessionId}`);
+      }
+
       console.log(`[AIContextService] Loaded competition data for ${this.compId}`);
     } catch (error) {
       console.error(`[AIContextService] Error loading competition data:`, error);
@@ -416,6 +864,14 @@ class AIContextService {
       hasCurrentContext: !!this._currentContext,
       lastSegmentId: this._lastSegmentId,
       config: this.config,
+      virtius: {
+        sessionId: this._virtiusSessionId,
+        hasData: !!this._virtiusData,
+        lastFetch: this._virtiusLastFetch
+          ? new Date(this._virtiusLastFetch).toISOString()
+          : null,
+        available: this._virtiusData?.available || false,
+      },
     };
   }
 }
@@ -504,6 +960,7 @@ const aiContextService = {
   CONTEXT_TYPES,
   PRIORITY,
   DEFAULT_CONFIG,
+  EVENT_MAPPINGS,
 };
 
 export default aiContextService;
@@ -517,4 +974,5 @@ export {
   CONTEXT_TYPES,
   PRIORITY,
   DEFAULT_CONFIG,
+  EVENT_MAPPINGS,
 };
