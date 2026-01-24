@@ -47,6 +47,7 @@ import { db, ref, set, get, push, remove, update, onValue, onDisconnect } from '
 import { analyzeCompetitionContext, analyzeSegmentOrder, analyzeCompetitionFormat } from '../lib/aiContextAnalyzer';
 import { useCompetition } from '../context/CompetitionContext';
 import { useOBS } from '../context/OBSContext';
+import { useShow } from '../context/ShowContext';
 
 // Hardcoded competition context per PRD (Phase 0B)
 const DUMMY_COMPETITION = {
@@ -369,10 +370,16 @@ export default function RundownEditorPage() {
   const [redoStack, setRedoStack] = useState([]); // Stack of undone states
   const [isUndoRedoOperation, setIsUndoRedoOperation] = useState(false); // Flag to prevent undo during undo/redo
 
-  // AI Suggestions state (Phase 12: Task 88)
+  // AI Suggestions state (Phase 12: Task 88, Phase D: Task 48)
   const [showAISuggestions, setShowAISuggestions] = useState(false); // Toggle AI suggestions panel
   const [aiSuggestions, setAISuggestions] = useState([]); // List of AI-generated segment suggestions
   const [dismissedSuggestions, setDismissedSuggestions] = useState([]); // IDs of dismissed suggestions
+  const [isLoadingAISuggestions, setIsLoadingAISuggestions] = useState(false); // Loading state for server AI suggestions
+  const [aiSuggestionsContext, setAISuggestionsContext] = useState(null); // Context from server (teams, seniors, etc.)
+  const [aiSuggestionsError, setAISuggestionsError] = useState(null); // Error state for AI suggestions
+
+  // Get socket for AI suggestions (Phase D: Task 48)
+  const { getAISuggestions, connected: socketConnected } = useShow();
 
   // Talent Schedule state (Phase 12: Task 94)
   const [showTalentScheduleModal, setShowTalentScheduleModal] = useState(false); // Talent schedule view modal
@@ -548,33 +555,114 @@ export default function RundownEditorPage() {
     };
   }, [darkMode]);
 
-  // Generate AI segment suggestions based on competition context (Phase 12: Task 88)
-  // Analyzes competition metadata, date, and existing segments to suggest relevant segments
-  useEffect(() => {
+  // Fetch AI segment suggestions from server (Phase D: Task 48)
+  // Uses server-side AI suggestion service for better context analysis
+  const fetchServerAISuggestions = useCallback(async () => {
+    if (!socketConnected || !compId) return;
+
+    setIsLoadingAISuggestions(true);
+    setAISuggestionsError(null);
+
+    try {
+      const result = await getAISuggestions({ minConfidence: 0.3 });
+
+      if (result.success) {
+        // Transform server suggestions to UI format
+        const existingNames = segments.map(s => s.name.toLowerCase());
+
+        const transformedSuggestions = result.suggestions
+          // Filter out dismissed suggestions
+          .filter(s => !dismissedSuggestions.includes(s.id))
+          // Filter out segments that already exist (by name)
+          .filter(s => !existingNames.some(name =>
+            name.includes(s.name.toLowerCase()) || s.name.toLowerCase().includes(name)
+          ))
+          // Transform to UI format
+          .map(s => ({
+            id: s.id,
+            type: s.category || s.type,
+            title: s.name,
+            description: s.reason || `${s.confidenceLevel} confidence suggestion`,
+            priority: s.confidenceLevel === 'high' ? 'high' : s.confidenceLevel === 'medium' ? 'medium' : 'low',
+            confidence: s.confidence,
+            confidenceLevel: s.confidenceLevel,
+            category: s.category,
+            segment: {
+              name: s.name,
+              type: s.type,
+              duration: s.duration,
+              scene: s.scene,
+              graphic: s.graphic,
+              autoAdvance: s.timingMode === 'fixed',
+              timingMode: s.timingMode,
+              notes: s.notes || '',
+            },
+            // Extra context from server
+            athleteContext: s.athleteContext,
+            suggestedOrder: s.suggestedOrder,
+          }));
+
+        setAISuggestions(transformedSuggestions);
+        setAISuggestionsContext(result.context);
+      } else {
+        setAISuggestionsError(result.error);
+        // Fall back to client-side suggestions
+        fallbackToClientSuggestions();
+      }
+    } catch (error) {
+      console.error('Failed to fetch AI suggestions from server:', error);
+      setAISuggestionsError(error.message);
+      // Fall back to client-side suggestions
+      fallbackToClientSuggestions();
+    } finally {
+      setIsLoadingAISuggestions(false);
+    }
+  }, [socketConnected, compId, getAISuggestions, segments, dismissedSuggestions]);
+
+  // Fallback to client-side suggestions when server is unavailable
+  const fallbackToClientSuggestions = useCallback(() => {
     // Build competition config for the analyzer from DUMMY_COMPETITION
-    // In production, this would come from Firebase
-    const competitionConfig = {
+    const localCompConfig = {
       id: DUMMY_COMPETITION.id,
       eventName: DUMMY_COMPETITION.name,
       compType: DUMMY_COMPETITION.type,
-      // Map teams to the format expected by the analyzer
       team1Name: DUMMY_COMPETITION.teams[1]?.name,
       team2Name: DUMMY_COMPETITION.teams[2]?.name,
       team3Name: DUMMY_COMPETITION.teams[3]?.name,
       team4Name: DUMMY_COMPETITION.teams[4]?.name,
     };
 
-    // Analyze competition context
     const context = analyzeCompetitionContext({
-      competition: competitionConfig,
-      teamData: null, // Would be loaded from Firebase in production
-      date: new Date(), // Use current date for analysis
+      competition: localCompConfig,
+      teamData: null,
+      date: new Date(),
     });
 
-    // Generate suggestions from triggers
     const suggestions = generateContextSuggestions(context, segments, dismissedSuggestions);
     setAISuggestions(suggestions);
   }, [segments, dismissedSuggestions]);
+
+  // Auto-fetch AI suggestions when socket connects or panel opens
+  useEffect(() => {
+    if (showAISuggestions) {
+      if (socketConnected && compId) {
+        fetchServerAISuggestions();
+      } else {
+        // No socket connection - use client-side fallback
+        fallbackToClientSuggestions();
+      }
+    }
+  }, [showAISuggestions, socketConnected, compId, fetchServerAISuggestions, fallbackToClientSuggestions]);
+
+  // Re-filter suggestions when segments or dismissed list changes
+  useEffect(() => {
+    if (showAISuggestions && aiSuggestions.length > 0) {
+      // Filter out newly dismissed suggestions
+      setAISuggestions(prev =>
+        prev.filter(s => !dismissedSuggestions.includes(s.id))
+      );
+    }
+  }, [dismissedSuggestions]);
 
   // Generate segment suggestions based on context triggers (Phase 12: Task 88)
   function generateContextSuggestions(context, existingSegments, dismissed) {
@@ -4371,7 +4459,7 @@ export default function RundownEditorPage() {
               <ArrowPathIcon className="w-4 h-4" />
               Sync OBS
             </button>
-            {/* AI Suggestions Button (Phase 12: Task 88) */}
+            {/* AI Suggestions Button (Phase 12: Task 88, Phase D: Task 48) */}
             <button
               onClick={() => setShowAISuggestions(!showAISuggestions)}
               className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
@@ -4381,15 +4469,17 @@ export default function RundownEditorPage() {
                     ? 'bg-purple-500/20 border border-purple-500/40 text-purple-300 hover:bg-purple-500/30'
                     : 'bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700'
               }`}
-              title={`AI Suggestions${aiSuggestions.length > 0 ? ` (${aiSuggestions.length})` : ''}`}
+              title={`AI Suggestions${aiSuggestions.length > 0 ? ` (${aiSuggestions.length})` : ''}${isLoadingAISuggestions ? ' (loading...)' : ''}`}
             >
-              <SparklesIcon className="w-4 h-4" />
+              <SparklesIcon className={`w-4 h-4 ${isLoadingAISuggestions ? 'animate-pulse' : ''}`} />
               AI Suggestions
-              {aiSuggestions.length > 0 && !showAISuggestions && (
+              {isLoadingAISuggestions ? (
+                <ArrowPathIcon className="w-3.5 h-3.5 animate-spin ml-1" />
+              ) : aiSuggestions.length > 0 && !showAISuggestions ? (
                 <span className="ml-1 px-1.5 py-0.5 bg-purple-500 text-white text-xs rounded-full">
                   {aiSuggestions.length}
                 </span>
-              )}
+              ) : null}
             </button>
           </div>
           <div className="flex items-center gap-3">
@@ -4568,19 +4658,36 @@ export default function RundownEditorPage() {
         </div>
       </div>
 
-      {/* AI Suggestions Panel (Phase 12: Task 88) */}
+      {/* AI Suggestions Panel (Phase 12: Task 88, Phase D: Task 48) */}
       {showAISuggestions && (
         <div className="border-b border-zinc-800 bg-purple-500/5">
           <div className="px-6 py-3">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
-                <SparklesIcon className="w-5 h-5 text-purple-400" />
+                <SparklesIcon className={`w-5 h-5 text-purple-400 ${isLoadingAISuggestions ? 'animate-pulse' : ''}`} />
                 <h3 className="text-sm font-medium text-purple-300">AI Segment Suggestions</h3>
-                <span className="text-xs text-zinc-500">
-                  Based on competition context
-                </span>
+                {aiSuggestionsContext ? (
+                  <span className="text-xs text-zinc-500">
+                    {aiSuggestionsContext.eventName || 'Competition'} • {aiSuggestionsContext.teams?.length || 0} teams
+                    {aiSuggestionsContext.seniors?.length > 0 && ` • ${aiSuggestionsContext.seniors.length} seniors`}
+                    {aiSuggestionsContext.allAmericans?.length > 0 && ` • ${aiSuggestionsContext.allAmericans.length} All-Americans`}
+                  </span>
+                ) : (
+                  <span className="text-xs text-zinc-500">
+                    Based on competition context
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-2">
+                {/* Refresh button (Phase D: Task 48) */}
+                <button
+                  onClick={fetchServerAISuggestions}
+                  disabled={isLoadingAISuggestions || !socketConnected}
+                  className="px-2 py-1 text-xs text-zinc-400 hover:text-zinc-300 bg-zinc-800 border border-zinc-700 rounded hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={!socketConnected ? 'Not connected to server' : 'Refresh suggestions'}
+                >
+                  <ArrowPathIcon className={`w-3.5 h-3.5 ${isLoadingAISuggestions ? 'animate-spin' : ''}`} />
+                </button>
                 {dismissedSuggestions.length > 0 && (
                   <button
                     onClick={handleResetSuggestions}
@@ -4597,7 +4704,20 @@ export default function RundownEditorPage() {
                 </button>
               </div>
             </div>
-            {aiSuggestions.length === 0 ? (
+            {/* Loading state */}
+            {isLoadingAISuggestions ? (
+              <div className="text-center py-8 text-zinc-500 text-sm">
+                <ArrowPathIcon className="w-6 h-6 animate-spin mx-auto mb-2 text-purple-400" />
+                <div>Analyzing competition context...</div>
+                <div className="text-xs text-zinc-600 mt-1">Querying rosters, All-Americans, and milestones</div>
+              </div>
+            ) : aiSuggestionsError ? (
+              /* Error state */
+              <div className="text-center py-4 text-amber-400 text-sm">
+                <div>Failed to fetch suggestions: {aiSuggestionsError}</div>
+                <div className="text-xs text-zinc-500 mt-1">Using fallback suggestions</div>
+              </div>
+            ) : aiSuggestions.length === 0 ? (
               <div className="text-center py-4 text-zinc-500 text-sm">
                 No suggestions available for this competition.
                 {dismissedSuggestions.length > 0 && (

@@ -54,7 +54,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | B | Talent View | P1 | COMPLETE | 22-27 |
 | I | Live Rundown Sync | P2 | COMPLETE | 28-37 |
 | J | Segment Timing Analytics | P2 | COMPLETE | 38-42 |
-| D | AI Suggestions - Planning | P2 | IN PROGRESS | 43-48 (5/6 complete) |
+| D | AI Suggestions - Planning | P2 | COMPLETE | 43-48 |
 | E | Script & Talent Flow | P2 | NOT STARTED | 49-54 |
 | C | AI Context - Live Execution | P3 | NOT STARTED | 55-62 |
 | F | Audio Cue Integration | P3 | NOT STARTED | 63-66 |
@@ -131,7 +131,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 41 | Show historical average in Rundown Editor | COMPLETE | Added call to `loadTimingAnalytics()` in component mount useEffect so historical averages are available when rendering segment rows. UI already existed in SegmentRow component (both compact and expanded views) showing ~Xs indicator next to duration field. Color-coded: amber if actual runs longer than planned, green if shorter, gray if matches. |
 | Task 42 | AI-powered timing predictions based on history | COMPLETE | Added `aiTimingPredictions` computed value in RundownEditorPage that analyzes historical timing data by segment name similarity and type averages. Shows purple sparkle indicator with confidence level (high/medium/low) for segments without direct historical data. Click-to-apply feature in both inline view and detail panel. |
 
-### Phase D: AI Suggestions - Planning (P2) - IN PROGRESS (4/6)
+### Phase D: AI Suggestions - Planning (P2) - COMPLETE (6/6)
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
@@ -140,7 +140,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 45 | Query roster data for seniors, All-Americans, milestones | COMPLETE | Added `queryAllAmericans()` to search teamsDatabase/honors for All-American athletes; `queryMilestones()` to search teamsDatabase/milestones for career records and approaching milestones; `computeSeniorMilestones()` to detect championship/final meet storylines for seniors; updated `buildContext()` to run queries in parallel; enhanced `getSpecialSegments()` to generate Record Holder Feature and Milestone Watch segments |
 | Task 46 | Generate segment suggestions with confidence scores | COMPLETE | Added dynamic confidence scoring with `calculateDynamicConfidence()` that adjusts scores based on: data availability (roster, stats), season phase (championship/late bonus), matchup analysis (close matchup bonus), and athlete features (All-American/milestone boost). Added `CONFIDENCE_FACTORS` constants and `getConfidenceLevel()` helper. Enhanced all segment generators to use context-aware confidence. Added new contextual segments: Season Context (championship/late), Mid-Meet Analysis (close matchups), Team Stats Preview, Event-by-Event Results, Standout Performers, and Rivalry & History. All reasons now include context justification via `buildReasonString()`. |
 | Task 47 | Add `getAISuggestions` API endpoint | COMPLETE | Added `getAISuggestions` and `getAISuggestionCount` socket handlers in server/index.js; handlers emit `aiSuggestionsResult` and `aiSuggestionCountResult` events; accepts `compId` and `options` parameters; logs suggestion generation |
-| Task 48 | Wire Rundown Editor to display suggestions | NOT STARTED | |
+| Task 48 | Wire Rundown Editor to display suggestions | COMPLETE | Added `getAISuggestions` function to ShowContext with promise-based API; added socket listener for `aiSuggestionsResult`; updated RundownEditorPage to use server-side suggestions with fallback to client-side; added loading state, error handling, context display, and refresh button; transformed server suggestions to UI format; filtered by dismissed and existing segments |
 
 ### Phase E: Script & Talent Flow (P2) - NOT STARTED
 

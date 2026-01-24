@@ -381,6 +381,13 @@ export function ShowProvider({ children }) {
       }));
     });
 
+    // AI suggestions result handler (Phase D - AI Suggestions)
+    // Note: This handler is for callback-based usage - callers set up their own
+    // one-time listener. This is a fallback for general logging.
+    newSocket.on('aiSuggestionsResult', (result) => {
+      console.log('AI suggestions received:', result.success ? `${result.suggestions?.length || 0} suggestions` : result.error);
+    });
+
     setSocket(newSocket);
 
     return () => {
@@ -511,6 +518,40 @@ export function ShowProvider({ children }) {
     }));
   }, []);
 
+  // AI Suggestions function (Phase D - AI Suggestions)
+  // Returns a promise that resolves with the suggestions result
+  const getAISuggestions = useCallback((options = {}) => {
+    return new Promise((resolve, reject) => {
+      if (!socket) {
+        reject(new Error('Socket not connected'));
+        return;
+      }
+
+      console.log('ShowContext: Requesting AI suggestions for competition', compId);
+
+      // Set up one-time listener for the result
+      const handleResult = (result) => {
+        socket.off('aiSuggestionsResult', handleResult);
+        if (result.success) {
+          resolve(result);
+        } else {
+          reject(new Error(result.error || 'Failed to get AI suggestions'));
+        }
+      };
+
+      socket.on('aiSuggestionsResult', handleResult);
+
+      // Emit the request
+      socket.emit('getAISuggestions', { compId, options });
+
+      // Timeout after 30 seconds
+      setTimeout(() => {
+        socket.off('aiSuggestionsResult', handleResult);
+        reject(new Error('AI suggestions request timed out'));
+      }, 30000);
+    });
+  }, [socket, compId]);
+
   const value = {
     // Connection info
     socketUrl,
@@ -557,7 +598,9 @@ export function ShowProvider({ children }) {
     getTimesheetOverrides,
     clearOverrideLog,
     setRehearsalMode,
-    clearRundownModified
+    clearRundownModified,
+    // AI Suggestions
+    getAISuggestions
   };
 
   return (
