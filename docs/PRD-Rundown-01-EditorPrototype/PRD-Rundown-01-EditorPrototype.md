@@ -72,7 +72,7 @@ The **Producer View** (separate page) uses this rundown as the "script" to contr
 | 7 | Templates & Presets | ✅ COMPLETE | Segment templates, recurrence |
 | 8 | Collaboration | ✅ COMPLETE | Multi-user, permissions, versioning |
 | 9 | Data & Reporting | ✅ COMPLETE | Export, import rundowns |
-| 10 | Visual & UX | 🔲 PLANNED | Timeline view, theming, print |
+| 10 | Visual & UX | ✅ COMPLETE | Timeline view, theming, print |
 | 11 | Quality of Life | 🔲 PLANNED | Keyboard shortcuts, undo/redo |
 | 12 | Advanced Planning | 🔲 PLANNED | AI suggestions, talent, equipment, sponsors |
 
@@ -1138,7 +1138,7 @@ const filteredSegments = segments.filter(seg => {
 - [x] Color coding by segment type
 - [x] Compact view toggle
 - [x] Dark/light mode toggle
-- [ ] Print-friendly view
+- [x] Print-friendly view
 
 ### Phase 11: Quality of Life
 

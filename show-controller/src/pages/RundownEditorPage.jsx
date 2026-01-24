@@ -300,6 +300,7 @@ export default function RundownEditorPage() {
     return saved !== null ? JSON.parse(saved) : true;
   }); // Dark/light mode toggle (Phase 10: Task 80)
   const [showColorSettingsModal, setShowColorSettingsModal] = useState(false); // Color settings modal (Phase 10: Task 78)
+  const [showPrintOptionsModal, setShowPrintOptionsModal] = useState(false); // Print options modal (Phase 10: Task 81)
   const [customTypeColors, setCustomTypeColors] = useState(() => {
     // Load custom colors from localStorage, or use null to indicate defaults
     const saved = localStorage.getItem(`rundown-type-colors-${compId}`);
@@ -1559,8 +1560,33 @@ export default function RundownEditorPage() {
     };
   }
 
-  // Generate print-friendly HTML for PDF export (Phase 9: Task 70)
-  function generatePrintableRundown() {
+  // Open print-friendly view with configurable options (Phase 10: Task 81)
+  function handlePrintView(options = {}) {
+    // Generate print-friendly HTML with user-selected options
+    const printContent = generatePrintableRundown(options);
+
+    // Open a new window for the print view
+    const printWindow = window.open('', '_blank', 'width=900,height=700');
+    if (!printWindow) {
+      showToast('Please allow popups to open print view');
+      return;
+    }
+
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+
+    showToast('Print view opened in new tab');
+  }
+
+  // Generate print-friendly HTML for PDF export (Phase 9: Task 70) and print view (Phase 10: Task 81)
+  function generatePrintableRundown(options = {}) {
+    const {
+      includeNotes = true,
+      includeOptional = true,
+      includeScene = true,
+      includeGraphic = true,
+    } = options;
+
     const now = new Date();
     const dateStr = now.toLocaleDateString('en-US', {
       weekday: 'long',
@@ -1577,16 +1603,18 @@ export default function RundownEditorPage() {
     let segmentRows = '';
     let segmentNumber = 1;
 
-    // Simple flat list (groups support can be added later)
-    segments.forEach((seg) => {
+    // Filter segments based on options and build rows
+    const segmentsToRender = includeOptional ? segments : segments.filter(seg => !seg.optional);
+
+    segmentsToRender.forEach((seg) => {
       const startTime = formatDuration(segmentStartTimes[seg.id] || 0);
       const duration = seg.duration ? formatDuration(seg.duration) : 'MANUAL';
       const typeBadge = seg.type.toUpperCase();
       const optionalClass = seg.optional ? 'optional' : '';
       const lockedClass = seg.locked ? 'locked' : '';
-      const notes = seg.notes ? `<div class="notes">${seg.notes}</div>` : '';
-      const graphicInfo = seg.graphic?.graphicId ? `<span class="graphic">${seg.graphic.graphicId}</span>` : '';
-      const sceneInfo = seg.scene ? `<span class="scene">${seg.scene}</span>` : '';
+      const notes = (includeNotes && seg.notes) ? `<div class="notes">${seg.notes}</div>` : '';
+      const graphicInfo = (includeGraphic && seg.graphic?.graphicId) ? `<span class="graphic">${seg.graphic.graphicId}</span>` : '';
+      const sceneInfo = (includeScene && seg.scene) ? `<span class="scene">${seg.scene}</span>` : '';
 
       segmentRows += `
         <tr class="${optionalClass} ${lockedClass}">
@@ -1600,8 +1628,8 @@ export default function RundownEditorPage() {
           </td>
           <td class="type"><span class="type-badge type-${seg.type}">${typeBadge}</span></td>
           <td class="duration">${duration}</td>
-          <td class="scene">${sceneInfo}</td>
-          <td class="graphic">${graphicInfo}</td>
+          ${includeScene ? `<td class="scene">${sceneInfo}</td>` : ''}
+          ${includeGraphic ? `<td class="graphic">${graphicInfo}</td>` : ''}
         </tr>
       `;
       segmentNumber++;
@@ -1779,8 +1807,8 @@ export default function RundownEditorPage() {
     <div class="meta">
       <span><strong>Total Runtime:</strong> ${formatDuration(totalRuntime)}</span>
       ${targetDuration ? `<span><strong>Target:</strong> ${formatDuration(targetDuration)}</span>` : ''}
-      <span><strong>Segments:</strong> ${segments.length}</span>
-      ${optionalSegmentsInfo.count > 0 ? `<span><strong>Optional:</strong> ${optionalSegmentsInfo.count} (${formatDuration(optionalSegmentsInfo.duration)})</span>` : ''}
+      <span><strong>Segments:</strong> ${segmentsToRender.length}${!includeOptional && optionalSegmentsInfo.count > 0 ? ` (${optionalSegmentsInfo.count} optional excluded)` : ''}</span>
+      ${includeOptional && optionalSegmentsInfo.count > 0 ? `<span><strong>Optional:</strong> ${optionalSegmentsInfo.count} (${formatDuration(optionalSegmentsInfo.duration)})</span>` : ''}
     </div>
   </div>
 
@@ -1792,8 +1820,8 @@ export default function RundownEditorPage() {
         <th class="name">Segment</th>
         <th class="type">Type</th>
         <th class="duration">Duration</th>
-        <th class="scene">Scene</th>
-        <th class="graphic">Graphic</th>
+        ${includeScene ? '<th class="scene">Scene</th>' : ''}
+        ${includeGraphic ? '<th class="graphic">Graphic</th>' : ''}
       </tr>
     </thead>
     <tbody>
@@ -3370,6 +3398,14 @@ export default function RundownEditorPage() {
             >
               {darkMode ? <MoonIcon className="w-4 h-4" /> : <SunIcon className="w-4 h-4" />}
             </button>
+            {/* Print View Button (Phase 10: Task 81) */}
+            <button
+              onClick={() => setShowPrintOptionsModal(true)}
+              className="px-3 py-2 text-sm rounded-lg border transition-colors bg-zinc-800 text-zinc-400 border-zinc-700 hover:text-zinc-300 hover:bg-zinc-700"
+              title="Open print-friendly view"
+            >
+              <DocumentTextIcon className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </div>
@@ -3787,6 +3823,14 @@ export default function RundownEditorPage() {
           onSave={handleSaveCustomColors}
           onReset={handleResetColors}
           onClose={() => setShowColorSettingsModal(false)}
+        />
+      )}
+
+      {/* Print Options Modal (Phase 10: Task 81) */}
+      {showPrintOptionsModal && (
+        <PrintOptionsModal
+          onPrint={handlePrintView}
+          onClose={() => setShowPrintOptionsModal(false)}
         />
       )}
     </div>
@@ -6947,6 +6991,128 @@ function ColorSettingsModal({ currentColors, onSave, onReset, onClose }) {
           >
             <CheckIcon className="w-4 h-4" />
             Save Colors
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Print Options Modal Component (Phase 10: Task 81)
+// Allows users to configure print view options before generating printable rundown
+function PrintOptionsModal({ onPrint, onClose }) {
+  const [includeNotes, setIncludeNotes] = useState(true);
+  const [includeOptional, setIncludeOptional] = useState(true);
+  const [includeScene, setIncludeScene] = useState(true);
+  const [includeGraphic, setIncludeGraphic] = useState(true);
+
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+      <div className="bg-zinc-900 border border-zinc-700 rounded-xl w-full max-w-md shadow-2xl">
+        {/* Header */}
+        <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
+              <PrinterIcon className="w-5 h-5 text-green-400" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-white">Print View</h2>
+              <p className="text-sm text-zinc-400">Configure your print layout</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-zinc-800 rounded-lg transition-colors"
+          >
+            <XMarkIcon className="w-5 h-5 text-zinc-400" />
+          </button>
+        </div>
+
+        {/* Options */}
+        <div className="p-4 space-y-4">
+          <p className="text-sm text-zinc-400">
+            Choose what to include in your printable rundown:
+          </p>
+
+          {/* Include Notes */}
+          <label className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg cursor-pointer hover:bg-zinc-800 transition-colors">
+            <input
+              type="checkbox"
+              checked={includeNotes}
+              onChange={(e) => setIncludeNotes(e.target.checked)}
+              className="w-4 h-4 rounded border-zinc-600 bg-zinc-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-zinc-900"
+            />
+            <div className="flex-1">
+              <span className="text-white text-sm font-medium">Include Notes</span>
+              <p className="text-xs text-zinc-500">Show production notes for each segment</p>
+            </div>
+          </label>
+
+          {/* Include Optional Segments */}
+          <label className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg cursor-pointer hover:bg-zinc-800 transition-colors">
+            <input
+              type="checkbox"
+              checked={includeOptional}
+              onChange={(e) => setIncludeOptional(e.target.checked)}
+              className="w-4 h-4 rounded border-zinc-600 bg-zinc-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-zinc-900"
+            />
+            <div className="flex-1">
+              <span className="text-white text-sm font-medium">Include Optional Segments</span>
+              <p className="text-xs text-zinc-500">Show segments marked as conditional/optional</p>
+            </div>
+          </label>
+
+          {/* Include Scene */}
+          <label className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg cursor-pointer hover:bg-zinc-800 transition-colors">
+            <input
+              type="checkbox"
+              checked={includeScene}
+              onChange={(e) => setIncludeScene(e.target.checked)}
+              className="w-4 h-4 rounded border-zinc-600 bg-zinc-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-zinc-900"
+            />
+            <div className="flex-1">
+              <span className="text-white text-sm font-medium">Include OBS Scene</span>
+              <p className="text-xs text-zinc-500">Show the OBS scene column</p>
+            </div>
+          </label>
+
+          {/* Include Graphic */}
+          <label className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg cursor-pointer hover:bg-zinc-800 transition-colors">
+            <input
+              type="checkbox"
+              checked={includeGraphic}
+              onChange={(e) => setIncludeGraphic(e.target.checked)}
+              className="w-4 h-4 rounded border-zinc-600 bg-zinc-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-zinc-900"
+            />
+            <div className="flex-1">
+              <span className="text-white text-sm font-medium">Include Graphic</span>
+              <p className="text-xs text-zinc-500">Show the graphic column</p>
+            </div>
+          </label>
+        </div>
+
+        {/* Footer */}
+        <div className="p-4 border-t border-zinc-800 flex gap-3 justify-end">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-zinc-800 text-zinc-300 rounded-lg hover:bg-zinc-700 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => {
+              onPrint({
+                includeNotes,
+                includeOptional,
+                includeScene,
+                includeGraphic,
+              });
+              onClose();
+            }}
+            className="px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-500 transition-colors flex items-center gap-2"
+          >
+            <PrinterIcon className="w-5 h-5" />
+            Open Print View
           </button>
         </div>
       </div>

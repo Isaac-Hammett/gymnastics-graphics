@@ -3,7 +3,7 @@
 **PRD:** PRD-Rundown-01-EditorPrototype
 **Status:** PROTOTYPE COMPLETE, FEATURES IN PROGRESS
 **Created:** 2026-01-22
-**Last Updated:** 2026-01-23 (v5.4 - Task 80 complete - Dark/light mode toggle)
+**Last Updated:** 2026-01-23 (v5.5 - Task 81 complete - Print-friendly view)
 
 ---
 
@@ -52,7 +52,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | 7 | Templates & Presets | ✅ COMPLETE | 58-62 |
 | 8 | Collaboration | ✅ COMPLETE | 63-69 |
 | 9 | Data & Reporting | ✅ COMPLETE | 70-74 |
-| 10 | Visual & UX | 🔄 IN PROGRESS | 75-81 |
+| 10 | Visual & UX | ✅ COMPLETE | 75-81 |
 | 11 | Quality of Life | 🔲 NOT STARTED | 82-86 |
 | 12 | Advanced Planning | 🔲 NOT STARTED | 87-96 |
 
@@ -196,7 +196,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 73: Import from CSV | COMPLETE | Hidden file input triggers file picker, parseCSV handles quoted values, autoDetectCSVMapping auto-maps columns by header keywords, ImportCSVModal shows field mapping UI with preview, append/replace modes, validation for required Name field |
 | Task 74: Import from JSON | COMPLETE | handleImportJSON opens file picker for .json files, validateJSONImport validates structure, ImportJSONModal shows preview with file info/segments/options, supports append/replace modes, import groups option, import settings option (targetDuration, approvalStatus), preserve IDs option |
 
-### Phase 10: Visual & UX 🔄 IN PROGRESS
+### Phase 10: Visual & UX ✅ COMPLETE
 
 | Task | Status | Notes |
 |------|--------|-------|
@@ -206,7 +206,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 78: Make colors customizable | COMPLETE | ColorSettingsModal with 16 color options, localStorage persistence per competition, SwatchIcon button in toolbar |
 | Task 79: Add compact view toggle | COMPLETE | QueueListIcon toggle button in toolbar (only visible in list view), compactView state, SegmentRow renders compact single-line with: number, name, type badge, lock/optional indicators, duration |
 | Task 80: Add dark/light mode toggle | COMPLETE | MoonIcon/SunIcon toggle button in toolbar, darkMode state with localStorage persistence, theme-light CSS class on body, CSS variable overrides in index.css for light theme backgrounds, text, and borders |
-| Task 81: Create print-friendly view | NOT STARTED | Clean layout for paper |
+| Task 81: Create print-friendly view | COMPLETE | PrintOptionsModal with configurable options (include notes, include optional segments, include scene, include graphic), DocumentTextIcon button in toolbar, handlePrintView function opens new window with print-friendly HTML, generatePrintableRundown updated to accept options and conditionally render columns/segments |
 
 ### Phase 11: Quality of Life 🔲 NOT STARTED
 
