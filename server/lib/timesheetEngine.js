@@ -717,7 +717,13 @@ class TimesheetEngine extends EventEmitter {
 
     // Also broadcast via socket.io
     if (this.io) {
-      this.io.emit('triggerGraphic', graphicData);
+      // Target competition-specific room if compId is available
+      if (this.compId) {
+        this.io.to(`competition:${this.compId}`).emit('triggerGraphic', graphicData);
+      } else {
+        // Fallback to global broadcast for legacy single-engine mode
+        this.io.emit('triggerGraphic', graphicData);
+      }
     }
 
     // Emit event for any listeners

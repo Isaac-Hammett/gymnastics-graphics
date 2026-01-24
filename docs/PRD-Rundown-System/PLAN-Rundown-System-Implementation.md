@@ -64,7 +64,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 
 ## Task Summary by Phase
 
-### Phase A: Connect Editor to Engine (P0) - IN PROGRESS (5/16 complete)
+### Phase A: Connect Editor to Engine (P0) - IN PROGRESS (6/16 complete)
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
@@ -73,7 +73,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 3 | Update `_applyTransitionAndSwitchScene()` to use `obsConnectionManager.getConnection(this.compId)` | COMPLETE | Updated to get OBS connection from obsConnectionManager using compId, with fallback to legacy this.obs |
 | Task 4 | Update `_playVideo()` to use per-competition OBS connection | COMPLETE | Updated to use obsConnectionManager.getConnection(compId) with fallback to legacy this.obs |
 | Task 5 | Update `_applyAudioOverrides()` to use per-competition OBS connection | COMPLETE | Updated to use obsConnectionManager.getConnection(compId) with fallback to legacy this.obs |
-| Task 6 | Update all socket event broadcasts to target competition room | NOT STARTED | |
+| Task 6 | Update all socket event broadcasts to target competition room | COMPLETE | Updated `_triggerGraphic()` to use `io.to('competition:${compId}').emit()` with fallback to legacy broadcast. All other socket events are already routed through EventEmitter handlers in server/index.js `getOrCreateEngine()` which already use room-based broadcasting. |
 | Task 7 | Pass Firebase Admin instance to engine for `_triggerGraphic()` | NOT STARTED | |
 | Task 8 | Add `loadRundown` socket handler on server | NOT STARTED | |
 | Task 9 | Add `loadRundown` action in ShowContext | NOT STARTED | |
@@ -292,16 +292,22 @@ Update the audio override method to use per-competition OBS connection.
 
 ### Task 6: Update socket event broadcasts
 
-**Status:** NOT STARTED
+**Status:** COMPLETE
 **File:** `server/lib/timesheetEngine.js`
 
 **Description:**
 Update all socket.io event emissions to target the competition-specific room.
 
 **Checklist:**
-- [ ] Replace `this.io.emit(...)` with `this.io.to('competition:${this.compId}').emit(...)`
-- [ ] Update all event emissions: `timesheetState`, `timesheetTick`, `timesheetSegmentActivated`, etc.
-- [ ] Verify room naming matches existing convention
+- [x] Replace `this.io.emit(...)` with `this.io.to('competition:${this.compId}').emit(...)`
+- [x] Update all event emissions: `timesheetState`, `timesheetTick`, `timesheetSegmentActivated`, etc.
+- [x] Verify room naming matches existing convention
+
+**Implementation Notes:**
+- The only direct `this.io.emit()` call in `timesheetEngine.js` was in `_triggerGraphic()` (line 722)
+- Updated to use `this.io.to('competition:${this.compId}').emit()` when `compId` is available
+- Added fallback to legacy `this.io.emit()` for backward compatibility with single-engine mode
+- All other socket events (`timesheetTick`, `timesheetState`, etc.) are emitted via EventEmitter (`this.emit()`) and handled in `server/index.js` by `getOrCreateEngine()` which already broadcasts to the correct room using `socketIo.to(roomName).emit()`
 
 ---
 
