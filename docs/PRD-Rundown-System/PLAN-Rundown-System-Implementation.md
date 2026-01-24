@@ -50,7 +50,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Phase | Name | Priority | Status | Tasks |
 |-------|------|----------|--------|-------|
 | A | Connect Editor to Engine | P0 | COMPLETE | 1-16 |
-| H | Rehearsal Mode | P1 | IN PROGRESS | 17-21 |
+| H | Rehearsal Mode | P1 | COMPLETE | 17-21 |
 | B | Talent View | P1 | NOT STARTED | 22-27 |
 | I | Live Rundown Sync | P2 | NOT STARTED | 28-37 |
 | J | Segment Timing Analytics | P2 | NOT STARTED | 38-42 |
@@ -85,7 +85,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 15 | Verify Rundown Editor graphics picker uses Graphics Registry | COMPLETE | Uses graphicsRegistry.js with getGraphicsForCompetition(). Filters by compType/gender. Note: Uses DUMMY_COMPETITION.type - Task 16 will wire live data. |
 | Task 16 | Fix any hardcoded picker data | COMPLETE | Replaced DUMMY_SCENES with live OBS scenes from useOBS(); replaced DUMMY_COMPETITION with live competition config from useCompetition(); updated getGroupedScenes/getGroupedGraphics to accept params; passed live data to SegmentRow, SegmentDetailPanel, and SelectionSummaryPanel |
 
-### Phase H: Rehearsal Mode (P1) - IN PROGRESS
+### Phase H: Rehearsal Mode (P1) - COMPLETE (5/5)
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
@@ -93,7 +93,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 18 | Skip OBS scene changes in rehearsal mode | COMPLETE | Added early-return check in `_applyTransitionAndSwitchScene()` that skips OBS calls when `_isRehearsalMode` is true; still emits `sceneChanged` event with `rehearsalMode: true` for UI updates |
 | Task 19 | Skip graphics firing in rehearsal mode | COMPLETE | Added early-return check in `_triggerGraphic()` that skips Firebase writes and socket.io broadcasts when `_isRehearsalMode` is true; still emits `graphicTriggered` event with `rehearsalMode: true` for UI updates |
 | Task 20 | Show "REHEARSAL" indicator in all views | COMPLETE | Added purple "REHEARSAL MODE" banner in ProducerView, rehearsal toggle button, `setRehearsalMode` socket handler, `rehearsalModeChanged` event wiring |
-| Task 21 | Log timing data for post-rehearsal analysis | NOT STARTED | |
+| Task 21 | Log timing data for post-rehearsal analysis | COMPLETE | Added timing analytics logging in `showStopped` event handler; saves segment history, overrides, and summary to Firebase at `competitions/{compId}/production/rundown/analytics/{runId}` |
 
 ### Phase B: Talent View (P1) - NOT STARTED
 
