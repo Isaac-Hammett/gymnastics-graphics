@@ -186,12 +186,12 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 70 | Add sponsor fields to segment data model | COMPLETE | Added sponsor field ({ name, logo, tier } or null) to segment creation in RundownEditorPage.jsx (4 places), added to segmentMapper.js (editor↔engine mapping), added to compareSegments fieldsToCompare |
 | Task 71 | Generate sponsor fulfillment report | COMPLETE | Added SponsorFulfillmentModal with: sponsor listing by tier (presenting/title/official/supporting), segment placements, airtime totals, export to text file |
 
-### Phase K: Timezone Display (P2) - IN PROGRESS (1/17)
+### Phase K: Timezone Display (P2) - IN PROGRESS (2/17)
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
 | Task 72 | Add `timezoneConfig` state and Firebase listener | COMPLETE | Added `timezoneConfig` state variable, Firebase `onValue` listener at `rundown/timezoneConfig`, `saveTimezoneConfig()` function with timestamp |
-| Task 73 | Create `calculateWallClockTimes()` utility | NOT STARTED | Calculate absolute times from anchor segment; handle forward/backward calculation |
+| Task 73 | Create `calculateWallClockTimes()` utility | COMPLETE | Added utility function in RundownEditorPage.jsx that takes segments, segmentStartTimes, and timezoneConfig; calculates show start from anchor, returns map of segment ID to Date objects |
 | Task 74 | Create `formatTimeInTimezone()` using Intl.DateTimeFormat | NOT STARTED | Format Date objects in specified timezone with 12h/24h support |
 | Task 75 | Create `getTimezoneAbbreviation()` helper | NOT STARTED | Extract abbreviation (PST, EST, etc.) from IANA timezone identifier |
 | Task 76 | Create `TimezoneConfigModal` component | NOT STARTED | Full configuration interface with sections for anchor, timezones, and format options |
