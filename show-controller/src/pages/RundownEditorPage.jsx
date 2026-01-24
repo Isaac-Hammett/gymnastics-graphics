@@ -248,6 +248,8 @@ export default function RundownEditorPage() {
   const [selectedSegmentId, setSelectedSegmentId] = useState(null);
   const [selectedSegmentIds, setSelectedSegmentIds] = useState([]);
   const [filterType, setFilterType] = useState('all');
+  const [filterScene, setFilterScene] = useState('all'); // Filter by OBS scene (Phase 11: Task 86)
+  const [filterGraphic, setFilterGraphic] = useState('all'); // Filter by graphic (Phase 11: Task 86)
   const [searchQuery, setSearchQuery] = useState('');
   const [toast, setToast] = useState('');
   const [showSaveTemplateModal, setShowSaveTemplateModal] = useState(false);
@@ -341,9 +343,15 @@ export default function RundownEditorPage() {
     return segments.filter(seg => {
       const matchesType = filterType === 'all' || seg.type === filterType;
       const matchesSearch = seg.name.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesType && matchesSearch;
+      // Scene filter (Phase 11: Task 86)
+      const matchesScene = filterScene === 'all' || seg.scene === filterScene;
+      // Graphic filter (Phase 11: Task 86)
+      const matchesGraphic = filterGraphic === 'all' ||
+        (filterGraphic === 'none' && !seg.graphic?.graphicId) ||
+        (filterGraphic !== 'none' && seg.graphic?.graphicId === filterGraphic);
+      return matchesType && matchesSearch && matchesScene && matchesGraphic;
     });
-  }, [segments, filterType, searchQuery]);
+  }, [segments, filterType, searchQuery, filterScene, filterGraphic]);
 
   // Get selected segment for detail panel (single selection)
   const selectedSegment = useMemo(() => {
@@ -3755,9 +3763,35 @@ export default function RundownEditorPage() {
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
               className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-300 text-sm focus:outline-none focus:border-blue-500"
+              title="Filter by segment type"
             >
               {SEGMENT_TYPES.map(type => (
                 <option key={type.value} value={type.value}>{type.label}</option>
+              ))}
+            </select>
+            {/* Scene filter dropdown (Phase 11: Task 86) */}
+            <select
+              value={filterScene}
+              onChange={(e) => setFilterScene(e.target.value)}
+              className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-300 text-sm focus:outline-none focus:border-blue-500"
+              title="Filter by OBS scene"
+            >
+              <option value="all">All Scenes</option>
+              {DUMMY_SCENES.map(scene => (
+                <option key={scene.name} value={scene.name}>{scene.name}</option>
+              ))}
+            </select>
+            {/* Graphic filter dropdown (Phase 11: Task 86) */}
+            <select
+              value={filterGraphic}
+              onChange={(e) => setFilterGraphic(e.target.value)}
+              className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-300 text-sm focus:outline-none focus:border-blue-500"
+              title="Filter by graphic"
+            >
+              <option value="all">All Graphics</option>
+              <option value="none">No Graphic</option>
+              {Object.keys(GRAPHICS).map(graphicId => (
+                <option key={graphicId} value={graphicId}>{GRAPHICS[graphicId].label}</option>
               ))}
             </select>
             <div className="relative">
@@ -3781,17 +3815,19 @@ export default function RundownEditorPage() {
               )}
             </div>
             {/* Result count indicator (Phase 11: Task 85) */}
-            {(searchQuery || filterType !== 'all') && (
+            {(searchQuery || filterType !== 'all' || filterScene !== 'all' || filterGraphic !== 'all') && (
               <span className="text-sm text-zinc-500">
                 {filteredSegments.length} of {segments.length} segment{segments.length !== 1 ? 's' : ''}
               </span>
             )}
-            {/* Clear all filters button (Phase 11: Task 85) */}
-            {(searchQuery || filterType !== 'all') && (
+            {/* Clear all filters button (Phase 11: Task 85, updated for Task 86) */}
+            {(searchQuery || filterType !== 'all' || filterScene !== 'all' || filterGraphic !== 'all') && (
               <button
                 onClick={() => {
                   setSearchQuery('');
                   setFilterType('all');
+                  setFilterScene('all');
+                  setFilterGraphic('all');
                 }}
                 className="px-2 py-1 text-xs text-zinc-400 hover:text-zinc-300 bg-zinc-800 border border-zinc-700 rounded hover:bg-zinc-700 transition-colors"
                 title="Clear all filters"

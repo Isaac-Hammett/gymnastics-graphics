@@ -73,7 +73,7 @@ The **Producer View** (separate page) uses this rundown as the "script" to contr
 | 8 | Collaboration | ✅ COMPLETE | Multi-user, permissions, versioning |
 | 9 | Data & Reporting | ✅ COMPLETE | Export, import rundowns |
 | 10 | Visual & UX | ✅ COMPLETE | Timeline view, theming, print |
-| 11 | Quality of Life | 🔲 PLANNED | Keyboard shortcuts, undo/redo |
+| 11 | Quality of Life | ✅ COMPLETE | Keyboard shortcuts, undo/redo |
 | 12 | Advanced Planning | 🔲 PLANNED | AI suggestions, talent, equipment, sponsors |
 
 > **Note:** Show Controller features (live execution, hard time markers, hotkeys, etc.) are documented in **PRD-05 (Show Controller Prototype)**.
@@ -1140,12 +1140,12 @@ const filteredSegments = segments.filter(seg => {
 - [x] Dark/light mode toggle
 - [x] Print-friendly view
 
-### Phase 11: Quality of Life
+### Phase 11: Quality of Life ✅ COMPLETE
 
-- [ ] Keyboard shortcuts functional
-- [ ] Undo/redo working (20+ levels)
-- [ ] Search by segment name
-- [ ] Filter by type, scene, graphic
+- [x] Keyboard shortcuts functional
+- [x] Undo/redo working (20+ levels)
+- [x] Search by segment name
+- [x] Filter by type, scene, graphic
 
 ### Phase 12: Advanced Planning
 

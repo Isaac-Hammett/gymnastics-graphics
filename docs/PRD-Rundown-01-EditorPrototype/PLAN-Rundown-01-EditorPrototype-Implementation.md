@@ -3,7 +3,7 @@
 **PRD:** PRD-Rundown-01-EditorPrototype
 **Status:** PROTOTYPE COMPLETE, FEATURES IN PROGRESS
 **Created:** 2026-01-22
-**Last Updated:** 2026-01-23 (v5.9 - Task 85 complete - Enhanced search)
+**Last Updated:** 2026-01-23 (v5.10 - Task 86 complete - Filter by scene/graphic)
 
 ---
 
@@ -53,7 +53,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | 8 | Collaboration | ✅ COMPLETE | 63-69 |
 | 9 | Data & Reporting | ✅ COMPLETE | 70-74 |
 | 10 | Visual & UX | ✅ COMPLETE | 75-81 |
-| 11 | Quality of Life | 🔄 IN PROGRESS | 82-86 |
+| 11 | Quality of Life | ✅ COMPLETE | 82-86 |
 | 12 | Advanced Planning | 🔲 NOT STARTED | 87-96 |
 
 ---
@@ -208,7 +208,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 80: Add dark/light mode toggle | COMPLETE | MoonIcon/SunIcon toggle button in toolbar, darkMode state with localStorage persistence, theme-light CSS class on body, CSS variable overrides in index.css for light theme backgrounds, text, and borders |
 | Task 81: Create print-friendly view | COMPLETE | PrintOptionsModal with configurable options (include notes, include optional segments, include scene, include graphic), DocumentTextIcon button in toolbar, handlePrintView function opens new window with print-friendly HTML, generatePrintableRundown updated to accept options and conditionally render columns/segments |
 
-### Phase 11: Quality of Life 🔄 IN PROGRESS
+### Phase 11: Quality of Life ✅ COMPLETE
 
 | Task | Status | Notes |
 |------|--------|-------|
@@ -216,7 +216,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 83: Add keyboard shortcuts | COMPLETE | Ctrl/Cmd+D duplicate, Ctrl/Cmd+N new segment, Ctrl/Cmd+S save, Ctrl/Cmd+A select all, Delete/Backspace delete, Enter open edit panel, Shift+Arrow extend selection |
 | Task 84: Implement undo/redo | COMPLETE | 25 levels of history, Ctrl+Z undo, Ctrl+Shift+Z / Ctrl+Y redo, toolbar buttons with visual state |
 | Task 85: Add search by segment name | COMPLETE | Enhanced: clear search button (X icon), result count indicator (e.g., "5 of 12 segments"), "Clear Filters" button to reset search and type filter |
-| Task 86: Add filter by scene/graphic | NOT STARTED | Additional filter options |
+| Task 86: Add filter by scene/graphic | COMPLETE | Added filterScene and filterGraphic state, scene dropdown with all DUMMY_SCENES, graphic dropdown with all GRAPHICS + "No Graphic" option, updated filteredSegments logic, result count and Clear Filters include all filters |
 
 ### Phase 12: Advanced Planning 🔲 NOT STARTED
 
