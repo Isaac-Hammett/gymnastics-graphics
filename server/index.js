@@ -114,7 +114,9 @@ let cameraFallbackManager = null;
 // OBS Scene Generator
 let obsSceneGenerator = null;
 
-// Timesheet Engine
+// Timesheet Engines (per-competition Map for multi-competition support)
+const timesheetEngines = new Map();
+// Legacy single-engine reference (for backward compatibility during transition)
 let timesheetEngine = null;
 
 // OBS State Sync
@@ -340,6 +342,155 @@ function initializeTimesheetEngine() {
   });
 
   console.log('Timesheet engine initialized');
+}
+
+/**
+ * Get or create a TimesheetEngine for a specific competition
+ * This is the new multi-competition approach - each competition gets its own engine instance
+ *
+ * @param {string} compId - Competition ID
+ * @param {Object} obsConnectionManager - OBS connection manager for per-competition OBS connections
+ * @param {Object} firebase - Firebase Admin instance for graphics
+ * @param {Object} socketIo - Socket.io server for broadcasting
+ * @returns {TimesheetEngine} The engine instance for this competition
+ */
+function getOrCreateEngine(compId, obsConnectionManager, firebase, socketIo) {
+  if (!compId) {
+    throw new Error('compId is required to get or create a TimesheetEngine');
+  }
+
+  if (timesheetEngines.has(compId)) {
+    return timesheetEngines.get(compId);
+  }
+
+  console.log(`[Timesheet] Creating new engine for competition: ${compId}`);
+
+  const engine = new TimesheetEngine({
+    compId,
+    obsConnectionManager,
+    firebase,
+    io: socketIo,
+    showConfig: { segments: [] } // Start with empty config - segments loaded via loadRundown
+  });
+
+  // Wire up timesheet events to broadcast to competition room only
+  const roomName = `competition:${compId}`;
+
+  engine.on('tick', (data) => {
+    socketIo.to(roomName).emit('timesheetTick', data);
+  });
+
+  engine.on('segmentActivated', (data) => {
+    console.log(`[Timesheet:${compId}] Segment activated - ${data.segment.name} (${data.reason})`);
+    socketIo.to(roomName).emit('timesheetSegmentActivated', data);
+    socketIo.to(roomName).emit('timesheetState', engine.getState());
+  });
+
+  engine.on('segmentCompleted', (data) => {
+    console.log(`[Timesheet:${compId}] Segment completed - ${data.segmentId} (${data.endReason})`);
+    socketIo.to(roomName).emit('timesheetSegmentCompleted', data);
+  });
+
+  engine.on('showStarted', (data) => {
+    console.log(`[Timesheet:${compId}] Show started`);
+    socketIo.to(roomName).emit('timesheetShowStarted', data);
+    socketIo.to(roomName).emit('timesheetState', engine.getState());
+  });
+
+  engine.on('showStopped', (data) => {
+    console.log(`[Timesheet:${compId}] Show stopped`);
+    socketIo.to(roomName).emit('timesheetShowStopped', data);
+    socketIo.to(roomName).emit('timesheetState', engine.getState());
+  });
+
+  engine.on('stateChanged', (data) => {
+    socketIo.to(roomName).emit('timesheetStateChanged', data);
+    socketIo.to(roomName).emit('timesheetState', engine.getState());
+  });
+
+  engine.on('holdStarted', (data) => {
+    console.log(`[Timesheet:${compId}] Hold started - ${data.segmentId}`);
+    socketIo.to(roomName).emit('timesheetHoldStarted', data);
+  });
+
+  engine.on('holdMaxReached', (data) => {
+    console.log(`[Timesheet:${compId}] Hold max reached - ${data.segmentId}`);
+    socketIo.to(roomName).emit('timesheetHoldMaxReached', data);
+  });
+
+  engine.on('autoAdvancing', (data) => {
+    console.log(`[Timesheet:${compId}] Auto-advancing from ${data.fromSegmentId} to segment ${data.toSegmentIndex}`);
+    socketIo.to(roomName).emit('timesheetAutoAdvancing', data);
+  });
+
+  engine.on('overrideRecorded', (data) => {
+    console.log(`[Timesheet:${compId}] Override recorded - ${data.type}`);
+    socketIo.to(roomName).emit('timesheetOverrideRecorded', data);
+  });
+
+  engine.on('sceneChanged', (data) => {
+    socketIo.to(roomName).emit('timesheetSceneChanged', data);
+  });
+
+  engine.on('sceneOverridden', (data) => {
+    console.log(`[Timesheet:${compId}] Scene overridden to ${data.sceneName}`);
+    socketIo.to(roomName).emit('timesheetSceneOverridden', data);
+  });
+
+  engine.on('cameraOverridden', (data) => {
+    console.log(`[Timesheet:${compId}] Camera overridden to ${data.cameraName}`);
+    socketIo.to(roomName).emit('timesheetCameraOverridden', data);
+  });
+
+  engine.on('graphicTriggered', (data) => {
+    socketIo.to(roomName).emit('timesheetGraphicTriggered', data);
+  });
+
+  engine.on('videoStarted', (data) => {
+    socketIo.to(roomName).emit('timesheetVideoStarted', data);
+  });
+
+  engine.on('breakStarted', (data) => {
+    console.log(`[Timesheet:${compId}] Break started - ${data.segmentId}`);
+    socketIo.to(roomName).emit('timesheetBreakStarted', data);
+  });
+
+  engine.on('error', (data) => {
+    console.error(`[Timesheet:${compId}] Error: ${data.message}`);
+    socketIo.to(roomName).emit('timesheetError', data);
+  });
+
+  timesheetEngines.set(compId, engine);
+  console.log(`[Timesheet] Engine created for competition: ${compId} (total engines: ${timesheetEngines.size})`);
+
+  return engine;
+}
+
+/**
+ * Get an existing TimesheetEngine for a competition (does not create)
+ * @param {string} compId - Competition ID
+ * @returns {TimesheetEngine|null} The engine instance or null if not found
+ */
+function getEngine(compId) {
+  return timesheetEngines.get(compId) || null;
+}
+
+/**
+ * Remove a TimesheetEngine for a competition
+ * @param {string} compId - Competition ID
+ */
+function removeEngine(compId) {
+  const engine = timesheetEngines.get(compId);
+  if (engine) {
+    // Stop the engine if running
+    if (engine.isRunning) {
+      engine.stop();
+    }
+    // Remove all listeners to prevent memory leaks
+    engine.removeAllListeners();
+    timesheetEngines.delete(compId);
+    console.log(`[Timesheet] Engine removed for competition: ${compId} (remaining engines: ${timesheetEngines.size})`);
+  }
 }
 
 // Initialize OBS State Sync

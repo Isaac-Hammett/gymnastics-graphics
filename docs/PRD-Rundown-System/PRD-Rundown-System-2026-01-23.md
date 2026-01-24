@@ -105,11 +105,11 @@ Producers can create rundowns but cannot execute them. There's no bridge between
 
 ---
 
-### Story 5: Producer Reloads Modified Rundown
+### Story 5: Producer Reloads Modified Rundown (Pre-Show)
 
-**As a** Producer who made last-minute changes
+**As a** Producer who made last-minute changes before starting
 **I want to** reload the rundown after editing
-**So that** I can incorporate changes before or during the show
+**So that** I can incorporate changes before the show begins
 
 **Flow:**
 1. Show is loaded but not started
@@ -156,6 +156,32 @@ Producers can create rundowns but cannot execute them. There's no bridge between
 
 ---
 
+### Story 8: Producer Modifies Rundown During Live Show
+
+**As a** Producer running a live broadcast
+**I want to** add, remove, or modify upcoming segments mid-show
+**So that** I can adapt to unexpected situations (injury, schedule change, breaking news)
+
+**Flow:**
+1. Show is running, currently on segment 12 of 24
+2. Producer opens Rundown Editor in a new tab
+3. Adds a new segment between 15 and 16 (e.g., "Breaking: Injury Update")
+4. Saves changes
+5. Returns to Producer View
+6. Sees "Rundown Modified" warning badge
+7. Clicks "Reload Rundown"
+8. Confirmation dialog: "Reload will add 1 segment. Current position preserved."
+9. Confirms → segment list updates, show continues from current position
+
+**Edge Cases:**
+- Current segment was deleted → Stay on it until manual advance, warn producer
+- Segments before current were reordered → Ignore past segments, preserve position
+- Multiple producers editing simultaneously → Last-write-wins with conflict warning
+
+**Status:** ❌ Not implemented (Phase I)
+
+---
+
 ## 4. Phase Overview
 
 | Phase | Name | Priority | Goal |
@@ -196,8 +222,11 @@ Producers can create rundowns but cannot execute them. There's no bridge between
 - [ ] Notes visible to talent
 
 ### Phase I Complete When:
-- [ ] Producer sees warning when rundown modified during show
-- [ ] "Reload Rundown" updates segments without losing position
+- [ ] Producer sees "Rundown Modified" warning badge when rundown changes during show
+- [ ] "Reload Rundown" updates segments without losing current position
+- [ ] Confirmation dialog shows summary of changes (added/removed/modified segments)
+- [ ] Deleted current segment is handled gracefully (stay on it, warn producer)
+- [ ] Past segments (already completed) are not affected by reload
 
 ### Phase J Complete When:
 - [ ] Actual segment durations logged during show

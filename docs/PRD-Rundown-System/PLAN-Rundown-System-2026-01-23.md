@@ -7,6 +7,17 @@
 
 ---
 
+## Related Documents
+
+| Document | Purpose |
+|----------|---------|
+| [PRD-Rundown-System-2026-01-23.md](./PRD-Rundown-System-2026-01-23.md) | Product requirements |
+| [PLAN-Rundown-System-Implementation.md](./PLAN-Rundown-System-Implementation.md) | Implementation task tracking (use this for day-to-day execution) |
+
+**Note:** This document serves as the technical reference for architecture, state machine, socket events, error handling, and testing. For task execution and progress tracking, see the Implementation Plan.
+
+---
+
 ## 1. Architecture Overview
 
 ### 1.1 System Components
@@ -81,33 +92,148 @@ Firebase storage         →      useTimesheet hook (client)
 
 ---
 
-## 2. Key Files
+## 2. Show State Machine
 
-### Server
-| File | Purpose |
-|------|---------|
-| `server/index.js` | Coordinator entry point, socket handlers |
-| `server/lib/timesheetEngine.js` | Show execution engine (~1187 lines) |
-| `server/lib/obsConnectionManager.js` | Per-competition OBS WebSocket connections |
-| `server/lib/vmPoolManager.js` | EC2 VM assignment and lifecycle |
-| `server/lib/productionConfigService.js` | Firebase Admin initialization |
+```
+                              ┌─────────────────────────────────────────┐
+                              │                                         │
+                              ▼                                         │
+┌─────────┐  loadRundown  ┌────────┐  startShow  ┌─────────┐           │
+│  IDLE   │──────────────▶│ LOADED │────────────▶│ RUNNING │           │
+└─────────┘               └────────┘             └─────────┘           │
+     ▲                         ▲                      │                │
+     │                         │                      │ pauseShow      │
+     │                         │                      ▼                │
+     │                         │                 ┌─────────┐           │
+     │                         │ resumeShow      │ PAUSED  │           │
+     │                         │◀────────────────┴─────────┘           │
+     │                         │                      │                │
+     │                    reloadRundown               │                │
+     │                         │                      │                │
+     │                         │                      │ stopShow       │
+     │   resetShow        ┌────────┐                  │                │
+     │◀───────────────────│STOPPED │◀─────────────────┘                │
+     │                    └────────┘                                   │
+     │                         │                                       │
+     │                         │ segment reaches end                   │
+     │                         ▼                                       │
+     │                    ┌──────────┐  (auto if last segment)         │
+     └────────────────────│ COMPLETE │─────────────────────────────────┘
+                          └──────────┘
+```
 
-### Client
-| File | Purpose |
-|------|---------|
-| `show-controller/src/hooks/useTimesheet.js` | Client hook for timesheet state |
-| `show-controller/src/context/ShowContext.jsx` | Shared state, socket connection |
-| `show-controller/src/pages/RundownEditorPage.jsx` | Rundown planning UI |
-| `show-controller/src/views/ProducerView.jsx` | Production control + Timesheet UI |
-| `show-controller/src/components/CurrentSegment.jsx` | Now Playing display |
-| `show-controller/src/components/NextSegment.jsx` | Up Next display |
-| `show-controller/src/components/RunOfShow.jsx` | Show Progress list |
+### State Definitions
+
+| State | Description | Valid Actions |
+|-------|-------------|---------------|
+| `IDLE` | No rundown loaded | `loadRundown` |
+| `LOADED` | Rundown loaded, ready to start | `startShow`, `reloadRundown`, `resetShow` |
+| `RUNNING` | Show in progress, timer active | `pauseShow`, `stopShow`, `nextSegment`, `prevSegment`, `jumpToSegment` |
+| `PAUSED` | Show paused, timer frozen | `resumeShow`, `stopShow`, `reloadRundown` |
+| `STOPPED` | Show stopped before completion | `resetShow`, `reloadRundown` |
+| `COMPLETE` | All segments finished | `resetShow`, `reloadRundown` |
+
+### State Transitions
+
+| From | Event | To | Side Effects |
+|------|-------|----|--------------|
+| IDLE | `loadRundown` | LOADED | Fetch segments from Firebase, initialize engine |
+| LOADED | `startShow` | RUNNING | Activate first segment, start timer, fire OBS/graphics |
+| RUNNING | `pauseShow` | PAUSED | Freeze timer, keep current segment |
+| PAUSED | `resumeShow` | RUNNING | Resume timer |
+| RUNNING | `stopShow` | STOPPED | Stop timer, log analytics |
+| PAUSED | `stopShow` | STOPPED | Log analytics |
+| RUNNING | segment ends (last) | COMPLETE | Log analytics, show complete indicator |
+| STOPPED | `resetShow` | IDLE | Clear segments, reset state |
+| COMPLETE | `resetShow` | IDLE | Clear segments, reset state |
+| LOADED/PAUSED/STOPPED | `reloadRundown` | LOADED | Re-fetch segments, preserve position if possible |
 
 ---
 
-## 3. Code Audit (2026-01-23)
+## 3. Task Dependency Graph
 
-### 3.1 Current State
+```
+PHASE A (P0): Connect Editor to Engine
+═══════════════════════════════════════
+
+A.0.1 ──┬──▶ A.0.3 ──┐
+        │            │
+A.0.2 ──┼──▶ A.0.4 ──┼──▶ A.0.6 ──┐
+        │            │            │
+        └──▶ A.0.5 ──┘            │
+                                  │
+A.0.7 ────────────────────────────┼──▶ A.1 ──▶ A.2 ──▶ A.3
+                                  │            │
+                                  │            ▼
+                                  │           A.4 ──▶ A.5 ──▶ A.6
+                                  │
+                                  └──▶ A.5.1 ──┬──▶ A.5.3
+                                       A.5.2 ──┘
+
+PHASE H (P1): Rehearsal Mode          PHASE B (P1): Talent View
+══════════════════════════════        ════════════════════════════
+
+     ┌──▶ H.2 ──┐                          B.1 ──▶ B.2 ──┐
+     │          │                                        │
+H.1 ─┼──▶ H.3 ──┼──▶ H.4 ──▶ H.5               B.3 ──────┤
+     │          │                                        │
+     └──────────┘                          B.4 ──▶ B.5 ──┼──▶ B.6
+                                                         │
+                                                         ▼
+PHASE I (P2): Live Rundown Sync       ◄───── DEPENDS ON PHASE A
+══════════════════════════════════
+
+I.1 ──▶ I.2 ──▶ I.3 ──┬──▶ I.5 ──▶ I.6 ──▶ I.7
+                      │
+                      └──▶ I.4
+```
+
+### Critical Path (Minimum for MVP)
+
+```
+A.0.1 → A.0.2 → A.0.3 → A.0.6 → A.1 → A.2 → A.3 → A.4 → A.6
+  │
+  └──▶ "Producer can load rundown and start show"
+```
+
+### Parallel Work Opportunities
+
+| Can Run In Parallel | Reason |
+|---------------------|--------|
+| A.0.3, A.0.4, A.0.5 | Independent OBS method updates |
+| A.5.1, A.5.2 | Independent picker verification |
+| Phase H, Phase B | No dependencies on each other (both depend on A) |
+| H.2, H.3 | Independent skip logic |
+
+---
+
+## 4. Key Files
+
+### Server
+| File | Purpose | Changes Required |
+|------|---------|------------------|
+| `server/index.js` | Coordinator entry point, socket handlers | Add `timesheetEngines` Map, `loadRundown` handler |
+| `server/lib/timesheetEngine.js` | Show execution engine (~1187 lines) | Accept `compId`, `obsConnectionManager`; update OBS calls |
+| `server/lib/obsConnectionManager.js` | Per-competition OBS WebSocket connections | Already supports multi-competition ✅ |
+| `server/lib/vmPoolManager.js` | EC2 VM assignment and lifecycle | No changes needed |
+| `server/lib/productionConfigService.js` | Firebase Admin initialization | Export `db` for engine use |
+
+### Client
+| File | Purpose | Changes Required |
+|------|---------|------------------|
+| `show-controller/src/hooks/useTimesheet.js` | Client hook for timesheet state | Add `loadRundown`, `reloadRundown` actions |
+| `show-controller/src/context/ShowContext.jsx` | Shared state, socket connection | Emit `loadRundown` event |
+| `show-controller/src/pages/RundownEditorPage.jsx` | Rundown planning UI | Verify pickers use live data |
+| `show-controller/src/views/ProducerView.jsx` | Production control + Timesheet UI | Add Load/Reload buttons, status indicator |
+| `show-controller/src/components/CurrentSegment.jsx` | Now Playing display | No changes needed |
+| `show-controller/src/components/NextSegment.jsx` | Up Next display | No changes needed |
+| `show-controller/src/components/RunOfShow.jsx` | Show Progress list | Add "modified" badge |
+
+---
+
+## 5. Code Audit (2026-01-23)
+
+### 5.1 Current State
 
 | Component | Code Exists | Actually Works |
 |-----------|-------------|----------------|
@@ -116,7 +242,7 @@ Firebase storage         →      useTimesheet hook (client)
 | Timesheet UI | ✅ | ✅ Works |
 | Rundown Editor | ✅ | ⚠️ Pickers need verification |
 
-### 3.2 Critical Gap: Single Global Instance
+### 5.2 Critical Gap: Single Global Instance
 
 **Current (Wrong):** `server/index.js` lines 250-255
 ```javascript
@@ -152,7 +278,7 @@ function getOrCreateEngine(compId, obsConnectionManager, firebase, io) {
 }
 ```
 
-### 3.3 Methods Requiring Updates
+### 5.3 Methods Requiring Updates
 
 | Method | Current | Required Change |
 |--------|---------|-----------------|
@@ -164,20 +290,196 @@ function getOrCreateEngine(compId, obsConnectionManager, firebase, io) {
 
 ---
 
-## 4. Socket Events
+## 6. Socket Events
 
-| Event | Direction | Purpose |
-|-------|-----------|---------|
-| `loadRundown` | Client → Server | Request to load rundown from Firebase |
-| `timesheetState` | Server → Client | Full state update |
-| `timesheetTick` | Server → Client | Real-time timing updates |
-| `timesheetSegmentActivated` | Server → Client | Segment changed |
-| `timesheetShowStarted` | Server → Client | Show started |
-| `timesheetShowStopped` | Server → Client | Show stopped |
+### 6.1 Client → Server (Commands)
+
+#### `loadRundown`
+Load segments from Firebase into the engine.
+
+```javascript
+// Request
+socket.emit('loadRundown', { compId: 'abc123' });
+
+// Response (via timesheetState)
+// Engine state with segments loaded
+```
+
+#### `startShow`
+Begin show execution.
+
+```javascript
+socket.emit('startShow', { compId: 'abc123' });
+```
+
+#### `stopShow`
+Stop show execution.
+
+```javascript
+socket.emit('stopShow', { compId: 'abc123' });
+```
+
+#### `pauseShow` / `resumeShow`
+Pause or resume the current show.
+
+```javascript
+socket.emit('pauseShow', { compId: 'abc123' });
+socket.emit('resumeShow', { compId: 'abc123' });
+```
+
+#### `nextSegment` / `prevSegment`
+Advance to next or previous segment.
+
+```javascript
+socket.emit('nextSegment', { compId: 'abc123' });
+socket.emit('prevSegment', { compId: 'abc123' });
+```
+
+#### `jumpToSegment`
+Jump to a specific segment by ID.
+
+```javascript
+socket.emit('jumpToSegment', { compId: 'abc123', segmentId: 'segment-5' });
+```
+
+#### `reloadRundown`
+Hot-reload rundown from Firebase (Phase I).
+
+```javascript
+socket.emit('reloadRundown', { compId: 'abc123' });
+```
+
+### 6.2 Server → Client (State Updates)
+
+#### `timesheetState`
+Full state update (sent on load, major changes).
+
+```javascript
+{
+  showState: 'RUNNING',           // IDLE | LOADED | RUNNING | PAUSED | STOPPED | COMPLETE
+  isRehearsalMode: false,
+  segments: [
+    {
+      id: 'segment-1',
+      name: 'Pre-Show Graphics',
+      type: 'graphics',
+      duration: 30,
+      obsScene: 'Pre-Show',
+      graphic: 'logos',
+      graphicData: { teamIds: ['ucla', 'oregon'] },
+      autoAdvance: true,
+      notes: 'Wait for countdown'
+    },
+    // ... more segments
+  ],
+  currentSegmentIndex: 3,
+  currentSegmentId: 'segment-4',
+  elapsedTime: 45,                // seconds into current segment
+  totalElapsed: 320,              // seconds since show start
+  rundownModified: false,         // true if Firebase changed since load
+  rundownModifiedSummary: null    // { added: [], removed: [], modified: [] }
+}
+```
+
+#### `timesheetTick`
+Lightweight timing update (sent every second during RUNNING state).
+
+```javascript
+{
+  currentSegmentIndex: 3,
+  elapsedTime: 46,                // seconds into current segment
+  remainingTime: 14,              // seconds remaining in segment
+  totalElapsed: 321,
+  progress: 0.77                  // 0-1 progress through segment
+}
+```
+
+#### `timesheetSegmentActivated`
+Sent when a new segment becomes active.
+
+```javascript
+{
+  previousSegmentId: 'segment-3',
+  previousSegmentIndex: 2,
+  currentSegmentId: 'segment-4',
+  currentSegmentIndex: 3,
+  segment: {
+    id: 'segment-4',
+    name: 'UCLA Introduction',
+    duration: 30,
+    obsScene: 'Team-Intro',
+    // ... full segment data
+  },
+  nextSegment: {
+    id: 'segment-5',
+    name: 'Oregon Introduction',
+    // ... preview of next
+  }
+}
+```
+
+#### `timesheetShowStarted`
+Show has started.
+
+```javascript
+{
+  startedAt: '2026-01-23T19:00:00.000Z',
+  totalSegments: 24,
+  firstSegment: { id: 'segment-1', name: 'Pre-Show Graphics' }
+}
+```
+
+#### `timesheetShowStopped`
+Show was stopped (not complete).
+
+```javascript
+{
+  stoppedAt: '2026-01-23T19:45:00.000Z',
+  lastSegmentIndex: 12,
+  reason: 'manual'                // manual | error
+}
+```
+
+#### `timesheetShowComplete`
+All segments finished.
+
+```javascript
+{
+  completedAt: '2026-01-23T20:30:00.000Z',
+  totalDuration: 5400,            // seconds
+  segmentCount: 24
+}
+```
+
+#### `rundownModified` (Phase I)
+Firebase rundown changed while show is loaded/running.
+
+```javascript
+{
+  added: ['segment-25'],
+  removed: [],
+  modified: ['segment-12'],
+  affectsCurrent: false,
+  affectsUpcoming: true,
+  timestamp: '2026-01-23T19:32:00.000Z'
+}
+```
+
+#### `obsError`
+OBS operation failed (non-fatal).
+
+```javascript
+{
+  operation: 'sceneChange',
+  scene: 'Team-Intro',
+  error: 'Scene not found',
+  segmentId: 'segment-4'
+}
+```
 
 ---
 
-## 5. Segment Data Mapping
+## 7. Segment Data Mapping
 
 | Editor Field | Engine Field | Notes |
 |--------------|--------------|-------|
@@ -193,7 +495,7 @@ function getOrCreateEngine(compId, obsConnectionManager, firebase, io) {
 
 ---
 
-## 6. Task Breakdown
+## 8. Task Breakdown
 
 ### Phase A: Connect Editor to Engine (P0)
 
@@ -269,11 +571,60 @@ function getOrCreateEngine(compId, obsConnectionManager, firebase, io) {
 
 ### Phase I: Live Rundown Sync (P2)
 
-- [ ] **I.1** Detect rundown changes in Firebase during show
-- [ ] **I.2** Show "Rundown Modified" warning in Producer View
-- [ ] **I.3** Add "Reload Rundown" action (with confirmation)
-- [ ] **I.4** Preserve current segment position on reload
-- [ ] **I.5** Option to block edits during live show
+#### I.1-I.3: Change Detection
+
+- [ ] **I.1** Subscribe to Firebase `rundown/segments` changes on server (use `onValue` listener)
+- [ ] **I.2** Compare incoming segments to loaded segments (deep diff)
+- [ ] **I.3** Emit `rundownModified` socket event with change summary:
+  ```javascript
+  {
+    added: ['segment-id-1'],
+    removed: ['segment-id-2'],
+    modified: ['segment-id-3'],
+    affectsCurrent: false,  // true if current segment was modified/deleted
+    affectsUpcoming: true   // true if any future segment changed
+  }
+  ```
+
+#### I.4-I.5: UI Indicators
+
+- [ ] **I.4** Add `rundownModified` state to `useTimesheet` hook
+- [ ] **I.5** Show "Rundown Modified" warning badge in Producer View header
+  - Yellow badge if only future segments changed
+  - Red badge if current segment affected
+  - Show count: "3 segments changed"
+
+#### I.6-I.7: Reload Flow
+
+- [ ] **I.6** Add "Reload Rundown" button (appears when modified)
+- [ ] **I.7** Confirmation dialog with change summary:
+  ```
+  ┌─────────────────────────────────────────────┐
+  │  Reload Rundown?                            │
+  ├─────────────────────────────────────────────┤
+  │  Changes detected:                          │
+  │  • 1 segment added                          │
+  │  • 2 segments modified                      │
+  │                                             │
+  │  Current position will be preserved.        │
+  │  You are on segment 12 of 24.               │
+  │                                             │
+  │  [Cancel]                    [Reload Now]   │
+  └─────────────────────────────────────────────┘
+  ```
+
+#### I.8-I.10: Edge Case Handling
+
+- [ ] **I.8** Handle deleted current segment:
+  - Keep segment active until manual advance
+  - Show warning: "Current segment was deleted from rundown"
+  - On advance, skip to next valid segment
+- [ ] **I.9** Handle reordered past segments:
+  - Ignore changes to segments before current index
+  - Only apply changes to current and future segments
+- [ ] **I.10** Handle ID conflicts:
+  - Match segments by ID, not index
+  - If current segment ID still exists, stay on it regardless of new position
 
 ---
 
@@ -341,7 +692,147 @@ function getOrCreateEngine(compId, obsConnectionManager, firebase, io) {
 
 ---
 
-## 7. Open Questions
+## 9. Error Handling
+
+### 9.1 OBS Connection Failures
+
+| Scenario | Detection | Response | User Feedback |
+|----------|-----------|----------|---------------|
+| OBS disconnects mid-show | `obsConnectionManager` emits `disconnected` | Continue show, queue scene changes | "OBS Disconnected" badge, retry button |
+| OBS reconnects | `obsConnectionManager` emits `connected` | Replay last scene change | "OBS Connected" toast |
+| Scene change fails | OBS WebSocket error | Log error, continue show | "Scene change failed" toast |
+| Scene doesn't exist | OBS returns error | Skip scene change, log | "Scene 'X' not found" warning |
+
+### 9.2 Firebase Failures
+
+| Scenario | Detection | Response | User Feedback |
+|----------|-----------|----------|---------------|
+| Firebase read fails | Promise rejection in `loadRundown` | Retry 3x with backoff | "Failed to load rundown" error |
+| Firebase write fails | Promise rejection in analytics | Queue for retry | Silent (non-critical) |
+| Firebase listener disconnects | `onValue` error callback | Reconnect automatically | "Sync paused" indicator |
+
+### 9.3 Show Execution Errors
+
+| Scenario | Detection | Response | User Feedback |
+|----------|-----------|----------|---------------|
+| Segment has no duration | Validation on load | Default to 30s, warn | "Segment X has no duration" warning |
+| Segment has invalid scene | Validation on load | Skip scene change | "Invalid scene in segment X" warning |
+| Timer drift > 1s | Periodic sync check | Correct timer | Silent correction |
+| Engine crashes | Uncaught exception | Restart engine, preserve state | "Show engine restarted" warning |
+
+### 9.4 Recovery Strategies
+
+```javascript
+// Graceful degradation for OBS failures
+async function executeSegmentWithFallback(segment) {
+  try {
+    await this._applyTransitionAndSwitchScene(segment.obsScene);
+  } catch (error) {
+    this._log('warn', `Scene change failed: ${error.message}`);
+    this._emit('obsError', { segment: segment.id, error: error.message });
+    // Continue show - don't block on OBS failures
+  }
+
+  // Graphics are optional - don't block on failure
+  if (segment.graphic) {
+    try {
+      await this._triggerGraphic(segment.graphic, segment.graphicData);
+    } catch (error) {
+      this._log('warn', `Graphic failed: ${error.message}`);
+    }
+  }
+}
+```
+
+---
+
+## 10. Testing Strategy
+
+### 10.1 Unit Tests
+
+| Component | Test File | Key Tests |
+|-----------|-----------|-----------|
+| TimesheetEngine | `server/lib/__tests__/timesheetEngine.test.js` | State transitions, timing accuracy, segment progression |
+| Segment Mapper | `server/lib/__tests__/segmentMapper.test.js` | Editor → Engine format conversion |
+| useTimesheet Hook | `show-controller/src/hooks/__tests__/useTimesheet.test.js` | State updates, action dispatching |
+
+### 10.2 Integration Tests
+
+| Scenario | Setup | Assertions |
+|----------|-------|------------|
+| Load rundown | Create test segments in Firebase | Segments appear in engine, state = LOADED |
+| Start show | Load rundown, call startShow | First segment active, timer running |
+| OBS integration | Mock OBS WebSocket | Scene change called with correct name |
+| Multi-competition | Create 2 engines | Actions on one don't affect other |
+| Live reload | Modify Firebase during show | Change detected, reload preserves position |
+
+### 10.3 End-to-End Tests (Playwright)
+
+```javascript
+// E2E: Producer loads and runs show
+test('producer can load and start show', async ({ page }) => {
+  await page.goto('/comp123/producer');
+
+  // Load rundown
+  await page.click('button:has-text("Load Rundown")');
+  await expect(page.locator('.segment-list')).toContainText('24 segments');
+
+  // Start show
+  await page.click('button:has-text("Start Show")');
+  await expect(page.locator('.current-segment')).toContainText('Pre-Show');
+  await expect(page.locator('.timer')).toBeVisible();
+});
+
+// E2E: Live reload during show
+test('producer can reload modified rundown', async ({ page }) => {
+  await page.goto('/comp123/producer');
+  await page.click('button:has-text("Load Rundown")');
+  await page.click('button:has-text("Start Show")');
+
+  // Simulate Firebase change (via API)
+  await addSegmentViaAPI('comp123', { name: 'Breaking News', duration: 60 });
+
+  // Verify warning appears
+  await expect(page.locator('.rundown-modified-badge')).toBeVisible();
+
+  // Reload
+  await page.click('button:has-text("Reload Rundown")');
+  await page.click('button:has-text("Reload Now")');
+
+  // Verify new segment appears
+  await expect(page.locator('.segment-list')).toContainText('Breaking News');
+});
+```
+
+### 10.4 Manual Test Checklist
+
+#### Phase A: Basic Flow
+- [ ] Create rundown in Editor with 5 segments
+- [ ] Navigate to Producer View
+- [ ] Click "Load Rundown" - segments appear
+- [ ] Click "Start Show" - timer starts, first segment active
+- [ ] Wait for auto-advance - second segment activates
+- [ ] Click "Next" on manual segment - advances
+- [ ] Verify OBS scene changes (check OBS)
+- [ ] Stop show - timer stops
+
+#### Phase H: Rehearsal
+- [ ] Enable rehearsal mode
+- [ ] Start show - timer runs
+- [ ] Verify OBS does NOT change scenes
+- [ ] Verify graphics do NOT fire
+- [ ] "REHEARSAL" visible in all views
+
+#### Phase I: Live Sync
+- [ ] Start show (not rehearsal)
+- [ ] In new tab, edit rundown - add segment
+- [ ] Return to Producer View - "Modified" badge visible
+- [ ] Click "Reload" - new segment appears
+- [ ] Position preserved (still on same segment)
+
+---
+
+## 11. Open Questions
 
 | Question | Status | Decision |
 |----------|--------|----------|
@@ -354,7 +845,7 @@ function getOrCreateEngine(compId, obsConnectionManager, firebase, io) {
 
 ---
 
-## 8. Reference APIs
+## 12. Reference APIs
 
 ### obsConnectionManager
 
