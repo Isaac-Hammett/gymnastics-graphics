@@ -6,6 +6,9 @@
  *
  * Phase D: AI Suggestions - Planning (P2)
  * Task 43: Create AI suggestion service on server
+ * Task 44: Analyze competition metadata (type, teams, date)
+ * Task 45: Query roster data for seniors, All-Americans, milestones
+ * Task 46: Generate segment suggestions with confidence scores
  */
 
 import { getDb } from './productionConfigService.js';
@@ -39,6 +42,129 @@ const CONFIDENCE = {
   LOW: 'low',         // 0.2-0.49 - Contextual, based on specific meet details
 };
 
+// Confidence scoring factors - multipliers and bonuses for different context signals
+const CONFIDENCE_FACTORS = {
+  // Base confidence for having data
+  HAS_ROSTER_DATA: 0.1,        // Bonus when roster data is available
+  HAS_TEAM_STATS: 0.1,         // Bonus when team stats are available
+  HAS_DATE_INFO: 0.05,         // Bonus when date/season info is available
+
+  // Context-based adjustments
+  CHAMPIONSHIP_MEET: 0.15,     // Bonus for championship meets (higher stakes = more segments)
+  LATE_SEASON: 0.1,            // Bonus for late season (more storylines)
+  CLOSE_MATCHUP: 0.1,          // Bonus when teams are evenly matched (more drama)
+
+  // Special segment modifiers
+  SENIOR_COUNT_THRESHOLD: 3,   // Min seniors to strongly suggest senior segment
+  ALL_AMERICAN_BOOST: 0.15,    // Bonus when All-Americans are competing
+  MILESTONE_BOOST: 0.1,        // Bonus when athletes have upcoming milestones
+};
+
+// ============================================================================
+// Confidence Scoring Helpers
+// ============================================================================
+
+/**
+ * Calculate a confidence level string from a numeric score
+ * @param {number} score - Numeric confidence score (0-1)
+ * @returns {string} Confidence level (high, medium, low)
+ */
+function getConfidenceLevel(score) {
+  if (score >= 0.8) return CONFIDENCE.HIGH;
+  if (score >= 0.5) return CONFIDENCE.MEDIUM;
+  return CONFIDENCE.LOW;
+}
+
+/**
+ * Calculate dynamic confidence based on context signals
+ *
+ * @param {number} baseConfidence - Base confidence score (0-1)
+ * @param {Object} context - Competition context with metadata
+ * @param {Object} factors - Specific factors to apply for this segment type
+ * @returns {Object} { confidence: number, confidenceLevel: string, reasons: string[] }
+ */
+function calculateDynamicConfidence(baseConfidence, context, factors = {}) {
+  let confidence = baseConfidence;
+  const reasons = [];
+
+  // Data availability bonuses
+  if (factors.requiresRoster && context.teams?.some(t => t.roster?.length > 0)) {
+    confidence += CONFIDENCE_FACTORS.HAS_ROSTER_DATA;
+    reasons.push('Roster data available');
+  }
+
+  if (factors.requiresStats && context.statsAnalysis?.teamStats?.some(t => t.hasStats)) {
+    confidence += CONFIDENCE_FACTORS.HAS_TEAM_STATS;
+    reasons.push('Team statistics available');
+  }
+
+  if (context.dateInfo) {
+    confidence += CONFIDENCE_FACTORS.HAS_DATE_INFO;
+
+    // Season phase adjustments
+    if (context.dateInfo.seasonPhase === 'championship') {
+      confidence += CONFIDENCE_FACTORS.CHAMPIONSHIP_MEET;
+      reasons.push('Championship meet - high stakes');
+    } else if (context.dateInfo.seasonPhase === 'late') {
+      confidence += CONFIDENCE_FACTORS.LATE_SEASON;
+      reasons.push('Late season - playoff implications');
+    }
+  }
+
+  // Matchup analysis adjustments
+  if (context.statsAnalysis?.matchupNotes?.length > 0) {
+    const isCloseMatchup = context.statsAnalysis.matchupNotes.some(
+      n => n.includes('Close matchup') || n.includes('Very close')
+    );
+    if (isCloseMatchup) {
+      confidence += CONFIDENCE_FACTORS.CLOSE_MATCHUP;
+      reasons.push('Close matchup expected');
+    }
+  }
+
+  // Special segment boosts
+  if (factors.athleteFeature) {
+    if (context.allAmericans?.length > 0) {
+      confidence += CONFIDENCE_FACTORS.ALL_AMERICAN_BOOST;
+      reasons.push(`${context.allAmericans.length} All-American(s) competing`);
+    }
+    if (context.milestones?.upcoming?.length > 0) {
+      confidence += CONFIDENCE_FACTORS.MILESTONE_BOOST;
+      reasons.push('Athletes approaching milestones');
+    }
+  }
+
+  // Senior-specific boosts
+  if (factors.seniorFeature && context.seniors?.length >= CONFIDENCE_FACTORS.SENIOR_COUNT_THRESHOLD) {
+    const seniorsWithStorylines = context.seniors.filter(s => s.hasStorylines).length;
+    if (seniorsWithStorylines > 0) {
+      confidence += 0.1;
+      reasons.push(`${seniorsWithStorylines} senior(s) with notable storylines`);
+    }
+  }
+
+  // Cap at 1.0
+  confidence = Math.min(1.0, confidence);
+
+  return {
+    confidence: Math.round(confidence * 100) / 100,
+    confidenceLevel: getConfidenceLevel(confidence),
+    reasons,
+  };
+}
+
+/**
+ * Build a detailed reason string for a segment suggestion
+ *
+ * @param {string} baseReason - Base reason for the segment
+ * @param {Array} additionalReasons - Additional context-based reasons
+ * @returns {string} Combined reason string
+ */
+function buildReasonString(baseReason, additionalReasons = []) {
+  if (additionalReasons.length === 0) return baseReason;
+  return `${baseReason}. Context: ${additionalReasons.join('; ')}`;
+}
+
 // ============================================================================
 // Segment Templates
 // ============================================================================
@@ -47,81 +173,127 @@ const CONFIDENCE = {
  * Pre-show segment templates (common to all meets)
  */
 function getPreShowSegments(context) {
-  const { team1Name, team2Name } = context;
+  const { team1Name, team2Name, dateInfo, statsAnalysis, eventName } = context;
 
-  return [
-    {
-      id: 'template-pre-1',
-      name: 'Starting Soon',
-      type: SEGMENT_TYPES.STATIC,
-      duration: 300,
-      scene: 'Starting Soon',
-      graphic: null,
-      timingMode: 'fixed',
-      notes: 'Display starting soon slate while audience enters',
-      confidence: 0.95,
-      confidenceLevel: CONFIDENCE.HIGH,
-      category: 'pre-show',
-      reason: 'Standard pre-show slate for all broadcasts',
-    },
-    {
-      id: 'template-pre-2',
-      name: 'Show Open',
-      type: SEGMENT_TYPES.VIDEO,
-      duration: 45,
-      scene: 'Graphics Fullscreen',
-      graphic: null,
-      timingMode: 'fixed',
-      notes: 'Intro video package',
-      confidence: 0.9,
-      confidenceLevel: CONFIDENCE.HIGH,
-      category: 'pre-show',
-      reason: 'Standard broadcast intro',
-    },
-    {
-      id: 'template-pre-3',
-      name: 'Team Logos',
-      type: SEGMENT_TYPES.STATIC,
-      duration: 10,
-      scene: 'Graphics Fullscreen',
-      graphic: { graphicId: 'logos', params: {} },
-      timingMode: 'fixed',
-      notes: 'Display competing team logos',
-      confidence: 0.95,
-      confidenceLevel: CONFIDENCE.HIGH,
-      category: 'pre-show',
-      reason: 'Team introduction graphic',
-    },
-    {
-      id: 'template-pre-4',
-      name: 'Welcome & Introductions',
+  const segments = [];
+
+  // Starting Soon - always high confidence
+  const startingSoon = calculateDynamicConfidence(0.9, context, {});
+  segments.push({
+    id: 'template-pre-1',
+    name: 'Starting Soon',
+    type: SEGMENT_TYPES.STATIC,
+    duration: 300,
+    scene: 'Starting Soon',
+    graphic: null,
+    timingMode: 'fixed',
+    notes: 'Display starting soon slate while audience enters',
+    confidence: startingSoon.confidence,
+    confidenceLevel: startingSoon.confidenceLevel,
+    category: 'pre-show',
+    reason: buildReasonString('Standard pre-show slate for all broadcasts', startingSoon.reasons),
+  });
+
+  // Show Open - always high confidence
+  const showOpen = calculateDynamicConfidence(0.85, context, {});
+  segments.push({
+    id: 'template-pre-2',
+    name: 'Show Open',
+    type: SEGMENT_TYPES.VIDEO,
+    duration: 45,
+    scene: 'Graphics Fullscreen',
+    graphic: null,
+    timingMode: 'fixed',
+    notes: 'Intro video package',
+    confidence: showOpen.confidence,
+    confidenceLevel: showOpen.confidenceLevel,
+    category: 'pre-show',
+    reason: buildReasonString('Standard broadcast intro', showOpen.reasons),
+  });
+
+  // Team Logos - high confidence, gets boost when we have team data
+  const teamLogos = calculateDynamicConfidence(0.9, context, { requiresRoster: true });
+  segments.push({
+    id: 'template-pre-3',
+    name: 'Team Logos',
+    type: SEGMENT_TYPES.STATIC,
+    duration: 10,
+    scene: 'Graphics Fullscreen',
+    graphic: { graphicId: 'logos', params: {} },
+    timingMode: 'fixed',
+    notes: `Display ${team1Name} vs ${team2Name} logos`,
+    confidence: teamLogos.confidence,
+    confidenceLevel: teamLogos.confidenceLevel,
+    category: 'pre-show',
+    reason: buildReasonString('Team introduction graphic', teamLogos.reasons),
+  });
+
+  // Welcome & Introductions - higher confidence for big meets
+  const welcome = calculateDynamicConfidence(0.85, context, {});
+  let welcomeNotes = 'Talent welcomes viewers and introduces the meet';
+  if (statsAnalysis?.matchupNotes?.length > 0) {
+    welcomeNotes += `. Talking points: ${statsAnalysis.matchupNotes[0]}`;
+  }
+  segments.push({
+    id: 'template-pre-4',
+    name: 'Welcome & Introductions',
+    type: SEGMENT_TYPES.LIVE,
+    duration: 60,
+    scene: 'Talent Camera',
+    graphic: null,
+    timingMode: 'fixed',
+    notes: welcomeNotes,
+    confidence: welcome.confidence,
+    confidenceLevel: welcome.confidenceLevel,
+    category: 'pre-show',
+    reason: buildReasonString('Standard talent intro segment', welcome.reasons),
+  });
+
+  // Season/Meet Context segment - only for championship or late season
+  if (dateInfo?.seasonPhase === 'championship' || dateInfo?.seasonPhase === 'late') {
+    const meetContext = calculateDynamicConfidence(0.6, context, { requiresStats: true });
+    const contextNotes = dateInfo.seasonPhase === 'championship'
+      ? 'Discuss championship implications and what each team needs'
+      : 'Discuss playoff implications, remaining schedule';
+
+    segments.push({
+      id: 'template-pre-5',
+      name: 'Season Context',
       type: SEGMENT_TYPES.LIVE,
-      duration: 60,
+      duration: 45,
       scene: 'Talent Camera',
-      graphic: null,
+      graphic: { graphicId: 'scoreboard', params: {} },
       timingMode: 'fixed',
-      notes: 'Talent welcomes viewers and introduces the meet',
-      confidence: 0.9,
-      confidenceLevel: CONFIDENCE.HIGH,
+      notes: contextNotes,
+      confidence: meetContext.confidence,
+      confidenceLevel: meetContext.confidenceLevel,
       category: 'pre-show',
-      reason: 'Standard talent intro segment',
-    },
-  ];
+      reason: buildReasonString(
+        `${dateInfo.seasonPhase === 'championship' ? 'Championship' : 'Late season'} meet context`,
+        meetContext.reasons
+      ),
+    });
+  }
+
+  return segments;
 }
 
 /**
  * Team introduction segment templates
  */
 function getTeamIntroSegments(context) {
-  const { teams, gender } = context;
+  const { teams, gender, seniors, statsAnalysis } = context;
   const segments = [];
 
   teams.forEach((team, index) => {
     if (!team.name) return;
 
-    const teamSlot = index + 1;
+    const teamSlot = team.slot || (index + 1);
+    const hasRoster = team.roster && team.roster.length > 0;
+    const teamStats = statsAnalysis?.teamStats?.find(t => t.name === team.name);
 
-    // Team coaches
+    // Team coaches - higher confidence when we have roster data
+    const coachConfidence = calculateDynamicConfidence(0.75, context, { requiresRoster: hasRoster });
     segments.push({
       id: `template-team-${teamSlot}-coaches`,
       name: `${team.name} Coaches`,
@@ -131,15 +303,22 @@ function getTeamIntroSegments(context) {
       graphic: { graphicId: 'team-coaches', params: { teamSlot } },
       timingMode: 'fixed',
       notes: `Introduce ${team.name} coaching staff`,
-      confidence: 0.85,
-      confidenceLevel: CONFIDENCE.HIGH,
+      confidence: coachConfidence.confidence,
+      confidenceLevel: coachConfidence.confidenceLevel,
       category: 'team-intro',
-      reason: 'Standard team introduction',
+      reason: buildReasonString('Standard team introduction', coachConfidence.reasons),
       teamContext: team.name,
     });
 
-    // Team roster (if roster exists)
-    if (team.roster && team.roster.length > 0) {
+    // Team roster (if roster exists) - higher confidence with more roster data
+    if (hasRoster) {
+      const rosterSize = team.roster.length;
+      const rosterConfidence = calculateDynamicConfidence(
+        0.7 + Math.min(0.15, rosterSize * 0.01), // Base + bonus for larger rosters
+        context,
+        { requiresRoster: true }
+      );
+
       segments.push({
         id: `template-team-${teamSlot}-roster`,
         name: `${team.name} Lineup`,
@@ -148,12 +327,67 @@ function getTeamIntroSegments(context) {
         scene: 'Graphics Fullscreen',
         graphic: { graphicId: 'team-lineup', params: { teamSlot } },
         timingMode: 'fixed',
-        notes: `Display ${team.name} starting lineup`,
-        confidence: 0.75,
-        confidenceLevel: CONFIDENCE.MEDIUM,
+        notes: `Display ${team.name} starting lineup (${rosterSize} athletes)`,
+        confidence: rosterConfidence.confidence,
+        confidenceLevel: rosterConfidence.confidenceLevel,
         category: 'team-intro',
-        reason: 'Roster available - suggest lineup graphic',
+        reason: buildReasonString(
+          `Roster available with ${rosterSize} athletes`,
+          rosterConfidence.reasons
+        ),
         teamContext: team.name,
+      });
+    }
+
+    // Team stats preview - if stats are available
+    if (teamStats?.hasStats) {
+      const statsConfidence = calculateDynamicConfidence(0.6, context, { requiresStats: true });
+      const statsNotes = teamStats.seasonHigh
+        ? `${team.name} season avg: ${teamStats.seasonAverage.toFixed(3)}, high: ${teamStats.seasonHigh.toFixed(3)}`
+        : `${team.name} season avg: ${teamStats.seasonAverage.toFixed(3)}`;
+
+      segments.push({
+        id: `template-team-${teamSlot}-stats`,
+        name: `${team.name} Season Stats`,
+        type: SEGMENT_TYPES.STATIC,
+        duration: 15,
+        scene: 'Graphics Fullscreen',
+        graphic: { graphicId: 'team-stats', params: { teamSlot } },
+        timingMode: 'fixed',
+        notes: statsNotes,
+        confidence: statsConfidence.confidence,
+        confidenceLevel: statsConfidence.confidenceLevel,
+        category: 'team-intro',
+        reason: buildReasonString('Season statistics available', statsConfidence.reasons),
+        teamContext: team.name,
+      });
+    }
+
+    // Team seniors feature - if team has seniors
+    const teamSeniors = seniors?.filter(s => s.team === team.name) || [];
+    if (teamSeniors.length > 0) {
+      const seniorConfidence = calculateDynamicConfidence(0.55, context, { seniorFeature: true });
+      const seniorNames = teamSeniors.slice(0, 3).map(s => s.name).join(', ');
+      const hasStorylines = teamSeniors.some(s => s.hasStorylines);
+
+      segments.push({
+        id: `template-team-${teamSlot}-seniors`,
+        name: `${team.name} Seniors`,
+        type: SEGMENT_TYPES.LIVE,
+        duration: 30,
+        scene: 'Talent Camera',
+        graphic: { graphicId: 'athlete-feature', params: { teamSlot } },
+        timingMode: 'fixed',
+        notes: `Feature seniors: ${seniorNames}${teamSeniors.length > 3 ? ` and ${teamSeniors.length - 3} more` : ''}`,
+        confidence: seniorConfidence.confidence,
+        confidenceLevel: seniorConfidence.confidenceLevel,
+        category: 'team-intro',
+        reason: buildReasonString(
+          `${teamSeniors.length} senior(s) on ${team.name}${hasStorylines ? ' with notable storylines' : ''}`,
+          seniorConfidence.reasons
+        ),
+        teamContext: team.name,
+        athleteContext: teamSeniors,
       });
     }
   });
@@ -165,15 +399,23 @@ function getTeamIntroSegments(context) {
  * Get rotation segments based on competition type
  */
 function getRotationSegments(context) {
-  const { gender, teamCount, teams } = context;
+  const { gender, teamCount, teams, statsAnalysis, dateInfo } = context;
   const events = gender === 'mens' ? MENS_EVENTS : WOMENS_EVENTS;
   const eventCodes = gender === 'mens' ? MENS_EVENT_CODES : WOMENS_EVENT_CODES;
   const rotationCount = events.length;
 
   const segments = [];
 
+  // Determine if this is a close matchup (affects segment confidence)
+  const isCloseMatchup = statsAnalysis?.matchupNotes?.some(
+    n => n.includes('Close matchup') || n.includes('Very close')
+  );
+
   for (let rotation = 1; rotation <= rotationCount; rotation++) {
-    // Rotation summary graphic
+    // Rotation summary graphic - higher confidence for later rotations in close meets
+    const summaryBaseConf = rotation === 1 ? 0.85 : (isCloseMatchup ? 0.9 : 0.8);
+    const summaryConf = calculateDynamicConfidence(summaryBaseConf, context, { requiresStats: true });
+
     segments.push({
       id: `template-rotation-${rotation}-summary`,
       name: `Rotation ${rotation} Summary`,
@@ -189,14 +431,15 @@ function getRotationSegments(context) {
       },
       timingMode: 'fixed',
       notes: `Display Rotation ${rotation} preview`,
-      confidence: 0.9,
-      confidenceLevel: CONFIDENCE.HIGH,
+      confidence: summaryConf.confidence,
+      confidenceLevel: summaryConf.confidenceLevel,
       category: 'rotation',
-      reason: 'Standard rotation intro',
+      reason: buildReasonString('Standard rotation intro', summaryConf.reasons),
     });
 
     // Competition action for this rotation
     // For dual meets, teams alternate apparatus
+    const actionConf = calculateDynamicConfidence(0.95, context, {});
     if (teamCount === 2) {
       // Home team event
       const homeEventIndex = (rotation - 1) % events.length;
@@ -211,10 +454,10 @@ function getRotationSegments(context) {
         graphic: null,
         timingMode: 'manual',
         notes: `${teams[0]?.name || 'Home'} on ${events[homeEventIndex]}, ${teams[1]?.name || 'Away'} on ${events[awayEventIndex]}`,
-        confidence: 0.95,
-        confidenceLevel: CONFIDENCE.HIGH,
+        confidence: actionConf.confidence,
+        confidenceLevel: actionConf.confidenceLevel,
         category: 'rotation',
-        reason: 'Main competition segment',
+        reason: buildReasonString('Main competition segment', actionConf.reasons),
       });
     } else {
       // Multi-team meet - all teams compete simultaneously
@@ -227,14 +470,17 @@ function getRotationSegments(context) {
         graphic: null,
         timingMode: 'manual',
         notes: `All teams compete on assigned apparatus`,
-        confidence: 0.95,
-        confidenceLevel: CONFIDENCE.HIGH,
+        confidence: actionConf.confidence,
+        confidenceLevel: actionConf.confidenceLevel,
         category: 'rotation',
-        reason: 'Main competition segment',
+        reason: buildReasonString('Main competition segment', actionConf.reasons),
       });
     }
 
-    // Rotation scores
+    // Rotation scores - higher confidence for close matchups (more drama)
+    const scoresBaseConf = isCloseMatchup ? 0.9 : 0.8;
+    const scoresConf = calculateDynamicConfidence(scoresBaseConf, context, { requiresStats: true });
+
     segments.push({
       id: `template-rotation-${rotation}-scores`,
       name: `Rotation ${rotation} Scores`,
@@ -243,15 +489,19 @@ function getRotationSegments(context) {
       scene: 'Graphics Fullscreen',
       graphic: { graphicId: 'scoreboard', params: {} },
       timingMode: 'fixed',
-      notes: `Display scores after Rotation ${rotation}`,
-      confidence: 0.85,
-      confidenceLevel: CONFIDENCE.HIGH,
+      notes: `Display scores after Rotation ${rotation}${isCloseMatchup ? ' - watch the margin' : ''}`,
+      confidence: scoresConf.confidence,
+      confidenceLevel: scoresConf.confidenceLevel,
       category: 'rotation',
-      reason: 'Score update after rotation',
+      reason: buildReasonString('Score update after rotation', scoresConf.reasons),
     });
 
     // Commercial break between rotations (except last)
+    // Lower confidence for championship meets (often no commercial breaks)
     if (rotation < rotationCount) {
+      const breakBaseConf = dateInfo?.seasonPhase === 'championship' ? 0.5 : 0.65;
+      const breakConf = calculateDynamicConfidence(breakBaseConf, context, {});
+
       segments.push({
         id: `template-rotation-${rotation}-break`,
         name: 'Commercial Break',
@@ -261,10 +511,31 @@ function getRotationSegments(context) {
         graphic: null,
         timingMode: 'fixed',
         notes: 'Commercial break between rotations',
-        confidence: 0.7,
-        confidenceLevel: CONFIDENCE.MEDIUM,
+        confidence: breakConf.confidence,
+        confidenceLevel: breakConf.confidenceLevel,
         category: 'break',
-        reason: 'Optional break between rotations',
+        reason: buildReasonString('Optional break between rotations', breakConf.reasons),
+      });
+    }
+
+    // Mid-meet analysis - after rotation 3 in 6-rotation meets or rotation 2 in 4-rotation meets
+    const midPoint = rotationCount === 6 ? 3 : 2;
+    if (rotation === midPoint && isCloseMatchup) {
+      const analysisConf = calculateDynamicConfidence(0.55, context, { requiresStats: true });
+
+      segments.push({
+        id: `template-rotation-${rotation}-analysis`,
+        name: 'Mid-Meet Analysis',
+        type: SEGMENT_TYPES.LIVE,
+        duration: 45,
+        scene: 'Talent Camera',
+        graphic: { graphicId: 'scoreboard', params: {} },
+        timingMode: 'fixed',
+        notes: 'Talent discusses the meet so far and what to watch in second half',
+        confidence: analysisConf.confidence,
+        confidenceLevel: analysisConf.confidenceLevel,
+        category: 'rotation',
+        reason: buildReasonString('Close matchup - mid-meet analysis adds value', analysisConf.reasons),
       });
     }
   }
@@ -276,62 +547,124 @@ function getRotationSegments(context) {
  * Post-show segment templates
  */
 function getPostShowSegments(context) {
-  const { team1Name, team2Name, teamCount } = context;
+  const { team1Name, team2Name, teamCount, statsAnalysis, dateInfo, allAmericans, milestones } = context;
 
-  return [
-    {
-      id: 'template-post-1',
-      name: 'Final Scores',
+  const segments = [];
+
+  // Final Scores - always high confidence
+  const scoresConf = calculateDynamicConfidence(0.9, context, { requiresStats: true });
+  segments.push({
+    id: 'template-post-1',
+    name: 'Final Scores',
+    type: SEGMENT_TYPES.STATIC,
+    duration: 30,
+    scene: 'Graphics Fullscreen',
+    graphic: { graphicId: 'scoreboard', params: {} },
+    timingMode: 'fixed',
+    notes: 'Display final meet scores',
+    confidence: scoresConf.confidence,
+    confidenceLevel: scoresConf.confidenceLevel,
+    category: 'post-show',
+    reason: buildReasonString('Standard final score display', scoresConf.reasons),
+  });
+
+  // Event-by-event results - higher confidence for close matches or championship meets
+  const isHighStakes = dateInfo?.seasonPhase === 'championship' || dateInfo?.seasonPhase === 'late';
+  if (isHighStakes || statsAnalysis?.matchupNotes?.some(n => n.includes('Close'))) {
+    const eventResultsConf = calculateDynamicConfidence(0.6, context, { requiresStats: true });
+
+    segments.push({
+      id: 'template-post-1b',
+      name: 'Event-by-Event Results',
       type: SEGMENT_TYPES.STATIC,
-      duration: 30,
+      duration: 45,
       scene: 'Graphics Fullscreen',
-      graphic: { graphicId: 'scoreboard', params: {} },
+      graphic: { graphicId: 'event-summary', params: { summaryMode: 'all' } },
       timingMode: 'fixed',
-      notes: 'Display final meet scores',
-      confidence: 0.95,
-      confidenceLevel: CONFIDENCE.HIGH,
+      notes: 'Display detailed breakdown by apparatus',
+      confidence: eventResultsConf.confidence,
+      confidenceLevel: eventResultsConf.confidenceLevel,
       category: 'post-show',
-      reason: 'Standard final score display',
-    },
-    {
-      id: 'template-post-2',
-      name: 'Post-Meet Analysis',
+      reason: buildReasonString(
+        isHighStakes ? 'High-stakes meet - detailed results add value' : 'Close match - show where it was won',
+        eventResultsConf.reasons
+      ),
+    });
+  }
+
+  // Post-Meet Analysis - standard for all meets
+  const analysisConf = calculateDynamicConfidence(0.8, context, {});
+  let analysisNotes = 'Talent discusses meet highlights and results';
+  if (statsAnalysis?.matchupNotes?.length > 0) {
+    analysisNotes += `. Key storyline: ${statsAnalysis.matchupNotes[0]}`;
+  }
+  segments.push({
+    id: 'template-post-2',
+    name: 'Post-Meet Analysis',
+    type: SEGMENT_TYPES.LIVE,
+    duration: 120,
+    scene: 'Talent Camera',
+    graphic: null,
+    timingMode: 'fixed',
+    notes: analysisNotes,
+    confidence: analysisConf.confidence,
+    confidenceLevel: analysisConf.confidenceLevel,
+    category: 'post-show',
+    reason: buildReasonString('Standard post-meet wrap-up', analysisConf.reasons),
+  });
+
+  // Standout performers - if we have All-Americans or record holders
+  if ((allAmericans?.length > 0 || milestones?.records?.length > 0) && isHighStakes) {
+    const standoutConf = calculateDynamicConfidence(0.5, context, { athleteFeature: true });
+    const performers = [
+      ...(allAmericans?.slice(0, 2).map(a => a.name) || []),
+      ...(milestones?.records?.slice(0, 1).map(r => r.name) || []),
+    ].slice(0, 3);
+
+    segments.push({
+      id: 'template-post-2b',
+      name: 'Standout Performers',
       type: SEGMENT_TYPES.LIVE,
-      duration: 120,
+      duration: 45,
       scene: 'Talent Camera',
-      graphic: null,
+      graphic: { graphicId: 'athlete-feature', params: {} },
       timingMode: 'fixed',
-      notes: 'Talent discusses meet highlights and results',
-      confidence: 0.85,
-      confidenceLevel: CONFIDENCE.HIGH,
+      notes: `Highlight standout performances: ${performers.join(', ')}`,
+      confidence: standoutConf.confidence,
+      confidenceLevel: standoutConf.confidenceLevel,
       category: 'post-show',
-      reason: 'Standard post-meet wrap-up',
-    },
-    {
-      id: 'template-post-3',
-      name: 'Credits & Sign-Off',
-      type: SEGMENT_TYPES.VIDEO,
-      duration: 30,
-      scene: 'Graphics Fullscreen',
-      graphic: null,
-      timingMode: 'fixed',
-      notes: 'Production credits and sign-off',
-      confidence: 0.9,
-      confidenceLevel: CONFIDENCE.HIGH,
-      category: 'post-show',
-      reason: 'Standard broadcast close',
-    },
-  ];
+      reason: buildReasonString('Notable athletes worth highlighting', standoutConf.reasons),
+    });
+  }
+
+  // Credits & Sign-Off - always include
+  const creditsConf = calculateDynamicConfidence(0.85, context, {});
+  segments.push({
+    id: 'template-post-3',
+    name: 'Credits & Sign-Off',
+    type: SEGMENT_TYPES.VIDEO,
+    duration: 30,
+    scene: 'Graphics Fullscreen',
+    graphic: null,
+    timingMode: 'fixed',
+    notes: 'Production credits and sign-off',
+    confidence: creditsConf.confidence,
+    confidenceLevel: creditsConf.confidenceLevel,
+    category: 'post-show',
+    reason: buildReasonString('Standard broadcast close', creditsConf.reasons),
+  });
+
+  return segments;
 }
 
 /**
  * Special segment suggestions based on roster analysis
  */
 function getSpecialSegments(context) {
-  const { teams, seniors, allAmericans, milestones, dateInfo, eventName } = context;
+  const { teams, seniors, allAmericans, milestones, dateInfo, eventName, statsAnalysis } = context;
   const segments = [];
 
-  // Senior recognition segments - enhanced with storylines
+  // Senior recognition segments - enhanced with storylines and dynamic confidence
   if (seniors && seniors.length > 0) {
     // Check if any seniors have storylines (championship, final home meet, etc.)
     const seniorsWithStorylines = seniors.filter(s => s.hasStorylines);
@@ -347,6 +680,14 @@ function getSpecialSegments(context) {
       notes += `. ${topStoryline.description}`;
     }
 
+    // Dynamic confidence based on senior count and storylines
+    const seniorBaseConf = Math.min(0.65 + (seniors.length * 0.03), 0.85);
+    const seniorConf = calculateDynamicConfidence(
+      seniorsWithStorylines.length > 0 ? seniorBaseConf + 0.1 : seniorBaseConf,
+      context,
+      { seniorFeature: true }
+    );
+
     segments.push({
       id: 'template-special-seniors',
       name: 'Senior Recognition',
@@ -356,15 +697,18 @@ function getSpecialSegments(context) {
       graphic: { graphicId: 'athlete-feature', params: {} },
       timingMode: 'manual',
       notes,
-      confidence: seniorsWithStorylines.length > 0 ? 0.9 : 0.8,
-      confidenceLevel: CONFIDENCE.HIGH,
+      confidence: seniorConf.confidence,
+      confidenceLevel: seniorConf.confidenceLevel,
       category: 'special',
-      reason: `${seniors.length} senior(s) competing${seniorsWithStorylines.length > 0 ? ' with notable storylines' : ''}`,
+      reason: buildReasonString(
+        `${seniors.length} senior(s) competing${seniorsWithStorylines.length > 0 ? ' with notable storylines' : ''}`,
+        seniorConf.reasons
+      ),
       athleteContext: seniors,
     });
   }
 
-  // All-American feature - enhanced with honor details
+  // All-American feature - enhanced with honor details and dynamic confidence
   if (allAmericans && allAmericans.length > 0) {
     const topAllAmericans = allAmericans.slice(0, 3);
     const honorSummary = topAllAmericans.map(a => {
@@ -373,6 +717,10 @@ function getSpecialSegments(context) {
         ? `${a.name} (${recentHonor.year} ${recentHonor.event || 'All-American'})`
         : a.name;
     }).join(', ');
+
+    // Dynamic confidence: more All-Americans = higher confidence
+    const aaBaseConf = Math.min(0.55 + (allAmericans.length * 0.05), 0.85);
+    const aaConf = calculateDynamicConfidence(aaBaseConf, context, { athleteFeature: true });
 
     segments.push({
       id: 'template-special-all-americans',
@@ -383,21 +731,25 @@ function getSpecialSegments(context) {
       graphic: { graphicId: 'athlete-feature', params: {} },
       timingMode: 'fixed',
       notes: `Feature All-Americans: ${honorSummary}`,
-      confidence: 0.75,
-      confidenceLevel: CONFIDENCE.MEDIUM,
+      confidence: aaConf.confidence,
+      confidenceLevel: aaConf.confidenceLevel,
       category: 'special',
-      reason: `${allAmericans.length} All-American(s) competing`,
+      reason: buildReasonString(`${allAmericans.length} All-American(s) competing`, aaConf.reasons),
       athleteContext: allAmericans,
     });
   }
 
-  // Record holders feature
+  // Record holders feature - with context-aware confidence
   if (milestones?.records && milestones.records.length > 0) {
     const recordHolders = milestones.records.slice(0, 2);
     const recordSummary = recordHolders.map(r => {
       const topRecord = r.recordMilestones[0];
       return `${r.name} (${topRecord.description || topRecord.type})`;
     }).join(', ');
+
+    // Higher confidence for championship meets where records matter more
+    const recordBaseConf = dateInfo?.seasonPhase === 'championship' ? 0.7 : 0.55;
+    const recordConf = calculateDynamicConfidence(recordBaseConf, context, { athleteFeature: true });
 
     segments.push({
       id: 'template-special-records',
@@ -408,10 +760,10 @@ function getSpecialSegments(context) {
       graphic: { graphicId: 'athlete-feature', params: {} },
       timingMode: 'fixed',
       notes: `Record holders competing: ${recordSummary}`,
-      confidence: 0.65,
-      confidenceLevel: CONFIDENCE.MEDIUM,
+      confidence: recordConf.confidence,
+      confidenceLevel: recordConf.confidenceLevel,
       category: 'special',
-      reason: `${milestones.records.length} record holder(s) in the meet`,
+      reason: buildReasonString(`${milestones.records.length} record holder(s) in the meet`, recordConf.reasons),
       athleteContext: recordHolders,
     });
   }
@@ -424,6 +776,10 @@ function getSpecialSegments(context) {
       return `${a.name}: ${topMilestone.description || topMilestone.type}`;
     }).join('; ');
 
+    // Dynamic confidence based on milestone significance
+    const milestoneBaseConf = 0.5 + (approachingMilestones.length * 0.05);
+    const milestoneConf = calculateDynamicConfidence(milestoneBaseConf, context, { athleteFeature: true });
+
     segments.push({
       id: 'template-special-milestones',
       name: 'Milestone Watch',
@@ -433,12 +789,41 @@ function getSpecialSegments(context) {
       graphic: { graphicId: 'athlete-feature', params: {} },
       timingMode: 'fixed',
       notes: `Athletes approaching milestones: ${milestoneSummary}`,
-      confidence: 0.6,
-      confidenceLevel: CONFIDENCE.MEDIUM,
+      confidence: milestoneConf.confidence,
+      confidenceLevel: milestoneConf.confidenceLevel,
       category: 'special',
-      reason: `${milestones.upcoming.length} athlete(s) approaching career milestones`,
+      reason: buildReasonString(
+        `${milestones.upcoming.length} athlete(s) approaching career milestones`,
+        milestoneConf.reasons
+      ),
       athleteContext: approachingMilestones,
     });
+  }
+
+  // Rivalry/matchup history segment - for known rivalries or close teams
+  if (statsAnalysis?.matchupNotes?.length > 0 && teams?.length >= 2) {
+    const isCloseMatchup = statsAnalysis.matchupNotes.some(
+      n => n.includes('Close matchup') || n.includes('Very close')
+    );
+
+    if (isCloseMatchup || dateInfo?.seasonPhase === 'championship') {
+      const matchupConf = calculateDynamicConfidence(0.5, context, { requiresStats: true });
+
+      segments.push({
+        id: 'template-special-matchup',
+        name: 'Rivalry & History',
+        type: SEGMENT_TYPES.LIVE,
+        duration: 45,
+        scene: 'Talent Camera',
+        graphic: { graphicId: 'scoreboard', params: {} },
+        timingMode: 'fixed',
+        notes: `Discuss ${teams[0]?.name} vs ${teams[1]?.name} history and rivalry. ${statsAnalysis.matchupNotes[0]}`,
+        confidence: matchupConf.confidence,
+        confidenceLevel: matchupConf.confidenceLevel,
+        category: 'special',
+        reason: buildReasonString('Close matchup - rivalry context adds value', matchupConf.reasons),
+      });
+    }
   }
 
   return segments;
@@ -1180,8 +1565,13 @@ const aiSuggestionService = {
   // Expose constants for testing
   SEGMENT_TYPES,
   CONFIDENCE,
+  CONFIDENCE_FACTORS,
   MENS_EVENTS,
   WOMENS_EVENTS,
+  // Expose helper functions for testing
+  calculateDynamicConfidence,
+  getConfidenceLevel,
+  buildReasonString,
 };
 
 export default aiSuggestionService;
@@ -1192,6 +1582,10 @@ export {
   getSuggestionCount,
   SEGMENT_TYPES,
   CONFIDENCE,
+  CONFIDENCE_FACTORS,
   MENS_EVENTS,
   WOMENS_EVENTS,
+  calculateDynamicConfidence,
+  getConfidenceLevel,
+  buildReasonString,
 };
