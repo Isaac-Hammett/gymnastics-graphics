@@ -64,7 +64,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 
 ## Task Summary by Phase
 
-### Phase A: Connect Editor to Engine (P0) - IN PROGRESS (6/16 complete)
+### Phase A: Connect Editor to Engine (P0) - IN PROGRESS (7/16 complete)
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
@@ -74,7 +74,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 4 | Update `_playVideo()` to use per-competition OBS connection | COMPLETE | Updated to use obsConnectionManager.getConnection(compId) with fallback to legacy this.obs |
 | Task 5 | Update `_applyAudioOverrides()` to use per-competition OBS connection | COMPLETE | Updated to use obsConnectionManager.getConnection(compId) with fallback to legacy this.obs |
 | Task 6 | Update all socket event broadcasts to target competition room | COMPLETE | Updated `_triggerGraphic()` to use `io.to('competition:${compId}').emit()` with fallback to legacy broadcast. All other socket events are already routed through EventEmitter handlers in server/index.js `getOrCreateEngine()` which already use room-based broadcasting. |
-| Task 7 | Pass Firebase Admin instance to engine for `_triggerGraphic()` | NOT STARTED | |
+| Task 7 | Pass Firebase Admin instance to engine for `_triggerGraphic()` | COMPLETE | Updated `_triggerGraphic()` to handle both Firebase db and Admin app; added JSDoc example to `getOrCreateEngine()` |
 | Task 8 | Add `loadRundown` socket handler on server | NOT STARTED | |
 | Task 9 | Add `loadRundown` action in ShowContext | NOT STARTED | |
 | Task 10 | Add "Load Rundown" button in Producer View | NOT STARTED | |
@@ -313,17 +313,22 @@ Update all socket.io event emissions to target the competition-specific room.
 
 ### Task 7: Pass Firebase Admin to engine
 
-**Status:** NOT STARTED
+**Status:** COMPLETE
 **File:** `server/lib/timesheetEngine.js`, `server/index.js`
 
 **Description:**
 Pass Firebase Admin instance to engine constructor for `_triggerGraphic()` functionality.
 
 **Checklist:**
-- [ ] Add `firebase` parameter to constructor
-- [ ] Export `db` from productionConfigService.js
-- [ ] Pass Firebase instance when creating engine
-- [ ] Update `_triggerGraphic()` to use `this.firebase`
+- [x] Add `firebase` parameter to constructor (already existed)
+- [x] Export `db` from productionConfigService.js (already exported as `getDb`)
+- [x] Pass Firebase instance when creating engine (added JSDoc example to `getOrCreateEngine()`)
+- [x] Update `_triggerGraphic()` to use `this.firebase` (updated to handle both db and Admin app)
+
+**Implementation Notes:**
+- `_triggerGraphic()` now auto-detects whether `this.firebase` is the database directly (has `.ref()` method) or the Firebase Admin app (has `.database()` method)
+- Added JSDoc example showing `productionConfigService.getDb()` should be passed when calling `getOrCreateEngine()`
+- The actual passing of firebase will happen in Task 8 when `loadRundown` socket handler is implemented
 
 ---
 

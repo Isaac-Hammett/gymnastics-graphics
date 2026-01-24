@@ -350,9 +350,17 @@ function initializeTimesheetEngine() {
  *
  * @param {string} compId - Competition ID
  * @param {Object} obsConnectionManager - OBS connection manager for per-competition OBS connections
- * @param {Object} firebase - Firebase Admin instance for graphics
+ * @param {Object} firebase - Firebase database (from productionConfigService.getDb()) for graphics
  * @param {Object} socketIo - Socket.io server for broadcasting
  * @returns {TimesheetEngine} The engine instance for this competition
+ *
+ * @example
+ * const engine = getOrCreateEngine(
+ *   'abc123',
+ *   obsConnectionManager,
+ *   productionConfigService.getDb(),
+ *   io
+ * );
  */
 function getOrCreateEngine(compId, obsConnectionManager, firebase, socketIo) {
   if (!compId) {
