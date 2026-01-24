@@ -328,11 +328,25 @@ function getPostShowSegments(context) {
  * Special segment suggestions based on roster analysis
  */
 function getSpecialSegments(context) {
-  const { teams, seniors, allAmericans } = context;
+  const { teams, seniors, allAmericans, milestones, dateInfo, eventName } = context;
   const segments = [];
 
-  // Senior recognition segments
+  // Senior recognition segments - enhanced with storylines
   if (seniors && seniors.length > 0) {
+    // Check if any seniors have storylines (championship, final home meet, etc.)
+    const seniorsWithStorylines = seniors.filter(s => s.hasStorylines);
+
+    let notes = `Recognize seniors: ${seniors.slice(0, 3).map(s => s.name).join(', ')}`;
+    if (seniors.length > 3) {
+      notes += ` and ${seniors.length - 3} more`;
+    }
+
+    // Add storyline context if available
+    if (seniorsWithStorylines.length > 0) {
+      const topStoryline = seniorsWithStorylines[0].storylines[0];
+      notes += `. ${topStoryline.description}`;
+    }
+
     segments.push({
       id: 'template-special-seniors',
       name: 'Senior Recognition',
@@ -341,17 +355,25 @@ function getSpecialSegments(context) {
       scene: 'Talent Camera',
       graphic: { graphicId: 'athlete-feature', params: {} },
       timingMode: 'manual',
-      notes: `Recognize seniors: ${seniors.slice(0, 3).map(s => s.name).join(', ')}${seniors.length > 3 ? ` and ${seniors.length - 3} more` : ''}`,
-      confidence: 0.8,
+      notes,
+      confidence: seniorsWithStorylines.length > 0 ? 0.9 : 0.8,
       confidenceLevel: CONFIDENCE.HIGH,
       category: 'special',
-      reason: `${seniors.length} senior(s) competing - suggest recognition segment`,
+      reason: `${seniors.length} senior(s) competing${seniorsWithStorylines.length > 0 ? ' with notable storylines' : ''}`,
       athleteContext: seniors,
     });
   }
 
-  // All-American feature
+  // All-American feature - enhanced with honor details
   if (allAmericans && allAmericans.length > 0) {
+    const topAllAmericans = allAmericans.slice(0, 3);
+    const honorSummary = topAllAmericans.map(a => {
+      const recentHonor = a.mostRecent;
+      return recentHonor
+        ? `${a.name} (${recentHonor.year} ${recentHonor.event || 'All-American'})`
+        : a.name;
+    }).join(', ');
+
     segments.push({
       id: 'template-special-all-americans',
       name: 'All-American Spotlight',
@@ -360,12 +382,62 @@ function getSpecialSegments(context) {
       scene: 'Talent Camera',
       graphic: { graphicId: 'athlete-feature', params: {} },
       timingMode: 'fixed',
-      notes: `Feature All-Americans: ${allAmericans.slice(0, 2).map(a => a.name).join(', ')}`,
-      confidence: 0.7,
+      notes: `Feature All-Americans: ${honorSummary}`,
+      confidence: 0.75,
       confidenceLevel: CONFIDENCE.MEDIUM,
       category: 'special',
       reason: `${allAmericans.length} All-American(s) competing`,
       athleteContext: allAmericans,
+    });
+  }
+
+  // Record holders feature
+  if (milestones?.records && milestones.records.length > 0) {
+    const recordHolders = milestones.records.slice(0, 2);
+    const recordSummary = recordHolders.map(r => {
+      const topRecord = r.recordMilestones[0];
+      return `${r.name} (${topRecord.description || topRecord.type})`;
+    }).join(', ');
+
+    segments.push({
+      id: 'template-special-records',
+      name: 'Record Holder Feature',
+      type: SEGMENT_TYPES.LIVE,
+      duration: 30,
+      scene: 'Talent Camera',
+      graphic: { graphicId: 'athlete-feature', params: {} },
+      timingMode: 'fixed',
+      notes: `Record holders competing: ${recordSummary}`,
+      confidence: 0.65,
+      confidenceLevel: CONFIDENCE.MEDIUM,
+      category: 'special',
+      reason: `${milestones.records.length} record holder(s) in the meet`,
+      athleteContext: recordHolders,
+    });
+  }
+
+  // Milestone watch segment (athletes approaching milestones)
+  if (milestones?.upcoming && milestones.upcoming.length > 0) {
+    const approachingMilestones = milestones.upcoming.slice(0, 2);
+    const milestoneSummary = approachingMilestones.map(a => {
+      const topMilestone = a.upcomingMilestones[0];
+      return `${a.name}: ${topMilestone.description || topMilestone.type}`;
+    }).join('; ');
+
+    segments.push({
+      id: 'template-special-milestones',
+      name: 'Milestone Watch',
+      type: SEGMENT_TYPES.LIVE,
+      duration: 30,
+      scene: 'Talent Camera',
+      graphic: { graphicId: 'athlete-feature', params: {} },
+      timingMode: 'fixed',
+      notes: `Athletes approaching milestones: ${milestoneSummary}`,
+      confidence: 0.6,
+      confidenceLevel: CONFIDENCE.MEDIUM,
+      category: 'special',
+      reason: `${milestones.upcoming.length} athlete(s) approaching career milestones`,
+      athleteContext: approachingMilestones,
     });
   }
 
@@ -544,9 +616,258 @@ function countByClassYear(teamDataMap, teams) {
 }
 
 /**
- * Build context object from competition config and team data
+ * Query All-Americans from athlete honors data
+ *
+ * All-American status is stored in teamsDatabase/honors/{athlete-name-lowercase}
+ * Structure: { name, team, honors: [{ year, type, event }] }
+ *
+ * Example honors types:
+ * - "First Team All-American"
+ * - "Second Team All-American"
+ * - "All-American"
+ * - "All-Conference"
+ *
+ * @param {Object} db - Firebase database reference
+ * @param {Array} teams - Teams in the competition
+ * @returns {Promise<Array>} All-Americans competing in this meet
  */
-function buildContext(competitionConfig, teamsData, teamDataFromComp) {
+async function queryAllAmericans(db, teams) {
+  const allAmericans = [];
+
+  if (!db) return allAmericans;
+
+  try {
+    // Check if honors database exists
+    const honorsSnapshot = await db.ref('teamsDatabase/honors').once('value');
+    const honorsData = honorsSnapshot.val();
+
+    if (!honorsData) {
+      // Honors database not yet populated - this is expected for now
+      // Future: integrate with Virtius API or manual data entry
+      return allAmericans;
+    }
+
+    // Build a set of athlete names from competing teams for quick lookup
+    const competingAthletes = new Map();
+    teams.forEach(team => {
+      const roster = team.roster || [];
+      roster.forEach(athlete => {
+        const key = athlete.fullName?.toLowerCase() ||
+          `${athlete.firstName} ${athlete.lastName}`.toLowerCase();
+        competingAthletes.set(key, { ...athlete, team: team.name, teamSlot: team.slot });
+      });
+    });
+
+    // Find All-Americans among competing athletes
+    Object.entries(honorsData).forEach(([key, honorData]) => {
+      if (competingAthletes.has(key)) {
+        const athlete = competingAthletes.get(key);
+        const allAmericanHonors = (honorData.honors || []).filter(h =>
+          h.type?.toLowerCase().includes('all-american')
+        );
+
+        if (allAmericanHonors.length > 0) {
+          allAmericans.push({
+            name: athlete.fullName || `${athlete.firstName} ${athlete.lastName}`,
+            firstName: athlete.firstName,
+            lastName: athlete.lastName,
+            team: athlete.team,
+            teamSlot: athlete.teamSlot,
+            honors: allAmericanHonors,
+            honorCount: allAmericanHonors.length,
+            // Most recent All-American honor
+            mostRecent: allAmericanHonors.sort((a, b) =>
+              (b.year || 0) - (a.year || 0)
+            )[0],
+          });
+        }
+      }
+    });
+
+    // Sort by honor count (most decorated first)
+    return allAmericans.sort((a, b) => b.honorCount - a.honorCount);
+  } catch (error) {
+    console.warn('[AISuggestionService] Error querying All-Americans:', error.message);
+    return allAmericans;
+  }
+}
+
+/**
+ * Query athlete milestones based on career statistics
+ *
+ * Milestones are stored in teamsDatabase/milestones/{athlete-name-lowercase}
+ * Structure: { name, team, milestones: [{ type, value, date, description }] }
+ *
+ * Example milestone types:
+ * - "career_routines" - Total career routines competed
+ * - "career_10s" - Number of perfect 10.0 scores
+ * - "career_high_aa" - Career high all-around score
+ * - "event_record" - School/conference/NCAA record on an event
+ * - "100_club" - Scored 100+ career routines
+ *
+ * @param {Object} db - Firebase database reference
+ * @param {Array} teams - Teams in the competition
+ * @returns {Promise<Object>} Milestone data for competing athletes
+ */
+async function queryMilestones(db, teams) {
+  const milestones = {
+    athletes: [],       // Athletes with notable milestones
+    upcoming: [],       // Athletes approaching milestones (e.g., 99 career routines)
+    records: [],        // Record holders competing
+  };
+
+  if (!db) return milestones;
+
+  try {
+    // Check if milestones database exists
+    const milestonesSnapshot = await db.ref('teamsDatabase/milestones').once('value');
+    const milestonesData = milestonesSnapshot.val();
+
+    if (!milestonesData) {
+      // Milestones database not yet populated - this is expected for now
+      // Future: compute from historical meet data or integrate with external API
+      return milestones;
+    }
+
+    // Build a set of athlete names from competing teams
+    const competingAthletes = new Map();
+    teams.forEach(team => {
+      const roster = team.roster || [];
+      roster.forEach(athlete => {
+        const key = athlete.fullName?.toLowerCase() ||
+          `${athlete.firstName} ${athlete.lastName}`.toLowerCase();
+        competingAthletes.set(key, { ...athlete, team: team.name, teamSlot: team.slot });
+      });
+    });
+
+    // Find milestones for competing athletes
+    Object.entries(milestonesData).forEach(([key, milestoneData]) => {
+      if (competingAthletes.has(key)) {
+        const athlete = competingAthletes.get(key);
+        const athleteMilestones = milestoneData.milestones || [];
+
+        if (athleteMilestones.length > 0) {
+          const athleteEntry = {
+            name: athlete.fullName || `${athlete.firstName} ${athlete.lastName}`,
+            firstName: athlete.firstName,
+            lastName: athlete.lastName,
+            team: athlete.team,
+            teamSlot: athlete.teamSlot,
+            milestones: athleteMilestones,
+          };
+
+          // Categorize milestones
+          const recordMilestones = athleteMilestones.filter(m =>
+            m.type === 'event_record' || m.type === 'school_record' || m.type === 'conference_record'
+          );
+
+          const upcomingMilestones = athleteMilestones.filter(m =>
+            m.type === 'approaching' || m.approaching === true
+          );
+
+          if (recordMilestones.length > 0) {
+            milestones.records.push({
+              ...athleteEntry,
+              recordMilestones,
+            });
+          }
+
+          if (upcomingMilestones.length > 0) {
+            milestones.upcoming.push({
+              ...athleteEntry,
+              upcomingMilestones,
+            });
+          }
+
+          milestones.athletes.push(athleteEntry);
+        }
+      }
+    });
+
+    return milestones;
+  } catch (error) {
+    console.warn('[AISuggestionService] Error querying milestones:', error.message);
+    return milestones;
+  }
+}
+
+/**
+ * Compute potential milestones for seniors
+ *
+ * For seniors in their final season, compute potential story angles:
+ * - Final home meet (if at home venue)
+ * - Final conference championship
+ * - Final NCAA championship appearance
+ *
+ * @param {Array} seniors - List of seniors from extractSeniors()
+ * @param {Object} context - Competition context
+ * @returns {Array} Enhanced senior data with potential storylines
+ */
+function computeSeniorMilestones(seniors, context) {
+  const { dateInfo, venue, location, eventName } = context;
+  const enhancedSeniors = [];
+
+  seniors.forEach(senior => {
+    const storylines = [];
+
+    // Check if this is a championship meet
+    const eventNameLower = eventName?.toLowerCase() || '';
+    const isConferenceChamp = eventNameLower.includes('championship') &&
+      (eventNameLower.includes('conference') || eventNameLower.includes('pac-12') ||
+       eventNameLower.includes('big ten') || eventNameLower.includes('sec') ||
+       eventNameLower.includes('big 12') || eventNameLower.includes('ncga'));
+    const isNCAA = eventNameLower.includes('ncaa');
+    const isNationals = eventNameLower.includes('national');
+
+    if (isNCAA || isNationals) {
+      storylines.push({
+        type: 'final_nationals',
+        description: `Final NCAA/National Championship appearance for ${senior.firstName}`,
+        significance: 'high',
+      });
+    } else if (isConferenceChamp) {
+      storylines.push({
+        type: 'final_conference',
+        description: `Final conference championship for ${senior.firstName}`,
+        significance: 'high',
+      });
+    }
+
+    // Check if late season (potential last regular season home meet)
+    if (dateInfo?.seasonPhase === 'late' && dateInfo?.isWeekend) {
+      storylines.push({
+        type: 'potential_final_home',
+        description: `Could be final home meet for ${senior.firstName}`,
+        significance: 'medium',
+      });
+    }
+
+    enhancedSeniors.push({
+      ...senior,
+      storylines,
+      hasStorylines: storylines.length > 0,
+    });
+  });
+
+  // Sort by those with storylines first, then alphabetically
+  return enhancedSeniors.sort((a, b) => {
+    if (a.hasStorylines !== b.hasStorylines) {
+      return b.hasStorylines ? 1 : -1;
+    }
+    return a.name.localeCompare(b.name);
+  });
+}
+
+/**
+ * Build context object from competition config and team data
+ *
+ * @param {Object} competitionConfig - Competition configuration from Firebase
+ * @param {Object} teamsData - Teams database data
+ * @param {Object} teamDataFromComp - Competition-specific team data with rosters
+ * @param {Object} db - Firebase database reference (optional, for async queries)
+ * @returns {Promise<Object>|Object} Context object (async if db provided)
+ */
+async function buildContext(competitionConfig, teamsData, teamDataFromComp, db = null) {
   const { gender, teamCount } = parseCompetitionType(competitionConfig?.compType);
 
   // Extract team info from config
@@ -556,14 +877,19 @@ function buildContext(competitionConfig, teamsData, teamDataFromComp) {
     const teamName = competitionConfig?.[`team${i}Name`];
 
     if (teamName) {
-      const teamData = teamsData?.[teamKey] || {};
+      // Use competition's teamData which has richer roster info
+      const compTeamData = teamDataFromComp?.[`team${i}`] || {};
+      const fallbackTeamData = teamsData?.[teamKey] || {};
+
       teams.push({
         slot: i,
         key: teamKey,
         name: teamName,
         logo: competitionConfig?.[`team${i}Logo`],
-        roster: teamData.roster || [],
+        // Prefer competition teamData roster, fallback to teamsDatabase
+        roster: compTeamData.roster || fallbackTeamData.roster || [],
         coaches: competitionConfig?.[`team${i}Coaches`]?.split('\n').filter(Boolean) || [],
+        rankings: compTeamData.rankings || {},
       });
     }
   }
@@ -580,7 +906,8 @@ function buildContext(competitionConfig, teamsData, teamDataFromComp) {
   // Count athletes by class year
   const classCounts = countByClassYear(teamDataFromComp, teams);
 
-  return {
+  // Build base context
+  const baseContext = {
     compId: competitionConfig?.compId,
     eventName: competitionConfig?.eventName,
     meetDate: competitionConfig?.meetDate,
@@ -592,12 +919,35 @@ function buildContext(competitionConfig, teamsData, teamDataFromComp) {
     teams,
     team1Name: teams[0]?.name || 'Team 1',
     team2Name: teams[1]?.name || 'Team 2',
-    // Roster analysis
-    seniors,
-    allAmericans: [], // Future: would need external data source for All-American status
+    // Class year analysis
     classCounts,
     // Team statistics
     statsAnalysis,
+  };
+
+  // Query All-Americans and milestones if database available
+  let allAmericans = [];
+  let milestones = { athletes: [], upcoming: [], records: [] };
+
+  if (db) {
+    // Run queries in parallel
+    const [allAmericansResult, milestonesResult] = await Promise.all([
+      queryAllAmericans(db, teams),
+      queryMilestones(db, teams),
+    ]);
+    allAmericans = allAmericansResult;
+    milestones = milestonesResult;
+  }
+
+  // Compute senior storylines
+  const seniorsWithStorylines = computeSeniorMilestones(seniors, baseContext);
+
+  return {
+    ...baseContext,
+    // Roster analysis with enhanced data
+    seniors: seniorsWithStorylines,
+    allAmericans,
+    milestones,
   };
 }
 
@@ -658,8 +1008,8 @@ async function generateSuggestions(compId, options = {}) {
     const teamDataSnapshot = await db.ref(`competitions/${compId}/teamData`).once('value');
     const teamDataFromComp = teamDataSnapshot.val() || {};
 
-    // Build context with full metadata analysis
-    const context = buildContext(competitionConfig, teamsData, teamDataFromComp);
+    // Build context with full metadata analysis (pass db for All-American/milestone queries)
+    const context = await buildContext(competitionConfig, teamsData, teamDataFromComp, db);
 
     // Generate suggestions by category
     let suggestions = [];
@@ -700,7 +1050,11 @@ async function generateSuggestions(compId, options = {}) {
         eventName: context.eventName,
         gender: context.gender,
         teamCount: context.teamCount,
-        teams: context.teams.map(t => ({ name: t.name, rosterSize: t.roster?.length || 0 })),
+        teams: context.teams.map(t => ({
+          name: t.name,
+          rosterSize: t.roster?.length || 0,
+          rankings: t.rankings || {},
+        })),
         // Enhanced metadata from Task 44
         dateInfo: context.dateInfo ? {
           formatted: context.dateInfo.formatted,
@@ -714,10 +1068,24 @@ async function generateSuggestions(compId, options = {}) {
           matchupNotes: context.statsAnalysis.matchupNotes,
           favorite: context.statsAnalysis.favorite,
         },
+        // Roster analysis from Task 45
         seniors: context.seniors.map(s => ({
           name: s.name,
           team: s.team,
+          hasStorylines: s.hasStorylines,
+          storylines: s.storylines || [],
         })),
+        allAmericans: context.allAmericans.map(a => ({
+          name: a.name,
+          team: a.team,
+          honorCount: a.honorCount,
+          mostRecent: a.mostRecent,
+        })),
+        milestones: {
+          athleteCount: context.milestones?.athletes?.length || 0,
+          upcomingCount: context.milestones?.upcoming?.length || 0,
+          recordHolders: context.milestones?.records?.length || 0,
+        },
         classCounts: context.classCounts,
       },
       suggestions,
