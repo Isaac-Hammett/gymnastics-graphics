@@ -64,7 +64,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 
 ## Task Summary by Phase
 
-### Phase A: Connect Editor to Engine (P0) - IN PROGRESS (10/16 complete)
+### Phase A: Connect Editor to Engine (P0) - IN PROGRESS (11/16 complete)
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
@@ -78,7 +78,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 8 | Add `loadRundown` socket handler on server | COMPLETE | Added handler that fetches segments from Firebase and loads into engine via updateConfig() |
 | Task 9 | Add `loadRundown` action in ShowContext | COMPLETE | Added loadRundown function, loadRundownResult handler, rundownLoaded state |
 | Task 10 | Add "Load Rundown" button in Producer View | COMPLETE | Added button with loading state, toast feedback, and disabled Start Show until rundown loaded |
-| Task 11 | Create segment mapper (Editor format → Engine format) | NOT STARTED | |
+| Task 11 | Create segment mapper (Editor format → Engine format) | COMPLETE | Created segmentMapper.js with mapping and validation functions; integrated into loadRundown handler |
 | Task 12 | Verify Firebase is passed to engine | NOT STARTED | |
 | Task 13 | Show rundown status indicator (loaded, modified, etc.) | NOT STARTED | |
 | Task 14 | Verify Rundown Editor scene picker uses OBS state | NOT STARTED | |
@@ -408,19 +408,25 @@ Add "Load Rundown" button in Producer View header/toolbar.
 
 ### Task 11: Create segment mapper
 
-**Status:** NOT STARTED
+**Status:** COMPLETE
 **File:** `server/lib/segmentMapper.js` (new file)
 
 **Description:**
 Create utility to map Rundown Editor segment format to Timesheet Engine format.
 
 **Checklist:**
-- [ ] Create `server/lib/segmentMapper.js`
-- [ ] Map `scene` → `obsScene`
-- [ ] Map `graphic.graphicId` → `graphic`
-- [ ] Map `graphic.params` → `graphicData`
-- [ ] Map `timingMode` → `autoAdvance` (fixed=true, manual=false)
-- [ ] Preserve all other fields
+- [x] Create `server/lib/segmentMapper.js`
+- [x] Map `scene` → `obsScene`
+- [x] Map `graphic.graphicId` → `graphic`
+- [x] Map `graphic.params` → `graphicData`
+- [x] Map `timingMode` → `autoAdvance` (fixed=true, manual=false)
+- [x] Preserve all other fields
+
+**Implementation Notes:**
+- Created `server/lib/segmentMapper.js` with `mapEditorToEngine()`, `mapEditorSegmentsToEngine()`, `mapEngineToEditor()`, `mapEngineSegmentsToEditor()` functions
+- Added validation utilities: `validateEngineSegment()`, `validateEngineSegments()`
+- Updated `loadRundown` handler in `server/index.js` to use mapper before passing segments to engine
+- Preserves optional fields: bufferAfter, locked, optional, minDuration, maxDuration
 
 ---
 

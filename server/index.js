@@ -28,6 +28,7 @@ import { setupOBSRoutes } from './routes/obs.js';
 import { getOBSConnectionManager } from './lib/obsConnectionManager.js';
 import { DEFAULT_PRESETS } from './lib/obsAudioManager.js';
 import { encryptStreamKey, decryptStreamKey, isEncryptedKey } from './lib/obsStreamManager.js';
+import { mapEditorSegmentsToEngine, validateEngineSegments } from './lib/segmentMapper.js';
 
 dotenv.config();
 
@@ -5425,12 +5426,24 @@ io.on('connection', async (socket) => {
 
       console.log(`[Timesheet] Found ${segments.length} segments for competition: ${targetCompId}`);
 
+      // Map Editor segments to Engine format (Task 11)
+      const engineSegments = mapEditorSegmentsToEngine(segments);
+
+      // Validate the mapped segments
+      const validation = validateEngineSegments(engineSegments);
+      if (!validation.valid) {
+        console.warn(`[Timesheet] Segment validation warnings for ${targetCompId}:`, validation.errors);
+        // Continue anyway - validation warnings are non-fatal
+      }
+
+      console.log(`[Timesheet] Mapped ${engineSegments.length} segments to engine format`);
+
       // Get or create the timesheet engine for this competition
       const obsConnManager = getOBSConnectionManager();
       const engine = getOrCreateEngine(targetCompId, obsConnManager, db, io);
 
-      // Update the engine's show config with the loaded segments
-      engine.updateConfig({ segments });
+      // Update the engine's show config with the mapped segments
+      engine.updateConfig({ segments: engineSegments });
 
       console.log(`[Timesheet] Rundown loaded successfully for competition: ${targetCompId}`);
 
@@ -5440,7 +5453,7 @@ io.on('connection', async (socket) => {
       // Send success result to the requesting client
       socket.emit('loadRundownResult', {
         success: true,
-        segmentCount: segments.length,
+        segmentCount: engineSegments.length,
         compId: targetCompId
       });
 
@@ -5448,7 +5461,7 @@ io.on('connection', async (socket) => {
       const roomName = `competition:${targetCompId}`;
       io.to(roomName).emit('timesheetState', {
         ...state,
-        segments // Include full segments array in state broadcast
+        segments: engineSegments // Include mapped segments array in state broadcast
       });
 
     } catch (error) {
