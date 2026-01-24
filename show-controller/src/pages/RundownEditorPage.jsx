@@ -41,6 +41,7 @@ import {
   MusicalNoteIcon,
   VideoCameraIcon,
   WrenchScrewdriverIcon,
+  StarIcon,
 } from '@heroicons/react/24/outline';
 import { getGraphicsForCompetition, getCategories, getRecommendedGraphic, getGraphicById, GRAPHICS } from '../lib/graphicsRegistry';
 import { db, ref, set, get, push, remove, update, onValue, onDisconnect } from '../lib/firebase';
@@ -386,6 +387,7 @@ export default function RundownEditorPage() {
 
   // Equipment Schedule state (Phase 12: Task 95)
   const [showEquipmentScheduleModal, setShowEquipmentScheduleModal] = useState(false); // Equipment schedule view modal
+  const [showSponsorFulfillmentModal, setShowSponsorFulfillmentModal] = useState(false); // Sponsor fulfillment report modal (Phase G: Task 71)
 
   // Timing Analytics state (Phase J: Task 40)
   const [showTimingAnalyticsModal, setShowTimingAnalyticsModal] = useState(false); // Timing analytics dashboard modal
@@ -4743,6 +4745,14 @@ export default function RundownEditorPage() {
             >
               <ChartBarIcon className="w-4 h-4" />
             </button>
+            {/* Sponsor Fulfillment Button (Phase G: Task 71) */}
+            <button
+              onClick={() => setShowSponsorFulfillmentModal(true)}
+              className="px-3 py-2 text-sm rounded-lg border transition-colors bg-zinc-800 text-zinc-400 border-zinc-700 hover:text-zinc-300 hover:bg-zinc-700"
+              title="View sponsor fulfillment report"
+            >
+              <StarIcon className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </div>
@@ -5350,6 +5360,15 @@ export default function RundownEditorPage() {
           segments={segments}
           segmentStartTimes={segmentStartTimes}
           onClose={() => setShowEquipmentScheduleModal(false)}
+        />
+      )}
+
+      {/* Sponsor Fulfillment Modal (Phase G: Task 71) */}
+      {showSponsorFulfillmentModal && (
+        <SponsorFulfillmentModal
+          segments={segments}
+          segmentStartTimes={segmentStartTimes}
+          onClose={() => setShowSponsorFulfillmentModal(false)}
         />
       )}
 
@@ -9547,6 +9566,280 @@ function EquipmentScheduleModal({ segments, segmentStartTimes, onClose }) {
           <button
             onClick={onClose}
             className="px-4 py-2 bg-cyan-600 text-white font-medium rounded-lg hover:bg-cyan-500 transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Sponsor Fulfillment Modal (Phase G: Task 71)
+// Displays sponsor placements across segments and generates fulfillment report
+function SponsorFulfillmentModal({ segments, segmentStartTimes, onClose }) {
+  // Build sponsor fulfillment data - which segments each sponsor appears in
+  const sponsorFulfillment = useMemo(() => {
+    const fulfillment = {};
+
+    // Collect all sponsors from segments
+    segments.forEach((segment, index) => {
+      if (segment.sponsor?.name) {
+        const sponsorKey = segment.sponsor.name.toLowerCase().replace(/\s+/g, '-');
+
+        if (!fulfillment[sponsorKey]) {
+          fulfillment[sponsorKey] = {
+            sponsor: segment.sponsor,
+            segments: [],
+            totalDuration: 0,
+          };
+        }
+
+        fulfillment[sponsorKey].segments.push({
+          ...segment,
+          index,
+          startTime: segmentStartTimes[index] || 0,
+        });
+        fulfillment[sponsorKey].totalDuration += segment.duration || 0;
+      }
+    });
+
+    return fulfillment;
+  }, [segments, segmentStartTimes]);
+
+  // Get tier color styling
+  const getTierColor = (tier) => {
+    switch (tier) {
+      case 'presenting':
+        return { bg: 'bg-amber-500/20', text: 'text-amber-400', border: 'border-amber-500/50' };
+      case 'title':
+        return { bg: 'bg-purple-500/20', text: 'text-purple-400', border: 'border-purple-500/50' };
+      case 'official':
+        return { bg: 'bg-blue-500/20', text: 'text-blue-400', border: 'border-blue-500/50' };
+      case 'supporting':
+        return { bg: 'bg-green-500/20', text: 'text-green-400', border: 'border-green-500/50' };
+      default:
+        return { bg: 'bg-zinc-500/20', text: 'text-zinc-400', border: 'border-zinc-500/50' };
+    }
+  };
+
+  // Get tier label for display
+  const getTierLabel = (tier) => {
+    switch (tier) {
+      case 'presenting': return 'Presenting Sponsor';
+      case 'title': return 'Title Sponsor';
+      case 'official': return 'Official Sponsor';
+      case 'supporting': return 'Supporting Sponsor';
+      default: return 'Sponsor';
+    }
+  };
+
+  // Sort sponsors by tier priority
+  const tierPriority = { presenting: 0, title: 1, official: 2, supporting: 3 };
+  const sortedSponsors = useMemo(() => {
+    return Object.values(sponsorFulfillment).sort((a, b) => {
+      const aTier = tierPriority[a.sponsor.tier] ?? 4;
+      const bTier = tierPriority[b.sponsor.tier] ?? 4;
+      if (aTier !== bTier) return aTier - bTier;
+      return b.totalDuration - a.totalDuration; // Secondary sort by duration
+    });
+  }, [sponsorFulfillment]);
+
+  // Calculate totals
+  const totalSponsoredDuration = useMemo(() => {
+    return sortedSponsors.reduce((sum, s) => sum + s.totalDuration, 0);
+  }, [sortedSponsors]);
+
+  const totalShowDuration = useMemo(() => {
+    return segments.reduce((sum, seg) => sum + (seg.duration || 0), 0);
+  }, [segments]);
+
+  // Handle export sponsor fulfillment report
+  const handleExport = () => {
+    const lines = ['Sponsor Fulfillment Report', '='.repeat(50), ''];
+    const date = new Date().toLocaleDateString('en-US', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    });
+    lines.push(`Generated: ${date}`, '');
+
+    // Summary
+    lines.push('SPONSORSHIP SUMMARY');
+    lines.push('-'.repeat(40));
+    lines.push(`Total Sponsors: ${sortedSponsors.length}`);
+    lines.push(`Sponsored Segments: ${sortedSponsors.reduce((sum, s) => sum + s.segments.length, 0)} of ${segments.length}`);
+    lines.push(`Sponsored Duration: ${formatDuration(totalSponsoredDuration)} of ${formatDuration(totalShowDuration)} (${Math.round(totalSponsoredDuration / totalShowDuration * 100) || 0}%)`);
+    lines.push('');
+
+    // By Tier
+    lines.push('SPONSORS BY TIER');
+    lines.push('-'.repeat(40));
+    ['presenting', 'title', 'official', 'supporting'].forEach(tier => {
+      const tierSponsors = sortedSponsors.filter(s => s.sponsor.tier === tier);
+      if (tierSponsors.length > 0) {
+        lines.push(`\n${getTierLabel(tier).toUpperCase()}`);
+        tierSponsors.forEach(data => {
+          lines.push(`  ${data.sponsor.name}: ${data.segments.length} segment(s), ${formatDuration(data.totalDuration)} airtime`);
+        });
+      }
+    });
+    lines.push('');
+
+    // Detailed placement
+    lines.push('DETAILED PLACEMENT SCHEDULE');
+    lines.push('-'.repeat(40));
+    sortedSponsors.forEach(data => {
+      const tierColors = getTierColor(data.sponsor.tier);
+      lines.push(`\n${data.sponsor.name} (${getTierLabel(data.sponsor.tier)})`);
+      lines.push(`  Total Airtime: ${formatDuration(data.totalDuration)}`);
+      lines.push(`  Placements:`);
+      data.segments.forEach(seg => {
+        lines.push(`    ${formatDuration(seg.startTime)} - ${seg.name} (${seg.duration ? formatDuration(seg.duration) : 'Manual'})`);
+      });
+    });
+
+    // Segments without sponsors
+    const unsponsoredSegments = segments.filter(seg => !seg.sponsor?.name);
+    if (unsponsoredSegments.length > 0) {
+      lines.push('');
+      lines.push('UNSPONSORED SEGMENTS');
+      lines.push('-'.repeat(40));
+      unsponsoredSegments.forEach((seg, i) => {
+        const startTime = segmentStartTimes[segments.indexOf(seg)] || 0;
+        lines.push(`  ${formatDuration(startTime)} - ${seg.name} (${seg.duration ? formatDuration(seg.duration) : 'Manual'})`);
+      });
+    }
+
+    // Create and download file
+    const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `sponsor-fulfillment-${new Date().toISOString().split('T')[0]}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+      <div className="bg-zinc-900 border border-zinc-700 rounded-xl w-full max-w-3xl max-h-[80vh] shadow-2xl flex flex-col">
+        {/* Header */}
+        <div className="p-4 border-b border-zinc-800 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
+              <StarIcon className="w-5 h-5 text-amber-400" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-white">Sponsor Fulfillment Report</h2>
+              <p className="text-sm text-zinc-400">View sponsor placements and airtime</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-zinc-800 rounded-lg transition-colors"
+          >
+            <XMarkIcon className="w-5 h-5 text-zinc-400" />
+          </button>
+        </div>
+
+        {/* Summary Stats */}
+        <div className="px-4 py-3 bg-zinc-800/50 border-b border-zinc-800 grid grid-cols-3 gap-4">
+          <div>
+            <div className="text-xs text-zinc-500 uppercase tracking-wider">Total Sponsors</div>
+            <div className="text-lg font-semibold text-white">{sortedSponsors.length}</div>
+          </div>
+          <div>
+            <div className="text-xs text-zinc-500 uppercase tracking-wider">Sponsored Segments</div>
+            <div className="text-lg font-semibold text-white">
+              {sortedSponsors.reduce((sum, s) => sum + s.segments.length, 0)} of {segments.length}
+            </div>
+          </div>
+          <div>
+            <div className="text-xs text-zinc-500 uppercase tracking-wider">Sponsored Airtime</div>
+            <div className="text-lg font-semibold text-white">
+              {formatDuration(totalSponsoredDuration)}
+              <span className="text-sm text-zinc-500 ml-1">
+                ({Math.round(totalSponsoredDuration / totalShowDuration * 100) || 0}%)
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="p-4 overflow-y-auto flex-1">
+          {sortedSponsors.length === 0 ? (
+            <div className="text-center py-12">
+              <StarIcon className="w-12 h-12 text-zinc-700 mx-auto mb-3" />
+              <p className="text-zinc-500">No sponsors assigned to segments</p>
+              <p className="text-zinc-600 text-sm mt-1">Add sponsors in the segment detail panel</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {sortedSponsors.map(data => {
+                const colors = getTierColor(data.sponsor.tier);
+
+                return (
+                  <div
+                    key={data.sponsor.name}
+                    className={`border rounded-lg overflow-hidden ${colors.border}`}
+                  >
+                    {/* Sponsor Header */}
+                    <div className={`p-3 flex items-center justify-between ${colors.bg}`}>
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-full ${colors.bg} flex items-center justify-center`}>
+                          <StarIcon className={`w-5 h-5 ${colors.text}`} />
+                        </div>
+                        <div>
+                          <div className="text-sm font-medium text-white">{data.sponsor.name}</div>
+                          <div className={`text-xs ${colors.text}`}>
+                            {getTierLabel(data.sponsor.tier)}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm text-zinc-300">
+                          {data.segments.length} segment{data.segments.length !== 1 ? 's' : ''}
+                        </div>
+                        <div className="text-xs text-zinc-500">
+                          {formatDuration(data.totalDuration)} airtime
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Segments List */}
+                    <div className="divide-y divide-zinc-800">
+                      {data.segments.map(seg => (
+                        <div key={seg.id} className="p-2 px-3 flex items-center gap-3 text-sm bg-zinc-800/30">
+                          <span className="text-zinc-500 font-mono text-xs w-12">
+                            {formatDuration(seg.startTime)}
+                          </span>
+                          <span className="flex-1 text-zinc-300">{seg.name}</span>
+                          <span className="text-zinc-500 text-xs">
+                            {seg.duration ? formatDuration(seg.duration) : 'Manual'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="p-4 border-t border-zinc-800 flex gap-3 justify-end shrink-0">
+          <button
+            onClick={handleExport}
+            className="px-4 py-2 bg-zinc-800 text-zinc-300 rounded-lg hover:bg-zinc-700 transition-colors flex items-center gap-2"
+          >
+            <ArrowDownTrayIcon className="w-4 h-4" />
+            Export Report
+          </button>
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-amber-600 text-white font-medium rounded-lg hover:bg-amber-500 transition-colors"
           >
             Close
           </button>
