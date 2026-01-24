@@ -54,7 +54,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | B | Talent View | P1 | COMPLETE | 22-27 |
 | I | Live Rundown Sync | P2 | COMPLETE | 28-37 |
 | J | Segment Timing Analytics | P2 | COMPLETE | 38-42 |
-| D | AI Suggestions - Planning | P2 | NOT STARTED | 43-48 |
+| D | AI Suggestions - Planning | P2 | IN PROGRESS | 43-48 |
 | E | Script & Talent Flow | P2 | NOT STARTED | 49-54 |
 | C | AI Context - Live Execution | P3 | NOT STARTED | 55-62 |
 | F | Audio Cue Integration | P3 | NOT STARTED | 63-66 |
@@ -131,11 +131,11 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 41 | Show historical average in Rundown Editor | COMPLETE | Added call to `loadTimingAnalytics()` in component mount useEffect so historical averages are available when rendering segment rows. UI already existed in SegmentRow component (both compact and expanded views) showing ~Xs indicator next to duration field. Color-coded: amber if actual runs longer than planned, green if shorter, gray if matches. |
 | Task 42 | AI-powered timing predictions based on history | COMPLETE | Added `aiTimingPredictions` computed value in RundownEditorPage that analyzes historical timing data by segment name similarity and type averages. Shows purple sparkle indicator with confidence level (high/medium/low) for segments without direct historical data. Click-to-apply feature in both inline view and detail panel. |
 
-### Phase D: AI Suggestions - Planning (P2) - NOT STARTED
+### Phase D: AI Suggestions - Planning (P2) - IN PROGRESS (1/6)
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
-| Task 43 | Create AI suggestion service on server | NOT STARTED | |
+| Task 43 | Create AI suggestion service on server | COMPLETE | Created `server/lib/aiSuggestionService.js` with: `generateSuggestions()` main API that fetches competition config and teams data from Firebase, builds context, and generates segment suggestions; template generators for pre-show, team-intro, rotation, post-show, and special segments; `getSuggestionsByCategory()` for filtered results; `getSuggestionCount()` for quick estimates; confidence scores (high/medium/low) on all suggestions |
 | Task 44 | Analyze competition metadata (type, teams, date) | NOT STARTED | |
 | Task 45 | Query roster data for seniors, All-Americans, milestones | NOT STARTED | |
 | Task 46 | Generate segment suggestions with confidence scores | NOT STARTED | |
