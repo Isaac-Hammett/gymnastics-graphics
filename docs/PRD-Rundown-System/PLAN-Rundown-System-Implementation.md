@@ -52,7 +52,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | A | Connect Editor to Engine | P0 | COMPLETE | 1-16 |
 | H | Rehearsal Mode | P1 | COMPLETE | 17-21 |
 | B | Talent View | P1 | COMPLETE | 22-27 |
-| I | Live Rundown Sync | P2 | NOT STARTED | 28-37 |
+| I | Live Rundown Sync | P2 | IN PROGRESS | 28-37 |
 | J | Segment Timing Analytics | P2 | NOT STARTED | 38-42 |
 | D | AI Suggestions - Planning | P2 | NOT STARTED | 43-48 |
 | E | Script & Talent Flow | P2 | NOT STARTED | 49-54 |
@@ -106,11 +106,11 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 26 | Notes display | COMPLETE | `CurrentSegment.jsx` shows notes in styled box at bottom of segment card |
 | Task 27 | Add `/talent` route | COMPLETE | Route exists at `App.jsx:68` as `<Route path="talent" element={<TalentView />} />` |
 
-### Phase I: Live Rundown Sync (P2) - NOT STARTED
+### Phase I: Live Rundown Sync (P2) - IN PROGRESS
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
-| Task 28 | Subscribe to Firebase `rundown/segments` changes on server | NOT STARTED | |
+| Task 28 | Subscribe to Firebase `rundown/segments` changes on server | COMPLETE | Added `rundownListeners` Map, `subscribeToRundownChanges()` function, cleanup in `removeEngine()`, called from `loadRundown` handler |
 | Task 29 | Compare incoming segments to loaded segments (deep diff) | NOT STARTED | |
 | Task 30 | Emit `rundownModified` socket event with change summary | NOT STARTED | |
 | Task 31 | Add `rundownModified` state to `useTimesheet` hook | NOT STARTED | |
