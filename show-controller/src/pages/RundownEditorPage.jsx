@@ -2138,6 +2138,7 @@ export default function RundownEditorPage() {
       talent: [], // Phase E: Task 52 - talent assignment for segments
       timingMode: 'manual', // Default to manual for new segments (Phase 6: Task 55)
       audioCue: null, // Phase F: Task 63 - audio cue for segment start
+      equipment: [], // Phase G: Task 67 - equipment assignment for segments
     };
 
     // Insert after selected segment, or at end
@@ -2177,6 +2178,7 @@ export default function RundownEditorPage() {
       script: suggestion.segment.script || '', // Phase E: Task 49
       talent: suggestion.segment.talent || [], // Phase E: Task 52 - talent assignment for segments
       audioCue: suggestion.segment.audioCue || null, // Phase F: Task 63
+      equipment: suggestion.segment.equipment || [], // Phase G: Task 67 - equipment assignment for segments
     };
 
     let newSegments;
@@ -3634,7 +3636,10 @@ export default function RundownEditorPage() {
       optional: template.segment.optional || false,
       notes: template.segment.notes || '',
       script: template.segment.script || '', // Phase E: Task 49
+      talent: template.segment.talent || [], // Phase E: Task 52 - talent assignment for segments
       timingMode: template.segment.timingMode || 'manual',
+      audioCue: template.segment.audioCue || null, // Phase F: Task 63 - audio cue for segment start
+      equipment: template.segment.equipment || [], // Phase G: Task 67 - equipment assignment for segments
     };
 
     // Insert after selected segment, or at end
@@ -3725,6 +3730,7 @@ export default function RundownEditorPage() {
         talent: [], // Phase E: Task 52 - talent assignment for segments
         timingMode: duration ? 'fixed' : 'manual',
         audioCue: null, // Phase F: Task 63
+        equipment: [], // Phase G: Task 67 - equipment assignment for segments
       };
 
       newSegments.push(newSegment);
