@@ -28,7 +28,8 @@ import {
   ExclamationCircleIcon,
   BellAlertIcon,
   QueueListIcon,
-  ComputerDesktopIcon
+  ComputerDesktopIcon,
+  ArrowDownTrayIcon
 } from '@heroicons/react/24/solid';
 
 // Health status colors for quick camera buttons
@@ -51,7 +52,9 @@ export default function ProducerView() {
     togglePause,
     resetShow,
     identify,
-    error
+    error,
+    loadRundown,
+    timesheetState
   } = useShow();
 
   // Use timesheet hook for show control actions
@@ -100,6 +103,8 @@ export default function ProducerView() {
   const [cameraHealth, setCameraHealth] = useState([]);
   const [cameraRuntimeState, setCameraRuntimeState] = useState([]);
   const [cameraMismatches, setCameraMismatches] = useState([]);
+  const [isLoadingRundown, setIsLoadingRundown] = useState(false);
+  const [loadRundownToast, setLoadRundownToast] = useState(null); // { type: 'success' | 'error', message: string }
 
   // Server URL for REST API calls
   const serverUrl = import.meta.env.PROD
@@ -179,6 +184,35 @@ export default function ProducerView() {
     return health?.cameraName || cameraId;
   }, [cameraHealth]);
 
+  // Handle load rundown button click
+  const handleLoadRundown = useCallback(() => {
+    setIsLoadingRundown(true);
+    setLoadRundownToast(null);
+    loadRundown();
+  }, [loadRundown]);
+
+  // Listen for loadRundownResult via socket
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleLoadRundownResult = ({ success, segmentCount, error: loadError }) => {
+      setIsLoadingRundown(false);
+      if (success) {
+        setLoadRundownToast({ type: 'success', message: `Rundown loaded: ${segmentCount} segments` });
+      } else {
+        setLoadRundownToast({ type: 'error', message: `Failed to load rundown: ${loadError || 'Unknown error'}` });
+      }
+      // Auto-clear toast after 5 seconds
+      setTimeout(() => setLoadRundownToast(null), 5000);
+    };
+
+    socket.on('loadRundownResult', handleLoadRundownResult);
+
+    return () => {
+      socket.off('loadRundownResult', handleLoadRundownResult);
+    };
+  }, [socket]);
+
   // Common OBS scenes for quick access
   const sceneOverrides = [
     'Intro Video',
@@ -255,6 +289,15 @@ export default function ProducerView() {
         </div>
       )}
 
+      {/* Load Rundown Toast */}
+      {loadRundownToast && (
+        <div className={`fixed top-4 left-1/2 -translate-x-1/2 px-4 py-2 rounded-lg shadow-lg z-50 ${
+          loadRundownToast.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+        }`}>
+          {loadRundownToast.message}
+        </div>
+      )}
+
       {/* Critical Alert Banner - always visible at top */}
       {criticalAlerts.length > 0 && (
         <div className="bg-red-500/20 border-b border-red-500/40 px-4 py-3">
@@ -311,15 +354,38 @@ export default function ProducerView() {
               <div className="bg-zinc-800 rounded-xl p-8 text-center">
                 <h2 className="text-2xl font-bold text-white mb-2">Ready to Start</h2>
                 <p className="text-zinc-400 mb-6">
-                  {totalSegments || showConfig?.segments?.length || 0} segments loaded
+                  {timesheetState?.rundownLoaded
+                    ? `${totalSegments || timesheetState?.segments?.length || 0} segments loaded`
+                    : 'No rundown loaded'}
                 </p>
-                <button
-                  onClick={timesheetStart}
-                  className="inline-flex items-center gap-2 px-8 py-4 bg-green-600 hover:bg-green-500 text-white font-bold text-lg rounded-xl transition-colors"
-                >
-                  <PlayIcon className="w-6 h-6" />
-                  Start Show
-                </button>
+                <div className="flex flex-col items-center gap-4">
+                  <button
+                    onClick={handleLoadRundown}
+                    disabled={isLoadingRundown}
+                    className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl transition-colors ${
+                      isLoadingRundown
+                        ? 'bg-zinc-600 text-zinc-400 cursor-wait'
+                        : timesheetState?.rundownLoaded
+                        ? 'bg-zinc-700 hover:bg-zinc-600 text-zinc-300'
+                        : 'bg-blue-600 hover:bg-blue-500 text-white'
+                    }`}
+                  >
+                    <ArrowDownTrayIcon className={`w-5 h-5 ${isLoadingRundown ? 'animate-pulse' : ''}`} />
+                    {isLoadingRundown ? 'Loading...' : timesheetState?.rundownLoaded ? 'Reload Rundown' : 'Load Rundown'}
+                  </button>
+                  <button
+                    onClick={timesheetStart}
+                    disabled={!timesheetState?.rundownLoaded}
+                    className={`inline-flex items-center gap-2 px-8 py-4 font-bold text-lg rounded-xl transition-colors ${
+                      timesheetState?.rundownLoaded
+                        ? 'bg-green-600 hover:bg-green-500 text-white'
+                        : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
+                    }`}
+                  >
+                    <PlayIcon className="w-6 h-6" />
+                    Start Show
+                  </button>
+                </div>
               </div>
             ) : (
               <>
