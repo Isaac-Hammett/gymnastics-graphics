@@ -3,7 +3,7 @@
 **PRD:** PRD-Rundown-01-EditorPrototype
 **Status:** PROTOTYPE COMPLETE, FEATURES IN PROGRESS
 **Created:** 2026-01-22
-**Last Updated:** 2026-01-23 (v5.5 - Task 81 complete - Print-friendly view)
+**Last Updated:** 2026-01-23 (v5.6 - Task 82 complete - Keyboard navigation)
 
 ---
 
@@ -53,7 +53,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | 8 | Collaboration | ✅ COMPLETE | 63-69 |
 | 9 | Data & Reporting | ✅ COMPLETE | 70-74 |
 | 10 | Visual & UX | ✅ COMPLETE | 75-81 |
-| 11 | Quality of Life | 🔲 NOT STARTED | 82-86 |
+| 11 | Quality of Life | 🔄 IN PROGRESS | 82-86 |
 | 12 | Advanced Planning | 🔲 NOT STARTED | 87-96 |
 
 ---
@@ -208,11 +208,11 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 80: Add dark/light mode toggle | COMPLETE | MoonIcon/SunIcon toggle button in toolbar, darkMode state with localStorage persistence, theme-light CSS class on body, CSS variable overrides in index.css for light theme backgrounds, text, and borders |
 | Task 81: Create print-friendly view | COMPLETE | PrintOptionsModal with configurable options (include notes, include optional segments, include scene, include graphic), DocumentTextIcon button in toolbar, handlePrintView function opens new window with print-friendly HTML, generatePrintableRundown updated to accept options and conditionally render columns/segments |
 
-### Phase 11: Quality of Life 🔲 NOT STARTED
+### Phase 11: Quality of Life 🔄 IN PROGRESS
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Task 82: Implement keyboard navigation | NOT STARTED | Arrow keys to navigate segments |
+| Task 82: Implement keyboard navigation | COMPLETE | Arrow keys navigate segments, Escape clears selection, auto-scrolls to selected segment |
 | Task 83: Add keyboard shortcuts | NOT STARTED | Ctrl+D duplicate, Ctrl+N new, etc. |
 | Task 84: Implement undo/redo | NOT STARTED | 20+ levels of history |
 | Task 85: Add search by segment name | NOT STARTED | Already exists, enhance |
