@@ -3,7 +3,7 @@
 **PRD:** PRD-Rundown-01-EditorPrototype
 **Status:** PROTOTYPE COMPLETE, FEATURES IN PROGRESS
 **Created:** 2026-01-22
-**Last Updated:** 2026-01-23 (v5.7 - Task 83 complete - Keyboard shortcuts)
+**Last Updated:** 2026-01-23 (v5.8 - Task 84 complete - Undo/redo)
 
 ---
 
@@ -214,7 +214,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 |------|--------|-------|
 | Task 82: Implement keyboard navigation | COMPLETE | Arrow keys navigate segments, Escape clears selection, auto-scrolls to selected segment |
 | Task 83: Add keyboard shortcuts | COMPLETE | Ctrl/Cmd+D duplicate, Ctrl/Cmd+N new segment, Ctrl/Cmd+S save, Ctrl/Cmd+A select all, Delete/Backspace delete, Enter open edit panel, Shift+Arrow extend selection |
-| Task 84: Implement undo/redo | NOT STARTED | 20+ levels of history |
+| Task 84: Implement undo/redo | COMPLETE | 25 levels of history, Ctrl+Z undo, Ctrl+Shift+Z / Ctrl+Y redo, toolbar buttons with visual state |
 | Task 85: Add search by segment name | NOT STARTED | Already exists, enhance |
 | Task 86: Add filter by scene/graphic | NOT STARTED | Additional filter options |
 
