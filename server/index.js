@@ -401,15 +401,62 @@ function getOrCreateEngine(compId, obsConnectionManager, firebase, socketIo) {
     socketIo.to(roomName).emit('timesheetState', engine.getState());
   });
 
-  engine.on('segmentCompleted', (data) => {
+  engine.on('segmentCompleted', async (data) => {
     console.log(`[Timesheet:${compId}] Segment completed - ${data.segmentId} (${data.endReason})`);
     socketIo.to(roomName).emit('timesheetSegmentCompleted', data);
+
+    // Task 38: Log actual segment duration to Firebase in real-time
+    // This allows for incremental timing analytics even if the show doesn't complete normally
+    if (firebase && compId && engine._currentRunId) {
+      try {
+        const db = typeof firebase.ref === 'function' ? firebase : firebase.database();
+        const timingEntry = {
+          segmentId: data.segmentId,
+          segmentIndex: data.segmentIndex,
+          actualDurationMs: data.durationMs,
+          endReason: data.endReason,
+          timestamp: Date.now()
+        };
+
+        // Push to the segmentTimings array for this run
+        const timingsPath = `competitions/${compId}/production/rundown/analytics/${engine._currentRunId}/segmentTimings`;
+        await db.ref(timingsPath).push(timingEntry);
+        console.log(`[Timesheet:${compId}] Segment timing logged: ${data.segmentId} (${Math.round(data.durationMs / 1000)}s)`);
+      } catch (error) {
+        console.error(`[Timesheet:${compId}] Failed to log segment timing:`, error.message);
+      }
+    }
   });
 
-  engine.on('showStarted', (data) => {
+  engine.on('showStarted', async (data) => {
     console.log(`[Timesheet:${compId}] Show started`);
     socketIo.to(roomName).emit('timesheetShowStarted', data);
     socketIo.to(roomName).emit('timesheetState', engine.getState());
+
+    // Task 38: Create initial run record for real-time timing analytics
+    if (firebase && compId) {
+      try {
+        const runId = `run-${data.timestamp}`;
+        engine._currentRunId = runId; // Store run ID on engine for segment timing writes
+
+        const db = typeof firebase.ref === 'function' ? firebase : firebase.database();
+        const initialRunData = {
+          runId,
+          compId,
+          isRehearsal: engine.isRehearsalMode,
+          startedAt: data.timestamp,
+          totalSegments: data.segmentCount,
+          status: 'running',
+          segmentTimings: {} // Will be populated as segments complete
+        };
+
+        const runPath = `competitions/${compId}/production/rundown/analytics/${runId}`;
+        await db.ref(runPath).set(initialRunData);
+        console.log(`[Timesheet:${compId}] Run started, logging to ${runPath}`);
+      } catch (error) {
+        console.error(`[Timesheet:${compId}] Failed to create run record:`, error.message);
+      }
+    }
   });
 
   engine.on('showStopped', async (data) => {
@@ -417,23 +464,25 @@ function getOrCreateEngine(compId, obsConnectionManager, firebase, socketIo) {
     socketIo.to(roomName).emit('timesheetShowStopped', data);
     socketIo.to(roomName).emit('timesheetState', engine.getState());
 
-    // Save timing analytics to Firebase for post-show/rehearsal analysis
+    // Save final timing analytics to Firebase for post-show/rehearsal analysis
+    // Task 38: Use the run ID from showStarted (real-time logging) or create new if not available
     if (firebase && compId) {
       try {
         const history = engine.getHistory();
         const overrides = engine.getOverrides();
         const isRehearsal = engine.isRehearsalMode;
 
-        // Calculate timing analytics
-        const analytics = {
-          runId: `run-${Date.now()}`,
-          compId,
-          isRehearsal,
-          startedAt: data.timestamp - data.showDurationMs,
+        // Use existing run ID from showStarted or create fallback
+        const runId = engine._currentRunId || `run-${data.timestamp}`;
+
+        // Calculate final analytics to update/merge with real-time data
+        const finalAnalytics = {
           stoppedAt: data.timestamp,
           showDurationMs: data.showDurationMs,
           segmentsCompleted: data.segmentsCompleted,
           overrideCount: data.overrideCount,
+          status: 'completed',
+          // Full segment history with planned durations (enriches real-time segmentTimings)
           segments: history.map(h => ({
             segmentId: h.segmentId,
             segmentName: h.segmentName,
@@ -471,11 +520,14 @@ function getOrCreateEngine(compId, obsConnectionManager, firebase, socketIo) {
           }
         };
 
-        // Save to Firebase - use unique run ID to preserve history
+        // Update the existing run record (merges with real-time segmentTimings)
         const db = typeof firebase.ref === 'function' ? firebase : firebase.database();
-        const analyticsPath = `competitions/${compId}/production/rundown/analytics/${analytics.runId}`;
-        await db.ref(analyticsPath).set(analytics);
+        const analyticsPath = `competitions/${compId}/production/rundown/analytics/${runId}`;
+        await db.ref(analyticsPath).update(finalAnalytics);
         console.log(`[Timesheet:${compId}] Timing analytics saved to ${analyticsPath} (${isRehearsal ? 'REHEARSAL' : 'LIVE'})`);
+
+        // Clear the run ID now that the show is complete
+        engine._currentRunId = null;
       } catch (error) {
         console.error(`[Timesheet:${compId}] Failed to save timing analytics:`, error.message);
       }

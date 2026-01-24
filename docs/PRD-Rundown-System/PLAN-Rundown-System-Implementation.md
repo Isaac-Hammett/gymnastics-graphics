@@ -53,7 +53,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | H | Rehearsal Mode | P1 | COMPLETE | 17-21 |
 | B | Talent View | P1 | COMPLETE | 22-27 |
 | I | Live Rundown Sync | P2 | COMPLETE | 28-37 |
-| J | Segment Timing Analytics | P2 | NOT STARTED | 38-42 |
+| J | Segment Timing Analytics | P2 | IN PROGRESS | 38-42 |
 | D | AI Suggestions - Planning | P2 | NOT STARTED | 43-48 |
 | E | Script & Talent Flow | P2 | NOT STARTED | 49-54 |
 | C | AI Context - Live Execution | P3 | NOT STARTED | 55-62 |
@@ -121,11 +121,11 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 36 | Handle reordered past segments | COMPLETE | Added filtering in `subscribeToRundownChanges()` to ignore reordered/modified segments where both old and new positions are before current segment; logs filtered segments for debugging |
 | Task 37 | Handle ID conflicts | COMPLETE | Added `detectDuplicateIds()` and `deduplicateSegmentsById()` functions to segmentMapper.js; integrated duplicate ID detection into `loadRundown` handler and `subscribeToRundownChanges()` listener; added logging when segments move positions via ID-based matching in `updateConfig()` |
 
-### Phase J: Segment Timing Analytics (P2) - NOT STARTED
+### Phase J: Segment Timing Analytics (P2) - IN PROGRESS (1/5)
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
-| Task 38 | Log actual segment durations during show | NOT STARTED | |
+| Task 38 | Log actual segment durations during show | COMPLETE | Real-time segment timing logged to Firebase on segmentCompleted; run record created on showStarted with status tracking; final analytics merged on showStopped |
 | Task 39 | Store timing data in Firebase post-show | NOT STARTED | |
 | Task 40 | Create timing analytics dashboard | NOT STARTED | |
 | Task 41 | Show historical average in Rundown Editor | NOT STARTED | |
