@@ -164,6 +164,17 @@ const TYPE_COLORS = {
   graphic: 'bg-pink-500/20 text-pink-400 border-pink-500/30',
 };
 
+// Row background colors by segment type (Phase 10: Task 77)
+// Subtle left border + very faint background tint for type differentiation
+const TYPE_ROW_COLORS = {
+  video: { border: 'border-l-purple-500', bg: 'bg-purple-500/5' },
+  live: { border: 'border-l-green-500', bg: 'bg-green-500/5' },
+  static: { border: 'border-l-blue-500', bg: 'bg-blue-500/5' },
+  break: { border: 'border-l-yellow-500', bg: 'bg-yellow-500/5' },
+  hold: { border: 'border-l-orange-500', bg: 'bg-orange-500/5' },
+  graphic: { border: 'border-l-pink-500', bg: 'bg-pink-500/5' },
+};
+
 // Group color options for segment grouping (Phase 4: Task 7.4)
 const GROUP_COLORS = [
   { id: 'blue', bg: 'bg-blue-500/10', border: 'border-blue-500/30', text: 'text-blue-400', header: 'bg-blue-500/20' },
@@ -3817,22 +3828,22 @@ function SegmentRow({
       onDragOver={(e) => onDragOver(e, originalIndex)}
       onDragLeave={onDragLeave}
       onDrop={(e) => onDrop(e, originalIndex)}
-      className={`p-3 rounded-lg border transition-all ${
+      className={`p-3 rounded-lg border-l-2 border transition-all ${
         isLocked
-          ? 'bg-zinc-900/50 border-zinc-700/50 opacity-75'
+          ? 'bg-zinc-900/50 border-zinc-700/50 border-l-zinc-600 opacity-75'
           : isDraggedOver
-            ? 'border-t-2 border-t-blue-500 border-blue-500/50 bg-blue-600/10'
+            ? 'border-t-2 border-t-blue-500 border-blue-500/50 border-l-blue-500 bg-blue-600/10'
             : isSelected
-              ? 'bg-blue-600/20 border-blue-500'
+              ? `border-blue-500 ${TYPE_ROW_COLORS[segment.type]?.border || 'border-l-blue-500'} ${TYPE_ROW_COLORS[segment.type]?.bg || ''} bg-blend-overlay bg-blue-600/20`
               : isMultiSelected
-                ? 'bg-zinc-800 border-blue-500/50'
+                ? `border-blue-500/50 ${TYPE_ROW_COLORS[segment.type]?.border || 'border-l-blue-500/50'} ${TYPE_ROW_COLORS[segment.type]?.bg || 'bg-zinc-800'}`
                 : isDragging
-                  ? 'bg-zinc-800 border-zinc-600 opacity-50'
+                  ? `border-zinc-600 ${TYPE_ROW_COLORS[segment.type]?.border || 'border-l-zinc-600'} bg-zinc-800 opacity-50`
                   : otherUsersHere.length > 0
-                    ? `bg-zinc-900 border-l-2 ${otherUsersHere[0].color.replace('bg-', 'border-')} border-t-zinc-800 border-r-zinc-800 border-b-zinc-800`
+                    ? `${TYPE_ROW_COLORS[segment.type]?.bg || 'bg-zinc-900'} border-l-2 ${otherUsersHere[0].color.replace('bg-', 'border-')} border-t-zinc-800 border-r-zinc-800 border-b-zinc-800`
                     : inGroup
-                      ? `bg-zinc-900/50 border-zinc-800/50 hover:border-zinc-700`
-                      : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'
+                      ? `${TYPE_ROW_COLORS[segment.type]?.bg || 'bg-zinc-900/50'} ${TYPE_ROW_COLORS[segment.type]?.border || 'border-l-zinc-800/50'} border-zinc-800/50 hover:border-zinc-700`
+                      : `${TYPE_ROW_COLORS[segment.type]?.bg || 'bg-zinc-900'} ${TYPE_ROW_COLORS[segment.type]?.border || 'border-l-zinc-800'} border-zinc-800 hover:border-zinc-700`
       }`}
     >
       {/* Row 1: Drag handle, checkbox, segment number, start time, name, type badge */}
