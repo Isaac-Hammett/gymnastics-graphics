@@ -245,12 +245,13 @@ export function useTimesheet() {
   }, [overrideTimesheetCamera]);
 
   /**
-   * Get all segments from show config
+   * Get all segments from timesheet state or legacy show config
+   * Note: loadRundown puts segments at timesheetState.segments, legacy puts them at state.showConfig.segments
    * @type {Array}
    */
   const segments = useMemo(() => {
-    return state?.showConfig?.segments || [];
-  }, [state?.showConfig?.segments]);
+    return timesheetState?.segments || state?.showConfig?.segments || [];
+  }, [timesheetState?.segments, state?.showConfig?.segments]);
 
   /**
    * Total segment count
