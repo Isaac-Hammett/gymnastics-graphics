@@ -4934,6 +4934,18 @@ export default function RundownEditorPage() {
             >
               <StarIcon className="w-4 h-4" />
             </button>
+            {/* Timezone Config Button (Phase K: Task 77) */}
+            <button
+              onClick={() => setShowTimezoneConfigModal(true)}
+              className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
+                timezoneConfig?.anchorSegmentId
+                  ? 'bg-teal-500/20 text-teal-300 border-teal-500/40 hover:bg-teal-500/30'
+                  : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:text-zinc-300 hover:bg-zinc-700'
+              }`}
+              title={timezoneConfig?.primaryTimezone ? `Timezone: ${timezoneConfig.primaryTimezone}` : 'Configure timezone display'}
+            >
+              <GlobeAltIcon className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </div>
