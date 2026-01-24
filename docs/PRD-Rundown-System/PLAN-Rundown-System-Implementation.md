@@ -57,8 +57,8 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | D | AI Suggestions - Planning | P2 | COMPLETE | 43-48 |
 | E | Script & Talent Flow | P2 | COMPLETE | 49-54 |
 | C | AI Context - Live Execution | P3 | COMPLETE | 55-62 |
-| F | Audio Cue Integration | P3 | IN PROGRESS | 63-66 |
-| G | Production Tracking | P3 | NOT STARTED | 67-71 |
+| F | Audio Cue Integration | P3 | COMPLETE | 63-66 |
+| G | Production Tracking | P3 | IN PROGRESS | 67-71 |
 
 ---
 
@@ -175,11 +175,11 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 65 | Trigger audio playback on segment start | COMPLETE | Already implemented in Task 64: `_activateSegment()` calls `_playAudioCue(segment)` at line 593 of timesheetEngine.js; socket event wiring in place for both legacy and multi-competition engines |
 | Task 66 | Add audio control to Producer View | COMPLETE | Added audio cue panel to ProducerView.jsx: listens for `timesheetAudioCueTriggered` socket event, tracks active audio cue state, shows song name and source, provides mute/unmute toggle via OBSContext's setMute function, clears audio cue when segment changes, handles rehearsal mode indicator |
 
-### Phase G: Production Tracking (P3) - NOT STARTED
+### Phase G: Production Tracking (P3) - IN PROGRESS
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
-| Task 67 | Add equipment fields to segment data model | NOT STARTED | |
+| Task 67 | Add equipment fields to segment data model | COMPLETE | Added equipment field (array of equipment IDs) to segment creation in RundownEditorPage.jsx (4 places), added to segmentMapper.js (editor↔engine mapping), added to compareSegments fieldsToCompare |
 | Task 68 | Generate equipment schedule report | NOT STARTED | |
 | Task 69 | Detect equipment conflicts | NOT STARTED | |
 | Task 70 | Add sponsor fields to segment data model | NOT STARTED | |
