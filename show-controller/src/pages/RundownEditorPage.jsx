@@ -140,15 +140,15 @@ const ROLE_COLORS = {
   viewer: 'ring-zinc-400',
 };
 
-// Hardcoded test data per PRD (updated with graphic field structure for Phase 0B, bufferAfter for Phase 1, locked/optional/notes for Phase 5, timingMode for Phase 6)
+// Hardcoded test data per PRD (updated with graphic field structure for Phase 0B, bufferAfter for Phase 1, locked/optional/notes for Phase 5, timingMode for Phase 6, script for Phase 12)
 const DUMMY_SEGMENTS = [
-  { id: 'seg-001', name: 'Show Intro', type: 'video', duration: 45, scene: 'Starting Soon', graphic: null, autoAdvance: true, bufferAfter: 0, locked: false, optional: false, notes: '', timingMode: 'fixed' },
-  { id: 'seg-002', name: 'Team Logos', type: 'static', duration: 10, scene: 'Graphics Fullscreen', graphic: { graphicId: 'logos', params: {} }, autoAdvance: true, bufferAfter: 5, locked: true, optional: false, notes: 'Show all 4 team logos in quad layout', timingMode: 'fixed' },
-  { id: 'seg-003', name: 'UCLA Coaches', type: 'live', duration: 15, scene: 'Single - Camera 2', graphic: { graphicId: 'team-coaches', params: { teamSlot: 1 } }, autoAdvance: true, bufferAfter: 0, locked: false, optional: false, notes: '', timingMode: 'follows-previous' },
-  { id: 'seg-004', name: 'Oregon Coaches', type: 'live', duration: 15, scene: 'Single - Camera 3', graphic: { graphicId: 'team-coaches', params: { teamSlot: 2 } }, autoAdvance: true, bufferAfter: 10, locked: false, optional: false, notes: 'First year head coach - mention in intro', timingMode: 'fixed' },
-  { id: 'seg-005', name: 'Rotation 1 Summary', type: 'static', duration: 20, scene: 'Graphics Fullscreen', graphic: { graphicId: 'event-summary', params: { summaryMode: 'rotation', summaryRotation: 1, summaryTheme: 'espn' } }, autoAdvance: true, bufferAfter: 0, locked: false, optional: false, notes: '', timingMode: 'fixed' },
-  { id: 'seg-006', name: 'Floor - Rotation 1', type: 'live', duration: null, scene: 'Quad View', graphic: { graphicId: 'floor', params: {} }, autoAdvance: false, bufferAfter: 0, locked: false, optional: false, notes: '', timingMode: 'manual' },
-  { id: 'seg-007', name: 'Commercial Break', type: 'break', duration: 120, scene: 'Starting Soon', graphic: null, autoAdvance: true, bufferAfter: 0, locked: false, optional: true, notes: 'Check with director before taking break', timingMode: 'fixed' }, // Example optional segment
+  { id: 'seg-001', name: 'Show Intro', type: 'video', duration: 45, scene: 'Starting Soon', graphic: null, autoAdvance: true, bufferAfter: 0, locked: false, optional: false, notes: '', script: '', timingMode: 'fixed' },
+  { id: 'seg-002', name: 'Team Logos', type: 'static', duration: 10, scene: 'Graphics Fullscreen', graphic: { graphicId: 'logos', params: {} }, autoAdvance: true, bufferAfter: 5, locked: true, optional: false, notes: 'Show all 4 team logos in quad layout', script: '', timingMode: 'fixed' },
+  { id: 'seg-003', name: 'UCLA Coaches', type: 'live', duration: 15, scene: 'Single - Camera 2', graphic: { graphicId: 'team-coaches', params: { teamSlot: 1 } }, autoAdvance: true, bufferAfter: 0, locked: false, optional: false, notes: '', script: '- Welcome viewers to today\'s competition\n- Introduce the UCLA coaching staff\n- **Head Coach Chris Waller** - 10th season\n- Mention last season\'s Pac-12 Championship victory', timingMode: 'follows-previous' },
+  { id: 'seg-004', name: 'Oregon Coaches', type: 'live', duration: 15, scene: 'Single - Camera 3', graphic: { graphicId: 'team-coaches', params: { teamSlot: 2 } }, autoAdvance: true, bufferAfter: 10, locked: false, optional: false, notes: 'First year head coach - mention in intro', script: '', timingMode: 'fixed' },
+  { id: 'seg-005', name: 'Rotation 1 Summary', type: 'static', duration: 20, scene: 'Graphics Fullscreen', graphic: { graphicId: 'event-summary', params: { summaryMode: 'rotation', summaryRotation: 1, summaryTheme: 'espn' } }, autoAdvance: true, bufferAfter: 0, locked: false, optional: false, notes: '', script: '', timingMode: 'fixed' },
+  { id: 'seg-006', name: 'Floor - Rotation 1', type: 'live', duration: null, scene: 'Quad View', graphic: { graphicId: 'floor', params: {} }, autoAdvance: false, bufferAfter: 0, locked: false, optional: false, notes: '', script: '', timingMode: 'manual' },
+  { id: 'seg-007', name: 'Commercial Break', type: 'break', duration: 120, scene: 'Starting Soon', graphic: null, autoAdvance: true, bufferAfter: 0, locked: false, optional: true, notes: 'Check with director before taking break', script: '', timingMode: 'fixed' }, // Example optional segment
 ];
 
 // Segment type options
@@ -5229,6 +5229,15 @@ function SegmentRow({
                 <ChatBubbleLeftIcon className="w-3 h-3" />
               </span>
             )}
+            {/* Script indicator (Phase 12: Task 92) */}
+            {segment.script && (
+              <span
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shrink-0 cursor-help"
+                title={`Script: ${segment.script.substring(0, 100)}${segment.script.length > 100 ? '...' : ''}`}
+              >
+                <DocumentTextIcon className="w-3 h-3" />
+              </span>
+            )}
             {/* Timing mode badge (Phase 6: Task 56) */}
             {segment.timingMode === 'manual' && (
               <span
@@ -5997,6 +6006,38 @@ function SegmentDetailPanel({ segment, onSave, onDelete, onCancel }) {
           {formData.notes && (
             <div className="mt-1 text-xs text-zinc-500">
               {formData.notes.length} character{formData.notes.length !== 1 ? 's' : ''}
+            </div>
+          )}
+        </div>
+
+        {/* Segment Script/Talking Points (Phase 12: Task 92) */}
+        <div>
+          <label className="block text-xs text-zinc-400 mb-1.5">
+            Script
+            <span className="ml-1.5 text-zinc-600 font-normal">— commentator talking points</span>
+          </label>
+          <div className="text-[10px] text-zinc-500 mb-1.5 flex items-center gap-2">
+            <span>Supports:</span>
+            <span className="px-1 py-0.5 bg-zinc-800 rounded">**bold**</span>
+            <span className="px-1 py-0.5 bg-zinc-800 rounded">*italic*</span>
+            <span className="px-1 py-0.5 bg-zinc-800 rounded">- bullet</span>
+          </div>
+          <textarea
+            value={formData.script || ''}
+            onChange={(e) => setFormData({ ...formData, script: e.target.value })}
+            placeholder="- Key talking points for this segment&#10;- **Bold** for emphasis&#10;- *Italic* for names/titles"
+            rows={5}
+            className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500 resize-y font-mono"
+          />
+          {formData.script && (
+            <div className="mt-1 text-xs text-zinc-500 flex items-center gap-3">
+              <span>
+                {formData.script.trim().split(/\s+/).filter(w => w.length > 0).length} word{formData.script.trim().split(/\s+/).filter(w => w.length > 0).length !== 1 ? 's' : ''}
+              </span>
+              <span className="text-zinc-600">•</span>
+              <span>
+                {formData.script.length} character{formData.script.length !== 1 ? 's' : ''}
+              </span>
             </div>
           )}
         </div>

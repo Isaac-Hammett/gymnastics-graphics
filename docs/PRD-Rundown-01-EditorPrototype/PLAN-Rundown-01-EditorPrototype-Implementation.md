@@ -3,7 +3,7 @@
 **PRD:** PRD-Rundown-01-EditorPrototype
 **Status:** PROTOTYPE COMPLETE, FEATURES IN PROGRESS
 **Created:** 2026-01-22
-**Last Updated:** 2026-01-23 (v5.14 - Task 90 complete - AI segment order suggestions)
+**Last Updated:** 2026-01-23 (v5.15 - Task 92 complete - Add segment script field)
 
 ---
 
@@ -229,7 +229,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 89: AI segment suggestions - roster | COMPLETE | Added roster-based triggers: All-American features (medium priority), hometown athlete stories (low priority), per-team senior spotlights with senior count and names. Updated aiContextAnalyzer.js to generate senior_spotlights triggers grouped by team. |
 | Task 90: AI segment order suggestions | COMPLETE | Added analyzeSegmentOrder() function to aiContextAnalyzer.js with 5 order rules: team intros before competition, break for long shows, rotation summaries, leaderboard placement, senior recognition timing. Order suggestions displayed in AI panel with amber styling. Suggestions can add segments at specific positions. |
 | Task 91: AI suggestions panel UI | COMPLETE | Implemented as part of Task 88 - non-intrusive panel below toolbar, one-click add, dismiss/reset functionality |
-| Task 92: Add segment script field | NOT STARTED | Rich text for pre-planning notes |
+| Task 92: Add segment script field | COMPLETE | Added `script` field to segments with markdown-style support hints, word/character count, emerald-colored indicator on segment row |
 | Task 93: Add audio cue planning fields | NOT STARTED | Song name, in/out timestamps |
 | Task 94: Add talent assignment | NOT STARTED | Who is on camera, schedule view |
 | Task 95: Add equipment tracking | NOT STARTED | Camera, mic per segment, conflicts |
