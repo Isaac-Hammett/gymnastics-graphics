@@ -1,9 +1,9 @@
 # Rundown System - Consolidated Plan
 
-**Version:** 2.0
+**Version:** 3.0
 **Date:** 2026-01-23
 **Status:** ACTIVE - Single Source of Truth
-**Last Audit:** 2026-01-23 (Reality check performed)
+**Last Audit:** 2026-01-23 (Reality check performed, improvements added)
 
 ---
 
@@ -260,9 +260,9 @@ timesheetEngine = new TimesheetEngine({
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### 3.4 Phase C: AI Context (P2/P3 - Future)
+### 3.4 Phase C: AI Context - Live Execution (P2/P3)
 
-**Goal:** Enrich segments with live stats, talking points, and alerts.
+**Goal:** Enrich segments with live stats, talking points, and alerts **during show execution**.
 
 | Task | Description | Priority | Status |
 |------|-------------|----------|--------|
@@ -270,8 +270,114 @@ timesheetEngine = new TimesheetEngine({
 | C.2 | Add `aiContextUpdated` socket event | P2 | Not Started |
 | C.3 | Create `useAIContext` hook | P2 | Not Started |
 | C.4 | Integrate with Virtius API for live stats | P3 | Not Started |
-| C.5 | Generate talking points | P3 | Not Started |
-| C.6 | Detect career highs, records | P3 | Not Started |
+| C.5 | Generate talking points in real-time | P3 | Not Started |
+| C.6 | Detect career highs, records during show | P3 | Not Started |
+| C.7 | Display AI context in Talent View | P3 | Not Started |
+| C.8 | Display AI context in Producer View | P3 | Not Started |
+
+### 3.5 Phase D: AI Segment Suggestions - Planning (P2)
+
+**Goal:** AI suggests segments to add **during rundown planning** based on competition context.
+
+> **Note:** PRD-01 Phase 12 builds the UI. This phase ensures the AI service is wired up.
+
+| Task | Description | Priority | Status |
+|------|-------------|----------|--------|
+| D.1 | Create AI suggestion service on server | P2 | Not Started |
+| D.2 | Analyze competition metadata (type, teams, date) | P2 | Not Started |
+| D.3 | Query roster data for seniors, All-Americans, milestones | P2 | Not Started |
+| D.4 | Generate segment suggestions with confidence scores | P2 | Not Started |
+| D.5 | Add `getAISuggestions` API endpoint | P2 | Not Started |
+| D.6 | Wire Rundown Editor to display suggestions | P2 | Not Started |
+
+**Context Triggers:**
+
+| Context | AI Suggestion |
+|---------|---------------|
+| Senior meet | "Add Senior Recognition segment?" |
+| Championship meet | "Add Trophy Presentation segment?" |
+| Rivalry meet | "Add Rivalry History segment with stats?" |
+| Seniors on roster | "UCLA has 3 seniors - add individual spotlights?" |
+| All-American on roster | "Oregon's [athlete] is returning All-American - feature?" |
+| Record approaching | "Arizona's [athlete] is 2 routines from school record" |
+
+### 3.6 Phase E: Script & Talent Flow (P2)
+
+**Goal:** Ensure segment scripts and talent assignments flow from Editor to execution views.
+
+> **Note:** PRD-01 Phase 12 builds the UI fields. This phase ensures data reaches Talent View.
+
+| Task | Description | Priority | Status |
+|------|-------------|----------|--------|
+| E.1 | Add script field to segment data model | P2 | Not Started |
+| E.2 | Pipe script field through Timesheet Engine | P2 | Not Started |
+| E.3 | Display script in Talent View (teleprompter-style) | P2 | Not Started |
+| E.4 | Add talent assignment to segment data model | P2 | Not Started |
+| E.5 | Create talent schedule view | P3 | Not Started |
+| E.6 | Show "you're on camera" indicator in Talent View | P3 | Not Started |
+
+### 3.7 Phase F: Audio Cue Integration (P3)
+
+**Goal:** Pipe audio cue data from Editor to execution for playback triggering.
+
+> **Note:** PRD-01 Phase 12 builds the audio planning UI. This phase wires playback.
+
+| Task | Description | Priority | Status |
+|------|-------------|----------|--------|
+| F.1 | Add audio cue fields to segment data model | P3 | Not Started |
+| F.2 | Pipe audio cues through Timesheet Engine | P3 | Not Started |
+| F.3 | Trigger audio playback on segment start | P3 | Not Started |
+| F.4 | Add audio control to Producer View | P3 | Not Started |
+
+### 3.8 Phase G: Production Tracking (P3)
+
+**Goal:** Ensure equipment and sponsor data flows for production management.
+
+> **Note:** PRD-01 Phase 12 builds the tracking UI. This phase enables reports.
+
+| Task | Description | Priority | Status |
+|------|-------------|----------|--------|
+| G.1 | Add equipment fields to segment data model | P3 | Not Started |
+| G.2 | Generate equipment schedule report | P3 | Not Started |
+| G.3 | Detect equipment conflicts | P3 | Not Started |
+| G.4 | Add sponsor fields to segment data model | P3 | Not Started |
+| G.5 | Generate sponsor fulfillment report | P3 | Not Started |
+
+### 3.9 Phase H: Rehearsal Mode (P1)
+
+**Goal:** Run through the show without firing real graphics or OBS changes.
+
+| Task | Description | Priority | Status |
+|------|-------------|----------|--------|
+| H.1 | Add rehearsal mode toggle to Timesheet Engine | P1 | Not Started |
+| H.2 | Skip OBS scene changes in rehearsal mode | P1 | Not Started |
+| H.3 | Skip graphics firing in rehearsal mode | P1 | Not Started |
+| H.4 | Show "REHEARSAL" indicator in all views | P1 | Not Started |
+| H.5 | Log timing data for post-rehearsal analysis | P2 | Not Started |
+
+### 3.10 Phase I: Live Rundown Sync (P2)
+
+**Goal:** Allow rundown edits during live show with hot-reload capability.
+
+| Task | Description | Priority | Status |
+|------|-------------|----------|--------|
+| I.1 | Detect rundown changes in Firebase during show | P2 | Not Started |
+| I.2 | Show "Rundown Modified" warning in Producer View | P2 | Not Started |
+| I.3 | Add "Reload Rundown" action (with confirmation) | P2 | Not Started |
+| I.4 | Preserve current segment position on reload | P2 | Not Started |
+| I.5 | Option to block edits during live show | P2 | Not Started |
+
+### 3.11 Phase J: Segment Timing Analytics (P2)
+
+**Goal:** Track actual vs planned duration across shows for future planning.
+
+| Task | Description | Priority | Status |
+|------|-------------|----------|--------|
+| J.1 | Log actual segment durations during show | P2 | Not Started |
+| J.2 | Store timing data in Firebase post-show | P2 | Not Started |
+| J.3 | Create timing analytics dashboard | P3 | Not Started |
+| J.4 | Show historical average in Rundown Editor | P3 | Not Started |
+| J.5 | AI-powered timing predictions based on history | P3 | Not Started |
 
 ---
 
@@ -356,7 +462,22 @@ timesheetEngine = new TimesheetEngine({
 
 ## 5. Implementation Plan
 
-### 5.1 Immediate Priority: Phase A (Connect Editor to Engine)
+### 5.1 Phase Priority Overview
+
+| Phase | Name | Priority | Depends On |
+|-------|------|----------|------------|
+| A | Connect Editor to Engine | P0 | - |
+| H | Rehearsal Mode | P1 | A |
+| B | Talent View | P1 | A |
+| I | Live Rundown Sync | P2 | A |
+| J | Segment Timing Analytics | P2 | A |
+| D | AI Segment Suggestions (Planning) | P2 | - |
+| E | Script & Talent Flow | P2 | A, B |
+| C | AI Context (Live Execution) | P2/P3 | A, B |
+| F | Audio Cue Integration | P3 | A |
+| G | Production Tracking | P3 | A |
+
+### 5.2 Immediate Priority: Phase A (Connect Editor to Engine)
 
 ```
 Step 1: Verify Current State
@@ -379,17 +500,39 @@ Step 4: Polish
 └── Testing: Verify show execution works with loaded rundown
 ```
 
-### 5.2 Next: Phase B (Talent View)
+### 5.3 Next: Phase H (Rehearsal Mode) + Phase B (Talent View)
 
 ```
+Phase H (Rehearsal):
+├── H.1: Add rehearsal mode toggle
+├── H.2-H.3: Skip OBS/graphics in rehearsal
+└── H.4: Show REHEARSAL indicator
+
+Phase B (Talent View):
 ├── B.1: Create TalentView.jsx page
 ├── B.2-B.5: Build UI components
 └── B.6: Add route
 ```
 
-### 5.3 Future: Phase C (AI Context)
+### 5.4 Then: Phases I, J, D, E (Live Sync, Analytics, AI, Scripts)
 
-Deferred until Phases A & B are complete and in use.
+```
+Phase I (Live Sync):
+└── Hot-reload rundown changes during show
+
+Phase J (Analytics):
+└── Track actual vs planned timing
+
+Phase D (AI Planning):
+└── Suggest segments based on competition context
+
+Phase E (Scripts):
+└── Pipe script/talent data to Talent View
+```
+
+### 5.5 Future: Phases C, F, G (AI Live, Audio, Production)
+
+Deferred until earlier phases are complete and in use.
 
 ---
 

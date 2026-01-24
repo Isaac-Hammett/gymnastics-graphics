@@ -647,6 +647,121 @@ export default function RundownEditorPage() {
     });
   }, [compId, mySessionId, selectedSegmentId, selectedSegmentIds, myRole]);
 
+  // Keyboard navigation for segment list (Phase 11: Task 82)
+  // Arrow keys navigate between segments, Escape clears selection
+  // Helper to scroll a segment into view
+  function scrollToSegment(segmentId) {
+    // Small delay to ensure the segment row has been rendered/selected
+    setTimeout(() => {
+      const element = document.getElementById(`segment-${segmentId}`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }, 10);
+  }
+
+  // Helper to select segment and scroll to it (for keyboard navigation)
+  function selectAndScrollToSegment(segmentId) {
+    handleSelectSegment(segmentId);
+    scrollToSegment(segmentId);
+  }
+
+  useEffect(() => {
+    function handleKeyDown(event) {
+      // Don't handle keyboard navigation if user is typing in an input field
+      const activeElement = document.activeElement;
+      const isInputFocused = activeElement && (
+        activeElement.tagName === 'INPUT' ||
+        activeElement.tagName === 'TEXTAREA' ||
+        activeElement.tagName === 'SELECT' ||
+        activeElement.isContentEditable
+      );
+      if (isInputFocused) return;
+
+      // Don't handle if a modal is open (check for common modal classes)
+      if (document.querySelector('.fixed.inset-0.bg-black')) return;
+
+      const { key } = event;
+
+      // Handle Arrow Up - navigate to previous segment
+      if (key === 'ArrowUp') {
+        event.preventDefault();
+        if (filteredSegments.length === 0) return;
+
+        // If multi-select is active, clear it and select the first of the multi-selected
+        if (selectedSegmentIds.length > 0) {
+          const firstSelectedId = selectedSegmentIds[0];
+          const firstSelectedIndex = filteredSegments.findIndex(s => s.id === firstSelectedId);
+          if (firstSelectedIndex > 0) {
+            selectAndScrollToSegment(filteredSegments[firstSelectedIndex - 1].id);
+          } else {
+            selectAndScrollToSegment(filteredSegments[firstSelectedIndex].id);
+          }
+          return;
+        }
+
+        // If no segment selected, select the last one
+        if (!selectedSegmentId) {
+          selectAndScrollToSegment(filteredSegments[filteredSegments.length - 1].id);
+          return;
+        }
+
+        // Find current segment index and move up
+        const currentIndex = filteredSegments.findIndex(s => s.id === selectedSegmentId);
+        if (currentIndex > 0) {
+          selectAndScrollToSegment(filteredSegments[currentIndex - 1].id);
+        }
+        // If at top, stay at top (don't wrap)
+      }
+
+      // Handle Arrow Down - navigate to next segment
+      if (key === 'ArrowDown') {
+        event.preventDefault();
+        if (filteredSegments.length === 0) return;
+
+        // If multi-select is active, clear it and select the last of the multi-selected
+        if (selectedSegmentIds.length > 0) {
+          const lastSelectedId = selectedSegmentIds[selectedSegmentIds.length - 1];
+          const lastSelectedIndex = filteredSegments.findIndex(s => s.id === lastSelectedId);
+          if (lastSelectedIndex < filteredSegments.length - 1) {
+            selectAndScrollToSegment(filteredSegments[lastSelectedIndex + 1].id);
+          } else {
+            selectAndScrollToSegment(filteredSegments[lastSelectedIndex].id);
+          }
+          return;
+        }
+
+        // If no segment selected, select the first one
+        if (!selectedSegmentId) {
+          selectAndScrollToSegment(filteredSegments[0].id);
+          return;
+        }
+
+        // Find current segment index and move down
+        const currentIndex = filteredSegments.findIndex(s => s.id === selectedSegmentId);
+        if (currentIndex < filteredSegments.length - 1) {
+          selectAndScrollToSegment(filteredSegments[currentIndex + 1].id);
+        }
+        // If at bottom, stay at bottom (don't wrap)
+      }
+
+      // Handle Escape - clear selection
+      if (key === 'Escape') {
+        event.preventDefault();
+        setSelectedSegmentId(null);
+        setSelectedSegmentIds([]);
+      }
+    }
+
+    // Add event listener
+    window.addEventListener('keydown', handleKeyDown);
+
+    // Cleanup on unmount
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [filteredSegments, selectedSegmentId, selectedSegmentIds]);
+
   // Helper function to log a change to Firebase history (Phase 8: Task 67)
   // Creates an entry in competitions/{compId}/rundown/history
   // Updated (Phase 8: Task 68) - Now stores snapshots for rollback capability
