@@ -72,7 +72,9 @@ export default function ProducerView() {
     isHoldSegment,
     canAdvanceHold,
     isFirstSegment,
-    totalSegments
+    totalSegments,
+    rundownModified,
+    rundownModifiedSummary
   } = useTimesheet();
 
   const {
@@ -274,6 +276,31 @@ export default function ProducerView() {
               <span className="flex items-center gap-1.5 px-2.5 py-1 bg-zinc-700/50 text-zinc-400 text-xs rounded-lg border border-zinc-600/50">
                 <DocumentTextIcon className="w-3.5 h-3.5" />
                 <span>No Rundown</span>
+              </span>
+            )}
+            {/* Rundown Modified warning badge */}
+            {rundownModified && rundownModifiedSummary && (
+              <span
+                className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg border cursor-pointer ${
+                  rundownModifiedSummary.affectsCurrent
+                    ? 'bg-red-500/20 text-red-400 border-red-500/30'
+                    : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+                }`}
+                title={rundownModifiedSummary.summaryText || 'Rundown has been modified'}
+              >
+                {rundownModifiedSummary.affectsCurrent ? (
+                  <ExclamationCircleIcon className="w-3.5 h-3.5" />
+                ) : (
+                  <ExclamationTriangleIcon className="w-3.5 h-3.5" />
+                )}
+                <span>
+                  {(() => {
+                    const total = (rundownModifiedSummary.added?.length || 0) +
+                      (rundownModifiedSummary.removed?.length || 0) +
+                      (rundownModifiedSummary.modified?.length || 0);
+                    return `${total} change${total !== 1 ? 's' : ''}`;
+                  })()}
+                </span>
               </span>
             )}
             {/* Alert count badge */}
