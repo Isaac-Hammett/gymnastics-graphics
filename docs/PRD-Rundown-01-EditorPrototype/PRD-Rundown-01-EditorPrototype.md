@@ -1128,9 +1128,9 @@ const filteredSegments = segments.filter(seg => {
 - [x] Export to PDF
 - [x] Export to CSV
 - [x] Export to JSON
-- [ ] Import from CSV with field mapping
+- [x] Import from CSV with field mapping
 - [ ] Import from JSON (backup restore)
-- [ ] Import preview and validation
+- [x] Import preview and validation
 
 ### Phase 10: Visual & UX
 

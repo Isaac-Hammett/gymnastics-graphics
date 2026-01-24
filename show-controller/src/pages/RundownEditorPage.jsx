@@ -220,6 +220,9 @@ export default function RundownEditorPage() {
   const [showApprovalMenu, setShowApprovalMenu] = useState(false); // Toggle approval actions dropdown (Phase 8: Task 69)
   const [showRejectModal, setShowRejectModal] = useState(false); // Reject with reason modal (Phase 8: Task 69)
   const [rejectReason, setRejectReason] = useState(''); // Reason for rejection (Phase 8: Task 69)
+  const [showImportCSVModal, setShowImportCSVModal] = useState(false); // CSV import modal (Phase 9: Task 73)
+  const [importCSVData, setImportCSVData] = useState(null); // Parsed CSV data for import (Phase 9: Task 73)
+  const [importCSVMapping, setImportCSVMapping] = useState({}); // Field mapping for CSV import (Phase 9: Task 73)
 
   // Filtered segments
   const filteredSegments = useMemo(() => {
@@ -1916,8 +1919,210 @@ export default function RundownEditorPage() {
     }
   }
 
+  // Import from CSV (Phase 9: Task 73)
   function handleImportCSV() {
-    showToast('Coming soon');
+    // Create hidden file input and trigger click
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.csv,text/csv';
+    input.onchange = async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      try {
+        const text = await file.text();
+        const parsedData = parseCSV(text);
+
+        if (parsedData.rows.length === 0) {
+          showToast('CSV file is empty');
+          return;
+        }
+
+        // Auto-detect column mappings based on header names
+        const autoMapping = autoDetectCSVMapping(parsedData.headers);
+
+        setImportCSVData(parsedData);
+        setImportCSVMapping(autoMapping);
+        setShowImportCSVModal(true);
+      } catch (error) {
+        console.error('Error parsing CSV:', error);
+        showToast('Error parsing CSV file');
+      }
+    };
+    input.click();
+  }
+
+  // Parse CSV text into headers and rows
+  function parseCSV(text) {
+    const lines = text.split(/\r?\n/).filter(line => line.trim());
+    if (lines.length === 0) return { headers: [], rows: [] };
+
+    // Parse CSV line handling quoted values
+    const parseLine = (line) => {
+      const result = [];
+      let current = '';
+      let inQuotes = false;
+
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        const nextChar = line[i + 1];
+
+        if (char === '"' && inQuotes && nextChar === '"') {
+          current += '"';
+          i++; // Skip next quote
+        } else if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          result.push(current.trim());
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      result.push(current.trim());
+      return result;
+    };
+
+    const headers = parseLine(lines[0]);
+    const rows = lines.slice(1).map(line => {
+      const values = parseLine(line);
+      const row = {};
+      headers.forEach((header, i) => {
+        row[header] = values[i] || '';
+      });
+      return row;
+    });
+
+    return { headers, rows };
+  }
+
+  // Auto-detect mapping based on common header names
+  function autoDetectCSVMapping(headers) {
+    const mapping = {};
+    const headerLower = headers.map(h => h.toLowerCase());
+
+    // Field detection patterns
+    const patterns = {
+      name: ['name', 'segment', 'title', 'description'],
+      type: ['type', 'segment type'],
+      duration: ['duration', 'duration (s)', 'time', 'length'],
+      scene: ['scene', 'obs scene', 'obs'],
+      graphic: ['graphic', 'graphics', 'overlay'],
+      notes: ['notes', 'note', 'comments', 'comment'],
+      autoAdvance: ['auto-advance', 'auto advance', 'autoadvance', 'auto'],
+      optional: ['optional', 'backup', 'conditional'],
+      locked: ['locked', 'lock'],
+      timingMode: ['timing mode', 'timing', 'mode'],
+      bufferAfter: ['buffer', 'buffer after', 'pad', 'gap'],
+    };
+
+    for (const [field, keywords] of Object.entries(patterns)) {
+      const matchIndex = headerLower.findIndex(h =>
+        keywords.some(k => h.includes(k))
+      );
+      if (matchIndex !== -1) {
+        mapping[field] = headers[matchIndex];
+      }
+    }
+
+    return mapping;
+  }
+
+  // Handle CSV import confirmation
+  function handleConfirmCSVImport(mode) {
+    if (!importCSVData || !importCSVMapping.name) {
+      showToast('Please map the Name field');
+      return;
+    }
+
+    const newSegments = importCSVData.rows.map((row, index) => {
+      // Parse duration - handle various formats
+      let duration = null;
+      if (importCSVMapping.duration && row[importCSVMapping.duration]) {
+        const durationStr = row[importCSVMapping.duration];
+        // Try to parse as number first (seconds)
+        const numDuration = parseFloat(durationStr);
+        if (!isNaN(numDuration)) {
+          duration = Math.round(numDuration);
+        } else {
+          // Try to parse as M:SS or H:MM:SS
+          duration = parseDurationString(durationStr);
+        }
+      }
+
+      // Parse boolean fields
+      const parseBoolean = (value) => {
+        if (!value) return false;
+        const lower = value.toLowerCase().trim();
+        return lower === 'yes' || lower === 'true' || lower === '1' || lower === 'y';
+      };
+
+      // Parse timing mode
+      let timingMode = 'fixed';
+      if (importCSVMapping.timingMode && row[importCSVMapping.timingMode]) {
+        const mode = row[importCSVMapping.timingMode].toLowerCase().trim();
+        if (mode === 'manual') timingMode = 'manual';
+        else if (mode === 'follows-previous' || mode === 'follows previous') timingMode = 'follows-previous';
+      }
+
+      // Parse buffer after
+      let bufferAfter = 0;
+      if (importCSVMapping.bufferAfter && row[importCSVMapping.bufferAfter]) {
+        bufferAfter = parseInt(row[importCSVMapping.bufferAfter], 10) || 0;
+      }
+
+      return {
+        id: `seg-import-${Date.now()}-${index}`,
+        name: row[importCSVMapping.name] || `Segment ${index + 1}`,
+        type: row[importCSVMapping.type]?.toLowerCase() || 'live',
+        duration: duration,
+        scene: row[importCSVMapping.scene] || '',
+        graphic: row[importCSVMapping.graphic] ? { graphicId: row[importCSVMapping.graphic], params: {} } : null,
+        autoAdvance: importCSVMapping.autoAdvance ? parseBoolean(row[importCSVMapping.autoAdvance]) : true,
+        optional: importCSVMapping.optional ? parseBoolean(row[importCSVMapping.optional]) : false,
+        locked: importCSVMapping.locked ? parseBoolean(row[importCSVMapping.locked]) : false,
+        notes: row[importCSVMapping.notes] || '',
+        timingMode: timingMode,
+        bufferAfter: bufferAfter,
+      };
+    });
+
+    if (mode === 'replace') {
+      setSegments(newSegments);
+      showToast(`Imported ${newSegments.length} segments (replaced)`);
+    } else {
+      setSegments([...segments, ...newSegments]);
+      showToast(`Imported ${newSegments.length} segments (appended)`);
+    }
+
+    setShowImportCSVModal(false);
+    setImportCSVData(null);
+    setImportCSVMapping({});
+  }
+
+  // Parse duration string like "1:30" or "1:30:00" to seconds
+  function parseDurationString(str) {
+    if (!str) return null;
+    const parts = str.split(':').map(p => parseInt(p.trim(), 10));
+    if (parts.some(isNaN)) return null;
+
+    if (parts.length === 2) {
+      // M:SS
+      return parts[0] * 60 + parts[1];
+    } else if (parts.length === 3) {
+      // H:MM:SS
+      return parts[0] * 3600 + parts[1] * 60 + parts[2];
+    } else if (parts.length === 1) {
+      return parts[0];
+    }
+    return null;
+  }
+
+  // Cancel CSV import
+  function handleCancelCSVImport() {
+    setShowImportCSVModal(false);
+    setImportCSVData(null);
+    setImportCSVMapping({});
   }
 
   function handleSyncOBS() {
@@ -3201,6 +3406,17 @@ export default function RundownEditorPage() {
           setReason={setRejectReason}
           onConfirm={handleConfirmReject}
           onCancel={handleCancelReject}
+        />
+      )}
+
+      {/* Import CSV Modal (Phase 9: Task 73) */}
+      {showImportCSVModal && importCSVData && (
+        <ImportCSVModal
+          data={importCSVData}
+          mapping={importCSVMapping}
+          setMapping={setImportCSVMapping}
+          onConfirm={handleConfirmCSVImport}
+          onCancel={handleCancelCSVImport}
         />
       )}
     </div>
@@ -5495,6 +5711,198 @@ function RejectReasonModal({ reason, setReason, onConfirm, onCancel }) {
             className="flex-1 px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Reject
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Import CSV Modal Component (Phase 9: Task 73)
+function ImportCSVModal({ data, mapping, setMapping, onConfirm, onCancel }) {
+  const [importMode, setImportMode] = useState('append'); // 'append' or 'replace'
+  const [validationErrors, setValidationErrors] = useState([]);
+
+  // Available fields that can be mapped
+  const mappableFields = [
+    { id: 'name', label: 'Name', required: true },
+    { id: 'type', label: 'Type', required: false },
+    { id: 'duration', label: 'Duration', required: false },
+    { id: 'scene', label: 'OBS Scene', required: false },
+    { id: 'graphic', label: 'Graphic', required: false },
+    { id: 'notes', label: 'Notes', required: false },
+    { id: 'autoAdvance', label: 'Auto-Advance', required: false },
+    { id: 'optional', label: 'Optional', required: false },
+    { id: 'locked', label: 'Locked', required: false },
+    { id: 'timingMode', label: 'Timing Mode', required: false },
+    { id: 'bufferAfter', label: 'Buffer After', required: false },
+  ];
+
+  // Validate current mapping
+  useEffect(() => {
+    const errors = [];
+    if (!mapping.name) {
+      errors.push('Name field is required');
+    }
+    setValidationErrors(errors);
+  }, [mapping]);
+
+  // Handle mapping change
+  function handleMappingChange(fieldId, csvColumn) {
+    setMapping(prev => ({
+      ...prev,
+      [fieldId]: csvColumn || undefined,
+    }));
+  }
+
+  // Get preview of first 3 rows with current mapping
+  const previewRows = data.rows.slice(0, 5);
+
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+      <div className="bg-zinc-900 border border-zinc-700 rounded-xl w-full max-w-3xl mx-4 shadow-2xl max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between p-4 border-b border-zinc-800">
+          <div>
+            <h2 className="text-lg font-bold text-white">Import CSV</h2>
+            <p className="text-xs text-zinc-500 mt-0.5">{data.rows.length} rows found</p>
+          </div>
+          <button
+            onClick={onCancel}
+            className="p-1 text-zinc-400 hover:text-zinc-200 rounded-lg hover:bg-zinc-800 transition-colors"
+          >
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-4 overflow-y-auto flex-1 space-y-6">
+          {/* Field Mapping Section */}
+          <div>
+            <h3 className="text-sm font-medium text-white mb-3">Map CSV Columns to Fields</h3>
+            <div className="grid grid-cols-2 gap-3">
+              {mappableFields.map(field => (
+                <div key={field.id} className="flex items-center gap-2">
+                  <label className="text-sm text-zinc-400 w-28 flex-shrink-0">
+                    {field.label}
+                    {field.required && <span className="text-red-400 ml-0.5">*</span>}
+                  </label>
+                  <select
+                    value={mapping[field.id] || ''}
+                    onChange={(e) => handleMappingChange(field.id, e.target.value)}
+                    className={`flex-1 px-2 py-1.5 bg-zinc-800 border rounded-lg text-sm focus:outline-none focus:border-blue-500 ${
+                      field.required && !mapping[field.id]
+                        ? 'border-red-500/50 text-red-300'
+                        : 'border-zinc-700 text-white'
+                    }`}
+                  >
+                    <option value="">-- Not Mapped --</option>
+                    {data.headers.map(header => (
+                      <option key={header} value={header}>{header}</option>
+                    ))}
+                  </select>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Preview Section */}
+          <div>
+            <h3 className="text-sm font-medium text-white mb-3">Preview (First 5 Rows)</h3>
+            <div className="border border-zinc-700 rounded-lg overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-zinc-800">
+                    <tr>
+                      <th className="px-3 py-2 text-left text-zinc-400 font-medium">#</th>
+                      {mappableFields.filter(f => mapping[f.id]).map(field => (
+                        <th key={field.id} className="px-3 py-2 text-left text-zinc-400 font-medium">
+                          {field.label}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-800">
+                    {previewRows.map((row, idx) => (
+                      <tr key={idx} className="hover:bg-zinc-800/50">
+                        <td className="px-3 py-2 text-zinc-500">{idx + 1}</td>
+                        {mappableFields.filter(f => mapping[f.id]).map(field => (
+                          <td key={field.id} className="px-3 py-2 text-zinc-300 max-w-[200px] truncate">
+                            {row[mapping[field.id]] || <span className="text-zinc-600">-</span>}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {!mapping.name && (
+                <div className="p-4 bg-zinc-800/50 text-center text-zinc-500 text-sm">
+                  Map at least the Name field to see preview
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Import Mode Section */}
+          <div>
+            <h3 className="text-sm font-medium text-white mb-3">Import Mode</h3>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="importMode"
+                  value="append"
+                  checked={importMode === 'append'}
+                  onChange={(e) => setImportMode(e.target.value)}
+                  className="w-4 h-4 text-blue-600 bg-zinc-800 border-zinc-600 focus:ring-blue-500"
+                />
+                <span className="text-zinc-300 text-sm">Append to existing segments</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="importMode"
+                  value="replace"
+                  checked={importMode === 'replace'}
+                  onChange={(e) => setImportMode(e.target.value)}
+                  className="w-4 h-4 text-blue-600 bg-zinc-800 border-zinc-600 focus:ring-blue-500"
+                />
+                <span className="text-zinc-300 text-sm">Replace all segments</span>
+              </label>
+            </div>
+            {importMode === 'replace' && (
+              <div className="mt-2 p-2 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                <span className="text-amber-400 text-xs">Warning: This will remove all existing segments</span>
+              </div>
+            )}
+          </div>
+
+          {/* Validation Errors */}
+          {validationErrors.length > 0 && (
+            <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+              <div className="text-red-400 text-sm font-medium mb-1">Please fix the following:</div>
+              <ul className="list-disc list-inside text-red-300 text-sm">
+                {validationErrors.map((error, idx) => (
+                  <li key={idx}>{error}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+
+        <div className="p-4 border-t border-zinc-800 flex gap-3">
+          <button
+            onClick={onCancel}
+            className="flex-1 px-4 py-2 bg-zinc-800 text-zinc-300 rounded-lg hover:bg-zinc-700 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => onConfirm(importMode)}
+            disabled={validationErrors.length > 0}
+            className="flex-1 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            <ArrowDownTrayIcon className="w-4 h-4" />
+            Import {data.rows.length} Segments
           </button>
         </div>
       </div>
