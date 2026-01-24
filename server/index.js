@@ -30,6 +30,7 @@ import { DEFAULT_PRESETS } from './lib/obsAudioManager.js';
 import { encryptStreamKey, decryptStreamKey, isEncryptedKey } from './lib/obsStreamManager.js';
 import { mapEditorSegmentsToEngine, validateEngineSegments, diffSegments, detectDuplicateIds, deduplicateSegmentsById } from './lib/segmentMapper.js';
 import aiSuggestionService from './lib/aiSuggestionService.js';
+import { getOrCreateContextService, getContextService, removeContextService } from './lib/aiContextService.js';
 
 dotenv.config();
 
@@ -434,6 +435,18 @@ function getOrCreateEngine(compId, obsConnectionManager, firebase, socketIo) {
     socketIo.to(roomName).emit('timesheetShowStarted', data);
     socketIo.to(roomName).emit('timesheetState', engine.getState());
 
+    // Task 56: Start AI Context Service for real-time talking points
+    try {
+      const aiContextService = getOrCreateContextService(compId, {
+        io: socketIo,
+        engine: engine
+      });
+      await aiContextService.start();
+      console.log(`[Timesheet:${compId}] AI Context Service started`);
+    } catch (error) {
+      console.error(`[Timesheet:${compId}] Failed to start AI Context Service:`, error.message);
+    }
+
     // Task 38: Create initial run record for real-time timing analytics
     if (firebase && compId) {
       try {
@@ -464,6 +477,13 @@ function getOrCreateEngine(compId, obsConnectionManager, firebase, socketIo) {
     console.log(`[Timesheet:${compId}] Show stopped`);
     socketIo.to(roomName).emit('timesheetShowStopped', data);
     socketIo.to(roomName).emit('timesheetState', engine.getState());
+
+    // Task 56: Stop AI Context Service when show stops
+    const aiContextService = getContextService(compId);
+    if (aiContextService) {
+      aiContextService.stop();
+      console.log(`[Timesheet:${compId}] AI Context Service stopped`);
+    }
 
     // Save final timing analytics to Firebase for post-show/rehearsal analysis
     // Task 38: Use the run ID from showStarted (real-time logging) or create new if not available
@@ -653,6 +673,9 @@ function removeEngine(compId) {
     rundownListeners.delete(compId);
     console.log(`[Timesheet] Rundown listener removed for competition: ${compId}`);
   }
+
+  // Task 56: Clean up AI Context Service
+  removeContextService(compId);
 }
 
 /**
@@ -5924,6 +5947,75 @@ io.on('connection', async (socket) => {
       });
     } catch (error) {
       socket.emit('aiSuggestionCountResult', {
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  // Task 56: Get current AI context for a competition
+  socket.on('getAIContext', ({ compId }) => {
+    const targetCompId = compId || clientCompId;
+
+    if (!targetCompId) {
+      socket.emit('aiContextResult', {
+        success: false,
+        error: 'No competition ID provided'
+      });
+      return;
+    }
+
+    const service = getContextService(targetCompId);
+    if (!service) {
+      socket.emit('aiContextResult', {
+        success: true,
+        compId: targetCompId,
+        context: null,
+        isRunning: false,
+        message: 'AI Context Service not running (show not started)'
+      });
+      return;
+    }
+
+    socket.emit('aiContextResult', {
+      success: true,
+      compId: targetCompId,
+      context: service.getCurrentContext(),
+      isRunning: service.isRunning,
+      state: service.getState()
+    });
+  });
+
+  // Task 56: Request AI context refresh
+  socket.on('refreshAIContext', async ({ compId }) => {
+    const targetCompId = compId || clientCompId;
+
+    if (!targetCompId) {
+      socket.emit('aiContextRefreshResult', {
+        success: false,
+        error: 'No competition ID provided'
+      });
+      return;
+    }
+
+    const service = getContextService(targetCompId);
+    if (!service || !service.isRunning) {
+      socket.emit('aiContextRefreshResult', {
+        success: false,
+        error: 'AI Context Service not running'
+      });
+      return;
+    }
+
+    try {
+      await service.refreshContext();
+      socket.emit('aiContextRefreshResult', {
+        success: true,
+        compId: targetCompId,
+        context: service.getCurrentContext()
+      });
+    } catch (error) {
+      socket.emit('aiContextRefreshResult', {
         success: false,
         error: error.message
       });
