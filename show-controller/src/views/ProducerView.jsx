@@ -114,6 +114,7 @@ export default function ProducerView() {
   const [isLoadingRundown, setIsLoadingRundown] = useState(false);
   const [isReloadingRundown, setIsReloadingRundown] = useState(false);
   const [loadRundownToast, setLoadRundownToast] = useState(null); // { type: 'success' | 'error', message: string }
+  const [showReloadConfirmation, setShowReloadConfirmation] = useState(false); // Confirmation dialog state
 
   // Server URL for REST API calls
   const serverUrl = import.meta.env.PROD
@@ -200,14 +201,25 @@ export default function ProducerView() {
     loadRundown();
   }, [loadRundown]);
 
-  // Handle reload rundown button click (when modified)
+  // Handle reload rundown button click - shows confirmation dialog
   const handleReloadRundown = useCallback(() => {
+    setShowReloadConfirmation(true);
+  }, []);
+
+  // Actually perform the reload after confirmation
+  const confirmReloadRundown = useCallback(() => {
+    setShowReloadConfirmation(false);
     setIsReloadingRundown(true);
     setLoadRundownToast(null);
     // Clear the modified state before reloading
     clearRundownModified();
     loadRundown();
   }, [loadRundown, clearRundownModified]);
+
+  // Cancel the reload confirmation
+  const cancelReloadRundown = useCallback(() => {
+    setShowReloadConfirmation(false);
+  }, []);
 
   // Listen for loadRundownResult via socket
   useEffect(() => {
@@ -368,6 +380,107 @@ export default function ProducerView() {
           loadRundownToast.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
         }`}>
           {loadRundownToast.message}
+        </div>
+      )}
+
+      {/* Reload Rundown Confirmation Dialog */}
+      {showReloadConfirmation && rundownModifiedSummary && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
+            {/* Header */}
+            <div className={`px-6 py-4 border-b ${
+              rundownModifiedSummary.affectsCurrent
+                ? 'bg-red-500/20 border-red-500/30'
+                : 'bg-yellow-500/20 border-yellow-500/30'
+            }`}>
+              <div className="flex items-center gap-3">
+                {rundownModifiedSummary.affectsCurrent ? (
+                  <ExclamationCircleIcon className="w-6 h-6 text-red-400" />
+                ) : (
+                  <ExclamationTriangleIcon className="w-6 h-6 text-yellow-400" />
+                )}
+                <h3 className="text-lg font-bold text-white">Reload Rundown?</h3>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-5 space-y-4">
+              {/* Changes summary */}
+              <div>
+                <div className="text-sm text-zinc-400 mb-2">Changes detected:</div>
+                <ul className="space-y-1 text-sm">
+                  {(rundownModifiedSummary.added?.length || 0) > 0 && (
+                    <li className="flex items-center gap-2 text-green-400">
+                      <span className="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
+                      {rundownModifiedSummary.added.length} segment{rundownModifiedSummary.added.length !== 1 ? 's' : ''} added
+                    </li>
+                  )}
+                  {(rundownModifiedSummary.removed?.length || 0) > 0 && (
+                    <li className="flex items-center gap-2 text-red-400">
+                      <span className="w-1.5 h-1.5 bg-red-400 rounded-full"></span>
+                      {rundownModifiedSummary.removed.length} segment{rundownModifiedSummary.removed.length !== 1 ? 's' : ''} removed
+                    </li>
+                  )}
+                  {(rundownModifiedSummary.modified?.length || 0) > 0 && (
+                    <li className="flex items-center gap-2 text-yellow-400">
+                      <span className="w-1.5 h-1.5 bg-yellow-400 rounded-full"></span>
+                      {rundownModifiedSummary.modified.length} segment{rundownModifiedSummary.modified.length !== 1 ? 's' : ''} modified
+                    </li>
+                  )}
+                  {(rundownModifiedSummary.reordered?.length || 0) > 0 && (
+                    <li className="flex items-center gap-2 text-blue-400">
+                      <span className="w-1.5 h-1.5 bg-blue-400 rounded-full"></span>
+                      {rundownModifiedSummary.reordered.length} segment{rundownModifiedSummary.reordered.length !== 1 ? 's' : ''} reordered
+                    </li>
+                  )}
+                </ul>
+              </div>
+
+              {/* Current position info */}
+              <div className="bg-zinc-800 rounded-lg px-4 py-3">
+                <div className="text-sm text-zinc-300">
+                  <span className="text-zinc-400">Current position will be preserved.</span>
+                  {timesheetState?.currentSegmentIndex !== undefined && totalSegments > 0 && (
+                    <div className="mt-1">
+                      You are on segment <span className="font-medium text-white">{timesheetState.currentSegmentIndex + 1}</span> of <span className="font-medium text-white">{totalSegments}</span>.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Warning if current segment affected */}
+              {rundownModifiedSummary.affectsCurrent && (
+                <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-3">
+                  <div className="flex items-start gap-2">
+                    <ExclamationCircleIcon className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-red-300">
+                      <span className="font-medium">Warning:</span> The current segment has been modified or removed.
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 bg-zinc-800/50 border-t border-zinc-700 flex justify-end gap-3">
+              <button
+                onClick={cancelReloadRundown}
+                className="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded-lg transition-colors text-sm font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmReloadRundown}
+                className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
+                  rundownModifiedSummary.affectsCurrent
+                    ? 'bg-red-600 hover:bg-red-500 text-white'
+                    : 'bg-yellow-600 hover:bg-yellow-500 text-white'
+                }`}
+              >
+                Reload Now
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

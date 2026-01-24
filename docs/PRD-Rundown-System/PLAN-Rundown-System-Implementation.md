@@ -116,7 +116,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 31 | Add `rundownModified` state to `useTimesheet` hook | COMPLETE | Added `rundownModified` and `rundownModifiedSummary` to INITIAL_TIMESHEET_STATE, added `rundownModified` socket listener, added `clearRundownModified` function, exposed all through useTimesheet hook |
 | Task 32 | Show "Rundown Modified" warning badge in Producer View | COMPLETE | Added warning badge in header next to rundown status; yellow for future segment changes, red if current segment affected; shows change count with tooltip for summary text |
 | Task 33 | Add "Reload Rundown" button (appears when modified) | COMPLETE | Added ArrowUturnLeftIcon import, isReloadingRundown state, handleReloadRundown callback, and Reload button next to warning badge in header; button color matches severity (red if current affected, yellow otherwise) |
-| Task 34 | Confirmation dialog with change summary | NOT STARTED | |
+| Task 34 | Confirmation dialog with change summary | COMPLETE | Added modal dialog in ProducerView.jsx with: change summary (added/removed/modified/reordered counts), current position info, warning if current segment affected, Cancel/Reload Now buttons |
 | Task 35 | Handle deleted current segment | NOT STARTED | |
 | Task 36 | Handle reordered past segments | NOT STARTED | |
 | Task 37 | Handle ID conflicts | NOT STARTED | |
