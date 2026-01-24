@@ -31,6 +31,7 @@ import {
   TableCellsIcon,
   Bars4Icon,
   ChartBarIcon,
+  SwatchIcon,
 } from '@heroicons/react/24/outline';
 import { getGraphicsForCompetition, getCategories, getRecommendedGraphic, getGraphicById, GRAPHICS } from '../lib/graphicsRegistry';
 import { db, ref, set, get, push, remove, update, onValue, onDisconnect } from '../lib/firebase';
@@ -166,13 +167,62 @@ const TYPE_COLORS = {
 
 // Row background colors by segment type (Phase 10: Task 77)
 // Subtle left border + very faint background tint for type differentiation
-const TYPE_ROW_COLORS = {
-  video: { border: 'border-l-purple-500', bg: 'bg-purple-500/5' },
-  live: { border: 'border-l-green-500', bg: 'bg-green-500/5' },
-  static: { border: 'border-l-blue-500', bg: 'bg-blue-500/5' },
-  break: { border: 'border-l-yellow-500', bg: 'bg-yellow-500/5' },
-  hold: { border: 'border-l-orange-500', bg: 'bg-orange-500/5' },
-  graphic: { border: 'border-l-pink-500', bg: 'bg-pink-500/5' },
+const DEFAULT_TYPE_ROW_COLORS = {
+  video: { color: 'purple', border: 'border-l-purple-500', bg: 'bg-purple-500/5' },
+  live: { color: 'green', border: 'border-l-green-500', bg: 'bg-green-500/5' },
+  static: { color: 'blue', border: 'border-l-blue-500', bg: 'bg-blue-500/5' },
+  break: { color: 'yellow', border: 'border-l-yellow-500', bg: 'bg-yellow-500/5' },
+  hold: { color: 'orange', border: 'border-l-orange-500', bg: 'bg-orange-500/5' },
+  graphic: { color: 'pink', border: 'border-l-pink-500', bg: 'bg-pink-500/5' },
+};
+
+// Available color options for customization (Phase 10: Task 78)
+// Colorblind-friendly palette included
+const COLOR_OPTIONS = [
+  { id: 'purple', label: 'Purple', border: 'border-l-purple-500', bg: 'bg-purple-500/5', badge: 'bg-purple-500/20 text-purple-400 border-purple-500/30', swatch: 'bg-purple-500' },
+  { id: 'green', label: 'Green', border: 'border-l-green-500', bg: 'bg-green-500/5', badge: 'bg-green-500/20 text-green-400 border-green-500/30', swatch: 'bg-green-500' },
+  { id: 'blue', label: 'Blue', border: 'border-l-blue-500', bg: 'bg-blue-500/5', badge: 'bg-blue-500/20 text-blue-400 border-blue-500/30', swatch: 'bg-blue-500' },
+  { id: 'yellow', label: 'Yellow', border: 'border-l-yellow-500', bg: 'bg-yellow-500/5', badge: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30', swatch: 'bg-yellow-500' },
+  { id: 'orange', label: 'Orange', border: 'border-l-orange-500', bg: 'bg-orange-500/5', badge: 'bg-orange-500/20 text-orange-400 border-orange-500/30', swatch: 'bg-orange-500' },
+  { id: 'pink', label: 'Pink', border: 'border-l-pink-500', bg: 'bg-pink-500/5', badge: 'bg-pink-500/20 text-pink-400 border-pink-500/30', swatch: 'bg-pink-500' },
+  { id: 'red', label: 'Red', border: 'border-l-red-500', bg: 'bg-red-500/5', badge: 'bg-red-500/20 text-red-400 border-red-500/30', swatch: 'bg-red-500' },
+  { id: 'cyan', label: 'Cyan', border: 'border-l-cyan-500', bg: 'bg-cyan-500/5', badge: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30', swatch: 'bg-cyan-500' },
+  { id: 'teal', label: 'Teal', border: 'border-l-teal-500', bg: 'bg-teal-500/5', badge: 'bg-teal-500/20 text-teal-400 border-teal-500/30', swatch: 'bg-teal-500' },
+  { id: 'indigo', label: 'Indigo', border: 'border-l-indigo-500', bg: 'bg-indigo-500/5', badge: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30', swatch: 'bg-indigo-500' },
+  { id: 'rose', label: 'Rose', border: 'border-l-rose-500', bg: 'bg-rose-500/5', badge: 'bg-rose-500/20 text-rose-400 border-rose-500/30', swatch: 'bg-rose-500' },
+  { id: 'amber', label: 'Amber', border: 'border-l-amber-500', bg: 'bg-amber-500/5', badge: 'bg-amber-500/20 text-amber-400 border-amber-500/30', swatch: 'bg-amber-500' },
+  { id: 'lime', label: 'Lime', border: 'border-l-lime-500', bg: 'bg-lime-500/5', badge: 'bg-lime-500/20 text-lime-400 border-lime-500/30', swatch: 'bg-lime-500' },
+  { id: 'emerald', label: 'Emerald', border: 'border-l-emerald-500', bg: 'bg-emerald-500/5', badge: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30', swatch: 'bg-emerald-500' },
+  { id: 'sky', label: 'Sky', border: 'border-l-sky-500', bg: 'bg-sky-500/5', badge: 'bg-sky-500/20 text-sky-400 border-sky-500/30', swatch: 'bg-sky-500' },
+  { id: 'violet', label: 'Violet', border: 'border-l-violet-500', bg: 'bg-violet-500/5', badge: 'bg-violet-500/20 text-violet-400 border-violet-500/30', swatch: 'bg-violet-500' },
+];
+
+// Helper to get type row colors from customTypeColors or defaults (Phase 10: Task 78)
+const getTypeRowColors = (customColors) => {
+  if (!customColors) return DEFAULT_TYPE_ROW_COLORS;
+
+  const result = {};
+  for (const type of Object.keys(DEFAULT_TYPE_ROW_COLORS)) {
+    const colorId = customColors[type] || DEFAULT_TYPE_ROW_COLORS[type].color;
+    const colorOption = COLOR_OPTIONS.find(c => c.id === colorId);
+    if (colorOption) {
+      result[type] = { color: colorId, border: colorOption.border, bg: colorOption.bg };
+    } else {
+      result[type] = DEFAULT_TYPE_ROW_COLORS[type];
+    }
+  }
+  return result;
+};
+
+// Helper to get type badge colors from customTypeColors or defaults (Phase 10: Task 78)
+const getTypeBadgeColor = (type, customColors) => {
+  if (!customColors) return TYPE_COLORS[type] || TYPE_COLORS.graphic;
+
+  const colorId = customColors[type];
+  if (!colorId) return TYPE_COLORS[type] || TYPE_COLORS.graphic;
+
+  const colorOption = COLOR_OPTIONS.find(c => c.id === colorId);
+  return colorOption?.badge || TYPE_COLORS[type] || TYPE_COLORS.graphic;
 };
 
 // Group color options for segment grouping (Phase 4: Task 7.4)
@@ -240,6 +290,17 @@ export default function RundownEditorPage() {
   const [importJSONData, setImportJSONData] = useState(null); // Parsed JSON data for import (Phase 9: Task 74)
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'timeline' (Phase 10: Task 75)
   const [timelineZoom, setTimelineZoom] = useState(100); // Zoom level percentage for timeline view (Phase 10: Task 75)
+  const [showColorSettingsModal, setShowColorSettingsModal] = useState(false); // Color settings modal (Phase 10: Task 78)
+  const [customTypeColors, setCustomTypeColors] = useState(() => {
+    // Load custom colors from localStorage, or use null to indicate defaults
+    const saved = localStorage.getItem(`rundown-type-colors-${compId}`);
+    return saved ? JSON.parse(saved) : null;
+  }); // Custom type colors (Phase 10: Task 78)
+
+  // Computed type row colors using customTypeColors (Phase 10: Task 78)
+  const TYPE_ROW_COLORS = useMemo(() => {
+    return getTypeRowColors(customTypeColors);
+  }, [customTypeColors]);
 
   // Filtered segments
   const filteredSegments = useMemo(() => {
@@ -1433,6 +1494,24 @@ export default function RundownEditorPage() {
     URL.revokeObjectURL(url);
 
     showToast('JSON exported');
+  }
+
+  // Save custom type colors to localStorage (Phase 10: Task 78)
+  function handleSaveCustomColors(colors) {
+    setCustomTypeColors(colors);
+    if (colors) {
+      localStorage.setItem(`rundown-type-colors-${compId}`, JSON.stringify(colors));
+    } else {
+      localStorage.removeItem(`rundown-type-colors-${compId}`);
+    }
+    showToast('Color preferences saved');
+  }
+
+  // Reset type colors to defaults (Phase 10: Task 78)
+  function handleResetColors() {
+    setCustomTypeColors(null);
+    localStorage.removeItem(`rundown-type-colors-${compId}`);
+    showToast('Colors reset to defaults');
   }
 
   // Export rundown to PDF using browser print dialog (Phase 9: Task 70)
@@ -3230,6 +3309,18 @@ export default function RundownEditorPage() {
                 <ChartBarIcon className="w-4 h-4" />
               </button>
             </div>
+            {/* Color Settings Button (Phase 10: Task 78) */}
+            <button
+              onClick={() => setShowColorSettingsModal(true)}
+              className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
+                customTypeColors
+                  ? 'bg-blue-600/20 text-blue-400 border-blue-500/40 hover:bg-blue-600/30'
+                  : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:text-zinc-300 hover:bg-zinc-700'
+              }`}
+              title="Customize type colors"
+            >
+              <SwatchIcon className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </div>
@@ -3393,6 +3484,8 @@ export default function RundownEditorPage() {
                                   onSaveAsTemplate={handleSaveSegmentAsTemplate}
                                   inGroup={true}
                                   groupColor={groupColor}
+                                  customTypeColors={customTypeColors}
+                                  TYPE_ROW_COLORS={TYPE_ROW_COLORS}
                                 />
                               );
                             })}
@@ -3434,6 +3527,8 @@ export default function RundownEditorPage() {
                         onSaveAsTemplate={handleSaveSegmentAsTemplate}
                         inGroup={false}
                         groupColor={null}
+                        customTypeColors={customTypeColors}
+                        TYPE_ROW_COLORS={TYPE_ROW_COLORS}
                       />
                     );
                   }
@@ -3468,6 +3563,7 @@ export default function RundownEditorPage() {
                     setTimeout(() => element.classList.remove('ring-2', 'ring-blue-400'), 1500);
                   }
                 }}
+                customTypeColors={customTypeColors}
               />
             ) : selectedSegment ? (
               <SegmentDetailPanel
@@ -3630,6 +3726,16 @@ export default function RundownEditorPage() {
           data={importJSONData}
           onConfirm={handleConfirmJSONImport}
           onCancel={handleCancelJSONImport}
+        />
+      )}
+
+      {/* Color Settings Modal (Phase 10: Task 78) */}
+      {showColorSettingsModal && (
+        <ColorSettingsModal
+          currentColors={customTypeColors}
+          onSave={handleSaveCustomColors}
+          onReset={handleResetColors}
+          onClose={() => setShowColorSettingsModal(false)}
         />
       )}
     </div>
@@ -3807,6 +3913,8 @@ function SegmentRow({
   onSaveAsTemplate,
   inGroup,
   groupColor,
+  customTypeColors,
+  TYPE_ROW_COLORS,
 }) {
   const isSelected = selectedSegmentId === segment.id;
   const isMultiSelected = selectedSegmentIds.includes(segment.id);
@@ -3883,7 +3991,7 @@ function SegmentRow({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className={`font-medium truncate ${isLocked ? 'text-zinc-400' : 'text-white'}`}>{segment.name}</span>
-            <span className={`px-2 py-0.5 text-xs rounded border shrink-0 ${TYPE_COLORS[segment.type] || 'bg-zinc-700 text-zinc-400 border-zinc-600'}`}>
+            <span className={`px-2 py-0.5 text-xs rounded border shrink-0 ${getTypeBadgeColor(segment.type, customTypeColors)}`}>
               {segment.type}
             </span>
             {/* Lock indicator badge (Phase 5: Task 8.3) */}
@@ -5092,7 +5200,8 @@ function SelectionSummaryPanel({
   onBulkEditGraphic,
   onCreateGroup,
   onClose,
-  onScrollToSegment
+  onScrollToSegment,
+  customTypeColors,
 }) {
   const [showBulkTypeDropdown, setShowBulkTypeDropdown] = useState(false);
   const [showBulkSceneDropdown, setShowBulkSceneDropdown] = useState(false);
@@ -5145,7 +5254,7 @@ function SelectionSummaryPanel({
                     {String(originalIndex + 1).padStart(2, '0')} {segment.name}
                   </button>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className={`px-1.5 py-0.5 text-xs rounded border ${TYPE_COLORS[segment.type] || 'bg-zinc-700 text-zinc-400 border-zinc-600'}`}>
+                    <span className={`px-1.5 py-0.5 text-xs rounded border ${getTypeBadgeColor(segment.type, customTypeColors)}`}>
                       {segment.type}
                     </span>
                     {segment.scene && (
@@ -6551,6 +6660,154 @@ function ImportJSONModal({ data, onConfirm, onCancel }) {
           >
             <ArrowDownTrayIcon className="w-4 h-4" />
             Import {segments.length} Segments
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Color Settings Modal Component (Phase 10: Task 78)
+// Allows users to customize segment type colors
+function ColorSettingsModal({ currentColors, onSave, onReset, onClose }) {
+  // Initialize with current colors or defaults
+  const [colors, setColors] = useState(() => {
+    const result = {};
+    for (const type of Object.keys(DEFAULT_TYPE_ROW_COLORS)) {
+      result[type] = currentColors?.[type] || DEFAULT_TYPE_ROW_COLORS[type].color;
+    }
+    return result;
+  });
+
+  const handleColorChange = (type, colorId) => {
+    setColors(prev => ({ ...prev, [type]: colorId }));
+  };
+
+  const handleSave = () => {
+    onSave(colors);
+    onClose();
+  };
+
+  const handleReset = () => {
+    onReset();
+    onClose();
+  };
+
+  // Check if any colors have been changed from defaults
+  const hasChanges = Object.keys(colors).some(
+    type => colors[type] !== DEFAULT_TYPE_ROW_COLORS[type].color
+  );
+
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+      <div className="bg-zinc-900 border border-zinc-700 rounded-xl w-full max-w-2xl mx-4 shadow-2xl max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between p-4 border-b border-zinc-800">
+          <div>
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <SwatchIcon className="w-5 h-5 text-blue-400" />
+              Customize Type Colors
+            </h2>
+            <p className="text-xs text-zinc-500 mt-0.5">
+              Choose colors for each segment type (colorblind-friendly options available)
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1 text-zinc-400 hover:text-zinc-200 rounded-lg hover:bg-zinc-800 transition-colors"
+          >
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-4 overflow-y-auto flex-1 space-y-4">
+          {Object.keys(DEFAULT_TYPE_ROW_COLORS).map(type => {
+            const selectedColor = colors[type];
+            const colorOption = COLOR_OPTIONS.find(c => c.id === selectedColor);
+
+            return (
+              <div key={type} className="flex items-center justify-between gap-4 p-3 bg-zinc-800/50 rounded-lg">
+                {/* Type name and preview */}
+                <div className="flex items-center gap-3 min-w-[120px]">
+                  <div
+                    className={`w-1.5 h-8 rounded-full ${colorOption?.swatch || 'bg-zinc-500'}`}
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-white capitalize">{type}</span>
+                    <div className="text-xs text-zinc-500">
+                      {type === 'video' && 'Pre-recorded clips'}
+                      {type === 'live' && 'Live camera feeds'}
+                      {type === 'static' && 'Fixed graphics/images'}
+                      {type === 'break' && 'Commercial/intermission'}
+                      {type === 'hold' && 'Waiting/pause segments'}
+                      {type === 'graphic' && 'Dynamic overlays'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Color selector */}
+                <div className="flex flex-wrap gap-1.5">
+                  {COLOR_OPTIONS.map(option => (
+                    <button
+                      key={option.id}
+                      onClick={() => handleColorChange(type, option.id)}
+                      className={`w-7 h-7 rounded-lg ${option.swatch} transition-all ${
+                        selectedColor === option.id
+                          ? 'ring-2 ring-white ring-offset-2 ring-offset-zinc-900 scale-110'
+                          : 'hover:scale-105 opacity-70 hover:opacity-100'
+                      }`}
+                      title={option.label}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Preview section */}
+          <div className="mt-6 p-4 bg-zinc-800 rounded-lg">
+            <h3 className="text-sm font-medium text-white mb-3">Preview</h3>
+            <div className="space-y-2">
+              {Object.keys(colors).map(type => {
+                const colorOption = COLOR_OPTIONS.find(c => c.id === colors[type]);
+                return (
+                  <div
+                    key={type}
+                    className={`p-3 rounded-lg border-l-4 ${colorOption?.border || 'border-l-zinc-500'} ${colorOption?.bg || 'bg-zinc-900'}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-0.5 text-xs font-medium rounded border ${colorOption?.badge || 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30'}`}>
+                        {type.toUpperCase()}
+                      </span>
+                      <span className="text-sm text-zinc-300">Example {type} segment</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        <div className="p-4 border-t border-zinc-800 flex gap-3">
+          <button
+            onClick={handleReset}
+            className="px-4 py-2 text-zinc-400 hover:text-zinc-200 transition-colors"
+            title="Reset all colors to defaults"
+          >
+            Reset to Defaults
+          </button>
+          <div className="flex-1" />
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-zinc-800 text-zinc-300 rounded-lg hover:bg-zinc-700 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-500 transition-colors flex items-center gap-2"
+          >
+            <CheckIcon className="w-4 h-4" />
+            Save Colors
           </button>
         </div>
       </div>
