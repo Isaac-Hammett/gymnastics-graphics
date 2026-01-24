@@ -49,7 +49,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 
 | Phase | Name | Priority | Status | Tasks |
 |-------|------|----------|--------|-------|
-| A | Connect Editor to Engine | P0 | IN PROGRESS | 1-16 |
+| A | Connect Editor to Engine | P0 | COMPLETE | 1-16 |
 | H | Rehearsal Mode | P1 | NOT STARTED | 17-21 |
 | B | Talent View | P1 | NOT STARTED | 22-27 |
 | I | Live Rundown Sync | P2 | NOT STARTED | 28-37 |
@@ -64,7 +64,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 
 ## Task Summary by Phase
 
-### Phase A: Connect Editor to Engine (P0) - IN PROGRESS (15/16 complete)
+### Phase A: Connect Editor to Engine (P0) - COMPLETE (16/16)
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
@@ -83,7 +83,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 13 | Show rundown status indicator (loaded, modified, etc.) | COMPLETE | Added status badge in header: green "X segments" when loaded, gray "No Rundown" when idle |
 | Task 14 | Verify Rundown Editor scene picker uses OBS state | COMPLETE | Scene picker uses hardcoded DUMMY_SCENES (lines 63-73). OBSContext provides obsState.scenes from live OBS. RundownEditorPage does NOT import useOBS. Task 16 will wire live data. |
 | Task 15 | Verify Rundown Editor graphics picker uses Graphics Registry | COMPLETE | Uses graphicsRegistry.js with getGraphicsForCompetition(). Filters by compType/gender. Note: Uses DUMMY_COMPETITION.type - Task 16 will wire live data. |
-| Task 16 | Fix any hardcoded picker data | NOT STARTED | |
+| Task 16 | Fix any hardcoded picker data | COMPLETE | Replaced DUMMY_SCENES with live OBS scenes from useOBS(); replaced DUMMY_COMPETITION with live competition config from useCompetition(); updated getGroupedScenes/getGroupedGraphics to accept params; passed live data to SegmentRow, SegmentDetailPanel, and SelectionSummaryPanel |
 
 ### Phase H: Rehearsal Mode (P1) - NOT STARTED
 
@@ -519,16 +519,26 @@ Verify that the graphics picker dropdown uses graphicsRegistry.js.
 
 ### Task 16: Fix hardcoded picker data
 
-**Status:** NOT STARTED
+**Status:** COMPLETE
 **File:** `show-controller/src/pages/RundownEditorPage.jsx`
 
 **Description:**
 Replace any hardcoded picker data with live data sources.
 
 **Checklist:**
-- [ ] Replace DUMMY_SCENES with OBS scene list (if hardcoded)
-- [ ] Verify graphics come from registry
-- [ ] Test with actual competition data
+- [x] Replace DUMMY_SCENES with OBS scene list (if hardcoded)
+- [x] Verify graphics come from registry
+- [x] Test with actual competition data
+
+**Implementation Notes:**
+- Added imports for `useCompetition` and `useOBS` hooks
+- Created `liveScenes`, `liveCompType`, and `liveTeamNames` derived from live context
+- Updated `getGroupedScenes(scenes)` to accept scenes array parameter (falls back to DUMMY_SCENES)
+- Updated `getTeamNames(competitionConfig, fallbackTeams)` to accept competition config (falls back to DUMMY_COMPETITION)
+- Updated `getGroupedGraphics(compType, teamNames)` to accept parameters (falls back to defaults)
+- Added memoized `groupedScenes` and `groupedGraphics` in main component
+- Updated `SegmentRow`, `SegmentDetailPanel`, and `SelectionSummaryPanel` components to receive grouped data as props
+- Build verified successful
 
 ---
 
