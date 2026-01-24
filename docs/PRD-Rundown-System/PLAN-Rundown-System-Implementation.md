@@ -50,7 +50,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Phase | Name | Priority | Status | Tasks |
 |-------|------|----------|--------|-------|
 | A | Connect Editor to Engine | P0 | COMPLETE | 1-16 |
-| H | Rehearsal Mode | P1 | NOT STARTED | 17-21 |
+| H | Rehearsal Mode | P1 | IN PROGRESS | 17-21 |
 | B | Talent View | P1 | NOT STARTED | 22-27 |
 | I | Live Rundown Sync | P2 | NOT STARTED | 28-37 |
 | J | Segment Timing Analytics | P2 | NOT STARTED | 38-42 |
@@ -85,11 +85,11 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 15 | Verify Rundown Editor graphics picker uses Graphics Registry | COMPLETE | Uses graphicsRegistry.js with getGraphicsForCompetition(). Filters by compType/gender. Note: Uses DUMMY_COMPETITION.type - Task 16 will wire live data. |
 | Task 16 | Fix any hardcoded picker data | COMPLETE | Replaced DUMMY_SCENES with live OBS scenes from useOBS(); replaced DUMMY_COMPETITION with live competition config from useCompetition(); updated getGroupedScenes/getGroupedGraphics to accept params; passed live data to SegmentRow, SegmentDetailPanel, and SelectionSummaryPanel |
 
-### Phase H: Rehearsal Mode (P1) - NOT STARTED
+### Phase H: Rehearsal Mode (P1) - IN PROGRESS
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
-| Task 17 | Add rehearsal mode toggle to Timesheet Engine | NOT STARTED | |
+| Task 17 | Add rehearsal mode toggle to Timesheet Engine | COMPLETE | Added `_isRehearsalMode` property, `isRehearsalMode` getter, `setRehearsalMode()` method, included in `getState()`, emits `rehearsalModeChanged` event |
 | Task 18 | Skip OBS scene changes in rehearsal mode | NOT STARTED | |
 | Task 19 | Skip graphics firing in rehearsal mode | NOT STARTED | |
 | Task 20 | Show "REHEARSAL" indicator in all views | NOT STARTED | |
