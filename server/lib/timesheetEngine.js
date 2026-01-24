@@ -710,14 +710,19 @@ class TimesheetEngine extends EventEmitter {
         // If this.firebase has a ref() method, it's the database directly
         // If it has a database() method, it's the Firebase Admin app
         const db = typeof this.firebase.ref === 'function' ? this.firebase : this.firebase.database();
+        console.log(`[Timesheet${this.compId ? ':' + this.compId : ''}] Triggering graphic "${segment.graphic}" via Firebase`);
         await db.ref('graphics/current').set(graphicData);
+        console.log(`[Timesheet${this.compId ? ':' + this.compId : ''}] Graphic "${segment.graphic}" triggered successfully`);
       } catch (error) {
+        console.error(`[Timesheet${this.compId ? ':' + this.compId : ''}] Firebase graphic trigger failed:`, error.message);
         this.emit('error', {
           type: 'firebase_graphic',
           message: `Failed to trigger graphic via Firebase: ${error.message}`,
           segmentId: segment.id
         });
       }
+    } else {
+      console.warn(`[Timesheet${this.compId ? ':' + this.compId : ''}] Firebase not available - graphic will only be broadcast via socket.io`);
     }
 
     // Also broadcast via socket.io

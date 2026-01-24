@@ -373,6 +373,8 @@ function getOrCreateEngine(compId, obsConnectionManager, firebase, socketIo) {
   }
 
   console.log(`[Timesheet] Creating new engine for competition: ${compId}`);
+  console.log(`[Timesheet:${compId}] Firebase instance: ${firebase ? 'provided' : 'NOT PROVIDED'}`);
+  console.log(`[Timesheet:${compId}] OBS Connection Manager: ${obsConnectionManager ? 'provided' : 'NOT PROVIDED'}`);
 
   const engine = new TimesheetEngine({
     compId,
