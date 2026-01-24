@@ -50,13 +50,19 @@ class TimesheetEngine extends EventEmitter {
   /**
    * Create a new TimesheetEngine
    * @param {Object} options - Configuration options
+   * @param {string} options.compId - Competition ID for multi-competition support
+   * @param {Object} options.obsConnectionManager - OBS connection manager for per-competition OBS connections
    * @param {Object} options.showConfig - Show configuration with segments
-   * @param {Object} options.obs - OBS WebSocket controller (optional)
+   * @param {Object} options.obs - OBS WebSocket controller (optional, legacy - prefer obsConnectionManager)
    * @param {Object} options.firebase - Firebase controller for graphics (optional)
    * @param {Object} options.io - Socket.io server for broadcasting (optional)
    */
   constructor(options = {}) {
     super();
+
+    // Multi-competition support
+    this.compId = options.compId || null;
+    this.obsConnectionManager = options.obsConnectionManager || null;
 
     this.showConfig = options.showConfig || { segments: [] };
     this.obs = options.obs || null;
