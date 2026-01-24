@@ -54,7 +54,7 @@ class TimesheetEngine extends EventEmitter {
    * @param {Object} options.obsConnectionManager - OBS connection manager for per-competition OBS connections
    * @param {Object} options.showConfig - Show configuration with segments
    * @param {Object} options.obs - OBS WebSocket controller (optional, legacy - prefer obsConnectionManager)
-   * @param {Object} options.firebase - Firebase controller for graphics (optional)
+   * @param {Object} options.firebase - Firebase database (from productionConfigService.getDb()) or Firebase Admin app (optional)
    * @param {Object} options.io - Socket.io server for broadcasting (optional)
    */
   constructor(options = {}) {
@@ -703,9 +703,14 @@ class TimesheetEngine extends EventEmitter {
     };
 
     // Try Firebase first if available
+    // this.firebase can be either the Firebase Admin database directly (from productionConfigService.getDb())
+    // or the full Firebase Admin app (legacy). Handle both cases.
     if (this.firebase) {
       try {
-        await this.firebase.database().ref('graphics/current').set(graphicData);
+        // If this.firebase has a ref() method, it's the database directly
+        // If it has a database() method, it's the Firebase Admin app
+        const db = typeof this.firebase.ref === 'function' ? this.firebase : this.firebase.database();
+        await db.ref('graphics/current').set(graphicData);
       } catch (error) {
         this.emit('error', {
           type: 'firebase_graphic',
