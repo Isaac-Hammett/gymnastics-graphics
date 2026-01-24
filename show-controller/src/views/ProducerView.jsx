@@ -602,6 +602,19 @@ export default function ProducerView() {
               </div>
             ) : (
               <>
+                {/* Current Segment Deleted Warning (Task 35) */}
+                {timesheetState?.currentSegmentDeleted && (
+                  <div className="bg-red-500/20 border border-red-500/40 rounded-xl p-4 flex items-start gap-3">
+                    <ExclamationCircleIcon className="w-6 h-6 text-red-400 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <div className="text-red-300 font-semibold">Current Segment Deleted</div>
+                      <div className="text-red-400/80 text-sm mt-1">
+                        This segment was removed from the rundown. Click <strong>NEXT</strong> to advance to the next valid segment.
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Current & Next Segment */}
                 <CurrentSegment />
                 <NextSegment />
