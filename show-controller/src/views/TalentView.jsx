@@ -7,14 +7,14 @@ import NextSegment from '../components/NextSegment';
 import RunOfShow from '../components/RunOfShow';
 import QuickActions from '../components/QuickActions';
 import ConnectionStatus from '../components/ConnectionStatus';
-import { PlayIcon, LockClosedIcon, ClockIcon } from '@heroicons/react/24/solid';
+import { PlayIcon, LockClosedIcon, ClockIcon, DocumentTextIcon } from '@heroicons/react/24/solid';
 
 export default function TalentView() {
   const { state, startShow, identify, error } = useShow();
   const { showConfig, isPlaying, talentLocked, showProgress } = state;
 
   // Use timesheet for advance/previous with hold segment support
-  const { advance: timesheetAdvance, isHoldSegment, canAdvanceHold, holdRemainingMs } = useTimesheet();
+  const { advance: timesheetAdvance, isHoldSegment, canAdvanceHold, holdRemainingMs, currentSegment } = useTimesheet();
 
   useEffect(() => {
     identify('talent', 'Talent');
@@ -82,6 +82,21 @@ export default function TalentView() {
           <>
             {/* Current Segment */}
             <CurrentSegment />
+
+            {/* Teleprompter Script Panel */}
+            {currentSegment?.script && (
+              <div className="bg-zinc-900 rounded-xl border-2 border-blue-500/30 overflow-hidden">
+                <div className="bg-blue-500/10 px-4 py-2 flex items-center gap-2 border-b border-blue-500/30">
+                  <DocumentTextIcon className="w-5 h-5 text-blue-400" />
+                  <span className="text-sm font-medium text-blue-400 uppercase tracking-wide">Script</span>
+                </div>
+                <div className="p-6">
+                  <div className="text-xl leading-relaxed text-white whitespace-pre-wrap font-sans">
+                    {currentSegment.script}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Next Segment Preview */}
             <NextSegment />
