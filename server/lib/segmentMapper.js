@@ -225,11 +225,183 @@ function validateEngineSegments(segments) {
   };
 }
 
+/**
+ * Deep equality check for two values
+ * Handles objects, arrays, and primitives
+ * @param {*} a - First value
+ * @param {*} b - Second value
+ * @returns {boolean} True if deeply equal
+ */
+function deepEqual(a, b) {
+  // Primitives and null/undefined
+  if (a === b) return true;
+  if (a == null || b == null) return false;
+  if (typeof a !== 'object' || typeof b !== 'object') return false;
+
+  // Arrays
+  if (Array.isArray(a) !== Array.isArray(b)) return false;
+  if (Array.isArray(a)) {
+    if (a.length !== b.length) return false;
+    return a.every((val, i) => deepEqual(val, b[i]));
+  }
+
+  // Objects
+  const keysA = Object.keys(a);
+  const keysB = Object.keys(b);
+  if (keysA.length !== keysB.length) return false;
+  return keysA.every(key => deepEqual(a[key], b[key]));
+}
+
+/**
+ * Compare two segments and return an object describing the changes
+ * @param {Object} oldSegment - Previous segment state
+ * @param {Object} newSegment - New segment state
+ * @returns {{ hasChanges: boolean, changedFields: string[] }} Change details
+ */
+function compareSegments(oldSegment, newSegment) {
+  if (!oldSegment || !newSegment) {
+    return { hasChanges: true, changedFields: ['*'] };
+  }
+
+  const changedFields = [];
+
+  // Fields to compare (both direct and mapped)
+  const fieldsToCompare = [
+    'name', 'type', 'duration', 'notes',
+    'scene', 'obsScene',
+    'graphic', 'graphicData',
+    'timingMode', 'autoAdvance',
+    'bufferAfter', 'locked', 'optional', 'minDuration', 'maxDuration'
+  ];
+
+  for (const field of fieldsToCompare) {
+    if (!deepEqual(oldSegment[field], newSegment[field])) {
+      changedFields.push(field);
+    }
+  }
+
+  return {
+    hasChanges: changedFields.length > 0,
+    changedFields
+  };
+}
+
+/**
+ * Compare two arrays of segments and produce a diff summary
+ *
+ * @param {Array} oldSegments - Previously loaded segments
+ * @param {Array} newSegments - New segments from Firebase
+ * @returns {{
+ *   hasChanges: boolean,
+ *   added: Array<{ id: string, name: string, index: number }>,
+ *   removed: Array<{ id: string, name: string, index: number }>,
+ *   modified: Array<{ id: string, name: string, oldIndex: number, newIndex: number, changedFields: string[] }>,
+ *   reordered: Array<{ id: string, name: string, oldIndex: number, newIndex: number }>,
+ *   summary: string
+ * }}
+ */
+function diffSegments(oldSegments, newSegments) {
+  // Handle null/undefined inputs
+  const oldArray = Array.isArray(oldSegments) ? oldSegments : [];
+  const newArray = Array.isArray(newSegments) ? newSegments : [];
+
+  // Build lookup maps by ID
+  const oldById = new Map(oldArray.map((seg, index) => [seg.id, { segment: seg, index }]));
+  const newById = new Map(newArray.map((seg, index) => [seg.id, { segment: seg, index }]));
+
+  const added = [];
+  const removed = [];
+  const modified = [];
+  const reordered = [];
+
+  // Find removed and modified segments
+  for (const [id, { segment: oldSeg, index: oldIndex }] of oldById) {
+    const newEntry = newById.get(id);
+    if (!newEntry) {
+      // Segment was removed
+      removed.push({
+        id,
+        name: oldSeg.name || 'Unnamed',
+        index: oldIndex
+      });
+    } else {
+      const { segment: newSeg, index: newIndex } = newEntry;
+
+      // Check for content modifications
+      const comparison = compareSegments(oldSeg, newSeg);
+      if (comparison.hasChanges) {
+        modified.push({
+          id,
+          name: newSeg.name || oldSeg.name || 'Unnamed',
+          oldIndex,
+          newIndex,
+          changedFields: comparison.changedFields
+        });
+      } else if (oldIndex !== newIndex) {
+        // Position changed but content is the same
+        reordered.push({
+          id,
+          name: newSeg.name || 'Unnamed',
+          oldIndex,
+          newIndex
+        });
+      }
+    }
+  }
+
+  // Find added segments
+  for (const [id, { segment: newSeg, index: newIndex }] of newById) {
+    if (!oldById.has(id)) {
+      added.push({
+        id,
+        name: newSeg.name || 'Unnamed',
+        index: newIndex
+      });
+    }
+  }
+
+  // Sort results by index for consistency
+  added.sort((a, b) => a.index - b.index);
+  removed.sort((a, b) => a.index - b.index);
+  modified.sort((a, b) => a.newIndex - b.newIndex);
+  reordered.sort((a, b) => a.newIndex - b.newIndex);
+
+  const hasChanges = added.length > 0 || removed.length > 0 || modified.length > 0 || reordered.length > 0;
+
+  // Build human-readable summary
+  const summaryParts = [];
+  if (added.length > 0) {
+    summaryParts.push(`${added.length} added`);
+  }
+  if (removed.length > 0) {
+    summaryParts.push(`${removed.length} removed`);
+  }
+  if (modified.length > 0) {
+    summaryParts.push(`${modified.length} modified`);
+  }
+  if (reordered.length > 0) {
+    summaryParts.push(`${reordered.length} reordered`);
+  }
+  const summary = summaryParts.length > 0 ? summaryParts.join(', ') : 'No changes';
+
+  return {
+    hasChanges,
+    added,
+    removed,
+    modified,
+    reordered,
+    summary
+  };
+}
+
 export {
   mapEditorToEngine,
   mapEditorSegmentsToEngine,
   mapEngineToEditor,
   mapEngineSegmentsToEditor,
   validateEngineSegment,
-  validateEngineSegments
+  validateEngineSegments,
+  deepEqual,
+  compareSegments,
+  diffSegments
 };

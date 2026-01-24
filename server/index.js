@@ -28,7 +28,7 @@ import { setupOBSRoutes } from './routes/obs.js';
 import { getOBSConnectionManager } from './lib/obsConnectionManager.js';
 import { DEFAULT_PRESETS } from './lib/obsAudioManager.js';
 import { encryptStreamKey, decryptStreamKey, isEncryptedKey } from './lib/obsStreamManager.js';
-import { mapEditorSegmentsToEngine, validateEngineSegments } from './lib/segmentMapper.js';
+import { mapEditorSegmentsToEngine, validateEngineSegments, diffSegments } from './lib/segmentMapper.js';
 
 dotenv.config();
 
@@ -639,16 +639,62 @@ function subscribeToRundownChanges(compId, db, initialSegments) {
 
     console.log(`[Timesheet] Rundown changed in Firebase for competition: ${compId} (${newSegments.length} segments)`);
 
-    // Store the new segments for the next comparison
-    // Task 29 will implement the deep diff and emit rundownModified event
-    listenerData.lastSegments = newSegments;
+    // Compare new segments to last known segments using deep diff
+    const diff = diffSegments(listenerData.lastSegments, newSegments);
 
-    // Emit a debug event for now (Task 30 will emit the actual rundownModified event)
-    const engine = getEngine(compId);
-    if (engine) {
-      // Log that we detected a change - Task 29/30 will handle the actual diff and notification
-      console.log(`[Timesheet] Rundown modification detected for engine: ${compId}`);
+    if (diff.hasChanges) {
+      console.log(`[Timesheet] Rundown diff for ${compId}: ${diff.summary}`);
+      if (diff.added.length > 0) {
+        console.log(`  Added: ${diff.added.map(s => s.name).join(', ')}`);
+      }
+      if (diff.removed.length > 0) {
+        console.log(`  Removed: ${diff.removed.map(s => s.name).join(', ')}`);
+      }
+      if (diff.modified.length > 0) {
+        console.log(`  Modified: ${diff.modified.map(s => `${s.name} (${s.changedFields.join(', ')})`).join(', ')}`);
+      }
+      if (diff.reordered.length > 0) {
+        console.log(`  Reordered: ${diff.reordered.map(s => `${s.name} (${s.oldIndex} → ${s.newIndex})`).join(', ')}`);
+      }
+
+      // Store the diff result for Task 30 to emit as socket event
+      listenerData.lastDiff = diff;
+
+      // Get the engine to check current position
+      const engine = getEngine(compId);
+      if (engine) {
+        const state = engine.getState();
+        const currentSegmentId = state.currentSegmentId;
+
+        // Determine if changes affect current or upcoming segments
+        const affectsCurrent = diff.removed.some(s => s.id === currentSegmentId) ||
+                              diff.modified.some(s => s.id === currentSegmentId);
+
+        // Segments after current position are "upcoming"
+        const currentIndex = state.currentSegmentIndex ?? -1;
+        const affectsUpcoming = diff.added.length > 0 ||
+                               diff.modified.some(s => s.newIndex > currentIndex) ||
+                               diff.reordered.some(s => s.newIndex > currentIndex);
+
+        // Store extended diff info
+        listenerData.lastDiff = {
+          ...diff,
+          affectsCurrent,
+          affectsUpcoming,
+          currentSegmentId,
+          currentSegmentIndex: currentIndex
+        };
+
+        console.log(`[Timesheet] Affects current: ${affectsCurrent}, affects upcoming: ${affectsUpcoming}`);
+
+        // Task 30 will emit the rundownModified socket event here
+      }
+    } else {
+      console.log(`[Timesheet] Rundown content unchanged for ${compId} (false positive from Firebase)`);
     }
+
+    // Store the new segments for the next comparison
+    listenerData.lastSegments = newSegments;
   };
 
   // Start listening
