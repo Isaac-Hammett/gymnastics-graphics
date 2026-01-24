@@ -322,6 +322,46 @@ function calculateWallClockTimes(segments, segmentStartTimes, timezoneConfig) {
   return wallClockTimes;
 }
 
+// Format a Date object in a specific timezone
+// Uses Intl.DateTimeFormat for proper timezone handling
+//
+// Parameters:
+//   date: Date object to format
+//   timezone: IANA timezone identifier (e.g., "America/Los_Angeles", "America/New_York")
+//   use24HourFormat: boolean - if true, use 24h format (e.g., "14:30"), otherwise 12h (e.g., "2:30 PM")
+//
+// Returns:
+//   Formatted time string (e.g., "11:05 AM" or "14:30")
+//
+// Example:
+//   formatTimeInTimezone(new Date('2026-03-15T19:05:00Z'), 'America/Los_Angeles', false)
+//   // Returns "11:05 AM" (PST is UTC-8)
+function formatTimeInTimezone(date, timezone, use24HourFormat = false) {
+  if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
+    return '';
+  }
+
+  if (!timezone) {
+    return '';
+  }
+
+  try {
+    const options = {
+      timeZone: timezone,
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: !use24HourFormat
+    };
+
+    const formatter = new Intl.DateTimeFormat('en-US', options);
+    return formatter.format(date);
+  } catch (error) {
+    // Invalid timezone identifier
+    console.warn(`formatTimeInTimezone: Invalid timezone "${timezone}"`, error);
+    return '';
+  }
+}
+
 // Group color options for segment grouping (Phase 4: Task 7.4)
 const GROUP_COLORS = [
   { id: 'blue', bg: 'bg-blue-500/10', border: 'border-blue-500/30', text: 'text-blue-400', header: 'bg-blue-500/20' },
