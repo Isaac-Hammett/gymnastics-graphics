@@ -1,7 +1,7 @@
 # PLAN-Rundown-System-Implementation
 
 **PRD:** [PRD-Rundown-System-2026-01-23.md](./PRD-Rundown-System-2026-01-23.md)
-**Status:** COMPLETE
+**Status:** IN PROGRESS
 **Created:** 2026-01-23
 **Last Updated:** 2026-01-24
 
@@ -39,7 +39,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 - Complete an entire phase in one iteration
 
 **Task Numbering:**
-- Tasks are numbered sequentially: Task 1, Task 2, ... Task 71
+- Tasks are numbered sequentially: Task 1, Task 2, ... Task 88
 - Each task number is unique and independent
 - Example: "Task 8" is ONE task, not a subtask
 
@@ -59,6 +59,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | C | AI Context - Live Execution | P3 | COMPLETE | 55-62 |
 | F | Audio Cue Integration | P3 | COMPLETE | 63-66 |
 | G | Production Tracking | P3 | COMPLETE | 67-71 |
+| K | Timezone Display | P2 | IN PROGRESS | 72-88 |
 
 ---
 
@@ -184,6 +185,28 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 69 | Detect equipment conflicts | COMPLETE | Added equipmentConflicts detection at component level; conflict count badge on toolbar button (red when conflicts exist); warning icon on segment rows with conflicts; detailed conflict warning in segment detail panel showing overlapping segments |
 | Task 70 | Add sponsor fields to segment data model | COMPLETE | Added sponsor field ({ name, logo, tier } or null) to segment creation in RundownEditorPage.jsx (4 places), added to segmentMapper.js (editor↔engine mapping), added to compareSegments fieldsToCompare |
 | Task 71 | Generate sponsor fulfillment report | COMPLETE | Added SponsorFulfillmentModal with: sponsor listing by tier (presenting/title/official/supporting), segment placements, airtime totals, export to text file |
+
+### Phase K: Timezone Display (P2) - IN PROGRESS (1/17)
+
+| Task | Description | Status | Notes |
+|------|-------------|--------|-------|
+| Task 72 | Add `timezoneConfig` state and Firebase listener | COMPLETE | Added `timezoneConfig` state variable, Firebase `onValue` listener at `rundown/timezoneConfig`, `saveTimezoneConfig()` function with timestamp |
+| Task 73 | Create `calculateWallClockTimes()` utility | NOT STARTED | Calculate absolute times from anchor segment; handle forward/backward calculation |
+| Task 74 | Create `formatTimeInTimezone()` using Intl.DateTimeFormat | NOT STARTED | Format Date objects in specified timezone with 12h/24h support |
+| Task 75 | Create `getTimezoneAbbreviation()` helper | NOT STARTED | Extract abbreviation (PST, EST, etc.) from IANA timezone identifier |
+| Task 76 | Create `TimezoneConfigModal` component | NOT STARTED | Full configuration interface with sections for anchor, timezones, and format options |
+| Task 77 | Add timezone config button to toolbar | NOT STARTED | Globe icon button that opens TimezoneConfigModal; shows current timezone when configured |
+| Task 78 | Add anchor segment dropdown in modal | NOT STARTED | Dropdown listing all segments to select as anchor point |
+| Task 79 | Add date/time picker for anchor datetime | NOT STARTED | Date input + time input for setting anchor segment's wall-clock time |
+| Task 80 | Add timezone multi-select in modal | NOT STARTED | Primary timezone dropdown + additional timezones checklist with common presets |
+| Task 81 | Pass timezone props to SegmentRow | NOT STARTED | Add wallClockTime, displayTimezones, timezoneConfig, isAnchorSegment props |
+| Task 82 | Render timezone columns in SegmentRow | NOT STARTED | Display wall-clock times after existing offset column; use w-16 fixed width |
+| Task 83 | Add anchor segment visual indicator (badge) | NOT STARTED | Amber "Anchor" badge with BookmarkIcon on anchor segment row |
+| Task 84 | Add column header row with TZ abbreviations | NOT STARTED | Header row above segment list showing timezone column labels |
+| Task 85 | Include timezoneConfig in JSON export | NOT STARTED | Add to exportData.rundown.timezoneConfig |
+| Task 86 | Handle timezoneConfig in JSON import | NOT STARTED | Restore timezoneConfig from imported JSON; sync to Firebase |
+| Task 87 | Add timezone columns to CSV export | NOT STARTED | Include wall-clock time columns for each configured timezone |
+| Task 88 | Add timezone presets and edge case handling | NOT STARTED | US Full, US Coasts presets; handle deleted anchor, midnight crossing |
 
 ---
 
