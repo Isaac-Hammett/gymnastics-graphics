@@ -2778,12 +2778,39 @@ export default function RundownEditorPage() {
     showToast('Rundown saved');
   }
 
-  // Export rundown to CSV (Phase 9: Task 71)
+  // Export rundown to CSV (Phase 9: Task 71, Phase K: Task 87)
   function handleExportCSV() {
-    // CSV headers
+    // Build timezone column headers if timezone is configured (Phase K: Task 87)
+    const timezoneHeaders = [];
+    const exportTimezones = [];
+    if (timezoneConfig?.primaryTimezone) {
+      // Get the anchor date for consistent DST abbreviations
+      const anchorDate = timezoneConfig.anchorDateTime
+        ? new Date(timezoneConfig.anchorDateTime)
+        : new Date();
+
+      // Add primary timezone
+      const primaryAbbr = getTimezoneAbbreviation(timezoneConfig.primaryTimezone, anchorDate);
+      timezoneHeaders.push(primaryAbbr || timezoneConfig.primaryTimezone);
+      exportTimezones.push(timezoneConfig.primaryTimezone);
+
+      // Add additional display timezones
+      if (timezoneConfig.displayTimezones && timezoneConfig.displayTimezones.length > 0) {
+        timezoneConfig.displayTimezones.forEach(tz => {
+          if (tz !== timezoneConfig.primaryTimezone && !exportTimezones.includes(tz)) {
+            const abbr = getTimezoneAbbreviation(tz, anchorDate);
+            timezoneHeaders.push(abbr || tz);
+            exportTimezones.push(tz);
+          }
+        });
+      }
+    }
+
+    // CSV headers - include timezone columns after Start Time if configured
     const headers = [
       '#',
       'Start Time',
+      ...timezoneHeaders, // Phase K: Task 87 - Timezone columns
       'Name',
       'Type',
       'Duration (s)',
@@ -2806,9 +2833,19 @@ export default function RundownEditorPage() {
       const graphicId = seg.graphic?.graphicId || '';
       const timingMode = seg.timingMode || 'fixed';
 
+      // Calculate wall-clock times for each timezone (Phase K: Task 87)
+      const wallClockTime = wallClockTimes[seg.id];
+      const timeColumns = exportTimezones.map(tz => {
+        if (wallClockTime) {
+          return formatTimeInTimezone(wallClockTime, tz, timezoneConfig?.use24HourFormat || false);
+        }
+        return '';
+      });
+
       return [
         String(index + 1).padStart(2, '0'),
         startTime,
+        ...timeColumns, // Phase K: Task 87 - Timezone column values
         seg.name,
         seg.type,
         durationSeconds,
