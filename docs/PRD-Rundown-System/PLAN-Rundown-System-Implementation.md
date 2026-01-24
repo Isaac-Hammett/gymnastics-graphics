@@ -64,7 +64,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 
 ## Task Summary by Phase
 
-### Phase A: Connect Editor to Engine (P0) - IN PROGRESS (9/16 complete)
+### Phase A: Connect Editor to Engine (P0) - IN PROGRESS (10/16 complete)
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
@@ -77,7 +77,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 7 | Pass Firebase Admin instance to engine for `_triggerGraphic()` | COMPLETE | Updated `_triggerGraphic()` to handle both Firebase db and Admin app; added JSDoc example to `getOrCreateEngine()` |
 | Task 8 | Add `loadRundown` socket handler on server | COMPLETE | Added handler that fetches segments from Firebase and loads into engine via updateConfig() |
 | Task 9 | Add `loadRundown` action in ShowContext | COMPLETE | Added loadRundown function, loadRundownResult handler, rundownLoaded state |
-| Task 10 | Add "Load Rundown" button in Producer View | NOT STARTED | |
+| Task 10 | Add "Load Rundown" button in Producer View | COMPLETE | Added button with loading state, toast feedback, and disabled Start Show until rundown loaded |
 | Task 11 | Create segment mapper (Editor format → Engine format) | NOT STARTED | |
 | Task 12 | Verify Firebase is passed to engine | NOT STARTED | |
 | Task 13 | Show rundown status indicator (loaded, modified, etc.) | NOT STARTED | |
@@ -381,17 +381,28 @@ Add `loadRundown` action to emit the socket event from client.
 
 ### Task 10: Add "Load Rundown" button
 
-**Status:** NOT STARTED
+**Status:** COMPLETE
 **File:** `show-controller/src/views/ProducerView.jsx`
 
 **Description:**
 Add "Load Rundown" button in Producer View header/toolbar.
 
 **Checklist:**
-- [ ] Add "Load Rundown" button to Producer View
-- [ ] Wire button to `loadRundown` action from ShowContext
-- [ ] Show loading state while loading
-- [ ] Show toast on success/failure
+- [x] Add "Load Rundown" button to Producer View
+- [x] Wire button to `loadRundown` action from ShowContext
+- [x] Show loading state while loading
+- [x] Show toast on success/failure
+
+**Implementation Notes:**
+- Added `ArrowDownTrayIcon` import from heroicons
+- Added `loadRundown` and `timesheetState` from `useShow()` context
+- Added `isLoadingRundown` and `loadRundownToast` local state
+- Added `handleLoadRundown` callback with loading state management
+- Added socket listener for `loadRundownResult` to show toast feedback
+- Added Load Rundown button in "Ready to Start" section
+- Button shows "Load Rundown" initially, "Loading..." while loading, "Reload Rundown" after loaded
+- Start Show button is disabled until rundown is loaded
+- Toast auto-clears after 5 seconds
 
 ---
 
