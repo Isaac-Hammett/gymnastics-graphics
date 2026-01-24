@@ -521,8 +521,87 @@ export default function RundownEditorPage() {
           }
           break;
 
+        // Phase 12: Task 89 - Roster-based suggestions
+        case 'all_american':
+          // Suggest All-American feature segment
+          if (!segmentExists('all-american') && !segmentExists('all american') && !segmentExists(trigger.athlete)) {
+            suggestions.push({
+              id: createSuggestionId('all_american', trigger.athlete),
+              type: 'all_american',
+              title: 'All-American Feature',
+              description: `${trigger.team}'s ${trigger.athlete} is a returning All-American. Add a feature segment?`,
+              priority: trigger.priority,
+              confidence: 0.85,
+              segment: {
+                name: `${trigger.athlete} All-American Feature`,
+                type: 'live',
+                duration: 45,
+                scene: 'Single - Camera 1',
+                graphic: null,
+                autoAdvance: true,
+                timingMode: 'fixed',
+                notes: `Feature ${trigger.athlete} (${trigger.team}) - All-American. Discuss achievements, season expectations.`,
+              },
+            });
+          }
+          break;
+
+        case 'hometown':
+          // Suggest hometown athlete story segment
+          if (!segmentExists('hometown') && !segmentExists('local') && !segmentExists(trigger.athlete)) {
+            suggestions.push({
+              id: createSuggestionId('hometown', trigger.athlete),
+              type: 'hometown',
+              title: 'Hometown Story',
+              description: `${trigger.team}'s ${trigger.athlete} is a local athlete. Add a hometown story segment?`,
+              priority: trigger.priority,
+              confidence: 0.6,
+              segment: {
+                name: `${trigger.athlete} Hometown Story`,
+                type: 'live',
+                duration: 30,
+                scene: 'Single - Camera 1',
+                graphic: null,
+                autoAdvance: true,
+                timingMode: 'fixed',
+                notes: `Local athlete ${trigger.athlete} (${trigger.team}) - discuss hometown connection, local fans in attendance.`,
+              },
+            });
+          }
+          break;
+
+        case 'senior_spotlights':
+          // Suggest individual senior spotlights for a team
+          const seniorNames = trigger.seniorNames?.slice(0, 3).join(', ') || 'seniors'; // Show up to 3 names
+          const moreText = trigger.seniorCount > 3 ? ` and ${trigger.seniorCount - 3} more` : '';
+          if (!segmentExists(`${trigger.team} senior`) && !segmentExists(`${trigger.team} spotlight`)) {
+            suggestions.push({
+              id: createSuggestionId('senior_spotlights', trigger.team),
+              type: 'senior_spotlights',
+              title: `${trigger.team} Senior Spotlights`,
+              description: `${trigger.team} has ${trigger.seniorCount} senior${trigger.seniorCount !== 1 ? 's' : ''} (${seniorNames}${moreText}). Add individual senior spotlight segments?`,
+              priority: trigger.priority,
+              confidence: 0.8,
+              segment: {
+                name: `${trigger.team} Senior Spotlights`,
+                type: 'live',
+                duration: trigger.seniorCount * 30, // 30 seconds per senior
+                scene: 'Talent Camera',
+                graphic: null,
+                autoAdvance: false,
+                timingMode: 'manual',
+                notes: `Feature ${trigger.seniorCount} seniors from ${trigger.team}: ${trigger.seniorNames?.join(', ')}. Discuss achievements, memories, future plans.`,
+              },
+            });
+          }
+          break;
+
+        case 'multi_team':
+          // No direct segment suggestion for multi-team, handled elsewhere
+          break;
+
         default:
-          // Skip other trigger types for now (handled in Task 89)
+          // Unknown trigger type - skip
           break;
       }
     }
