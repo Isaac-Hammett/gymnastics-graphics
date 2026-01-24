@@ -693,28 +693,6 @@ export default function RundownEditorPage() {
     return predictions;
   }, [timingAnalyticsData, segments, segmentHistoricalAverages]);
 
-  // Compute wall-clock times for each segment based on timezone config (Phase K: Task 81)
-  // Returns a map of segmentId -> Date object representing the wall-clock time for that segment
-  const wallClockTimes = useMemo(() => {
-    return calculateWallClockTimes(segments, segmentStartTimes, timezoneConfig);
-  }, [segments, segmentStartTimes, timezoneConfig]);
-
-  // Compute the list of all timezones to display (primary first, then additional) (Phase K: Task 81)
-  // This is used for rendering timezone columns in SegmentRow
-  const allDisplayTimezones = useMemo(() => {
-    if (!timezoneConfig?.primaryTimezone) return [];
-    const timezones = [timezoneConfig.primaryTimezone];
-    if (timezoneConfig.displayTimezones && timezoneConfig.displayTimezones.length > 0) {
-      // Add additional timezones, filtering out any duplicates of primary
-      timezoneConfig.displayTimezones.forEach(tz => {
-        if (tz !== timezoneConfig.primaryTimezone && !timezones.includes(tz)) {
-          timezones.push(tz);
-        }
-      });
-    }
-    return timezones;
-  }, [timezoneConfig]);
-
   // Apply theme class to body and persist preference (Phase 10: Task 80)
   useEffect(() => {
     localStorage.setItem('rundown-theme-dark', JSON.stringify(darkMode));
@@ -1177,6 +1155,28 @@ export default function RundownEditorPage() {
     });
     return startTimes;
   }, [segments]);
+
+  // Compute wall-clock times for each segment based on timezone config (Phase K: Task 81)
+  // Returns a map of segmentId -> Date object representing the wall-clock time for that segment
+  const wallClockTimes = useMemo(() => {
+    return calculateWallClockTimes(segments, segmentStartTimes, timezoneConfig);
+  }, [segments, segmentStartTimes, timezoneConfig]);
+
+  // Compute the list of all timezones to display (primary first, then additional) (Phase K: Task 81)
+  // This is used for rendering timezone columns in SegmentRow
+  const allDisplayTimezones = useMemo(() => {
+    if (!timezoneConfig?.primaryTimezone) return [];
+    const timezones = [timezoneConfig.primaryTimezone];
+    if (timezoneConfig.displayTimezones && timezoneConfig.displayTimezones.length > 0) {
+      // Add additional timezones, filtering out any duplicates of primary
+      timezoneConfig.displayTimezones.forEach(tz => {
+        if (tz !== timezoneConfig.primaryTimezone && !timezones.includes(tz)) {
+          timezones.push(tz);
+        }
+      });
+    }
+    return timezones;
+  }, [timezoneConfig]);
 
   // Detect equipment conflicts - equipment assigned to overlapping segments (Phase G: Task 69)
   // This is computed at component level so conflicts are visible in toolbar, segment rows, and detail panel
