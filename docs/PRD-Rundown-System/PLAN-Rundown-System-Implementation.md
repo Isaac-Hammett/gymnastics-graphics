@@ -64,7 +64,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 
 ## Task Summary by Phase
 
-### Phase A: Connect Editor to Engine (P0) - IN PROGRESS (4/16 complete)
+### Phase A: Connect Editor to Engine (P0) - IN PROGRESS (5/16 complete)
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
@@ -72,7 +72,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 2 | Create `timesheetEngines` Map in server/index.js | COMPLETE | Added Map, getOrCreateEngine, getEngine, removeEngine functions |
 | Task 3 | Update `_applyTransitionAndSwitchScene()` to use `obsConnectionManager.getConnection(this.compId)` | COMPLETE | Updated to get OBS connection from obsConnectionManager using compId, with fallback to legacy this.obs |
 | Task 4 | Update `_playVideo()` to use per-competition OBS connection | COMPLETE | Updated to use obsConnectionManager.getConnection(compId) with fallback to legacy this.obs |
-| Task 5 | Update `_applyAudioOverrides()` to use per-competition OBS connection | NOT STARTED | |
+| Task 5 | Update `_applyAudioOverrides()` to use per-competition OBS connection | COMPLETE | Updated to use obsConnectionManager.getConnection(compId) with fallback to legacy this.obs |
 | Task 6 | Update all socket event broadcasts to target competition room | NOT STARTED | |
 | Task 7 | Pass Firebase Admin instance to engine for `_triggerGraphic()` | NOT STARTED | |
 | Task 8 | Add `loadRundown` socket handler on server | NOT STARTED | |
@@ -272,15 +272,21 @@ Update the video playback method to use per-competition OBS connection.
 
 ### Task 5: Update _applyAudioOverrides()
 
-**Status:** NOT STARTED
+**Status:** COMPLETE
 **File:** `server/lib/timesheetEngine.js`
 
 **Description:**
 Update the audio override method to use per-competition OBS connection.
 
 **Checklist:**
-- [ ] Replace `this.obs.call(...)` with `this.obsConnectionManager.getConnection(this.compId).call(...)`
-- [ ] Handle case when connection doesn't exist
+- [x] Replace `this.obs.call(...)` with `this.obsConnectionManager.getConnection(this.compId).call(...)`
+- [x] Handle case when connection doesn't exist
+
+**Implementation Notes:**
+- Updated `_applyAudioOverrides()` to first check for `obsConnectionManager` + `compId` (preferred)
+- Added fallback to legacy `this.obs` for backward compatibility
+- Emits error event with `type: 'obs_audio'` when no connection found for competition
+- Follows same pattern as `_applyTransitionAndSwitchScene()` and `_playVideo()`
 
 ---
 

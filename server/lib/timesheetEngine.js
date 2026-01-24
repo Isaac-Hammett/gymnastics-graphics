@@ -796,14 +796,34 @@ class TimesheetEngine extends EventEmitter {
    * @private
    */
   async _applyAudioOverrides(segment) {
-    if (!this.obs || !segment.audio) return;
+    if (!segment.audio) return;
+
+    // Get OBS connection - prefer per-competition connection via obsConnectionManager
+    let obsConnection = null;
+    if (this.obsConnectionManager && this.compId) {
+      obsConnection = this.obsConnectionManager.getConnection(this.compId);
+      if (!obsConnection) {
+        this.emit('error', {
+          type: 'obs_audio',
+          message: `No OBS connection found for competition ${this.compId}`,
+          segmentId: segment.id
+        });
+        return;
+      }
+    } else if (this.obs) {
+      // Fallback to legacy single OBS connection
+      obsConnection = this.obs;
+    } else {
+      // No OBS connection available
+      return;
+    }
 
     const audioConfig = this.showConfig.audioConfig || {};
 
     try {
       // Apply venue audio volume
       if (segment.audio.venueVolume !== undefined && audioConfig.venue?.sourceName) {
-        await this.obs.call('SetInputVolume', {
+        await obsConnection.call('SetInputVolume', {
           inputName: audioConfig.venue.sourceName,
           inputVolumeDb: this._volumeToDb(segment.audio.venueVolume)
         });
@@ -811,7 +831,7 @@ class TimesheetEngine extends EventEmitter {
 
       // Apply commentary audio volume
       if (segment.audio.commentaryVolume !== undefined && audioConfig.commentary?.sourceName) {
-        await this.obs.call('SetInputVolume', {
+        await obsConnection.call('SetInputVolume', {
           inputName: audioConfig.commentary.sourceName,
           inputVolumeDb: this._volumeToDb(segment.audio.commentaryVolume)
         });
@@ -819,14 +839,14 @@ class TimesheetEngine extends EventEmitter {
 
       // Apply mute states
       if (segment.audio.muteVenue !== undefined && audioConfig.venue?.sourceName) {
-        await this.obs.call('SetInputMute', {
+        await obsConnection.call('SetInputMute', {
           inputName: audioConfig.venue.sourceName,
           inputMuted: segment.audio.muteVenue
         });
       }
 
       if (segment.audio.muteCommentary !== undefined && audioConfig.commentary?.sourceName) {
-        await this.obs.call('SetInputMute', {
+        await obsConnection.call('SetInputMute', {
           inputName: audioConfig.commentary.sourceName,
           inputMuted: segment.audio.muteCommentary
         });
