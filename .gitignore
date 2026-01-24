@@ -39,3 +39,4 @@ Thumbs.db
 screenshots/
 ralph-wigg/screenshots/
 docs/PRD-Rundown-01-EditorPrototype/logs/claude-output.jsonl
+docs/PRD-Rundown-System/logs/*.jsonl
