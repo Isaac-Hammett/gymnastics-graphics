@@ -87,6 +87,34 @@ const DEFAULT_CONFIG = {
   lookAheadSegments: 2,        // Number of upcoming segments to prep
 };
 
+/**
+ * Segment type patterns for context generation
+ */
+const SEGMENT_PATTERNS = {
+  rotation: /rotation\s*(\d+)/i,
+  event: /\b(floor|vault|bars|beam|rings|pommel|parallel|high bar|fx|vt|ub|bb|sr|ph|pb|hb)\b/i,
+  team: /\b(intro|introduction|welcome)\b/i,
+  interview: /\b(interview|feature|spotlight|profile)\b/i,
+  scoring: /\b(score|scoring|results?|standings?)\b/i,
+  break: /\b(break|intermission|halftime)\b/i,
+  opening: /\b(open|opening|pre-?show|warmup)\b/i,
+  closing: /\b(close|closing|post-?show|wrap|finale)\b/i,
+};
+
+/**
+ * Event short code to full name mapping
+ */
+const EVENT_FULL_NAMES = {
+  FX: 'Floor Exercise',
+  VT: 'Vault',
+  UB: 'Uneven Bars',
+  BB: 'Balance Beam',
+  PH: 'Pommel Horse',
+  SR: 'Still Rings',
+  PB: 'Parallel Bars',
+  HB: 'High Bar',
+};
+
 // ============================================================================
 // AI Context Service Class
 // ============================================================================
@@ -353,15 +381,19 @@ class AIContextService {
   /**
    * Get basic talking points for a segment type
    *
+   * Enhanced in Task 59 with intelligent context-aware generation based on:
+   * - Segment name/type patterns
+   * - Team data (seniors, rankings, coaches)
+   * - Event-specific context
+   * - Matchup analysis
+   *
    * @param {Object} segment - Segment data
    * @returns {Array} Talking points
    */
   _getBasicTalkingPoints(segment) {
-    // STUB: Returns placeholder talking points
-    // Will be enhanced in Task 59 with actual AI/rule-based generation
     const points = [];
 
-    // Add segment-specific placeholder points
+    // Always include segment notes if present (highest priority)
     if (segment.notes) {
       points.push({
         id: `notes-${segment.id}`,
@@ -372,18 +404,539 @@ class AIContextService {
       });
     }
 
-    // Add type-specific placeholder
+    // Analyze segment name for context patterns
+    const segmentName = segment.name || '';
+    const segmentContext = this._analyzeSegmentName(segmentName);
+
+    // Generate points based on segment context
+    if (segmentContext.isRotation) {
+      points.push(...this._getRotationTalkingPoints(segmentContext, segment));
+    }
+
+    if (segmentContext.isTeamIntro) {
+      points.push(...this._getTeamIntroTalkingPoints(segment));
+    }
+
+    if (segmentContext.isInterview) {
+      points.push(...this._getInterviewTalkingPoints(segment));
+    }
+
+    if (segmentContext.isScoring) {
+      points.push(...this._getScoringTalkingPoints(segment));
+    }
+
+    if (segmentContext.isOpening) {
+      points.push(...this._getOpeningTalkingPoints(segment));
+    }
+
+    if (segmentContext.isClosing) {
+      points.push(...this._getClosingTalkingPoints(segment));
+    }
+
+    if (segmentContext.isBreak) {
+      points.push(...this._getBreakTalkingPoints(segment));
+    }
+
+    // Add event-specific talking points if an event is detected
+    if (segmentContext.event) {
+      points.push(...this._getEventTalkingPoints(segmentContext.event, segment));
+    }
+
+    // Add matchup context if we have team data
+    if (this._teamData) {
+      const matchupPoints = this._getMatchupTalkingPoints(segment);
+      points.push(...matchupPoints);
+    }
+
+    // Add type-specific context
     if (segment.type === 'live' || segment.type === 'LIVE') {
       points.push({
-        id: `type-${segment.id}`,
+        id: `live-${segment.id}`,
         type: CONTEXT_TYPES.SEGMENT,
-        priority: PRIORITY.MEDIUM,
+        priority: PRIORITY.LOW,
         text: 'Live segment - engage with the audience',
         source: 'segment-type',
       });
     }
 
     return points;
+  }
+
+  /**
+   * Analyze segment name to extract context patterns
+   *
+   * @param {string} name - Segment name
+   * @returns {Object} Extracted context
+   */
+  _analyzeSegmentName(name) {
+    const context = {
+      isRotation: false,
+      rotationNumber: null,
+      event: null,
+      isTeamIntro: false,
+      isInterview: false,
+      isScoring: false,
+      isBreak: false,
+      isOpening: false,
+      isClosing: false,
+    };
+
+    // Check for rotation
+    const rotationMatch = name.match(SEGMENT_PATTERNS.rotation);
+    if (rotationMatch) {
+      context.isRotation = true;
+      context.rotationNumber = parseInt(rotationMatch[1], 10);
+    }
+
+    // Check for event references
+    const eventMatch = name.match(SEGMENT_PATTERNS.event);
+    if (eventMatch) {
+      context.event = this._normalizeEventName(eventMatch[1]);
+    }
+
+    // Check other patterns
+    context.isTeamIntro = SEGMENT_PATTERNS.team.test(name);
+    context.isInterview = SEGMENT_PATTERNS.interview.test(name);
+    context.isScoring = SEGMENT_PATTERNS.scoring.test(name);
+    context.isBreak = SEGMENT_PATTERNS.break.test(name);
+    context.isOpening = SEGMENT_PATTERNS.opening.test(name);
+    context.isClosing = SEGMENT_PATTERNS.closing.test(name);
+
+    return context;
+  }
+
+  /**
+   * Normalize event name to short code
+   *
+   * @param {string} eventName - Event name or code
+   * @returns {string} Normalized event code
+   */
+  _normalizeEventName(eventName) {
+    const normalized = eventName.toUpperCase().trim();
+
+    // Direct matches
+    if (EVENT_FULL_NAMES[normalized]) return normalized;
+
+    // Map full names to codes
+    const nameMap = {
+      FLOOR: 'FX',
+      VAULT: 'VT',
+      BARS: 'UB',
+      BEAM: 'BB',
+      POMMEL: 'PH',
+      RINGS: 'SR',
+      PARALLEL: 'PB',
+      'HIGH BAR': 'HB',
+    };
+
+    return nameMap[normalized] || normalized;
+  }
+
+  /**
+   * Generate talking points for rotation segments
+   */
+  _getRotationTalkingPoints(context, segment) {
+    const points = [];
+    const rotation = context.rotationNumber;
+
+    if (rotation === 1) {
+      points.push({
+        id: `rotation-start-${segment.id}`,
+        type: CONTEXT_TYPES.SEGMENT,
+        priority: PRIORITY.MEDIUM,
+        text: 'First rotation - set the stage for the competition, introduce the teams and format',
+        source: 'rotation-context',
+      });
+    } else if (rotation === 6) {
+      points.push({
+        id: `rotation-final-${segment.id}`,
+        type: CONTEXT_TYPES.SEGMENT,
+        priority: PRIORITY.HIGH,
+        text: 'Final rotation - championship moments ahead, build tension for the finish',
+        source: 'rotation-context',
+      });
+    }
+
+    // Add event-specific context for the rotation
+    if (context.event) {
+      const eventName = EVENT_FULL_NAMES[context.event] || context.event;
+      points.push({
+        id: `rotation-event-${segment.id}`,
+        type: CONTEXT_TYPES.SEGMENT,
+        priority: PRIORITY.MEDIUM,
+        text: `Teams competing on ${eventName} - highlight key athletes and watch for standout performances`,
+        source: 'rotation-context',
+      });
+    }
+
+    return points;
+  }
+
+  /**
+   * Generate talking points for team introduction segments
+   */
+  _getTeamIntroTalkingPoints(segment) {
+    const points = [];
+
+    // Extract team info from segment name
+    const segmentName = segment.name || '';
+
+    // Get seniors from team data
+    const seniors = this._getSeniorsFromTeamData();
+    if (seniors.length > 0) {
+      const seniorNames = seniors.slice(0, 3).map((s) => s.firstName || s.fullName.split(' ')[0]);
+      points.push({
+        id: `seniors-${segment.id}`,
+        type: CONTEXT_TYPES.ATHLETE,
+        priority: PRIORITY.HIGH,
+        text: `Senior spotlight: ${seniorNames.join(', ')} - their final season`,
+        source: 'roster-analysis',
+        data: { seniors: seniors.slice(0, 3) },
+      });
+    }
+
+    // Get freshmen for "new faces" context
+    const freshmen = this._getFreshmenFromTeamData();
+    if (freshmen.length > 0) {
+      const freshmanNames = freshmen.slice(0, 2).map((f) => f.firstName || f.fullName.split(' ')[0]);
+      points.push({
+        id: `freshmen-${segment.id}`,
+        type: CONTEXT_TYPES.ATHLETE,
+        priority: PRIORITY.MEDIUM,
+        text: `New faces to watch: ${freshmanNames.join(', ')} making their mark this season`,
+        source: 'roster-analysis',
+        data: { freshmen: freshmen.slice(0, 2) },
+      });
+    }
+
+    // Add coach info
+    const coaches = this._getCoachesFromTeamData();
+    if (coaches.length > 0) {
+      const headCoach = coaches.find((c) => c.position?.toLowerCase().includes('head')) || coaches[0];
+      if (headCoach) {
+        points.push({
+          id: `coach-${segment.id}`,
+          type: CONTEXT_TYPES.SEGMENT,
+          priority: PRIORITY.MEDIUM,
+          text: `Led by head coach ${headCoach.fullName || headCoach.firstName + ' ' + headCoach.lastName}`,
+          source: 'team-data',
+          data: { coach: headCoach },
+        });
+      }
+    }
+
+    return points;
+  }
+
+  /**
+   * Generate talking points for interview/feature segments
+   */
+  _getInterviewTalkingPoints(segment) {
+    const points = [];
+
+    points.push({
+      id: `interview-${segment.id}`,
+      type: CONTEXT_TYPES.SEGMENT,
+      priority: PRIORITY.MEDIUM,
+      text: 'Feature segment - keep questions concise, let the subject tell their story',
+      source: 'segment-type',
+    });
+
+    return points;
+  }
+
+  /**
+   * Generate talking points for scoring segments
+   */
+  _getScoringTalkingPoints(segment) {
+    const points = [];
+
+    points.push({
+      id: `scoring-${segment.id}`,
+      type: CONTEXT_TYPES.SEGMENT,
+      priority: PRIORITY.MEDIUM,
+      text: 'Scoring update - compare current standings, highlight momentum shifts',
+      source: 'segment-type',
+    });
+
+    return points;
+  }
+
+  /**
+   * Generate talking points for opening segments
+   */
+  _getOpeningTalkingPoints(segment) {
+    const points = [];
+
+    points.push({
+      id: `opening-${segment.id}`,
+      type: CONTEXT_TYPES.SEGMENT,
+      priority: PRIORITY.HIGH,
+      text: 'Welcome viewers, set the scene for today\'s competition, preview key matchups',
+      source: 'segment-type',
+    });
+
+    // Add matchup preview from rankings
+    const rankingContext = this._getRankingComparisonContext();
+    if (rankingContext) {
+      points.push({
+        id: `rankings-${segment.id}`,
+        type: CONTEXT_TYPES.MATCHUP,
+        priority: PRIORITY.MEDIUM,
+        text: rankingContext,
+        source: 'rankings-data',
+      });
+    }
+
+    return points;
+  }
+
+  /**
+   * Generate talking points for closing segments
+   */
+  _getClosingTalkingPoints(segment) {
+    const points = [];
+
+    points.push({
+      id: `closing-${segment.id}`,
+      type: CONTEXT_TYPES.SEGMENT,
+      priority: PRIORITY.HIGH,
+      text: 'Wrap up with final scores, standout performances, and what\'s next for both teams',
+      source: 'segment-type',
+    });
+
+    return points;
+  }
+
+  /**
+   * Generate talking points for break segments
+   */
+  _getBreakTalkingPoints(segment) {
+    const points = [];
+
+    points.push({
+      id: `break-${segment.id}`,
+      type: CONTEXT_TYPES.SEGMENT,
+      priority: PRIORITY.MEDIUM,
+      text: 'Transition segment - preview upcoming rotations, update standings if available',
+      source: 'segment-type',
+    });
+
+    return points;
+  }
+
+  /**
+   * Generate event-specific talking points
+   */
+  _getEventTalkingPoints(eventCode, segment) {
+    const points = [];
+    const eventName = EVENT_FULL_NAMES[eventCode] || eventCode;
+
+    // Event-specific commentary tips
+    const eventTips = {
+      FX: 'Watch for tumbling passes, dance elements, and stick landings - energy and artistry matter',
+      VT: 'Key factors: table height, distance, rotation, and landing - look for amplitude and control',
+      UB: 'Focus on release moves, transitions, and dismounts - handstands and connections are crucial',
+      BB: 'Balance, artistry, and confidence - watch for wobbles and deductions, acro series is key',
+      PH: 'Continuous circular motion, scissors work - watch for leg separations and pauses',
+      SR: 'Strength holds, swings, and dismount - look for stability and controlled movements',
+      PB: 'Release moves, swings, and handstands - watch for form and dismount execution',
+      HB: 'Release moves and catches, giant swings - dismount often determines the score',
+    };
+
+    if (eventTips[eventCode]) {
+      points.push({
+        id: `event-tips-${segment.id}`,
+        type: CONTEXT_TYPES.SEGMENT,
+        priority: PRIORITY.MEDIUM,
+        text: `${eventName}: ${eventTips[eventCode]}`,
+        source: 'event-expertise',
+      });
+    }
+
+    // Get event-specific ranking comparison
+    const eventRankings = this._getEventRankingComparison(eventCode);
+    if (eventRankings) {
+      points.push({
+        id: `event-rankings-${segment.id}`,
+        type: CONTEXT_TYPES.MATCHUP,
+        priority: PRIORITY.MEDIUM,
+        text: eventRankings,
+        source: 'rankings-data',
+      });
+    }
+
+    return points;
+  }
+
+  /**
+   * Generate matchup talking points from team data
+   */
+  _getMatchupTalkingPoints(segment) {
+    const points = [];
+
+    if (!this._teamData) return points;
+
+    // Only add matchup context for relevant segments
+    const segmentName = (segment.name || '').toLowerCase();
+    if (
+      segmentName.includes('rotation') ||
+      segmentName.includes('intro') ||
+      segmentName.includes('opening')
+    ) {
+      const comparison = this._getRankingComparisonContext();
+      if (comparison && !points.some((p) => p.source === 'rankings-data')) {
+        points.push({
+          id: `matchup-${segment.id}`,
+          type: CONTEXT_TYPES.MATCHUP,
+          priority: PRIORITY.MEDIUM,
+          text: comparison,
+          source: 'rankings-data',
+        });
+      }
+    }
+
+    return points;
+  }
+
+  /**
+   * Get seniors from team data
+   */
+  _getSeniorsFromTeamData() {
+    const seniors = [];
+    if (!this._teamData) return seniors;
+
+    for (const teamKey of ['team1', 'team2']) {
+      const team = this._teamData[teamKey];
+      if (team?.roster) {
+        const teamSeniors = team.roster.filter((a) => a.year === 4);
+        seniors.push(...teamSeniors.map((s) => ({ ...s, team: teamKey })));
+      }
+    }
+
+    return seniors;
+  }
+
+  /**
+   * Get freshmen from team data
+   */
+  _getFreshmenFromTeamData() {
+    const freshmen = [];
+    if (!this._teamData) return freshmen;
+
+    for (const teamKey of ['team1', 'team2']) {
+      const team = this._teamData[teamKey];
+      if (team?.roster) {
+        const teamFreshmen = team.roster.filter((a) => a.year === 1);
+        freshmen.push(...teamFreshmen.map((f) => ({ ...f, team: teamKey })));
+      }
+    }
+
+    return freshmen;
+  }
+
+  /**
+   * Get coaches from team data
+   */
+  _getCoachesFromTeamData() {
+    const coaches = [];
+    if (!this._teamData) return coaches;
+
+    for (const teamKey of ['team1', 'team2']) {
+      const team = this._teamData[teamKey];
+      if (team?.coaches) {
+        coaches.push(...team.coaches.map((c) => ({ ...c, team: teamKey })));
+      }
+    }
+
+    return coaches;
+  }
+
+  /**
+   * Get ranking comparison context text
+   */
+  _getRankingComparisonContext() {
+    if (!this._teamData?.team1?.rankings || !this._teamData?.team2?.rankings) {
+      return null;
+    }
+
+    const team1 = this._teamData.team1;
+    const team2 = this._teamData.team2;
+    const r1 = team1.rankings;
+    const r2 = team2.rankings;
+
+    if (!r1.team || !r2.team) return null;
+
+    // Find which team is ranked higher
+    const team1Name = this._getTeamDisplayName('team1');
+    const team2Name = this._getTeamDisplayName('team2');
+
+    if (r1.team < r2.team) {
+      return `${team1Name} (ranked #${r1.team}) vs ${team2Name} (#${r2.team}) - ${Math.abs(r1.team - r2.team)} spots separate these teams`;
+    } else if (r2.team < r1.team) {
+      return `${team2Name} (ranked #${r2.team}) vs ${team1Name} (#${r1.team}) - ${Math.abs(r1.team - r2.team)} spots separate these teams`;
+    } else {
+      return `Both teams ranked #${r1.team} - evenly matched heading into today`;
+    }
+  }
+
+  /**
+   * Get event-specific ranking comparison
+   */
+  _getEventRankingComparison(eventCode) {
+    if (!this._teamData?.team1?.rankings || !this._teamData?.team2?.rankings) {
+      return null;
+    }
+
+    const eventRankingKey = {
+      FX: 'floor',
+      VT: 'vault',
+      UB: 'bars',
+      BB: 'beam',
+      PH: 'horse',
+      SR: 'rings',
+      PB: 'pbars',
+      HB: 'hbar',
+    };
+
+    const key = eventRankingKey[eventCode];
+    if (!key) return null;
+
+    const r1 = this._teamData.team1.rankings[key];
+    const r2 = this._teamData.team2.rankings[key];
+
+    if (!r1 || !r2) return null;
+
+    const team1Name = this._getTeamDisplayName('team1');
+    const team2Name = this._getTeamDisplayName('team2');
+    const eventName = EVENT_FULL_NAMES[eventCode] || eventCode;
+
+    if (r1 < r2) {
+      return `On ${eventName}: ${team1Name} ranked #${r1}, ${team2Name} #${r2}`;
+    } else if (r2 < r1) {
+      return `On ${eventName}: ${team2Name} ranked #${r2}, ${team1Name} #${r1}`;
+    }
+
+    return null;
+  }
+
+  /**
+   * Get team display name from competition config or team data
+   */
+  _getTeamDisplayName(teamKey) {
+    // Try competition config first
+    if (this._competitionConfig?.teams?.[teamKey]?.name) {
+      return this._competitionConfig.teams[teamKey].name;
+    }
+
+    // Fall back to extracting from schedule opponent
+    const team = this._teamData?.[teamKey];
+    if (team?.schedule?.[0]?.opponent) {
+      // Try to extract from context
+      return teamKey === 'team1' ? 'Team 1' : 'Team 2';
+    }
+
+    return teamKey === 'team1' ? 'Home' : 'Away';
   }
 
   // ==========================================================================
@@ -961,6 +1514,8 @@ const aiContextService = {
   PRIORITY,
   DEFAULT_CONFIG,
   EVENT_MAPPINGS,
+  SEGMENT_PATTERNS,
+  EVENT_FULL_NAMES,
 };
 
 export default aiContextService;
@@ -975,4 +1530,6 @@ export {
   PRIORITY,
   DEFAULT_CONFIG,
   EVENT_MAPPINGS,
+  SEGMENT_PATTERNS,
+  EVENT_FULL_NAMES,
 };
