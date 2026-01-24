@@ -70,6 +70,16 @@ const DUMMY_SCENES = [
   { name: 'Quad View', category: 'multi' },
 ];
 
+// Hardcoded talent roster per PRD (Phase 12: Task 94)
+// On-camera talent database for assignment to segments
+const DUMMY_TALENT = [
+  { id: 'talent-1', name: 'John Smith', role: 'Lead Commentator', abbreviation: 'JS' },
+  { id: 'talent-2', name: 'Sarah Johnson', role: 'Color Analyst', abbreviation: 'SJ' },
+  { id: 'talent-3', name: 'Mike Davis', role: 'Sideline Reporter', abbreviation: 'MD' },
+  { id: 'talent-4', name: 'Emily Chen', role: 'Host', abbreviation: 'EC' },
+  { id: 'talent-5', name: 'Alex Rodriguez', role: 'Analyst', abbreviation: 'AR' },
+];
+
 // Timing mode options (Phase 6: Task 55)
 const TIMING_MODES = [
   { value: 'fixed', label: 'Fixed Duration', description: 'Segment has set duration, auto-advances when complete' },
@@ -141,15 +151,15 @@ const ROLE_COLORS = {
   viewer: 'ring-zinc-400',
 };
 
-// Hardcoded test data per PRD (updated with graphic field structure for Phase 0B, bufferAfter for Phase 1, locked/optional/notes for Phase 5, timingMode for Phase 6, script for Phase 12, audioCue for Phase 12 Task 93)
+// Hardcoded test data per PRD (updated with graphic field structure for Phase 0B, bufferAfter for Phase 1, locked/optional/notes for Phase 5, timingMode for Phase 6, script for Phase 12, audioCue for Phase 12 Task 93, talent for Phase 12 Task 94)
 const DUMMY_SEGMENTS = [
-  { id: 'seg-001', name: 'Show Intro', type: 'video', duration: 45, scene: 'Starting Soon', graphic: null, autoAdvance: true, bufferAfter: 0, locked: false, optional: false, notes: '', script: '', timingMode: 'fixed', audioCue: { songName: 'ESPN Theme', inPoint: '0:00', outPoint: '0:45' } },
-  { id: 'seg-002', name: 'Team Logos', type: 'static', duration: 10, scene: 'Graphics Fullscreen', graphic: { graphicId: 'logos', params: {} }, autoAdvance: true, bufferAfter: 5, locked: true, optional: false, notes: 'Show all 4 team logos in quad layout', script: '', timingMode: 'fixed', audioCue: null },
-  { id: 'seg-003', name: 'UCLA Coaches', type: 'live', duration: 15, scene: 'Single - Camera 2', graphic: { graphicId: 'team-coaches', params: { teamSlot: 1 } }, autoAdvance: true, bufferAfter: 0, locked: false, optional: false, notes: '', script: '- Welcome viewers to today\'s competition\n- Introduce the UCLA coaching staff\n- **Head Coach Chris Waller** - 10th season\n- Mention last season\'s Pac-12 Championship victory', timingMode: 'follows-previous', audioCue: null },
-  { id: 'seg-004', name: 'Oregon Coaches', type: 'live', duration: 15, scene: 'Single - Camera 3', graphic: { graphicId: 'team-coaches', params: { teamSlot: 2 } }, autoAdvance: true, bufferAfter: 10, locked: false, optional: false, notes: 'First year head coach - mention in intro', script: '', timingMode: 'fixed', audioCue: null },
-  { id: 'seg-005', name: 'Rotation 1 Summary', type: 'static', duration: 20, scene: 'Graphics Fullscreen', graphic: { graphicId: 'event-summary', params: { summaryMode: 'rotation', summaryRotation: 1, summaryTheme: 'espn' } }, autoAdvance: true, bufferAfter: 0, locked: false, optional: false, notes: '', script: '', timingMode: 'fixed', audioCue: null },
-  { id: 'seg-006', name: 'Floor - Rotation 1', type: 'live', duration: null, scene: 'Quad View', graphic: { graphicId: 'floor', params: {} }, autoAdvance: false, bufferAfter: 0, locked: false, optional: false, notes: '', script: '', timingMode: 'manual', audioCue: { songName: 'Floor Background Music', inPoint: '0:00', outPoint: '' } },
-  { id: 'seg-007', name: 'Commercial Break', type: 'break', duration: 120, scene: 'Starting Soon', graphic: null, autoAdvance: true, bufferAfter: 0, locked: false, optional: true, notes: 'Check with director before taking break', script: '', timingMode: 'fixed', audioCue: null }, // Example optional segment
+  { id: 'seg-001', name: 'Show Intro', type: 'video', duration: 45, scene: 'Starting Soon', graphic: null, autoAdvance: true, bufferAfter: 0, locked: false, optional: false, notes: '', script: '', timingMode: 'fixed', audioCue: { songName: 'ESPN Theme', inPoint: '0:00', outPoint: '0:45' }, talent: ['talent-4'] },
+  { id: 'seg-002', name: 'Team Logos', type: 'static', duration: 10, scene: 'Graphics Fullscreen', graphic: { graphicId: 'logos', params: {} }, autoAdvance: true, bufferAfter: 5, locked: true, optional: false, notes: 'Show all 4 team logos in quad layout', script: '', timingMode: 'fixed', audioCue: null, talent: [] },
+  { id: 'seg-003', name: 'UCLA Coaches', type: 'live', duration: 15, scene: 'Single - Camera 2', graphic: { graphicId: 'team-coaches', params: { teamSlot: 1 } }, autoAdvance: true, bufferAfter: 0, locked: false, optional: false, notes: '', script: '- Welcome viewers to today\'s competition\n- Introduce the UCLA coaching staff\n- **Head Coach Chris Waller** - 10th season\n- Mention last season\'s Pac-12 Championship victory', timingMode: 'follows-previous', audioCue: null, talent: ['talent-1', 'talent-2'] },
+  { id: 'seg-004', name: 'Oregon Coaches', type: 'live', duration: 15, scene: 'Single - Camera 3', graphic: { graphicId: 'team-coaches', params: { teamSlot: 2 } }, autoAdvance: true, bufferAfter: 10, locked: false, optional: false, notes: 'First year head coach - mention in intro', script: '', timingMode: 'fixed', audioCue: null, talent: ['talent-1', 'talent-2'] },
+  { id: 'seg-005', name: 'Rotation 1 Summary', type: 'static', duration: 20, scene: 'Graphics Fullscreen', graphic: { graphicId: 'event-summary', params: { summaryMode: 'rotation', summaryRotation: 1, summaryTheme: 'espn' } }, autoAdvance: true, bufferAfter: 0, locked: false, optional: false, notes: '', script: '', timingMode: 'fixed', audioCue: null, talent: [] },
+  { id: 'seg-006', name: 'Floor - Rotation 1', type: 'live', duration: null, scene: 'Quad View', graphic: { graphicId: 'floor', params: {} }, autoAdvance: false, bufferAfter: 0, locked: false, optional: false, notes: '', script: '', timingMode: 'manual', audioCue: { songName: 'Floor Background Music', inPoint: '0:00', outPoint: '' }, talent: ['talent-1', 'talent-2', 'talent-3'] },
+  { id: 'seg-007', name: 'Commercial Break', type: 'break', duration: 120, scene: 'Starting Soon', graphic: null, autoAdvance: true, bufferAfter: 0, locked: false, optional: true, notes: 'Check with director before taking break', script: '', timingMode: 'fixed', audioCue: null, talent: [] }, // Example optional segment
 ];
 
 // Segment type options
@@ -326,6 +336,9 @@ export default function RundownEditorPage() {
   const [showAISuggestions, setShowAISuggestions] = useState(false); // Toggle AI suggestions panel
   const [aiSuggestions, setAISuggestions] = useState([]); // List of AI-generated segment suggestions
   const [dismissedSuggestions, setDismissedSuggestions] = useState([]); // IDs of dismissed suggestions
+
+  // Talent Schedule state (Phase 12: Task 94)
+  const [showTalentScheduleModal, setShowTalentScheduleModal] = useState(false); // Talent schedule view modal
 
   // Computed type row colors using customTypeColors (Phase 10: Task 78)
   const TYPE_ROW_COLORS = useMemo(() => {
@@ -4303,6 +4316,14 @@ export default function RundownEditorPage() {
             >
               <DocumentTextIcon className="w-4 h-4" />
             </button>
+            {/* Talent Schedule Button (Phase 12: Task 94) */}
+            <button
+              onClick={() => setShowTalentScheduleModal(true)}
+              className="px-3 py-2 text-sm rounded-lg border transition-colors bg-zinc-800 text-zinc-400 border-zinc-700 hover:text-zinc-300 hover:bg-zinc-700"
+              title="View talent schedule"
+            >
+              <UserIcon className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </div>
@@ -4843,6 +4864,15 @@ export default function RundownEditorPage() {
           onClose={() => setShowPrintOptionsModal(false)}
         />
       )}
+
+      {/* Talent Schedule Modal (Phase 12: Task 94) */}
+      {showTalentScheduleModal && (
+        <TalentScheduleModal
+          segments={segments}
+          segmentStartTimes={segmentStartTimes}
+          onClose={() => setShowTalentScheduleModal(false)}
+        />
+      )}
     </div>
   );
 }
@@ -5246,6 +5276,16 @@ function SegmentRow({
                 title={`Audio: ${segment.audioCue.songName}${segment.audioCue.inPoint || segment.audioCue.outPoint ? ` (${segment.audioCue.inPoint || '0:00'} - ${segment.audioCue.outPoint || 'end'})` : ''}`}
               >
                 <MusicalNoteIcon className="w-3 h-3" />
+              </span>
+            )}
+            {/* Talent indicator (Phase 12: Task 94) */}
+            {segment.talent?.length > 0 && (
+              <span
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded bg-rose-500/20 text-rose-400 border border-rose-500/30 shrink-0 cursor-help"
+                title={`Talent: ${segment.talent.map(tId => DUMMY_TALENT.find(t => t.id === tId)?.name || tId).join(', ')}`}
+              >
+                <UserIcon className="w-3 h-3" />
+                <span className="text-[10px]">{segment.talent.length}</span>
               </span>
             )}
             {/* Timing mode badge (Phase 6: Task 56) */}
@@ -6106,6 +6146,67 @@ function SegmentDetailPanel({ segment, onSave, onDelete, onCancel }) {
               >
                 Clear audio cue
               </button>
+            )}
+          </div>
+        </div>
+
+        {/* Talent Assignment (Phase 12: Task 94) */}
+        <div className="border-t border-zinc-700/50 pt-4">
+          <label className="block text-xs text-zinc-400 mb-2 flex items-center gap-1.5">
+            <UserIcon className="w-3.5 h-3.5" />
+            Talent Assignment
+            <span className="ml-1 text-zinc-600 font-normal">— on-camera personnel for this segment</span>
+          </label>
+          <div className="space-y-2">
+            {/* Talent checkboxes */}
+            <div className="grid grid-cols-1 gap-1.5">
+              {DUMMY_TALENT.map((talent) => {
+                const isSelected = (formData.talent || []).includes(talent.id);
+                return (
+                  <label
+                    key={talent.id}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors ${
+                      isSelected
+                        ? 'bg-rose-500/10 border border-rose-500/30'
+                        : 'bg-zinc-800 border border-zinc-700 hover:border-zinc-600'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={(e) => {
+                        const currentTalent = formData.talent || [];
+                        if (e.target.checked) {
+                          setFormData({ ...formData, talent: [...currentTalent, talent.id] });
+                        } else {
+                          setFormData({ ...formData, talent: currentTalent.filter(id => id !== talent.id) });
+                        }
+                      }}
+                      className="w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-rose-500 focus:ring-rose-500/50"
+                    />
+                    <div className="flex-1">
+                      <span className="text-sm text-white">{talent.name}</span>
+                      <span className="ml-2 text-xs text-zinc-500">({talent.abbreviation})</span>
+                    </div>
+                    <span className="text-xs text-zinc-500">{talent.role}</span>
+                  </label>
+                );
+              })}
+            </div>
+            {/* Selected talent summary */}
+            {formData.talent?.length > 0 && (
+              <div className="flex items-center justify-between mt-2 pt-2 border-t border-zinc-700/50">
+                <span className="text-xs text-zinc-400">
+                  {formData.talent.length} talent assigned
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, talent: [] })}
+                  className="text-xs text-zinc-500 hover:text-red-400 transition-colors"
+                >
+                  Clear all
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -8231,6 +8332,239 @@ function PrintOptionsModal({ onPrint, onClose }) {
           >
             <PrinterIcon className="w-5 h-5" />
             Open Print View
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Talent Schedule Modal Component (Phase 12: Task 94)
+// Shows which talent is assigned to which segments with conflict warnings
+function TalentScheduleModal({ segments, segmentStartTimes, onClose, onExport }) {
+  // Build talent schedule data - which segments each talent appears in
+  const talentSchedule = useMemo(() => {
+    const schedule = {};
+
+    // Initialize schedule for each talent
+    DUMMY_TALENT.forEach(talent => {
+      schedule[talent.id] = {
+        talent,
+        segments: [],
+        totalDuration: 0,
+      };
+    });
+
+    // Populate segments for each talent
+    segments.forEach((segment, index) => {
+      if (segment.talent?.length > 0) {
+        segment.talent.forEach(talentId => {
+          if (schedule[talentId]) {
+            schedule[talentId].segments.push({
+              ...segment,
+              index,
+              startTime: segmentStartTimes[index] || 0,
+            });
+            schedule[talentId].totalDuration += segment.duration || 0;
+          }
+        });
+      }
+    });
+
+    return schedule;
+  }, [segments, segmentStartTimes]);
+
+  // Detect conflicts - talent assigned to overlapping segments
+  const conflicts = useMemo(() => {
+    const conflictList = [];
+
+    Object.entries(talentSchedule).forEach(([talentId, data]) => {
+      const segs = data.segments;
+      for (let i = 0; i < segs.length; i++) {
+        for (let j = i + 1; j < segs.length; j++) {
+          const seg1 = segs[i];
+          const seg2 = segs[j];
+          const seg1End = seg1.startTime + (seg1.duration || 0);
+          // Check if segments overlap (back-to-back is not a conflict)
+          if (seg1End > seg2.startTime && seg1.startTime < seg2.startTime + (seg2.duration || 0)) {
+            conflictList.push({
+              talentId,
+              talentName: data.talent.name,
+              segment1: seg1,
+              segment2: seg2,
+            });
+          }
+        }
+      }
+    });
+
+    return conflictList;
+  }, [talentSchedule]);
+
+  // Handle export talent schedule
+  const handleExport = () => {
+    const lines = ['Talent Schedule Report', '='.repeat(50), ''];
+
+    // Summary
+    lines.push('TALENT SUMMARY');
+    lines.push('-'.repeat(30));
+    Object.values(talentSchedule).forEach(data => {
+      if (data.segments.length > 0) {
+        lines.push(`${data.talent.name} (${data.talent.role}): ${data.segments.length} segment(s), ${formatDuration(data.totalDuration)} total`);
+      }
+    });
+    lines.push('');
+
+    // Conflicts
+    if (conflicts.length > 0) {
+      lines.push('CONFLICTS DETECTED');
+      lines.push('-'.repeat(30));
+      conflicts.forEach(conflict => {
+        lines.push(`⚠ ${conflict.talentName}: "${conflict.segment1.name}" and "${conflict.segment2.name}" overlap`);
+      });
+      lines.push('');
+    }
+
+    // Detailed schedule
+    lines.push('DETAILED SCHEDULE');
+    lines.push('-'.repeat(30));
+    Object.values(talentSchedule).forEach(data => {
+      if (data.segments.length > 0) {
+        lines.push(`\n${data.talent.name} (${data.talent.abbreviation}) - ${data.talent.role}`);
+        data.segments.forEach(seg => {
+          lines.push(`  ${formatDuration(seg.startTime)} - ${seg.name} (${formatDuration(seg.duration || 0)})`);
+        });
+      }
+    });
+
+    // Create and download file
+    const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `talent-schedule-${new Date().toISOString().split('T')[0]}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    if (onExport) onExport();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+      <div className="bg-zinc-900 border border-zinc-700 rounded-xl w-full max-w-3xl max-h-[80vh] shadow-2xl flex flex-col">
+        {/* Header */}
+        <div className="p-4 border-b border-zinc-800 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-rose-500/20 flex items-center justify-center">
+              <UserIcon className="w-5 h-5 text-rose-400" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-white">Talent Schedule</h2>
+              <p className="text-sm text-zinc-400">View who is on camera and when</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-zinc-800 rounded-lg transition-colors"
+          >
+            <XMarkIcon className="w-5 h-5 text-zinc-400" />
+          </button>
+        </div>
+
+        {/* Conflicts Warning */}
+        {conflicts.length > 0 && (
+          <div className="px-4 py-3 bg-amber-500/10 border-b border-amber-500/30">
+            <div className="flex items-center gap-2 text-amber-400 text-sm font-medium">
+              <span>⚠</span>
+              <span>{conflicts.length} scheduling conflict{conflicts.length !== 1 ? 's' : ''} detected</span>
+            </div>
+            <div className="mt-2 space-y-1">
+              {conflicts.map((conflict, i) => (
+                <div key={i} className="text-xs text-amber-300/80">
+                  {conflict.talentName}: "{conflict.segment1.name}" and "{conflict.segment2.name}" overlap
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Content */}
+        <div className="p-4 overflow-y-auto flex-1">
+          <div className="space-y-4">
+            {DUMMY_TALENT.map(talent => {
+              const data = talentSchedule[talent.id];
+              const hasSegments = data.segments.length > 0;
+
+              return (
+                <div
+                  key={talent.id}
+                  className={`border rounded-lg overflow-hidden ${
+                    hasSegments ? 'border-zinc-700' : 'border-zinc-800 opacity-50'
+                  }`}
+                >
+                  {/* Talent Header */}
+                  <div className={`p-3 flex items-center justify-between ${
+                    hasSegments ? 'bg-zinc-800' : 'bg-zinc-800/50'
+                  }`}>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-rose-500/20 flex items-center justify-center text-sm font-medium text-rose-400">
+                        {talent.abbreviation}
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-white">{talent.name}</div>
+                        <div className="text-xs text-zinc-500">{talent.role}</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm text-zinc-400">
+                        {data.segments.length} segment{data.segments.length !== 1 ? 's' : ''}
+                      </div>
+                      {hasSegments && (
+                        <div className="text-xs text-zinc-500">
+                          {formatDuration(data.totalDuration)} total
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Segments List */}
+                  {hasSegments && (
+                    <div className="divide-y divide-zinc-800">
+                      {data.segments.map(seg => (
+                        <div key={seg.id} className="p-2 px-3 flex items-center gap-3 text-sm">
+                          <span className="text-zinc-500 font-mono text-xs w-12">
+                            {formatDuration(seg.startTime)}
+                          </span>
+                          <span className="flex-1 text-zinc-300">{seg.name}</span>
+                          <span className="text-zinc-500 text-xs">
+                            {seg.duration ? formatDuration(seg.duration) : 'Manual'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="p-4 border-t border-zinc-800 flex gap-3 justify-end shrink-0">
+          <button
+            onClick={handleExport}
+            className="px-4 py-2 bg-zinc-800 text-zinc-300 rounded-lg hover:bg-zinc-700 transition-colors flex items-center gap-2"
+          >
+            <ArrowDownTrayIcon className="w-4 h-4" />
+            Export Schedule
+          </button>
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-rose-600 text-white font-medium rounded-lg hover:bg-rose-500 transition-colors"
+          >
+            Close
           </button>
         </div>
       </div>
