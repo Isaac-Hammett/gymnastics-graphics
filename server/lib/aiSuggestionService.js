@@ -395,9 +395,158 @@ function parseCompetitionType(compType) {
 }
 
 /**
+ * Parse meet date string into structured date info
+ * Handles formats like "January 17, 2026" or "Jan 17, 2026"
+ */
+function parseMeetDate(meetDateStr) {
+  if (!meetDateStr) return null;
+
+  try {
+    const date = new Date(meetDateStr);
+    if (isNaN(date.getTime())) return null;
+
+    const month = date.getMonth(); // 0-11
+    const dayOfWeek = date.getDay(); // 0=Sunday
+    const dayOfMonth = date.getDate();
+
+    // Determine season context (NCAA gymnastics season is typically Jan-April)
+    let seasonPhase = 'regular';
+    if (month === 0 && dayOfMonth <= 15) {
+      seasonPhase = 'early'; // Early January - season opener territory
+    } else if (month === 2 && dayOfMonth >= 15) {
+      seasonPhase = 'late'; // Late March - conference/NCAA championship territory
+    } else if (month >= 3) {
+      seasonPhase = 'championship'; // April - NCAA championships
+    }
+
+    return {
+      date,
+      month,
+      dayOfWeek,
+      dayOfMonth,
+      year: date.getFullYear(),
+      seasonPhase,
+      isWeekend: dayOfWeek === 0 || dayOfWeek === 5 || dayOfWeek === 6, // Fri, Sat, Sun
+      formatted: meetDateStr,
+    };
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * Extract seniors (year 4) from team roster data
+ */
+function extractSeniors(teamDataMap, teams) {
+  const seniors = [];
+
+  teams.forEach(team => {
+    const teamData = teamDataMap?.[`team${team.slot}`];
+    const roster = teamData?.roster || [];
+
+    roster.forEach(athlete => {
+      if (athlete.year === 4) {
+        seniors.push({
+          name: athlete.fullName || `${athlete.firstName} ${athlete.lastName}`,
+          firstName: athlete.firstName,
+          lastName: athlete.lastName,
+          team: team.name,
+          teamSlot: team.slot,
+          hometown: athlete.hometown,
+          headshotUrl: athlete.headshotUrl,
+        });
+      }
+    });
+  });
+
+  return seniors;
+}
+
+/**
+ * Analyze team statistics for matchup context
+ */
+function analyzeTeamStats(competitionConfig, teams) {
+  const analysis = {
+    teamStats: [],
+    matchupNotes: [],
+    favorite: null,
+    margin: null,
+  };
+
+  teams.forEach((team, index) => {
+    const slot = team.slot;
+    const avg = parseFloat(competitionConfig?.[`team${slot}Ave`]) || 0;
+    const high = parseFloat(competitionConfig?.[`team${slot}High`]) || 0;
+    const tricode = competitionConfig?.[`team${slot}Tricode`] || '';
+
+    analysis.teamStats.push({
+      name: team.name,
+      slot,
+      tricode,
+      seasonAverage: avg,
+      seasonHigh: high,
+      hasStats: avg > 0,
+    });
+  });
+
+  // Determine favorite if stats available for both teams in a dual meet
+  if (analysis.teamStats.length === 2) {
+    const [team1, team2] = analysis.teamStats;
+    if (team1.hasStats && team2.hasStats) {
+      const diff = team1.seasonAverage - team2.seasonAverage;
+      if (Math.abs(diff) >= 1.0) {
+        analysis.favorite = diff > 0 ? team1.name : team2.name;
+        analysis.margin = Math.abs(diff).toFixed(3);
+        analysis.matchupNotes.push(
+          `${analysis.favorite} favored by ~${analysis.margin} points based on season averages`
+        );
+      } else if (Math.abs(diff) >= 0.5) {
+        analysis.matchupNotes.push('Close matchup expected - teams within 1 point average');
+      } else {
+        analysis.matchupNotes.push('Very close matchup - teams nearly even on paper');
+      }
+    }
+  }
+
+  return analysis;
+}
+
+/**
+ * Count athletes by class year
+ */
+function countByClassYear(teamDataMap, teams) {
+  const counts = {
+    freshmen: 0,  // year 1
+    sophomores: 0, // year 2
+    juniors: 0,   // year 3
+    seniors: 0,   // year 4
+    byTeam: {},
+  };
+
+  teams.forEach(team => {
+    const teamData = teamDataMap?.[`team${team.slot}`];
+    const roster = teamData?.roster || [];
+    const teamCounts = { freshmen: 0, sophomores: 0, juniors: 0, seniors: 0 };
+
+    roster.forEach(athlete => {
+      switch (athlete.year) {
+        case 1: counts.freshmen++; teamCounts.freshmen++; break;
+        case 2: counts.sophomores++; teamCounts.sophomores++; break;
+        case 3: counts.juniors++; teamCounts.juniors++; break;
+        case 4: counts.seniors++; teamCounts.seniors++; break;
+      }
+    });
+
+    counts.byTeam[team.name] = teamCounts;
+  });
+
+  return counts;
+}
+
+/**
  * Build context object from competition config and team data
  */
-function buildContext(competitionConfig, teamsData) {
+function buildContext(competitionConfig, teamsData, teamDataFromComp) {
   const { gender, teamCount } = parseCompetitionType(competitionConfig?.compType);
 
   // Extract team info from config
@@ -419,10 +568,23 @@ function buildContext(competitionConfig, teamsData) {
     }
   }
 
+  // Parse meet date for date-based suggestions
+  const dateInfo = parseMeetDate(competitionConfig?.meetDate);
+
+  // Extract seniors from team roster data (uses competition's teamData)
+  const seniors = extractSeniors(teamDataFromComp, teams);
+
+  // Analyze team statistics
+  const statsAnalysis = analyzeTeamStats(competitionConfig, teams);
+
+  // Count athletes by class year
+  const classCounts = countByClassYear(teamDataFromComp, teams);
+
   return {
     compId: competitionConfig?.compId,
     eventName: competitionConfig?.eventName,
     meetDate: competitionConfig?.meetDate,
+    dateInfo,
     venue: competitionConfig?.venue,
     location: competitionConfig?.location,
     gender,
@@ -430,9 +592,12 @@ function buildContext(competitionConfig, teamsData) {
     teams,
     team1Name: teams[0]?.name || 'Team 1',
     team2Name: teams[1]?.name || 'Team 2',
-    // Placeholder for future roster analysis
-    seniors: [],
-    allAmericans: [],
+    // Roster analysis
+    seniors,
+    allAmericans: [], // Future: would need external data source for All-American status
+    classCounts,
+    // Team statistics
+    statsAnalysis,
   };
 }
 
@@ -485,12 +650,16 @@ async function generateSuggestions(compId, options = {}) {
       };
     }
 
-    // Fetch teams database for roster info
+    // Fetch teams database for roster info (fallback)
     const teamsSnapshot = await db.ref('teamsDatabase/teams').once('value');
     const teamsData = teamsSnapshot.val() || {};
 
-    // Build context
-    const context = buildContext(competitionConfig, teamsData);
+    // Fetch competition's teamData which has richer roster info (includes year, rankings, etc.)
+    const teamDataSnapshot = await db.ref(`competitions/${compId}/teamData`).once('value');
+    const teamDataFromComp = teamDataSnapshot.val() || {};
+
+    // Build context with full metadata analysis
+    const context = buildContext(competitionConfig, teamsData, teamDataFromComp);
 
     // Generate suggestions by category
     let suggestions = [];
@@ -532,6 +701,24 @@ async function generateSuggestions(compId, options = {}) {
         gender: context.gender,
         teamCount: context.teamCount,
         teams: context.teams.map(t => ({ name: t.name, rosterSize: t.roster?.length || 0 })),
+        // Enhanced metadata from Task 44
+        dateInfo: context.dateInfo ? {
+          formatted: context.dateInfo.formatted,
+          seasonPhase: context.dateInfo.seasonPhase,
+          isWeekend: context.dateInfo.isWeekend,
+        } : null,
+        venue: context.venue,
+        location: context.location,
+        statsAnalysis: {
+          teamStats: context.statsAnalysis.teamStats,
+          matchupNotes: context.statsAnalysis.matchupNotes,
+          favorite: context.statsAnalysis.favorite,
+        },
+        seniors: context.seniors.map(s => ({
+          name: s.name,
+          team: s.team,
+        })),
+        classCounts: context.classCounts,
       },
       suggestions,
       meta: {
