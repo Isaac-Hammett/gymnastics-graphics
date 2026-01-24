@@ -114,7 +114,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 29 | Compare incoming segments to loaded segments (deep diff) | COMPLETE | Added `deepEqual()`, `compareSegments()`, and `diffSegments()` functions to segmentMapper.js; integrated diff into `subscribeToRundownChanges()` which now logs added/removed/modified/reordered segments with field-level details |
 | Task 30 | Emit `rundownModified` socket event with change summary | COMPLETE | Emits to `competition:${compId}` room with: segment IDs for added/removed/modified/reordered, affectsCurrent/affectsUpcoming flags, summary text, timestamp, and detailed change info for confirmation dialog |
 | Task 31 | Add `rundownModified` state to `useTimesheet` hook | COMPLETE | Added `rundownModified` and `rundownModifiedSummary` to INITIAL_TIMESHEET_STATE, added `rundownModified` socket listener, added `clearRundownModified` function, exposed all through useTimesheet hook |
-| Task 32 | Show "Rundown Modified" warning badge in Producer View | NOT STARTED | |
+| Task 32 | Show "Rundown Modified" warning badge in Producer View | COMPLETE | Added warning badge in header next to rundown status; yellow for future segment changes, red if current segment affected; shows change count with tooltip for summary text |
 | Task 33 | Add "Reload Rundown" button (appears when modified) | NOT STARTED | |
 | Task 34 | Confirmation dialog with change summary | NOT STARTED | |
 | Task 35 | Handle deleted current segment | NOT STARTED | |
