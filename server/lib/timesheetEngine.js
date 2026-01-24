@@ -580,6 +580,18 @@ class TimesheetEngine extends EventEmitter {
       return;
     }
 
+    // In rehearsal mode, skip actual OBS scene changes but still emit event
+    if (this._isRehearsalMode) {
+      console.log(`[Timesheet${this.compId ? ':' + this.compId : ''}] REHEARSAL: Skipping scene change to "${segment.obsScene}"`);
+      this.emit('sceneChanged', {
+        sceneName: segment.obsScene,
+        transition: transition,
+        segmentId: segment.id,
+        rehearsalMode: true
+      });
+      return;
+    }
+
     // Get OBS connection - prefer per-competition connection via obsConnectionManager
     let obsConnection = null;
     if (this.obsConnectionManager && this.compId) {
