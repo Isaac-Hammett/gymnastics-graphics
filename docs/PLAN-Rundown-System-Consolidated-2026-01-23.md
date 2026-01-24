@@ -1,9 +1,9 @@
 # Rundown System - Consolidated Plan
 
-**Version:** 3.1
+**Version:** 3.2
 **Date:** 2026-01-23
 **Status:** ACTIVE - Single Source of Truth
-**Last Audit:** 2026-01-23 (Architecture clarified for multi-competition support)
+**Last Audit:** 2026-01-23 (Architecture clarified, user stories added)
 
 ---
 
@@ -474,6 +474,169 @@ if (obs && this.obsConnectionManager.isConnected(this.compId)) {
 | J.3 | Create timing analytics dashboard | P3 | Not Started |
 | J.4 | Show historical average in Rundown Editor | P3 | Not Started |
 | J.5 | AI-powered timing predictions based on history | P3 | Not Started |
+
+### 3.12 Phase A User Stories
+
+These user stories define the expected behavior for Phase A completion.
+
+#### Story 1: Producer Creates a Rundown
+
+**As a** Producer planning a UCLA vs Oregon meet
+**I want to** create segments in the Rundown Editor
+**So that** I have a structured plan for the show
+
+```
+Producer Flow:
+1. Navigate to /{compId}/rundown
+2. Add segments:
+   - "Pre-Show Graphics" (2:00, scene: Graphics, graphic: logos)
+   - "Welcome" (0:30, scene: Wide Shot, timing: manual)
+   - "UCLA Introduction" (1:00, scene: Team Intro, graphic: team-roster)
+   - "Oregon Introduction" (1:00, scene: Team Intro, graphic: team-roster)
+   - "Rotation 1 Start" (0:15, scene: Wide Shot)
+   ...
+3. Click Save
+4. Segments saved to Firebase: competitions/{compId}/production/rundown/segments
+```
+
+**Status:** ✅ Works today (Rundown Editor UI exists)
+
+---
+
+#### Story 2: Producer Loads Rundown for Execution
+
+**As a** Producer ready to run the show
+**I want to** load my saved rundown into the execution engine
+**So that** I can start the show with all my segments ready
+
+```
+Producer Flow:
+1. Navigate to /{compId}/producer (Producer View)
+2. See "No rundown loaded" indicator
+3. Click "Load Rundown" button
+4. System fetches segments from Firebase
+5. Segments appear in the "Show Progress" panel
+6. See "Rundown loaded: 24 segments" indicator
+7. "Start Show" button becomes active
+```
+
+**Status:** ❌ Does NOT work today (no Load Rundown bridge)
+
+---
+
+#### Story 3: Producer Runs the Show
+
+**As a** Producer executing a live broadcast
+**I want** segments to progress automatically or manually
+**So that** the show flows smoothly with proper timing
+
+```
+Producer Flow:
+1. Click "Start Show"
+2. First segment "Pre-Show Graphics" activates:
+   - Timer counts down from 2:00
+   - OBS switches to "Graphics" scene (via this competition's VM)
+   - "logos" graphic fires
+   - Progress bar shows percentage complete
+3. After 2:00, auto-advances to "Welcome" segment
+4. "Welcome" has manual timing - waits for producer
+5. Producer clicks "Next" when talent finishes welcome
+6. "UCLA Introduction" activates...
+```
+
+**Status:** ⚠️ Partially works (engine logic exists, but can't load segments, OBS goes to wrong place)
+
+---
+
+#### Story 4: Producer Runs Second Competition Simultaneously
+
+**As a** Production company running two meets at once
+**I want** each competition to have independent show control
+**So that** one show doesn't interfere with the other
+
+```
+Scenario:
+- Competition A (compId: abc123): UCLA vs Oregon on VM 50.19.137.152
+- Competition B (compId: xyz789): Stanford vs Cal on VM 54.210.98.89
+
+Producer A at /abc123/producer:
+1. Loads rundown for UCLA vs Oregon
+2. Starts show
+3. OBS commands go to VM 50.19.137.152:4455
+4. Timesheet events broadcast only to competition:abc123 room
+
+Producer B at /xyz789/producer:
+1. Loads rundown for Stanford vs Cal
+2. Starts show
+3. OBS commands go to VM 54.210.98.89:4455
+4. Timesheet events broadcast only to competition:xyz789 room
+
+No interference between the two shows.
+```
+
+**Status:** ❌ Does NOT work today (single TimesheetEngine instance)
+
+---
+
+#### Story 5: Producer Reloads Modified Rundown
+
+**As a** Producer who made last-minute changes
+**I want to** reload the rundown after editing
+**So that** I can incorporate changes before or during the show
+
+```
+Producer Flow:
+1. Show is loaded but not started yet
+2. Realizes need to add "Sponsor Recognition" segment
+3. Opens Rundown Editor in new tab
+4. Adds segment, saves
+5. Returns to Producer View
+6. Clicks "Reload Rundown"
+7. New segment appears in Show Progress panel
+```
+
+**Status:** ❌ Does NOT work today (no reload mechanism)
+
+---
+
+#### User Story Summary
+
+| Story | Description | Works Today | After Phase A |
+|-------|-------------|-------------|---------------|
+| 1 | Create rundown in Editor | ✅ | ✅ |
+| 2 | Load rundown into engine | ❌ | ✅ |
+| 3 | Run show with timing/OBS/graphics | ⚠️ Partial | ✅ |
+| 4 | Multiple competitions independently | ❌ | ✅ |
+| 5 | Reload modified rundown | ❌ | ✅ |
+
+#### The Core User Journey
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  BEFORE SHOW (Planning)                                              │
+│                                                                      │
+│  Producer → Rundown Editor → Creates segments → Saves to Firebase   │
+│                                                                      │
+└─────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    │ "Load Rundown" (Phase A builds this)
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  SHOW TIME (Execution)                                               │
+│                                                                      │
+│  Producer View:                                                      │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────────┐ │
+│  │ Now Playing │  │ Up Next     │  │ Show Progress               │ │
+│  │             │  │             │  │ ☑ Pre-Show Graphics         │ │
+│  │ UCLA Intro  │  │ Oregon      │  │ ☑ Welcome                   │ │
+│  │ 0:45 left   │  │ Intro       │  │ ▶ UCLA Introduction         │ │
+│  │ [████░░░░]  │  │ (1:00)      │  │ ○ Oregon Introduction       │ │
+│  └─────────────┘  └─────────────┘  │ ○ Rotation 1 Start          │ │
+│                                     └─────────────────────────────┘ │
+│  [◀ Previous]  [Next ▶]  [⏸ Pause]                                   │
+│                                                                      │
+└─────────────────────────────────────────────────────────────────────┘
+```
 
 ---
 

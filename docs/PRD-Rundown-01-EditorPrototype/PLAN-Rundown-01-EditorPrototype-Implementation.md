@@ -3,7 +3,7 @@
 **PRD:** PRD-Rundown-01-EditorPrototype
 **Status:** PROTOTYPE COMPLETE, FEATURES IN PROGRESS
 **Created:** 2026-01-22
-**Last Updated:** 2026-01-23 (v5.17 - Task 94 complete - Add talent assignment)
+**Last Updated:** 2026-01-23 (v5.18 - Task 95 complete - Add equipment tracking)
 
 ---
 
@@ -232,7 +232,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 92: Add segment script field | COMPLETE | Added `script` field to segments with markdown-style support hints, word/character count, emerald-colored indicator on segment row |
 | Task 93: Add audio cue planning fields | COMPLETE | Added `audioCue` field with songName, inPoint, outPoint. Form UI in Edit panel with clear button. Purple-colored indicator on segment row shows song name and timestamps in tooltip. |
 | Task 94: Add talent assignment | COMPLETE | Added `talent` field (array of talent IDs) to segments, DUMMY_TALENT roster constant with 5 talent members, multi-select UI in Edit panel, rose-colored indicator on segment row showing talent count, TalentScheduleModal with per-talent segment view, conflict detection for overlapping segments, export talent schedule feature |
-| Task 95: Add equipment tracking | NOT STARTED | Camera, mic per segment, conflicts |
+| Task 95: Add equipment tracking | COMPLETE | Added `equipment` field (array of equipment IDs) to segments, DUMMY_EQUIPMENT database constant with 9 items (4 cameras, 3 mics, 2 other), multi-select UI in Edit panel grouped by type, cyan-colored indicator on segment row showing equipment count, EquipmentScheduleModal with per-equipment segment view grouped by type, conflict detection for overlapping segments, export equipment schedule feature |
 | Task 96: Add sponsor/ad tracking | NOT STARTED | Commercial obligations, fulfillment |
 
 ---
