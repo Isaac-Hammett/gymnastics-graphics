@@ -32,7 +32,8 @@ import {
   ArrowDownTrayIcon,
   DocumentTextIcon,
   CheckCircleIcon,
-  BeakerIcon
+  BeakerIcon,
+  ArrowUturnLeftIcon
 } from '@heroicons/react/24/solid';
 
 // Health status colors for quick camera buttons
@@ -58,7 +59,8 @@ export default function ProducerView() {
     error,
     loadRundown,
     timesheetState,
-    setRehearsalMode
+    setRehearsalMode,
+    clearRundownModified
   } = useShow();
 
   // Use timesheet hook for show control actions
@@ -110,6 +112,7 @@ export default function ProducerView() {
   const [cameraRuntimeState, setCameraRuntimeState] = useState([]);
   const [cameraMismatches, setCameraMismatches] = useState([]);
   const [isLoadingRundown, setIsLoadingRundown] = useState(false);
+  const [isReloadingRundown, setIsReloadingRundown] = useState(false);
   const [loadRundownToast, setLoadRundownToast] = useState(null); // { type: 'success' | 'error', message: string }
 
   // Server URL for REST API calls
@@ -197,12 +200,22 @@ export default function ProducerView() {
     loadRundown();
   }, [loadRundown]);
 
+  // Handle reload rundown button click (when modified)
+  const handleReloadRundown = useCallback(() => {
+    setIsReloadingRundown(true);
+    setLoadRundownToast(null);
+    // Clear the modified state before reloading
+    clearRundownModified();
+    loadRundown();
+  }, [loadRundown, clearRundownModified]);
+
   // Listen for loadRundownResult via socket
   useEffect(() => {
     if (!socket) return;
 
     const handleLoadRundownResult = ({ success, segmentCount, error: loadError }) => {
       setIsLoadingRundown(false);
+      setIsReloadingRundown(false);
       if (success) {
         setLoadRundownToast({ type: 'success', message: `Rundown loaded: ${segmentCount} segments` });
       } else {
@@ -278,30 +291,47 @@ export default function ProducerView() {
                 <span>No Rundown</span>
               </span>
             )}
-            {/* Rundown Modified warning badge */}
+            {/* Rundown Modified warning badge + Reload button */}
             {rundownModified && rundownModifiedSummary && (
-              <span
-                className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg border cursor-pointer ${
-                  rundownModifiedSummary.affectsCurrent
-                    ? 'bg-red-500/20 text-red-400 border-red-500/30'
-                    : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
-                }`}
-                title={rundownModifiedSummary.summaryText || 'Rundown has been modified'}
-              >
-                {rundownModifiedSummary.affectsCurrent ? (
-                  <ExclamationCircleIcon className="w-3.5 h-3.5" />
-                ) : (
-                  <ExclamationTriangleIcon className="w-3.5 h-3.5" />
-                )}
-                <span>
-                  {(() => {
-                    const total = (rundownModifiedSummary.added?.length || 0) +
-                      (rundownModifiedSummary.removed?.length || 0) +
-                      (rundownModifiedSummary.modified?.length || 0);
-                    return `${total} change${total !== 1 ? 's' : ''}`;
-                  })()}
+              <div className="flex items-center gap-2">
+                <span
+                  className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg border ${
+                    rundownModifiedSummary.affectsCurrent
+                      ? 'bg-red-500/20 text-red-400 border-red-500/30'
+                      : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+                  }`}
+                  title={rundownModifiedSummary.summaryText || 'Rundown has been modified'}
+                >
+                  {rundownModifiedSummary.affectsCurrent ? (
+                    <ExclamationCircleIcon className="w-3.5 h-3.5" />
+                  ) : (
+                    <ExclamationTriangleIcon className="w-3.5 h-3.5" />
+                  )}
+                  <span>
+                    {(() => {
+                      const total = (rundownModifiedSummary.added?.length || 0) +
+                        (rundownModifiedSummary.removed?.length || 0) +
+                        (rundownModifiedSummary.modified?.length || 0);
+                      return `${total} change${total !== 1 ? 's' : ''}`;
+                    })()}
+                  </span>
                 </span>
-              </span>
+                <button
+                  onClick={handleReloadRundown}
+                  disabled={isReloadingRundown}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg border transition-colors ${
+                    isReloadingRundown
+                      ? 'bg-zinc-600 text-zinc-400 border-zinc-500 cursor-wait'
+                      : rundownModifiedSummary.affectsCurrent
+                      ? 'bg-red-600 hover:bg-red-500 text-white border-red-500'
+                      : 'bg-yellow-600 hover:bg-yellow-500 text-white border-yellow-500'
+                  }`}
+                  title="Reload rundown from Rundown Editor"
+                >
+                  <ArrowUturnLeftIcon className={`w-3.5 h-3.5 ${isReloadingRundown ? 'animate-spin' : ''}`} />
+                  <span>{isReloadingRundown ? 'Reloading...' : 'Reload'}</span>
+                </button>
+              </div>
             )}
             {/* Alert count badge */}
             {(criticalCount > 0 || warningCount > 0) && (

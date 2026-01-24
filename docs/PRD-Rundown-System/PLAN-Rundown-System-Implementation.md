@@ -115,7 +115,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 30 | Emit `rundownModified` socket event with change summary | COMPLETE | Emits to `competition:${compId}` room with: segment IDs for added/removed/modified/reordered, affectsCurrent/affectsUpcoming flags, summary text, timestamp, and detailed change info for confirmation dialog |
 | Task 31 | Add `rundownModified` state to `useTimesheet` hook | COMPLETE | Added `rundownModified` and `rundownModifiedSummary` to INITIAL_TIMESHEET_STATE, added `rundownModified` socket listener, added `clearRundownModified` function, exposed all through useTimesheet hook |
 | Task 32 | Show "Rundown Modified" warning badge in Producer View | COMPLETE | Added warning badge in header next to rundown status; yellow for future segment changes, red if current segment affected; shows change count with tooltip for summary text |
-| Task 33 | Add "Reload Rundown" button (appears when modified) | NOT STARTED | |
+| Task 33 | Add "Reload Rundown" button (appears when modified) | COMPLETE | Added ArrowUturnLeftIcon import, isReloadingRundown state, handleReloadRundown callback, and Reload button next to warning badge in header; button color matches severity (red if current affected, yellow otherwise) |
 | Task 34 | Confirmation dialog with change summary | NOT STARTED | |
 | Task 35 | Handle deleted current segment | NOT STARTED | |
 | Task 36 | Handle reordered past segments | NOT STARTED | |
