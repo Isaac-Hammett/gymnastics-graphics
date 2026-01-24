@@ -232,6 +232,13 @@ Producers can create rundowns but cannot execute them. There's no bridge between
 - [x] Actual segment durations logged during show
 - [x] Historical timing data available in Rundown Editor
 
+### Phase E Complete When:
+- [x] Script field added to segment data model
+- [x] Script displayed in Talent View (teleprompter-style)
+- [x] Talent assignment field added to segment data model
+- [x] Talent schedule view available in Rundown Editor
+- [x] "You're on camera" indicator shows in Talent View when talent is assigned to current segment
+
 ---
 
 ## 6. Terminology
