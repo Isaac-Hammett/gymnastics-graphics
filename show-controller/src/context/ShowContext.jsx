@@ -34,7 +34,9 @@ const INITIAL_TIMESHEET_STATE = {
   showElapsedMs: 0,
   isHoldSegment: false,
   canAdvanceHold: false,
-  holdRemainingMs: 0
+  holdRemainingMs: 0,
+  segments: [],
+  rundownLoaded: false
 };
 
 export function ShowProvider({ children }) {
@@ -327,6 +329,21 @@ export function ShowProvider({ children }) {
       setTimeout(() => setError(null), 3000);
     });
 
+    // Load rundown result handler
+    newSocket.on('loadRundownResult', ({ success, segmentCount, error: loadError }) => {
+      if (success) {
+        console.log(`Rundown loaded successfully: ${segmentCount} segments`);
+        setTimesheetState(prev => ({
+          ...prev,
+          rundownLoaded: true
+        }));
+      } else {
+        console.error(`Failed to load rundown: ${loadError}`);
+        setError(`Failed to load rundown: ${loadError}`);
+        setTimeout(() => setError(null), 5000);
+      }
+    });
+
     setSocket(newSocket);
 
     return () => {
@@ -403,6 +420,11 @@ export function ShowProvider({ children }) {
   }, [socket]);
 
   // Timesheet control functions
+  const loadRundown = useCallback(() => {
+    console.log('ShowContext: Loading rundown for competition', compId);
+    socket?.emit('loadRundown', { compId });
+  }, [socket, compId]);
+
   const startTimesheetShow = useCallback(() => {
     socket?.emit('startTimesheetShow');
   }, [socket]);
@@ -474,6 +496,7 @@ export function ShowProvider({ children }) {
     timesheetState,
     overrideLog,
     // Timesheet control functions
+    loadRundown,
     startTimesheetShow,
     stopTimesheetShow,
     advanceTimesheetSegment,
