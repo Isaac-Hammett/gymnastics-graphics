@@ -29,7 +29,9 @@ import {
   BellAlertIcon,
   QueueListIcon,
   ComputerDesktopIcon,
-  ArrowDownTrayIcon
+  ArrowDownTrayIcon,
+  DocumentTextIcon,
+  CheckCircleIcon
 } from '@heroicons/react/24/solid';
 
 // Health status colors for quick camera buttons
@@ -260,6 +262,18 @@ export default function ProducerView() {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            {/* Rundown status badge */}
+            {timesheetState?.rundownLoaded ? (
+              <span className="flex items-center gap-1.5 px-2.5 py-1 bg-green-500/20 text-green-400 text-xs rounded-lg border border-green-500/30">
+                <CheckCircleIcon className="w-3.5 h-3.5" />
+                <span>{timesheetState?.segments?.length || 0} segments</span>
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5 px-2.5 py-1 bg-zinc-700/50 text-zinc-400 text-xs rounded-lg border border-zinc-600/50">
+                <DocumentTextIcon className="w-3.5 h-3.5" />
+                <span>No Rundown</span>
+              </span>
+            )}
             {/* Alert count badge */}
             {(criticalCount > 0 || warningCount > 0) && (
               <div className="flex items-center gap-1">

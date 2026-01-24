@@ -64,7 +64,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 
 ## Task Summary by Phase
 
-### Phase A: Connect Editor to Engine (P0) - IN PROGRESS (12/16 complete)
+### Phase A: Connect Editor to Engine (P0) - IN PROGRESS (13/16 complete)
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
@@ -80,7 +80,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 10 | Add "Load Rundown" button in Producer View | COMPLETE | Added button with loading state, toast feedback, and disabled Start Show until rundown loaded |
 | Task 11 | Create segment mapper (Editor format → Engine format) | COMPLETE | Created segmentMapper.js with mapping and validation functions; integrated into loadRundown handler |
 | Task 12 | Verify Firebase is passed to engine | COMPLETE | Added logging in getOrCreateEngine and _triggerGraphic to confirm Firebase instance and usage |
-| Task 13 | Show rundown status indicator (loaded, modified, etc.) | NOT STARTED | |
+| Task 13 | Show rundown status indicator (loaded, modified, etc.) | COMPLETE | Added status badge in header: green "X segments" when loaded, gray "No Rundown" when idle |
 | Task 14 | Verify Rundown Editor scene picker uses OBS state | NOT STARTED | |
 | Task 15 | Verify Rundown Editor graphics picker uses Graphics Registry | NOT STARTED | |
 | Task 16 | Fix any hardcoded picker data | NOT STARTED | |
@@ -453,17 +453,23 @@ Verify Firebase Admin is correctly passed and usable in engine.
 
 ### Task 13: Show rundown status indicator
 
-**Status:** NOT STARTED
+**Status:** COMPLETE
 **File:** `show-controller/src/views/ProducerView.jsx`
 
 **Description:**
 Add status indicator showing rundown state (idle, loaded, modified).
 
 **Checklist:**
-- [ ] Add status badge component
-- [ ] Show "No Rundown" when state is IDLE
-- [ ] Show "Rundown Loaded" when state is LOADED
-- [ ] Show segment count in badge
+- [x] Add status badge component
+- [x] Show "No Rundown" when state is IDLE
+- [x] Show "Rundown Loaded" when state is LOADED
+- [x] Show segment count in badge
+
+**Implementation Notes:**
+- Added status badge in header next to alert badges
+- Gray badge with DocumentTextIcon shows "No Rundown" when `timesheetState?.rundownLoaded` is false
+- Green badge with CheckCircleIcon shows "{count} segments" when rundown is loaded
+- Badge uses existing design patterns from alert count badges
 
 ---
 
