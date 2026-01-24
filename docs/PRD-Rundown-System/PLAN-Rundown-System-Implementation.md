@@ -64,14 +64,14 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 
 ## Task Summary by Phase
 
-### Phase A: Connect Editor to Engine (P0) - IN PROGRESS (3/16 complete)
+### Phase A: Connect Editor to Engine (P0) - IN PROGRESS (4/16 complete)
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
 | Task 1 | Update TimesheetEngine constructor to accept `compId` and `obsConnectionManager` | COMPLETE | Commit 9d0267c |
 | Task 2 | Create `timesheetEngines` Map in server/index.js | COMPLETE | Added Map, getOrCreateEngine, getEngine, removeEngine functions |
 | Task 3 | Update `_applyTransitionAndSwitchScene()` to use `obsConnectionManager.getConnection(this.compId)` | COMPLETE | Updated to get OBS connection from obsConnectionManager using compId, with fallback to legacy this.obs |
-| Task 4 | Update `_playVideo()` to use per-competition OBS connection | NOT STARTED | |
+| Task 4 | Update `_playVideo()` to use per-competition OBS connection | COMPLETE | Updated to use obsConnectionManager.getConnection(compId) with fallback to legacy this.obs |
 | Task 5 | Update `_applyAudioOverrides()` to use per-competition OBS connection | NOT STARTED | |
 | Task 6 | Update all socket event broadcasts to target competition room | NOT STARTED | |
 | Task 7 | Pass Firebase Admin instance to engine for `_triggerGraphic()` | NOT STARTED | |
@@ -252,15 +252,21 @@ Update the scene switching method to use per-competition OBS connection via obsC
 
 ### Task 4: Update _playVideo()
 
-**Status:** NOT STARTED
+**Status:** COMPLETE
 **File:** `server/lib/timesheetEngine.js`
 
 **Description:**
 Update the video playback method to use per-competition OBS connection.
 
 **Checklist:**
-- [ ] Replace `this.obs.call(...)` with `this.obsConnectionManager.getConnection(this.compId).call(...)`
-- [ ] Handle case when connection doesn't exist
+- [x] Replace `this.obs.call(...)` with `this.obsConnectionManager.getConnection(this.compId).call(...)`
+- [x] Handle case when connection doesn't exist
+
+**Implementation Notes:**
+- Updated `_playVideo()` to first check for `obsConnectionManager` + `compId` (preferred)
+- Added fallback to legacy `this.obs` for backward compatibility
+- Emits error event with `type: 'obs_video'` when no connection found for competition
+- Also updated `_handleSegmentTypeActions()` to remove redundant `this.obs` check since `_playVideo()` now handles its own connection checking
 
 ---
 
