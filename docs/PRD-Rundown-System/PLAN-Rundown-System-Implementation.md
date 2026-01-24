@@ -55,7 +55,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | I | Live Rundown Sync | P2 | COMPLETE | 28-37 |
 | J | Segment Timing Analytics | P2 | COMPLETE | 38-42 |
 | D | AI Suggestions - Planning | P2 | COMPLETE | 43-48 |
-| E | Script & Talent Flow | P2 | NOT STARTED | 49-54 |
+| E | Script & Talent Flow | P2 | IN PROGRESS | 49-54 |
 | C | AI Context - Live Execution | P3 | NOT STARTED | 55-62 |
 | F | Audio Cue Integration | P3 | NOT STARTED | 63-66 |
 | G | Production Tracking | P3 | NOT STARTED | 67-71 |
@@ -142,11 +142,11 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 47 | Add `getAISuggestions` API endpoint | COMPLETE | Added `getAISuggestions` and `getAISuggestionCount` socket handlers in server/index.js; handlers emit `aiSuggestionsResult` and `aiSuggestionCountResult` events; accepts `compId` and `options` parameters; logs suggestion generation |
 | Task 48 | Wire Rundown Editor to display suggestions | COMPLETE | Added `getAISuggestions` function to ShowContext with promise-based API; added socket listener for `aiSuggestionsResult`; updated RundownEditorPage to use server-side suggestions with fallback to client-side; added loading state, error handling, context display, and refresh button; transformed server suggestions to UI format; filtered by dismissed and existing segments |
 
-### Phase E: Script & Talent Flow (P2) - NOT STARTED
+### Phase E: Script & Talent Flow (P2) - IN PROGRESS (1/6)
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
-| Task 49 | Add script field to segment data model | NOT STARTED | |
+| Task 49 | Add script field to segment data model | COMPLETE | Added `script: ''` to segment creation in 5 places in RundownEditorPage.jsx; added script field to segmentMapper.js for both editor→engine and engine→editor mappings; added script to compareSegments fieldsToCompare |
 | Task 50 | Pipe script field through Timesheet Engine | NOT STARTED | |
 | Task 51 | Display script in Talent View (teleprompter-style) | NOT STARTED | |
 | Task 52 | Add talent assignment to segment data model | NOT STARTED | |

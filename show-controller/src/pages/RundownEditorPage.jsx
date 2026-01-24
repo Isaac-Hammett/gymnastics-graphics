@@ -2134,6 +2134,7 @@ export default function RundownEditorPage() {
       locked: false,
       optional: false,
       notes: '',
+      script: '', // Phase E: Task 49 - script field for commentator talking points
       timingMode: 'manual', // Default to manual for new segments (Phase 6: Task 55)
     };
 
@@ -3089,6 +3090,7 @@ export default function RundownEditorPage() {
       locked: false, // Segments from templates start unlocked
       optional: seg.optional || false,
       notes: seg.notes || '', // Preserve notes (Phase 5: Task 8.5)
+      script: seg.script || '', // Preserve script (Phase E: Task 49)
       timingMode: seg.timingMode || 'manual', // Preserve timing mode (Phase 6: Task 55)
     }));
   }
@@ -3347,6 +3349,7 @@ export default function RundownEditorPage() {
         optional: importCSVMapping.optional ? parseBoolean(row[importCSVMapping.optional]) : false,
         locked: importCSVMapping.locked ? parseBoolean(row[importCSVMapping.locked]) : false,
         notes: row[importCSVMapping.notes] || '',
+        script: row[importCSVMapping.script] || '', // Phase E: Task 49
         timingMode: timingMode,
         bufferAfter: bufferAfter,
       };
@@ -3625,6 +3628,7 @@ export default function RundownEditorPage() {
       locked: false,
       optional: template.segment.optional || false,
       notes: template.segment.notes || '',
+      script: template.segment.script || '', // Phase E: Task 49
       timingMode: template.segment.timingMode || 'manual',
     };
 
@@ -3712,6 +3716,7 @@ export default function RundownEditorPage() {
         locked: false,
         optional: false,
         notes: '',
+        script: '', // Phase E: Task 49
         timingMode: duration ? 'fixed' : 'manual',
       };
 
