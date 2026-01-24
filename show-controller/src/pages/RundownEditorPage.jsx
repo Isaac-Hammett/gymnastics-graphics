@@ -263,6 +263,65 @@ const getTypeBadgeColor = (type, customColors) => {
   return colorOption?.badge || TYPE_COLORS[type] || TYPE_COLORS.graphic;
 };
 
+// Calculate wall-clock times for each segment based on anchor segment and timezone config (Phase K: Task 73)
+// Takes segments, their cumulative start times, and timezone configuration
+// Returns a map of segment ID -> Date object representing the wall-clock time in the primary timezone
+//
+// Algorithm:
+// 1. Find the anchor segment's offset from show start (in seconds)
+// 2. Parse the anchor datetime to get the anchor's wall-clock time
+// 3. Calculate show start = anchorDateTime - anchorOffset
+// 4. For each segment: wallClockTime = showStart + segmentOffset
+//
+// Example:
+//   Anchor segment "Rotation 1" starts at offset 1200s (20 min into show)
+//   Anchor datetime is "2026-03-15T11:05:00" (11:05 AM)
+//   Show start = 11:05 AM - 20 min = 10:45 AM
+//   Segment at offset 0s -> 10:45 AM
+//   Segment at offset 900s -> 10:45 AM + 15 min = 11:00 AM
+function calculateWallClockTimes(segments, segmentStartTimes, timezoneConfig) {
+  // Return empty map if no timezone config or no anchor
+  if (!timezoneConfig || !timezoneConfig.anchorSegmentId || !timezoneConfig.anchorDateTime) {
+    return {};
+  }
+
+  const { anchorSegmentId, anchorDateTime } = timezoneConfig;
+
+  // Get the anchor segment's offset from show start
+  const anchorOffsetSeconds = segmentStartTimes[anchorSegmentId];
+
+  // If anchor segment not found in segments, return empty map
+  if (anchorOffsetSeconds === undefined) {
+    return {};
+  }
+
+  // Parse the anchor datetime
+  // anchorDateTime is in ISO format: "2026-03-15T11:05:00"
+  // This represents the local time in the primary timezone
+  const anchorDate = new Date(anchorDateTime);
+
+  // Check for invalid date
+  if (isNaN(anchorDate.getTime())) {
+    return {};
+  }
+
+  // Calculate show start time by subtracting anchor's offset
+  // showStart = anchorDateTime - anchorOffsetSeconds
+  const showStartMs = anchorDate.getTime() - (anchorOffsetSeconds * 1000);
+
+  // Build wall-clock times map for each segment
+  const wallClockTimes = {};
+  segments.forEach(segment => {
+    const segmentOffsetSeconds = segmentStartTimes[segment.id];
+    if (segmentOffsetSeconds !== undefined) {
+      // wallClockTime = showStart + segmentOffset
+      wallClockTimes[segment.id] = new Date(showStartMs + (segmentOffsetSeconds * 1000));
+    }
+  });
+
+  return wallClockTimes;
+}
+
 // Group color options for segment grouping (Phase 4: Task 7.4)
 const GROUP_COLORS = [
   { id: 'blue', bg: 'bg-blue-500/10', border: 'border-blue-500/30', text: 'text-blue-400', header: 'bg-blue-500/20' },
