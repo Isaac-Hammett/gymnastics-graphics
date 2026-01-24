@@ -43,6 +43,7 @@ import {
   WrenchScrewdriverIcon,
   StarIcon,
   GlobeAltIcon,
+  ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline';
 import { getGraphicsForCompetition, getCategories, getRecommendedGraphic, getGraphicById, GRAPHICS } from '../lib/graphicsRegistry';
 import { db, ref, set, get, push, remove, update, onValue, onDisconnect } from '../lib/firebase';
@@ -406,6 +407,67 @@ function getTimezoneAbbreviation(timezone, date = new Date()) {
     console.warn(`getTimezoneAbbreviation: Invalid timezone "${timezone}"`, error);
     return '';
   }
+}
+
+// Calculate day offset between a segment's wall-clock time and the anchor datetime (Phase K: Task 88)
+// Returns: -1 (previous day), 0 (same day), +1 (next day), +2 (two days later), etc.
+// Used to show date indicators when times cross midnight
+//
+// Parameters:
+//   wallClockTime: Date object representing the segment's wall-clock time
+//   anchorDateTime: ISO string of anchor datetime (e.g., "2026-03-15T11:05:00")
+//   timezone: IANA timezone identifier to use for date comparison
+//
+// Returns:
+//   Number representing day offset from anchor date (-1, 0, +1, +2, etc.)
+//   Returns 0 if any parameter is invalid
+function getDayOffset(wallClockTime, anchorDateTime, timezone) {
+  if (!wallClockTime || !anchorDateTime || !timezone) {
+    return 0;
+  }
+
+  try {
+    // Get the date portion in the specified timezone for both dates
+    const dateFormatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+
+    // Parse anchor date
+    const anchorDate = new Date(anchorDateTime);
+    if (isNaN(anchorDate.getTime())) {
+      return 0;
+    }
+
+    // Get date strings for comparison
+    const anchorDateStr = dateFormatter.format(anchorDate);
+    const segmentDateStr = dateFormatter.format(wallClockTime);
+
+    // Parse the formatted dates to compare days
+    // Format is MM/DD/YYYY
+    const [anchorMonth, anchorDay, anchorYear] = anchorDateStr.split('/').map(Number);
+    const [segMonth, segDay, segYear] = segmentDateStr.split('/').map(Number);
+
+    // Convert to comparable date values (days since epoch approximation)
+    const anchorDays = anchorYear * 365 + anchorMonth * 31 + anchorDay;
+    const segDays = segYear * 365 + segMonth * 31 + segDay;
+
+    return segDays - anchorDays;
+  } catch (error) {
+    console.warn('getDayOffset: Error calculating day offset', error);
+    return 0;
+  }
+}
+
+// Format day offset as a human-readable string (Phase K: Task 88)
+// Returns: "", "+1d", "-1d", "+2d", etc.
+function formatDayOffset(offset) {
+  if (offset === 0 || offset === undefined || offset === null) {
+    return '';
+  }
+  return offset > 0 ? `+${offset}d` : `${offset}d`;
 }
 
 // Group color options for segment grouping (Phase 4: Task 7.4)
@@ -1177,6 +1239,15 @@ export default function RundownEditorPage() {
     }
     return timezones;
   }, [timezoneConfig]);
+
+  // Check if the configured anchor segment still exists in the segment list (Phase K: Task 88)
+  // Returns true if anchor is valid or no anchor is configured, false if anchor was deleted
+  const isAnchorValid = useMemo(() => {
+    if (!timezoneConfig?.anchorSegmentId) {
+      return true; // No anchor configured, so nothing is invalid
+    }
+    return segments.some(seg => seg.id === timezoneConfig.anchorSegmentId);
+  }, [timezoneConfig?.anchorSegmentId, segments]);
 
   // Detect equipment conflicts - equipment assigned to overlapping segments (Phase G: Task 69)
   // This is computed at component level so conflicts are visible in toolbar, segment rows, and detail panel
@@ -4998,17 +5069,29 @@ export default function RundownEditorPage() {
             >
               <StarIcon className="w-4 h-4" />
             </button>
-            {/* Timezone Config Button (Phase K: Task 77) */}
+            {/* Timezone Config Button (Phase K: Task 77, Task 88) */}
             <button
               onClick={() => setShowTimezoneConfigModal(true)}
-              className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
-                timezoneConfig?.anchorSegmentId
+              className={`px-3 py-2 text-sm rounded-lg border transition-colors relative ${
+                timezoneConfig?.anchorSegmentId && !isAnchorValid
+                  ? 'bg-red-500/20 text-red-300 border-red-500/40 hover:bg-red-500/30'
+                  : timezoneConfig?.anchorSegmentId
                   ? 'bg-teal-500/20 text-teal-300 border-teal-500/40 hover:bg-teal-500/30'
                   : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:text-zinc-300 hover:bg-zinc-700'
               }`}
-              title={timezoneConfig?.primaryTimezone ? `Timezone: ${timezoneConfig.primaryTimezone}` : 'Configure timezone display'}
+              title={
+                timezoneConfig?.anchorSegmentId && !isAnchorValid
+                  ? 'Warning: Anchor segment was deleted - click to reconfigure'
+                  : timezoneConfig?.primaryTimezone
+                  ? `Timezone: ${timezoneConfig.primaryTimezone}`
+                  : 'Configure timezone display'
+              }
             >
               <GlobeAltIcon className="w-4 h-4" />
+              {/* Warning indicator when anchor is deleted (Phase K: Task 88) */}
+              {timezoneConfig?.anchorSegmentId && !isAnchorValid && (
+                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+              )}
             </button>
           </div>
         </div>
@@ -5669,6 +5752,7 @@ export default function RundownEditorPage() {
         <TimezoneConfigModal
           timezoneConfig={timezoneConfig}
           segments={segments}
+          isAnchorValid={isAnchorValid}
           onSave={saveTimezoneConfig}
           onClose={() => setShowTimezoneConfigModal(false)}
         />
@@ -6075,20 +6159,30 @@ function SegmentRow({
         <span className="text-xs text-zinc-400 font-mono w-12 text-right" title="Start time">
           {formatDuration(segmentStartTimes[segment.id] || 0)}
         </span>
-        {/* Phase K: Task 82 - Timezone columns (wall-clock times) */}
+        {/* Phase K: Task 82, Task 88 - Timezone columns (wall-clock times) with day offset for midnight crossing */}
         {displayTimezones.length > 0 && wallClockTime && (
           <div className="flex items-center gap-1 shrink-0">
-            {displayTimezones.map((tz, tzIndex) => (
-              <span
-                key={tz}
-                className={`text-xs font-mono w-16 text-right ${
-                  tzIndex === 0 ? 'text-teal-400' : 'text-zinc-500'
-                }`}
-                title={tz}
-              >
-                {formatTimeInTimezone(wallClockTime, tz, timezoneConfig?.use24HourFormat)}
-              </span>
-            ))}
+            {displayTimezones.map((tz, tzIndex) => {
+              // Calculate day offset from anchor for midnight crossing detection (Task 88)
+              const dayOffset = timezoneConfig?.anchorDateTime
+                ? getDayOffset(wallClockTime, timezoneConfig.anchorDateTime, tz)
+                : 0;
+              const dayOffsetStr = formatDayOffset(dayOffset);
+              return (
+                <span
+                  key={tz}
+                  className={`text-xs font-mono w-16 text-right ${
+                    tzIndex === 0 ? 'text-teal-400' : 'text-zinc-500'
+                  }`}
+                  title={`${tz}${dayOffsetStr ? ` (${dayOffsetStr})` : ''}`}
+                >
+                  {formatTimeInTimezone(wallClockTime, tz, timezoneConfig?.use24HourFormat)}
+                  {dayOffsetStr && (
+                    <span className="text-amber-400/80 text-[10px] ml-0.5">{dayOffsetStr}</span>
+                  )}
+                </span>
+              );
+            })}
           </div>
         )}
         <div className="flex-1 min-w-0">
@@ -10549,12 +10643,14 @@ function TimingAnalyticsModal({ analyticsData, segments, loading, onRefresh, onC
   );
 }
 
-// Common US timezone presets (Phase K: Task 76)
+// Common US timezone presets (Phase K: Task 76, Task 88)
 const TIMEZONE_PRESETS = {
   'US Full': ['America/Los_Angeles', 'America/Denver', 'America/Chicago', 'America/New_York'],
   'US Coasts': ['America/Los_Angeles', 'America/New_York'],
   'US Mountain-East': ['America/Denver', 'America/Chicago', 'America/New_York'],
   'US Pacific-Mountain': ['America/Los_Angeles', 'America/Denver'],
+  'US Central-East': ['America/Chicago', 'America/New_York'],
+  'US West': ['America/Los_Angeles', 'America/Denver', 'America/Phoenix'],
 };
 
 // All available timezones for selection (Phase K: Task 76)
@@ -10571,11 +10667,17 @@ const AVAILABLE_TIMEZONES = [
   { id: 'Australia/Sydney', label: 'Sydney (AEST/AEDT)', region: 'Australia' },
 ];
 
-// Timezone Configuration Modal (Phase K: Task 76)
+// Timezone Configuration Modal (Phase K: Task 76, Task 88)
 // Full configuration interface with sections for anchor, timezones, and format options
-function TimezoneConfigModal({ timezoneConfig, segments, onSave, onClose }) {
+function TimezoneConfigModal({ timezoneConfig, segments, isAnchorValid = true, onSave, onClose }) {
   // Local state for form fields - initialize from existing config or defaults
-  const [anchorSegmentId, setAnchorSegmentId] = useState(timezoneConfig?.anchorSegmentId || '');
+  // If anchor was deleted, clear the anchor segment ID in local state (Phase K: Task 88)
+  const [anchorSegmentId, setAnchorSegmentId] = useState(() => {
+    if (timezoneConfig?.anchorSegmentId && !isAnchorValid) {
+      return ''; // Clear deleted anchor
+    }
+    return timezoneConfig?.anchorSegmentId || '';
+  });
   const [anchorDate, setAnchorDate] = useState(() => {
     // Extract date part from anchorDateTime (YYYY-MM-DD)
     if (timezoneConfig?.anchorDateTime) {
@@ -10683,6 +10785,19 @@ function TimezoneConfigModal({ timezoneConfig, segments, onSave, onClose }) {
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 space-y-6">
+          {/* Warning banner when anchor segment was deleted (Phase K: Task 88) */}
+          {!isAnchorValid && timezoneConfig?.anchorSegmentId && (
+            <div className="p-3 bg-red-500/20 border border-red-500/40 rounded-lg flex items-start gap-3">
+              <ExclamationTriangleIcon className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-red-300">Anchor segment was deleted</p>
+                <p className="text-xs text-red-400/80 mt-1">
+                  The previously selected anchor segment no longer exists. Please select a new anchor segment below, or clear the configuration.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Anchor Section */}
           <div className="space-y-3">
             <h3 className="text-xs font-medium text-zinc-400 uppercase tracking-wider flex items-center gap-2">
