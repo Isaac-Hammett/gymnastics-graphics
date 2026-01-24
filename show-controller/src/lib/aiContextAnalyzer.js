@@ -670,4 +670,273 @@ function buildSuggestionTriggers({
   return triggers;
 }
 
+// ============================================
+// SEGMENT ORDER ANALYSIS (Task 90)
+// ============================================
+
+/**
+ * Best practices for segment order based on gymnastics broadcast conventions
+ * Each rule defines what should come before/after certain segment types
+ */
+const SEGMENT_ORDER_RULES = [
+  {
+    id: 'team_intros_before_competition',
+    name: 'Team intros should be early in the show',
+    description: 'Team introduction segments typically come before competition starts',
+    check: (segments) => {
+      const introPatterns = ['team intro', 'team logos', 'coaches', 'roster'];
+      const rotationPatterns = ['rotation', 'r1', 'r2', 'r3', 'r4', 'r5', 'r6', 'event'];
+
+      const firstIntro = segments.findIndex(s =>
+        introPatterns.some(p => s.name.toLowerCase().includes(p))
+      );
+      const firstRotation = segments.findIndex(s =>
+        rotationPatterns.some(p => s.name.toLowerCase().includes(p))
+      );
+
+      if (firstIntro > -1 && firstRotation > -1 && firstIntro > firstRotation) {
+        return {
+          issue: true,
+          message: 'Team intros typically come before competition starts',
+          suggestion: 'Move team intro segments before rotation/event segments',
+          affectedSegments: [segments[firstIntro]?.id],
+          targetPosition: firstRotation,
+        };
+      }
+      return { issue: false };
+    },
+  },
+  {
+    id: 'break_midpoint',
+    name: 'Include halftime/break for long shows',
+    description: 'Shows over 90 minutes should have a break segment around the midpoint',
+    check: (segments) => {
+      const totalDuration = segments.reduce((sum, s) => sum + (s.duration || 0), 0);
+
+      // Only check if show is over 90 minutes (5400 seconds)
+      if (totalDuration < 5400) return { issue: false };
+
+      const breakPatterns = ['break', 'halftime', 'intermission', 'pause'];
+      const hasBreak = segments.some(s =>
+        breakPatterns.some(p => s.name.toLowerCase().includes(p)) ||
+        s.type === 'break'
+      );
+
+      if (!hasBreak) {
+        const midpointDuration = totalDuration / 2;
+        let runningTime = 0;
+        let midpointIndex = 0;
+        for (let i = 0; i < segments.length; i++) {
+          runningTime += segments[i].duration || 0;
+          if (runningTime >= midpointDuration) {
+            midpointIndex = i;
+            break;
+          }
+        }
+
+        return {
+          issue: true,
+          message: `Show is ${Math.round(totalDuration / 60)} minutes with no break`,
+          suggestion: 'Consider adding a halftime/break segment around the midpoint',
+          targetPosition: midpointIndex,
+          suggestNew: {
+            name: 'Halftime Break',
+            type: 'break',
+            duration: 300,
+            scene: 'Starting Soon',
+            timingMode: 'manual',
+            notes: 'Halftime break - time for sponsors, promos, or commentary',
+          },
+        };
+      }
+      return { issue: false };
+    },
+  },
+  {
+    id: 'rotation_summaries',
+    name: 'Add rotation summaries after each rotation',
+    description: 'Rotation/event summaries should follow the rotation they summarize',
+    check: (segments, format) => {
+      // Check for rotation segments without summaries
+      const rotations = format?.gender === 'womens' ? 4 : 6;
+      const missingRecaps = [];
+
+      for (let r = 1; r <= rotations; r++) {
+        const rotationPatterns = [`rotation ${r}`, `r${r} `, `r${r}-`];
+        const summaryPatterns = [`r${r} summary`, `r${r} recap`, `rotation ${r} summary`, `rotation ${r} recap`];
+
+        // Find last segment of this rotation
+        let lastRotationIndex = -1;
+        for (let i = segments.length - 1; i >= 0; i--) {
+          const name = segments[i].name.toLowerCase();
+          if (rotationPatterns.some(p => name.includes(p) || name.startsWith(p.trim()))) {
+            lastRotationIndex = i;
+            break;
+          }
+        }
+
+        // Check if there's a summary after it
+        if (lastRotationIndex > -1) {
+          const hasSummary = segments.slice(lastRotationIndex).some(s =>
+            summaryPatterns.some(p => s.name.toLowerCase().includes(p))
+          );
+
+          if (!hasSummary) {
+            missingRecaps.push({
+              rotation: r,
+              afterIndex: lastRotationIndex,
+            });
+          }
+        }
+      }
+
+      if (missingRecaps.length > 0) {
+        const first = missingRecaps[0];
+        return {
+          issue: true,
+          message: `No summary segment after Rotation ${first.rotation}`,
+          suggestion: `Add a Rotation ${first.rotation} Summary segment`,
+          targetPosition: first.afterIndex + 1,
+          suggestNew: {
+            name: `Rotation ${first.rotation} Summary`,
+            type: 'static',
+            duration: 30,
+            scene: 'Graphics Fullscreen',
+            graphic: { graphicId: 'event-summary', params: { rotation: first.rotation } },
+            timingMode: 'fixed',
+            autoAdvance: true,
+            notes: `Recap rotation ${first.rotation} scores and standings`,
+          },
+        };
+      }
+      return { issue: false };
+    },
+  },
+  {
+    id: 'leaderboard_placement',
+    name: 'Show leaderboard periodically',
+    description: 'Leaderboard check-ins should appear after rotation 2+ to maintain engagement',
+    check: (segments, format) => {
+      const leaderboardPatterns = ['leaderboard', 'standings', 'scores'];
+      const rotationCount = format?.gender === 'womens' ? 4 : 6;
+
+      const hasLeaderboard = segments.some(s =>
+        leaderboardPatterns.some(p => s.name.toLowerCase().includes(p)) ||
+        s.graphic?.graphicId === 'leaderboard'
+      );
+
+      // Find rotation 2 end
+      const r2Patterns = ['rotation 2', 'r2 '];
+      let r2EndIndex = -1;
+      for (let i = segments.length - 1; i >= 0; i--) {
+        if (r2Patterns.some(p => segments[i].name.toLowerCase().includes(p))) {
+          r2EndIndex = i;
+          break;
+        }
+      }
+
+      // Only suggest if we have rotation 2 but no leaderboard
+      if (r2EndIndex > -1 && !hasLeaderboard && rotationCount >= 4) {
+        return {
+          issue: true,
+          message: 'No leaderboard segment found in rundown',
+          suggestion: 'Add a leaderboard check-in after Rotation 2',
+          targetPosition: r2EndIndex + 1,
+          suggestNew: {
+            name: 'Leaderboard Check-In',
+            type: 'static',
+            duration: 20,
+            scene: 'Graphics Fullscreen',
+            graphic: { graphicId: 'leaderboard', params: {} },
+            timingMode: 'fixed',
+            autoAdvance: true,
+            notes: 'Show current standings after rotation 2',
+          },
+        };
+      }
+      return { issue: false };
+    },
+  },
+  {
+    id: 'senior_recognition_timing',
+    name: 'Senior recognition should be after intros but before final rotation',
+    description: 'Senior recognition works best after opening but before the finale',
+    check: (segments) => {
+      const seniorPatterns = ['senior', 'recognition', 'graduating'];
+      const seniorIndex = segments.findIndex(s =>
+        seniorPatterns.some(p => s.name.toLowerCase().includes(p))
+      );
+
+      if (seniorIndex === -1) return { issue: false }; // No senior segment
+
+      // Check if it's at the very end or very beginning
+      const position = seniorIndex / segments.length;
+
+      if (position > 0.9) {
+        // Too late - should be earlier
+        const finalRotationIndex = segments.findIndex(s =>
+          s.name.toLowerCase().includes('rotation 4') ||
+          s.name.toLowerCase().includes('r4') ||
+          s.name.toLowerCase().includes('rotation 6') ||
+          s.name.toLowerCase().includes('r6')
+        );
+
+        if (finalRotationIndex > -1) {
+          return {
+            issue: true,
+            message: 'Senior recognition is at the end of the show',
+            suggestion: 'Consider moving senior recognition before the final rotation',
+            affectedSegments: [segments[seniorIndex]?.id],
+            targetPosition: finalRotationIndex,
+          };
+        }
+      }
+
+      if (position < 0.05) {
+        return {
+          issue: true,
+          message: 'Senior recognition is at the very beginning',
+          suggestion: 'Consider moving senior recognition after team intros',
+          affectedSegments: [segments[seniorIndex]?.id],
+          targetPosition: Math.min(3, segments.length - 1), // After first few segments
+        };
+      }
+
+      return { issue: false };
+    },
+  },
+];
+
+/**
+ * Analyze segment order and return suggestions for improvements
+ * @param {Array} segments - Current segment list
+ * @param {Object} format - Competition format from analyzeCompetitionFormat
+ * @returns {Array} Array of order suggestions with trigger data
+ */
+export function analyzeSegmentOrder(segments, format) {
+  const suggestions = [];
+
+  if (!segments || segments.length === 0) return suggestions;
+
+  for (const rule of SEGMENT_ORDER_RULES) {
+    const result = rule.check(segments, format);
+
+    if (result.issue) {
+      suggestions.push({
+        type: 'segment_order',
+        ruleId: rule.id,
+        ruleName: rule.name,
+        priority: result.suggestNew ? 'medium' : 'low', // New segment suggestions are higher priority
+        message: result.message,
+        suggestion: result.suggestion,
+        affectedSegments: result.affectedSegments || [],
+        targetPosition: result.targetPosition,
+        suggestNew: result.suggestNew || null,
+      });
+    }
+  }
+
+  return suggestions;
+}
+
 export default analyzeCompetitionContext;
