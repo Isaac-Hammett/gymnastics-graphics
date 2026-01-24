@@ -1,7 +1,7 @@
 # PLAN-Rundown-System-Implementation
 
 **PRD:** [PRD-Rundown-System-2026-01-23.md](./PRD-Rundown-System-2026-01-23.md)
-**Status:** IN PROGRESS
+**Status:** COMPLETE
 **Created:** 2026-01-23
 **Last Updated:** 2026-01-24
 
@@ -59,7 +59,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | C | AI Context - Live Execution | P3 | COMPLETE | 55-62 |
 | F | Audio Cue Integration | P3 | COMPLETE | 63-66 |
 | G | Production Tracking | P3 | COMPLETE | 67-71 |
-| K | Timezone Display | P2 | IN PROGRESS | 72-88 (16/17) |
+| K | Timezone Display | P2 | COMPLETE | 72-88 (17/17) |
 
 ---
 
@@ -186,7 +186,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 70 | Add sponsor fields to segment data model | COMPLETE | Added sponsor field ({ name, logo, tier } or null) to segment creation in RundownEditorPage.jsx (4 places), added to segmentMapper.js (editor↔engine mapping), added to compareSegments fieldsToCompare |
 | Task 71 | Generate sponsor fulfillment report | COMPLETE | Added SponsorFulfillmentModal with: sponsor listing by tier (presenting/title/official/supporting), segment placements, airtime totals, export to text file |
 
-### Phase K: Timezone Display (P2) - IN PROGRESS (15/17)
+### Phase K: Timezone Display (P2) - COMPLETE (17/17)
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
@@ -206,7 +206,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 85 | Include timezoneConfig in JSON export | COMPLETE | Added timezoneConfig field to rundown object in handleExportJSON() |
 | Task 86 | Handle timezoneConfig in JSON import | COMPLETE | Added importTimezoneConfig state and checkbox to ImportJSONModal; calls saveTimezoneConfig() when option enabled and data present |
 | Task 87 | Add timezone columns to CSV export | COMPLETE | Added timezone headers (PST, EST, etc.) and wall-clock time columns for each configured timezone after Start Time column; uses formatTimeInTimezone and getTimezoneAbbreviation utilities; respects 24h format setting |
-| Task 88 | Add timezone presets and edge case handling | NOT STARTED | US Full, US Coasts presets; handle deleted anchor, midnight crossing |
+| Task 88 | Add timezone presets and edge case handling | COMPLETE | Added US Central-East and US West presets; added getDayOffset() and formatDayOffset() helpers for midnight crossing; added isAnchorValid check with warning indicator on toolbar button; added warning banner in modal when anchor deleted; updated SegmentRow to show day offset (+1d, -1d) when times cross midnight |
 
 ---
 
