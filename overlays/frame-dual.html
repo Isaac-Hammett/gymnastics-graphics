@@ -28,22 +28,16 @@
     .frame-panel.right {
       right: 40px;
     }
-    /* Logo containers - centered between top of page (0) and top of frame box (320px) */
-    .logo-container {
+    /* Logo header row - all team logos across the top */
+    .logo-header {
       position: absolute;
       top: 0;
+      left: 40px;
+      right: 40px;
       height: 320px;
       display: flex;
       align-items: center;
-      justify-content: center;
-    }
-    .logo-container.left {
-      left: 40px;
-      width: 920px;
-    }
-    .logo-container.right {
-      right: 40px;
-      width: 920px;
+      justify-content: space-around;
     }
     .team-logo {
       height: 140px;
@@ -66,35 +60,25 @@
   </style>
 </head>
 <body>
-  <div class="logo-container left" id="logoLeft"></div>
-  <div class="logo-container right" id="logoRight"></div>
+  <div class="logo-header" id="logoHeader"></div>
   <div class="frame-panel left"></div>
   <div class="frame-panel right"></div>
   <div class="virtius-watermark"><span class="v">V</span>irtius</div>
 
   <script>
     const params = new URLSearchParams(window.location.search);
-    const logoLeft = document.getElementById('logoLeft');
-    const logoRight = document.getElementById('logoRight');
+    const header = document.getElementById('logoHeader');
 
-    // Get team logos
-    const team1Logo = params.get('team1Logo');
-    const team2Logo = params.get('team2Logo');
-
-    if (team1Logo && team1Logo.trim()) {
-      const img = document.createElement('img');
-      img.className = 'team-logo';
-      img.src = team1Logo;
-      img.alt = 'Team 1';
-      logoLeft.appendChild(img);
-    }
-
-    if (team2Logo && team2Logo.trim()) {
-      const img = document.createElement('img');
-      img.className = 'team-logo';
-      img.src = team2Logo;
-      img.alt = 'Team 2';
-      logoRight.appendChild(img);
+    // Collect all logos from URL params (supports up to 6 teams)
+    for (let i = 1; i <= 6; i++) {
+      const logo = params.get(`team${i}Logo`);
+      if (logo && logo.trim()) {
+        const img = document.createElement('img');
+        img.className = 'team-logo';
+        img.src = logo;
+        img.alt = `Team ${i}`;
+        header.appendChild(img);
+      }
     }
   </script>
 </body>
