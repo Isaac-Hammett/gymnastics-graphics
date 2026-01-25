@@ -228,9 +228,10 @@ export function ShowProvider({ children }) {
     newSocket.on('timesheetTick', (tickData) => {
       setTimesheetState(prev => ({
         ...prev,
-        segmentElapsedMs: tickData.segmentElapsedMs,
-        segmentRemainingMs: tickData.segmentRemainingMs,
-        segmentProgress: tickData.segmentProgress,
+        // Map server property names to client state property names
+        segmentElapsedMs: tickData.elapsedMs,
+        segmentRemainingMs: tickData.remainingMs,
+        segmentProgress: tickData.progress,
         showElapsedMs: tickData.showElapsedMs,
         isHoldSegment: tickData.isHoldSegment,
         canAdvanceHold: tickData.canAdvanceHold,

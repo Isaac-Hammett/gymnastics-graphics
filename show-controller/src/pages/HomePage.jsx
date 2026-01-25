@@ -774,6 +774,12 @@ export default function HomePage() {
             description="Generate OBS overlay URLs"
           />
           <ToolCard
+            to="/graphics-manager"
+            icon="[gfx]"
+            title="Graphics Manager"
+            description="View all graphics, filter by category"
+          />
+          <ToolCard
             to="/import"
             icon="[csv]"
             title="Import Shows"

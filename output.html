@@ -4484,11 +4484,15 @@
         if (!response.ok) throw new Error('Failed to fetch');
         const data = await response.json();
 
-        // Build team logo and team name maps from teams data
+        // Build team logo, team name, and gymnast-to-team maps from teams data
         const teamLogos = {};
         const teamNames = {};  // Map tricode -> proper team name
+        const gymnastToTeam = {};  // Map gymnast_id -> team info (for AA where g.team_name is wrong)
         if (data.meet?.teams) {
           data.meet.teams.forEach(team => {
+            const teamName = team.short_name || team.tricode || '';
+            const teamLogo = team.logo || '';
+
             if (team.tricode && team.logo) {
               teamLogos[team.tricode] = team.logo;
             }
@@ -4497,10 +4501,27 @@
             }
             // Map tricode to team name for AA where team_name might be wrong
             if (team.tricode) {
-              teamNames[team.tricode] = team.short_name || team.tricode;
+              teamNames[team.tricode] = teamName;
             }
             if (team.short_name) {
-              teamNames[team.short_name] = team.short_name;
+              teamNames[team.short_name] = teamName;
+            }
+
+            // Build gymnast_id -> team map by scanning all events
+            // This is the most reliable way to get team info for AA results
+            if (team.events) {
+              team.events.forEach(event => {
+                if (event.gymnasts) {
+                  event.gymnasts.forEach(g => {
+                    if (g.gymnast_id && !gymnastToTeam[g.gymnast_id]) {
+                      gymnastToTeam[g.gymnast_id] = {
+                        name: teamName,
+                        logo: teamLogo
+                      };
+                    }
+                  });
+                }
+              });
             }
           });
         }
@@ -4633,9 +4654,11 @@
                                  place === 2 ? '<span class="place-indicator silver"></span>' :
                                  place === 3 ? '<span class="place-indicator bronze"></span>' : '';
 
-          // Team logo - try tricode first, then short_name
+          // Team info - first try gymnast_id lookup (most reliable for AA),
+          // then tricode lookup, finally fall back to g.team_name
+          const gymnastTeamInfo = gymnastToTeam[g.gymnast_id] || {};
           const teamKey = g.tricode || g.short_name || '';
-          const logoUrl = teamLogos[teamKey] || '';
+          const logoUrl = gymnastTeamInfo.logo || teamLogos[teamKey] || '';
           const logoHtml = logoUrl ? `<img class="leaderboard-team-logo" src="${logoUrl}" alt="">` : '';
 
           // Stick bonus indicator
@@ -4645,8 +4668,8 @@
           const dScoreStr = dScore > 0 ? dScore.toFixed(1) : '-';
           const eScoreStr = eScore > 0 ? eScore.toFixed(3) : '-';
 
-          // Use tricode to look up team name from teams data (more reliable than g.team_name which may contain competition name for AA)
-          const teamName = teamNames[teamKey] || g.team_name || g.short_name || '';
+          // Team name - gymnast_id lookup is most reliable (g.team_name may have competition name for AA)
+          const teamName = gymnastTeamInfo.name || teamNames[teamKey] || g.team_name || g.short_name || '';
 
           tableHtml += `
             <tr>

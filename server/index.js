@@ -3246,9 +3246,10 @@ io.on('connection', async (socket) => {
     socket.emit('activeFallbacks', cameraFallbackManager.getActiveFallbacks());
   }
 
-  // Send initial timesheet state if available
-  if (timesheetEngine) {
-    socket.emit('timesheetState', timesheetEngine.getState());
+  // Send initial timesheet state if available (use competition-specific engine)
+  const compTimesheetEngine = clientCompId ? getEngine(clientCompId) : timesheetEngine;
+  if (compTimesheetEngine) {
+    socket.emit('timesheetState', compTimesheetEngine.getState());
   }
 
   // Send initial OBS state if available
@@ -6056,58 +6057,68 @@ io.on('connection', async (socket) => {
 
   // Start show via timesheet engine
   socket.on('startTimesheetShow', async () => {
-    if (!timesheetEngine) {
-      socket.emit('error', { message: 'Timesheet engine not initialized' });
+    // Use competition-specific engine (not legacy timesheetEngine)
+    const engine = getEngine(clientCompId);
+    if (!engine) {
+      socket.emit('error', { message: `No timesheet engine for competition: ${clientCompId}. Load a rundown first.` });
       return;
     }
-    await timesheetEngine.start();
-    console.log('Socket: Timesheet show started');
+    await engine.start();
+    console.log(`Socket: Timesheet show started for competition ${clientCompId}`);
   });
 
   // Stop show via timesheet engine
   socket.on('stopTimesheetShow', () => {
-    if (!timesheetEngine) {
-      socket.emit('error', { message: 'Timesheet engine not initialized' });
+    // Use competition-specific engine (not legacy timesheetEngine)
+    const engine = getEngine(clientCompId);
+    if (!engine) {
+      socket.emit('error', { message: `No timesheet engine for competition: ${clientCompId}` });
       return;
     }
-    timesheetEngine.stop();
-    console.log('Socket: Timesheet show stopped');
+    engine.stop();
+    console.log(`Socket: Timesheet show stopped for competition ${clientCompId}`);
   });
 
   // Advance to next segment via timesheet engine
   socket.on('advanceSegment', async () => {
-    if (!timesheetEngine) {
-      socket.emit('error', { message: 'Timesheet engine not initialized' });
+    // Use competition-specific engine (not legacy timesheetEngine)
+    const engine = getEngine(clientCompId);
+    if (!engine) {
+      socket.emit('error', { message: `No timesheet engine for competition: ${clientCompId}` });
       return;
     }
     const client = showState.connectedClients.find(c => c.id === socket.id);
     const advancedBy = client?.name || socket.id;
-    const success = await timesheetEngine.advance(advancedBy);
+    const success = await engine.advance(advancedBy);
     if (!success) {
       socket.emit('error', { message: 'Cannot advance segment' });
     }
-    console.log(`Socket: Segment advanced by ${advancedBy}`);
+    console.log(`Socket: Segment advanced by ${advancedBy} for competition ${clientCompId}`);
   });
 
   // Go to previous segment via timesheet engine
   socket.on('previousSegment', async () => {
-    if (!timesheetEngine) {
-      socket.emit('error', { message: 'Timesheet engine not initialized' });
+    // Use competition-specific engine (not legacy timesheetEngine)
+    const engine = getEngine(clientCompId);
+    if (!engine) {
+      socket.emit('error', { message: `No timesheet engine for competition: ${clientCompId}` });
       return;
     }
     const client = showState.connectedClients.find(c => c.id === socket.id);
     const triggeredBy = client?.name || socket.id;
-    const success = await timesheetEngine.previous(triggeredBy);
+    const success = await engine.previous(triggeredBy);
     if (!success) {
       socket.emit('error', { message: 'Cannot go to previous segment' });
     }
-    console.log(`Socket: Previous segment triggered by ${triggeredBy}`);
+    console.log(`Socket: Previous segment triggered by ${triggeredBy} for competition ${clientCompId}`);
   });
 
   // Jump to specific segment via timesheet engine
   socket.on('goToSegment', async ({ segmentId }) => {
-    if (!timesheetEngine) {
-      socket.emit('error', { message: 'Timesheet engine not initialized' });
+    // Use competition-specific engine (not legacy timesheetEngine)
+    const engine = getEngine(clientCompId);
+    if (!engine) {
+      socket.emit('error', { message: `No timesheet engine for competition: ${clientCompId}` });
       return;
     }
     if (!segmentId) {
@@ -6116,17 +6127,19 @@ io.on('connection', async (socket) => {
     }
     const client = showState.connectedClients.find(c => c.id === socket.id);
     const triggeredBy = client?.name || socket.id;
-    const success = await timesheetEngine.goToSegment(segmentId, triggeredBy);
+    const success = await engine.goToSegment(segmentId, triggeredBy);
     if (!success) {
       socket.emit('error', { message: `Cannot jump to segment: ${segmentId}` });
     }
-    console.log(`Socket: Jump to segment ${segmentId} by ${triggeredBy}`);
+    console.log(`Socket: Jump to segment ${segmentId} by ${triggeredBy} for competition ${clientCompId}`);
   });
 
   // Override scene via timesheet engine (producer only)
   socket.on('timesheetOverrideScene', async ({ sceneName }) => {
-    if (!timesheetEngine) {
-      socket.emit('error', { message: 'Timesheet engine not initialized' });
+    // Use competition-specific engine (not legacy timesheetEngine)
+    const engine = getEngine(clientCompId);
+    if (!engine) {
+      socket.emit('error', { message: `No timesheet engine for competition: ${clientCompId}` });
       return;
     }
     const client = showState.connectedClients.find(c => c.id === socket.id);
@@ -6135,17 +6148,19 @@ io.on('connection', async (socket) => {
       return;
     }
     const triggeredBy = client?.name || socket.id;
-    const success = await timesheetEngine.overrideScene(sceneName, triggeredBy);
+    const success = await engine.overrideScene(sceneName, triggeredBy);
     if (!success) {
       socket.emit('error', { message: `Failed to override scene: ${sceneName}` });
     }
-    console.log(`Socket: Scene overridden to ${sceneName} by ${triggeredBy}`);
+    console.log(`Socket: Scene overridden to ${sceneName} by ${triggeredBy} for competition ${clientCompId}`);
   });
 
   // Override camera via timesheet engine (producer only)
   socket.on('overrideCamera', async ({ cameraId }) => {
-    if (!timesheetEngine) {
-      socket.emit('error', { message: 'Timesheet engine not initialized' });
+    // Use competition-specific engine (not legacy timesheetEngine)
+    const engine = getEngine(clientCompId);
+    if (!engine) {
+      socket.emit('error', { message: `No timesheet engine for competition: ${clientCompId}` });
       return;
     }
     const client = showState.connectedClients.find(c => c.id === socket.id);
@@ -6154,38 +6169,44 @@ io.on('connection', async (socket) => {
       return;
     }
     const triggeredBy = client?.name || socket.id;
-    const success = await timesheetEngine.overrideCamera(cameraId, triggeredBy);
+    const success = await engine.overrideCamera(cameraId, triggeredBy);
     if (!success) {
       socket.emit('error', { message: `Failed to override camera: ${cameraId}` });
     }
-    console.log(`Socket: Camera overridden to ${cameraId} by ${triggeredBy}`);
+    console.log(`Socket: Camera overridden to ${cameraId} by ${triggeredBy} for competition ${clientCompId}`);
   });
 
   // Get current timesheet state
   socket.on('getTimesheetState', () => {
-    if (!timesheetEngine) {
-      socket.emit('error', { message: 'Timesheet engine not initialized' });
+    // Use competition-specific engine (not legacy timesheetEngine)
+    const engine = getEngine(clientCompId);
+    if (!engine) {
+      socket.emit('error', { message: `No timesheet engine for competition: ${clientCompId}` });
       return;
     }
-    socket.emit('timesheetState', timesheetEngine.getState());
+    socket.emit('timesheetState', engine.getState());
   });
 
   // Get timesheet overrides history
   socket.on('getTimesheetOverrides', () => {
-    if (!timesheetEngine) {
-      socket.emit('error', { message: 'Timesheet engine not initialized' });
+    // Use competition-specific engine (not legacy timesheetEngine)
+    const engine = getEngine(clientCompId);
+    if (!engine) {
+      socket.emit('error', { message: `No timesheet engine for competition: ${clientCompId}` });
       return;
     }
-    socket.emit('timesheetOverrides', timesheetEngine.getOverrides());
+    socket.emit('timesheetOverrides', engine.getOverrides());
   });
 
   // Get timesheet segment history
   socket.on('getTimesheetHistory', () => {
-    if (!timesheetEngine) {
-      socket.emit('error', { message: 'Timesheet engine not initialized' });
+    // Use competition-specific engine (not legacy timesheetEngine)
+    const engine = getEngine(clientCompId);
+    if (!engine) {
+      socket.emit('error', { message: `No timesheet engine for competition: ${clientCompId}` });
       return;
     }
-    socket.emit('timesheetHistory', timesheetEngine.getHistory());
+    socket.emit('timesheetHistory', engine.getHistory());
   });
 
   // Start the show

@@ -3377,8 +3377,8 @@ export default function RundownEditorPage() {
       name: abstractTeamReferences(seg.name, teams),
       type: seg.type,
       duration: seg.duration,
-      scene: seg.scene,
-      graphic: seg.graphic,
+      scene: seg.scene || null, // Firebase rejects undefined
+      graphic: seg.graphic || null, // Firebase rejects undefined
       autoAdvance: seg.autoAdvance,
       bufferAfter: seg.bufferAfter || 0,
       optional: seg.optional || false,
@@ -3949,8 +3949,8 @@ export default function RundownEditorPage() {
           name: abstractedName,
           type: segmentToSaveAsTemplate.type,
           duration: segmentToSaveAsTemplate.duration,
-          scene: segmentToSaveAsTemplate.scene,
-          graphic: segmentToSaveAsTemplate.graphic,
+          scene: segmentToSaveAsTemplate.scene || null, // Firebase rejects undefined
+          graphic: segmentToSaveAsTemplate.graphic || null, // Firebase rejects undefined
           autoAdvance: segmentToSaveAsTemplate.autoAdvance,
           bufferAfter: segmentToSaveAsTemplate.bufferAfter || 0,
           optional: segmentToSaveAsTemplate.optional || false,
