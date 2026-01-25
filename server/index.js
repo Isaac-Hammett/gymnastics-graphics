@@ -263,95 +263,100 @@ function initializeTimesheetEngine() {
     io
   });
 
-  // Wire up timesheet events to broadcast to all clients
+  // Wire up timesheet events to broadcast to LOCAL room only (not all clients)
+  // This prevents the global/legacy engine from interfering with competition-specific engines
+  // Clients in competition rooms (e.g., 'competition:abc123') will receive state from their engine
+  // Only clients in 'competition:local' room will receive state from this global engine
+  const localRoom = 'competition:local';
+
   timesheetEngine.on('tick', (data) => {
-    io.emit('timesheetTick', data);
+    io.to(localRoom).emit('timesheetTick', data);
   });
 
   timesheetEngine.on('segmentActivated', (data) => {
     console.log(`Timesheet: Segment activated - ${data.segment.name} (${data.reason})`);
-    io.emit('timesheetSegmentActivated', data);
-    io.emit('timesheetState', timesheetEngine.getState());
+    io.to(localRoom).emit('timesheetSegmentActivated', data);
+    io.to(localRoom).emit('timesheetState', timesheetEngine.getState());
   });
 
   timesheetEngine.on('segmentCompleted', (data) => {
     console.log(`Timesheet: Segment completed - ${data.segmentId} (${data.endReason})`);
-    io.emit('timesheetSegmentCompleted', data);
+    io.to(localRoom).emit('timesheetSegmentCompleted', data);
   });
 
   timesheetEngine.on('showStarted', (data) => {
     console.log('Timesheet: Show started');
-    io.emit('timesheetShowStarted', data);
-    io.emit('timesheetState', timesheetEngine.getState());
+    io.to(localRoom).emit('timesheetShowStarted', data);
+    io.to(localRoom).emit('timesheetState', timesheetEngine.getState());
   });
 
   timesheetEngine.on('showStopped', (data) => {
     console.log('Timesheet: Show stopped');
-    io.emit('timesheetShowStopped', data);
-    io.emit('timesheetState', timesheetEngine.getState());
+    io.to(localRoom).emit('timesheetShowStopped', data);
+    io.to(localRoom).emit('timesheetState', timesheetEngine.getState());
   });
 
   timesheetEngine.on('stateChanged', (data) => {
-    io.emit('timesheetStateChanged', data);
-    io.emit('timesheetState', timesheetEngine.getState());
+    io.to(localRoom).emit('timesheetStateChanged', data);
+    io.to(localRoom).emit('timesheetState', timesheetEngine.getState());
   });
 
   timesheetEngine.on('holdStarted', (data) => {
     console.log(`Timesheet: Hold started - ${data.segmentId}`);
-    io.emit('timesheetHoldStarted', data);
+    io.to(localRoom).emit('timesheetHoldStarted', data);
   });
 
   timesheetEngine.on('holdMaxReached', (data) => {
     console.log(`Timesheet: Hold max reached - ${data.segmentId}`);
-    io.emit('timesheetHoldMaxReached', data);
+    io.to(localRoom).emit('timesheetHoldMaxReached', data);
   });
 
   timesheetEngine.on('autoAdvancing', (data) => {
     console.log(`Timesheet: Auto-advancing from ${data.fromSegmentId} to segment ${data.toSegmentIndex}`);
-    io.emit('timesheetAutoAdvancing', data);
+    io.to(localRoom).emit('timesheetAutoAdvancing', data);
   });
 
   timesheetEngine.on('overrideRecorded', (data) => {
     console.log(`Timesheet: Override recorded - ${data.type}`);
-    io.emit('timesheetOverrideRecorded', data);
+    io.to(localRoom).emit('timesheetOverrideRecorded', data);
   });
 
   timesheetEngine.on('sceneChanged', (data) => {
-    io.emit('timesheetSceneChanged', data);
+    io.to(localRoom).emit('timesheetSceneChanged', data);
   });
 
   timesheetEngine.on('sceneOverridden', (data) => {
     console.log(`Timesheet: Scene overridden to ${data.sceneName}`);
-    io.emit('timesheetSceneOverridden', data);
+    io.to(localRoom).emit('timesheetSceneOverridden', data);
   });
 
   timesheetEngine.on('cameraOverridden', (data) => {
     console.log(`Timesheet: Camera overridden to ${data.cameraName}`);
-    io.emit('timesheetCameraOverridden', data);
+    io.to(localRoom).emit('timesheetCameraOverridden', data);
   });
 
   timesheetEngine.on('graphicTriggered', (data) => {
-    io.emit('timesheetGraphicTriggered', data);
+    io.to(localRoom).emit('timesheetGraphicTriggered', data);
   });
 
   timesheetEngine.on('videoStarted', (data) => {
-    io.emit('timesheetVideoStarted', data);
+    io.to(localRoom).emit('timesheetVideoStarted', data);
   });
 
   // Phase F: Task 64 - Audio cue triggered event (legacy)
   timesheetEngine.on('audioCueTriggered', (data) => {
     console.log(`Timesheet: Audio cue triggered - "${data.audioCue?.songName}"`);
-    io.emit('timesheetAudioCueTriggered', data);
+    io.to(localRoom).emit('timesheetAudioCueTriggered', data);
   });
 
   timesheetEngine.on('breakStarted', (data) => {
     console.log(`Timesheet: Break started - ${data.segmentId}`);
-    io.emit('timesheetBreakStarted', data);
+    io.to(localRoom).emit('timesheetBreakStarted', data);
   });
 
   timesheetEngine.on('error', (data) => {
     console.error(`Timesheet error: ${data.message}`);
-    io.emit('timesheetError', data);
+    io.to(localRoom).emit('timesheetError', data);
   });
 
   console.log('Timesheet engine initialized');
