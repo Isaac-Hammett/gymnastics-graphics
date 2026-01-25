@@ -1,5 +1,5 @@
 import { useTimesheet } from '../hooks/useTimesheet';
-import { CheckCircleIcon, PlayCircleIcon } from '@heroicons/react/24/solid';
+import { CheckCircleIcon, PlayCircleIcon, PhotoIcon } from '@heroicons/react/24/solid';
 
 export default function RunOfShow({ onSegmentClick, clickable = false }) {
   const { segments, currentIndex, totalSegments, jumpTo, formatTime } = useTimesheet();
@@ -69,6 +69,17 @@ export default function RunOfShow({ onSegmentClick, clickable = false }) {
                   {segment.name}
                 </div>
               </div>
+
+              {/* Graphic indicator - show which graphic is tied to this segment */}
+              {segment.graphic && (
+                <div
+                  className="flex items-center gap-1 px-1.5 py-0.5 text-xs rounded bg-pink-500/20 text-pink-400 border border-pink-500/30 shrink-0"
+                  title={`Graphic: ${segment.graphic}`}
+                >
+                  <PhotoIcon className="w-3 h-3" />
+                  <span className="max-w-16 truncate">{segment.graphic}</span>
+                </div>
+              )}
 
               {segment.duration && (
                 <div className="text-xs text-zinc-500">

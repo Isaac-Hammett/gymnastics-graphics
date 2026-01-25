@@ -1,5 +1,125 @@
 # Rundown System - Bug Tracker
 
+## BUG-006: No Graphic Indicator in SHOW PROGRESS Panel (FIXED)
+
+**Date Identified:** 2026-01-24
+**Date Fixed:** 2026-01-24
+**Severity:** Medium
+**Status:** FIXED
+
+### Symptoms
+
+1. Producer loads rundown and starts show
+2. SHOW PROGRESS panel shows list of segments
+3. **BUG:** No indication of which graphic is tied to each segment
+4. Producer cannot see at a glance what graphics will fire for upcoming segments
+
+### Root Cause
+
+The `RunOfShow.jsx` component only displayed:
+- Segment name
+- Duration
+- Auto-advance indicator ("A")
+
+It did **not** display the `segment.graphic` field, which contains the graphic identifier for each segment.
+
+### Fix Applied
+
+Added a pink badge with PhotoIcon showing the graphic identifier for each segment:
+
+```jsx
+{/* Graphic indicator - show which graphic is tied to this segment */}
+{segment.graphic && (
+  <div
+    className="flex items-center gap-1 px-1.5 py-0.5 text-xs rounded bg-pink-500/20 text-pink-400 border border-pink-500/30 shrink-0"
+    title={`Graphic: ${segment.graphic}`}
+  >
+    <PhotoIcon className="w-3 h-3" />
+    <span className="max-w-16 truncate">{segment.graphic}</span>
+  </div>
+)}
+```
+
+### Files Changed
+
+- `show-controller/src/components/RunOfShow.jsx` - Added PhotoIcon import and graphic indicator badge
+
+---
+
+## BUG-005: TimesheetEngine Writes Graphics to Wrong Firebase Path (FIXED)
+
+**Date Identified:** 2026-01-24
+**Date Fixed:** 2026-01-24
+**Severity:** Critical
+**Status:** FIXED
+
+### Symptoms
+
+1. Producer loads rundown with segments that have graphics configured
+2. Show starts and segments progress via timesheet
+3. **BUG:** Graphics do NOT appear in output.html (OBS browser source)
+4. The Web Graphics panel shows a different graphic than what the timesheet segment specifies
+5. Console logs show "Graphic triggered successfully" but nothing happens
+
+### Root Cause
+
+**Firebase path mismatch:**
+
+| Component | Firebase Path |
+|-----------|---------------|
+| `TimesheetEngine._triggerGraphic()` | `graphics/current` (global path) |
+| `output.html` listener | `competitions/${competitionId}/currentGraphic` (competition-specific) |
+
+The TimesheetEngine had `this.compId` available but was writing to the wrong path. The output.html renderer was listening on the correct competition-specific path but never received the data.
+
+### Code Location (Before Fix)
+
+```javascript
+// server/lib/timesheetEngine.js - _triggerGraphic() line 820
+async _triggerGraphic(segment) {
+  // ...
+  await db.ref('graphics/current').set(graphicData);  // <-- WRONG PATH
+  // ...
+}
+```
+
+### Fix Applied
+
+Changed `_triggerGraphic()` to use competition-specific path:
+
+```javascript
+// server/lib/timesheetEngine.js - _triggerGraphic()
+async _triggerGraphic(segment) {
+  // ...
+  // Use competition-specific path if compId is available, otherwise fallback to global path
+  // output.html listens to: competitions/${competitionId}/currentGraphic
+  const firebasePath = this.compId
+    ? `competitions/${this.compId}/currentGraphic`
+    : 'graphics/current';
+
+  await db.ref(firebasePath).set(graphicData);  // <-- NOW CORRECT
+  // ...
+}
+```
+
+### Files Changed
+
+- `server/lib/timesheetEngine.js` - Updated `_triggerGraphic()` to use competition-specific Firebase path
+
+### Architecture Insight
+
+The graphics system now properly routes data:
+
+| Action | Firebase Path |
+|--------|---------------|
+| Manual graphic trigger (web buttons) | `competitions/${compId}/currentGraphic` |
+| Timesheet segment graphic trigger | `competitions/${compId}/currentGraphic` |
+| output.html listener | `competitions/${compId}/currentGraphic` |
+
+All components now use the same competition-specific path.
+
+---
+
 ## BUG-004: SHOW PROGRESS Falls Back to Legacy showConfig.segments (FIXED)
 
 **Date Identified:** 2026-01-24

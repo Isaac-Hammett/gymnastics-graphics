@@ -816,8 +816,15 @@ class TimesheetEngine extends EventEmitter {
         // If this.firebase has a ref() method, it's the database directly
         // If it has a database() method, it's the Firebase Admin app
         const db = typeof this.firebase.ref === 'function' ? this.firebase : this.firebase.database();
-        console.log(`[Timesheet${this.compId ? ':' + this.compId : ''}] Triggering graphic "${segment.graphic}" via Firebase`);
-        await db.ref('graphics/current').set(graphicData);
+
+        // Use competition-specific path if compId is available, otherwise fallback to global path
+        // output.html listens to: competitions/${competitionId}/currentGraphic
+        const firebasePath = this.compId
+          ? `competitions/${this.compId}/currentGraphic`
+          : 'graphics/current';
+
+        console.log(`[Timesheet${this.compId ? ':' + this.compId : ''}] Triggering graphic "${segment.graphic}" via Firebase at ${firebasePath}`);
+        await db.ref(firebasePath).set(graphicData);
         console.log(`[Timesheet${this.compId ? ':' + this.compId : ''}] Graphic "${segment.graphic}" triggered successfully`);
       } catch (error) {
         console.error(`[Timesheet${this.compId ? ':' + this.compId : ''}] Firebase graphic trigger failed:`, error.message);
