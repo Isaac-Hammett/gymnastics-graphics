@@ -3252,9 +3252,17 @@ io.on('connection', async (socket) => {
   }
 
   // Send initial timesheet state if available (use competition-specific engine)
+  // IMPORTANT: Must include segments array - getState() doesn't include it, but client needs it
+  // to display the correct rundown in SHOW PROGRESS panel (see BUG-003 follow-up)
   const compTimesheetEngine = clientCompId ? getEngine(clientCompId) : timesheetEngine;
   if (compTimesheetEngine) {
-    socket.emit('timesheetState', compTimesheetEngine.getState());
+    const state = compTimesheetEngine.getState();
+    const segments = compTimesheetEngine.segments || [];
+    socket.emit('timesheetState', {
+      ...state,
+      segments,  // Include segments so client doesn't fall back to legacy showConfig.segments
+      rundownLoaded: segments.length > 0  // Also set rundownLoaded flag if segments exist
+    });
   }
 
   // Send initial OBS state if available

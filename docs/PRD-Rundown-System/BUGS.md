@@ -1,5 +1,89 @@
 # Rundown System - Bug Tracker
 
+## BUG-004: SHOW PROGRESS Falls Back to Legacy showConfig.segments (FIXED)
+
+**Date Identified:** 2026-01-24
+**Date Fixed:** 2026-01-24
+**Severity:** High
+**Status:** FIXED
+
+### Symptoms
+
+1. User loads rundown and starts show
+2. "NOW PLAYING" panel shows correct segment (e.g., "Team 1 Introduction")
+3. "SHOW PROGRESS" panel shows completely DIFFERENT segments (e.g., "Event Intro", "National Anthem")
+4. The segments in SHOW PROGRESS don't match the loaded rundown at all
+
+### Root Cause
+
+The `TimesheetEngine.getState()` method did NOT include the `segments` array in its return value. This caused a chain of problems:
+
+1. Client connects to server
+2. Server sends `timesheetState` from `engine.getState()` - **missing `segments` array**
+3. Client's `timesheetState.segments` is `undefined`
+4. In `useTimesheet.js`, the segments fall back: `timesheetState?.segments || state?.showConfig?.segments`
+5. **SHOW PROGRESS displays segments from the GLOBAL legacy `showConfig` (loaded from server/config/show-config.json)**
+6. But **NOW PLAYING** correctly displays `timesheetState.currentSegment` from the competition's engine
+
+### Code Location (Before Fix)
+
+```javascript
+// server/lib/timesheetEngine.js - getState() missing segments
+getState() {
+  return {
+    state: this._state,
+    currentSegmentIndex: this._currentSegmentIndex,
+    currentSegment: this._currentSegment,
+    // ... other properties ...
+    segmentCount: this.segments.length,  // <-- Only includes count, NOT the array
+    // segments: this.segments  // <-- MISSING!
+  };
+}
+
+// show-controller/src/hooks/useTimesheet.js - fallback to legacy
+const segments = useMemo(() => {
+  return timesheetState?.segments || state?.showConfig?.segments || [];  // <-- Falls back!
+}, [timesheetState?.segments, state?.showConfig?.segments]);
+```
+
+### Fix Applied
+
+1. **Added `segments` array to `getState()` in TimesheetEngine:**
+
+```javascript
+// server/lib/timesheetEngine.js
+getState() {
+  return {
+    // ... other properties ...
+    segments: this.segments,  // <-- NOW INCLUDED
+    segmentCount: this.segments.length,
+  };
+}
+```
+
+2. **Include segments when sending initial state on connection:**
+
+```javascript
+// server/index.js
+const compTimesheetEngine = clientCompId ? getEngine(clientCompId) : timesheetEngine;
+if (compTimesheetEngine) {
+  const state = compTimesheetEngine.getState();
+  const segments = compTimesheetEngine.segments || [];
+  socket.emit('timesheetState', {
+    ...state,
+    segments,
+    rundownLoaded: segments.length > 0
+  });
+}
+```
+
+### Files Changed
+
+- `server/lib/timesheetEngine.js` - Added `segments` to `getState()` return value
+- `server/index.js` - Include segments in initial timesheet state on connection
+
+---
+
 ## BUG-003: NOW PLAYING and SHOW PROGRESS Desync Due to Dual Engine Broadcasting (FIXED)
 
 **Date Identified:** 2026-01-24
