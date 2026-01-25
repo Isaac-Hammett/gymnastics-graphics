@@ -1157,6 +1157,9 @@ class TimesheetEngine extends EventEmitter {
       segmentProgress: this.segmentProgress,
       showElapsedMs: this.showElapsedMs,
       showStartTime: this._showStartTime,
+      // Include segments array so clients always have the correct rundown
+      // Previously missing - caused SHOW PROGRESS to fall back to legacy showConfig.segments
+      segments: this.segments,
       segmentCount: this.segments.length,
       historyCount: this._history.length,
       overrideCount: this._overrides.length,
