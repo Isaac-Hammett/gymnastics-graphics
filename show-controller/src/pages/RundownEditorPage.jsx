@@ -487,6 +487,29 @@ export default function RundownEditorPage() {
   const { competitionConfig } = useCompetition();
   const { obsState } = useOBS();
 
+  // Derive real competition object from Firebase config, falling back to DUMMY_COMPETITION while loading
+  const competition = useMemo(() => {
+    if (!competitionConfig) return DUMMY_COMPETITION;
+    const teams = {};
+    for (let i = 1; i <= 6; i++) {
+      const name = competitionConfig[`team${i}Name`];
+      if (name) {
+        teams[i] = {
+          name,
+          tricode: competitionConfig[`team${i}Tricode`] || '',
+          logo: competitionConfig[`team${i}Logo`] || '',
+          coaches: competitionConfig[`team${i}Coaches`] || '',
+        };
+      }
+    }
+    return {
+      id: compId,
+      name: competitionConfig.eventName || 'Unknown Competition',
+      type: competitionConfig.compType || 'womens-dual',
+      teams,
+    };
+  }, [compId, competitionConfig]);
+
   // Derive scenes and competition data from live sources
   // Falls back to DUMMY_SCENES and DUMMY_COMPETITION when live data unavailable
   const liveScenes = obsState?.scenes?.length > 0 ? obsState.scenes : null;
@@ -495,8 +518,8 @@ export default function RundownEditorPage() {
     if (competitionConfig) {
       return getTeamNames(competitionConfig, null);
     }
-    return getTeamNames(null, DUMMY_COMPETITION.teams);
-  }, [competitionConfig]);
+    return getTeamNames(null, competition.teams);
+  }, [competitionConfig, competition]);
 
   // Memoize grouped scenes and graphics for pickers (Task 16)
   const groupedScenes = useMemo(() => getGroupedScenes(liveScenes), [liveScenes]);
@@ -835,15 +858,15 @@ export default function RundownEditorPage() {
 
   // Fallback to client-side suggestions when server is unavailable
   const fallbackToClientSuggestions = useCallback(() => {
-    // Build competition config for the analyzer from DUMMY_COMPETITION
+    // Build competition config for the analyzer from competition
     const localCompConfig = {
-      id: DUMMY_COMPETITION.id,
-      eventName: DUMMY_COMPETITION.name,
-      compType: DUMMY_COMPETITION.type,
-      team1Name: DUMMY_COMPETITION.teams[1]?.name,
-      team2Name: DUMMY_COMPETITION.teams[2]?.name,
-      team3Name: DUMMY_COMPETITION.teams[3]?.name,
-      team4Name: DUMMY_COMPETITION.teams[4]?.name,
+      id: competition.id,
+      eventName: competition.name,
+      compType: competition.type,
+      team1Name: competition.teams[1]?.name,
+      team2Name: competition.teams[2]?.name,
+      team3Name: competition.teams[3]?.name,
+      team4Name: competition.teams[4]?.name,
     };
 
     const context = analyzeCompetitionContext({
@@ -2983,7 +3006,7 @@ export default function RundownEditorPage() {
     // Generate filename with competition name and date
     const now = new Date();
     const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
-    const sanitizedName = DUMMY_COMPETITION.name.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+    const sanitizedName = competition.name.replace(/[^a-z0-9]/gi, '-').toLowerCase();
     link.download = `rundown-${sanitizedName}-${dateStr}.csv`;
 
     // Trigger download
@@ -3003,9 +3026,9 @@ export default function RundownEditorPage() {
       exportedAt: new Date().toISOString(),
       competition: {
         id: compId,
-        name: DUMMY_COMPETITION.name,
-        type: DUMMY_COMPETITION.type,
-        teams: DUMMY_COMPETITION.teams,
+        name: competition.name,
+        type: competition.type,
+        teams: competition.teams,
       },
       rundown: {
         totalRuntime: totalRuntime,
@@ -3033,7 +3056,7 @@ export default function RundownEditorPage() {
     // Generate filename with competition name and date
     const now = new Date();
     const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
-    const sanitizedName = DUMMY_COMPETITION.name.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+    const sanitizedName = competition.name.replace(/[^a-z0-9]/gi, '-').toLowerCase();
     link.download = `rundown-${sanitizedName}-${dateStr}.json`;
 
     // Trigger download
@@ -3165,7 +3188,7 @@ export default function RundownEditorPage() {
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Rundown - ${DUMMY_COMPETITION.name}</title>
+  <title>Rundown - ${competition.name}</title>
   <style>
     * {
       box-sizing: border-box;
@@ -3328,7 +3351,7 @@ export default function RundownEditorPage() {
 <body>
   <div class="header">
     <h1>RUNDOWN</h1>
-    <div class="competition">${DUMMY_COMPETITION.name}</div>
+    <div class="competition">${competition.name}</div>
     <div class="meta">
       <span><strong>Total Runtime:</strong> ${formatDuration(totalRuntime)}</span>
       ${targetDuration ? `<span><strong>Target:</strong> ${formatDuration(targetDuration)}</span>` : ''}
@@ -3446,14 +3469,14 @@ export default function RundownEditorPage() {
   async function handleSaveTemplate(templateName, templateDescription) {
     try {
       const templateId = templateName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-      const teams = DUMMY_COMPETITION.teams;
+      const teams = competition.teams;
 
       const templateData = {
         metadata: {
           id: templateId,
           name: templateName,
           description: templateDescription,
-          competitionTypes: getCompatibleTypes(DUMMY_COMPETITION.type),
+          competitionTypes: getCompatibleTypes(competition.type),
           teamCount: Object.keys(teams).length,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -3504,8 +3527,8 @@ export default function RundownEditorPage() {
 
   // Check if template is compatible with current competition
   function isTemplateCompatible(template) {
-    const compType = DUMMY_COMPETITION.type;
-    const teamCount = Object.keys(DUMMY_COMPETITION.teams).length;
+    const compType = competition.type;
+    const teamCount = Object.keys(competition.teams).length;
 
     // Check competition type compatibility
     if (template.competitionTypes && !template.competitionTypes.includes(compType)) {
@@ -3536,7 +3559,7 @@ export default function RundownEditorPage() {
       }
 
       const templateData = snapshot.val();
-      const teams = DUMMY_COMPETITION.teams;
+      const teams = competition.teams;
 
       // Create new segments from template
       const newSegments = createSegmentsFromTemplate(templateData.segments, teams);
@@ -3973,7 +3996,7 @@ export default function RundownEditorPage() {
 
     try {
       const templateId = `seg-tpl-${Date.now()}`;
-      const teams = DUMMY_COMPETITION.teams;
+      const teams = competition.teams;
 
       // Abstract team references in segment name
       const abstractedName = abstractTeamReferences(segmentToSaveAsTemplate.name, teams);
@@ -4033,7 +4056,7 @@ export default function RundownEditorPage() {
 
   // Add a segment from a template (Phase 7: Task 59)
   function handleAddSegmentFromTemplate(template) {
-    const teams = DUMMY_COMPETITION.teams;
+    const teams = competition.teams;
     const timestamp = Date.now();
     const newId = `seg-${timestamp}`;
 
@@ -4608,7 +4631,7 @@ export default function RundownEditorPage() {
                   )}
                 </div>
               </div>
-              <p className="text-sm text-zinc-500">{compId} - {DUMMY_COMPETITION.name}</p>
+              <p className="text-sm text-zinc-500">{compId} - {competition.name}</p>
             </div>
             {/* Total Runtime Display with Target Duration */}
             <div className="flex items-center gap-2">
