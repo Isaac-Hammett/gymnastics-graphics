@@ -788,12 +788,29 @@ class TimesheetEngine extends EventEmitter {
   async _triggerGraphic(segment) {
     if (!segment.graphic) return;
 
+    // Handle both legacy format (string) and new format (object with graphicId/params)
+    // Legacy: segment.graphic = 'team-coaches', segment.graphicData = { teamSlot: 1 }
+    // New:    segment.graphic = { graphicId: 'team-coaches', params: { teamSlot: 1 } }
+    let graphicId;
+    let graphicParams;
+
+    if (typeof segment.graphic === 'object' && segment.graphic.graphicId) {
+      // New format from Rundown Editor
+      graphicId = segment.graphic.graphicId;
+      graphicParams = segment.graphic.params || {};
+    } else {
+      // Legacy format (string)
+      graphicId = segment.graphic;
+      graphicParams = segment.graphicData || {};
+    }
+
     // In rehearsal mode, skip actual graphic firing but still emit event
     if (this._isRehearsalMode) {
-      console.log(`[Timesheet${this.compId ? ':' + this.compId : ''}] REHEARSAL: Skipping graphic "${segment.graphic}"`);
+      console.log(`[Timesheet${this.compId ? ':' + this.compId : ''}] REHEARSAL: Skipping graphic "${graphicId}"`);
       this.emit('graphicTriggered', {
-        graphic: segment.graphic,
-        data: segment.graphicData || {},
+        graphic: graphicId,
+        graphicId: graphicId,
+        data: graphicParams,
         segmentId: segment.id,
         timestamp: Date.now(),
         rehearsalMode: true
@@ -801,9 +818,49 @@ class TimesheetEngine extends EventEmitter {
       return;
     }
 
+    // Build data object - start with segment params, then load competition config
+    let data = graphicParams;
+
+    // If we have Firebase and compId, load the competition config to get team data
+    if (this.firebase && this.compId) {
+      try {
+        const db = typeof this.firebase.ref === 'function' ? this.firebase : this.firebase.database();
+        const configSnapshot = await db.ref(`competitions/${this.compId}/config`).once('value');
+        const config = configSnapshot.val();
+
+        if (config) {
+          // Build complete data object from competition config (same as GraphicsControl.sendGraphic)
+          data = {
+            eventName: config.eventName || '',
+            meetDate: config.meetDate || '',
+            venue: config.venue || '',
+            location: config.location || '',
+            hosts: config.hosts || '',
+            virtiusSessionId: config.virtiusSessionId || '',
+            // Team 1-6 data
+            ...Object.fromEntries(
+              [1, 2, 3, 4, 5, 6].flatMap(i => [
+                [`team${i}Name`, config[`team${i}Name`] || ''],
+                [`team${i}Logo`, config[`team${i}Logo`] || ''],
+                [`team${i}Ave`, config[`team${i}Ave`] || ''],
+                [`team${i}High`, config[`team${i}High`] || ''],
+                [`team${i}Con`, config[`team${i}Con`] || ''],
+                [`team${i}Coaches`, config[`team${i}Coaches`] || ''],
+              ])
+            ),
+            // Merge any segment-specific params on top (e.g., teamSlot)
+            ...graphicParams,
+          };
+        }
+      } catch (error) {
+        console.warn(`[Timesheet${this.compId ? ':' + this.compId : ''}] Failed to load competition config for graphic: ${error.message}`);
+      }
+    }
+
     const graphicData = {
-      graphic: segment.graphic,
-      data: segment.graphicData || {},
+      graphic: graphicId,
+      graphicId: graphicId, // For button highlighting in GraphicsControl
+      data: data,
       segmentId: segment.id,
       timestamp: Date.now()
     };
@@ -823,9 +880,9 @@ class TimesheetEngine extends EventEmitter {
           ? `competitions/${this.compId}/currentGraphic`
           : 'graphics/current';
 
-        console.log(`[Timesheet${this.compId ? ':' + this.compId : ''}] Triggering graphic "${segment.graphic}" via Firebase at ${firebasePath}`);
+        console.log(`[Timesheet${this.compId ? ':' + this.compId : ''}] Triggering graphic "${graphicId}" via Firebase at ${firebasePath}`);
         await db.ref(firebasePath).set(graphicData);
-        console.log(`[Timesheet${this.compId ? ':' + this.compId : ''}] Graphic "${segment.graphic}" triggered successfully`);
+        console.log(`[Timesheet${this.compId ? ':' + this.compId : ''}] Graphic "${graphicId}" triggered successfully`);
       } catch (error) {
         console.error(`[Timesheet${this.compId ? ':' + this.compId : ''}] Firebase graphic trigger failed:`, error.message);
         this.emit('error', {

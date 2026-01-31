@@ -1,5 +1,241 @@
 # Rundown System - Bug Tracker
 
+## BUG-008: Timesheet Graphics Not Rendering in output.html (FIXED)
+
+**Date Identified:** 2026-01-24
+**Date Fixed:** 2026-01-24
+**Severity:** Critical
+**Status:** FIXED
+
+### Symptoms
+
+1. Producer loads rundown with segments containing graphics (e.g., "Team 1 Coaches")
+2. Show starts and segment activates, graphic triggers
+3. WEB GRAPHICS panel shows correct badge (e.g., "team-coaches")
+4. **BUG:** output.html page remains blank - graphic does not render
+5. Manual button clicks in WEB GRAPHICS panel DO render graphics correctly
+
+### Root Cause
+
+**Two separate issues:**
+
+1. **Server lacks Firebase credentials** - The coordinator VM doesn't have `GOOGLE_APPLICATION_CREDENTIALS` set, so `TimesheetEngine._triggerGraphic()` cannot write to Firebase directly.
+
+2. **Renderer ID mismatch** - The graphics registry uses `team-coaches` with a `teamSlot` parameter, but `output.html` only had specific renderers like `team1-coaches`, `team2-coaches`, etc. When Firebase contained `graphic: "team-coaches"`, output.html couldn't find a matching renderer and cleared the display.
+
+### Fix Applied
+
+**Part 1: Client-side Firebase writes (ShowContext.jsx)**
+
+Since the server can't write to Firebase, the server emits a `timesheetGraphicTriggered` socket event. The client receives this and writes to Firebase with merged competition config:
+
+```javascript
+// ShowContext.jsx - timesheetGraphicTriggered handler
+newSocket.on('timesheetGraphicTriggered', ({ graphic, graphicId, data, segmentId }) => {
+  if (compId && graphic) {
+    // Use ref to get latest competition config (avoids stale closure)
+    const config = competitionConfigRef.current;
+    // Merge competition config with segment-specific data
+    const mergedData = {
+      eventName: config?.eventName || '',
+      team1Name: config?.team1Name || '',
+      team1Logo: config?.team1Logo || '',
+      team1Coaches: config?.team1Coaches || '',
+      // ... all team1-6 data
+      ...data  // Segment-specific data (e.g., teamSlot) on top
+    };
+    set(ref(db, `competitions/${compId}/currentGraphic`), {
+      graphic,
+      graphicId: graphicId || graphic,
+      data: mergedData,
+      segmentId,
+      timestamp: Date.now()
+    });
+  }
+});
+```
+
+**Part 2: Dynamic renderers in output.html**
+
+Added `team-coaches` and `team-stats` renderers that use the `teamSlot` parameter:
+
+```javascript
+// output.html - Dynamic team-coaches renderer
+'team-coaches': (data) => {
+  const slot = data.teamSlot || 1;
+  const name = data[`team${slot}Name`] || '';
+  const logo = data[`team${slot}Logo`] || '';
+  const coaches = data[`team${slot}Coaches`] || '';
+  return `
+    <div class="graphic-container graphic-coaches">
+      <div class="coaches-header">
+        <div class="coaches-title">COACHES</div>
+        <img class="coaches-logo" src="${getTeamLogoUrl(name, logo)}" alt="Team">
+      </div>
+      <div class="coaches-content">
+        ${coaches ? coaches.split('\n').map(c => `<div class="coach-name">${c}</div>`).join('') : ''}
+      </div>
+    </div>
+  `;
+},
+```
+
+### Files Changed
+
+- `show-controller/src/context/ShowContext.jsx` - Added `useRef` for competitionConfig, updated `timesheetGraphicTriggered` handler to merge config and write to Firebase
+- `output.html` - Added dynamic `team-coaches` and `team-stats` renderers that use `teamSlot` parameter
+
+### Architecture Note
+
+The graphics triggering flow is now:
+
+```
+TimesheetEngine._triggerGraphic()
+    ↓ (socket event)
+ShowContext.jsx (timesheetGraphicTriggered handler)
+    ↓ (merges competition config)
+Firebase: competitions/${compId}/currentGraphic
+    ↓ (realtime listener)
+output.html (renders graphic)
+```
+
+This bypasses the server's lack of Firebase credentials by having the client (which has Firebase web SDK access) do the Firebase write.
+
+---
+
+## BUG-009: Team-Stats Graphics Not Triggering from Rundown (FIXED)
+
+**Date Identified:** 2026-01-24
+**Date Fixed:** 2026-01-24
+**Severity:** High
+**Status:** FIXED
+
+### Symptoms
+
+1. Producer loads rundown with segments containing team-stats or team-coaches graphics
+2. Show starts and segment activates
+3. **BUG:** team-stats and team-coaches graphics do NOT trigger from rundown
+4. Other graphics (e.g., event-bar, logos) trigger correctly
+5. Manual button clicks for team-stats DO work correctly
+
+### Root Cause
+
+**Data structure mismatch between Rundown Editor and TimesheetEngine:**
+
+The **Rundown Editor** stores graphics as objects with `graphicId` and `params`:
+```javascript
+segment.graphic = { graphicId: 'team-stats', params: { teamSlot: 1 } }
+```
+
+But **TimesheetEngine._triggerGraphic()** expected the legacy string format:
+```javascript
+segment.graphic = 'team-stats'        // string
+segment.graphicData = { teamSlot: 1 } // separate field
+```
+
+When TimesheetEngine received the object format, `typeof segment.graphic === 'object'` was true but the code was treating it as a string, causing the graphic trigger to fail silently.
+
+### Fix Applied
+
+Updated `_triggerGraphic()` in `server/lib/timesheetEngine.js` to handle both formats:
+
+```javascript
+async _triggerGraphic(segment) {
+  if (!segment.graphic) return;
+
+  // Handle both legacy format (string) and new format (object with graphicId/params)
+  // Legacy: segment.graphic = 'team-coaches', segment.graphicData = { teamSlot: 1 }
+  // New:    segment.graphic = { graphicId: 'team-coaches', params: { teamSlot: 1 } }
+  let graphicId;
+  let graphicParams;
+
+  if (typeof segment.graphic === 'object' && segment.graphic.graphicId) {
+    // New format from Rundown Editor
+    graphicId = segment.graphic.graphicId;
+    graphicParams = segment.graphic.params || {};
+  } else {
+    // Legacy format (string)
+    graphicId = segment.graphic;
+    graphicParams = segment.graphicData || {};
+  }
+
+  // Rest of method uses graphicId and graphicParams...
+}
+```
+
+### Files Changed
+
+- `server/lib/timesheetEngine.js` - Updated `_triggerGraphic()` to handle both object and string formats
+
+### Deployment
+
+Deployed to coordinator VM at `/opt/gymnastics-graphics/server/lib/timesheetEngine.js` and restarted PM2 process.
+
+### Testing
+
+1. Load rundown with team-stats segment (teamSlot=1 for Navy)
+2. Advance show to that segment
+3. Verify Navy stats appear in output.html (AVE: 311.100, HIGH: 320.700)
+4. Test teamSlot=2 (Springfield) - verify Springfield stats appear (AVE: 304.861, HIGH: 309.350)
+
+---
+
+## BUG-007: WEB GRAPHICS Button Not Highlighted When Graphic Triggered from Timesheet (FIXED)
+
+**Date Identified:** 2026-01-24
+**Date Fixed:** 2026-01-24
+**Severity:** Medium
+**Status:** FIXED
+
+### Symptoms
+
+1. Producer loads rundown with segments that have graphics configured (e.g., "Event Info")
+2. Show starts and segment with graphic activates
+3. The WEB GRAPHICS panel badge shows correct graphic (e.g., "event-bar")
+4. **BUG:** The corresponding button in WEB GRAPHICS panel is NOT highlighted blue
+5. Clicking the button manually DOES highlight it correctly
+
+### Root Cause
+
+The `TimesheetEngine._triggerGraphic()` method was missing the `graphicId` field when emitting to Firebase. `GraphicsControl.jsx` uses `graphicId` for button highlighting:
+
+```javascript
+// Reading from Firebase
+setCurrentGraphicId(data?.graphicId || null);
+
+// Button highlighting
+currentGraphicId === btn.id ? 'bg-blue-600 text-white' : 'bg-zinc-700 ...'
+```
+
+Without `graphicId`, the button comparison always fails.
+
+### Fix Applied
+
+Added `graphicId` field to the data written to Firebase (via ShowContext.jsx):
+
+```javascript
+set(ref(db, `competitions/${compId}/currentGraphic`), {
+  graphic,
+  graphicId: graphicId || graphic,  // For button highlighting
+  data: mergedData,
+  segmentId,
+  timestamp: Date.now()
+});
+```
+
+### Files Changed
+
+- `show-controller/src/context/ShowContext.jsx` - Added `graphicId` field to Firebase write
+
+### Testing
+
+1. Load rundown with segments containing graphics
+2. Start show and advance to a segment with a graphic (e.g., "Event Info")
+3. Verify the "Event Info" button in WEB GRAPHICS panel is highlighted blue
+4. Verify the badge shows "event-bar"
+
+---
+
 ## BUG-006: No Graphic Indicator in SHOW PROGRESS Panel (FIXED)
 
 **Date Identified:** 2026-01-24

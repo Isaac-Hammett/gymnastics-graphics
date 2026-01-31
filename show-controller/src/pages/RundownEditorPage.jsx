@@ -1908,6 +1908,31 @@ export default function RundownEditorPage() {
     }
   }
 
+  // Sanitize segment data for Firebase (removes undefined values which Firebase rejects)
+  function sanitizeSegmentForFirebase(segment) {
+    return {
+      id: segment.id,
+      name: segment.name || '',
+      type: segment.type || 'live',
+      duration: segment.duration || 0,
+      scene: segment.scene || null,
+      graphic: segment.graphic || null,
+      autoAdvance: segment.autoAdvance ?? false,
+      bufferAfter: segment.bufferAfter || 0,
+      locked: segment.locked || false,
+      optional: segment.optional || false,
+      notes: segment.notes || '',
+      script: segment.script || '',
+      timingMode: segment.timingMode || 'manual',
+      // Preserve optional fields if they exist
+      ...(segment.groupId && { groupId: segment.groupId }),
+      ...(segment.talent && { talent: segment.talent }),
+      ...(segment.equipment && { equipment: segment.equipment }),
+      ...(segment.sponsor && { sponsor: segment.sponsor }),
+      ...(segment.audioCue && { audioCue: segment.audioCue }),
+    };
+  }
+
   // Helper function to sync segments to Firebase (Phase 8: Task 63)
   // This is called by all segment-modifying handlers
   // Updated to accept optional action description for history logging (Phase 8: Task 67)
@@ -1916,7 +1941,9 @@ export default function RundownEditorPage() {
     if (!compId) return;
     setIsSyncing(true);
     try {
-      await set(ref(db, `competitions/${compId}/rundown/segments`), newSegments);
+      // Sanitize segments to prevent Firebase errors from undefined values
+      const sanitizedSegments = newSegments.map(sanitizeSegmentForFirebase);
+      await set(ref(db, `competitions/${compId}/rundown/segments`), sanitizedSegments);
       // Log the change if action is provided
       if (action) {
         // Create snapshot of state BEFORE change for rollback (Phase 8: Task 68)
@@ -3456,15 +3483,16 @@ export default function RundownEditorPage() {
   }
 
   // Create rundown segments from template
+  // Note: Firebase rejects undefined values, so all fields must have fallbacks
   function createSegmentsFromTemplate(templateSegments, teams) {
     return templateSegments.map((seg, index) => ({
       id: `seg-${String(index + 1).padStart(3, '0')}`,
       name: resolveTeamReferences(seg.name, teams),
-      type: seg.type,
-      duration: seg.duration,
-      scene: seg.scene,
-      graphic: seg.graphic,
-      autoAdvance: seg.autoAdvance,
+      type: seg.type || 'live',
+      duration: seg.duration || 0,
+      scene: seg.scene || null,
+      graphic: seg.graphic || null, // Firebase rejects undefined
+      autoAdvance: seg.autoAdvance ?? false,
       bufferAfter: seg.bufferAfter || 0,
       locked: false, // Segments from templates start unlocked
       optional: seg.optional || false,
@@ -3512,10 +3540,23 @@ export default function RundownEditorPage() {
 
       // Create new segments from template
       const newSegments = createSegmentsFromTemplate(templateData.segments, teams);
-      syncSegmentsToFirebase(newSegments);
+
+      // Save undo state before loading template
+      pushUndoState('Load template');
+
+      // Update local state immediately for responsive UI
+      setSegments(newSegments);
+
+      // Sync to Firebase (fire and forget - listener will confirm)
+      await syncSegmentsToFirebase(newSegments, 'Load template', {
+        templateId,
+        templateName: templateData.metadata.name,
+        segmentCount: newSegments.length,
+      });
+
       setSelectedSegmentId(null);
       setShowTemplateLibrary(false);
-      showToast(`Loaded template: ${templateData.metadata.name}`);
+      showToast(`Loaded template: ${templateData.metadata.name} (${newSegments.length} segments)`);
     } catch (error) {
       console.error('Error loading template:', error);
       showToast('Error loading template');

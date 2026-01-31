@@ -1,6 +1,7 @@
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { io } from 'socket.io-client';
 import { useCompetition } from './CompetitionContext';
+import { db, ref, set } from '../lib/firebase';
 
 const ShowContext = createContext(null);
 
@@ -44,7 +45,7 @@ const INITIAL_TIMESHEET_STATE = {
 
 export function ShowProvider({ children }) {
   // Get socket URL and competition info from CompetitionContext
-  const { socketUrl, compId } = useCompetition();
+  const { socketUrl, compId, competitionConfig } = useCompetition();
 
   const [socket, setSocket] = useState(null);
   const [connected, setConnected] = useState(false);
@@ -61,6 +62,12 @@ export function ShowProvider({ children }) {
   // Timesheet state
   const [timesheetState, setTimesheetState] = useState(INITIAL_TIMESHEET_STATE);
   const [overrideLog, setOverrideLog] = useState([]);
+
+  // Ref to always have access to latest competitionConfig in socket handlers
+  const competitionConfigRef = useRef(competitionConfig);
+  useEffect(() => {
+    competitionConfigRef.current = competitionConfig;
+  }, [competitionConfig]);
 
   useEffect(() => {
     // Don't connect if no socket URL is available
@@ -332,8 +339,67 @@ export function ShowProvider({ children }) {
       console.log(`Timesheet camera overridden: ${cameraId} (${sceneName}) by ${triggeredBy}`);
     });
 
-    newSocket.on('timesheetGraphicTriggered', ({ graphic, segment }) => {
-      console.log(`Timesheet graphic triggered: ${graphic}`);
+    newSocket.on('timesheetGraphicTriggered', ({ graphic, graphicId, data, segmentId }) => {
+      console.log(`Timesheet graphic triggered: ${graphic}`, { graphicId, segmentId });
+      // Write to Firebase so output.html receives the graphic
+      // This bridges the server-side timesheet engine to the client-side Firebase
+      if (compId && graphic) {
+        // Use ref to get latest competition config (avoids stale closure)
+        const config = competitionConfigRef.current;
+        // Merge competition config (team names, logos, coaches, etc.) with segment-specific data
+        // Competition config provides the base data, segment data overrides
+        const mergedData = {
+          // Event and venue info
+          eventName: config?.eventName || '',
+          venue: config?.venue || '',
+          meetDate: config?.meetDate || '',
+          // Team 1
+          team1Name: config?.team1Name || '',
+          team1Logo: config?.team1Logo || '',
+          team1Coaches: config?.team1Coaches || '',
+          team1Ave: config?.team1Ave || '',
+          team1High: config?.team1High || '',
+          // Team 2
+          team2Name: config?.team2Name || '',
+          team2Logo: config?.team2Logo || '',
+          team2Coaches: config?.team2Coaches || '',
+          team2Ave: config?.team2Ave || '',
+          team2High: config?.team2High || '',
+          // Team 3
+          team3Name: config?.team3Name || '',
+          team3Logo: config?.team3Logo || '',
+          team3Coaches: config?.team3Coaches || '',
+          team3Ave: config?.team3Ave || '',
+          team3High: config?.team3High || '',
+          // Team 4
+          team4Name: config?.team4Name || '',
+          team4Logo: config?.team4Logo || '',
+          team4Coaches: config?.team4Coaches || '',
+          team4Ave: config?.team4Ave || '',
+          team4High: config?.team4High || '',
+          // Team 5
+          team5Name: config?.team5Name || '',
+          team5Logo: config?.team5Logo || '',
+          team5Coaches: config?.team5Coaches || '',
+          team5Ave: config?.team5Ave || '',
+          team5High: config?.team5High || '',
+          // Team 6
+          team6Name: config?.team6Name || '',
+          team6Logo: config?.team6Logo || '',
+          team6Coaches: config?.team6Coaches || '',
+          team6Ave: config?.team6Ave || '',
+          team6High: config?.team6High || '',
+          // Merge segment-specific data on top (e.g., teamSlot)
+          ...data
+        };
+        set(ref(db, `competitions/${compId}/currentGraphic`), {
+          graphic,
+          graphicId: graphicId || graphic,
+          data: mergedData,
+          segmentId,
+          timestamp: Date.now()
+        }).catch(err => console.error('Failed to trigger graphic via Firebase:', err));
+      }
     });
 
     newSocket.on('timesheetVideoStarted', ({ videoPath, segment }) => {

@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1920, height=1080">
+  <title>Athlete Spotlight</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: transparent;
+    }
+
+    .spotlight-card {
+      position: absolute;
+      bottom: 120px;
+      left: 100px;
+      animation: slideIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-100px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .spotlight-header {
+      background: #BFBFBF;
+      padding: 12px 30px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .spotlight-event {
+      font-size: 36px;
+      font-weight: 900;
+      color: #000;
+      text-transform: uppercase;
+      letter-spacing: -0.5px;
+    }
+
+    .spotlight-logo {
+      width: 50px;
+      height: 50px;
+      object-fit: contain;
+    }
+
+    .spotlight-content {
+      background: #000;
+      padding: 20px 30px;
+      display: flex;
+      gap: 40px;
+    }
+
+    .athlete {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .athlete-headshot {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: #333;
+      border: 3px solid #fff;
+    }
+
+    .athlete-headshot.no-image {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      font-weight: 900;
+      color: #666;
+    }
+
+    .athlete-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .athlete-name {
+      font-size: 24px;
+      font-weight: 800;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: -0.5px;
+      line-height: 1.1;
+    }
+
+    .athlete-details {
+      font-size: 16px;
+      font-weight: 400;
+      color: #aaa;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .divider {
+      width: 2px;
+      background: #333;
+      align-self: stretch;
+    }
+  </style>
+</head>
+<body>
+  <div class="spotlight-card">
+    <div class="spotlight-header">
+      <div class="spotlight-event" id="event">FLOOR EXERCISE</div>
+      <img id="logo" class="spotlight-logo" src="" alt="Team">
+    </div>
+    <div class="spotlight-content">
+      <div class="athlete">
+        <img id="athlete1Headshot" class="athlete-headshot" src="" alt="">
+        <div class="athlete-info">
+          <div class="athlete-name" id="athlete1Name">ATHLETE NAME</div>
+          <div class="athlete-details" id="athlete1Details">Sr • City, ST</div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="athlete">
+        <img id="athlete2Headshot" class="athlete-headshot" src="" alt="">
+        <div class="athlete-info">
+          <div class="athlete-name" id="athlete2Name">ATHLETE NAME</div>
+          <div class="athlete-details" id="athlete2Details">Sr • City, ST</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+
+    // Header
+    document.getElementById('event').textContent = (params.get('event') || 'FLOOR EXERCISE').toUpperCase();
+    document.getElementById('logo').src = params.get('logo') || '';
+
+    // Year mapping
+    const yearMap = { '1': 'Fr', '2': 'So', '3': 'Jr', '4': 'Sr', '5': 'Gr' };
+
+    // Helper to format details line
+    function formatDetails(year, hometown) {
+      const yearStr = yearMap[year] || year || '';
+      const location = hometown ? hometown.split(',')[0].trim() : ''; // Just city
+      if (yearStr && location) return `${yearStr} • ${location}`;
+      if (yearStr) return yearStr;
+      if (location) return location;
+      return '';
+    }
+
+    // Helper to get initials for placeholder
+    function getInitials(name) {
+      if (!name) return '?';
+      const parts = name.trim().split(' ');
+      if (parts.length >= 2) {
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+      }
+      return name[0].toUpperCase();
+    }
+
+    // Athlete 1
+    const a1Name = params.get('athlete1Name') || '';
+    const a1Headshot = params.get('athlete1Headshot') || '';
+    const a1Year = params.get('athlete1Year') || '';
+    const a1Hometown = params.get('athlete1Hometown') || '';
+
+    document.getElementById('athlete1Name').textContent = a1Name.toUpperCase();
+    document.getElementById('athlete1Details').textContent = formatDetails(a1Year, a1Hometown);
+
+    const img1 = document.getElementById('athlete1Headshot');
+    if (a1Headshot) {
+      img1.src = a1Headshot;
+      img1.onerror = () => {
+        img1.style.display = 'none';
+        const placeholder = document.createElement('div');
+        placeholder.className = 'athlete-headshot no-image';
+        placeholder.textContent = getInitials(a1Name);
+        img1.parentNode.insertBefore(placeholder, img1);
+      };
+    } else {
+      img1.style.display = 'none';
+      const placeholder = document.createElement('div');
+      placeholder.className = 'athlete-headshot no-image';
+      placeholder.textContent = getInitials(a1Name);
+      img1.parentNode.insertBefore(placeholder, img1);
+    }
+
+    // Athlete 2
+    const a2Name = params.get('athlete2Name') || '';
+    const a2Headshot = params.get('athlete2Headshot') || '';
+    const a2Year = params.get('athlete2Year') || '';
+    const a2Hometown = params.get('athlete2Hometown') || '';
+
+    document.getElementById('athlete2Name').textContent = a2Name.toUpperCase();
+    document.getElementById('athlete2Details').textContent = formatDetails(a2Year, a2Hometown);
+
+    const img2 = document.getElementById('athlete2Headshot');
+    if (a2Headshot) {
+      img2.src = a2Headshot;
+      img2.onerror = () => {
+        img2.style.display = 'none';
+        const placeholder = document.createElement('div');
+        placeholder.className = 'athlete-headshot no-image';
+        placeholder.textContent = getInitials(a2Name);
+        img2.parentNode.insertBefore(placeholder, img2);
+      };
+    } else {
+      img2.style.display = 'none';
+      const placeholder = document.createElement('div');
+      placeholder.className = 'athlete-headshot no-image';
+      placeholder.textContent = getInitials(a2Name);
+      img2.parentNode.insertBefore(placeholder, img2);
+    }
+  </script>
+</body>
+</html>

@@ -154,6 +154,32 @@ export const GRAPHICS = {
     },
   },
 
+  'athlete-spotlight': {
+    id: 'athlete-spotlight',
+    label: 'Athlete Spotlight',
+    labelTemplate: '{teamName} Spotlight',
+    category: 'pre-meet',
+    keywords: ['athlete', 'spotlight', 'featured', 'intro', 'headshot', 'player', 'gymnast'],
+    gender: 'both',
+    renderer: 'overlay',
+    file: 'athlete-spotlight.html',
+    transparent: true,
+    perTeam: true,
+    params: {
+      teamSlot: { type: 'number', min: 1, max: 6, required: true, label: 'Team' },
+      logo: { type: 'string', source: 'competition', required: true },
+      event: { type: 'string', required: true, label: 'Event Name', default: 'FLOOR EXERCISE' },
+      athlete1Name: { type: 'string', required: true, label: 'Athlete 1 Name' },
+      athlete1Headshot: { type: 'string', label: 'Athlete 1 Headshot URL' },
+      athlete1Year: { type: 'enum', options: ['1', '2', '3', '4', '5'], label: 'Athlete 1 Year' },
+      athlete1Hometown: { type: 'string', label: 'Athlete 1 Hometown' },
+      athlete2Name: { type: 'string', required: true, label: 'Athlete 2 Name' },
+      athlete2Headshot: { type: 'string', label: 'Athlete 2 Headshot URL' },
+      athlete2Year: { type: 'enum', options: ['1', '2', '3', '4', '5'], label: 'Athlete 2 Year' },
+      athlete2Hometown: { type: 'string', label: 'Athlete 2 Hometown' },
+    },
+  },
+
   // ============================================================
   // IN-MEET GRAPHICS
   // ============================================================
