@@ -280,6 +280,8 @@ export function ShowProvider({ children }) {
         isRunning: false,
         isPaused: false
       }));
+      // Clear legacy isPlaying so the producer isn't stuck (BUG-011)
+      setState(prev => ({ ...prev, isPlaying: false, isPaused: false }));
     });
 
     // Task 39: Handle show completion (all segments finished naturally)

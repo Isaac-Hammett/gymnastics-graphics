@@ -1,5 +1,194 @@
 # Rundown System - Bug Tracker
 
+## BUG-012: Talent View Shows Legacy showName Instead of Competition Name (OPEN)
+
+**Date Identified:** 2026-01-31
+**Severity:** High
+**Status:** OPEN
+
+### Symptoms
+
+1. Producer opens Talent View for competition "West Chester vs Cortland"
+2. **BUG:** Header shows "CGA All Stars 2025" instead of "West Chester vs Cortland"
+3. The competition banner bar at the top correctly shows "West Chester vs Cortland @ Sturzebecker Hall" (from CompetitionContext), but the view's own header is wrong
+
+### Root Cause
+
+`TalentView.jsx` line 80 displays:
+```javascript
+{showConfig?.showName || 'Show Controller'}
+```
+
+`showConfig.showName` comes from the **legacy global config file** `server/config/show-config.json`, which is hardcoded to `"CGA All Stars 2025"`. The server sends this to ALL clients at `server/index.js` line 1151 regardless of which competition they're in.
+
+This is a global, non-competition-scoped value — every competition's Talent View shows the same stale name from the last show config import.
+
+### Proposed Fix
+
+Replace the legacy `showConfig.showName` with the competition-specific `eventName` from `competitionConfig`:
+
+```javascript
+// TalentView.jsx - use competition context instead of legacy showConfig
+const { competitionConfig } = useCompetition();
+
+// In the header:
+{competitionConfig?.eventName || showConfig?.showName || 'Show Controller'}
+```
+
+The `useCompetition()` hook is already available in the component tree (CompetitionLayout wraps all `/:compId/*` routes). The Talent View just needs to import and use it.
+
+### Related Bugs
+
+- **BUG-010**: Same class of issue — Rundown Editor uses hardcoded `DUMMY_COMPETITION` instead of real competition config
+- Both bugs stem from views not adopting the competition-scoped config pattern
+
+### Files Affected
+
+- `show-controller/src/views/TalentView.jsx` - Line 80, replace `showConfig.showName` with `competitionConfig.eventName`
+
+---
+
+## BUG-011: Load Rundown Button Hidden When Legacy isPlaying State is Stale (FIXED)
+
+**Date Identified:** 2026-01-31
+**Date Fixed:** 2026-01-31
+**Severity:** Critical
+**Status:** FIXED
+
+### Symptoms
+
+1. Producer navigates to Producer View for a competition
+2. No rundown is loaded (header shows "No Rundown")
+3. **BUG:** The "Load Rundown" button is NOT visible — the UI shows the active-show controls (Previous, NEXT, Pause, Stop) instead
+4. Bottom of page says "No show loaded" but there is no way to load one
+5. Producer is completely blocked from loading a rundown
+
+### Root Cause
+
+The Producer View conditionally renders either a "Ready to Start" panel (with Load Rundown button) or the active-show controls, based on:
+
+```javascript
+// ProducerView.jsx line 108
+const showIsActive = timesheetIsRunning || isPlaying;
+```
+
+The legacy `isPlaying` flag (from `ShowContext.state`) can be `true` from a previous session that was never properly stopped. When this happens, `showIsActive` is `true` even though no rundown is loaded and no show is running. The Load Rundown button is inside the `!showIsActive` branch (line 622) and becomes completely inaccessible.
+
+### Fix Applied
+
+Two changes were made:
+
+1. **ProducerView.jsx line 108** — Guard `isPlaying` so it can only hide the Load Rundown panel when a rundown is actually loaded:
+   ```javascript
+   const showIsActive = timesheetIsRunning || (isPlaying && timesheetState?.rundownLoaded);
+   ```
+   This ensures a stale legacy `isPlaying: true` from a previous session cannot block the producer from accessing the Load Rundown button.
+
+2. **ShowContext.jsx `timesheetShowStopped` handler** — Clear legacy `isPlaying` when the Stop button is pressed:
+   ```javascript
+   setState(prev => ({ ...prev, isPlaying: false, isPaused: false }));
+   ```
+   This ensures pressing Stop in the active-show UI properly escapes the stuck state by resetting the legacy flag alongside the timesheet state.
+
+### Files Changed
+
+- `show-controller/src/views/ProducerView.jsx` (line 108)
+- `show-controller/src/context/ShowContext.jsx` (timesheetShowStopped handler)
+
+---
+
+## BUG-010: Rundown Editor Uses Hardcoded DUMMY_COMPETITION Instead of Real Competition Config (FIXED)
+
+**Date Identified:** 2026-01-31
+**Date Fixed:** 2026-01-31
+**Severity:** High
+**Status:** FIXED
+
+### Symptoms
+
+1. Producer opens Rundown Editor for competition "West Chester vs Cortland" (a `womens-dual` meet)
+2. **BUG:** Header shows "10a21t4b - Women's Quad Meet" instead of "10a21t4b - West Chester vs Cortland"
+3. Competition type is treated as `womens-quad` instead of `womens-dual`
+4. Team name references in templates, AI suggestions, and exports use dummy team names instead of real ones
+5. CSV/JSON exports label the competition as "Women's Quad Meet"
+
+### Root Cause
+
+`RundownEditorPage.jsx` defines a hardcoded dummy object at line 56-66:
+
+```javascript
+const DUMMY_COMPETITION = {
+  id: 'pac12-2025',
+  name: "Women's Quad Meet",
+  type: 'womens-quad',
+  teams: {
+    1: { name: 'Navy', tricode: 'NVY' },
+    2: { name: 'Springfield', tricode: 'SPR' },
+    3: { name: 'Greenville', tricode: 'GRN' },
+    4: { name: 'Westmont', tricode: 'WMT' },
+  }
+};
+```
+
+This object is referenced **~20 times** throughout the file for:
+- Header subtitle (line 4611)
+- AI segment analysis (lines 838-847)
+- Template compatibility checks (lines 3507-3508)
+- CSV/JSON export metadata (lines 2986, 3006-3008, 3036)
+- Print view (lines 3168, 3331)
+- Graphic picker team names (lines 5870, 6888-6889)
+- Template import/export (lines 3449, 3456, 3539)
+- New segment creation (line 4036)
+
+The actual competition config IS loaded via `useCompetition()` (line 487) which reads from `competitions/{compId}/config` in Firebase. However, it is **never used** — all references go to `DUMMY_COMPETITION` instead.
+
+### Impact
+
+- **Incorrect labeling**: All competitions appear as "Women's Quad Meet" regardless of actual type
+- **Wrong template matching**: Templates filtered by `womens-quad` compatibility won't match `womens-dual` meets
+- **Wrong team references**: Graphic pickers show dummy team names (Navy, Springfield, etc.) instead of actual teams (West Chester, Cortland)
+- **Bad exports**: CSV/JSON exports have wrong competition metadata
+- **AI confusion**: AI suggestion service receives wrong competition context
+
+### Proposed Fix
+
+Replace all `DUMMY_COMPETITION` references with a derived object from `competitionConfig`:
+
+```javascript
+const competition = useMemo(() => {
+  if (!competitionConfig) return DUMMY_COMPETITION; // fallback during loading
+  return {
+    id: compId,
+    name: competitionConfig.eventName || 'Unknown Competition',
+    type: competitionConfig.compType || 'womens-dual',
+    teams: buildTeamsFromConfig(competitionConfig), // extract team1-6 fields
+  };
+}, [compId, competitionConfig]);
+```
+
+Then replace all `DUMMY_COMPETITION` references with `competition`.
+
+### Fix Applied
+
+Added a `competition` memo inside `RundownEditorPage` that derives the competition object from `competitionConfig` (loaded via `useCompetition()` from Firebase at `competitions/{compId}/config`). Falls back to `DUMMY_COMPETITION` while config is loading.
+
+Replaced 18 `DUMMY_COMPETITION` references inside the component with `competition`:
+- Header subtitle display
+- AI segment analysis context
+- CSV/JSON export metadata and filenames
+- Print view title and header
+- Template save/load/compatibility checks
+- Segment creation from templates
+- Team name resolution for graphic pickers
+
+Kept `DUMMY_COMPETITION` const as fallback default. Two standalone helper functions outside the component (`getGroupedGraphics`, `SegmentDetailPanel`) retain `DUMMY_COMPETITION` as safety fallback since they already receive correct values via parameters.
+
+### Files Affected
+
+- `show-controller/src/pages/RundownEditorPage.jsx` - Added `competition` memo, replaced 18 references
+
+---
+
 ## BUG-008: Timesheet Graphics Not Rendering in output.html (FIXED)
 
 **Date Identified:** 2026-01-24
