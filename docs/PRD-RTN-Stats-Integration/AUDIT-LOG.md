@@ -150,3 +150,28 @@
 
 ---
 
+## Category F: AI Service Integration Feasibility — 2026-02-01
+
+**Result:** 3 PASS / 3 FAIL / 0 INFO
+
+| # | Check | Result | Finding |
+|---|-------|--------|---------|
+| F1 | aiContextService data loading lifecycle | PASS | `_loadRtnStats()` hooks into `start()` after `_loadCompetitionData()`. Clear integration point at line 184. |
+| F2 | aiSuggestionService data access | PASS | Has Firebase access via `db` param. Can read `teamsDatabase/stats/`. Existing `HAS_TEAM_STATS` factor provides precedent. |
+| F3 | Talking point priority system | FAIL | Plan used "Priority: normal" — no such value exists. Must use `PRIORITY.MEDIUM` from `aiContextService.js:74`. Fixed in Tasks 18-21. |
+| F4 | Athlete matching feasibility | FAIL | Plan said match via `teamsDatabase/headshots/{name}/rtnId` but aiContextService doesn't load headshots. Fixed: use `teamData.team{N}.roster[].rtnId` (available after B-CRIT fix). |
+| F5 | Graceful degradation | PASS | Existing null-safe patterns (`if (!data) return []`, optional chaining) provide clear template for new generators. |
+| F6 | Token/context budget | FAIL | `maxTalkingPoints: 5` means MEDIUM-priority RTN generators crowded out during scoring. Fixed: matchup generator uses HIGH, others only fire during non-scoring segments. |
+
+**Plan docs updated:**
+- `PLAN-RTN-Stats-Integration-2026-02-01.md` Section 7.1: Fixed athlete matching to use teamData rtnId instead of headshots; added audit notes F3/F4/F6; added Priority and When columns to generator table
+- `PLAN-RTN-Stats-Integration-Implementation.md` Task 18: Fixed priority to MEDIUM, fixed athlete matching to use teamData, added slot competition guidance
+- `PLAN-RTN-Stats-Integration-Implementation.md` Task 19: Fixed priority to MEDIUM, added segment-aware generation note
+- `PLAN-RTN-Stats-Integration-Implementation.md` Task 20: Fixed priority to HIGH, noted existing `_getMatchupTalkingPoints()` stub to replace
+- `PLAN-RTN-Stats-Integration-Implementation.md` Task 21: Fixed priority to MEDIUM, added segment-aware generation note
+
+**Tests written:**
+- `tests/audit-F-ai-integration.md` — full report with code references for all 6 checks, detailed analysis of priority system, athlete matching, and slot competition
+
+---
+

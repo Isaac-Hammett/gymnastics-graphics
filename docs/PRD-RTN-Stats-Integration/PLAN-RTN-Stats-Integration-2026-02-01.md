@@ -636,14 +636,22 @@ Subscribes to `rtnCache/rankings/{gender}-{year}-{latestWeek}` via Firebase list
 
 | Generator | Data Source | Example Output |
 |-----------|------------|----------------|
-| `_getAthleteStatsTalkingPoints()` | individualAverages, individualHighs | "Mackenzie Estep averages 9.933 on vault (#2 nationally)" |
-| `_getConsistencyTalkingPoints()` | consistency | "Oklahoma trending up on beam: 49.50 -> 49.68 over last 3 meets" |
-| `_getMVPTalkingPoints()` | mvp | "Addison Fatta leads OU with 157.45 total contribution" |
-| `_getLineupTalkingPoints()` | lineup | "Faith Torrez competed in all 4 meets -- key contributor on VT, UB, BB" |
-| `_getTopScoresTalkingPoints()` | topScores | "OU's theoretical max is 198.75 if everyone hits season highs" |
-| `_getMatchupTalkingPoints()` | individualHighs + rankings | "Vault matchup: Estep (9.975 high) vs. Chiles (9.95 high)" |
+> **Audit note (F3):** Priority values must use the `PRIORITY` constant from `aiContextService.js:74`: `CRITICAL`, `HIGH`, `MEDIUM`, `LOW`. The plan originally used "normal" which doesn't exist — corrected to `MEDIUM`.
 
-**Athlete matching:** When generating per-athlete talking points, the service matches RTN stats to the Virtius roster using the `rtnId` stored in `teamsDatabase/headshots/{name}/rtnId`. Unmatched athletes are included by name but flagged as "unverified match."
+> **Audit note (F6):** `maxTalkingPoints` defaults to 5. During active scoring, existing generators produce CRITICAL/HIGH points (career highs, margins, standings) that consume most slots. RTN generators at MEDIUM priority will only surface during non-scoring segments (opening, intro, break, rotation start). Matchup generator uses HIGH priority to compete effectively. Consider increasing `maxTalkingPoints` to 8 for intro/break segments where more context is valuable.
+
+| Generator | Data Source | Priority | When | Example Output |
+|-----------|------------|----------|------|----------------|
+| `_getAthleteStatsTalkingPoints()` | individualAverages, individualHighs | MEDIUM | Non-scoring segments | "Mackenzie Estep averages 9.933 on vault (#2 nationally)" |
+| `_getConsistencyTalkingPoints()` | consistency | MEDIUM | Non-scoring segments | "Oklahoma trending up on beam: 49.50 -> 49.68 over last 3 meets" |
+| `_getMVPTalkingPoints()` | mvp | MEDIUM | Non-scoring segments | "Addison Fatta leads OU with 157.45 total contribution" |
+| `_getLineupTalkingPoints()` | lineup | MEDIUM | Non-scoring segments | "Faith Torrez competed in all 4 meets -- key contributor on VT, UB, BB" |
+| `_getTopScoresTalkingPoints()` | topScores | MEDIUM | Non-scoring segments | "OU's theoretical max is 198.75 if everyone hits season highs" |
+| `_getMatchupTalkingPoints()` | individualHighs + rankings | HIGH | Rotation start, scoring | "Vault matchup: Estep (9.975 high) vs. Chiles (9.95 high)" |
+
+> **Audit note (F4):** Athlete matching does NOT use `teamsDatabase/headshots/{name}/rtnId` — aiContextService doesn't load headshots data. Instead, match via `this._teamData.team{N}.roster[].rtnId` (populated by `enrichTeamsWithRTN()` after the B-CRIT fix in Task 1). Join key: `teamData` roster `rtnId` ↔ `rtnStats` athlete `rtnId`. Fallback: name matching via existing `_getAthleteFromRoster()` method.
+
+**Athlete matching:** When generating per-athlete talking points, the service matches RTN stats to the Virtius roster using the `rtnId` stored in `competitions/{compId}/teamData/team{N}/roster[].rtnId` (populated by enrichTeamsWithRTN). Unmatched athletes fall back to name matching via the existing `_getAthleteFromRoster()` method and are flagged as "unverified match."
 
 ### 7.2 aiSuggestionService.js Enhancements
 
