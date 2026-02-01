@@ -31,7 +31,7 @@ import { encryptStreamKey, decryptStreamKey, isEncryptedKey } from './lib/obsStr
 import { mapEditorSegmentsToEngine, validateEngineSegments, diffSegments, detectDuplicateIds, deduplicateSegmentsById } from './lib/segmentMapper.js';
 import aiSuggestionService from './lib/aiSuggestionService.js';
 import { getOrCreateContextService, getContextService, removeContextService } from './lib/aiContextService.js';
-import { ingestCompetitionStats, ingestTeamStats, syncStatsToConfig, snapshotStatsForCompetition, checkStaleness, parseCompetitionType, buildTeamDbKey } from './lib/rtnStatsService.js';
+import { ingestCompetitionStats, ingestTeamStats, syncStatsToConfig, snapshotStatsForCompetition, checkStaleness, parseCompetitionType, buildTeamDbKey, fetchLeagueRankings } from './lib/rtnStatsService.js';
 
 dotenv.config();
 
@@ -6200,6 +6200,42 @@ io.on('connection', async (socket) => {
         success: false,
         compId: targetCompId,
         error: `Failed to refresh stats: ${error.message}`
+      });
+    }
+  });
+
+  // Fetch league rankings (team + individual) from RTN (Task 16)
+  socket.on('fetchLeagueRankings', async ({ gender, year, week }) => {
+    if (!gender) {
+      socket.emit('leagueRankingsResult', {
+        success: false,
+        error: 'No gender provided',
+      });
+      return;
+    }
+
+    try {
+      console.log(`[RTN Rankings] Fetching league rankings: gender=${gender}, year=${year || 'auto'}, week=${week || 'auto'}`);
+      const result = await fetchLeagueRankings(gender, year, week);
+
+      socket.emit('leagueRankingsResult', {
+        success: result.success,
+        gender: result.gender,
+        week: result.week,
+        teamCount: result.teamCount,
+        individualEvents: result.individualEvents,
+        error: result.error || null,
+      });
+
+      console.log(`[RTN Rankings] Complete: ${result.teamCount} teams, ${result.individualEvents} events, week ${result.week}`);
+    } catch (error) {
+      console.error(`[RTN Rankings] Error fetching rankings:`, error.message);
+      socket.emit('leagueRankingsResult', {
+        success: false,
+        gender,
+        week: week || 0,
+        teamCount: 0,
+        error: `Failed to fetch rankings: ${error.message}`,
       });
     }
   });
