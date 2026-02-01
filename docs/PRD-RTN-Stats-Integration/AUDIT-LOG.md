@@ -1,7 +1,7 @@
 # RTN Stats Integration — Audit Log
 
 **Started:** 2026-02-01
-**Status:** IN PROGRESS
+**Status:** COMPLETE
 
 **Categories:** A (Firebase Paths) | B (RTN API) | C (Existing Code) | D (Data Model) | E (Socket/Hooks) | F (AI Integration) | G (Plan Consistency)
 
@@ -172,6 +172,33 @@
 
 **Tests written:**
 - `tests/audit-F-ai-integration.md` — full report with code references for all 6 checks, detailed analysis of priority system, athlete matching, and slot competition
+
+---
+
+## Category G: Plan Document Consistency — 2026-02-01
+
+**Result:** 6 PASS / 2 FAIL / 0 INFO
+
+| # | Check | Result | Finding |
+|---|-------|--------|---------|
+| G1 | Task count matches | PASS | 24 tasks across 5 phases, identical in PRD and Implementation Plan |
+| G2 | Task-to-section alignment | PASS | All tasks map to correct Technical Plan sections |
+| G3 | Firebase paths consistent | PASS | All 6 path families match across documents |
+| G4 | Socket event names consistent | PASS | All 6 socket events match across documents |
+| G5 | Success criteria coverage | PASS | Every PRD Section 5 criterion maps to at least one task |
+| G6 | Verification checklist completeness | FAIL | PRD Stories 2/3 require per-team/per-athlete stats detail UI — no implementation task existed. Added Task 25. |
+| G7 | File references CREATE/MODIFY | FAIL | `aiSuggestionService.js` listed as MODIFY in Tech Plan Section 10 with enhancements in Section 7.2, but no implementation task covered it. Added Task 26. |
+| G8 | Task dependency ordering | PASS | No circular dependencies. Server (Phase 1) completes before client (Phase 2). Cross-phase dependency (Task 20 → Task 17) is correctly ordered. |
+
+**Plan docs updated:**
+- `PLAN-RTN-Stats-Integration-Implementation.md`: Added Task 25 (stats detail panel UI, Phase 2) and Task 26 (aiSuggestionService enhancements, Phase 4)
+- `PLAN-RTN-Stats-Integration-Implementation.md`: Updated Phase Summary table to include Tasks 25-26 in their respective phases
+- `PLAN-RTN-Stats-Integration-Implementation.md`: Updated Phase 2 and Phase 4 task counts (7→8, 4→5)
+- `PLAN-RTN-Stats-Integration-Implementation.md`: Updated verification checklists for Phases 2 and 4 with new checklist items
+- `PLAN-RTN-Stats-Integration-Implementation.md`: Updated task numbering note (24→26)
+
+**Tests written:**
+- `tests/audit-G-plan-consistency.md` — full report with cross-reference analysis for all 8 checks
 
 ---
 
