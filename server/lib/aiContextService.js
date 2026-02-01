@@ -154,6 +154,7 @@ class AIContextService {
     this._competitionConfig = null;
     this._teamData = null;
     this._athleteStats = null;
+    this._rtnStats = null;  // RTN stats snapshot from competitions/{compId}/rtnStats/
 
     // Virtius API state
     this._virtiusSessionId = null;
@@ -182,6 +183,9 @@ class AIContextService {
 
     // Load initial competition data
     await this._loadCompetitionData();
+
+    // Load RTN stats snapshot (frozen at show start)
+    await this._loadRtnStats();
 
     // Start periodic context updates
     this._updateInterval = setInterval(
@@ -308,6 +312,11 @@ class AIContextService {
     // Generate basic talking points based on segment type
     const basicPoints = this._getBasicTalkingPoints(segment);
     context.talkingPoints.push(...basicPoints);
+
+    // Generate RTN athlete stats talking points (Task 18)
+    const segmentContext = this._analyzeSegmentName(segment.name || '');
+    const athleteStatsPoints = this._getAthleteStatsTalkingPoints(segment, segmentContext);
+    context.talkingPoints.push(...athleteStatsPoints);
 
     // Sort talking points by priority
     context.talkingPoints.sort((a, b) => {
@@ -1840,6 +1849,205 @@ class AIContextService {
   // ==========================================================================
   // Data Loading
   // ==========================================================================
+
+  /**
+   * Load RTN stats snapshot from Firebase
+   * Reads the frozen snapshot at competitions/{compId}/rtnStats/
+   * This data was captured at show start by snapshotStatsForCompetition()
+   */
+  async _loadRtnStats() {
+    const db = getDb();
+    if (!db || !this.compId) {
+      return;
+    }
+
+    try {
+      const snapshot = await db.ref(`competitions/${this.compId}/rtnStats`).once('value');
+      this._rtnStats = snapshot.val();
+
+      if (this._rtnStats) {
+        console.log(`[AIContextService] Loaded RTN stats snapshot for ${this.compId}`);
+      } else {
+        console.log(`[AIContextService] No RTN stats snapshot available for ${this.compId}`);
+      }
+    } catch (error) {
+      console.warn(`[AIContextService] Error loading RTN stats:`, error);
+      this._rtnStats = null;
+    }
+  }
+
+  /**
+   * Generate athlete-specific talking points from RTN individual stats
+   *
+   * Uses individual averages and highs from the RTN stats snapshot.
+   * Matches athletes via rtnId (from teamData roster) or falls back to name matching.
+   * Only generates during non-scoring segments (opening, intro, break, rotation start).
+   *
+   * @param {Object} segment - Current segment
+   * @param {Object} segmentContext - Analyzed segment context
+   * @returns {Array} Athlete stats talking points
+   */
+  _getAthleteStatsTalkingPoints(segment, segmentContext) {
+    const points = [];
+
+    if (!this._rtnStats) return points;
+
+    // Only generate during non-scoring segments
+    if (segmentContext.isScoring) return points;
+
+    // Determine which event to focus on (if any)
+    const focusEvent = segmentContext.event || null;
+
+    // Iterate over teams in the snapshot
+    for (const teamKey of ['team1', 'team2', 'team3', 'team4', 'team5', 'team6']) {
+      const teamStats = this._rtnStats[teamKey];
+      if (!teamStats) continue;
+
+      const teamName = this._getTeamDisplayName(teamKey);
+      const individualAverages = this._toArray(teamStats.individualAverages);
+      const individualHighs = this._toArray(teamStats.individualHighs);
+
+      if (!individualAverages.length && !individualHighs.length) continue;
+
+      // Build a map of rtnId -> roster athlete for matching
+      const rosterByRtnId = this._buildRosterRtnIdMap(teamKey);
+
+      // Generate points from top averages
+      for (const athlete of individualAverages.slice(0, 5)) {
+        if (!athlete?.events) continue;
+
+        const matchedName = this._matchAthleteToRoster(athlete, rosterByRtnId);
+        const displayName = matchedName || athlete.fullName || `${athlete.firstName} ${athlete.lastName}`;
+        if (!displayName) continue;
+
+        // If we have a focus event, only mention that event
+        const events = focusEvent ? { [focusEvent]: athlete.events[focusEvent] } : athlete.events;
+
+        for (const [eventCode, avg] of Object.entries(events)) {
+          if (avg === null || avg === undefined || eventCode === 'AA') continue;
+          const eventName = EVENT_FULL_NAMES[eventCode] || eventCode;
+
+          // Only generate points for notable averages (9.7+)
+          if (typeof avg === 'number' && avg >= 9.7) {
+            points.push({
+              id: `rtn-avg-${displayName}-${eventCode}-${segment.id}`,
+              type: CONTEXT_TYPES.ATHLETE,
+              priority: PRIORITY.MEDIUM,
+              text: `${displayName} (${teamName}) averages ${avg.toFixed(3)} on ${eventName}`,
+              source: 'rtn-stats',
+              data: { athlete: displayName, team: teamName, event: eventCode, average: avg },
+            });
+          }
+        }
+      }
+
+      // Generate points from season highs
+      for (const athlete of individualHighs.slice(0, 5)) {
+        if (!athlete?.events) continue;
+
+        const matchedName = this._matchAthleteToRoster(athlete, rosterByRtnId);
+        const displayName = matchedName || athlete.fullName || `${athlete.firstName} ${athlete.lastName}`;
+        if (!displayName) continue;
+
+        const events = focusEvent ? { [focusEvent]: athlete.events[focusEvent] } : athlete.events;
+
+        for (const [eventCode, high] of Object.entries(events)) {
+          if (high === null || high === undefined || eventCode === 'AA') continue;
+          const eventName = EVENT_FULL_NAMES[eventCode] || eventCode;
+
+          // Only generate points for notable highs (9.9+)
+          if (typeof high === 'number' && high >= 9.9) {
+            points.push({
+              id: `rtn-high-${displayName}-${eventCode}-${segment.id}`,
+              type: CONTEXT_TYPES.ATHLETE,
+              priority: PRIORITY.MEDIUM,
+              text: `${displayName} (${teamName}) season high ${high.toFixed(3)} on ${eventName}`,
+              source: 'rtn-stats',
+              data: { athlete: displayName, team: teamName, event: eventCode, high },
+            });
+          }
+        }
+      }
+    }
+
+    // Deduplicate: prefer average over high for same athlete+event
+    const seen = new Set();
+    const deduped = [];
+    for (const point of points) {
+      const key = `${point.data?.athlete}-${point.data?.event}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        deduped.push(point);
+      }
+    }
+
+    // Limit to top 4 to avoid overwhelming the talking points budget
+    return deduped.slice(0, 4);
+  }
+
+  /**
+   * Build a map of rtnId -> roster athlete name for a team
+   * Uses this._teamData.team{N}.roster[].rtnId
+   *
+   * @param {string} teamKey - Team key (e.g., 'team1')
+   * @returns {Map} rtnId -> fullName map
+   */
+  _buildRosterRtnIdMap(teamKey) {
+    const map = new Map();
+    const roster = this._teamData?.[teamKey]?.roster;
+    if (!roster || !Array.isArray(roster)) return map;
+
+    for (const athlete of roster) {
+      if (athlete.rtnId) {
+        const name = athlete.fullName || athlete.name || `${athlete.firstName || ''} ${athlete.lastName || ''}`.trim();
+        if (name) {
+          map.set(String(athlete.rtnId), name);
+        }
+      }
+    }
+
+    return map;
+  }
+
+  /**
+   * Match an RTN stats athlete record to a roster athlete
+   * Tries rtnId match first, falls back to name matching
+   *
+   * @param {Object} rtnAthlete - RTN athlete record with rtnId, fullName, etc.
+   * @param {Map} rosterByRtnId - Map of rtnId -> fullName from roster
+   * @returns {string|null} Matched athlete name or null
+   */
+  _matchAthleteToRoster(rtnAthlete, rosterByRtnId) {
+    // Try rtnId match first
+    if (rtnAthlete.rtnId && rosterByRtnId.has(String(rtnAthlete.rtnId))) {
+      return rosterByRtnId.get(String(rtnAthlete.rtnId));
+    }
+
+    // Fall back to name matching via _getAthleteFromRoster
+    const rtnName = rtnAthlete.fullName || `${rtnAthlete.firstName || ''} ${rtnAthlete.lastName || ''}`.trim();
+    if (rtnName) {
+      const match = this._getAthleteFromRoster(rtnName);
+      if (match) {
+        return match.fullName || match.name || rtnName;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Convert Firebase object-or-array to array
+   * Firebase may store arrays as objects with numeric keys
+   *
+   * @param {*} data - Firebase data (array, object, or null)
+   * @returns {Array} Normalized array
+   */
+  _toArray(data) {
+    if (!data) return [];
+    if (Array.isArray(data)) return data;
+    if (typeof data === 'object') return Object.values(data);
+    return [];
+  }
 
   /**
    * Load competition data from Firebase
