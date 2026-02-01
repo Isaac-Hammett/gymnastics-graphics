@@ -447,6 +447,19 @@ function getOrCreateEngine(compId, obsConnectionManager, firebase, socketIo) {
     socketIo.to(roomName).emit('timesheetShowStarted', data);
     socketIo.to(roomName).emit('timesheetState', engine.getState());
 
+    // PRD-RTN-Stats Task 7: Snapshot RTN stats BEFORE AI Context Service starts
+    // (AI service reads from competitions/{compId}/rtnStats/ during start())
+    try {
+      const snapshotResult = await snapshotStatsForCompetition(compId);
+      if (snapshotResult.success) {
+        console.log(`[Timesheet:${compId}] RTN stats snapshot taken (${snapshotResult.teamsSnapshotted} teams)`);
+      } else {
+        console.warn(`[Timesheet:${compId}] RTN stats snapshot failed: ${snapshotResult.error}`);
+      }
+    } catch (error) {
+      console.error(`[Timesheet:${compId}] RTN stats snapshot error:`, error.message);
+    }
+
     // Task 56: Start AI Context Service for real-time talking points
     try {
       const aiContextService = getOrCreateContextService(compId, {
@@ -457,18 +470,6 @@ function getOrCreateEngine(compId, obsConnectionManager, firebase, socketIo) {
       console.log(`[Timesheet:${compId}] AI Context Service started`);
     } catch (error) {
       console.error(`[Timesheet:${compId}] Failed to start AI Context Service:`, error.message);
-    }
-
-    // PRD-RTN-Stats Task 7: Snapshot RTN stats for this competition at show start
-    try {
-      const snapshotResult = await snapshotStatsForCompetition(compId);
-      if (snapshotResult.success) {
-        console.log(`[Timesheet:${compId}] RTN stats snapshot taken (${snapshotResult.teamsSnapshotted} teams)`);
-      } else {
-        console.warn(`[Timesheet:${compId}] RTN stats snapshot failed: ${snapshotResult.error}`);
-      }
-    } catch (error) {
-      console.error(`[Timesheet:${compId}] RTN stats snapshot error:`, error.message);
     }
 
     // Task 38: Create initial run record for real-time timing analytics
