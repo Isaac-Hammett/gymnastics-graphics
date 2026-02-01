@@ -318,6 +318,10 @@ class AIContextService {
     const athleteStatsPoints = this._getAthleteStatsTalkingPoints(segment, segmentContext);
     context.talkingPoints.push(...athleteStatsPoints);
 
+    // Generate consistency trend talking points (Task 19)
+    const consistencyPoints = this._getConsistencyTalkingPoints(segment, segmentContext);
+    context.talkingPoints.push(...consistencyPoints);
+
     // Sort talking points by priority
     context.talkingPoints.sort((a, b) => {
       const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
@@ -1983,6 +1987,132 @@ class AIContextService {
 
     // Limit to top 4 to avoid overwhelming the talking points budget
     return deduped.slice(0, 4);
+  }
+
+  /**
+   * Generate consistency trend talking points from RTN consistency data
+   *
+   * Analyzes per-event score arrays over time to detect trends:
+   * - "improving" if last 3 scores are increasing
+   * - "declining" if last 3 scores are decreasing
+   * - "stable" otherwise
+   *
+   * Only generates during non-scoring segments (opening, intro, break, rotation start).
+   * Uses PRIORITY.MEDIUM.
+   *
+   * @param {Object} segment - Current segment
+   * @param {Object} segmentContext - Analyzed segment context
+   * @returns {Array} Consistency trend talking points
+   */
+  _getConsistencyTalkingPoints(segment, segmentContext) {
+    const points = [];
+
+    if (!this._rtnStats) return points;
+
+    // Only generate during non-scoring segments
+    if (segmentContext.isScoring) return points;
+
+    // Determine which event to focus on (if any)
+    const focusEvent = segmentContext.event || null;
+
+    for (const teamKey of ['team1', 'team2', 'team3', 'team4', 'team5', 'team6']) {
+      const teamStats = this._rtnStats[teamKey];
+      if (!teamStats?.consistency?.events) continue;
+
+      const teamName = this._getTeamDisplayName(teamKey);
+      const labels = this._toArray(teamStats.consistency.labels);
+      const events = teamStats.consistency.events;
+
+      for (const [eventCode, scores] of Object.entries(events)) {
+        // If there's a focus event, only analyze that one
+        if (focusEvent && eventCode !== focusEvent) continue;
+
+        const scoreArr = this._toArray(scores).filter(s => typeof s === 'number' && s > 0);
+        if (scoreArr.length < 3) continue;
+
+        const eventName = EVENT_FULL_NAMES[eventCode] || eventCode;
+
+        // Analyze trend using last 3 scores
+        const last3 = scoreArr.slice(-3);
+        const trend = this._detectTrend(last3);
+
+        // Calculate standard deviation for consistency rating
+        const stdDev = this._standardDeviation(scoreArr);
+        const consistencyRating = stdDev < 0.15 ? 'very consistent' :
+                                  stdDev < 0.3 ? 'consistent' :
+                                  stdDev < 0.5 ? 'somewhat inconsistent' : 'inconsistent';
+
+        // Format score progression string (last 3-4 scores)
+        const recentScores = scoreArr.slice(-4);
+        const scoreProgression = recentScores.map(s => s.toFixed(2)).join(' → ');
+
+        if (trend === 'improving') {
+          points.push({
+            id: `rtn-trend-up-${teamKey}-${eventCode}-${segment.id}`,
+            type: CONTEXT_TYPES.MATCHUP,
+            priority: PRIORITY.MEDIUM,
+            text: `${teamName} trending up on ${eventName}: ${scoreProgression}`,
+            source: 'rtn-consistency',
+            data: { team: teamName, event: eventCode, trend, scores: recentScores, stdDev, consistencyRating },
+          });
+        } else if (trend === 'declining') {
+          points.push({
+            id: `rtn-trend-down-${teamKey}-${eventCode}-${segment.id}`,
+            type: CONTEXT_TYPES.MATCHUP,
+            priority: PRIORITY.MEDIUM,
+            text: `${teamName} trending down on ${eventName}: ${scoreProgression}`,
+            source: 'rtn-consistency',
+            data: { team: teamName, event: eventCode, trend, scores: recentScores, stdDev, consistencyRating },
+          });
+        } else if (consistencyRating === 'very consistent') {
+          // Stable and very consistent is worth noting
+          const avg = scoreArr.reduce((a, b) => a + b, 0) / scoreArr.length;
+          points.push({
+            id: `rtn-consistent-${teamKey}-${eventCode}-${segment.id}`,
+            type: CONTEXT_TYPES.MATCHUP,
+            priority: PRIORITY.MEDIUM,
+            text: `${teamName} ${consistencyRating} on ${eventName} — averaging ${avg.toFixed(3)} across ${scoreArr.length} meets`,
+            source: 'rtn-consistency',
+            data: { team: teamName, event: eventCode, trend: 'stable', scores: recentScores, stdDev, consistencyRating, average: avg },
+          });
+        }
+      }
+    }
+
+    // Limit to top 3 consistency points to avoid overwhelming the budget
+    return points.slice(0, 3);
+  }
+
+  /**
+   * Detect trend direction from an array of scores
+   *
+   * @param {number[]} scores - Array of at least 3 scores (chronological order)
+   * @returns {'improving'|'declining'|'stable'} Trend direction
+   */
+  _detectTrend(scores) {
+    if (scores.length < 3) return 'stable';
+
+    const last3 = scores.slice(-3);
+    const isIncreasing = last3[0] < last3[1] && last3[1] < last3[2];
+    const isDecreasing = last3[0] > last3[1] && last3[1] > last3[2];
+
+    if (isIncreasing) return 'improving';
+    if (isDecreasing) return 'declining';
+    return 'stable';
+  }
+
+  /**
+   * Calculate standard deviation of an array of numbers
+   *
+   * @param {number[]} values - Array of numbers
+   * @returns {number} Standard deviation
+   */
+  _standardDeviation(values) {
+    if (values.length < 2) return 0;
+    const mean = values.reduce((a, b) => a + b, 0) / values.length;
+    const squaredDiffs = values.map(v => (v - mean) ** 2);
+    const variance = squaredDiffs.reduce((a, b) => a + b, 0) / values.length;
+    return Math.sqrt(variance);
   }
 
   /**
