@@ -254,20 +254,23 @@ async function getCurrentWeek(gender, year) {
       // Look for the week marked as current
       const currentWeek = data.schema.weeks.find(w => w.current === '1' || w.current === 1);
       if (currentWeek?.week) {
-        return parseInt(currentWeek.week, 10);
+        const parsed = parseInt(currentWeek.week, 10);
+        if (!isNaN(parsed)) return parsed;
       }
 
       // Fallback: latest week with rqs enabled
       const rqsWeeks = data.schema.weeks.filter(w => w.rqs === '1' || w.rqs === 1);
       if (rqsWeeks.length > 0) {
         const latest = rqsWeeks[rqsWeeks.length - 1];
-        return parseInt(latest.week, 10);
+        const parsed = parseInt(latest.week, 10);
+        if (!isNaN(parsed)) return parsed;
       }
 
       // Fallback: last week in array
       if (data.schema.weeks.length > 0) {
         const last = data.schema.weeks[data.schema.weeks.length - 1];
-        return parseInt(last.week, 10);
+        const parsed = parseInt(last.week, 10);
+        if (!isNaN(parsed)) return parsed;
       }
     }
 
@@ -734,6 +737,10 @@ async function ingestTeamStats(teamKey, rtnId, gender, year, io, compId) {
   let week;
   try {
     week = await getCurrentWeek(gender, year);
+    if (typeof week !== 'number' || isNaN(week)) {
+      console.warn(`[rtnStatsService] getCurrentWeek returned invalid value (${week}), using 1`);
+      week = 1;
+    }
   } catch (err) {
     console.warn(`[rtnStatsService] Failed to get week, using 1: ${err.message}`);
     week = 1;
