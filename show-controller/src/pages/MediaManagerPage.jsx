@@ -627,6 +627,14 @@ function RosterView({ teamKey, teams, getTeamRosterWithHeadshots }) {
               )}
             </div>
             <span className="text-xs text-zinc-300 truncate flex-1">{athlete.name}</span>
+            {athlete.rtnId && (
+              <span
+                className="text-[9px] px-1 py-0.5 rounded bg-blue-600/20 text-blue-400 flex-shrink-0"
+                title={`RTN ID: ${athlete.rtnId}`}
+              >
+                RTN
+              </span>
+            )}
             {athlete.hasHeadshot ? (
               <CheckCircleIcon className="w-3 h-3 text-green-500 flex-shrink-0" />
             ) : (

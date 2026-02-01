@@ -177,15 +177,19 @@ export function useTeamsDatabase() {
   const saveHeadshots = useCallback(async (headshotsArray, teamKey = null) => {
     try {
       const updates = {};
-      for (const { name, headshotUrl } of headshotsArray) {
+      for (const { name, headshotUrl, rtnId } of headshotsArray) {
         const normalized = normalizeName(name);
         const safeKey = getSafeFirebaseKey(normalized);
-        updates[`teamsDatabase/headshots/${safeKey}`] = {
+        const entry = {
           name: name,  // Store original name for display
           url: headshotUrl,
           teamKey: teamKey,
           updatedAt: new Date().toISOString(),
         };
+        if (rtnId) {
+          entry.rtnId = String(rtnId);
+        }
+        updates[`teamsDatabase/headshots/${safeKey}`] = entry;
       }
 
       // Use update with full paths for atomic batch write
@@ -212,12 +216,19 @@ export function useTeamsDatabase() {
         updatedAt: new Date().toISOString(),
       });
 
-      // 2. Save all headshots
+      // 2. Save all headshots (including RTN IDs if available from Virtius)
       const headshotsToSave = athletes.map(a => ({
         name: a.name,
         headshotUrl: a.headshotUrl,
+        rtnId: a.rtnId || null,
       }));
       await saveHeadshots(headshotsToSave, teamKey);
+
+      // Log warnings for athletes missing RTN IDs
+      const missingRtnIds = athletes.filter(a => !a.rtnId);
+      if (missingRtnIds.length > 0) {
+        console.warn(`[importRoster] ${missingRtnIds.length}/${athletes.length} athletes missing RTN IDs for ${teamKey}:`, missingRtnIds.map(a => a.name));
+      }
 
       return { success: true, athleteCount: athletes.length };
     } catch (err) {
@@ -345,12 +356,18 @@ export function useTeamsDatabase() {
     const team = getTeam(teamKey);
     if (!team?.roster) return [];
 
-    return team.roster.map(name => ({
-      name,
-      hasHeadshot: hasHeadshot(name),
-      headshotUrl: getHeadshot(name),
-    }));
-  }, [getTeam, hasHeadshot, getHeadshot]);
+    return team.roster.map(name => {
+      const normalized = normalizeName(name);
+      const safeKey = getSafeFirebaseKey(normalized);
+      const headshotEntry = headshots[safeKey];
+      return {
+        name,
+        hasHeadshot: hasHeadshot(name),
+        headshotUrl: getHeadshot(name),
+        rtnId: headshotEntry?.rtnId || null,
+      };
+    });
+  }, [getTeam, hasHeadshot, getHeadshot, headshots]);
 
   /**
    * Get roster stats for a team
