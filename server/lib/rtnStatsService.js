@@ -304,6 +304,333 @@ function buildTeamStatUrls(gender, year, tid, week) {
 }
 
 // ============================================================================
+// Score Parsing Helpers
+// ============================================================================
+
+/**
+ * Parse a score value from RTN.
+ * - String scores are parsed to numbers (e.g., "9.9250" -> 9.925)
+ * - Negative scores (exhibition/scratch) are treated as null
+ * - null/undefined/empty string -> null
+ * - Results are rounded to 4 decimal places
+ *
+ * @param {*} val - Raw score value from RTN
+ * @returns {number|null}
+ */
+function parseScore(val) {
+  if (val === null || val === undefined || val === '' || val === '0.0000' || val === 0) return null;
+  const num = typeof val === 'number' ? val : parseFloat(val);
+  if (isNaN(num)) return null;
+  if (num < 0) return null; // Negative = exhibition/scratch
+  return Math.round(num * 10000) / 10000;
+}
+
+/**
+ * Coerce an RTN athlete ID to a string for consistent storage.
+ * RTN uses 'id', 'gid', or 'gymnast_id' depending on endpoint, and types vary (string or number).
+ *
+ * @param {*} val - Raw ID value
+ * @returns {string|null}
+ */
+function toRtnIdString(val) {
+  if (val === null || val === undefined || val === '') return null;
+  return String(val);
+}
+
+// ============================================================================
+// Normalization Functions (Task 4)
+// ============================================================================
+
+/**
+ * Normalize consistency data.
+ * Raw shape: { labels: [...], vts: [...], ubs: [...], bbs: [...], fxs: [...] }
+ * (men: fxs, phs, srs, vts, pbs, hbs)
+ *
+ * @param {Object} raw - Raw RTN consistency response
+ * @param {string} gender - "mens" or "womens"
+ * @returns {Object|null} { labels: string[], events: { VT: number[], UB: number[], ... } }
+ */
+function normalizeConsistency(raw, gender) {
+  if (!raw || typeof raw !== 'object') return null;
+
+  const labels = raw.labels || [];
+  const eventMap = getConsistencyEvents(gender);
+  const events = {};
+
+  for (const [rtnField, stdCode] of Object.entries(eventMap)) {
+    if (raw[rtnField] && Array.isArray(raw[rtnField])) {
+      events[stdCode] = raw[rtnField].map(v => parseScore(v));
+    }
+  }
+
+  if (Object.keys(events).length === 0) return null;
+
+  return { labels, events };
+}
+
+/**
+ * Normalize MVP data.
+ * Raw shape: array of athlete objects with sum fields (vsum, ubsum, etc.) and gid.
+ *
+ * @param {Array} raw - Raw RTN MVP response
+ * @param {string} gender - "mens" or "womens"
+ * @returns {Array|null} Array of { rtnId, firstName, lastName, fullName, events: {...}, total }
+ */
+function normalizeMVP(raw, gender) {
+  if (!raw || !Array.isArray(raw) || raw.length === 0) return null;
+
+  const eventMap = getMvpEvents(gender);
+
+  return raw.map(athlete => {
+    const events = {};
+    let total = 0;
+
+    for (const [rtnField, stdCode] of Object.entries(eventMap)) {
+      const score = parseScore(athlete[rtnField]);
+      events[stdCode] = score;
+      if (score !== null) total += score;
+    }
+
+    // Round total to 4 decimals to avoid floating-point artifacts
+    total = Math.round(total * 10000) / 10000;
+
+    return {
+      rtnId: toRtnIdString(athlete.gid),
+      firstName: (athlete.fname || '').trim(),
+      lastName: (athlete.lname || '').trim(),
+      fullName: `${(athlete.fname || '').trim()} ${(athlete.lname || '').trim()}`.trim(),
+      events,
+      total,
+    };
+  }).sort((a, b) => b.total - a.total);
+}
+
+/**
+ * Normalize top scores data.
+ * Raw shape: { data: [...top lineup entries...], max: number }
+ * Each entry has gymnast_id and event-named fields (vault, bars, beam, floor for women).
+ *
+ * @param {Object} raw - Raw RTN top scores response
+ * @param {string} gender - "mens" or "womens"
+ * @returns {Object|null} { theoreticalMax, scores: [...], events: { VT: [...], UB: [...], ... } }
+ */
+function normalizeTopScores(raw, gender) {
+  if (!raw || typeof raw !== 'object') return null;
+
+  const rawData = raw.data || raw;
+  if (!Array.isArray(rawData)) return null;
+
+  const eventMap = getTopScoreEvents(gender);
+  const theoreticalMax = parseScore(raw.max) || null;
+
+  // Group athletes by event
+  const events = {};
+  for (const stdCode of Object.values(eventMap)) {
+    events[stdCode] = [];
+  }
+
+  // Also build the flat scores array (top lineup entries)
+  const scores = rawData.map(entry => {
+    const row = {};
+    for (const [rtnField, stdCode] of Object.entries(eventMap)) {
+      row[rtnField] = entry[rtnField] || '';
+    }
+    return row;
+  });
+
+  // Build per-event top athletes
+  for (const [rtnField, stdCode] of Object.entries(eventMap)) {
+    // Collect athletes who have a score for this event
+    const athletesWithScores = rawData
+      .filter(entry => {
+        const score = parseScore(entry[rtnField]);
+        return score !== null;
+      })
+      .map(entry => ({
+        rtnId: toRtnIdString(entry.gymnast_id || entry.gid || entry.id),
+        firstName: (entry.fname || '').trim(),
+        lastName: (entry.lname || '').trim(),
+        fullName: `${(entry.fname || '').trim()} ${(entry.lname || '').trim()}`.trim(),
+        high: parseScore(entry[rtnField]),
+      }))
+      .sort((a, b) => (b.high || 0) - (a.high || 0));
+
+    events[stdCode] = athletesWithScores;
+  }
+
+  return { theoreticalMax, scores, events };
+}
+
+/**
+ * Normalize lineup data.
+ * Raw shape: array of athlete objects with binary meets arrays and id field.
+ *
+ * @param {Array} raw - Raw RTN lineup response
+ * @param {string} gender - "mens" or "womens"
+ * @returns {Array|null} Array of { rtnId, firstName, lastName, fullName, meets: number[], rate: number }
+ */
+function normalizeLineup(raw, gender) {
+  if (!raw || !Array.isArray(raw) || raw.length === 0) return null;
+
+  return raw.map(athlete => {
+    const meets = athlete.meets || [];
+    const totalMeets = meets.length;
+    const competed = meets.filter(m => m === 1 || m === '1').length;
+    const rate = totalMeets > 0 ? Math.round((competed / totalMeets) * 10000) / 10000 : 0;
+
+    return {
+      rtnId: toRtnIdString(athlete.id || athlete.gid),
+      firstName: (athlete.fname || '').trim(),
+      lastName: (athlete.lname || '').trim(),
+      fullName: `${(athlete.fname || '').trim()} ${(athlete.lname || '').trim()}`.trim(),
+      meets: meets.map(m => (m === 1 || m === '1') ? 1 : 0),
+      rate,
+    };
+  });
+}
+
+/**
+ * Normalize individual stats (highs or averages).
+ * Raw shape: { team: [...], ind: [...] } — NOT a flat array.
+ * The `ind` array contains athlete records with fields like maxv, maxub, maxbb, maxfx, maxaa (women)
+ * or maxfx, maxph, maxsr, maxvt, maxpb, maxhb, maxaa (men), plus gid.
+ *
+ * @param {Object} raw - Raw RTN rostermain response
+ * @param {string} gender - "mens" or "womens"
+ * @returns {Array|null} Array of { rtnId, firstName, lastName, fullName, events: { VT, UB, ... } }
+ */
+function normalizeIndividualStats(raw, gender) {
+  if (!raw || typeof raw !== 'object') return null;
+
+  // Handle { team, ind } structure
+  const athletes = raw.ind || raw;
+  if (!Array.isArray(athletes) || athletes.length === 0) return null;
+
+  const fieldMap = getIndividualFields(gender);
+
+  return athletes.map(athlete => {
+    const events = {};
+
+    for (const [rtnField, stdCode] of Object.entries(fieldMap)) {
+      events[stdCode] = parseScore(athlete[rtnField]);
+    }
+
+    return {
+      rtnId: toRtnIdString(athlete.gid || athlete.id),
+      firstName: (athlete.fname || '').trim(),
+      lastName: (athlete.lname || '').trim(),
+      fullName: `${(athlete.fname || '').trim()} ${(athlete.lname || '').trim()}`.trim(),
+      events,
+    };
+  });
+}
+
+/**
+ * Normalize individual highs (convenience wrapper).
+ * @param {Object} raw - Raw RTN rostermain/{tid}/2 response
+ * @param {string} gender
+ * @returns {Array|null}
+ */
+function normalizeIndividualHighs(raw, gender) {
+  return normalizeIndividualStats(raw, gender);
+}
+
+/**
+ * Normalize individual averages (convenience wrapper).
+ * @param {Object} raw - Raw RTN rostermain/{tid}/3 response
+ * @param {string} gender
+ * @returns {Array|null}
+ */
+function normalizeIndividualAverages(raw, gender) {
+  return normalizeIndividualStats(raw, gender);
+}
+
+/**
+ * Normalize team ranking from league results.
+ * The results endpoint returns ALL teams; we find ours by tid.
+ *
+ * Raw shape: { data: [...], schema: {...} }
+ * Each entry in data has: tid, rank, ave, high, rqs, conference, region, division, etc.
+ *
+ * @param {Object} raw - Raw RTN results response
+ * @param {string} gender - "mens" or "womens"
+ * @param {number|string} tid - RTN team ID to find
+ * @returns {Object|null} { rank, ave, high, rqs, conference, region, division }
+ */
+function normalizeTeamRanking(raw, gender, tid) {
+  if (!raw || typeof raw !== 'object') return null;
+
+  const results = raw.data || raw;
+  if (!Array.isArray(results) || results.length === 0) return null;
+
+  const tidStr = String(tid);
+  const team = results.find(t =>
+    String(t.tid) === tidStr || String(t.id) === tidStr
+  );
+
+  if (!team) {
+    console.warn(`[rtnStatsService] Team tid=${tid} not found in ranking results`);
+    return null;
+  }
+
+  return {
+    rank: team.rank ? String(team.rank) : null,
+    ave: team.ave ? String(team.ave) : null,
+    high: team.high ? String(team.high) : null,
+    rqs: team.rqs != null ? String(team.rqs) : null,
+    conference: team.conference || team.conf || null,
+    region: team.region || null,
+    division: team.division || team.div || null,
+  };
+}
+
+/**
+ * Normalize all raw fetch results for a team into the Firebase schema.
+ * Takes the results array from rateLimitedFetch and produces the full stats object.
+ *
+ * @param {Array<{label: string, data: Object|null, status: string}>} fetchResults
+ * @param {string} gender - "mens" or "womens"
+ * @param {number|string} tid - RTN team ID
+ * @returns {Object} { normalized: {...}, endpointStatus: {...} }
+ */
+function normalizeAllResults(fetchResults, gender, tid) {
+  const normalized = {};
+  const endpointStatus = {};
+
+  for (const result of fetchResults) {
+    endpointStatus[result.label] = result.status;
+
+    if (result.status !== 'ok' || !result.data) continue;
+
+    switch (result.label) {
+      case 'teamRanking':
+        normalized.teamRanking = normalizeTeamRanking(result.data, gender, tid);
+        break;
+      case 'consistency':
+        normalized.consistency = normalizeConsistency(result.data, gender);
+        break;
+      case 'mvp':
+        normalized.mvp = normalizeMVP(result.data, gender);
+        break;
+      case 'topScores':
+        normalized.topScores = normalizeTopScores(result.data, gender);
+        break;
+      case 'lineup':
+        normalized.lineup = normalizeLineup(result.data, gender);
+        break;
+      case 'individualHighs':
+        normalized.individualHighs = normalizeIndividualHighs(result.data, gender);
+        break;
+      case 'individualAverages':
+        normalized.individualAverages = normalizeIndividualAverages(result.data, gender);
+        break;
+    }
+  }
+
+  return { normalized, endpointStatus };
+}
+
+// ============================================================================
 // Exports
 // ============================================================================
 
@@ -352,4 +679,19 @@ export {
 
   // URL builder
   buildTeamStatUrls,
+
+  // Score parsing
+  parseScore,
+  toRtnIdString,
+
+  // Normalization functions (Task 4)
+  normalizeConsistency,
+  normalizeMVP,
+  normalizeTopScores,
+  normalizeLineup,
+  normalizeIndividualHighs,
+  normalizeIndividualAverages,
+  normalizeIndividualStats,
+  normalizeTeamRanking,
+  normalizeAllResults,
 };
