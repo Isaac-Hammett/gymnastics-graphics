@@ -3,6 +3,8 @@ import { db, ref, onValue, set, update, remove, get } from '../lib/firebase';
 import { getTeamDashboard } from '../lib/roadToNationals';
 import { normalizeName, getLookupKeys } from '../lib/nameNormalization';
 import { buildTeamKey } from '../lib/competitionUtils';
+import { io } from 'socket.io-client';
+import { SERVER_URL } from '../lib/serverUrl';
 
 /**
  * Fetch all headshots from Firebase teamsDatabase
@@ -375,6 +377,50 @@ export async function checkVmStatus(vmAddress, timeout = 5000, compId = null) {
   }
 }
 
+/**
+ * Fire-and-forget: trigger RTN stats ingestion on the coordinator server.
+ * Creates a temporary socket connection, emits ingestRtnStats, then disconnects.
+ * Non-blocking — the competition is usable immediately while stats fetch in background.
+ */
+function triggerStatsIngestion(compId) {
+  if (!compId) return;
+
+  try {
+    const socket = io(SERVER_URL, {
+      transports: ['websocket', 'polling'],
+      query: { compId },
+    });
+
+    const cleanup = () => {
+      try { socket.disconnect(); } catch { /* ignore */ }
+    };
+
+    socket.on('connect', () => {
+      console.log(`[triggerStatsIngestion] Connected, emitting ingestRtnStats for ${compId}`);
+      socket.emit('ingestRtnStats', { compId });
+    });
+
+    socket.on('rtnStatsResult', (data) => {
+      if (data.success) {
+        console.log(`[triggerStatsIngestion] Stats ingestion complete for ${compId}`);
+      } else {
+        console.warn(`[triggerStatsIngestion] Stats ingestion failed for ${compId}:`, data.error);
+      }
+      cleanup();
+    });
+
+    socket.on('connect_error', (err) => {
+      console.warn(`[triggerStatsIngestion] Connection failed:`, err.message);
+      cleanup();
+    });
+
+    // Safety timeout: disconnect after 60s regardless
+    setTimeout(cleanup, 60000);
+  } catch (err) {
+    console.warn(`[triggerStatsIngestion] Failed to trigger stats ingestion:`, err.message);
+  }
+}
+
 export function useCompetitions() {
   const [competitions, setCompetitions] = useState({});
   const [loading, setLoading] = useState(true);
@@ -420,6 +466,9 @@ export function useCompetitions() {
             await update(ref(db, `competitions/${compId}/config`), configUpdates);
           }
         }
+
+        // Trigger RTN stats ingestion (non-blocking, fire-and-forget)
+        triggerStatsIngestion(compId);
       }
 
       return { success: true };
@@ -454,6 +503,9 @@ export function useCompetitions() {
             await update(ref(db, `competitions/${compId}/config`), configUpdates);
           }
         }
+
+        // Trigger RTN stats ingestion after team data refresh (non-blocking)
+        triggerStatsIngestion(compId);
       }
 
       return { success: true };
