@@ -34,3 +34,35 @@
 
 ---
 
+## Category B: RTN API Endpoint Verification — 2026-02-01
+
+**Result:** 6 PASS / 4 FAIL / 6 INFO
+
+| # | Check | Result | Finding |
+|---|-------|--------|---------|
+| B1 | Dashboard endpoint | FAIL | `dashboard.id` doesn't exist; team ID is at `info.team_id`. Women's dashboards have no `test` field (men's only). Dashboard roster includes athlete RTN IDs (`roster[].id`). |
+| B2 | Consistency endpoint | PASS | Response matches plan: `labels`, `vts`, `ubs`, `bbs`, `fxs` arrays. Values are strings. |
+| B3 | MVP endpoint | PASS | Array of athletes with `vsum`/`ubsum`/`bbsum`/`fsum`/`total`/`gid`. Event field names differ from consistency. |
+| B4 | Top Scores endpoint | PASS | `scores` array, `total` number, per-event arrays with `gymnast_id`/`max`/names. |
+| B5 | Lineup endpoint | PASS | Array of `{id, first_name, last_name, meets: [0/1...]}`. |
+| B6 | Individual Highs | FAIL | Response is `{team, ind}` NOT flat array. Fields: `maxv`/`maxub`/`maxbb`/`maxfx`/`maxaa`/`gid`. |
+| B7 | Individual Averages | PASS | Same `{team, ind}` structure as B6. |
+| B8 | Team Rankings | PASS | All fields present: `rank`, `name`, `tid`, `ave`, `high`, `rqs`, `reg`, `con`, `div`. `rqs` is 0 early in season. |
+| B9 | Individual Rankings | FAIL | Name is `fname`+`lname` (not single `name`). `gid`/`tid` are numbers (not strings). |
+| B10 | Week Discovery | PASS | `weeks` array sorted descending, `current: "1"` marks active week. Schema in all results responses. |
+| B-CRIT | RTN ID source | FAIL | `enrichTeamsWithRTN()` uses `dashboard.id` which is always undefined → `rtnId` is always `null`. Must fix to `dashboard.info.team_id`. Athlete IDs available from dashboard roster AND Virtius HTML import. |
+
+**Plan docs updated:**
+- `PLAN-RTN-Stats-Integration-2026-02-01.md` Section 3.1: Expanded event code tables to include MVP, Top Scores, and Highs/Avgs field names
+- `PLAN-RTN-Stats-Integration-2026-02-01.md` Section 3.1: Added athlete ID field name mapping table across all endpoints
+- `PLAN-RTN-Stats-Integration-2026-02-01.md` Section 3.1: Added audit note (B6) about `{team, ind}` response structure
+- `PLAN-RTN-Stats-Integration-2026-02-01.md` Section 3.4: Added audit note (B1) about `dashboard.id` bug
+- `PLAN-RTN-Stats-Integration-2026-02-01.md` Section 5.4: Fixed error handling row that still referenced `teamData` fallback
+- `PLAN-RTN-Stats-Integration-Implementation.md` Task 1: Added `dashboard.id` bug fix, dashboard roster as backup RTN ID source
+- `PLAN-RTN-Stats-Integration-Implementation.md` Task 4: Added detailed response shapes and field name mappings from audit
+
+**Tests written:**
+- `tests/audit-B-rtn-api.md` — full report with actual API response snippets for all 10 endpoints + RTN ID source analysis
+
+---
+
