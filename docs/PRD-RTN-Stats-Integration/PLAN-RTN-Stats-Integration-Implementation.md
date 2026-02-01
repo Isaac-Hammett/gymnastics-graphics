@@ -52,7 +52,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 |-------|------|----------|--------|-------|
 | 1 | RTN ID Capture & Shared Stats Store | P0 | COMPLETE | 1-7 |
 | 2 | Client Integration & Config Sync | P0 | COMPLETE | 8-14, 25 |
-| 3 | League Rankings | P1 | NOT STARTED | 15-17 |
+| 3 | League Rankings | P1 | IN PROGRESS | 15-17 |
 | 4 | AI Enhancement | P1 | NOT STARTED | 18-21, 26 |
 | 5 | Playwright Integration Tests | P1 | NOT STARTED | 22-24 |
 
@@ -84,11 +84,11 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 13 | Add auto-refresh before show start (client-side trigger) | COMPLETE | Added `useRtnStats` hook to ProducerView.jsx. Created `handleStartShow` wrapper that checks `isStale` before calling `timesheetStart()`. If stats are stale, calls `refreshRtnStats()` (non-blocking) then immediately starts the show. Yellow "Stats are stale" hint shown below Start Show button when stale. Blue "Refreshing stats..." spinner shown during refresh. Uses `staleRefreshTriggered` flag to prevent duplicate refreshes. Server-side `showStarted` handler (Task 7) still handles the snapshot independently. Build verified. |
 | Task 14 | Update existing `enrichTeamsWithRTN()` coach sync to respect locks | COMPLETE | Created `buildCoachUpdates(compId, teamData)` helper in `useCompetitions.js` that reads `competitions/{compId}/config/_locks` from Firebase before syncing coaches. Skips any `team{N}Coaches` field where lock is `true`. Replaced all three coach sync blocks (in `createCompetition`, `updateCompetition`, and `refreshTeamData`) with calls to this shared helper. Logs skipped fields for debugging. Build verified. |
 
-### Phase 3: League Rankings (P1) - NOT STARTED (0/3)
+### Phase 3: League Rankings (P1) - IN PROGRESS (1/3)
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
-| Task 15 | Implement `fetchLeagueRankings(gender, year, week)` in rtnStatsService.js | NOT STARTED | Fetch team rankings: `results/{year}/{week}/0/{type}` (type=5 for women, 7 for men). Fetch individual rankings for each event: `results/{year}/{week}/1/{1..5 or 1..7}`. Normalize all results. Write to `rtnCache/rankings/{gender}-{year}-{week}/`. Include `getCurrentWeek()` to determine latest available week (use week-based, NOT daily). Cache with 24h TTL. Use rate-limited fetch for all ranking calls. |
+| Task 15 | Implement `fetchLeagueRankings(gender, year, week)` in rtnStatsService.js | COMPLETE | Added `fetchLeagueRankings(gender, year, week)` to `server/lib/rtnStatsService.js`. Fetches team rankings via `results/{year}/{week}/0/{type}` (type=5 women, 7 men) and individual rankings for each event via `results/{year}/{week}/1/{1..N}` (5 events women, 7 events men). Added `normalizeTeamRankings()` normalizer (extracts rank, name, tid, ave, high, rqs, conference, region, division). Added `normalizeIndividualRankings()` normalizer (extracts rank, firstName, lastName, fullName, rtnId, team, teamId, ave, high, rqs, conference). Uses `getCurrentWeek()` when week not provided. Checks existing cache at `rtnCache/rankings/{gender}-{year}-{week}/` with 24h TTL before fetching. Uses `rateLimitedFetch()` for all ranking calls (1 team + N individual = 6-8 total calls). Writes normalized data to Firebase cache with timestamp. All new functions exported. Build verified. |
 | Task 16 | Create `useLeagueRankings(gender)` hook and wire socket event | NOT STARTED | Subscribe to `rtnCache/rankings/{gender}-{year}-{latestWeek}`. Return `{ teamRankings, individualRankings, week, loading, error, refresh }`. `refresh()` emits `fetchLeagueRankings` socket event. Determine latest week from available cache keys. Wire `fetchLeagueRankings` socket handler in server/index.js that calls `fetchLeagueRankings()` and emits `leagueRankingsResult`. **Socket listener pattern (audit E5):** Register `leagueRankingsResult` listener directly in hook's useEffect (follow `useAIContext.js` pattern), not in ShowContext.jsx. |
 | Task 17 | Display rankings in Dashboard and make available to AI services | NOT STARTED | Add rankings panel or tab in DashboardPage showing team rankings (rank, team name, ave, high, rqs) and individual rankings per event. Highlight teams in current competition. Make `rtnCache/rankings/` readable by `aiContextService.js` so talking points can reference "Ranked #3 nationally on beam". |
 
