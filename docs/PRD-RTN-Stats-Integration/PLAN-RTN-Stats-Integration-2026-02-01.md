@@ -556,6 +556,8 @@ The "last fetched" timestamp is always displayed in the UI so the producer knows
 
 ## 6. Client Integration
 
+> **Audit note (E5):** New hooks (`useRtnStats`, `useLeagueRankings`) should register their own socket event listeners directly in useEffect, following the `useAIContext.js` pattern (get socket via `useShow()`, register with `socket.on()`, cleanup with `socket.off()`). Do NOT add RTN-related socket listeners to `ShowContext.jsx`. ShowContext handles core infrastructure events (timesheet, camera, OBS); domain-specific hooks manage their own socket subscriptions.
+
 ### 6.1 Hook: `useRtnStats(compId)`
 
 ```javascript

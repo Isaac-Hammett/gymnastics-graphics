@@ -126,3 +126,27 @@
 
 ---
 
+## Category E: Socket & Hook Contract Alignment — 2026-02-01
+
+**Result:** 6 PASS / 1 FAIL / 0 INFO
+
+| # | Check | Result | Finding |
+|---|-------|--------|---------|
+| E1 | Socket event naming convention | PASS | All planned events follow existing camelCase verbNoun (client->server) and nounResult (server->client) patterns. |
+| E2 | ingestRtnStats vs refreshRtnStats distinction | PASS | Two-event pattern matches existing getAIContext/refreshAIContext split. Distinction (stale-check vs force) is clear. |
+| E3 | rtnStatsProgress granularity | PASS | Single progress event with step counter is appropriate. Precedent: VM lifecycle uses separate events per stage, but RTN has 8+ endpoints making a generic progress event better. |
+| E4 | Room broadcasting | PASS | Plan correctly specifies `socketIo.to(roomName).emit()` pattern matching existing `competition:${compId}` rooms. |
+| E5 | ShowContext integration | FAIL | Plan didn't specify where hooks register socket listeners. ShowContext handles core infra events; domain-specific hooks (like useAIContext.js) register their own listeners. Fixed: Task 8 and Task 16 now specify useAIContext.js pattern for socket listeners. |
+| E6 | Hook naming convention | PASS | `useRtnStats.js` and `useLeagueRankings.js` follow existing `useCamelCase.js` convention. |
+| E7 | Hook Firebase subscription pattern | PASS | Plan's `onValue` usage matches existing useCompetitions.js pattern (ref, onValue, snapshot.val(), unsubscribe cleanup). |
+
+**Plan docs updated:**
+- `PLAN-RTN-Stats-Integration-2026-02-01.md` Section 6: Added audit note (E5) about socket listener pattern — hooks register own listeners, not ShowContext
+- `PLAN-RTN-Stats-Integration-Implementation.md` Task 8: Added explicit socket listener pattern guidance (follow useAIContext.js)
+- `PLAN-RTN-Stats-Integration-Implementation.md` Task 16: Added explicit socket listener pattern guidance
+
+**Tests written:**
+- `tests/audit-E-socket-hooks.md` — full report with naming convention analysis, pattern comparisons, and code references
+
+---
+
