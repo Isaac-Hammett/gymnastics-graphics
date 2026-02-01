@@ -1,7 +1,7 @@
 # PLAN-RTN-Stats-Integration-Implementation
 
 **PRD:** [PRD-RTN-Stats-Integration-2026-02-01.md](./PRD-RTN-Stats-Integration-2026-02-01.md)
-**Status:** NOT STARTED
+**Status:** NOT STARTED | Audit: COMPLETE
 **Created:** 2026-02-01
 **Last Updated:** 2026-02-01
 
@@ -39,9 +39,10 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 - Complete an entire phase in one iteration
 
 **Task Numbering:**
-- Tasks are numbered sequentially: Task 1, Task 2, ... Task 24
+- Tasks are numbered sequentially: Task 1, Task 2, ... Task 26
 - Each task number is unique and independent
 - Example: "Task 8" is ONE task, not a subtask
+- Tasks 25-26 were added by audit Category G and belong to Phases 2 and 4 respectively
 
 ---
 
@@ -50,9 +51,9 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Phase | Name | Priority | Status | Tasks |
 |-------|------|----------|--------|-------|
 | 1 | RTN ID Capture & Shared Stats Store | P0 | NOT STARTED | 1-7 |
-| 2 | Client Integration & Config Sync | P0 | NOT STARTED | 8-14 |
+| 2 | Client Integration & Config Sync | P0 | NOT STARTED | 8-14, 25 |
 | 3 | League Rankings | P1 | NOT STARTED | 15-17 |
-| 4 | AI Enhancement | P1 | NOT STARTED | 18-21 |
+| 4 | AI Enhancement | P1 | NOT STARTED | 18-21, 26 |
 | 5 | Playwright Integration Tests | P1 | NOT STARTED | 22-24 |
 
 ---
@@ -71,7 +72,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 6 | Implement `syncStatsToConfig(compId)` with config lock support | NOT STARTED | Reads `teamsDatabase/stats/{teamKey}/teamRanking` for each team. Reads `competitions/{compId}/config/_locks` to check for manual overrides. **Handle `_locks` being null (no locks set yet) by defaulting to empty object: `const locks = (await ref.once('value')).val() || {}`.** For each field, only skip write if `locks[fieldName] === true`; undefined/false/missing = unlocked. For each team, writes `team{N}Ave` (from ranking average), `team{N}High` (from ranking high) to config — BUT ONLY if the corresponding lock is not set. Writes `team{N}Con` as the team's **overall ranking string** (e.g., "#1", "#3(t)") from `teamRanking.rank`, matching the existing format used in graphics. Skips locked fields entirely. Also applies to coach names: respect `team{N}Coaches` lock from `_locks`. Must handle team3-team6 for tri/quad/multi-team meets (config has placeholder fields for up to 6 teams). |
 | Task 7 | Wire socket events in `server/index.js` and add show-start snapshot | NOT STARTED | Add socket handlers: `ingestRtnStats` calls `ingestCompetitionStats()` then `syncStatsToConfig()`, emits `rtnStatsResult`. `refreshRtnStats` calls `ingestTeamStats()` directly (bypasses staleness check), then `syncStatsToConfig()`. Both emit `rtnStatsResult` on completion. Add `snapshotStatsForCompetition(compId)` function that copies `teamsDatabase/stats/{teamKey}/` to `competitions/{compId}/rtnStats/team{N}/` with `snapshotTakenAt` timestamp. Wire snapshot into `showStarted` event handler at `server/index.js:444` (inside per-competition timesheet setup, `engine.on('showStarted')`): add after AI Context Service start (line 459), before run record creation (line 461). Uses `compId`, `firebase`, and `roomName` from enclosing scope. Follow existing room pattern: `socketIo.to(roomName).emit()` where `roomName = \`competition:${compId}\``. |
 
-### Phase 2: Client Integration & Config Sync (P0) - NOT STARTED (0/7)
+### Phase 2: Client Integration & Config Sync (P0) - NOT STARTED (0/8)
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
@@ -91,7 +92,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 16 | Create `useLeagueRankings(gender)` hook and wire socket event | NOT STARTED | Subscribe to `rtnCache/rankings/{gender}-{year}-{latestWeek}`. Return `{ teamRankings, individualRankings, week, loading, error, refresh }`. `refresh()` emits `fetchLeagueRankings` socket event. Determine latest week from available cache keys. Wire `fetchLeagueRankings` socket handler in server/index.js that calls `fetchLeagueRankings()` and emits `leagueRankingsResult`. **Socket listener pattern (audit E5):** Register `leagueRankingsResult` listener directly in hook's useEffect (follow `useAIContext.js` pattern), not in ShowContext.jsx. |
 | Task 17 | Display rankings in Dashboard and make available to AI services | NOT STARTED | Add rankings panel or tab in DashboardPage showing team rankings (rank, team name, ave, high, rqs) and individual rankings per event. Highlight teams in current competition. Make `rtnCache/rankings/` readable by `aiContextService.js` so talking points can reference "Ranked #3 nationally on beam". |
 
-### Phase 4: AI Enhancement (P1) - NOT STARTED (0/4)
+### Phase 4: AI Enhancement (P1) - NOT STARTED (0/5)
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
@@ -99,6 +100,13 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 19 | Add consistency trend analysis talking points | NOT STARTED | Add `_getConsistencyTalkingPoints()` to aiContextService.js. Analyze event score arrays from consistency data. Detect trends: "improving" if last 3 scores increasing, "declining" if decreasing, "stable" otherwise. Generate: "Oklahoma trending up on beam: 49.50 -> 49.48 -> 49.68". **Priority (audit F3):** Use `PRIORITY.MEDIUM`. Only generate during non-scoring segments (opening, intro, break). Include standard deviation for consistency rating. |
 | Task 20 | Add head-to-head matchup talking points using individual rankings | NOT STARTED | Add `_getMatchupTalkingPoints()` to aiContextService.js. Compare athletes across teams on same events using individual highs and averages. Generate: "Vault matchup: Estep (9.975 high, 9.933 avg) vs. Chiles (9.95 high, 9.944 avg)". Focus on events where competition is closest. Also pull league rankings from `rtnCache/rankings/` if available. **Priority (audit F3):** Use `PRIORITY.HIGH` (matchups are most useful for commentary and will compete well in the 5-slot budget). Generate during rotation start and scoring segments. Note: an existing `_getMatchupTalkingPoints()` method exists at line 842 — the new implementation should REPLACE the existing stub, not create a duplicate. |
 | Task 21 | Add MVP and lineup context talking points | NOT STARTED | Add `_getMVPTalkingPoints()` and `_getLineupTalkingPoints()` to aiContextService.js. MVP: "Addison Fatta leads OU with 157.45 total across all events". Top scores: "OU's theoretical max is 198.75 if everyone hits season highs". Lineup: "Faith Torrez has competed in all 4 meets — key contributor on VT, UB, BB". Detect lineup changes: "First time in lineup" if meets array shows recent addition. **Priority (audit F3):** Use `PRIORITY.MEDIUM`. Only generate during non-scoring segments (opening, intro, break). |
+
+### Additional Tasks (added by audit G)
+
+| Task | Description | Phase | Status | Notes |
+|------|-------------|-------|--------|-------|
+| Task 25 | Add stats detail panel to DashboardPage for per-team and per-athlete stats browsing | Phase 2 | NOT STARTED | **Added by audit G6:** PRD Stories 2 and 3 require producers to browse per-team stats (consistency trends, MVP standings, top scores, lineup frequency) and per-athlete stats (averages, highs, lineup rate). No existing task creates this UI. Add a collapsible/tabbed stats detail panel to DashboardPage (or a linked detail view) showing: (1) per-team: consistency chart/trend, MVP standings table, top scores per event, lineup frequency; (2) per-athlete: event averages, event highs, lineup rate, MVP total. Data comes from `useRtnStats` hook (Task 8). Depends on Tasks 8-10 being complete. Athletes sortable/filterable by event. |
+| Task 26 | Enhance aiSuggestionService.js with RTN stats confidence factors and segment suggestions | Phase 4 | NOT STARTED | **Added by audit G7:** Technical Plan Section 7.2 describes enhancements to `aiSuggestionService.js` but no implementation task covered them. Add confidence scoring factors: `HAS_RTN_STATS` (+0.15 if rtnStats loaded), `HAS_INDIVIDUAL_STATS` (+0.1 if individual averages/highs available), `HAS_RANKINGS` (+0.05 if league rankings available). Add new segment suggestions: "Athlete Spotlight: [top MVP contributor]" (high confidence when MVP data available), "Event Preview: [event where teams are closest]" (uses individual averages for matchup analysis), "Senior Feature: [senior with highest contribution]" (combines MVP + roster year data). Read from `teamsDatabase/stats/{teamKey}/` for pre-show planning suggestions. |
 
 ### Phase 5: Playwright Integration Tests (P1) - NOT STARTED (0/3)
 
@@ -140,6 +148,8 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 - [ ] Unlocking re-enables auto-sync
 - [ ] Coach name sync respects locks
 - [ ] Ave/High fields show RTN indicator when auto-filled
+- [ ] Per-team stats detail panel shows consistency, MVP, top scores, lineup (Task 25)
+- [ ] Per-athlete stats browsable with averages, highs, lineup rate (Task 25)
 - [ ] Build succeeds: `cd show-controller && npm run build`
 - [ ] Deploy and verify on production
 
@@ -159,6 +169,8 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 - [ ] Head-to-head matchups shown for overlapping events
 - [ ] MVP/lineup context in talking points
 - [ ] Missing RTN stats handled gracefully (no errors, just fewer talking points)
+- [ ] aiSuggestionService confidence scoring includes RTN stats factors (Task 26)
+- [ ] Pre-show segment suggestions reference RTN stats data (Task 26)
 
 ### After Phase 5 (Playwright Tests)
 - [ ] All 3 test scenarios pass on production
