@@ -11,6 +11,7 @@ import { getGenderFromCompType, buildTeamKey } from '../lib/competitionUtils';
 import { ExclamationTriangleIcon, CheckCircleIcon, UserIcon } from '@heroicons/react/24/solid';
 import StatsStatusBadge from '../components/StatsStatusBadge';
 import StatsDetailPanel from '../components/StatsDetailPanel';
+import RankingsPanel from '../components/RankingsPanel';
 
 /**
  * HomePage - Consolidated landing page combining:
@@ -916,6 +917,7 @@ function CompetitionCard({
       <div className="mb-3">
         <StatsStatusBadge compId={compId} config={config} />
         <StatsDetailPanel compId={compId} config={config} />
+        <RankingsPanel compId={compId} config={config} />
       </div>
 
       {vmBadge?.vm?.publicIp && (
