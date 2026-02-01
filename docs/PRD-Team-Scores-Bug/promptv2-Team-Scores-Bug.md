@@ -8,9 +8,8 @@
 - The bash loop will restart you for the next task. Do NOT continue to additional tasks.
 - Complete each workflow phase (1-7) FULLY before moving to the next phase
 - Mark checkboxes [x] as you complete each step
-- DO NOT parallelize file reads - read sequentially, one at a time
 - After each phase, output the checkpoint summary before continuing
-- If verification fails, record bug and STOP (handle in next context window)
+- If verification fails, ROLLBACK the deployment, record bug, and STOP (handle in next context window)
 
 **What counts as ONE task?**
 - A single row in `docs/PRD-Team-Scores-Bug/PLAN-Team-Scores-Bug-2026-01-31.md` (e.g., "Task A1: Create team-bug.html boilerplate")
@@ -116,14 +115,15 @@ Do NOT:
 
 ## Phase 4: Commit & Push
 
-- [ ] **4.1** Stage and commit:
+- [ ] **4.1** Stage specific changed files and commit (do NOT use `git add -A` — add files by name):
   ```bash
-  git add -A && git commit -m "PRD-Team-Scores-Bug: [brief description]" && git push origin main
+  git add [specific files] && git commit -m "PRD-Team-Scores-Bug: [brief description]" && git push origin main
   ```
 
   **Output:**
   ```
   4.1 Committed and pushed
+  - Files staged: [list specific files]
   - Commit message: [fill in]
   ```
 
@@ -162,8 +162,14 @@ Determine what changed and deploy accordingly:
   ```
 
 **If verification FAILS:**
-- Record bug in `docs/PRD-Team-Scores-Bug/PLAN-Team-Scores-Bug-2026-01-31.md` with details
-- STOP here - handle fix in next context window
+1. **ROLLBACK immediately** — redeploy the previous working version:
+   - `git log --oneline -3` to find the previous commit hash
+   - `git checkout <previous-hash> -- overlays/ output.html` (if overlay changed)
+   - `cd show-controller && npm run build` (if frontend changed)
+   - Redeploy per CLAUDE.md to restore production
+   - `git checkout main -- overlays/ output.html` to restore working tree
+2. Record bug in `docs/PRD-Team-Scores-Bug/PLAN-Team-Scores-Bug-2026-01-31.md` with details
+3. STOP here — handle fix in next context window
 
 ---
 
@@ -188,5 +194,5 @@ Determine what changed and deploy accordingly:
 |-------------|----------------|
 | Overlay only | Tarball overlays/ + upload per CLAUDE.md |
 | Frontend only | `npm run build` + upload per CLAUDE.md |
-| Both | Deploy frontend first (includes overlays in build), then overlays separately |
+| Both | Deploy frontend first, THEN deploy overlays separately (overlays are NOT part of the React build) |
 | Docs only | No deploy needed |

@@ -2,7 +2,8 @@
 
 **Version:** 1.0
 **Date:** 2026-01-23
-**Status:** Complete
+**Status:** Complete (implementation), Partial (validation)
+**Last Validated:** 2026-02-01
 
 ---
 
@@ -30,6 +31,22 @@ Producers can create rundowns but cannot execute them. There's no bridge between
 
 ## 3. User Stories
 
+### Validation Summary (2026-02-01)
+
+| Story | Description | Status | Blocker |
+|-------|-------------|--------|---------|
+| 1 | Producer Creates a Rundown | ✅ Validated | — |
+| 2 | Producer Loads Rundown for Execution | ⚠️ Blocked | BUG-011: Start Show button hidden |
+| 3 | Producer Runs the Show | ⚠️ Blocked | BUG-011: depends on Story 2 |
+| 4 | Multiple Competitions Run Independently | ⚠️ Not tested | Architecture in place, needs multi-comp test |
+| 5 | Producer Reloads Modified Rundown | ✅ Validated | — |
+| 6 | Producer Runs Rehearsal | ✅ Validated | — |
+| 7 | Talent Views Their Segments | ⚠️ Partial | BUG-012: wrong competition name in header |
+| 8 | Producer Modifies Rundown During Live Show | ✅ Validated | — |
+| 9 | Producer Views Wall-Clock Times | ✅ Validated | — |
+
+---
+
 ### Story 1: Producer Creates a Rundown
 
 **As a** Producer planning a UCLA vs Oregon meet
@@ -43,7 +60,7 @@ Producers can create rundowns but cannot execute them. There's no bridge between
 4. Click Save
 5. Segments saved to Firebase
 
-**Status:** ✅ Works today
+**Status:** ✅ Validated — works today (pre-existing)
 
 ---
 
@@ -61,7 +78,7 @@ Producers can create rundowns but cannot execute them. There's no bridge between
 5. See "Rundown loaded: 24 segments" confirmation
 6. "Start Show" button becomes active
 
-**Status:** ❌ Not implemented
+**Status:** ⚠️ Implemented (Phase A) but **blocked by BUG-011** — stale `isPlaying` flag from previous session hides the "Start Show" button after loading segments. See [BUGS.md](./BUGS.md#bug-011).
 
 ---
 
@@ -82,7 +99,7 @@ Producers can create rundowns but cannot execute them. There's no bridge between
 4. Manual segments wait for producer to click "Next"
 5. Show continues through all segments
 
-**Status:** ⚠️ Engine logic exists, but can't load segments
+**Status:** ⚠️ Implemented (Phase A) but **blocked by BUG-011** — cannot reach "Start Show" due to Story 2 blocker. Engine logic, OBS switching, and graphics firing are all complete.
 
 ---
 
@@ -101,7 +118,7 @@ Producers can create rundowns but cannot execute them. There's no bridge between
 - OBS commands route to the correct VM
 - No interference between shows
 
-**Status:** ❌ Not implemented (single global engine)
+**Status:** ⚠️ Implemented (Phase A) but **not explicitly validated** — Map-based engine instances, per-competition OBS connections, and room-scoped socket broadcasts are all in place. Needs a manual test with two simultaneous competitions to confirm no cross-talk.
 
 ---
 
@@ -118,7 +135,7 @@ Producers can create rundowns but cannot execute them. There's no bridge between
 4. Click "Reload Rundown"
 5. Updated segments appear
 
-**Status:** ❌ Not implemented
+**Status:** ✅ Validated (Phase I) — Firebase listener detects changes, warning badge appears, reload preserves position.
 
 ---
 
@@ -135,7 +152,7 @@ Producers can create rundowns but cannot execute them. There's no bridge between
 4. OBS and graphics do NOT fire
 5. "REHEARSAL" indicator visible throughout
 
-**Status:** ❌ Not implemented
+**Status:** ✅ Validated (Phase H) — rehearsal mode skips OBS/graphics, banner visible, timing logged to Firebase.
 
 ---
 
@@ -152,7 +169,7 @@ Producers can create rundowns but cannot execute them. There's no bridge between
 4. See preview of next segment
 5. Quick scene-switch buttons available
 
-**Status:** ❌ Not implemented
+**Status:** ⚠️ Implemented (Phase B + E) but **partially blocked by BUG-012** — header shows legacy `showConfig.showName` instead of actual competition name. Core functionality (timer, notes, next segment, scene buttons) works. See [BUGS.md](./BUGS.md#bug-012).
 
 ---
 
@@ -178,7 +195,7 @@ Producers can create rundowns but cannot execute them. There's no bridge between
 - Segments before current were reordered → Ignore past segments, preserve position
 - Multiple producers editing simultaneously → Last-write-wins with conflict warning
 
-**Status:** ❌ Not implemented (Phase I)
+**Status:** ✅ Validated (Phase I) — all edge cases implemented and tested. Deep diff, confirmation dialog, position preservation all working.
 
 ---
 
@@ -209,7 +226,7 @@ Producers can create rundowns but cannot execute them. There's no bridge between
 4   0:36      11:21 AM  12:21 PM  1:21 PM   2:21 PM   Rotation 1 Ends
 ```
 
-**Status:** ❌ Not implemented (Phase K)
+**Status:** ✅ Validated (Phase K) — anchor config, multi-timezone columns, presets, CSV/JSON export, midnight crossing all working.
 
 ---
 
