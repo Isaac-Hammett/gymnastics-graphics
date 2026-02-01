@@ -850,33 +850,317 @@ class AIContextService {
   }
 
   /**
-   * Generate matchup talking points from team data
+   * Generate head-to-head matchup talking points from RTN individual stats
+   *
+   * Compares athletes across teams on the same events using individual highs
+   * and averages. Also pulls league rankings from rtnCache/rankings/ if available.
+   * Uses PRIORITY.HIGH to compete well in the 5-slot talking points budget.
+   * Generates during rotation start and scoring segments.
+   *
+   * @param {Object} segment - Current segment
+   * @returns {Array} Matchup talking points
    */
   _getMatchupTalkingPoints(segment) {
     const points = [];
 
     if (!this._teamData) return points;
 
-    // Only add matchup context for relevant segments
+    // Generate during rotation start, scoring, opening, and intro segments
     const segmentName = (segment.name || '').toLowerCase();
-    if (
-      segmentName.includes('rotation') ||
-      segmentName.includes('intro') ||
-      segmentName.includes('opening')
-    ) {
-      const comparison = this._getRankingComparisonContext();
-      if (comparison && !points.some((p) => p.source === 'rankings-data')) {
-        points.push({
-          id: `matchup-${segment.id}`,
-          type: CONTEXT_TYPES.MATCHUP,
-          priority: PRIORITY.MEDIUM,
-          text: comparison,
-          source: 'rankings-data',
-        });
+    const segmentContext = this._analyzeSegmentName(segment.name || '');
+    const isRelevantSegment = segmentContext.isRotation || segmentContext.isScoring ||
+      segmentContext.isOpening || segmentName.includes('intro');
+
+    if (!isRelevantSegment) return points;
+
+    // Determine focus event from segment context
+    const focusEvent = segmentContext.event || null;
+
+    // If we have RTN stats, generate athlete-level matchup comparisons
+    if (this._rtnStats) {
+      const matchupPoints = this._generateAthleteMatchups(segment, focusEvent);
+      points.push(...matchupPoints);
+    }
+
+    // Add team-level ranking comparison (existing logic, upgraded to HIGH priority)
+    const comparison = this._getRankingComparisonContext();
+    if (comparison && !points.some((p) => p.source === 'rankings-data')) {
+      points.push({
+        id: `matchup-ranking-${segment.id}`,
+        type: CONTEXT_TYPES.MATCHUP,
+        priority: PRIORITY.HIGH,
+        text: comparison,
+        source: 'rankings-data',
+      });
+    }
+
+    // Add league ranking context if available
+    const leaguePoints = this._getLeagueRankingMatchupPoints(segment, focusEvent);
+    points.push(...leaguePoints);
+
+    // Limit to 3 matchup points to stay within budget
+    return points.slice(0, 3);
+  }
+
+  /**
+   * Generate athlete-level head-to-head matchup comparisons
+   *
+   * Finds the best athletes on each event from each team and compares them.
+   * Focuses on events where competition is closest (smallest gap).
+   *
+   * @param {Object} segment - Current segment
+   * @param {string|null} focusEvent - Event to focus on, or null for all
+   * @returns {Array} Athlete matchup talking points
+   */
+  _generateAthleteMatchups(segment, focusEvent) {
+    const points = [];
+
+    // Collect team keys that have stats
+    const teamsWithStats = [];
+    for (const teamKey of ['team1', 'team2', 'team3', 'team4', 'team5', 'team6']) {
+      if (this._rtnStats[teamKey]?.individualHighs || this._rtnStats[teamKey]?.individualAverages) {
+        teamsWithStats.push(teamKey);
       }
     }
 
+    if (teamsWithStats.length < 2) return points;
+
+    // Get all event codes to compare
+    const allEvents = focusEvent ? [focusEvent] : this._getCompetitionEvents();
+
+    // Build per-team top athlete maps: { eventCode: { name, avg, high } }
+    const teamTopAthletes = {};
+    for (const teamKey of teamsWithStats) {
+      teamTopAthletes[teamKey] = this._getTopAthletesPerEvent(teamKey);
+    }
+
+    // Generate pairwise comparisons between teams
+    const matchups = [];
+    for (let i = 0; i < teamsWithStats.length - 1; i++) {
+      for (let j = i + 1; j < teamsWithStats.length; j++) {
+        const teamA = teamsWithStats[i];
+        const teamB = teamsWithStats[j];
+
+        for (const eventCode of allEvents) {
+          const athleteA = teamTopAthletes[teamA]?.[eventCode];
+          const athleteB = teamTopAthletes[teamB]?.[eventCode];
+
+          if (!athleteA || !athleteB) continue;
+
+          // Calculate gap using averages (more meaningful than highs for matchups)
+          const avgA = athleteA.avg;
+          const avgB = athleteB.avg;
+          const highA = athleteA.high;
+          const highB = athleteB.high;
+
+          // Need at least one comparison metric
+          if (avgA == null && highA == null) continue;
+          if (avgB == null && highB == null) continue;
+
+          const gap = (avgA != null && avgB != null) ? Math.abs(avgA - avgB) : null;
+
+          matchups.push({
+            eventCode,
+            teamA,
+            teamB,
+            athleteA,
+            athleteB,
+            gap,
+            avgA,
+            avgB,
+            highA,
+            highB,
+          });
+        }
+      }
+    }
+
+    // Sort by closest competition (smallest gap) — most interesting matchups first
+    matchups.sort((a, b) => {
+      if (a.gap == null && b.gap == null) return 0;
+      if (a.gap == null) return 1;
+      if (b.gap == null) return -1;
+      return a.gap - b.gap;
+    });
+
+    // Generate talking points from top matchups
+    for (const matchup of matchups.slice(0, 3)) {
+      const eventName = EVENT_FULL_NAMES[matchup.eventCode] || matchup.eventCode;
+      const teamAName = this._getTeamDisplayName(matchup.teamA);
+      const teamBName = this._getTeamDisplayName(matchup.teamB);
+
+      // Build comparison text with available stats
+      let text = `${eventName} matchup: ${matchup.athleteA.name}`;
+      const partsA = [];
+      if (matchup.highA != null) partsA.push(`${matchup.highA.toFixed(3)} high`);
+      if (matchup.avgA != null) partsA.push(`${matchup.avgA.toFixed(3)} avg`);
+      if (partsA.length) text += ` (${partsA.join(', ')})`;
+
+      text += ` vs ${matchup.athleteB.name}`;
+      const partsB = [];
+      if (matchup.highB != null) partsB.push(`${matchup.highB.toFixed(3)} high`);
+      if (matchup.avgB != null) partsB.push(`${matchup.avgB.toFixed(3)} avg`);
+      if (partsB.length) text += ` (${partsB.join(', ')})`;
+
+      points.push({
+        id: `matchup-h2h-${matchup.eventCode}-${matchup.teamA}-${matchup.teamB}-${segment.id}`,
+        type: CONTEXT_TYPES.MATCHUP,
+        priority: PRIORITY.HIGH,
+        text,
+        source: 'rtn-matchup',
+        data: {
+          event: matchup.eventCode,
+          teamA: teamAName,
+          teamB: teamBName,
+          athleteA: matchup.athleteA,
+          athleteB: matchup.athleteB,
+          gap: matchup.gap,
+        },
+      });
+    }
+
     return points;
+  }
+
+  /**
+   * Get the top athlete per event for a team from RTN stats
+   *
+   * @param {string} teamKey - Team key (e.g., 'team1')
+   * @returns {Object} Map of eventCode -> { name, avg, high, rtnId }
+   */
+  _getTopAthletesPerEvent(teamKey) {
+    const result = {};
+    const teamStats = this._rtnStats[teamKey];
+    if (!teamStats) return result;
+
+    const individualAverages = this._toArray(teamStats.individualAverages);
+    const individualHighs = this._toArray(teamStats.individualHighs);
+    const rosterByRtnId = this._buildRosterRtnIdMap(teamKey);
+
+    // Build a combined map: rtnId -> { name, events: { eventCode: { avg, high } } }
+    const athleteMap = new Map();
+
+    for (const athlete of individualAverages) {
+      if (!athlete?.events) continue;
+      const rtnId = athlete.rtnId ? String(athlete.rtnId) : null;
+      const name = this._matchAthleteToRoster(athlete, rosterByRtnId) ||
+                   athlete.fullName || `${athlete.firstName || ''} ${athlete.lastName || ''}`.trim();
+      const key = rtnId || name;
+      if (!key) continue;
+
+      if (!athleteMap.has(key)) athleteMap.set(key, { name, events: {} });
+      const entry = athleteMap.get(key);
+      for (const [eventCode, avg] of Object.entries(athlete.events)) {
+        if (avg == null || eventCode === 'AA') continue;
+        if (!entry.events[eventCode]) entry.events[eventCode] = {};
+        entry.events[eventCode].avg = typeof avg === 'number' ? avg : null;
+      }
+    }
+
+    for (const athlete of individualHighs) {
+      if (!athlete?.events) continue;
+      const rtnId = athlete.rtnId ? String(athlete.rtnId) : null;
+      const name = this._matchAthleteToRoster(athlete, rosterByRtnId) ||
+                   athlete.fullName || `${athlete.firstName || ''} ${athlete.lastName || ''}`.trim();
+      const key = rtnId || name;
+      if (!key) continue;
+
+      if (!athleteMap.has(key)) athleteMap.set(key, { name, events: {} });
+      const entry = athleteMap.get(key);
+      for (const [eventCode, high] of Object.entries(athlete.events)) {
+        if (high == null || eventCode === 'AA') continue;
+        if (!entry.events[eventCode]) entry.events[eventCode] = {};
+        entry.events[eventCode].high = typeof high === 'number' ? high : null;
+      }
+    }
+
+    // For each event, find the top athlete by average (or high if no average)
+    for (const [, athleteData] of athleteMap) {
+      for (const [eventCode, stats] of Object.entries(athleteData.events)) {
+        const score = stats.avg ?? stats.high ?? 0;
+        if (!result[eventCode] || score > (result[eventCode].avg ?? result[eventCode].high ?? 0)) {
+          result[eventCode] = {
+            name: athleteData.name,
+            avg: stats.avg ?? null,
+            high: stats.high ?? null,
+          };
+        }
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Get event codes for the current competition based on gender
+   *
+   * @returns {string[]} Array of event codes
+   */
+  _getCompetitionEvents() {
+    // Try to determine gender from competition config
+    const compType = this._competitionConfig?.compType || '';
+    if (compType.includes('womens')) {
+      return ['VT', 'UB', 'BB', 'FX'];
+    }
+    if (compType.includes('mens')) {
+      return ['FX', 'PH', 'SR', 'VT', 'PB', 'HB'];
+    }
+
+    // Fallback: check RTN stats meta for gender
+    for (const teamKey of ['team1', 'team2']) {
+      const meta = this._rtnStats?.[teamKey]?.meta;
+      if (meta?.gender === 'womens') return ['VT', 'UB', 'BB', 'FX'];
+      if (meta?.gender === 'mens') return ['FX', 'PH', 'SR', 'VT', 'PB', 'HB'];
+    }
+
+    // Default to women's events (more common)
+    return ['VT', 'UB', 'BB', 'FX'];
+  }
+
+  /**
+   * Generate talking points from league rankings for matchup context
+   * Reads from this._leagueRankings (loaded at start) or cached data
+   *
+   * @param {Object} segment - Current segment
+   * @param {string|null} focusEvent - Event to focus on, or null
+   * @returns {Array} League ranking matchup points
+   */
+  _getLeagueRankingMatchupPoints(segment, focusEvent) {
+    const points = [];
+
+    if (!this._rtnStats) return points;
+
+    // Look for individual ranking data from any team's stats to find nationally ranked athletes
+    for (const teamKey of ['team1', 'team2', 'team3', 'team4', 'team5', 'team6']) {
+      const teamStats = this._rtnStats[teamKey];
+      if (!teamStats?.teamRanking) continue;
+
+      const teamName = this._getTeamDisplayName(teamKey);
+      const ranking = teamStats.teamRanking;
+
+      // If team has a national ranking and it's notable (top 25)
+      const rank = parseInt(ranking.rank, 10);
+      if (!isNaN(rank) && rank <= 25 && ranking.ave) {
+        // Check if we already have a ranking comparison from _getRankingComparisonContext
+        // Only add individual team ranking if it wasn't already covered
+        if (!points.some(p => p.data?.teamKey === teamKey)) {
+          // Only add if focused on this being useful context (e.g., opening segment)
+          if (focusEvent == null) {
+            points.push({
+              id: `league-rank-${teamKey}-${segment.id}`,
+              type: CONTEXT_TYPES.MATCHUP,
+              priority: PRIORITY.HIGH,
+              text: `${teamName} ranked #${ranking.rank} nationally (${ranking.ave} avg, ${ranking.high} high)`,
+              source: 'rtn-league-ranking',
+              data: { teamKey, team: teamName, rank: ranking.rank, ave: ranking.ave, high: ranking.high },
+            });
+          }
+        }
+      }
+    }
+
+    // Limit to 2 league ranking points
+    return points.slice(0, 2);
   }
 
   /**
