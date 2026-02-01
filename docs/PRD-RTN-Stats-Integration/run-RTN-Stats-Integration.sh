@@ -54,7 +54,9 @@ impl_done()   { grep -q "^\\*\\*Status:\\*\\* COMPLETE" "$IMPL_PLAN" 2>/dev/null
 
 count_tasks() {
     local status=$1
-    grep -c "| $status |" "$IMPL_PLAN" 2>/dev/null || echo 0
+    local n
+    n=$(grep -c "| $status |" "$IMPL_PLAN" 2>/dev/null) || true
+    echo "${n:-0}"
 }
 
 print_status() {

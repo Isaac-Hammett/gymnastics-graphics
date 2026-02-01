@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { db, ref, onValue, set, update, remove, get } from '../lib/firebase';
 import { getTeamDashboard } from '../lib/roadToNationals';
 import { normalizeName, getLookupKeys } from '../lib/nameNormalization';
+import { buildTeamKey } from '../lib/competitionUtils';
 
 /**
  * Fetch all headshots from Firebase teamsDatabase
@@ -131,7 +132,7 @@ async function enrichTeamsWithRTN(config, gender = 'womens') {
 
       // Extract and normalize the data we care about
       teamData[teamKey] = {
-        rtnId: dashboard.id || null,
+        rtnId: dashboard.info?.team_id || null,
         fetchedAt: new Date().toISOString(),
 
         // Coaching staff (filtered to coaches only)
@@ -185,6 +186,7 @@ async function enrichTeamsWithRTN(config, gender = 'womens') {
 
           return {
             id: r.id,
+            rtnId: r.id ? String(r.id) : null, // RTN athlete ID for stats joining
             firstName,
             lastName,
             fullName,
@@ -220,6 +222,47 @@ async function enrichTeamsWithRTN(config, gender = 'womens') {
       };
     }
   });
+
+  // Persist RTN IDs to teamsDatabase for use by stats service
+  // This stores team-level and athlete-level RTN IDs in the shared store
+  for (let i = 0; i < teamNames.length; i++) {
+    const teamKey = `team${i + 1}`;
+    const data = teamData[teamKey];
+    if (!data?.rtnId) continue;
+
+    const teamDbKey = buildTeamKey(teamNames[i], gender);
+    if (!teamDbKey) continue;
+
+    try {
+      // Store team RTN ID (only if not already set or different)
+      const teamRtnIdRef = ref(db, `teamsDatabase/teams/${teamDbKey}/rtnId`);
+      const existingRtnId = await get(teamRtnIdRef);
+      if (!existingRtnId.exists() || existingRtnId.val() !== data.rtnId) {
+        await set(teamRtnIdRef, data.rtnId);
+        console.log(`[enrichTeamsWithRTN] Stored RTN ID ${data.rtnId} for team ${teamDbKey}`);
+      }
+
+      // Store per-athlete RTN IDs in teamsDatabase/headshots/{name}/rtnId
+      if (data.roster && Array.isArray(data.roster)) {
+        for (const athlete of data.roster) {
+          if (!athlete.rtnId || !athlete.fullName) continue;
+          const headshotKey = normalizeName(athlete.fullName).replace(/\s+/g, '_');
+          if (!headshotKey) continue;
+          try {
+            const athleteRtnIdRef = ref(db, `teamsDatabase/headshots/${headshotKey}/rtnId`);
+            const existingAthleteRtnId = await get(athleteRtnIdRef);
+            if (!existingAthleteRtnId.exists() || String(existingAthleteRtnId.val()) !== athlete.rtnId) {
+              await set(athleteRtnIdRef, athlete.rtnId);
+            }
+          } catch (err) {
+            console.warn(`[enrichTeamsWithRTN] Failed to store RTN ID for athlete ${athlete.fullName}:`, err.message);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn(`[enrichTeamsWithRTN] Failed to store RTN ID for team ${teamDbKey}:`, err.message);
+    }
+  }
 
   return teamData;
 }

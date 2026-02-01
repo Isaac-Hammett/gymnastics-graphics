@@ -1,7 +1,7 @@
 # PLAN-RTN-Stats-Integration-Implementation
 
 **PRD:** [PRD-RTN-Stats-Integration-2026-02-01.md](./PRD-RTN-Stats-Integration-2026-02-01.md)
-**Status:** NOT STARTED | Audit: COMPLETE
+**Status:** IN PROGRESS | Audit: COMPLETE
 **Created:** 2026-02-01
 **Last Updated:** 2026-02-01
 
@@ -50,7 +50,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 
 | Phase | Name | Priority | Status | Tasks |
 |-------|------|----------|--------|-------|
-| 1 | RTN ID Capture & Shared Stats Store | P0 | NOT STARTED | 1-7 |
+| 1 | RTN ID Capture & Shared Stats Store | P0 | IN PROGRESS | 1-7 |
 | 2 | Client Integration & Config Sync | P0 | NOT STARTED | 8-14, 25 |
 | 3 | League Rankings | P1 | NOT STARTED | 15-17 |
 | 4 | AI Enhancement | P1 | NOT STARTED | 18-21, 26 |
@@ -60,11 +60,11 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 
 ## Task Summary by Phase
 
-### Phase 1: RTN ID Capture & Shared Stats Store (P0) - NOT STARTED (0/7)
+### Phase 1: RTN ID Capture & Shared Stats Store (P0) - IN PROGRESS (1/7)
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
-| Task 1 | Capture RTN team ID during Media Manager team setup | NOT STARTED | **Bug fix required:** `enrichTeamsWithRTN()` at `useCompetitions.js:134` sets `rtnId: dashboard.id` but dashboard has no top-level `id`. Fix to use `dashboard.info.team_id`. Then store `rtnId` at `teamsDatabase/teams/{teamKey}/rtnId`. Also store per-athlete RTN IDs from `dashboard.roster[].id` to `teamsDatabase/headshots/{name}/rtnId` as a fallback source alongside Virtius HTML import. If RTN ID is already present and valid, skip. Log a warning if data doesn't include an RTN ID. Update Media Manager verification checklist to show RTN ID status. |
+| Task 1 | Capture RTN team ID during Media Manager team setup | COMPLETE | Fixed `enrichTeamsWithRTN()` bug: `dashboard.id` → `dashboard.info?.team_id`. Added `rtnId` field (as string) to roster entries. After enrichment, persists team RTN ID to `teamsDatabase/teams/{teamKey}/rtnId` and per-athlete RTN IDs to `teamsDatabase/headshots/{name}/rtnId`. Skips write if already stored and unchanged. Added RTN ID status badge to Media Manager verification checklist (blue "RTN" badge if present, gray "No RTN" if missing). Build verified. |
 | Task 2 | Capture RTN athlete IDs during Media Manager headshot setup | NOT STARTED | When fetching athlete data from Virtius (headshot URLs), also extract the RTN athlete ID and store it at `teamsDatabase/headshots/{athlete-name}/rtnId`. This is the key for joining individual stats from RTN to Virtius roster entries. Log warnings for missing RTN IDs. Update Media Manager verification checklist to include RTN ID check alongside headshot and roster checks. |
 | Task 3 | Create `server/lib/rtnStatsService.js` with all 8 RTN fetch functions and rate limiting | NOT STARTED | Functions: `fetchConsistency()`, `fetchMVP()`, `fetchTopScores()`, `fetchLineup()`, `fetchIndividualHighs()`, `fetchIndividualAverages()`, `fetchTeamRanking()`, `getCurrentWeek()`. Each takes `(gender, year, tid)`, calls RTN API, returns raw JSON. Default `year` to `new Date().getFullYear()` (NCAA gymnastics season = calendar year, Jan-Apr). Include `rateLimitedFetch()` helper with 200ms delay, 10s timeout per request, retry-once on 500 errors. Export constants for event mappings and type codes (see PLAN section 3.1 for women's 4 events and men's 6 events). |
 | Task 4 | Add normalization layer to translate raw RTN JSON to Firebase schema | NOT STARTED | Functions: `normalizeConsistency()`, `normalizeMVP()`, `normalizeTopScores()`, `normalizeLineup()`, `normalizeIndividualHighs()`, `normalizeIndividualAverages()`, `normalizeTeamRanking()`. Gender-aware event code translation (see PLAN section 3.1). **Key response shapes from audit B:** Consistency has flat arrays — women: `vts`/`ubs`/`bbs`/`fxs`, men: `fxs`/`phs`/`srs`/`vts`/`pbs`/`hbs`. MVP has `vsum`/`ubsum`/`bbsum`/`fsum` and `gid`. Top scores has `gymnast_id`. Highs/Averages have `{team, ind}` structure (NOT flat array) — women: `maxv`/`maxub`/`maxbb`/`maxfx`/`maxaa`, men: `maxfx`/`maxph`/`maxsr`/`maxvt`/`maxpb`/`maxhb`/`maxaa` and `gid`. Individual rankings have `fname`/`lname` (not single `name`), `gid` (number). Athlete ID field varies by endpoint (`id`/`gid`/`gymnast_id`, string or number). Handle negative scores as null, round floats to 4 decimals, parse string scores to numbers. **Handle empty responses:** if endpoint returns `[]` or `{}`, return null and record `endpointStatus` as `"empty"` (distinct from `"ok"` and `"error"`). Store `rtnId` (as string) on each athlete record for downstream joins. |
