@@ -243,7 +243,7 @@ class AIContextService {
     try {
       // Get current show state
       const showState = this._getShowState();
-      if (!showState || showState.showState !== 'RUNNING') {
+      if (!showState || showState.state !== 'running') {
         return;
       }
 
