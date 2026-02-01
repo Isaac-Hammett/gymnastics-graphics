@@ -54,6 +54,11 @@ const CONFIDENCE_FACTORS = {
   LATE_SEASON: 0.1,            // Bonus for late season (more storylines)
   CLOSE_MATCHUP: 0.1,          // Bonus when teams are evenly matched (more drama)
 
+  // RTN stats availability bonuses
+  HAS_RTN_STATS: 0.15,          // Bonus when RTN stats are loaded (vs only dashboard data)
+  HAS_INDIVIDUAL_STATS: 0.1,    // Bonus when individual averages/highs are available
+  HAS_RANKINGS: 0.05,           // Bonus when league rankings are available
+
   // Special segment modifiers
   SENIOR_COUNT_THRESHOLD: 3,   // Min seniors to strongly suggest senior segment
   ALL_AMERICAN_BOOST: 0.15,    // Bonus when All-Americans are competing
@@ -96,6 +101,20 @@ function calculateDynamicConfidence(baseConfidence, context, factors = {}) {
   if (factors.requiresStats && context.statsAnalysis?.teamStats?.some(t => t.hasStats)) {
     confidence += CONFIDENCE_FACTORS.HAS_TEAM_STATS;
     reasons.push('Team statistics available');
+  }
+
+  // RTN stats availability bonuses
+  if (context.rtnStatsAvailable) {
+    confidence += CONFIDENCE_FACTORS.HAS_RTN_STATS;
+    reasons.push('RTN stats loaded');
+  }
+  if (context.hasIndividualStats) {
+    confidence += CONFIDENCE_FACTORS.HAS_INDIVIDUAL_STATS;
+    reasons.push('Individual athlete stats available');
+  }
+  if (context.hasRankings) {
+    confidence += CONFIDENCE_FACTORS.HAS_RANKINGS;
+    reasons.push('League rankings available');
   }
 
   if (context.dateInfo) {
@@ -800,6 +819,104 @@ function getSpecialSegments(context) {
     });
   }
 
+  // RTN-powered: Athlete Spotlight (top MVP contributor)
+  if (context.rtnStatsAvailable && context.rtnStats) {
+    // Find top MVP contributor across all teams
+    let topMVP = null;
+    let topMVPTeam = null;
+    for (const team of teams) {
+      const teamStats = context.rtnStats[`team${team.slot}`];
+      const mvpAthlete = getTopMVPContributor(teamStats);
+      if (mvpAthlete && (!topMVP || mvpAthlete.total > topMVP.total)) {
+        topMVP = mvpAthlete;
+        topMVPTeam = team.name;
+      }
+    }
+
+    if (topMVP) {
+      const mvpName = topMVP.fullName || `${topMVP.firstName} ${topMVP.lastName}`;
+      const spotlightConf = calculateDynamicConfidence(0.65, context, { athleteFeature: true });
+
+      segments.push({
+        id: 'template-special-athlete-spotlight',
+        name: `Athlete Spotlight: ${mvpName}`,
+        type: SEGMENT_TYPES.LIVE,
+        duration: 45,
+        scene: 'Talent Camera',
+        graphic: { graphicId: 'athlete-feature', params: {} },
+        timingMode: 'fixed',
+        notes: `Top contributor: ${mvpName} (${topMVPTeam}) with ${topMVP.total.toFixed(3)} total contribution. RTN MVP leader.`,
+        confidence: spotlightConf.confidence,
+        confidenceLevel: spotlightConf.confidenceLevel,
+        category: 'special',
+        reason: buildReasonString(
+          `${mvpName} is top MVP contributor with RTN stats available`,
+          spotlightConf.reasons
+        ),
+      });
+    }
+  }
+
+  // RTN-powered: Event Preview (closest event matchup)
+  if (context.hasIndividualStats && teams?.length >= 2) {
+    const team1Stats = context.rtnStats?.[`team${teams[0].slot}`];
+    const team2Stats = context.rtnStats?.[`team${teams[1].slot}`];
+    const closestEvent = findClosestEvent(team1Stats, team2Stats, gender);
+
+    if (closestEvent && closestEvent.gap < 0.1) {
+      const eventPreviewConf = calculateDynamicConfidence(0.6, context, { requiresStats: true });
+
+      segments.push({
+        id: 'template-special-event-preview',
+        name: `Event Preview: ${closestEvent.event}`,
+        type: SEGMENT_TYPES.LIVE,
+        duration: 30,
+        scene: 'Talent Camera',
+        graphic: { graphicId: 'event-summary', params: {} },
+        timingMode: 'fixed',
+        notes: `Closest matchup on ${closestEvent.event}: ${closestEvent.team1Top.name} (${closestEvent.team1Top.avg.toFixed(3)}) vs ${closestEvent.team2Top.name} (${closestEvent.team2Top.avg.toFixed(3)}) — gap of just ${closestEvent.gap.toFixed(3)}`,
+        confidence: eventPreviewConf.confidence,
+        confidenceLevel: eventPreviewConf.confidenceLevel,
+        category: 'special',
+        reason: buildReasonString(
+          `Teams separated by only ${closestEvent.gap.toFixed(3)} on ${closestEvent.event}`,
+          eventPreviewConf.reasons
+        ),
+      });
+    }
+  }
+
+  // RTN-powered: Senior Feature (senior with highest contribution)
+  if (context.rtnStatsAvailable && seniors && seniors.length > 0) {
+    const topSenior = findTopSeniorContributor(seniors, context.rtnStats, teams);
+
+    if (topSenior) {
+      const seniorFeatureConf = calculateDynamicConfidence(0.6, context, {
+        seniorFeature: true,
+        athleteFeature: true,
+      });
+
+      segments.push({
+        id: 'template-special-senior-feature',
+        name: `Senior Feature: ${topSenior.name}`,
+        type: SEGMENT_TYPES.LIVE,
+        duration: 45,
+        scene: 'Talent Camera',
+        graphic: { graphicId: 'athlete-feature', params: { teamSlot: topSenior.teamSlot } },
+        timingMode: 'fixed',
+        notes: `Senior spotlight: ${topSenior.name} (${topSenior.team}) — top senior contributor with ${topSenior.total.toFixed(3)} total MVP contribution`,
+        confidence: seniorFeatureConf.confidence,
+        confidenceLevel: seniorFeatureConf.confidenceLevel,
+        category: 'special',
+        reason: buildReasonString(
+          `${topSenior.name} is top senior contributor with RTN MVP data`,
+          seniorFeatureConf.reasons
+        ),
+        athleteContext: [topSenior],
+      });
+    }
+  }
+
   // Rivalry/matchup history segment - for known rivalries or close teams
   if (statsAnalysis?.matchupNotes?.length > 0 && teams?.length >= 2) {
     const isCloseMatchup = statsAnalysis.matchupNotes.some(
@@ -827,6 +944,127 @@ function getSpecialSegments(context) {
   }
 
   return segments;
+}
+
+// ============================================================================
+// RTN Stats Helpers
+// ============================================================================
+
+/**
+ * Convert Firebase object to array (handles both arrays and objects with numeric keys)
+ */
+function toArray(val) {
+  if (!val) return [];
+  if (Array.isArray(val)) return val;
+  return Object.values(val);
+}
+
+/**
+ * Load RTN stats for teams in the competition from teamsDatabase/stats/
+ * Returns stats keyed by team slot (team1, team2, etc.)
+ */
+async function loadRtnStatsForTeams(db, teams) {
+  if (!db || !teams || teams.length === 0) return {};
+
+  const statsMap = {};
+  for (const team of teams) {
+    if (!team.key) continue;
+    try {
+      const snapshot = await db.ref(`teamsDatabase/stats/${team.key}`).once('value');
+      const stats = snapshot.val();
+      if (stats && stats.meta?.status !== 'error') {
+        statsMap[`team${team.slot}`] = stats;
+      }
+    } catch (err) {
+      // Skip teams with read errors
+    }
+  }
+  return statsMap;
+}
+
+/**
+ * Get top MVP contributor for a team from RTN stats
+ */
+function getTopMVPContributor(teamStats) {
+  const mvp = toArray(teamStats?.mvp);
+  if (mvp.length === 0) return null;
+  // Already sorted by total descending from normalization
+  return mvp[0];
+}
+
+/**
+ * Find the event where two teams are closest based on individual averages
+ * Returns { event, team1Top, team2Top, gap } or null
+ */
+function findClosestEvent(team1Stats, team2Stats, gender) {
+  const eventCodes = gender === 'mens' ? MENS_EVENT_CODES : WOMENS_EVENT_CODES;
+  const team1Avgs = toArray(team1Stats?.individualAverages);
+  const team2Avgs = toArray(team2Stats?.individualAverages);
+
+  if (team1Avgs.length === 0 || team2Avgs.length === 0) return null;
+
+  let closestEvent = null;
+  let smallestGap = Infinity;
+
+  for (const event of eventCodes) {
+    // Find top athlete per event for each team
+    const t1Top = team1Avgs
+      .filter(a => a.events?.[event] != null && a.events[event] > 0)
+      .sort((a, b) => (b.events[event] || 0) - (a.events[event] || 0))[0];
+    const t2Top = team2Avgs
+      .filter(a => a.events?.[event] != null && a.events[event] > 0)
+      .sort((a, b) => (b.events[event] || 0) - (a.events[event] || 0))[0];
+
+    if (t1Top && t2Top) {
+      const gap = Math.abs((t1Top.events[event] || 0) - (t2Top.events[event] || 0));
+      if (gap < smallestGap) {
+        smallestGap = gap;
+        closestEvent = {
+          event,
+          team1Top: { name: t1Top.fullName || `${t1Top.firstName} ${t1Top.lastName}`, avg: t1Top.events[event] },
+          team2Top: { name: t2Top.fullName || `${t2Top.firstName} ${t2Top.lastName}`, avg: t2Top.events[event] },
+          gap: Math.round(gap * 1000) / 1000,
+        };
+      }
+    }
+  }
+
+  return closestEvent;
+}
+
+/**
+ * Find senior with highest MVP contribution from RTN stats
+ */
+function findTopSeniorContributor(seniors, rtnStats, teams) {
+  if (!seniors || seniors.length === 0) return null;
+
+  let topSenior = null;
+  let topTotal = 0;
+
+  for (const senior of seniors) {
+    const teamSlot = `team${senior.teamSlot}`;
+    const mvpList = toArray(rtnStats?.[teamSlot]?.mvp);
+    if (mvpList.length === 0) continue;
+
+    // Match senior by name
+    const seniorName = senior.name.toLowerCase();
+    const mvpEntry = mvpList.find(m => {
+      const fullName = (m.fullName || `${m.firstName} ${m.lastName}`).toLowerCase();
+      return fullName === seniorName;
+    });
+
+    if (mvpEntry && mvpEntry.total > topTotal) {
+      topTotal = mvpEntry.total;
+      topSenior = {
+        name: senior.name,
+        team: senior.team,
+        total: mvpEntry.total,
+        teamSlot: senior.teamSlot,
+      };
+    }
+  }
+
+  return topSenior;
 }
 
 // ============================================================================
@@ -1310,19 +1548,29 @@ async function buildContext(competitionConfig, teamsData, teamDataFromComp, db =
     statsAnalysis,
   };
 
-  // Query All-Americans and milestones if database available
+  // Query All-Americans, milestones, and RTN stats if database available
   let allAmericans = [];
   let milestones = { athletes: [], upcoming: [], records: [] };
+  let rtnStats = {};
 
   if (db) {
     // Run queries in parallel
-    const [allAmericansResult, milestonesResult] = await Promise.all([
+    const [allAmericansResult, milestonesResult, rtnStatsResult] = await Promise.all([
       queryAllAmericans(db, teams),
       queryMilestones(db, teams),
+      loadRtnStatsForTeams(db, teams),
     ]);
     allAmericans = allAmericansResult;
     milestones = milestonesResult;
+    rtnStats = rtnStatsResult;
   }
+
+  // Determine RTN stats availability flags for confidence scoring
+  const rtnStatsAvailable = Object.keys(rtnStats).length > 0;
+  const hasIndividualStats = Object.values(rtnStats).some(
+    s => toArray(s?.individualAverages).length > 0 || toArray(s?.individualHighs).length > 0
+  );
+  const hasRankings = Object.values(rtnStats).some(s => s?.teamRanking?.rank != null);
 
   // Compute senior storylines
   const seniorsWithStorylines = computeSeniorMilestones(seniors, baseContext);
@@ -1333,6 +1581,11 @@ async function buildContext(competitionConfig, teamsData, teamDataFromComp, db =
     seniors: seniorsWithStorylines,
     allAmericans,
     milestones,
+    // RTN stats context
+    rtnStats,
+    rtnStatsAvailable,
+    hasIndividualStats,
+    hasRankings,
   };
 }
 
@@ -1472,6 +1725,10 @@ async function generateSuggestions(compId, options = {}) {
           recordHolders: context.milestones?.records?.length || 0,
         },
         classCounts: context.classCounts,
+        // RTN stats context
+        rtnStatsAvailable: context.rtnStatsAvailable || false,
+        hasIndividualStats: context.hasIndividualStats || false,
+        hasRankings: context.hasRankings || false,
       },
       suggestions,
       meta: {
