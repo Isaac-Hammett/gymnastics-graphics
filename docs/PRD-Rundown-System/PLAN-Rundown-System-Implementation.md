@@ -1,9 +1,9 @@
 # PLAN-Rundown-System-Implementation
 
 **PRD:** [PRD-Rundown-System-2026-01-23.md](./PRD-Rundown-System-2026-01-23.md)
-**Status:** COMPLETE
+**Status:** CODE COMPLETE — validation gaps in Phases C, D (see notes)
 **Created:** 2026-01-23
-**Last Updated:** 2026-01-24
+**Last Updated:** 2026-02-01
 
 ---
 
@@ -54,9 +54,9 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | B | Talent View | P1 | COMPLETE | 22-27 |
 | I | Live Rundown Sync | P2 | COMPLETE | 28-37 |
 | J | Segment Timing Analytics | P2 | COMPLETE | 38-42 |
-| D | AI Suggestions - Planning | P2 | COMPLETE | 43-48 |
+| D | AI Suggestions - Planning | P2 | CODE COMPLETE (not validated — missing data) | 43-48 |
 | E | Script & Talent Flow | P2 | COMPLETE | 49-54 |
-| C | AI Context - Live Execution | P3 | COMPLETE | 55-62 |
+| C | AI Context - Live Execution | P3 | CODE COMPLETE (not validated — missing data) | 55-62 |
 | F | Audio Cue Integration | P3 | COMPLETE | 63-66 |
 | G | Production Tracking | P3 | COMPLETE | 67-71 |
 | K | Timezone Display | P2 | COMPLETE | 72-88 (17/17) |
@@ -132,13 +132,26 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 41 | Show historical average in Rundown Editor | COMPLETE | Added call to `loadTimingAnalytics()` in component mount useEffect so historical averages are available when rendering segment rows. UI already existed in SegmentRow component (both compact and expanded views) showing ~Xs indicator next to duration field. Color-coded: amber if actual runs longer than planned, green if shorter, gray if matches. |
 | Task 42 | AI-powered timing predictions based on history | COMPLETE | Added `aiTimingPredictions` computed value in RundownEditorPage that analyzes historical timing data by segment name similarity and type averages. Shows purple sparkle indicator with confidence level (high/medium/low) for segments without direct historical data. Click-to-apply feature in both inline view and detail panel. |
 
-### Phase D: AI Suggestions - Planning (P2) - COMPLETE (6/6)
+### Phase D: AI Suggestions - Planning (P2) - CODE COMPLETE, NOT VALIDATED (6/6 tasks, 0/6 validated)
+
+**⚠️ Validation Gap (2026-02-01):** All code was written and deployed, but this feature has never been tested end-to-end with real data. Two of the four Firebase data sources it reads from are **empty**:
+
+| Firebase Path | Purpose | Has Data? |
+|---------------|---------|-----------|
+| `competitions/{compId}/config` | Team names, stats, date | ✅ Yes |
+| `competitions/{compId}/teamData` | Roster with class years | ✅ Yes |
+| `teamsDatabase/honors` | All-American status | ❌ Empty |
+| `teamsDatabase/milestones` | Career records/milestones | ❌ Empty |
+
+**Impact:** The service won't crash (graceful fallback to empty arrays), but 3 segment types are never generated: All-American Spotlight, Record Holder Feature, Milestone Watch. The remaining ~35-50 suggestions (pre-show, team intros, rotations, post-show, senior recognition, matchup analysis) should work but have not been verified against a real competition.
+
+**To validate:** Open the Rundown Editor for a competition with populated config/teamData, click the AI Suggestions button, and confirm suggestions appear.
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
 | Task 43 | Create AI suggestion service on server | COMPLETE | Created `server/lib/aiSuggestionService.js` with: `generateSuggestions()` main API that fetches competition config and teams data from Firebase, builds context, and generates segment suggestions; template generators for pre-show, team-intro, rotation, post-show, and special segments; `getSuggestionsByCategory()` for filtered results; `getSuggestionCount()` for quick estimates; confidence scores (high/medium/low) on all suggestions |
 | Task 44 | Analyze competition metadata (type, teams, date) | COMPLETE | Enhanced `buildContext()` to include: `parseMeetDate()` for date parsing with season phase detection (early/regular/late/championship); `extractSeniors()` to find year-4 athletes from roster; `analyzeTeamStats()` for matchup analysis using team averages and season highs; `countByClassYear()` for roster demographics. Updated `generateSuggestions()` to fetch competition's `teamData` and return enhanced context with dateInfo, statsAnalysis, seniors list, and classCounts. |
-| Task 45 | Query roster data for seniors, All-Americans, milestones | COMPLETE | Added `queryAllAmericans()` to search teamsDatabase/honors for All-American athletes; `queryMilestones()` to search teamsDatabase/milestones for career records and approaching milestones; `computeSeniorMilestones()` to detect championship/final meet storylines for seniors; updated `buildContext()` to run queries in parallel; enhanced `getSpecialSegments()` to generate Record Holder Feature and Milestone Watch segments |
+| Task 45 | Query roster data for seniors, All-Americans, milestones | COMPLETE | Added `queryAllAmericans()` to search teamsDatabase/honors for All-American athletes; `queryMilestones()` to search teamsDatabase/milestones for career records and approaching milestones; `computeSeniorMilestones()` to detect championship/final meet storylines for seniors; updated `buildContext()` to run queries in parallel; enhanced `getSpecialSegments()` to generate Record Holder Feature and Milestone Watch segments. **Note:** `teamsDatabase/honors` and `teamsDatabase/milestones` paths are empty — these queries return nothing. |
 | Task 46 | Generate segment suggestions with confidence scores | COMPLETE | Added dynamic confidence scoring with `calculateDynamicConfidence()` that adjusts scores based on: data availability (roster, stats), season phase (championship/late bonus), matchup analysis (close matchup bonus), and athlete features (All-American/milestone boost). Added `CONFIDENCE_FACTORS` constants and `getConfidenceLevel()` helper. Enhanced all segment generators to use context-aware confidence. Added new contextual segments: Season Context (championship/late), Mid-Meet Analysis (close matchups), Team Stats Preview, Event-by-Event Results, Standout Performers, and Rivalry & History. All reasons now include context justification via `buildReasonString()`. |
 | Task 47 | Add `getAISuggestions` API endpoint | COMPLETE | Added `getAISuggestions` and `getAISuggestionCount` socket handlers in server/index.js; handlers emit `aiSuggestionsResult` and `aiSuggestionCountResult` events; accepts `compId` and `options` parameters; logs suggestion generation |
 | Task 48 | Wire Rundown Editor to display suggestions | COMPLETE | Added `getAISuggestions` function to ShowContext with promise-based API; added socket listener for `aiSuggestionsResult`; updated RundownEditorPage to use server-side suggestions with fallback to client-side; added loading state, error handling, context display, and refresh button; transformed server suggestions to UI format; filtered by dismissed and existing segments |
@@ -154,7 +167,9 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 53 | Create talent schedule view | COMPLETE | Already implemented as TalentScheduleModal in RundownEditorPage.jsx (Phase 12: Task 94); includes talent-per-segment view, conflict detection, and export functionality |
 | Task 54 | Show "you're on camera" indicator in Talent View | COMPLETE | Added talentId query param support (e.g., ?talentId=talent-1); prominent red "ON CAMERA" banner when talent is assigned to current segment; identity banner shows when viewing but not on camera; uses TALENT_ROSTER for talent lookup |
 
-### Phase C: AI Context - Live Execution (P3) - COMPLETE (8/8)
+### Phase C: AI Context - Live Execution (P3) - CODE COMPLETE, NOT VALIDATED (8/8 tasks, 0/8 validated)
+
+**⚠️ Validation Gap (2026-02-01):** Like Phase D, this feature was coded but never tested during a live or rehearsal show. The AIContextService depends on running a show (auto-starts on `showStarted` event), which is currently blocked by BUG-011. The Virtius API integration (Task 58) and career high/record detection (Task 60) have not been verified with live score data. The `teamsDatabase/honors` and `teamsDatabase/milestones` gaps from Phase D also affect the quality of talking points generated here.
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|

@@ -48,10 +48,10 @@ The `useCompetition()` hook is already available in the component tree (Competit
 
 ---
 
-## BUG-011: Load Rundown Button Hidden When Legacy isPlaying State is Stale (FIXED)
+## BUG-011: Load Rundown Button Hidden / Start Show Inaccessible Due to Stale Legacy isPlaying (FIXED)
 
 **Date Identified:** 2026-01-31
-**Date Fixed:** 2026-01-31
+**Date Fixed:** 2026-02-01
 **Severity:** Critical
 **Status:** FIXED
 
@@ -62,38 +62,51 @@ The `useCompetition()` hook is already available in the component tree (Competit
 3. **BUG:** The "Load Rundown" button is NOT visible — the UI shows the active-show controls (Previous, NEXT, Pause, Stop) instead
 4. Bottom of page says "No show loaded" but there is no way to load one
 5. Producer is completely blocked from loading a rundown
+6. **After first partial fix:** Rundown loads successfully (34 segments visible in SHOW PROGRESS), but the "Start Show" button is still hidden — the UI jumps straight to active-show controls
+7. Clicking NEXT produces "Cannot advance segment" error because the timesheet engine was never started (`engine.advance()` returns false when `!this._isRunning` at `timesheetEngine.js` line 1350)
 
 ### Root Cause
 
-The Producer View conditionally renders either a "Ready to Start" panel (with Load Rundown button) or the active-show controls, based on:
+The Producer View conditionally renders either a "Ready to Start" panel (with Load Rundown + Start Show buttons) or the active-show controls, based on:
 
 ```javascript
 // ProducerView.jsx line 108
 const showIsActive = timesheetIsRunning || isPlaying;
 ```
 
-The legacy `isPlaying` flag (from `ShowContext.state`) can be `true` from a previous session that was never properly stopped. When this happens, `showIsActive` is `true` even though no rundown is loaded and no show is running. The Load Rundown button is inside the `!showIsActive` branch (line 622) and becomes completely inaccessible.
+The legacy `isPlaying` flag (from `ShowContext.state`) can be `true` from a previous session that was never properly stopped. When this happens, `showIsActive` is `true` even though no show is actually running. The "Ready to Start" panel (line 622) — which contains BOTH the Load Rundown button AND the Start Show button — becomes completely inaccessible.
 
-### Fix Applied
+### First Fix (Insufficient)
 
-Two changes were made:
+The first attempt guarded `isPlaying` with `rundownLoaded`:
+```javascript
+const showIsActive = timesheetIsRunning || (isPlaying && timesheetState?.rundownLoaded);
+```
 
-1. **ProducerView.jsx line 108** — Guard `isPlaying` so it can only hide the Load Rundown panel when a rundown is actually loaded:
-   ```javascript
-   const showIsActive = timesheetIsRunning || (isPlaying && timesheetState?.rundownLoaded);
-   ```
-   This ensures a stale legacy `isPlaying: true` from a previous session cannot block the producer from accessing the Load Rundown button.
+This allowed the rundown to load (when `rundownLoaded` was false), but once the rundown loaded, `isPlaying && rundownLoaded` became `true` again — hiding the Start Show button. The user could see segments in SHOW PROGRESS but had no way to start the show.
 
-2. **ShowContext.jsx `timesheetShowStopped` handler** — Clear legacy `isPlaying` when the Stop button is pressed:
-   ```javascript
-   setState(prev => ({ ...prev, isPlaying: false, isPaused: false }));
-   ```
-   This ensures pressing Stop in the active-show UI properly escapes the stuck state by resetting the legacy flag alongside the timesheet state.
+### Required Fix
 
-### Files Changed
+Remove `isPlaying` from `showIsActive` entirely. Only `timesheetIsRunning` should control whether the active-show UI is displayed:
+
+```javascript
+const showIsActive = timesheetIsRunning;
+const showIsPaused = timesheetIsPaused;
+```
+
+This is safe because:
+- The timesheet engine is the only show execution system (legacy show controls are deprecated)
+- `timesheetIsRunning` is true only after `engine.start()` is called
+- This completely eliminates the stale `isPlaying` problem regardless of rundown load state
+
+### Files Changed (First Fix)
 
 - `show-controller/src/views/ProducerView.jsx` (line 108)
 - `show-controller/src/context/ShowContext.jsx` (timesheetShowStopped handler)
+
+### Files To Change (Complete Fix)
+
+- `show-controller/src/views/ProducerView.jsx` (line 108-109: change to `timesheetIsRunning` / `timesheetIsPaused` only)
 
 ---
 

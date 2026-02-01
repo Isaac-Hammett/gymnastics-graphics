@@ -104,10 +104,9 @@ export default function ProducerView() {
     showProgress
   } = state;
 
-  // Determine if show is active (use timesheet state if available, fallback to legacy)
-  // Guard: legacy isPlaying alone cannot hide the Load Rundown button when no rundown is loaded (BUG-011)
-  const showIsActive = timesheetIsRunning || (isPlaying && timesheetState?.rundownLoaded);
-  const showIsPaused = timesheetIsPaused || isPaused;
+  // Determine if show is active - timesheet engine is the sole authority (BUG-011 fix)
+  const showIsActive = timesheetIsRunning;
+  const showIsPaused = timesheetIsPaused;
 
   // Alerts state
   const {

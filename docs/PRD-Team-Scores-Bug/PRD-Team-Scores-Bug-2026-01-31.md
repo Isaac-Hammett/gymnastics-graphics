@@ -1,6 +1,6 @@
 # PRD: Team Scores Bug
 
-**Version:** 1.0
+**Version:** 1.2
 **Date:** 2026-01-31
 **Status:** Not Started
 
@@ -21,7 +21,7 @@ The system needs a persistent "score bug" — similar to the score tickers in pr
 | **Persistent Score Display** | Always-visible team scores on the right side of the broadcast |
 | **Automated Score Flashes** | Detect new scores via API polling and surface them with athlete info |
 | **Now Competing Detection** | Approximate who is currently on apparatus and display it |
-| **Producer Control** | Dedicated control panel with on/off toggle, automation settings, lineup card triggers |
+| **Producer Control** | Dedicated collapsible panel in producer view with on/off toggle, automation settings, lineup card triggers, and copy URL button |
 | **Scalable Team Support** | Work for dual meets (2 teams) up to 6-team competitions |
 | **Lineup Card Integration** | Toggleable lineup overlay that pops above the bug |
 
@@ -32,12 +32,12 @@ The system needs a persistent "score bug" — similar to the score tickers in pr
 ### Story 1: Producer Enables Score Bug
 
 **As a** Producer running a dual meet broadcast
-**I want to** toggle the score bug on from a dedicated producer panel tab
+**I want to** toggle the score bug on from the Score Bug panel in the producer view
 **So that** viewers see a persistent scoreboard on the right side of the screen
 
 **Flow:**
 1. Navigate to `/{compId}/producer`
-2. Open "Score Bug" tab in producer panel
+2. Expand "Score Bug" collapsible panel (right column, similar to GraphicsControl and other panels)
 3. Toggle bug ON
 4. Bug animates in from the right edge of the screen
 5. Shows team logos + cumulative totals for each team
@@ -65,7 +65,7 @@ The system needs a persistent "score bug" — similar to the score tickers in pr
 5. Slot-machines back down to default (logo + total)
 6. Team total animates/highlights to show it updated
 
-**Both team rows operate independently** — if both teams post scores close together, both rows can flash simultaneously.
+**Each team row operates independently** — every row manages its own score flash queue. If Team 1 and Team 2 both post scores at the same time, both rows flash simultaneously. If Team 1 posts 3 scores in rapid succession, Team 1's row queues and plays all 3 flashes sequentially (10s each) while Team 2's row is unaffected. There is no cross-team queue; each team's flash state is completely independent.
 
 ---
 
@@ -81,7 +81,6 @@ The system needs a persistent "score bug" — similar to the score tickers in pr
    - Athlete headshot
    - Abbreviated name
    - Apparatus short code
-   - Start value
 3. **Manual mode:** Producer panel shows suggestion: "K. Tokunaga (PH) likely up — [SHOW]"
    - Producer clicks SHOW to confirm
 4. When athlete's score arrives, "now competing" transitions directly to score flash (10 sec), then back to default
@@ -95,7 +94,7 @@ The system needs a persistent "score bug" — similar to the score tickers in pr
 **So that** viewers can see the full lineup with scores
 
 **Flow:**
-1. In Score Bug producer tab, select team from dropdown
+1. In Score Bug panel, select team from dropdown
 2. Click "Show Lineup"
 3. Lineup card slides up from above the score bug:
    - Team name + logo header
@@ -127,7 +126,7 @@ The system needs a persistent "score bug" — similar to the score tickers in pr
 **So that** I can prevent incorrect athlete detection from going to air
 
 **Flow:**
-1. Score Bug tab has "Automation: Auto / Manual" toggle
+1. Score Bug panel has "Automation: Auto / Manual" toggle
 2. **Auto mode:**
    - System detects who's likely up and displays automatically
    - Producer can dismiss via HIDE button if detection is wrong
@@ -147,14 +146,25 @@ OVERLAY PAGE                           FIREBASE                    PRODUCER PANE
 ─────────────                          ────────                    ──────────────
 overlays/team-bug.html          ←→     competitions/{compId}/      Show Controller
 ├── Polls Virtius API (5-10s)          scoreBug/                   (reads Firebase only,
-├── Renders team rows                  ├── enabled                  never polls Virtius)
-├── Manages slot animations            ├── automationMode
-├── Resolves headshots (Firebase)      ├── showLineup
+├── Writes API data to Firebase ──→    ├── enabled                  never polls Virtius)
+├── Renders team rows from FB data     ├── automationMode
+├── Manages slot animations            ├── showLineup
+├── Resolves headshots (Firebase)      ├── liveData/ ──────────→   Reads live scores
 ├── Writes detected state to FB ──→    ├── detected/ ──────────→   Displays suggestions
 └── Transparent background (OBS)       └── nowCompeting             SHOW/HIDE buttons
 ```
 
-**Single poller architecture:** Only the overlay page polls the Virtius API. The overlay writes detected "now competing" athletes to `scoreBug/detected/` in Firebase. The producer panel reads this Firebase path to show suggestions — it never polls Virtius directly. This avoids redundant API calls.
+**Single poller architecture:** Only the overlay page polls the Virtius API. After each poll, the overlay writes **only changed data** (incremental deltas) to `scoreBug/liveData/` in Firebase — it does NOT rewrite the full API response each poll. This is critical for staying within Firebase free tier limits over a 2-3 hour competition. Both the overlay itself and the producer panel read from Firebase — no component other than the overlay ever calls the Virtius API. This eliminates the existing duplicate polling in GraphicsControl.jsx (which currently polls Virtius independently for the Athlete Spotlight feature). The overlay also writes detected "now competing" athletes to `scoreBug/detected/` for the producer panel.
+
+**Heartbeat mechanism:** The overlay writes a `scoreBug/heartbeat` timestamp to Firebase on every successful poll cycle. The producer panel monitors this timestamp and displays a prominent "Last poll: Xs ago" indicator. If the heartbeat goes stale (>30 seconds old), the producer panel shows a warning: "Overlay not polling — check OBS browser source." This covers cases where the overlay tab is closed, backgrounded (browser throttling), or crashed.
+
+**Note:** This is the first overlay to use Firebase for real-time state. Existing overlays use URL parameters only. The overlay will need to initialize the Firebase SDK and establish realtime listeners in addition to polling the API.
+
+**Offline/reconnect behavior:** If the overlay loses network connectivity:
+- Firebase listeners will automatically reconnect when the network is restored (built-in SDK behavior).
+- API polling should detect fetch failures and enter backoff mode (see Section 7.2).
+- On reconnect, the overlay performs a full API poll immediately (bypassing the interval timer) and diffs against its last known state. Any scores posted during the disconnect appear as "new" and trigger score flashes normally.
+- The overlay writes the reconnect event to `scoreBug/lastError` with a "reconnected" status so the producer panel can see the gap.
 
 ### 4.2 Layout
 
@@ -191,12 +201,12 @@ overlays/team-bug.html          ←→     competitions/{compId}/      Show Cont
 **Now competing state (holds until score arrives):**
 ```
 ├───────┬──────────────────────────────────────┤
-│  [N]  │  [📷] K. Tokunaga · PH · SV 4.4    │
+│  [N]  │  [📷] K. Tokunaga · PH                   │
 │ 91.000│                                      │
 ├───────┴──────────────────────────────────────┤
 ```
 
-- Same layout as score flash but without the score and stick indicator
+- Headshot, name, and apparatus only (start value is not known until after the athlete competes)
 - Holds until score arrives, then transitions to score flash
 
 **Lineup card (above bug, producer-triggered):**
@@ -236,7 +246,9 @@ overlays/team-bug.html          ←→     competitions/{compId}/      Show Cont
 Default → Now Competing (A) → Score Flash (A) → Default → Now Competing (B) → ...
 ```
 
-Score flash always takes over immediately, regardless of current state. After 10 seconds, returns to default. System then detects next athlete and cycle continues.
+Score flash always takes over immediately, regardless of current state. If a score correction arrives during an active flash, the current flash is **interrupted** and replaced with a new flash showing the corrected score (resets the 10-second timer). After 10 seconds, returns to default. System then detects next athlete and cycle continues.
+
+**Producer flash dismiss:** The producer can manually dismiss any active score flash via a DISMISS button in the producer panel. This immediately ends the flash and returns the row to default state. This is useful if a score was posted in error or the producer wants to clear the display. Dismissing a flash does not prevent future flashes — the next queued flash (if any) will fire, or the next detected score will trigger normally.
 
 ### 4.4 Animation Specifications
 
@@ -268,7 +280,9 @@ Score flash always takes over immediately, regardless of current state. After 10
 | `team.name` / `team.short_name` | Team identification |
 | `team.events[].event_name` | Determine which apparatus team is on |
 | `team.events[].event_score` | Event total for lineup card |
-| `team.events[].gymnasts[].full_name` | Athlete name |
+| `team.events[].gymnasts[].gymnast_id` | Stable athlete identifier (primary key for score diff engine) |
+| `team.events[].gymnasts[].full_name` | Athlete display name |
+| `team.events[].gymnasts[].first_name` / `last_name` | For abbreviated display (e.g., "K. Tokunaga") |
 | `team.events[].gymnasts[].final_score` | Individual score (null = hasn't competed) |
 | `team.events[].gymnasts[].order` | Lineup position |
 | `team.events[].gymnasts[].scores[].start` | Start value (difficulty) |
@@ -296,6 +310,79 @@ For each team:
 
 This is an approximation — the API doesn't have a real-time "on apparatus" field. It works well when scores are entered sequentially in lineup order.
 
+**All athletes are shown in the bug**, including alternates and exhibition gymnasts. Their scores appear in score flashes like any other athlete. However, only counting scores contribute to the team total — the team total comes from `team.final_score` in the API, which already excludes non-counting scores.
+
+**Reuse existing detection logic:** GraphicsControl.jsx (lines 216-269) already has a working "now competing" detection implementation for the Athlete Spotlight feature. Extract and reuse this logic rather than writing it from scratch.
+
+### 5.4 Rotation Detection Logic
+
+The Virtius API does not provide a "current rotation" field. The overlay infers rotation from the API data using **all teams** (not just one):
+
+```
+For each team:
+  1. Count events where ALL gymnasts have final_score (= completed events)
+
+Rotation = MINIMUM completed events across ALL teams + 1
+
+This ensures the rotation only advances when ALL teams have finished their
+current event. If Team A finishes event 2 but Team B is still competing on
+event 2, the rotation stays at 2.
+
+Total rotations = total number of events (6 for men, 4 for women)
+
+Display: "Rotation {current} of {total}"
+```
+
+**Edge case:** Between rotations (all events either fully complete or untouched), use the minimum count of completed events across all teams as the rotation number. If all events are complete for all teams, display "Final" instead of a rotation number.
+
+### 5.5 Athlete Identification
+
+The score diff engine uses `gymnast_id` from the Virtius API as the primary stable identifier for tracking scores between polls. This field is already used in the existing leaderboard code (`output.html:4490`). Using `gymnast_id` avoids name collision issues (two athletes with the same name across teams) and is resilient to display name formatting differences.
+
+**Fallback:** If `gymnast_id` is not present (e.g., All-Around aggregate results), fall back to a composite key: `{team.short_name}|{normalizeName(gymnast.full_name)}` using the existing `normalizeName()` function from `nameNormalization.js`.
+
+### 5.6 API Data Type Notes
+
+- `gymnast.final_score` is returned as a **string** (e.g., `"14.500"`), not a number. The score diff engine must compare string values or convert to float for comparison.
+- `team.final_score` is also a string. Convert to float for display formatting.
+- `gymnast.scores[].start` is a number (float).
+- `gymnast.bonus` is a number (float).
+- `gymnast.gymnast_id` is a string (stable identifier).
+
+### 5.7 Stale Data Detection
+
+The Virtius API may return cached or stale data (CDN caching, API lag). The overlay tracks whether each poll returned data identical to the previous poll:
+- After each poll, compare the raw API response hash (or `team.final_score` values + total gymnast score count) against the previous poll.
+- If data is identical, increment a `stalePollCount` counter.
+- Write `stalePollCount` and `lastDataChangeTimestamp` to `scoreBug/liveData/` so the producer panel can display: "Data unchanged for X polls (Ys)" — this helps the producer distinguish "no new scores have been posted" from "the API might be stuck."
+- The producer panel shows this as an informational indicator (not an error) — stale data is normal between routines.
+
+### 5.8 Score Corrections
+
+Occasionally a score may be corrected after initial posting (judge review, inquiry). When this happens:
+- `gymnast.final_score` changes to a different value
+- `team.final_score` may change (up or down)
+
+**Behavior on correction:**
+- The score diff engine detects the change (previous score != current score for same athlete, keyed by `gymnast_id`)
+- If a flash for this athlete is currently active, **interrupt it immediately** and replace with a new flash showing the corrected score (resets the 10-second timer)
+- If no flash is active, trigger a normal score flash showing the corrected score
+- Update the team total — highlight animation fires regardless of direction (increase or decrease)
+- No special "correction" indicator is needed in v1
+
+### 5.9 Initial/Empty State
+
+Before any scores are posted (start of competition):
+- Team totals display `0.000`
+- Slot area is empty (default state)
+- Rotation tag displays "Rotation 1 of {total}"
+- No score flashes or now competing until first API data arrives
+
+When the overlay first loads and has not yet received API data:
+- Display team logos and names from Firebase competition config
+- Team totals show `--` until first successful API poll
+- Once first poll completes, replace `--` with actual totals (which may be `0.000`)
+
 ---
 
 ## 6. Firebase Schema
@@ -308,6 +395,11 @@ competitions/{compId}/scoreBug/
 ├── polling: boolean              // API polling active (independent of enabled)
 ├── automationMode: "auto" | "manual"
 ├── showLineup: null | "navy-mens"  // Which team's lineup to show (null = hidden)
+│                                    // Intentionally single-team: only one lineup card at a time
+├── dismissFlash: {               // Producer flash dismiss (written by producer, read by overlay)
+│     "navy-mens": 1706745610000, // Timestamp of dismiss — overlay clears flash if active
+│     "springfield-mens": null
+│   }
 ├── nowCompeting: {               // Manual overrides for now competing
 │     "navy-mens": "Kody Tokunaga",
 │     "springfield-mens": null
@@ -315,17 +407,37 @@ competitions/{compId}/scoreBug/
 ├── detected: {                   // Written by overlay, read by producer panel
 │     "navy-mens": {
 │       "athlete": "Kody Tokunaga",
-│       "apparatus": "PH",
-│       "sv": 4.4
+│       "gymnastId": "abc123",
+│       "apparatus": "PH"
 │     },
 │     "springfield-mens": null
 │   }
+├── heartbeat: 1706745600000      // Written by overlay on every poll cycle
+│                                  // Producer monitors: if stale >30s, show warning
+├── liveData: {                   // Written INCREMENTALLY by overlay (deltas only, not full rewrite)
+│     "lastPollTimestamp": 1706745600000,
+│     "lastDataChangeTimestamp": 1706745590000,
+│     "stalePollCount": 0,        // Consecutive polls with no data change
+│     "rotation": 2,
+│     "totalRotations": 6,
+│     "teams": {
+│       "navy-mens": {            // Only updated when this team's data changes
+│         "finalScore": "91.000",
+│         "events": { ... }
+│       }
+│     }
+│   }
+├── lastError: null               // { message, timestamp, type } — written by overlay on failure
 └── config: {
       pollInterval: 5000,         // API poll interval in ms (configurable by producer)
       flashDuration: 10000,       // Score flash duration in ms
       showStickIndicator: true    // Men's meets only
     }
 ```
+
+**Incremental Firebase writes:** The overlay does NOT rewrite the full API response to `liveData/` on every poll. Instead, it compares the current API response against the previous one and uses `firebase.update()` to write only the paths that changed (e.g., a single team's score, a single gymnast's `final_score`). This is critical for staying within Firebase free tier limits over a 2-3 hour competition with 5-second polling intervals.
+
+**Schema initialization safety:** On first load, the overlay uses a Firebase transaction (or `firebase.update()` with null checks) to initialize the `scoreBug/` schema. This prevents a race condition where both the overlay and producer panel load simultaneously and both attempt to write defaults, potentially clobbering each other's initial settings.
 
 **Polling is independent of bug visibility.** The producer can:
 - Start polling before enabling the bug (pre-warm data)
@@ -336,35 +448,75 @@ competitions/{compId}/scoreBug/
 
 ## 7. Producer Panel
 
-### 7.1 Score Bug Tab Layout
+### 7.1 Score Bug Panel Layout
+
+The Score Bug panel is a **collapsible panel** in the ProducerView right column, following the same pattern as GraphicsControl, OverrideLog, AlertPanel, and other existing panels. It is **not** a separate tab or route.
 
 ```
-SCORE BUG
+SCORE BUG                                    [📋 Copy URL]
 ────────────────────────────────
 Bug: [● ON / ○ OFF]
 
-Polling: [● ON / ○ OFF]   [5s ▾]
-         ↑ start/stop      ↑ frequency (1s, 2s, 5s, 10s, 15s, 30s)
+Polling: [● ON / ○ OFF]   [5s ▾]    Last poll: 3s ago ●
+         ↑ start/stop      ↑ freq    ↑ heartbeat (green=healthy, yellow=stale, red=dead)
+
+Data: Updated 12s ago · 2 unchanged polls
+      ↑ stale data indicator (informational, not an error)
 
 Automation: [Auto / Manual]
 
 Now Competing (detected):
-┌─────────────────────────────────────┐
-│  Navy: K. Tokunaga · PH    [SHOW]  │
-│  Springfield: J. Chen · FX  [SHOW]  │
-└─────────────────────────────────────┘
+┌─────────────────────────────────────────────┐
+│  Navy: K. Tokunaga · PH       [SHOW]        │
+│  Springfield: J. Chen · FX    [SHOW]        │
+└─────────────────────────────────────────────┘
+
+Active Flashes:
+┌─────────────────────────────────────────────┐
+│  Navy: K. Tokunaga · 13.300        [DISMISS] │
+└─────────────────────────────────────────────┘
 
 Lineup Card:
   Team: [Navy          ▾]
   [SHOW LINEUP]  [HIDE LINEUP]
 ```
 
+- **Copy URL button** — copies the OBS browser source URL for the score bug overlay (`https://commentarygraphic.com/overlays/team-bug.html?compId=xxx`) to clipboard, same pattern as existing graphics URL copy
+- **Heartbeat indicator** — shows time since last overlay poll. Green (<10s), yellow (10-30s), red (>30s or overlay not running). If red, displays "Overlay not polling — check OBS browser source"
+- **Stale data indicator** — shows time since data last changed and count of unchanged polls. Informational only — helps producer distinguish "no new scores" from "API might be stuck"
 - **Polling is independent of bug visibility** — start polling to pre-warm data before enabling the bug, or stop polling to freeze current state
 - **Poll frequency is adjustable** — default 5s, can increase if API is slow or reduce for faster updates
 - In **auto mode**, SHOW buttons become HIDE buttons (to dismiss if wrong)
 - In **manual mode**, SHOW buttons confirm display
+- **Active Flashes section** — shows currently flashing scores with DISMISS button per team. Dismissing clears the flash immediately. Section only visible when a flash is active.
 - Lineup team dropdown lists all teams in the competition
 - Score flashes always fire automatically regardless of mode (but only when polling is active)
+
+### 7.2 Lineup Card + Score Flash Interaction
+
+When a lineup card is visible and a score flash fires for any team:
+- The **team row still animates the score flash normally** (slot machine up, 10s hold, slot machine down). The lineup card remains visible above the bug and is unaffected.
+- The **lineup card updates live** — the athlete's score appears in the lineup card list as soon as the API data arrives, which happens at the same time as the flash. This provides useful reinforcement: the viewer sees the flash in the team row and the lineup card score fill in simultaneously.
+- If the lineup card is open for the same team that's flashing, both updates happen together. If it's open for a different team, only that team's row flashes while the lineup card stays static (no new data for that team).
+
+### 7.3 OBS Browser Source Configuration
+
+The score bug overlay is designed for a **1920x1080 full-screen OBS browser source** with transparent background. The bug renders on the right side of the viewport; the left side is fully transparent, allowing camera feeds and other sources to show through.
+
+| Property | Value |
+|----------|-------|
+| Source dimensions | 1920x1080 |
+| Background | Transparent (CSS: `background: transparent`) |
+| Bug position | Right-aligned within the 1920x1080 viewport |
+| Z-order | Above camera feeds, below other overlays (lower thirds, leaderboards) unless producer adjusts |
+
+### 7.4 API Error Handling
+
+When the Virtius API poll fails (network error, 429 rate limit, 500, malformed response):
+- **Overlay:** Continue displaying the last known good data. Do not clear scores or show an error to viewers.
+- **Producer panel:** Show a warning indicator (e.g., "API unreachable — showing stale data") with timestamp of last successful poll.
+- **Backoff:** On consecutive failures, double the poll interval (up to 30s max). Reset to configured interval on next success.
+- **Logging:** Write error details to `scoreBug/lastError` in Firebase so the producer panel can display them.
 
 ---
 
@@ -375,7 +527,7 @@ Lineup Card:
 | **A** | Core Score Bug | P0 | Overlay page, API polling, team rows with totals, score flashes |
 | **B** | Now Competing | P0 | Auto-detection, manual mode, producer panel suggestions |
 | **C** | Lineup Card | P1 | Toggleable lineup overlay above bug |
-| **D** | Producer Panel | P0 | Dedicated tab in show controller with all controls |
+| **D** | Producer Panel | P0 | Collapsible panel in producer view with all controls and copy URL button |
 | **E** | Headshot Integration | P1 | Resolve and display athlete headshots in flashes |
 | **F** | Stick Indicator | P2 | Green circle + S for men's meets |
 | **G** | Multi-Team Scaling | P1 | Test and refine layout for 3-6 team meets |
@@ -386,16 +538,28 @@ Lineup Card:
 ## 9. Success Criteria
 
 ### Phase A Complete When:
-- [ ] `overlays/team-bug.html` exists and renders in OBS browser source
+- [ ] `overlays/team-bug.html` exists and renders in 1920x1080 OBS browser source with transparent background
+- [ ] Firebase SDK initialized in overlay (first overlay to use Firebase)
+- [ ] Firebase schema initialized safely with default values on first load (transaction/null-check to prevent race conditions)
 - [ ] Polls Virtius API on configurable interval (default 5 seconds)
-- [ ] Displays team logos and cumulative totals
+- [ ] Writes **incremental deltas** (not full rewrite) to `scoreBug/liveData/` in Firebase after each poll
+- [ ] Writes heartbeat timestamp to `scoreBug/heartbeat` on every poll cycle
+- [ ] Tracks stale poll count and last data change timestamp
+- [ ] Displays team logos and cumulative totals (shows `--` before first poll, then `0.000` or actual total)
+- [ ] Score diff engine uses `gymnast_id` as primary key (fallback: composite team+normalized name)
 - [ ] Detects new scores and triggers slot-machine score flash
-- [ ] Score flash shows: headshot, name, score, apparatus, start value
+- [ ] Score flash shows: name, score, apparatus, start value (headshots added in Phase E)
 - [ ] Score flash holds for 10 seconds then returns to default
-- [ ] Team total animates when it updates
-- [ ] Rotation number tag displays at top
+- [ ] Score corrections interrupt active flash immediately (replaces with corrected score, resets timer)
+- [ ] Per-team independent flash queues (each team row manages its own queue)
+- [ ] Producer can dismiss active flash via Firebase `scoreBug/dismissFlash`
+- [ ] Team total animates when it updates (including corrections)
+- [ ] Rotation number tag displays at top (inferred from ALL teams' data, not just first team)
 - [ ] Bug slides in/out from right edge
 - [ ] Firebase path `scoreBug/enabled` controls visibility
+- [ ] API error handling: displays stale data on failure, backs off poll interval
+- [ ] Offline/reconnect: immediate full poll on reconnect, diffs against last known state
+- [ ] `final_score` string values handled correctly (string-to-float conversion)
 
 ### Phase B Complete When:
 - [ ] System detects "now competing" athlete per team from API data
@@ -413,11 +577,18 @@ Lineup Card:
 - [ ] Slides up/down with animation
 
 ### Phase D Complete When:
-- [ ] Dedicated "Score Bug" tab exists in producer view
+- [ ] Collapsible "Score Bug" panel exists in producer view right column
+- [ ] Copy URL button copies OBS browser source URL to clipboard
 - [ ] On/off toggle controls bug visibility via Firebase
+- [ ] Polling start/stop toggle and frequency selector
+- [ ] Heartbeat indicator with color-coded status (green/yellow/red) and "overlay not polling" warning
+- [ ] Stale data indicator showing time since last data change and unchanged poll count
 - [ ] Auto/manual toggle for now competing
-- [ ] Now competing suggestions shown with SHOW/HIDE buttons
+- [ ] Now competing suggestions shown with SHOW/HIDE buttons (reads from Firebase, no API polling)
+- [ ] Active flash display with DISMISS button per team (writes to `scoreBug/dismissFlash`)
 - [ ] Lineup card team selector and show/hide controls
+- [ ] API error indicator shown when polling fails (reads `scoreBug/lastError` from Firebase)
+- [ ] GraphicsControl.jsx Athlete Spotlight polling removed/replaced (reads from `scoreBug/liveData/` instead)
 
 ### Phase E Complete When:
 - [ ] Headshots resolve from `teamsDatabase/headshots/` using existing normalization
