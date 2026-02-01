@@ -320,13 +320,13 @@ RTN uses different event identifiers depending on the endpoint. The normalizatio
 
 **Women's Events:**
 
-| RTN Dashboard | RTN Consistency | RTN Individual Ranking # | Standard Code |
-|---------------|-----------------|--------------------------|---------------|
-| `vault` | `vts` | 1 | `VT` |
-| `bars` | `ubs` | 2 | `UB` |
-| `beam` | `bbs` | 3 | `BB` |
-| `floor` | `fxs` | 4 | `FX` |
-| -- | -- | 5 | `AA` |
+| RTN Dashboard | RTN Consistency | RTN MVP | RTN Top Scores | RTN Highs/Avgs | RTN Indiv Ranking # | Standard Code |
+|---------------|-----------------|---------|----------------|----------------|---------------------|---------------|
+| `vault` | `vts` | `vsum` | `vault` | `maxv` | 1 | `VT` |
+| `bars` | `ubs` | `ubsum` | `bars` | `maxub` | 2 | `UB` |
+| `beam` | `bbs` | `bbsum` | `beam` | `maxbb` | 3 | `BB` |
+| `floor` | `fxs` | `fsum` | `floor` | `maxfx` | 4 | `FX` |
+| -- | -- | -- | -- | `maxaa` | 5 | `AA` |
 
 **Men's Events:**
 
@@ -351,7 +351,7 @@ RTN uses different event identifiers depending on the endpoint. The normalizatio
 | `pb` | `PB` |
 | `hb` | `HB` |
 
-**Men's Individual Stats Fields:**
+**Men's Individual Stats Fields (Highs/Averages):**
 
 | RTN Field | Standard Code |
 |-----------|---------------|
@@ -362,6 +362,21 @@ RTN uses different event identifiers depending on the endpoint. The normalizatio
 | `maxpb` / `pb` | `PB` |
 | `maxhb` / `hb` | `HB` |
 | `maxaa` | `AA` |
+
+> **Audit note (B6):** Individual highs (`rostermain/{tid}/2`) and averages (`rostermain/{tid}/3`) return `{ team: [...], ind: [...] }` — NOT a flat array. The `ind` array contains athlete records. Women's fields are `maxv`, `maxub`, `maxbb`, `maxfx`, `maxaa`. The `team` array contains per-event team totals.
+
+**RTN Athlete ID Field Names by Endpoint:**
+
+> **Audit note (B-CRIT):** The RTN athlete ID field name varies by endpoint. Normalization must map all to a consistent `rtnId` string.
+
+| Endpoint | Athlete ID Field | Type |
+|----------|-----------------|------|
+| Dashboard roster | `id` | string |
+| MVP | `gid` | number |
+| Top Scores | `gymnast_id` | string |
+| Lineup | `id` | string |
+| Individual Highs/Averages | `gid` | string |
+| Individual Rankings | `gid` | number |
 
 ### 3.2 Score Normalization
 
@@ -390,6 +405,8 @@ The stats service reads these IDs for all RTN API calls. Resolution order:
 2. If still missing, log error and skip that team
 
 > **Audit note (A5):** The previous plan included a fallback to `competitions/{compId}/teamData/team{N}/rtnId`. This path has never been populated by `enrichTeamsWithRTN()` and does not exist in any competition. The fallback was removed. `teamsDatabase/teams/{teamKey}/rtnId` is the sole source.
+
+> **Audit note (B1):** The existing `enrichTeamsWithRTN()` at `useCompetitions.js:134` sets `rtnId: dashboard.id || null`, but the RTN dashboard response has NO top-level `id` field. The team ID is at `dashboard.info.team_id`. This means `teamData.team{N}.rtnId` is always `null` in all existing competitions. Task 1 must fix this by changing `dashboard.id` to `dashboard.info.team_id` AND saving to `teamsDatabase/teams/{teamKey}/rtnId`.
 
 **Athlete ID matching:** Individual stats from RTN (individualHighs, individualAverages, mvp, lineup) include RTN athlete IDs. These are matched to Virtius roster entries via `teamsDatabase/headshots/{name}/rtnId`. The authoritative roster is always Virtius (used for live scoring), not RTN. RTN data supplements the Virtius roster with historical stats.
 
@@ -507,7 +524,7 @@ This is acceptable since ingestion is a one-time background operation.
 | Individual endpoint fails | Other endpoints still succeed; `meta.status = "partial"` |
 | All endpoints fail for a team | `meta.status = "error"` for that team; other teams unaffected |
 | Firebase write fails | Record error, continue with other teams |
-| No `rtnId` in teamsDatabase | Fall back to `teamData/team{N}/rtnId`; if missing, skip |
+| No `rtnId` in teamsDatabase | Log error and skip that team |
 
 **Partial success behavior:**
 - Each endpoint result is stored independently
