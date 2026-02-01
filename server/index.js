@@ -31,6 +31,7 @@ import { encryptStreamKey, decryptStreamKey, isEncryptedKey } from './lib/obsStr
 import { mapEditorSegmentsToEngine, validateEngineSegments, diffSegments, detectDuplicateIds, deduplicateSegmentsById } from './lib/segmentMapper.js';
 import aiSuggestionService from './lib/aiSuggestionService.js';
 import { getOrCreateContextService, getContextService, removeContextService } from './lib/aiContextService.js';
+import { ingestCompetitionStats, ingestTeamStats, syncStatsToConfig, snapshotStatsForCompetition, checkStaleness, parseCompetitionType, buildTeamDbKey } from './lib/rtnStatsService.js';
 
 dotenv.config();
 
@@ -456,6 +457,18 @@ function getOrCreateEngine(compId, obsConnectionManager, firebase, socketIo) {
       console.log(`[Timesheet:${compId}] AI Context Service started`);
     } catch (error) {
       console.error(`[Timesheet:${compId}] Failed to start AI Context Service:`, error.message);
+    }
+
+    // PRD-RTN-Stats Task 7: Snapshot RTN stats for this competition at show start
+    try {
+      const snapshotResult = await snapshotStatsForCompetition(compId);
+      if (snapshotResult.success) {
+        console.log(`[Timesheet:${compId}] RTN stats snapshot taken (${snapshotResult.teamsSnapshotted} teams)`);
+      } else {
+        console.warn(`[Timesheet:${compId}] RTN stats snapshot failed: ${snapshotResult.error}`);
+      }
+    } catch (error) {
+      console.error(`[Timesheet:${compId}] RTN stats snapshot error:`, error.message);
     }
 
     // Task 38: Create initial run record for real-time timing analytics
@@ -6044,6 +6057,149 @@ io.on('connection', async (socket) => {
       socket.emit('aiContextRefreshResult', {
         success: false,
         error: error.message
+      });
+    }
+  });
+
+  // PRD-RTN-Stats Task 7: Ingest RTN stats for all teams in a competition
+  socket.on('ingestRtnStats', async ({ compId }) => {
+    const targetCompId = compId || clientCompId;
+
+    if (!targetCompId) {
+      socket.emit('rtnStatsResult', {
+        success: false,
+        error: 'No competition ID provided'
+      });
+      return;
+    }
+
+    try {
+      console.log(`[RTN Stats] Ingesting stats for competition: ${targetCompId}`);
+
+      // Ingest stats (checks staleness, fetches if needed)
+      const result = await ingestCompetitionStats(targetCompId, io);
+
+      // Sync to config fields (Ave, High, Con) respecting locks
+      let syncResult = null;
+      if (result.success) {
+        try {
+          syncResult = await syncStatsToConfig(targetCompId);
+        } catch (syncErr) {
+          console.error(`[RTN Stats] Config sync failed for ${targetCompId}:`, syncErr.message);
+        }
+      }
+
+      const roomName = `competition:${targetCompId}`;
+      io.to(roomName).emit('rtnStatsResult', {
+        success: result.success,
+        compId: targetCompId,
+        teams: result.teams,
+        sync: syncResult,
+        error: result.error || null,
+      });
+
+      console.log(`[RTN Stats] Ingestion complete for ${targetCompId}: success=${result.success}`);
+    } catch (error) {
+      console.error(`[RTN Stats] Error ingesting stats for ${targetCompId}:`, error.message);
+      socket.emit('rtnStatsResult', {
+        success: false,
+        compId: targetCompId,
+        error: `Failed to ingest stats: ${error.message}`
+      });
+    }
+  });
+
+  // PRD-RTN-Stats Task 7: Force refresh RTN stats (bypasses staleness check)
+  socket.on('refreshRtnStats', async ({ compId, teamKey }) => {
+    const targetCompId = compId || clientCompId;
+
+    if (!targetCompId) {
+      socket.emit('rtnStatsResult', {
+        success: false,
+        error: 'No competition ID provided'
+      });
+      return;
+    }
+
+    try {
+      console.log(`[RTN Stats] Force refreshing stats for competition: ${targetCompId}${teamKey ? ` (team: ${teamKey})` : ''}`);
+
+      const db = productionConfigService.getDb();
+      if (!db) {
+        socket.emit('rtnStatsResult', { success: false, compId: targetCompId, error: 'Firebase not available' });
+        return;
+      }
+
+      // Read competition config
+      const configSnapshot = await db.ref(`competitions/${targetCompId}/config`).once('value');
+      const config = configSnapshot.val();
+      if (!config) {
+        socket.emit('rtnStatsResult', { success: false, compId: targetCompId, error: 'Competition config not found' });
+        return;
+      }
+
+      const { gender, teamCount } = parseCompetitionType(config.compType);
+      const year = new Date().getFullYear();
+      const teamResults = {};
+
+      // Build list of teams to refresh
+      const teamsToRefresh = [];
+      for (let i = 1; i <= teamCount; i++) {
+        const name = config[`team${i}Name`];
+        if (!name) continue;
+        const key = buildTeamDbKey(name, gender);
+        if (!key) continue;
+
+        // If a specific teamKey was requested, only refresh that one
+        if (teamKey && key !== teamKey) continue;
+
+        teamsToRefresh.push({ index: i, name, key });
+      }
+
+      for (const { index, name, key } of teamsToRefresh) {
+        // Look up RTN ID
+        let rtnId;
+        try {
+          const rtnIdSnapshot = await db.ref(`teamsDatabase/teams/${key}/rtnId`).once('value');
+          rtnId = rtnIdSnapshot.val();
+        } catch (err) {
+          console.error(`[RTN Stats] Failed to read rtnId for ${key}:`, err.message);
+        }
+
+        if (!rtnId) {
+          teamResults[`team${index}`] = { teamKey: key, status: 'error', error: 'Missing RTN ID' };
+          continue;
+        }
+
+        // Force fetch (no staleness check)
+        const result = await ingestTeamStats(key, rtnId, gender, year, io, targetCompId);
+        teamResults[`team${index}`] = { teamKey: key, ...result };
+      }
+
+      // Sync to config
+      let syncResult = null;
+      try {
+        syncResult = await syncStatsToConfig(targetCompId);
+      } catch (syncErr) {
+        console.error(`[RTN Stats] Config sync failed for ${targetCompId}:`, syncErr.message);
+      }
+
+      const roomName = `competition:${targetCompId}`;
+      io.to(roomName).emit('rtnStatsResult', {
+        success: true,
+        compId: targetCompId,
+        teams: teamResults,
+        sync: syncResult,
+        refreshed: true,
+      });
+
+      console.log(`[RTN Stats] Force refresh complete for ${targetCompId}`);
+    } catch (error) {
+      console.error(`[RTN Stats] Error refreshing stats for ${targetCompId}:`, error.message);
+      socket.emit('rtnStatsResult', {
+        success: false,
+        compId: targetCompId,
+        error: `Failed to refresh stats: ${error.message}`
       });
     }
   });

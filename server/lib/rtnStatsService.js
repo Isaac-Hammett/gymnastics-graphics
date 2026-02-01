@@ -1041,6 +1041,79 @@ async function syncStatsToConfig(compId) {
 }
 
 // ============================================================================
+// Show-Start Snapshot (Task 7)
+// ============================================================================
+
+/**
+ * Copy shared stats from `teamsDatabase/stats/{teamKey}/` to
+ * `competitions/{compId}/rtnStats/team{N}/` for archival at show start.
+ *
+ * The snapshot freezes stats so mid-show refreshes for other competitions
+ * don't change the data AI services read during a live broadcast.
+ *
+ * @param {string} compId - Competition ID
+ * @returns {Promise<{ success: boolean, teamsSnapshotted: number, error?: string }>}
+ */
+async function snapshotStatsForCompetition(compId) {
+  const db = productionConfigService.getDb();
+  if (!db) {
+    return { success: false, teamsSnapshotted: 0, error: 'Firebase not available' };
+  }
+
+  console.log(`[rtnStatsService] Taking stats snapshot for competition ${compId}`);
+
+  // Read competition config to find team names
+  let config;
+  try {
+    const configSnapshot = await db.ref(`competitions/${compId}/config`).once('value');
+    config = configSnapshot.val();
+  } catch (err) {
+    console.error(`[rtnStatsService] Failed to read config for snapshot ${compId}:`, err.message);
+    return { success: false, teamsSnapshotted: 0, error: `Failed to read config: ${err.message}` };
+  }
+
+  if (!config) {
+    return { success: false, teamsSnapshotted: 0, error: 'Competition config not found' };
+  }
+
+  const { gender, teamCount } = parseCompetitionType(config.compType);
+  const snapshotData = {
+    snapshotTakenAt: new Date().toISOString(),
+  };
+  let teamsSnapshotted = 0;
+
+  for (let i = 1; i <= teamCount; i++) {
+    const name = config[`team${i}Name`];
+    if (!name) continue;
+
+    const teamKey = buildTeamDbKey(name, gender);
+    if (!teamKey) continue;
+
+    try {
+      const statsSnapshot = await db.ref(`teamsDatabase/stats/${teamKey}`).once('value');
+      const stats = statsSnapshot.val();
+      if (stats) {
+        snapshotData[`team${i}`] = stats;
+        teamsSnapshotted++;
+      }
+    } catch (err) {
+      console.warn(`[rtnStatsService] Failed to read stats for ${teamKey} during snapshot:`, err.message);
+    }
+  }
+
+  // Write snapshot to competition
+  try {
+    await db.ref(`competitions/${compId}/rtnStats`).set(snapshotData);
+    console.log(`[rtnStatsService] Snapshot complete for ${compId}: ${teamsSnapshotted} teams`);
+  } catch (err) {
+    console.error(`[rtnStatsService] Failed to write snapshot for ${compId}:`, err.message);
+    return { success: false, teamsSnapshotted: 0, error: `Failed to write snapshot: ${err.message}` };
+  }
+
+  return { success: true, teamsSnapshotted };
+}
+
+// ============================================================================
 // Exports
 // ============================================================================
 
@@ -1114,4 +1187,7 @@ export {
 
   // Config sync (Task 6)
   syncStatsToConfig,
+
+  // Show-start snapshot (Task 7)
+  snapshotStatsForCompetition,
 };
