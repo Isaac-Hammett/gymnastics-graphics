@@ -920,6 +920,127 @@ async function ingestCompetitionStats(compId, io) {
 }
 
 // ============================================================================
+// Config Sync (Task 6)
+// ============================================================================
+
+/**
+ * Sync RTN stats to competition config fields, respecting manual override locks.
+ *
+ * For each team in the competition, reads `teamsDatabase/stats/{teamKey}/teamRanking`
+ * and writes `team{N}Ave`, `team{N}High`, `team{N}Con` to the competition config.
+ * Locked fields (at `competitions/{compId}/config/_locks`) are skipped.
+ *
+ * @param {string} compId - Competition ID
+ * @returns {Promise<{ success: boolean, synced: Object, skipped: Object, error?: string }>}
+ */
+async function syncStatsToConfig(compId) {
+  const db = productionConfigService.getDb();
+  if (!db) {
+    return { success: false, synced: {}, skipped: {}, error: 'Firebase not available' };
+  }
+
+  console.log(`[rtnStatsService] syncStatsToConfig for competition ${compId}`);
+
+  // Read competition config
+  let config;
+  try {
+    const configSnapshot = await db.ref(`competitions/${compId}/config`).once('value');
+    config = configSnapshot.val();
+  } catch (err) {
+    console.error(`[rtnStatsService] Failed to read config for ${compId}:`, err.message);
+    return { success: false, synced: {}, skipped: {}, error: `Failed to read config: ${err.message}` };
+  }
+
+  if (!config) {
+    return { success: false, synced: {}, skipped: {}, error: 'Competition config not found' };
+  }
+
+  // Read locks — default to empty object if null/missing
+  const locks = config._locks || {};
+
+  // Extract gender and team count
+  const { gender, teamCount } = parseCompetitionType(config.compType);
+
+  const synced = {};
+  const skipped = {};
+
+  for (let i = 1; i <= teamCount; i++) {
+    const teamName = config[`team${i}Name`];
+    if (!teamName) continue;
+
+    const teamKey = buildTeamDbKey(teamName, gender);
+    if (!teamKey) {
+      console.warn(`[rtnStatsService] syncStatsToConfig: Could not build team key for "${teamName}"`);
+      continue;
+    }
+
+    // Read team ranking from shared stats store
+    let teamRanking = null;
+    try {
+      const rankingSnapshot = await db.ref(`teamsDatabase/stats/${teamKey}/teamRanking`).once('value');
+      teamRanking = rankingSnapshot.val();
+    } catch (err) {
+      console.warn(`[rtnStatsService] Failed to read teamRanking for ${teamKey}:`, err.message);
+    }
+
+    if (!teamRanking) {
+      console.log(`[rtnStatsService] No teamRanking data for ${teamKey}, skipping config sync`);
+      skipped[`team${i}`] = { teamKey, reason: 'no ranking data' };
+      continue;
+    }
+
+    // Build updates for this team, respecting locks
+    const updates = {};
+    const teamSynced = [];
+    const teamSkipped = [];
+
+    // team{N}Ave — from ranking average
+    const aveField = `team${i}Ave`;
+    if (locks[aveField] === true) {
+      teamSkipped.push(aveField);
+    } else if (teamRanking.ave) {
+      updates[aveField] = teamRanking.ave;
+      teamSynced.push(aveField);
+    }
+
+    // team{N}High — from ranking high
+    const highField = `team${i}High`;
+    if (locks[highField] === true) {
+      teamSkipped.push(highField);
+    } else if (teamRanking.high) {
+      updates[highField] = teamRanking.high;
+      teamSynced.push(highField);
+    }
+
+    // team{N}Con — overall ranking string (e.g., "#1", "#3(t)")
+    const conField = `team${i}Con`;
+    if (locks[conField] === true) {
+      teamSkipped.push(conField);
+    } else if (teamRanking.rank) {
+      updates[conField] = `#${teamRanking.rank}`;
+      teamSynced.push(conField);
+    }
+
+    // Write updates to config
+    if (Object.keys(updates).length > 0) {
+      try {
+        await db.ref(`competitions/${compId}/config`).update(updates);
+        console.log(`[rtnStatsService] Synced config for team${i} (${teamKey}): ${teamSynced.join(', ')}`);
+      } catch (err) {
+        console.error(`[rtnStatsService] Failed to write config for team${i}:`, err.message);
+      }
+    }
+
+    if (teamSynced.length > 0) synced[`team${i}`] = { teamKey, fields: teamSynced };
+    if (teamSkipped.length > 0) skipped[`team${i}`] = { teamKey, fields: teamSkipped, reason: 'locked' };
+  }
+
+  console.log(`[rtnStatsService] syncStatsToConfig complete: synced=${JSON.stringify(synced)}, skipped=${JSON.stringify(skipped)}`);
+
+  return { success: true, synced, skipped };
+}
+
+// ============================================================================
 // Exports
 // ============================================================================
 
@@ -990,4 +1111,7 @@ export {
   checkStaleness,
   ingestTeamStats,
   ingestCompetitionStats,
+
+  // Config sync (Task 6)
+  syncStatsToConfig,
 };
