@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useCompetition } from '../hooks/useCompetitions';
 import { graphicButtons, graphicNames, getApparatusButtons, eventFrameIds, isMensCompetition } from '../lib/graphicButtons';
+import { db, ref, onValue } from '../lib/firebase';
+import { buildTeamDbKey, parseCompetitionType } from '../hooks/useRtnStats';
 
 // Fields that can be locked to prevent auto-sync from RTN stats
 const LOCKABLE_FIELDS = [
@@ -17,6 +19,7 @@ export default function ControllerPage() {
   const [toast, setToast] = useState('');
   const [formData, setFormData] = useState({});
   const locksRef = useRef({});
+  const [rtnStatsMeta, setRtnStatsMeta] = useState({}); // { team1: { fetchedAt, status }, team2: ... }
 
   // Derive locks from config (lives at config._locks in Firebase)
   const locks = config?._locks || {};
@@ -30,6 +33,42 @@ export default function ControllerPage() {
     // If unlocking, remove the key by setting null
     await updateConfig({ [`_locks/${fieldName}`]: newLockValue || null });
   }, [updateConfig]);
+
+  // Subscribe to RTN stats meta for each team to show auto-fill indicators
+  useEffect(() => {
+    if (!config?.compType) return;
+    const { gender } = parseCompetitionType(config.compType);
+    if (!gender) return;
+
+    const unsubs = [];
+    const teamNumbers = ['1', '2', '3', '4', '5', '6'];
+    for (const num of teamNumbers) {
+      const teamName = config[`team${num}Name`];
+      if (!teamName) continue;
+      const teamKey = buildTeamDbKey(teamName, gender);
+      if (!teamKey) continue;
+
+      const metaRef = ref(db, `teamsDatabase/stats/${teamKey}/meta`);
+      const unsub = onValue(metaRef, (snapshot) => {
+        const meta = snapshot.val();
+        setRtnStatsMeta(prev => ({ ...prev, [`team${num}`]: meta }));
+      });
+      unsubs.push(unsub);
+    }
+
+    return () => unsubs.forEach(unsub => unsub());
+  }, [config?.compType, config?.team1Name, config?.team2Name, config?.team3Name, config?.team4Name, config?.team5Name, config?.team6Name]);
+
+  // Determine which fields have RTN-sourced data (not locked, and stats exist for that team)
+  const rtnAutoFilled = {};
+  for (const num of ['1', '2']) {
+    const meta = rtnStatsMeta[`team${num}`];
+    const hasStats = meta?.status === 'complete' || meta?.status === 'partial';
+    for (const field of ['Ave', 'High', 'Con']) {
+      const fieldName = `team${num}${field}`;
+      rtnAutoFilled[fieldName] = hasStats && !locks[fieldName] && !!formData[fieldName];
+    }
+  }
 
   // Handle field change with auto-lock: when user manually edits a lockable field, engage the lock
   const handleFieldChange = useCallback((fieldName, value) => {
@@ -188,6 +227,7 @@ export default function ControllerPage() {
               fieldName="team1Ave"
               value={formData.team1Ave}
               locked={locks.team1Ave}
+              rtnAutoFilled={rtnAutoFilled.team1Ave}
               onChange={handleFieldChange}
               onToggleLock={toggleLock}
             />
@@ -196,6 +236,7 @@ export default function ControllerPage() {
               fieldName="team1High"
               value={formData.team1High}
               locked={locks.team1High}
+              rtnAutoFilled={rtnAutoFilled.team1High}
               onChange={handleFieldChange}
               onToggleLock={toggleLock}
             />
@@ -204,6 +245,7 @@ export default function ControllerPage() {
               fieldName="team1Con"
               value={formData.team1Con}
               locked={locks.team1Con}
+              rtnAutoFilled={rtnAutoFilled.team1Con}
               onChange={handleFieldChange}
               onToggleLock={toggleLock}
             />
@@ -237,6 +279,7 @@ export default function ControllerPage() {
               fieldName="team2Ave"
               value={formData.team2Ave}
               locked={locks.team2Ave}
+              rtnAutoFilled={rtnAutoFilled.team2Ave}
               onChange={handleFieldChange}
               onToggleLock={toggleLock}
             />
@@ -245,6 +288,7 @@ export default function ControllerPage() {
               fieldName="team2High"
               value={formData.team2High}
               locked={locks.team2High}
+              rtnAutoFilled={rtnAutoFilled.team2High}
               onChange={handleFieldChange}
               onToggleLock={toggleLock}
             />
@@ -253,6 +297,7 @@ export default function ControllerPage() {
               fieldName="team2Con"
               value={formData.team2Con}
               locked={locks.team2Con}
+              rtnAutoFilled={rtnAutoFilled.team2Con}
               onChange={handleFieldChange}
               onToggleLock={toggleLock}
             />
@@ -406,13 +451,14 @@ function LockIcon({ locked, onClick }) {
   );
 }
 
-function LockableInput({ label, fieldName, value, locked, onChange, onToggleLock, placeholder }) {
+function LockableInput({ label, fieldName, value, locked, rtnAutoFilled, onChange, onToggleLock, placeholder }) {
   return (
     <div className="mb-3">
       <div className="flex items-center mb-1">
         <label className="block text-xs text-zinc-500">{label}</label>
         <LockIcon locked={locked} onClick={() => onToggleLock(fieldName)} />
         {locked && <span className="ml-1 text-[9px] text-amber-400/70">Manual</span>}
+        {!locked && rtnAutoFilled && <span className="ml-1 px-1 py-px rounded text-[8px] font-medium bg-blue-500/20 text-blue-400 border border-blue-500/30">RTN</span>}
       </div>
       <input
         type="text"
@@ -420,7 +466,7 @@ function LockableInput({ label, fieldName, value, locked, onChange, onToggleLock
         onChange={(e) => onChange(fieldName, e.target.value)}
         placeholder={placeholder}
         className={`w-full px-2.5 py-2 bg-zinc-800 border rounded-md text-white text-sm focus:outline-none focus:border-blue-500 ${
-          locked ? 'border-amber-500/30' : 'border-zinc-700'
+          locked ? 'border-amber-500/30' : rtnAutoFilled ? 'border-blue-500/20' : 'border-zinc-700'
         }`}
       />
     </div>
