@@ -378,6 +378,42 @@ export async function checkVmStatus(vmAddress, timeout = 5000, compId = null) {
 }
 
 /**
+ * Build coach config updates, respecting manual override locks.
+ * Reads _locks from Firebase and skips any team{N}Coaches field that is locked.
+ * @param {string} compId - Competition ID
+ * @param {Object} teamData - Enriched team data from enrichTeamsWithRTN
+ * @returns {Promise<Object>} Config updates to apply (only unlocked coach fields)
+ */
+async function buildCoachUpdates(compId, teamData) {
+  const configUpdates = {};
+
+  // Read existing locks
+  let locks = {};
+  try {
+    const locksRef = ref(db, `competitions/${compId}/config/_locks`);
+    const locksSnap = await get(locksRef);
+    locks = locksSnap.val() || {};
+  } catch {
+    // If locks can't be read, proceed without lock checking
+  }
+
+  for (const teamKey of Object.keys(teamData)) {
+    const lockField = `${teamKey}Coaches`;
+    if (locks[lockField]) {
+      console.log(`[buildCoachUpdates] Skipping ${lockField} — manually locked`);
+      continue;
+    }
+
+    const coaches = teamData[teamKey]?.coaches;
+    if (coaches && Array.isArray(coaches) && coaches.length > 0) {
+      configUpdates[lockField] = coaches.map(c => c.fullName).join('\n');
+    }
+  }
+
+  return configUpdates;
+}
+
+/**
  * Fire-and-forget: trigger RTN stats ingestion on the coordinator server.
  * Creates a temporary socket connection, emits ingestRtnStats, then disconnects.
  * Non-blocking — the competition is usable immediately while stats fetch in background.
@@ -452,16 +488,8 @@ export function useCompetitions() {
         if (Object.keys(teamData).length > 0) {
           await set(ref(db, `competitions/${compId}/teamData`), teamData);
 
-          // Also sync coaches to config as newline-separated strings for graphics
-          const configUpdates = {};
-          for (const teamKey of Object.keys(teamData)) {
-            const coaches = teamData[teamKey]?.coaches;
-            if (coaches && Array.isArray(coaches) && coaches.length > 0) {
-              const coachesString = coaches.map(c => c.fullName).join('\n');
-              configUpdates[`${teamKey}Coaches`] = coachesString;
-            }
-          }
-
+          // Sync coaches to config (respecting manual override locks)
+          const configUpdates = await buildCoachUpdates(compId, teamData);
           if (Object.keys(configUpdates).length > 0) {
             await update(ref(db, `competitions/${compId}/config`), configUpdates);
           }
@@ -489,16 +517,8 @@ export function useCompetitions() {
         if (Object.keys(teamData).length > 0) {
           await set(ref(db, `competitions/${compId}/teamData`), teamData);
 
-          // Also sync coaches to config as newline-separated strings for graphics
-          const configUpdates = {};
-          for (const teamKey of Object.keys(teamData)) {
-            const coaches = teamData[teamKey]?.coaches;
-            if (coaches && Array.isArray(coaches) && coaches.length > 0) {
-              const coachesString = coaches.map(c => c.fullName).join('\n');
-              configUpdates[`${teamKey}Coaches`] = coachesString;
-            }
-          }
-
+          // Sync coaches to config (respecting manual override locks)
+          const configUpdates = await buildCoachUpdates(compId, teamData);
           if (Object.keys(configUpdates).length > 0) {
             await update(ref(db, `competitions/${compId}/config`), configUpdates);
           }
@@ -538,16 +558,8 @@ export function useCompetitions() {
           console.error('[refreshTeamData] Failed to save teamData:', err);
         }
 
-        // Sync coaches to config for graphics
-        const configUpdates = {};
-        for (const teamKey of Object.keys(teamData)) {
-          const coaches = teamData[teamKey]?.coaches;
-          if (coaches && Array.isArray(coaches) && coaches.length > 0) {
-            configUpdates[`${teamKey}Coaches`] = coaches.map(c => c.fullName).join('\n');
-          }
-          // Note: Stats (AVE, HIGH) are entered manually - RTN data format needs investigation
-        }
-
+        // Sync coaches to config (respecting manual override locks)
+        const configUpdates = await buildCoachUpdates(compId, teamData);
         if (Object.keys(configUpdates).length > 0) {
           await update(ref(db, `competitions/${compId}/config`), configUpdates);
         }
