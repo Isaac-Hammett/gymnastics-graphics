@@ -1114,6 +1114,185 @@ async function snapshotStatsForCompetition(compId) {
 }
 
 // ============================================================================
+// League Rankings (Task 15)
+// ============================================================================
+
+/**
+ * Normalize team rankings from the results endpoint.
+ * Raw shape: { data: [...], schema: {...} }
+ * Each entry: { tid, rank, team_name/name, ave, high, rqs, conference, region, division, ... }
+ *
+ * @param {Object} raw - Raw RTN results response
+ * @returns {Array|null} Array of { rank, name, tid, ave, high, rqs, conference, region, division }
+ */
+function normalizeTeamRankings(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+
+  const results = raw.data || raw;
+  if (!Array.isArray(results) || results.length === 0) return null;
+
+  return results.map(team => ({
+    rank: team.rank ? String(team.rank) : null,
+    name: team.team_name || team.name || team.team || '',
+    tid: team.tid ? Number(team.tid) : (team.id ? Number(team.id) : null),
+    ave: team.ave ? String(team.ave) : null,
+    high: team.high ? String(team.high) : null,
+    rqs: team.rqs != null ? String(team.rqs) : null,
+    conference: team.conference || team.conf || null,
+    region: team.region || null,
+    division: team.division || team.div || null,
+  }));
+}
+
+/**
+ * Normalize individual rankings for a single event.
+ * Raw shape: { data: [...], schema: {...} }
+ * Each entry: { gid, fname, lname, team_name, ave, high, rqs, conference, rank, tid, ... }
+ *
+ * @param {Object} raw - Raw RTN individual results response
+ * @returns {Array|null} Array of { rank, firstName, lastName, fullName, rtnId, team, teamId, ave, high, rqs, conference }
+ */
+function normalizeIndividualRankings(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+
+  const results = raw.data || raw;
+  if (!Array.isArray(results) || results.length === 0) return null;
+
+  return results.map(athlete => ({
+    rank: athlete.rank ? String(athlete.rank) : null,
+    firstName: (athlete.fname || '').trim(),
+    lastName: (athlete.lname || '').trim(),
+    fullName: `${(athlete.fname || '').trim()} ${(athlete.lname || '').trim()}`.trim(),
+    rtnId: toRtnIdString(athlete.gid || athlete.id),
+    team: athlete.team_name || athlete.team || '',
+    teamId: athlete.tid ? Number(athlete.tid) : null,
+    ave: athlete.ave ? String(athlete.ave) : null,
+    high: athlete.high ? String(athlete.high) : null,
+    rqs: athlete.rqs != null ? String(athlete.rqs) : null,
+    conference: athlete.conference || athlete.conf || null,
+  }));
+}
+
+/**
+ * Fetch league rankings (team + individual) for a gender/year/week.
+ * Fetches team rankings and individual rankings for every event, normalizes,
+ * and writes to Firebase at `rtnCache/rankings/{gender}-{year}-{week}/`.
+ *
+ * Uses rate-limited fetch for all calls.
+ *
+ * @param {string} gender - "mens" or "womens"
+ * @param {number} [year] - Season year (defaults to current year)
+ * @param {number} [week] - RTN week number (defaults to current week)
+ * @returns {Promise<{ success: boolean, gender: string, week: number, teamCount: number, individualEvents: number, error?: string }>}
+ */
+async function fetchLeagueRankings(gender, year, week) {
+  const db = productionConfigService.getDb();
+  if (!db) {
+    return { success: false, gender, week: week || 0, teamCount: 0, individualEvents: 0, error: 'Firebase not available' };
+  }
+
+  const resolvedYear = year || new Date().getFullYear();
+  let resolvedWeek = week;
+
+  // Determine current week if not provided
+  if (!resolvedWeek) {
+    try {
+      resolvedWeek = await getCurrentWeek(gender, resolvedYear);
+    } catch (err) {
+      console.error(`[rtnStatsService] Failed to get current week for rankings: ${err.message}`);
+      return { success: false, gender, week: 0, teamCount: 0, individualEvents: 0, error: `Failed to determine current week: ${err.message}` };
+    }
+  }
+
+  const cacheKey = `${gender}-${resolvedYear}-${resolvedWeek}`;
+  console.log(`[rtnStatsService] Fetching league rankings: ${cacheKey}`);
+
+  // Check existing cache TTL
+  try {
+    const cacheSnapshot = await db.ref(`rtnCache/rankings/${cacheKey}/timestamp`).once('value');
+    const cachedTimestamp = cacheSnapshot.val();
+    if (cachedTimestamp && (Date.now() - cachedTimestamp) < RANKINGS_CACHE_TTL) {
+      console.log(`[rtnStatsService] Rankings cache still fresh for ${cacheKey}, skipping fetch`);
+      // Read existing data to return counts
+      const existingSnapshot = await db.ref(`rtnCache/rankings/${cacheKey}`).once('value');
+      const existing = existingSnapshot.val();
+      const teamCount = existing?.team ? (Array.isArray(existing.team) ? existing.team.length : Object.keys(existing.team).length) : 0;
+      const individualEvents = existing?.individual ? Object.keys(existing.individual).length : 0;
+      return { success: true, gender, week: resolvedWeek, teamCount, individualEvents, cached: true };
+    }
+  } catch (err) {
+    // Cache check failed, proceed with fetch
+  }
+
+  // Build URLs: team rankings + individual rankings per event
+  const g = getGenderPath(gender);
+  const type = getTeamRankingType(gender);
+  const individualEvents = getIndividualEventNumbers(gender);
+
+  const urls = [
+    { url: `${RTN_BASE}/${g}/results/${resolvedYear}/${resolvedWeek}/0/${type}`, label: 'team' },
+  ];
+
+  // Add individual ranking URLs for each event
+  for (const [eventNum, eventCode] of Object.entries(individualEvents)) {
+    urls.push({
+      url: `${RTN_BASE}/${g}/results/${resolvedYear}/${resolvedWeek}/1/${eventNum}`,
+      label: `individual-${eventCode}`,
+    });
+  }
+
+  console.log(`[rtnStatsService] Fetching ${urls.length} ranking endpoints for ${cacheKey}`);
+
+  const fetchResults = await rateLimitedFetch(urls);
+
+  // Normalize team rankings
+  const teamResult = fetchResults.find(r => r.label === 'team');
+  let teamRankings = null;
+  if (teamResult && teamResult.status === 'ok' && teamResult.data) {
+    teamRankings = normalizeTeamRankings(teamResult.data);
+  }
+
+  // Normalize individual rankings per event
+  const individualRankings = {};
+  let individualEventCount = 0;
+  for (const [eventNum, eventCode] of Object.entries(individualEvents)) {
+    const result = fetchResults.find(r => r.label === `individual-${eventCode}`);
+    if (result && result.status === 'ok' && result.data) {
+      const normalized = normalizeIndividualRankings(result.data);
+      if (normalized) {
+        individualRankings[eventCode] = normalized;
+        individualEventCount++;
+      }
+    }
+  }
+
+  // Build cache data
+  const cacheData = {
+    timestamp: Date.now(),
+    fetchedAt: new Date().toISOString(),
+    team: teamRankings || [],
+    individual: individualRankings,
+  };
+
+  // Write to Firebase
+  try {
+    await db.ref(`rtnCache/rankings/${cacheKey}`).set(cacheData);
+    console.log(`[rtnStatsService] Wrote rankings cache for ${cacheKey}: ${teamRankings?.length || 0} teams, ${individualEventCount} events`);
+  } catch (err) {
+    console.error(`[rtnStatsService] Failed to write rankings cache for ${cacheKey}:`, err.message);
+    return { success: false, gender, week: resolvedWeek, teamCount: 0, individualEvents: 0, error: `Failed to write cache: ${err.message}` };
+  }
+
+  return {
+    success: true,
+    gender,
+    week: resolvedWeek,
+    teamCount: teamRankings?.length || 0,
+    individualEvents: individualEventCount,
+  };
+}
+
+// ============================================================================
 // Exports
 // ============================================================================
 
@@ -1190,4 +1369,9 @@ export {
 
   // Show-start snapshot (Task 7)
   snapshotStatsForCompetition,
+
+  // League Rankings (Task 15)
+  normalizeTeamRankings,
+  normalizeIndividualRankings,
+  fetchLeagueRankings,
 };
