@@ -51,7 +51,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Phase | Name | Priority | Status | Tasks |
 |-------|------|----------|--------|-------|
 | 1 | RTN ID Capture & Shared Stats Store | P0 | COMPLETE | 1-7 |
-| 2 | Client Integration & Config Sync | P0 | IN PROGRESS | 8-14, 25 |
+| 2 | Client Integration & Config Sync | P0 | COMPLETE | 8-14, 25 |
 | 3 | League Rankings | P1 | NOT STARTED | 15-17 |
 | 4 | AI Enhancement | P1 | NOT STARTED | 18-21, 26 |
 | 5 | Playwright Integration Tests | P1 | NOT STARTED | 22-24 |
@@ -72,7 +72,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 6 | Implement `syncStatsToConfig(compId)` with config lock support | COMPLETE | Added `syncStatsToConfig(compId)` to `server/lib/rtnStatsService.js`. Reads competition config and `_locks` (defaults to `{}` if null). For each team (1-6), reads `teamsDatabase/stats/{teamKey}/teamRanking`, writes `team{N}Ave` (ranking average), `team{N}High` (ranking high), `team{N}Con` (formatted as `#rank` string, e.g., "#1", "#3(t)") to config. Skips fields where `locks[fieldName] === true`. Returns `{ success, synced, skipped }` with per-team details. Handles multi-team meets (up to 6 teams). Coach lock support ready for Task 14 (coach sync happens in existing `enrichTeamsWithRTN()`). Build verified, module import verified. |
 | Task 7 | Wire socket events in `server/index.js` and add show-start snapshot | COMPLETE | Added `snapshotStatsForCompetition(compId)` to `rtnStatsService.js`: reads competition config, iterates teams, copies `teamsDatabase/stats/{teamKey}/` to `competitions/{compId}/rtnStats/team{N}/` with `snapshotTakenAt` timestamp. Added import of RTN stats functions in `server/index.js`. Added `ingestRtnStats` socket handler: calls `ingestCompetitionStats()` then `syncStatsToConfig()`, emits `rtnStatsResult` to competition room. Added `refreshRtnStats` socket handler: bypasses staleness check, fetches directly via `ingestTeamStats()` for each team (or single team if `teamKey` provided), then syncs config, emits `rtnStatsResult`. Wired `snapshotStatsForCompetition()` into `engine.on('showStarted')` after AI Context Service start and before run record creation. All errors handled gracefully with try/catch. Build verified, module import verified. |
 
-### Phase 2: Client Integration & Config Sync (P0) - IN PROGRESS (7/8)
+### Phase 2: Client Integration & Config Sync (P0) - COMPLETE (8/8)
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
@@ -105,7 +105,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 
 | Task | Description | Phase | Status | Notes |
 |------|-------------|-------|--------|-------|
-| Task 25 | Add stats detail panel to DashboardPage for per-team and per-athlete stats browsing | Phase 2 | NOT STARTED | **Added by audit G6:** PRD Stories 2 and 3 require producers to browse per-team stats (consistency trends, MVP standings, top scores, lineup frequency) and per-athlete stats (averages, highs, lineup rate). No existing task creates this UI. Add a collapsible/tabbed stats detail panel to DashboardPage (or a linked detail view) showing: (1) per-team: consistency chart/trend, MVP standings table, top scores per event, lineup frequency; (2) per-athlete: event averages, event highs, lineup rate, MVP total. Data comes from `useRtnStats` hook (Task 8). Depends on Tasks 8-10 being complete. Athletes sortable/filterable by event. |
+| Task 25 | Add stats detail panel to DashboardPage for per-team and per-athlete stats browsing | Phase 2 | COMPLETE | Created `show-controller/src/components/StatsDetailPanel.jsx` — collapsible panel added to competition cards on both HomePage and DashboardPage. Reads directly from Firebase `teamsDatabase/stats/{teamKey}/` (no ShowContext dependency, same pattern as StatsStatusBadge). Features: team selector tabs for multi-team meets, 4 content tabs (Overview, Athletes, Trends, Lineup). Overview shows team ranking, MVP top 5, top scores with theoretical max. Athletes tab shows per-athlete averages, highs, lineup rate, MVP total with event filter buttons and sortable columns. Trends tab shows mini bar charts per event with trend detection (up/down/stable). Lineup tab shows frequency bars with per-meet dots. Handles empty state gracefully. Uses `toArray()` helper for Firebase object-to-array conversion. Build verified. |
 | Task 26 | Enhance aiSuggestionService.js with RTN stats confidence factors and segment suggestions | Phase 4 | NOT STARTED | **Added by audit G7:** Technical Plan Section 7.2 describes enhancements to `aiSuggestionService.js` but no implementation task covered them. Add confidence scoring factors: `HAS_RTN_STATS` (+0.15 if rtnStats loaded), `HAS_INDIVIDUAL_STATS` (+0.1 if individual averages/highs available), `HAS_RANKINGS` (+0.05 if league rankings available). Add new segment suggestions: "Athlete Spotlight: [top MVP contributor]" (high confidence when MVP data available), "Event Preview: [event where teams are closest]" (uses individual averages for matchup analysis), "Senior Feature: [senior with highest contribution]" (combines MVP + roster year data). Read from `teamsDatabase/stats/{teamKey}/` for pre-show planning suggestions. |
 
 ### Phase 5: Playwright Integration Tests (P1) - NOT STARTED (0/3)

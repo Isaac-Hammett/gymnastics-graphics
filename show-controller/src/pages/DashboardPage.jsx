@@ -7,6 +7,7 @@ import { useHeadCoach } from '../hooks/useRoadToNationals';
 import { getGenderFromCompType, buildTeamKey } from '../lib/competitionUtils';
 import { ExclamationTriangleIcon, CheckCircleIcon, UserIcon } from '@heroicons/react/24/solid';
 import StatsStatusBadge from '../components/StatsStatusBadge';
+import StatsDetailPanel from '../components/StatsDetailPanel';
 
 export default function DashboardPage() {
   const { competitions, loading, createCompetition, updateCompetition, deleteCompetition, duplicateCompetition, refreshTeamData } = useCompetitions();
@@ -364,6 +365,7 @@ export default function DashboardPage() {
                       </div>
                       <div className="mt-1.5">
                         <StatsStatusBadge compId={compId} config={config} />
+                        <StatsDetailPanel compId={compId} config={config} />
                       </div>
                     </div>
                     <span className={`px-3 py-1 rounded text-xs font-semibold ${
