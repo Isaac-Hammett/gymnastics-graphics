@@ -310,6 +310,10 @@ teamsDatabase/headshots/mackenzie-estep/
   updatedAt: "..."
 ```
 
+> **Audit note (C3/C12):** `enrichTeamsWithRTN()` already stores team `rtnId` and athlete `roster[].id` in `competitions/{compId}/teamData/team{N}/`. Once the B-CRIT bug fix changes `dashboard.id` → `dashboard.info.team_id`, this becomes a viable secondary source for RTN IDs. However, `teamData` is per-competition (ephemeral), while `teamsDatabase/teams/{teamKey}/rtnId` is the canonical persistent location. Task 1 should write to `teamsDatabase` and optionally also fix `teamData`.
+
+> **Audit note (C7):** An existing `useRoadToNationals.js` hook handles client-side RTN dashboard fetching. The new `useRtnStats.js` hook serves a different purpose (consuming server-side normalized stats from Firebase). Implementation should document this distinction to avoid developer confusion.
+
 ---
 
 ## 3. RTN API Normalization

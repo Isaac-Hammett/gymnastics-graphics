@@ -66,3 +66,31 @@
 
 ---
 
+## Category C: Existing Code Assumptions — 2026-02-01
+
+**Result:** 12 PASS / 0 FAIL / 3 INFO
+
+| # | Check | Result | Finding |
+|---|-------|--------|---------|
+| C1 | enrichTeamsWithRTN syncs only coaches to config | PASS | Confirmed — only `team{N}Coaches` synced to config. Ave/High/Con untouched. |
+| C2 | Ave/High/Con manually entered | PASS | Confirmed — explicit code comment at useCompetitions.js:453 says so. |
+| C3 | Media Manager doesn't capture rtnId | PASS | No rtnId in MediaManagerPage. But enrichTeamsWithRTN stores it in teamData (currently null due to B-CRIT bug). |
+| C4 | aiContextService doesn't use RTN stats | PASS | `_loadCompetitionData()` loads config + teamData only, no RTN stats paths. |
+| C5 | aiSuggestionService reads team{N}Ave/High | PASS | `analyzeTeamStats()` reads `team{slot}Ave` and `team{slot}High` from config. |
+| C6 | rtnStatsService.js needs creation | PASS | File does not exist in server/lib/. |
+| C7 | useRtnStats.js needs creation | PASS | File does not exist. Existing `useRoadToNationals.js` serves different purpose (client-side dashboard fetching). |
+| C8 | useLeagueRankings.js needs creation | PASS | File does not exist. |
+| C9 | showStarted handler exists | PASS | At server/index.js:444 inside per-competition engine setup. Good integration point after AI Context Service start (line 459). |
+| C10 | Room-based broadcasting | PASS | Standard pattern: `io.to(\`competition:${compId}\`).emit()`. Also `socketIo.to(roomName).emit()` where roomName = same. |
+| C11 | getDb() pattern in productionConfigService | PASS | Uses `firebase-admin`, singleton init, exports `getDb()`. New service should import from this. |
+| C12 | enrichTeamsWithRTN writes teamData, not config | PASS | Writes to `competitions/{compId}/teamData`. Only syncs `team{N}Coaches` to config. teamData includes stats.average/high/rqs and rtnId (currently null). |
+
+**Plan docs updated:**
+- `PLAN-RTN-Stats-Integration-2026-02-01.md` Section 2.5: Added audit notes (C3/C12) about teamData as secondary RTN ID source, and (C7) about useRoadToNationals.js vs useRtnStats.js distinction
+- `PLAN-RTN-Stats-Integration-Implementation.md` Task 7: Added specific line numbers for showStarted handler integration point (server/index.js:444, add after line 459)
+
+**Tests written:**
+- `tests/audit-C-existing-code.md` — full report with code references for all 12 checks
+
+---
+
