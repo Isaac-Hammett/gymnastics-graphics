@@ -1,7 +1,7 @@
 # PLAN-Rundown-System-Implementation
 
 **PRD:** [PRD-Rundown-System-2026-01-23.md](./PRD-Rundown-System-2026-01-23.md)
-**Status:** CODE COMPLETE — validation gaps in Phases C, D (see notes)
+**Status:** CODE COMPLETE — significant validation gaps (see audit notes on Phases A, C, D, E, F, G, J)
 **Created:** 2026-01-23
 **Last Updated:** 2026-02-01
 
@@ -49,23 +49,34 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 
 | Phase | Name | Priority | Status | Tasks |
 |-------|------|----------|--------|-------|
-| A | Connect Editor to Engine | P0 | COMPLETE | 1-16 |
+| A | Connect Editor to Engine | P0 | COMPLETE (silent failure risks — see notes) | 1-16 |
 | H | Rehearsal Mode | P1 | COMPLETE | 17-21 |
-| B | Talent View | P1 | COMPLETE | 22-27 |
+| B | Talent View | P1 | COMPLETE (BUG-012: wrong header name) | 22-27 |
 | I | Live Rundown Sync | P2 | COMPLETE | 28-37 |
-| J | Segment Timing Analytics | P2 | COMPLETE | 38-42 |
+| J | Segment Timing Analytics | P2 | **BROKEN** (BUG-013: data structure mismatch) | 38-42 |
 | D | AI Suggestions - Planning | P2 | CODE COMPLETE (not validated — missing data) | 43-48 |
-| E | Script & Talent Flow | P2 | COMPLETE | 49-54 |
+| E | Script & Talent Flow | P2 | DEMO ONLY (hardcoded talent roster, no markdown) | 49-54 |
 | C | AI Context - Live Execution | P3 | CODE COMPLETE (not validated — missing data) | 55-62 |
-| F | Audio Cue Integration | P3 | COMPLETE | 63-66 |
-| G | Production Tracking | P3 | COMPLETE | 67-71 |
+| F | Audio Cue Integration | P3 | PARTIAL (in/out points ignored, no file picker) | 63-66 |
+| G | Production Tracking | P3 | PARTIAL (no sponsor assignment UI, hardcoded equipment) | 67-71 |
 | K | Timezone Display | P2 | COMPLETE | 72-88 (17/17) |
 
 ---
 
 ## Task Summary by Phase
 
-### Phase A: Connect Editor to Engine (P0) - COMPLETE (16/16)
+### Phase A: Connect Editor to Engine (P0) - COMPLETE (16/16, silent failure risks)
+
+**⚠️ Audit Findings (2026-02-01):** Core execution loop works (once BUG-011 is fixed). However, peripheral failures are invisible to the producer:
+
+| Risk | What Happens | User Sees |
+|------|-------------|-----------|
+| OBS connection drops mid-show | `getConnection()` returns null, scene switch skipped | Nothing — show continues silently without OBS switching |
+| Firebase write slow/fails | `_triggerGraphic()` hangs on await | Segment activation delays with no feedback |
+| Audio system fails | `_playAudioCue()` catches error, emits event | No audio, no visible warning |
+| Load rundown fails | Socket error emitted to requesting client | Start button stays disabled, no error toast shown |
+
+**Recommendation:** Surface OBS/Firebase/audio errors as visible warnings in Producer View.
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
@@ -122,15 +133,27 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 36 | Handle reordered past segments | COMPLETE | Added filtering in `subscribeToRundownChanges()` to ignore reordered/modified segments where both old and new positions are before current segment; logs filtered segments for debugging |
 | Task 37 | Handle ID conflicts | COMPLETE | Added `detectDuplicateIds()` and `deduplicateSegmentsById()` functions to segmentMapper.js; integrated duplicate ID detection into `loadRundown` handler and `subscribeToRundownChanges()` listener; added logging when segments move positions via ID-based matching in `updateConfig()` |
 
-### Phase J: Segment Timing Analytics (P2) - COMPLETE (5/5)
+### Phase J: Segment Timing Analytics (P2) - **BROKEN** (5/5 tasks coded, 0/5 functional)
+
+**BUG-013 (2026-02-01): Two critical bugs prevent this feature from working:**
+
+1. **Data structure mismatch** — Server writes timing data as `segmentTimings` (object with Firebase push keys). Frontend expects `segments` (array). Every `run.segments.forEach()` in `RundownEditorPage.jsx` (lines 645, 684, 10367) silently gets nothing because `run.segments` is `undefined`.
+
+2. **Status filter excludes all data** — `loadTimingAnalytics()` at line 2067 filters for `status === 'completed'`, but all runs in Firebase have `status: "running"` because the server never updates the status field on show completion.
+
+**Result:** TimingAnalyticsModal always shows "No Analytics Data". Historical averages on segment rows are blank. AI timing predictions have no data. The feature is silently broken — timing data IS being written to Firebase (verified: 3+ competitions have run records) but the frontend cannot read it.
+
+**To fix:**
+- Transform `segmentTimings` object to `segments` array in `loadTimingAnalytics()`
+- Either change the status filter to accept `"running"` or fix the server to set `status: "completed"` on show stop
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
 | Task 38 | Log actual segment durations during show | COMPLETE | Real-time segment timing logged to Firebase on segmentCompleted; run record created on showStarted with status tracking; final analytics merged on showStopped |
-| Task 39 | Store timing data in Firebase post-show | COMPLETE | Fixed show completion flow: added `_completeShow()` method to TimesheetEngine that emits `showComplete` event when last segment auto-advances; this ensures `showStopped` is also emitted for analytics saving. Added `timesheetShowComplete` socket event and client handler. Now timing data is saved whether show ends naturally or via manual stop. |
-| Task 40 | Create timing analytics dashboard | COMPLETE | Added TimingAnalyticsModal to RundownEditorPage with: summary stats (shows/rehearsals count, avg variance), segment averages table (planned vs actual across all runs), and expandable run history showing per-segment timing details. Loads data from Firebase `competitions/{compId}/production/rundown/analytics`. Button added to toolbar with ChartBarIcon. |
-| Task 41 | Show historical average in Rundown Editor | COMPLETE | Added call to `loadTimingAnalytics()` in component mount useEffect so historical averages are available when rendering segment rows. UI already existed in SegmentRow component (both compact and expanded views) showing ~Xs indicator next to duration field. Color-coded: amber if actual runs longer than planned, green if shorter, gray if matches. |
-| Task 42 | AI-powered timing predictions based on history | COMPLETE | Added `aiTimingPredictions` computed value in RundownEditorPage that analyzes historical timing data by segment name similarity and type averages. Shows purple sparkle indicator with confidence level (high/medium/low) for segments without direct historical data. Click-to-apply feature in both inline view and detail panel. |
+| Task 39 | Store timing data in Firebase post-show | COMPLETE | Fixed show completion flow: added `_completeShow()` method to TimesheetEngine that emits `showComplete` event when last segment auto-advances; this ensures `showStopped` is also emitted for analytics saving. Added `timesheetShowComplete` socket event and client handler. Now timing data is saved whether show ends naturally or via manual stop. **NOTE: status field never transitions to "completed" — see BUG-013.** |
+| Task 40 | Create timing analytics dashboard | COMPLETE | Added TimingAnalyticsModal to RundownEditorPage with: summary stats (shows/rehearsals count, avg variance), segment averages table (planned vs actual across all runs), and expandable run history showing per-segment timing details. Loads data from Firebase `competitions/{compId}/production/rundown/analytics`. Button added to toolbar with ChartBarIcon. **NOTE: Always shows empty — see BUG-013.** |
+| Task 41 | Show historical average in Rundown Editor | COMPLETE | Added call to `loadTimingAnalytics()` in component mount useEffect so historical averages are available when rendering segment rows. UI already existed in SegmentRow component (both compact and expanded views) showing ~Xs indicator next to duration field. Color-coded: amber if actual runs longer than planned, green if shorter, gray if matches. **NOTE: Never shows data — see BUG-013.** |
+| Task 42 | AI-powered timing predictions based on history | COMPLETE | Added `aiTimingPredictions` computed value in RundownEditorPage that analyzes historical timing data by segment name similarity and type averages. Shows purple sparkle indicator with confidence level (high/medium/low) for segments without direct historical data. Click-to-apply feature in both inline view and detail panel. **NOTE: No predictions generated — see BUG-013.** |
 
 ### Phase D: AI Suggestions - Planning (P2) - CODE COMPLETE, NOT VALIDATED (6/6 tasks, 0/6 validated)
 
@@ -156,16 +179,27 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 47 | Add `getAISuggestions` API endpoint | COMPLETE | Added `getAISuggestions` and `getAISuggestionCount` socket handlers in server/index.js; handlers emit `aiSuggestionsResult` and `aiSuggestionCountResult` events; accepts `compId` and `options` parameters; logs suggestion generation |
 | Task 48 | Wire Rundown Editor to display suggestions | COMPLETE | Added `getAISuggestions` function to ShowContext with promise-based API; added socket listener for `aiSuggestionsResult`; updated RundownEditorPage to use server-side suggestions with fallback to client-side; added loading state, error handling, context display, and refresh button; transformed server suggestions to UI format; filtered by dismissed and existing segments |
 
-### Phase E: Script & Talent Flow (P2) - COMPLETE (6/6)
+### Phase E: Script & Talent Flow (P2) - DEMO ONLY (6/6 tasks coded, hardcoded data)
+
+**⚠️ Audit Findings (2026-02-01):** The data pipeline works (producer → Firebase → Talent View), but the feature uses hardcoded demo data and has UX gaps:
+
+| Issue | Severity | Detail |
+|-------|----------|--------|
+| **Talent roster is hardcoded** | BLOCKER for production | `DUMMY_TALENT` in RundownEditorPage.jsx (5 fake people: "John Smith", etc.) and duplicated as `TALENT_ROSTER` in TalentView.jsx. Not fetched from Firebase. Not configurable. |
+| **Talent identity is ephemeral** | MAJOR | Commentator identified by query param only (`?talentId=talent-1`). Page refresh loses identity. No session persistence. |
+| **Duplicate roster definitions** | TECH DEBT | `DUMMY_TALENT` (RundownEditorPage) and `TALENT_ROSTER` (TalentView) are separate copies — can drift out of sync. |
+| **Script markdown not rendered** | MINOR | UI says it supports `**bold**`, `*italic*`, `- bullet` but TalentView renders plain text only (`whitespace-pre-wrap`). |
+
+**To make production-ready:** Move talent roster to Firebase (`competitions/{compId}/production/talent`), fetch dynamically in both views, add `localStorage` persistence for talentId.
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
 | Task 49 | Add script field to segment data model | COMPLETE | Added `script: ''` to segment creation in 5 places in RundownEditorPage.jsx; added script field to segmentMapper.js for both editor→engine and engine→editor mappings; added script to compareSegments fieldsToCompare |
 | Task 50 | Pipe script field through Timesheet Engine | COMPLETE | Script field already flows through engine via generic segment handling; TimesheetEngine spreads full segment objects in `getState()` (lines 1061-1063) and `segmentActivated` events (line 594); no explicit handling needed since engine preserves all segment fields; script accessible via `currentSegment.script` in client hooks |
-| Task 51 | Display script in Talent View (teleprompter-style) | COMPLETE | Added teleprompter-style script panel in TalentView.jsx between CurrentSegment and NextSegment; uses large text (text-xl), blue accent border, DocumentTextIcon header; only shows when currentSegment.script has content; uses whitespace-pre-wrap for line breaks |
+| Task 51 | Display script in Talent View (teleprompter-style) | COMPLETE | Added teleprompter-style script panel in TalentView.jsx between CurrentSegment and NextSegment; uses large text (text-xl), blue accent border, DocumentTextIcon header; only shows when currentSegment.script has content; uses whitespace-pre-wrap for line breaks. **NOTE: Markdown syntax not rendered — displays as plain text.** |
 | Task 52 | Add talent assignment to segment data model | COMPLETE | Added `talent: []` to segment creation in 3 places in RundownEditorPage.jsx; added talent field to segmentMapper.js for both editor→engine and engine→editor mappings; added talent to compareSegments fieldsToCompare |
-| Task 53 | Create talent schedule view | COMPLETE | Already implemented as TalentScheduleModal in RundownEditorPage.jsx (Phase 12: Task 94); includes talent-per-segment view, conflict detection, and export functionality |
-| Task 54 | Show "you're on camera" indicator in Talent View | COMPLETE | Added talentId query param support (e.g., ?talentId=talent-1); prominent red "ON CAMERA" banner when talent is assigned to current segment; identity banner shows when viewing but not on camera; uses TALENT_ROSTER for talent lookup |
+| Task 53 | Create talent schedule view | COMPLETE | Already implemented as TalentScheduleModal in RundownEditorPage.jsx (Phase 12: Task 94); includes talent-per-segment view, conflict detection, and export functionality. **NOTE: Uses hardcoded DUMMY_TALENT roster.** |
+| Task 54 | Show "you're on camera" indicator in Talent View | COMPLETE | Added talentId query param support (e.g., ?talentId=talent-1); prominent red "ON CAMERA" banner when talent is assigned to current segment; identity banner shows when viewing but not on camera. **NOTE: Uses hardcoded TALENT_ROSTER; talentId not persisted across page refresh.** |
 
 ### Phase C: AI Context - Live Execution (P3) - CODE COMPLETE, NOT VALIDATED (8/8 tasks, 0/8 validated)
 
@@ -182,24 +216,43 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 61 | Display AI context in Talent View | COMPLETE | Added collapsible AI Talking Points panel in TalentView.jsx with: useAIContext hook integration, priority-colored talking points (critical=red, high=orange, normal=purple), milestones section with trophy icons, refresh button, empty/loading states, expand/collapse toggle with counts |
 | Task 62 | Display AI context in Producer View | COMPLETE | Added collapsible AI Talking Points panel in ProducerView.jsx right column; uses useAIContext hook; shows milestones, priority points, and regular talking points; styled consistently with TalentView but adapted for compact sidebar layout; max-height with scroll for long content; only visible when AI service is running |
 
-### Phase F: Audio Cue Integration (P3) - COMPLETE (4/4)
+### Phase F: Audio Cue Integration (P3) - PARTIAL (4/4 tasks coded, in/out points non-functional)
+
+**⚠️ Audit Findings (2026-02-01):** Core audio playback works (OBS WebSocket commands are real — `SetInputSettings`, `TriggerMediaInputAction`). However:
+
+| Issue | Severity | Detail |
+|-------|----------|--------|
+| **In/out points ignored** | MEDIUM | UI accepts `inPoint` and `outPoint` values, they're stored in Firebase, but `_playAudioCue()` always plays from the start. No seek or trim control. |
+| **No audio file picker** | MINOR | Song name is a free-form text field (file path reference). No preview, no library, no browse dialog. |
+| **Single audio source** | MINOR | Hardcoded to `showConfig.audioConfig?.musicSource?.sourceName` or `"Music Player"`. No support for multiple simultaneous audio tracks. |
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
 | Task 63 | Add audio cue fields to segment data model | COMPLETE | Added audioCue field (songName, inPoint, outPoint) to segment creation in RundownEditorPage.jsx (3 places), added to segmentMapper.js (editor↔engine mapping), added to compareSegments fieldsToCompare |
-| Task 64 | Pipe audio cues through Timesheet Engine | COMPLETE | Added `_playAudioCue()` method to TimesheetEngine that plays audio via OBS media source; handles rehearsal mode skipping; emits `audioCueTriggered` event; wired event to `timesheetAudioCueTriggered` socket broadcast in server/index.js for both legacy and multi-competition engines |
+| Task 64 | Pipe audio cues through Timesheet Engine | COMPLETE | Added `_playAudioCue()` method to TimesheetEngine that plays audio via OBS media source; handles rehearsal mode skipping; emits `audioCueTriggered` event; wired event to `timesheetAudioCueTriggered` socket broadcast in server/index.js for both legacy and multi-competition engines. **NOTE: `inPoint`/`outPoint` values are not used — OBS always plays from start.** |
 | Task 65 | Trigger audio playback on segment start | COMPLETE | Already implemented in Task 64: `_activateSegment()` calls `_playAudioCue(segment)` at line 593 of timesheetEngine.js; socket event wiring in place for both legacy and multi-competition engines |
 | Task 66 | Add audio control to Producer View | COMPLETE | Added audio cue panel to ProducerView.jsx: listens for `timesheetAudioCueTriggered` socket event, tracks active audio cue state, shows song name and source, provides mute/unmute toggle via OBSContext's setMute function, clears audio cue when segment changes, handles rehearsal mode indicator |
 
-### Phase G: Production Tracking (P3) - COMPLETE (5/5)
+### Phase G: Production Tracking (P3) - PARTIAL (5/5 tasks coded, sponsor UI missing, hardcoded equipment)
+
+**⚠️ Audit Findings (2026-02-01):** Equipment assignment works but uses hardcoded data. Sponsor assignment has no UI at all.
+
+| Issue | Severity | Detail |
+|-------|----------|--------|
+| **No sponsor assignment UI** | BLOCKER | Data model supports sponsors, SponsorFulfillmentModal report exists (270 lines), but the segment detail panel has **no UI to assign sponsors to segments**. The only sponsor data comes from hardcoded test segments. |
+| **Equipment list is hardcoded** | MAJOR | `DUMMY_EQUIPMENT` defines 9 items (4 cameras, 3 mics, jib arm, teleprompter). Not in Firebase. Not configurable per venue/competition. |
+| **No equipment configuration** | MAJOR | Producers cannot add/remove/rename equipment. The checkbox UI works, but the list of available equipment is frozen. |
+| **No Firebase persistence for config** | MAJOR | Equipment and sponsor lists are component-local constants. They don't persist across competitions or page refreshes. |
+
+**What does work:** Equipment assignment checkboxes, conflict detection, Equipment Schedule Report modal, Sponsor Fulfillment Report modal (if sponsors existed).
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
-| Task 67 | Add equipment fields to segment data model | COMPLETE | Added equipment field (array of equipment IDs) to segment creation in RundownEditorPage.jsx (4 places), added to segmentMapper.js (editor↔engine mapping), added to compareSegments fieldsToCompare |
+| Task 67 | Add equipment fields to segment data model | COMPLETE | Added equipment field (array of equipment IDs) to segment creation in RundownEditorPage.jsx (4 places), added to segmentMapper.js (editor↔engine mapping), added to compareSegments fieldsToCompare. **NOTE: Equipment IDs reference hardcoded DUMMY_EQUIPMENT list.** |
 | Task 68 | Generate equipment schedule report | COMPLETE | Already implemented as EquipmentScheduleModal in RundownEditorPage.jsx (Phase 12: Task 95); includes equipment usage per segment view, export to text file, grouped by equipment type (cameras, microphones, other) |
 | Task 69 | Detect equipment conflicts | COMPLETE | Added equipmentConflicts detection at component level; conflict count badge on toolbar button (red when conflicts exist); warning icon on segment rows with conflicts; detailed conflict warning in segment detail panel showing overlapping segments |
-| Task 70 | Add sponsor fields to segment data model | COMPLETE | Added sponsor field ({ name, logo, tier } or null) to segment creation in RundownEditorPage.jsx (4 places), added to segmentMapper.js (editor↔engine mapping), added to compareSegments fieldsToCompare |
-| Task 71 | Generate sponsor fulfillment report | COMPLETE | Added SponsorFulfillmentModal with: sponsor listing by tier (presenting/title/official/supporting), segment placements, airtime totals, export to text file |
+| Task 70 | Add sponsor fields to segment data model | COMPLETE | Added sponsor field ({ name, logo, tier } or null) to segment creation in RundownEditorPage.jsx (4 places), added to segmentMapper.js (editor↔engine mapping), added to compareSegments fieldsToCompare. **NOTE: No UI exists to assign sponsors — data model only.** |
+| Task 71 | Generate sponsor fulfillment report | COMPLETE | Added SponsorFulfillmentModal with: sponsor listing by tier (presenting/title/official/supporting), segment placements, airtime totals, export to text file. **NOTE: Report is always empty because no sponsors can be assigned.** |
 
 ### Phase K: Timezone Display (P2) - COMPLETE (17/17)
 

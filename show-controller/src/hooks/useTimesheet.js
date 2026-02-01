@@ -21,6 +21,8 @@ export function useTimesheet() {
     overrideLog,
     startTimesheetShow,
     stopTimesheetShow,
+    pauseTimesheetShow,
+    resumeTimesheetShow,
     advanceTimesheetSegment,
     previousTimesheetSegment,
     goToTimesheetSegment,
@@ -200,6 +202,20 @@ export function useTimesheet() {
   const stop = useCallback(() => {
     stopTimesheetShow();
   }, [stopTimesheetShow]);
+
+  /**
+   * Pause the timesheet show
+   */
+  const pause = useCallback(() => {
+    pauseTimesheetShow();
+  }, [pauseTimesheetShow]);
+
+  /**
+   * Resume the timesheet show
+   */
+  const resume = useCallback(() => {
+    resumeTimesheetShow();
+  }, [resumeTimesheetShow]);
 
   /**
    * Advance to next segment
@@ -449,6 +465,18 @@ export function useTimesheet() {
      * @type {function(): void}
      */
     stop,
+
+    /**
+     * Pause the timesheet show
+     * @type {function(): void}
+     */
+    pause,
+
+    /**
+     * Resume the timesheet show from paused state
+     * @type {function(): void}
+     */
+    resume,
 
     /**
      * Advance to next segment

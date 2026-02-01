@@ -36,8 +36,8 @@ Producers can create rundowns but cannot execute them. There's no bridge between
 | Story | Description | Status | Blocker |
 |-------|-------------|--------|---------|
 | 1 | Producer Creates a Rundown | ✅ Validated | — |
-| 2 | Producer Loads Rundown for Execution | ⚠️ Blocked | BUG-011: Start Show button hidden |
-| 3 | Producer Runs the Show | ⚠️ Blocked | BUG-011: depends on Story 2 |
+| 2 | Producer Loads Rundown for Execution | ✅ Validated | BUG-011 FIXED |
+| 3 | Producer Runs the Show | ✅ Validated | BUG-011, BUG-018 FIXED |
 | 4 | Multiple Competitions Run Independently | ⚠️ Not tested | Architecture in place, needs multi-comp test |
 | 5 | Producer Reloads Modified Rundown | ✅ Validated | — |
 | 6 | Producer Runs Rehearsal | ✅ Validated | — |
@@ -78,7 +78,7 @@ Producers can create rundowns but cannot execute them. There's no bridge between
 5. See "Rundown loaded: 24 segments" confirmation
 6. "Start Show" button becomes active
 
-**Status:** ⚠️ Implemented (Phase A) but **blocked by BUG-011** — stale `isPlaying` flag from previous session hides the "Start Show" button after loading segments. See [BUGS.md](./BUGS.md#bug-011).
+**Status:** ✅ Validated (Phase A) — BUG-011 fixed. Load Rundown button visible, segments load into engine, Start Show button activates.
 
 ---
 
@@ -99,7 +99,7 @@ Producers can create rundowns but cannot execute them. There's no bridge between
 4. Manual segments wait for producer to click "Next"
 5. Show continues through all segments
 
-**Status:** ⚠️ Implemented (Phase A) but **blocked by BUG-011** — cannot reach "Start Show" due to Story 2 blocker. Engine logic, OBS switching, and graphics firing are all complete.
+**Status:** ✅ Validated (Phase A) — BUG-011 and BUG-018 fixed. Show starts, segments progress with timing, Pause/Resume/Stop/Next all functional via timesheet engine.
 
 ---
 

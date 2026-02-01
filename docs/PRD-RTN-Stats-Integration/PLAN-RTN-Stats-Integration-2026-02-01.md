@@ -513,6 +513,8 @@ async function rateLimitedFetch(urls, onProgress) {
 
 Rate limiting is **per-competition** (one ingestion at a time per compId). If two producers create competitions simultaneously, each gets its own serial queue. The 200ms delay is between consecutive calls within a single team's ingestion.
 
+> **Audit note (D4):** Per-competition isolation does NOT prevent concurrent writes to the same `teamsDatabase/stats/{teamKey}/` when two competitions share a team. To avoid duplicate RTN API calls: before starting ingestion for a team, re-check `meta.fetchedAt`. If it was updated within the last 60 seconds (another ingestion just completed), skip that team and use existing data. This lightweight deduplication avoids the race without distributed locks.
+
 For a dual meet (2 teams x 8 endpoints = 16 calls): ~3.2 seconds.
 For a quad meet (4 teams x 8 endpoints = 32 calls): ~6.4 seconds.
 This is acceptable since ingestion is a one-time background operation.
@@ -528,18 +530,21 @@ This is acceptable since ingestion is a one-time background operation.
 | Individual endpoint fails | Other endpoints still succeed; `meta.status = "partial"` |
 | All endpoints fail for a team | `meta.status = "error"` for that team; other teams unaffected |
 | Firebase write fails | Record error, continue with other teams |
+| RTN API returns 200 with empty body | Record status as "empty", store null for that category, continue |
 | No `rtnId` in teamsDatabase | Log error and skip that team |
 
 **Partial success behavior:**
 - Each endpoint result is stored independently
-- `meta.endpointStatus` tracks per-endpoint success/fail: `{ "consistency": "ok", "mvp": "error", ... }`
-- `meta.status` is "complete" if all endpoints succeed, "partial" if some fail, "error" if all fail
+- `meta.endpointStatus` tracks per-endpoint status with three values: `{ "consistency": "ok", "mvp": "error", "lineup": "empty", ... }`. Values: `"ok"` = data received, `"empty"` = 200 response but no data (empty array/object), `"error"` = fetch failed.
+- `meta.status` is "complete" if all endpoints succeed (including "empty" — fetch succeeded, team just has no data yet), "partial" if some fail with "error", "error" if all fail
 - `syncStatsToConfig()` proceeds with whatever data is available (e.g., can sync `team1Ave` from teamRanking even if consistency failed)
 - The UI distinguishes between "no data available" (endpoint returned empty) and "fetch failed" (endpoint errored) via `meta.endpointStatus`
 
 ### 5.5 Staleness & Auto-Refresh
 
-Stats are considered **stale** if `meta.fetchedAt` is older than 24 hours. The staleness check occurs:
+Stats are considered **stale** if `meta.fetchedAt` is older than 24 hours. All `fetchedAt` timestamps use **UTC** via `new Date().toISOString()`. Staleness comparison: `Date.now() - new Date(fetchedAt).getTime() > STALENESS_TTL`. Client-side hooks should parse ISO strings and compare in UTC (which `new Date(isoString)` does automatically).
+
+The staleness check occurs:
 
 1. **On competition creation** -- `ingestCompetitionStats()` checks each team's shared stats; only fetches if stale or missing
 2. **Before show start** -- `showStarted` event handler checks staleness; if stale, triggers refresh before taking snapshot
@@ -735,7 +740,7 @@ The Virtius roster is the source of truth for athlete names and lineup. RTN data
 RTN is the official statistics system for NCAA gymnastics and is reliable during the season. However:
 
 1. **Off-season** -- Endpoints may return empty data or errors between seasons
-2. **Year rollover** -- The `year` parameter must match the current season
+2. **Year rollover** -- The `year` parameter must match the current season. Default to `new Date().getFullYear()`. NCAA gymnastics season runs January–April, so the season year always matches the calendar year (unlike sports that span two calendar years). This default should be passed consistently across all RTN API calls within a single ingestion.
 3. **Schema changes** -- While unlikely, RTN could change response format without notice
 
 **Fallback behavior:**
