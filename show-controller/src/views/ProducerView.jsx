@@ -77,6 +77,8 @@ export default function ProducerView() {
   const {
     start: timesheetStart,
     stop: timesheetStop,
+    pause: timesheetPause,
+    resume: timesheetResume,
     advance: timesheetAdvance,
     previous: timesheetPrevious,
     isRunning: timesheetIsRunning,
@@ -726,7 +728,7 @@ export default function ProducerView() {
                     </button>
 
                     <button
-                      onClick={togglePause}
+                      onClick={showIsPaused ? timesheetResume : timesheetPause}
                       className={`flex items-center gap-2 px-4 py-3 rounded-lg transition-colors ${
                         showIsPaused
                           ? 'bg-green-600 hover:bg-green-500 text-white'
@@ -770,7 +772,7 @@ export default function ProducerView() {
                     </button>
 
                     <button
-                      onClick={resetShow}
+                      onClick={timesheetStop}
                       className="flex items-center gap-2 px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded-lg transition-colors"
                     >
                       <ArrowPathIcon className="w-4 h-4" />

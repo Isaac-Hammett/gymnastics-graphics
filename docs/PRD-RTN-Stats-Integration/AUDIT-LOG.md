@@ -94,3 +94,35 @@
 
 ---
 
+## Category D: Data Model Edge Cases — 2026-02-01
+
+**Result:** 5 PASS / 3 FAIL / 2 INFO
+
+| # | Check | Result | Finding |
+|---|-------|--------|---------|
+| D1 | No RTN ID — skip-and-continue logic | FAIL | Task 5 implied but didn't explicitly document skip logic for missing rtnId. Fixed: added explicit "log warning, skip team, continue" to Task 5. |
+| D2 | Tri/Quad meets — team3-team6 | PASS | Config supports 6 teams. Task 6 explicitly mentions team3-team6. |
+| D3 | Men's 6 events vs Women's 4 | PASS | Section 3.1 has full event tables. Task 4 references section 3.1. Added men's field examples to Task 4, section 3.1 cross-ref to Task 3. |
+| D4 | Concurrent stats refresh — race condition | FAIL | No deduplication for same teamKey across concurrent competitions. Fixed: added 60-second dedup check to Task 5 and Section 5.3. |
+| D5 | Staleness timezone — UTC vs local | INFO | ISO/UTC implied but not explicit. Fixed: added UTC documentation to Section 5.5. |
+| D6 | `_locks` path null — first-time handling | FAIL | Task 6 didn't handle null _locks (new competitions). Fixed: added `|| {}` default and explicit null-handling guidance. |
+| D7 | Name mismatches — RTN vs Virtius | PASS | rtnId-based joins avoid name matching entirely. Plan correctly documents this. |
+| D8 | Empty API responses — distinguishing empty from error | FAIL | endpointStatus only had "ok"/"error". Fixed: added "empty" as third status value in Section 5.4 and Task 4/5. |
+| D9 | RTN year rollover — year determination | INFO | `getFullYear()` is correct for gymnastics (Jan-Apr season = calendar year). Fixed: documented explicitly in Task 3 and Section 9. |
+| D10 | Config field types — strings vs numbers | PASS | All config fields are strings in Firebase, DashboardPage defaults, RTN API, and plan schema. No type mismatch. |
+
+**Plan docs updated:**
+- `PLAN-RTN-Stats-Integration-Implementation.md` Task 3: Added year default and section 3.1 cross-reference for event mappings
+- `PLAN-RTN-Stats-Integration-Implementation.md` Task 4: Added men's field name examples, empty response handling with "empty" status
+- `PLAN-RTN-Stats-Integration-Implementation.md` Task 5: Added explicit rtnId null skip logic, 60-second dedup check, three-value endpointStatus
+- `PLAN-RTN-Stats-Integration-Implementation.md` Task 6: Added null _locks handling with `|| {}` default
+- `PLAN-RTN-Stats-Integration-2026-02-01.md` Section 5.3: Added audit note (D4) about concurrent team deduplication
+- `PLAN-RTN-Stats-Integration-2026-02-01.md` Section 5.4: Added "empty" endpointStatus value, added empty response row to error table
+- `PLAN-RTN-Stats-Integration-2026-02-01.md` Section 5.5: Added explicit UTC timestamp documentation
+- `PLAN-RTN-Stats-Integration-2026-02-01.md` Section 9: Added year default documentation for gymnastics season
+
+**Tests written:**
+- `tests/audit-D-data-model.md` — full report with findings for all 10 edge cases, verified against live Firebase data
+
+---
+

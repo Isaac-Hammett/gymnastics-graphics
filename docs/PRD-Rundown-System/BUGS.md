@@ -1,5 +1,291 @@
 # Rundown System - Bug Tracker
 
+## Open Bug Summary (2026-02-01)
+
+| Bug | Severity | Phase | Status | Description |
+|-----|----------|-------|--------|-------------|
+| BUG-013 | Critical | J | OPEN | Timing analytics broken — data structure mismatch + status filter |
+| BUG-014 | High | G | OPEN | No sponsor assignment UI in segment detail panel |
+| BUG-015 | High | E | OPEN | Talent roster hardcoded (5 fake people), not from Firebase |
+| BUG-016 | Medium | F | OPEN | Audio cue in/out points accepted by UI but ignored by playback |
+| BUG-017 | Medium | G | OPEN | Equipment list hardcoded, not configurable per competition |
+| BUG-018 | Critical | A | FIXED | Producer View Pause/Stop/Reset buttons use legacy handlers, not timesheet engine |
+| BUG-012 | High | B | OPEN | Talent View shows wrong competition name |
+| BUG-011 | Critical | A | FIXED | Start Show button hidden by stale isPlaying |
+
+---
+
+## BUG-018: Producer View Pause/Stop/Reset Buttons Use Legacy Handlers (FIXED)
+
+**Date Identified:** 2026-02-01
+**Date Fixed:** 2026-02-01
+**Severity:** Critical
+**Status:** FIXED
+**Phase:** A (Connect Editor to Engine)
+
+### Symptoms
+
+1. Producer loads rundown and starts show — segments advance correctly via NEXT button
+2. **BUG:** Pause button does nothing — show keeps running, timer keeps counting
+3. **BUG:** Stop button does nothing — show continues
+4. **BUG:** Reset Show button does nothing — show continues
+5. **BUG:** Lock Talent button has no visible effect
+6. Only the NEXT button works
+
+### Root Cause
+
+The Producer View buttons were wired to **legacy** socket events that modify the old `showState` object but never interact with the timesheet engine:
+
+| Button | Socket Event | Server Handler | Problem |
+|--------|-------------|----------------|---------|
+| Pause | `togglePause` | `showState.isPaused` toggle | Doesn't call `engine.pause()` |
+| Stop | `stopTimesheetShow` | `engine.stop()` | Correctly wired but `broadcastState()` not reaching client |
+| Reset Show | `resetShow` | Legacy `showState` reset | Doesn't call `engine.stop()` |
+| Lock Talent | `lockTalent` | `showState.talentLocked` | Legacy broadcast, role check dependency |
+
+Since the BUG-011 fix changed `showIsPaused = timesheetIsPaused` (line 109), the UI now only reflects timesheet engine state. But the Pause button still toggled legacy `showState.isPaused` which the UI no longer reads.
+
+### Fix Applied
+
+**Server** (`server/index.js`):
+- Added `pauseTimesheetShow` socket handler → calls `engine.pause()`
+- Added `resumeTimesheetShow` socket handler → calls `engine.resume()`
+
+**Client** (`ShowContext.jsx`, `useTimesheet.js`):
+- Added `pauseTimesheetShow()` and `resumeTimesheetShow()` functions
+- Exposed `pause` and `resume` actions through useTimesheet hook
+
+**ProducerView** (`ProducerView.jsx`):
+- Pause button: `togglePause` → `showIsPaused ? timesheetResume : timesheetPause`
+- Reset Show button: `resetShow` → `timesheetStop`
+
+### Files Changed
+
+- `server/index.js` — Added `pauseTimesheetShow` and `resumeTimesheetShow` socket handlers
+- `show-controller/src/context/ShowContext.jsx` — Added `pauseTimesheetShow`, `resumeTimesheetShow` functions and exports
+- `show-controller/src/hooks/useTimesheet.js` — Added `pause`, `resume` actions
+- `show-controller/src/views/ProducerView.jsx` — Rewired Pause and Reset Show buttons to timesheet engine
+
+### Deployment
+
+- Server deployed to coordinator VM (`44.193.31.120`) and PM2 restarted
+- Frontend built and deployed to `commentarygraphic.com` (`3.87.107.201`)
+
+---
+
+## BUG-017: Equipment List Hardcoded, Not Configurable (OPEN)
+
+**Date Identified:** 2026-02-01
+**Severity:** Medium
+**Status:** OPEN
+**Phase:** G (Production Tracking)
+
+### Symptoms
+
+Equipment assignment UI shows 9 fixed items (Camera 1-4, Lav 1-2, Handheld, Jib Arm, Teleprompter). Cannot add, remove, or rename equipment for different venues or competitions.
+
+### Root Cause
+
+`DUMMY_EQUIPMENT` constant hardcoded in `RundownEditorPage.jsx` (lines 91-103). Not stored in Firebase. Not configurable.
+
+### Impact
+
+Equipment assignment works for the 9 predefined items, but producers at different venues with different gear cannot customize the list.
+
+### Proposed Fix
+
+Move equipment definitions to Firebase at `competitions/{compId}/production/equipment` or a shared `productionConfig/equipment` path. Add a configuration UI or import/export mechanism.
+
+### Files Affected
+
+- `show-controller/src/pages/RundownEditorPage.jsx` — Replace `DUMMY_EQUIPMENT` with Firebase-fetched data
+
+---
+
+## BUG-016: Audio Cue In/Out Points Ignored by Playback (OPEN)
+
+**Date Identified:** 2026-02-01
+**Severity:** Medium
+**Status:** OPEN
+**Phase:** F (Audio Cue Integration)
+
+### Symptoms
+
+1. Producer sets `inPoint: "0:30"` and `outPoint: "1:45"` on a segment's audio cue
+2. Values are stored in Firebase correctly
+3. During show, `_playAudioCue()` plays audio from the beginning of the file
+4. In/out points are completely ignored
+
+### Root Cause
+
+`_playAudioCue()` in `timesheetEngine.js` (lines 984-1064) sends `TriggerMediaInputAction` with `OBS_WEBSOCKET_MEDIA_INPUT_ACTION_RESTART` which always starts from the beginning. No seeking or stop-at-outpoint logic exists.
+
+### Impact
+
+The in/out point fields in the UI are misleading — they accept values that have no effect.
+
+### Proposed Fix
+
+Either implement OBS media seeking via `SetMediaInputCursorOffset` and a timer-based stop at `outPoint`, or remove the in/out point fields from the UI to avoid confusion.
+
+### Files Affected
+
+- `server/lib/timesheetEngine.js` — `_playAudioCue()` method
+- `show-controller/src/pages/RundownEditorPage.jsx` — in/out point UI (optional: remove or disable)
+
+---
+
+## BUG-015: Talent Roster Hardcoded with Dummy Data (OPEN)
+
+**Date Identified:** 2026-02-01
+**Severity:** High
+**Status:** OPEN
+**Phase:** E (Script & Talent Flow)
+
+### Symptoms
+
+1. Talent assignment UI shows 5 fake people: "John Smith", "Sarah Johnson", "Mike Davis", "Emily Chen", "Alex Rodriguez"
+2. These names appear in RundownEditorPage and TalentView
+3. Cannot add real commentators or remove dummy ones
+4. Talent identity lost on page refresh (query param only, no session persistence)
+
+### Root Cause
+
+Two separate hardcoded constants:
+- `DUMMY_TALENT` in `RundownEditorPage.jsx` (line 83) — 5 entries
+- `TALENT_ROSTER` in `TalentView.jsx` (line 14) — same 5 entries, duplicated
+
+Neither is fetched from Firebase. The `talentId` query param (`?talentId=talent-1`) is the only way to identify a commentator, and it's not persisted in localStorage or sessionStorage.
+
+### Impact
+
+- Cannot use with real production talent without code changes
+- Two copies of the roster can drift out of sync
+- Commentator loses identity on page refresh
+
+### Proposed Fix
+
+1. Move talent roster to Firebase at `competitions/{compId}/production/talent`
+2. Fetch dynamically in both RundownEditorPage and TalentView
+3. Add `localStorage` persistence for `talentId` so page refresh doesn't lose identity
+4. Add talent management UI (or at minimum, a competition config field)
+
+### Files Affected
+
+- `show-controller/src/pages/RundownEditorPage.jsx` — Replace `DUMMY_TALENT`
+- `show-controller/src/views/TalentView.jsx` — Replace `TALENT_ROSTER`, add localStorage
+
+---
+
+## BUG-014: No Sponsor Assignment UI in Segment Detail Panel (OPEN)
+
+**Date Identified:** 2026-02-01
+**Severity:** High
+**Status:** OPEN
+**Phase:** G (Production Tracking)
+
+### Symptoms
+
+1. The segment detail panel has sections for Script, Talent, Audio Cue, and Equipment
+2. No section exists for Sponsor assignment
+3. The SponsorFulfillmentModal report exists (270 lines of code) but always shows empty results
+4. The only sponsor data in the system comes from hardcoded test segments in `DUMMY_SEGMENTS`
+
+### Root Cause
+
+Task 70 added the sponsor data model (`{ name, logo, tier }`) but no UI was built to assign sponsors to segments in the SegmentDetailPanel. The form jumps from Equipment Assignment directly to Save/Cancel buttons.
+
+### Impact
+
+- Sponsor Fulfillment Report is useless (no sponsors to report on)
+- The data model exists but is inaccessible to producers
+- 270 lines of report code have no practical function
+
+### Proposed Fix
+
+1. Add a Sponsor assignment section to SegmentDetailPanel (dropdown or searchable select)
+2. Create a sponsor configuration panel where producers define sponsors for a competition
+3. Store sponsor list in Firebase at `competitions/{compId}/production/sponsors`
+
+### Files Affected
+
+- `show-controller/src/pages/RundownEditorPage.jsx` — Add sponsor section to SegmentDetailPanel (after Equipment section)
+
+---
+
+## BUG-013: Timing Analytics Broken — Data Structure Mismatch and Status Filter (OPEN)
+
+**Date Identified:** 2026-02-01
+**Severity:** Critical
+**Status:** OPEN
+**Phase:** J (Segment Timing Analytics)
+
+### Symptoms
+
+1. TimingAnalyticsModal always shows "No Analytics Data"
+2. Historical average indicators on segment rows are blank
+3. AI timing predictions generate nothing
+4. Timing data IS being written to Firebase (verified: 3+ competitions have run records with segment data)
+
+### Root Cause
+
+**Two separate bugs:**
+
+**Bug A: Data structure mismatch**
+
+Server writes timing data as an object with Firebase push keys:
+```
+competitions/{compId}/production/rundown/analytics/{runId}/segmentTimings/{pushKey}
+```
+
+Frontend expects an array called `segments`:
+```javascript
+// RundownEditorPage.jsx lines 645, 684, 10367
+run.segments.forEach(seg => { ... })  // run.segments is undefined!
+```
+
+The loaded data has `run.segmentTimings` (object), not `run.segments` (array). Every `.forEach()` silently does nothing.
+
+**Bug B: Status filter excludes all data**
+
+`loadTimingAnalytics()` at line 2067:
+```javascript
+.filter(run => run.status === 'completed')
+```
+
+All runs in Firebase have `status: "running"` because the server's `showStopped` handler either doesn't update the status field, or the show is stopped before the update completes. This filter excludes every run.
+
+### Impact
+
+The entire Phase J feature chain is broken:
+- Task 40 (TimingAnalyticsModal) — shows empty
+- Task 41 (Historical averages on segment rows) — shows nothing
+- Task 42 (AI timing predictions) — no data to analyze
+
+### Proposed Fix
+
+**Fix A:** In `loadTimingAnalytics()`, transform `segmentTimings` object to array:
+```javascript
+const runs = Object.entries(data).map(([runId, runData]) => ({
+  runId,
+  ...runData,
+  segments: runData.segmentTimings
+    ? Object.values(runData.segmentTimings)
+    : runData.segments || []
+}));
+```
+
+**Fix B:** Either:
+- Change filter to `.filter(run => run.segmentTimings || run.segments)` (accept any run with timing data)
+- Or fix the server to set `status: "completed"` on show stop at `server/index.js` line 558
+
+### Files Affected
+
+- `show-controller/src/pages/RundownEditorPage.jsx` — `loadTimingAnalytics()` (line 2057-2079), `segmentHistoricalAverages` (line 645), `aiTimingPredictions` (line 684), `TimingAnalyticsModal` (line 10367)
+- `server/index.js` — `showStopped` handler (line 500-566) — status update
+
+---
+
 ## BUG-012: Talent View Shows Legacy showName Instead of Competition Name (OPEN)
 
 **Date Identified:** 2026-01-31

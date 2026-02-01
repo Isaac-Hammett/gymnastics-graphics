@@ -550,6 +550,14 @@ export function ShowProvider({ children }) {
     socket?.emit('stopTimesheetShow');
   }, [socket]);
 
+  const pauseTimesheetShow = useCallback(() => {
+    socket?.emit('pauseTimesheetShow');
+  }, [socket]);
+
+  const resumeTimesheetShow = useCallback(() => {
+    socket?.emit('resumeTimesheetShow');
+  }, [socket]);
+
   const advanceTimesheetSegment = useCallback((advancedBy = 'producer') => {
     socket?.emit('advanceSegment', { advancedBy });
   }, [socket]);
@@ -663,6 +671,8 @@ export function ShowProvider({ children }) {
     loadRundown,
     startTimesheetShow,
     stopTimesheetShow,
+    pauseTimesheetShow,
+    resumeTimesheetShow,
     advanceTimesheetSegment,
     previousTimesheetSegment,
     goToTimesheetSegment,

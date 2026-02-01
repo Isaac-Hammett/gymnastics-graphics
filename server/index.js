@@ -6092,6 +6092,28 @@ io.on('connection', async (socket) => {
     console.log(`Socket: Timesheet show stopped for competition ${clientCompId}`);
   });
 
+  // Pause show via timesheet engine
+  socket.on('pauseTimesheetShow', () => {
+    const engine = getEngine(clientCompId);
+    if (!engine) {
+      socket.emit('error', { message: `No timesheet engine for competition: ${clientCompId}` });
+      return;
+    }
+    engine.pause();
+    console.log(`Socket: Timesheet show paused for competition ${clientCompId}`);
+  });
+
+  // Resume show via timesheet engine
+  socket.on('resumeTimesheetShow', () => {
+    const engine = getEngine(clientCompId);
+    if (!engine) {
+      socket.emit('error', { message: `No timesheet engine for competition: ${clientCompId}` });
+      return;
+    }
+    engine.resume();
+    console.log(`Socket: Timesheet show resumed for competition ${clientCompId}`);
+  });
+
   // Advance to next segment via timesheet engine
   socket.on('advanceSegment', async () => {
     // Use competition-specific engine (not legacy timesheetEngine)
