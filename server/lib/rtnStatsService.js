@@ -631,6 +631,295 @@ function normalizeAllResults(fetchResults, gender, tid) {
 }
 
 // ============================================================================
+// Orchestration Functions (Task 5)
+// ============================================================================
+
+import productionConfigService from './productionConfigService.js';
+
+const DEDUP_WINDOW_MS = 60 * 1000; // 60 seconds — skip if another ingestion just completed
+
+/**
+ * Parse competition type to extract gender and team count.
+ * @param {string} compType - e.g., "womens-dual", "mens-tri", "womens-quad"
+ * @returns {{ gender: string, teamCount: number }}
+ */
+function parseCompetitionType(compType) {
+  if (!compType) return { gender: 'womens', teamCount: 2 };
+  const parts = compType.toLowerCase().split('-');
+  const gender = parts[0] === 'mens' ? 'mens' : 'womens';
+  let teamCount = 2;
+  if (parts[1]) {
+    const typeMap = { dual: 2, tri: 3, quad: 4, '5': 5, '6': 6 };
+    teamCount = typeMap[parts[1]] || 2;
+  }
+  return { gender, teamCount };
+}
+
+/**
+ * Build a teamsDatabase key from a team name and gender.
+ * Matches the client-side buildTeamKey() logic: lowercase, strip gender suffixes, hyphenate.
+ * @param {string} schoolName - e.g., "Oklahoma", "Stanford"
+ * @param {string} gender - "mens" or "womens"
+ * @returns {string} e.g., "oklahoma-womens"
+ */
+function buildTeamDbKey(schoolName, gender) {
+  if (!schoolName) return '';
+  const normalized = schoolName
+    .toLowerCase()
+    .replace(/['']/g, '')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/-mens$/, '')
+    .replace(/-womens$/, '')
+    .replace(/ mens$/, '')
+    .replace(/ womens$/, '')
+    .replace(/ men$/, '')
+    .replace(/ women$/, '')
+    .replace(/\s+/g, '-')
+    .trim();
+  if (!normalized) return '';
+  const genderSuffix = gender === 'womens' ? 'womens' : 'mens';
+  return `${normalized}-${genderSuffix}`;
+}
+
+/**
+ * Check if a team's stats are stale (older than STALENESS_TTL).
+ * @param {string} teamKey - teamsDatabase key, e.g., "oklahoma-womens"
+ * @returns {Promise<{ isStale: boolean, fetchedAt: string|null, withinDedup: boolean }>}
+ */
+async function checkStaleness(teamKey) {
+  const db = productionConfigService.getDb();
+  if (!db) return { isStale: true, fetchedAt: null, withinDedup: false };
+
+  try {
+    const snapshot = await db.ref(`teamsDatabase/stats/${teamKey}/meta/fetchedAt`).once('value');
+    const fetchedAt = snapshot.val();
+
+    if (!fetchedAt) return { isStale: true, fetchedAt: null, withinDedup: false };
+
+    const fetchedTime = new Date(fetchedAt).getTime();
+    const now = Date.now();
+    const age = now - fetchedTime;
+
+    return {
+      isStale: age > STALENESS_TTL,
+      fetchedAt,
+      withinDedup: age < DEDUP_WINDOW_MS,
+    };
+  } catch (err) {
+    console.error(`[rtnStatsService] Error checking staleness for ${teamKey}:`, err.message);
+    return { isStale: true, fetchedAt: null, withinDedup: false };
+  }
+}
+
+/**
+ * Ingest stats for a single team: fetch all RTN endpoints, normalize, and write to Firebase.
+ *
+ * @param {string} teamKey - teamsDatabase key, e.g., "oklahoma-womens"
+ * @param {string|number} rtnId - RTN team ID
+ * @param {string} gender - "mens" or "womens"
+ * @param {number} year - Season year
+ * @param {Object} [io] - Socket.IO server instance for progress events
+ * @param {string} [compId] - Competition ID for progress events
+ * @returns {Promise<{ status: string, endpointStatus: Object, errors: Object|null }>}
+ */
+async function ingestTeamStats(teamKey, rtnId, gender, year, io, compId) {
+  const db = productionConfigService.getDb();
+  if (!db) {
+    return { status: 'error', endpointStatus: {}, errors: { firebase: 'Firebase not available' } };
+  }
+
+  const tidStr = String(rtnId);
+
+  // Get current week for team ranking endpoint
+  let week;
+  try {
+    week = await getCurrentWeek(gender, year);
+  } catch (err) {
+    console.warn(`[rtnStatsService] Failed to get week, using 1: ${err.message}`);
+    week = 1;
+  }
+
+  // Build URLs and fetch all endpoints
+  const urls = buildTeamStatUrls(gender, year, tidStr, week);
+
+  const onProgress = (label, step, total, status) => {
+    console.log(`[rtnStatsService] ${teamKey}: ${label} (${step}/${total}) - ${status}`);
+    if (io && compId) {
+      const roomName = `competition:${compId}`;
+      io.to(roomName).emit('rtnStatsProgress', {
+        compId,
+        teamKey,
+        endpoint: label,
+        step,
+        total,
+        status,
+      });
+    }
+  };
+
+  const fetchResults = await rateLimitedFetch(urls, onProgress);
+
+  // Normalize all results
+  const { normalized, endpointStatus } = normalizeAllResults(fetchResults, gender, tidStr);
+
+  // Determine overall status
+  const statuses = Object.values(endpointStatus);
+  const errorCount = statuses.filter(s => s === 'error').length;
+  let overallStatus;
+  if (errorCount === statuses.length) {
+    overallStatus = 'error';
+  } else if (errorCount > 0) {
+    overallStatus = 'partial';
+  } else {
+    overallStatus = 'complete';
+  }
+
+  // Build error details
+  const errors = {};
+  for (const result of fetchResults) {
+    if (result.status === 'error') {
+      errors[result.label] = result.error || 'Unknown error';
+    }
+  }
+
+  // Build meta
+  const meta = {
+    fetchedAt: new Date().toISOString(),
+    rtnId: tidStr,
+    year,
+    gender,
+    week,
+    status: overallStatus,
+    errors: Object.keys(errors).length > 0 ? errors : null,
+    endpointStatus,
+  };
+
+  // Write to Firebase: teamsDatabase/stats/{teamKey}/
+  try {
+    const statsRef = db.ref(`teamsDatabase/stats/${teamKey}`);
+    const writeData = { ...normalized, meta };
+    await statsRef.set(writeData);
+    console.log(`[rtnStatsService] Wrote stats for ${teamKey} (status: ${overallStatus})`);
+  } catch (err) {
+    console.error(`[rtnStatsService] Failed to write stats for ${teamKey}:`, err.message);
+    return { status: 'error', endpointStatus, errors: { ...errors, firebase: err.message } };
+  }
+
+  return { status: overallStatus, endpointStatus, errors: Object.keys(errors).length > 0 ? errors : null };
+}
+
+/**
+ * Ingest RTN stats for all teams in a competition.
+ * Checks staleness, deduplicates, fetches if needed, writes to shared store.
+ *
+ * @param {string} compId - Competition ID
+ * @param {Object} [io] - Socket.IO server instance for progress/result events
+ * @returns {Promise<{ success: boolean, teams: Object, error?: string }>}
+ */
+async function ingestCompetitionStats(compId, io) {
+  const db = productionConfigService.getDb();
+  if (!db) {
+    return { success: false, teams: {}, error: 'Firebase not available' };
+  }
+
+  console.log(`[rtnStatsService] Starting ingestion for competition ${compId}`);
+
+  // Read competition config
+  let config;
+  try {
+    const configSnapshot = await db.ref(`competitions/${compId}/config`).once('value');
+    config = configSnapshot.val();
+  } catch (err) {
+    console.error(`[rtnStatsService] Failed to read config for ${compId}:`, err.message);
+    return { success: false, teams: {}, error: `Failed to read config: ${err.message}` };
+  }
+
+  if (!config) {
+    return { success: false, teams: {}, error: 'Competition config not found' };
+  }
+
+  // Extract gender and team count
+  const { gender, teamCount } = parseCompetitionType(config.compType);
+  const year = new Date().getFullYear();
+
+  // Build team name list from config
+  const teamNames = [];
+  for (let i = 1; i <= teamCount; i++) {
+    const name = config[`team${i}Name`];
+    if (name) teamNames.push({ index: i, name });
+  }
+
+  if (teamNames.length === 0) {
+    return { success: false, teams: {}, error: 'No team names found in config' };
+  }
+
+  const teamResults = {};
+
+  for (const { index, name } of teamNames) {
+    const teamKey = buildTeamDbKey(name, gender);
+    if (!teamKey) {
+      console.warn(`[rtnStatsService] Could not build team key for "${name}"`);
+      teamResults[`team${index}`] = { teamKey: null, status: 'error', error: 'Invalid team name' };
+      continue;
+    }
+
+    // Look up RTN ID from teamsDatabase
+    let rtnId;
+    try {
+      const rtnIdSnapshot = await db.ref(`teamsDatabase/teams/${teamKey}/rtnId`).once('value');
+      rtnId = rtnIdSnapshot.val();
+    } catch (err) {
+      console.error(`[rtnStatsService] Failed to read rtnId for ${teamKey}:`, err.message);
+    }
+
+    if (!rtnId) {
+      console.warn(`[rtnStatsService] No RTN ID for team ${teamKey} — skipping`);
+      // Write error to meta so the UI can see it
+      try {
+        await db.ref(`teamsDatabase/stats/${teamKey}/meta`).update({
+          status: 'error',
+          errors: { rtnId: 'RTN ID not set. Run Media Manager team setup first.' },
+          fetchedAt: new Date().toISOString(),
+        });
+      } catch (e) {
+        // Best effort
+      }
+      teamResults[`team${index}`] = { teamKey, status: 'error', error: 'Missing RTN ID' };
+      continue;
+    }
+
+    // Check staleness
+    const staleness = await checkStaleness(teamKey);
+
+    if (staleness.withinDedup) {
+      console.log(`[rtnStatsService] ${teamKey}: Recently ingested (dedup window), skipping`);
+      teamResults[`team${index}`] = { teamKey, status: 'skipped', reason: 'dedup' };
+      continue;
+    }
+
+    if (!staleness.isStale) {
+      console.log(`[rtnStatsService] ${teamKey}: Stats are fresh (fetched ${staleness.fetchedAt}), skipping`);
+      teamResults[`team${index}`] = { teamKey, status: 'skipped', reason: 'fresh' };
+      continue;
+    }
+
+    // Stats are stale or missing — fetch from RTN
+    console.log(`[rtnStatsService] ${teamKey}: Stats are stale/missing, fetching from RTN...`);
+    const result = await ingestTeamStats(teamKey, rtnId, gender, year, io, compId);
+    teamResults[`team${index}`] = { teamKey, ...result };
+  }
+
+  const allStatuses = Object.values(teamResults).map(r => r.status);
+  const allErrors = allStatuses.every(s => s === 'error');
+
+  const success = !allErrors;
+
+  console.log(`[rtnStatsService] Ingestion complete for ${compId}: ${JSON.stringify(teamResults)}`);
+
+  return { success, teams: teamResults };
+}
+
+// ============================================================================
 // Exports
 // ============================================================================
 
@@ -694,4 +983,11 @@ export {
   normalizeIndividualStats,
   normalizeTeamRanking,
   normalizeAllResults,
+
+  // Orchestration functions (Task 5)
+  parseCompetitionType,
+  buildTeamDbKey,
+  checkStaleness,
+  ingestTeamStats,
+  ingestCompetitionStats,
 };
