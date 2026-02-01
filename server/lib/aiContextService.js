@@ -322,6 +322,13 @@ class AIContextService {
     const consistencyPoints = this._getConsistencyTalkingPoints(segment, segmentContext);
     context.talkingPoints.push(...consistencyPoints);
 
+    // Generate MVP and lineup talking points (Task 21)
+    const mvpPoints = this._getMVPTalkingPoints(segment, segmentContext);
+    context.talkingPoints.push(...mvpPoints);
+
+    const lineupPoints = this._getLineupTalkingPoints(segment, segmentContext);
+    context.talkingPoints.push(...lineupPoints);
+
     // Sort talking points by priority
     context.talkingPoints.sort((a, b) => {
       const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
@@ -2364,6 +2371,166 @@ class AIContextService {
     }
 
     // Limit to top 3 consistency points to avoid overwhelming the budget
+    return points.slice(0, 3);
+  }
+
+  /**
+   * Generate MVP talking points from RTN MVP data
+   *
+   * Highlights top contributors by total cumulative score across all events.
+   * Also includes theoretical max from topScores data.
+   * Only generates during non-scoring segments (opening, intro, break).
+   * Uses PRIORITY.MEDIUM.
+   *
+   * @param {Object} segment - Current segment
+   * @param {Object} segmentContext - Analyzed segment context
+   * @returns {Array} MVP talking points
+   */
+  _getMVPTalkingPoints(segment, segmentContext) {
+    const points = [];
+
+    if (!this._rtnStats) return points;
+
+    // Only generate during non-scoring segments
+    if (segmentContext.isScoring) return points;
+
+    for (const teamKey of ['team1', 'team2', 'team3', 'team4', 'team5', 'team6']) {
+      const teamStats = this._rtnStats[teamKey];
+      if (!teamStats) continue;
+
+      const teamName = this._getTeamDisplayName(teamKey);
+      const rosterByRtnId = this._buildRosterRtnIdMap(teamKey);
+
+      // MVP talking points
+      const mvpData = this._toArray(teamStats.mvp);
+      if (mvpData.length > 0) {
+        // Top MVP contributor
+        const topMvp = mvpData[0];
+        if (topMvp?.total && topMvp.total > 0) {
+          const displayName = this._matchAthleteToRoster(topMvp, rosterByRtnId) ||
+                              topMvp.fullName || `${topMvp.firstName || ''} ${topMvp.lastName || ''}`.trim();
+          if (displayName) {
+            points.push({
+              id: `rtn-mvp-${teamKey}-${segment.id}`,
+              type: CONTEXT_TYPES.ATHLETE,
+              priority: PRIORITY.MEDIUM,
+              text: `${displayName} leads ${teamName} with ${topMvp.total.toFixed(2)} total contribution across all events`,
+              source: 'rtn-mvp',
+              data: { athlete: displayName, team: teamName, total: topMvp.total },
+            });
+          }
+        }
+      }
+
+      // Top scores / theoretical max
+      const topScores = teamStats.topScores;
+      if (topScores?.theoreticalMax && typeof topScores.theoreticalMax === 'number') {
+        points.push({
+          id: `rtn-themax-${teamKey}-${segment.id}`,
+          type: CONTEXT_TYPES.MATCHUP,
+          priority: PRIORITY.MEDIUM,
+          text: `${teamName}'s theoretical max is ${topScores.theoreticalMax.toFixed(3)} if everyone hits their season highs`,
+          source: 'rtn-topscores',
+          data: { team: teamName, theoreticalMax: topScores.theoreticalMax },
+        });
+      }
+    }
+
+    // Limit to 3 points
+    return points.slice(0, 3);
+  }
+
+  /**
+   * Generate lineup talking points from RTN lineup data
+   *
+   * Highlights athletes who have competed in every meet (ironman gymnasts),
+   * and detects recent additions to the lineup.
+   * Only generates during non-scoring segments (opening, intro, break).
+   * Uses PRIORITY.MEDIUM.
+   *
+   * @param {Object} segment - Current segment
+   * @param {Object} segmentContext - Analyzed segment context
+   * @returns {Array} Lineup talking points
+   */
+  _getLineupTalkingPoints(segment, segmentContext) {
+    const points = [];
+
+    if (!this._rtnStats) return points;
+
+    // Only generate during non-scoring segments
+    if (segmentContext.isScoring) return points;
+
+    for (const teamKey of ['team1', 'team2', 'team3', 'team4', 'team5', 'team6']) {
+      const teamStats = this._rtnStats[teamKey];
+      if (!teamStats) continue;
+
+      const teamName = this._getTeamDisplayName(teamKey);
+      const rosterByRtnId = this._buildRosterRtnIdMap(teamKey);
+      const lineupData = this._toArray(teamStats.lineup);
+
+      if (!lineupData.length) continue;
+
+      // Find total number of meets from the longest meets array
+      let totalMeets = 0;
+      for (const athlete of lineupData) {
+        const meets = this._toArray(athlete.meets);
+        if (meets.length > totalMeets) totalMeets = meets.length;
+      }
+
+      if (totalMeets === 0) continue;
+
+      // Find ironman gymnasts (competed in every meet, rate === 1 or close)
+      const ironmen = [];
+      // Find recent additions (last meet is 1, but not all meets)
+      const recentAdditions = [];
+
+      for (const athlete of lineupData) {
+        const meets = this._toArray(athlete.meets);
+        const rate = typeof athlete.rate === 'number' ? athlete.rate : meets.filter(m => m === 1).length / totalMeets;
+        const displayName = this._matchAthleteToRoster(athlete, rosterByRtnId) ||
+                            athlete.fullName || `${athlete.firstName || ''} ${athlete.lastName || ''}`.trim();
+        if (!displayName) continue;
+
+        const meetsCompeted = meets.filter(m => m === 1).length;
+
+        if (rate >= 1.0 && totalMeets >= 3) {
+          ironmen.push({ name: displayName, meets: meetsCompeted, total: totalMeets });
+        }
+
+        // Detect recent lineup addition: last meet is 1, but competed in fewer than half
+        if (meets.length >= 2 && meets[meets.length - 1] === 1 && rate < 0.5 && meetsCompeted >= 1) {
+          recentAdditions.push({ name: displayName, meets: meetsCompeted, total: totalMeets });
+        }
+      }
+
+      // Ironman gymnasts (competed in all meets)
+      if (ironmen.length > 0 && ironmen.length <= 5) {
+        const names = ironmen.map(a => a.name);
+        const meetCount = ironmen[0].total;
+        points.push({
+          id: `rtn-ironman-${teamKey}-${segment.id}`,
+          type: CONTEXT_TYPES.ATHLETE,
+          priority: PRIORITY.MEDIUM,
+          text: `${names.join(', ')} ${names.length === 1 ? 'has' : 'have'} competed in all ${meetCount} meets for ${teamName}`,
+          source: 'rtn-lineup',
+          data: { team: teamName, athletes: ironmen, type: 'ironman' },
+        });
+      }
+
+      // Recent lineup additions
+      for (const addition of recentAdditions.slice(0, 1)) {
+        points.push({
+          id: `rtn-newlineup-${teamKey}-${addition.name}-${segment.id}`,
+          type: CONTEXT_TYPES.ATHLETE,
+          priority: PRIORITY.MEDIUM,
+          text: `${addition.name} recently added to ${teamName}'s lineup — competed in ${addition.meets} of ${addition.total} meets`,
+          source: 'rtn-lineup',
+          data: { team: teamName, athlete: addition.name, type: 'recent-addition', meets: addition.meets, total: addition.total },
+        });
+      }
+    }
+
+    // Limit to 3 points
     return points.slice(0, 3);
   }
 
