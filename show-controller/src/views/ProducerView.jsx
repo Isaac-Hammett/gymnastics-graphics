@@ -5,6 +5,7 @@ import { useCompetition } from '../context/CompetitionContext';
 import { useOBS } from '../context/OBSContext';
 import { useTimesheet } from '../hooks/useTimesheet';
 import { useAIContext } from '../hooks/useAIContext';
+import { useRtnStats } from '../hooks/useRtnStats';
 import CurrentSegment from '../components/CurrentSegment';
 import NextSegment from '../components/NextSegment';
 import RunOfShow from '../components/RunOfShow';
@@ -134,6 +135,21 @@ export default function ProducerView() {
     refresh: refreshAI,
     error: aiError
   } = useAIContext();
+
+  // RTN Stats - check staleness for auto-refresh before show start
+  const { isStale: rtnStatsStale, refresh: refreshRtnStats, progress: rtnProgress } = useRtnStats(compId, competitionConfig);
+  const [staleRefreshTriggered, setStaleRefreshTriggered] = useState(false);
+
+  // Wrap timesheetStart to trigger RTN stats refresh if stale (non-blocking)
+  const handleStartShow = useCallback(() => {
+    if (rtnStatsStale && !staleRefreshTriggered) {
+      console.log('[ProducerView] Stats are stale, triggering background refresh before show start');
+      refreshRtnStats();
+      setStaleRefreshTriggered(true);
+    }
+    // Always start the show immediately — refresh is non-blocking
+    timesheetStart();
+  }, [rtnStatsStale, staleRefreshTriggered, refreshRtnStats, timesheetStart]);
 
   // State for AI panel expansion
   const [aiPanelExpanded, setAIPanelExpanded] = useState(true);
@@ -662,7 +678,7 @@ export default function ProducerView() {
                     {timesheetState?.isRehearsalMode ? 'Rehearsal Mode ON' : 'Rehearsal Mode'}
                   </button>
                   <button
-                    onClick={timesheetStart}
+                    onClick={handleStartShow}
                     disabled={!timesheetState?.rundownLoaded}
                     className={`inline-flex items-center gap-2 px-8 py-4 font-bold text-lg rounded-xl transition-colors ${
                       timesheetState?.rundownLoaded
@@ -673,6 +689,15 @@ export default function ProducerView() {
                     <PlayIcon className="w-6 h-6" />
                     Start Show
                   </button>
+                  {rtnStatsStale && !staleRefreshTriggered && (
+                    <p className="text-yellow-400/70 text-xs mt-1">Stats are stale -- will auto-refresh on start</p>
+                  )}
+                  {staleRefreshTriggered && rtnProgress && (
+                    <p className="text-blue-400/70 text-xs mt-1 flex items-center gap-1">
+                      <ArrowPathIcon className="w-3 h-3 animate-spin" />
+                      Refreshing stats...
+                    </p>
+                  )}
                 </div>
               </div>
             ) : (
