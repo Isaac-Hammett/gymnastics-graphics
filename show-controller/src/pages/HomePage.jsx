@@ -9,6 +9,7 @@ import { useTeamsDatabase } from '../hooks/useTeamsDatabase';
 import { useHeadCoach } from '../hooks/useRoadToNationals';
 import { getGenderFromCompType, buildTeamKey } from '../lib/competitionUtils';
 import { ExclamationTriangleIcon, CheckCircleIcon, UserIcon } from '@heroicons/react/24/solid';
+import StatsStatusBadge from '../components/StatsStatusBadge';
 
 /**
  * HomePage - Consolidated landing page combining:
@@ -906,10 +907,14 @@ function CompetitionCard({
       </div>
 
       {teams.length > 0 && (
-        <div className="text-sm text-zinc-500 mb-3">
+        <div className="text-sm text-zinc-500 mb-2">
           {teams.join(' vs ')}
         </div>
       )}
+
+      <div className="mb-3">
+        <StatsStatusBadge compId={compId} config={config} />
+      </div>
 
       {vmBadge?.vm?.publicIp && (
         <div className="text-xs text-zinc-500 mb-3 font-mono">
