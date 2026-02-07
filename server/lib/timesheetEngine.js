@@ -1211,6 +1211,7 @@ class TimesheetEngine extends EventEmitter {
     return {
       state: this._state,
       isRunning: this._isRunning,
+      isPaused: this._state === ENGINE_STATE.PAUSED,
       isRehearsalMode: this._isRehearsalMode,
       currentSegmentIndex: this._currentSegmentIndex,
       currentSegment: this._currentSegment ? { ...this._currentSegment } : null,
