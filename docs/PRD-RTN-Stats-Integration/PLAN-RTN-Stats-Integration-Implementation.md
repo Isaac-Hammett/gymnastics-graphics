@@ -141,6 +141,32 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 
 ---
 
+### Bug Fix: getCurrentWeek() Unreliable 'current' Flag (2026-02-07)
+
+**Symptom:** Rankings panel still showed "Week 1" after the field name fix above.
+
+**Root Cause:** RTN's `current: "1"` flag is not a reliable indicator of the actual current calendar week. In the men's API, Week 1 (dated 2026-01-12) has `current: "1"` even in February 2026. The flag appears to mark the "first week of season" rather than "current calendar week."
+
+**Additional Issue:** The fallback checked for `rqs` field but men's API uses `nqs` field for ranking qualification status.
+
+**Fix Applied:**
+1. Changed week detection from `current: "1"` flag to **date-based logic**: find the latest week whose `date` field is ≤ today
+2. Added check for `nqs` field in addition to `rqs` for ranked weeks fallback
+3. Added logging to show which detection method was used
+
+**New Logic Order:**
+1. Find latest week with `date <= today` (actual current calendar week)
+2. Fallback: latest week with `nqs > 0` or `rqs > 0` (has ranking data)
+3. Fallback: highest week number in array
+
+**Files Modified:** `server/lib/rtnStatsService.js`
+
+**Commit:** `f824eb7` - "Fix getCurrentWeek() to use date-based logic instead of unreliable 'current' flag"
+
+**Verification:** Rankings panel now shows Week 4 (dated 2026-02-02) which is the correct week for Feb 7, 2026.
+
+---
+
 ## Verification Checklist
 
 ### After Phase 1 (RTN ID Capture & Shared Stats Store)

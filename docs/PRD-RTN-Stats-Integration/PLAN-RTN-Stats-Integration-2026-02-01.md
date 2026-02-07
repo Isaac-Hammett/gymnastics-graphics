@@ -419,14 +419,15 @@ The stats service reads these IDs for all RTN API calls. Resolution order:
 RTN organizes rankings by week number. The service needs to determine the current week:
 
 1. Fetch `/{gender}/results/{year}/1/0/5` -- the `schema.weeks` array lists all available weeks
-2. Find the week with `current: "1"`, or the latest week with `rqs: "1"`
-3. Cache the week number for the session
-4. Default to week 1 if determination fails
+2. Find the latest week whose `date` field is ≤ today (date-based detection)
+3. Fallback: latest week with `nqs > 0` (men's) or `rqs > 0` (women's)
+4. Fallback: highest week number in array (index 0, since sorted descending)
 
 **IMPORTANT - RTN API Field Names:**
-- Week number field is `wk` (not `week`): `{ "wk": "4", "current": "1", "rqs": "1", ... }`
+- Week number field is `wk` (not `week`): `{ "wk": "4", "date": "2026-02-02", "nqs": "0", "current": "0" }`
 - Weeks array is sorted **descending** (highest week first): `[{wk: "12"}, {wk: "11"}, {wk: "10"}, ...]`
-- When iterating for fallbacks, use index 0 for latest, not last element
+- Men's API uses `nqs` for ranking status; women's API uses `rqs`
+- **DO NOT use `current: "1"` flag** — it marks "first week of season", not actual current week
 
 **Note:** Use week-based rankings only (not daily). Daily updates are too dynamic since not all teams may have competed yet. The weekly view is a more stable and representative snapshot.
 
