@@ -5365,7 +5365,9 @@
         // getTeamEventForRotation now returns the event name directly (e.g., 'FLOOR', 'VAULT', 'BARS')
         const rotationData = sortedTeams.slice(0, actualNumTeams).map((team, idx) => {
           const eventName = getTeamEventForRotation(idx, rotation, actualNumTeams, competitionFormat, gender);
-          const teamEvent = team.events?.find(e => e.event_name === eventName);
+          // Convert internal event code to API event name (e.g., 'FLOOR' -> 'Floor Exercise')
+          const apiEventName = EVENT_DISPLAY_NAMES[eventName] || eventName;
+          const teamEvent = team.events?.find(e => e.event_name === apiEventName);
           const gymnasts = teamEvent?.gymnasts?.sort((a, b) => (a.order || 0) - (b.order || 0)) || [];
           const eventScore = parseFloat(teamEvent?.event_score) || 0;
           const totalScore = parseFloat(team.final_score) || 0;
@@ -6554,7 +6556,8 @@
 
         // Build data for each team on the SAME event (apparatus mode)
         const apparatusData = sortedTeams.slice(0, actualNumTeams).map((team) => {
-          const teamEvent = team.events?.find(e => e.event_name === eventName);
+          // Use eventDisplayName for API lookup (e.g., 'Floor Exercise' instead of 'FLOOR')
+          const teamEvent = team.events?.find(e => e.event_name === eventDisplayName);
           const gymnasts = teamEvent?.gymnasts?.sort((a, b) => (a.order || 0) - (b.order || 0)) || [];
           const eventScore = parseFloat(teamEvent?.event_score) || 0;
           const totalScore = parseFloat(team.final_score) || 0;
