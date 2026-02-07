@@ -167,9 +167,17 @@ Producers can create rundowns but cannot execute them. There's no bridge between
 2. See current segment with large countdown timer
 3. See notes for current segment
 4. See preview of next segment
-5. Quick scene-switch buttons available
+5. Control buttons: **PREV** (previous segment), **PAUSE/RESUME**, **NEXT** (advance segment)
+6. Quick scene-switch buttons available
+7. "SHOW PAUSED" banner appears when show is paused
 
-**Status:** ⚠️ Implemented (Phase B + E) but **partially blocked by BUG-012** — header shows legacy `showConfig.showName` instead of actual competition name. Core functionality (timer, notes, next segment, scene buttons) works. See [BUGS.md](./BUGS.md#bug-012).
+**Controls:**
+- **PREV** (gray) — Go to previous segment (disabled at first segment)
+- **PAUSE** (yellow) — Pause the show timer (changes to green **RESUME** when paused)
+- **NEXT** (blue) — Advance to next segment (respects hold segment timing)
+- All controls disabled when producer has locked talent controls
+
+**Status:** ⚠️ Implemented (Phase B + E) but **partially blocked by BUG-012** — header shows legacy `showConfig.showName` instead of actual competition name. Core functionality (timer, notes, next segment, scene buttons, control buttons) works. See [BUGS.md](./BUGS.md#bug-012).
 
 ---
 

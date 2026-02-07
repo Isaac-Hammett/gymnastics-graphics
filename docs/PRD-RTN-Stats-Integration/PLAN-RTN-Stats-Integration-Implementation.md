@@ -118,6 +118,29 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 
 ---
 
+## Post-Deployment Bug Fixes
+
+### Bug Fix: getCurrentWeek() Using Wrong Field Name (2026-02-07)
+
+**Symptom:** Rankings panel always showed "Week 1" regardless of actual date in the season.
+
+**Root Cause:** The RTN API returns week numbers in the `wk` field, but `getCurrentWeek()` was looking for `week`. This caused all three fallback branches to fail (`currentWeek.week`, `latest.week`, `last.week` all returned `undefined`), resulting in the function defaulting to week 1.
+
+**Secondary Issue:** The weeks array from RTN is sorted **descending** (highest week first, e.g., week 12, 11, 10...), but the fallback logic used `array[array.length - 1]` which returned the **lowest** week number instead of the latest.
+
+**Fix Applied:**
+1. Changed `currentWeek.week` → `currentWeek.wk` (3 occurrences)
+2. Changed `rqsWeeks[rqsWeeks.length - 1]` → `rqsWeeks[0]` (first element = latest week)
+3. Changed "last week in array" fallback to use index 0 instead of last index
+
+**Files Modified:** `server/lib/rtnStatsService.js`
+
+**Commit:** `25693d9` - "Fix getCurrentWeek() using wrong field name (wk not week) for RTN API"
+
+**Verification:** After fix, Rankings panel correctly shows current week number based on RTN's `current: "1"` flag or falls back to the highest RQS-enabled week.
+
+---
+
 ## Verification Checklist
 
 ### After Phase 1 (RTN ID Capture & Shared Stats Store)

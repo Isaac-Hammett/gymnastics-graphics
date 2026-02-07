@@ -279,6 +279,8 @@ Week 1 has `"current": "1"`. Array is sorted descending by week number.
 
 **INFO: The plan's `getCurrentWeek()` endpoint path is wrong.** Plan says `/results/{year}/1/0/5` but the weeks schema is available from ANY results endpoint (e.g., `/results/2026/4/0/5`). The week discovery doesn't need a specific path — the schema object is included in every results response.
 
+**POST-DEPLOYMENT BUG (2026-02-07):** Despite this audit correctly documenting `wk` as the field name, the implementation used `week` instead. This caused `getCurrentWeek()` to always return week 1. Fixed in commit `25693d9`. **Lesson:** Audit findings about API field names must explicitly update implementation task descriptions, not just be noted in audit reports.
+
 ---
 
 ## B-CRITICAL: RTN ID Source Verification
