@@ -423,6 +423,11 @@ RTN organizes rankings by week number. The service needs to determine the curren
 3. Cache the week number for the session
 4. Default to week 1 if determination fails
 
+**IMPORTANT - RTN API Field Names:**
+- Week number field is `wk` (not `week`): `{ "wk": "4", "current": "1", "rqs": "1", ... }`
+- Weeks array is sorted **descending** (highest week first): `[{wk: "12"}, {wk: "11"}, {wk: "10"}, ...]`
+- When iterating for fallbacks, use index 0 for latest, not last element
+
 **Note:** Use week-based rankings only (not daily). Daily updates are too dynamic since not all teams may have competed yet. The weekly view is a more stable and representative snapshot.
 
 ---

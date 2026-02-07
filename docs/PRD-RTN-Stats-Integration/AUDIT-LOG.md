@@ -202,3 +202,45 @@
 
 ---
 
+## Post-Deployment Issues — 2026-02-07
+
+### Issue: getCurrentWeek() Always Returns Week 1
+
+**Reported:** 2026-02-07 (Navy vs Army MAG competition)
+**Severity:** HIGH — All rankings showing Week 1 data instead of current week
+
+**Root Cause Analysis:**
+
+| Check | Finding |
+|-------|---------|
+| API Response | RTN API returns `{ "wk": "4", "current": "1", ... }` — field is `wk`, not `week` |
+| Code Bug | `getCurrentWeek()` checked `currentWeek.week` which was always `undefined` |
+| Fallback Bug | Weeks array sorted descending; code used `array[length-1]` (lowest week) instead of `array[0]` (highest) |
+| Result | All three fallback branches failed → defaulted to week 1 |
+
+**Fix Applied:**
+
+```javascript
+// Before (broken)
+if (currentWeek?.week) { ... parseInt(currentWeek.week, 10) }
+const latest = rqsWeeks[rqsWeeks.length - 1];  // Wrong: gets lowest week
+const last = data.schema.weeks[data.schema.weeks.length - 1];  // Wrong
+
+// After (fixed)
+if (currentWeek?.wk) { ... parseInt(currentWeek.wk, 10) }
+const latest = rqsWeeks[0];  // Correct: gets highest week (descending sort)
+const first = data.schema.weeks[0];  // Correct
+```
+
+**Files Modified:** `server/lib/rtnStatsService.js`
+**Commit:** `25693d9`
+**Deployed:** 2026-02-07 via SSH to coordinator VM
+
+**Why Audit Missed This:**
+
+Category B (RTN API) audit B10 documented the correct field name (`wk`) in the audit report, but the plan documents and implementation tasks still referenced `week`. The audit verified the API response structure but didn't cross-check against the planned implementation code.
+
+**Lesson Learned:** Audit findings about API field names should trigger explicit updates to implementation task descriptions, not just audit notes.
+
+---
+

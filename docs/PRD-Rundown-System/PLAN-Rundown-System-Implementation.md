@@ -39,7 +39,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 - Complete an entire phase in one iteration
 
 **Task Numbering:**
-- Tasks are numbered sequentially: Task 1, Task 2, ... Task 88
+- Tasks are numbered sequentially: Task 1, Task 2, ... Task 89
 - Each task number is unique and independent
 - Example: "Task 8" is ONE task, not a subtask
 
@@ -51,7 +51,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 |-------|------|----------|--------|-------|
 | A | Connect Editor to Engine | P0 | COMPLETE (silent failure risks — see notes) | 1-16 |
 | H | Rehearsal Mode | P1 | COMPLETE | 17-21 |
-| B | Talent View | P1 | COMPLETE (BUG-012: wrong header name) | 22-27 |
+| B | Talent View | P1 | COMPLETE (BUG-012: wrong header name) | 22-27, 89 |
 | I | Live Rundown Sync | P2 | COMPLETE | 28-37 |
 | J | Segment Timing Analytics | P2 | **BROKEN** (BUG-013: data structure mismatch) | 38-42 |
 | D | AI Suggestions - Planning | P2 | CODE COMPLETE (not validated — missing data) | 43-48 |
@@ -107,7 +107,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 20 | Show "REHEARSAL" indicator in all views | COMPLETE | Added purple "REHEARSAL MODE" banner in ProducerView, rehearsal toggle button, `setRehearsalMode` socket handler, `rehearsalModeChanged` event wiring |
 | Task 21 | Log timing data for post-rehearsal analysis | COMPLETE | Added timing analytics logging in `showStopped` event handler; saves segment history, overrides, and summary to Firebase at `competitions/{compId}/production/rundown/analytics/{runId}` |
 
-### Phase B: Talent View (P1) - COMPLETE (6/6)
+### Phase B: Talent View (P1) - COMPLETE (7/7)
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
@@ -117,6 +117,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 25 | Next segment preview | COMPLETE | `NextSegment.jsx` component included showing name, duration, type icon, auto-advance indicator |
 | Task 26 | Notes display | COMPLETE | `CurrentSegment.jsx` shows notes in styled box at bottom of segment card |
 | Task 27 | Add `/talent` route | COMPLETE | Route exists at `App.jsx:68` as `<Route path="talent" element={<TalentView />} />` |
+| Task 89 | Add talent control buttons (Prev/Pause/Next) | COMPLETE | Added 3-column grid with PREV (gray), PAUSE/RESUME (yellow/green), NEXT (blue) buttons; all respect talentLocked state; PREV disabled at first segment; NEXT respects hold segment timing; added "SHOW PAUSED" banner when paused |
 
 ### Phase I: Live Rundown Sync (P2) - COMPLETE (10/10)
 
