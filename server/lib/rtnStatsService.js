@@ -251,26 +251,47 @@ async function getCurrentWeek(gender, year) {
     const data = await fetchWithRetry(url);
 
     if (data?.schema?.weeks && Array.isArray(data.schema.weeks)) {
-      // Look for the week marked as current (field is 'wk', not 'week')
-      const currentWeek = data.schema.weeks.find(w => w.current === '1' || w.current === 1);
-      if (currentWeek?.wk) {
-        const parsed = parseInt(currentWeek.wk, 10);
-        if (!isNaN(parsed)) return parsed;
+      // RTN's 'current' flag is unreliable (often stuck on week 1)
+      // Instead, find the latest week whose date is <= today
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      // Weeks are sorted descending (highest week first), so find first week with date <= today
+      const currentByDate = data.schema.weeks.find(w => {
+        if (!w.date) return false;
+        const weekDate = new Date(w.date);
+        return weekDate <= today;
+      });
+
+      if (currentByDate?.wk) {
+        const parsed = parseInt(currentByDate.wk, 10);
+        if (!isNaN(parsed)) {
+          console.log(`[rtnStatsService] Determined current week ${parsed} by date (${currentByDate.date})`);
+          return parsed;
+        }
       }
 
-      // Fallback: latest week with rqs enabled (weeks array is sorted descending, so index 0 is latest)
-      const rqsWeeks = data.schema.weeks.filter(w => w.rqs === '1' || w.rqs === 1);
-      if (rqsWeeks.length > 0) {
-        const latest = rqsWeeks[0]; // First element is latest (descending sort)
+      // Fallback: latest week with nqs/rqs > 0 (has ranking data)
+      const rankedWeeks = data.schema.weeks.filter(w =>
+        (w.nqs && w.nqs !== '0') || (w.rqs && w.rqs !== '0' && w.rqs !== 0)
+      );
+      if (rankedWeeks.length > 0) {
+        const latest = rankedWeeks[0]; // First element is latest (descending sort)
         const parsed = parseInt(latest.wk, 10);
-        if (!isNaN(parsed)) return parsed;
+        if (!isNaN(parsed)) {
+          console.log(`[rtnStatsService] Determined current week ${parsed} by NQS/RQS data`);
+          return parsed;
+        }
       }
 
       // Fallback: first week in array (descending, so index 0 is highest week number)
       if (data.schema.weeks.length > 0) {
         const first = data.schema.weeks[0];
         const parsed = parseInt(first.wk, 10);
-        if (!isNaN(parsed)) return parsed;
+        if (!isNaN(parsed)) {
+          console.log(`[rtnStatsService] Determined current week ${parsed} as fallback (highest available)`);
+          return parsed;
+        }
       }
     }
 
