@@ -251,25 +251,25 @@ async function getCurrentWeek(gender, year) {
     const data = await fetchWithRetry(url);
 
     if (data?.schema?.weeks && Array.isArray(data.schema.weeks)) {
-      // Look for the week marked as current
+      // Look for the week marked as current (field is 'wk', not 'week')
       const currentWeek = data.schema.weeks.find(w => w.current === '1' || w.current === 1);
-      if (currentWeek?.week) {
-        const parsed = parseInt(currentWeek.week, 10);
+      if (currentWeek?.wk) {
+        const parsed = parseInt(currentWeek.wk, 10);
         if (!isNaN(parsed)) return parsed;
       }
 
-      // Fallback: latest week with rqs enabled
+      // Fallback: latest week with rqs enabled (weeks array is sorted descending, so index 0 is latest)
       const rqsWeeks = data.schema.weeks.filter(w => w.rqs === '1' || w.rqs === 1);
       if (rqsWeeks.length > 0) {
-        const latest = rqsWeeks[rqsWeeks.length - 1];
-        const parsed = parseInt(latest.week, 10);
+        const latest = rqsWeeks[0]; // First element is latest (descending sort)
+        const parsed = parseInt(latest.wk, 10);
         if (!isNaN(parsed)) return parsed;
       }
 
-      // Fallback: last week in array
+      // Fallback: first week in array (descending, so index 0 is highest week number)
       if (data.schema.weeks.length > 0) {
-        const last = data.schema.weeks[data.schema.weeks.length - 1];
-        const parsed = parseInt(last.week, 10);
+        const first = data.schema.weeks[0];
+        const parsed = parseInt(first.wk, 10);
         if (!isNaN(parsed)) return parsed;
       }
     }
