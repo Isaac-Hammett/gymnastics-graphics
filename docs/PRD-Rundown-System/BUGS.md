@@ -9,9 +9,65 @@
 | BUG-015 | High | E | OPEN | Talent roster hardcoded (5 fake people), not from Firebase |
 | BUG-016 | Medium | F | OPEN | Audio cue in/out points accepted by UI but ignored by playback |
 | BUG-017 | Medium | G | OPEN | Equipment list hardcoded, not configurable per competition |
+| BUG-019 | Critical | A | FIXED | Resume button doesn't work after pause — isPaused missing from getState() |
 | BUG-018 | Critical | A | FIXED | Producer View Pause/Stop/Reset buttons use legacy handlers, not timesheet engine |
 | BUG-012 | High | B | OPEN | Talent View shows wrong competition name |
 | BUG-011 | Critical | A | FIXED | Start Show button hidden by stale isPlaying |
+
+---
+
+## BUG-019: Resume Button Doesn't Work After Pause — isPaused Missing from getState() (FIXED)
+
+**Date Identified:** 2026-02-07
+**Date Fixed:** 2026-02-07
+**Severity:** Critical
+**Status:** FIXED
+**Phase:** A (Connect Editor to Engine)
+
+### Symptoms
+
+1. Producer starts show and clicks Pause — show pauses correctly
+2. **BUG:** The Pause button does NOT change to Resume — it stays as "Pause"
+3. Clicking Pause again does nothing — show remains paused with no way to resume
+4. Same issue in Talent View — no Resume button appears
+
+### Root Cause
+
+The `TimesheetEngine.getState()` method did NOT include `isPaused` in its return object. It only included `state: 'paused'` (the engine state string).
+
+The client code in `useTimesheet.js` was looking for:
+```javascript
+const isPaused = useMemo(() => {
+  return timesheetState.isPaused || false;
+}, [timesheetState.isPaused]);
+```
+
+Since `timesheetState.isPaused` was always `undefined`, the UI never showed the Resume button.
+
+### Fix Applied
+
+Added `isPaused` boolean field to `getState()` in `server/lib/timesheetEngine.js`:
+
+```javascript
+getState() {
+  return {
+    state: this._state,
+    isRunning: this._isRunning,
+    isPaused: this._state === ENGINE_STATE.PAUSED,  // <-- ADDED
+    isRehearsalMode: this._isRehearsalMode,
+    // ... rest of state
+  };
+}
+```
+
+### Files Changed
+
+- `server/lib/timesheetEngine.js` — Added `isPaused` to `getState()` return value
+
+### Deployment
+
+- Server deployed to coordinator VM (`44.193.31.120`) and PM2 restarted
+- Verified API response now includes `isPaused: false` field
 
 ---
 
