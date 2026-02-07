@@ -244,3 +244,43 @@ Category B (RTN API) audit B10 documented the correct field name (`wk`) in the a
 
 ---
 
+### Issue: RTN 'current' Flag Unreliable (2026-02-07)
+
+**Reported:** 2026-02-07 (same session, after first fix deployed)
+**Severity:** HIGH — Rankings still showing Week 1 after field name fix
+
+**Root Cause Analysis:**
+
+| Check | Finding |
+|-------|---------|
+| API Response | Men's API shows `{"wk":"1","date":"2026-01-12","nqs":"0","current":"1"}` — Week 1 marked as current even in February |
+| Semantic Meaning | RTN's `current: "1"` flag marks "first week of season", NOT "current calendar week" |
+| Field Name | Men's API uses `nqs` for ranking status; women's uses `rqs` — code only checked `rqs` |
+| Result | Week detection found Week 1 (correct per RTN flag, wrong semantically) |
+
+**Fix Applied:**
+
+```javascript
+// Before (relied on unreliable flag)
+const currentWeek = data.schema.weeks.find(w => w.current === '1');
+
+// After (date-based logic)
+const today = new Date();
+const currentByDate = data.schema.weeks.find(w => {
+  const weekDate = new Date(w.date);
+  return weekDate <= today;
+});
+```
+
+**Files Modified:** `server/lib/rtnStatsService.js`
+**Commit:** `f824eb7`
+**Deployed:** 2026-02-07 via SSH to coordinator VM
+
+**Why Original Design Failed:**
+
+The plan assumed RTN's `current: "1"` flag would indicate the actual current week. This assumption was not validated during the B10 audit which only verified the schema structure existed, not the semantic correctness of the `current` field's value.
+
+**Lesson Learned:** When APIs provide "current" or "active" flags, validate the semantic meaning with real data across different time periods, not just the schema structure.
+
+---
+
