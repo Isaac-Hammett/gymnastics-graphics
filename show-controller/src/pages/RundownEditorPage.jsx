@@ -623,6 +623,10 @@ export default function RundownEditorPage() {
   // Fetched from competitions/{compId}/production/talent, falls back to DUMMY_TALENT
   const [talentRoster, setTalentRoster] = useState(DUMMY_TALENT);
 
+  // Equipment list from Firebase (Phase X: Task 98 - BUG-017)
+  // Fetched from competitions/{compId}/production/equipment, falls back to DUMMY_EQUIPMENT
+  const [equipmentList, setEquipmentList] = useState(DUMMY_EQUIPMENT);
+
   // Timing Analytics state (Phase J: Task 40)
   const [showTimingAnalyticsModal, setShowTimingAnalyticsModal] = useState(false); // Timing analytics dashboard modal
   const [timingAnalyticsData, setTimingAnalyticsData] = useState([]); // Past run analytics from Firebase
@@ -1307,7 +1311,7 @@ export default function RundownEditorPage() {
           const seg1End = seg1.startTime + (seg1.duration || 0);
           // Check if segments overlap (back-to-back is not a conflict)
           if (seg1End > seg2.startTime && seg1.startTime < seg2.startTime + (seg2.duration || 0)) {
-            const equipment = DUMMY_EQUIPMENT.find(e => e.id === eqId);
+            const equipment = equipmentList.find(e => e.id === eqId);
             conflictList.push({
               equipmentId: eqId,
               equipmentName: equipment?.name || eqId,
@@ -1538,6 +1542,24 @@ export default function RundownEditorPage() {
       // Keep dummy talent on error
     });
 
+    // Subscribe to equipment list changes (Phase X: Task 98 - BUG-017)
+    // Fetches equipment data from competitions/{compId}/production/equipment
+    const equipmentRef = ref(db, `competitions/${compId}/production/equipment`);
+    const unsubscribeEquipment = onValue(equipmentRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        // Convert object to array format expected by component
+        const equipmentArray = Object.values(data);
+        setEquipmentList(equipmentArray);
+      } else {
+        // Fall back to dummy equipment if no Firebase data exists
+        setEquipmentList(DUMMY_EQUIPMENT);
+      }
+    }, (error) => {
+      console.error('Error loading equipment list from Firebase:', error);
+      // Keep dummy equipment on error
+    });
+
     // Load timing analytics for historical averages (Phase J: Task 41)
     // This allows segment rows to show average actual durations from past runs
     loadTimingAnalytics();
@@ -1549,6 +1571,7 @@ export default function RundownEditorPage() {
       unsubscribeStatus();
       unsubscribeTimezoneConfig();
       unsubscribeTalent();
+      unsubscribeEquipment();
     };
   }, [compId]);
 
@@ -6372,8 +6395,8 @@ function SegmentRow({
                     : 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
                 }`}
                 title={hasEquipmentConflict
-                  ? `⚠ Equipment conflict! ${segment.equipment.map(eId => DUMMY_EQUIPMENT.find(e => e.id === eId)?.name || eId).join(', ')}`
-                  : `Equipment: ${segment.equipment.map(eId => DUMMY_EQUIPMENT.find(e => e.id === eId)?.name || eId).join(', ')}`}
+                  ? `⚠ Equipment conflict! ${segment.equipment.map(eId => equipmentList.find(e => e.id === eId)?.name || eId).join(', ')}`
+                  : `Equipment: ${segment.equipment.map(eId => equipmentList.find(e => e.id === eId)?.name || eId).join(', ')}`}
               >
                 {hasEquipmentConflict ? (
                   <ExclamationTriangleIcon className="w-3 h-3" />
@@ -7415,7 +7438,7 @@ function SegmentDetailPanel({ segment, onSave, onDelete, onCancel, groupedScenes
           <div className="space-y-3">
             {/* Equipment by type */}
             {['camera', 'microphone', 'other'].map((eqType) => {
-              const equipmentOfType = DUMMY_EQUIPMENT.filter(e => e.type === eqType);
+              const equipmentOfType = equipmentList.filter(e => e.type === eqType);
               const typeLabel = eqType === 'camera' ? 'Cameras' : eqType === 'microphone' ? 'Microphones' : 'Other Equipment';
               return (
                 <div key={eqType}>
@@ -9919,7 +9942,7 @@ function EquipmentScheduleModal({ segments, segmentStartTimes, onClose }) {
     const schedule = {};
 
     // Initialize schedule for each equipment
-    DUMMY_EQUIPMENT.forEach(eq => {
+    equipmentList.forEach(eq => {
       schedule[eq.id] = {
         equipment: eq,
         segments: [],
@@ -10024,13 +10047,13 @@ function EquipmentScheduleModal({ segments, segmentStartTimes, onClose }) {
   // Group equipment by type for display
   const equipmentByType = useMemo(() => {
     const grouped = { camera: [], microphone: [], other: [] };
-    DUMMY_EQUIPMENT.forEach(eq => {
+    equipmentList.forEach(eq => {
       if (grouped[eq.type]) {
         grouped[eq.type].push(eq);
       }
     });
     return grouped;
-  }, []);
+  }, [equipmentList]);
 
   const typeLabels = {
     camera: 'Cameras',
