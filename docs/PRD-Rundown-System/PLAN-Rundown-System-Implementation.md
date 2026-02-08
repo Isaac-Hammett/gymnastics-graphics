@@ -22,6 +22,27 @@ This implementation plan covers all phases of the Rundown System from planning t
 
 ---
 
+## Quick Task Index (Phase X Bug Fixes)
+
+**READ THIS FIRST** — Contains file paths, line numbers, and fix summaries. Skip full context loading.
+
+| Task | Bug | File | Lines | Fix Summary |
+|------|-----|------|-------|-------------|
+| 90 | BUG-012 | `TalentView.jsx` | 91 | ✅ COMPLETE — `competitionConfig?.eventName \|\| showConfig?.showName` |
+| 91 | BUG-013a | `RundownEditorPage.jsx` | 2057-2079 | Transform `segmentTimings` object → `segments` array in `loadTimingAnalytics()` |
+| 92 | BUG-013b | `RundownEditorPage.jsx` | 2067 | Change filter: `run.segmentTimings \|\| run.segments` (not `status === 'completed'`) |
+| 93 | BUG-013c | `server/index.js` | ~558 | Add `status: 'completed'` to analytics write in `showStopped` handler |
+| 94 | BUG-015a | Firebase | — | Create schema at `competitions/{compId}/production/talent` |
+| 95 | BUG-015b | `RundownEditorPage.jsx` | 83 | Replace `DUMMY_TALENT` with Firebase fetch |
+| 96 | BUG-015c | `TalentView.jsx` | 15 | Replace `TALENT_ROSTER` with Firebase fetch + localStorage for talentId |
+| 97 | BUG-014 | `RundownEditorPage.jsx` | ~6500 | Add sponsor section to SegmentDetailPanel (after Equipment) |
+| 98 | BUG-017 | `RundownEditorPage.jsx` | 91 | Replace `DUMMY_EQUIPMENT` with Firebase fetch |
+| 99 | BUG-016 | `RundownEditorPage.jsx` | ~6200 | Remove inPoint/outPoint fields OR implement OBS seek |
+
+**Workflow:** Read index → Read target lines only → Implement → Commit → Deploy → Verify
+
+---
+
 ## IMPORTANT: Task Execution Rules
 
 **ONE TASK = ONE ITERATION**
