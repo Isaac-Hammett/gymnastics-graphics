@@ -5,7 +5,7 @@
 | Bug | Severity | Phase | Status | Fix Task | Description |
 |-----|----------|-------|--------|----------|-------------|
 | BUG-012 | High | B | FIXED | — | Talent View shows wrong competition name |
-| BUG-013 | Critical | J | **Tasks 91-93** | [Tasks 91-93](#task-91) | Timing analytics broken — data structure mismatch + status filter |
+| BUG-013 | Critical | J | **Task 91 ✓, 92-93 pending** | [Tasks 91-93](#task-91) | Timing analytics broken — data structure mismatch + status filter |
 | BUG-014 | High | G | **Task 97** | [Task 97](#task-97) | No sponsor assignment UI in segment detail panel |
 | BUG-015 | High | E | **Tasks 94-96** | [Tasks 94-96](#task-94) | Talent roster hardcoded (5 fake people), not from Firebase |
 | BUG-016 | Medium | F | **Task 99** | [Task 99](#task-99) | Audio cue in/out points accepted by UI but ignored by playback |
