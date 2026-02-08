@@ -2073,7 +2073,7 @@ export default function RundownEditorPage() {
               ? Object.values(runData.segmentTimings)
               : runData.segments || []
           }))
-          .filter(run => run.status === 'completed') // Only show completed runs
+          .filter(run => run.segmentTimings || run.segments) // BUG-013b FIX: Accept runs with timing data regardless of status
           .sort((a, b) => (b.startedAt || 0) - (a.startedAt || 0)) // Most recent first
           .slice(0, 20); // Limit to last 20 runs
         setTimingAnalyticsData(analyticsArray);
