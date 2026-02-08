@@ -7474,6 +7474,70 @@ function SegmentDetailPanel({ segment, onSave, onDelete, onCancel, groupedScenes
           </div>
         </div>
 
+        {/* Sponsor Assignment (Phase G: Task 97 - BUG-014 fix) */}
+        <div className="border-t border-zinc-700/50 pt-4">
+          <label className="block text-xs text-zinc-400 mb-2 flex items-center gap-1.5">
+            <StarIcon className="w-3.5 h-3.5" />
+            Sponsor Assignment
+            <span className="ml-1 text-zinc-600 font-normal">— optional sponsor for this segment</span>
+          </label>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-[10px] text-zinc-500 uppercase tracking-wider mb-1">Sponsor Name</label>
+              <input
+                type="text"
+                value={formData.sponsor?.name || ''}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  sponsor: e.target.value ? { ...formData.sponsor, name: e.target.value } : null
+                })}
+                placeholder="e.g., State Farm, Nike, Gatorade"
+                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500 placeholder-zinc-500"
+              />
+            </div>
+            {formData.sponsor?.name && (
+              <>
+                <div>
+                  <label className="block text-[10px] text-zinc-500 uppercase tracking-wider mb-1">Logo URL</label>
+                  <input
+                    type="text"
+                    value={formData.sponsor?.logo || ''}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      sponsor: { ...formData.sponsor, logo: e.target.value }
+                    })}
+                    placeholder="https://example.com/logo.png"
+                    className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500 placeholder-zinc-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-zinc-500 uppercase tracking-wider mb-1">Sponsor Tier</label>
+                  <select
+                    value={formData.sponsor?.tier || 'official'}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      sponsor: { ...formData.sponsor, tier: e.target.value }
+                    })}
+                    className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="presenting">Presenting Sponsor</option>
+                    <option value="title">Title Sponsor</option>
+                    <option value="official">Official Sponsor</option>
+                    <option value="supporting">Supporting Sponsor</option>
+                  </select>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, sponsor: null })}
+                  className="text-xs text-zinc-500 hover:text-red-400 transition-colors"
+                >
+                  Clear sponsor
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+
         <div className="flex gap-3 pt-4">
           <button
             type="button"
