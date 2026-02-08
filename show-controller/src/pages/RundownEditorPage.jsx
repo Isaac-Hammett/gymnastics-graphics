@@ -619,6 +619,10 @@ export default function RundownEditorPage() {
   const [showEquipmentScheduleModal, setShowEquipmentScheduleModal] = useState(false); // Equipment schedule view modal
   const [showSponsorFulfillmentModal, setShowSponsorFulfillmentModal] = useState(false); // Sponsor fulfillment report modal (Phase G: Task 71)
 
+  // Talent roster from Firebase (Phase X: Task 95 - BUG-015b)
+  // Fetched from competitions/{compId}/production/talent, falls back to DUMMY_TALENT
+  const [talentRoster, setTalentRoster] = useState(DUMMY_TALENT);
+
   // Timing Analytics state (Phase J: Task 40)
   const [showTimingAnalyticsModal, setShowTimingAnalyticsModal] = useState(false); // Timing analytics dashboard modal
   const [timingAnalyticsData, setTimingAnalyticsData] = useState([]); // Past run analytics from Firebase
@@ -1516,6 +1520,24 @@ export default function RundownEditorPage() {
       console.error('Error loading timezone config from Firebase:', error);
     });
 
+    // Subscribe to talent roster changes (Phase X: Task 95 - BUG-015b)
+    // Fetches talent data from competitions/{compId}/production/talent
+    const talentRef = ref(db, `competitions/${compId}/production/talent`);
+    const unsubscribeTalent = onValue(talentRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        // Convert object to array format expected by component
+        const talentArray = Object.values(data);
+        setTalentRoster(talentArray);
+      } else {
+        // Fall back to dummy talent if no Firebase data exists
+        setTalentRoster(DUMMY_TALENT);
+      }
+    }, (error) => {
+      console.error('Error loading talent roster from Firebase:', error);
+      // Keep dummy talent on error
+    });
+
     // Load timing analytics for historical averages (Phase J: Task 41)
     // This allows segment rows to show average actual durations from past runs
     loadTimingAnalytics();
@@ -1526,6 +1548,7 @@ export default function RundownEditorPage() {
       unsubscribeGroups();
       unsubscribeStatus();
       unsubscribeTimezoneConfig();
+      unsubscribeTalent();
     };
   }, [compId]);
 
@@ -5781,6 +5804,7 @@ export default function RundownEditorPage() {
         <TalentScheduleModal
           segments={segments}
           segmentStartTimes={segmentStartTimes}
+          talentRoster={talentRoster}
           onClose={() => setShowTalentScheduleModal(false)}
         />
       )}
@@ -6333,7 +6357,7 @@ function SegmentRow({
             {segment.talent?.length > 0 && (
               <span
                 className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded bg-rose-500/20 text-rose-400 border border-rose-500/30 shrink-0 cursor-help"
-                title={`Talent: ${segment.talent.map(tId => DUMMY_TALENT.find(t => t.id === tId)?.name || tId).join(', ')}`}
+                title={`Talent: ${segment.talent.map(tId => talentRoster.find(t => t.id === tId)?.name || tId).join(', ')}`}
               >
                 <UserIcon className="w-3 h-3" />
                 <span className="text-[10px]">{segment.talent.length}</span>
@@ -7304,7 +7328,7 @@ function SegmentDetailPanel({ segment, onSave, onDelete, onCancel, groupedScenes
           <div className="space-y-2">
             {/* Talent checkboxes */}
             <div className="grid grid-cols-1 gap-1.5">
-              {DUMMY_TALENT.map((talent) => {
+              {talentRoster.map((talent) => {
                 const isSelected = (formData.talent || []).includes(talent.id);
                 return (
                   <label
@@ -9592,13 +9616,13 @@ function PrintOptionsModal({ onPrint, onClose }) {
 
 // Talent Schedule Modal Component (Phase 12: Task 94)
 // Shows which talent is assigned to which segments with conflict warnings
-function TalentScheduleModal({ segments, segmentStartTimes, onClose, onExport }) {
+function TalentScheduleModal({ segments, segmentStartTimes, talentRoster, onClose, onExport }) {
   // Build talent schedule data - which segments each talent appears in
   const talentSchedule = useMemo(() => {
     const schedule = {};
 
     // Initialize schedule for each talent
-    DUMMY_TALENT.forEach(talent => {
+    talentRoster.forEach(talent => {
       schedule[talent.id] = {
         talent,
         segments: [],
@@ -9623,7 +9647,7 @@ function TalentScheduleModal({ segments, segmentStartTimes, onClose, onExport })
     });
 
     return schedule;
-  }, [segments, segmentStartTimes]);
+  }, [segments, segmentStartTimes, talentRoster]);
 
   // Detect conflicts - talent assigned to overlapping segments
   const conflicts = useMemo(() => {
@@ -9744,7 +9768,7 @@ function TalentScheduleModal({ segments, segmentStartTimes, onClose, onExport })
         {/* Content */}
         <div className="p-4 overflow-y-auto flex-1">
           <div className="space-y-4">
-            {DUMMY_TALENT.map(talent => {
+            {talentRoster.map(talent => {
               const data = talentSchedule[talent.id];
               const hasSegments = data.segments.length > 0;
 
