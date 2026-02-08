@@ -33,7 +33,7 @@ This implementation plan covers all phases of the Rundown System from planning t
 | 92 | BUG-013b | `RundownEditorPage.jsx` | 2067 | ✅ COMPLETE — Change filter: `run.segmentTimings \|\| run.segments` (not `status === 'completed'`) |
 | 93 | BUG-013c | `server/index.js` | ~558 | ✅ COMPLETE — Add `status: 'completed'` to analytics write in `showStopped` handler |
 | 94 | BUG-015a | Firebase | — | ✅ COMPLETE — Create schema at `competitions/{compId}/production/talent` |
-| 95 | BUG-015b | `RundownEditorPage.jsx` | 83 | Replace `DUMMY_TALENT` with Firebase fetch |
+| 95 | BUG-015b | `RundownEditorPage.jsx` | 83 | ✅ COMPLETE — Replace `DUMMY_TALENT` with Firebase fetch via talentRoster state |
 | 96 | BUG-015c | `TalentView.jsx` | 15 | Replace `TALENT_ROSTER` with Firebase fetch + localStorage for talentId |
 | 97 | BUG-014 | `RundownEditorPage.jsx` | ~6500 | Add sponsor section to SegmentDetailPanel (after Equipment) |
 | 98 | BUG-017 | `RundownEditorPage.jsx` | 91 | Replace `DUMMY_EQUIPMENT` with Firebase fetch |
@@ -70,7 +70,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 
 | Phase | Name | Priority | Status | Tasks |
 |-------|------|----------|--------|-------|
-| **X** | **Bug Fixes (2026-02-08)** | **P0** | **IN PROGRESS (5/10)** | **90-99** |
+| **X** | **Bug Fixes (2026-02-08)** | **P0** | **IN PROGRESS (6/10)** | **90-99** |
 | A | Connect Editor to Engine | P0 | COMPLETE (silent failure risks — see notes) | 1-16 |
 | H | Rehearsal Mode | P1 | COMPLETE | 17-21 |
 | B | Talent View | P1 | COMPLETE | 22-27, 89 |
@@ -85,7 +85,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 
 ---
 
-## Phase X: Bug Fixes (P0) - IN PROGRESS (5/10)
+## Phase X: Bug Fixes (P0) - IN PROGRESS (6/10)
 
 **Priority:** These bugs block production use. Fix before next validation audit.
 
@@ -105,7 +105,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task | Bug | Description | Status | Files |
 |------|-----|-------------|--------|-------|
 | Task 94 | BUG-015a | Create Firebase schema for talent roster at `competitions/{compId}/production/talent` | COMPLETE | Firebase |
-| Task 95 | BUG-015b | Replace `DUMMY_TALENT` in RundownEditorPage with Firebase fetch | NOT STARTED | `RundownEditorPage.jsx` |
+| Task 95 | BUG-015b | Replace `DUMMY_TALENT` in RundownEditorPage with Firebase fetch | COMPLETE | `RundownEditorPage.jsx` |
 | Task 96 | BUG-015c | Replace `TALENT_ROSTER` in TalentView with Firebase fetch + add localStorage persistence for talentId | NOT STARTED | `TalentView.jsx` |
 | Task 97 | BUG-014 | Add sponsor assignment UI to SegmentDetailPanel (dropdown with name/logo/tier fields) | NOT STARTED | `RundownEditorPage.jsx` |
 
