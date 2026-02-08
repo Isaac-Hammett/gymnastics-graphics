@@ -4,7 +4,7 @@
 
 | Bug | Severity | Phase | Status | Fix Task | Description |
 |-----|----------|-------|--------|----------|-------------|
-| BUG-012 | High | B | **Task 90** | [Task 90](#task-90) | Talent View shows wrong competition name |
+| BUG-012 | High | B | FIXED | — | Talent View shows wrong competition name |
 | BUG-013 | Critical | J | **Tasks 91-93** | [Tasks 91-93](#task-91) | Timing analytics broken — data structure mismatch + status filter |
 | BUG-014 | High | G | **Task 97** | [Task 97](#task-97) | No sponsor assignment UI in segment detail panel |
 | BUG-015 | High | E | **Tasks 94-96** | [Tasks 94-96](#task-94) | Talent roster hardcoded (5 fake people), not from Firebase |
@@ -344,11 +344,12 @@ const runs = Object.entries(data).map(([runId, runData]) => ({
 
 ---
 
-## BUG-012: Talent View Shows Legacy showName Instead of Competition Name (OPEN)
+## BUG-012: Talent View Shows Legacy showName Instead of Competition Name (FIXED)
 
 **Date Identified:** 2026-01-31
+**Date Fixed:** 2026-02-08
 **Severity:** High
-**Status:** OPEN
+**Status:** FIXED
 
 ### Symptoms
 
@@ -380,6 +381,16 @@ const { competitionConfig } = useCompetition();
 ```
 
 The `useCompetition()` hook is already available in the component tree (CompetitionLayout wraps all `/:compId/*` routes). The Talent View just needs to import and use it.
+
+### Fix Applied
+
+1. Imported `useCompetition` from `'../context/CompetitionContext'`
+2. Called `useCompetition()` hook to get `competitionConfig`
+3. Updated header to use `competitionConfig?.eventName || showConfig?.showName || 'Show Controller'`
+
+### Files Changed
+
+- `show-controller/src/views/TalentView.jsx` - Added import, hook call, updated header
 
 ### Related Bugs
 
