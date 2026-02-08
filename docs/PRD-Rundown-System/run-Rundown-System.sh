@@ -1,6 +1,6 @@
 #!/bin/bash
 # Autonomous loop for PRD-Rundown-System implementation
-# Updated 2026-02-08: Now prioritizes Phase X bug fixes
+# Updated 2026-02-08: Uses v3 prompt (96% less context usage)
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
@@ -35,7 +35,7 @@ for i in $(seq 1 $MAX_ITERATIONS); do
     NOT_STARTED=$(grep -c "NOT STARTED" "$SCRIPT_DIR/PLAN-Rundown-System-Implementation.md" 2>/dev/null || echo "0")
     echo "Tasks remaining (NOT STARTED): $NOT_STARTED" | tee -a "$LOG_FILE"
 
-    cat "$SCRIPT_DIR/promptv2-Rundown-System.md" | \
+    cat "$SCRIPT_DIR/promptv3-Rundown-System.md" | \
         claude -p --dangerously-skip-permissions --verbose --output-format stream-json \
         --mcp-config "$MCP_CONFIG" 2>&1 | \
         tee -a "$LOG_FILE"
