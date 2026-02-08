@@ -4,6 +4,7 @@ import { useShow } from '../context/ShowContext';
 import { useCompetition } from '../context/CompetitionContext';
 import { useTimesheet } from '../hooks/useTimesheet';
 import { useAIContext } from '../hooks/useAIContext';
+import { db, ref, onValue } from '../lib/firebase';
 import CurrentSegment from '../components/CurrentSegment';
 import NextSegment from '../components/NextSegment';
 import RunOfShow from '../components/RunOfShow';
@@ -11,15 +12,14 @@ import QuickActions from '../components/QuickActions';
 import ConnectionStatus from '../components/ConnectionStatus';
 import { PlayIcon, PauseIcon, BackwardIcon, LockClosedIcon, ClockIcon, DocumentTextIcon, VideoCameraIcon, SparklesIcon, ChevronDownIcon, ChevronUpIcon, StarIcon, TrophyIcon, ArrowPathIcon, ExclamationTriangleIcon } from '@heroicons/react/24/solid';
 
-// Talent roster - shared with RundownEditorPage
-// TODO: In future, this should be fetched from Firebase based on competition config
-const TALENT_ROSTER = [
-  { id: 'talent-1', name: 'John Smith', role: 'Lead Commentator', abbreviation: 'JS' },
-  { id: 'talent-2', name: 'Sarah Johnson', role: 'Color Analyst', abbreviation: 'SJ' },
-  { id: 'talent-3', name: 'Mike Davis', role: 'Sideline Reporter', abbreviation: 'MD' },
-  { id: 'talent-4', name: 'Emily Chen', role: 'Host', abbreviation: 'EC' },
-  { id: 'talent-5', name: 'Alex Rodriguez', role: 'Analyst', abbreviation: 'AR' },
+// Fallback talent roster used when Firebase has no data
+const FALLBACK_TALENT = [
+  { id: 'talent-1', name: 'Talent 1', role: 'Commentator', abbreviation: 'T1' },
+  { id: 'talent-2', name: 'Talent 2', role: 'Analyst', abbreviation: 'T2' },
 ];
+
+// localStorage key for persisting talent selection
+const TALENT_ID_STORAGE_KEY = 'gymnastics-graphics-talent-id';
 
 export default function TalentView() {
   const { state, startShow, identify, error } = useShow();
@@ -55,15 +55,60 @@ export default function TalentView() {
   // State for AI panel expansion
   const [aiPanelExpanded, setAIPanelExpanded] = useState(true);
 
-  // Get talent ID from URL query param (e.g., ?talentId=talent-1)
-  const [searchParams] = useSearchParams();
-  const talentId = searchParams.get('talentId');
+  // Talent roster state - fetched from Firebase (Phase X: Task 96 - BUG-015c)
+  const [talentRoster, setTalentRoster] = useState(FALLBACK_TALENT);
+
+  // Get compId and talentId from URL query params
+  const [searchParams, setSearchParams] = useSearchParams();
+  const compId = searchParams.get('comp');
+  const urlTalentId = searchParams.get('talentId');
+
+  // Initialize talentId from URL or localStorage
+  const [talentId, setTalentId] = useState(() => {
+    if (urlTalentId) {
+      // URL takes precedence - also save to localStorage
+      localStorage.setItem(TALENT_ID_STORAGE_KEY, urlTalentId);
+      return urlTalentId;
+    }
+    // Fall back to localStorage
+    return localStorage.getItem(TALENT_ID_STORAGE_KEY) || null;
+  });
+
+  // Fetch talent roster from Firebase (Phase X: Task 96 - BUG-015c)
+  useEffect(() => {
+    if (!compId) return;
+
+    const talentRef = ref(db, `competitions/${compId}/production/talent`);
+    const unsubscribe = onValue(talentRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        // Convert object to array format expected by component
+        const talentArray = Object.values(data);
+        setTalentRoster(talentArray);
+      } else {
+        // Fall back to fallback talent if no Firebase data exists
+        setTalentRoster(FALLBACK_TALENT);
+      }
+    }, (error) => {
+      console.error('Error loading talent roster from Firebase:', error);
+      // Keep fallback talent on error
+    });
+
+    return () => unsubscribe();
+  }, [compId]);
+
+  // Sync talentId to localStorage when it changes
+  useEffect(() => {
+    if (talentId) {
+      localStorage.setItem(TALENT_ID_STORAGE_KEY, talentId);
+    }
+  }, [talentId]);
 
   // Find the current talent from roster
   const currentTalent = useMemo(() => {
     if (!talentId) return null;
-    return TALENT_ROSTER.find(t => t.id === talentId) || null;
-  }, [talentId]);
+    return talentRoster.find(t => t.id === talentId) || null;
+  }, [talentId, talentRoster]);
 
   // Check if current talent is assigned to the current segment
   const isOnCamera = useMemo(() => {
