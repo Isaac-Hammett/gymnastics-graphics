@@ -2063,7 +2063,16 @@ export default function RundownEditorPage() {
       if (snapshot.exists()) {
         const data = snapshot.val();
         const analyticsArray = Object.entries(data)
-          .map(([runId, runData]) => ({ runId, ...runData }))
+          .map(([runId, runData]) => ({
+            runId,
+            ...runData,
+            // BUG-013a FIX: Transform segmentTimings object to segments array
+            // Server writes timing data as segmentTimings (object with push keys)
+            // Frontend expects segments (array) for .forEach() calls
+            segments: runData.segmentTimings
+              ? Object.values(runData.segmentTimings)
+              : runData.segments || []
+          }))
           .filter(run => run.status === 'completed') // Only show completed runs
           .sort((a, b) => (b.startedAt || 0) - (a.startedAt || 0)) // Most recent first
           .slice(0, 20); // Limit to last 20 runs
