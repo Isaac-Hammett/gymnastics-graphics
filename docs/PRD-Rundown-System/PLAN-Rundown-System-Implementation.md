@@ -75,12 +75,12 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | H | Rehearsal Mode | P1 | COMPLETE | 17-21 |
 | B | Talent View | P1 | COMPLETE | 22-27, 89 |
 | I | Live Rundown Sync | P2 | COMPLETE | 28-37 |
-| J | Segment Timing Analytics | P2 | **BROKEN** (BUG-013: data structure mismatch) | 38-42 |
+| J | Segment Timing Analytics | P2 | COMPLETE (BUG-013 fixed in Phase X) | 38-42 |
 | D | AI Suggestions - Planning | P2 | CODE COMPLETE (not validated — missing data) | 43-48 |
-| E | Script & Talent Flow | P2 | DEMO ONLY (hardcoded talent roster, no markdown) | 49-54 |
+| E | Script & Talent Flow | P2 | COMPLETE (BUG-015 talent roster fixed in Phase X) | 49-54 |
 | C | AI Context - Live Execution | P3 | CODE COMPLETE (not validated — missing data) | 55-62 |
-| F | Audio Cue Integration | P3 | PARTIAL (in/out points ignored, no file picker) | 63-66 |
-| G | Production Tracking | P3 | PARTIAL (no sponsor assignment UI, hardcoded equipment) | 67-71 |
+| F | Audio Cue Integration | P3 | PARTIAL (BUG-016 removed in/out points; no file picker) | 63-66 |
+| G | Production Tracking | P3 | COMPLETE (BUG-014/017 fixed in Phase X) | 67-71 |
 | K | Timezone Display | P2 | COMPLETE | 72-88 (17/17) |
 
 ---
@@ -434,7 +434,7 @@ After completing all bug fix tasks, run this validation:
 | Task 36 | Handle reordered past segments | COMPLETE | Added filtering in `subscribeToRundownChanges()` to ignore reordered/modified segments where both old and new positions are before current segment; logs filtered segments for debugging |
 | Task 37 | Handle ID conflicts | COMPLETE | Added `detectDuplicateIds()` and `deduplicateSegmentsById()` functions to segmentMapper.js; integrated duplicate ID detection into `loadRundown` handler and `subscribeToRundownChanges()` listener; added logging when segments move positions via ID-based matching in `updateConfig()` |
 
-### Phase J: Segment Timing Analytics (P2) - **BROKEN** (5/5 tasks coded, 0/5 functional)
+### Phase J: Segment Timing Analytics (P2) - COMPLETE (5/5 tasks, BUG-013 fixed in Phase X)
 
 **BUG-013 (2026-02-01): Two critical bugs prevent this feature from working:**
 
