@@ -1,18 +1,20 @@
 # Rundown System - Bug Tracker
 
-## Open Bug Summary (2026-02-01)
+## Open Bug Summary (2026-02-08)
 
-| Bug | Severity | Phase | Status | Description |
-|-----|----------|-------|--------|-------------|
-| BUG-013 | Critical | J | OPEN | Timing analytics broken — data structure mismatch + status filter |
-| BUG-014 | High | G | OPEN | No sponsor assignment UI in segment detail panel |
-| BUG-015 | High | E | OPEN | Talent roster hardcoded (5 fake people), not from Firebase |
-| BUG-016 | Medium | F | OPEN | Audio cue in/out points accepted by UI but ignored by playback |
-| BUG-017 | Medium | G | OPEN | Equipment list hardcoded, not configurable per competition |
-| BUG-019 | Critical | A | FIXED | Resume button doesn't work after pause — isPaused missing from getState() |
-| BUG-018 | Critical | A | FIXED | Producer View Pause/Stop/Reset buttons use legacy handlers, not timesheet engine |
-| BUG-012 | High | B | OPEN | Talent View shows wrong competition name |
-| BUG-011 | Critical | A | FIXED | Start Show button hidden by stale isPlaying |
+| Bug | Severity | Phase | Status | Fix Task | Description |
+|-----|----------|-------|--------|----------|-------------|
+| BUG-012 | High | B | **Task 90** | [Task 90](#task-90) | Talent View shows wrong competition name |
+| BUG-013 | Critical | J | **Tasks 91-93** | [Tasks 91-93](#task-91) | Timing analytics broken — data structure mismatch + status filter |
+| BUG-014 | High | G | **Task 97** | [Task 97](#task-97) | No sponsor assignment UI in segment detail panel |
+| BUG-015 | High | E | **Tasks 94-96** | [Tasks 94-96](#task-94) | Talent roster hardcoded (5 fake people), not from Firebase |
+| BUG-016 | Medium | F | **Task 99** | [Task 99](#task-99) | Audio cue in/out points accepted by UI but ignored by playback |
+| BUG-017 | Medium | G | **Task 98** | [Task 98](#task-98) | Equipment list hardcoded, not configurable per competition |
+| BUG-019 | Critical | A | FIXED | — | Resume button doesn't work after pause — isPaused missing from getState() |
+| BUG-018 | Critical | A | FIXED | — | Producer View Pause/Stop/Reset buttons use legacy handlers, not timesheet engine |
+| BUG-011 | Critical | A | FIXED | — | Start Show button hidden by stale isPlaying |
+
+**See:** [PLAN-Rundown-System-Implementation.md](./PLAN-Rundown-System-Implementation.md#phase-x-bug-fixes-p0---not-started-010) for detailed fix tasks.
 
 ---
 

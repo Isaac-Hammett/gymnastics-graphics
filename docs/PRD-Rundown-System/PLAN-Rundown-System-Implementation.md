@@ -1,9 +1,9 @@
 # PLAN-Rundown-System-Implementation
 
 **PRD:** [PRD-Rundown-System-2026-01-23.md](./PRD-Rundown-System-2026-01-23.md)
-**Status:** CODE COMPLETE — significant validation gaps (see audit notes on Phases A, C, D, E, F, G, J)
+**Status:** BUG FIXES IN PROGRESS — see Phase X below
 **Created:** 2026-01-23
-**Last Updated:** 2026-02-01
+**Last Updated:** 2026-02-08
 
 ---
 
@@ -49,9 +49,10 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 
 | Phase | Name | Priority | Status | Tasks |
 |-------|------|----------|--------|-------|
+| **X** | **Bug Fixes (2026-02-08)** | **P0** | **IN PROGRESS (1/10)** | **90-99** |
 | A | Connect Editor to Engine | P0 | COMPLETE (silent failure risks — see notes) | 1-16 |
 | H | Rehearsal Mode | P1 | COMPLETE | 17-21 |
-| B | Talent View | P1 | COMPLETE (BUG-012: wrong header name) | 22-27, 89 |
+| B | Talent View | P1 | COMPLETE | 22-27, 89 |
 | I | Live Rundown Sync | P2 | COMPLETE | 28-37 |
 | J | Segment Timing Analytics | P2 | **BROKEN** (BUG-013: data structure mismatch) | 38-42 |
 | D | AI Suggestions - Planning | P2 | CODE COMPLETE (not validated — missing data) | 43-48 |
@@ -60,6 +61,284 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | F | Audio Cue Integration | P3 | PARTIAL (in/out points ignored, no file picker) | 63-66 |
 | G | Production Tracking | P3 | PARTIAL (no sponsor assignment UI, hardcoded equipment) | 67-71 |
 | K | Timezone Display | P2 | COMPLETE | 72-88 (17/17) |
+
+---
+
+## Phase X: Bug Fixes (P0) - IN PROGRESS (1/10)
+
+**Priority:** These bugs block production use. Fix before next validation audit.
+
+**Execution Order:** Tasks ordered by dependency and impact. BUG-012 is a one-line fix. BUG-013 unblocks Phase J. BUG-015 must be done before BUG-014 (same pattern).
+
+### Critical Bugs
+
+| Task | Bug | Description | Status | Files |
+|------|-----|-------------|--------|-------|
+| Task 90 | BUG-012 | Fix Talent View wrong competition name — use `competitionConfig.eventName` instead of legacy `showConfig.showName` | COMPLETE | `TalentView.jsx` |
+| Task 91 | BUG-013a | Fix timing analytics data structure — transform `segmentTimings` object to `segments` array in `loadTimingAnalytics()` | NOT STARTED | `RundownEditorPage.jsx` |
+| Task 92 | BUG-013b | Fix timing analytics status filter — accept runs with timing data regardless of status field | NOT STARTED | `RundownEditorPage.jsx` |
+| Task 93 | BUG-013c | Fix server to set `status: "completed"` on show stop | NOT STARTED | `server/index.js` |
+
+### High Priority Bugs
+
+| Task | Bug | Description | Status | Files |
+|------|-----|-------------|--------|-------|
+| Task 94 | BUG-015a | Create Firebase schema for talent roster at `competitions/{compId}/production/talent` | NOT STARTED | Firebase |
+| Task 95 | BUG-015b | Replace `DUMMY_TALENT` in RundownEditorPage with Firebase fetch | NOT STARTED | `RundownEditorPage.jsx` |
+| Task 96 | BUG-015c | Replace `TALENT_ROSTER` in TalentView with Firebase fetch + add localStorage persistence for talentId | NOT STARTED | `TalentView.jsx` |
+| Task 97 | BUG-014 | Add sponsor assignment UI to SegmentDetailPanel (dropdown with name/logo/tier fields) | NOT STARTED | `RundownEditorPage.jsx` |
+
+### Medium Priority Bugs
+
+| Task | Bug | Description | Status | Files |
+|------|-----|-------------|--------|-------|
+| Task 98 | BUG-017 | Move equipment list to Firebase at `competitions/{compId}/production/equipment`, replace `DUMMY_EQUIPMENT` | NOT STARTED | `RundownEditorPage.jsx`, Firebase |
+| Task 99 | BUG-016 | Remove audio in/out point fields from UI (they don't work) OR implement OBS seek functionality | NOT STARTED | `RundownEditorPage.jsx` or `timesheetEngine.js` |
+
+---
+
+### Task 90: Fix BUG-012 — Talent View Wrong Competition Name
+
+**Bug:** Header shows "CGA All Stars 2025" instead of actual competition name.
+
+**Root Cause:** `TalentView.jsx` line 80 uses `showConfig.showName` from legacy global config.
+
+**Fix:**
+```javascript
+// TalentView.jsx
+const { competitionConfig } = useCompetition();
+
+// In header (line 80):
+{competitionConfig?.eventName || showConfig?.showName || 'Show Controller'}
+```
+
+**Validation:**
+1. Navigate to `/{compId}/talent` for a competition
+2. Verify header shows the competition's actual name (e.g., "UCLA vs Oregon")
+3. Verify it does NOT show legacy name ("CGA All Stars 2025")
+
+---
+
+### Task 91: Fix BUG-013a — Timing Analytics Data Structure
+
+**Bug:** Server writes `segmentTimings` as object, frontend expects `segments` array.
+
+**Root Cause:** `loadTimingAnalytics()` doesn't transform the data structure.
+
+**Fix:**
+```javascript
+// RundownEditorPage.jsx - loadTimingAnalytics() around line 2057
+const runs = Object.entries(data).map(([runId, runData]) => ({
+  runId,
+  ...runData,
+  // Transform segmentTimings object to segments array
+  segments: runData.segmentTimings
+    ? Object.values(runData.segmentTimings)
+    : runData.segments || []
+}));
+```
+
+**Validation:**
+1. Run a show (or use existing run data in Firebase)
+2. Open Rundown Editor → Timing Analytics modal
+3. Verify run data appears (not "No Analytics Data")
+
+---
+
+### Task 92: Fix BUG-013b — Timing Analytics Status Filter
+
+**Bug:** Filter requires `status === 'completed'` but all runs have `status: 'running'`.
+
+**Root Cause:** Server never updates status to "completed".
+
+**Fix:**
+```javascript
+// RundownEditorPage.jsx - loadTimingAnalytics() around line 2067
+// Change from:
+.filter(run => run.status === 'completed')
+// To:
+.filter(run => run.segmentTimings || run.segments?.length > 0)
+```
+
+**Validation:**
+1. Open Timing Analytics modal
+2. Verify runs with timing data appear regardless of status field
+
+---
+
+### Task 93: Fix BUG-013c — Server Status Update
+
+**Bug:** Server never sets `status: "completed"` when show stops.
+
+**Root Cause:** `showStopped` handler writes analytics but doesn't update status.
+
+**Fix:**
+```javascript
+// server/index.js - showStopped handler (around line 500-566)
+// After writing analytics, update the run status:
+await db.ref(`competitions/${compId}/production/rundown/analytics/${runId}/status`).set('completed');
+```
+
+**Validation:**
+1. Start and complete a show
+2. Check Firebase: `competitions/{compId}/production/rundown/analytics/{runId}/status`
+3. Verify it shows "completed"
+
+---
+
+### Task 94: Fix BUG-015a — Talent Roster Firebase Schema
+
+**Description:** Create the Firebase structure for talent roster.
+
+**Schema:**
+```
+competitions/{compId}/production/talent
+{
+  "talent-1": {
+    "id": "talent-1",
+    "name": "John Smith",
+    "role": "Play-by-Play",
+    "email": "john@example.com"
+  },
+  "talent-2": {
+    "id": "talent-2",
+    "name": "Sarah Johnson",
+    "role": "Color Commentary",
+    "email": "sarah@example.com"
+  }
+}
+```
+
+**Validation:**
+1. Use Firebase console or MCP tool to create sample talent data
+2. Verify structure matches schema
+
+---
+
+### Task 95: Fix BUG-015b — Replace DUMMY_TALENT in RundownEditorPage
+
+**Bug:** Talent roster is hardcoded as `DUMMY_TALENT`.
+
+**Fix:**
+1. Add Firebase listener for `competitions/{compId}/production/talent`
+2. Replace `DUMMY_TALENT` references with fetched data
+3. Fall back to empty array if no talent configured
+
+**Validation:**
+1. Add talent to Firebase for a competition
+2. Open Rundown Editor → Talent Schedule
+3. Verify real talent names appear (not "John Smith", etc.)
+
+---
+
+### Task 96: Fix BUG-015c — Replace TALENT_ROSTER in TalentView + Persistence
+
+**Bug:** Talent roster duplicated as `TALENT_ROSTER`, talentId lost on refresh.
+
+**Fix:**
+1. Fetch talent from Firebase (same path as Task 95)
+2. Add localStorage persistence:
+```javascript
+// On mount, restore talentId from localStorage
+useEffect(() => {
+  const savedId = localStorage.getItem(`talentId-${compId}`);
+  if (savedId) setTalentId(savedId);
+}, [compId]);
+
+// When talentId changes, persist it
+useEffect(() => {
+  if (talentId) localStorage.setItem(`talentId-${compId}`, talentId);
+}, [talentId, compId]);
+```
+
+**Validation:**
+1. Open Talent View with `?talentId=talent-1`
+2. Refresh page
+3. Verify talentId is preserved (still shows correct talent identity)
+
+---
+
+### Task 97: Fix BUG-014 — Add Sponsor Assignment UI
+
+**Bug:** No UI to assign sponsors to segments. SponsorFulfillmentModal is useless.
+
+**Fix:**
+Add sponsor section to SegmentDetailPanel after Equipment section:
+- Sponsor name text input
+- Sponsor logo URL input
+- Sponsor tier dropdown (Presenting, Title, Official, Supporting)
+- Clear button to remove sponsor
+
+**Validation:**
+1. Open segment detail panel
+2. Assign a sponsor (name, logo, tier)
+3. Save segment
+4. Open Sponsor Fulfillment Report
+5. Verify sponsor appears in report
+
+---
+
+### Task 98: Fix BUG-017 — Move Equipment to Firebase
+
+**Bug:** Equipment list is hardcoded as `DUMMY_EQUIPMENT`.
+
+**Fix:**
+1. Create Firebase schema at `competitions/{compId}/production/equipment`
+2. Add Firebase listener in RundownEditorPage
+3. Replace `DUMMY_EQUIPMENT` with fetched data
+4. (Optional) Add equipment configuration UI
+
+**Schema:**
+```
+competitions/{compId}/production/equipment
+{
+  "cam-1": { "id": "cam-1", "name": "Camera 1", "type": "camera" },
+  "cam-2": { "id": "cam-2", "name": "Camera 2", "type": "camera" },
+  "lav-1": { "id": "lav-1", "name": "Lav Mic 1", "type": "microphone" }
+}
+```
+
+**Validation:**
+1. Add equipment to Firebase
+2. Open Rundown Editor → segment detail
+3. Verify custom equipment appears in assignment UI
+
+---
+
+### Task 99: Fix BUG-016 — Audio In/Out Points
+
+**Bug:** In/out points accepted by UI but ignored by playback.
+
+**Options:**
+- **Option A (Remove):** Delete in/out point fields from UI to avoid confusion
+- **Option B (Implement):** Add OBS seek via `SetMediaInputCursorOffset` and timer-based stop
+
+**Recommended:** Option A (Remove) — simpler, clears confusion, can implement properly later.
+
+**Fix (Option A):**
+Remove `inPoint` and `outPoint` fields from audio cue section in SegmentDetailPanel.
+
+**Validation:**
+1. Open segment detail panel
+2. Verify audio cue section only has song name field
+3. No in/out point fields visible
+
+---
+
+## Validation Checklist (Post-Bug-Fix)
+
+After completing all bug fix tasks, run this validation:
+
+| Story | Test | Expected Result |
+|-------|------|-----------------|
+| 7 | Open Talent View for any competition | Header shows correct competition name |
+| J.1 | Run a show, then open Timing Analytics | Historical runs appear with segment data |
+| J.2 | Check segment rows in Rundown Editor | Historical average indicators show data |
+| E.1 | Open Talent Schedule modal | Real talent from Firebase (not dummy names) |
+| E.2 | Open Talent View, refresh page | talentId persists across refresh |
+| G.1 | Assign sponsor to segment, open report | Sponsor appears in fulfillment report |
+| G.2 | Check equipment in segment detail | Custom equipment from Firebase |
+| F.1 | Open audio cue in segment detail | No in/out point fields (or they work) |
 
 ---
 

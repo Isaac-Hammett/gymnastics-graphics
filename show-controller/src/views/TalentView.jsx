@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useShow } from '../context/ShowContext';
+import { useCompetition } from '../context/CompetitionContext';
 import { useTimesheet } from '../hooks/useTimesheet';
 import { useAIContext } from '../hooks/useAIContext';
 import CurrentSegment from '../components/CurrentSegment';
@@ -23,6 +24,7 @@ const TALENT_ROSTER = [
 export default function TalentView() {
   const { state, startShow, identify, error } = useShow();
   const { showConfig, isPlaying, talentLocked, showProgress } = state;
+  const { competitionConfig } = useCompetition();
 
   // Use timesheet for advance/previous/pause with hold segment support
   const {
@@ -88,7 +90,7 @@ export default function TalentView() {
             </Link>
             <div>
               <h1 className="text-lg font-bold text-white">
-                {showConfig?.showName || 'Show Controller'}
+                {competitionConfig?.eventName || showConfig?.showName || 'Show Controller'}
               </h1>
               <div className="text-sm text-zinc-500">Talent View</div>
             </div>

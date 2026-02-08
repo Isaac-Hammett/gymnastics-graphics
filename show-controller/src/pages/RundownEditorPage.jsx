@@ -3525,28 +3525,22 @@ export default function RundownEditorPage() {
     }));
   }
 
-  // Check if template is compatible with current competition
+  // Check if template is compatible with current competition (gender match only)
   function isTemplateCompatible(template) {
     const compType = competition.type;
-    const teamCount = Object.keys(competition.teams).length;
+    const isWomensComp = compType.startsWith('womens-');
+    const isMensComp = compType.startsWith('mens-');
 
-    // Check competition type compatibility
-    if (template.competitionTypes && !template.competitionTypes.includes(compType)) {
-      // Also check for gender match
-      const isWomensComp = compType.startsWith('womens-');
-      const isMensComp = compType.startsWith('mens-');
+    // Only enforce gender matching - team count is flexible
+    if (template.competitionTypes && template.competitionTypes.length > 0) {
       const hasCompatibleGender = template.competitionTypes.some(t =>
         (isWomensComp && t.startsWith('womens-')) ||
         (isMensComp && t.startsWith('mens-'))
       );
-      if (!hasCompatibleGender) return false;
+      return hasCompatibleGender;
     }
 
-    // Check team count compatibility
-    if (template.teamCount && template.teamCount > teamCount) {
-      return false;
-    }
-
+    // If no competition types specified, allow it
     return true;
   }
 

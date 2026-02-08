@@ -1,5 +1,6 @@
 #!/bin/bash
 # Autonomous loop for PRD-Rundown-System implementation
+# Updated 2026-02-08: Now prioritizes Phase X bug fixes
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
@@ -16,12 +17,23 @@ cd "$PROJECT_ROOT"
 for i in $(seq 1 $MAX_ITERATIONS); do
     echo "=== Iteration $i ($(date)) ===" | tee -a "$LOG_FILE"
 
-    # Check if PRD is complete
-    if grep -q "Status: COMPLETE" "$SCRIPT_DIR/PLAN-Rundown-System-Implementation.md" 2>/dev/null; then
-        echo "All tasks complete!" | tee -a "$LOG_FILE"
-        say "All tasks complete"
-        exit 0
+    # Check if all Phase X bug fixes are complete
+    # Look for "Phase X" row and check if it says "COMPLETE"
+    if grep -q "| \*\*X\*\* |.*| \*\*COMPLETE\*\* |" "$SCRIPT_DIR/PLAN-Rundown-System-Implementation.md" 2>/dev/null; then
+        echo "Phase X bug fixes complete!" | tee -a "$LOG_FILE"
+        say "Phase X bug fixes complete"
+
+        # Check if entire PRD is complete
+        if grep -q "Status: COMPLETE" "$SCRIPT_DIR/PLAN-Rundown-System-Implementation.md" 2>/dev/null; then
+            echo "All tasks complete!" | tee -a "$LOG_FILE"
+            say "All tasks complete"
+            exit 0
+        fi
     fi
+
+    # Count remaining NOT STARTED tasks in Phase X for progress
+    NOT_STARTED=$(grep -c "NOT STARTED" "$SCRIPT_DIR/PLAN-Rundown-System-Implementation.md" 2>/dev/null || echo "0")
+    echo "Tasks remaining (NOT STARTED): $NOT_STARTED" | tee -a "$LOG_FILE"
 
     cat "$SCRIPT_DIR/promptv2-Rundown-System.md" | \
         claude -p --dangerously-skip-permissions --verbose --output-format stream-json \

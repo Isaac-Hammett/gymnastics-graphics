@@ -12,9 +12,13 @@
 - After each phase, output the checkpoint summary before continuing
 - If verification fails, record bug and STOP (handle in next context window)
 
+**CURRENT PRIORITY: Phase X Bug Fixes (Tasks 90-99)**
+
+Phase X contains critical bug fixes that must be completed before any other work. These bugs block production use of the Rundown System.
+
 **What counts as ONE task?**
-- A single row in `docs/PRD-Rundown-System/PLAN-Rundown-System-Implementation.md` (e.g., "Task 53: Add notes field to segment")
-- Each task has a unique whole number (Task 53, Task 54, etc.)
+- A single row in `docs/PRD-Rundown-System/PLAN-Rundown-System-Implementation.md` (e.g., "Task 90: Fix BUG-012")
+- Each task has a unique whole number (Task 90, Task 91, etc.)
 - NOT a phase (a phase contains multiple tasks)
 - NOT multiple related tasks
 
@@ -40,25 +44,35 @@ Read these files ONE AT A TIME. After EACH file, output the answers before readi
   ```
   1.2 Implementation Plan Read
   - Total tasks: [fill in]
-  - Tasks NOT STARTED: [fill in]
-  - Tasks IN PROGRESS: [fill in]
-  - Tasks COMPLETE: [fill in]
+  - Phase X tasks NOT STARTED: [fill in]
+  - Phase X tasks COMPLETE: [fill in]
+  - Current priority: Phase X Bug Fixes
   ```
 
-- [ ] **1.3** Read Detailed Plan (for context): `docs/PRD-Rundown-System/PLAN-Rundown-System-2026-01-23.md`
+- [ ] **1.3** Read Bug Tracker: `docs/PRD-Rundown-System/BUGS.md`
 
   **Output before continuing:**
   ```
-  1.3 Detailed Plan Read
-  - Current phase: [fill in]
+  1.3 Bug Tracker Read
+  - Open bugs: [count]
+  - Next bug to fix: [BUG-XXX]
+  - Corresponding task: [Task XX]
+  ```
+
+- [ ] **1.4** Read Detailed Plan (for context): `docs/PRD-Rundown-System/PLAN-Rundown-System-2026-01-23.md`
+
+  **Output before continuing:**
+  ```
+  1.4 Detailed Plan Read
+  - Current phase: Phase X (Bug Fixes)
   - Relevant details noted: [fill in]
   ```
 
-- [ ] **1.4** Read Infrastructure Reference: `docs/INFRASTRUCTURE.md`
+- [ ] **1.5** Read Infrastructure Reference: `docs/INFRASTRUCTURE.md`
 
   **Output before continuing:**
   ```
-  1.4 Infrastructure Reference Read
+  1.5 Infrastructure Reference Read
   - Relevant infrastructure noted: [fill in]
   ```
 
@@ -66,17 +80,21 @@ Read these files ONE AT A TIME. After EACH file, output the answers before readi
 
 ## Phase 2: Select ONE Task
 
-- [ ] **2.1** From `docs/PRD-Rundown-System/PLAN-Rundown-System-Implementation.md`, identify the FIRST SINGLE task that is:
-  - Status = "IN PROGRESS", OR
-  - Status = "NOT STARTED" (if none are IN PROGRESS)
+**IMPORTANT: Phase X bug fix tasks (90-99) take priority over all other tasks.**
 
-  **Select ONLY ONE task.** Example: "Task 53: Add notes field to segment" - not "Phase 5" or "Tasks 53 and 54".
+- [ ] **2.1** From `docs/PRD-Rundown-System/PLAN-Rundown-System-Implementation.md`, identify the FIRST SINGLE task that is:
+  - In **Phase X** (Tasks 90-99) with Status = "NOT STARTED", OR
+  - In **Phase X** with Status = "IN PROGRESS", OR
+  - If Phase X is complete, then the next NOT STARTED task from other phases
+
+  **Select ONLY ONE task.** Example: "Task 90: Fix BUG-012" - not "Phase X" or "Tasks 90 and 91".
 
 - [ ] **2.2** Output your selection:
   ```
   2.2 ONE Task Selected
-  - Task ID: [e.g., Task 53]
-  - Task name: [e.g., Add notes field to segment]
+  - Task ID: [e.g., Task 90]
+  - Task name: [e.g., Fix BUG-012 — Talent View Wrong Competition Name]
+  - Bug being fixed: [e.g., BUG-012]
   - This is ONE task, not multiple: [yes]
   - Files to modify: [fill in]
   ```
@@ -94,9 +112,11 @@ Do NOT:
 - Continue to other tasks in the same phase
 
 - [ ] **3.1** Implement ONLY the single task identified in step 2.2
+  - Follow the **Fix** instructions in the task description
+  - Use the **Validation** steps to verify your fix works
 - [ ] **3.2** STOP coding. Do not implement any other tasks.
 - [ ] **3.3** Update `docs/PRD-Rundown-System/PLAN-Rundown-System-Implementation.md` for THIS ONE TASK:
-  - Mark task status (IN PROGRESS -> COMPLETE)
+  - Mark task status (NOT STARTED -> COMPLETE)
   - Add notes about changes made
   - Add any bugs discovered
 
@@ -104,8 +124,9 @@ Do NOT:
   ```
   3.3 ONE Task Implementation Complete
   - Task completed: [Task ID only]
+  - Bug fixed: [BUG-XXX]
   - Changes made: [brief summary]
-  - Bugs found: [none / list]
+  - Validation passed: [yes/no]
   - Next task: [will be handled in NEXT iteration]
   ```
 
@@ -117,7 +138,7 @@ Do NOT:
 
 - [ ] **4.1** Stage and commit:
   ```bash
-  git add -A && git commit -m "PRD-Rundown-System: [brief description]" && git push origin main
+  git add -A && git commit -m "Fix BUG-XXX: [brief description]" && git push origin main
   ```
 
   **Output:**
@@ -132,9 +153,9 @@ Do NOT:
 
 Determine what changed and deploy accordingly:
 
-- [ ] **5.1** Backend changes? -> `ssh_exec` to coordinator, restart PM2
-- [ ] **5.2** Frontend changes? -> Build and deploy per CLAUDE.md
-- [ ] **5.3** No deployment needed? -> Mark as skipped
+- [ ] **5.1** Backend changes (server/*)? -> `ssh_exec` to coordinator, restart PM2
+- [ ] **5.2** Frontend changes (show-controller/*)? -> Build and deploy per CLAUDE.md
+- [ ] **5.3** No deployment needed (docs only)? -> Mark as skipped
 
   **Output:**
   ```
@@ -150,33 +171,39 @@ Determine what changed and deploy accordingly:
 - [ ] **6.1** Navigate to https://commentarygraphic.com using Playwright
 - [ ] **6.2** Take screenshot
 - [ ] **6.3** Check console for errors
-- [ ] **6.4** Test the specific feature changed
+- [ ] **6.4** Test the specific bug fix using the **Validation** steps from the task
 
   **Output:**
   ```
   6.4 Verification
   - Screenshot taken: [yes/no]
   - Console errors: [none / list]
-  - Feature works: [yes / no]
+  - Bug fix verified: [yes / no]
+  - Validation steps passed: [list which ones]
   ```
 
 **If verification FAILS:**
-- Record bug in `docs/PRD-Rundown-System/PLAN-Rundown-System-Implementation.md` with details
+- Record failure in `docs/PRD-Rundown-System/PLAN-Rundown-System-Implementation.md` with details
 - STOP here - handle fix in next context window
 
 ---
 
-## Phase 7: Update PRD Status
+## Phase 7: Update Status
 
-- [ ] **7.1** If ALL tasks complete -> Update `docs/PRD-Rundown-System/PRD-Rundown-System-2026-01-23.md` status to COMPLETE
-- [ ] **7.2** If tasks remain -> Update `docs/PRD-Rundown-System/PRD-Rundown-System-2026-01-23.md` status to IN PROGRESS
-- [ ] **7.3** Verify `docs/PRD-Rundown-System/PLAN-Rundown-System-Implementation.md` matches PRD (fix any discrepancies)
+- [ ] **7.1** Update `docs/PRD-Rundown-System/BUGS.md`:
+  - Change bug status from "Task XX" to "FIXED"
+  - Add date fixed
+- [ ] **7.2** Check if Phase X is complete:
+  - If ALL Phase X tasks (90-99) are COMPLETE -> Update Phase X status in implementation plan
+  - If tasks remain -> Keep Phase X status as "IN PROGRESS"
+- [ ] **7.3** Update Phase X progress count in implementation plan header
 
   **Output:**
   ```
   7.3 Status Updated
-  - PRD status: [IN PROGRESS / COMPLETE]
-  - Tasks remaining: [count]
+  - Bug marked fixed: [BUG-XXX]
+  - Phase X progress: [X/10 complete]
+  - Tasks remaining in Phase X: [count]
   ```
 
 ---
@@ -185,7 +212,23 @@ Determine what changed and deploy accordingly:
 
 | Change Type | Deploy Command |
 |-------------|----------------|
-| Backend only | `ssh_exec` to coordinator |
+| Backend only | `ssh_exec` to coordinator, `pm2 restart all` |
 | Frontend only | `npm run build` + upload per CLAUDE.md |
 | Both | Deploy backend first, then frontend |
 | Docs only | No deploy needed |
+| Firebase schema | Use MCP firebase_set tool |
+
+## Bug Fix Quick Reference
+
+| Task | Bug | File(s) | Complexity |
+|------|-----|---------|------------|
+| 90 | BUG-012 | TalentView.jsx | Very Low |
+| 91 | BUG-013a | RundownEditorPage.jsx | Low |
+| 92 | BUG-013b | RundownEditorPage.jsx | Low |
+| 93 | BUG-013c | server/index.js | Low |
+| 94 | BUG-015a | Firebase | Low |
+| 95 | BUG-015b | RundownEditorPage.jsx | Medium |
+| 96 | BUG-015c | TalentView.jsx | Medium |
+| 97 | BUG-014 | RundownEditorPage.jsx | Medium |
+| 98 | BUG-017 | RundownEditorPage.jsx, Firebase | Medium |
+| 99 | BUG-016 | RundownEditorPage.jsx | Low |
