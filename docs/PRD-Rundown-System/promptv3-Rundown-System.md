@@ -128,11 +128,13 @@ Otherwise, just update the partial status in BUGS.md summary table.
 
 ## Quick Task Index Reference
 
+**Note:** This is a snapshot. Check `PLAN-Rundown-System-Implementation.md` Quick Task Index for current status.
+
 | Task | Bug | File | Lines | Fix |
 |------|-----|------|-------|-----|
 | 90 | BUG-012 | TalentView.jsx | 91 | ✅ DONE |
 | 91 | BUG-013a | RundownEditorPage.jsx | 2057-2079 | ✅ DONE |
-| 92 | BUG-013b | RundownEditorPage.jsx | 2067 | Change filter to `run.segmentTimings \|\| run.segments` |
+| 92 | BUG-013b | RundownEditorPage.jsx | 2067 | ✅ DONE |
 | 93 | BUG-013c | server/index.js | ~558 | Add `status: 'completed'` in showStopped |
 | 94 | BUG-015a | Firebase | — | Create schema |
 | 95 | BUG-015b | RundownEditorPage.jsx | 83 | Replace DUMMY_TALENT |
