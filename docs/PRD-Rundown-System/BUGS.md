@@ -5,11 +5,11 @@
 | Bug | Severity | Phase | Status | Fix Task | Description |
 |-----|----------|-------|--------|----------|-------------|
 | BUG-012 | High | B | FIXED | — | Talent View shows wrong competition name |
-| BUG-013 | Critical | J | **Task 91 ✓, 92-93 pending** | [Tasks 91-93](#task-91) | Timing analytics broken — data structure mismatch + status filter |
-| BUG-014 | High | G | **Task 97** | [Task 97](#task-97) | No sponsor assignment UI in segment detail panel |
-| BUG-015 | High | E | **Tasks 94-96** | [Tasks 94-96](#task-94) | Talent roster hardcoded (5 fake people), not from Firebase |
-| BUG-016 | Medium | F | **Task 99** | [Task 99](#task-99) | Audio cue in/out points accepted by UI but ignored by playback |
-| BUG-017 | Medium | G | **Task 98** | [Task 98](#task-98) | Equipment list hardcoded, not configurable per competition |
+| BUG-013 | Critical | J | FIXED | — | Timing analytics broken — data structure mismatch + status filter |
+| BUG-014 | High | G | FIXED | — | No sponsor assignment UI in segment detail panel |
+| BUG-015 | High | E | FIXED | — | Talent roster hardcoded (5 fake people), not from Firebase |
+| BUG-016 | Medium | F | FIXED | — | Audio cue in/out points removed from UI (non-functional) |
+| BUG-017 | Medium | G | FIXED | — | Equipment list hardcoded, not configurable per competition |
 | BUG-019 | Critical | A | FIXED | — | Resume button doesn't work after pause — isPaused missing from getState() |
 | BUG-018 | Critical | A | FIXED | — | Producer View Pause/Stop/Reset buttons use legacy handlers, not timesheet engine |
 | BUG-011 | Critical | A | FIXED | — | Start Show button hidden by stale isPlaying |
@@ -160,12 +160,15 @@ Move equipment definitions to Firebase at `competitions/{compId}/production/equi
 
 ---
 
-## BUG-016: Audio Cue In/Out Points Ignored by Playback (OPEN)
+## BUG-016: Audio Cue In/Out Points Ignored by Playback (FIXED)
 
 **Date Identified:** 2026-02-01
+**Date Fixed:** 2026-02-08
 **Severity:** Medium
-**Status:** OPEN
+**Status:** FIXED
 **Phase:** F (Audio Cue Integration)
+
+**Resolution:** Removed in/out point input fields from SegmentDetailPanel UI (lines 7304-7331) and simplified audio cue tooltip display. Fields were non-functional as OBS seek was never implemented.
 
 ### Symptoms
 

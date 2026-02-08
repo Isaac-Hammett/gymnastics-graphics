@@ -6371,7 +6371,7 @@ function SegmentRow({
             {segment.audioCue?.songName && (
               <span
                 className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded bg-purple-500/20 text-purple-400 border border-purple-500/30 shrink-0 cursor-help"
-                title={`Audio: ${segment.audioCue.songName}${segment.audioCue.inPoint || segment.audioCue.outPoint ? ` (${segment.audioCue.inPoint || '0:00'} - ${segment.audioCue.outPoint || 'end'})` : ''}`}
+                title={`Audio: ${segment.audioCue.songName}`}
               >
                 <MusicalNoteIcon className="w-3 h-3" />
               </span>
@@ -7301,34 +7301,6 @@ function SegmentDetailPanel({ segment, onSave, onDelete, onCancel, groupedScenes
               placeholder="Song name or file reference"
               className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
             />
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <label className="block text-[10px] text-zinc-500 mb-1">In Point</label>
-                <input
-                  type="text"
-                  value={formData.audioCue?.inPoint || ''}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    audioCue: { ...(formData.audioCue || {}), inPoint: e.target.value }
-                  })}
-                  placeholder="0:00"
-                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500 font-mono"
-                />
-              </div>
-              <div className="flex-1">
-                <label className="block text-[10px] text-zinc-500 mb-1">Out Point</label>
-                <input
-                  type="text"
-                  value={formData.audioCue?.outPoint || ''}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    audioCue: { ...(formData.audioCue || {}), outPoint: e.target.value }
-                  })}
-                  placeholder="0:00"
-                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500 font-mono"
-                />
-              </div>
-            </div>
             {formData.audioCue?.songName && (
               <button
                 type="button"

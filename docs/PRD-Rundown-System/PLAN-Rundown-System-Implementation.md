@@ -37,7 +37,7 @@ This implementation plan covers all phases of the Rundown System from planning t
 | 96 | BUG-015c | `TalentView.jsx` | 15 | ✅ COMPLETE — Replace `TALENT_ROSTER` with Firebase fetch + localStorage for talentId |
 | 97 | BUG-014 | `RundownEditorPage.jsx` | ~6500 | ✅ COMPLETE — Add sponsor section to SegmentDetailPanel (after Equipment) |
 | 98 | BUG-017 | `RundownEditorPage.jsx` | 91 | ✅ COMPLETE — Replace `DUMMY_EQUIPMENT` with Firebase fetch via equipmentList state |
-| 99 | BUG-016 | `RundownEditorPage.jsx` | ~6200 | Remove inPoint/outPoint fields OR implement OBS seek |
+| 99 | BUG-016 | `RundownEditorPage.jsx` | ~6200 | ✅ COMPLETE — Removed inPoint/outPoint fields from UI (non-functional) |
 
 **Workflow:** Read index → Read target lines only → Implement → Commit → Deploy → Verify
 
@@ -70,7 +70,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 
 | Phase | Name | Priority | Status | Tasks |
 |-------|------|----------|--------|-------|
-| **X** | **Bug Fixes (2026-02-08)** | **P0** | **IN PROGRESS (9/10)** | **90-99** |
+| **X** | **Bug Fixes (2026-02-08)** | **P0** | **COMPLETE (10/10)** | **90-99** |
 | A | Connect Editor to Engine | P0 | COMPLETE (silent failure risks — see notes) | 1-16 |
 | H | Rehearsal Mode | P1 | COMPLETE | 17-21 |
 | B | Talent View | P1 | COMPLETE | 22-27, 89 |
@@ -85,7 +85,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 
 ---
 
-## Phase X: Bug Fixes (P0) - IN PROGRESS (8/10)
+## Phase X: Bug Fixes (P0) - COMPLETE (10/10)
 
 **Priority:** These bugs block production use. Fix before next validation audit.
 
@@ -114,7 +114,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task | Bug | Description | Status | Files |
 |------|-----|-------------|--------|-------|
 | Task 98 | BUG-017 | Move equipment list to Firebase at `competitions/{compId}/production/equipment`, replace `DUMMY_EQUIPMENT` | COMPLETE | `RundownEditorPage.jsx`, Firebase |
-| Task 99 | BUG-016 | Remove audio in/out point fields from UI (they don't work) OR implement OBS seek functionality | NOT STARTED | `RundownEditorPage.jsx` or `timesheetEngine.js` |
+| Task 99 | BUG-016 | Remove audio in/out point fields from UI (they don't work) OR implement OBS seek functionality | COMPLETE | `RundownEditorPage.jsx` |
 
 ---
 
