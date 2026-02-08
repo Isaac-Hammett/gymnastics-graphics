@@ -321,10 +321,31 @@ Producers can create rundowns but cannot execute them. There's no bridge between
 | **Hold Segment** | A segment that waits for manual advance |
 | **Coordinator** | Central server managing all competitions |
 | **Competition VM** | EC2 instance assigned to a competition (runs OBS) |
+| **Rundown Template** | A saved rundown that can be loaded into new competitions |
 
 ---
 
-## 7. Related Documents
+## 7. Rundown Templates
+
+### Template Compatibility
+
+Templates are compatible based on **gender only** — team count is flexible.
+
+| Current Competition | Compatible Templates |
+|---------------------|---------------------|
+| `womens-dual` | Any women's template (dual, tri, quad, 5, 6) |
+| `womens-tri` | Any women's template |
+| `womens-quad` | Any women's template |
+| `mens-dual` | Any men's template |
+| `mens-tri` | Any men's template |
+
+**Rationale:** Producers should be able to load any same-gender template and adapt it by adding or removing segments. A quad template loaded into a tri meet will have some team references that don't resolve (e.g., `{team4}`), but this is preferable to blocking the template entirely.
+
+**Changed:** 2026-02-08 — Removed team count restriction. Previously, templates were blocked if `template.teamCount > competition.teamCount`.
+
+---
+
+## 8. Related Documents
 
 | Document | Purpose |
 |----------|---------|
