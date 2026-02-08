@@ -31,7 +31,7 @@ This implementation plan covers all phases of the Rundown System from planning t
 | 90 | BUG-012 | `TalentView.jsx` | 91 | ✅ COMPLETE — `competitionConfig?.eventName \|\| showConfig?.showName` |
 | 91 | BUG-013a | `RundownEditorPage.jsx` | 2057-2079 | ✅ COMPLETE — Transform `segmentTimings` object → `segments` array in `loadTimingAnalytics()` |
 | 92 | BUG-013b | `RundownEditorPage.jsx` | 2067 | ✅ COMPLETE — Change filter: `run.segmentTimings \|\| run.segments` (not `status === 'completed'`) |
-| 93 | BUG-013c | `server/index.js` | ~558 | Add `status: 'completed'` to analytics write in `showStopped` handler |
+| 93 | BUG-013c | `server/index.js` | ~558 | ✅ COMPLETE — Add `status: 'completed'` to analytics write in `showStopped` handler |
 | 94 | BUG-015a | Firebase | — | Create schema at `competitions/{compId}/production/talent` |
 | 95 | BUG-015b | `RundownEditorPage.jsx` | 83 | Replace `DUMMY_TALENT` with Firebase fetch |
 | 96 | BUG-015c | `TalentView.jsx` | 15 | Replace `TALENT_ROSTER` with Firebase fetch + localStorage for talentId |
@@ -70,7 +70,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 
 | Phase | Name | Priority | Status | Tasks |
 |-------|------|----------|--------|-------|
-| **X** | **Bug Fixes (2026-02-08)** | **P0** | **IN PROGRESS (3/10)** | **90-99** |
+| **X** | **Bug Fixes (2026-02-08)** | **P0** | **IN PROGRESS (4/10)** | **90-99** |
 | A | Connect Editor to Engine | P0 | COMPLETE (silent failure risks — see notes) | 1-16 |
 | H | Rehearsal Mode | P1 | COMPLETE | 17-21 |
 | B | Talent View | P1 | COMPLETE | 22-27, 89 |
@@ -85,7 +85,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 
 ---
 
-## Phase X: Bug Fixes (P0) - IN PROGRESS (3/10)
+## Phase X: Bug Fixes (P0) - IN PROGRESS (4/10)
 
 **Priority:** These bugs block production use. Fix before next validation audit.
 
@@ -98,7 +98,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 90 | BUG-012 | Fix Talent View wrong competition name — use `competitionConfig.eventName` instead of legacy `showConfig.showName` | COMPLETE | `TalentView.jsx` |
 | Task 91 | BUG-013a | Fix timing analytics data structure — transform `segmentTimings` object to `segments` array in `loadTimingAnalytics()` | COMPLETE | `RundownEditorPage.jsx` |
 | Task 92 | BUG-013b | Fix timing analytics status filter — accept runs with timing data regardless of status field | COMPLETE | `RundownEditorPage.jsx` |
-| Task 93 | BUG-013c | Fix server to set `status: "completed"` on show stop | NOT STARTED | `server/index.js` |
+| Task 93 | BUG-013c | Fix server to set `status: "completed"` on show stop | COMPLETE | `server/index.js` |
 
 ### High Priority Bugs
 
