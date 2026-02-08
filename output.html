@@ -4774,8 +4774,8 @@
           // Stick bonus indicator
           const stickHtml = hasStick ? '<span class="stick-bonus">S</span>' : '';
 
-          // Format difficulty - show 1 decimal, execution show 3 decimals
-          const dScoreStr = dScore > 0 ? dScore.toFixed(1) : '-';
+          // Format difficulty - show 2 decimals, execution show 3 decimals
+          const dScoreStr = dScore > 0 ? dScore.toFixed(2) : '-';
           const eScoreStr = eScore > 0 ? eScore.toFixed(3) : '-';
 
           // Team name from lookup (g.team_name may have competition name for AA)
