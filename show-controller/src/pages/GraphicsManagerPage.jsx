@@ -16,6 +16,7 @@ const CATEGORY_LABELS = {
   'leaderboards': 'Leaderboards',
   'event-summary': 'Event Summary',
   'stream': 'Stream',
+  'sponsors': 'Sponsors',
 };
 
 // Gender display
@@ -95,8 +96,19 @@ export default function GraphicsManagerPage() {
       hosts: 'John Smith|Jane Doe',
     };
 
+    // Add dummy sponsors for sponsor graphic previews
+    const testSponsors = previewGraphic.category === 'sponsors' ? [
+      { name: 'Acme Corp', logoUrl: 'https://placehold.co/400x200/1e40af/white?text=Acme+Corp', tier: 'gold' },
+      { name: 'TechStart', logoUrl: 'https://placehold.co/400x200/059669/white?text=TechStart', tier: 'gold' },
+      { name: 'SportsPro', logoUrl: 'https://placehold.co/400x200/dc2626/white?text=SportsPro', tier: 'silver' },
+      { name: 'HealthPlus', logoUrl: 'https://placehold.co/400x200/7c3aed/white?text=HealthPlus', tier: 'silver' },
+      { name: 'LocalBank', logoUrl: 'https://placehold.co/400x200/0891b2/white?text=LocalBank', tier: 'bronze' },
+      { name: 'CafeBlend', logoUrl: 'https://placehold.co/400x200/ca8a04/white?text=CafeBlend', tier: 'bronze' },
+    ] : null;
+
     return generateGraphicURL(previewGraphic.id, testFormData, 2, undefined, {
       compType: previewGraphic.gender === 'womens' ? 'womens-dual' : 'mens-dual',
+      ...(testSponsors && { sponsors: testSponsors }),
     });
   }, [previewGraphic]);
 
