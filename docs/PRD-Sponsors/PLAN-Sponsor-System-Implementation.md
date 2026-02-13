@@ -1,6 +1,6 @@
 # Plan: Sponsor System — Implementation Tracker
 
-**Status:** IN PROGRESS (8/12 tasks complete)
+**Status:** IN PROGRESS (9/12 tasks complete)
 **Last Updated:** 2026-02-13
 
 ---
@@ -17,7 +17,7 @@
 | T6 | C | `show-controller/src/pages/UrlGeneratorPage.jsx` | Import `useTeamsDatabase`; add 3 entries to `baseGraphicTitles`; add Sponsors sidebar section; add `resolveHomeTeamKey` helper; thread `sponsorsJson` through `options.sponsors` | COMPLETE |
 | T7 | D | `show-controller/src/pages/MediaManagerPage.jsx` | Create `SponsorsView` component (add/reorder/delete); inline under expanded team cards; add sponsor count badge to team card headers; destructure new hook functions | COMPLETE |
 | T8 | E | `overlays/sponsors-thanks.html` | Create full-screen "Thank You to Our Sponsors" grid overlay (1920x1080, Inter font, gray header bar, auto-sizing grid, URL params) | COMPLETE |
-| T9 | F | `overlays/sponsors-cycle.html` | Create full-screen cycling sponsor overlay (one at a time, 3s hold, 0.5s crossfade, continuous loop) | NOT STARTED |
+| T9 | F | `overlays/sponsors-cycle.html` | Create full-screen cycling sponsor overlay (one at a time, 3s hold, 0.5s crossfade, continuous loop) | COMPLETE |
 | T10 | G | `overlays/sponsors-bug.html` | Create transparent corner bug overlay (bottom-right 200x80, 10s cycling, 0.8s fade, semi-transparent pill) | NOT STARTED |
 | T11 | H | — | `cd show-controller && npm run build` — verify no errors | NOT STARTED |
 | T12 | H | — | Deploy SPA + 3 overlay files to production; verify overlay URLs serve overlays (not React SPA) | NOT STARTED |
@@ -33,7 +33,7 @@
 | **C** | URL Generator Plumbing | T6 | COMPLETE |
 | **D** | Media Manager UI | T7 | COMPLETE |
 | **E** | Overlay: Thank You | T8 | COMPLETE |
-| **F** | Overlay: Cycle | T9 | NOT STARTED |
+| **F** | Overlay: Cycle | T9 | COMPLETE |
 | **G** | Overlay: Bug | T10 | NOT STARTED |
 | **H** | Build & Deploy | T11, T12 | NOT STARTED |
 
@@ -219,7 +219,7 @@ All use `URLSearchParams` for proper encoding.
 - 1 sponsor = static, no transitions
 - Broken logo → skip to next; ALL broken → text-only mode
 
-**Status:** NOT STARTED
+**Status:** COMPLETE
 
 ---
 
