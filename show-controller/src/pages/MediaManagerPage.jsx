@@ -16,6 +16,10 @@ import {
   ArrowUpTrayIcon,
   CloudArrowUpIcon,
   PlusIcon,
+  SparklesIcon,
+  ArrowUpIcon,
+  ArrowDownIcon,
+  TrashIcon,
 } from '@heroicons/react/24/solid';
 
 export default function MediaManagerPage() {
@@ -29,6 +33,12 @@ export default function MediaManagerPage() {
     importRoster,
     saveTeam,
     saveHeadshot,
+    sponsors,
+    saveSponsor,
+    deleteSponsor,
+    reorderSponsors,
+    getTeamSponsors,
+    getTeamSponsorCount,
   } = useTeamsDatabase();
 
   const [expandedTeam, setExpandedTeam] = useState(null);
@@ -385,6 +395,21 @@ export default function MediaManagerPage() {
                           {team.rtnId ? 'RTN' : 'No RTN'}
                         </div>
 
+                        {/* Sponsor Count */}
+                        {(() => {
+                          const sponsorCount = getTeamSponsorCount(team.key);
+                          return (
+                            <div
+                              className={`px-2 py-1 rounded text-xs font-medium ${
+                                sponsorCount > 0 ? 'bg-amber-600/20 text-amber-400' : 'bg-zinc-700 text-zinc-500'
+                              }`}
+                              title={sponsorCount > 0 ? `${sponsorCount} sponsor(s)` : 'No sponsors'}
+                            >
+                              {sponsorCount > 0 ? `${sponsorCount} Spons` : 'No Spons'}
+                            </div>
+                          );
+                        })()}
+
                         {/* Expand Arrow */}
                         {expandedTeam === team.key ? (
                           <ChevronDownIcon className="w-5 h-5 text-zinc-400" />
@@ -394,13 +419,22 @@ export default function MediaManagerPage() {
                       </div>
                     </button>
 
-                    {/* Expanded Roster */}
+                    {/* Expanded Roster + Sponsors */}
                     {expandedTeam === team.key && (
-                      <RosterView
-                        teamKey={team.key}
-                        teams={teams}
-                        getTeamRosterWithHeadshots={getTeamRosterWithHeadshots}
-                      />
+                      <>
+                        <RosterView
+                          teamKey={team.key}
+                          teams={teams}
+                          getTeamRosterWithHeadshots={getTeamRosterWithHeadshots}
+                        />
+                        <SponsorsView
+                          teamKey={team.key}
+                          getTeamSponsors={getTeamSponsors}
+                          saveSponsor={saveSponsor}
+                          deleteSponsor={deleteSponsor}
+                          reorderSponsors={reorderSponsors}
+                        />
+                      </>
                     )}
                   </div>
                 );
@@ -643,6 +677,234 @@ function RosterView({ teamKey, teams, getTeamRosterWithHeadshots }) {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function SponsorsView({ teamKey, getTeamSponsors, saveSponsor, deleteSponsor, reorderSponsors }) {
+  const [newName, setNewName] = useState('');
+  const [newUrl, setNewUrl] = useState('');
+  const [newTier, setNewTier] = useState('official');
+  const [error, setError] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [logoError, setLogoError] = useState(false);
+
+  const sponsors = getTeamSponsors(teamKey);
+
+  // Convert name to URL-safe key
+  const slugify = (name) => {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+  };
+
+  const handleAdd = async () => {
+    if (!newName.trim() || !newUrl.trim()) return;
+
+    const sponsorKey = slugify(newName.trim());
+
+    // Check for duplicate
+    if (sponsors.some(s => s.key === sponsorKey)) {
+      setError(`A sponsor named '${newName.trim()}' already exists for this team`);
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+
+    const result = await saveSponsor(teamKey, sponsorKey, {
+      name: newName.trim(),
+      url: newUrl.trim(),
+      tier: newTier,
+      order: sponsors.length,
+    });
+
+    setSaving(false);
+
+    if (result.success) {
+      setNewName('');
+      setNewUrl('');
+      setNewTier('official');
+      setLogoError(false);
+    } else {
+      setError(result.error);
+    }
+  };
+
+  const handleDelete = async (sponsorKey) => {
+    await deleteSponsor(teamKey, sponsorKey);
+  };
+
+  const handleMove = async (index, direction) => {
+    const newIndex = index + direction;
+    if (newIndex < 0 || newIndex >= sponsors.length) return;
+
+    const newOrder = [...sponsors];
+    const [moved] = newOrder.splice(index, 1);
+    newOrder.splice(newIndex, 0, moved);
+
+    const orderedKeys = newOrder.map(s => s.key);
+    await reorderSponsors(teamKey, orderedKeys);
+  };
+
+  const tierColors = {
+    presenting: 'bg-purple-600/20 text-purple-400',
+    official: 'bg-blue-600/20 text-blue-400',
+    supporting: 'bg-zinc-600/20 text-zinc-400',
+  };
+
+  return (
+    <div className="p-4 border-t border-zinc-700">
+      {/* Section Header */}
+      <div className="flex items-center gap-2 mb-3">
+        <SparklesIcon className="w-4 h-4 text-amber-400" />
+        <span className="text-sm font-medium text-zinc-300">Sponsors ({sponsors.length})</span>
+      </div>
+
+      {/* Sponsor List */}
+      {sponsors.length > 0 ? (
+        <div className="space-y-2 mb-4">
+          {sponsors.map((sponsor, idx) => (
+            <div
+              key={sponsor.key}
+              className="flex items-center gap-3 p-2 bg-zinc-700/50 rounded"
+            >
+              {/* Logo thumbnail */}
+              <div className="w-12 h-12 bg-zinc-600 rounded flex items-center justify-center overflow-hidden flex-shrink-0">
+                <img
+                  src={sponsor.url}
+                  alt={sponsor.name}
+                  className="w-12 h-12 object-contain"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'flex';
+                  }}
+                />
+                <div className="w-12 h-12 items-center justify-center text-zinc-500 text-xs hidden">
+                  No img
+                </div>
+              </div>
+
+              {/* Name */}
+              <span className="text-sm text-zinc-200 flex-1 truncate">{sponsor.name}</span>
+
+              {/* Tier badge */}
+              <span className={`px-2 py-0.5 rounded text-xs font-medium ${tierColors[sponsor.tier] || tierColors.official}`}>
+                {sponsor.tier}
+              </span>
+
+              {/* URL (truncated) */}
+              <a
+                href={sponsor.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-zinc-500 hover:text-zinc-300 truncate max-w-[120px]"
+                title={sponsor.url}
+              >
+                {sponsor.url.replace(/^https?:\/\//, '').slice(0, 20)}...
+              </a>
+
+              {/* Reorder buttons */}
+              <button
+                onClick={() => handleMove(idx, -1)}
+                disabled={idx === 0}
+                className="p-1 text-zinc-500 hover:text-zinc-300 disabled:opacity-30"
+                title="Move up"
+              >
+                <ArrowUpIcon className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => handleMove(idx, 1)}
+                disabled={idx === sponsors.length - 1}
+                className="p-1 text-zinc-500 hover:text-zinc-300 disabled:opacity-30"
+                title="Move down"
+              >
+                <ArrowDownIcon className="w-4 h-4" />
+              </button>
+
+              {/* Delete button */}
+              <button
+                onClick={() => handleDelete(sponsor.key)}
+                className="p-1 text-red-500/50 hover:text-red-400"
+                title="Delete sponsor"
+              >
+                <TrashIcon className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-zinc-500 text-sm mb-4">No sponsors for this team</p>
+      )}
+
+      {/* Add Sponsor Form */}
+      <div className="flex flex-wrap items-end gap-2 p-3 bg-zinc-800/50 rounded-lg">
+        <div className="flex-1 min-w-[150px]">
+          <label className="block text-xs text-zinc-500 mb-1">Name</label>
+          <input
+            type="text"
+            value={newName}
+            onChange={(e) => { setNewName(e.target.value); setError(null); }}
+            placeholder="e.g., Nike"
+            className="w-full px-3 py-2 bg-zinc-700 border border-zinc-600 rounded text-sm text-white focus:outline-none focus:border-amber-500"
+          />
+        </div>
+
+        <div className="flex-1 min-w-[200px]">
+          <label className="block text-xs text-zinc-500 mb-1">Logo URL</label>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={newUrl}
+              onChange={(e) => { setNewUrl(e.target.value); setLogoError(false); }}
+              placeholder="https://..."
+              className="flex-1 px-3 py-2 bg-zinc-700 border border-zinc-600 rounded text-sm text-white focus:outline-none focus:border-amber-500"
+            />
+            {newUrl && (
+              <div className="w-12 h-12 bg-zinc-600 rounded flex items-center justify-center overflow-hidden flex-shrink-0">
+                {!logoError ? (
+                  <img
+                    src={newUrl}
+                    alt="Preview"
+                    className="w-12 h-12 object-contain"
+                    onError={() => setLogoError(true)}
+                  />
+                ) : (
+                  <span className="text-red-400 text-xs">Bad URL</span>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="w-32">
+          <label className="block text-xs text-zinc-500 mb-1">Tier</label>
+          <select
+            value={newTier}
+            onChange={(e) => setNewTier(e.target.value)}
+            className="w-full px-3 py-2 bg-zinc-700 border border-zinc-600 rounded text-sm text-white focus:outline-none focus:border-amber-500"
+          >
+            <option value="presenting">Presenting</option>
+            <option value="official">Official</option>
+            <option value="supporting">Supporting</option>
+          </select>
+        </div>
+
+        <button
+          onClick={handleAdd}
+          disabled={!newName.trim() || !newUrl.trim() || saving}
+          className="px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:bg-zinc-700 disabled:text-zinc-500 text-white font-medium rounded transition-colors flex items-center gap-2"
+        >
+          <PlusIcon className="w-4 h-4" />
+          {saving ? 'Adding...' : 'Add'}
+        </button>
+      </div>
+
+      {/* Error message */}
+      {error && (
+        <p className="mt-2 text-sm text-red-400">{error}</p>
+      )}
     </div>
   );
 }
