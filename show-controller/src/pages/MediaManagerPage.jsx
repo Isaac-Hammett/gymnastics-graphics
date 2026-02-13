@@ -795,15 +795,19 @@ function SponsorsView({ teamKey, getTeamSponsors, saveSponsor, deleteSponsor, re
               </span>
 
               {/* URL (truncated) */}
-              <a
-                href={sponsor.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-zinc-500 hover:text-zinc-300 truncate max-w-[120px]"
-                title={sponsor.url}
-              >
-                {sponsor.url.replace(/^https?:\/\//, '').slice(0, 20)}...
-              </a>
+              {sponsor.url ? (
+                <a
+                  href={sponsor.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-zinc-500 hover:text-zinc-300 truncate max-w-[120px]"
+                  title={sponsor.url}
+                >
+                  {sponsor.url.replace(/^https?:\/\//, '').slice(0, 20)}...
+                </a>
+              ) : (
+                <span className="text-xs text-zinc-600">No URL</span>
+              )}
 
               {/* Reorder buttons */}
               <button

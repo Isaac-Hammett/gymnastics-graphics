@@ -510,7 +510,7 @@ export function useTeamsDatabase() {
       .map(([key, data]) => ({
         key,
         name: data.name,
-        url: data.url,
+        url: data.logoUrl || data.url,
         tier: data.tier || 'official',
         order: data.order ?? 0,
       }))
