@@ -5540,6 +5540,8 @@ export default function RundownEditorPage() {
                                   displayTimezones={allDisplayTimezones}
                                   timezoneConfig={timezoneConfig}
                                   isAnchorSegment={segment.id === timezoneConfig?.anchorSegmentId}
+                                  talentRoster={talentRoster}
+                                  equipmentList={equipmentList}
                                 />
                               );
                             })}
@@ -5593,6 +5595,8 @@ export default function RundownEditorPage() {
                         displayTimezones={allDisplayTimezones}
                         timezoneConfig={timezoneConfig}
                         isAnchorSegment={segment.id === timezoneConfig?.anchorSegmentId}
+                        talentRoster={talentRoster}
+                        equipmentList={equipmentList}
                       />
                     );
                   }
@@ -5646,6 +5650,8 @@ export default function RundownEditorPage() {
                 equipmentConflictsForSegment={equipmentConflicts.filter(
                   c => c.segment1.id === selectedSegment.id || c.segment2.id === selectedSegment.id
                 )}
+                talentRoster={talentRoster}
+                equipmentList={equipmentList}
               />
             ) : (
               <div className="text-center py-20 text-zinc-500">
@@ -5837,6 +5843,7 @@ export default function RundownEditorPage() {
         <EquipmentScheduleModal
           segments={segments}
           segmentStartTimes={segmentStartTimes}
+          equipmentList={equipmentList}
           onClose={() => setShowEquipmentScheduleModal(false)}
         />
       )}
@@ -6078,6 +6085,8 @@ function SegmentRow({
   displayTimezones = [], // Phase K: Task 82 - Array of timezone IDs to display (e.g., ['America/Los_Angeles', 'America/New_York'])
   timezoneConfig, // Phase K: Task 82 - Full timezone config object (for use24HourFormat)
   isAnchorSegment = false, // Phase K: Task 83 - Whether this segment is the anchor segment
+  talentRoster = [], // Phase X: Passed from parent (was previously closure-scoped)
+  equipmentList = [], // Phase X: Passed from parent (was previously closure-scoped)
 }) {
   const isSelected = selectedSegmentId === segment.id;
   const isMultiSelected = selectedSegmentIds.includes(segment.id);
@@ -6947,7 +6956,7 @@ function CreateGroupModal({ onCreate, onCancel, selectedCount }) {
 }
 
 // Placeholder SegmentDetail panel component
-function SegmentDetailPanel({ segment, onSave, onDelete, onCancel, groupedScenes, groupedGraphics, compType, teamNames, historicalAverageSec, aiPrediction, equipmentConflictsForSegment = [] }) {
+function SegmentDetailPanel({ segment, onSave, onDelete, onCancel, groupedScenes, groupedGraphics, compType, teamNames, historicalAverageSec, aiPrediction, equipmentConflictsForSegment = [], talentRoster = [], equipmentList = [] }) {
   const [formData, setFormData] = useState(segment);
 
   // Reset form when segment changes
@@ -9908,7 +9917,7 @@ function TalentScheduleModal({ segments, segmentStartTimes, talentRoster, onClos
 
 // Equipment Schedule Modal Component (Phase 12: Task 95)
 // Shows which equipment is assigned to which segments with conflict warnings
-function EquipmentScheduleModal({ segments, segmentStartTimes, onClose }) {
+function EquipmentScheduleModal({ segments, segmentStartTimes, equipmentList = [], onClose }) {
   // Build equipment schedule data - which segments each piece of equipment is used in
   const equipmentSchedule = useMemo(() => {
     const schedule = {};
