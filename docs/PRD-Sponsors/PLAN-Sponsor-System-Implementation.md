@@ -1,6 +1,6 @@
 # Plan: Sponsor System — Implementation Tracker
 
-**Status:** IN PROGRESS (4/12 tasks complete)
+**Status:** IN PROGRESS (5/12 tasks complete)
 **Last Updated:** 2026-02-13
 
 ---
@@ -13,7 +13,7 @@
 | T2 | B | `show-controller/src/lib/graphicsRegistry.js` | Add `sponsors-thanks`, `sponsors-cycle`, `sponsors-bug` in new `sponsors` category (before closing `};` at line 945) | COMPLETE |
 | T3 | B | `show-controller/src/pages/GraphicsManagerPage.jsx` | Add `'sponsors': 'Sponsors'` to `CATEGORY_LABELS` (line 18); add dummy sponsors to `testOptions` for preview | COMPLETE |
 | T4 | B | `show-controller/src/lib/graphicButtons.js` | Add `sponsors` key using `getGraphicsByCategory('sponsors')`, numbers starting at 30 | COMPLETE |
-| T5 | B | `show-controller/src/lib/urlBuilder.js` | Add 3 builder functions (`buildSponsorsThanksURL`, `buildSponsorsCycleURL`, `buildSponsorsBugURL`) + 3 switch cases + destructure `sponsors` from `options` | NOT STARTED |
+| T5 | B | `show-controller/src/lib/urlBuilder.js` | Add 3 builder functions (`buildSponsorsThanksURL`, `buildSponsorsCycleURL`, `buildSponsorsBugURL`) + 3 switch cases + destructure `sponsors` from `options` | COMPLETE |
 | T6 | C | `show-controller/src/pages/UrlGeneratorPage.jsx` | Import `useTeamsDatabase`; add 3 entries to `baseGraphicTitles`; add Sponsors sidebar section; add `resolveHomeTeamKey` helper; thread `sponsorsJson` through `options.sponsors` | NOT STARTED |
 | T7 | D | `show-controller/src/pages/MediaManagerPage.jsx` | Create `SponsorsView` component (add/reorder/delete); inline under expanded team cards; add sponsor count badge to team card headers; destructure new hook functions | NOT STARTED |
 | T8 | E | `overlays/sponsors-thanks.html` | Create full-screen "Thank You to Our Sponsors" grid overlay (1920x1080, Inter font, gray header bar, auto-sizing grid, URL params) | NOT STARTED |
@@ -29,7 +29,7 @@
 | Phase | Name | Tasks | Status |
 |-------|------|-------|--------|
 | **A** | Data & Hook | T1 | COMPLETE |
-| **B** | Registry & Routing | T2, T3, T4, T5 | NOT STARTED |
+| **B** | Registry & Routing | T2, T3, T4, T5 | COMPLETE |
 | **C** | URL Generator Plumbing | T6 | NOT STARTED |
 | **D** | Media Manager UI | T7 | NOT STARTED |
 | **E** | Overlay: Thank You | T8 | NOT STARTED |
@@ -144,7 +144,7 @@ T1-T10 all ──→ T11 (build) ──→ T12 (deploy)
 
 All use `URLSearchParams` for proper encoding.
 
-**Status:** NOT STARTED
+**Status:** COMPLETE
 
 ---
 
