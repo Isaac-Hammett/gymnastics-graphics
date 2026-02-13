@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useCompetition, useCompetitions } from '../hooks/useCompetitions';
+import { useTeamsDatabase } from '../hooks/useTeamsDatabase';
 import { graphicButtons, getApparatusButtons, getPreMeetButtons, getLeaderboardButtons, getEventSummaryRotationButtons, getEventSummaryApparatusButtons, transparentGraphics, isTransparentGraphic } from '../lib/graphicButtons';
 import { getTeamCount, getGenderFromCompType } from '../lib/competitionUtils';
 import { generateGraphicURL, copyToClipboard } from '../lib/urlBuilder';
@@ -98,6 +99,10 @@ const baseGraphicTitles = {
   'summary-hb': 'Event Summary - High Bar',
   'summary-ub': 'Event Summary - Uneven Bars',
   'summary-bb': 'Event Summary - Balance Beam',
+  // Sponsors
+  'sponsors-thanks': 'Thank You Sponsors',
+  'sponsors-cycle': 'Cycling Sponsors',
+  'sponsors-bug': 'Sponsor Bug',
 };
 
 // Generate team-specific graphic titles dynamically
@@ -116,6 +121,7 @@ export default function UrlGeneratorPage() {
 
   const { config } = useCompetition(compId);
   const { updateCompetition, refreshTeamData } = useCompetitions();
+  const { getTeamSponsors, resolveSchoolKey } = useTeamsDatabase();
   const [hasChanges, setHasChanges] = useState(false);
   const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -293,13 +299,32 @@ export default function UrlGeneratorPage() {
   const summaryRotationButtons = useMemo(() => getEventSummaryRotationButtons(config?.compType), [config?.compType]);
   const summaryApparatusButtons = useMemo(() => getEventSummaryApparatusButtons(config?.compType), [config?.compType]);
 
+  // Resolve home team key for sponsor lookups
+  const resolveHomeTeamKey = (formData, config) => {
+    if (!formData.team1Name) return null;
+    const gender = config?.compType?.startsWith('mens') ? 'mens' : 'womens';
+    const schoolKey = resolveSchoolKey(formData.team1Name);
+    if (!schoolKey) return null;
+    return `${schoolKey}-${gender}`;
+  };
+
   // Generate URL with options for new graphic types
   const generateURLWithOptions = (graphic) => {
+    let sponsorsJson = null;
+    if (graphic.startsWith('sponsors-')) {
+      const homeTeamKey = resolveHomeTeamKey(formData, config);
+      if (homeTeamKey) {
+        const teamSponsors = getTeamSponsors(homeTeamKey);
+        const capped = teamSponsors.slice(0, 8).map(s => ({ name: s.name, url: s.url }));
+        sponsorsJson = JSON.stringify(capped);
+      }
+    }
     return generateGraphicURL(graphic, formData, teamCount, undefined, {
       compType: config?.compType,
       virtiusSessionId: config?.virtiusSessionId,
       compId: compId,
       summaryTheme: summaryTheme,
+      sponsors: sponsorsJson,
     });
   };
 
@@ -454,6 +479,19 @@ export default function UrlGeneratorPage() {
             active={currentGraphic === 'thanks'}
             onClick={() => setCurrentGraphic('thanks')}
           />
+        </GraphicSection>
+
+        <GraphicSection title="Sponsors">
+          {graphicButtons.sponsors.map((btn) => (
+            <GraphicSidebarButton
+              key={btn.id}
+              id={btn.id}
+              label={btn.label}
+              number={btn.number}
+              active={currentGraphic === btn.id}
+              onClick={() => setCurrentGraphic(btn.id)}
+            />
+          ))}
         </GraphicSection>
       </div>
 
