@@ -37,6 +37,7 @@ export function useTeamsDatabase() {
   const [teams, setTeams] = useState({});
   const [headshots, setHeadshots] = useState({});
   const [aliases, setAliases] = useState({});
+  const [sponsors, setSponsors] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -45,11 +46,12 @@ export function useTeamsDatabase() {
     const teamsRef = ref(db, 'teamsDatabase/teams');
     const headshotsRef = ref(db, 'teamsDatabase/headshots');
     const aliasesRef = ref(db, 'teamsDatabase/aliases');
+    const sponsorsRef = ref(db, 'teamsDatabase/sponsors');
 
     let loadedCount = 0;
     const checkLoaded = () => {
       loadedCount++;
-      if (loadedCount >= 3) setLoading(false);
+      if (loadedCount >= 4) setLoading(false);
     };
 
     const unsubTeams = onValue(teamsRef, (snapshot) => {
@@ -76,10 +78,19 @@ export function useTeamsDatabase() {
       checkLoaded();
     });
 
+    const unsubSponsors = onValue(sponsorsRef, (snapshot) => {
+      setSponsors(snapshot.val() || {});
+      checkLoaded();
+    }, (err) => {
+      setError(err.message);
+      checkLoaded();
+    });
+
     return () => {
       unsubTeams();
       unsubHeadshots();
       unsubAliases();
+      unsubSponsors();
     };
   }, []);
 
@@ -235,6 +246,65 @@ export function useTeamsDatabase() {
       return { success: false, error: err.message };
     }
   }, [saveHeadshots]);
+
+  // ============================================
+  // SPONSOR OPERATIONS
+  // ============================================
+
+  /**
+   * Add or update a sponsor for a specific team
+   * @param {string} teamKey - Team key (e.g., "penn-state-mens")
+   * @param {string} sponsorKey - URL-safe key (e.g., "nike", "state-farm")
+   * @param {Object} sponsorData - { name, url, tier, order }
+   */
+  const saveSponsor = useCallback(async (teamKey, sponsorKey, sponsorData) => {
+    try {
+      await set(ref(db, `teamsDatabase/sponsors/${teamKey}/${sponsorKey}`), {
+        name: sponsorData.name,
+        url: sponsorData.url,
+        tier: sponsorData.tier || 'official',
+        order: sponsorData.order ?? 0,
+        updatedAt: new Date().toISOString(),
+      });
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  }, []);
+
+  /**
+   * Delete a sponsor for a specific team
+   * @param {string} teamKey - Team key (e.g., "penn-state-mens")
+   * @param {string} sponsorKey - Sponsor key to delete
+   */
+  const deleteSponsor = useCallback(async (teamKey, sponsorKey) => {
+    try {
+      await set(ref(db, `teamsDatabase/sponsors/${teamKey}/${sponsorKey}`), null);
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  }, []);
+
+  /**
+   * Reorder sponsors for a specific team by updating their order values
+   * @param {string} teamKey - Team key (e.g., "penn-state-mens")
+   * @param {string[]} orderedKeys - Array of sponsor keys in desired order
+   */
+  const reorderSponsors = useCallback(async (teamKey, orderedKeys) => {
+    try {
+      const updates = {};
+      orderedKeys.forEach((key, index) => {
+        updates[`teamsDatabase/sponsors/${teamKey}/${key}/order`] = index;
+        updates[`teamsDatabase/sponsors/${teamKey}/${key}/updatedAt`] = new Date().toISOString();
+      });
+      const rootRef = ref(db);
+      await update(rootRef, updates);
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  }, []);
 
   // ============================================
   // QUERY HELPERS
@@ -428,6 +498,34 @@ export function useTeamsDatabase() {
 
     return null;
   }, [teams, aliases]);
+
+  /**
+   * Get sorted sponsors for a specific team
+   * @param {string} teamKey - Team key (e.g., "penn-state-mens")
+   * @returns {Array<{key: string, name: string, url: string, tier: string, order: number}>}
+   */
+  const getTeamSponsors = useCallback((teamKey) => {
+    if (!teamKey || !sponsors[teamKey]) return [];
+    return Object.entries(sponsors[teamKey])
+      .map(([key, data]) => ({
+        key,
+        name: data.name,
+        url: data.url,
+        tier: data.tier || 'official',
+        order: data.order ?? 0,
+      }))
+      .sort((a, b) => a.order - b.order);
+  }, [sponsors]);
+
+  /**
+   * Get count of sponsors for a specific team
+   * @param {string} teamKey - Team key (e.g., "penn-state-mens")
+   * @returns {number}
+   */
+  const getTeamSponsorCount = useCallback((teamKey) => {
+    if (!teamKey || !sponsors[teamKey]) return 0;
+    return Object.keys(sponsors[teamKey]).length;
+  }, [sponsors]);
 
   /**
    * Get team with flexible matching (handles various name formats)
@@ -684,6 +782,7 @@ export function useTeamsDatabase() {
     teams,
     headshots,
     aliases,
+    sponsors,
     loading,
     error,
 
@@ -712,6 +811,13 @@ export function useTeamsDatabase() {
     importRoster,
     getTeamRosterWithHeadshots,
     getTeamRosterStats,
+
+    // Sponsor operations
+    saveSponsor,
+    deleteSponsor,
+    reorderSponsors,
+    getTeamSponsors,
+    getTeamSponsorCount,
 
     // Migration
     migrateFromStatic,
