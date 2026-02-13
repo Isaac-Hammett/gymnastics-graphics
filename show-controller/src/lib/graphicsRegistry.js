@@ -942,6 +942,52 @@ export const GRAPHICS = {
       meetDate: { type: 'string', source: 'competition' },
     },
   },
+
+  // ============================================================
+  // SPONSOR GRAPHICS
+  // ============================================================
+
+  'sponsors-thanks': {
+    id: 'sponsors-thanks',
+    label: 'Sponsor Thank You',
+    category: 'sponsors',
+    keywords: ['sponsor', 'sponsors', 'partner', 'partners', 'thank you'],
+    gender: 'both',
+    renderer: 'overlay',
+    file: 'sponsors-thanks.html',
+    transparent: false,
+    params: {
+      logo: { type: 'string', source: 'competition' },
+      sponsors: { type: 'string', source: 'computed' },
+    },
+  },
+  'sponsors-cycle': {
+    id: 'sponsors-cycle',
+    label: 'Sponsor Cycle',
+    category: 'sponsors',
+    keywords: ['sponsor', 'sponsors', 'cycle', 'rotate', 'cycling'],
+    gender: 'both',
+    renderer: 'overlay',
+    file: 'sponsors-cycle.html',
+    transparent: false,
+    params: {
+      logo: { type: 'string', source: 'competition' },
+      sponsors: { type: 'string', source: 'computed' },
+    },
+  },
+  'sponsors-bug': {
+    id: 'sponsors-bug',
+    label: 'Sponsor Bug',
+    category: 'sponsors',
+    keywords: ['sponsor', 'bug', 'persistent', 'corner', 'watermark'],
+    gender: 'both',
+    renderer: 'overlay',
+    file: 'sponsors-bug.html',
+    transparent: true,
+    params: {
+      sponsors: { type: 'string', source: 'computed' },
+    },
+  },
 };
 
 // ============================================================

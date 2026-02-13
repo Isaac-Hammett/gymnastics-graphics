@@ -1,6 +1,6 @@
 # Plan: Sponsor System — Implementation Tracker
 
-**Status:** IN PROGRESS (1/12 tasks complete)
+**Status:** IN PROGRESS (2/12 tasks complete)
 **Last Updated:** 2026-02-13
 
 ---
@@ -10,7 +10,7 @@
 | Task | Phase | File | Change | Status |
 |------|-------|------|--------|--------|
 | T1 | A | `show-controller/src/hooks/useTeamsDatabase.js` | Rescope `saveSponsor`/`deleteSponsor`/`reorderSponsors` to per-team paths; add `tier` field; add `getTeamSponsors`/`getTeamSponsorCount` helpers; update exports | COMPLETE |
-| T2 | B | `show-controller/src/lib/graphicsRegistry.js` | Add `sponsors-thanks`, `sponsors-cycle`, `sponsors-bug` in new `sponsors` category (before closing `};` at line 945) | NOT STARTED |
+| T2 | B | `show-controller/src/lib/graphicsRegistry.js` | Add `sponsors-thanks`, `sponsors-cycle`, `sponsors-bug` in new `sponsors` category (before closing `};` at line 945) | COMPLETE |
 | T3 | B | `show-controller/src/pages/GraphicsManagerPage.jsx` | Add `'sponsors': 'Sponsors'` to `CATEGORY_LABELS` (line 18); add dummy sponsors to `testOptions` for preview | NOT STARTED |
 | T4 | B | `show-controller/src/lib/graphicButtons.js` | Add `sponsors` key using `getGraphicsByCategory('sponsors')`, numbers starting at 30 | NOT STARTED |
 | T5 | B | `show-controller/src/lib/urlBuilder.js` | Add 3 builder functions (`buildSponsorsThanksURL`, `buildSponsorsCycleURL`, `buildSponsorsBugURL`) + 3 switch cases + destructure `sponsors` from `options` | NOT STARTED |
@@ -96,7 +96,7 @@ T1-T10 all ──→ T11 (build) ──→ T12 (deploy)
 
 **Insert location:** Before closing `};` at line 945. Use `'sponsors'` category (NOT `'stream'`) to avoid keyword collision with `stream-thanks`.
 
-**Status:** NOT STARTED
+**Status:** COMPLETE
 
 ---
 
