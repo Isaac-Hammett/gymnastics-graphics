@@ -1,6 +1,6 @@
 # Plan: Sponsor System — Implementation Tracker
 
-**Status:** IN PROGRESS (10/12 tasks complete)
+**Status:** IN PROGRESS (11/12 tasks complete)
 **Last Updated:** 2026-02-13
 
 ---
@@ -19,7 +19,7 @@
 | T8 | E | `overlays/sponsors-thanks.html` | Create full-screen "Thank You to Our Sponsors" grid overlay (1920x1080, Inter font, gray header bar, auto-sizing grid, URL params) | COMPLETE |
 | T9 | F | `overlays/sponsors-cycle.html` | Create full-screen cycling sponsor overlay (one at a time, 3s hold, 0.5s crossfade, continuous loop) | COMPLETE |
 | T10 | G | `overlays/sponsors-bug.html` | Create transparent corner bug overlay (bottom-right 200x80, 10s cycling, 0.8s fade, semi-transparent pill) | COMPLETE |
-| T11 | H | — | `cd show-controller && npm run build` — verify no errors | NOT STARTED |
+| T11 | H | — | `cd show-controller && npm run build` — verify no errors | COMPLETE |
 | T12 | H | — | Deploy SPA + 3 overlay files to production; verify overlay URLs serve overlays (not React SPA) | NOT STARTED |
 
 ---
@@ -35,7 +35,7 @@
 | **E** | Overlay: Thank You | T8 | COMPLETE |
 | **F** | Overlay: Cycle | T9 | COMPLETE |
 | **G** | Overlay: Bug | T10 | COMPLETE |
-| **H** | Build & Deploy | T11, T12 | NOT STARTED |
+| **H** | Build & Deploy | T11, T12 | IN PROGRESS |
 
 ---
 
@@ -252,7 +252,7 @@ All use `URLSearchParams` for proper encoding.
 2. Verify no errors, no warnings about missing imports
 3. Check `dist/` output exists
 
-**Status:** NOT STARTED
+**Status:** COMPLETE
 
 ---
 
