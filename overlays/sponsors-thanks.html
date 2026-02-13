@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1920, height=1080">
+  <title>Thank You to Our Sponsors</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: transparent;
+    }
+
+    .header-bar {
+      background: #BFBFBF;
+      height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 60px;
+    }
+
+    .header-title {
+      font-size: 48px;
+      font-weight: 900;
+      color: #000;
+      text-transform: uppercase;
+      letter-spacing: -0.5px;
+    }
+
+    .header-logo {
+      width: 80px;
+      height: 80px;
+      object-fit: contain;
+    }
+
+    .sponsors-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 980px;
+      padding: 40px;
+    }
+
+    .sponsors-grid {
+      display: grid;
+      gap: 40px;
+      justify-items: center;
+      align-items: center;
+    }
+
+    /* Grid layouts based on sponsor count */
+    .sponsors-grid.count-1 {
+      grid-template-columns: 1fr;
+    }
+
+    .sponsors-grid.count-2 {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .sponsors-grid.count-3,
+    .sponsors-grid.count-4 {
+      grid-template-columns: repeat(2, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+    }
+
+    .sponsors-grid.count-5,
+    .sponsors-grid.count-6 {
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+    }
+
+    .sponsors-grid.count-7,
+    .sponsors-grid.count-8 {
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+    }
+
+    .sponsor-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .sponsor-logo {
+      width: 200px;
+      height: 200px;
+      object-fit: contain;
+    }
+
+    .sponsor-name {
+      font-size: 24px;
+      font-weight: 700;
+      color: #000;
+      text-align: center;
+      max-width: 200px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .sponsor-fallback {
+      width: 200px;
+      height: 200px;
+      background: #E5E5E5;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .sponsor-fallback-text {
+      font-size: 20px;
+      font-weight: 700;
+      color: #666;
+      text-align: center;
+      word-wrap: break-word;
+    }
+
+    .no-sponsors-message {
+      font-size: 36px;
+      font-weight: 700;
+      color: #666;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="header-bar">
+    <div class="header-title">THANK YOU TO OUR SPONSORS</div>
+    <img id="headerLogo" class="header-logo" src="" alt="Team Logo">
+  </div>
+  <div class="sponsors-container">
+    <div id="sponsorsGrid" class="sponsors-grid"></div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const logoUrl = params.get('logo') || '';
+    const sponsorsParam = params.get('sponsors') || '';
+
+    // Handle header logo
+    const headerLogo = document.getElementById('headerLogo');
+    if (logoUrl) {
+      headerLogo.src = logoUrl;
+      headerLogo.onerror = () => {
+        headerLogo.style.display = 'none';
+      };
+    } else {
+      headerLogo.style.display = 'none';
+    }
+
+    // Parse sponsors
+    let sponsors = [];
+    if (sponsorsParam) {
+      try {
+        sponsors = JSON.parse(sponsorsParam);
+        if (!Array.isArray(sponsors)) {
+          sponsors = [];
+        }
+      } catch (e) {
+        sponsors = [];
+      }
+    }
+
+    const grid = document.getElementById('sponsorsGrid');
+
+    // Show message if no sponsors
+    if (sponsors.length === 0) {
+      grid.innerHTML = '<div class="no-sponsors-message">No sponsors configured</div>';
+    } else {
+      // Set grid class based on count (cap at 8)
+      const count = Math.min(sponsors.length, 8);
+      grid.classList.add(`count-${count}`);
+
+      // Render sponsors (max 8)
+      sponsors.slice(0, 8).forEach(sponsor => {
+        const item = document.createElement('div');
+        item.className = 'sponsor-item';
+
+        const name = sponsor.name || 'Sponsor';
+        const url = sponsor.url || '';
+
+        if (url) {
+          const img = document.createElement('img');
+          img.className = 'sponsor-logo';
+          img.src = url;
+          img.alt = name;
+          img.onerror = () => {
+            // Replace broken image with fallback
+            const fallback = document.createElement('div');
+            fallback.className = 'sponsor-fallback';
+            const fallbackText = document.createElement('div');
+            fallbackText.className = 'sponsor-fallback-text';
+            fallbackText.textContent = name;
+            fallback.appendChild(fallbackText);
+            img.replaceWith(fallback);
+          };
+          item.appendChild(img);
+        } else {
+          // No URL provided - show fallback
+          const fallback = document.createElement('div');
+          fallback.className = 'sponsor-fallback';
+          const fallbackText = document.createElement('div');
+          fallbackText.className = 'sponsor-fallback-text';
+          fallbackText.textContent = name;
+          fallback.appendChild(fallbackText);
+          item.appendChild(fallback);
+        }
+
+        const nameEl = document.createElement('div');
+        nameEl.className = 'sponsor-name';
+        nameEl.textContent = name;
+        nameEl.title = name; // Tooltip for truncated names
+        item.appendChild(nameEl);
+
+        grid.appendChild(item);
+      });
+    }
+  </script>
+</body>
+</html>
