@@ -1,6 +1,6 @@
 # Plan: Sponsor System — Implementation Tracker
 
-**Status:** IN PROGRESS (3/12 tasks complete)
+**Status:** IN PROGRESS (4/12 tasks complete)
 **Last Updated:** 2026-02-13
 
 ---
@@ -12,7 +12,7 @@
 | T1 | A | `show-controller/src/hooks/useTeamsDatabase.js` | Rescope `saveSponsor`/`deleteSponsor`/`reorderSponsors` to per-team paths; add `tier` field; add `getTeamSponsors`/`getTeamSponsorCount` helpers; update exports | COMPLETE |
 | T2 | B | `show-controller/src/lib/graphicsRegistry.js` | Add `sponsors-thanks`, `sponsors-cycle`, `sponsors-bug` in new `sponsors` category (before closing `};` at line 945) | COMPLETE |
 | T3 | B | `show-controller/src/pages/GraphicsManagerPage.jsx` | Add `'sponsors': 'Sponsors'` to `CATEGORY_LABELS` (line 18); add dummy sponsors to `testOptions` for preview | COMPLETE |
-| T4 | B | `show-controller/src/lib/graphicButtons.js` | Add `sponsors` key using `getGraphicsByCategory('sponsors')`, numbers starting at 30 | NOT STARTED |
+| T4 | B | `show-controller/src/lib/graphicButtons.js` | Add `sponsors` key using `getGraphicsByCategory('sponsors')`, numbers starting at 30 | COMPLETE |
 | T5 | B | `show-controller/src/lib/urlBuilder.js` | Add 3 builder functions (`buildSponsorsThanksURL`, `buildSponsorsCycleURL`, `buildSponsorsBugURL`) + 3 switch cases + destructure `sponsors` from `options` | NOT STARTED |
 | T6 | C | `show-controller/src/pages/UrlGeneratorPage.jsx` | Import `useTeamsDatabase`; add 3 entries to `baseGraphicTitles`; add Sponsors sidebar section; add `resolveHomeTeamKey` helper; thread `sponsorsJson` through `options.sponsors` | NOT STARTED |
 | T7 | D | `show-controller/src/pages/MediaManagerPage.jsx` | Create `SponsorsView` component (add/reorder/delete); inline under expanded team cards; add sponsor count badge to team card headers; destructure new hook functions | NOT STARTED |
@@ -125,7 +125,7 @@ T1-T10 all ──→ T11 (build) ──→ T12 (deploy)
 2. Use `getGraphicsByCategory('sponsors').map(...)` pattern
 3. Number sequence starting at 30 (stream uses 19+, inMeet uses 27+)
 
-**Status:** NOT STARTED
+**Status:** COMPLETE
 
 ---
 

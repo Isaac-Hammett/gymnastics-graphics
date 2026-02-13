@@ -77,6 +77,11 @@ export const graphicButtons = {
     label: g.label,
     number: 27 + i,
   })),
+  sponsors: getGraphicsByCategory('sponsors').map((g, i) => ({
+    id: g.id,
+    label: g.label,
+    number: 30 + i,
+  })),
 };
 
 // Derive graphicNames from registry
