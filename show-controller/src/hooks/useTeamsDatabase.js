@@ -800,6 +800,7 @@ export function useTeamsDatabase() {
     getTeamFlexible,
     getTeamRosterStatsFlexible,
     hasTeamRoster,
+    resolveSchoolKey,
 
     // Headshot operations
     saveHeadshot,
