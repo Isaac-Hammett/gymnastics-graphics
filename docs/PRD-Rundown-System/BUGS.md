@@ -1,9 +1,10 @@
 # Rundown System - Bug Tracker
 
-## Open Bug Summary (2026-02-08)
+## Open Bug Summary (2026-02-13)
 
 | Bug | Severity | Phase | Status | Fix Task | Description |
 |-----|----------|-------|--------|----------|-------------|
+| BUG-020 | Critical | X | FIXED | — | Rundown editor blank screen — talentRoster/equipmentList not passed as props to sub-components |
 | BUG-012 | High | B | FIXED | — | Talent View shows wrong competition name |
 | BUG-013 | Critical | J | FIXED | — | Timing analytics broken — data structure mismatch + status filter |
 | BUG-014 | High | G | FIXED | — | No sponsor assignment UI in segment detail panel |
@@ -15,6 +16,66 @@
 | BUG-011 | Critical | A | FIXED | — | Start Show button hidden by stale isPlaying |
 
 **See:** [PLAN-Rundown-System-Implementation.md](./PLAN-Rundown-System-Implementation.md#phase-x-bug-fixes-p0---not-started-010) for detailed fix tasks.
+
+---
+
+## BUG-020: Rundown Editor Blank Screen — Sub-Components Reference Out-of-Scope Variables (FIXED)
+
+**Date Identified:** 2026-02-13
+**Date Fixed:** 2026-02-13
+**Severity:** Critical
+**Status:** FIXED
+**Phase:** X (Bug Fixes)
+
+### Symptoms
+
+1. Navigate to `/{compId}/rundown` for any competition
+2. Page shows a blank black screen with empty `<div id="root"></div>`
+3. No visible error to the user — React tree silently unmounts
+4. Console shows: `ReferenceError: talentRoster is not defined`
+5. All other pages (producer, talent, etc.) work correctly
+
+### Root Cause
+
+Three sub-components in `RundownEditorPage.jsx` were defined as **standalone functions outside** the main `RundownEditorPage` component but referenced `talentRoster` and `equipmentList` as if they were still in closure scope:
+
+| Component | Line | Missing Variables |
+|-----------|------|-------------------|
+| `SegmentRow` | 6041 | `talentRoster`, `equipmentList` |
+| `SegmentDetailPanel` | 6950 | `talentRoster`, `equipmentList` |
+| `EquipmentScheduleModal` | 9911 | `equipmentList` |
+
+These variables are `useState` values defined inside the main `RundownEditorPage` function (lines 624, 628). When the sub-components were extracted to standalone functions (likely during a refactor), the prop-passing was not added.
+
+**Why the page goes completely blank:** React 18 unmounts the entire component tree when an uncaught error occurs during render and there is no Error Boundary. Since `SegmentRow` renders immediately (dummy segments include talent assignments), the crash happens on first render, before any content is visible.
+
+**Why this wasn't caught earlier:** The bug was introduced when BUG-015 (talent roster from Firebase) and BUG-017 (equipment from Firebase) added `talentRoster` and `equipmentList` state variables to the main component but the sub-components already referenced them via closure (which worked when they were nested). When the sub-components were standalone functions, the closure was broken.
+
+### Fix Applied
+
+Added `talentRoster` and `equipmentList` as props to all three sub-components and passed them at every render site:
+
+**Component definitions updated:**
+- `SegmentRow` — Added `talentRoster = []` and `equipmentList = []` props
+- `SegmentDetailPanel` — Added `talentRoster = []` and `equipmentList = []` props
+- `EquipmentScheduleModal` — Added `equipmentList = []` prop
+
+**Render sites updated (5 total):**
+- `<SegmentRow>` in grouped segments (line ~5543)
+- `<SegmentRow>` in ungrouped segments (line ~5598)
+- `<SegmentDetailPanel>` in right panel (line ~5653)
+- `<EquipmentScheduleModal>` (line ~5846)
+- `<TalentScheduleModal>` already received `talentRoster` as prop (no change needed)
+
+### Files Changed
+
+- `show-controller/src/pages/RundownEditorPage.jsx` — Added props to 3 sub-component definitions and 5 render sites
+
+### Verification
+
+1. Built successfully with `npm run build` (no errors)
+2. Playwright test: navigated to `/zbbabcn1/rundown`, confirmed page renders without `ReferenceError`
+3. Console errors reduced from 1 (ReferenceError) to 0
 
 ---
 
@@ -131,11 +192,12 @@ Since the BUG-011 fix changed `showIsPaused = timesheetIsPaused` (line 109), the
 
 ---
 
-## BUG-017: Equipment List Hardcoded, Not Configurable (OPEN)
+## BUG-017: Equipment List Hardcoded, Not Configurable (FIXED)
 
 **Date Identified:** 2026-02-01
+**Date Fixed:** 2026-02-08
 **Severity:** Medium
-**Status:** OPEN
+**Status:** FIXED
 **Phase:** G (Production Tracking)
 
 ### Symptoms
@@ -196,11 +258,12 @@ Either implement OBS media seeking via `SetMediaInputCursorOffset` and a timer-b
 
 ---
 
-## BUG-015: Talent Roster Hardcoded with Dummy Data (OPEN)
+## BUG-015: Talent Roster Hardcoded with Dummy Data (FIXED)
 
 **Date Identified:** 2026-02-01
+**Date Fixed:** 2026-02-08
 **Severity:** High
-**Status:** OPEN
+**Status:** FIXED
 **Phase:** E (Script & Talent Flow)
 
 ### Symptoms
@@ -238,11 +301,12 @@ Neither is fetched from Firebase. The `talentId` query param (`?talentId=talent-
 
 ---
 
-## BUG-014: No Sponsor Assignment UI in Segment Detail Panel (OPEN)
+## BUG-014: No Sponsor Assignment UI in Segment Detail Panel (FIXED)
 
 **Date Identified:** 2026-02-01
+**Date Fixed:** 2026-02-08
 **Severity:** High
-**Status:** OPEN
+**Status:** FIXED
 **Phase:** G (Production Tracking)
 
 ### Symptoms
@@ -274,11 +338,12 @@ Task 70 added the sponsor data model (`{ name, logo, tier }`) but no UI was buil
 
 ---
 
-## BUG-013: Timing Analytics Broken — Data Structure Mismatch and Status Filter (OPEN)
+## BUG-013: Timing Analytics Broken — Data Structure Mismatch and Status Filter (FIXED)
 
 **Date Identified:** 2026-02-01
+**Date Fixed:** 2026-02-08
 **Severity:** Critical
-**Status:** OPEN
+**Status:** FIXED
 **Phase:** J (Segment Timing Analytics)
 
 ### Symptoms
