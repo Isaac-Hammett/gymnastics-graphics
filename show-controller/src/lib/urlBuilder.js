@@ -209,6 +209,58 @@ export function buildStreamURL({ type, logo, eventName, meetDate, baseUrl }) {
 }
 
 /**
+ * Build URL for Sponsors Thanks graphic (full-screen grid)
+ * @param {Object} options
+ * @param {string} options.logo - Team logo URL
+ * @param {string} options.sponsorsJson - JSON array of sponsors [{name, url}, ...]
+ * @param {string} [options.baseUrl] - Override base URL
+ * @returns {string} Complete URL
+ */
+export function buildSponsorsThanksURL({ logo, sponsorsJson, baseUrl }) {
+  const base = baseUrl || getBaseURL();
+  const params = new URLSearchParams();
+
+  if (logo) params.set('logo', logo);
+  if (sponsorsJson) params.set('sponsors', sponsorsJson);
+
+  return `${base}/overlays/sponsors-thanks.html?${params.toString()}`;
+}
+
+/**
+ * Build URL for Sponsors Cycle graphic (full-screen cycling)
+ * @param {Object} options
+ * @param {string} options.logo - Team logo URL
+ * @param {string} options.sponsorsJson - JSON array of sponsors [{name, url}, ...]
+ * @param {string} [options.baseUrl] - Override base URL
+ * @returns {string} Complete URL
+ */
+export function buildSponsorsCycleURL({ logo, sponsorsJson, baseUrl }) {
+  const base = baseUrl || getBaseURL();
+  const params = new URLSearchParams();
+
+  if (logo) params.set('logo', logo);
+  if (sponsorsJson) params.set('sponsors', sponsorsJson);
+
+  return `${base}/overlays/sponsors-cycle.html?${params.toString()}`;
+}
+
+/**
+ * Build URL for Sponsors Bug graphic (corner bug overlay)
+ * @param {Object} options
+ * @param {string} options.sponsorsJson - JSON array of sponsors [{name, url}, ...]
+ * @param {string} [options.baseUrl] - Override base URL
+ * @returns {string} Complete URL
+ */
+export function buildSponsorsBugURL({ sponsorsJson, baseUrl }) {
+  const base = baseUrl || getBaseURL();
+  const params = new URLSearchParams();
+
+  if (sponsorsJson) params.set('sponsors', sponsorsJson);
+
+  return `${base}/overlays/sponsors-bug.html?${params.toString()}`;
+}
+
+/**
  * Build URL for Frame Overlay graphics
  * @param {Object} options
  * @param {string} options.frameType - Frame type (quad, tri-center, tri-wide, team-header, single)
@@ -330,7 +382,7 @@ export function buildEventSummaryURL({ mode, rotation, apparatus, virtiusSession
  */
 export function generateGraphicURL(graphicId, formData, teamCount, baseUrl, options = {}) {
   const base = baseUrl || getBaseURL();
-  const { compType, virtiusSessionId, compId, summaryTheme } = options;
+  const { compType, virtiusSessionId, compId, summaryTheme, sponsors } = options;
 
   // Helper to get team logo with placeholder fallback
   const getTeamLogo = (teamNum) => {
@@ -521,6 +573,26 @@ export function generateGraphicURL(graphicId, formData, teamCount, baseUrl, opti
         baseUrl: base,
       });
 
+    case 'sponsors-thanks':
+      return buildSponsorsThanksURL({
+        logo: getTeamLogo(1),
+        sponsorsJson: sponsors || '[]',
+        baseUrl: base,
+      });
+
+    case 'sponsors-cycle':
+      return buildSponsorsCycleURL({
+        logo: getTeamLogo(1),
+        sponsorsJson: sponsors || '[]',
+        baseUrl: base,
+      });
+
+    case 'sponsors-bug':
+      return buildSponsorsBugURL({
+        sponsorsJson: sponsors || '[]',
+        baseUrl: base,
+      });
+
     default:
       return '';
   }
@@ -645,6 +717,9 @@ export default {
   buildCoachesURL,
   buildEventFrameURL,
   buildStreamURL,
+  buildSponsorsThanksURL,
+  buildSponsorsCycleURL,
+  buildSponsorsBugURL,
   buildFrameOverlayURL,
   buildLeaderboardURL,
   buildEventSummaryURL,
