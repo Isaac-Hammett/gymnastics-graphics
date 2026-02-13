@@ -1,6 +1,6 @@
 # Plan: Sponsor System — Implementation Tracker
 
-**Status:** IN PROGRESS (5/12 tasks complete)
+**Status:** IN PROGRESS (6/12 tasks complete)
 **Last Updated:** 2026-02-13
 
 ---
@@ -14,7 +14,7 @@
 | T3 | B | `show-controller/src/pages/GraphicsManagerPage.jsx` | Add `'sponsors': 'Sponsors'` to `CATEGORY_LABELS` (line 18); add dummy sponsors to `testOptions` for preview | COMPLETE |
 | T4 | B | `show-controller/src/lib/graphicButtons.js` | Add `sponsors` key using `getGraphicsByCategory('sponsors')`, numbers starting at 30 | COMPLETE |
 | T5 | B | `show-controller/src/lib/urlBuilder.js` | Add 3 builder functions (`buildSponsorsThanksURL`, `buildSponsorsCycleURL`, `buildSponsorsBugURL`) + 3 switch cases + destructure `sponsors` from `options` | COMPLETE |
-| T6 | C | `show-controller/src/pages/UrlGeneratorPage.jsx` | Import `useTeamsDatabase`; add 3 entries to `baseGraphicTitles`; add Sponsors sidebar section; add `resolveHomeTeamKey` helper; thread `sponsorsJson` through `options.sponsors` | NOT STARTED |
+| T6 | C | `show-controller/src/pages/UrlGeneratorPage.jsx` | Import `useTeamsDatabase`; add 3 entries to `baseGraphicTitles`; add Sponsors sidebar section; add `resolveHomeTeamKey` helper; thread `sponsorsJson` through `options.sponsors` | COMPLETE |
 | T7 | D | `show-controller/src/pages/MediaManagerPage.jsx` | Create `SponsorsView` component (add/reorder/delete); inline under expanded team cards; add sponsor count badge to team card headers; destructure new hook functions | NOT STARTED |
 | T8 | E | `overlays/sponsors-thanks.html` | Create full-screen "Thank You to Our Sponsors" grid overlay (1920x1080, Inter font, gray header bar, auto-sizing grid, URL params) | NOT STARTED |
 | T9 | F | `overlays/sponsors-cycle.html` | Create full-screen cycling sponsor overlay (one at a time, 3s hold, 0.5s crossfade, continuous loop) | NOT STARTED |
@@ -30,7 +30,7 @@
 |-------|------|-------|--------|
 | **A** | Data & Hook | T1 | COMPLETE |
 | **B** | Registry & Routing | T2, T3, T4, T5 | COMPLETE |
-| **C** | URL Generator Plumbing | T6 | NOT STARTED |
+| **C** | URL Generator Plumbing | T6 | COMPLETE |
 | **D** | Media Manager UI | T7 | NOT STARTED |
 | **E** | Overlay: Thank You | T8 | NOT STARTED |
 | **F** | Overlay: Cycle | T9 | NOT STARTED |
@@ -162,7 +162,7 @@ All use `URLSearchParams` for proper encoding.
 5. Add `resolveHomeTeamKey(formData, config)` helper using `resolveSchoolKey`
 6. In `generateURLWithOptions`: resolve home team sponsors, cap at 8, serialize as JSON, thread through `options.sponsors`
 
-**Status:** NOT STARTED
+**Status:** COMPLETE
 
 ---
 
