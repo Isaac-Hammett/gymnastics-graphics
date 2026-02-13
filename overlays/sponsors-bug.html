@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1920, height=1080">
+  <title>Sponsor Bug</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: transparent;
+    }
+
+    .bug-container {
+      position: fixed;
+      bottom: 40px;
+      right: 40px;
+      width: 200px;
+      height: 80px;
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 12px;
+      padding: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .sponsor-logo {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      opacity: 0;
+      transition: opacity 0.8s ease-in-out;
+      position: absolute;
+    }
+
+    .sponsor-logo.active {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="bugContainer" class="bug-container"></div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const sponsorsParam = params.get('sponsors') || '';
+
+    // Parse sponsors
+    let sponsors = [];
+    if (sponsorsParam) {
+      try {
+        sponsors = JSON.parse(sponsorsParam);
+        if (!Array.isArray(sponsors)) {
+          sponsors = [];
+        }
+      } catch (e) {
+        sponsors = [];
+      }
+    }
+
+    const container = document.getElementById('bugContainer');
+    let currentIndex = 0;
+    let brokenCount = 0;
+    let images = [];
+    let cycleInterval = null;
+
+    // If no sponsors, hide container entirely
+    if (sponsors.length === 0) {
+      container.style.display = 'none';
+    } else {
+      // Create image for each sponsor
+      sponsors.forEach((sponsor, index) => {
+        const url = sponsor.url || '';
+        if (!url) {
+          brokenCount++;
+          images.push(null);
+          return;
+        }
+
+        const img = document.createElement('img');
+        img.className = 'sponsor-logo';
+        img.src = url;
+        img.alt = sponsor.name || 'Sponsor';
+        img.dataset.index = index;
+        img.onerror = () => {
+          brokenCount++;
+          img.dataset.broken = 'true';
+          img.style.display = 'none';
+
+          // Check if ALL logos are broken
+          if (brokenCount >= sponsors.length) {
+            container.style.display = 'none';
+            if (cycleInterval) {
+              clearInterval(cycleInterval);
+            }
+          } else if (img.classList.contains('active')) {
+            // This was the active image - skip to next immediately
+            advanceToNext();
+          }
+        };
+        container.appendChild(img);
+        images.push(img);
+      });
+
+      // Filter out null entries (no URL provided)
+      const validImages = images.filter(img => img !== null);
+
+      // If all entries had no URLs, hide container
+      if (validImages.length === 0) {
+        container.style.display = 'none';
+      } else {
+        // Show first valid image
+        showImage(0);
+
+        // Only start cycling if more than 1 sponsor
+        if (sponsors.length > 1) {
+          cycleInterval = setInterval(advanceToNext, 10000);
+        }
+      }
+    }
+
+    function showImage(index) {
+      // Skip null entries or broken images
+      if (images[index] === null || (images[index] && images[index].dataset.broken === 'true')) {
+        currentIndex = (index + 1) % images.length;
+        // Avoid infinite loop if all are broken
+        if (currentIndex === index) {
+          container.style.display = 'none';
+          return;
+        }
+        showImage(currentIndex);
+        return;
+      }
+
+      images.forEach((img, i) => {
+        if (img === null) return;
+        if (i === index) {
+          img.classList.add('active');
+        } else {
+          img.classList.remove('active');
+        }
+      });
+      currentIndex = index;
+    }
+
+    function advanceToNext() {
+      let nextIndex = (currentIndex + 1) % images.length;
+      let attempts = 0;
+
+      // Find next valid, non-broken image
+      while (attempts < images.length) {
+        if (images[nextIndex] !== null && images[nextIndex].dataset.broken !== 'true') {
+          break;
+        }
+        nextIndex = (nextIndex + 1) % images.length;
+        attempts++;
+      }
+
+      // If all images are broken or null, hide container
+      if (attempts >= images.length) {
+        container.style.display = 'none';
+        if (cycleInterval) {
+          clearInterval(cycleInterval);
+        }
+        return;
+      }
+
+      showImage(nextIndex);
+    }
+  </script>
+</body>
+</html>

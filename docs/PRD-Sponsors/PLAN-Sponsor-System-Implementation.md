@@ -1,6 +1,6 @@
 # Plan: Sponsor System — Implementation Tracker
 
-**Status:** IN PROGRESS (9/12 tasks complete)
+**Status:** IN PROGRESS (10/12 tasks complete)
 **Last Updated:** 2026-02-13
 
 ---
@@ -18,7 +18,7 @@
 | T7 | D | `show-controller/src/pages/MediaManagerPage.jsx` | Create `SponsorsView` component (add/reorder/delete); inline under expanded team cards; add sponsor count badge to team card headers; destructure new hook functions | COMPLETE |
 | T8 | E | `overlays/sponsors-thanks.html` | Create full-screen "Thank You to Our Sponsors" grid overlay (1920x1080, Inter font, gray header bar, auto-sizing grid, URL params) | COMPLETE |
 | T9 | F | `overlays/sponsors-cycle.html` | Create full-screen cycling sponsor overlay (one at a time, 3s hold, 0.5s crossfade, continuous loop) | COMPLETE |
-| T10 | G | `overlays/sponsors-bug.html` | Create transparent corner bug overlay (bottom-right 200x80, 10s cycling, 0.8s fade, semi-transparent pill) | NOT STARTED |
+| T10 | G | `overlays/sponsors-bug.html` | Create transparent corner bug overlay (bottom-right 200x80, 10s cycling, 0.8s fade, semi-transparent pill) | COMPLETE |
 | T11 | H | — | `cd show-controller && npm run build` — verify no errors | NOT STARTED |
 | T12 | H | — | Deploy SPA + 3 overlay files to production; verify overlay URLs serve overlays (not React SPA) | NOT STARTED |
 
@@ -34,7 +34,7 @@
 | **D** | Media Manager UI | T7 | COMPLETE |
 | **E** | Overlay: Thank You | T8 | COMPLETE |
 | **F** | Overlay: Cycle | T9 | COMPLETE |
-| **G** | Overlay: Bug | T10 | NOT STARTED |
+| **G** | Overlay: Bug | T10 | COMPLETE |
 | **H** | Build & Deploy | T11, T12 | NOT STARTED |
 
 ---
@@ -238,7 +238,7 @@ All use `URLSearchParams` for proper encoding.
 - URL params: `?sponsors={encodedJSON}` only (no `?logo=`)
 - Missing/empty → fully transparent page; 1 sponsor → static; all broken → hide container
 
-**Status:** NOT STARTED
+**Status:** COMPLETE
 
 ---
 
