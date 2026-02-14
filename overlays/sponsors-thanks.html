@@ -15,21 +15,33 @@
       background: transparent;
     }
 
+    .card-container {
+      position: absolute;
+      top: 50px;
+      left: 70px;
+      right: 70px;
+      bottom: 50px;
+      display: flex;
+      flex-direction: column;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+
     .header-bar {
-      background: #BFBFBF;
-      height: 100px;
+      background: #d4d4d8;
+      padding: 18px 40px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 60px;
+      flex-shrink: 0;
     }
 
     .header-title {
-      font-size: 48px;
-      font-weight: 900;
+      font-size: 42px;
+      font-weight: 800;
       color: #000;
       text-transform: uppercase;
-      letter-spacing: -0.5px;
     }
 
     .header-logo {
@@ -39,18 +51,21 @@
     }
 
     .sponsors-container {
+      flex: 1;
+      background: #18181b;
       display: flex;
       align-items: center;
       justify-content: center;
-      height: 980px;
       padding: 40px;
     }
 
     .sponsors-grid {
       display: grid;
-      gap: 40px;
+      gap: 30px;
       justify-items: center;
       align-items: center;
+      width: 100%;
+      height: 100%;
     }
 
     /* Grid layouts based on sponsor count */
@@ -82,43 +97,34 @@
 
     .sponsor-item {
       display: flex;
-      flex-direction: column;
       align-items: center;
-      gap: 16px;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      padding: 20px;
+      background: #27272a;
+      border-radius: 12px;
     }
 
     .sponsor-logo {
-      width: 200px;
-      height: 200px;
+      width: 100%;
+      height: 100%;
       object-fit: contain;
     }
 
-    .sponsor-name {
-      font-size: 24px;
-      font-weight: 700;
-      color: #000;
-      text-align: center;
-      max-width: 200px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
     .sponsor-fallback {
-      width: 200px;
-      height: 200px;
-      background: #E5E5E5;
-      border-radius: 12px;
+      width: 100%;
+      height: 100%;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 16px;
+      padding: 20px;
     }
 
     .sponsor-fallback-text {
-      font-size: 20px;
+      font-size: 32px;
       font-weight: 700;
-      color: #666;
+      color: #a1a1aa;
       text-align: center;
       word-wrap: break-word;
     }
@@ -126,18 +132,20 @@
     .no-sponsors-message {
       font-size: 36px;
       font-weight: 700;
-      color: #666;
+      color: #71717a;
       text-align: center;
     }
   </style>
 </head>
 <body>
-  <div class="header-bar">
-    <div class="header-title">THANK YOU TO OUR SPONSORS</div>
-    <img id="headerLogo" class="header-logo" src="" alt="Team Logo">
-  </div>
-  <div class="sponsors-container">
-    <div id="sponsorsGrid" class="sponsors-grid"></div>
+  <div class="card-container">
+    <div class="header-bar">
+      <div class="header-title">Thank You to Our Sponsors</div>
+      <img id="headerLogo" class="header-logo" src="" alt="Team Logo">
+    </div>
+    <div class="sponsors-container">
+      <div id="sponsorsGrid" class="sponsors-grid"></div>
+    </div>
   </div>
 
   <script>
@@ -213,12 +221,6 @@
           fallback.appendChild(fallbackText);
           item.appendChild(fallback);
         }
-
-        const nameEl = document.createElement('div');
-        nameEl.className = 'sponsor-name';
-        nameEl.textContent = name;
-        nameEl.title = name; // Tooltip for truncated names
-        item.appendChild(nameEl);
 
         grid.appendChild(item);
       });
