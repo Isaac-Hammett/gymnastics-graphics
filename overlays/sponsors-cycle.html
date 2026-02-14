@@ -3,58 +3,35 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=1920, height=1080">
-  <title>Our Sponsors</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800;900&display=swap" rel="stylesheet">
+  <title>Sponsor Cycle</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      font-family: 'Inter', sans-serif;
       width: 1920px;
       height: 1080px;
       overflow: hidden;
-      background: transparent;
+      background: #E5E5E5;
     }
 
-    .header-bar {
-      background: #BFBFBF;
-      height: 100px;
+    #container {
+      width: 1920px;
+      height: 1080px;
+      position: relative;
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 60px;
-    }
-
-    .header-title {
-      font-size: 48px;
-      font-weight: 900;
-      color: #000;
-      text-transform: uppercase;
-      letter-spacing: -0.5px;
-    }
-
-    .header-logo {
-      width: 80px;
-      height: 80px;
-      object-fit: contain;
-    }
-
-    .sponsor-display {
-      display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      height: 980px;
-      padding: 40px;
-      position: relative;
     }
 
     .sponsor-slide {
       position: absolute;
+      top: 0;
+      left: 0;
+      width: 1920px;
+      height: 1080px;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 32px;
+      padding: 60px;
       opacity: 0;
       transition: opacity 0.5s ease-in-out;
     }
@@ -64,68 +41,26 @@
     }
 
     .sponsor-logo {
-      max-width: 600px;
-      max-height: 500px;
+      max-width: 1800px;
+      max-height: 960px;
       object-fit: contain;
     }
 
-    .sponsor-name {
-      font-size: 36px;
-      font-weight: 700;
-      color: #000;
-      text-align: center;
-      max-width: 800px;
-    }
-
-    .sponsor-fallback {
-      width: 600px;
-      height: 400px;
-      background: #E5E5E5;
-      border-radius: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 32px;
-    }
-
-    .sponsor-fallback-text {
-      font-size: 48px;
-      font-weight: 700;
-      color: #666;
-      text-align: center;
-      word-wrap: break-word;
-    }
-
     .no-sponsors-message {
-      font-size: 36px;
-      font-weight: 700;
-      color: #666;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 48px;
+      font-weight: 600;
+      color: #999;
       text-align: center;
     }
   </style>
 </head>
 <body>
-  <div class="header-bar">
-    <div class="header-title">OUR SPONSORS</div>
-    <img id="headerLogo" class="header-logo" src="" alt="Team Logo">
-  </div>
-  <div id="sponsorDisplay" class="sponsor-display"></div>
+  <div id="container"></div>
 
   <script>
     const params = new URLSearchParams(window.location.search);
-    const logoUrl = params.get('logo') || '';
     const sponsorsParam = params.get('sponsors') || '';
-
-    // Handle header logo
-    const headerLogo = document.getElementById('headerLogo');
-    if (logoUrl) {
-      headerLogo.src = logoUrl;
-      headerLogo.onerror = () => {
-        headerLogo.style.display = 'none';
-      };
-    } else {
-      headerLogo.style.display = 'none';
-    }
 
     // Parse sponsors
     let sponsors = [];
@@ -140,88 +75,63 @@
       }
     }
 
-    const display = document.getElementById('sponsorDisplay');
+    const container = document.getElementById('container');
     let currentIndex = 0;
-    let brokenCount = 0;
-    let textOnlyMode = false;
     let slides = [];
-    let cycleInterval = null;
 
     // Show message if no sponsors
     if (sponsors.length === 0) {
-      display.innerHTML = '<div class="no-sponsors-message">No sponsors configured</div>';
+      container.innerHTML = '<div class="no-sponsors-message">No sponsors configured</div>';
     } else {
       // Create slide for each sponsor
       sponsors.forEach((sponsor, index) => {
+        const url = sponsor.url || '';
+        if (!url) return; // Skip sponsors without URLs
+
         const slide = document.createElement('div');
         slide.className = 'sponsor-slide';
-        slide.dataset.index = index;
 
-        const name = sponsor.name || 'Sponsor';
-        const url = sponsor.url || '';
+        const img = document.createElement('img');
+        img.className = 'sponsor-logo';
+        img.src = url;
+        img.alt = sponsor.name || 'Sponsor';
+        img.onerror = () => {
+          slide.dataset.broken = 'true';
+          if (slide.classList.contains('active')) {
+            advanceToNext();
+          }
+        };
+        slide.appendChild(img);
 
-        if (url) {
-          const img = document.createElement('img');
-          img.className = 'sponsor-logo';
-          img.src = url;
-          img.alt = name;
-          img.dataset.index = index;
-          img.onerror = () => {
-            brokenCount++;
-            // Check if ALL logos are broken
-            if (brokenCount >= sponsors.length) {
-              switchToTextOnlyMode();
-            } else if (slide.classList.contains('active')) {
-              // This was the active slide - skip to next immediately
-              advanceToNext();
-            }
-            // Mark this slide as broken
-            slide.dataset.broken = 'true';
-          };
-          slide.appendChild(img);
-        } else {
-          // No URL provided - show fallback
-          const fallback = document.createElement('div');
-          fallback.className = 'sponsor-fallback';
-          const fallbackText = document.createElement('div');
-          fallbackText.className = 'sponsor-fallback-text';
-          fallbackText.textContent = name;
-          fallback.appendChild(fallbackText);
-          slide.appendChild(fallback);
-        }
-
-        const nameEl = document.createElement('div');
-        nameEl.className = 'sponsor-name';
-        nameEl.textContent = name;
-        slide.appendChild(nameEl);
-
-        display.appendChild(slide);
+        container.appendChild(slide);
         slides.push(slide);
       });
 
-      // Show first slide
-      showSlide(0);
+      // Show first slide if we have any
+      if (slides.length > 0) {
+        showSlide(0);
 
-      // Only start cycling if more than 1 sponsor
-      if (sponsors.length > 1) {
-        cycleInterval = setInterval(advanceToNext, 3000);
+        // Only start cycling if more than 1 sponsor
+        if (slides.length > 1) {
+          setInterval(advanceToNext, 3000);
+        }
+      } else {
+        container.innerHTML = '<div class="no-sponsors-message">No sponsors configured</div>';
       }
     }
 
     function showSlide(index) {
-      // Skip broken slides unless we're in text-only mode
-      if (!textOnlyMode && slides[index].dataset.broken === 'true') {
+      // Skip broken slides
+      if (slides[index].dataset.broken === 'true') {
         currentIndex = (index + 1) % slides.length;
-        showSlide(currentIndex);
+        if (currentIndex !== index) {
+          showSlide(currentIndex);
+        }
         return;
       }
 
       slides.forEach((slide, i) => {
-        if (i === index) {
-          slide.classList.add('active');
-        } else {
-          slide.classList.remove('active');
-        }
+        slide.classList.toggle('active', i === index);
       });
       currentIndex = index;
     }
@@ -230,46 +140,14 @@
       let nextIndex = (currentIndex + 1) % slides.length;
       let attempts = 0;
 
-      // Find next non-broken slide (unless text-only mode)
-      while (!textOnlyMode && slides[nextIndex].dataset.broken === 'true' && attempts < slides.length) {
+      while (slides[nextIndex].dataset.broken === 'true' && attempts < slides.length) {
         nextIndex = (nextIndex + 1) % slides.length;
         attempts++;
       }
 
-      // If all slides are broken, we'll switch to text-only mode
-      if (attempts >= slides.length) {
-        switchToTextOnlyMode();
-        return;
+      if (attempts < slides.length) {
+        showSlide(nextIndex);
       }
-
-      showSlide(nextIndex);
-    }
-
-    function switchToTextOnlyMode() {
-      textOnlyMode = true;
-
-      // Rebuild slides with text-only fallbacks
-      slides.forEach((slide, index) => {
-        const name = sponsors[index].name || 'Sponsor';
-        slide.innerHTML = '';
-        slide.dataset.broken = 'false';
-
-        const fallback = document.createElement('div');
-        fallback.className = 'sponsor-fallback';
-        const fallbackText = document.createElement('div');
-        fallbackText.className = 'sponsor-fallback-text';
-        fallbackText.textContent = name;
-        fallback.appendChild(fallbackText);
-        slide.appendChild(fallback);
-
-        const nameEl = document.createElement('div');
-        nameEl.className = 'sponsor-name';
-        nameEl.textContent = name;
-        slide.appendChild(nameEl);
-      });
-
-      // Resume from current position
-      showSlide(currentIndex);
     }
   </script>
 </body>
