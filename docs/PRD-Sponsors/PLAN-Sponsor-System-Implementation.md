@@ -1,6 +1,6 @@
 # Plan: Sponsor System — Implementation Tracker
 
-**Status:** COMPLETE (12/12 tasks complete)
+**Status:** COMPLETE (12/12 tasks + 3 bug fixes + 2 design updates)
 **Last Updated:** 2026-02-13
 
 ---
@@ -279,10 +279,31 @@ All use `URLSearchParams` for proper encoding.
 
 After all tasks complete:
 
-- [ ] **Hook** — `saveSponsor('test-mens', 'test-sponsor', {...})` → Firebase path exists with all fields
-- [ ] **Media Manager** — Expand team → SponsorsView appears → add/reorder/delete works → badge updates
-- [ ] **Overlays** — Open each HTML locally with test `?sponsors=` param → renders correctly
-- [ ] **URL Generator** — Select competition with sponsors → sponsor graphics show in sidebar → URLs generate correctly
-- [ ] **Build** — `npm run build` no errors
-- [ ] **Deploy** — Production URLs serve overlays (not React SPA)
-- [ ] **OBS test** — `sponsors-bug.html` as Browser Source → transparency works
+- [x] **Hook** — `saveSponsor('test-mens', 'test-sponsor', {...})` → Firebase path exists with all fields
+- [x] **Media Manager** — Expand team → SponsorsView appears → add/reorder/delete works → badge updates
+- [x] **Overlays** — Open each HTML locally with test `?sponsors=` param → renders correctly
+- [x] **URL Generator** — Select competition with sponsors → sponsor graphics show in sidebar → URLs generate correctly
+- [x] **Build** — `npm run build` no errors
+- [x] **Deploy** — Production URLs serve overlays (not React SPA)
+- [x] **OBS test** — `sponsors-bug.html` as Browser Source → transparency works
+
+---
+
+## Post-Deployment Fixes (2026-02-13)
+
+### Bug Fixes
+
+| Bug | Fix | Commit |
+|-----|-----|--------|
+| BUG-S01: Media Manager crash (logoUrl mismatch) | Map `data.logoUrl \|\| data.url` in hook | `3c8ed0f` |
+| BUG-S02: URL Generator crash (missing export) | Export `resolveSchoolKey` from hook | `ca9bde4` |
+| BUG-S03: 403 Forbidden on overlays | `chmod 644` on overlay files | (server fix) |
+
+### Design Updates
+
+| Overlay | Change | Commit |
+|---------|--------|--------|
+| sponsors-cycle.html | Full screen logo on grey, no header/text | `1cfb3cc` |
+| sponsors-thanks.html | Card-style layout like leaderboards | `e62a111` |
+
+**See:** [BUGS.md](./BUGS.md) for detailed bug descriptions and design change rationale.

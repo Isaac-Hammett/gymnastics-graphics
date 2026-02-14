@@ -174,24 +174,25 @@ Wrap `RosterView` + new `SponsorsView` in a fragment:
 
 **File**: `overlays/sponsors-thanks.html`
 
-**Follow existing overlay conventions** (see `overlays/event-frame.html`, `overlays/hosts.html`):
-- Viewport: `<meta name="viewport" content="width=1920, height=1080">`
-- Font: Google Fonts Inter
-- Reset: `* { margin: 0; padding: 0; box-sizing: border-box; }`
-- Body: `width: 1920px; height: 1080px; overflow: hidden;`
-- URL params via: `const params = new URLSearchParams(window.location.search);`
+**Design**: Card-style layout matching the leaderboard graphics (not full screen).
 
-**Header bar** (match overlay pattern):
-- Gray header bar (`#BFBFBF` background)
-- Title: "THANK YOU TO OUR SPONSORS" (left side)
-- Team logo (80x80, `object-fit: contain`) — far right
-- `background: transparent` for the body
+**Layout**:
+- Card container with margins: `top: 50px; left: 70px; right: 70px; bottom: 50px`
+- Grey header bar (`#d4d4d8`) with "THANK YOU TO OUR SPONSORS" title
+- Dark content area (`#18181b`) with sponsor cards (`#27272a`)
+- Logos fill their card boxes (width/height 100%, object-fit: contain)
+- No sponsor name labels - logo only
+- Rounded corners (12px) and box shadow for polish
 
 **URL params**:
-- `?logo={teamLogoUrl}` — team logo for the header bar
+- `?logo={teamLogoUrl}` — team logo for the header bar (optional)
 - `?sponsors={encodedJSON}` — JSON array of `[{name, url}]` objects
 
-**Rendering**: Parse `sponsors` param, render logos in a CSS grid. Auto-sizing: 1-2 sponsors = single row; 3-4 = 2x2; 5-8 = 2 rows. Each sponsor: logo (200x200, `object-fit: contain`) + name below (24px).
+**Grid layout** (based on sponsor count):
+- 1-2 sponsors: 1-2 columns
+- 3-4 sponsors: 2x2 grid
+- 5-6 sponsors: 3x2 grid
+- 7-8 sponsors: 4x2 grid
 
 **Error handling**:
 
@@ -201,10 +202,9 @@ Wrap `RosterView` + new `SponsorsView` in a fragment:
 | Missing/empty `?sponsors=` | Show centered "No sponsors configured" |
 | Invalid JSON in `?sponsors=` | `try/catch` around `JSON.parse`; show "No sponsors configured" |
 | Empty array `[]` | Show "No sponsors configured" |
-| Broken sponsor logo URL | `img.onerror`: hide broken img, show fallback div with sponsor name in styled box |
-| Long sponsor name | `text-overflow: ellipsis; max-width: 200px; white-space: nowrap; overflow: hidden;` |
+| Broken sponsor logo URL | `img.onerror`: show fallback div with sponsor name |
 
-> **Why URL params instead of Firebase**: All 16 existing overlay files use URL params exclusively — none use Firebase. This keeps overlays stateless, cacheable, and resilient to Firebase outages. The URL Builder serializes sponsor data from the React app (which already has the Firebase subscription) into the URL.
+> **Why URL params instead of Firebase**: All overlay files use URL params exclusively — none use Firebase. This keeps overlays stateless, cacheable, and resilient to Firebase outages.
 
 ---
 
@@ -212,23 +212,37 @@ Wrap `RosterView` + new `SponsorsView` in a fragment:
 
 **File**: `overlays/sponsors-cycle.html`
 
-Same gray header bar as sponsors-thanks (`#BFBFBF`, title: "OUR SPONSORS", team logo on right).
+**Design**: Full-screen logo on grey background - clean, simple, maximum impact.
 
-**Below the header**: One sponsor logo at a time, centered, large (~600px max, `object-fit: contain`). Sponsor name below logo (36px Inter bold). Crossfade transition (CSS opacity, 0.5s). 3-second hold. Continuous loop via `setInterval`.
+**Layout**:
+- Full 1920x1080 viewport
+- Grey background (`#E5E5E5`)
+- No header bar
+- No sponsor name text
+- Logo centered and as large as possible (max 1800x960px with 60px padding)
+- `object-fit: contain` to preserve aspect ratio
 
-**URL params**: Same as sponsors-thanks.
+**Cycling**:
+- 3-second hold per sponsor
+- 0.5s crossfade transition (CSS opacity)
+- Continuous loop via `setInterval`
+- 1 sponsor = static display (no cycling)
+
+**URL params**:
+- `?sponsors={encodedJSON}` — JSON array of `[{name, url}]` objects
+- No `?logo=` param needed (no header bar)
 
 **Error handling**:
 
 | Condition | Behavior |
 |-----------|----------|
-| Missing/empty/invalid `?sponsors=` | Header + centered "No sponsors" message; no cycling |
+| Missing/empty/invalid `?sponsors=` | Show centered "No sponsors configured" message |
 | Empty array `[]` | Same as missing |
 | 1 sponsor | Static display — no `setInterval`, no transitions |
-| Broken logo during cycle | `img.onerror` → call `advanceToNext()` immediately (skip broken sponsor) |
-| ALL logos broken | Track `brokenCount`; if equals `sponsors.length`, switch to text-only mode (show just names) |
+| Broken logo during cycle | `img.onerror` → skip to next sponsor |
+| ALL logos broken | Show "No sponsors configured" |
 
-**Note on live updates**: URL-param-based overlays are static once loaded. If sponsors change mid-broadcast, the producer must regenerate and reload the URL in OBS. This matches every other overlay in the system.
+**Note on live updates**: URL-param-based overlays are static once loaded. If sponsors change mid-broadcast, the producer must regenerate and reload the URL in OBS.
 
 ---
 
