@@ -1218,6 +1218,11 @@
         // Update now-competing slot displays (B2)
         updateAllNowCompeting();
       }
+
+      // Update lineup card if visible (C5 - live update with new scores)
+      if (state.showLineup) {
+        updateLineupCard();
+      }
     }
 
     /**
