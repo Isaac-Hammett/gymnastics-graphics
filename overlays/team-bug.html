@@ -375,7 +375,11 @@
       consecutiveErrors: 0,      // Count of consecutive poll failures
       lastError: null,           // Last error message
       lastErrorTime: null,       // Timestamp of last error
-      maxBackoffMs: 60000        // Max backoff delay (60 seconds)
+      maxBackoffMs: 60000,       // Max backoff delay (60 seconds)
+      // Offline/reconnect state (A3d)
+      firebaseConnected: true,   // Firebase connection state
+      pendingWrites: [],         // Writes queued during offline
+      reconnectAttempts: 0       // Count of reconnect attempts
     };
 
     /**
@@ -390,6 +394,92 @@
     // Firebase paths
     const scoreBugRef = db.ref(`competitions/${compId}/scoreBug`);
     const configRef = db.ref(`competitions/${compId}/config`);
+    const connectedRef = db.ref('.info/connected');
+
+    /**
+     * Initialize Firebase connection monitoring (A3d).
+     * Detects offline/online state and handles reconnection.
+     */
+    function initConnectionMonitor() {
+      connectedRef.on('value', (snapshot) => {
+        const connected = snapshot.val() === true;
+        const wasConnected = state.firebaseConnected;
+        state.firebaseConnected = connected;
+
+        if (connected && !wasConnected) {
+          // Just reconnected
+          console.log('Firebase connected - processing pending writes');
+          state.reconnectAttempts = 0;
+          processPendingWrites();
+
+          // Write reconnect event to Firebase
+          scoreBugRef.child('connectionStatus').set({
+            connected: true,
+            reconnectedAt: Date.now(),
+            pendingWritesProcessed: state.pendingWrites.length
+          });
+        } else if (!connected && wasConnected) {
+          // Just went offline
+          console.warn('Firebase disconnected - writes will be queued');
+          state.reconnectAttempts++;
+
+          // Note: Firebase SDK has offline persistence by default
+          // Writes are automatically queued and synced on reconnect
+        }
+
+        console.log('Firebase connection state:', connected ? 'ONLINE' : 'OFFLINE');
+      });
+    }
+
+    /**
+     * Process any pending writes that were queued during offline.
+     * Firebase SDK handles this automatically, but we log for visibility.
+     */
+    function processPendingWrites() {
+      if (state.pendingWrites.length === 0) return;
+
+      console.log('Processing', state.pendingWrites.length, 'pending writes');
+
+      // Firebase SDK automatically syncs queued writes
+      // Clear our tracking array
+      state.pendingWrites = [];
+    }
+
+    /**
+     * Safe write to Firebase with offline queueing (A3d).
+     * Wraps Firebase write operations to track pending writes during offline.
+     * @param {firebase.database.Reference} ref - Firebase reference
+     * @param {string} method - 'set', 'update', or 'remove'
+     * @param {*} data - Data to write (for set/update)
+     * @returns {Promise}
+     */
+    async function safeWrite(ref, method, data) {
+      const writeOp = { path: ref.toString(), method, data, timestamp: Date.now() };
+
+      if (!state.firebaseConnected) {
+        // Queue the write for tracking (Firebase SDK queues automatically)
+        state.pendingWrites.push(writeOp);
+        console.log('Queued offline write:', writeOp.path, method);
+      }
+
+      try {
+        if (method === 'set') {
+          await ref.set(data);
+        } else if (method === 'update') {
+          await ref.update(data);
+        } else if (method === 'remove') {
+          await ref.remove();
+        }
+        return true;
+      } catch (err) {
+        // Firebase SDK will retry on reconnect
+        console.error('Write failed (will retry on reconnect):', err.message);
+        if (!state.pendingWrites.includes(writeOp)) {
+          state.pendingWrites.push(writeOp);
+        }
+        return false;
+      }
+    }
 
     /**
      * Load competition config from Firebase.
@@ -626,8 +716,8 @@
           }
         });
 
-        // Write heartbeat to Firebase on successful poll
-        await scoreBugRef.child('heartbeat').set(pollStartTime);
+        // Write heartbeat to Firebase on successful poll (using safeWrite for offline resilience)
+        await safeWrite(scoreBugRef.child('heartbeat'), 'set', pollStartTime);
 
         console.log('Poll successful:', {
           sessionId: state.virtiusSessionId,
@@ -657,18 +747,15 @@
         });
 
         // Write error state to Firebase for producer panel visibility (D5b)
-        try {
-          await scoreBugRef.child('apiError').set({
-            message: err.message,
-            consecutiveErrors: state.consecutiveErrors,
-            timestamp: pollStartTime,
-            nextRetryMs: backoffDelay
-          });
-          // Still write heartbeat to indicate overlay is running
-          await scoreBugRef.child('heartbeat').set(pollStartTime);
-        } catch (firebaseErr) {
-          console.error('Failed to write error state to Firebase:', firebaseErr);
-        }
+        // Using safeWrite for offline resilience
+        await safeWrite(scoreBugRef.child('apiError'), 'set', {
+          message: err.message,
+          consecutiveErrors: state.consecutiveErrors,
+          timestamp: pollStartTime,
+          nextRetryMs: backoffDelay
+        });
+        // Still write heartbeat to indicate overlay is running
+        await safeWrite(scoreBugRef.child('heartbeat'), 'set', pollStartTime);
 
         // Schedule next poll with backoff delay if we're still supposed to be polling
         if (state.polling && pollTimer) {
@@ -691,7 +778,7 @@
         state.lastErrorTime = null;
 
         // Clear error state in Firebase
-        await scoreBugRef.child('apiError').remove();
+        await safeWrite(scoreBugRef.child('apiError'), 'remove');
 
         // Restore normal polling interval (we might be on backoff timeout)
         if (state.polling && pollTimer) {
@@ -777,28 +864,24 @@
         });
       });
 
-      // Write to Firebase
-      try {
-        if (hasChanges) {
-          // Write changed paths and reset stale counter
-          await scoreBugRef.child('liveData').update({
-            ...changedPaths,
-            lastDataChangeTimestamp: pollTimestamp,
-            stalePollCount: 0
-          });
-          state.stalePollCount = 0;
+      // Write to Firebase (using safeWrite for offline resilience)
+      if (hasChanges) {
+        // Write changed paths and reset stale counter
+        await safeWrite(scoreBugRef.child('liveData'), 'update', {
+          ...changedPaths,
+          lastDataChangeTimestamp: pollTimestamp,
+          stalePollCount: 0
+        });
+        state.stalePollCount = 0;
 
-          console.log('Wrote incremental deltas to Firebase:', Object.keys(changedPaths).length, 'paths');
-        } else {
-          // No changes - increment stale counter
-          state.stalePollCount++;
-          await scoreBugRef.child('liveData').update({
-            lastPollTimestamp: pollTimestamp,
-            stalePollCount: state.stalePollCount
-          });
-        }
-      } catch (err) {
-        console.error('Failed to write liveData:', err);
+        console.log('Wrote incremental deltas to Firebase:', Object.keys(changedPaths).length, 'paths');
+      } else {
+        // No changes - increment stale counter
+        state.stalePollCount++;
+        await safeWrite(scoreBugRef.child('liveData'), 'update', {
+          lastPollTimestamp: pollTimestamp,
+          stalePollCount: state.stalePollCount
+        });
       }
 
       // Update previous state for next comparison
@@ -903,6 +986,9 @@
 
     // Initialize on load
     if (compId) {
+      // Start connection monitor immediately (A3d)
+      initConnectionMonitor();
+
       // Order: load config -> render teams -> initialize schema -> start listeners
       loadCompetitionConfig().then((success) => {
         if (!success) return;
