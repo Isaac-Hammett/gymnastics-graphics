@@ -54,7 +54,7 @@
 | D3d | Heartbeat indicator | COMPLETE | `show-controller/src/components/ScoreBugPanel.jsx` | — | Added HeartbeatIndicator component: shows lastPoll time, pulsing green dot when recent (within 2x poll interval), gray when stale |
 | D3e | Stale data indicator | COMPLETE | `show-controller/src/components/ScoreBugPanel.jsx` | — | Enhanced HeartbeatIndicator with 3 states: recent (green, <2x interval), warning (yellow, 2-5x), stale (red, >5x) with STALE badge |
 | D4 | Auto/manual toggle | COMPLETE | `show-controller/src/components/ScoreBugPanel.jsx` | — | Added toggleAutomationMode(), purple toggle with MANUAL/AUTO labels, writes to config/automationMode |
-| D5 | Now-competing display | NOT STARTED | `show-controller/src/components/ScoreBugPanel.jsx` | — |
+| D5 | Now-competing display | COMPLETE | `show-controller/src/components/ScoreBugPanel.jsx` | — | Shows detected now-competing athletes with tricode badge, name, and event |
 | D5b | API error indicator | NOT STARTED | `show-controller/src/components/ScoreBugPanel.jsx` | — |
 | D5c | Dismiss flash button | NOT STARTED | `show-controller/src/components/ScoreBugPanel.jsx` | — |
 | D6 | SHOW/HIDE now-competing | NOT STARTED | `show-controller/src/components/ScoreBugPanel.jsx` | — |

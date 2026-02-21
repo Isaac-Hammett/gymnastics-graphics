@@ -308,6 +308,29 @@ export default function ScoreBugPanel({
               </span>
             </div>
           </div>
+
+          {/* Now Competing Display (D5) - shown when detected athletes exist */}
+          {scoreBugState?.detected?.nowCompeting?.length > 0 && (
+            <div className="pt-2 border-t border-zinc-700">
+              <div className="text-xs text-zinc-400 mb-2">Detected Now Competing:</div>
+              <div className="space-y-2">
+                {scoreBugState.detected.nowCompeting.map((nc, idx) => (
+                  <div
+                    key={`${nc.teamIndex}-${idx}`}
+                    className="flex items-center justify-between bg-zinc-900/50 rounded-lg px-3 py-2"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-purple-400 bg-purple-500/20 px-1.5 py-0.5 rounded">
+                        {nc.tricode}
+                      </span>
+                      <span className="text-sm text-zinc-200">{nc.athlete?.name}</span>
+                    </div>
+                    <span className="text-xs text-zinc-400">{nc.eventName}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
