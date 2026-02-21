@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { db, ref, onValue, set } from '../lib/firebase';
 import {
   ChartBarIcon,
@@ -7,6 +7,43 @@ import {
   ClipboardIcon,
   CheckIcon
 } from '@heroicons/react/24/solid';
+
+/**
+ * HeartbeatIndicator - Shows last poll time with pulsing dot
+ */
+function HeartbeatIndicator({ lastPoll, pollInterval }) {
+  const [now, setNow] = useState(Date.now());
+
+  // Update "now" every second to keep relative time fresh
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const { timeAgo, isRecent } = useMemo(() => {
+    if (!lastPoll) return { timeAgo: 'never', isRecent: false };
+    const seconds = Math.floor((now - lastPoll) / 1000);
+    // Consider "recent" if within 2x poll interval
+    const threshold = (pollInterval / 1000) * 2;
+    return {
+      timeAgo: seconds < 60 ? `${seconds}s ago` : `${Math.floor(seconds / 60)}m ago`,
+      isRecent: seconds < threshold
+    };
+  }, [lastPoll, now, pollInterval]);
+
+  return (
+    <div className="flex items-center gap-2">
+      <span
+        className={`w-2 h-2 rounded-full ${
+          isRecent ? 'bg-green-500 animate-pulse' : 'bg-zinc-500'
+        }`}
+      />
+      <span className={`text-sm ${isRecent ? 'text-green-400' : 'text-zinc-500'}`}>
+        {timeAgo}
+      </span>
+    </div>
+  );
+}
 
 /**
  * ScoreBugPanel - Control panel for team scores bug overlay
@@ -188,6 +225,17 @@ export default function ScoreBugPanel({
               <option value={30000}>30s</option>
             </select>
           </div>
+
+          {/* Heartbeat Indicator */}
+          {scoreBugState?.polling && (
+            <div className="flex items-center justify-between py-2">
+              <span className="text-sm text-zinc-300">Last Poll</span>
+              <HeartbeatIndicator
+                lastPoll={scoreBugState?.status?.lastPoll}
+                pollInterval={scoreBugState?.config?.pollInterval || 5000}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>
