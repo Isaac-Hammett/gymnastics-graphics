@@ -1800,13 +1800,25 @@
      * @param {Object} nowCompetingData - { athlete: { name }, eventName }
      */
     function insertNowCompetingContent(slotContent, nowCompetingData) {
-      const athleteName = nowCompetingData.athlete?.name || 'Unknown';
+      const athlete = nowCompetingData.athlete || {};
+      const athleteName = athlete.name || 'Unknown';
       const eventName = nowCompetingData.eventName || '';
 
       // Format event name to short code if possible (e.g., "Floor Exercise" -> "FX")
       const eventShort = getEventShortCode(eventName) || eventName;
 
+      // Get headshot URL (E4)
+      const headshotUrl = getAthleteHeadshot(
+        athlete.firstName,
+        athlete.lastName,
+        athlete.apiHeadshot
+      );
+      const headshotHtml = headshotUrl
+        ? `<img class="slot-headshot" src="${headshotUrl}" alt="" onerror="this.style.display='none'">`
+        : '';
+
       slotContent.innerHTML = `
+        ${headshotHtml}
         <span class="slot-apparatus">${eventShort}</span>
         <span class="slot-sv" style="color: #22d3ee;">UP NOW</span>
         <span class="slot-name">${athleteName}</span>
@@ -2027,6 +2039,9 @@
             athlete: {
               id: nowCompeting.athlete.gymnast_id,
               name: nowCompeting.athlete.full_name,
+              firstName: nowCompeting.athlete.first_name || '',
+              lastName: nowCompeting.athlete.last_name || '',
+              apiHeadshot: nowCompeting.athlete.headshot || '',
               order: nowCompeting.athlete.order,
               type: nowCompeting.athlete.type // 0=competing, 1=exhibition, etc.
             },
