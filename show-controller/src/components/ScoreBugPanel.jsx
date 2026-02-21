@@ -46,6 +46,11 @@ export default function ScoreBugPanel({
     set(ref(db, `competitions/${compId}/scoreBug/polling`), newState);
   };
 
+  // Set poll frequency
+  const setPollFrequency = (frequency) => {
+    set(ref(db, `competitions/${compId}/scoreBug/config/pollInterval`), frequency);
+  };
+
   // Listen to scoreBug state from Firebase
   useEffect(() => {
     if (!compId) return;
@@ -167,6 +172,21 @@ export default function ScoreBugPanel({
                 }`}
               />
             </button>
+          </div>
+
+          {/* Poll Frequency Selector */}
+          <div className="flex items-center justify-between py-2">
+            <span className="text-sm text-zinc-300">Poll Frequency</span>
+            <select
+              value={scoreBugState?.config?.pollInterval || 5000}
+              onChange={(e) => setPollFrequency(Number(e.target.value))}
+              className="bg-zinc-700 text-zinc-200 text-sm px-3 py-1.5 rounded-lg border border-zinc-600 focus:outline-none focus:border-blue-500"
+            >
+              <option value={2000}>2s</option>
+              <option value={5000}>5s</option>
+              <option value={10000}>10s</option>
+              <option value={30000}>30s</option>
+            </select>
           </div>
         </div>
       )}
