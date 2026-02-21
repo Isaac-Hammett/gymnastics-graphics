@@ -1285,6 +1285,9 @@
               // Build gymnast data for Firebase and flash queue
               const gymnastData = {
                 name: gymnast.full_name,
+                firstName: gymnast.first_name || '',
+                lastName: gymnast.last_name || '',
+                apiHeadshot: gymnast.headshot || '',
                 score: currScore,
                 startValue: gymnast.start_value || null,
                 execution: gymnast.execution || null,
@@ -1636,6 +1639,16 @@
      * @param {Object} gymnastData - Score data to render
      */
     function insertFlashContent(slotContent, gymnastData) {
+      // Get headshot URL (E3)
+      const headshotUrl = getAthleteHeadshot(
+        gymnastData.firstName,
+        gymnastData.lastName,
+        gymnastData.apiHeadshot
+      );
+      const headshotHtml = headshotUrl
+        ? `<img class="slot-headshot" src="${headshotUrl}" alt="" onerror="this.style.display='none'">`
+        : '';
+
       // Format start value for display (e.g., "5.0" or "5.2")
       const svDisplay = gymnastData.startValue
         ? `<span class="slot-sv">SV ${parseFloat(gymnastData.startValue).toFixed(1)}</span>`
@@ -1646,6 +1659,7 @@
       const scoreDisplay = isNaN(scoreValue) ? gymnastData.score : scoreValue.toFixed(3);
 
       slotContent.innerHTML = `
+        ${headshotHtml}
         <span class="slot-apparatus">${gymnastData.event}</span>
         <span class="slot-name">${gymnastData.name}</span>
         ${svDisplay}
