@@ -1422,6 +1422,9 @@
         // Render team rows with initial state (before API data)
         renderTeamRows();
 
+        // Update rotation tag for correct total (4 for women, 6 for men)
+        updateRotationTag();
+
         // Initialize Firebase schema (safe defaults)
         return initializeSchema();
       }).then(() => {
