@@ -1354,6 +1354,7 @@
 
     /**
      * Clear flash display for a team (return to idle state) with spin-out animation.
+     * After flash ends, checks if there's a now-competing state to restore (B5).
      * @param {number} teamIndex - 1-based team index
      */
     function clearFlashDisplay(teamIndex) {
@@ -1367,13 +1368,50 @@
       slotContent.classList.remove('spin-in', 'visible');
       slotContent.classList.add('spin-out');
 
-      // Clear content after animation completes
+      // After animation completes, either restore now-competing or clear (B5)
       setTimeout(() => {
-        if (!state.activeFlashes[teamIndex]) {
+        if (state.activeFlashes[teamIndex]) return;  // New flash started during animation
+
+        // Check if there's a now-competing state to restore
+        const nowCompetingToRestore = getNowCompetingForTeam(teamIndex);
+
+        if (nowCompetingToRestore) {
+          // Restore now-competing display
+          insertNowCompetingContent(slotContent, nowCompetingToRestore);
+          triggerSpinIn(slotContent);
+          console.log('Restored now-competing after flash:', {
+            team: teamIndex,
+            athlete: nowCompetingToRestore.athlete?.name
+          });
+        } else {
+          // No now-competing to show - clear the slot
           slotContent.innerHTML = '';
           slotContent.classList.remove('spin-out');
         }
       }, 400);  // Match CSS animation duration
+    }
+
+    /**
+     * Get the current now-competing data for a team (B5).
+     * Respects auto/manual mode settings.
+     * @param {number} teamIndex - 1-based team index
+     * @returns {Object|null} Now-competing data or null
+     */
+    function getNowCompetingForTeam(teamIndex) {
+      // Find the team by index
+      const teamArrayIdx = state.teams.findIndex(t => t.index === teamIndex);
+      if (teamArrayIdx === -1) return null;
+
+      const nowCompeting = state.nowCompeting.find(nc => nc.teamIndex === teamArrayIdx);
+      if (!nowCompeting) return null;
+
+      // Check if we should show based on mode
+      if (state.automationMode === 'auto') {
+        return nowCompeting;
+      } else {
+        // Manual mode - only if producer has enabled
+        return state.manualNowCompeting[teamIndex] ? nowCompeting : null;
+      }
     }
 
     // ============================================================

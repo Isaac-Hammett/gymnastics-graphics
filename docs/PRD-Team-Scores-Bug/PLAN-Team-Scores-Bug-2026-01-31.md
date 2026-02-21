@@ -36,7 +36,7 @@
 | B2 | Now-competing slot state | COMPLETE | `overlays/team-bug.html` | — | Added renderNowCompeting(), insertNowCompetingContent(), getEventShortCode(), clearNowCompeting(), updateAllNowCompeting() |
 | B3 | Auto mode | COMPLETE | `overlays/team-bug.html` | — | updateAllNowCompeting() shows detected now-competing automatically in auto mode. Mode change triggers immediate update. |
 | B4 | Manual mode | COMPLETE | `overlays/team-bug.html` | — | In manual mode, now-competing only shown when manualNowCompeting[teamIndex]=true. Uses detected data but requires producer enable. |
-| B5 | Now competing → flash transition | NOT STARTED | `overlays/team-bug.html` | — |
+| B5 | Now competing → flash transition | COMPLETE | `overlays/team-bug.html` | — | clearFlashDisplay() now checks for now-competing to restore after flash ends. Added getNowCompetingForTeam() helper that respects auto/manual mode. |
 | B6 | Firebase listener: automationMode | COMPLETE | `overlays/team-bug.html` | — | Listener at line 672-682, calls updateAllNowCompeting() on mode change |
 | B7 | Firebase listener: nowCompeting | COMPLETE | `overlays/team-bug.html` | — | Listener at line 685-700, converts teamKey to index, stores in state.manualNowCompeting, triggers updateAllNowCompeting() |
 | B8 | Write detected state to Firebase | NOT STARTED | `overlays/team-bug.html` | — |
