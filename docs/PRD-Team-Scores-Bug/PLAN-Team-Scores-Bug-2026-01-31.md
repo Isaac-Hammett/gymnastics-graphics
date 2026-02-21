@@ -2,7 +2,7 @@
 
 **Version:** 1.2
 **Date:** 2026-01-31
-**Status:** Not Started
+**Status:** In Progress
 **PRD:** [PRD-Team-Scores-Bug-2026-01-31.md](./PRD-Team-Scores-Bug-2026-01-31.md)
 
 ---
@@ -191,7 +191,7 @@ detectRotation(teams):
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
-| A1 | Create `overlays/team-bug.html` boilerplate with transparent background, Firebase SDK init | NOT STARTED | First overlay to use Firebase — must include SDK initialization. 1920x1080 full-screen source. |
+| A1 | Create `overlays/team-bug.html` boilerplate with transparent background, Firebase SDK init | COMPLETE | First overlay to use Firebase — must include SDK initialization. 1920x1080 full-screen source. Created with: Inter font, 1920x1080 viewport, transparent background, Firebase SDK v9.22 compat, URL param parsing for compId, basic state management, Firebase listeners for enabled/polling/automationMode/showLineup/dismissFlash. |
 | A1b | Initialize Firebase `scoreBug/` schema with default values on first load | NOT STARTED | Use Firebase transaction or `update()` with null checks to prevent race condition if overlay and producer panel load simultaneously |
 | A2 | Implement URL parameter parsing (`compId`) and read competition config from Firebase | NOT STARTED | Only `compId` needed — session ID and team info come from Firebase config |
 | A3 | Implement Virtius API polling gated by Firebase `scoreBug/polling` flag | NOT STARTED | Only polls when polling=true. Reads interval from config.pollInterval. Converts `final_score` strings to floats. |

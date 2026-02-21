@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1920, height=1080">
+  <title>Team Score Bug</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: transparent;
+    }
+
+    /* Score bug container - positioned on right side of screen */
+    .score-bug {
+      position: absolute;
+      top: 50%;
+      right: 0;
+      transform: translateY(-50%) translateX(100%);
+      display: flex;
+      flex-direction: column;
+      min-width: 500px;
+      opacity: 0;
+      transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .score-bug.visible {
+      transform: translateY(-50%) translateX(0);
+      opacity: 1;
+    }
+
+    /* Rotation tag at top */
+    .rotation-tag {
+      background: #27272a;
+      color: #fff;
+      font-size: 20px;
+      font-weight: 700;
+      padding: 10px 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Team rows container */
+    .team-rows {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Individual team row */
+    .team-row {
+      display: flex;
+      flex-direction: row;
+      background: #1a1a1a;
+      border-bottom: 1px solid #333;
+      min-height: 70px;
+    }
+
+    .team-row:last-child {
+      border-bottom: none;
+    }
+
+    /* Fixed left section: logo + total */
+    .team-fixed {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 15px;
+      min-width: 100px;
+      background: #000;
+    }
+
+    .team-logo {
+      width: 40px;
+      height: 40px;
+      object-fit: contain;
+    }
+
+    .team-total {
+      font-size: 22px;
+      font-weight: 900;
+      color: #fff;
+      margin-top: 4px;
+    }
+
+    .team-total.highlight {
+      animation: totalPulse 0.5s ease;
+    }
+
+    @keyframes totalPulse {
+      0%, 100% { transform: scale(1); color: #fff; }
+      50% { transform: scale(1.1); color: #22d3ee; }
+    }
+
+    /* Slot area for score flash / now competing */
+    .team-slot {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      padding: 10px 20px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Slot content (animates up/down) */
+    .slot-content {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transform: translateY(0);
+      transition: transform 0.4s ease, opacity 0.4s ease;
+      opacity: 0;
+    }
+
+    .slot-content.visible {
+      opacity: 1;
+    }
+
+    .slot-content.exit-up {
+      transform: translateY(-100%);
+      opacity: 0;
+    }
+
+    .slot-content.enter-from-below {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+
+    /* Headshot in slot */
+    .slot-headshot {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+
+    /* Athlete name in slot */
+    .slot-name {
+      font-size: 24px;
+      font-weight: 700;
+      color: #fff;
+      white-space: nowrap;
+    }
+
+    /* Score in slot */
+    .slot-score {
+      font-size: 28px;
+      font-weight: 900;
+      color: #fff;
+    }
+
+    /* Apparatus code */
+    .slot-apparatus {
+      font-size: 18px;
+      font-weight: 600;
+      color: #a1a1aa;
+      text-transform: uppercase;
+    }
+
+    /* Start value */
+    .slot-sv {
+      font-size: 16px;
+      font-weight: 400;
+      color: #71717a;
+    }
+
+    /* Stick indicator */
+    .slot-stick {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #22c55e;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Separator dot */
+    .slot-separator {
+      color: #52525b;
+      font-size: 20px;
+    }
+
+    /* Lineup card (above bug) */
+    .lineup-card {
+      position: absolute;
+      bottom: 100%;
+      right: 0;
+      width: 100%;
+      background: #1a1a1a;
+      transform: translateY(100%);
+      opacity: 0;
+      transition: transform 0.4s ease, opacity 0.4s ease;
+      margin-bottom: 8px;
+    }
+
+    .lineup-card.visible {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .lineup-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 20px;
+      background: #27272a;
+    }
+
+    .lineup-team-name {
+      font-size: 22px;
+      font-weight: 800;
+      color: #fff;
+      text-transform: uppercase;
+    }
+
+    .lineup-logo {
+      width: 32px;
+      height: 32px;
+      object-fit: contain;
+    }
+
+    .lineup-athletes {
+      padding: 8px 0;
+    }
+
+    .lineup-athlete {
+      display: flex;
+      align-items: center;
+      padding: 8px 20px;
+      gap: 12px;
+    }
+
+    .lineup-order {
+      font-size: 16px;
+      font-weight: 600;
+      color: #71717a;
+      min-width: 24px;
+    }
+
+    .lineup-name {
+      flex: 1;
+      font-size: 20px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .lineup-sv {
+      font-size: 16px;
+      font-weight: 400;
+      color: #71717a;
+      min-width: 40px;
+      text-align: right;
+    }
+
+    .lineup-score {
+      font-size: 22px;
+      font-weight: 700;
+      color: #fff;
+      min-width: 70px;
+      text-align: right;
+    }
+
+    .lineup-score.pending {
+      color: #52525b;
+    }
+
+    .lineup-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 20px;
+      background: #27272a;
+    }
+
+    .lineup-event {
+      font-size: 18px;
+      font-weight: 600;
+      color: #a1a1aa;
+      text-transform: uppercase;
+    }
+
+    .lineup-total {
+      font-size: 26px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    /* Loading / error states */
+    .loading-state {
+      color: #71717a;
+      font-size: 18px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .error-state {
+      color: #ef4444;
+      font-size: 18px;
+      padding: 20px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="score-bug" id="scoreBug">
+    <div class="lineup-card" id="lineupCard">
+      <!-- Lineup card content populated dynamically -->
+    </div>
+    <div class="rotation-tag" id="rotationTag">Rotation 1 of 6</div>
+    <div class="team-rows" id="teamRows">
+      <!-- Team rows populated dynamically -->
+    </div>
+  </div>
+
+  <script>
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyCh0aZUvKl6Qvqsva3hvOgJJlleP1OwcTY",
+      authDomain: "gymnastics-graphics.firebaseapp.com",
+      databaseURL: "https://gymnastics-graphics-default-rtdb.firebaseio.com",
+      projectId: "gymnastics-graphics",
+      storageBucket: "gymnastics-graphics.firebasestorage.app",
+      messagingSenderId: "702072609550",
+      appId: "1:702072609550:web:ac74a811186d3ff45b955f"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Parse URL parameters
+    const params = new URLSearchParams(window.location.search);
+    const compId = params.get('compId');
+
+    if (!compId) {
+      console.error('Missing compId parameter');
+      document.body.innerHTML = '<div class="error-state">Missing compId parameter</div>';
+    }
+
+    // State management
+    const state = {
+      enabled: false,
+      polling: false,
+      automationMode: 'auto',
+      showLineup: null,
+      teams: [],
+      rotation: { current: 1, total: 6, isFinal: false },
+      previousScores: {},
+      flashQueues: {},  // Per-team flash queues
+      activeFlashes: {},  // Currently active flashes per team
+      pollInterval: 5000,
+      flashDuration: 10000
+    };
+
+    // Firebase paths
+    const scoreBugRef = db.ref(`competitions/${compId}/scoreBug`);
+    const configRef = db.ref(`competitions/${compId}/config`);
+
+    // Initialize Firebase listeners
+    function initFirebaseListeners() {
+      // Listen for enabled state
+      scoreBugRef.child('enabled').on('value', (snapshot) => {
+        state.enabled = snapshot.val() === true;
+        updateBugVisibility();
+      });
+
+      // Listen for polling state
+      scoreBugRef.child('polling').on('value', (snapshot) => {
+        const wasPolling = state.polling;
+        state.polling = snapshot.val() === true;
+        if (state.polling && !wasPolling) {
+          startPolling();
+        } else if (!state.polling && wasPolling) {
+          stopPolling();
+        }
+      });
+
+      // Listen for automation mode
+      scoreBugRef.child('automationMode').on('value', (snapshot) => {
+        state.automationMode = snapshot.val() || 'auto';
+      });
+
+      // Listen for lineup card toggle
+      scoreBugRef.child('showLineup').on('value', (snapshot) => {
+        state.showLineup = snapshot.val();
+        updateLineupCard();
+      });
+
+      // Listen for flash dismissals
+      scoreBugRef.child('dismissFlash').on('value', (snapshot) => {
+        const dismissals = snapshot.val() || {};
+        handleFlashDismissals(dismissals);
+      });
+
+      // Listen for poll interval changes
+      scoreBugRef.child('config/pollInterval').on('value', (snapshot) => {
+        state.pollInterval = snapshot.val() || 5000;
+      });
+
+      // Listen for flash duration changes
+      scoreBugRef.child('config/flashDuration').on('value', (snapshot) => {
+        state.flashDuration = snapshot.val() || 10000;
+      });
+
+      console.log('Firebase listeners initialized');
+    }
+
+    // Update bug visibility based on enabled state
+    function updateBugVisibility() {
+      const bugEl = document.getElementById('scoreBug');
+      if (state.enabled) {
+        bugEl.classList.add('visible');
+      } else {
+        bugEl.classList.remove('visible');
+      }
+    }
+
+    // Update lineup card visibility
+    function updateLineupCard() {
+      const cardEl = document.getElementById('lineupCard');
+      if (state.showLineup) {
+        cardEl.classList.add('visible');
+        // TODO: Populate lineup card content (Phase C)
+      } else {
+        cardEl.classList.remove('visible');
+      }
+    }
+
+    // Handle flash dismissals from producer
+    function handleFlashDismissals(dismissals) {
+      // TODO: Implement flash dismissal handling (Task A12c)
+    }
+
+    // Polling management
+    let pollTimer = null;
+
+    function startPolling() {
+      if (pollTimer) return;
+      console.log('Starting API polling');
+      poll();  // Initial poll
+      pollTimer = setInterval(poll, state.pollInterval);
+    }
+
+    function stopPolling() {
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+        console.log('Stopped API polling');
+      }
+    }
+
+    // Main poll function
+    async function poll() {
+      // TODO: Implement Virtius API polling (Task A3)
+      // For now, just write heartbeat
+      try {
+        await scoreBugRef.child('heartbeat').set(Date.now());
+      } catch (err) {
+        console.error('Failed to write heartbeat:', err);
+      }
+    }
+
+    // Initialize on load
+    if (compId) {
+      initFirebaseListeners();
+    }
+  </script>
+</body>
+</html>
