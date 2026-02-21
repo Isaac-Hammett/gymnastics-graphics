@@ -137,6 +137,16 @@ export default function ScoreBugPanel({
     set(ref(db, `competitions/${compId}/scoreBug/dismissFlash`), dismissals);
   };
 
+  // Show now-competing for a specific team (manual mode)
+  const showNowCompeting = (teamKey) => {
+    set(ref(db, `competitions/${compId}/scoreBug/nowCompeting/${teamKey}`), true);
+  };
+
+  // Hide now-competing for a specific team (manual mode)
+  const hideNowCompeting = (teamKey) => {
+    set(ref(db, `competitions/${compId}/scoreBug/nowCompeting/${teamKey}`), false);
+  };
+
   // Listen to scoreBug state from Firebase
   useEffect(() => {
     if (!compId) return;
@@ -354,29 +364,49 @@ export default function ScoreBugPanel({
                 </button>
               </div>
               <div className="space-y-2">
-                {scoreBugState.detected.nowCompeting.map((nc, idx) => (
-                  <div
-                    key={`${nc.teamIndex}-${idx}`}
-                    className="flex items-center justify-between bg-zinc-900/50 rounded-lg px-3 py-2"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-purple-400 bg-purple-500/20 px-1.5 py-0.5 rounded">
-                        {nc.tricode}
-                      </span>
-                      <span className="text-sm text-zinc-200">{nc.athlete?.name}</span>
+                {scoreBugState.detected.nowCompeting.map((nc, idx) => {
+                  const isManual = (scoreBugState?.config?.automationMode || 'auto') === 'manual';
+                  const isShowing = isManual
+                    ? scoreBugState?.nowCompeting?.[nc.teamKey] === true
+                    : true; // In auto mode, always shown
+                  return (
+                    <div
+                      key={`${nc.teamIndex}-${idx}`}
+                      className="flex items-center justify-between bg-zinc-900/50 rounded-lg px-3 py-2"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-purple-400 bg-purple-500/20 px-1.5 py-0.5 rounded">
+                          {nc.tricode}
+                        </span>
+                        <span className="text-sm text-zinc-200">{nc.athlete?.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-zinc-400">{nc.eventName}</span>
+                        {/* SHOW/HIDE buttons (manual mode only) */}
+                        {isManual && (
+                          <button
+                            onClick={() => isShowing ? hideNowCompeting(nc.teamKey) : showNowCompeting(nc.teamKey)}
+                            className={`text-xs px-2 py-0.5 rounded transition-colors ${
+                              isShowing
+                                ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
+                                : 'bg-zinc-700 text-zinc-400 hover:bg-zinc-600'
+                            }`}
+                            title={isShowing ? `Hide ${nc.tricode}` : `Show ${nc.tricode}`}
+                          >
+                            {isShowing ? 'HIDE' : 'SHOW'}
+                          </button>
+                        )}
+                        <button
+                          onClick={() => dismissFlash(nc.teamIndex)}
+                          className="p-1 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
+                          title={`Dismiss ${nc.tricode} flash`}
+                        >
+                          <XMarkIcon className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-zinc-400">{nc.eventName}</span>
-                      <button
-                        onClick={() => dismissFlash(nc.teamIndex)}
-                        className="p-1 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
-                        title={`Dismiss ${nc.tricode} flash`}
-                      >
-                        <XMarkIcon className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
