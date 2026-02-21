@@ -40,6 +40,12 @@ export default function ScoreBugPanel({
     set(ref(db, `competitions/${compId}/scoreBug/enabled`), newState);
   };
 
+  // Toggle polling state
+  const togglePolling = () => {
+    const newState = !scoreBugState?.polling;
+    set(ref(db, `competitions/${compId}/scoreBug/polling`), newState);
+  };
+
   // Listen to scoreBug state from Firebase
   useEffect(() => {
     if (!compId) return;
@@ -141,6 +147,23 @@ export default function ScoreBugPanel({
               <span
                 className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
                   scoreBugState?.enabled ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+
+          {/* Polling Toggle */}
+          <div className="flex items-center justify-between py-2">
+            <span className="text-sm text-zinc-300">API Polling</span>
+            <button
+              onClick={togglePolling}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                scoreBugState?.polling ? 'bg-blue-500' : 'bg-zinc-600'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  scoreBugState?.polling ? 'translate-x-6' : 'translate-x-1'
                 }`}
               />
             </button>
