@@ -727,9 +727,46 @@
       }
     }
 
-    // Handle flash dismissals from producer
+    /**
+     * Handle flash dismissals from producer panel (Task A12c).
+     * When producer clicks "dismiss" for a team, immediately clears
+     * the active flash and advances to next in queue.
+     * @param {Object} dismissals - Map of teamIndex -> timestamp
+     */
     function handleFlashDismissals(dismissals) {
-      // TODO: Implement flash dismissal handling (Task A12c)
+      if (!dismissals || typeof dismissals !== 'object') return;
+
+      Object.keys(dismissals).forEach((teamIndexStr) => {
+        const teamIndex = parseInt(teamIndexStr, 10);
+        const dismissTimestamp = dismissals[teamIndex];
+
+        // Skip if no active flash for this team
+        if (!state.activeFlashes[teamIndex]) return;
+
+        // Skip if already processed this dismissal (compare timestamps)
+        const activeFlash = state.activeFlashes[teamIndex];
+        if (activeFlash.dismissedAt === dismissTimestamp) return;
+
+        console.log('Processing flash dismissal:', {
+          team: teamIndex,
+          gymnast: activeFlash.name,
+          dismissTimestamp
+        });
+
+        // Mark as processed
+        activeFlash.dismissedAt = dismissTimestamp;
+
+        // Clear the timer for current flash
+        if (activeFlash.timer) {
+          clearTimeout(activeFlash.timer);
+        }
+
+        // Advance to next flash (or clear if queue empty)
+        advanceFlashQueue(teamIndex);
+
+        // Clear the dismissal flag in Firebase after processing
+        scoreBugRef.child(`dismissFlash/${teamIndex}`).remove();
+      });
     }
 
     // Polling management

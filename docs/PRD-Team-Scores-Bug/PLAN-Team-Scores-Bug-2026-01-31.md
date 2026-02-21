@@ -30,7 +30,7 @@
 | A11 | Bug enter/exit animation | COMPLETE | `overlays/team-bug.html` | `overlays/event-bar.html` | Already implemented: CSS transition on .score-bug (translateX slide-in from right), .visible class toggled by updateBugVisibility() |
 | A12 | Firebase listener: enabled | COMPLETE | `overlays/team-bug.html` | `output.html:200-300` | Already implemented: line 654-657, calls updateBugVisibility() |
 | A12b | Firebase listener: polling | COMPLETE | `overlays/team-bug.html` | — | Already implemented: line 660-668, starts/stops polling on change |
-| A12c | Firebase listener: dismissFlash | NOT STARTED | `overlays/team-bug.html` | — |
+| A12c | Firebase listener: dismissFlash | COMPLETE | `overlays/team-bug.html` | — | Implemented handleFlashDismissals() - clears active flash, advances queue, removes dismissal flag |
 | A13 | Flash queue edge cases | NOT STARTED | `overlays/team-bug.html` | — |
 | B1 | Now-competing detection | NOT STARTED | `overlays/team-bug.html` | `GraphicsControl.jsx:216-269` |
 | B2 | Now-competing slot state | NOT STARTED | `overlays/team-bug.html` | — |
