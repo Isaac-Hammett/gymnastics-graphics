@@ -495,9 +495,18 @@
         handleFlashDismissals(dismissals);
       });
 
-      // Listen for poll interval changes
+      // Listen for poll interval changes - restart polling with new interval
       scoreBugRef.child('config/pollInterval').on('value', (snapshot) => {
-        state.pollInterval = snapshot.val() || 5000;
+        const newInterval = snapshot.val() || 5000;
+        const wasPolling = state.polling && pollTimer !== null;
+        state.pollInterval = newInterval;
+
+        // Restart polling with new interval if currently polling
+        if (wasPolling) {
+          console.log('Poll interval changed to', newInterval, 'ms - restarting polling');
+          stopPolling();
+          startPolling();
+        }
       });
 
       // Listen for flash duration changes
@@ -552,14 +561,74 @@
       }
     }
 
-    // Main poll function
+    // Main poll function - fetches data from Virtius API
     async function poll() {
-      // TODO: Implement Virtius API polling (Task A3)
-      // For now, just write heartbeat
+      // Check if we have a valid session ID
+      if (!state.virtiusSessionId) {
+        console.warn('No Virtius session ID - skipping poll');
+        return;
+      }
+
+      const pollStartTime = Date.now();
+
       try {
-        await scoreBugRef.child('heartbeat').set(Date.now());
+        // Fetch from Virtius API
+        const response = await fetch(`https://api.virti.us/session/${state.virtiusSessionId}/json`);
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+
+        // Store raw API data for score diff engine (Task A5)
+        // Extract teams array from meet data
+        const teams = data.meet?.teams || [];
+
+        if (teams.length === 0) {
+          console.warn('No teams found in API response');
+        }
+
+        // Store the latest API data in state
+        state.lastApiData = data;
+        state.lastApiTeams = teams;
+
+        // Extract team totals and update state.teams with actual data
+        // final_score comes as a string from API - convert to float for display
+        teams.forEach((apiTeam, idx) => {
+          // Match API team to our configured teams by index or name
+          const stateTeam = state.teams[idx];
+          if (stateTeam) {
+            // Convert string final_score to formatted number
+            const rawScore = apiTeam.final_score;
+            if (rawScore !== null && rawScore !== undefined) {
+              const numScore = parseFloat(rawScore);
+              stateTeam.total = isNaN(numScore) ? '--' : numScore.toFixed(3);
+            }
+            // Store API team reference for score diff engine
+            stateTeam.apiTeam = apiTeam;
+          }
+        });
+
+        // Write heartbeat to Firebase on successful poll
+        await scoreBugRef.child('heartbeat').set(pollStartTime);
+
+        console.log('Poll successful:', {
+          sessionId: state.virtiusSessionId,
+          teamCount: teams.length,
+          teams: state.teams.map(t => ({ name: t.name, total: t.total }))
+        });
+
       } catch (err) {
-        console.error('Failed to write heartbeat:', err);
+        // Log error - full error handling with backoff is Task A3c
+        console.error('Poll failed:', err.message);
+
+        // Still try to write heartbeat even on failure (indicates overlay is running)
+        try {
+          await scoreBugRef.child('heartbeat').set(pollStartTime);
+        } catch (heartbeatErr) {
+          console.error('Failed to write heartbeat:', heartbeatErr);
+        }
       }
     }
 
