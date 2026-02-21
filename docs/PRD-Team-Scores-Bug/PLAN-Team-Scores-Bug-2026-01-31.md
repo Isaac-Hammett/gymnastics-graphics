@@ -62,8 +62,8 @@
 | D8 | Write showLineup | COMPLETE | `show-controller/src/components/ScoreBugPanel.jsx` | — | Implemented in D7: showLineup(teamKey) writes to scoreBug/showLineup, hideLineup() sets to null |
 | D9 | Write nowCompeting | COMPLETE | `show-controller/src/components/ScoreBugPanel.jsx` | — | Already implemented in D6: showNowCompeting(teamKey) and hideNowCompeting(teamKey) write to scoreBug/nowCompeting/{teamKey} |
 | D10 | Migrate GraphicsControl | COMPLETE | `show-controller/src/components/GraphicsControl.jsx` | — | Removed independent Virtius polling. Now reads from Firebase `scoreBug/detected/nowCompeting` and `scoreBug/config/polling`. UI shows read-only status indicator. |
-| E1 | Load headshots | NOT STARTED | `overlays/team-bug.html` | `output.html:5048-5110` |
-| E2 | Headshot normalization | NOT STARTED | `overlays/team-bug.html` | `nameNormalization.js` |
+| E1 | Load headshots | COMPLETE | `overlays/team-bug.html` | `output.html:5048-5110` | Added loadFirebaseHeadshots() with multi-key storage (5 variants per name), getAthleteHeadshot() with fuzzy matching |
+| E2 | Headshot normalization | COMPLETE | `overlays/team-bug.html` | `nameNormalization.js` | Added normalizeAccentsUnified(), removeSuffixesUnified(), normalizeNameUnified() - handles accents, suffixes, 3+ part names |
 | E3 | Headshots in flash | NOT STARTED | `overlays/team-bug.html` | — |
 | E4 | Headshots in now-competing | NOT STARTED | `overlays/team-bug.html` | — |
 | E5 | Headshot fallback | NOT STARTED | `overlays/team-bug.html` | — |
