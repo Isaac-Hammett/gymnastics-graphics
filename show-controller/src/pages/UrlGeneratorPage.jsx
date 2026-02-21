@@ -30,6 +30,9 @@ const summaryThemes = [
   { id: 'layout-default-v18', label: 'V18 Team Colors' },
   { id: 'layout-default-v19', label: 'V19 Dense Compact' },
   { id: 'layout-default-v20', label: 'V20 Combined Best' },
+  { id: 'layout-default-v21', label: 'V21 Extra Large' },
+  { id: 'layout-default-v22', label: 'V22 Integrated Rank' },
+  { id: 'layout-default-v23', label: 'V23 No Rankings' },
   // COLOR THEMES - Same structure, different colors
   { id: 'default', label: 'Default (Original)' },
   { id: 'espn', label: 'ESPN Colors' },

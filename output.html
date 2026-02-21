@@ -3712,14 +3712,14 @@
     .event-summary-v20 .team-header {
       display: flex;
       align-items: center;
-      padding: 12px 14px;
+      padding: 14px 16px;
       background: #27272a;
-      gap: 12px;
+      gap: 14px;
     }
 
     .event-summary-v20 .team-logo {
-      width: 40px;
-      height: 40px;
+      width: 50px;
+      height: 50px;
       object-fit: contain;
       flex-shrink: 0;
     }
@@ -3730,7 +3730,7 @@
     }
 
     .event-summary-v20 .team-name {
-      font-size: 18px;
+      font-size: 24px;
       font-weight: 700;
       color: #fff;
       white-space: nowrap;
@@ -3739,7 +3739,7 @@
     }
 
     .event-summary-v20 .event-name {
-      font-size: 12px;
+      font-size: 16px;
       color: #a1a1aa;
       text-transform: uppercase;
       letter-spacing: 0.5px;
@@ -3748,16 +3748,16 @@
     .event-summary-v20 .header-right {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
       flex-shrink: 0;
     }
 
     .event-summary-v20 .rank-badge {
-      font-size: 12px;
+      font-size: 16px;
       font-weight: 700;
       color: #fff;
       background: #52525b;
-      padding: 4px 10px;
+      padding: 6px 14px;
       border-radius: 4px;
     }
 
@@ -3766,7 +3766,7 @@
     .event-summary-v20 .rank-badge.rank-3 { background: #b45309; }
 
     .event-summary-v20 .header-total {
-      font-size: 22px;
+      font-size: 28px;
       font-weight: 800;
       color: #fff;
     }
@@ -3800,17 +3800,17 @@
     }
 
     .event-summary-v20 .athlete-order {
-      width: 28px;
-      height: 28px;
+      width: 34px;
+      height: 34px;
       border-radius: 50%;
       background: #52525b;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 14px;
+      font-size: 18px;
       font-weight: 700;
       color: #fff;
-      margin-right: 12px;
+      margin-right: 14px;
       flex-shrink: 0;
     }
 
@@ -3821,7 +3821,7 @@
 
     .event-summary-v20 .athlete-name {
       flex: 1;
-      font-size: 18px;
+      font-size: 22px;
       font-weight: 600;
       color: #fff;
       white-space: nowrap;
@@ -3833,11 +3833,36 @@
       color: #52525b;
     }
 
-    .event-summary-v20 .athlete-score {
-      font-size: 20px;
+    /* Athlete meet ranking badge (top 3 on this apparatus across entire meet) */
+    .event-summary-v20 .athlete-rank {
+      font-size: 14px;
       font-weight: 700;
       color: #fff;
-      min-width: 70px;
+      padding: 4px 10px;
+      border-radius: 4px;
+      margin-left: 8px;
+      flex-shrink: 0;
+    }
+    .event-summary-v20 .athlete-rank.rank-1 { background: #ca8a04; }
+    .event-summary-v20 .athlete-rank.rank-2 { background: #64748b; }
+    .event-summary-v20 .athlete-rank.rank-3 { background: #b45309; }
+
+    /* Start value display */
+    .event-summary-v20 .athlete-sv {
+      font-size: 18px;
+      font-weight: 500;
+      color: #71717a;
+      min-width: 50px;
+      text-align: right;
+      margin-right: 16px;
+      flex-shrink: 0;
+    }
+
+    .event-summary-v20 .athlete-score {
+      font-size: 26px;
+      font-weight: 700;
+      color: #fff;
+      min-width: 80px;
       text-align: right;
     }
 
@@ -3847,7 +3872,7 @@
 
     /* V3-style footer */
     .event-summary-v20 .team-footer {
-      padding: 14px 16px;
+      padding: 16px 18px;
       background: #27272a;
       display: flex;
       justify-content: space-between;
@@ -3855,13 +3880,627 @@
     }
 
     .event-summary-v20 .footer-label {
-      font-size: 15px;
+      font-size: 18px;
       color: #a1a1aa;
       font-weight: 500;
     }
 
     .event-summary-v20 .footer-total {
-      font-size: 26px;
+      font-size: 32px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    /* ==========================================
+       Layout V21: Extra Large - Based on V20 with larger fonts
+       For better readability on large displays
+       ========================================== */
+    .event-summary-v21 {
+      display: grid;
+      flex: 1;
+      gap: 2px;
+      background: #3f3f46;
+      height: 100%;
+    }
+    .event-summary-v21.teams-2 { grid-template-columns: repeat(2, 1fr); }
+    .event-summary-v21.teams-3 { grid-template-columns: repeat(3, 1fr); }
+    .event-summary-v21.teams-4 { grid-template-columns: repeat(4, 1fr); }
+    .event-summary-v21.teams-5 { grid-template-columns: repeat(5, 1fr); }
+    .event-summary-v21.teams-6 { grid-template-columns: repeat(6, 1fr); }
+
+    .event-summary-v21 .team-column {
+      background: #18181b;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    /* V21 Header - logo left, team/event center-left, rank+total right */
+    .event-summary-v21 .team-header {
+      display: flex;
+      align-items: center;
+      padding: 16px 18px;
+      background: #27272a;
+      gap: 16px;
+    }
+
+    .event-summary-v21 .team-logo {
+      width: 60px;
+      height: 60px;
+      object-fit: contain;
+      flex-shrink: 0;
+    }
+
+    .event-summary-v21 .header-left {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .event-summary-v21 .team-name {
+      font-size: 30px;
+      font-weight: 700;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .event-summary-v21 .event-name {
+      font-size: 20px;
+      color: #a1a1aa;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .event-summary-v21 .header-right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-shrink: 0;
+    }
+
+    .event-summary-v21 .rank-badge {
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+      background: #52525b;
+      padding: 8px 16px;
+      border-radius: 4px;
+    }
+
+    .event-summary-v21 .rank-badge.rank-1 { background: #ca8a04; }
+    .event-summary-v21 .rank-badge.rank-2 { background: #64748b; }
+    .event-summary-v21 .rank-badge.rank-3 { background: #b45309; }
+
+    .event-summary-v21 .header-total {
+      font-size: 36px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    /* V21 athlete list */
+    .event-summary-v21 .athlete-list {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .event-summary-v21 .athlete-row {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      min-height: 0;
+    }
+
+    .event-summary-v21 .athlete-row:nth-child(odd) {
+      background: #18181b;
+    }
+
+    .event-summary-v21 .athlete-row:nth-child(even) {
+      background: #0f0f10;
+    }
+
+    .event-summary-v21 .athlete-row.empty {
+      background: #141416;
+    }
+
+    .event-summary-v21 .athlete-order {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #52525b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+      margin-right: 16px;
+      flex-shrink: 0;
+    }
+
+    .event-summary-v21 .athlete-row.empty .athlete-order {
+      background: #3f3f46;
+      color: #71717a;
+    }
+
+    .event-summary-v21 .athlete-name {
+      flex: 1;
+      font-size: 28px;
+      font-weight: 600;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .event-summary-v21 .athlete-row.empty .athlete-name {
+      color: #52525b;
+    }
+
+    /* Athlete meet ranking badge (top 3 on this apparatus across entire meet) */
+    .event-summary-v21 .athlete-rank {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 4px;
+      margin-left: 10px;
+      flex-shrink: 0;
+    }
+    .event-summary-v21 .athlete-rank.rank-1 { background: #ca8a04; }
+    .event-summary-v21 .athlete-rank.rank-2 { background: #64748b; }
+    .event-summary-v21 .athlete-rank.rank-3 { background: #b45309; }
+
+    /* Start value display */
+    .event-summary-v21 .athlete-sv {
+      font-size: 22px;
+      font-weight: 500;
+      color: #71717a;
+      min-width: 60px;
+      text-align: right;
+      margin-right: 18px;
+      flex-shrink: 0;
+    }
+
+    .event-summary-v21 .athlete-score {
+      font-size: 34px;
+      font-weight: 700;
+      color: #fff;
+      min-width: 100px;
+      text-align: right;
+    }
+
+    .event-summary-v21 .athlete-row.empty .athlete-score {
+      color: #3f3f46;
+    }
+
+    /* V21 footer */
+    .event-summary-v21 .team-footer {
+      padding: 18px 20px;
+      background: #27272a;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .event-summary-v21 .footer-label {
+      font-size: 22px;
+      color: #a1a1aa;
+      font-weight: 500;
+    }
+
+    .event-summary-v21 .footer-total {
+      font-size: 40px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    /* V22 Event Summary - Extra Large with Integrated Rankings */
+    /* Same as V21 but ranking is integrated into the order bubble instead of separate badge */
+    .event-summary-v22 {
+      display: grid;
+      flex: 1;
+      gap: 2px;
+      background: #3f3f46;
+      height: 100%;
+    }
+    .event-summary-v22.teams-2 { grid-template-columns: repeat(2, 1fr); }
+    .event-summary-v22.teams-3 { grid-template-columns: repeat(3, 1fr); }
+    .event-summary-v22.teams-4 { grid-template-columns: repeat(4, 1fr); }
+    .event-summary-v22.teams-5 { grid-template-columns: repeat(5, 1fr); }
+    .event-summary-v22.teams-6 { grid-template-columns: repeat(6, 1fr); }
+
+    .event-summary-v22 .team-column {
+      background: #18181b;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    /* V22 Header - logo left, team/event center-left, rank+total right */
+    .event-summary-v22 .team-header {
+      display: flex;
+      align-items: center;
+      padding: 16px 18px;
+      background: #27272a;
+      gap: 16px;
+    }
+
+    .event-summary-v22 .team-logo {
+      width: 60px;
+      height: 60px;
+      object-fit: contain;
+      flex-shrink: 0;
+    }
+
+    .event-summary-v22 .header-left {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .event-summary-v22 .team-name {
+      font-size: 30px;
+      font-weight: 700;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .event-summary-v22 .event-name {
+      font-size: 20px;
+      color: #a1a1aa;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .event-summary-v22 .header-right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-shrink: 0;
+    }
+
+    .event-summary-v22 .rank-badge {
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+      background: #52525b;
+      padding: 8px 16px;
+      border-radius: 4px;
+    }
+
+    .event-summary-v22 .rank-badge.rank-1 { background: #ca8a04; }
+    .event-summary-v22 .rank-badge.rank-2 { background: #64748b; }
+    .event-summary-v22 .rank-badge.rank-3 { background: #b45309; }
+
+    .event-summary-v22 .header-total {
+      font-size: 36px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    /* V22 athlete list */
+    .event-summary-v22 .athlete-list {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .event-summary-v22 .athlete-row {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      min-height: 0;
+    }
+
+    .event-summary-v22 .athlete-row:nth-child(odd) {
+      background: #18181b;
+    }
+
+    .event-summary-v22 .athlete-row:nth-child(even) {
+      background: #0f0f10;
+    }
+
+    .event-summary-v22 .athlete-row.empty {
+      background: #141416;
+    }
+
+    /* V22 Order bubble - integrates ranking */
+    .event-summary-v22 .athlete-order {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #52525b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+      margin-right: 16px;
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    /* Ranking colors for order bubble */
+    .event-summary-v22 .athlete-order.rank-1 {
+      background: linear-gradient(135deg, #fbbf24 0%, #ca8a04 100%);
+      box-shadow: 0 2px 8px rgba(202, 138, 4, 0.4);
+    }
+    .event-summary-v22 .athlete-order.rank-2 {
+      background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+      box-shadow: 0 2px 8px rgba(100, 116, 139, 0.4);
+    }
+    .event-summary-v22 .athlete-order.rank-3 {
+      background: linear-gradient(135deg, #f59e0b 0%, #b45309 100%);
+      box-shadow: 0 2px 8px rgba(180, 83, 9, 0.4);
+    }
+
+    /* Medal icon for ranked athletes */
+    .event-summary-v22 .athlete-order .medal-icon {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      font-size: 14px;
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+    }
+
+    .event-summary-v22 .athlete-row.empty .athlete-order {
+      background: #3f3f46;
+      color: #71717a;
+    }
+
+    .event-summary-v22 .athlete-name {
+      flex: 1;
+      font-size: 28px;
+      font-weight: 600;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .event-summary-v22 .athlete-row.empty .athlete-name {
+      color: #52525b;
+    }
+
+    /* Start value display */
+    .event-summary-v22 .athlete-sv {
+      font-size: 22px;
+      font-weight: 500;
+      color: #71717a;
+      min-width: 60px;
+      text-align: right;
+      margin-right: 18px;
+      flex-shrink: 0;
+    }
+
+    .event-summary-v22 .athlete-score {
+      font-size: 34px;
+      font-weight: 700;
+      color: #fff;
+      min-width: 100px;
+      text-align: right;
+    }
+
+    .event-summary-v22 .athlete-row.empty .athlete-score {
+      color: #3f3f46;
+    }
+
+    /* V22 footer */
+    .event-summary-v22 .team-footer {
+      padding: 18px 20px;
+      background: #27272a;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .event-summary-v22 .footer-label {
+      font-size: 22px;
+      color: #a1a1aa;
+      font-weight: 500;
+    }
+
+    .event-summary-v22 .footer-total {
+      font-size: 40px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    /* V23 Event Summary - Extra Large WITHOUT Integrated Rankings */
+    /* Same as V22 but order bubbles stay grey (no medal colors/icons) */
+    .event-summary-v23 {
+      display: grid;
+      flex: 1;
+      gap: 2px;
+      background: #3f3f46;
+      height: 100%;
+    }
+    .event-summary-v23.teams-2 { grid-template-columns: repeat(2, 1fr); }
+    .event-summary-v23.teams-3 { grid-template-columns: repeat(3, 1fr); }
+    .event-summary-v23.teams-4 { grid-template-columns: repeat(4, 1fr); }
+    .event-summary-v23.teams-5 { grid-template-columns: repeat(5, 1fr); }
+    .event-summary-v23.teams-6 { grid-template-columns: repeat(6, 1fr); }
+
+    .event-summary-v23 .team-column {
+      background: #18181b;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .event-summary-v23 .team-header {
+      display: flex;
+      align-items: center;
+      padding: 16px 18px;
+      background: #27272a;
+      gap: 16px;
+    }
+
+    .event-summary-v23 .team-logo {
+      width: 60px;
+      height: 60px;
+      object-fit: contain;
+      flex-shrink: 0;
+    }
+
+    .event-summary-v23 .header-left {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .event-summary-v23 .team-name {
+      font-size: 30px;
+      font-weight: 700;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .event-summary-v23 .event-name {
+      font-size: 20px;
+      color: #a1a1aa;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .event-summary-v23 .header-right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-shrink: 0;
+    }
+
+    .event-summary-v23 .rank-badge {
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+      background: #52525b;
+      padding: 8px 16px;
+      border-radius: 4px;
+    }
+
+    .event-summary-v23 .rank-badge.rank-1 { background: #ca8a04; }
+    .event-summary-v23 .rank-badge.rank-2 { background: #64748b; }
+    .event-summary-v23 .rank-badge.rank-3 { background: #b45309; }
+
+    .event-summary-v23 .header-total {
+      font-size: 36px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .event-summary-v23 .athlete-list {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .event-summary-v23 .athlete-row {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      min-height: 0;
+    }
+
+    .event-summary-v23 .athlete-row:nth-child(odd) {
+      background: #18181b;
+    }
+
+    .event-summary-v23 .athlete-row:nth-child(even) {
+      background: #0f0f10;
+    }
+
+    .event-summary-v23 .athlete-row.empty {
+      background: #141416;
+    }
+
+    /* V23 Order bubble - NO ranking colors, always grey */
+    .event-summary-v23 .athlete-order {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #52525b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+      margin-right: 16px;
+      flex-shrink: 0;
+    }
+
+    .event-summary-v23 .athlete-row.empty .athlete-order {
+      background: #3f3f46;
+      color: #71717a;
+    }
+
+    .event-summary-v23 .athlete-name {
+      flex: 1;
+      font-size: 28px;
+      font-weight: 600;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .event-summary-v23 .athlete-row.empty .athlete-name {
+      color: #52525b;
+    }
+
+    .event-summary-v23 .athlete-sv {
+      font-size: 22px;
+      font-weight: 500;
+      color: #71717a;
+      min-width: 60px;
+      text-align: right;
+      margin-right: 18px;
+      flex-shrink: 0;
+    }
+
+    .event-summary-v23 .athlete-score {
+      font-size: 34px;
+      font-weight: 700;
+      color: #fff;
+      min-width: 100px;
+      text-align: right;
+    }
+
+    .event-summary-v23 .athlete-row.empty .athlete-score {
+      color: #3f3f46;
+    }
+
+    .event-summary-v23 .team-footer {
+      padding: 18px 20px;
+      background: #27272a;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .event-summary-v23 .footer-label {
+      font-size: 22px;
+      color: #a1a1aa;
+      font-weight: 500;
+    }
+
+    .event-summary-v23 .footer-total {
+      font-size: 40px;
       font-weight: 800;
       color: #fff;
     }
@@ -5338,6 +5977,51 @@
       return null;
     }
 
+    // Calculate meet-wide apparatus rankings (top 3 scores per apparatus across all teams)
+    // Returns: { 'VAULT': [ { name: 'K. Tatum', score: 9.525, team: 'West Chester' }, ... ], ... }
+    function calculateApparatusRankings(teams) {
+      const rankings = {};
+
+      // Collect all scores for each apparatus across all teams
+      teams.forEach(team => {
+        if (!team.events) return;
+
+        team.events.forEach(event => {
+          const eventName = event.event_name;
+          if (!rankings[eventName]) {
+            rankings[eventName] = [];
+          }
+
+          if (event.gymnasts) {
+            event.gymnasts.forEach(g => {
+              const score = parseFloat(g.final_score) || 0;
+              if (score > 0) {
+                const name = `${g.first_name?.charAt(0) || ''}. ${g.last_name || ''}`;
+                const fullName = `${g.first_name || ''} ${g.last_name || ''}`.trim();
+                rankings[eventName].push({
+                  name,
+                  fullName,
+                  score,
+                  team: team.name || team.tricode,
+                  gymnastId: g.gymnast_id
+                });
+              }
+            });
+          }
+        });
+      });
+
+      // Sort each apparatus by score (descending) and keep top 3
+      for (const eventName of Object.keys(rankings)) {
+        rankings[eventName] = rankings[eventName]
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 3)
+          .map((entry, idx) => ({ ...entry, rank: idx + 1 }));
+      }
+
+      return rankings;
+    }
+
     // Fetch event summary data from Virtius API and render rotation view
     async function fetchAndRenderEventSummary(sessionId, rotation, numTeams, competitionFormat, layout = 'default', gender = 'mens') {
       const contentEl = document.getElementById('event-summary-content');
@@ -5359,6 +6043,9 @@
 
         // Sort teams by team_order
         const sortedTeams = [...teams].sort((a, b) => (a.team_order || 0) - (b.team_order || 0));
+
+        // Calculate meet-wide apparatus rankings for V20 layout
+        const apparatusRankings = calculateApparatusRankings(teams);
 
         // Determine if this is a dual meet (2 teams) or multi-team (3+)
         const isDual = sortedTeams.length === 2;
@@ -5429,7 +6116,13 @@
           } else if (layout === 'default-v19') {
             renderMultiTeamSummaryV19(contentEl, rotationData, rotation, actualNumTeams);
           } else if (layout === 'default-v20') {
-            renderMultiTeamSummaryV20(contentEl, rotationData, rotation, actualNumTeams);
+            renderMultiTeamSummaryV20(contentEl, rotationData, rotation, actualNumTeams, apparatusRankings);
+          } else if (layout === 'default-v21') {
+            renderMultiTeamSummaryV21(contentEl, rotationData, rotation, actualNumTeams, apparatusRankings);
+          } else if (layout === 'default-v22') {
+            renderMultiTeamSummaryV22(contentEl, rotationData, rotation, actualNumTeams, apparatusRankings);
+          } else if (layout === 'default-v23') {
+            renderMultiTeamSummaryV23(contentEl, rotationData, rotation, actualNumTeams, apparatusRankings);
           } else {
             renderDualMeetSummary(contentEl, rotationData, rotation);
           }
@@ -5470,7 +6163,13 @@
           } else if (layout === 'default-v19') {
             renderMultiTeamSummaryV19(contentEl, rotationData, rotation, actualNumTeams);
           } else if (layout === 'default-v20') {
-            renderMultiTeamSummaryV20(contentEl, rotationData, rotation, actualNumTeams);
+            renderMultiTeamSummaryV20(contentEl, rotationData, rotation, actualNumTeams, apparatusRankings);
+          } else if (layout === 'default-v21') {
+            renderMultiTeamSummaryV21(contentEl, rotationData, rotation, actualNumTeams, apparatusRankings);
+          } else if (layout === 'default-v22') {
+            renderMultiTeamSummaryV22(contentEl, rotationData, rotation, actualNumTeams, apparatusRankings);
+          } else if (layout === 'default-v23') {
+            renderMultiTeamSummaryV23(contentEl, rotationData, rotation, actualNumTeams, apparatusRankings);
           } else {
             renderMultiTeamSummary(contentEl, rotationData, rotation, actualNumTeams);
           }
@@ -6306,8 +7005,9 @@
     function renderMultiTeamSummaryV19(contentEl, rotationData, rotation, numTeams) {
       renderGenericLayout(contentEl, rotationData, numTeams, 'v19', false);
     }
-    function renderMultiTeamSummaryV20(contentEl, rotationData, rotation, numTeams) {
+    function renderMultiTeamSummaryV20(contentEl, rotationData, rotation, numTeams, apparatusRankings = {}) {
       // V20: V20 header (logo + team + event left, rank + total right) with V3 body/footer
+      // Now includes start values and meet-wide apparatus rankings for top 3 athletes
       const maxAthletes = Math.min(
         Math.max(...rotationData.map(t => t.gymnasts.length)),
         10
@@ -6318,10 +7018,18 @@
         .map((t, idx) => ({ idx, score: t.totalScore || 0 }))
         .sort((a, b) => b.score - a.score);
 
+      // Helper to check if athlete is in top 3 for their apparatus across entire meet
+      function getAthleteApparatusRank(eventName, gymnastId, score) {
+        const rankings = apparatusRankings[eventName] || [];
+        // Find by gymnast_id first, then by score as fallback
+        const found = rankings.find(r => r.gymnastId === gymnastId || r.score === score);
+        return found ? found.rank : null;
+      }
+
       let columnsHtml = '';
 
       rotationData.forEach((teamData, teamIndex) => {
-        const { team, eventDisplayName, gymnasts, eventScore, totalScore } = teamData;
+        const { team, eventName, eventDisplayName, gymnasts, eventScore, totalScore } = teamData;
         const logoUrl = getTeamLogoUrl(team.name, team.logo);
         const teamName = team.name || team.tricode;
 
@@ -6329,17 +7037,31 @@
         const rank = rankedTeams.findIndex(t => t.idx === teamIndex) + 1;
         const rankClass = rank <= 3 ? ` rank-${rank}` : '';
 
-        // Build athlete rows (V3 style)
+        // Build athlete rows with start values and meet rankings
         let athletesHtml = '';
         for (let i = 0; i < maxAthletes; i++) {
           const g = gymnasts[i];
           if (g) {
             const score = parseFloat(g.final_score) || 0;
             const name = `${g.first_name?.charAt(0) || ''}. ${g.last_name || ''}`;
+
+            // Get start value (difficulty score)
+            const startValue = g.scores && g.scores.length > 0
+              ? parseFloat(g.scores[0].start) || 0
+              : 0;
+
+            // Check if this athlete is in top 3 for this apparatus across entire meet
+            const athleteRank = score > 0 ? getAthleteApparatusRank(eventName, g.gymnast_id, score) : null;
+            const athleteRankHtml = athleteRank && athleteRank <= 3
+              ? `<div class="athlete-rank rank-${athleteRank}">${athleteRank}</div>`
+              : '';
+
             athletesHtml += `
               <div class="athlete-row">
                 <div class="athlete-order">${i + 1}</div>
                 <div class="athlete-name">${name}</div>
+                ${athleteRankHtml}
+                <div class="athlete-sv">${startValue > 0 ? startValue.toFixed(2) : ''}</div>
                 <div class="athlete-score">${score > 0 ? score.toFixed(3) : '—'}</div>
               </div>
             `;
@@ -6348,6 +7070,7 @@
               <div class="athlete-row empty">
                 <div class="athlete-order">${i + 1}</div>
                 <div class="athlete-name">—</div>
+                <div class="athlete-sv"></div>
                 <div class="athlete-score"></div>
               </div>
             `;
@@ -6379,6 +7102,286 @@
       });
 
       contentEl.innerHTML = `<div class="event-summary-v20 teams-${numTeams}">${columnsHtml}</div>`;
+    }
+
+    function renderMultiTeamSummaryV21(contentEl, rotationData, rotation, numTeams, apparatusRankings = {}) {
+      // V21: Extra Large - Same as V20 but uses v21 CSS class for larger fonts
+      const maxAthletes = Math.min(
+        Math.max(...rotationData.map(t => t.gymnasts.length)),
+        10
+      );
+
+      // Calculate ranks based on totalScore
+      const rankedTeams = rotationData
+        .map((t, idx) => ({ idx, score: t.totalScore || 0 }))
+        .sort((a, b) => b.score - a.score);
+
+      // Helper to check if athlete is in top 3 for their apparatus across entire meet
+      function getAthleteApparatusRank(eventName, gymnastId, score) {
+        const rankings = apparatusRankings[eventName] || [];
+        const found = rankings.find(r => r.gymnastId === gymnastId || r.score === score);
+        return found ? found.rank : null;
+      }
+
+      let columnsHtml = '';
+
+      rotationData.forEach((teamData, teamIndex) => {
+        const { team, eventName, eventDisplayName, gymnasts, eventScore, totalScore } = teamData;
+        const logoUrl = getTeamLogoUrl(team.name, team.logo);
+        const teamName = team.name || team.tricode;
+
+        // Get rank for this team
+        const rank = rankedTeams.findIndex(t => t.idx === teamIndex) + 1;
+        const rankClass = rank <= 3 ? ` rank-${rank}` : '';
+
+        // Build athlete rows with start values and meet rankings
+        let athletesHtml = '';
+        for (let i = 0; i < maxAthletes; i++) {
+          const g = gymnasts[i];
+          if (g) {
+            const score = parseFloat(g.final_score) || 0;
+            const name = `${g.first_name?.charAt(0) || ''}. ${g.last_name || ''}`;
+
+            // Get start value (difficulty score)
+            const startValue = g.scores && g.scores.length > 0
+              ? parseFloat(g.scores[0].start) || 0
+              : 0;
+
+            // Check if this athlete is in top 3 for this apparatus across entire meet
+            const athleteRank = score > 0 ? getAthleteApparatusRank(eventName, g.gymnast_id, score) : null;
+            const athleteRankHtml = athleteRank && athleteRank <= 3
+              ? `<div class="athlete-rank rank-${athleteRank}">${athleteRank}</div>`
+              : '';
+
+            athletesHtml += `
+              <div class="athlete-row">
+                <div class="athlete-order">${i + 1}</div>
+                <div class="athlete-name">${name}</div>
+                ${athleteRankHtml}
+                <div class="athlete-sv">${startValue > 0 ? startValue.toFixed(2) : ''}</div>
+                <div class="athlete-score">${score > 0 ? score.toFixed(3) : '—'}</div>
+              </div>
+            `;
+          } else {
+            athletesHtml += `
+              <div class="athlete-row empty">
+                <div class="athlete-order">${i + 1}</div>
+                <div class="athlete-name">—</div>
+                <div class="athlete-sv"></div>
+                <div class="athlete-score"></div>
+              </div>
+            `;
+          }
+        }
+
+        columnsHtml += `
+          <div class="team-column">
+            <div class="team-header">
+              ${logoUrl ? `<img class="team-logo" src="${logoUrl}" alt="">` : ''}
+              <div class="header-left">
+                <div class="team-name">${teamName}</div>
+                <div class="event-name">${eventDisplayName}</div>
+              </div>
+              <div class="header-right">
+                <div class="rank-badge${rankClass}">${rank}</div>
+                <div class="header-total">${totalScore > 0 ? totalScore.toFixed(3) : '—'}</div>
+              </div>
+            </div>
+            <div class="athlete-list">
+              ${athletesHtml}
+            </div>
+            <div class="team-footer">
+              <div class="footer-label">Event Total</div>
+              <div class="footer-total">${eventScore > 0 ? eventScore.toFixed(3) : '—'}</div>
+            </div>
+          </div>
+        `;
+      });
+
+      contentEl.innerHTML = `<div class="event-summary-v21 teams-${numTeams}">${columnsHtml}</div>`;
+    }
+
+    function renderMultiTeamSummaryV22(contentEl, rotationData, rotation, numTeams, apparatusRankings = {}) {
+      // V22: Same as V21 but ranking is integrated into the order bubble
+      const maxAthletes = Math.min(
+        Math.max(...rotationData.map(t => t.gymnasts.length)),
+        10
+      );
+
+      // Calculate ranks based on totalScore
+      const rankedTeams = rotationData
+        .map((t, idx) => ({ idx, score: t.totalScore || 0 }))
+        .sort((a, b) => b.score - a.score);
+
+      // Helper to check if athlete is in top 3 for their apparatus across entire meet
+      function getAthleteApparatusRank(eventName, gymnastId, score) {
+        const rankings = apparatusRankings[eventName] || [];
+        const found = rankings.find(r => r.gymnastId === gymnastId || r.score === score);
+        return found ? found.rank : null;
+      }
+
+      // Medal icons for top 3
+      const medalIcons = { 1: '🥇', 2: '🥈', 3: '🥉' };
+
+      let columnsHtml = '';
+
+      rotationData.forEach((teamData, teamIndex) => {
+        const { team, eventName, eventDisplayName, gymnasts, eventScore, totalScore } = teamData;
+        const logoUrl = getTeamLogoUrl(team.name, team.logo);
+        const teamName = team.name || team.tricode;
+
+        // Get rank for this team
+        const rank = rankedTeams.findIndex(t => t.idx === teamIndex) + 1;
+        const rankClass = rank <= 3 ? ` rank-${rank}` : '';
+
+        // Build athlete rows with integrated ranking in order bubble
+        let athletesHtml = '';
+        for (let i = 0; i < maxAthletes; i++) {
+          const g = gymnasts[i];
+          if (g) {
+            const score = parseFloat(g.final_score) || 0;
+            const name = `${g.first_name?.charAt(0) || ''}. ${g.last_name || ''}`;
+
+            // Get start value (difficulty score)
+            const startValue = g.scores && g.scores.length > 0
+              ? parseFloat(g.scores[0].start) || 0
+              : 0;
+
+            // Check if this athlete is in top 3 for this apparatus across entire meet
+            const athleteRank = score > 0 ? getAthleteApparatusRank(eventName, g.gymnast_id, score) : null;
+            const orderRankClass = athleteRank && athleteRank <= 3 ? ` rank-${athleteRank}` : '';
+            const medalIcon = athleteRank && athleteRank <= 3
+              ? `<span class="medal-icon">${medalIcons[athleteRank]}</span>`
+              : '';
+
+            athletesHtml += `
+              <div class="athlete-row">
+                <div class="athlete-order${orderRankClass}">${i + 1}${medalIcon}</div>
+                <div class="athlete-name">${name}</div>
+                <div class="athlete-sv">${startValue > 0 ? startValue.toFixed(2) : ''}</div>
+                <div class="athlete-score">${score > 0 ? score.toFixed(3) : '—'}</div>
+              </div>
+            `;
+          } else {
+            athletesHtml += `
+              <div class="athlete-row empty">
+                <div class="athlete-order">${i + 1}</div>
+                <div class="athlete-name">—</div>
+                <div class="athlete-sv"></div>
+                <div class="athlete-score"></div>
+              </div>
+            `;
+          }
+        }
+
+        columnsHtml += `
+          <div class="team-column">
+            <div class="team-header">
+              ${logoUrl ? `<img class="team-logo" src="${logoUrl}" alt="">` : ''}
+              <div class="header-left">
+                <div class="team-name">${teamName}</div>
+                <div class="event-name">${eventDisplayName}</div>
+              </div>
+              <div class="header-right">
+                <div class="rank-badge${rankClass}">${rank}</div>
+                <div class="header-total">${totalScore > 0 ? totalScore.toFixed(3) : '—'}</div>
+              </div>
+            </div>
+            <div class="athlete-list">
+              ${athletesHtml}
+            </div>
+            <div class="team-footer">
+              <div class="footer-label">Event Total</div>
+              <div class="footer-total">${eventScore > 0 ? eventScore.toFixed(3) : '—'}</div>
+            </div>
+          </div>
+        `;
+      });
+
+      contentEl.innerHTML = `<div class="event-summary-v22 teams-${numTeams}">${columnsHtml}</div>`;
+    }
+
+    function renderMultiTeamSummaryV23(contentEl, rotationData, rotation, numTeams, apparatusRankings = {}) {
+      // V23: Same as V22 but WITHOUT ranking integrated into order bubble (no medals/colors)
+      const maxAthletes = Math.min(
+        Math.max(...rotationData.map(t => t.gymnasts.length)),
+        10
+      );
+
+      // Calculate ranks based on totalScore
+      const rankedTeams = rotationData
+        .map((t, idx) => ({ idx, score: t.totalScore || 0 }))
+        .sort((a, b) => b.score - a.score);
+
+      let columnsHtml = '';
+
+      rotationData.forEach((teamData, teamIndex) => {
+        const { team, eventName, eventDisplayName, gymnasts, eventScore, totalScore } = teamData;
+        const logoUrl = getTeamLogoUrl(team.name, team.logo);
+        const teamName = team.name || team.tricode;
+
+        // Get rank for this team
+        const rank = rankedTeams.findIndex(t => t.idx === teamIndex) + 1;
+        const rankClass = rank <= 3 ? ` rank-${rank}` : '';
+
+        // Build athlete rows WITHOUT ranking in order bubble
+        let athletesHtml = '';
+        for (let i = 0; i < maxAthletes; i++) {
+          const g = gymnasts[i];
+          if (g) {
+            const score = parseFloat(g.final_score) || 0;
+            const name = `${g.first_name?.charAt(0) || ''}. ${g.last_name || ''}`;
+
+            // Get start value (difficulty score)
+            const startValue = g.scores && g.scores.length > 0
+              ? parseFloat(g.scores[0].start) || 0
+              : 0;
+
+            athletesHtml += `
+              <div class="athlete-row">
+                <div class="athlete-order">${i + 1}</div>
+                <div class="athlete-name">${name}</div>
+                <div class="athlete-sv">${startValue > 0 ? startValue.toFixed(2) : ''}</div>
+                <div class="athlete-score">${score > 0 ? score.toFixed(3) : '—'}</div>
+              </div>
+            `;
+          } else {
+            athletesHtml += `
+              <div class="athlete-row empty">
+                <div class="athlete-order">${i + 1}</div>
+                <div class="athlete-name">—</div>
+                <div class="athlete-sv"></div>
+                <div class="athlete-score"></div>
+              </div>
+            `;
+          }
+        }
+
+        columnsHtml += `
+          <div class="team-column">
+            <div class="team-header">
+              ${logoUrl ? `<img class="team-logo" src="${logoUrl}" alt="">` : ''}
+              <div class="header-left">
+                <div class="team-name">${teamName}</div>
+                <div class="event-name">${eventDisplayName}</div>
+              </div>
+              <div class="header-right">
+                <div class="rank-badge${rankClass}">${rank}</div>
+                <div class="header-total">${totalScore > 0 ? totalScore.toFixed(3) : '—'}</div>
+              </div>
+            </div>
+            <div class="athlete-list">
+              ${athletesHtml}
+            </div>
+            <div class="team-footer">
+              <div class="footer-label">Event Total</div>
+              <div class="footer-total">${eventScore > 0 ? eventScore.toFixed(3) : '—'}</div>
+            </div>
+          </div>
+        `;
+      });
+
+      contentEl.innerHTML = `<div class="event-summary-v23 teams-${numTeams}">${columnsHtml}</div>`;
     }
 
     // Render functions for V5-V19 (apparatus view)
@@ -6427,8 +7430,9 @@
     function renderMultiTeamSummaryApparatusV19(contentEl, apparatusData, eventDisplayName, eventShortCode, numTeams) {
       renderGenericLayout(contentEl, apparatusData, numTeams, 'v19', true, eventDisplayName);
     }
-    function renderMultiTeamSummaryApparatusV20(contentEl, apparatusData, eventDisplayName, eventShortCode, numTeams) {
+    function renderMultiTeamSummaryApparatusV20(contentEl, apparatusData, eventDisplayName, eventShortCode, numTeams, apparatusRankings = {}) {
       // V20: V20 header (logo + team + event left, rank + total right) with V3 body/footer
+      // Now includes start values and meet-wide apparatus rankings for top 3 athletes
       const maxAthletes = Math.min(
         Math.max(...apparatusData.map(t => t.gymnasts.length)),
         10
@@ -6439,10 +7443,17 @@
         .map((t, idx) => ({ idx, score: t.totalScore || 0 }))
         .sort((a, b) => b.score - a.score);
 
+      // Helper to check if athlete is in top 3 for their apparatus across entire meet
+      function getAthleteApparatusRank(eventName, gymnastId, score) {
+        const rankings = apparatusRankings[eventName] || [];
+        const found = rankings.find(r => r.gymnastId === gymnastId || r.score === score);
+        return found ? found.rank : null;
+      }
+
       let columnsHtml = '';
 
       apparatusData.forEach((teamData, teamIndex) => {
-        const { team, gymnasts, eventScore, totalScore } = teamData;
+        const { team, eventName, gymnasts, eventScore, totalScore } = teamData;
         const logoUrl = getTeamLogoUrl(team.name, team.logo);
         const teamName = team.name || team.tricode;
 
@@ -6450,17 +7461,31 @@
         const rank = rankedTeams.findIndex(t => t.idx === teamIndex) + 1;
         const rankClass = rank <= 3 ? ` rank-${rank}` : '';
 
-        // Build athlete rows (V3 style)
+        // Build athlete rows with start values and meet rankings
         let athletesHtml = '';
         for (let i = 0; i < maxAthletes; i++) {
           const g = gymnasts[i];
           if (g) {
             const score = parseFloat(g.final_score) || 0;
             const name = `${g.first_name?.charAt(0) || ''}. ${g.last_name || ''}`;
+
+            // Get start value (difficulty score)
+            const startValue = g.scores && g.scores.length > 0
+              ? parseFloat(g.scores[0].start) || 0
+              : 0;
+
+            // Check if this athlete is in top 3 for this apparatus across entire meet
+            const athleteRank = score > 0 ? getAthleteApparatusRank(eventName, g.gymnast_id, score) : null;
+            const athleteRankHtml = athleteRank && athleteRank <= 3
+              ? `<div class="athlete-rank rank-${athleteRank}">${athleteRank}</div>`
+              : '';
+
             athletesHtml += `
               <div class="athlete-row">
                 <div class="athlete-order">${i + 1}</div>
                 <div class="athlete-name">${name}</div>
+                ${athleteRankHtml}
+                <div class="athlete-sv">${startValue > 0 ? startValue.toFixed(2) : ''}</div>
                 <div class="athlete-score">${score > 0 ? score.toFixed(3) : '—'}</div>
               </div>
             `;
@@ -6469,6 +7494,7 @@
               <div class="athlete-row empty">
                 <div class="athlete-order">${i + 1}</div>
                 <div class="athlete-name">—</div>
+                <div class="athlete-sv"></div>
                 <div class="athlete-score"></div>
               </div>
             `;
@@ -6500,6 +7526,286 @@
       });
 
       contentEl.innerHTML = `<div class="event-summary-v20 teams-${numTeams}">${columnsHtml}</div>`;
+    }
+
+    function renderMultiTeamSummaryApparatusV21(contentEl, apparatusData, eventDisplayName, eventShortCode, numTeams, apparatusRankings = {}) {
+      // V21: Extra Large - Same as V20 but uses v21 CSS class for larger fonts
+      const maxAthletes = Math.min(
+        Math.max(...apparatusData.map(t => t.gymnasts.length)),
+        10
+      );
+
+      // Calculate ranks based on totalScore
+      const rankedTeams = apparatusData
+        .map((t, idx) => ({ idx, score: t.totalScore || 0 }))
+        .sort((a, b) => b.score - a.score);
+
+      // Helper to check if athlete is in top 3 for their apparatus across entire meet
+      function getAthleteApparatusRank(eventName, gymnastId, score) {
+        const rankings = apparatusRankings[eventName] || [];
+        const found = rankings.find(r => r.gymnastId === gymnastId || r.score === score);
+        return found ? found.rank : null;
+      }
+
+      let columnsHtml = '';
+
+      apparatusData.forEach((teamData, teamIndex) => {
+        const { team, eventName, gymnasts, eventScore, totalScore } = teamData;
+        const logoUrl = getTeamLogoUrl(team.name, team.logo);
+        const teamName = team.name || team.tricode;
+
+        // Get rank for this team
+        const rank = rankedTeams.findIndex(t => t.idx === teamIndex) + 1;
+        const rankClass = rank <= 3 ? ` rank-${rank}` : '';
+
+        // Build athlete rows with start values and meet rankings
+        let athletesHtml = '';
+        for (let i = 0; i < maxAthletes; i++) {
+          const g = gymnasts[i];
+          if (g) {
+            const score = parseFloat(g.final_score) || 0;
+            const name = `${g.first_name?.charAt(0) || ''}. ${g.last_name || ''}`;
+
+            // Get start value (difficulty score)
+            const startValue = g.scores && g.scores.length > 0
+              ? parseFloat(g.scores[0].start) || 0
+              : 0;
+
+            // Check if this athlete is in top 3 for this apparatus across entire meet
+            const athleteRank = score > 0 ? getAthleteApparatusRank(eventName, g.gymnast_id, score) : null;
+            const athleteRankHtml = athleteRank && athleteRank <= 3
+              ? `<div class="athlete-rank rank-${athleteRank}">${athleteRank}</div>`
+              : '';
+
+            athletesHtml += `
+              <div class="athlete-row">
+                <div class="athlete-order">${i + 1}</div>
+                <div class="athlete-name">${name}</div>
+                ${athleteRankHtml}
+                <div class="athlete-sv">${startValue > 0 ? startValue.toFixed(2) : ''}</div>
+                <div class="athlete-score">${score > 0 ? score.toFixed(3) : '—'}</div>
+              </div>
+            `;
+          } else {
+            athletesHtml += `
+              <div class="athlete-row empty">
+                <div class="athlete-order">${i + 1}</div>
+                <div class="athlete-name">—</div>
+                <div class="athlete-sv"></div>
+                <div class="athlete-score"></div>
+              </div>
+            `;
+          }
+        }
+
+        columnsHtml += `
+          <div class="team-column">
+            <div class="team-header">
+              ${logoUrl ? `<img class="team-logo" src="${logoUrl}" alt="">` : ''}
+              <div class="header-left">
+                <div class="team-name">${teamName}</div>
+                <div class="event-name">${eventDisplayName}</div>
+              </div>
+              <div class="header-right">
+                <div class="rank-badge${rankClass}">${rank}</div>
+                <div class="header-total">${totalScore > 0 ? totalScore.toFixed(3) : '—'}</div>
+              </div>
+            </div>
+            <div class="athlete-list">
+              ${athletesHtml}
+            </div>
+            <div class="team-footer">
+              <div class="footer-label">Event Total</div>
+              <div class="footer-total">${eventScore > 0 ? eventScore.toFixed(3) : '—'}</div>
+            </div>
+          </div>
+        `;
+      });
+
+      contentEl.innerHTML = `<div class="event-summary-v21 teams-${numTeams}">${columnsHtml}</div>`;
+    }
+
+    function renderMultiTeamSummaryApparatusV22(contentEl, apparatusData, eventDisplayName, eventShortCode, numTeams, apparatusRankings = {}) {
+      // V22: Same as V21 but ranking is integrated into the order bubble
+      const maxAthletes = Math.min(
+        Math.max(...apparatusData.map(t => t.gymnasts.length)),
+        10
+      );
+
+      // Calculate ranks based on totalScore
+      const rankedTeams = apparatusData
+        .map((t, idx) => ({ idx, score: t.totalScore || 0 }))
+        .sort((a, b) => b.score - a.score);
+
+      // Helper to check if athlete is in top 3 for their apparatus across entire meet
+      function getAthleteApparatusRank(eventName, gymnastId, score) {
+        const rankings = apparatusRankings[eventName] || [];
+        const found = rankings.find(r => r.gymnastId === gymnastId || r.score === score);
+        return found ? found.rank : null;
+      }
+
+      // Medal icons for top 3
+      const medalIcons = { 1: '🥇', 2: '🥈', 3: '🥉' };
+
+      let columnsHtml = '';
+
+      apparatusData.forEach((teamData, teamIndex) => {
+        const { team, eventName, gymnasts, eventScore, totalScore } = teamData;
+        const logoUrl = getTeamLogoUrl(team.name, team.logo);
+        const teamName = team.name || team.tricode;
+
+        // Get rank for this team
+        const rank = rankedTeams.findIndex(t => t.idx === teamIndex) + 1;
+        const rankClass = rank <= 3 ? ` rank-${rank}` : '';
+
+        // Build athlete rows with integrated ranking in order bubble
+        let athletesHtml = '';
+        for (let i = 0; i < maxAthletes; i++) {
+          const g = gymnasts[i];
+          if (g) {
+            const score = parseFloat(g.final_score) || 0;
+            const name = `${g.first_name?.charAt(0) || ''}. ${g.last_name || ''}`;
+
+            // Get start value (difficulty score)
+            const startValue = g.scores && g.scores.length > 0
+              ? parseFloat(g.scores[0].start) || 0
+              : 0;
+
+            // Check if this athlete is in top 3 for this apparatus across entire meet
+            const athleteRank = score > 0 ? getAthleteApparatusRank(eventName, g.gymnast_id, score) : null;
+            const orderRankClass = athleteRank && athleteRank <= 3 ? ` rank-${athleteRank}` : '';
+            const medalIcon = athleteRank && athleteRank <= 3
+              ? `<span class="medal-icon">${medalIcons[athleteRank]}</span>`
+              : '';
+
+            athletesHtml += `
+              <div class="athlete-row">
+                <div class="athlete-order${orderRankClass}">${i + 1}${medalIcon}</div>
+                <div class="athlete-name">${name}</div>
+                <div class="athlete-sv">${startValue > 0 ? startValue.toFixed(2) : ''}</div>
+                <div class="athlete-score">${score > 0 ? score.toFixed(3) : '—'}</div>
+              </div>
+            `;
+          } else {
+            athletesHtml += `
+              <div class="athlete-row empty">
+                <div class="athlete-order">${i + 1}</div>
+                <div class="athlete-name">—</div>
+                <div class="athlete-sv"></div>
+                <div class="athlete-score"></div>
+              </div>
+            `;
+          }
+        }
+
+        columnsHtml += `
+          <div class="team-column">
+            <div class="team-header">
+              ${logoUrl ? `<img class="team-logo" src="${logoUrl}" alt="">` : ''}
+              <div class="header-left">
+                <div class="team-name">${teamName}</div>
+                <div class="event-name">${eventDisplayName}</div>
+              </div>
+              <div class="header-right">
+                <div class="rank-badge${rankClass}">${rank}</div>
+                <div class="header-total">${totalScore > 0 ? totalScore.toFixed(3) : '—'}</div>
+              </div>
+            </div>
+            <div class="athlete-list">
+              ${athletesHtml}
+            </div>
+            <div class="team-footer">
+              <div class="footer-label">Event Total</div>
+              <div class="footer-total">${eventScore > 0 ? eventScore.toFixed(3) : '—'}</div>
+            </div>
+          </div>
+        `;
+      });
+
+      contentEl.innerHTML = `<div class="event-summary-v22 teams-${numTeams}">${columnsHtml}</div>`;
+    }
+
+    function renderMultiTeamSummaryApparatusV23(contentEl, apparatusData, eventDisplayName, eventShortCode, numTeams, apparatusRankings = {}) {
+      // V23: Same as V22 but WITHOUT ranking in order bubble (no medals/colors)
+      const maxAthletes = Math.min(
+        Math.max(...apparatusData.map(t => t.gymnasts.length)),
+        10
+      );
+
+      // Calculate ranks based on totalScore
+      const rankedTeams = apparatusData
+        .map((t, idx) => ({ idx, score: t.totalScore || 0 }))
+        .sort((a, b) => b.score - a.score);
+
+      let columnsHtml = '';
+
+      apparatusData.forEach((teamData, teamIndex) => {
+        const { team, eventName, gymnasts, eventScore, totalScore } = teamData;
+        const logoUrl = getTeamLogoUrl(team.name, team.logo);
+        const teamName = team.name || team.tricode;
+
+        // Get rank for this team
+        const rank = rankedTeams.findIndex(t => t.idx === teamIndex) + 1;
+        const rankClass = rank <= 3 ? ` rank-${rank}` : '';
+
+        // Build athlete rows WITHOUT ranking in order bubble
+        let athletesHtml = '';
+        for (let i = 0; i < maxAthletes; i++) {
+          const g = gymnasts[i];
+          if (g) {
+            const score = parseFloat(g.final_score) || 0;
+            const name = `${g.first_name?.charAt(0) || ''}. ${g.last_name || ''}`;
+
+            // Get start value (difficulty score)
+            const startValue = g.scores && g.scores.length > 0
+              ? parseFloat(g.scores[0].start) || 0
+              : 0;
+
+            athletesHtml += `
+              <div class="athlete-row">
+                <div class="athlete-order">${i + 1}</div>
+                <div class="athlete-name">${name}</div>
+                <div class="athlete-sv">${startValue > 0 ? startValue.toFixed(2) : ''}</div>
+                <div class="athlete-score">${score > 0 ? score.toFixed(3) : '—'}</div>
+              </div>
+            `;
+          } else {
+            athletesHtml += `
+              <div class="athlete-row empty">
+                <div class="athlete-order">${i + 1}</div>
+                <div class="athlete-name">—</div>
+                <div class="athlete-sv"></div>
+                <div class="athlete-score"></div>
+              </div>
+            `;
+          }
+        }
+
+        columnsHtml += `
+          <div class="team-column">
+            <div class="team-header">
+              ${logoUrl ? `<img class="team-logo" src="${logoUrl}" alt="">` : ''}
+              <div class="header-left">
+                <div class="team-name">${teamName}</div>
+                <div class="event-name">${eventDisplayName}</div>
+              </div>
+              <div class="header-right">
+                <div class="rank-badge${rankClass}">${rank}</div>
+                <div class="header-total">${totalScore > 0 ? totalScore.toFixed(3) : '—'}</div>
+              </div>
+            </div>
+            <div class="athlete-list">
+              ${athletesHtml}
+            </div>
+            <div class="team-footer">
+              <div class="footer-label">Event Total</div>
+              <div class="footer-total">${eventScore > 0 ? eventScore.toFixed(3) : '—'}</div>
+            </div>
+          </div>
+        `;
+      });
+
+      contentEl.innerHTML = `<div class="event-summary-v23 teams-${numTeams}">${columnsHtml}</div>`;
     }
 
     // Map apparatus short codes to API event names
@@ -6546,6 +7852,9 @@
 
         // Sort teams by team_order
         const sortedTeams = [...teams].sort((a, b) => (a.team_order || 0) - (b.team_order || 0));
+
+        // Calculate meet-wide apparatus rankings for V20 layout
+        const apparatusRankings = calculateApparatusRankings(teams);
 
         // Get the event name from the apparatus code
         const eventName = APPARATUS_TO_EVENT[apparatus] || 'FLOOR';
@@ -6618,7 +7927,13 @@
           } else if (layout === 'default-v19') {
             renderMultiTeamSummaryApparatusV19(contentEl, apparatusData, eventDisplayName, eventShortCode, actualNumTeams);
           } else if (layout === 'default-v20') {
-            renderMultiTeamSummaryApparatusV20(contentEl, apparatusData, eventDisplayName, eventShortCode, actualNumTeams);
+            renderMultiTeamSummaryApparatusV20(contentEl, apparatusData, eventDisplayName, eventShortCode, actualNumTeams, apparatusRankings);
+          } else if (layout === 'default-v21') {
+            renderMultiTeamSummaryApparatusV21(contentEl, apparatusData, eventDisplayName, eventShortCode, actualNumTeams, apparatusRankings);
+          } else if (layout === 'default-v22') {
+            renderMultiTeamSummaryApparatusV22(contentEl, apparatusData, eventDisplayName, eventShortCode, actualNumTeams, apparatusRankings);
+          } else if (layout === 'default-v23') {
+            renderMultiTeamSummaryApparatusV23(contentEl, apparatusData, eventDisplayName, eventShortCode, actualNumTeams, apparatusRankings);
           } else {
             renderDualMeetSummaryApparatus(contentEl, apparatusData, eventDisplayName, eventShortCode);
           }
@@ -6659,7 +7974,13 @@
           } else if (layout === 'default-v19') {
             renderMultiTeamSummaryApparatusV19(contentEl, apparatusData, eventDisplayName, eventShortCode, actualNumTeams);
           } else if (layout === 'default-v20') {
-            renderMultiTeamSummaryApparatusV20(contentEl, apparatusData, eventDisplayName, eventShortCode, actualNumTeams);
+            renderMultiTeamSummaryApparatusV20(contentEl, apparatusData, eventDisplayName, eventShortCode, actualNumTeams, apparatusRankings);
+          } else if (layout === 'default-v21') {
+            renderMultiTeamSummaryApparatusV21(contentEl, apparatusData, eventDisplayName, eventShortCode, actualNumTeams, apparatusRankings);
+          } else if (layout === 'default-v22') {
+            renderMultiTeamSummaryApparatusV22(contentEl, apparatusData, eventDisplayName, eventShortCode, actualNumTeams, apparatusRankings);
+          } else if (layout === 'default-v23') {
+            renderMultiTeamSummaryApparatusV23(contentEl, apparatusData, eventDisplayName, eventShortCode, actualNumTeams, apparatusRankings);
           } else {
             renderMultiTeamSummaryApparatus(contentEl, apparatusData, eventDisplayName, eventShortCode, actualNumTeams);
           }
@@ -7796,6 +9117,27 @@
           <div class="stream-branding"><span>V</span>irtius</div>
         </div>
       `,
+
+      // Sponsor Graphics - load overlay files in iframe
+      'sponsors-thanks': (data) => {
+        const logo = encodeURIComponent(getTeamLogoUrl(data.team1Name, data.team1Logo) || '');
+        const sponsors = encodeURIComponent(data.sponsors || '[]');
+        const overlayUrl = `/overlays/sponsors-thanks.html?logo=${logo}&sponsors=${sponsors}`;
+        return `<iframe src="${overlayUrl}" style="width: 1920px; height: 1080px; border: none; overflow: hidden;"></iframe>`;
+      },
+
+      'sponsors-cycle': (data) => {
+        const logo = encodeURIComponent(getTeamLogoUrl(data.team1Name, data.team1Logo) || '');
+        const sponsors = encodeURIComponent(data.sponsors || '[]');
+        const overlayUrl = `/overlays/sponsors-cycle.html?logo=${logo}&sponsors=${sponsors}`;
+        return `<iframe src="${overlayUrl}" style="width: 1920px; height: 1080px; border: none; overflow: hidden;"></iframe>`;
+      },
+
+      'sponsors-bug': (data) => {
+        const sponsors = encodeURIComponent(data.sponsors || '[]');
+        const overlayUrl = `/overlays/sponsors-bug.html?sponsors=${sponsors}`;
+        return `<iframe src="${overlayUrl}" style="width: 1920px; height: 1080px; border: none; overflow: hidden;"></iframe>`;
+      },
 
       // Frame Overlays for OBS
       'frame-quad': () => `

@@ -1,10 +1,30 @@
 # PRD-Graphics-Registry: Schema-Driven Graphics System
 
-**Version:** 1.1
-**Date:** 2026-01-22
+**Version:** 1.2
+**Date:** 2026-02-13
 **Status:** COMPLETE
 **Depends On:** None (Foundation)
 **Blocks:** PRD-Rundown-04-Pickers, URL Generator improvements
+
+---
+
+## Recent Updates (v1.2 - 2026-02-13)
+
+### V20 "Combined Best" Enhancements
+- **Larger font sizes** - Increased readability across all elements
+- **Start values (SV)** - Displays difficulty scores with 2 decimal places
+- **Meet-wide apparatus rankings** - Shows gold/silver/bronze badges (1/2/3) for athletes with top 3 scores on their apparatus across the ENTIRE meet, not just the current rotation
+- **Team ranking badges** - Shows team standings in header
+
+### V21 "Extra Large" Layout (NEW)
+- Same features as V20 with significantly larger fonts for big displays
+- Team name: 30px, Athlete name: 28px, Athlete score: 34px, Footer total: 40px
+
+### Files Modified
+- `output.html` - Added `.event-summary-v21` CSS and `renderMultiTeamSummaryV21()` / `renderMultiTeamSummaryApparatusV21()` functions
+- `output.html` - Added `calculateApparatusRankings()` helper function for meet-wide rankings
+- `UrlGeneratorPage.jsx` - Added V21 to layout dropdown
+- `GraphicsControl.jsx` - Added V21 to layout dropdown
 
 ---
 

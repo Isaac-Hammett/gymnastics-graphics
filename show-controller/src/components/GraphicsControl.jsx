@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { db, ref, set, onValue } from '../lib/firebase';
 import { PhotoIcon, XMarkIcon, ClipboardDocumentIcon, CheckIcon, Cog6ToothIcon } from '@heroicons/react/24/solid';
 import useEventConfig from '../hooks/useEventConfig';
+import useTeamsDatabase from '../hooks/useTeamsDatabase';
 import { getGraphicsForCompetition, getGraphicsByCategory } from '../lib/graphicsRegistry';
 
 // Category to section mapping for display
@@ -11,6 +12,7 @@ const CATEGORY_TO_SECTION = {
   'in-meet': 'In-Meet',
   'frame-overlays': 'Frame Overlays',
   'stream': 'Stream',
+  'sponsors': 'Sponsors',
 };
 
 // Event button mapping for different genders (uses eventConfig IDs)
@@ -89,6 +91,9 @@ const summaryThemes = [
   { id: 'layout-default-v18', label: '🎨 V18 Team Colors', isLayout: true },
   { id: 'layout-default-v19', label: '📐 V19 Dense Compact', isLayout: true },
   { id: 'layout-default-v20', label: '⭐ V20 Combined Best', isLayout: true },
+  { id: 'layout-default-v21', label: '📺 V21 Extra Large', isLayout: true },
+  { id: 'layout-default-v22', label: '🏅 V22 Integrated Rank', isLayout: true },
+  { id: 'layout-default-v23', label: '📋 V23 No Rankings', isLayout: true },
   // COLOR THEMES - Same structure, different colors
   { id: 'default', label: 'Default (Original)' },
   { id: 'espn', label: 'ESPN Colors' },
@@ -128,6 +133,9 @@ export default function GraphicsControl({ competitionId }) {
   // Get gender-specific event configuration
   const { events, eventIds, rotationCount, gender } = useEventConfig(config?.compType);
 
+  // Get teams database for sponsor data
+  const { getTeamSponsors, resolveSchoolKey } = useTeamsDatabase();
+
   // Build dynamic graphic buttons based on competition gender and team names
   const graphicButtons = useMemo(() => {
     const maxTeams = teamCounts[config?.compType] || 2;
@@ -141,21 +149,15 @@ export default function GraphicsControl({ competitionId }) {
     // Get graphics from registry with dynamic labels
     const registryGraphics = getGraphicsForCompetition(config?.compType, teamNames);
 
-    // Build base graphic buttons from registry (pre-meet, in-meet, frame-overlays, stream)
+    // Build base graphic buttons from registry (pre-meet, in-meet, frame-overlays, stream, sponsors)
     const baseGraphicButtons = registryGraphics
-      .filter(g => ['pre-meet', 'in-meet', 'frame-overlays', 'stream'].includes(g.category))
+      .filter(g => ['pre-meet', 'in-meet', 'frame-overlays', 'stream', 'sponsors'].includes(g.category))
       .map(g => ({
         id: g.id,
         label: g.label,
         section: CATEGORY_TO_SECTION[g.category] || g.category,
         team: g.team,
       }));
-
-    // Build event buttons from gender-specific events
-    const eventButtons = eventIds
-      .map(eventId => eventButtonConfig[eventId])
-      .filter(Boolean)
-      .map(btn => ({ ...btn, section: 'Events' }));
 
     // Build leaderboard buttons from gender-specific events
     const leaderboardButtons = eventIds
@@ -165,8 +167,6 @@ export default function GraphicsControl({ competitionId }) {
 
     return [
       ...baseGraphicButtons,
-      ...eventButtons,
-      ...commonEventButtons.map(btn => ({ ...btn, section: 'Events' })),
       ...leaderboardButtons,
       ...commonLeaderboardButtons.map(btn => ({ ...btn, section: 'Leaderboards' })),
     ];
@@ -331,6 +331,24 @@ export default function GraphicsControl({ competitionId }) {
       data.leaderboardGender = gender; // Pass gender for column visibility (women don't have Exec/SB)
     }
 
+    // Handle sponsor graphics - fetch sponsor data from home team
+    if (graphicId.startsWith('sponsors-')) {
+      // Resolve home team key from team name (includes gender suffix)
+      const schoolKey = resolveSchoolKey(config.team1Name);
+      // Add gender suffix to get full team key (e.g., "west-chester" -> "west-chester-womens")
+      const homeTeamKey = schoolKey ? `${schoolKey}-${gender}` : null;
+      if (homeTeamKey) {
+        const teamSponsors = getTeamSponsors(homeTeamKey);
+        // Convert to JSON for the overlay
+        data.sponsors = JSON.stringify(teamSponsors.slice(0, 8).map(s => ({
+          name: s.name,
+          url: s.url
+        })));
+      } else {
+        data.sponsors = '[]';
+      }
+    }
+
     // Determine graphic type
     let graphicType = graphicId;
     if (eventFrames.includes(graphicId)) {
@@ -440,7 +458,7 @@ export default function GraphicsControl({ competitionId }) {
     });
   };
 
-  const sections = ['Pre-Meet', 'In-Meet', 'Events', 'Frame Overlays', 'Leaderboards', 'Stream'];
+  const sections = ['Pre-Meet', 'In-Meet', 'Frame Overlays', 'Leaderboards', 'Stream', 'Sponsors'];
 
   const outputUrl = compId ? `${OUTPUT_BASE_URL}?comp=${compId}` : '';
   const localOutputUrl = compId ? `${LOCAL_OUTPUT_URL}?comp=${compId}` : '';
