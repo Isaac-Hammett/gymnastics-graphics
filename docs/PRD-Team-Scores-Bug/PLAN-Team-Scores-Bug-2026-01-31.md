@@ -67,7 +67,7 @@
 | E3 | Headshots in flash | COMPLETE | `overlays/team-bug.html` | — | Added firstName, lastName, apiHeadshot to gymnastData. insertFlashContent() uses getAthleteHeadshot() with onerror fallback |
 | E4 | Headshots in now-competing | COMPLETE | `overlays/team-bug.html` | — | Added firstName, lastName, apiHeadshot to athlete object in detectAllNowCompeting(). Updated insertNowCompetingContent() to use getAthleteHeadshot() with onerror fallback |
 | E5 | Headshot fallback | COMPLETE | `overlays/team-bug.html` | — | Added handleHeadshotError() function with initials placeholder. Both insertFlashContent() and insertNowCompetingContent() now show initials (e.g., "JD") when headshot fails to load or is unavailable |
-| F1 | Stick detection | NOT STARTED | `overlays/team-bug.html` | `output.html:4742` |
+| F1 | Stick detection | COMPLETE | `overlays/team-bug.html` | `output.html:4742` | Added `bonus` and `hasStick` fields to gymnastData, parsed from Virtius API `gymnast.bonus` field |
 | F2 | Stick indicator UI | NOT STARTED | `overlays/team-bug.html` | — |
 | F3 | Men's only conditional | NOT STARTED | `overlays/team-bug.html` | — |
 | G1 | 3-team layout | NOT STARTED | `overlays/team-bug.html` | — |
