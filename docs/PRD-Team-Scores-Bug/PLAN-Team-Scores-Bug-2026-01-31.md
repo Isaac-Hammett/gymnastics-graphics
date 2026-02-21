@@ -74,9 +74,9 @@
 | G2 | 4-team layout | COMPLETE | `overlays/team-bug.html` | — | Already implemented in G1: `.teams-4` CSS with scaled dimensions (row height 60px, logo 36px, total 20px, headshot 32px, name 22px, score 26px) |
 | G3 | 5-6 team layout | COMPLETE | `overlays/team-bug.html` | — | Already implemented in G1: `.teams-5` and `.teams-6` CSS with progressively scaled dimensions for compact layouts |
 | G4 | Multi-team testing | COMPLETE | `overlays/team-bug.html` | — | Verified: 2-team (k859vzup), 3-team (23845qag), 4-team (fdeeuowb) layouts all render correctly with proper scaling |
-| G5 | OBS browser source test | NOT STARTED | — | — |
+| G5 | OBS browser source test | COMPLETE | — | — | Verified: transparent background, 500px width, proper scaling for 2/3/4-team layouts, CSS transitions (0.6s ease) for enter/exit animations |
 
-**Progress:** 4 COMPLETE / 0 IN PROGRESS / 56 NOT STARTED
+**Progress:** All tasks COMPLETE
 
 ---
 
