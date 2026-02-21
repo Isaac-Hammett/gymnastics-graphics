@@ -1054,6 +1054,9 @@
         await safeWrite(scoreBugRef.child('detected/nowCompeting'), 'set', nowCompeting);
 
         console.log('Now competing updated:', nowCompeting);
+
+        // Update now-competing slot displays (B2)
+        updateAllNowCompeting();
       }
     }
 
@@ -1342,6 +1345,153 @@
           slotContent.classList.remove('spin-out');
         }
       }, 400);  // Match CSS animation duration
+    }
+
+    // ============================================================
+    // NOW-COMPETING SLOT STATE (Task B2)
+    // ============================================================
+
+    /**
+     * Render "now competing" state in a team's slot area.
+     * Shows: athlete name + apparatus (no start value - not known until after)
+     * Uses same slot animation system as score flashes.
+     * @param {number} teamIndex - 1-based team index
+     * @param {Object} nowCompetingData - { athlete: { name }, eventName }
+     */
+    function renderNowCompeting(teamIndex, nowCompetingData) {
+      const slotContent = document.getElementById(`slotContent${teamIndex}`);
+      if (!slotContent) return;
+
+      // Don't show now-competing if there's an active score flash
+      if (state.activeFlashes[teamIndex]) {
+        console.log('Skipping now-competing render - score flash active', { team: teamIndex });
+        return;
+      }
+
+      // Check if there's existing content to animate out
+      const hasExistingContent = slotContent.innerHTML.trim() !== '';
+
+      if (hasExistingContent) {
+        // Spin out existing content first
+        slotContent.classList.remove('spin-in', 'visible');
+        slotContent.classList.add('spin-out');
+
+        // After spin-out completes, insert new content and spin in
+        setTimeout(() => {
+          insertNowCompetingContent(slotContent, nowCompetingData);
+          triggerSpinIn(slotContent);
+        }, 400);  // Match spin-out animation duration
+      } else {
+        // No existing content - insert and spin in directly
+        insertNowCompetingContent(slotContent, nowCompetingData);
+        triggerSpinIn(slotContent);
+      }
+
+      console.log('Rendered now-competing:', {
+        team: teamIndex,
+        athlete: nowCompetingData.athlete.name,
+        event: nowCompetingData.eventName
+      });
+    }
+
+    /**
+     * Insert now-competing content HTML into slot element.
+     * Renders: apparatus | "UP NOW" label | athlete name
+     * @param {HTMLElement} slotContent - The slot content container
+     * @param {Object} nowCompetingData - { athlete: { name }, eventName }
+     */
+    function insertNowCompetingContent(slotContent, nowCompetingData) {
+      const athleteName = nowCompetingData.athlete?.name || 'Unknown';
+      const eventName = nowCompetingData.eventName || '';
+
+      // Format event name to short code if possible (e.g., "Floor Exercise" -> "FX")
+      const eventShort = getEventShortCode(eventName) || eventName;
+
+      slotContent.innerHTML = `
+        <span class="slot-apparatus">${eventShort}</span>
+        <span class="slot-sv" style="color: #22d3ee;">UP NOW</span>
+        <span class="slot-name">${athleteName}</span>
+      `;
+    }
+
+    /**
+     * Convert event name to short code (e.g., "Floor Exercise" -> "FX").
+     * @param {string} eventName - Full event name from API
+     * @returns {string} Short code or original name
+     */
+    function getEventShortCode(eventName) {
+      if (!eventName) return '';
+
+      const name = eventName.toLowerCase();
+
+      // Men's events
+      if (name.includes('floor')) return 'FX';
+      if (name.includes('pommel') || name.includes('horse')) return 'PH';
+      if (name.includes('ring')) return 'SR';
+      if (name.includes('vault')) return 'VT';
+      if (name.includes('parallel')) return 'PB';
+      if (name.includes('high bar') || name.includes('horizontal')) return 'HB';
+
+      // Women's events
+      if (name.includes('uneven') || name.includes('bars')) return 'UB';
+      if (name.includes('beam') || name.includes('balance')) return 'BB';
+
+      return eventName;
+    }
+
+    /**
+     * Clear now-competing display for a team (when they finish or move to flash).
+     * @param {number} teamIndex - 1-based team index
+     */
+    function clearNowCompeting(teamIndex) {
+      const slotContent = document.getElementById(`slotContent${teamIndex}`);
+      if (!slotContent) return;
+
+      // Don't clear if a score flash is showing
+      if (state.activeFlashes[teamIndex]) return;
+
+      // Only animate if there's content to clear
+      if (slotContent.innerHTML.trim() === '') return;
+
+      // Check if showing now-competing content (has "UP NOW" label)
+      if (!slotContent.innerHTML.includes('UP NOW')) return;
+
+      // Trigger spin-out animation
+      slotContent.classList.remove('spin-in', 'visible');
+      slotContent.classList.add('spin-out');
+
+      // Clear content after animation completes
+      setTimeout(() => {
+        if (!state.activeFlashes[teamIndex]) {
+          slotContent.innerHTML = '';
+          slotContent.classList.remove('spin-out');
+        }
+      }, 400);  // Match CSS animation duration
+    }
+
+    /**
+     * Update now-competing displays for all teams based on current state.
+     * Called after processApiData detects now-competing changes.
+     */
+    function updateAllNowCompeting() {
+      // Clear slots for teams that are no longer competing
+      state.teams.forEach((team, idx) => {
+        const teamIndex = team.index;
+        const nowCompeting = state.nowCompeting.find(nc => nc.teamIndex === idx);
+
+        if (!nowCompeting) {
+          // No one competing for this team - clear if showing now-competing
+          clearNowCompeting(teamIndex);
+        }
+      });
+
+      // Show now-competing for active teams (if in auto mode or manually enabled)
+      if (state.automationMode === 'auto') {
+        state.nowCompeting.forEach((nc) => {
+          const teamIndex = nc.teamIndex + 1;  // Convert 0-based to 1-based
+          renderNowCompeting(teamIndex, nc);
+        });
+      }
     }
 
     /**

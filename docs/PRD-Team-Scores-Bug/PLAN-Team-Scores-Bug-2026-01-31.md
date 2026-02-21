@@ -33,7 +33,7 @@
 | A12c | Firebase listener: dismissFlash | COMPLETE | `overlays/team-bug.html` | — | Implemented handleFlashDismissals() - clears active flash, advances queue, removes dismissal flag |
 | A13 | Flash queue edge cases | COMPLETE | `overlays/team-bug.html` | — | Added: (1) Correction detection for gymnasts already in queue - updates entry instead of duplicating, (2) Max queue size cap of 6 entries with FIFO eviction |
 | B1 | Now-competing detection | COMPLETE | `overlays/team-bug.html` | `GraphicsControl.jsx:216-269` | Added detectNowCompeting(), detectAllNowCompeting(), calls in processApiData(), writes to Firebase detected/nowCompeting |
-| B2 | Now-competing slot state | NOT STARTED | `overlays/team-bug.html` | — |
+| B2 | Now-competing slot state | COMPLETE | `overlays/team-bug.html` | — | Added renderNowCompeting(), insertNowCompetingContent(), getEventShortCode(), clearNowCompeting(), updateAllNowCompeting() |
 | B3 | Auto mode | NOT STARTED | `overlays/team-bug.html` | — |
 | B4 | Manual mode | NOT STARTED | `overlays/team-bug.html` | — |
 | B5 | Now competing → flash transition | NOT STARTED | `overlays/team-bug.html` | — |
@@ -289,7 +289,7 @@ detectRotation(teams):
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
 | B1 | Implement now-competing detection logic from API data | NOT STARTED | Reuse/extract logic from GraphicsControl.jsx lines 216-269. All athletes shown (including alternates/exhibition). |
-| B2 | Build now-competing slot state (name, apparatus) | NOT STARTED | No SV — start value not known until after athlete competes. No headshot until Phase E. |
+| B2 | Build now-competing slot state (name, apparatus) | COMPLETE | Implemented: renderNowCompeting(), insertNowCompetingContent() shows "UP NOW" + athlete name + apparatus code, getEventShortCode() for event name → short code conversion, clearNowCompeting(), updateAllNowCompeting() called on nowCompeting changes |
 | B3 | Implement auto mode — display now competing automatically | NOT STARTED | |
 | B4 | Implement manual mode — wait for Firebase signal to display | NOT STARTED | |
 | B5 | Handle transition: now competing → score flash (priority system) | NOT STARTED | |
