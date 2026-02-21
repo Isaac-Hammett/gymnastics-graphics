@@ -565,6 +565,43 @@
       console.log('Team rows rendered:', state.teams.length);
     }
 
+    /**
+     * Update team total display element (A4).
+     * Called when API polling detects a change in team.final_score.
+     * Adds highlight animation on value change.
+     * @param {number} teamIndex - 1-based team index
+     * @param {string} newTotal - Formatted score string (e.g., "196.450")
+     */
+    function updateTeamTotal(teamIndex, newTotal) {
+      const totalEl = document.getElementById(`teamTotal${teamIndex}`);
+      if (!totalEl) return;
+
+      const prevTotal = totalEl.textContent;
+
+      // Only update if value changed
+      if (prevTotal === newTotal) return;
+
+      totalEl.textContent = newTotal;
+
+      // Trigger highlight animation on change (skip for initial load)
+      if (prevTotal !== '--') {
+        totalEl.classList.remove('highlight');
+        // Force reflow to restart animation
+        void totalEl.offsetWidth;
+        totalEl.classList.add('highlight');
+      }
+    }
+
+    /**
+     * Update all team totals from state (A4).
+     * Called after API poll updates state.teams[].total values.
+     */
+    function updateAllTeamTotals() {
+      state.teams.forEach((team) => {
+        updateTeamTotal(team.index, team.total);
+      });
+    }
+
     // Initialize Firebase listeners
     function initFirebaseListeners() {
       // Listen for enabled state
@@ -727,6 +764,9 @@
 
         // Process API data - detect changes and write deltas to Firebase
         await processApiData(teams, pollStartTime);
+
+        // Update team total displays (A4)
+        updateAllTeamTotals();
 
       } catch (err) {
         // Error handling with exponential backoff (A3c)

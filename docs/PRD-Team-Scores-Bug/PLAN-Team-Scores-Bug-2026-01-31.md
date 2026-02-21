@@ -20,7 +20,7 @@
 | A3b | Write incremental deltas to Firebase | COMPLETE | `overlays/team-bug.html` | PLAN 1.3 | Added processApiData(), buildScoreMap(), buildTeamTotalMap() |
 | A3c | API error handling + backoff | COMPLETE | `overlays/team-bug.html` | — | Added exponential backoff (5s→60s max), writes error state to Firebase for D5b |
 | A3d | Offline/reconnect behavior | COMPLETE | `overlays/team-bug.html` | — | Added Firebase .info/connected listener, safeWrite() wrapper, pending write queue |
-| A4 | Team row rendering | NOT STARTED | `overlays/team-bug.html` | `overlays/event-bar.html` |
+| A4 | Team row rendering | COMPLETE | `overlays/team-bug.html` | `overlays/event-bar.html` | Added updateTeamTotal(), updateAllTeamTotals() with highlight animation |
 | A5 | Score diff engine | NOT STARTED | `overlays/team-bug.html` | PLAN 1.3 |
 | A6 | Slot machine animation | NOT STARTED | `overlays/team-bug.html` | CSS keyframes |
 | A7 | Score flash renderer | NOT STARTED | `overlays/team-bug.html` | `overlays/event-bar.html` |
