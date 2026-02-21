@@ -9,7 +9,12 @@ import {
 } from '@heroicons/react/24/solid';
 
 /**
- * HeartbeatIndicator - Shows last poll time with pulsing dot
+ * HeartbeatIndicator - Shows last poll time with status indicator
+ *
+ * States:
+ * - Recent (green): within 2x poll interval - normal operation
+ * - Warning (yellow): 2x-5x poll interval - delayed but not critical
+ * - Stale (red): beyond 5x poll interval - data may be outdated
  */
 function HeartbeatIndicator({ lastPoll, pollInterval }) {
   const [now, setNow] = useState(Date.now());
@@ -20,27 +25,50 @@ function HeartbeatIndicator({ lastPoll, pollInterval }) {
     return () => clearInterval(interval);
   }, []);
 
-  const { timeAgo, isRecent } = useMemo(() => {
-    if (!lastPoll) return { timeAgo: 'never', isRecent: false };
+  const { timeAgo, status } = useMemo(() => {
+    if (!lastPoll) return { timeAgo: 'never', status: 'stale' };
     const seconds = Math.floor((now - lastPoll) / 1000);
-    // Consider "recent" if within 2x poll interval
-    const threshold = (pollInterval / 1000) * 2;
+    const intervalSec = pollInterval / 1000;
+
+    // Determine status based on multiples of poll interval
+    let status;
+    if (seconds < intervalSec * 2) {
+      status = 'recent';
+    } else if (seconds < intervalSec * 5) {
+      status = 'warning';
+    } else {
+      status = 'stale';
+    }
+
     return {
       timeAgo: seconds < 60 ? `${seconds}s ago` : `${Math.floor(seconds / 60)}m ago`,
-      isRecent: seconds < threshold
+      status
     };
   }, [lastPoll, now, pollInterval]);
 
+  const dotClass = {
+    recent: 'bg-green-500 animate-pulse',
+    warning: 'bg-yellow-500',
+    stale: 'bg-red-500'
+  }[status];
+
+  const textClass = {
+    recent: 'text-green-400',
+    warning: 'text-yellow-400',
+    stale: 'text-red-400'
+  }[status];
+
   return (
     <div className="flex items-center gap-2">
-      <span
-        className={`w-2 h-2 rounded-full ${
-          isRecent ? 'bg-green-500 animate-pulse' : 'bg-zinc-500'
-        }`}
-      />
-      <span className={`text-sm ${isRecent ? 'text-green-400' : 'text-zinc-500'}`}>
+      <span className={`w-2 h-2 rounded-full ${dotClass}`} />
+      <span className={`text-sm ${textClass}`}>
         {timeAgo}
       </span>
+      {status === 'stale' && (
+        <span className="px-1.5 py-0.5 bg-red-500/20 text-red-400 text-xs rounded font-medium">
+          STALE
+        </span>
+      )}
     </div>
   );
 }
