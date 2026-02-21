@@ -15,6 +15,7 @@ import CameraRuntimePanel from '../components/CameraRuntimePanel';
 // TimesheetPanel removed - functionality consolidated into main content area (PRD-Rundown-00)
 import OverrideLog from '../components/OverrideLog';
 import AlertPanel from '../components/AlertPanel';
+import ScoreBugPanel from '../components/ScoreBugPanel';
 import { useAlerts } from '../hooks/useAlerts';
 import {
   PlayIcon,
@@ -966,6 +967,9 @@ export default function ProducerView() {
               onAcknowledgeAll={acknowledgeAll}
               collapsed={true}
             />
+
+            {/* Score Bug Panel - Team scores overlay control */}
+            <ScoreBugPanel compId={compId} collapsed={true} />
 
             {/* AI Context Panel - Talking Points & Milestones */}
             {aiRunning && (
