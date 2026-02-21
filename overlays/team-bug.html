@@ -360,16 +360,27 @@
       showLineup: null,
       teams: [],
       rotation: { current: 1, total: 6, isFinal: false },
-      previousScores: {},
-      flashQueues: {},  // Per-team flash queues
-      activeFlashes: {},  // Currently active flashes per team
+      previousScores: {},        // { "gymnast_id": "finalScore" (string) }
+      previousTeamTotals: {},    // { "teamKey": "finalScore" (string) }
+      flashQueues: {},           // Per-team flash queues
+      activeFlashes: {},         // Currently active flashes per team
       pollInterval: 5000,
       flashDuration: 10000,
+      stalePollCount: 0,         // Consecutive polls with no data changes
       // Competition config (loaded from Firebase)
       competitionConfig: null,
       virtiusSessionId: null,
       gender: 'mens'
     };
+
+    /**
+     * Normalize athlete name for lookup (lowercase, remove special chars).
+     * Matches pattern used in output.html for headshot lookups.
+     */
+    function normalizeName(name) {
+      if (!name) return '';
+      return name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    }
 
     // Firebase paths
     const scoreBugRef = db.ref(`competitions/${compId}/scoreBug`);
@@ -619,6 +630,9 @@
           teams: state.teams.map(t => ({ name: t.name, total: t.total }))
         });
 
+        // Process API data - detect changes and write deltas to Firebase
+        await processApiData(teams, pollStartTime);
+
       } catch (err) {
         // Log error - full error handling with backoff is Task A3c
         console.error('Poll failed:', err.message);
@@ -630,6 +644,145 @@
           console.error('Failed to write heartbeat:', heartbeatErr);
         }
       }
+    }
+
+    /**
+     * Process API data - detect score changes and write incremental deltas to Firebase.
+     * Only writes changed paths, not full data rewrite.
+     * @param {Array} apiTeams - Teams array from Virtius API
+     * @param {number} pollTimestamp - Timestamp of this poll
+     */
+    async function processApiData(apiTeams, pollTimestamp) {
+      const changedPaths = {};
+      let hasChanges = false;
+
+      // Process each team
+      apiTeams.forEach((team, teamIdx) => {
+        const teamKey = team.short_name || `team${teamIdx + 1}`;
+
+        // Check if team total changed
+        const prevTeamTotal = state.previousTeamTotals[teamKey];
+        const currTeamTotal = team.final_score;  // string or null
+
+        if (currTeamTotal !== prevTeamTotal) {
+          changedPaths[`teams/${teamKey}/finalScore`] = currTeamTotal;
+          changedPaths[`teams/${teamKey}/name`] = team.name || teamKey;
+          hasChanges = true;
+        }
+
+        // Process each event's gymnasts for score changes
+        const events = team.events || [];
+        events.forEach((event) => {
+          const eventKey = event.short_name || event.name || 'unknown';
+          const gymnasts = event.gymnasts || [];
+
+          gymnasts.forEach((gymnast) => {
+            // Primary key: gymnast_id. Fallback: teamKey|normalizedName
+            const gymnastKey = gymnast.gymnast_id ||
+              `${teamKey}|${normalizeName(gymnast.full_name)}`;
+
+            const prevScore = state.previousScores[gymnastKey];
+            const currScore = gymnast.final_score;  // string or null
+
+            // Score changed (new score OR corrected score)
+            if (currScore != null && prevScore !== currScore) {
+              // Build gymnast data for Firebase
+              const gymnastData = {
+                name: gymnast.full_name,
+                score: currScore,
+                startValue: gymnast.start_value || null,
+                execution: gymnast.execution || null,
+                difficulty: gymnast.difficulty || null,
+                order: gymnast.order,
+                event: eventKey,
+                team: teamKey,
+                timestamp: pollTimestamp
+              };
+
+              changedPaths[`teams/${teamKey}/events/${eventKey}/gymnasts/${gymnastKey}`] = gymnastData;
+              hasChanges = true;
+
+              console.log('Score change detected:', {
+                gymnast: gymnast.full_name,
+                event: eventKey,
+                team: teamKey,
+                prev: prevScore,
+                curr: currScore
+              });
+            }
+
+            // Score removed (rare - inquiry pending)
+            if (currScore == null && prevScore != null) {
+              changedPaths[`teams/${teamKey}/events/${eventKey}/gymnasts/${gymnastKey}/score`] = null;
+              hasChanges = true;
+              console.log('Score removed:', { gymnast: gymnast.full_name, event: eventKey });
+            }
+          });
+        });
+      });
+
+      // Write to Firebase
+      try {
+        if (hasChanges) {
+          // Write changed paths and reset stale counter
+          await scoreBugRef.child('liveData').update({
+            ...changedPaths,
+            lastDataChangeTimestamp: pollTimestamp,
+            stalePollCount: 0
+          });
+          state.stalePollCount = 0;
+
+          console.log('Wrote incremental deltas to Firebase:', Object.keys(changedPaths).length, 'paths');
+        } else {
+          // No changes - increment stale counter
+          state.stalePollCount++;
+          await scoreBugRef.child('liveData').update({
+            lastPollTimestamp: pollTimestamp,
+            stalePollCount: state.stalePollCount
+          });
+        }
+      } catch (err) {
+        console.error('Failed to write liveData:', err);
+      }
+
+      // Update previous state for next comparison
+      state.previousScores = buildScoreMap(apiTeams);
+      state.previousTeamTotals = buildTeamTotalMap(apiTeams);
+    }
+
+    /**
+     * Build score map from API teams data.
+     * @returns {Object} Map of gymnastKey -> finalScore (string)
+     */
+    function buildScoreMap(apiTeams) {
+      const map = {};
+      apiTeams.forEach((team, teamIdx) => {
+        const teamKey = team.short_name || `team${teamIdx + 1}`;
+        const events = team.events || [];
+
+        events.forEach((event) => {
+          const gymnasts = event.gymnasts || [];
+          gymnasts.forEach((gymnast) => {
+            const gymnastKey = gymnast.gymnast_id ||
+              `${teamKey}|${normalizeName(gymnast.full_name)}`;
+            map[gymnastKey] = gymnast.final_score;  // string or null
+          });
+        });
+      });
+      return map;
+    }
+
+    /**
+     * Build team total map from API teams data.
+     * @returns {Object} Map of teamKey -> finalScore (string)
+     */
+    function buildTeamTotalMap(apiTeams) {
+      const map = {};
+      apiTeams.forEach((team, teamIdx) => {
+        const teamKey = team.short_name || `team${teamIdx + 1}`;
+        map[teamKey] = team.final_score;  // string or null
+      });
+      return map;
     }
 
     // Initialize Firebase schema with default values (prevents race conditions)
