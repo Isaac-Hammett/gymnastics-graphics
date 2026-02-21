@@ -410,6 +410,7 @@
       previousTeamTotals: {},    // { "teamKey": "finalScore" (string) }
       flashQueues: {},           // Per-team flash queues
       activeFlashes: {},         // Currently active flashes per team
+      nowCompeting: [],          // Currently competing athletes per team (B1)
       pollInterval: 5000,
       flashDuration: 10000,
       stalePollCount: 0,         // Consecutive polls with no data changes
@@ -1038,6 +1039,22 @@
 
         console.log('Rotation updated:', newRotation);
       }
+
+      // Detect now-competing athletes (B1)
+      const nowCompeting = detectAllNowCompeting(apiTeams);
+      const prevNowCompeting = state.nowCompeting || [];
+
+      // Check if now-competing has changed
+      const nowCompetingChanged = JSON.stringify(nowCompeting) !== JSON.stringify(prevNowCompeting);
+
+      if (nowCompetingChanged) {
+        state.nowCompeting = nowCompeting;
+
+        // Write detected state to Firebase for producer panel visibility
+        await safeWrite(scoreBugRef.child('detected/nowCompeting'), 'set', nowCompeting);
+
+        console.log('Now competing updated:', nowCompeting);
+      }
     }
 
     /**
@@ -1395,6 +1412,73 @@
       // Current rotation = completed events + 1
       const currentRotation = minCompletedAcrossTeams + 1;
       return { current: currentRotation, total: totalEvents, isFinal: false };
+    }
+
+    /**
+     * Detect the currently competing athlete for a team.
+     * Finds the next athlete without a score in an event that has some scores.
+     * Based on logic from GraphicsControl.jsx:216-269.
+     * @param {Object} team - Team object from Virtius API
+     * @returns {Object|null} { athlete: Object, event: Object } or null
+     */
+    function detectNowCompeting(team) {
+      if (!team || !team.events) return null;
+
+      // Olympic order for events (already sorted in API, but just in case)
+      const events = team.events;
+
+      for (const event of events) {
+        const gymnasts = event.gymnasts || [];
+        if (gymnasts.length === 0) continue;
+
+        // Sort by order (lineup position)
+        const sortedGymnasts = [...gymnasts].sort((a, b) => (a.order || 0) - (b.order || 0));
+
+        // Find scored and unscored athletes
+        const scored = sortedGymnasts.filter(g => g.final_score != null);
+        const unscored = sortedGymnasts.filter(g => g.final_score == null);
+
+        // If this event has some scores but not all, it's in progress
+        if (scored.length > 0 && unscored.length > 0) {
+          return {
+            athlete: unscored[0],
+            event: event
+          };
+        }
+      }
+
+      return null; // No one currently competing (between rotations or complete)
+    }
+
+    /**
+     * Detect now-competing athletes for all teams and return results.
+     * @param {Array} apiTeams - Teams array from Virtius API
+     * @returns {Array} Array of { teamIndex, teamName, tricode, athlete, eventName }
+     */
+    function detectAllNowCompeting(apiTeams) {
+      if (!apiTeams || apiTeams.length === 0) return [];
+
+      const results = [];
+
+      apiTeams.forEach((team, teamIndex) => {
+        const nowCompeting = detectNowCompeting(team);
+        if (nowCompeting) {
+          results.push({
+            teamIndex: teamIndex,
+            teamName: team.name,
+            tricode: team.tricode,
+            athlete: {
+              id: nowCompeting.athlete.gymnast_id,
+              name: nowCompeting.athlete.full_name,
+              order: nowCompeting.athlete.order,
+              type: nowCompeting.athlete.type // 0=competing, 1=exhibition, etc.
+            },
+            eventName: nowCompeting.event.event_name
+          });
+        }
+      });
+
+      return results;
     }
 
     /**
