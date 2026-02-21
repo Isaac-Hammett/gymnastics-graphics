@@ -34,11 +34,11 @@
 | A13 | Flash queue edge cases | COMPLETE | `overlays/team-bug.html` | — | Added: (1) Correction detection for gymnasts already in queue - updates entry instead of duplicating, (2) Max queue size cap of 6 entries with FIFO eviction |
 | B1 | Now-competing detection | COMPLETE | `overlays/team-bug.html` | `GraphicsControl.jsx:216-269` | Added detectNowCompeting(), detectAllNowCompeting(), calls in processApiData(), writes to Firebase detected/nowCompeting |
 | B2 | Now-competing slot state | COMPLETE | `overlays/team-bug.html` | — | Added renderNowCompeting(), insertNowCompetingContent(), getEventShortCode(), clearNowCompeting(), updateAllNowCompeting() |
-| B3 | Auto mode | NOT STARTED | `overlays/team-bug.html` | — |
-| B4 | Manual mode | NOT STARTED | `overlays/team-bug.html` | — |
+| B3 | Auto mode | COMPLETE | `overlays/team-bug.html` | — | updateAllNowCompeting() shows detected now-competing automatically in auto mode. Mode change triggers immediate update. |
+| B4 | Manual mode | COMPLETE | `overlays/team-bug.html` | — | In manual mode, now-competing only shown when manualNowCompeting[teamIndex]=true. Uses detected data but requires producer enable. |
 | B5 | Now competing → flash transition | NOT STARTED | `overlays/team-bug.html` | — |
-| B6 | Firebase listener: automationMode | NOT STARTED | `overlays/team-bug.html` | — |
-| B7 | Firebase listener: nowCompeting | NOT STARTED | `overlays/team-bug.html` | — |
+| B6 | Firebase listener: automationMode | COMPLETE | `overlays/team-bug.html` | — | Listener at line 672-682, calls updateAllNowCompeting() on mode change |
+| B7 | Firebase listener: nowCompeting | COMPLETE | `overlays/team-bug.html` | — | Listener at line 685-700, converts teamKey to index, stores in state.manualNowCompeting, triggers updateAllNowCompeting() |
 | B8 | Write detected state to Firebase | NOT STARTED | `overlays/team-bug.html` | — |
 | C1 | Lineup card HTML/CSS | NOT STARTED | `overlays/team-bug.html` | — |
 | C2 | Lineup card populate | NOT STARTED | `overlays/team-bug.html` | — |

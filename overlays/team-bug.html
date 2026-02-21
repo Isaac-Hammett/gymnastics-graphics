@@ -411,6 +411,7 @@
       flashQueues: {},           // Per-team flash queues
       activeFlashes: {},         // Currently active flashes per team
       nowCompeting: [],          // Currently competing athletes per team (B1)
+      manualNowCompeting: {},    // Manual overrides from producer { teamIndex: true/false } (B4/B7)
       pollInterval: 5000,
       flashDuration: 10000,
       stalePollCount: 0,         // Consecutive polls with no data changes
@@ -668,9 +669,37 @@
         }
       });
 
-      // Listen for automation mode
+      // Listen for automation mode changes
       scoreBugRef.child('automationMode').on('value', (snapshot) => {
-        state.automationMode = snapshot.val() || 'auto';
+        const newMode = snapshot.val() || 'auto';
+        const modeChanged = state.automationMode !== newMode;
+        state.automationMode = newMode;
+
+        // When mode changes, update now-competing display accordingly
+        if (modeChanged) {
+          console.log('Automation mode changed to:', newMode);
+          updateAllNowCompeting();
+        }
+      });
+
+      // Listen for manual now-competing overrides (B7)
+      // Producer can show/hide now-competing per team in manual mode
+      scoreBugRef.child('nowCompeting').on('value', (snapshot) => {
+        const overrides = snapshot.val() || {};
+        state.manualNowCompeting = {};
+
+        // Convert team keys to indices: { "team1": true } → { 1: true }
+        Object.entries(overrides).forEach(([teamKey, value]) => {
+          // teamKey is "team1", "team2", etc.
+          const match = teamKey.match(/team(\d+)/);
+          if (match) {
+            const teamIndex = parseInt(match[1], 10);
+            state.manualNowCompeting[teamIndex] = value;
+          }
+        });
+
+        console.log('Manual now-competing overrides updated:', state.manualNowCompeting);
+        updateAllNowCompeting();
       });
 
       // Listen for lineup card toggle
@@ -1472,26 +1501,33 @@
     /**
      * Update now-competing displays for all teams based on current state.
      * Called after processApiData detects now-competing changes.
+     *
+     * Behavior differs by mode:
+     * - Auto mode (B3): Automatically show all detected now-competing athletes
+     * - Manual mode (B4): Only show when producer explicitly enables via Firebase nowCompeting
      */
     function updateAllNowCompeting() {
-      // Clear slots for teams that are no longer competing
       state.teams.forEach((team, idx) => {
         const teamIndex = team.index;
         const nowCompeting = state.nowCompeting.find(nc => nc.teamIndex === idx);
 
-        if (!nowCompeting) {
-          // No one competing for this team - clear if showing now-competing
+        // Determine if we should show now-competing for this team
+        let shouldShow = false;
+
+        if (state.automationMode === 'auto') {
+          // Auto mode (B3): Show if detected
+          shouldShow = !!nowCompeting;
+        } else {
+          // Manual mode (B4): Only show if producer has enabled AND we have data
+          shouldShow = !!nowCompeting && state.manualNowCompeting[teamIndex] === true;
+        }
+
+        if (shouldShow && nowCompeting) {
+          renderNowCompeting(teamIndex, nowCompeting);
+        } else {
           clearNowCompeting(teamIndex);
         }
       });
-
-      // Show now-competing for active teams (if in auto mode or manually enabled)
-      if (state.automationMode === 'auto') {
-        state.nowCompeting.forEach((nc) => {
-          const teamIndex = nc.teamIndex + 1;  // Convert 0-based to 1-based
-          renderNowCompeting(teamIndex, nc);
-        });
-      }
     }
 
     /**
