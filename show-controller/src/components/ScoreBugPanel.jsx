@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ref, onValue } from 'firebase/database';
+import { db, ref, onValue } from '../lib/firebase';
 import {
   ChartBarIcon,
   ChevronDownIcon,
@@ -9,12 +9,10 @@ import {
 /**
  * ScoreBugPanel - Control panel for team scores bug overlay
  *
- * @param {Object} database - Firebase database instance
  * @param {string} compId - Competition ID
  * @param {boolean} collapsed - Initial collapsed state
  */
 export default function ScoreBugPanel({
-  database,
   compId,
   collapsed: initialCollapsed = true
 }) {
@@ -23,15 +21,15 @@ export default function ScoreBugPanel({
 
   // Listen to scoreBug state from Firebase
   useEffect(() => {
-    if (!database || !compId) return;
+    if (!compId) return;
 
-    const scoreBugRef = ref(database, `competitions/${compId}/scoreBug`);
+    const scoreBugRef = ref(db, `competitions/${compId}/scoreBug`);
     const unsubscribe = onValue(scoreBugRef, (snapshot) => {
       setScoreBugState(snapshot.val() || {});
     });
 
     return () => unsubscribe();
-  }, [database, compId]);
+  }, [compId]);
 
   // Empty state - no competition selected
   if (!compId) {
