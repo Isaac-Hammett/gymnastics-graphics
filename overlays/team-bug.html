@@ -1321,6 +1321,10 @@
             // Score changed (new score OR corrected score)
             if (currScore != null && prevScore !== currScore) {
               // Build gymnast data for Firebase and flash queue
+              // Stick bonus is indicated by bonus > 0 in the API (men's gymnastics only)
+              const bonusValue = parseFloat(gymnast.bonus) || 0;
+              const hasStick = bonusValue > 0;
+
               const gymnastData = {
                 name: gymnast.full_name,
                 firstName: gymnast.first_name || '',
@@ -1330,6 +1334,8 @@
                 startValue: gymnast.start_value || null,
                 execution: gymnast.execution || null,
                 difficulty: gymnast.difficulty || null,
+                bonus: bonusValue,
+                hasStick: hasStick,
                 order: gymnast.order,
                 event: eventKey,
                 team: teamKey,
