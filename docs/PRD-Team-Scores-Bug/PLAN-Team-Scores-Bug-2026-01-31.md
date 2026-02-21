@@ -32,7 +32,7 @@
 | A12b | Firebase listener: polling | COMPLETE | `overlays/team-bug.html` | — | Already implemented: line 660-668, starts/stops polling on change |
 | A12c | Firebase listener: dismissFlash | COMPLETE | `overlays/team-bug.html` | — | Implemented handleFlashDismissals() - clears active flash, advances queue, removes dismissal flag |
 | A13 | Flash queue edge cases | COMPLETE | `overlays/team-bug.html` | — | Added: (1) Correction detection for gymnasts already in queue - updates entry instead of duplicating, (2) Max queue size cap of 6 entries with FIFO eviction |
-| B1 | Now-competing detection | NOT STARTED | `overlays/team-bug.html` | `GraphicsControl.jsx:216-269` |
+| B1 | Now-competing detection | COMPLETE | `overlays/team-bug.html` | `GraphicsControl.jsx:216-269` | Added detectNowCompeting(), detectAllNowCompeting(), calls in processApiData(), writes to Firebase detected/nowCompeting |
 | B2 | Now-competing slot state | NOT STARTED | `overlays/team-bug.html` | — |
 | B3 | Auto mode | NOT STARTED | `overlays/team-bug.html` | — |
 | B4 | Manual mode | NOT STARTED | `overlays/team-bug.html` | — |
