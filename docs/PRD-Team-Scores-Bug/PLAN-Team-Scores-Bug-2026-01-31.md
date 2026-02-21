@@ -1,9 +1,82 @@
 # Implementation Plan: Team Scores Bug
 
-**Version:** 1.2
+**Version:** 1.3
 **Date:** 2026-01-31
 **Status:** In Progress
 **PRD:** [PRD-Team-Scores-Bug-2026-01-31.md](./PRD-Team-Scores-Bug-2026-01-31.md)
+
+---
+
+## Quick Task Index
+
+**Next task: Find first `NOT STARTED` or `IN PROGRESS` below.**
+
+| Task | Description | Status | Target File | Reference Pattern |
+|------|-------------|--------|-------------|-------------------|
+| A1 | Create team-bug.html boilerplate | COMPLETE | `overlays/team-bug.html` | `overlays/event-bar.html` |
+| A1b | Initialize Firebase schema | COMPLETE | `overlays/team-bug.html` | PLAN 3.3 |
+| A2 | Load competition config from Firebase | COMPLETE | `overlays/team-bug.html` | `output.html:4450` |
+| A3 | Implement Virtius API polling | COMPLETE | `overlays/team-bug.html` | `output.html:4478` |
+| A3b | Write incremental deltas to Firebase | COMPLETE | `overlays/team-bug.html` | PLAN 1.3 | Added processApiData(), buildScoreMap(), buildTeamTotalMap() |
+| A3c | API error handling + backoff | NOT STARTED | `overlays/team-bug.html` | — |
+| A3d | Offline/reconnect behavior | NOT STARTED | `overlays/team-bug.html` | — |
+| A4 | Team row rendering | NOT STARTED | `overlays/team-bug.html` | `overlays/event-bar.html` |
+| A5 | Score diff engine | NOT STARTED | `overlays/team-bug.html` | PLAN 1.3 |
+| A6 | Slot machine animation | NOT STARTED | `overlays/team-bug.html` | CSS keyframes |
+| A7 | Score flash renderer | NOT STARTED | `overlays/team-bug.html` | `overlays/event-bar.html` |
+| A8 | Per-team flash queue | NOT STARTED | `overlays/team-bug.html` | — |
+| A9 | Team total highlight | NOT STARTED | `overlays/team-bug.html` | CSS animation |
+| A10 | Rotation tag renderer | NOT STARTED | `overlays/team-bug.html` | PLAN 1.5 |
+| A11 | Bug enter/exit animation | NOT STARTED | `overlays/team-bug.html` | `overlays/event-bar.html` |
+| A12 | Firebase listener: enabled | NOT STARTED | `overlays/team-bug.html` | `output.html:200-300` |
+| A12b | Firebase listener: polling | NOT STARTED | `overlays/team-bug.html` | — |
+| A12c | Firebase listener: dismissFlash | NOT STARTED | `overlays/team-bug.html` | — |
+| A13 | Flash queue edge cases | NOT STARTED | `overlays/team-bug.html` | — |
+| B1 | Now-competing detection | NOT STARTED | `overlays/team-bug.html` | `GraphicsControl.jsx:216-269` |
+| B2 | Now-competing slot state | NOT STARTED | `overlays/team-bug.html` | — |
+| B3 | Auto mode | NOT STARTED | `overlays/team-bug.html` | — |
+| B4 | Manual mode | NOT STARTED | `overlays/team-bug.html` | — |
+| B5 | Now competing → flash transition | NOT STARTED | `overlays/team-bug.html` | — |
+| B6 | Firebase listener: automationMode | NOT STARTED | `overlays/team-bug.html` | — |
+| B7 | Firebase listener: nowCompeting | NOT STARTED | `overlays/team-bug.html` | — |
+| B8 | Write detected state to Firebase | NOT STARTED | `overlays/team-bug.html` | — |
+| C1 | Lineup card HTML/CSS | NOT STARTED | `overlays/team-bug.html` | — |
+| C2 | Lineup card populate | NOT STARTED | `overlays/team-bug.html` | — |
+| C3 | Lineup card animation | NOT STARTED | `overlays/team-bug.html` | — |
+| C4 | Firebase listener: showLineup | NOT STARTED | `overlays/team-bug.html` | — |
+| C5 | Lineup live-update | NOT STARTED | `overlays/team-bug.html` | — |
+| D1 | ScoreBugPanel component | NOT STARTED | `show-controller/src/components/ScoreBugPanel.jsx` | `AlertPanel.jsx` |
+| D2 | Add panel to ProducerView | NOT STARTED | `show-controller/src/pages/ProducerView.jsx` | — |
+| D2b | Copy URL button | NOT STARTED | `show-controller/src/components/ScoreBugPanel.jsx` | — |
+| D3 | On/off toggle | NOT STARTED | `show-controller/src/components/ScoreBugPanel.jsx` | — |
+| D3b | Polling toggle | NOT STARTED | `show-controller/src/components/ScoreBugPanel.jsx` | — |
+| D3c | Poll frequency selector | NOT STARTED | `show-controller/src/components/ScoreBugPanel.jsx` | — |
+| D3d | Heartbeat indicator | NOT STARTED | `show-controller/src/components/ScoreBugPanel.jsx` | — |
+| D3e | Stale data indicator | NOT STARTED | `show-controller/src/components/ScoreBugPanel.jsx` | — |
+| D4 | Auto/manual toggle | NOT STARTED | `show-controller/src/components/ScoreBugPanel.jsx` | — |
+| D5 | Now-competing display | NOT STARTED | `show-controller/src/components/ScoreBugPanel.jsx` | — |
+| D5b | API error indicator | NOT STARTED | `show-controller/src/components/ScoreBugPanel.jsx` | — |
+| D5c | Dismiss flash button | NOT STARTED | `show-controller/src/components/ScoreBugPanel.jsx` | — |
+| D6 | SHOW/HIDE now-competing | NOT STARTED | `show-controller/src/components/ScoreBugPanel.jsx` | — |
+| D7 | Lineup card controls | NOT STARTED | `show-controller/src/components/ScoreBugPanel.jsx` | — |
+| D8 | Write showLineup | NOT STARTED | `show-controller/src/components/ScoreBugPanel.jsx` | — |
+| D9 | Write nowCompeting | NOT STARTED | `show-controller/src/components/ScoreBugPanel.jsx` | — |
+| D10 | Migrate GraphicsControl | NOT STARTED | `show-controller/src/components/GraphicsControl.jsx` | — |
+| E1 | Load headshots | NOT STARTED | `overlays/team-bug.html` | `output.html:5048-5110` |
+| E2 | Headshot normalization | NOT STARTED | `overlays/team-bug.html` | `nameNormalization.js` |
+| E3 | Headshots in flash | NOT STARTED | `overlays/team-bug.html` | — |
+| E4 | Headshots in now-competing | NOT STARTED | `overlays/team-bug.html` | — |
+| E5 | Headshot fallback | NOT STARTED | `overlays/team-bug.html` | — |
+| F1 | Stick detection | NOT STARTED | `overlays/team-bug.html` | `output.html:4742` |
+| F2 | Stick indicator UI | NOT STARTED | `overlays/team-bug.html` | — |
+| F3 | Men's only conditional | NOT STARTED | `overlays/team-bug.html` | — |
+| G1 | 3-team layout | NOT STARTED | `overlays/team-bug.html` | — |
+| G2 | 4-team layout | NOT STARTED | `overlays/team-bug.html` | — |
+| G3 | 5-6 team layout | NOT STARTED | `overlays/team-bug.html` | — |
+| G4 | Multi-team testing | NOT STARTED | `overlays/team-bug.html` | — |
+| G5 | OBS browser source test | NOT STARTED | — | — |
+
+**Progress:** 4 COMPLETE / 0 IN PROGRESS / 56 NOT STARTED
 
 ---
 
