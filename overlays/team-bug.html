@@ -1219,6 +1219,19 @@
         updateAllNowCompeting();
       }
 
+      // Write detected teams list for lineup card controls (D7)
+      const detectedTeams = apiTeams.map((team, idx) => ({
+        teamIndex: idx,
+        teamKey: team.short_name || `team${idx + 1}`,
+        teamName: team.name,
+        tricode: team.tricode
+      }));
+      const prevDetectedTeams = state.detectedTeams || [];
+      if (JSON.stringify(detectedTeams) !== JSON.stringify(prevDetectedTeams)) {
+        state.detectedTeams = detectedTeams;
+        await safeWrite(scoreBugRef.child('detected/teams'), 'set', detectedTeams);
+      }
+
       // Update lineup card if visible (C5 - live update with new scores)
       if (state.showLineup) {
         updateLineupCard();
@@ -1825,6 +1838,7 @@
         if (nowCompeting) {
           results.push({
             teamIndex: teamIndex,
+            teamKey: team.short_name || `team${teamIndex + 1}`,
             teamName: team.name,
             tricode: team.tricode,
             athlete: {
