@@ -61,7 +61,7 @@
 | D7 | Lineup card controls | COMPLETE | `show-controller/src/components/ScoreBugPanel.jsx` | — | Added showLineup(), hideLineup() functions. Lineup Cards section shows team buttons (tricode) with SHOWING indicator for active lineup. Amber highlight for active selection. |
 | D8 | Write showLineup | COMPLETE | `show-controller/src/components/ScoreBugPanel.jsx` | — | Implemented in D7: showLineup(teamKey) writes to scoreBug/showLineup, hideLineup() sets to null |
 | D9 | Write nowCompeting | COMPLETE | `show-controller/src/components/ScoreBugPanel.jsx` | — | Already implemented in D6: showNowCompeting(teamKey) and hideNowCompeting(teamKey) write to scoreBug/nowCompeting/{teamKey} |
-| D10 | Migrate GraphicsControl | NOT STARTED | `show-controller/src/components/GraphicsControl.jsx` | — |
+| D10 | Migrate GraphicsControl | COMPLETE | `show-controller/src/components/GraphicsControl.jsx` | — | Removed independent Virtius polling. Now reads from Firebase `scoreBug/detected/nowCompeting` and `scoreBug/config/polling`. UI shows read-only status indicator. |
 | E1 | Load headshots | NOT STARTED | `overlays/team-bug.html` | `output.html:5048-5110` |
 | E2 | Headshot normalization | NOT STARTED | `overlays/team-bug.html` | `nameNormalization.js` |
 | E3 | Headshots in flash | NOT STARTED | `overlays/team-bug.html` | — |

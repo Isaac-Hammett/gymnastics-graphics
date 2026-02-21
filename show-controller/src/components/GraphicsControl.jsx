@@ -124,8 +124,8 @@ export default function GraphicsControl({ competitionId }) {
   const [config, setConfig] = useState(null);
   const [copied, setCopied] = useState(false);
   const [summaryTheme, setSummaryTheme] = useState('default');
-  const [liveAthletes, setLiveAthletes] = useState([]); // Athletes currently competing (type: 0, no score yet)
-  const [isPolling, setIsPolling] = useState(false);
+  const [liveAthletes, setLiveAthletes] = useState([]); // Athletes currently competing - now read from Firebase
+  const [scoreBugPolling, setScoreBugPolling] = useState(false); // Whether scoreBug overlay is polling
 
   // Use competitionId directly from props (no local state needed)
   const compId = competitionId || '';
@@ -212,61 +212,46 @@ export default function GraphicsControl({ competitionId }) {
     return () => unsubscribe();
   }, [compId]);
 
-  // Poll Virtius API for live athletes when polling is enabled
+  // Listen to Firebase for now-competing athletes (written by team-bug.html overlay)
   useEffect(() => {
-    if (!isPolling || !config?.virtiusSessionId) {
+    if (!compId) {
       setLiveAthletes([]);
+      setScoreBugPolling(false);
       return;
     }
 
-    const fetchLiveAthletes = async () => {
-      try {
-        const response = await fetch(`https://api.virti.us/session/${config.virtiusSessionId}/json`);
-        const data = await response.json();
-
-        if (!data.meet?.teams) return;
-
-        // Find athletes who are "on air" - type: 0 with no score, first in lineup order for their event
-        const athletes = [];
-
-        for (const team of data.meet.teams) {
-          if (!team.events) continue;
-
-          for (const event of team.events) {
-            if (!event.gymnasts) continue;
-
-            // Find the first gymnast in this event who hasn't competed yet (type: 0, no final_score)
-            for (const gymnast of event.gymnasts) {
-              if (gymnast.type === 0 && !gymnast.final_score) {
-                athletes.push({
-                  id: gymnast.gymnast_id,
-                  name: gymnast.full_name,
-                  team: team.name,
-                  teamTricode: team.tricode,
-                  event: event.event_name,
-                  eventDisplay: eventDisplayNames[event.event_name] || event.event_name,
-                  order: gymnast.order,
-                });
-                break; // Only the first one per event per team
-              }
-            }
-          }
-        }
-
+    // Listen for detected now-competing athletes from scoreBug overlay
+    const nowCompetingRef = ref(db, `competitions/${compId}/scoreBug/detected/nowCompeting`);
+    const unsubscribeNowCompeting = onValue(nowCompetingRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data && Array.isArray(data)) {
+        // Transform to match existing liveAthletes format
+        const athletes = data.map(entry => ({
+          id: entry.athlete?.id,
+          name: entry.athlete?.name,
+          team: entry.teamName,
+          teamTricode: entry.tricode,
+          event: entry.eventName,
+          eventDisplay: eventDisplayNames[entry.eventName] || entry.eventName,
+          order: entry.athlete?.order,
+        }));
         setLiveAthletes(athletes);
-      } catch (error) {
-        console.error('Error fetching Virtius data:', error);
+      } else {
+        setLiveAthletes([]);
       }
+    });
+
+    // Listen for scoreBug polling state to show status indicator
+    const pollingRef = ref(db, `competitions/${compId}/scoreBug/config/polling`);
+    const unsubscribePolling = onValue(pollingRef, (snapshot) => {
+      setScoreBugPolling(snapshot.val() === true);
+    });
+
+    return () => {
+      unsubscribeNowCompeting();
+      unsubscribePolling();
     };
-
-    // Fetch immediately
-    fetchLiveAthletes();
-
-    // Poll every 10 seconds
-    const interval = setInterval(fetchLiveAthletes, 10000);
-
-    return () => clearInterval(interval);
-  }, [isPolling, config?.virtiusSessionId]);
+  }, [compId]);
 
   const sendGraphic = (graphicId, frameTitle = null, leaderboardEvent = null) => {
     if (!compId || !config) return;
@@ -620,23 +605,22 @@ export default function GraphicsControl({ competitionId }) {
             </div>
           )}
 
-          {/* Now Competing Section - Live athletes from Virtius */}
+          {/* Now Competing Section - Live athletes from Firebase (via team-bug overlay) */}
           {config.virtiusSessionId && (
             <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
                 <div className="text-xs text-zinc-500 uppercase">Now Competing</div>
-                <button
-                  onClick={() => setIsPolling(!isPolling)}
-                  className={`text-xs px-2 py-1 rounded font-medium transition-colors ${
-                    isPolling
+                <span
+                  className={`text-xs px-2 py-1 rounded font-medium ${
+                    scoreBugPolling
                       ? 'bg-green-600 text-white'
-                      : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'
+                      : 'bg-zinc-700 text-zinc-400'
                   }`}
                 >
-                  {isPolling ? 'Live' : 'Start Polling'}
-                </button>
+                  {scoreBugPolling ? 'Live' : 'Polling Off'}
+                </span>
               </div>
-              {isPolling ? (
+              {scoreBugPolling ? (
                 liveAthletes.length > 0 ? (
                   <div className="space-y-1.5">
                     {liveAthletes.map((athlete) => (
@@ -666,7 +650,7 @@ export default function GraphicsControl({ competitionId }) {
                 )
               ) : (
                 <div className="text-xs text-zinc-500 text-center py-3 bg-zinc-700/50 rounded">
-                  Click "Start Polling" to fetch live athletes
+                  Enable polling in Score Bug panel
                 </div>
               )}
             </div>
