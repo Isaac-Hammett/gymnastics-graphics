@@ -21,7 +21,7 @@
 | A3c | API error handling + backoff | COMPLETE | `overlays/team-bug.html` | — | Added exponential backoff (5s→60s max), writes error state to Firebase for D5b |
 | A3d | Offline/reconnect behavior | COMPLETE | `overlays/team-bug.html` | — | Added Firebase .info/connected listener, safeWrite() wrapper, pending write queue |
 | A4 | Team row rendering | COMPLETE | `overlays/team-bug.html` | `overlays/event-bar.html` | Added updateTeamTotal(), updateAllTeamTotals() with highlight animation |
-| A5 | Score diff engine | NOT STARTED | `overlays/team-bug.html` | PLAN 1.3 |
+| A5 | Score diff engine | COMPLETE | `overlays/team-bug.html` | PLAN 1.3 | Added flash queue system: triggerScoreFlash(), interruptFlash(), isFlashActive(), displayNextFlash(), advanceFlashQueue(), renderFlash(), clearFlashDisplay(). Score changes now trigger queued flashes per-team with correction detection. |
 | A6 | Slot machine animation | NOT STARTED | `overlays/team-bug.html` | CSS keyframes |
 | A7 | Score flash renderer | NOT STARTED | `overlays/team-bug.html` | `overlays/event-bar.html` |
 | A8 | Per-team flash queue | NOT STARTED | `overlays/team-bug.html` | — |
@@ -272,7 +272,7 @@ detectRotation(teams):
 | A3c | Implement API error handling: stale data display, exponential backoff, write to `scoreBug/lastError` | NOT STARTED | On failure: keep last good data, double interval (max 30s), reset on success |
 | A3d | Implement offline/reconnect behavior | NOT STARTED | On reconnect: immediate full poll (bypass interval timer), diff against last known state, write reconnect event to lastError |
 | A4 | Build team row rendering (logo + cumulative total) | NOT STARTED | Initial state: show `--` before first poll, then `0.000` or actual total |
-| A5 | Implement score diff engine to detect new scores AND corrections between polls | NOT STARTED | Use `gymnast_id` as primary key (already in API, used in output.html:4490). Fallback: `team.short_name\|normalizeName(full_name)`. Compare string values. |
+| A5 | Implement score diff engine to detect new scores AND corrections between polls | COMPLETE | Implemented flash queue system with per-team queues. isFlashActive() checks if correction should interrupt. triggerScoreFlash() queues or displays immediately. interruptFlash() replaces active flash. Added isCorrection flag for UI indication. |
 | A6 | Build slot machine animation (vertical slide up/down) | NOT STARTED | |
 | A7 | Implement score flash renderer (name, score, apparatus, SV) | NOT STARTED | No headshots in Phase A — headshots added in Phase E |
 | A8 | Implement per-team independent score flash queue (10s hold, then return to default) | NOT STARTED | Each team row has its own queue. Multiple teams can flash simultaneously. |

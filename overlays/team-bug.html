@@ -195,6 +195,14 @@
       font-size: 20px;
     }
 
+    /* Correction indicator (score was changed) */
+    .slot-correction {
+      font-size: 14px;
+      font-weight: 500;
+      color: #f59e0b;
+      font-style: italic;
+    }
+
     /* Lineup card (above bug) */
     .lineup-card {
       position: absolute;
@@ -869,7 +877,7 @@
 
             // Score changed (new score OR corrected score)
             if (currScore != null && prevScore !== currScore) {
-              // Build gymnast data for Firebase
+              // Build gymnast data for Firebase and flash queue
               const gymnastData = {
                 name: gymnast.full_name,
                 score: currScore,
@@ -879,7 +887,9 @@
                 order: gymnast.order,
                 event: eventKey,
                 team: teamKey,
-                timestamp: pollTimestamp
+                gymnastKey: gymnastKey,
+                timestamp: pollTimestamp,
+                isCorrection: prevScore != null  // True if score was changed (not new)
               };
 
               changedPaths[`teams/${teamKey}/events/${eventKey}/gymnasts/${gymnastKey}`] = gymnastData;
@@ -890,8 +900,19 @@
                 event: eventKey,
                 team: teamKey,
                 prev: prevScore,
-                curr: currScore
+                curr: currScore,
+                isCorrection: prevScore != null
               });
+
+              // Trigger flash for this score change (A5)
+              const teamIndex = teamIdx + 1;  // Convert 0-based to 1-based index
+              if (isFlashActive(teamIndex, gymnastKey)) {
+                // Correction during active flash - interrupt and replace
+                interruptFlash(teamIndex, gymnastData);
+              } else {
+                // Queue new flash for this team
+                triggerScoreFlash(teamIndex, gymnastData);
+              }
             }
 
             // Score removed (rare - inquiry pending)
@@ -962,6 +983,203 @@
         map[teamKey] = team.final_score;  // string or null
       });
       return map;
+    }
+
+    // ============================================================
+    // SCORE DIFF ENGINE - Flash Queue Management (Task A5)
+    // ============================================================
+
+    /**
+     * Check if a flash is currently active for a given team and gymnast.
+     * Used to detect score corrections during active flash display.
+     * @param {number} teamIndex - 1-based team index
+     * @param {string} gymnastKey - Unique gymnast identifier
+     * @returns {boolean} True if flash is active for this gymnast
+     */
+    function isFlashActive(teamIndex, gymnastKey) {
+      const activeFlash = state.activeFlashes[teamIndex];
+      return activeFlash && activeFlash.gymnastKey === gymnastKey;
+    }
+
+    /**
+     * Interrupt current flash with a new one (score correction case).
+     * Immediately replaces the active flash and resets timer.
+     * @param {number} teamIndex - 1-based team index
+     * @param {Object} gymnastData - New score data to display
+     */
+    function interruptFlash(teamIndex, gymnastData) {
+      console.log('Interrupting active flash with correction:', {
+        team: teamIndex,
+        gymnast: gymnastData.name,
+        newScore: gymnastData.score
+      });
+
+      // Clear existing flash timer
+      if (state.activeFlashes[teamIndex]?.timer) {
+        clearTimeout(state.activeFlashes[teamIndex].timer);
+      }
+
+      // Replace with new flash data
+      state.activeFlashes[teamIndex] = {
+        ...gymnastData,
+        startTime: Date.now(),
+        timer: null
+      };
+
+      // Render the updated flash immediately
+      renderFlash(teamIndex, gymnastData);
+
+      // Set new timer
+      state.activeFlashes[teamIndex].timer = setTimeout(() => {
+        advanceFlashQueue(teamIndex);
+      }, state.flashDuration);
+    }
+
+    /**
+     * Queue a new score flash for a team.
+     * If no flash is active, displays immediately. Otherwise queued.
+     * @param {number} teamIndex - 1-based team index
+     * @param {Object} gymnastData - Score data to display
+     */
+    function triggerScoreFlash(teamIndex, gymnastData) {
+      // Initialize queue if needed
+      if (!state.flashQueues[teamIndex]) {
+        state.flashQueues[teamIndex] = [];
+      }
+
+      console.log('Queuing score flash:', {
+        team: teamIndex,
+        gymnast: gymnastData.name,
+        score: gymnastData.score,
+        queueLength: state.flashQueues[teamIndex].length
+      });
+
+      // Add to queue
+      state.flashQueues[teamIndex].push(gymnastData);
+
+      // If no active flash, start displaying
+      if (!state.activeFlashes[teamIndex]) {
+        displayNextFlash(teamIndex);
+      }
+    }
+
+    /**
+     * Display the next flash from the queue.
+     * Called when starting or advancing the queue.
+     * @param {number} teamIndex - 1-based team index
+     */
+    function displayNextFlash(teamIndex) {
+      const queue = state.flashQueues[teamIndex] || [];
+
+      if (queue.length === 0) {
+        // No more flashes - clear active state
+        state.activeFlashes[teamIndex] = null;
+        clearFlashDisplay(teamIndex);
+        return;
+      }
+
+      // Get next flash from queue
+      const gymnastData = queue.shift();
+
+      // Set as active
+      state.activeFlashes[teamIndex] = {
+        ...gymnastData,
+        startTime: Date.now(),
+        timer: setTimeout(() => {
+          advanceFlashQueue(teamIndex);
+        }, state.flashDuration)
+      };
+
+      // Render the flash
+      renderFlash(teamIndex, gymnastData);
+    }
+
+    /**
+     * Advance to next flash in queue (called when timer expires).
+     * @param {number} teamIndex - 1-based team index
+     */
+    function advanceFlashQueue(teamIndex) {
+      // Clear current flash timer
+      if (state.activeFlashes[teamIndex]?.timer) {
+        clearTimeout(state.activeFlashes[teamIndex].timer);
+      }
+
+      // Display next or clear
+      displayNextFlash(teamIndex);
+    }
+
+    /**
+     * Render a score flash in a team's slot area.
+     * TODO: Task A6 will add slot machine animation.
+     * TODO: Task A7 will enhance rendering with headshots/apparatus.
+     * @param {number} teamIndex - 1-based team index
+     * @param {Object} gymnastData - Score data to render
+     */
+    function renderFlash(teamIndex, gymnastData) {
+      const slotContent = document.getElementById(`slotContent${teamIndex}`);
+      if (!slotContent) return;
+
+      // Basic flash rendering (will be enhanced in A6/A7)
+      slotContent.innerHTML = `
+        <span class="slot-apparatus">${gymnastData.event}</span>
+        <span class="slot-name">${gymnastData.name}</span>
+        <span class="slot-score">${gymnastData.score}</span>
+        ${gymnastData.isCorrection ? '<span class="slot-correction">(corrected)</span>' : ''}
+      `;
+
+      // Animate in
+      slotContent.classList.remove('exit-up', 'enter-from-below');
+      slotContent.classList.add('visible');
+
+      console.log('Rendered flash:', {
+        team: teamIndex,
+        gymnast: gymnastData.name,
+        score: gymnastData.score
+      });
+    }
+
+    /**
+     * Clear flash display for a team (return to idle state).
+     * @param {number} teamIndex - 1-based team index
+     */
+    function clearFlashDisplay(teamIndex) {
+      const slotContent = document.getElementById(`slotContent${teamIndex}`);
+      if (!slotContent) return;
+
+      // Animate out
+      slotContent.classList.add('exit-up');
+      slotContent.classList.remove('visible');
+
+      // Clear content after animation
+      setTimeout(() => {
+        if (!state.activeFlashes[teamIndex]) {
+          slotContent.innerHTML = '';
+          slotContent.classList.remove('exit-up');
+        }
+      }, 400);  // Match CSS transition duration
+    }
+
+    /**
+     * Get current flash queue status for debugging/producer panel.
+     * @returns {Object} Queue status by team
+     */
+    function getFlashQueueStatus() {
+      const status = {};
+      state.teams.forEach((team) => {
+        const queue = state.flashQueues[team.index] || [];
+        const active = state.activeFlashes[team.index];
+        status[team.index] = {
+          teamName: team.name,
+          queueLength: queue.length,
+          activeFlash: active ? {
+            gymnast: active.name,
+            score: active.score,
+            timeRemaining: active.startTime ?
+              Math.max(0, state.flashDuration - (Date.now() - active.startTime)) : 0
+          } : null
+        };
+      });
+      return status;
     }
 
     // Initialize Firebase schema with default values (prevents race conditions)
