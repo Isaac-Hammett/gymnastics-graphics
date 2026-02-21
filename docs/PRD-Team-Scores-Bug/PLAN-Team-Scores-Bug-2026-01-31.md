@@ -45,7 +45,7 @@
 | C3 | Lineup card animation | COMPLETE | `overlays/team-bug.html` | — | Already implemented in C1: CSS transition on .lineup-card (translateY slide-up + opacity), .visible class toggled by updateLineupCard() |
 | C4 | Firebase listener: showLineup | COMPLETE | `overlays/team-bug.html` | — | Already implemented: line 706-709, listens to showLineup, calls updateLineupCard() |
 | C5 | Lineup live-update | COMPLETE | `overlays/team-bug.html` | — | Added updateLineupCard() call at end of processApiData() when showLineup is set, so lineup scores update on each API poll |
-| D1 | ScoreBugPanel component | NOT STARTED | `show-controller/src/components/ScoreBugPanel.jsx` | `AlertPanel.jsx` |
+| D1 | ScoreBugPanel component | COMPLETE | `show-controller/src/components/ScoreBugPanel.jsx` | `AlertPanel.jsx` | Created collapsible panel with Firebase listener, ON status indicator, follows AlertPanel pattern |
 | D2 | Add panel to ProducerView | NOT STARTED | `show-controller/src/pages/ProducerView.jsx` | — |
 | D2b | Copy URL button | NOT STARTED | `show-controller/src/components/ScoreBugPanel.jsx` | — |
 | D3 | On/off toggle | NOT STARTED | `show-controller/src/components/ScoreBugPanel.jsx` | — |
