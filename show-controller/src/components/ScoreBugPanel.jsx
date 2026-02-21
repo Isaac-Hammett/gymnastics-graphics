@@ -5,7 +5,8 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   ClipboardIcon,
-  CheckIcon
+  CheckIcon,
+  ExclamationTriangleIcon
 } from '@heroicons/react/24/solid';
 
 /**
@@ -269,6 +270,24 @@ export default function ScoreBugPanel({
                 lastPoll={scoreBugState?.status?.lastPoll}
                 pollInterval={scoreBugState?.config?.pollInterval || 5000}
               />
+            </div>
+          )}
+
+          {/* API Error Indicator (D5b) */}
+          {scoreBugState?.status?.error && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
+              <div className="flex items-center gap-2">
+                <ExclamationTriangleIcon className="w-4 h-4 text-red-400 flex-shrink-0" />
+                <span className="text-sm text-red-400 font-medium">API Error</span>
+              </div>
+              <p className="text-xs text-red-300/80 mt-1 ml-6">
+                {scoreBugState.status.error.message || 'Unknown error'}
+              </p>
+              {scoreBugState.status.error.retryIn && (
+                <p className="text-xs text-red-300/60 mt-0.5 ml-6">
+                  Retrying in {Math.ceil(scoreBugState.status.error.retryIn / 1000)}s
+                </p>
+              )}
             </div>
           )}
 
