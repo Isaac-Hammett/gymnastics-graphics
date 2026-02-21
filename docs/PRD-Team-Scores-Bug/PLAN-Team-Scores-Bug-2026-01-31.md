@@ -42,9 +42,9 @@
 | B8 | Write detected state to Firebase | COMPLETE | `overlays/team-bug.html` | — | Already implemented in B1 (line 1083): safeWrite to detected/nowCompeting |
 | C1 | Lineup card HTML/CSS | COMPLETE | `overlays/team-bug.html` | — | Already implemented: HTML placeholder (line 367-369), CSS styles (lines 245-347) with header, athletes list, footer, slide animation |
 | C2 | Lineup card populate | COMPLETE | `overlays/team-bug.html` | — | Added updateLineupCard(), findCurrentEventForLineup(), renderLineupCardContent(). Uses state.lastApiTeams, matches showLineup to team short_name, displays athletes sorted by order with SV/score. |
-| C3 | Lineup card animation | NOT STARTED | `overlays/team-bug.html` | — |
-| C4 | Firebase listener: showLineup | NOT STARTED | `overlays/team-bug.html` | — |
-| C5 | Lineup live-update | NOT STARTED | `overlays/team-bug.html` | — |
+| C3 | Lineup card animation | COMPLETE | `overlays/team-bug.html` | — | Already implemented in C1: CSS transition on .lineup-card (translateY slide-up + opacity), .visible class toggled by updateLineupCard() |
+| C4 | Firebase listener: showLineup | COMPLETE | `overlays/team-bug.html` | — | Already implemented: line 706-709, listens to showLineup, calls updateLineupCard() |
+| C5 | Lineup live-update | COMPLETE | `overlays/team-bug.html` | — | Added updateLineupCard() call at end of processApiData() when showLineup is set, so lineup scores update on each API poll |
 | D1 | ScoreBugPanel component | NOT STARTED | `show-controller/src/components/ScoreBugPanel.jsx` | `AlertPanel.jsx` |
 | D2 | Add panel to ProducerView | NOT STARTED | `show-controller/src/pages/ProducerView.jsx` | — |
 | D2b | Copy URL button | NOT STARTED | `show-controller/src/components/ScoreBugPanel.jsx` | — |
