@@ -1453,8 +1453,8 @@
       initConnectionMonitor();
 
       // Order: load config -> render teams -> initialize schema -> start listeners
-      loadCompetitionConfig().then((success) => {
-        if (!success) return;
+      loadCompetitionConfig().then(async (success) => {
+        if (!success) return;  // Exit early, don't initialize listeners
 
         // Render team rows with initial state (before API data)
         renderTeamRows();
@@ -1463,9 +1463,9 @@
         updateRotationTag();
 
         // Initialize Firebase schema (safe defaults)
-        return initializeSchema();
-      }).then(() => {
-        // Start listening for Firebase changes
+        await initializeSchema();
+
+        // Start listening for Firebase changes (only after successful config load)
         initFirebaseListeners();
       });
     }
