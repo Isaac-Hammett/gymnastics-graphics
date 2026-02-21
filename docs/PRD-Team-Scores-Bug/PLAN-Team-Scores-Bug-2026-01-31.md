@@ -57,7 +57,7 @@
 | D5 | Now-competing display | COMPLETE | `show-controller/src/components/ScoreBugPanel.jsx` | — | Shows detected now-competing athletes with tricode badge, name, and event |
 | D5b | API error indicator | COMPLETE | `show-controller/src/components/ScoreBugPanel.jsx` | — | Added error banner showing message and retry countdown, reads from status/error |
 | D5c | Dismiss flash button | COMPLETE | `show-controller/src/components/ScoreBugPanel.jsx` | — | Added dismissFlash(), dismissAllFlashes() functions. Per-team X button + "Dismiss All" button in now-competing section. Writes to dismissFlash/{teamIndex} |
-| D6 | SHOW/HIDE now-competing | NOT STARTED | `show-controller/src/components/ScoreBugPanel.jsx` | — |
+| D6 | SHOW/HIDE now-competing | COMPLETE | `show-controller/src/components/ScoreBugPanel.jsx` | — | Added showNowCompeting(), hideNowCompeting() functions. SHOW/HIDE buttons appear in manual mode for each detected athlete, toggle nowCompeting/{teamKey} in Firebase |
 | D7 | Lineup card controls | NOT STARTED | `show-controller/src/components/ScoreBugPanel.jsx` | — |
 | D8 | Write showLineup | NOT STARTED | `show-controller/src/components/ScoreBugPanel.jsx` | — |
 | D9 | Write nowCompeting | NOT STARTED | `show-controller/src/components/ScoreBugPanel.jsx` | — |
