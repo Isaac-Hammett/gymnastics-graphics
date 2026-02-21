@@ -370,7 +370,12 @@
       // Competition config (loaded from Firebase)
       competitionConfig: null,
       virtiusSessionId: null,
-      gender: 'mens'
+      gender: 'mens',
+      // Error handling state (A3c)
+      consecutiveErrors: 0,      // Count of consecutive poll failures
+      lastError: null,           // Last error message
+      lastErrorTime: null,       // Timestamp of last error
+      maxBackoffMs: 60000        // Max backoff delay (60 seconds)
     };
 
     /**
@@ -634,14 +639,65 @@
         await processApiData(teams, pollStartTime);
 
       } catch (err) {
-        // Log error - full error handling with backoff is Task A3c
-        console.error('Poll failed:', err.message);
+        // Error handling with exponential backoff (A3c)
+        state.consecutiveErrors++;
+        state.lastError = err.message;
+        state.lastErrorTime = pollStartTime;
 
-        // Still try to write heartbeat even on failure (indicates overlay is running)
+        // Calculate backoff delay: 5s, 10s, 20s, 40s, 60s (max)
+        const backoffDelay = Math.min(
+          state.pollInterval * Math.pow(2, state.consecutiveErrors - 1),
+          state.maxBackoffMs
+        );
+
+        console.error('Poll failed:', {
+          error: err.message,
+          consecutiveErrors: state.consecutiveErrors,
+          nextRetryIn: `${backoffDelay / 1000}s`
+        });
+
+        // Write error state to Firebase for producer panel visibility (D5b)
         try {
+          await scoreBugRef.child('apiError').set({
+            message: err.message,
+            consecutiveErrors: state.consecutiveErrors,
+            timestamp: pollStartTime,
+            nextRetryMs: backoffDelay
+          });
+          // Still write heartbeat to indicate overlay is running
           await scoreBugRef.child('heartbeat').set(pollStartTime);
-        } catch (heartbeatErr) {
-          console.error('Failed to write heartbeat:', heartbeatErr);
+        } catch (firebaseErr) {
+          console.error('Failed to write error state to Firebase:', firebaseErr);
+        }
+
+        // Schedule next poll with backoff delay if we're still supposed to be polling
+        if (state.polling && pollTimer) {
+          clearInterval(pollTimer);
+          pollTimer = setTimeout(() => {
+            if (state.polling) {
+              poll();
+              // If poll succeeds, startPolling() will be called to restore normal interval
+            }
+          }, backoffDelay);
+        }
+        return; // Skip normal completion
+      }
+
+      // Success - reset error state
+      if (state.consecutiveErrors > 0) {
+        console.log('Poll recovered after', state.consecutiveErrors, 'consecutive errors');
+        state.consecutiveErrors = 0;
+        state.lastError = null;
+        state.lastErrorTime = null;
+
+        // Clear error state in Firebase
+        await scoreBugRef.child('apiError').remove();
+
+        // Restore normal polling interval (we might be on backoff timeout)
+        if (state.polling && pollTimer) {
+          clearTimeout(pollTimer);
+          clearInterval(pollTimer);
+          pollTimer = setInterval(poll, state.pollInterval);
         }
       }
     }
