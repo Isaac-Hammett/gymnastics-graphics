@@ -749,12 +749,143 @@
     // Update lineup card visibility
     function updateLineupCard() {
       const cardEl = document.getElementById('lineupCard');
-      if (state.showLineup) {
-        cardEl.classList.add('visible');
-        // TODO: Populate lineup card content (Phase C)
-      } else {
+      if (!state.showLineup) {
         cardEl.classList.remove('visible');
+        return;
       }
+
+      // Find the team matching state.showLineup (teamKey like "navy-mens")
+      const apiTeams = state.lastApiTeams || [];
+      const teamData = apiTeams.find(t => {
+        const teamKey = t.short_name || `team${apiTeams.indexOf(t) + 1}`;
+        return teamKey === state.showLineup;
+      });
+
+      if (!teamData) {
+        console.warn('Lineup card: team not found for key:', state.showLineup);
+        cardEl.classList.remove('visible');
+        return;
+      }
+
+      // Find the config team to get logo and display name
+      const configTeamIndex = apiTeams.indexOf(teamData);
+      const configTeam = state.teams[configTeamIndex] || {};
+
+      // Find the current event (in progress or most recent)
+      const currentEvent = findCurrentEventForLineup(teamData);
+      if (!currentEvent) {
+        console.warn('Lineup card: no current event found');
+        cardEl.classList.remove('visible');
+        return;
+      }
+
+      // Populate the lineup card content
+      cardEl.innerHTML = renderLineupCardContent(teamData, configTeam, currentEvent);
+      cardEl.classList.add('visible');
+    }
+
+    /**
+     * Find the current event for lineup card display.
+     * Prioritizes: (1) event in progress, (2) last completed event, (3) first event.
+     * @param {Object} teamData - Team data from Virtius API
+     * @returns {Object|null} Event object or null
+     */
+    function findCurrentEventForLineup(teamData) {
+      if (!teamData || !teamData.events) return null;
+
+      const events = teamData.events;
+      if (events.length === 0) return null;
+
+      // Look for event in progress (some scores, but not all)
+      for (const event of events) {
+        const gymnasts = event.gymnasts || [];
+        if (gymnasts.length === 0) continue;
+
+        const scored = gymnasts.filter(g => g.final_score != null);
+        const unscored = gymnasts.filter(g => g.final_score == null);
+
+        // Event in progress: has some scores but not complete
+        if (scored.length > 0 && unscored.length > 0) {
+          return event;
+        }
+      }
+
+      // No event in progress - find the last event with scores
+      for (let i = events.length - 1; i >= 0; i--) {
+        const event = events[i];
+        const gymnasts = event.gymnasts || [];
+        const scored = gymnasts.filter(g => g.final_score != null);
+        if (scored.length > 0) {
+          return event;
+        }
+      }
+
+      // No events have scores yet - return first event
+      return events[0];
+    }
+
+    /**
+     * Render lineup card HTML content.
+     * @param {Object} teamData - Team data from Virtius API
+     * @param {Object} configTeam - Team config with logo/name
+     * @param {Object} event - Current event to display
+     * @returns {string} HTML content
+     */
+    function renderLineupCardContent(teamData, configTeam, event) {
+      const teamName = configTeam.name || teamData.name || 'Team';
+      const teamLogo = configTeam.logo || '';
+      const eventName = getEventShortCode(event.event_name || event.name || '');
+      const eventTotal = formatScore(event.event_score);
+
+      // Sort gymnasts by lineup order
+      const gymnasts = [...(event.gymnasts || [])].sort((a, b) => (a.order || 0) - (b.order || 0));
+
+      // Build athlete rows
+      const athleteRows = gymnasts.map((g, idx) => {
+        const order = g.order || (idx + 1);
+        const name = g.full_name || 'Unknown';
+        // Get start value from scores array if available
+        const startValue = (g.scores && g.scores[0] && g.scores[0].start)
+          ? parseFloat(g.scores[0].start).toFixed(1)
+          : '';
+        const score = g.final_score != null ? formatScore(g.final_score) : '--';
+        const pendingClass = g.final_score == null ? 'pending' : '';
+
+        return `
+          <div class="lineup-athlete">
+            <span class="lineup-order">${order}.</span>
+            <span class="lineup-name">${name}</span>
+            <span class="lineup-sv">${startValue}</span>
+            <span class="lineup-score ${pendingClass}">${score}</span>
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <div class="lineup-header">
+          <span class="lineup-team-name">${teamName}</span>
+          <img class="lineup-logo" src="${teamLogo}" alt="" onerror="this.style.display='none'">
+        </div>
+        <div class="lineup-athletes">
+          ${athleteRows}
+        </div>
+        <div class="lineup-footer">
+          <span class="lineup-event">${eventName}</span>
+          <span class="lineup-total">${eventTotal}</span>
+        </div>
+      `;
+    }
+
+    /**
+     * Format score for display (3 decimal places).
+     * @param {string|number|null} score - Score value
+     * @returns {string} Formatted score or "--"
+     */
+    function formatScore(score) {
+      if (score == null || score === '') return '--';
+      const num = parseFloat(score);
+      if (isNaN(num)) return '--';
+      return num.toFixed(3);
     }
 
     /**
