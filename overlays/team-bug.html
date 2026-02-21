@@ -1184,15 +1184,27 @@
     }
 
     /**
-     * Insert flash content HTML into slot element.
+     * Insert flash content HTML into slot element (Task A7).
+     * Renders: apparatus | name | SV | separator | score | correction indicator
      * @param {HTMLElement} slotContent - The slot content container
      * @param {Object} gymnastData - Score data to render
      */
     function insertFlashContent(slotContent, gymnastData) {
+      // Format start value for display (e.g., "5.0" or "5.2")
+      const svDisplay = gymnastData.startValue
+        ? `<span class="slot-sv">SV ${parseFloat(gymnastData.startValue).toFixed(1)}</span>`
+        : '';
+
+      // Format score for display (e.g., "13.450")
+      const scoreValue = parseFloat(gymnastData.score);
+      const scoreDisplay = isNaN(scoreValue) ? gymnastData.score : scoreValue.toFixed(3);
+
       slotContent.innerHTML = `
         <span class="slot-apparatus">${gymnastData.event}</span>
         <span class="slot-name">${gymnastData.name}</span>
-        <span class="slot-score">${gymnastData.score}</span>
+        ${svDisplay}
+        <span class="slot-separator">•</span>
+        <span class="slot-score">${scoreDisplay}</span>
         ${gymnastData.isCorrection ? '<span class="slot-correction">(corrected)</span>' : ''}
       `;
     }
