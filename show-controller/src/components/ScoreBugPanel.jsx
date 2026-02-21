@@ -3,7 +3,9 @@ import { db, ref, onValue } from '../lib/firebase';
 import {
   ChartBarIcon,
   ChevronDownIcon,
-  ChevronUpIcon
+  ChevronUpIcon,
+  ClipboardIcon,
+  CheckIcon
 } from '@heroicons/react/24/solid';
 
 /**
@@ -18,6 +20,19 @@ export default function ScoreBugPanel({
 }) {
   const [collapsed, setCollapsed] = useState(initialCollapsed);
   const [scoreBugState, setScoreBugState] = useState(null);
+  const [copiedUrl, setCopiedUrl] = useState(false);
+
+  // Generate overlay URL
+  const overlayUrl = compId
+    ? `${window.location.origin}/overlays/team-bug.html?compId=${compId}`
+    : '';
+
+  // Copy URL to clipboard
+  const copyUrl = () => {
+    navigator.clipboard.writeText(overlayUrl);
+    setCopiedUrl(true);
+    setTimeout(() => setCopiedUrl(false), 2000);
+  };
 
   // Listen to scoreBug state from Firebase
   useEffect(() => {
@@ -87,9 +102,30 @@ export default function ScoreBugPanel({
 
       {!collapsed && (
         <div className="p-4 pt-0 space-y-3">
-          {/* Placeholder content - controls will be added in subsequent tasks */}
-          <div className="text-center py-4 text-zinc-500 text-sm">
-            Score bug controls coming soon
+          {/* Overlay URL with Copy Button */}
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              readOnly
+              value={overlayUrl}
+              className="flex-1 bg-zinc-900 text-zinc-400 text-xs px-3 py-2 rounded-lg border border-zinc-700 focus:outline-none"
+            />
+            <button
+              onClick={copyUrl}
+              className="p-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded-lg transition-colors"
+              title="Copy overlay URL"
+            >
+              {copiedUrl ? (
+                <CheckIcon className="w-4 h-4 text-green-400" />
+              ) : (
+                <ClipboardIcon className="w-4 h-4" />
+              )}
+            </button>
+          </div>
+
+          {/* Placeholder - more controls coming in subsequent tasks */}
+          <div className="text-center py-2 text-zinc-500 text-sm">
+            More controls coming soon
           </div>
         </div>
       )}

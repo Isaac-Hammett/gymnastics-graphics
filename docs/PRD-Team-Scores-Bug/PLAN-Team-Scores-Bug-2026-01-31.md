@@ -47,7 +47,7 @@
 | C5 | Lineup live-update | COMPLETE | `overlays/team-bug.html` | — | Added updateLineupCard() call at end of processApiData() when showLineup is set, so lineup scores update on each API poll |
 | D1 | ScoreBugPanel component | COMPLETE | `show-controller/src/components/ScoreBugPanel.jsx` | `AlertPanel.jsx` | Created collapsible panel with Firebase listener, ON status indicator, follows AlertPanel pattern |
 | D2 | Add panel to ProducerView | COMPLETE | `show-controller/src/views/ProducerView.jsx` | — | Added import and component placement after AlertPanel. Also updated ScoreBugPanel to import db directly from firebase lib (consistent with other components). |
-| D2b | Copy URL button | NOT STARTED | `show-controller/src/components/ScoreBugPanel.jsx` | — |
+| D2b | Copy URL button | COMPLETE | `show-controller/src/components/ScoreBugPanel.jsx` | — | Added overlayUrl generation, copyUrl() with clipboard API, visual feedback (CheckIcon for 2s) |
 | D3 | On/off toggle | NOT STARTED | `show-controller/src/components/ScoreBugPanel.jsx` | — |
 | D3b | Polling toggle | NOT STARTED | `show-controller/src/components/ScoreBugPanel.jsx` | — |
 | D3c | Poll frequency selector | NOT STARTED | `show-controller/src/components/ScoreBugPanel.jsx` | — |
