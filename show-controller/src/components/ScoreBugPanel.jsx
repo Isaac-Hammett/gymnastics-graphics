@@ -116,6 +116,13 @@ export default function ScoreBugPanel({
     set(ref(db, `competitions/${compId}/scoreBug/config/pollInterval`), frequency);
   };
 
+  // Toggle automation mode (auto/manual)
+  const toggleAutomationMode = () => {
+    const currentMode = scoreBugState?.config?.automationMode || 'auto';
+    const newMode = currentMode === 'auto' ? 'manual' : 'auto';
+    set(ref(db, `competitions/${compId}/scoreBug/config/automationMode`), newMode);
+  };
+
   // Listen to scoreBug state from Firebase
   useEffect(() => {
     if (!compId) return;
@@ -264,6 +271,43 @@ export default function ScoreBugPanel({
               />
             </div>
           )}
+
+          {/* Automation Mode Toggle */}
+          <div className="flex items-center justify-between py-2">
+            <span className="text-sm text-zinc-300">Now Competing</span>
+            <div className="flex items-center gap-2">
+              <span className={`text-xs ${
+                (scoreBugState?.config?.automationMode || 'auto') === 'auto'
+                  ? 'text-zinc-500'
+                  : 'text-purple-400 font-medium'
+              }`}>
+                MANUAL
+              </span>
+              <button
+                onClick={toggleAutomationMode}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  (scoreBugState?.config?.automationMode || 'auto') === 'auto'
+                    ? 'bg-purple-500'
+                    : 'bg-zinc-600'
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    (scoreBugState?.config?.automationMode || 'auto') === 'auto'
+                      ? 'translate-x-6'
+                      : 'translate-x-1'
+                  }`}
+                />
+              </button>
+              <span className={`text-xs ${
+                (scoreBugState?.config?.automationMode || 'auto') === 'auto'
+                  ? 'text-purple-400 font-medium'
+                  : 'text-zinc-500'
+              }`}>
+                AUTO
+              </span>
+            </div>
+          </div>
         </div>
       )}
     </div>
