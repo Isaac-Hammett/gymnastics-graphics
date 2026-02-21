@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { db, ref, onValue } from '../lib/firebase';
+import { db, ref, onValue, set } from '../lib/firebase';
 import {
   ChartBarIcon,
   ChevronDownIcon,
@@ -32,6 +32,12 @@ export default function ScoreBugPanel({
     navigator.clipboard.writeText(overlayUrl);
     setCopiedUrl(true);
     setTimeout(() => setCopiedUrl(false), 2000);
+  };
+
+  // Toggle enabled state
+  const toggleEnabled = () => {
+    const newState = !scoreBugState?.enabled;
+    set(ref(db, `competitions/${compId}/scoreBug/enabled`), newState);
   };
 
   // Listen to scoreBug state from Firebase
@@ -123,9 +129,21 @@ export default function ScoreBugPanel({
             </button>
           </div>
 
-          {/* Placeholder - more controls coming in subsequent tasks */}
-          <div className="text-center py-2 text-zinc-500 text-sm">
-            More controls coming soon
+          {/* On/Off Toggle */}
+          <div className="flex items-center justify-between py-2">
+            <span className="text-sm text-zinc-300">Show Bug</span>
+            <button
+              onClick={toggleEnabled}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                scoreBugState?.enabled ? 'bg-green-500' : 'bg-zinc-600'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  scoreBugState?.enabled ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
           </div>
         </div>
       )}
