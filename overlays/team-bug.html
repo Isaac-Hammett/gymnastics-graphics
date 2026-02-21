@@ -136,6 +136,44 @@
       opacity: 0;
     }
 
+    /* Slot machine animation - new content spins up from below */
+    @keyframes slotSpinIn {
+      0% {
+        transform: translateY(100%);
+        opacity: 0;
+      }
+      20% {
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    /* Slot machine animation - old content spins up and out */
+    @keyframes slotSpinOut {
+      0% {
+        transform: translateY(0);
+        opacity: 1;
+      }
+      80% {
+        opacity: 0;
+      }
+      100% {
+        transform: translateY(-100%);
+        opacity: 0;
+      }
+    }
+
+    .slot-content.spin-in {
+      animation: slotSpinIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .slot-content.spin-out {
+      animation: slotSpinOut 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
     /* Headshot in slot */
     .slot-headshot {
       width: 36px;
@@ -1109,8 +1147,7 @@
     }
 
     /**
-     * Render a score flash in a team's slot area.
-     * TODO: Task A6 will add slot machine animation.
+     * Render a score flash in a team's slot area with slot machine animation.
      * TODO: Task A7 will enhance rendering with headshots/apparatus.
      * @param {number} teamIndex - 1-based team index
      * @param {Object} gymnastData - Score data to render
@@ -1119,44 +1156,84 @@
       const slotContent = document.getElementById(`slotContent${teamIndex}`);
       if (!slotContent) return;
 
-      // Basic flash rendering (will be enhanced in A6/A7)
+      // Check if there's existing content to animate out
+      const hasExistingContent = slotContent.innerHTML.trim() !== '';
+
+      if (hasExistingContent) {
+        // Spin out existing content first
+        slotContent.classList.remove('spin-in', 'visible');
+        slotContent.classList.add('spin-out');
+
+        // After spin-out completes, insert new content and spin in
+        setTimeout(() => {
+          insertFlashContent(slotContent, gymnastData);
+          triggerSpinIn(slotContent);
+        }, 400);  // Match spin-out animation duration
+      } else {
+        // No existing content - insert and spin in directly
+        insertFlashContent(slotContent, gymnastData);
+        triggerSpinIn(slotContent);
+      }
+
+      console.log('Rendered flash:', {
+        team: teamIndex,
+        gymnast: gymnastData.name,
+        score: gymnastData.score,
+        animated: hasExistingContent ? 'spin-transition' : 'spin-in'
+      });
+    }
+
+    /**
+     * Insert flash content HTML into slot element.
+     * @param {HTMLElement} slotContent - The slot content container
+     * @param {Object} gymnastData - Score data to render
+     */
+    function insertFlashContent(slotContent, gymnastData) {
       slotContent.innerHTML = `
         <span class="slot-apparatus">${gymnastData.event}</span>
         <span class="slot-name">${gymnastData.name}</span>
         <span class="slot-score">${gymnastData.score}</span>
         ${gymnastData.isCorrection ? '<span class="slot-correction">(corrected)</span>' : ''}
       `;
-
-      // Animate in
-      slotContent.classList.remove('exit-up', 'enter-from-below');
-      slotContent.classList.add('visible');
-
-      console.log('Rendered flash:', {
-        team: teamIndex,
-        gymnast: gymnastData.name,
-        score: gymnastData.score
-      });
     }
 
     /**
-     * Clear flash display for a team (return to idle state).
+     * Trigger spin-in animation on slot content.
+     * @param {HTMLElement} slotContent - The slot content container
+     */
+    function triggerSpinIn(slotContent) {
+      // Reset animation state
+      slotContent.classList.remove('spin-out', 'exit-up', 'enter-from-below');
+
+      // Force reflow to ensure animation restarts
+      void slotContent.offsetWidth;
+
+      // Trigger spin-in animation
+      slotContent.classList.add('spin-in', 'visible');
+    }
+
+    /**
+     * Clear flash display for a team (return to idle state) with spin-out animation.
      * @param {number} teamIndex - 1-based team index
      */
     function clearFlashDisplay(teamIndex) {
       const slotContent = document.getElementById(`slotContent${teamIndex}`);
       if (!slotContent) return;
 
-      // Animate out
-      slotContent.classList.add('exit-up');
-      slotContent.classList.remove('visible');
+      // Only animate if there's content to clear
+      if (slotContent.innerHTML.trim() === '') return;
 
-      // Clear content after animation
+      // Trigger spin-out animation
+      slotContent.classList.remove('spin-in', 'visible');
+      slotContent.classList.add('spin-out');
+
+      // Clear content after animation completes
       setTimeout(() => {
         if (!state.activeFlashes[teamIndex]) {
           slotContent.innerHTML = '';
-          slotContent.classList.remove('exit-up');
+          slotContent.classList.remove('spin-out');
         }
-      }, 400);  // Match CSS transition duration
+      }, 400);  // Match CSS animation duration
     }
 
     /**

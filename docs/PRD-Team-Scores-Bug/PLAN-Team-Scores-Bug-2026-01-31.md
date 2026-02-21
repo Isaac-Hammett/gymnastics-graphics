@@ -22,7 +22,7 @@
 | A3d | Offline/reconnect behavior | COMPLETE | `overlays/team-bug.html` | — | Added Firebase .info/connected listener, safeWrite() wrapper, pending write queue |
 | A4 | Team row rendering | COMPLETE | `overlays/team-bug.html` | `overlays/event-bar.html` | Added updateTeamTotal(), updateAllTeamTotals() with highlight animation |
 | A5 | Score diff engine | COMPLETE | `overlays/team-bug.html` | PLAN 1.3 | Added flash queue system: triggerScoreFlash(), interruptFlash(), isFlashActive(), displayNextFlash(), advanceFlashQueue(), renderFlash(), clearFlashDisplay(). Score changes now trigger queued flashes per-team with correction detection. |
-| A6 | Slot machine animation | NOT STARTED | `overlays/team-bug.html` | CSS keyframes |
+| A6 | Slot machine animation | COMPLETE | `overlays/team-bug.html` | CSS keyframes | Added slotSpinIn/slotSpinOut keyframes, updated renderFlash() with insertFlashContent() and triggerSpinIn() helpers |
 | A7 | Score flash renderer | NOT STARTED | `overlays/team-bug.html` | `overlays/event-bar.html` |
 | A8 | Per-team flash queue | NOT STARTED | `overlays/team-bug.html` | — |
 | A9 | Team total highlight | NOT STARTED | `overlays/team-bug.html` | CSS animation |
