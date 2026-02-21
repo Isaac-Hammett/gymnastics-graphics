@@ -71,9 +71,9 @@
 | F2 | Stick indicator UI | COMPLETE | `overlays/team-bug.html` | — | Added .slot-stick CSS (green badge), updated insertFlashContent() to show "Stick" badge when hasStick=true |
 | F3 | Men's only conditional | COMPLETE | `overlays/team-bug.html` | — | Added state.gender check in insertFlashContent() - stick indicator only shows when gender='mens' |
 | G1 | 3-team layout | COMPLETE | `overlays/team-bug.html` | — | Added `.teams-3` through `.teams-6` CSS classes with scaled dimensions. `renderTeamRows()` adds team count class to scoreBug container |
-| G2 | 4-team layout | NOT STARTED | `overlays/team-bug.html` | — |
-| G3 | 5-6 team layout | NOT STARTED | `overlays/team-bug.html` | — |
-| G4 | Multi-team testing | NOT STARTED | `overlays/team-bug.html` | — |
+| G2 | 4-team layout | COMPLETE | `overlays/team-bug.html` | — | Already implemented in G1: `.teams-4` CSS with scaled dimensions (row height 60px, logo 36px, total 20px, headshot 32px, name 22px, score 26px) |
+| G3 | 5-6 team layout | COMPLETE | `overlays/team-bug.html` | — | Already implemented in G1: `.teams-5` and `.teams-6` CSS with progressively scaled dimensions for compact layouts |
+| G4 | Multi-team testing | COMPLETE | `overlays/team-bug.html` | — | Verified: 2-team (k859vzup), 3-team (23845qag), 4-team (fdeeuowb) layouts all render correctly with proper scaling |
 | G5 | OBS browser source test | NOT STARTED | — | — |
 
 **Progress:** 4 COMPLETE / 0 IN PROGRESS / 56 NOT STARTED
