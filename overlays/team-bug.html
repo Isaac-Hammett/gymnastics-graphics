@@ -475,9 +475,71 @@
       }
     }
 
+    // Initialize Firebase schema with default values (prevents race conditions)
+    // Uses update() with null checks - only sets values that don't exist
+    async function initializeSchema() {
+      const defaultSchema = {
+        enabled: false,
+        polling: false,
+        automationMode: 'auto',
+        showLineup: null,
+        dismissFlash: {},
+        nowCompeting: {},
+        detected: {},
+        heartbeat: null,
+        liveData: {
+          lastPollTimestamp: null,
+          lastDataChangeTimestamp: null,
+          stalePollCount: 0,
+          rotation: null,
+          totalRotations: null,
+          teams: {}
+        },
+        lastError: null,
+        config: {
+          pollInterval: 5000,
+          flashDuration: 10000,
+          showStickIndicator: true
+        }
+      };
+
+      try {
+        // Use transaction to safely initialize schema without overwriting existing values
+        await scoreBugRef.transaction((currentData) => {
+          if (currentData === null) {
+            // No data exists - write full schema
+            console.log('Initializing scoreBug schema with defaults');
+            return defaultSchema;
+          }
+          // Data exists - merge defaults for any missing fields only
+          const merged = { ...defaultSchema };
+          Object.keys(currentData).forEach(key => {
+            if (currentData[key] !== undefined) {
+              // Keep existing value
+              merged[key] = currentData[key];
+            }
+          });
+          // Deep merge for nested objects (config, liveData)
+          if (currentData.config) {
+            merged.config = { ...defaultSchema.config, ...currentData.config };
+          }
+          if (currentData.liveData) {
+            merged.liveData = { ...defaultSchema.liveData, ...currentData.liveData };
+          }
+          console.log('Merged existing scoreBug data with defaults');
+          return merged;
+        });
+        console.log('Firebase schema initialized');
+      } catch (err) {
+        console.error('Failed to initialize schema:', err);
+      }
+    }
+
     // Initialize on load
     if (compId) {
-      initFirebaseListeners();
+      initializeSchema().then(() => {
+        initFirebaseListeners();
+      });
     }
   </script>
 </body>
