@@ -364,12 +364,100 @@
       flashQueues: {},  // Per-team flash queues
       activeFlashes: {},  // Currently active flashes per team
       pollInterval: 5000,
-      flashDuration: 10000
+      flashDuration: 10000,
+      // Competition config (loaded from Firebase)
+      competitionConfig: null,
+      virtiusSessionId: null,
+      gender: 'mens'
     };
 
     // Firebase paths
     const scoreBugRef = db.ref(`competitions/${compId}/scoreBug`);
     const configRef = db.ref(`competitions/${compId}/config`);
+
+    /**
+     * Load competition config from Firebase.
+     * Gets virtiusSessionId, team names/logos, gender, and compType.
+     * Must be called before initializing Firebase listeners.
+     */
+    async function loadCompetitionConfig() {
+      try {
+        const snapshot = await configRef.once('value');
+        const config = snapshot.val();
+
+        if (!config) {
+          console.error('No competition config found for compId:', compId);
+          document.body.innerHTML = '<div class="error-state">Competition not found</div>';
+          return false;
+        }
+
+        state.competitionConfig = config;
+        state.virtiusSessionId = config.virtiusSessionId || null;
+        state.gender = config.gender || 'mens';
+
+        // Build teams array from config (up to 6 teams)
+        state.teams = [];
+        for (let i = 1; i <= 6; i++) {
+          const teamName = config[`team${i}Name`];
+          if (teamName) {
+            state.teams.push({
+              index: i,
+              name: teamName,
+              logo: config[`team${i}Logo`] || '',
+              tricode: config[`team${i}Tricode`] || '',
+              total: '--'  // Initial state before first API poll
+            });
+          }
+        }
+
+        // Determine total rotations based on gender (6 for men, 4 for women)
+        state.rotation.total = state.gender === 'womens' ? 4 : 6;
+
+        console.log('Competition config loaded:', {
+          compId,
+          virtiusSessionId: state.virtiusSessionId,
+          gender: state.gender,
+          teamCount: state.teams.length,
+          teams: state.teams.map(t => t.name)
+        });
+
+        // Check if Virtius session ID is configured
+        if (!state.virtiusSessionId) {
+          console.warn('No Virtius session ID configured - API polling will not work');
+        }
+
+        return true;
+      } catch (err) {
+        console.error('Failed to load competition config:', err);
+        document.body.innerHTML = '<div class="error-state">Failed to load competition config</div>';
+        return false;
+      }
+    }
+
+    /**
+     * Render initial team rows based on competition config.
+     * Called after loadCompetitionConfig() to show teams before API polling starts.
+     */
+    function renderTeamRows() {
+      const container = document.getElementById('teamRows');
+      if (!container) return;
+
+      container.innerHTML = state.teams.map((team, idx) => `
+        <div class="team-row" data-team-index="${team.index}">
+          <div class="team-fixed">
+            <img class="team-logo" src="${team.logo}" alt="${team.name}" onerror="this.style.display='none'">
+            <div class="team-total" id="teamTotal${team.index}">${team.total}</div>
+          </div>
+          <div class="team-slot" id="teamSlot${team.index}">
+            <div class="slot-content" id="slotContent${team.index}">
+              <!-- Score flash / now competing content populated dynamically -->
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      console.log('Team rows rendered:', state.teams.length);
+    }
 
     // Initialize Firebase listeners
     function initFirebaseListeners() {
@@ -537,7 +625,17 @@
 
     // Initialize on load
     if (compId) {
-      initializeSchema().then(() => {
+      // Order: load config -> render teams -> initialize schema -> start listeners
+      loadCompetitionConfig().then((success) => {
+        if (!success) return;
+
+        // Render team rows with initial state (before API data)
+        renderTeamRows();
+
+        // Initialize Firebase schema (safe defaults)
+        return initializeSchema();
+      }).then(() => {
+        // Start listening for Firebase changes
         initFirebaseListeners();
       });
     }
