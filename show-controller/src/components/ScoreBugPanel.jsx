@@ -6,7 +6,8 @@ import {
   ChevronUpIcon,
   ClipboardIcon,
   CheckIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
+  XMarkIcon
 } from '@heroicons/react/24/solid';
 
 /**
@@ -122,6 +123,18 @@ export default function ScoreBugPanel({
     const currentMode = scoreBugState?.config?.automationMode || 'auto';
     const newMode = currentMode === 'auto' ? 'manual' : 'auto';
     set(ref(db, `competitions/${compId}/scoreBug/config/automationMode`), newMode);
+  };
+
+  // Dismiss flash for a specific team
+  const dismissFlash = (teamIndex) => {
+    set(ref(db, `competitions/${compId}/scoreBug/dismissFlash/${teamIndex}`), true);
+  };
+
+  // Dismiss all flashes
+  const dismissAllFlashes = () => {
+    // Dismiss flashes for teams 0, 1 (typical dual meet)
+    const dismissals = { 0: true, 1: true };
+    set(ref(db, `competitions/${compId}/scoreBug/dismissFlash`), dismissals);
   };
 
   // Listen to scoreBug state from Firebase
@@ -331,7 +344,15 @@ export default function ScoreBugPanel({
           {/* Now Competing Display (D5) - shown when detected athletes exist */}
           {scoreBugState?.detected?.nowCompeting?.length > 0 && (
             <div className="pt-2 border-t border-zinc-700">
-              <div className="text-xs text-zinc-400 mb-2">Detected Now Competing:</div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-zinc-400">Detected Now Competing:</span>
+                <button
+                  onClick={dismissAllFlashes}
+                  className="text-xs text-red-400 hover:text-red-300 px-2 py-0.5 rounded hover:bg-red-500/10 transition-colors"
+                >
+                  Dismiss All
+                </button>
+              </div>
               <div className="space-y-2">
                 {scoreBugState.detected.nowCompeting.map((nc, idx) => (
                   <div
@@ -344,7 +365,16 @@ export default function ScoreBugPanel({
                       </span>
                       <span className="text-sm text-zinc-200">{nc.athlete?.name}</span>
                     </div>
-                    <span className="text-xs text-zinc-400">{nc.eventName}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-zinc-400">{nc.eventName}</span>
+                      <button
+                        onClick={() => dismissFlash(nc.teamIndex)}
+                        className="p-1 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
+                        title={`Dismiss ${nc.tricode} flash`}
+                      >
+                        <XMarkIcon className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
