@@ -24,9 +24,9 @@
 | A5 | Score diff engine | COMPLETE | `overlays/team-bug.html` | PLAN 1.3 | Added flash queue system: triggerScoreFlash(), interruptFlash(), isFlashActive(), displayNextFlash(), advanceFlashQueue(), renderFlash(), clearFlashDisplay(). Score changes now trigger queued flashes per-team with correction detection. |
 | A6 | Slot machine animation | COMPLETE | `overlays/team-bug.html` | CSS keyframes | Added slotSpinIn/slotSpinOut keyframes, updated renderFlash() with insertFlashContent() and triggerSpinIn() helpers |
 | A7 | Score flash renderer | COMPLETE | `overlays/team-bug.html` | `overlays/event-bar.html` | Enhanced insertFlashContent() with start value display, score formatting (3 decimals), separator dot |
-| A8 | Per-team flash queue | NOT STARTED | `overlays/team-bug.html` | — |
-| A9 | Team total highlight | NOT STARTED | `overlays/team-bug.html` | CSS animation |
-| A10 | Rotation tag renderer | NOT STARTED | `overlays/team-bug.html` | PLAN 1.5 |
+| A8 | Per-team flash queue | COMPLETE | `overlays/team-bug.html` | — | Already implemented in A5: state.flashQueues[teamIndex], 10s hold, clearFlashDisplay() on empty |
+| A9 | Team total highlight | COMPLETE | `overlays/team-bug.html` | CSS animation | Already implemented in A4: .team-total.highlight with totalPulse keyframes, applied in updateTeamTotal() |
+| A10 | Rotation tag renderer | COMPLETE | `overlays/team-bug.html` | PLAN 1.5 | Added detectRotation(), updateRotationTag(), writes to Firebase |
 | A11 | Bug enter/exit animation | NOT STARTED | `overlays/team-bug.html` | `overlays/event-bar.html` |
 | A12 | Firebase listener: enabled | NOT STARTED | `overlays/team-bug.html` | `output.html:200-300` |
 | A12b | Firebase listener: polling | NOT STARTED | `overlays/team-bug.html` | — |
@@ -275,9 +275,9 @@ detectRotation(teams):
 | A5 | Implement score diff engine to detect new scores AND corrections between polls | COMPLETE | Implemented flash queue system with per-team queues. isFlashActive() checks if correction should interrupt. triggerScoreFlash() queues or displays immediately. interruptFlash() replaces active flash. Added isCorrection flag for UI indication. |
 | A6 | Build slot machine animation (vertical slide up/down) | NOT STARTED | |
 | A7 | Implement score flash renderer (name, score, apparatus, SV) | NOT STARTED | No headshots in Phase A — headshots added in Phase E |
-| A8 | Implement per-team independent score flash queue (10s hold, then return to default) | NOT STARTED | Each team row has its own queue. Multiple teams can flash simultaneously. |
-| A9 | Add team total highlight animation on score change (including corrections) | NOT STARTED | Fires on both increases and decreases |
-| A10 | Build rotation tag renderer (infer rotation from ALL teams' data) | NOT STARTED | Rotation = min completed events across ALL teams + 1. Show "Final" when all events complete for all teams. See Section 1.5. |
+| A8 | Implement per-team independent score flash queue (10s hold, then return to default) | COMPLETE | Already implemented in A5 - state.flashQueues[teamIndex], 10s hold via flashDuration, clearFlashDisplay() returns to idle. |
+| A9 | Add team total highlight animation on score change (including corrections) | COMPLETE | Already implemented in A4 - .team-total.highlight with totalPulse keyframes, applied in updateTeamTotal() on any score change. |
+| A10 | Build rotation tag renderer (infer rotation from ALL teams' data) | COMPLETE | Added detectRotation() + updateRotationTag() following Section 1.5 logic. Writes rotation/totalRotations/isFinal to Firebase. |
 | A11 | Implement bug enter/exit animation (slide from right) | NOT STARTED | |
 | A12 | Connect Firebase listener for `scoreBug/enabled` toggle | NOT STARTED | |
 | A12b | Connect Firebase listener for `scoreBug/polling` and `config/pollInterval` | NOT STARTED | Start/stop/adjust polling dynamically |
