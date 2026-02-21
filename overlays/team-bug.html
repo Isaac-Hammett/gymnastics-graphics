@@ -1722,8 +1722,8 @@
       const scoreValue = parseFloat(gymnastData.score);
       const scoreDisplay = isNaN(scoreValue) ? gymnastData.score : scoreValue.toFixed(3);
 
-      // Stick indicator for bonus landings (men's gymnastics)
-      const stickIndicator = gymnastData.hasStick ? '<span class="slot-stick">Stick</span>' : '';
+      // Stick indicator for bonus landings (men's gymnastics only)
+      const stickIndicator = (state.gender === 'mens' && gymnastData.hasStick) ? '<span class="slot-stick">Stick</span>' : '';
 
       slotContent.innerHTML = `
         ${headshotHtml}

@@ -69,7 +69,7 @@
 | E5 | Headshot fallback | COMPLETE | `overlays/team-bug.html` | — | Added handleHeadshotError() function with initials placeholder. Both insertFlashContent() and insertNowCompetingContent() now show initials (e.g., "JD") when headshot fails to load or is unavailable |
 | F1 | Stick detection | COMPLETE | `overlays/team-bug.html` | `output.html:4742` | Added `bonus` and `hasStick` fields to gymnastData, parsed from Virtius API `gymnast.bonus` field |
 | F2 | Stick indicator UI | COMPLETE | `overlays/team-bug.html` | — | Added .slot-stick CSS (green badge), updated insertFlashContent() to show "Stick" badge when hasStick=true |
-| F3 | Men's only conditional | NOT STARTED | `overlays/team-bug.html` | — |
+| F3 | Men's only conditional | COMPLETE | `overlays/team-bug.html` | — | Added state.gender check in insertFlashContent() - stick indicator only shows when gender='mens' |
 | G1 | 3-team layout | NOT STARTED | `overlays/team-bug.html` | — |
 | G2 | 4-team layout | NOT STARTED | `overlays/team-bug.html` | — |
 | G3 | 5-6 team layout | NOT STARTED | `overlays/team-bug.html` | — |
