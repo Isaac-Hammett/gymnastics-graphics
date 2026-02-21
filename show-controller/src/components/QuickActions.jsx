@@ -30,7 +30,7 @@ const HEALTH_COLORS = {
   unknown: 'bg-zinc-500'
 };
 
-export default function QuickActions() {
+export default function QuickActions({ hideApparatusCameras = false }) {
   const { socket, state, overrideScene } = useShow();
   const { showConfig, obsCurrentScene } = state;
 
@@ -138,7 +138,7 @@ export default function QuickActions() {
   return (
     <div className="bg-zinc-900 rounded-xl p-4 border border-zinc-800">
       {/* Apparatus Quick Switch - Runtime-based camera buttons */}
-      {cameraRuntimeState.length > 0 && (
+      {!hideApparatusCameras && cameraRuntimeState.length > 0 && (
         <>
           <div className="flex items-center gap-2 text-sm text-zinc-400 uppercase tracking-wide mb-3">
             <VideoCameraIcon className="w-4 h-4" />

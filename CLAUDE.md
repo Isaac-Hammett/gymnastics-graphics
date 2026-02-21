@@ -113,11 +113,13 @@ tar -czf /tmp/claude/overlays.tar.gz overlays/
 # remotePath: /tmp/overlays.tar.gz
 # target: 3.87.107.201
 
-# Extract overlays (ssh_exec)
-# command: cd /var/www/commentarygraphic && tar -xzf /tmp/overlays.tar.gz && find /var/www/commentarygraphic -name '._*' -delete
+# Extract overlays (ssh_exec) - IMPORTANT: Fix permissions after extract!
+# command: cd /var/www/commentarygraphic && tar -xzf /tmp/overlays.tar.gz && find /var/www/commentarygraphic -name '._*' -delete && chmod 644 /var/www/commentarygraphic/overlays/*.html
 ```
 
 **Why this matters:** Without these files, the URL Generator preview will be blank and OBS browser sources won't work. The React SPA will incorrectly intercept requests to `/output.html` and `/overlays/*`.
+
+**IMPORTANT:** The `chmod 644` is required because macOS creates files with 600 permissions when uploaded via SCP, which nginx cannot read (403 Forbidden).
 
 ### Step 3: Verify Deployment
 ```bash
@@ -135,8 +137,9 @@ tar -czf /tmp/claude/overlays.tar.gz overlays/
 - [ ] React SPA deployed (`show-controller/dist/`)
 - [ ] `output.html` deployed (from project root)
 - [ ] `overlays/` directory deployed (from project root)
+- [ ] Overlay file permissions set to 644 (`chmod 644 overlays/*.html`)
 - [ ] No console errors on main site
-- [ ] URL Generator preview works
+- [ ] URL Generator preview works (including sponsor graphics)
 
 **Note:** SSL auto-renews via Certbot. Certificate expires 2026-04-17.
 

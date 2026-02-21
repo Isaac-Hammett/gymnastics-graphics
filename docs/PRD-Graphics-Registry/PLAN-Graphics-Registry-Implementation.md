@@ -3,7 +3,7 @@
 **PRD:** PRD-Graphics-Registry
 **Status:** COMPLETE
 **Created:** 2026-01-22
-**Last Updated:** 2026-01-22
+**Last Updated:** 2026-02-13
 
 ---
 
@@ -20,6 +20,23 @@
 | MANAGER-PAGE | COMPLETE | Create GraphicsManagerPage.jsx |
 | DEPLOY | COMPLETE | Build and deploy to production |
 | VERIFY | COMPLETE | Verify all pickers show correct graphics |
+| V20-ENHANCEMENTS | COMPLETE | Added start values, meet-wide apparatus rankings, larger fonts |
+| V21-EXTRA-LARGE | COMPLETE | Created V21 layout with even larger fonts for big displays |
+
+---
+
+## V20/V21 Enhancements (2026-02-13)
+
+### V20 Changes
+- Increased font sizes throughout the layout
+- Added start values (SV) with 2 decimal places
+- Added `calculateApparatusRankings()` function to compute top 3 scores per apparatus across entire meet
+- Added athlete ranking badges (gold/silver/bronze) for top 3 on each apparatus
+
+### V21 "Extra Large" Layout
+- Created new V21 layout with significantly larger fonts
+- Font sizes: Team name 30px, Athlete name 28px, Score 34px, Footer 40px
+- Added to both UrlGeneratorPage.jsx and GraphicsControl.jsx dropdowns
 
 ---
 

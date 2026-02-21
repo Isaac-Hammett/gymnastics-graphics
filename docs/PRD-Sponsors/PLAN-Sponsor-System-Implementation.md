@@ -305,5 +305,13 @@ After all tasks complete:
 |---------|--------|--------|
 | sponsors-cycle.html | Full screen logo on grey, no header/text | `1cfb3cc` |
 | sponsors-thanks.html | Card-style layout like leaderboards | `e62a111` |
+| sponsors-thanks.html | Dynamic background color, larger logos, no card boxes | (2026-02-14) |
+
+### Integration Updates
+
+| Component | Change | Date |
+|-----------|--------|------|
+| GraphicsControl.jsx | Added Sponsors section, sponsor data fetching, gender-aware team key resolution | 2026-02-14 |
+| output.html | Added iframe-based renderers for sponsors-thanks, sponsors-cycle, sponsors-bug | 2026-02-14 |
 
 **See:** [BUGS.md](./BUGS.md) for detailed bug descriptions and design change rationale.

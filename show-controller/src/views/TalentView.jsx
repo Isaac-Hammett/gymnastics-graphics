@@ -488,7 +488,7 @@ export default function TalentView() {
             )}
 
             {/* Quick Actions */}
-            <QuickActions />
+            <QuickActions hideApparatusCameras />
 
             {/* Run of Show */}
             <RunOfShow />

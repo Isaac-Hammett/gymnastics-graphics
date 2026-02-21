@@ -646,3 +646,65 @@ open "http://localhost:5173/overlays/technical.html?team1Logo=https://example.co
 | `overlays/*.html` | Overlay graphic renderers |
 | `output.html` | Complex graphic renderer (leaderboards, summaries) |
 | `show-controller/src/lib/graphicsRegistry.js` | **Single source of truth for all graphics** |
+
+---
+
+## Event Summary Layout Reference (V20/V21/V22/V23)
+
+The V20, V21, V22, and V23 layouts are enhanced event summary layouts with additional features:
+
+### Features
+- **Start Values (SV)** - Displays difficulty score with 2 decimal places
+- **Meet-Wide Apparatus Rankings** - Gold/silver/bronze indicators for athletes with top 3 scores on their apparatus across the ENTIRE meet (not just current rotation) - V20/V21/V22 only
+- **Team Ranking Badges** - Shows team standings in header (all versions)
+
+### V20 vs V21 vs V22 vs V23 Comparison
+
+| Feature | V20 | V21 | V22 | V23 |
+|---------|-----|-----|-----|-----|
+| Font Size | Large | Extra Large | Extra Large | Extra Large |
+| Ranking Display | Separate badge | Separate badge | Integrated in order bubble | None |
+| Order Bubble | Grey | Grey | Gold/Silver/Bronze for ranked | Grey (always) |
+| Medal Icons | No | No | Yes (🥇🥈🥉) | No |
+| Team Rank Badge | Yes | Yes | Yes | Yes |
+
+### Font Size Reference
+
+| Element | V20 | V21/V22/V23 |
+|---------|-----|-------------|
+| Team name | 24px | 30px |
+| Event name | 16px | 20px |
+| Header total | 28px | 36px |
+| Athlete order | 18px | 20px |
+| Athlete name | 22px | 28px |
+| Start value | 18px | 22px |
+| Athlete score | 26px | 34px |
+| Footer label | 18px | 22px |
+| Footer total | 32px | 40px |
+| Team logo | 50px | 60px |
+
+### V22 Integrated Ranking Feature
+
+V22 integrates the apparatus ranking directly into the lineup order bubble:
+
+| Ranking | Bubble Background | Icon | Shadow |
+|---------|------------------|------|--------|
+| 1st Place | Gold gradient (#fbbf24 → #ca8a04) | 🥇 | Gold glow |
+| 2nd Place | Silver gradient (#94a3b8 → #64748b) | 🥈 | Silver glow |
+| 3rd Place | Bronze gradient (#f59e0b → #b45309) | 🥉 | Bronze glow |
+| No Ranking | Solid grey (#52525b) | None | None |
+
+### V23 No Rankings Feature
+
+V23 is identical to V22 but **removes** all athlete apparatus ranking indicators:
+- Order bubbles are always grey (#52525b)
+- No medal icons in bubbles
+- No ranking colors on athlete rows
+- Team rank badge in header is still shown (1st/2nd/3rd place team standings)
+
+Use V23 when you want the extra large fonts without the individual athlete ranking visual clutter.
+
+### Key Functions (output.html)
+- `calculateApparatusRankings(teams)` - Computes top 3 scores per apparatus across all teams
+- `renderMultiTeamSummaryV20/V21/V22/V23()` - Renders rotation view
+- `renderMultiTeamSummaryApparatusV20/V21/V22/V23()` - Renders apparatus view
