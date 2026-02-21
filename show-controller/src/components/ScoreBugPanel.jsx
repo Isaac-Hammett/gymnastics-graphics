@@ -147,6 +147,16 @@ export default function ScoreBugPanel({
     set(ref(db, `competitions/${compId}/scoreBug/nowCompeting/${teamKey}`), false);
   };
 
+  // Show lineup card for a team
+  const showLineup = (teamKey) => {
+    set(ref(db, `competitions/${compId}/scoreBug/showLineup`), teamKey);
+  };
+
+  // Hide lineup card
+  const hideLineup = () => {
+    set(ref(db, `competitions/${compId}/scoreBug/showLineup`), null);
+  };
+
   // Listen to scoreBug state from Firebase
   useEffect(() => {
     if (!compId) return;
@@ -405,6 +415,44 @@ export default function ScoreBugPanel({
                         </button>
                       </div>
                     </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Lineup Card Controls (D7/D8) */}
+          {scoreBugState?.detected?.teams?.length > 0 && (
+            <div className="pt-2 border-t border-zinc-700">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-zinc-400">Lineup Cards:</span>
+                {scoreBugState?.showLineup && (
+                  <button
+                    onClick={hideLineup}
+                    className="text-xs text-red-400 hover:text-red-300 px-2 py-0.5 rounded hover:bg-red-500/10 transition-colors"
+                  >
+                    Hide Lineup
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {scoreBugState.detected.teams.map((team) => {
+                  const isActive = scoreBugState?.showLineup === team.teamKey;
+                  return (
+                    <button
+                      key={team.teamKey}
+                      onClick={() => isActive ? hideLineup() : showLineup(team.teamKey)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                        isActive
+                          ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+                          : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600 border border-transparent'
+                      }`}
+                    >
+                      <span className="font-medium">{team.tricode}</span>
+                      {isActive && (
+                        <span className="text-xs opacity-75">SHOWING</span>
+                      )}
+                    </button>
                   );
                 })}
               </div>

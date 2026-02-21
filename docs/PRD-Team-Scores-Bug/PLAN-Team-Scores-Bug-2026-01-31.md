@@ -58,9 +58,9 @@
 | D5b | API error indicator | COMPLETE | `show-controller/src/components/ScoreBugPanel.jsx` | — | Added error banner showing message and retry countdown, reads from status/error |
 | D5c | Dismiss flash button | COMPLETE | `show-controller/src/components/ScoreBugPanel.jsx` | — | Added dismissFlash(), dismissAllFlashes() functions. Per-team X button + "Dismiss All" button in now-competing section. Writes to dismissFlash/{teamIndex} |
 | D6 | SHOW/HIDE now-competing | COMPLETE | `show-controller/src/components/ScoreBugPanel.jsx` | — | Added showNowCompeting(), hideNowCompeting() functions. SHOW/HIDE buttons appear in manual mode for each detected athlete, toggle nowCompeting/{teamKey} in Firebase |
-| D7 | Lineup card controls | NOT STARTED | `show-controller/src/components/ScoreBugPanel.jsx` | — |
-| D8 | Write showLineup | NOT STARTED | `show-controller/src/components/ScoreBugPanel.jsx` | — |
-| D9 | Write nowCompeting | NOT STARTED | `show-controller/src/components/ScoreBugPanel.jsx` | — |
+| D7 | Lineup card controls | COMPLETE | `show-controller/src/components/ScoreBugPanel.jsx` | — | Added showLineup(), hideLineup() functions. Lineup Cards section shows team buttons (tricode) with SHOWING indicator for active lineup. Amber highlight for active selection. |
+| D8 | Write showLineup | COMPLETE | `show-controller/src/components/ScoreBugPanel.jsx` | — | Implemented in D7: showLineup(teamKey) writes to scoreBug/showLineup, hideLineup() sets to null |
+| D9 | Write nowCompeting | COMPLETE | `show-controller/src/components/ScoreBugPanel.jsx` | — | Already implemented in D6: showNowCompeting(teamKey) and hideNowCompeting(teamKey) write to scoreBug/nowCompeting/{teamKey} |
 | D10 | Migrate GraphicsControl | NOT STARTED | `show-controller/src/components/GraphicsControl.jsx` | — |
 | E1 | Load headshots | NOT STARTED | `overlays/team-bug.html` | `output.html:5048-5110` |
 | E2 | Headshot normalization | NOT STARTED | `overlays/team-bug.html` | `nameNormalization.js` |
