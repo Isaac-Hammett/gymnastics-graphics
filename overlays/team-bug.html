@@ -1137,15 +1137,42 @@
         state.flashQueues[teamIndex] = [];
       }
 
+      const queue = state.flashQueues[teamIndex];
+
+      // Edge case: Check if this gymnast is already in the queue (correction before display)
+      const existingIndex = queue.findIndex(item => item.gymnastKey === gymnastData.gymnastKey);
+      if (existingIndex !== -1) {
+        // Update existing queue entry with corrected score (A13: corrections in queue)
+        console.log('Updating queued flash with correction:', {
+          team: teamIndex,
+          gymnast: gymnastData.name,
+          oldScore: queue[existingIndex].score,
+          newScore: gymnastData.score
+        });
+        queue[existingIndex] = { ...gymnastData, isCorrection: true };
+        return;
+      }
+
+      // Edge case: Cap queue length to prevent runaway (A13: rapid scores)
+      const MAX_QUEUE_SIZE = 6;  // Max gymnasts per rotation
+      if (queue.length >= MAX_QUEUE_SIZE) {
+        console.warn('Flash queue full, dropping oldest entry:', {
+          team: teamIndex,
+          dropped: queue[0].name,
+          newEntry: gymnastData.name
+        });
+        queue.shift();
+      }
+
       console.log('Queuing score flash:', {
         team: teamIndex,
         gymnast: gymnastData.name,
         score: gymnastData.score,
-        queueLength: state.flashQueues[teamIndex].length
+        queueLength: queue.length
       });
 
       // Add to queue
-      state.flashQueues[teamIndex].push(gymnastData);
+      queue.push(gymnastData);
 
       // If no active flash, start displaying
       if (!state.activeFlashes[teamIndex]) {
