@@ -241,6 +241,23 @@
       font-style: italic;
     }
 
+    /* Stick indicator (bonus landing - men's only) */
+    .slot-stick {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-left: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+    }
+
     /* Lineup card (above bug) */
     .lineup-card {
       position: absolute;
@@ -1705,6 +1722,9 @@
       const scoreValue = parseFloat(gymnastData.score);
       const scoreDisplay = isNaN(scoreValue) ? gymnastData.score : scoreValue.toFixed(3);
 
+      // Stick indicator for bonus landings (men's gymnastics)
+      const stickIndicator = gymnastData.hasStick ? '<span class="slot-stick">Stick</span>' : '';
+
       slotContent.innerHTML = `
         ${headshotHtml}
         <span class="slot-apparatus">${gymnastData.event}</span>
@@ -1712,6 +1732,7 @@
         ${svDisplay}
         <span class="slot-separator">•</span>
         <span class="slot-score">${scoreDisplay}</span>
+        ${stickIndicator}
         ${gymnastData.isCorrection ? '<span class="slot-correction">(corrected)</span>' : ''}
       `;
     }
