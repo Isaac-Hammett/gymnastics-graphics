@@ -986,6 +986,21 @@
       // Update previous state for next comparison
       state.previousScores = buildScoreMap(apiTeams);
       state.previousTeamTotals = buildTeamTotalMap(apiTeams);
+
+      // Detect and update rotation (A10)
+      const newRotation = detectRotation(apiTeams);
+      if (newRotation.current !== state.rotation.current ||
+          newRotation.isFinal !== state.rotation.isFinal) {
+        state.rotation = newRotation;
+        updateRotationTag();
+
+        // Write rotation to Firebase for producer panel visibility
+        await safeWrite(scoreBugRef.child('liveData/rotation'), 'set', newRotation.current);
+        await safeWrite(scoreBugRef.child('liveData/totalRotations'), 'set', newRotation.total);
+        await safeWrite(scoreBugRef.child('liveData/isFinal'), 'set', newRotation.isFinal);
+
+        console.log('Rotation updated:', newRotation);
+      }
     }
 
     /**
@@ -1269,6 +1284,70 @@
         };
       });
       return status;
+    }
+
+    // ============================================================
+    // ROTATION DETECTION (Task A10)
+    // ============================================================
+
+    /**
+     * Detect current rotation from API data using ALL teams.
+     * Rotation only advances when ALL teams have completed their current event.
+     * @param {Array} apiTeams - Teams array from Virtius API
+     * @returns {Object} { current: number, total: number, isFinal: boolean }
+     */
+    function detectRotation(apiTeams) {
+      if (!apiTeams || apiTeams.length === 0) {
+        return state.rotation;  // Keep existing state if no data
+      }
+
+      // Total events based on gender (6 for men, 4 for women)
+      const totalEvents = state.rotation.total;
+
+      // Find minimum completed events across ALL teams
+      let minCompletedAcrossTeams = totalEvents;
+
+      apiTeams.forEach((team) => {
+        const events = team.events || [];
+        let completedEvents = 0;
+
+        events.forEach((event) => {
+          const gymnasts = event.gymnasts || [];
+          // An event is "complete" if all gymnasts have scores
+          const scored = gymnasts.filter(g => g.final_score != null);
+          if (scored.length === gymnasts.length && gymnasts.length > 0) {
+            completedEvents++;
+          }
+        });
+
+        minCompletedAcrossTeams = Math.min(minCompletedAcrossTeams, completedEvents);
+      });
+
+      // All events complete for all teams = Final
+      if (minCompletedAcrossTeams === totalEvents) {
+        return { current: totalEvents, total: totalEvents, isFinal: true };
+      }
+
+      // Current rotation = completed events + 1
+      const currentRotation = minCompletedAcrossTeams + 1;
+      return { current: currentRotation, total: totalEvents, isFinal: false };
+    }
+
+    /**
+     * Update the rotation tag display in the DOM.
+     * Shows "Rotation X of Y" or "Final" when complete.
+     */
+    function updateRotationTag() {
+      const tagEl = document.getElementById('rotationTag');
+      if (!tagEl) return;
+
+      const { current, total, isFinal } = state.rotation;
+
+      if (isFinal) {
+        tagEl.textContent = 'Final';
+      } else {
+        tagEl.textContent = `Rotation ${current} of ${total}`;
+      }
     }
 
     // Initialize Firebase schema with default values (prevents race conditions)
