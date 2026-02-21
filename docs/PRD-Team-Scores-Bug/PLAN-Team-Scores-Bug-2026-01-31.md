@@ -39,9 +39,9 @@
 | B5 | Now competing → flash transition | COMPLETE | `overlays/team-bug.html` | — | clearFlashDisplay() now checks for now-competing to restore after flash ends. Added getNowCompetingForTeam() helper that respects auto/manual mode. |
 | B6 | Firebase listener: automationMode | COMPLETE | `overlays/team-bug.html` | — | Listener at line 672-682, calls updateAllNowCompeting() on mode change |
 | B7 | Firebase listener: nowCompeting | COMPLETE | `overlays/team-bug.html` | — | Listener at line 685-700, converts teamKey to index, stores in state.manualNowCompeting, triggers updateAllNowCompeting() |
-| B8 | Write detected state to Firebase | NOT STARTED | `overlays/team-bug.html` | — |
-| C1 | Lineup card HTML/CSS | NOT STARTED | `overlays/team-bug.html` | — |
-| C2 | Lineup card populate | NOT STARTED | `overlays/team-bug.html` | — |
+| B8 | Write detected state to Firebase | COMPLETE | `overlays/team-bug.html` | — | Already implemented in B1 (line 1083): safeWrite to detected/nowCompeting |
+| C1 | Lineup card HTML/CSS | COMPLETE | `overlays/team-bug.html` | — | Already implemented: HTML placeholder (line 367-369), CSS styles (lines 245-347) with header, athletes list, footer, slide animation |
+| C2 | Lineup card populate | COMPLETE | `overlays/team-bug.html` | — | Added updateLineupCard(), findCurrentEventForLineup(), renderLineupCardContent(). Uses state.lastApiTeams, matches showLineup to team short_name, displays athletes sorted by order with SV/score. |
 | C3 | Lineup card animation | NOT STARTED | `overlays/team-bug.html` | — |
 | C4 | Firebase listener: showLineup | NOT STARTED | `overlays/team-bug.html` | — |
 | C5 | Lineup live-update | NOT STARTED | `overlays/team-bug.html` | — |
