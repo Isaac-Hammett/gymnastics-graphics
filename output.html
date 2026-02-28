@@ -5878,6 +5878,33 @@
           6: { FLOOR: 1, HORSE: 2, RINGS: 3, VAULT: null, PBARS: null, BAR: 0 },
         },
       },
+      // Men's 5-team - 5 teams rotate through 6 apparatus, one apparatus has bye each rotation
+      // Bye rotates: R1=HB, R2=FX, R3=PH, R4=SR, R5=VT, R6=PB
+      'mens-5': {
+        rotationCount: 6,
+        eventOrder: ['FLOOR', 'HORSE', 'RINGS', 'VAULT', 'PBARS', 'BAR'],
+        schedule: {
+          1: { FLOOR: 0, HORSE: 1, RINGS: 2, VAULT: 3, PBARS: 4, BAR: null },
+          2: { FLOOR: null, HORSE: 0, RINGS: 1, VAULT: 2, PBARS: 3, BAR: 4 },
+          3: { FLOOR: 4, HORSE: null, RINGS: 0, VAULT: 1, PBARS: 2, BAR: 3 },
+          4: { FLOOR: 3, HORSE: 4, RINGS: null, VAULT: 0, PBARS: 1, BAR: 2 },
+          5: { FLOOR: 2, HORSE: 3, RINGS: 4, VAULT: null, PBARS: 0, BAR: 1 },
+          6: { FLOOR: 1, HORSE: 2, RINGS: 3, VAULT: 4, PBARS: null, BAR: 0 },
+        },
+      },
+      // Men's 6-team - All 6 teams on all 6 apparatus, standard rotation
+      'mens-6': {
+        rotationCount: 6,
+        eventOrder: ['FLOOR', 'HORSE', 'RINGS', 'VAULT', 'PBARS', 'BAR'],
+        schedule: {
+          1: { FLOOR: 0, HORSE: 1, RINGS: 2, VAULT: 3, PBARS: 4, BAR: 5 },
+          2: { FLOOR: 5, HORSE: 0, RINGS: 1, VAULT: 2, PBARS: 3, BAR: 4 },
+          3: { FLOOR: 4, HORSE: 5, RINGS: 0, VAULT: 1, PBARS: 2, BAR: 3 },
+          4: { FLOOR: 3, HORSE: 4, RINGS: 5, VAULT: 0, PBARS: 1, BAR: 2 },
+          5: { FLOOR: 2, HORSE: 3, RINGS: 4, VAULT: 5, PBARS: 0, BAR: 1 },
+          6: { FLOOR: 1, HORSE: 2, RINGS: 3, VAULT: 4, PBARS: 5, BAR: 0 },
+        },
+      },
     };
 
     // Get the schedule key based on competition parameters
@@ -5894,8 +5921,12 @@
         return `${genderPrefix}-dual-headtohead`; // default
       } else if (numTeams === 3) {
         return `${genderPrefix}-tri`;
-      } else if (numTeams >= 4) {
+      } else if (numTeams === 4) {
         return `${genderPrefix}-quad`;
+      } else if (numTeams === 5) {
+        return `${genderPrefix}-5`;
+      } else if (numTeams >= 6) {
+        return `${genderPrefix}-6`;
       }
       return `${genderPrefix}-dual-headtohead`; // fallback
     }
