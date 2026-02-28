@@ -94,6 +94,8 @@ const summaryThemes = [
   { id: 'layout-default-v21', label: '📺 V21 Extra Large', isLayout: true },
   { id: 'layout-default-v22', label: '🏅 V22 Integrated Rank', isLayout: true },
   { id: 'layout-default-v23', label: '📋 V23 No Rankings', isLayout: true },
+  { id: 'layout-split-row', label: '📊 Split Row (5-team)', isLayout: true },
+  { id: 'layout-dual-dynamic-v1', label: '📏 Dual Dynamic V1', isLayout: true },
   // COLOR THEMES - Same structure, different colors
   { id: 'default', label: 'Default (Original)' },
   { id: 'espn', label: 'ESPN Colors' },
@@ -340,7 +342,12 @@ export default function GraphicsControl({ competitionId }) {
       graphicType = 'event-frame';
     } else if (graphicId.startsWith('leaderboard-')) {
       graphicType = 'virtius-leaderboard';
+    } else if (graphicId.match(/^team\d+-roster$/)) {
+      graphicType = 'team-roster';
     }
+
+    // Include graphicId in data for renderers that need it
+    data.graphicId = graphicId;
 
     set(ref(db, `competitions/${compId}/currentGraphic`), {
       graphic: graphicType,

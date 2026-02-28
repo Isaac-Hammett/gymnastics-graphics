@@ -1787,6 +1787,283 @@
       font-weight: 700;
     }
 
+    /* Layout: Dual Dynamic V1 - Same as Default V2 but scales to fit 1-9 athletes */
+    .layout-dual-dynamic-v1 {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      background: #18181b;
+    }
+    /* Title bar at top - EVENT SUMMARY on left, logos on right */
+    .layout-dual-dynamic-v1 .title-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 40px;
+      background: #d4d4d8;
+      min-height: 80px;
+      flex-shrink: 0;
+    }
+    .layout-dual-dynamic-v1 .title-bar .title-text {
+      font-size: 42px;
+      font-weight: 800;
+      color: #000;
+      font-style: italic;
+    }
+    .layout-dual-dynamic-v1 .title-bar .title-logos {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .layout-dual-dynamic-v1 .title-bar .title-logo {
+      width: 72px;
+      height: 72px;
+      object-fit: contain;
+    }
+    /* Main content area */
+    .layout-dual-dynamic-v1 .main-content {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+    }
+    .layout-dual-dynamic-v1 .team-column {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    .layout-dual-dynamic-v1 .team-header {
+      display: flex;
+      align-items: center;
+      padding: 16px 24px;
+      background: #27272a;
+      gap: 16px;
+      height: 88px;
+      flex-shrink: 0;
+    }
+    .layout-dual-dynamic-v1 .team-header.left {
+      justify-content: flex-start;
+    }
+    .layout-dual-dynamic-v1 .team-header.right {
+      justify-content: flex-end;
+      flex-direction: row-reverse;
+    }
+    .layout-dual-dynamic-v1 .team-logo {
+      width: 72px;
+      height: 72px;
+      object-fit: contain;
+      flex-shrink: 0;
+    }
+    .layout-dual-dynamic-v1 .team-name {
+      font-size: 32px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .layout-dual-dynamic-v1 .team-total {
+      font-size: 36px;
+      font-weight: 800;
+      color: #fff;
+      margin-left: auto;
+    }
+    .layout-dual-dynamic-v1 .team-header.right .team-total {
+      margin-left: 0;
+      margin-right: auto;
+    }
+    .layout-dual-dynamic-v1 .athlete-list {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #18181b;
+      gap: 4px;
+      padding: 4px 0;
+      min-height: 0;
+    }
+    .layout-dual-dynamic-v1 .athlete-row {
+      display: flex;
+      align-items: center;
+      padding: 12px 20px;
+      flex: 1;
+      min-height: 0; /* KEY DIFFERENCE: No min-height, allows scaling for 9 athletes */
+      background: #27272a;
+      gap: 16px;
+    }
+    /* Left side layout - score then D-score */
+    .layout-dual-dynamic-v1 .team-column.left .athlete-row {
+      flex-direction: row;
+    }
+    .layout-dual-dynamic-v1 .team-column.left .athlete-score-block {
+      flex-direction: row-reverse;
+      justify-content: flex-end;
+    }
+    /* Right side - mirrored layout */
+    .layout-dual-dynamic-v1 .team-column.right .athlete-row {
+      flex-direction: row-reverse;
+    }
+    .layout-dual-dynamic-v1 .team-column.right .athlete-info {
+      text-align: right;
+    }
+    .layout-dual-dynamic-v1 .team-column.right .athlete-score-block {
+      flex-direction: row;
+      justify-content: flex-start;
+    }
+    .layout-dual-dynamic-v1 .athlete-order {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: #52525b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .layout-dual-dynamic-v1 .athlete-order.anchor {
+      background: #eab308;
+      color: #000;
+    }
+    .layout-dual-dynamic-v1 .athlete-photo {
+      width: 88px;
+      height: 88px;
+      border-radius: 8px;
+      object-fit: contain;
+      background: transparent;
+      flex-shrink: 0;
+    }
+    .layout-dual-dynamic-v1 .athlete-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-width: 0;
+    }
+    .layout-dual-dynamic-v1 .athlete-name {
+      font-size: 36px;
+      font-weight: 600;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .layout-dual-dynamic-v1 .athlete-score-block {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      min-width: 180px;
+    }
+    .layout-dual-dynamic-v1 .athlete-score {
+      font-size: 44px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .layout-dual-dynamic-v1 .athlete-start {
+      font-size: 24px;
+      font-weight: 500;
+      color: #a1a1aa;
+      margin-bottom: -4px;
+    }
+    /* Center divider */
+    .layout-dual-dynamic-v1 .center-divider {
+      width: 140px;
+      display: flex;
+      flex-direction: column;
+      background: #18181b;
+      flex-shrink: 0;
+    }
+    .layout-dual-dynamic-v1 .center-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 88px;
+      background: #27272a;
+      flex-shrink: 0;
+    }
+    .layout-dual-dynamic-v1 .rotation-badge {
+      font-size: 36px;
+      font-weight: 800;
+      color: #fff;
+    }
+    .layout-dual-dynamic-v1 .diff-list {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 4px 0;
+      min-height: 0;
+    }
+    .layout-dual-dynamic-v1 .diff-row {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      min-height: 0; /* KEY DIFFERENCE: No min-height, allows scaling for 9 athletes */
+      background: #27272a;
+      padding: 8px 12px;
+    }
+    .layout-dual-dynamic-v1 .diff-value {
+      font-size: 22px;
+      font-weight: 600;
+      color: #a1a1aa;
+      margin-bottom: 8px;
+    }
+    .layout-dual-dynamic-v1 .diff-bar {
+      width: 100%;
+      height: 6px;
+      background: #3f3f46;
+      border-radius: 3px;
+      position: relative;
+      overflow: hidden;
+    }
+    .layout-dual-dynamic-v1 .diff-bar-fill {
+      position: absolute;
+      top: 0;
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+    .layout-dual-dynamic-v1 .diff-bar-fill.left {
+      right: 50%;
+      background: linear-gradient(to left, #22c55e, #16a34a);
+    }
+    .layout-dual-dynamic-v1 .diff-bar-fill.right {
+      left: 50%;
+      background: linear-gradient(to right, #ef4444, #dc2626);
+    }
+    .layout-dual-dynamic-v1 .diff-bar-fill.tie {
+      left: 50%;
+      transform: translateX(-50%);
+      width: 4px !important;
+      background: #a1a1aa;
+    }
+    /* Footer - same as Default V2 */
+    .layout-dual-dynamic-v1-footer {
+      border-top: 2px solid #3f3f46;
+    }
+    .layout-dual-dynamic-v1-footer .event-abbr {
+      font-size: 28px;
+      font-weight: 800;
+    }
+    .layout-dual-dynamic-v1-footer .event-icon {
+      width: 32px;
+      height: 32px;
+    }
+    .layout-dual-dynamic-v1-footer .event-label {
+      font-size: 18px;
+    }
+    .layout-dual-dynamic-v1-footer .event-total {
+      font-size: 36px;
+      font-weight: 800;
+    }
+    .layout-dual-dynamic-v1-footer .footer-center {
+      width: 160px;
+    }
+    .layout-dual-dynamic-v1-footer .footer-diff {
+      font-size: 24px;
+      font-weight: 700;
+    }
+
     /* ==========================================
        END LAYOUT OPTIONS
        ========================================== */
@@ -4505,6 +4782,220 @@
       color: #fff;
     }
 
+    /* ====================================================================
+       Split Row Layout - 5 teams in 3+2 grid for better readability
+       Row 1: 3 teams (33% width each)
+       Row 2: 2 teams (33% width each, centered)
+       ==================================================================== */
+    .event-summary-split-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: 1fr 1fr;
+      gap: 3px;
+      background: #27272a;
+      height: 100%;
+      padding: 3px;
+    }
+
+    /* Center the bottom row (2 teams) */
+    .event-summary-split-row .team-column:nth-child(4) {
+      grid-column: 1 / 2;
+      margin-left: calc(50% - 1.5px);
+    }
+    .event-summary-split-row .team-column:nth-child(5) {
+      grid-column: 2 / 3;
+      margin-right: calc(50% - 1.5px);
+    }
+
+    .event-summary-split-row .team-column {
+      background: #18181b;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+      border-radius: 4px;
+    }
+
+    .event-summary-split-row .team-header {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      background: #27272a;
+      gap: 14px;
+      border-radius: 4px 4px 0 0;
+    }
+
+    .event-summary-split-row .team-logo {
+      width: 52px;
+      height: 52px;
+      object-fit: contain;
+      flex-shrink: 0;
+    }
+
+    .event-summary-split-row .header-left {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .event-summary-split-row .team-name {
+      font-size: 26px;
+      font-weight: 700;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .event-summary-split-row .event-name {
+      font-size: 16px;
+      color: #a1a1aa;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .event-summary-split-row .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .event-summary-split-row .rank-badge {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      background: #52525b;
+      padding: 6px 12px;
+      border-radius: 4px;
+    }
+
+    .event-summary-split-row .rank-badge.rank-1 { background: #ca8a04; }
+    .event-summary-split-row .rank-badge.rank-2 { background: #64748b; }
+    .event-summary-split-row .rank-badge.rank-3 { background: #b45309; }
+
+    .event-summary-split-row .header-total {
+      font-size: 28px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .event-summary-split-row .athlete-list {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .event-summary-split-row .athlete-row {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      min-height: 0;
+    }
+
+    .event-summary-split-row .athlete-row:nth-child(odd) {
+      background: #18181b;
+    }
+
+    .event-summary-split-row .athlete-row:nth-child(even) {
+      background: #0f0f10;
+    }
+
+    .event-summary-split-row .athlete-row.empty {
+      background: #141416;
+    }
+
+    .event-summary-split-row .athlete-order {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #52525b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      margin-right: 12px;
+      flex-shrink: 0;
+    }
+
+    .event-summary-split-row .athlete-row.empty .athlete-order {
+      background: #3f3f46;
+      color: #71717a;
+    }
+
+    .event-summary-split-row .athlete-name {
+      flex: 1;
+      font-size: 22px;
+      font-weight: 600;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .event-summary-split-row .athlete-row.empty .athlete-name {
+      color: #52525b;
+    }
+
+    .event-summary-split-row .athlete-rank {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      padding: 4px 8px;
+      border-radius: 4px;
+      margin-left: 8px;
+      flex-shrink: 0;
+    }
+    .event-summary-split-row .athlete-rank.rank-1 { background: #ca8a04; }
+    .event-summary-split-row .athlete-rank.rank-2 { background: #64748b; }
+    .event-summary-split-row .athlete-rank.rank-3 { background: #b45309; }
+
+    .event-summary-split-row .athlete-sv {
+      font-size: 18px;
+      font-weight: 500;
+      color: #71717a;
+      min-width: 50px;
+      text-align: right;
+      margin-right: 14px;
+      flex-shrink: 0;
+    }
+
+    .event-summary-split-row .athlete-score {
+      font-size: 26px;
+      font-weight: 700;
+      color: #fff;
+      min-width: 85px;
+      text-align: right;
+    }
+
+    .event-summary-split-row .athlete-row.empty .athlete-score {
+      color: #3f3f46;
+    }
+
+    .event-summary-split-row .team-footer {
+      padding: 12px 16px;
+      background: #27272a;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-radius: 0 0 4px 4px;
+    }
+
+    .event-summary-split-row .footer-label {
+      font-size: 18px;
+      color: #a1a1aa;
+      font-weight: 500;
+    }
+
+    .event-summary-split-row .footer-total {
+      font-size: 32px;
+      font-weight: 800;
+      color: #fff;
+    }
+
     .event-summary-loading {
       color: #fff;
       font-size: 36px;
@@ -6112,6 +6603,8 @@
             renderClassicBroadcastLayout(contentEl, rotationData, rotation);
           } else if (layout === 'default-v2') {
             renderDefaultV2Layout(contentEl, rotationData, rotation);
+          } else if (layout === 'dual-dynamic-v1') {
+            renderDualDynamicV1Layout(contentEl, rotationData, rotation);
           } else if (layout === 'default-v3') {
             renderMultiTeamSummaryV3(contentEl, rotationData, rotation, actualNumTeams);
           } else if (layout === 'default-v4') {
@@ -6154,6 +6647,8 @@
             renderMultiTeamSummaryV22(contentEl, rotationData, rotation, actualNumTeams, apparatusRankings);
           } else if (layout === 'default-v23') {
             renderMultiTeamSummaryV23(contentEl, rotationData, rotation, actualNumTeams, apparatusRankings);
+          } else if (layout === 'split-row') {
+            renderMultiTeamSummarySplitRow(contentEl, rotationData, rotation, actualNumTeams, apparatusRankings);
           } else {
             renderDualMeetSummary(contentEl, rotationData, rotation);
           }
@@ -6201,6 +6696,8 @@
             renderMultiTeamSummaryV22(contentEl, rotationData, rotation, actualNumTeams, apparatusRankings);
           } else if (layout === 'default-v23') {
             renderMultiTeamSummaryV23(contentEl, rotationData, rotation, actualNumTeams, apparatusRankings);
+          } else if (layout === 'split-row') {
+            renderMultiTeamSummarySplitRow(contentEl, rotationData, rotation, actualNumTeams, apparatusRankings);
           } else {
             renderMultiTeamSummary(contentEl, rotationData, rotation, actualNumTeams);
           }
@@ -7415,6 +7912,199 @@
       contentEl.innerHTML = `<div class="event-summary-v23 teams-${numTeams}">${columnsHtml}</div>`;
     }
 
+    function renderMultiTeamSummarySplitRow(contentEl, rotationData, rotation, numTeams, apparatusRankings = {}) {
+      // Split Row Layout: 3 teams on top row, 2 teams on bottom row (centered)
+      // Provides more horizontal space per team for 5-team competitions
+      const maxAthletes = Math.min(
+        Math.max(...rotationData.map(t => t.gymnasts.length)),
+        6 // Limit to 6 athletes per team for split row to fit better
+      );
+
+      // Calculate ranks based on totalScore
+      const rankedTeams = rotationData
+        .map((t, idx) => ({ idx, score: t.totalScore || 0 }))
+        .sort((a, b) => b.score - a.score);
+
+      // Helper to check if athlete is in top 3 for their apparatus across entire meet
+      function getAthleteApparatusRank(eventName, gymnastId, score) {
+        const rankings = apparatusRankings[eventName] || [];
+        const found = rankings.find(r => r.gymnastId === gymnastId || r.score === score);
+        return found ? found.rank : null;
+      }
+
+      let columnsHtml = '';
+
+      rotationData.forEach((teamData, teamIndex) => {
+        const { team, eventName, eventDisplayName, gymnasts, eventScore, totalScore } = teamData;
+        const logoUrl = getTeamLogoUrl(team.name, team.logo);
+        const teamName = team.name || team.tricode;
+
+        // Get rank for this team
+        const rank = rankedTeams.findIndex(t => t.idx === teamIndex) + 1;
+        const rankClass = rank <= 3 ? ` rank-${rank}` : '';
+
+        // Build athlete rows with start values and meet rankings
+        let athletesHtml = '';
+        for (let i = 0; i < maxAthletes; i++) {
+          const g = gymnasts[i];
+          if (g) {
+            const score = parseFloat(g.final_score) || 0;
+            const name = `${g.first_name?.charAt(0) || ''}. ${g.last_name || ''}`;
+
+            // Get start value (difficulty score)
+            const startValue = g.scores && g.scores.length > 0
+              ? parseFloat(g.scores[0].start) || 0
+              : 0;
+
+            // Check if this athlete is in top 3 for this apparatus across entire meet
+            const athleteRank = score > 0 ? getAthleteApparatusRank(eventName, g.gymnast_id, score) : null;
+            const athleteRankHtml = athleteRank && athleteRank <= 3
+              ? `<div class="athlete-rank rank-${athleteRank}">${athleteRank}</div>`
+              : '';
+
+            athletesHtml += `
+              <div class="athlete-row">
+                <div class="athlete-order">${i + 1}</div>
+                <div class="athlete-name">${name}</div>
+                ${athleteRankHtml}
+                <div class="athlete-sv">${startValue > 0 ? startValue.toFixed(2) : ''}</div>
+                <div class="athlete-score">${score > 0 ? score.toFixed(3) : '—'}</div>
+              </div>
+            `;
+          } else {
+            athletesHtml += `
+              <div class="athlete-row empty">
+                <div class="athlete-order">${i + 1}</div>
+                <div class="athlete-name">—</div>
+                <div class="athlete-sv"></div>
+                <div class="athlete-score"></div>
+              </div>
+            `;
+          }
+        }
+
+        columnsHtml += `
+          <div class="team-column">
+            <div class="team-header">
+              ${logoUrl ? `<img class="team-logo" src="${logoUrl}" alt="">` : ''}
+              <div class="header-left">
+                <div class="team-name">${teamName}</div>
+                <div class="event-name">${eventDisplayName}</div>
+              </div>
+              <div class="header-right">
+                <div class="rank-badge${rankClass}">${rank}</div>
+                <div class="header-total">${totalScore > 0 ? totalScore.toFixed(3) : '—'}</div>
+              </div>
+            </div>
+            <div class="athlete-list">
+              ${athletesHtml}
+            </div>
+            <div class="team-footer">
+              <div class="footer-label">Event Total</div>
+              <div class="footer-total">${eventScore > 0 ? eventScore.toFixed(3) : '—'}</div>
+            </div>
+          </div>
+        `;
+      });
+
+      contentEl.innerHTML = `<div class="event-summary-split-row">${columnsHtml}</div>`;
+    }
+
+    function renderMultiTeamSummaryApparatusSplitRow(contentEl, apparatusData, eventDisplayName, eventShortCode, numTeams, apparatusRankings = {}) {
+      // Split Row Layout for apparatus view: 3 teams on top, 2 on bottom
+      const maxAthletes = Math.min(
+        Math.max(...apparatusData.map(t => t.gymnasts.length)),
+        6
+      );
+
+      // Calculate ranks based on eventScore (apparatus total)
+      const rankedTeams = apparatusData
+        .map((t, idx) => ({ idx, score: t.eventScore || 0 }))
+        .sort((a, b) => b.score - a.score);
+
+      // Helper to check if athlete is in top 3 for this apparatus across entire meet
+      function getAthleteApparatusRank(gymnastId, score) {
+        const rankings = apparatusRankings[eventShortCode?.toUpperCase()] || [];
+        const found = rankings.find(r => r.gymnastId === gymnastId || r.score === score);
+        return found ? found.rank : null;
+      }
+
+      let columnsHtml = '';
+
+      apparatusData.forEach((teamData, teamIndex) => {
+        const { team, gymnasts, eventScore, totalScore } = teamData;
+        const logoUrl = getTeamLogoUrl(team.name, team.logo);
+        const teamName = team.name || team.tricode;
+
+        // Get rank for this team on this apparatus
+        const rank = rankedTeams.findIndex(t => t.idx === teamIndex) + 1;
+        const rankClass = rank <= 3 ? ` rank-${rank}` : '';
+
+        // Build athlete rows
+        let athletesHtml = '';
+        for (let i = 0; i < maxAthletes; i++) {
+          const g = gymnasts[i];
+          if (g) {
+            const score = parseFloat(g.final_score) || 0;
+            const name = `${g.first_name?.charAt(0) || ''}. ${g.last_name || ''}`;
+
+            const startValue = g.scores && g.scores.length > 0
+              ? parseFloat(g.scores[0].start) || 0
+              : 0;
+
+            const athleteRank = score > 0 ? getAthleteApparatusRank(g.gymnast_id, score) : null;
+            const athleteRankHtml = athleteRank && athleteRank <= 3
+              ? `<div class="athlete-rank rank-${athleteRank}">${athleteRank}</div>`
+              : '';
+
+            athletesHtml += `
+              <div class="athlete-row">
+                <div class="athlete-order">${i + 1}</div>
+                <div class="athlete-name">${name}</div>
+                ${athleteRankHtml}
+                <div class="athlete-sv">${startValue > 0 ? startValue.toFixed(2) : ''}</div>
+                <div class="athlete-score">${score > 0 ? score.toFixed(3) : '—'}</div>
+              </div>
+            `;
+          } else {
+            athletesHtml += `
+              <div class="athlete-row empty">
+                <div class="athlete-order">${i + 1}</div>
+                <div class="athlete-name">—</div>
+                <div class="athlete-sv"></div>
+                <div class="athlete-score"></div>
+              </div>
+            `;
+          }
+        }
+
+        columnsHtml += `
+          <div class="team-column">
+            <div class="team-header">
+              ${logoUrl ? `<img class="team-logo" src="${logoUrl}" alt="">` : ''}
+              <div class="header-left">
+                <div class="team-name">${teamName}</div>
+                <div class="event-name">${eventDisplayName}</div>
+              </div>
+              <div class="header-right">
+                <div class="rank-badge${rankClass}">${rank}</div>
+                <div class="header-total">${totalScore > 0 ? totalScore.toFixed(3) : '—'}</div>
+              </div>
+            </div>
+            <div class="athlete-list">
+              ${athletesHtml}
+            </div>
+            <div class="team-footer">
+              <div class="footer-label">Event Total</div>
+              <div class="footer-total">${eventScore > 0 ? eventScore.toFixed(3) : '—'}</div>
+            </div>
+          </div>
+        `;
+      });
+
+      contentEl.innerHTML = `<div class="event-summary-split-row">${columnsHtml}</div>`;
+    }
+
     // Render functions for V5-V19 (apparatus view)
     function renderMultiTeamSummaryApparatusV5(contentEl, apparatusData, eventDisplayName, eventShortCode, numTeams) {
       renderGenericLayout(contentEl, apparatusData, numTeams, 'v5', true, eventDisplayName);
@@ -7923,6 +8613,8 @@
             renderClassicBroadcastLayoutApparatus(contentEl, apparatusData, eventDisplayName, eventShortCode);
           } else if (layout === 'default-v2') {
             renderDefaultV2LayoutApparatus(contentEl, apparatusData, eventDisplayName, eventShortCode);
+          } else if (layout === 'dual-dynamic-v1') {
+            renderDualDynamicV1LayoutApparatus(contentEl, apparatusData, eventDisplayName, eventShortCode);
           } else if (layout === 'default-v3') {
             renderMultiTeamSummaryApparatusV3(contentEl, apparatusData, eventDisplayName, eventShortCode, actualNumTeams);
           } else if (layout === 'default-v4') {
@@ -7965,6 +8657,8 @@
             renderMultiTeamSummaryApparatusV22(contentEl, apparatusData, eventDisplayName, eventShortCode, actualNumTeams, apparatusRankings);
           } else if (layout === 'default-v23') {
             renderMultiTeamSummaryApparatusV23(contentEl, apparatusData, eventDisplayName, eventShortCode, actualNumTeams, apparatusRankings);
+          } else if (layout === 'split-row') {
+            renderMultiTeamSummaryApparatusSplitRow(contentEl, apparatusData, eventDisplayName, eventShortCode, actualNumTeams, apparatusRankings);
           } else {
             renderDualMeetSummaryApparatus(contentEl, apparatusData, eventDisplayName, eventShortCode);
           }
@@ -8012,6 +8706,8 @@
             renderMultiTeamSummaryApparatusV22(contentEl, apparatusData, eventDisplayName, eventShortCode, actualNumTeams, apparatusRankings);
           } else if (layout === 'default-v23') {
             renderMultiTeamSummaryApparatusV23(contentEl, apparatusData, eventDisplayName, eventShortCode, actualNumTeams, apparatusRankings);
+          } else if (layout === 'split-row') {
+            renderMultiTeamSummaryApparatusSplitRow(contentEl, apparatusData, eventDisplayName, eventShortCode, actualNumTeams, apparatusRankings);
           } else {
             renderMultiTeamSummaryApparatus(contentEl, apparatusData, eventDisplayName, eventShortCode, actualNumTeams);
           }
@@ -8836,6 +9532,278 @@
       `;
     }
 
+    // Dual Dynamic V1 Layout - Scales to fit 1-9 athletes
+    // Calculate dynamic sizes based on athlete count
+    function getDynamicSizes(athleteCount) {
+      // Base sizes for 6 athletes (matches Default V2)
+      const base = {
+        photoSize: 88,
+        orderSize: 52,
+        orderFont: 24,
+        nameFont: 36,
+        scoreFont: 44,
+        startFont: 24,
+        rowPadding: 12,
+        rowGap: 16
+      };
+
+      // Scale factor: 6 athletes = 1.0, 9 athletes = 0.65
+      const scale = athleteCount <= 6 ? 1.0 : Math.max(0.65, 1.0 - (athleteCount - 6) * 0.12);
+
+      return {
+        photoSize: Math.round(base.photoSize * scale),
+        orderSize: Math.round(base.orderSize * scale),
+        orderFont: Math.round(base.orderFont * scale),
+        nameFont: Math.round(base.nameFont * scale),
+        scoreFont: Math.round(base.scoreFont * scale),
+        startFont: Math.round(base.startFont * scale),
+        rowPadding: Math.round(base.rowPadding * scale),
+        rowGap: Math.round(base.rowGap * scale)
+      };
+    }
+
+    function renderDualDynamicV1Layout(contentEl, rotationData, rotation) {
+      const team1 = rotationData[0];
+      const team2 = rotationData[1];
+
+      const maxAthletes = Math.max(team1.gymnasts.length, team2.gymnasts.length);
+      const sizes = getDynamicSizes(maxAthletes);
+
+      // Get home team logo from Firebase or API (only show home team in title bar)
+      const team1Logo = getTeamLogoUrl(team1.team.name, team1.team.logo);
+
+      // Build title bar - EVENT SUMMARY on left, home team logo on right
+      const titleHtml = `
+        <div class="title-bar">
+          <div class="title-text">Event Summary</div>
+          ${team1Logo ? `<img class="title-logo" src="${team1Logo}" alt="">` : ''}
+        </div>
+      `;
+
+      // Build left team column
+      const leftColumn = buildDualDynamicV1Column(team1, 'left', maxAthletes, sizes);
+      const rightColumn = buildDualDynamicV1Column(team2, 'right', maxAthletes, sizes);
+
+      // Build center divider with visual diff bars (wrapped in diff-list for alignment)
+      let diffRowsHtml = '';
+      for (let i = 0; i < maxAthletes; i++) {
+        const score1 = team1.gymnasts[i] ? parseFloat(team1.gymnasts[i].final_score) || 0 : 0;
+        const score2 = team2.gymnasts[i] ? parseFloat(team2.gymnasts[i].final_score) || 0 : 0;
+        const diff = score1 - score2;
+        const diffStr = (score1 === 0 && score2 === 0) ? '--' : diff.toFixed(3);
+
+        const barWidth = Math.min(Math.abs(diff) * 25, 50);
+        let barClass = 'tie';
+        if (diff > 0.001) barClass = 'left';
+        else if (diff < -0.001) barClass = 'right';
+
+        diffRowsHtml += `
+          <div class="diff-row">
+            <div class="diff-value">${diffStr}</div>
+            <div class="diff-bar">
+              <div class="diff-bar-fill ${barClass}" style="width: ${barWidth}%;"></div>
+            </div>
+          </div>
+        `;
+      }
+
+      const centerHtml = `
+        <div class="center-divider">
+          <div class="center-header"><div class="rotation-badge">R${rotation}</div></div>
+          <div class="diff-list">${diffRowsHtml}</div>
+        </div>
+      `;
+
+      // Calculate event total difference
+      const eventDiff = team1.eventScore - team2.eventScore;
+      const eventDiffStr = eventDiff.toFixed(3);
+      const eventBarWidth = Math.min(Math.abs(eventDiff) * 5, 50);
+      let eventBarClass = 'tie';
+      if (eventDiff > 0.001) eventBarClass = 'left';
+      else if (eventDiff < -0.001) eventBarClass = 'right';
+
+      // Build footer with event totals and icons
+      const footerHtml = `
+        <div class="event-summary-footer layout-dual-dynamic-v1-footer">
+          <div class="footer-team left">
+            <div class="event-abbr">${team1.eventShortCode}</div>
+            ${EVENT_ICONS[team1.eventShortCode] || ''}
+            <div class="event-label">Event Total</div>
+            <div class="event-total">${team1.eventScore > 0 ? team1.eventScore.toFixed(3) : '—'}</div>
+          </div>
+          <div class="footer-center">
+            <div class="footer-diff">${eventDiffStr}</div>
+            <div class="footer-diff-bar">
+              <div class="footer-diff-fill ${eventBarClass}" style="width: ${eventBarWidth}%;"></div>
+            </div>
+          </div>
+          <div class="footer-team right">
+            <div class="event-abbr">${team2.eventShortCode}</div>
+            ${EVENT_ICONS[team2.eventShortCode] || ''}
+            <div class="event-label">Event Total</div>
+            <div class="event-total">${team2.eventScore > 0 ? team2.eventScore.toFixed(3) : '—'}</div>
+          </div>
+        </div>
+      `;
+
+      contentEl.innerHTML = `
+        <div class="layout-dual-dynamic-v1">
+          ${titleHtml}
+          <div class="main-content">
+            ${leftColumn}
+            ${centerHtml}
+            ${rightColumn}
+          </div>
+        </div>
+        ${footerHtml}
+      `;
+    }
+
+    // Build a team column for Dual Dynamic V1 layout with dynamic sizing
+    function buildDualDynamicV1Column(teamData, side, maxAthletes, sizes) {
+      const { team, gymnasts, totalScore, eventShortCode } = teamData;
+
+      let athletesHtml = '';
+      for (let i = 0; i < maxAthletes; i++) {
+        const g = gymnasts[i];
+        if (g) {
+          const score = parseFloat(g.final_score) || 0;
+          const startValue = g.scores && g.scores.length > 0 ? parseFloat(g.scores[0].start) || 0 : 0;
+          const name = `${g.first_name?.charAt(0) || ''}. ${g.last_name || ''}`;
+          const photoUrl = getAthleteHeadshot(g.first_name, g.last_name, g.headshot);
+          const isAnchor = i === 5;
+
+          athletesHtml += `
+            <div class="athlete-row" style="padding: ${sizes.rowPadding}px 20px; gap: ${sizes.rowGap}px;">
+              <div class="athlete-order${isAnchor ? ' anchor' : ''}" style="width: ${sizes.orderSize}px; height: ${sizes.orderSize}px; font-size: ${sizes.orderFont}px;">${i + 1}</div>
+              <img class="athlete-photo" src="${photoUrl || ''}" alt="" style="width: ${sizes.photoSize}px; height: ${sizes.photoSize}px; ${!photoUrl ? 'display: none;' : ''}" onerror="this.style.display='none'">
+              <div class="athlete-info">
+                <div class="athlete-name" style="font-size: ${sizes.nameFont}px;">${name}</div>
+              </div>
+              <div class="athlete-score-block">
+                <div class="athlete-score" style="font-size: ${sizes.scoreFont}px;">${score > 0 ? score.toFixed(3) : 'On Eval'}</div>
+                ${startValue > 0 ? `<div class="athlete-start" style="font-size: ${sizes.startFont}px;">${startValue.toFixed(2)}</div>` : ''}
+              </div>
+            </div>
+          `;
+        } else {
+          athletesHtml += `<div class="athlete-row" style="padding: ${sizes.rowPadding}px 20px;"></div>`;
+        }
+      }
+
+      const logoUrl = getTeamLogoUrl(team.name, team.logo);
+      return `
+        <div class="team-column ${side}">
+          <div class="team-header ${side}">
+            ${logoUrl ? `<img class="team-logo" src="${logoUrl}" alt="">` : ''}
+            <div class="team-name">${team.name || team.tricode}</div>
+            <div class="team-total">${totalScore > 0 ? totalScore.toFixed(3) : '0.000'}</div>
+          </div>
+          <div class="athlete-list">
+            ${athletesHtml}
+          </div>
+        </div>
+      `;
+    }
+
+    // Dual Dynamic V1 Layout for Apparatus mode (same event for both teams)
+    function renderDualDynamicV1LayoutApparatus(contentEl, apparatusData, eventDisplayName, eventShortCode) {
+      const team1 = apparatusData[0];
+      const team2 = apparatusData[1];
+
+      const maxAthletes = Math.max(team1.gymnasts.length, team2.gymnasts.length);
+      const sizes = getDynamicSizes(maxAthletes);
+
+      // Get home team logo from Firebase or API (only show home team in title bar)
+      const team1Logo = getTeamLogoUrl(team1.team.name, team1.team.logo);
+
+      // Build title bar - EVENT SUMMARY on left, home team logo on right
+      const titleHtml = `
+        <div class="title-bar">
+          <div class="title-text">Event Summary</div>
+          ${team1Logo ? `<img class="title-logo" src="${team1Logo}" alt="">` : ''}
+        </div>
+      `;
+
+      // Build left team column
+      const leftColumn = buildDualDynamicV1Column(team1, 'left', maxAthletes, sizes);
+      const rightColumn = buildDualDynamicV1Column(team2, 'right', maxAthletes, sizes);
+
+      // Build center divider with event name and visual diff bars
+      let diffRowsHtml = '';
+      for (let i = 0; i < maxAthletes; i++) {
+        const score1 = team1.gymnasts[i] ? parseFloat(team1.gymnasts[i].final_score) || 0 : 0;
+        const score2 = team2.gymnasts[i] ? parseFloat(team2.gymnasts[i].final_score) || 0 : 0;
+        const diff = score1 - score2;
+        const diffStr = (score1 === 0 && score2 === 0) ? '--' : diff.toFixed(3);
+
+        const barWidth = Math.min(Math.abs(diff) * 25, 50);
+        let barClass = 'tie';
+        if (diff > 0.001) barClass = 'left';
+        else if (diff < -0.001) barClass = 'right';
+
+        diffRowsHtml += `
+          <div class="diff-row">
+            <div class="diff-value">${diffStr}</div>
+            <div class="diff-bar">
+              <div class="diff-bar-fill ${barClass}" style="width: ${barWidth}%;"></div>
+            </div>
+          </div>
+        `;
+      }
+
+      const centerHtml = `
+        <div class="center-divider">
+          <div class="center-header"><div class="rotation-badge">${eventShortCode}</div></div>
+          <div class="diff-list">${diffRowsHtml}</div>
+        </div>
+      `;
+
+      // Calculate event total difference
+      const eventDiff = team1.eventScore - team2.eventScore;
+      const eventDiffStr = eventDiff.toFixed(3);
+      const eventBarWidth = Math.min(Math.abs(eventDiff) * 5, 50);
+      let eventBarClass = 'tie';
+      if (eventDiff > 0.001) eventBarClass = 'left';
+      else if (eventDiff < -0.001) eventBarClass = 'right';
+
+      // Build footer with event totals and icons (same event for both teams)
+      const footerHtml = `
+        <div class="event-summary-footer layout-dual-dynamic-v1-footer">
+          <div class="footer-team left">
+            <div class="event-abbr">${eventShortCode}</div>
+            ${EVENT_ICONS[eventShortCode] || ''}
+            <div class="event-label">Event Total</div>
+            <div class="event-total">${team1.eventScore > 0 ? team1.eventScore.toFixed(3) : '—'}</div>
+          </div>
+          <div class="footer-center">
+            <div class="footer-diff">${eventDiffStr}</div>
+            <div class="footer-diff-bar">
+              <div class="footer-diff-fill ${eventBarClass}" style="width: ${eventBarWidth}%;"></div>
+            </div>
+          </div>
+          <div class="footer-team right">
+            <div class="event-abbr">${eventShortCode}</div>
+            ${EVENT_ICONS[eventShortCode] || ''}
+            <div class="event-label">Event Total</div>
+            <div class="event-total">${team2.eventScore > 0 ? team2.eventScore.toFixed(3) : '—'}</div>
+          </div>
+        </div>
+      `;
+
+      contentEl.innerHTML = `
+        <div class="layout-dual-dynamic-v1">
+          ${titleHtml}
+          <div class="main-content">
+            ${leftColumn}
+            ${centerHtml}
+            ${rightColumn}
+          </div>
+        </div>
+        ${footerHtml}
+      `;
+    }
+
     // Graphic renderers
     const renderers = {
       clear: () => '',
@@ -9442,6 +10410,29 @@
             <div class="frame-content" id="leaderboard-content">
               <div class="leaderboard-loading">Loading leaderboard...</div>
             </div>
+          </div>
+        `;
+      },
+
+      'team-roster': (data) => {
+        // Extract team slot from graphicId (e.g., "team1-roster" -> 1)
+        const teamSlotMatch = data.graphicId?.match(/^team(\d+)-roster$/);
+        const teamSlot = teamSlotMatch ? teamSlotMatch[1] : '1';
+
+        // Get team info
+        const teamName = data[`team${teamSlot}Name`] || `Team ${teamSlot}`;
+        const teamLogo = data[`team${teamSlot}Logo`] || '';
+
+        // Build iframe URL - use compId from data or competition context
+        const rosterUrl = `/overlays/team-roster.html?compId=${encodeURIComponent(competitionId)}&teamSlot=${teamSlot}`;
+
+        return `
+          <div class="graphic-container" style="width: 100%; height: 100%; background: transparent;">
+            <iframe
+              src="${rosterUrl}"
+              style="width: 100%; height: 100%; border: none; background: transparent;"
+              allowtransparency="true"
+            ></iframe>
           </div>
         `;
       }
