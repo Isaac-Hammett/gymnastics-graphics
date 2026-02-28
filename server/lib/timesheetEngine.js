@@ -851,6 +851,44 @@ class TimesheetEngine extends EventEmitter {
             // Merge any segment-specific params on top (e.g., teamSlot)
             ...graphicParams,
           };
+
+          // Handle sponsor graphics - fetch sponsor data from home team
+          if (graphicId.startsWith('sponsors-')) {
+            // Get team key from config (team1Key is already in correct format like "navy-mens")
+            const teamKey = config.team1Key;
+            if (teamKey) {
+              try {
+                const sponsorsSnapshot = await db.ref(`teamsDatabase/sponsors/${teamKey}`).once('value');
+                const sponsorsData = sponsorsSnapshot.val();
+
+                if (sponsorsData) {
+                  // Convert sponsors object to array, sorted by order, limited to 8
+                  const sponsorsArray = Object.entries(sponsorsData)
+                    .map(([key, sponsor]) => ({
+                      name: sponsor.name,
+                      url: sponsor.logoUrl || sponsor.url,  // Handle both field names
+                      order: sponsor.order ?? 0
+                    }))
+                    .filter(s => s.name && s.url)  // Only include sponsors with both name and url
+                    .sort((a, b) => a.order - b.order)
+                    .slice(0, 8)  // Max 8 sponsors
+                    .map(({ name, url }) => ({ name, url }));  // Remove order field for output
+
+                  data.sponsors = JSON.stringify(sponsorsArray);
+                  console.log(`[Timesheet${this.compId ? ':' + this.compId : ''}] Loaded ${sponsorsArray.length} sponsors for team "${teamKey}"`);
+                } else {
+                  data.sponsors = '[]';
+                  console.log(`[Timesheet${this.compId ? ':' + this.compId : ''}] No sponsors found for team "${teamKey}"`);
+                }
+              } catch (sponsorError) {
+                console.warn(`[Timesheet${this.compId ? ':' + this.compId : ''}] Failed to load sponsors: ${sponsorError.message}`);
+                data.sponsors = '[]';
+              }
+            } else {
+              data.sponsors = '[]';
+              console.log(`[Timesheet${this.compId ? ':' + this.compId : ''}] No team1Key in config, cannot load sponsors`);
+            }
+          }
         }
       } catch (error) {
         console.warn(`[Timesheet${this.compId ? ':' + this.compId : ''}] Failed to load competition config for graphic: ${error.message}`);
