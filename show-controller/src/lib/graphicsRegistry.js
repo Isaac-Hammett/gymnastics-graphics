@@ -154,6 +154,24 @@ export const GRAPHICS = {
     },
   },
 
+  'team-roster': {
+    id: 'team-roster',
+    label: 'Team Roster',
+    labelTemplate: '{teamName} Roster',
+    category: 'pre-meet',
+    keywords: ['roster', 'team', 'athletes', 'lineup', 'players', 'gymnasts', 'headshots', 'photos'],
+    gender: 'both',
+    renderer: 'overlay',
+    file: 'team-roster.html',
+    transparent: false,
+    perTeam: true,
+    params: {
+      teamSlot: { type: 'number', min: 1, max: 6, required: true, label: 'Team' },
+      logo: { type: 'string', source: 'competition', required: true },
+      teamName: { type: 'string', source: 'competition', required: true },
+    },
+  },
+
   'athlete-spotlight': {
     id: 'athlete-spotlight',
     label: 'Athlete Spotlight',

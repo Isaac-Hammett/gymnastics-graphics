@@ -167,6 +167,28 @@ export function buildCoachesURL({ logo, coaches, baseUrl }) {
 }
 
 /**
+ * Build URL for Team Roster graphic
+ * @param {Object} options
+ * @param {string} options.compId - Competition ID
+ * @param {number} options.teamSlot - Team slot number (1-6)
+ * @param {string} options.teamName - Team name (for preview)
+ * @param {string} options.logo - Team logo URL (for preview)
+ * @param {string} [options.baseUrl] - Override base URL
+ * @returns {string} Complete URL
+ */
+export function buildTeamRosterURL({ compId, teamSlot, teamName, logo, baseUrl }) {
+  const base = baseUrl || getBaseURL();
+  const params = new URLSearchParams();
+
+  if (compId) params.set('compId', compId);
+  if (teamSlot) params.set('teamSlot', teamSlot);
+  if (teamName) params.set('teamName', teamName);
+  if (logo) params.set('logo', logo);
+
+  return `${base}/overlays/team-roster.html?${params.toString()}`;
+}
+
+/**
  * Build URL for Event Frame graphic
  * @param {Object} options
  * @param {string} options.eventId - Event ID (floor, vault, etc.)
@@ -420,6 +442,18 @@ export function generateGraphicURL(graphicId, formData, teamCount, baseUrl, opti
     return buildCoachesURL({
       logo: getTeamLogo(num),
       coaches: formData[`team${num}Coaches`],
+      baseUrl: base,
+    });
+  }
+
+  const teamRosterMatch = graphicId.match(/^team(\d+)-roster$/);
+  if (teamRosterMatch) {
+    const num = parseInt(teamRosterMatch[1]);
+    return buildTeamRosterURL({
+      compId,
+      teamSlot: num,
+      teamName: formData[`team${num}Name`],
+      logo: getTeamLogo(num),
       baseUrl: base,
     });
   }
@@ -715,6 +749,7 @@ export default {
   buildHostsURL,
   buildTeamStatsURL,
   buildCoachesURL,
+  buildTeamRosterURL,
   buildEventFrameURL,
   buildStreamURL,
   buildSponsorsThanksURL,

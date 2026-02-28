@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1920, height=1080">
+  <title>Team Roster</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: transparent;
+    }
+
+    .card-container {
+      position: absolute;
+      top: 50px;
+      left: 70px;
+      right: 70px;
+      bottom: 50px;
+      display: flex;
+      flex-direction: column;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.98); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .header-bar {
+      background: #d4d4d8;
+      padding: 18px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .header-title {
+      font-size: 42px;
+      font-weight: 800;
+      color: #000;
+      text-transform: uppercase;
+    }
+
+    .header-logo {
+      width: 80px;
+      height: 80px;
+      object-fit: contain;
+    }
+
+    .roster-container {
+      flex: 1;
+      background: #18181b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      overflow: hidden;
+    }
+
+    .roster-grid {
+      display: grid;
+      gap: 20px;
+      justify-content: center;
+      align-content: center;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Dynamic grid layouts based on athlete count */
+    /* 1-6 athletes: single row */
+    .roster-grid.count-1 { grid-template-columns: repeat(1, 250px); }
+    .roster-grid.count-2 { grid-template-columns: repeat(2, 250px); }
+    .roster-grid.count-3 { grid-template-columns: repeat(3, 250px); }
+    .roster-grid.count-4 { grid-template-columns: repeat(4, 250px); }
+    .roster-grid.count-5 { grid-template-columns: repeat(5, 250px); }
+    .roster-grid.count-6 { grid-template-columns: repeat(6, 250px); }
+
+    /* 7-10 athletes: 2 rows */
+    .roster-grid.count-7 { grid-template-columns: repeat(4, 220px); }
+    .roster-grid.count-8 { grid-template-columns: repeat(4, 220px); }
+    .roster-grid.count-9 { grid-template-columns: repeat(5, 200px); }
+    .roster-grid.count-10 { grid-template-columns: repeat(5, 200px); }
+
+    /* 11-15 athletes: 3 rows */
+    .roster-grid.count-11,
+    .roster-grid.count-12 { grid-template-columns: repeat(4, 220px); gap: 16px; }
+    .roster-grid.count-13,
+    .roster-grid.count-14,
+    .roster-grid.count-15 { grid-template-columns: repeat(5, 200px); gap: 14px; }
+
+    /* 16-20 athletes: 4 rows */
+    .roster-grid.count-16,
+    .roster-grid.count-17,
+    .roster-grid.count-18,
+    .roster-grid.count-19,
+    .roster-grid.count-20 { grid-template-columns: repeat(5, 190px); gap: 12px; }
+
+    /* 21-25 athletes: 5 rows */
+    .roster-grid.count-21,
+    .roster-grid.count-22,
+    .roster-grid.count-23,
+    .roster-grid.count-24,
+    .roster-grid.count-25 { grid-template-columns: repeat(5, 180px); gap: 10px; }
+
+    /* 26+ athletes: 6 rows, compact */
+    .roster-grid.count-large { grid-template-columns: repeat(6, 160px); gap: 8px; }
+
+    .athlete-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+    }
+
+    /* Staggered animation */
+    .athlete-card:nth-child(1) { animation-delay: 0.05s; }
+    .athlete-card:nth-child(2) { animation-delay: 0.1s; }
+    .athlete-card:nth-child(3) { animation-delay: 0.15s; }
+    .athlete-card:nth-child(4) { animation-delay: 0.2s; }
+    .athlete-card:nth-child(5) { animation-delay: 0.25s; }
+    .athlete-card:nth-child(6) { animation-delay: 0.3s; }
+    .athlete-card:nth-child(7) { animation-delay: 0.35s; }
+    .athlete-card:nth-child(8) { animation-delay: 0.4s; }
+    .athlete-card:nth-child(9) { animation-delay: 0.45s; }
+    .athlete-card:nth-child(10) { animation-delay: 0.5s; }
+    .athlete-card:nth-child(n+11) { animation-delay: 0.55s; }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .athlete-headshot {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: #3f3f46;
+      border: 3px solid #52525b;
+      margin-bottom: 12px;
+    }
+
+    /* Smaller headshots for larger rosters */
+    .roster-grid.count-11 .athlete-headshot,
+    .roster-grid.count-12 .athlete-headshot,
+    .roster-grid.count-13 .athlete-headshot,
+    .roster-grid.count-14 .athlete-headshot,
+    .roster-grid.count-15 .athlete-headshot { width: 100px; height: 100px; }
+
+    .roster-grid.count-16 .athlete-headshot,
+    .roster-grid.count-17 .athlete-headshot,
+    .roster-grid.count-18 .athlete-headshot,
+    .roster-grid.count-19 .athlete-headshot,
+    .roster-grid.count-20 .athlete-headshot { width: 90px; height: 90px; margin-bottom: 8px; }
+
+    .roster-grid.count-21 .athlete-headshot,
+    .roster-grid.count-22 .athlete-headshot,
+    .roster-grid.count-23 .athlete-headshot,
+    .roster-grid.count-24 .athlete-headshot,
+    .roster-grid.count-25 .athlete-headshot { width: 80px; height: 80px; margin-bottom: 6px; }
+
+    .roster-grid.count-large .athlete-headshot { width: 70px; height: 70px; margin-bottom: 4px; border-width: 2px; }
+
+    .athlete-initials {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #3f3f46 0%, #27272a 100%);
+      border: 3px solid #52525b;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      font-weight: 700;
+      color: #a1a1aa;
+    }
+
+    /* Scale initials placeholder too */
+    .roster-grid.count-11 .athlete-initials,
+    .roster-grid.count-12 .athlete-initials,
+    .roster-grid.count-13 .athlete-initials,
+    .roster-grid.count-14 .athlete-initials,
+    .roster-grid.count-15 .athlete-initials { width: 100px; height: 100px; font-size: 30px; }
+
+    .roster-grid.count-16 .athlete-initials,
+    .roster-grid.count-17 .athlete-initials,
+    .roster-grid.count-18 .athlete-initials,
+    .roster-grid.count-19 .athlete-initials,
+    .roster-grid.count-20 .athlete-initials { width: 90px; height: 90px; font-size: 26px; margin-bottom: 8px; }
+
+    .roster-grid.count-21 .athlete-initials,
+    .roster-grid.count-22 .athlete-initials,
+    .roster-grid.count-23 .athlete-initials,
+    .roster-grid.count-24 .athlete-initials,
+    .roster-grid.count-25 .athlete-initials { width: 80px; height: 80px; font-size: 22px; margin-bottom: 6px; }
+
+    .roster-grid.count-large .athlete-initials { width: 70px; height: 70px; font-size: 20px; margin-bottom: 4px; border-width: 2px; }
+
+    .athlete-name {
+      font-size: 18px;
+      font-weight: 600;
+      color: #fff;
+      text-transform: uppercase;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Smaller text for larger rosters */
+    .roster-grid.count-11 .athlete-name,
+    .roster-grid.count-12 .athlete-name,
+    .roster-grid.count-13 .athlete-name,
+    .roster-grid.count-14 .athlete-name,
+    .roster-grid.count-15 .athlete-name { font-size: 16px; }
+
+    .roster-grid.count-16 .athlete-name,
+    .roster-grid.count-17 .athlete-name,
+    .roster-grid.count-18 .athlete-name,
+    .roster-grid.count-19 .athlete-name,
+    .roster-grid.count-20 .athlete-name { font-size: 14px; }
+
+    .roster-grid.count-21 .athlete-name,
+    .roster-grid.count-22 .athlete-name,
+    .roster-grid.count-23 .athlete-name,
+    .roster-grid.count-24 .athlete-name,
+    .roster-grid.count-25 .athlete-name { font-size: 13px; }
+
+    .roster-grid.count-large .athlete-name { font-size: 12px; }
+
+    .loading-state {
+      color: #71717a;
+      font-size: 24px;
+      text-align: center;
+    }
+
+    .error-state {
+      color: #ef4444;
+      font-size: 20px;
+      text-align: center;
+    }
+
+    .no-roster-message {
+      font-size: 28px;
+      font-weight: 600;
+      color: #71717a;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="card-container">
+    <div class="header-bar">
+      <div class="header-title" id="headerTitle">TEAM ROSTER</div>
+      <img id="headerLogo" class="header-logo" src="" alt="Team Logo">
+    </div>
+    <div class="roster-container">
+      <div id="rosterGrid" class="roster-grid">
+        <div class="loading-state">Loading roster...</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyCh0aZUvKl6Qvqsva3hvOgJJlleP1OwcTY",
+      authDomain: "gymnastics-graphics.firebaseapp.com",
+      databaseURL: "https://gymnastics-graphics-default-rtdb.firebaseio.com",
+      projectId: "gymnastics-graphics",
+      storageBucket: "gymnastics-graphics.firebasestorage.app",
+      messagingSenderId: "702072609550",
+      appId: "1:702072609550:web:ac74a811186d3ff45b955f"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Parse URL parameters
+    const params = new URLSearchParams(window.location.search);
+    const compId = params.get('compId');
+    const teamSlot = parseInt(params.get('teamSlot') || '1', 10);
+
+    // Also support direct params for URL generator preview
+    const directLogo = params.get('logo');
+    const directTeamName = params.get('teamName');
+
+    if (!compId && !directLogo) {
+      document.getElementById('rosterGrid').innerHTML = '<div class="error-state">Missing compId parameter</div>';
+    }
+
+    // Headshot storage
+    let firebaseHeadshots = {};
+    let headshotsLoaded = false;
+
+    /**
+     * Normalize accented characters to ASCII equivalents.
+     */
+    function normalizeAccents(str) {
+      if (!str) return '';
+      return str
+        .replace(/ö/g, 'oe').replace(/Ö/g, 'oe')
+        .replace(/ä/g, 'ae').replace(/Ä/g, 'ae')
+        .replace(/ü/g, 'ue').replace(/Ü/g, 'ue')
+        .replace(/ß/g, 'ss')
+        .replace(/[éèêë]/g, 'e').replace(/[ÉÈÊË]/g, 'e')
+        .replace(/[áàâãå]/g, 'a').replace(/[ÁÀÂÃÅ]/g, 'a')
+        .replace(/[íìîï]/g, 'i').replace(/[ÍÌÎÏ]/g, 'i')
+        .replace(/[óòôõø]/g, 'o').replace(/[ÓÒÔÕØ]/g, 'o')
+        .replace(/[úùûü]/g, 'u').replace(/[ÚÙÛÜ]/g, 'u')
+        .replace(/ñ/g, 'n').replace(/Ñ/g, 'n')
+        .replace(/ç/g, 'c').replace(/Ç/g, 'c')
+        .replace(/ÿ/g, 'y').replace(/Ÿ/g, 'y')
+        .replace(/æ/g, 'ae').replace(/Æ/g, 'ae')
+        .replace(/œ/g, 'oe').replace(/Œ/g, 'oe');
+    }
+
+    /**
+     * Remove common name suffixes (Jr., Sr., III, etc.).
+     */
+    function removeSuffixes(name) {
+      if (!name) return '';
+      return name
+        .replace(/,?\s*(jr\.?|junior|sr\.?|senior|[iv]+|[1-5](?:st|nd|rd|th))$/i, '')
+        .trim();
+    }
+
+    /**
+     * Unified name normalization.
+     */
+    function normalizeName(name) {
+      if (!name) return '';
+      return normalizeAccents(removeSuffixes(name))
+        .toLowerCase()
+        .replace(/[-_]/g, ' ')
+        .replace(/[''`]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    /**
+     * Load headshots from Firebase teamsDatabase.
+     */
+    function loadFirebaseHeadshots() {
+      return new Promise((resolve) => {
+        db.ref('teamsDatabase/headshots').once('value', (snapshot) => {
+          const data = snapshot.val() || {};
+          firebaseHeadshots = {};
+
+          for (const [key, value] of Object.entries(data)) {
+            if (value && value.url) {
+              const keyWithSpaces = key.toLowerCase().trim().replace(/_/g, ' ').replace(/\s+/g, ' ');
+              firebaseHeadshots[keyWithSpaces] = value.url;
+
+              const normalizedKey = normalizeName(key);
+              firebaseHeadshots[normalizedKey] = value.url;
+
+              if (value.name) {
+                const nameNormalized = normalizeName(value.name);
+                firebaseHeadshots[nameNormalized] = value.url;
+                const nameLower = value.name.toLowerCase().trim().replace(/\s+/g, ' ');
+                firebaseHeadshots[nameLower] = value.url;
+              }
+
+              const strippedKey = normalizedKey.replace(/[^a-z\s]/g, '').replace(/\s+/g, ' ').trim();
+              if (strippedKey && strippedKey.length > 2) {
+                firebaseHeadshots[strippedKey] = value.url;
+              }
+
+              const parts = normalizedKey.split(' ').filter(Boolean);
+              if (parts.length >= 3) {
+                firebaseHeadshots[`${parts[0]} ${parts[parts.length - 1]}`] = value.url;
+                firebaseHeadshots[`${parts[0]} ${parts[1][0]} ${parts[parts.length - 1]}`] = value.url;
+              }
+            }
+          }
+          headshotsLoaded = true;
+          console.log(`Loaded ${Object.keys(firebaseHeadshots).length} headshot entries`);
+          resolve();
+        });
+      });
+    }
+
+    /**
+     * Get athlete headshot URL.
+     */
+    function getAthleteHeadshot(athleteName) {
+      if (!athleteName) return '';
+
+      const normalized = normalizeName(athleteName);
+      const stripped = normalized.replace(/[^a-z\s]/g, '').replace(/\s+/g, ' ').trim();
+
+      const lookupKeys = [
+        athleteName.toLowerCase().replace(/\s+/g, ' ').trim(),
+        normalized,
+        stripped,
+      ];
+
+      const parts = normalized.split(' ').filter(Boolean);
+      if (parts.length >= 3) {
+        lookupKeys.push(`${parts[0]} ${parts[parts.length - 1]}`);
+        lookupKeys.push(`${parts[0]} ${parts[1][0]} ${parts[parts.length - 1]}`);
+      }
+
+      const uniqueKeys = [...new Set(lookupKeys.filter(Boolean))];
+
+      for (const key of uniqueKeys) {
+        if (firebaseHeadshots[key]) {
+          return firebaseHeadshots[key];
+        }
+      }
+
+      return '';
+    }
+
+    /**
+     * Get initials from athlete name.
+     */
+    function getInitials(name) {
+      if (!name) return '?';
+      const parts = name.trim().split(/\s+/);
+      if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+      return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+    }
+
+    /**
+     * Handle headshot load error - replace with initials.
+     */
+    function handleHeadshotError(img, athleteName) {
+      img.style.display = 'none';
+      const initials = getInitials(athleteName);
+      const placeholder = document.createElement('div');
+      placeholder.className = 'athlete-initials';
+      placeholder.textContent = initials;
+      img.parentNode.insertBefore(placeholder, img);
+    }
+
+    /**
+     * Render the roster grid.
+     */
+    function renderRoster(roster, teamName, logo) {
+      const grid = document.getElementById('rosterGrid');
+      const headerTitle = document.getElementById('headerTitle');
+      const headerLogo = document.getElementById('headerLogo');
+
+      // Set header
+      headerTitle.textContent = teamName ? `${teamName} ROSTER` : 'TEAM ROSTER';
+
+      if (logo) {
+        headerLogo.src = logo;
+        headerLogo.onerror = () => { headerLogo.style.display = 'none'; };
+      } else {
+        headerLogo.style.display = 'none';
+      }
+
+      // Handle empty roster
+      if (!roster || roster.length === 0) {
+        grid.innerHTML = '<div class="no-roster-message">No roster available</div>';
+        return;
+      }
+
+      // Set grid class based on count
+      grid.className = 'roster-grid';
+      const count = roster.length;
+      if (count <= 25) {
+        grid.classList.add(`count-${count}`);
+      } else {
+        grid.classList.add('count-large');
+      }
+
+      // Clear and render athletes
+      grid.innerHTML = '';
+      roster.forEach((athleteName) => {
+        const card = document.createElement('div');
+        card.className = 'athlete-card';
+
+        const headshot = getAthleteHeadshot(athleteName);
+        const img = document.createElement('img');
+        img.className = 'athlete-headshot';
+        img.src = headshot || '';
+        img.alt = athleteName;
+        img.onerror = () => handleHeadshotError(img, athleteName);
+
+        // If no headshot URL, show initials immediately
+        if (!headshot) {
+          const placeholder = document.createElement('div');
+          placeholder.className = 'athlete-initials';
+          placeholder.textContent = getInitials(athleteName);
+          card.appendChild(placeholder);
+        } else {
+          card.appendChild(img);
+        }
+
+        const nameDiv = document.createElement('div');
+        nameDiv.className = 'athlete-name';
+        nameDiv.textContent = athleteName;
+        card.appendChild(nameDiv);
+
+        grid.appendChild(card);
+      });
+    }
+
+    /**
+     * Load data and render.
+     */
+    async function init() {
+      // Load headshots first
+      await loadFirebaseHeadshots();
+
+      // If direct params provided (URL generator preview), use those
+      if (directLogo && directTeamName) {
+        // For preview, show a sample roster
+        renderRoster(
+          ['Sample Athlete 1', 'Sample Athlete 2', 'Sample Athlete 3', 'Sample Athlete 4', 'Sample Athlete 5', 'Sample Athlete 6'],
+          directTeamName,
+          directLogo
+        );
+        return;
+      }
+
+      if (!compId) return;
+
+      try {
+        // Load competition config
+        const configSnap = await db.ref(`competitions/${compId}/config`).once('value');
+        const config = configSnap.val();
+
+        if (!config) {
+          document.getElementById('rosterGrid').innerHTML = '<div class="error-state">Competition not found</div>';
+          return;
+        }
+
+        // Get team info for the specified slot
+        const teamKey = config[`team${teamSlot}Key`];
+        const teamName = config[`team${teamSlot}Name`] || `Team ${teamSlot}`;
+        const teamLogo = config[`team${teamSlot}Logo`];
+
+        if (!teamKey) {
+          document.getElementById('rosterGrid').innerHTML = `<div class="error-state">Team ${teamSlot} not found in competition</div>`;
+          return;
+        }
+
+        // Load roster from teamsDatabase
+        const rosterSnap = await db.ref(`teamsDatabase/teams/${teamKey}/roster`).once('value');
+        const roster = rosterSnap.val() || [];
+
+        renderRoster(roster, teamName, teamLogo);
+      } catch (error) {
+        console.error('Error loading roster:', error);
+        document.getElementById('rosterGrid').innerHTML = `<div class="error-state">Error: ${error.message}</div>`;
+      }
+    }
+
+    // Initialize
+    init();
+  </script>
+</body>
+</html>
