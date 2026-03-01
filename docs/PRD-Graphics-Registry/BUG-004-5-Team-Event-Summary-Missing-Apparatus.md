@@ -79,7 +79,14 @@ The Firebase config defines teams in order (team1=Stanford, team2=Cal, etc.), bu
 
 ## Fix Applied
 
-Added `mens-5` and `mens-6` rotation schedules to handle 5 and 6 team meets.
+### Fix 1: Added rotation schedules (partial fix)
+Added `mens-5` and `mens-6` rotation schedules to handle 5 and 6 team meets. This fixed the "NULL" apparatus issue but didn't fix the incorrect assignments.
+
+### Fix 2: API-based event detection (complete fix)
+Added `detectEventFromApiData()` function that detects each team's event from the actual Virtius API data instead of using hardcoded rotation schedules. For 5+ team meets, the code now:
+1. Looks at each team's `events` array
+2. Finds events where gymnasts have scores
+3. Returns the correct event for the requested rotation
 
 ### Men's 5-Team Schedule
 
