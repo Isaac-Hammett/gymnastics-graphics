@@ -7775,6 +7775,9 @@
 
     function renderMultiTeamSummaryV22(contentEl, rotationData, rotation, numTeams, apparatusRankings = {}) {
       // V22: Same as V21 but ranking is integrated into the order bubble
+      // For 5-team layouts, rankings are hidden to reduce clutter
+      const showRankings = numTeams !== 5;
+
       const maxAthletes = Math.min(
         Math.max(...rotationData.map(t => t.gymnasts.length)),
         10
@@ -7792,6 +7795,9 @@
         return found ? found.rank : null;
       }
 
+      // Medal icons for top 3
+      const medalIcons = { 1: '🥇', 2: '🥈', 3: '🥉' };
+
       let columnsHtml = '';
 
       rotationData.forEach((teamData, teamIndex) => {
@@ -7799,7 +7805,11 @@
         const logoUrl = getTeamLogoUrl(team.name, team.logo);
         const teamName = team.name || team.tricode;
 
-        // Build athlete rows (no rankings)
+        // Get rank for this team
+        const rank = rankedTeams.findIndex(t => t.idx === teamIndex) + 1;
+        const rankClass = rank <= 3 ? ` rank-${rank}` : '';
+
+        // Build athlete rows
         let athletesHtml = '';
         for (let i = 0; i < maxAthletes; i++) {
           const g = gymnasts[i];
@@ -7812,9 +7822,16 @@
               ? parseFloat(g.scores[0].start) || 0
               : 0;
 
+            // Check if this athlete is in top 3 for this apparatus (only if showing rankings)
+            const athleteRank = showRankings && score > 0 ? getAthleteApparatusRank(eventName, g.gymnast_id, score) : null;
+            const orderRankClass = athleteRank && athleteRank <= 3 ? ` rank-${athleteRank}` : '';
+            const medalIcon = athleteRank && athleteRank <= 3
+              ? `<span class="medal-icon">${medalIcons[athleteRank]}</span>`
+              : '';
+
             athletesHtml += `
               <div class="athlete-row">
-                <div class="athlete-order">${i + 1}</div>
+                <div class="athlete-order${orderRankClass}">${i + 1}${medalIcon}</div>
                 <div class="athlete-name">${name}</div>
                 <div class="athlete-sv">${startValue > 0 ? startValue.toFixed(2) : ''}</div>
                 <div class="athlete-score">${score > 0 ? score.toFixed(3) : '—'}</div>
@@ -7841,6 +7858,7 @@
                 <div class="event-name">${eventDisplayName}</div>
               </div>
               <div class="header-right">
+                ${showRankings ? `<div class="rank-badge${rankClass}">${rank}</div>` : ''}
                 <div class="header-total">${totalScore > 0 ? totalScore.toFixed(3) : '—'}</div>
               </div>
             </div>
