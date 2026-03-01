@@ -4388,7 +4388,16 @@
     .event-summary-v22.teams-2 { grid-template-columns: repeat(2, 1fr); }
     .event-summary-v22.teams-3 { grid-template-columns: repeat(3, 1fr); }
     .event-summary-v22.teams-4 { grid-template-columns: repeat(4, 1fr); }
-    .event-summary-v22.teams-5 { grid-template-columns: repeat(5, 1fr); }
+    /* 5 teams: 3 on top row, 2 on bottom row centered using 6-column grid */
+    .event-summary-v22.teams-5 {
+      grid-template-columns: repeat(6, 1fr);
+      grid-template-rows: 1fr 1fr;
+    }
+    .event-summary-v22.teams-5 .team-column:nth-child(1) { grid-column: 1 / 3; }
+    .event-summary-v22.teams-5 .team-column:nth-child(2) { grid-column: 3 / 5; }
+    .event-summary-v22.teams-5 .team-column:nth-child(3) { grid-column: 5 / 7; }
+    .event-summary-v22.teams-5 .team-column:nth-child(4) { grid-column: 2 / 4; }
+    .event-summary-v22.teams-5 .team-column:nth-child(5) { grid-column: 4 / 6; }
     .event-summary-v22.teams-6 { grid-template-columns: repeat(6, 1fr); }
 
     .event-summary-v22 .team-column {
@@ -7783,9 +7792,6 @@
         return found ? found.rank : null;
       }
 
-      // Medal icons for top 3
-      const medalIcons = { 1: '🥇', 2: '🥈', 3: '🥉' };
-
       let columnsHtml = '';
 
       rotationData.forEach((teamData, teamIndex) => {
@@ -7793,11 +7799,7 @@
         const logoUrl = getTeamLogoUrl(team.name, team.logo);
         const teamName = team.name || team.tricode;
 
-        // Get rank for this team
-        const rank = rankedTeams.findIndex(t => t.idx === teamIndex) + 1;
-        const rankClass = rank <= 3 ? ` rank-${rank}` : '';
-
-        // Build athlete rows with integrated ranking in order bubble
+        // Build athlete rows (no rankings)
         let athletesHtml = '';
         for (let i = 0; i < maxAthletes; i++) {
           const g = gymnasts[i];
@@ -7810,16 +7812,9 @@
               ? parseFloat(g.scores[0].start) || 0
               : 0;
 
-            // Check if this athlete is in top 3 for this apparatus across entire meet
-            const athleteRank = score > 0 ? getAthleteApparatusRank(eventName, g.gymnast_id, score) : null;
-            const orderRankClass = athleteRank && athleteRank <= 3 ? ` rank-${athleteRank}` : '';
-            const medalIcon = athleteRank && athleteRank <= 3
-              ? `<span class="medal-icon">${medalIcons[athleteRank]}</span>`
-              : '';
-
             athletesHtml += `
               <div class="athlete-row">
-                <div class="athlete-order${orderRankClass}">${i + 1}${medalIcon}</div>
+                <div class="athlete-order">${i + 1}</div>
                 <div class="athlete-name">${name}</div>
                 <div class="athlete-sv">${startValue > 0 ? startValue.toFixed(2) : ''}</div>
                 <div class="athlete-score">${score > 0 ? score.toFixed(3) : '—'}</div>
@@ -7846,7 +7841,6 @@
                 <div class="event-name">${eventDisplayName}</div>
               </div>
               <div class="header-right">
-                <div class="rank-badge${rankClass}">${rank}</div>
                 <div class="header-total">${totalScore > 0 ? totalScore.toFixed(3) : '—'}</div>
               </div>
             </div>
