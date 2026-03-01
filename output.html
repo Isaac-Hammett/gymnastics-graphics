@@ -6507,8 +6507,9 @@
         : ['FLOOR', 'HORSE', 'RINGS', 'VAULT', 'PBARS', 'BAR'];
 
       // Get events that have any gymnast scores, sorted by olympic order
+      // Note: Virtius API uses 'final_score' for gymnast scores, not 'score'
       const eventsWithScores = (team.events || [])
-        .filter(e => e.gymnasts?.some(g => parseFloat(g.score) > 0))
+        .filter(e => e.gymnasts?.some(g => parseFloat(g.final_score) > 0))
         .map(e => e.event_name)
         .sort((a, b) => eventOrder.indexOf(a) - eventOrder.indexOf(b));
 
