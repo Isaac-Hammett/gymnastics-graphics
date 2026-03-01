@@ -6499,6 +6499,36 @@
       return null;
     }
 
+    // For 5+ team meets, detect event from API data instead of hardcoded schedule
+    // This is more reliable because actual meet rotation assignments vary
+    function detectEventFromApiData(team, rotation, gender) {
+      const eventOrder = gender === 'womens'
+        ? ['VAULT', 'BARS', 'BEAM', 'FLOOR']
+        : ['FLOOR', 'HORSE', 'RINGS', 'VAULT', 'PBARS', 'BAR'];
+
+      // Get events that have any gymnast scores, sorted by olympic order
+      const eventsWithScores = (team.events || [])
+        .filter(e => e.gymnasts?.some(g => parseFloat(g.score) > 0))
+        .map(e => e.event_name)
+        .sort((a, b) => eventOrder.indexOf(a) - eventOrder.indexOf(b));
+
+      // For rotation N, return the Nth event with scores (1-indexed rotation)
+      // This assumes events are completed roughly in olympic order
+      if (rotation <= eventsWithScores.length) {
+        return eventsWithScores[rotation - 1];
+      }
+
+      // If rotation exceeds events with scores, return the last event with scores
+      // or the first event in the team's data
+      if (eventsWithScores.length > 0) {
+        return eventsWithScores[eventsWithScores.length - 1];
+      }
+
+      // Fallback: return first event in team data (even without scores)
+      const firstEvent = (team.events || [])[0];
+      return firstEvent?.event_name || null;
+    }
+
     // Calculate meet-wide apparatus rankings (top 3 scores per apparatus across all teams)
     // Returns: { 'VAULT': [ { name: 'K. Tatum', score: 9.525, team: 'West Chester' }, ... ], ... }
     function calculateApparatusRankings(teams) {
@@ -6574,9 +6604,13 @@
         const actualNumTeams = Math.min(sortedTeams.length, numTeams || sortedTeams.length);
 
         // Build rotation data for each team
-        // getTeamEventForRotation now returns the event name directly (e.g., 'FLOOR', 'VAULT', 'BARS')
+        // For 5+ teams, detect event from API data instead of hardcoded schedule
+        // For 2-4 teams, use the hardcoded rotation schedules
         const rotationData = sortedTeams.slice(0, actualNumTeams).map((team, idx) => {
-          const eventName = getTeamEventForRotation(idx, rotation, actualNumTeams, competitionFormat, gender);
+          // Use API detection for 5+ teams, hardcoded schedule for 2-4 teams
+          const eventName = actualNumTeams >= 5
+            ? detectEventFromApiData(team, rotation, gender)
+            : getTeamEventForRotation(idx, rotation, actualNumTeams, competitionFormat, gender);
           // API returns event names as codes (FLOOR, HORSE, etc.), not display names
           const teamEvent = team.events?.find(e => e.event_name === eventName);
           const gymnasts = teamEvent?.gymnasts?.sort((a, b) => (a.order || 0) - (b.order || 0)) || [];
