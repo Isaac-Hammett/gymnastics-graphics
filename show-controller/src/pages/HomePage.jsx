@@ -783,6 +783,12 @@ export default function HomePage() {
             description="View all graphics, filter by category"
           />
           <ToolCard
+            to="/theme-editor"
+            icon="[theme]"
+            title="Theme Editor"
+            description="Create custom meet themes for branded graphics"
+          />
+          <ToolCard
             to="/import"
             icon="[csv]"
             title="Import Shows"

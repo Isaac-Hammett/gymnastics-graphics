@@ -173,9 +173,9 @@ Add `meetTheme` to the options object in these functions:
 
 ---
 
-## Phase 4: Theme Editor UI
+## Phase 4: Theme Editor UI - COMPLETE
 
-### Task 4.1: Create `show-controller/src/pages/ThemeEditorPage.jsx`
+### Task 4.1: Create `show-controller/src/pages/ThemeEditorPage.jsx` - COMPLETE
 
 **Layout (3-column):**
 - **Left panel**: Theme list from Firebase `themes/`, with "New Theme" button
@@ -186,9 +186,7 @@ Add `meetTheme` to the options object in these functions:
   - Cause logo URL input + preview thumbnail
   - Meet title text field
   - Subtitle text field
-- **Right panel**: Live preview iframe
-  - Loads `output.html?graphic=event-summary&meetTheme={tempId}` (or similar)
-  - Updates in real-time as user changes colors
+- **Right panel**: Live preview with color swatches (shows header, badge, accent, footer previews)
 
 **Preset templates (hardcoded in UI):**
 - Pink Meet: `#E91E8C` / `#FFB6D9`
@@ -202,10 +200,21 @@ Add `meetTheme` to the options object in these functions:
 - List: `firebase_list_paths('themes/')`
 - Delete: `firebase_delete('themes/{themeId}')` with confirmation
 
-### Task 4.2: Add route and navigation
+**Completed 2026-03-06:** Created ThemeEditorPage.jsx with:
+- 3-column layout (theme list, editor form, live preview)
+- 4 preset templates
+- 10 color pickers with contrast warnings
+- Logo URL inputs with preview thumbnails
+- Meet title and subtitle text fields
+- Save/load/delete functionality
+- Unsaved changes indicator
 
-- Add route in `App.jsx` (or router config): `/themes` -> `ThemeEditorPage`
-- Add "Theme Editor" link/card on `HubPage.jsx`
+### Task 4.2: Add route and navigation - COMPLETE
+
+- Add route in `App.jsx`: `/theme-editor` -> `ThemeEditorPage`
+- Add "Theme Editor" card on `HomePage.jsx` in Management Tools section
+
+**Completed 2026-03-06:** Added route and navigation link.
 
 ---
 
