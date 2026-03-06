@@ -36,7 +36,7 @@
     }
 
     .frame-header {
-      background: #BFBFBF;
+      background: var(--meet-header-bg, #BFBFBF);
       padding: 18px 50px;
       display: flex;
       align-items: center;
@@ -46,7 +46,7 @@
     .frame-title {
       font-size: 56px;
       font-weight: 900;
-      color: #000;
+      color: var(--meet-header-text, #000);
       text-transform: uppercase;
       letter-spacing: -1px;
     }
@@ -60,6 +60,7 @@
     .frame-content {
       flex: 1;
       background: #000;
+      border-top: 4px solid var(--meet-border-color, transparent);
     }
   </style>
 </head>
