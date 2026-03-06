@@ -86,11 +86,18 @@ The `themes/` path needs public read access in Firebase Realtime Database rules.
 
 ## Phase 2: Overlay Integration (24 files)
 
-### Task 2.1: Add theme-loader to each overlay
+### Task 2.1: Add theme-loader to each overlay - COMPLETE
 
 For each file in `overlays/*.html`:
 1. Add `<script src="theme-loader.js"></script>` before `</body>`
 2. For overlays without Firebase SDK imports, theme-loader handles the conditional init
+
+**Completed 2026-03-06:** Added `<script src="theme-loader.js"></script>` to all 22 overlay HTML files:
+- event-frame.html, stream.html, event-bar.html, hosts.html, team-stats.html
+- coaches.html, warm-up.html, logos.html, replay.html, athlete-spotlight.html
+- frame-quad.html, frame-single.html, frame-team-header.html, frame-tri-center.html
+- frame-tri-wide.html, frame-dual.html, sponsors-bug.html, sponsors-cycle.html
+- sponsors-thanks.html, team-bug.html, team-roster.html, rotation-slate.html
 
 ### Task 2.2: Replace hardcoded accent colors with CSS variable fallbacks
 
