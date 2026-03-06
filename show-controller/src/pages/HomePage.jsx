@@ -12,6 +12,7 @@ import { ExclamationTriangleIcon, CheckCircleIcon, UserIcon } from '@heroicons/r
 import StatsStatusBadge from '../components/StatsStatusBadge';
 import StatsDetailPanel from '../components/StatsDetailPanel';
 import RankingsPanel from '../components/RankingsPanel';
+import { db, ref, onValue } from '../lib/firebase';
 
 /**
  * HomePage - Consolidated landing page combining:
@@ -64,6 +65,16 @@ export default function HomePage() {
   const [virtiusFetching, setVirtiusFetching] = useState(false);
   const [virtiusError, setVirtiusError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [availableThemes, setAvailableThemes] = useState({});
+
+  // Load meet themes from Firebase
+  useEffect(() => {
+    const themesRef = ref(db, 'themes');
+    const unsubscribe = onValue(themesRef, (snapshot) => {
+      setAvailableThemes(snapshot.val() || {});
+    });
+    return () => unsubscribe();
+  }, []);
 
   // Coordinator status helpers
   const isCoordinatorOffline = coordinatorStatus === COORDINATOR_STATUS.OFFLINE;
@@ -74,6 +85,7 @@ export default function HomePage() {
       compId: '',
       compType: '',
       gender: '',
+      meetTheme: '',
       eventName: '',
       meetDate: '',
       venue: '',
@@ -278,6 +290,7 @@ export default function HomePage() {
       compId,
       compType: config.compType || 'mens-dual',
       gender,
+      meetTheme: config.meetTheme || '',
       eventName: config.eventName || '',
       meetDate: config.meetDate || '',
       venue: config.venue || '',
@@ -303,6 +316,7 @@ export default function HomePage() {
     const config = {
       compType: formData.compType,
       gender,
+      meetTheme: formData.meetTheme || '',
       eventName: formData.eventName,
       meetDate: formData.meetDate,
       venue: formData.venue,
@@ -848,6 +862,7 @@ export default function HomePage() {
           onRefreshTeamData={handleRefreshTeamData}
           onClose={() => setShowModal(false)}
           getTeamLogo={getTeamLogo}
+          availableThemes={availableThemes}
         />
       )}
     </div>
@@ -1122,7 +1137,8 @@ function CompetitionModal({
   onDelete,
   onRefreshTeamData,
   onClose,
-  getTeamLogo
+  getTeamLogo,
+  availableThemes = {}
 }) {
   return (
     <div
@@ -1254,6 +1270,32 @@ function CompetitionModal({
               />
             </FormGroup>
           </div>
+
+          <FormGroup label="Meet Theme (optional)">
+            <select
+              value={formData.meetTheme}
+              onChange={(e) => setFormData({ ...formData, meetTheme: e.target.value })}
+              className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+            >
+              <option value="">None (use default styling)</option>
+              {Object.entries(availableThemes).map(([id, theme]) => (
+                <option key={id} value={id}>
+                  {theme.name || id}
+                </option>
+              ))}
+            </select>
+            {formData.meetTheme && availableThemes[formData.meetTheme] && (
+              <div className="mt-2 flex items-center gap-2">
+                <div
+                  className="w-4 h-4 rounded-sm border border-zinc-600"
+                  style={{ backgroundColor: availableThemes[formData.meetTheme]?.colors?.accentPrimary }}
+                />
+                <span className="text-xs text-zinc-400">
+                  {availableThemes[formData.meetTheme]?.description || 'Custom theme'}
+                </span>
+              </div>
+            )}
+          </FormGroup>
 
           {/* Team inputs */}
           <TeamLogoInput

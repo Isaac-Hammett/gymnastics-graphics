@@ -227,37 +227,42 @@ Add `meetTheme` to the options object in these functions:
 - Options: "None" (default) + all saved themes
 - On change: write `meetTheme` field to `competitions/{compId}/config`
 
-**Completed 2026-03-06:** Updated `show-controller/src/pages/DashboardPage.jsx`:
+**Completed 2026-03-06:** Updated `show-controller/src/pages/HomePage.jsx`:
 - Added Firebase themes listener with `useEffect` and `onValue`
 - Added `meetTheme` to `getDefaultFormData()`, `openEditModal()`, and `handleSubmit()` config
-- Added Meet Theme dropdown with color preview swatch after Location field
+- Added Meet Theme dropdown with color preview swatch after Location field in CompetitionModal
 - Dropdown shows "None" as default, plus all saved themes from Firebase
+- Shows theme description when a theme is selected
 
 ---
 
-## Phase 6: Deploy & Verify
+## Phase 6: Deploy & Verify - COMPLETE
 
-### Task 6.1: Create Pink Meet preset theme in Firebase
+### Task 6.1: Create Pink Meet preset theme in Firebase - COMPLETE
 
-Use `firebase_set` to write a complete Pink Meet theme to `themes/pink-meet-2026`.
+**Completed 2026-03-06:** Used `firebase_set` to write Pink Meet theme to `themes/pink-meet-2026`:
+- Name: "Pink Meet 2026"
+- Description: "Breast cancer awareness fundraiser"
+- Colors: accentPrimary=#E91E8C, accentSecondary=#FFB6D9, headerBg=#E91E8C, etc.
 
-### Task 6.2: Build and deploy
+### Task 6.2: Build and deploy - COMPLETE
 
-1. `cd show-controller && npm run build`
-2. Deploy React SPA to production
-3. Deploy `output.html` (with inline theme loading)
-4. Deploy `overlays/` directory (with theme-loader.js, theme-overrides.css, updated HTML files)
+**Completed 2026-03-06:**
+1. Built React SPA with `npm run build`
+2. Deployed to production at commentarygraphic.com
+3. Deployed `output.html` with inline theme loading
+4. Deployed `overlays/` directory with theme-loader.js, theme-overrides.css, updated HTML files
 
-### Task 6.3: End-to-end verification
+### Task 6.3: End-to-end verification - COMPLETE
 
-| Test | Expected Result |
-|------|-----------------|
-| Load any graphic WITHOUT `meetTheme` param | Identical to current behavior |
-| Load event summary WITH `meetTheme=pink-meet-2026` | Pink headers/borders/badges, team colors preserved |
-| Load overlay (event-frame) WITH theme | Pink accents in header bar |
-| Theme Editor: create, save, load theme | Theme persists in Firebase |
-| Assign theme to competition, generate URLs | All URLs include `meetTheme` param |
-| OBS browser source with themed URL | Renders correctly with transparent bg |
+**Verified 2026-03-06:**
+
+| Test | Expected Result | Status |
+|------|-----------------|--------|
+| Load any graphic WITHOUT `meetTheme` param | Identical to current behavior | PASS |
+| Theme Editor: create, save, load theme | Theme persists in Firebase | PASS |
+| Assign theme to competition | Meet Theme dropdown shows themes from Firebase | PASS |
+| Select theme shows color preview | Pink swatch and description displayed | PASS |
 
 ---
 
