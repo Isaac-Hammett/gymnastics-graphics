@@ -1,0 +1,190 @@
+/**
+ * Theme Overrides CSS
+ *
+ * CSS rules scoped under [data-meet-theme] that override chrome elements.
+ * This stylesheet is only loaded when a meetTheme is active.
+ *
+ * Color mappings:
+ * --meet-accent-primary   : Primary accent (most prominent)
+ * --meet-accent-secondary : Secondary accent (lighter/complementary)
+ * --meet-header-bg        : Header bar background
+ * --meet-header-text      : Header bar text
+ * --meet-footer-bg        : Footer bar background
+ * --meet-border-color     : Borders and dividers
+ * --meet-badge-bg         : Badges/labels background
+ * --meet-badge-text       : Badges/labels text
+ * --meet-overlay-bg       : Full-screen overlay background
+ * --meet-overlay-text     : Full-screen overlay text
+ *
+ * Important: Team colors are NOT affected - they continue using
+ * --home-primary, --away-primary, etc.
+ */
+
+/* ============================================================
+   HEADER BARS
+   Used in: team-roster, event-frame, hosts, coaches, team-stats
+   ============================================================ */
+
+[data-meet-theme] .header-bar,
+[data-meet-theme] .frame-header,
+[data-meet-theme] .hosts-header,
+[data-meet-theme] .stats-header {
+  background: var(--meet-header-bg, #d4d4d8);
+  color: var(--meet-header-text, #000);
+}
+
+[data-meet-theme] .header-title,
+[data-meet-theme] .hosts-title,
+[data-meet-theme] .stats-team-name {
+  color: var(--meet-header-text, #000);
+}
+
+/* ============================================================
+   EVENT BAR (lower-third info bar)
+   ============================================================ */
+
+[data-meet-theme] .event-bar-logo {
+  background: var(--meet-accent-secondary, #BFBFBF);
+}
+
+[data-meet-theme] .event-bar-venue {
+  background: var(--meet-accent-secondary, #BFBFBF);
+  color: var(--meet-header-text, #000);
+}
+
+/* ============================================================
+   EVENT FRAME (title overlays)
+   ============================================================ */
+
+[data-meet-theme] .frame-header {
+  background: var(--meet-header-bg, #d4d4d8);
+}
+
+[data-meet-theme] .frame-content {
+  border-top: 4px solid var(--meet-border-color, transparent);
+}
+
+[data-meet-theme] .frame-title {
+  color: var(--meet-header-text, #000);
+}
+
+/* ============================================================
+   STREAM GRAPHICS (starting/thanks full-screen)
+   ============================================================ */
+
+[data-meet-theme] .stream-container {
+  background: var(--meet-overlay-bg, #18181b);
+}
+
+[data-meet-theme] .stream-title,
+[data-meet-theme] .stream-event-name,
+[data-meet-theme] .stream-date {
+  color: var(--meet-overlay-text, #fff);
+}
+
+[data-meet-theme] .stream-accent-bar {
+  background: var(--meet-accent-primary, #d4d4d8);
+}
+
+/* ============================================================
+   ROTATION SLATE
+   ============================================================ */
+
+[data-meet-theme] .rotation-slate {
+  background: var(--meet-overlay-bg, #18181b);
+}
+
+[data-meet-theme] .rotation-slate .rotation-header {
+  background: var(--meet-header-bg, #d4d4d8);
+  color: var(--meet-header-text, #000);
+}
+
+[data-meet-theme] .rotation-slate .rotation-badge {
+  background: var(--meet-badge-bg, #d4d4d8);
+  color: var(--meet-badge-text, #000);
+}
+
+/* ============================================================
+   TEAM ROSTER
+   ============================================================ */
+
+[data-meet-theme] .roster-container {
+  background: var(--meet-overlay-bg, #18181b);
+}
+
+/* ============================================================
+   SPONSORS GRAPHICS
+   ============================================================ */
+
+[data-meet-theme] .sponsors-header {
+  background: var(--meet-header-bg, #d4d4d8);
+  color: var(--meet-header-text, #000);
+}
+
+[data-meet-theme] .sponsors-container {
+  background: var(--meet-overlay-bg, #18181b);
+}
+
+/* ============================================================
+   LOGOS GRAPHIC (team logos display)
+   ============================================================ */
+
+[data-meet-theme] .team-logo {
+  background: var(--meet-accent-secondary, #f4f4f5);
+}
+
+/* ============================================================
+   WARM-UP / REPLAY
+   ============================================================ */
+
+[data-meet-theme] .warmup-header,
+[data-meet-theme] .replay-header {
+  background: var(--meet-header-bg, #d4d4d8);
+  color: var(--meet-header-text, #000);
+}
+
+/* ============================================================
+   FRAME OVERLAYS (quad, tri, dual views)
+   ============================================================ */
+
+[data-meet-theme] .frame-overlay .team-label-bg {
+  background: var(--meet-accent-secondary, rgba(255,255,255,0.9));
+}
+
+[data-meet-theme] .frame-overlay .divider-line {
+  background: var(--meet-border-color, #fff);
+}
+
+/* ============================================================
+   ATHLETE SPOTLIGHT
+   ============================================================ */
+
+[data-meet-theme] .spotlight-header {
+  background: var(--meet-header-bg, #d4d4d8);
+  color: var(--meet-header-text, #000);
+}
+
+[data-meet-theme] .spotlight-container {
+  background: var(--meet-overlay-bg, #18181b);
+}
+
+/* ============================================================
+   GENERIC ACCENT ELEMENTS
+   These catch any elements using generic class names
+   ============================================================ */
+
+[data-meet-theme] .accent-bar,
+[data-meet-theme] .accent-stripe {
+  background: var(--meet-accent-primary);
+}
+
+[data-meet-theme] .accent-border {
+  border-color: var(--meet-border-color);
+}
+
+[data-meet-theme] .badge,
+[data-meet-theme] .tag,
+[data-meet-theme] .label-badge {
+  background: var(--meet-badge-bg);
+  color: var(--meet-badge-text);
+}
