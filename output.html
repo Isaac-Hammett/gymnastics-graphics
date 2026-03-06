@@ -1047,6 +1047,66 @@
        ========================================== */
 
     /* ==========================================
+       MEET THEME OVERRIDES
+       Custom meet branding (Pink Meet, etc.)
+       Applied via [data-meet-theme] attribute
+       ========================================== */
+
+    /* Header bar overrides - applies to all layouts */
+    [data-meet-theme] .event-summary-header {
+      background: var(--meet-header-bg, #d4d4d8);
+    }
+    [data-meet-theme] .event-summary-title {
+      color: var(--meet-header-text, #000);
+    }
+
+    /* Footer bar overrides */
+    [data-meet-theme] .event-summary-footer {
+      background: var(--meet-footer-bg, #27272a);
+      border-top-color: var(--meet-border-color, transparent);
+    }
+
+    /* Center divider / rotation badge overrides */
+    [data-meet-theme] .center-divider {
+      background: var(--meet-overlay-bg, #27272a);
+    }
+    [data-meet-theme] .rotation-badge {
+      background: var(--meet-badge-bg);
+      color: var(--meet-badge-text, #fff);
+    }
+
+    /* Leaderboard header/footer overrides */
+    [data-meet-theme] .leaderboard-header {
+      background: var(--meet-header-bg, #18181b);
+    }
+    [data-meet-theme] .leaderboard-title {
+      color: var(--meet-header-text, #fff);
+    }
+    [data-meet-theme] .leaderboard-footer {
+      background: var(--meet-footer-bg, #18181b);
+    }
+
+    /* Stats header override */
+    [data-meet-theme] .stats-header {
+      background: var(--meet-header-bg, #d4d4d8);
+    }
+    [data-meet-theme] .stats-team-name {
+      color: var(--meet-header-text, #000);
+    }
+
+    /* Hosts header override */
+    [data-meet-theme] .hosts-header {
+      background: var(--meet-header-bg, #d4d4d8);
+    }
+    [data-meet-theme] .hosts-title {
+      color: var(--meet-header-text, #000);
+    }
+
+    /* ==========================================
+       END MEET THEME OVERRIDES
+       ========================================== */
+
+    /* ==========================================
        LAYOUT OPTIONS - Different structural layouts
        ========================================== */
 
@@ -5372,6 +5432,78 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    // ============================================================
+    // MEET THEME SYSTEM
+    // Load custom meet themes from Firebase and apply CSS variables
+    // ============================================================
+    const meetThemeId = urlParams.get('meetTheme');
+
+    /**
+     * Apply meet theme colors as CSS custom properties
+     * @param {Object} theme - Theme data from Firebase
+     */
+    function applyMeetTheme(theme) {
+      if (!theme || !theme.colors) {
+        console.warn('[meet-theme] No theme colors found');
+        return;
+      }
+
+      const root = document.documentElement;
+      const colors = theme.colors;
+
+      // Map theme colors to CSS custom properties with --meet- prefix
+      const colorMappings = {
+        accentPrimary: '--meet-accent-primary',
+        accentSecondary: '--meet-accent-secondary',
+        headerBg: '--meet-header-bg',
+        headerText: '--meet-header-text',
+        footerBg: '--meet-footer-bg',
+        borderColor: '--meet-border-color',
+        badgeBg: '--meet-badge-bg',
+        badgeText: '--meet-badge-text',
+        overlayBg: '--meet-overlay-bg',
+        overlayText: '--meet-overlay-text'
+      };
+
+      for (const [themeKey, cssVar] of Object.entries(colorMappings)) {
+        if (colors[themeKey]) {
+          root.style.setProperty(cssVar, colors[themeKey]);
+        }
+      }
+
+      // Apply logo URLs as CSS custom properties
+      if (theme.logos) {
+        if (theme.logos.meetLogo) {
+          root.style.setProperty('--meet-logo-url', `url(${theme.logos.meetLogo})`);
+        }
+        if (theme.logos.causeLogo) {
+          root.style.setProperty('--meet-cause-logo-url', `url(${theme.logos.causeLogo})`);
+        }
+      }
+
+      // Set data-meet-theme attribute on body for CSS selector targeting
+      document.body.setAttribute('data-meet-theme', theme.id || meetThemeId);
+
+      console.log('[meet-theme] Theme applied:', theme.name || meetThemeId);
+    }
+
+    // Load meet theme if specified in URL
+    if (meetThemeId) {
+      console.log('[meet-theme] Loading theme:', meetThemeId);
+      db.ref(`themes/${meetThemeId}`).once('value')
+        .then(snapshot => {
+          const theme = snapshot.val();
+          if (theme) {
+            applyMeetTheme(theme);
+          } else {
+            console.warn('[meet-theme] Theme not found:', meetThemeId);
+          }
+        })
+        .catch(error => {
+          console.error('[meet-theme] Error loading theme:', error);
+        });
+    }
+
     // Firebase headshots cache - loaded once at startup
     let firebaseHeadshots = {};
     let headshotsLoaded = false;
@@ -6507,34 +6639,18 @@
     }
 
     // For 5+ team meets, detect event from API data instead of hardcoded schedule
-    // This is more reliable because actual meet rotation assignments vary
+    // Uses the Virtius API 'rotation' field on each event to determine the correct mapping
     function detectEventFromApiData(team, rotation, gender) {
-      const eventOrder = gender === 'womens'
-        ? ['VAULT', 'BARS', 'BEAM', 'FLOOR']
-        : ['FLOOR', 'HORSE', 'RINGS', 'VAULT', 'PBARS', 'BAR'];
-
-      // Get events that have any gymnast scores, sorted by olympic order
-      // Note: Virtius API uses 'final_score' for gymnast scores, not 'score'
-      const eventsWithScores = (team.events || [])
-        .filter(e => e.gymnasts?.some(g => parseFloat(g.final_score) > 0))
-        .map(e => e.event_name)
-        .sort((a, b) => eventOrder.indexOf(a) - eventOrder.indexOf(b));
-
-      // For rotation N, return the Nth event with scores (1-indexed rotation)
-      // This assumes events are completed roughly in olympic order
-      if (rotation <= eventsWithScores.length) {
-        return eventsWithScores[rotation - 1];
+      // Virtius API includes a 'rotation' field on each event indicating which rotation it was scored in
+      // This is the most reliable way to determine team-event assignments
+      const eventForRotation = (team.events || []).find(e => e.rotation === rotation);
+      if (eventForRotation) {
+        return eventForRotation.event_name;
       }
 
-      // If rotation exceeds events with scores, return the last event with scores
-      // or the first event in the team's data
-      if (eventsWithScores.length > 0) {
-        return eventsWithScores[eventsWithScores.length - 1];
-      }
-
-      // Fallback: return first event in team data (even without scores)
-      const firstEvent = (team.events || [])[0];
-      return firstEvent?.event_name || null;
+      // Fallback: If no event has the requested rotation, the team may have a bye
+      // or the rotation hasn't happened yet - return null to indicate no data
+      return null;
     }
 
     // Calculate meet-wide apparatus rankings (top 3 scores per apparatus across all teams)
