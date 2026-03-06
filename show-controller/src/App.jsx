@@ -12,6 +12,7 @@ import SetupGuidePage from './pages/SetupGuidePage';
 import OBSManager from './pages/OBSManager';
 import RundownEditorPage from './pages/RundownEditorPage';
 import GraphicsManagerPage from './pages/GraphicsManagerPage';
+import ThemeEditorPage from './pages/ThemeEditorPage';
 
 // Competition-bound layout
 import CompetitionLayout from './components/CompetitionLayout';
@@ -41,6 +42,7 @@ function App() {
         <Route path="/url-generator" element={<UrlGeneratorPage />} />
         <Route path="/media-manager" element={<MediaManagerPage />} />
         <Route path="/graphics-manager" element={<GraphicsManagerPage />} />
+        <Route path="/theme-editor" element={<ThemeEditorPage />} />
         <Route path="/import" element={<ImportView />} />
 
         {/* Admin routes - use _admin prefix to avoid /:compId catching it */}
