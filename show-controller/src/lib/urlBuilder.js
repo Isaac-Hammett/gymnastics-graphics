@@ -72,9 +72,10 @@ function encode(value) {
  * @param {Object} options.teams - Team data keyed by team number (team1Name, team1Logo, etc.)
  * @param {number} options.teamCount - Number of teams to include
  * @param {string} [options.baseUrl] - Override base URL
+ * @param {string} [options.meetTheme] - Meet theme ID for themed graphics
  * @returns {string} Complete URL
  */
-export function buildLogosURL({ teams, teamCount, baseUrl }) {
+export function buildLogosURL({ teams, teamCount, baseUrl, meetTheme }) {
   const base = baseUrl || getBaseURL();
   const params = new URLSearchParams();
 
@@ -85,6 +86,7 @@ export function buildLogosURL({ teams, teamCount, baseUrl }) {
     }
   }
 
+  if (meetTheme) params.set('meetTheme', meetTheme);
   return `${base}/overlays/logos.html?${params.toString()}`;
 }
 
@@ -96,9 +98,10 @@ export function buildLogosURL({ teams, teamCount, baseUrl }) {
  * @param {string} options.eventName - Event/meet name
  * @param {string} options.location - Location
  * @param {string} [options.baseUrl] - Override base URL
+ * @param {string} [options.meetTheme] - Meet theme ID for themed graphics
  * @returns {string} Complete URL
  */
-export function buildEventBarURL({ team1Logo, venue, eventName, location, baseUrl }) {
+export function buildEventBarURL({ team1Logo, venue, eventName, location, baseUrl, meetTheme }) {
   const base = baseUrl || getBaseURL();
   const params = new URLSearchParams();
 
@@ -106,6 +109,7 @@ export function buildEventBarURL({ team1Logo, venue, eventName, location, baseUr
   if (venue) params.set('venue', venue);
   if (eventName) params.set('eventName', eventName);
   if (location) params.set('location', location);
+  if (meetTheme) params.set('meetTheme', meetTheme);
 
   return `${base}/overlays/event-bar.html?${params.toString()}`;
 }
@@ -115,13 +119,16 @@ export function buildEventBarURL({ team1Logo, venue, eventName, location, baseUr
  * @param {Object} options
  * @param {string} options.hosts - Hosts (newline or pipe separated)
  * @param {string} [options.baseUrl] - Override base URL
+ * @param {string} [options.meetTheme] - Meet theme ID for themed graphics
  * @returns {string} Complete URL
  */
-export function buildHostsURL({ hosts, baseUrl }) {
+export function buildHostsURL({ hosts, baseUrl, meetTheme }) {
   const base = baseUrl || getBaseURL();
   // Convert newlines to pipes for URL
   const hostsFormatted = hosts?.split('\n').join('|') || '';
-  return `${base}/overlays/hosts.html?hosts=${encode(hostsFormatted)}`;
+  let url = `${base}/overlays/hosts.html?hosts=${encode(hostsFormatted)}`;
+  if (meetTheme) url += `&meetTheme=${encode(meetTheme)}`;
+  return url;
 }
 
 /**
@@ -132,9 +139,10 @@ export function buildHostsURL({ hosts, baseUrl }) {
  * @param {string} options.ave - Average score
  * @param {string} options.high - High score
  * @param {string} [options.baseUrl] - Override base URL
+ * @param {string} [options.meetTheme] - Meet theme ID for themed graphics
  * @returns {string} Complete URL
  */
-export function buildTeamStatsURL({ teamName, logo, ave, high, baseUrl }) {
+export function buildTeamStatsURL({ teamName, logo, ave, high, baseUrl, meetTheme }) {
   const base = baseUrl || getBaseURL();
   const params = new URLSearchParams();
 
@@ -142,6 +150,7 @@ export function buildTeamStatsURL({ teamName, logo, ave, high, baseUrl }) {
   if (logo) params.set('logo', logo);
   if (ave) params.set('ave', ave);
   if (high) params.set('high', high);
+  if (meetTheme) params.set('meetTheme', meetTheme);
 
   return `${base}/overlays/team-stats.html?${params.toString()}`;
 }
@@ -152,9 +161,10 @@ export function buildTeamStatsURL({ teamName, logo, ave, high, baseUrl }) {
  * @param {string} options.logo - Team logo URL
  * @param {string} options.coaches - Coaches (newline or pipe separated)
  * @param {string} [options.baseUrl] - Override base URL
+ * @param {string} [options.meetTheme] - Meet theme ID for themed graphics
  * @returns {string} Complete URL
  */
-export function buildCoachesURL({ logo, coaches, baseUrl }) {
+export function buildCoachesURL({ logo, coaches, baseUrl, meetTheme }) {
   const base = baseUrl || getBaseURL();
   // Convert newlines to pipes for URL
   const coachesFormatted = coaches?.split('\n').join('|') || '';
@@ -162,6 +172,7 @@ export function buildCoachesURL({ logo, coaches, baseUrl }) {
 
   if (logo) params.set('logo', logo);
   if (coachesFormatted) params.set('coaches', coachesFormatted);
+  if (meetTheme) params.set('meetTheme', meetTheme);
 
   return `${base}/overlays/coaches.html?${params.toString()}`;
 }
@@ -174,9 +185,10 @@ export function buildCoachesURL({ logo, coaches, baseUrl }) {
  * @param {string} options.teamName - Team name (for preview)
  * @param {string} options.logo - Team logo URL (for preview)
  * @param {string} [options.baseUrl] - Override base URL
+ * @param {string} [options.meetTheme] - Meet theme ID for themed graphics
  * @returns {string} Complete URL
  */
-export function buildTeamRosterURL({ compId, teamSlot, teamName, logo, baseUrl }) {
+export function buildTeamRosterURL({ compId, teamSlot, teamName, logo, baseUrl, meetTheme }) {
   const base = baseUrl || getBaseURL();
   const params = new URLSearchParams();
 
@@ -184,6 +196,7 @@ export function buildTeamRosterURL({ compId, teamSlot, teamName, logo, baseUrl }
   if (teamSlot) params.set('teamSlot', teamSlot);
   if (teamName) params.set('teamName', teamName);
   if (logo) params.set('logo', logo);
+  if (meetTheme) params.set('meetTheme', meetTheme);
 
   return `${base}/overlays/team-roster.html?${params.toString()}`;
 }
@@ -194,15 +207,17 @@ export function buildTeamRosterURL({ compId, teamSlot, teamName, logo, baseUrl }
  * @param {string} options.eventId - Event ID (floor, vault, etc.)
  * @param {string} options.logo - Team logo URL
  * @param {string} [options.baseUrl] - Override base URL
+ * @param {string} [options.meetTheme] - Meet theme ID for themed graphics
  * @returns {string} Complete URL
  */
-export function buildEventFrameURL({ eventId, logo, baseUrl }) {
+export function buildEventFrameURL({ eventId, logo, baseUrl, meetTheme }) {
   const base = baseUrl || getBaseURL();
   const title = EVENT_TITLES[eventId] || eventId?.toUpperCase() || '';
   const params = new URLSearchParams();
 
   if (title) params.set('title', title);
   if (logo) params.set('logo', logo);
+  if (meetTheme) params.set('meetTheme', meetTheme);
 
   return `${base}/overlays/event-frame.html?${params.toString()}`;
 }
@@ -215,9 +230,10 @@ export function buildEventFrameURL({ eventId, logo, baseUrl }) {
  * @param {string} options.eventName - Event/meet name
  * @param {string} options.meetDate - Date of the meet
  * @param {string} [options.baseUrl] - Override base URL
+ * @param {string} [options.meetTheme] - Meet theme ID for themed graphics
  * @returns {string} Complete URL
  */
-export function buildStreamURL({ type, logo, eventName, meetDate, baseUrl }) {
+export function buildStreamURL({ type, logo, eventName, meetDate, baseUrl, meetTheme }) {
   const base = baseUrl || getBaseURL();
   const title = type === 'starting' ? 'STREAM STARTING SOON' : 'THANKS FOR WATCHING';
   const params = new URLSearchParams();
@@ -226,6 +242,7 @@ export function buildStreamURL({ type, logo, eventName, meetDate, baseUrl }) {
   if (logo) params.set('logo', logo);
   if (eventName) params.set('eventName', eventName);
   if (meetDate) params.set('meetDate', meetDate);
+  if (meetTheme) params.set('meetTheme', meetTheme);
 
   return `${base}/overlays/stream.html?${params.toString()}`;
 }
@@ -236,14 +253,16 @@ export function buildStreamURL({ type, logo, eventName, meetDate, baseUrl }) {
  * @param {string} options.logo - Team logo URL
  * @param {string} options.sponsorsJson - JSON array of sponsors [{name, url}, ...]
  * @param {string} [options.baseUrl] - Override base URL
+ * @param {string} [options.meetTheme] - Meet theme ID for themed graphics
  * @returns {string} Complete URL
  */
-export function buildSponsorsThanksURL({ logo, sponsorsJson, baseUrl }) {
+export function buildSponsorsThanksURL({ logo, sponsorsJson, baseUrl, meetTheme }) {
   const base = baseUrl || getBaseURL();
   const params = new URLSearchParams();
 
   if (logo) params.set('logo', logo);
   if (sponsorsJson) params.set('sponsors', sponsorsJson);
+  if (meetTheme) params.set('meetTheme', meetTheme);
 
   return `${base}/overlays/sponsors-thanks.html?${params.toString()}`;
 }
@@ -254,14 +273,16 @@ export function buildSponsorsThanksURL({ logo, sponsorsJson, baseUrl }) {
  * @param {string} options.logo - Team logo URL
  * @param {string} options.sponsorsJson - JSON array of sponsors [{name, url}, ...]
  * @param {string} [options.baseUrl] - Override base URL
+ * @param {string} [options.meetTheme] - Meet theme ID for themed graphics
  * @returns {string} Complete URL
  */
-export function buildSponsorsCycleURL({ logo, sponsorsJson, baseUrl }) {
+export function buildSponsorsCycleURL({ logo, sponsorsJson, baseUrl, meetTheme }) {
   const base = baseUrl || getBaseURL();
   const params = new URLSearchParams();
 
   if (logo) params.set('logo', logo);
   if (sponsorsJson) params.set('sponsors', sponsorsJson);
+  if (meetTheme) params.set('meetTheme', meetTheme);
 
   return `${base}/overlays/sponsors-cycle.html?${params.toString()}`;
 }
@@ -271,13 +292,15 @@ export function buildSponsorsCycleURL({ logo, sponsorsJson, baseUrl }) {
  * @param {Object} options
  * @param {string} options.sponsorsJson - JSON array of sponsors [{name, url}, ...]
  * @param {string} [options.baseUrl] - Override base URL
+ * @param {string} [options.meetTheme] - Meet theme ID for themed graphics
  * @returns {string} Complete URL
  */
-export function buildSponsorsBugURL({ sponsorsJson, baseUrl }) {
+export function buildSponsorsBugURL({ sponsorsJson, baseUrl, meetTheme }) {
   const base = baseUrl || getBaseURL();
   const params = new URLSearchParams();
 
   if (sponsorsJson) params.set('sponsors', sponsorsJson);
+  if (meetTheme) params.set('meetTheme', meetTheme);
 
   return `${base}/overlays/sponsors-bug.html?${params.toString()}`;
 }
@@ -289,9 +312,10 @@ export function buildSponsorsBugURL({ sponsorsJson, baseUrl }) {
  * @param {Object} options.teams - Team data keyed by team number
  * @param {number} options.teamCount - Number of teams
  * @param {string} [options.baseUrl] - Override base URL
+ * @param {string} [options.meetTheme] - Meet theme ID for themed graphics
  * @returns {string} Complete URL
  */
-export function buildFrameOverlayURL({ frameType, teams, teamCount, baseUrl }) {
+export function buildFrameOverlayURL({ frameType, teams, teamCount, baseUrl, meetTheme }) {
   const base = baseUrl || getBaseURL();
   const params = new URLSearchParams();
 
@@ -303,6 +327,7 @@ export function buildFrameOverlayURL({ frameType, teams, teamCount, baseUrl }) {
     }
   }
 
+  if (meetTheme) params.set('meetTheme', meetTheme);
   return `${base}/overlays/frame-${frameType}.html?${params.toString()}`;
 }
 
@@ -315,9 +340,10 @@ export function buildFrameOverlayURL({ frameType, teams, teamCount, baseUrl }) {
  * @param {Object} options.teams - Team data keyed by team number
  * @param {number} options.teamCount - Number of teams
  * @param {string} [options.baseUrl] - Override base URL
+ * @param {string} [options.meetTheme] - Meet theme ID for themed graphics
  * @returns {string} Complete URL
  */
-export function buildLeaderboardURL({ event, virtiusSessionId, gender, teams, teamCount, compId, baseUrl }) {
+export function buildLeaderboardURL({ event, virtiusSessionId, gender, teams, teamCount, compId, baseUrl, meetTheme }) {
   const base = baseUrl || getBaseURL();
   const params = new URLSearchParams();
 
@@ -336,6 +362,7 @@ export function buildLeaderboardURL({ event, virtiusSessionId, gender, teams, te
     if (logo) params.set(`team${i}Logo`, logo);
   }
 
+  if (meetTheme) params.set('meetTheme', meetTheme);
   return `${base}/output.html?graphic=virtius-leaderboard&${params.toString()}`;
 }
 
@@ -352,9 +379,10 @@ export function buildLeaderboardURL({ event, virtiusSessionId, gender, teams, te
  * @param {number} options.teamCount - Number of teams
  * @param {string} [options.theme] - Summary theme ID
  * @param {string} [options.baseUrl] - Override base URL
+ * @param {string} [options.meetTheme] - Meet theme ID for themed graphics
  * @returns {string} Complete URL
  */
-export function buildEventSummaryURL({ mode, rotation, apparatus, virtiusSessionId, compType, gender, teams, teamCount, theme, compId, baseUrl }) {
+export function buildEventSummaryURL({ mode, rotation, apparatus, virtiusSessionId, compType, gender, teams, teamCount, theme, compId, baseUrl, meetTheme }) {
   const base = baseUrl || getBaseURL();
   const params = new URLSearchParams();
 
@@ -390,6 +418,7 @@ export function buildEventSummaryURL({ mode, rotation, apparatus, virtiusSession
     if (logo) params.set(`team${i}Logo`, logo);
   }
 
+  if (meetTheme) params.set('meetTheme', meetTheme);
   return `${base}/output.html?${params.toString()}`;
 }
 
@@ -399,12 +428,12 @@ export function buildEventSummaryURL({ mode, rotation, apparatus, virtiusSession
  * @param {Object} formData - Form data with team info, event details, etc.
  * @param {number} teamCount - Number of teams in competition
  * @param {string} [baseUrl] - Override base URL
- * @param {Object} [options] - Additional options (compType, virtiusSessionId, etc.)
+ * @param {Object} [options] - Additional options (compType, virtiusSessionId, meetTheme, etc.)
  * @returns {string} Complete URL or empty string if unknown graphic
  */
 export function generateGraphicURL(graphicId, formData, teamCount, baseUrl, options = {}) {
   const base = baseUrl || getBaseURL();
-  const { compType, virtiusSessionId, compId, summaryTheme, sponsors } = options;
+  const { compType, virtiusSessionId, compId, summaryTheme, sponsors, meetTheme } = options;
 
   // Helper to get team logo with placeholder fallback
   const getTeamLogo = (teamNum) => {
@@ -433,6 +462,7 @@ export function generateGraphicURL(graphicId, formData, teamCount, baseUrl, opti
       ave: formData[`team${num}Ave`],
       high: formData[`team${num}High`],
       baseUrl: base,
+      meetTheme,
     });
   }
 
@@ -443,6 +473,7 @@ export function generateGraphicURL(graphicId, formData, teamCount, baseUrl, opti
       logo: getTeamLogo(num),
       coaches: formData[`team${num}Coaches`],
       baseUrl: base,
+      meetTheme,
     });
   }
 
@@ -455,6 +486,7 @@ export function generateGraphicURL(graphicId, formData, teamCount, baseUrl, opti
       teamName: formData[`team${num}Name`],
       logo: getTeamLogo(num),
       baseUrl: base,
+      meetTheme,
     });
   }
 
@@ -466,6 +498,7 @@ export function generateGraphicURL(graphicId, formData, teamCount, baseUrl, opti
       teams: getTeamsData(),
       teamCount,
       baseUrl: base,
+      meetTheme,
     });
   }
 
@@ -483,6 +516,7 @@ export function generateGraphicURL(graphicId, formData, teamCount, baseUrl, opti
       teamCount,
       compId,
       baseUrl: base,
+      meetTheme,
     });
   }
 
@@ -502,6 +536,7 @@ export function generateGraphicURL(graphicId, formData, teamCount, baseUrl, opti
       theme: summaryTheme,
       compId,
       baseUrl: base,
+      meetTheme,
     });
   }
 
@@ -520,6 +555,7 @@ export function generateGraphicURL(graphicId, formData, teamCount, baseUrl, opti
       theme: summaryTheme,
       compId,
       baseUrl: base,
+      meetTheme,
     });
   }
 
@@ -539,6 +575,7 @@ export function generateGraphicURL(graphicId, formData, teamCount, baseUrl, opti
         },
         teamCount,
         baseUrl: base,
+        meetTheme,
       });
 
     case 'event-bar':
@@ -548,26 +585,30 @@ export function generateGraphicURL(graphicId, formData, teamCount, baseUrl, opti
         eventName: formData.eventName,
         location: formData.location,
         baseUrl: base,
+        meetTheme,
       });
 
     case 'warm-up':
-      // Warm-up graphic uses event-bar.html with warm-up title
+      // Warm-up graphic uses warm-up.html
       const warmUpParams = new URLSearchParams();
       warmUpParams.set('title', 'WARM UP');
       warmUpParams.set('team1Logo', getTeamLogo(1));
       if (formData.venue) warmUpParams.set('venue', formData.venue);
+      if (meetTheme) warmUpParams.set('meetTheme', meetTheme);
       return `${base}/overlays/warm-up.html?${warmUpParams.toString()}`;
 
     case 'replay':
       // Replay graphic - simple instant replay indicator
       const replayParams = new URLSearchParams();
       replayParams.set('team1Logo', getTeamLogo(1));
+      if (meetTheme) replayParams.set('meetTheme', meetTheme);
       return `${base}/overlays/replay.html?${replayParams.toString()}`;
 
     case 'hosts':
       return buildHostsURL({
         hosts: formData.hosts,
         baseUrl: base,
+        meetTheme,
       });
 
     case 'floor':
@@ -587,6 +628,7 @@ export function generateGraphicURL(graphicId, formData, teamCount, baseUrl, opti
         eventId: graphicId,
         logo: getTeamLogo(1),
         baseUrl: base,
+        meetTheme,
       });
 
     case 'starting':
@@ -596,6 +638,7 @@ export function generateGraphicURL(graphicId, formData, teamCount, baseUrl, opti
         eventName: formData.eventName,
         meetDate: formData.meetDate,
         baseUrl: base,
+        meetTheme,
       });
 
     case 'thanks':
@@ -605,6 +648,7 @@ export function generateGraphicURL(graphicId, formData, teamCount, baseUrl, opti
         eventName: formData.eventName,
         meetDate: formData.meetDate,
         baseUrl: base,
+        meetTheme,
       });
 
     case 'sponsors-thanks':
@@ -612,6 +656,7 @@ export function generateGraphicURL(graphicId, formData, teamCount, baseUrl, opti
         logo: getTeamLogo(1),
         sponsorsJson: sponsors || '[]',
         baseUrl: base,
+        meetTheme,
       });
 
     case 'sponsors-cycle':
@@ -619,13 +664,24 @@ export function generateGraphicURL(graphicId, formData, teamCount, baseUrl, opti
         logo: getTeamLogo(1),
         sponsorsJson: sponsors || '[]',
         baseUrl: base,
+        meetTheme,
       });
 
     case 'sponsors-bug':
       return buildSponsorsBugURL({
         sponsorsJson: sponsors || '[]',
         baseUrl: base,
+        meetTheme,
       });
+
+    case 'rotation-slate':
+      // Rotation Slate - full screen with team logo, meet name, rotation number
+      const rotationSlateParams = new URLSearchParams();
+      rotationSlateParams.set('logo', getTeamLogo(1));
+      rotationSlateParams.set('meetName', formData.eventName || 'GYMNASTICS');
+      rotationSlateParams.set('rotation', options.rotation || '1');
+      if (meetTheme) rotationSlateParams.set('meetTheme', meetTheme);
+      return `${base}/overlays/rotation-slate.html?${rotationSlateParams.toString()}`;
 
     default:
       return '';
@@ -691,7 +747,7 @@ export function getGraphicPath(graphicId) {
  * @param {string} graphicId - Graphic ID
  * @param {Object} formData - Form data with values
  * @param {number} teamCount - Number of teams
- * @param {Object} [options] - Additional options
+ * @param {Object} [options] - Additional options (including meetTheme)
  * @returns {string|null} URL or null if graphic not found or not supported
  */
 export function buildGraphicUrlFromRegistry(graphicId, formData, teamCount, options = {}) {
@@ -699,6 +755,7 @@ export function buildGraphicUrlFromRegistry(graphicId, formData, teamCount, opti
   if (!graphic) return null;
 
   const base = options.baseUrl || getBaseURL();
+  const { meetTheme } = options;
 
   // Only handle simple overlay graphics for now
   // Complex graphics (leaderboards, event-summary) use dedicated builders
@@ -726,6 +783,11 @@ export function buildGraphicUrlFromRegistry(graphicId, formData, teamCount, opti
         params.set(paramKey, value);
       }
     }
+  }
+
+  // Add meetTheme if present
+  if (meetTheme) {
+    params.set('meetTheme', meetTheme);
   }
 
   const queryString = params.toString();

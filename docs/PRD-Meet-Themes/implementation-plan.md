@@ -138,9 +138,9 @@ Priority order (most visible first):
 
 ---
 
-## Phase 3: URL Transport
+## Phase 3: URL Transport - COMPLETE
 
-### Task 3.1: Thread `meetTheme` through `urlBuilder.js`
+### Task 3.1: Thread `meetTheme` through `urlBuilder.js` - COMPLETE
 
 Add `meetTheme` to the options object in these functions:
 - `generateGraphicURL()` -- main entry point
@@ -154,18 +154,22 @@ Add `meetTheme` to the options object in these functions:
 
 **Implementation:** At the end of each function, before returning, append `&meetTheme={id}` if present in options.
 
-### Task 3.2: Pass `meetTheme` from competition config in controllers
+**Completed 2026-03-06:** Added `meetTheme` parameter to all 14 URL builder functions:
+- `buildLogosURL`, `buildEventBarURL`, `buildHostsURL`, `buildTeamStatsURL`, `buildCoachesURL`
+- `buildTeamRosterURL`, `buildEventFrameURL`, `buildStreamURL`, `buildSponsorsThanksURL`
+- `buildSponsorsCycleURL`, `buildSponsorsBugURL`, `buildFrameOverlayURL`, `buildLeaderboardURL`
+- `buildEventSummaryURL`, `buildGraphicUrlFromRegistry`, `generateGraphicURL`
+
+### Task 3.2: Pass `meetTheme` from competition config in controllers - COMPLETE
 
 **`QuickActions.jsx`:**
 - Read `competitionConfig.meetTheme`
-- Include in URL builder options when generating graphic URLs
-
-**`GraphicsControl.jsx`:**
-- Same: include `meetTheme` from competition config in all URL builder calls
+- Include in data sent to Firebase when generating graphics
 
 **`UrlGeneratorPage.jsx`:**
-- Show active theme indicator (e.g., "Theme: Pink Meet 2026" badge)
-- Include `meetTheme` in generated URLs
+- Include `meetTheme` from config in generated URLs
+
+**Completed 2026-03-06:** Updated both files to read and pass `meetTheme` from competition config.
 
 ---
 

@@ -33,6 +33,7 @@ const summaryThemes = [
   { id: 'layout-default-v21', label: 'V21 Extra Large' },
   { id: 'layout-default-v22', label: 'V22 Integrated Rank' },
   { id: 'layout-default-v23', label: 'V23 No Rankings' },
+  { id: 'layout-split-row', label: 'Split Row (5-team 3+2)' },
   // COLOR THEMES - Same structure, different colors
   { id: 'default', label: 'Default (Original)' },
   { id: 'espn', label: 'ESPN Colors' },
@@ -70,6 +71,7 @@ const baseGraphicTitles = {
   thanks: 'Thanks for Watching',
   // In-Meet
   replay: 'Instant Replay',
+  'rotation-slate': 'Rotation Slate',
   // Frame Overlays
   'frame-quad': 'Quad View',
   'frame-tri-center': 'Tri Center',
@@ -133,6 +135,7 @@ export default function UrlGeneratorPage() {
   const [activeTab, setActiveTab] = useState('meet');
   const [toast, setToast] = useState('');
   const [summaryTheme, setSummaryTheme] = useState('layout-default-v4');
+  const [rotationSlateNum, setRotationSlateNum] = useState('1');
 
   // Get team count from competition type (supports 2-6 teams)
   const teamCount = useMemo(() => getTeamCount(config?.compType), [config?.compType]);
@@ -328,6 +331,8 @@ export default function UrlGeneratorPage() {
       compId: compId,
       summaryTheme: summaryTheme,
       sponsors: sponsorsJson,
+      rotation: rotationSlateNum,
+      meetTheme: config?.meetTheme,
     });
   };
 
@@ -336,7 +341,7 @@ export default function UrlGeneratorPage() {
     return generateURLWithOptions(graphic);
   };
 
-  const currentUrl = useMemo(() => generateURL(currentGraphic), [currentGraphic, formData, teamCount, config?.compType, config?.virtiusSessionId, summaryTheme]);
+  const currentUrl = useMemo(() => generateURL(currentGraphic), [currentGraphic, formData, teamCount, config?.compType, config?.virtiusSessionId, config?.meetTheme, summaryTheme, rotationSlateNum]);
 
   return (
     <div className="h-screen bg-zinc-950 flex">
@@ -371,7 +376,7 @@ export default function UrlGeneratorPage() {
         </GraphicSection>
 
         <GraphicSection title="In-Meet">
-          {graphicButtons.inMeet.map((btn) => (
+          {graphicButtons.inMeet.filter(btn => btn.id !== 'rotation-slate').map((btn) => (
             <GraphicSidebarButton
               key={btn.id}
               id={btn.id}
@@ -381,6 +386,28 @@ export default function UrlGeneratorPage() {
               onClick={() => setCurrentGraphic(btn.id)}
             />
           ))}
+          {/* Rotation Slate with rotation picker */}
+          <div className="mt-2">
+            <div className="text-xs text-zinc-500 mb-1">Rotation Slate</div>
+            <div className="grid grid-cols-6 gap-1">
+              {['1', '2', '3', '4', '5', '6'].map((num) => (
+                <button
+                  key={`rotation-slate-${num}`}
+                  onClick={() => {
+                    setRotationSlateNum(num);
+                    setCurrentGraphic('rotation-slate');
+                  }}
+                  className={`px-2 py-1.5 rounded text-xs font-medium transition-colors ${
+                    currentGraphic === 'rotation-slate' && rotationSlateNum === num
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700'
+                  }`}
+                >
+                  R{num}
+                </button>
+              ))}
+            </div>
+          </div>
         </GraphicSection>
 
         <GraphicSection title="Event Frames">
