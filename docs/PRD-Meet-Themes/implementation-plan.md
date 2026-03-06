@@ -99,7 +99,7 @@ For each file in `overlays/*.html`:
 - frame-tri-wide.html, frame-dual.html, sponsors-bug.html, sponsors-cycle.html
 - sponsors-thanks.html, team-bug.html, team-roster.html, rotation-slate.html
 
-### Task 2.2: Replace hardcoded accent colors with CSS variable fallbacks
+### Task 2.2: Replace hardcoded accent colors with CSS variable fallbacks - COMPLETE
 
 Priority order (most visible first):
 1. `event-frame.html` -- header bar, title area
@@ -113,6 +113,28 @@ Priority order (most visible first):
 9. Remaining overlays: `warm-up.html`, `team-stats.html`, `sponsors-*.html`, etc.
 
 **Pattern:** `background: #BFBFBF` becomes `background: var(--meet-header-bg, #BFBFBF)`
+
+**Completed 2026-03-06:** Updated 19 overlay HTML files with CSS variable fallbacks:
+- **event-frame.html**: header-bg, header-text, border-color
+- **stream.html**: overlay-text (title, event-name, date)
+- **rotation-slate.html**: overlay-bg, accent-secondary, overlay-text, border-color
+- **event-bar.html**: accent-secondary (logo/venue rows), header-text
+- **logos.html**: accent-secondary (logo backgrounds)
+- **hosts.html**: header-bg, header-text
+- **coaches.html**: header-bg, header-text
+- **team-stats.html**: header-bg, header-text
+- **warm-up.html**: accent-secondary, header-text
+- **replay.html**: accent-secondary, header-text
+- **athlete-spotlight.html**: header-bg, header-text
+- **frame-dual.html**: border-color
+- **frame-quad.html**: border-color
+- **frame-single.html**: border-color
+- **frame-team-header.html**: border-color
+- **frame-tri-center.html**: border-color
+- **frame-tri-wide.html**: border-color
+- **sponsors-thanks.html**: header-bg, header-text, overlay-bg
+- **sponsors-cycle.html**: overlay-bg
+- **sponsors-bug.html**: badge-bg
 
 ---
 
