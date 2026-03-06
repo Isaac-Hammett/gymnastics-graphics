@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useCompetitions } from '../hooks/useCompetitions';
 import { competitionTypes, teamCounts, typeLabels } from '../lib/graphicButtons';
@@ -9,6 +9,7 @@ import { ExclamationTriangleIcon, CheckCircleIcon, UserIcon } from '@heroicons/r
 import StatsStatusBadge from '../components/StatsStatusBadge';
 import StatsDetailPanel from '../components/StatsDetailPanel';
 import RankingsPanel from '../components/RankingsPanel';
+import { db, ref, onValue } from '../lib/firebase';
 
 export default function DashboardPage() {
   const { competitions, loading, createCompetition, updateCompetition, deleteCompetition, duplicateCompetition, refreshTeamData } = useCompetitions();
@@ -20,6 +21,16 @@ export default function DashboardPage() {
   const [virtiusSessionId, setVirtiusSessionId] = useState('');
   const [virtiusFetching, setVirtiusFetching] = useState(false);
   const [virtiusError, setVirtiusError] = useState(null);
+  const [availableThemes, setAvailableThemes] = useState({});
+
+  // Load meet themes from Firebase
+  useEffect(() => {
+    const themesRef = ref(db, 'themes');
+    const unsubscribe = onValue(themesRef, (snapshot) => {
+      setAvailableThemes(snapshot.val() || {});
+    });
+    return () => unsubscribe();
+  }, []);
 
   const competitionList = Object.keys(competitions);
 
@@ -28,6 +39,7 @@ export default function DashboardPage() {
       compId: '',
       compType: '',
       gender: '', // Explicit gender field: 'mens' or 'womens'
+      meetTheme: '', // Meet theme ID for custom branding
       eventName: '',
       meetDate: '',
       venue: '',
@@ -155,6 +167,7 @@ export default function DashboardPage() {
       compId,
       compType: config.compType || 'mens-dual',
       gender,
+      meetTheme: config.meetTheme || '',
       eventName: config.eventName || '',
       meetDate: config.meetDate || '',
       venue: config.venue || '',
@@ -195,6 +208,8 @@ export default function DashboardPage() {
       compType: formData.compType,
       // Store explicit gender for downstream access
       gender: gender,
+      // Meet theme for custom branding (optional)
+      meetTheme: formData.meetTheme || '',
       eventName: formData.eventName,
       meetDate: formData.meetDate,
       venue: formData.venue,
@@ -561,6 +576,32 @@ export default function DashboardPage() {
                   />
                 </FormGroup>
               </div>
+
+              <FormGroup label="Meet Theme (optional)">
+                <select
+                  value={formData.meetTheme}
+                  onChange={(e) => setFormData({ ...formData, meetTheme: e.target.value })}
+                  className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+                >
+                  <option value="">None (use default styling)</option>
+                  {Object.entries(availableThemes).map(([id, theme]) => (
+                    <option key={id} value={id}>
+                      {theme.name || id}
+                    </option>
+                  ))}
+                </select>
+                {formData.meetTheme && availableThemes[formData.meetTheme] && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <div
+                      className="w-4 h-4 rounded-sm border border-zinc-600"
+                      style={{ backgroundColor: availableThemes[formData.meetTheme]?.colors?.accentPrimary }}
+                    />
+                    <span className="text-xs text-zinc-400">
+                      {availableThemes[formData.meetTheme]?.description || 'Custom theme'}
+                    </span>
+                  </div>
+                )}
+              </FormGroup>
 
               <TeamLogoInput
                 teamNum={1}
