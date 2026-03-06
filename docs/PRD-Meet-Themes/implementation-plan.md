@@ -84,7 +84,7 @@ The `themes/` path needs public read access in Firebase Realtime Database rules.
 
 ---
 
-## Phase 2: Overlay Integration (24 files)
+## Phase 2: Overlay Integration (24 files) - COMPLETE
 
 ### Task 2.1: Add theme-loader to each overlay - COMPLETE
 
