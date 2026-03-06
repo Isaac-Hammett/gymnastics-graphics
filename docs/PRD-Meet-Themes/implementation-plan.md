@@ -55,6 +55,35 @@ Theme-loader.js injects this stylesheet dynamically (via `<link>` tag) only when
 
 ---
 
+## BLOCKER: Firebase Security Rules
+
+**Status:** REQUIRES MANUAL ACTION
+
+The `themes/` path needs public read access in Firebase Realtime Database rules.
+
+**Current error:** `permission_denied at /themes/pink-meet-2026: Client doesn't have permission to access the desired data.`
+
+**Fix:** Add this rule to Firebase Console > Realtime Database > Rules:
+
+```json
+{
+  "rules": {
+    "themes": {
+      ".read": true,
+      ".write": "auth != null"
+    }
+    // ... existing rules
+  }
+}
+```
+
+**How to apply:**
+1. Go to https://console.firebase.google.com/project/gymnastics-graphics/database/gymnastics-graphics-default-rtdb/rules
+2. Add the `"themes"` rule alongside existing rules
+3. Click "Publish"
+
+---
+
 ## Phase 2: Overlay Integration (24 files)
 
 ### Task 2.1: Add theme-loader to each overlay
