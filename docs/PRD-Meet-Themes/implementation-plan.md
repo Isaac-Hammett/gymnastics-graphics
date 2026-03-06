@@ -218,14 +218,20 @@ Add `meetTheme` to the options object in these functions:
 
 ---
 
-## Phase 5: Competition Assignment
+## Phase 5: Competition Assignment - COMPLETE
 
-### Task 5.1: Add "Meet Theme" dropdown to competition config UI
+### Task 5.1: Add "Meet Theme" dropdown to competition config UI - COMPLETE
 
 - Locate the competition config form (likely in a setup/config page)
 - Add a dropdown populated from Firebase `themes/` path
 - Options: "None" (default) + all saved themes
 - On change: write `meetTheme` field to `competitions/{compId}/config`
+
+**Completed 2026-03-06:** Updated `show-controller/src/pages/DashboardPage.jsx`:
+- Added Firebase themes listener with `useEffect` and `onValue`
+- Added `meetTheme` to `getDefaultFormData()`, `openEditModal()`, and `handleSubmit()` config
+- Added Meet Theme dropdown with color preview swatch after Location field
+- Dropdown shows "None" as default, plus all saved themes from Firebase
 
 ---
 
