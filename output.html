@@ -6941,6 +6941,7 @@
     };
 
     // Get the schedule key based on competition parameters
+    // For 5+ teams (especially women's), returns null to force API-based event detection
     function getScheduleKey(numTeams, competitionFormat, gender = 'mens') {
       const genderPrefix = gender === 'womens' ? 'womens' : 'mens';
 
@@ -6956,10 +6957,11 @@
         return `${genderPrefix}-tri`;
       } else if (numTeams === 4) {
         return `${genderPrefix}-quad`;
-      } else if (numTeams === 5) {
-        return `${genderPrefix}-5`;
-      } else if (numTeams >= 6) {
-        return `${genderPrefix}-6`;
+      } else if (numTeams >= 5) {
+        // For 5+ team meets (womens-5, womens-6, womens-7, mens-5, mens-6),
+        // return null to use API-based event detection via Virtius rotation field
+        // No hardcoded schedules exist for these formats
+        return null;
       }
       return `${genderPrefix}-dual-headtohead`; // fallback
     }

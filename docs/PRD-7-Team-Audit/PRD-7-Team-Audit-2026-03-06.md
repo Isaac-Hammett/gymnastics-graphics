@@ -53,29 +53,29 @@ The `womens-7` competition format was recently added to support 7-team women's g
 ### Major (Incorrect Behavior)
 
 #### BUG-002: `sendNowCompeting` loops to 6 instead of 7
-- **File:** `show-controller/src/components/GraphicsControl.jsx` (line 439)
+- **File:** `show-controller/src/components/GraphicsControl.jsx` (line 465)
 - **Description:** `for (let i = 1; i <= 6; i++)` — team 7 athletes get team1's logo
 - **Impact:** Wrong team logo on Now Competing graphic for team 7
-- **Status:** NOT STARTED
+- **Status:** COMPLETE
 
 #### BUG-004: Rotation button grid assumes 4 or 6 only
-- **File:** `show-controller/src/components/GraphicsControl.jsx` (line 613)
+- **File:** `show-controller/src/components/GraphicsControl.jsx` (line 639)
 - **Description:** `rotationCount === 4 ? 'grid-cols-4' : 'grid-cols-6'` — no 7-column layout
 - **Impact:** 7th rotation button wraps awkwardly
-- **Status:** NOT STARTED
+- **Status:** COMPLETE
 
 #### BUG-006: No womens-5/6/7 in `ROTATION_SCHEDULES`
-- **File:** `output.html` (lines 6515-6643)
+- **File:** `output.html` (lines 6944-6968)
 - **Description:** `getScheduleKey()` maps 7-team to nonexistent `womens-6` key
 - **Impact:** Mitigated by API detection for 5+ teams, but fragile fallback
-- **Status:** NOT STARTED
+- **Status:** COMPLETE
 
 ### Minor (Polish)
 
 #### BUG-007: `getScheduleKey()` maps 7→6 semantically
-- **File:** `output.html` (line 6663)
+- **File:** `output.html` (line 6961)
 - **Description:** `>= 6` catchall should handle 7 explicitly
-- **Status:** NOT STARTED
+- **Status:** COMPLETE
 
 #### BUG-008: team7 missing stats fields in Firebase config
 - **Path:** `competitions/sewj4d2b/config`
