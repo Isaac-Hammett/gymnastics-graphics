@@ -5,7 +5,7 @@
 **Items Definition:** [checklist-items-definition.md](./checklist-items-definition.md)
 **Status:** IN PROGRESS
 **Created:** 2026-01-24
-**Last Updated:** 2026-03-07 (Phase 1D in progress: Task 29 complete)
+**Last Updated:** 2026-03-07 (Phase 1D complete: Task 30 complete - responsive design)
 
 ---
 
@@ -72,7 +72,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | 1A | Core Checklist UI | P0 | COMPLETE | 1-8 |
 | 1B | Auto-Validation | P0 | COMPLETE | 9-16 |
 | 1C | Team Contacts | P0 | COMPLETE | 17-22 |
-| 1D | Polish & Navigation | P0 | IN PROGRESS | 23-30 |
+| 1D | Polish & Navigation | P0 | COMPLETE | 23-30 |
 | 2 | Checklist Templates | P1 | NOT STARTED | 31-38 |
 | 3A | Site Evaluations | P2 | NOT STARTED | 39-46 |
 | 3B | Camera Config Integration | P2 | NOT STARTED | 47-52 |
@@ -133,7 +133,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 27 | Add "Last updated" timestamp display | COMPLETE | Shows in header when checklist was last modified. Already implemented in ChecklistPage lines 519-523 + hook. |
 | Task 28 | Polish error boundary + empty states | COMPLETE | ErrorBoundary.jsx created with full fallback UI. ChecklistPage wrapped in App.jsx. Skeleton loading built into Task 3. |
 | Task 29 | Add keyboard accessibility | COMPLETE | Tab navigation, Space/Enter to toggle checkboxes, visible focus-visible indicators, ARIA labels for screen readers. |
-| Task 30 | Ensure responsive design | NOT STARTED | Desktop: 2-col. Tablet: contacts drawer. Mobile: single col. Min 44x44px touch targets. |
+| Task 30 | Ensure responsive design | COMPLETE | Desktop: 2-col (lg:grid-cols-3). Tablet/Mobile: single col + floating contacts button → slide-out drawer. Min 44x44px touch targets on all interactive elements. Phase tabs horizontally scroll on mobile. Progress stats wrap on small screens. |
 
 ---
 

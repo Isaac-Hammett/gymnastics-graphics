@@ -15,7 +15,7 @@
  * Reference: docs/PRD-Production-Checklist/PRD-Production-Checklist-2026-01-24.md
  */
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
@@ -26,11 +26,13 @@ import {
   XCircleIcon,
   ClockIcon,
   ArrowPathIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/solid';
 import {
   ArrowLeftIcon,
   ChatBubbleLeftEllipsisIcon,
   SparklesIcon,
+  UserGroupIcon,
 } from '@heroicons/react/24/outline';
 import { useCompetition } from '../context/CompetitionContext';
 import { useProductionChecklist } from '../hooks/useProductionChecklist';
@@ -100,50 +102,51 @@ function ChecklistSkeleton() {
 
 /**
  * Progress bar component showing completion stats
+ * Responsive: wraps stats on mobile
  */
 function ChecklistProgress({ summary }) {
   const { total, complete, warnings, errors, pending, percentage } = summary;
 
   return (
-    <div className="bg-zinc-800 rounded-lg p-4">
+    <div className="bg-zinc-800 rounded-lg p-3 sm:p-4">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-lg font-semibold text-white">
+        <span className="text-base sm:text-lg font-semibold text-white">
           {percentage}% Complete
         </span>
-        <span className="text-sm text-zinc-400">
+        <span className="text-xs sm:text-sm text-zinc-400">
           {complete}/{total} items
         </span>
       </div>
 
       {/* Progress bar */}
-      <div className="h-3 bg-zinc-700 rounded-full overflow-hidden mb-3">
+      <div className="h-2.5 sm:h-3 bg-zinc-700 rounded-full overflow-hidden mb-3">
         <div
           className="h-full bg-green-500 transition-all duration-300"
           style={{ width: `${percentage}%` }}
         />
       </div>
 
-      {/* Stats row */}
-      <div className="flex gap-4 text-sm">
+      {/* Stats row - wraps on mobile */}
+      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs sm:text-sm">
         <span className="flex items-center gap-1.5">
-          <CheckCircleIcon className="w-4 h-4 text-green-500" />
+          <CheckCircleIcon className="w-4 h-4 text-green-500 flex-shrink-0" />
           <span className="text-zinc-300">{complete} complete</span>
         </span>
         {warnings > 0 && (
           <span className="flex items-center gap-1.5">
-            <ExclamationTriangleIcon className="w-4 h-4 text-amber-500" />
+            <ExclamationTriangleIcon className="w-4 h-4 text-amber-500 flex-shrink-0" />
             <span className="text-zinc-300">{warnings} warnings</span>
           </span>
         )}
         {errors > 0 && (
           <span className="flex items-center gap-1.5">
-            <XCircleIcon className="w-4 h-4 text-red-500" />
+            <XCircleIcon className="w-4 h-4 text-red-500 flex-shrink-0" />
             <span className="text-zinc-300">{errors} errors</span>
           </span>
         )}
         {pending > 0 && (
           <span className="flex items-center gap-1.5">
-            <ClockIcon className="w-4 h-4 text-zinc-500" />
+            <ClockIcon className="w-4 h-4 text-zinc-500 flex-shrink-0" />
             <span className="text-zinc-300">{pending} pending</span>
           </span>
         )}
@@ -154,6 +157,7 @@ function ChecklistProgress({ summary }) {
 
 /**
  * Phase tab component
+ * Touch target: min 44x44px via min-h-[44px] and adequate padding
  */
 function PhaseTab({ phase, isActive, onClick, itemCounts }) {
   // Calculate phase completion status
@@ -177,32 +181,35 @@ function PhaseTab({ phase, isActive, onClick, itemCounts }) {
       onClick={onClick}
       aria-pressed={isActive}
       aria-label={`${phase.shortName} phase, ${complete} of ${total} items complete, ${srStatus}`}
-      className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900 ${
+      className={`px-4 py-2 min-h-[44px] rounded-lg font-medium transition-colors flex items-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900 ${
         isActive
           ? 'bg-blue-600 text-white'
           : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
       }`}
     >
       {statusIndicator}
-      <span>{phase.shortName}</span>
+      <span className="hidden sm:inline">{phase.shortName}</span>
+      {/* Shorter label for very small screens */}
+      <span className="sm:hidden">{phase.shortName.replace(' Before', '')}</span>
     </button>
   );
 }
 
 /**
  * Category section component (collapsible)
+ * Touch target: min 44x44px via min-h-[48px] header
  */
 function ChecklistCategory({ category, expanded, onToggle, onItemToggle, onNoteChange }) {
   const completeCount = category.items.filter(i => i.status === 'complete').length;
 
   return (
     <div className="bg-zinc-800 rounded-lg overflow-hidden">
-      {/* Category header */}
+      {/* Category header - min 48px height for comfortable touch */}
       <button
         onClick={onToggle}
         aria-expanded={expanded}
         aria-controls={`category-${category.id}`}
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-zinc-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset"
+        className="w-full flex items-center justify-between px-4 py-3 min-h-[48px] hover:bg-zinc-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset"
       >
         <div className="flex items-center gap-3">
           {expanded ? (
@@ -236,6 +243,7 @@ function ChecklistCategory({ category, expanded, onToggle, onItemToggle, onNoteC
 
 /**
  * Individual checklist item component
+ * Touch target: min 44x44px via min-h-[44px] and checkbox sizing
  */
 function ChecklistItem({ item, onToggle, onNoteChange }) {
   const isManual = item.type === 'manual';
@@ -288,13 +296,13 @@ function ChecklistItem({ item, onToggle, onNoteChange }) {
         aria-checked={isManual ? item.checked : undefined}
         aria-label={`${item.name}${item.detail ? `, ${item.detail}` : ''}${item.status === 'error' ? ', needs attention' : ''}`}
         tabIndex={isManual ? 0 : undefined}
-        className={`flex items-center gap-3 py-2 px-2 rounded ${
+        className={`flex items-center gap-3 py-2.5 sm:py-2 px-2 rounded min-h-[44px] ${
           isClickable ? 'hover:bg-zinc-700 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset' : ''
         }`}
         onClick={isClickable ? onToggle : undefined}
         onKeyDown={isManual ? handleKeyDown : undefined}
       >
-        {/* Status icon or checkbox */}
+        {/* Status icon or checkbox - larger on mobile for touch */}
         {isManual ? (
           <input
             type="checkbox"
@@ -303,10 +311,10 @@ function ChecklistItem({ item, onToggle, onNoteChange }) {
             onClick={e => e.stopPropagation()}
             tabIndex={-1}
             aria-hidden="true"
-            className="w-5 h-5 rounded border-2 border-zinc-500 bg-transparent checked:bg-green-500 checked:border-green-500 cursor-pointer focus:outline-none"
+            className="w-6 h-6 sm:w-5 sm:h-5 rounded border-2 border-zinc-500 bg-transparent checked:bg-green-500 checked:border-green-500 cursor-pointer focus:outline-none flex-shrink-0"
           />
         ) : (
-          <StatusIcon status={item.status} />
+          <StatusIcon status={item.status} className="flex-shrink-0" />
         )}
 
         {/* Item name */}
@@ -381,7 +389,7 @@ function ChecklistItem({ item, onToggle, onNoteChange }) {
 
       {/* Note input area */}
       {showNoteInput && (
-        <div className="ml-8 mt-1 mb-2 flex gap-2" onClick={e => e.stopPropagation()}>
+        <div className="ml-8 sm:ml-8 ml-6 mt-1 mb-2 flex gap-2 flex-wrap sm:flex-nowrap" onClick={e => e.stopPropagation()}>
           <input
             type="text"
             value={noteValue}
@@ -389,24 +397,26 @@ function ChecklistItem({ item, onToggle, onNoteChange }) {
             onKeyDown={handleNoteKeyDown}
             placeholder="Add a note..."
             autoFocus
-            className="flex-1 bg-zinc-700 border border-zinc-600 rounded px-3 py-1.5 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500"
+            className="flex-1 min-w-0 bg-zinc-700 border border-zinc-600 rounded px-3 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500"
           />
-          <button
-            onClick={handleNoteSave}
-            disabled={isSaving}
-            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-600 rounded text-sm text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-800"
-          >
-            {isSaving ? '...' : 'Save'}
-          </button>
-          <button
-            onClick={() => {
-              setNoteValue(item.note || '');
-              setShowNoteInput(false);
-            }}
-            className="px-3 py-1.5 bg-zinc-700 hover:bg-zinc-600 rounded text-sm text-zinc-300 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-800"
-          >
-            Cancel
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleNoteSave}
+              disabled={isSaving}
+              className="px-4 py-2 min-h-[40px] bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-600 rounded text-sm text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-800"
+            >
+              {isSaving ? '...' : 'Save'}
+            </button>
+            <button
+              onClick={() => {
+                setNoteValue(item.note || '');
+                setShowNoteInput(false);
+              }}
+              className="px-4 py-2 min-h-[40px] bg-zinc-700 hover:bg-zinc-600 rounded text-sm text-zinc-300 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-800"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       )}
 
@@ -423,6 +433,96 @@ function ChecklistItem({ item, onToggle, onNoteChange }) {
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * Mobile contacts drawer component
+ * Slides in from the right on tablet/mobile
+ */
+function ContactsDrawer({ isOpen, onClose, children }) {
+  // Close drawer on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
+  // Prevent body scroll when drawer is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        className={`fixed inset-0 bg-black/60 z-40 transition-opacity lg:hidden ${
+          isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+        onClick={onClose}
+        aria-hidden="true"
+      />
+
+      {/* Drawer */}
+      <div
+        className={`fixed top-0 right-0 h-full w-full max-w-sm bg-zinc-900 z-50 transform transition-transform lg:hidden ${
+          isOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Team Contacts"
+      >
+        {/* Drawer header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-700">
+          <h2 className="text-lg font-semibold text-white">Team Contacts</h2>
+          <button
+            onClick={onClose}
+            aria-label="Close contacts drawer"
+            className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-zinc-400 hover:text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
+          >
+            <XMarkIcon className="w-6 h-6" />
+          </button>
+        </div>
+
+        {/* Drawer content */}
+        <div className="p-4 overflow-y-auto h-[calc(100%-56px)]">
+          {children}
+        </div>
+      </div>
+    </>
+  );
+}
+
+/**
+ * Floating contacts button for mobile/tablet
+ */
+function ContactsFloatingButton({ onClick, contactCount }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label={`Open team contacts${contactCount > 0 ? `, ${contactCount} contacts` : ''}`}
+      className="fixed bottom-6 right-6 lg:hidden z-30 flex items-center gap-2 px-4 py-3 min-h-[48px] bg-blue-600 hover:bg-blue-500 text-white rounded-full shadow-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
+    >
+      <UserGroupIcon className="w-5 h-5" />
+      <span className="font-medium">Contacts</span>
+      {contactCount > 0 && (
+        <span className="px-2 py-0.5 bg-blue-500 text-xs rounded-full">
+          {contactCount}
+        </span>
+      )}
+    </button>
   );
 }
 
@@ -460,6 +560,17 @@ export default function ChecklistPage() {
 
   // Expanded categories (all expanded by default)
   const [expandedCategories, setExpandedCategories] = useState(new Set());
+
+  // Mobile contacts drawer state
+  const [contactsDrawerOpen, setContactsDrawerOpen] = useState(false);
+
+  // Count total contacts for the floating button badge
+  const totalContacts = useMemo(() => {
+    return Object.values(contacts || {}).reduce(
+      (sum, teamContacts) => sum + Object.keys(teamContacts || {}).length,
+      0
+    );
+  }, [contacts]);
 
   // Initialize expanded categories when phases load
   useMemo(() => {
@@ -524,26 +635,26 @@ export default function ChecklistPage() {
   return (
     <div className="min-h-screen bg-zinc-900 text-white">
       {/* Header */}
-      <header className="bg-zinc-800 border-b border-zinc-700 px-6 py-4">
+      <header className="bg-zinc-800 border-b border-zinc-700 px-4 sm:px-6 py-3 sm:py-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
             <Link
               to={`/${compId}/producer`}
               aria-label="Back to Producer view"
-              className="text-zinc-400 hover:text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded p-1"
+              className="text-zinc-400 hover:text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded p-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
             >
               <ArrowLeftIcon className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="text-xl font-bold">Production Checklist</h1>
-              <p className="text-sm text-zinc-400">
+              <h1 className="text-lg sm:text-xl font-bold">Production Checklist</h1>
+              <p className="text-xs sm:text-sm text-zinc-400 truncate max-w-[200px] sm:max-w-none">
                 {competitionConfig?.eventName || 'Competition'}
               </p>
             </div>
           </div>
 
           {formattedLastUpdated && (
-            <span className="text-sm text-zinc-500">
+            <span className="text-xs sm:text-sm text-zinc-500 hidden sm:block">
               Last updated: {formattedLastUpdated}
             </span>
           )}
@@ -551,16 +662,16 @@ export default function ChecklistPage() {
       </header>
 
       {/* Main content */}
-      <main className="max-w-7xl mx-auto px-6 py-6">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
         {loading ? (
           <ChecklistSkeleton />
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Progress bar */}
             <ChecklistProgress summary={summary} />
 
-            {/* Phase tabs */}
-            <div className="flex gap-2 flex-wrap">
+            {/* Phase tabs - horizontal scroll on mobile */}
+            <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
               {phases?.map(phase => (
                 <PhaseTab
                   key={phase.id}
@@ -572,7 +683,7 @@ export default function ChecklistPage() {
               ))}
             </div>
 
-            {/* Two-column layout: Checklist + Contacts */}
+            {/* Two-column layout: Checklist + Contacts (desktop only) */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Categories for active phase */}
               <div className="lg:col-span-2 space-y-4">
@@ -588,8 +699,8 @@ export default function ChecklistPage() {
                 ))}
               </div>
 
-              {/* Team Contacts sidebar */}
-              <div className="lg:col-span-1">
+              {/* Team Contacts sidebar - desktop only */}
+              <div className="hidden lg:block lg:col-span-1">
                 <div className="sticky top-6">
                   <TeamContactsPanel
                     teamKeys={teamKeys}
@@ -605,6 +716,29 @@ export default function ChecklistPage() {
           </div>
         )}
       </main>
+
+      {/* Mobile/Tablet: Floating contacts button */}
+      {!loading && (
+        <ContactsFloatingButton
+          onClick={() => setContactsDrawerOpen(true)}
+          contactCount={totalContacts}
+        />
+      )}
+
+      {/* Mobile/Tablet: Contacts drawer */}
+      <ContactsDrawer
+        isOpen={contactsDrawerOpen}
+        onClose={() => setContactsDrawerOpen(false)}
+      >
+        <TeamContactsPanel
+          teamKeys={teamKeys}
+          contacts={contacts}
+          teamNames={teamNames}
+          onUpdateContact={updateContact}
+          onDeleteContact={deleteContact}
+          collapsed={false}
+        />
+      </ContactsDrawer>
     </div>
   );
 }
