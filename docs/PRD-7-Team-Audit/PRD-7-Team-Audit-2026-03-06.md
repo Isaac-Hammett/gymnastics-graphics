@@ -2,7 +2,7 @@
 
 **Status:** IN PROGRESS
 **Date:** 2026-03-06
-**Last Updated:** 2026-03-06
+**Last Updated:** 2026-03-07
 **Competition Type:** `womens-7` (7 teams, 4 apparatus, 7 rotations, 4 compete per rotation, 3 on bye)
 
 ---
@@ -89,7 +89,38 @@ The `womens-7` competition format was recently added to support 7-team women's g
 
 ### Discovered During Playwright Audit
 
-*(Additional bugs will be added here as the audit progresses)*
+#### BUG-010: BUG-001 fix not deployed — production still shows 2 teams
+- **Severity:** Critical
+- **Description:** BUG-001 was marked COMPLETE in code but the frontend has not been redeployed. Production still sends `summaryNumTeams: 2` for womens-7 competitions.
+- **Steps to Reproduce:** Navigate to `https://commentarygraphic.com/sewj4d2b/producer` → observe Pre-Meet section shows only Brockport and Ithaca buttons (2 teams). Click any R1-R4 rotation → event summary shows only 2 team columns.
+- **Expected:** 7 team buttons in producer, 4 or 7 team columns in event summary
+- **Actual:** 2 team buttons, 2 team columns
+- **Screenshot:** audit-A1-producer-page-load.png, audit-B1-event-summary-R1.png
+- **Fix:** Deploy the updated frontend build to production (Task 4.1-4.2)
+
+#### BUG-011: Rotation slate renders blank on output page
+- **Severity:** Minor
+- **Description:** Clicking "Rotation Slate" from producer results in blank output. The `#output` container remains empty.
+- **Steps to Reproduce:** Open output tab → click Rotation Slate from producer → output page shows blank
+- **Expected:** Rotation slate graphic with team assignments
+- **Actual:** Blank page
+- **Screenshot:** audit-E5-rotation-slate.png
+- **Affected File:** `output.html` (rotation-slate graphic handler)
+
+#### BUG-012: Mixed Content errors from VM IP on producer page
+- **Severity:** Minor (infrastructure, not 7-team specific)
+- **Description:** Producer page makes HTTP requests to VM IP `3.81.127.185:3003` which are blocked by Mixed Content policy on HTTPS page. Causes 5+ console errors per page load.
+- **Steps to Reproduce:** Open producer page → check console → see Mixed Content errors for `/api/timesheet/overrides`, `/api/cameras/health`, `/api/cameras/runtime`
+- **Expected:** No Mixed Content errors
+- **Actual:** 5+ blocked requests, causing Failed to fetch errors
+- **Screenshot:** audit-A1-producer-page-load.png
+
+#### BUG-013: Firebase permission_denied for /alerts path
+- **Severity:** Minor (infrastructure, not 7-team specific)
+- **Description:** Producer console shows `[useAlerts] Firebase error: permission_denied at /alerts/sewj4d2b`
+- **Steps to Reproduce:** Open producer page → check console
+- **Expected:** Alerts load without error
+- **Actual:** Permission denied error
 
 ---
 
@@ -103,3 +134,55 @@ The `womens-7` competition format was recently added to support 7-team women's g
 - [ ] Leaderboard displays all 7 teams
 - [ ] No console errors on producer or output pages
 - [ ] All graphics deploy and render correctly on production
+
+---
+
+## Playwright Audit Results (2026-03-07)
+
+```
+═══════════════════════════════════════
+  7-TEAM WOMEN'S COMPETITION AUDIT
+  Competition: sewj4d2b
+═══════════════════════════════════════
+
+PRODUCER VIEW
+  A1 Page Load:           PASS (with 11 console errors - infrastructure)
+  A2 Team Buttons:        FAIL (only 2 of 7 teams — BUG-001/BUG-010)
+  A3 Rotation Buttons:    FAIL (R1-R4 only, need R1-R7 — BUG-003)
+  A4 Rotation Layout:     FAIL (deferred, blocked by BUG-003 — BUG-004)
+  A5 Apparatus Buttons:   PASS (VT, UB, BB, FX all visible)
+
+TEAM BUG OVERLAY
+  D1 Team Rows:           PASS (7 rows rendered)
+  D2 Team Logos:           PASS (all 7 logos visible)
+  D3 Score Display:       PASS (placeholder "--" shown, no NaN/undefined)
+  D4 Bye Indicator:       FAIL (no visual distinction — BUG-009)
+
+EVENT SUMMARY (by rotation)
+  B1 R1:                  FAIL (2 teams shown, expected 4 — BUG-001/BUG-010)
+  B2 R2:                  FAIL (2 teams shown — BUG-001/BUG-010)
+  B3 R3:                  FAIL (2 teams shown — BUG-001/BUG-010)
+  B4 R4:                  FAIL (2 teams shown — BUG-001/BUG-010)
+  B5 R5:                  BLOCKED (button missing — BUG-003)
+  B6 R6:                  BLOCKED (button missing — BUG-003)
+  B7 R7:                  BLOCKED (button missing — BUG-003)
+
+EVENT SUMMARY (by apparatus)
+  C1 Vault:               FAIL (2 teams shown, expected 7 — BUG-001/BUG-010)
+  C2 Bars:                FAIL (2 teams shown — BUG-001/BUG-010)
+  C3 Beam:                FAIL (2 teams shown — BUG-001/BUG-010)
+  C4 Floor:               FAIL (2 teams shown — BUG-001/BUG-010)
+
+OTHER GRAPHICS
+  E1 Leaderboard:         PASS (VT leaderboard renders correctly)
+  E2 Logos:               PASS (all 7 logos displayed in grid)
+  E3 Now Competing:       NOT TESTED (requires polling; BUG-002 confirmed by code)
+  E4 Team Stats (1-7):    PARTIAL (team1-2 render; teams 3-7 no buttons — BUG-001)
+  E5 Rotation Slate:      FAIL (blank output — BUG-011)
+
+TOTAL: 7 PASS / 13 FAIL / 3 BLOCKED / 2 NOT TESTED
+BUGS: 13 total (3 critical, 3 major, 7 minor)
+  - Pre-existing (code analysis): BUG-001 through BUG-009
+  - New (Playwright audit): BUG-010 through BUG-013
+═══════════════════════════════════════
+```
