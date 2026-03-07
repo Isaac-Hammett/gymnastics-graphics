@@ -385,7 +385,7 @@ function ChecklistItem({ item, onToggle, onNoteChange }) {
  * Main ChecklistPage component
  */
 export default function ChecklistPage() {
-  const { compId, competitionConfig } = useCompetition();
+  const { compId } = useCompetition();
   const {
     phases,
     summary,
