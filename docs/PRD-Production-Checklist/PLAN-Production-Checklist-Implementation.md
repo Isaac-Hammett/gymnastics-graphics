@@ -127,7 +127,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
 | Task 23 | Add checklist link to HomePage competition cards | COMPLETE | Added "Checklist" link alongside Producer/Talent/Graphics/Cameras buttons in CompetitionCard. |
-| Task 24 | Add checklist icon to CompetitionHeader | NOT STARTED | ClipboardDocumentCheckIcon link to `/{compId}/checklist` |
+| Task 24 | Add checklist icon to CompetitionHeader | COMPLETE | Added ClipboardDocumentCheckIcon link to `/{compId}/checklist` in header next to Change link. |
 | Task 25 | Add checklist link to ProducerView sidebar | NOT STARTED | Prominent link — producers spend most time here |
 | Task 26 | Add phase completion indicators to tabs | NOT STARTED | ✓ complete, ◐ partial, ○ empty |
 | Task 27 | Add "Last updated" timestamp display | NOT STARTED | Show when checklist was last modified |
