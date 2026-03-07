@@ -1,8 +1,39 @@
 # PRD: Production Checklist System
 
-**Version:** 1.0
+**Version:** 1.2
 **Date:** 2026-01-24
+**Updated:** 2026-03-07
 **Status:** Planning
+
+---
+
+## Changelog
+
+### v1.2 (2026-03-07)
+- **CRITICAL FIX:** Corrected rundown segments Firebase path (was `production/rundown/segments/`, actual is `competitions/{compId}/rundown/segments`)
+- Added `theme-configured` auto-validator (total auto-validated items: 14, total items: 75)
+- Added fix links for `socket-connected` and `vm-online` (previously missing)
+- Clarified contact "auto-assist" is NOT auto-validation — items stay manual type
+- Clarified venue contacts (`venue-operations`, `scoring-operations`) are venue-scoped but stored under team key (known limitation)
+- Clarified phase timeline labels are organizational only — no countdown/timezone logic
+- Clarified checklist is not copied on competition duplication (starts blank)
+- Added error boundary requirement
+- Added Firebase security considerations note
+- Added sidebar collapse behavior for Day Of phases
+
+### v1.1 (2026-03-06)
+- Added checklist items definition document (74 curated items)
+- Updated auto-validators to support N teams (up to 7) based on competition type
+- Clarified: no `checkedBy` tracking in MVP
+- Clarified: Firebase native offline support (no custom queuing)
+- Clarified: socket/OBS validators show red when disconnected (expected pre-show)
+- Clarified: custom VMs show red for VM health (no health check path)
+- Clarified: checklist is pre-show only (no during-show or end-of-stream items)
+- Clarified: site evaluation items deferred to Phase 3
+- Updated item count from ~72 to 74
+- Added reference to original CSV checklist
+- Removed `checkedBy` from data model
+- Updated related documents
 
 ---
 
@@ -35,14 +66,14 @@ Currently, producers use a 130+ item Google Sheets checklist that requires manua
 
 ### Story 1: Producer Reviews Pre-Flight Checklist
 
-**As a** Producer preparing for a WCU vs William & Mary dual meet
-**I want to** see a comprehensive checklist of all required tasks
+**As a** Producer preparing for a competition
+**I want to** see a comprehensive checklist of all required pre-show tasks
 **So that** I don't miss any critical setup steps
 
 **Flow:**
 1. Navigate to `/{compId}/checklist`
-2. See overall progress: "45/72 items complete (62%)"
-3. View items grouped by phase: Setup → Pre-Production → Day Of
+2. See overall progress: "45/75 items complete (60%)"
+3. View items grouped by phase: Setup → Pre-Production → 2hr Before → 1hr Before
 4. See auto-validated items (green checkmarks) for system-verifiable items
 5. Manually check off completed tasks (communications, deliverables)
 6. Add notes to specific items (e.g., camera op phone number)
@@ -63,21 +94,31 @@ Currently, producers use a 130+ item Google Sheets checklist that requires manua
 **I want** technical items to auto-validate based on system state
 **So that** I don't have to manually verify things the system can check
 
-**Auto-validated items:**
+**Auto-validated items (14 total):**
 - Event name configured → Check `competitionConfig.eventName`
-- Teams configured with logos → Check `config.team1Name` and `config.team1Logo`
-- Rosters loaded → Check `teamData.team1.roster.length > 0`
-- Headshots uploaded (>80%) → Count roster members with `headshotUrl`
+- Meet date configured → Check `competitionConfig.meetDate`
+- Venue configured → Check `competitionConfig.venue`
+- Teams configured with logos → Check `config.team{N}Name` and `config.team{N}Logo` for all teams in comp type
+- Rosters loaded → Check `teamData.team{N}.roster.length > 0` for all teams
+- Headshots uploaded (>80%) → Count roster members with headshots, average across all teams
+- Theme configured → Check `competitionConfig.meetTheme` exists (warning if not set, not error)
 - VM assigned → Check `config.vmAddress` exists
-- VM online → Ping VM status endpoint
+- VM online → Ping VM status endpoint (shows red for custom VMs — no health check path)
 - Socket connected → Check `ShowContext.connected`
 - OBS connected → Check `OBSContext.obsConnected`
-- Rundown created → Check `rundown/segments` has items
-- Graphics assigned → Calculate percentage with `graphic.graphicId`
+- Rundown created → Check `competitions/{compId}/rundown/segments` has items
+- Segments named → Check no segments named "New Segment"
+- Graphics assigned → Calculate percentage with `graphic.graphicId` (>= 80% = complete)
+
+**Notes:**
+- Validators for teams, rosters, and headshots are **dynamic** — they check N teams based on competition type (2 for dual, 3 for tri, up to 7 for womens-7)
+- Socket/OBS validators will show red when no one is actively running the show. This is expected pre-show behavior.
+- Custom VMs will always show red for VM health since there's no health check path.
 
 **Acceptance Criteria:**
 - [ ] Technical items show auto-validation status
 - [ ] Green checkmark when condition met
+- [ ] Amber warning for partial completion
 - [ ] Red X when condition not met
 - [ ] "Fix" link navigates to relevant configuration page
 - [ ] Status updates in real-time without page refresh
@@ -94,7 +135,7 @@ Currently, producers use a 130+ item Google Sheets checklist that requires manua
 1. On checklist page, see "Contacts" panel for competition teams
 2. View existing contacts: Head Coach, Assistant Coach, SID, Camera Op
 3. Add new contact with name, role, phone, email
-4. Contact auto-populates "Camera op contact received" checklist item
+4. Contact auto-assists "Camera op contact received" checklist item (shows hint, stays manual)
 5. Next competition with same team shows saved contacts
 
 **Contact Roles:**
@@ -106,12 +147,17 @@ Currently, producers use a 130+ item Google Sheets checklist that requires manua
 - Venue Operations (facility manager, A/V tech)
 - Scoring Operations (meet director, scoring table contact)
 
+**Notes:**
+- Contacts panel must handle **N teams** based on competition type (not just 2)
+- Team keys are derived using `buildTeamKey(school, gender)` from `competitionUtils.js`
+- **Known limitation:** "Venue Operations" and "Scoring Operations" contacts are stored under the team key, but they are venue-specific (a team's facility manager differs at home vs away). This is acceptable for MVP — most contacts are team-level. A venue contacts model (`teamsDatabase/venues/{venue-key}/contacts`) would be more accurate but is deferred to Phase 3 alongside site evaluations.
+
 **Acceptance Criteria:**
-- [ ] Contacts panel shows on checklist page
+- [ ] Contacts panel shows on checklist page with tabs for all teams in competition
 - [ ] Contacts stored at `teamsDatabase/contacts/{team-key}`
 - [ ] Contacts persist across competitions for same team
 - [ ] Click-to-call and click-to-email links work
-- [ ] Contact existence auto-validates related checklist items
+- [ ] Contact existence auto-assists related checklist items (visual hint, item stays manual type)
 
 ---
 
@@ -123,15 +169,20 @@ Currently, producers use a 130+ item Google Sheets checklist that requires manua
 
 **Timeline Phases:**
 1. **Setup (5+ Days Out)** - Session creation, team config, initial communications
-2. **Pre-Production (2-4 Days Out)** - Graphics, talent, camera ops, rundown
-3. **Day Of (2 Hours Before)** - VM, OBS, camera connections
-4. **Day Of (1 Hour Before)** - Discord, talent dry run, final checks
+2. **Pre-Production (2-4 Days Out)** - Camera ops, YouTube, talent, rundown
+3. **2hr Before** - VM, OBS, camera day-of setup, Virtius session
+4. **1hr Before** - Discord, talent dry run, final checks
 
 **Flow:**
 1. Day 1: Complete Setup phase items, check them off
 2. Day 2: Return to checklist, Setup items still checked
 3. Day 3: Work on Pre-Production items
 4. Day of show: Focus on Day-Of items, all previous work preserved
+
+**Notes:**
+- Checklist is **pre-show only**. No during-show or end-of-stream items.
+- Firebase Realtime Database provides native offline persistence — no custom queuing needed.
+- No `checkedBy` tracking. Items store only `checked` (boolean) and `checkedAt` (timestamp).
 
 **Acceptance Criteria:**
 - [ ] Checklist state persists to Firebase
@@ -141,7 +192,7 @@ Currently, producers use a 130+ item Google Sheets checklist that requires manua
 
 ---
 
-### Story 5: Producer Reviews Site Evaluation (Future Phase)
+### Story 5: Producer Reviews Site Evaluation (Phase 3)
 
 **As a** Producer preparing for a competition at a known venue
 **I want to** review the site evaluation and camera positions
@@ -154,6 +205,9 @@ Currently, producers use a 130+ item Google Sheets checklist that requires manua
 4. Review known issues (e.g., "subwoofer causes camera shake")
 5. See recommended internet settings
 
+**Notes:**
+- Site evaluation checklist items (venue walk-through, camera angles, 360 video, etc.) are **deferred to Phase 3** and will be part of the venue database.
+
 **Acceptance Criteria (Phase 3):**
 - [ ] Site evaluations stored at `teamsDatabase/venues/{venue-key}`
 - [ ] Camera positions with photos, apparatus assignment, notes
@@ -163,7 +217,7 @@ Currently, producers use a 130+ item Google Sheets checklist that requires manua
 
 ---
 
-### Story 6: Producer Uses Competition-Type Template (Future Phase)
+### Story 6: Producer Uses Competition-Type Template (Phase 2)
 
 **As a** Producer setting up a championship event
 **I want to** use a checklist template designed for multi-team events
@@ -172,7 +226,7 @@ Currently, producers use a 130+ item Google Sheets checklist that requires manua
 **Template Types:**
 - **Dual Meet Standard** - 2 teams, standard items
 - **Tri/Quad Meet** - 3-4 teams, additional camera/graphics items
-- **Championship Event** - 5-6 teams, extended communications, more camera ops
+- **Championship Event** - 5-7 teams, extended communications, more camera ops
 
 **Flow:**
 1. Create new competition as "womens-quad"
@@ -194,7 +248,7 @@ Currently, producers use a 130+ item Google Sheets checklist that requires manua
 
 | Phase | Name | Priority | Goal |
 |-------|------|----------|------|
-| **1** | MVP Checklist | P0 | Hardcoded checklist, auto-validation, manual checkboxes |
+| **1** | MVP Checklist | P0 | 75-item checklist, auto-validation, manual checkboxes |
 | **1** | Team Contacts | P0 | Contacts database under teamsDatabase |
 | **2** | Checklist Templates | P1 | Editable templates per competition type |
 | **3** | Site Evaluations | P2 | Venue database with camera positions, photos |
@@ -206,14 +260,15 @@ Currently, producers use a 130+ item Google Sheets checklist that requires manua
 
 ### Phase 1 (MVP) Complete When:
 - [ ] Checklist page accessible at `/{compId}/checklist`
-- [ ] 4 phases with ~72 items displayed
-- [ ] Auto-validated items show real-time status
-- [ ] Manual items can be checked/unchecked
+- [ ] 4 phases with 75 items displayed
+- [ ] Auto-validated items (14) show real-time status
+- [ ] Manual items (61) can be checked/unchecked
 - [ ] Checklist state persists to Firebase
 - [ ] Notes can be added to items
-- [ ] Team contacts panel shows and edits contacts
+- [ ] Team contacts panel shows and edits contacts for all teams in competition
 - [ ] Contacts persist at `teamsDatabase/contacts/{team-key}`
 - [ ] "Fix" links navigate to relevant pages
+- [ ] Checklist link accessible from ProducerView sidebar
 
 ### Phase 2 Complete When:
 - [ ] Template editor UI available
@@ -233,38 +288,32 @@ Currently, producers use a 130+ item Google Sheets checklist that requires manua
 
 | Term | Definition |
 |------|------------|
-| **Checklist** | Collection of items a producer must complete before/during a show |
-| **Phase** | Timeline grouping of checklist items (Setup, Pre-Production, Day Of) |
+| **Checklist** | Collection of pre-show items a producer must complete before going live |
+| **Phase** | Timeline grouping of checklist items (Setup, Pre-Production, 2hr Before, 1hr Before) |
 | **Category** | Logical grouping within a phase (Session Setup, Communications, etc.) |
-| **Auto-validated Item** | Item whose completion is determined by system state |
-| **Manual Item** | Item checked off by producer manually |
-| **Team Key** | Unique identifier for a team (e.g., "west-chester-womens") |
+| **Auto-validated Item** | Item whose completion is determined by system state (14 items) |
+| **Manual Item** | Item checked off by producer manually (61 items) |
+| **Auto-assisted Item** | Manual item that shows a visual hint when related data exists (e.g., contact info), but remains manually toggleable |
+| **Team Key** | Unique identifier for a team, derived via `buildTeamKey(school, gender)` (e.g., "west-chester-womens") |
 | **Venue Key** | Unique identifier for a venue (e.g., "hollinger-fieldhouse") |
-| **Site Evaluation** | Documentation of venue layout, camera positions, technical specs |
-| **Template** | Predefined checklist that can be applied to new competitions |
+| **Site Evaluation** | Documentation of venue layout, camera positions, technical specs (Phase 3) |
+| **Template** | Predefined checklist that can be applied to new competitions (Phase 2) |
 
 ---
 
-## 7. Data Sources (Real Checklist Reference)
-
-Based on "2026 Master: Streaming Check List - Women - WCU - 12/5 - 7pm EST":
+## 7. Data Sources
 
 **Original spreadsheet (130+ items):**
-- Communications (15 items) - Emails, talent coordination, group chats
-- Deliverable (5 items) - Graphics, timeline, sponsorships received
-- Graphics (10 items) - Custom backgrounds, meet graphics, canva work
-- Site Evaluation (10 items) - Venue assessment, camera placement, internet
-- Internal Scheduling (5 items) - Calendar events for team
-- Session (10 items) - Virtius session config, headshots, rosters, lineups
-- Camera Ops (15 items) - Larix QR codes, SRT config, camera testing
-- Commentary/Talent (15 items) - Talent coordination, mics, bandwidth, Discord
-- YouTube (10 items) - Stream setup, thumbnail, description
-- OBS (20 items) - Stream key, settings, scenes, audio config
-- VM (5 items) - VM login, Haivision gateway
-- Discord (5 items) - Streamer mode, audio capture, screen share
+Source CSV: `docs/PRD-Production-Checklist/2026 Master_ Streaming Check List - Women - WCU - 12_5 - 7pm EST (4).csv`
 
-**MVP Scope (72 items):**
-The MVP includes a curated subset of ~72 items selected for their criticality and ability to be auto-validated. The full 130+ item list is available in the original spreadsheet for reference, but the in-app checklist focuses on the most essential items to avoid overwhelming producers while still ensuring nothing critical is missed.
+**Curated MVP (75 items):**
+See [checklist-items-definition.md](./checklist-items-definition.md) for the complete item list with IDs, types, validators, and fix links.
+
+**Items excluded from MVP:**
+- Site evaluation items (9 items) → Deferred to Phase 3
+- During-show items (rotation changes, score updates) → Handled by show controller
+- End-of-stream items (turn off streaming, shut down VM) → Not part of pre-show checklist
+- Duplicate/redundant items from original spreadsheet
 
 ---
 
@@ -272,5 +321,8 @@ The MVP includes a curated subset of ~72 items selected for their criticality an
 
 | Document | Purpose |
 |----------|---------|
+| [checklist-items-definition.md](./checklist-items-definition.md) | Complete list of all 74 checklist items |
 | [PLAN-Production-Checklist-2026-01-24.md](./PLAN-Production-Checklist-2026-01-24.md) | Technical architecture, data models, component design |
 | [PLAN-Production-Checklist-Implementation.md](./PLAN-Production-Checklist-Implementation.md) | Task breakdown and progress tracking |
+| [AUDIT-Production-Checklist.md](./AUDIT-Production-Checklist.md) | Audit findings and resolutions |
+| [prompt-Production-Checklist.md](./prompt-Production-Checklist.md) | Implementation workflow for Claude loop |
