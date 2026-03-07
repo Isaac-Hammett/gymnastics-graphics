@@ -151,7 +151,62 @@ export const validators = {
   // ============================================
   // Infrastructure Validators (Task 11)
   // ============================================
-  // Placeholder for: vm-assigned, vm-online, socket-connected, obs-connected
+
+  /**
+   * Check if a VM is assigned to the competition.
+   */
+  'vm-assigned': (ctx) => ({
+    status: ctx.config?.vmAddress ? 'complete' : 'error',
+    detail: ctx.config?.vmAddress || 'No VM assigned',
+  }),
+
+  /**
+   * Check if the VM is online.
+   * Note: Custom VMs will always show offline since there's no health check path.
+   * The vmStatus object is populated by polling in useProductionChecklist.
+   */
+  'vm-online': (ctx) => {
+    // No VM assigned - show error
+    if (!ctx.config?.vmAddress) {
+      return { status: 'error', detail: 'No VM assigned' };
+    }
+
+    // VM status is being checked
+    if (ctx.vmStatus?.checking) {
+      return { status: 'checking', detail: 'Checking...' };
+    }
+
+    // VM is online
+    if (ctx.vmStatus?.online) {
+      return { status: 'complete', detail: 'Online' };
+    }
+
+    // VM is offline or error
+    return {
+      status: 'error',
+      detail: ctx.vmStatus?.error || 'Offline',
+    };
+  },
+
+  /**
+   * Check if socket is connected to the coordinator.
+   * Note: This will show red when no one is actively running the show,
+   * which is expected pre-show behavior.
+   */
+  'socket-connected': (ctx) => ({
+    status: ctx.socketConnected ? 'complete' : 'error',
+    detail: ctx.socketConnected ? 'Connected' : 'Disconnected',
+  }),
+
+  /**
+   * Check if OBS is connected.
+   * Note: This will show red when OBS is not running, which is expected
+   * pre-show until the producer starts OBS.
+   */
+  'obs-connected': (ctx) => ({
+    status: ctx.obsConnected ? 'complete' : 'error',
+    detail: ctx.obsConnected ? 'Connected' : 'Not connected',
+  }),
 
   // ============================================
   // Rundown Validators (Task 12)
