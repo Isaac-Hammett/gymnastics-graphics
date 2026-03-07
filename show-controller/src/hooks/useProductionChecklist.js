@@ -16,6 +16,7 @@ import { db, ref, onValue, set, get } from '../lib/firebase';
 import { checkVmStatus } from './useCompetitions';
 import { CHECKLIST_PHASES, getAllItems } from '../lib/checklistItems';
 import { getTeamCount, buildTeamKey, getGenderFromCompType } from '../lib/competitionUtils';
+import { runValidator } from '../lib/checklistValidators';
 
 /**
  * useProductionChecklist - Main hook for production checklist state
@@ -204,9 +205,9 @@ export function useProductionChecklist() {
 
           if (item.type === 'auto' && item.validator) {
             // Auto-validated items - compute status from validators
-            // Validators will be implemented in Task 9, for now return pending
-            status = 'pending';
-            detail = 'Validator not implemented';
+            const result = runValidator(item.validator, validatorContext);
+            status = result.status;
+            detail = result.detail;
           } else {
             // Manual items - get from Firebase state
             const itemState = effectiveChecklistState.items?.[item.id];
