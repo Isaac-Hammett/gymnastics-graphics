@@ -80,7 +80,7 @@ The `womens-7` competition format was recently added to support 7-team women's g
 #### BUG-008: team7 missing stats fields in Firebase config
 - **Path:** `competitions/sewj4d2b/config`
 - **Description:** Missing `team7Ave`, `team7High`, `team7Con`, `team7Coaches` fields
-- **Status:** NOT STARTED
+- **Status:** COMPLETE
 
 #### BUG-009: No BYE visual indicator in team-bug overlay
 - **File:** `overlays/team-bug.html`
