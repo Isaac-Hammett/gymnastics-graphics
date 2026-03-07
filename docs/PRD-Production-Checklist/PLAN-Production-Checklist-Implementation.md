@@ -5,7 +5,7 @@
 **Items Definition:** [checklist-items-definition.md](./checklist-items-definition.md)
 **Status:** IN PROGRESS
 **Created:** 2026-01-24
-**Last Updated:** 2026-03-07 (Phase 1C complete: Tasks 1-22)
+**Last Updated:** 2026-03-07 (Phase 1D in progress: Task 23 complete)
 
 ---
 
@@ -126,7 +126,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
-| Task 23 | Add checklist link to HomePage competition cards | NOT STARTED | "Checklist" button alongside existing Producer/Talent/etc. links |
+| Task 23 | Add checklist link to HomePage competition cards | COMPLETE | Added "Checklist" link alongside Producer/Talent/Graphics/Cameras buttons in CompetitionCard. |
 | Task 24 | Add checklist icon to CompetitionHeader | NOT STARTED | ClipboardDocumentCheckIcon link to `/{compId}/checklist` |
 | Task 25 | Add checklist link to ProducerView sidebar | NOT STARTED | Prominent link — producers spend most time here |
 | Task 26 | Add phase completion indicators to tabs | NOT STARTED | ✓ complete, ◐ partial, ○ empty |
