@@ -60,19 +60,19 @@ Also add font-size scaling for readability at 7 columns in 1920px.
 
 ## Phase 2: Major Fixes (Incorrect Behavior)
 
-### Task 2.1: Fix `sendNowCompeting` team loop — NOT STARTED
+### Task 2.1: Fix `sendNowCompeting` team loop — COMPLETE
 
-**File:** `show-controller/src/components/GraphicsControl.jsx` (line 439)
+**File:** `show-controller/src/components/GraphicsControl.jsx` (line 465)
 
-**Change:** Replace `i <= 6` with dynamic team count: `i <= numTeams` (using the corrected `teamCounts` from Task 1.1)
+**Change:** Replace `i <= 6` with dynamic team count: `i <= maxTeams` (using `teamCounts[config.compType]`)
 
 **Fixes:** BUG-002 — Team 7 gets wrong logo in Now Competing
 
 ---
 
-### Task 2.2: Fix rotation button grid layout — NOT STARTED
+### Task 2.2: Fix rotation button grid layout — COMPLETE
 
-**File:** `show-controller/src/components/GraphicsControl.jsx` (line 613)
+**File:** `show-controller/src/components/GraphicsControl.jsx` (line 639)
 
 **Change:** Handle rotation counts beyond 6:
 ```javascript
@@ -83,11 +83,11 @@ ${rotationCount <= 4 ? 'grid-cols-4' : rotationCount <= 6 ? 'grid-cols-6' : 'gri
 
 ---
 
-### Task 2.3: Fix schedule fallback for womens 5/6/7 — NOT STARTED
+### Task 2.3: Fix schedule fallback for womens 5/6/7 — COMPLETE
 
-**File:** `output.html` (lines 6660-6665)
+**File:** `output.html` (lines 6944-6968)
 
-**Change:** Improve `getScheduleKey()` to handle all team counts explicitly, or return `null` for 5+ teams to make the API detection path explicit.
+**Change:** Changed `numTeams === 5` and `numTeams >= 6` branches to a single `numTeams >= 5` branch that returns `null`, forcing API-based event detection via Virtius rotation field. Added comment explaining why.
 
 **Fixes:** BUG-006 and BUG-007 — Incorrect/misleading schedule key mapping
 
@@ -173,7 +173,7 @@ cd show-controller && npm run build
 | Phase | Tasks | Complexity | Status |
 |-------|-------|------------|--------|
 | Phase 1: Critical | 3 | Medium | 3 COMPLETE |
-| Phase 2: Major | 3 | Low-Medium | NOT STARTED |
+| Phase 2: Major | 3 | Low-Medium | 3 COMPLETE |
 | Phase 3: Minor | 3 | Low | NOT STARTED |
 | Phase 4: Deploy | 3 | Low | NOT STARTED |
 | Phase 5: Audit Issues | 3 | Low | NOT STARTED |

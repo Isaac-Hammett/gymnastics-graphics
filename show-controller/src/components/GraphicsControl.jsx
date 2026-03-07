@@ -461,8 +461,9 @@ export default function GraphicsControl({ competitionId }) {
     if (!compId || !config) return;
 
     // Find the team logo based on the athlete's team
+    const maxTeams = teamCounts[config.compType] || 2;
     let athleteLogo = config.team1Logo || '';
-    for (let i = 1; i <= 6; i++) {
+    for (let i = 1; i <= maxTeams; i++) {
       if (config[`team${i}Name`] === athlete.team ||
           config[`team${i}Tricode`]?.toUpperCase() === athlete.teamTricode?.toUpperCase()) {
         athleteLogo = config[`team${i}Logo`] || '';
@@ -636,7 +637,7 @@ export default function GraphicsControl({ competitionId }) {
               </div>
               {/* Rotation buttons - dynamic based on gender (R1-R6 for mens, R1-R4 for womens) */}
               <div className="text-xs text-zinc-600 mb-1">By Rotation (Alternating)</div>
-              <div className={`grid gap-1.5 mb-2 ${rotationCount === 4 ? 'grid-cols-4' : 'grid-cols-6'}`}>
+              <div className={`grid gap-1.5 mb-2 ${rotationCount <= 4 ? 'grid-cols-4' : rotationCount <= 6 ? 'grid-cols-6' : 'grid-cols-7'}`}>
                 {Array.from({ length: rotationCount }, (_, i) => i + 1).map((rotation) => {
                   const graphicId = `summary-r${rotation}`;
                   return (
