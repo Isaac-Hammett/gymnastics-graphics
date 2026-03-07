@@ -162,17 +162,22 @@ function PhaseTab({ phase, isActive, onClick, itemCounts }) {
 
   let statusIndicator;
   if (percentage === 100) {
-    statusIndicator = <span className="text-green-500">✓</span>;
+    statusIndicator = <span className="text-green-500" aria-hidden="true">✓</span>;
   } else if (percentage > 0) {
-    statusIndicator = <span className="text-amber-500">◐</span>;
+    statusIndicator = <span className="text-amber-500" aria-hidden="true">◐</span>;
   } else {
-    statusIndicator = <span className="text-zinc-500">○</span>;
+    statusIndicator = <span className="text-zinc-500" aria-hidden="true">○</span>;
   }
+
+  // Screen reader text for completion status
+  const srStatus = percentage === 100 ? 'complete' : percentage > 0 ? 'in progress' : 'not started';
 
   return (
     <button
       onClick={onClick}
-      className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+      aria-pressed={isActive}
+      aria-label={`${phase.shortName} phase, ${complete} of ${total} items complete, ${srStatus}`}
+      className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900 ${
         isActive
           ? 'bg-blue-600 text-white'
           : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
@@ -195,7 +200,9 @@ function ChecklistCategory({ category, expanded, onToggle, onItemToggle, onNoteC
       {/* Category header */}
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-zinc-700 transition-colors"
+        aria-expanded={expanded}
+        aria-controls={`category-${category.id}`}
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-zinc-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset"
       >
         <div className="flex items-center gap-3">
           {expanded ? (
@@ -212,7 +219,7 @@ function ChecklistCategory({ category, expanded, onToggle, onItemToggle, onNoteC
 
       {/* Items list */}
       {expanded && (
-        <div className="px-4 pb-3 space-y-1">
+        <div id={`category-${category.id}`} className="px-4 pb-3 space-y-1" role="group" aria-label={`${category.name} items`}>
           {category.items.map(item => (
             <ChecklistItem
               key={item.id}
@@ -238,6 +245,14 @@ function ChecklistItem({ item, onToggle, onNoteChange }) {
   const [isSaving, setIsSaving] = useState(false);
   const [showAutoAssistTooltip, setShowAutoAssistTooltip] = useState(false);
 
+  // Handle keyboard events for item row (for non-checkbox clicks)
+  const handleKeyDown = useCallback((e) => {
+    if (isManual && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      onToggle();
+    }
+  }, [isManual, onToggle]);
+
   // Handle note save
   const handleNoteSave = useCallback(async () => {
     if (noteValue === item.note) {
@@ -256,7 +271,7 @@ function ChecklistItem({ item, onToggle, onNoteChange }) {
   }, [noteValue, item.note, item.id, onNoteChange]);
 
   // Handle key events for note input
-  const handleKeyDown = useCallback((e) => {
+  const handleNoteKeyDown = useCallback((e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleNoteSave();
@@ -269,10 +284,15 @@ function ChecklistItem({ item, onToggle, onNoteChange }) {
   return (
     <div className="group">
       <div
+        role={isManual ? 'checkbox' : 'listitem'}
+        aria-checked={isManual ? item.checked : undefined}
+        aria-label={`${item.name}${item.detail ? `, ${item.detail}` : ''}${item.status === 'error' ? ', needs attention' : ''}`}
+        tabIndex={isManual ? 0 : undefined}
         className={`flex items-center gap-3 py-2 px-2 rounded ${
-          isClickable ? 'hover:bg-zinc-700 cursor-pointer' : ''
+          isClickable ? 'hover:bg-zinc-700 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset' : ''
         }`}
         onClick={isClickable ? onToggle : undefined}
+        onKeyDown={isManual ? handleKeyDown : undefined}
       >
         {/* Status icon or checkbox */}
         {isManual ? (
@@ -281,7 +301,9 @@ function ChecklistItem({ item, onToggle, onNoteChange }) {
             checked={item.checked}
             onChange={onToggle}
             onClick={e => e.stopPropagation()}
-            className="w-5 h-5 rounded border-2 border-zinc-500 bg-transparent checked:bg-green-500 checked:border-green-500 cursor-pointer"
+            tabIndex={-1}
+            aria-hidden="true"
+            className="w-5 h-5 rounded border-2 border-zinc-500 bg-transparent checked:bg-green-500 checked:border-green-500 cursor-pointer focus:outline-none"
           />
         ) : (
           <StatusIcon status={item.status} />
@@ -317,21 +339,23 @@ function ChecklistItem({ item, onToggle, onNoteChange }) {
               e.stopPropagation();
               setShowNoteInput(true);
             }}
-            className="text-zinc-400 hover:text-zinc-300"
+            aria-label={`Edit note: ${item.note}`}
+            className="text-zinc-400 hover:text-zinc-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
             title={item.note}
           >
             <ChatBubbleLeftEllipsisIcon className="w-4 h-4" />
           </button>
         )}
 
-        {/* Add note button (visible on hover when no note) */}
+        {/* Add note button (visible on hover or focus) */}
         {!item.note && !showNoteInput && (
           <button
             onClick={(e) => {
               e.stopPropagation();
               setShowNoteInput(true);
             }}
-            className="text-zinc-600 hover:text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity text-sm"
+            aria-label="Add note to this item"
+            className="text-zinc-600 hover:text-zinc-400 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded px-1"
           >
             + Note
           </button>
@@ -347,7 +371,8 @@ function ChecklistItem({ item, onToggle, onNoteChange }) {
           <Link
             to={item.fixLink}
             onClick={e => e.stopPropagation()}
-            className="text-sm text-blue-400 hover:text-blue-300"
+            aria-label={`Fix ${item.name}`}
+            className="text-sm text-blue-400 hover:text-blue-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded px-1"
           >
             Fix
           </Link>
@@ -361,7 +386,7 @@ function ChecklistItem({ item, onToggle, onNoteChange }) {
             type="text"
             value={noteValue}
             onChange={(e) => setNoteValue(e.target.value)}
-            onKeyDown={handleKeyDown}
+            onKeyDown={handleNoteKeyDown}
             placeholder="Add a note..."
             autoFocus
             className="flex-1 bg-zinc-700 border border-zinc-600 rounded px-3 py-1.5 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500"
@@ -369,7 +394,7 @@ function ChecklistItem({ item, onToggle, onNoteChange }) {
           <button
             onClick={handleNoteSave}
             disabled={isSaving}
-            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-600 rounded text-sm text-white transition-colors"
+            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-600 rounded text-sm text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-800"
           >
             {isSaving ? '...' : 'Save'}
           </button>
@@ -378,7 +403,7 @@ function ChecklistItem({ item, onToggle, onNoteChange }) {
               setNoteValue(item.note || '');
               setShowNoteInput(false);
             }}
-            className="px-3 py-1.5 bg-zinc-700 hover:bg-zinc-600 rounded text-sm text-zinc-300 transition-colors"
+            className="px-3 py-1.5 bg-zinc-700 hover:bg-zinc-600 rounded text-sm text-zinc-300 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-800"
           >
             Cancel
           </button>
@@ -504,7 +529,8 @@ export default function ChecklistPage() {
           <div className="flex items-center gap-4">
             <Link
               to={`/${compId}/producer`}
-              className="text-zinc-400 hover:text-white transition-colors"
+              aria-label="Back to Producer view"
+              className="text-zinc-400 hover:text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded p-1"
             >
               <ArrowLeftIcon className="w-5 h-5" />
             </Link>
