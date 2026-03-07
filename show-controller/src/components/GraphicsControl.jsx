@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { db, ref, set, onValue } from '../lib/firebase';
+import { db, ref, set, get, onValue } from '../lib/firebase';
 import { PhotoIcon, XMarkIcon, ClipboardDocumentIcon, CheckIcon, Cog6ToothIcon } from '@heroicons/react/24/solid';
 import useEventConfig from '../hooks/useEventConfig';
 import useTeamsDatabase from '../hooks/useTeamsDatabase';
@@ -256,7 +256,7 @@ export default function GraphicsControl({ competitionId }) {
     };
   }, [compId]);
 
-  const sendGraphic = (graphicId, frameTitle = null, leaderboardEvent = null) => {
+  const sendGraphic = async (graphicId, frameTitle = null, leaderboardEvent = null) => {
     if (!compId || !config) return;
 
     const data = {
@@ -326,21 +326,45 @@ export default function GraphicsControl({ competitionId }) {
       data.leaderboardGender = gender; // Pass gender for column visibility (women don't have Exec/SB)
     }
 
-    // Handle sponsor graphics - fetch sponsor data from home team
+    // Handle sponsor graphics - check for event sponsors from theme first, then fall back to team sponsors
     if (graphicId.startsWith('sponsors-')) {
-      // Resolve home team key from team name (includes gender suffix)
-      const schoolKey = resolveSchoolKey(config.team1Name);
-      // Add gender suffix to get full team key (e.g., "west-chester" -> "west-chester-womens")
-      const homeTeamKey = schoolKey ? `${schoolKey}-${gender}` : null;
-      if (homeTeamKey) {
-        const teamSponsors = getTeamSponsors(homeTeamKey);
-        // Convert to JSON for the overlay
-        data.sponsors = JSON.stringify(teamSponsors.slice(0, 8).map(s => ({
-          name: s.name,
-          url: s.url
-        })));
-      } else {
-        data.sponsors = '[]';
+      let sponsorsFound = false;
+
+      // Check if competition has a theme with event sponsors
+      if (config.meetTheme) {
+        try {
+          const themeRef = ref(db, `themes/${config.meetTheme}/sponsors`);
+          const snapshot = await get(themeRef);
+          const eventSponsors = snapshot.val();
+          if (eventSponsors && Array.isArray(eventSponsors) && eventSponsors.length > 0) {
+            // Use event sponsors from theme
+            data.sponsors = JSON.stringify(eventSponsors.slice(0, 8).map(s => ({
+              name: s.name || '',
+              url: s.url || ''
+            })));
+            sponsorsFound = true;
+          }
+        } catch (err) {
+          console.error('Error fetching theme sponsors:', err);
+        }
+      }
+
+      // Fallback to team sponsors if no event sponsors
+      if (!sponsorsFound) {
+        // Resolve home team key from team name (includes gender suffix)
+        const schoolKey = resolveSchoolKey(config.team1Name);
+        // Add gender suffix to get full team key (e.g., "west-chester" -> "west-chester-womens")
+        const homeTeamKey = schoolKey ? `${schoolKey}-${gender}` : null;
+        if (homeTeamKey) {
+          const teamSponsors = getTeamSponsors(homeTeamKey);
+          // Convert to JSON for the overlay
+          data.sponsors = JSON.stringify(teamSponsors.slice(0, 8).map(s => ({
+            name: s.name,
+            url: s.url
+          })));
+        } else {
+          data.sponsors = '[]';
+        }
       }
     }
 
