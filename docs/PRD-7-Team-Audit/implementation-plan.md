@@ -28,7 +28,7 @@ const teamCounts = {
 
 ---
 
-### Task 1.2: Fix `rotationCount` in useEventConfig.js — NOT STARTED
+### Task 1.2: Fix `rotationCount` in useEventConfig.js — COMPLETE
 
 **File:** `show-controller/src/hooks/useEventConfig.js` (line 78)
 
@@ -172,7 +172,7 @@ cd show-controller && npm run build
 
 | Phase | Tasks | Complexity | Status |
 |-------|-------|------------|--------|
-| Phase 1: Critical | 3 | Medium | 1 COMPLETE, 2 NOT STARTED |
+| Phase 1: Critical | 3 | Medium | 2 COMPLETE, 1 NOT STARTED |
 | Phase 2: Major | 3 | Low-Medium | NOT STARTED |
 | Phase 3: Minor | 3 | Low | NOT STARTED |
 | Phase 4: Deploy | 3 | Low | NOT STARTED |
