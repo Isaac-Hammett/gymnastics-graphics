@@ -98,7 +98,7 @@ The `womens-7` competition format was recently added to support 7-team women's g
 - **Screenshot:** audit-A1-producer-page-load.png, audit-B1-event-summary-R1.png
 - **Fix:** Deploy the updated frontend build to production (Task 4.1-4.2)
 
-#### BUG-011: Rotation slate renders blank on output page
+#### BUG-011: Rotation slate renders blank on output page — FIXED
 - **Severity:** Minor
 - **Description:** Clicking "Rotation Slate" from producer results in blank output. The `#output` container remains empty.
 - **Steps to Reproduce:** Open output tab → click Rotation Slate from producer → output page shows blank
@@ -106,6 +106,8 @@ The `womens-7` competition format was recently added to support 7-team women's g
 - **Actual:** Blank page
 - **Screenshot:** audit-E5-rotation-slate.png
 - **Affected File:** `output.html` (rotation-slate graphic handler)
+- **Fix:** Added `rotation-slate` renderer to output.html, added R1-R7 buttons to producer UI, fixed in Task 5.1
+- **Verification:** verify-rotation-slate-R3-full.png, verify-rotation-slate-R7-working.png
 
 #### BUG-012: Mixed Content errors from VM IP on producer page
 - **Severity:** Minor (infrastructure, not 7-team specific)
