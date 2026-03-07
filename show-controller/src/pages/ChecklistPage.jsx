@@ -15,7 +15,7 @@
  * Reference: docs/PRD-Production-Checklist/PRD-Production-Checklist-2026-01-24.md
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
@@ -29,6 +29,7 @@ import {
 } from '@heroicons/react/24/solid';
 import {
   ArrowLeftIcon,
+  ChatBubbleLeftEllipsisIcon,
 } from '@heroicons/react/24/outline';
 import { useCompetition } from '../context/CompetitionContext';
 import { useProductionChecklist } from '../hooks/useProductionChecklist';
@@ -184,7 +185,7 @@ function PhaseTab({ phase, isActive, onClick, itemCounts }) {
 /**
  * Category section component (collapsible)
  */
-function ChecklistCategory({ category, expanded, onToggle, onItemToggle }) {
+function ChecklistCategory({ category, expanded, onToggle, onItemToggle, onNoteChange }) {
   const completeCount = category.items.filter(i => i.status === 'complete').length;
 
   return (
@@ -215,6 +216,7 @@ function ChecklistCategory({ category, expanded, onToggle, onItemToggle }) {
               key={item.id}
               item={item}
               onToggle={() => onItemToggle(item.id)}
+              onNoteChange={onNoteChange}
             />
           ))}
         </div>
@@ -226,49 +228,153 @@ function ChecklistCategory({ category, expanded, onToggle, onItemToggle }) {
 /**
  * Individual checklist item component
  */
-function ChecklistItem({ item, onToggle }) {
+function ChecklistItem({ item, onToggle, onNoteChange }) {
   const isManual = item.type === 'manual';
   const isClickable = isManual;
+  const [showNoteInput, setShowNoteInput] = useState(false);
+  const [noteValue, setNoteValue] = useState(item.note || '');
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Handle note save
+  const handleNoteSave = useCallback(async () => {
+    if (noteValue === item.note) {
+      setShowNoteInput(false);
+      return;
+    }
+    setIsSaving(true);
+    try {
+      await onNoteChange(item.id, noteValue);
+      setShowNoteInput(false);
+    } catch (error) {
+      toast.error('Failed to save note');
+    } finally {
+      setIsSaving(false);
+    }
+  }, [noteValue, item.note, item.id, onNoteChange]);
+
+  // Handle key events for note input
+  const handleKeyDown = useCallback((e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleNoteSave();
+    } else if (e.key === 'Escape') {
+      setNoteValue(item.note || '');
+      setShowNoteInput(false);
+    }
+  }, [handleNoteSave, item.note]);
 
   return (
-    <div
-      className={`flex items-center gap-3 py-2 px-2 rounded ${
-        isClickable ? 'hover:bg-zinc-700 cursor-pointer' : ''
-      }`}
-      onClick={isClickable ? onToggle : undefined}
-    >
-      {/* Status icon or checkbox */}
-      {isManual ? (
-        <input
-          type="checkbox"
-          checked={item.checked}
-          onChange={onToggle}
-          onClick={e => e.stopPropagation()}
-          className="w-5 h-5 rounded border-2 border-zinc-500 bg-transparent checked:bg-green-500 checked:border-green-500 cursor-pointer"
-        />
-      ) : (
-        <StatusIcon status={item.status} />
+    <div className="group">
+      <div
+        className={`flex items-center gap-3 py-2 px-2 rounded ${
+          isClickable ? 'hover:bg-zinc-700 cursor-pointer' : ''
+        }`}
+        onClick={isClickable ? onToggle : undefined}
+      >
+        {/* Status icon or checkbox */}
+        {isManual ? (
+          <input
+            type="checkbox"
+            checked={item.checked}
+            onChange={onToggle}
+            onClick={e => e.stopPropagation()}
+            className="w-5 h-5 rounded border-2 border-zinc-500 bg-transparent checked:bg-green-500 checked:border-green-500 cursor-pointer"
+          />
+        ) : (
+          <StatusIcon status={item.status} />
+        )}
+
+        {/* Item name */}
+        <span className={`flex-1 ${item.status === 'complete' ? 'text-zinc-300' : 'text-white'}`}>
+          {item.name}
+        </span>
+
+        {/* Note indicator */}
+        {item.note && !showNoteInput && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowNoteInput(true);
+            }}
+            className="text-zinc-400 hover:text-zinc-300"
+            title={item.note}
+          >
+            <ChatBubbleLeftEllipsisIcon className="w-4 h-4" />
+          </button>
+        )}
+
+        {/* Add note button (visible on hover when no note) */}
+        {!item.note && !showNoteInput && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowNoteInput(true);
+            }}
+            className="text-zinc-600 hover:text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity text-sm"
+          >
+            + Note
+          </button>
+        )}
+
+        {/* Detail text for auto-validated items */}
+        {item.detail && (
+          <span className="text-sm text-zinc-500">{item.detail}</span>
+        )}
+
+        {/* Fix link for failed auto items */}
+        {item.type === 'auto' && item.status === 'error' && item.fixLink && (
+          <Link
+            to={item.fixLink}
+            onClick={e => e.stopPropagation()}
+            className="text-sm text-blue-400 hover:text-blue-300"
+          >
+            Fix
+          </Link>
+        )}
+      </div>
+
+      {/* Note input area */}
+      {showNoteInput && (
+        <div className="ml-8 mt-1 mb-2 flex gap-2" onClick={e => e.stopPropagation()}>
+          <input
+            type="text"
+            value={noteValue}
+            onChange={(e) => setNoteValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Add a note..."
+            autoFocus
+            className="flex-1 bg-zinc-700 border border-zinc-600 rounded px-3 py-1.5 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500"
+          />
+          <button
+            onClick={handleNoteSave}
+            disabled={isSaving}
+            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-600 rounded text-sm text-white transition-colors"
+          >
+            {isSaving ? '...' : 'Save'}
+          </button>
+          <button
+            onClick={() => {
+              setNoteValue(item.note || '');
+              setShowNoteInput(false);
+            }}
+            className="px-3 py-1.5 bg-zinc-700 hover:bg-zinc-600 rounded text-sm text-zinc-300 transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
       )}
 
-      {/* Item name */}
-      <span className={`flex-1 ${item.status === 'complete' ? 'text-zinc-300' : 'text-white'}`}>
-        {item.name}
-      </span>
-
-      {/* Detail text for auto-validated items */}
-      {item.detail && (
-        <span className="text-sm text-zinc-500">{item.detail}</span>
-      )}
-
-      {/* Fix link for failed auto items */}
-      {item.type === 'auto' && item.status === 'error' && item.fixLink && (
-        <Link
-          to={item.fixLink}
-          onClick={e => e.stopPropagation()}
-          className="text-sm text-blue-400 hover:text-blue-300"
+      {/* Display existing note when not editing */}
+      {item.note && !showNoteInput && (
+        <div
+          className="ml-8 text-sm text-zinc-400 italic cursor-pointer hover:text-zinc-300"
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowNoteInput(true);
+          }}
         >
-          Fix
-        </Link>
+          {item.note}
+        </div>
       )}
     </div>
   );
@@ -283,6 +389,7 @@ export default function ChecklistPage() {
     phases,
     summary,
     toggleItem,
+    updateNote,
     loading,
     lastUpdated,
   } = useProductionChecklist();
@@ -412,6 +519,7 @@ export default function ChecklistPage() {
                   expanded={expandedCategories.has(category.id)}
                   onToggle={() => toggleCategory(category.id)}
                   onItemToggle={handleItemToggle}
+                  onNoteChange={updateNote}
                 />
               ))}
             </div>
