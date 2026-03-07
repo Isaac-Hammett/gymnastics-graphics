@@ -90,7 +90,63 @@ export const validators = {
   // ============================================
   // Team Data Validators (Task 10)
   // ============================================
-  // Placeholder for: rosters-loaded, headshots-uploaded
+
+  /**
+   * Check if rosters are loaded for all teams.
+   * Dynamic: checks N teams based on competition type.
+   */
+  'rosters-loaded': (ctx) => {
+    const teamCount = getTeamCountFromConfig(ctx.config);
+    const results = [];
+    let allOk = true;
+
+    for (let i = 1; i <= teamCount; i++) {
+      const roster = ctx.teamData?.[`team${i}`]?.roster;
+      const count = Array.isArray(roster) ? roster.length : 0;
+      if (count === 0) allOk = false;
+      results.push(`Team ${i}: ${count}`);
+    }
+
+    return {
+      status: allOk ? 'complete' : 'warning',
+      detail: results.join(', '),
+    };
+  },
+
+  /**
+   * Check if headshots are uploaded for all teams (>= 80% threshold).
+   * Dynamic: checks N teams based on competition type.
+   *
+   * Threshold rationale: 80% accounts for walk-ons and injured athletes who
+   * won't compete and may not have headshots. Only ~6 of ~20 roster members
+   * typically compete, so 80% of the full roster is a reasonable floor.
+   */
+  'headshots-uploaded': (ctx) => {
+    const teamCount = getTeamCountFromConfig(ctx.config);
+
+    const getHeadshotPercent = (roster) => {
+      if (!Array.isArray(roster) || roster.length === 0) return 0;
+      const withPhotos = roster.filter(a => a?.headshotUrl).length;
+      return Math.round((withPhotos / roster.length) * 100);
+    };
+
+    let totalPct = 0;
+    const results = [];
+
+    for (let i = 1; i <= teamCount; i++) {
+      const roster = ctx.teamData?.[`team${i}`]?.roster;
+      const pct = getHeadshotPercent(roster);
+      totalPct += pct;
+      results.push(`T${i}: ${pct}%`);
+    }
+
+    const avgPct = teamCount > 0 ? Math.round(totalPct / teamCount) : 0;
+
+    return {
+      status: avgPct >= 80 ? 'complete' : avgPct >= 50 ? 'warning' : 'error',
+      detail: results.join(', '),
+    };
+  },
 
   // ============================================
   // Infrastructure Validators (Task 11)
