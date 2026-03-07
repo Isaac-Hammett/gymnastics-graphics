@@ -109,13 +109,14 @@ The `womens-7` competition format was recently added to support 7-team women's g
 - **Fix:** Added `rotation-slate` renderer to output.html, added R1-R7 buttons to producer UI, fixed in Task 5.1
 - **Verification:** verify-rotation-slate-R3-full.png, verify-rotation-slate-R7-working.png
 
-#### BUG-012: Mixed Content errors from VM IP on producer page
+#### BUG-012: Mixed Content errors from VM IP on producer page — FIXED
 - **Severity:** Minor (infrastructure, not 7-team specific)
 - **Description:** Producer page makes HTTP requests to VM IP `3.81.127.185:3003` which are blocked by Mixed Content policy on HTTPS page. Causes 5+ console errors per page load.
 - **Steps to Reproduce:** Open producer page → check console → see Mixed Content errors for `/api/timesheet/overrides`, `/api/cameras/health`, `/api/cameras/runtime`
 - **Expected:** No Mixed Content errors
 - **Actual:** 5+ blocked requests, causing Failed to fetch errors
 - **Screenshot:** audit-A1-producer-page-load.png
+- **Fix:** Updated ProducerView.jsx and OverrideLog.jsx to use `socketUrl` from CompetitionContext instead of `VITE_SOCKET_SERVER` env var. In production (HTTPS), this routes through `https://api.commentarygraphic.com`.
 
 #### BUG-013: Firebase permission_denied for /alerts path
 - **Severity:** Minor (infrastructure, not 7-team specific)

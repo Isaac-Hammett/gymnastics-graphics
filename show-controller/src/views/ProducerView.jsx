@@ -61,7 +61,7 @@ const HEALTH_COLORS = {
 };
 
 export default function ProducerView() {
-  const { compId, competitionConfig } = useCompetition();
+  const { compId, competitionConfig, socketUrl } = useCompetition();
   const {
     socket,
     state,
@@ -168,10 +168,9 @@ export default function ProducerView() {
   const [showReloadConfirmation, setShowReloadConfirmation] = useState(false); // Confirmation dialog state
   const [activeAudioCue, setActiveAudioCue] = useState(null); // { songName, segmentId, sourceName, timestamp }
 
-  // Server URL for REST API calls
-  const serverUrl = import.meta.env.PROD
-    ? (import.meta.env.VITE_SOCKET_SERVER || '')
-    : 'http://localhost:3003';
+  // Server URL for REST API calls - use socketUrl from competition context
+  // This ensures HTTPS routing through the coordinator in production
+  const serverUrl = socketUrl || 'http://localhost:3003';
 
   useEffect(() => {
     identify('producer', 'Producer');
@@ -961,7 +960,7 @@ export default function ProducerView() {
           {/* Right Column - Status */}
           <div className="space-y-4">
             {/* Override Log */}
-            <OverrideLog collapsed={true} defaultVisible={5} />
+            <OverrideLog collapsed={true} defaultVisible={5} serverUrl={serverUrl} />
 
             {/* Alert Panel - warning alerts shown in collapsible panel */}
             <AlertPanel
