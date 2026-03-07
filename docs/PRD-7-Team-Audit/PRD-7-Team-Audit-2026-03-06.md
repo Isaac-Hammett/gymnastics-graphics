@@ -1,6 +1,6 @@
 # PRD: 7-Team Women's Competition — Audit & Bug Fix
 
-**Status:** IN PROGRESS
+**Status:** COMPLETE (1 infrastructure issue deferred)
 **Date:** 2026-03-06
 **Last Updated:** 2026-03-07
 **Competition Type:** `womens-7` (7 teams, 4 apparatus, 7 rotations, 4 compete per rotation, 3 on bye)
@@ -118,25 +118,26 @@ The `womens-7` competition format was recently added to support 7-team women's g
 - **Screenshot:** audit-A1-producer-page-load.png
 - **Fix:** Updated ProducerView.jsx and OverrideLog.jsx to use `socketUrl` from CompetitionContext instead of `VITE_SOCKET_SERVER` env var. In production (HTTPS), this routes through `https://api.commentarygraphic.com`.
 
-#### BUG-013: Firebase permission_denied for /alerts path
+#### BUG-013: Firebase permission_denied for /alerts path — DEFERRED
 - **Severity:** Minor (infrastructure, not 7-team specific)
 - **Description:** Producer console shows `[useAlerts] Firebase error: permission_denied at /alerts/sewj4d2b`
 - **Steps to Reproduce:** Open producer page → check console
 - **Expected:** Alerts load without error
-- **Actual:** Permission denied error
+- **Actual:** Permission denied error (UI shows "No active alerts" and continues working)
+- **Status:** DEFERRED — Firebase Realtime Database rules need to be updated in Firebase console (not in this repo). The alerts feature works when server writes alerts; client gracefully handles permission error.
 
 ---
 
 ## Acceptance Criteria
 
-- [ ] Producer view shows all 7 team buttons (stats, coaches, roster for teams 1-7)
-- [ ] R1-R7 rotation buttons visible and functional
-- [ ] Event summary renders correctly with 7 team columns
-- [ ] Now Competing shows correct logo for all 7 teams
-- [ ] Team bug overlay renders all 7 teams with appropriate bye indicators
-- [ ] Leaderboard displays all 7 teams
-- [ ] No console errors on producer or output pages
-- [ ] All graphics deploy and render correctly on production
+- [x] Producer view shows all 7 team buttons (stats, coaches, roster for teams 1-7) ✓
+- [x] R1-R7 rotation buttons visible and functional ✓
+- [x] Event summary renders correctly with 7 team columns ✓
+- [x] Now Competing shows correct logo for all 7 teams ✓
+- [x] Team bug overlay renders all 7 teams with appropriate bye indicators ✓
+- [x] Leaderboard displays all 7 teams ✓
+- [ ] No console errors on producer or output pages (BUG-013 deferred - Firebase rules)
+- [x] All graphics deploy and render correctly on production ✓
 
 ---
 

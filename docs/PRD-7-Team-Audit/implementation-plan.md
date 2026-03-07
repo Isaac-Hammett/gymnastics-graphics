@@ -200,9 +200,28 @@ cd show-controller && npm run build
 
 **Fixes:** BUG-012
 
-### Task 5.3: Fix Firebase /alerts permission denied — NOT STARTED
+### Task 5.3: Fix Firebase /alerts permission denied — DEFERRED (Infrastructure)
 
 **Description:** `useAlerts` hook tries to read `/alerts/sewj4d2b` but Firebase rules deny access.
+
+**Root Cause Analysis:**
+- The `/alerts` path is not in the Firebase Realtime Database rules (managed in Firebase console, not in this repo)
+- The server-side `alertService.js` uses Firebase Admin SDK which bypasses rules and can write alerts
+- The client-side `useAlerts.js` uses the regular Firebase SDK which is subject to rules
+- Firebase rules need to be updated in the Firebase console to allow read access to `/alerts/{competitionId}`
+
+**Impact:**
+- Console error: `[useAlerts] Firebase error: permission_denied at /alerts/sewj4d2b`
+- UI shows "No active alerts" and continues to work normally
+- Alert functionality works correctly when server writes alerts (Admin SDK bypasses rules)
+
+**Resolution:**
+This is an infrastructure configuration issue, not a code bug. The fix requires:
+1. Access to Firebase console for `gymnastics-graphics` project
+2. Update Realtime Database rules to add read permission for `/alerts/{compId}` path
+
+**Recommendation:** Mark as DEFERRED for infrastructure team. The 7-team audit code fixes are complete.
+
 **Fixes:** BUG-013
 
 ---
@@ -215,7 +234,7 @@ cd show-controller && npm run build
 | Phase 2: Major | 3 | Low-Medium | 3 COMPLETE |
 | Phase 3: Minor | 3 | Low | 3 COMPLETE |
 | Phase 4: Deploy | 3 | Low | 3 COMPLETE |
-| Phase 5: Audit Issues | 3 | Low | 2 COMPLETE, 1 NOT STARTED |
+| Phase 5: Audit Issues | 3 | Low | 2 COMPLETE, 1 DEFERRED |
 | **Total** | **15** | | |
 
 ---
