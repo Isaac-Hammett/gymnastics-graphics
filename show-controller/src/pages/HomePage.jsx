@@ -984,6 +984,12 @@ function CompetitionCard({
         >
           Cameras
         </Link>
+        <Link
+          to={`/${compId}/checklist`}
+          className="px-3 py-1.5 bg-zinc-800 text-zinc-300 text-sm font-medium rounded-lg hover:bg-zinc-700 transition-colors"
+        >
+          Checklist
+        </Link>
       </div>
 
       {/* VM & Edit Controls */}
@@ -1297,7 +1303,7 @@ function CompetitionModal({
               <div className="mt-2 flex items-center gap-2">
                 <div
                   className="w-4 h-4 rounded-sm border border-zinc-600"
-                  style={{ backgroundColor: availableThemes[formData.meetTheme]?.colors?.accentPrimary }}
+                  style={{ backgroundColor: availableThemes[formData.meetTheme]?.colors?.headerBar || availableThemes[formData.meetTheme]?.colors?.accentPrimary }}
                 />
                 <span className="text-xs text-zinc-400">
                   {availableThemes[formData.meetTheme]?.description || 'Custom theme'}
