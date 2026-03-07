@@ -13,6 +13,10 @@ import OBSManager from './pages/OBSManager';
 import RundownEditorPage from './pages/RundownEditorPage';
 import GraphicsManagerPage from './pages/GraphicsManagerPage';
 import ThemeEditorPage from './pages/ThemeEditorPage';
+import ChecklistPage from './pages/ChecklistPage';
+
+// Error boundary for catching component errors
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Competition-bound layout
 import CompetitionLayout from './components/CompetitionLayout';
@@ -72,6 +76,11 @@ function App() {
           <Route path="graphics" element={<ControllerPage />} />
           <Route path="obs-manager" element={<OBSManager />} />
           <Route path="rundown" element={<RundownEditorPage />} />
+          <Route path="checklist" element={
+            <ErrorBoundary>
+              <ChecklistPage />
+            </ErrorBoundary>
+          } />
         </Route>
       </Routes>
     </BrowserRouter>
