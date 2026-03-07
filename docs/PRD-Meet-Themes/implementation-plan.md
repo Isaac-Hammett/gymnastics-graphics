@@ -283,14 +283,23 @@ Production testing revealed that many graphics don't fully pick up theme colors.
 | `stream.html` | `.stream-branding` color → `var(--meet-accent-secondary, #666)`, span → `var(--meet-accent-primary, #3b82f6)` |
 | `team-roster.html` | `.header-bar` bg → `var(--meet-header-bg, #d4d4d8)`, `.header-title` color → `var(--meet-header-text, #000)`, `.roster-container` bg → `var(--meet-overlay-bg, #18181b)` |
 
-### Task 7.2: Fix leaderboard theme colors in output.html - NOT STARTED
+### Task 7.2: Fix leaderboard theme colors in output.html - COMPLETE
 
-The leaderboard table in `output.html` uses hardcoded colors for headers, rows, and cells. These need CSS variable fallbacks.
+**Completed 2026-03-06:** Added `[data-meet-theme]` scoped CSS overrides for leaderboard table elements:
 
-**Affected classes in output.html:**
-- `.leaderboard-table` header row — hardcoded `#27272a` → `var(--meet-header-bg, #27272a)`
-- `.leaderboard-table` row backgrounds — hardcoded `#18181b` → `var(--meet-overlay-bg, #18181b)`
-- `.leaderboard-table` text colors — hardcoded `#fff`, `#a1a1aa` → `var(--meet-overlay-text, ...)`
+| Selector | Override |
+|----------|----------|
+| `.leaderboard-table thead` | `--meet-header-bg` |
+| `.leaderboard-table th` | `--meet-header-text`, `--meet-border-color` |
+| `.leaderboard-table tbody tr` | `--meet-border-color` |
+| `.leaderboard-table tbody tr:nth-child(odd)` | `--meet-overlay-bg` |
+| `.leaderboard-table tbody tr:nth-child(even)` | `--meet-overlay-bg` (darkened via color-mix) |
+| `.leaderboard-table td` | `--meet-overlay-text` |
+| `.leaderboard-table td.col-rank` | `--meet-accent-secondary` |
+| `.leaderboard-table td.col-diff/exec` | `--meet-accent-secondary` |
+| `.leaderboard-table td.col-team` | `--meet-accent-secondary` |
+| `.leaderboard-team-logo` | `--meet-header-bg` |
+| `.apparatus-badge` | `--meet-border-color`, `--meet-accent-secondary` |
 
 ### Task 7.3: Fix event summary theme colors in output.html - NOT STARTED
 

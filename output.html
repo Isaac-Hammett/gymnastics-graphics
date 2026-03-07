@@ -1086,6 +1086,44 @@
       background: var(--meet-footer-bg, #18181b);
     }
 
+    /* Leaderboard table overrides */
+    [data-meet-theme] .leaderboard-table thead {
+      background: var(--meet-header-bg, #27272a);
+    }
+    [data-meet-theme] .leaderboard-table th {
+      color: var(--meet-header-text, #a1a1aa);
+      border-bottom-color: var(--meet-border-color, #3f3f46);
+    }
+    [data-meet-theme] .leaderboard-table tbody tr {
+      border-bottom-color: var(--meet-border-color, #3f3f46);
+    }
+    [data-meet-theme] .leaderboard-table tbody tr:nth-child(odd) {
+      background: var(--meet-overlay-bg, #18181b);
+    }
+    [data-meet-theme] .leaderboard-table tbody tr:nth-child(even) {
+      background: color-mix(in srgb, var(--meet-overlay-bg, #0f0f10) 85%, black);
+    }
+    [data-meet-theme] .leaderboard-table td {
+      color: var(--meet-overlay-text, #fff);
+    }
+    [data-meet-theme] .leaderboard-table td.col-rank {
+      color: var(--meet-accent-secondary, #a1a1aa);
+    }
+    [data-meet-theme] .leaderboard-table td.col-diff,
+    [data-meet-theme] .leaderboard-table td.col-exec {
+      color: var(--meet-accent-secondary, #a1a1aa);
+    }
+    [data-meet-theme] .leaderboard-table td.col-team {
+      color: var(--meet-accent-secondary, #d4d4d8);
+    }
+    [data-meet-theme] .leaderboard-team-logo {
+      background: var(--meet-header-bg, #27272a);
+    }
+    [data-meet-theme] .apparatus-badge {
+      border-color: var(--meet-border-color, #52525b);
+      color: var(--meet-accent-secondary, #a1a1aa);
+    }
+
     /* Stats header override */
     [data-meet-theme] .stats-header {
       background: var(--meet-header-bg, #d4d4d8);
@@ -9949,7 +9987,7 @@
       logos: (data) => {
         // Collect all team logos that exist (filter out empty/placeholder)
         const logos = [];
-        for (let i = 1; i <= 6; i++) {
+        for (let i = 1; i <= 7; i++) {
           const logo = data[`team${i}Logo`];
           if (logo && logo.trim() && !logo.includes('placeholder')) {
             logos.push(logo);
@@ -10179,6 +10217,37 @@
         </div>
       `,
 
+      'team7-stats': (data) => `
+        <div class="graphic-container graphic-team-stats">
+          <div class="stats-header">
+            <div class="stats-team-name">${data.team7Name}</div>
+            <img class="stats-logo" src="${getTeamLogoUrl(data.team7Name, data.team7Logo)}" alt="Team">
+          </div>
+          <div class="stats-content">
+            <div class="stat-item">
+              <div class="stat-label">AVE</div>
+              <div class="stat-value">${data.team7Ave}</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">HIGH</div>
+              <div class="stat-value">${data.team7High}</div>
+            </div>
+          </div>
+        </div>
+      `,
+
+      'team7-coaches': (data) => `
+        <div class="graphic-container graphic-coaches">
+          <div class="coaches-header">
+            <div class="coaches-title">COACHES</div>
+            <img class="coaches-logo" src="${getTeamLogoUrl(data.team7Name, data.team7Logo)}" alt="Team">
+          </div>
+          <div class="coaches-content">
+            ${data.team7Coaches.split('\n').map(c => `<div class="coach-name">${c}</div>`).join('')}
+          </div>
+        </div>
+      `,
+
       // Dynamic team-coaches renderer - uses teamSlot parameter to select team data
       'team-coaches': (data) => {
         const slot = data.teamSlot || 1;
@@ -10329,7 +10398,7 @@
       'frame-team-header': (data) => {
         // Collect all team logos that exist
         const logos = [];
-        for (let i = 1; i <= 6; i++) {
+        for (let i = 1; i <= 7; i++) {
           const logo = data[`team${i}Logo`];
           if (logo && logo.trim() && !logo.includes('placeholder')) {
             logos.push(logo);
