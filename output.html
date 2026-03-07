@@ -1191,6 +1191,70 @@
       color: var(--meet-header-text, #000);
     }
 
+    /* Event bar overrides */
+    [data-meet-theme] .event-bar-logo {
+      background: var(--meet-accent-secondary, #BFBFBF);
+    }
+    [data-meet-theme] .event-bar-venue {
+      background: var(--meet-accent-secondary, #BFBFBF);
+      color: var(--meet-header-text, #000);
+    }
+    [data-meet-theme] .event-bar-details {
+      background: var(--meet-accent-primary, #000);
+    }
+    [data-meet-theme] .event-bar-name,
+    [data-meet-theme] .event-bar-location {
+      color: var(--meet-overlay-text, #fff);
+    }
+
+    /* Warm-up overrides */
+    [data-meet-theme] .warm-up-logo-section {
+      background: var(--meet-accent-secondary, #BFBFBF);
+    }
+    [data-meet-theme] .warm-up-teams-row {
+      background: var(--meet-accent-secondary, #BFBFBF);
+    }
+    [data-meet-theme] .warm-up-teams-text {
+      color: var(--meet-header-text, #000);
+    }
+    [data-meet-theme] .warm-up-status-row {
+      background: var(--meet-accent-primary, #000);
+    }
+    [data-meet-theme] .warm-up-status-text {
+      color: var(--meet-overlay-text, #fff);
+    }
+
+    /* Coaches overrides */
+    [data-meet-theme] .coaches-header {
+      background: var(--meet-header-bg, #d4d4d8);
+    }
+    [data-meet-theme] .coaches-title {
+      color: var(--meet-header-text, #000);
+    }
+    [data-meet-theme] .coaches-content {
+      background: var(--meet-accent-primary, #000);
+    }
+    [data-meet-theme] .coach-name {
+      color: var(--meet-overlay-text, #fff);
+    }
+
+    /* Replay overrides */
+    [data-meet-theme] .replay-logo-section {
+      background: var(--meet-accent-secondary, #BFBFBF);
+    }
+    [data-meet-theme] .replay-title-row {
+      background: var(--meet-accent-secondary, #BFBFBF);
+    }
+    [data-meet-theme] .replay-title-text {
+      color: var(--meet-header-text, #000);
+    }
+    [data-meet-theme] .replay-status-row {
+      background: var(--meet-accent-primary, #000);
+    }
+    [data-meet-theme] .replay-status-text {
+      color: var(--meet-overlay-text, #fff);
+    }
+
     /* ==========================================
        END MEET THEME OVERRIDES
        ========================================== */
@@ -2332,6 +2396,7 @@
     .event-summary-quad-v3.teams-4 { grid-template-columns: repeat(4, 1fr); }
     .event-summary-quad-v3.teams-5 { grid-template-columns: repeat(5, 1fr); }
     .event-summary-quad-v3.teams-6 { grid-template-columns: repeat(6, 1fr); }
+    .event-summary-quad-v3.teams-7 { grid-template-columns: repeat(7, 1fr); }
 
     .event-summary-quad-v3 .team-column {
       background: #18181b;
@@ -2493,6 +2558,7 @@
     .event-summary-quad-v4.teams-4 { grid-template-columns: repeat(4, 1fr); }
     .event-summary-quad-v4.teams-5 { grid-template-columns: repeat(5, 1fr); }
     .event-summary-quad-v4.teams-6 { grid-template-columns: repeat(6, 1fr); }
+    .event-summary-quad-v4.teams-7 { grid-template-columns: repeat(7, 1fr); }
 
     .event-summary-quad-v4 .team-column {
       background: #18181b;
@@ -2677,6 +2743,7 @@
     .event-summary-v5.teams-4 { grid-template-columns: repeat(4, 1fr); }
     .event-summary-v5.teams-5 { grid-template-columns: repeat(5, 1fr); }
     .event-summary-v5.teams-6 { grid-template-columns: repeat(6, 1fr); }
+    .event-summary-v5.teams-7 { grid-template-columns: repeat(7, 1fr); }
 
     .event-summary-v5 .team-column {
       background: #18181b;
@@ -2768,6 +2835,7 @@
     .event-summary-v6.teams-4 { grid-template-columns: repeat(4, 1fr); }
     .event-summary-v6.teams-5 { grid-template-columns: repeat(5, 1fr); }
     .event-summary-v6.teams-6 { grid-template-columns: repeat(6, 1fr); }
+    .event-summary-v6.teams-7 { grid-template-columns: repeat(7, 1fr); }
 
     .event-summary-v6 .team-column {
       background: #18181b;
@@ -2875,6 +2943,7 @@
     .event-summary-v7.teams-4 { grid-template-columns: repeat(4, 1fr); }
     .event-summary-v7.teams-5 { grid-template-columns: repeat(5, 1fr); }
     .event-summary-v7.teams-6 { grid-template-columns: repeat(6, 1fr); }
+    .event-summary-v7.teams-7 { grid-template-columns: repeat(7, 1fr); }
 
     .event-summary-v7 .team-column {
       background: #0f0f10;
@@ -2972,6 +3041,7 @@
     .event-summary-v8.teams-4 { grid-template-columns: repeat(4, 1fr); }
     .event-summary-v8.teams-5 { grid-template-columns: repeat(5, 1fr); }
     .event-summary-v8.teams-6 { grid-template-columns: repeat(6, 1fr); }
+    .event-summary-v8.teams-7 { grid-template-columns: repeat(7, 1fr); }
 
     .event-summary-v8 .team-column {
       background: #fff;
@@ -3055,6 +3125,7 @@
     .event-summary-v9.teams-4 { grid-template-columns: repeat(4, 1fr); }
     .event-summary-v9.teams-5 { grid-template-columns: repeat(5, 1fr); }
     .event-summary-v9.teams-6 { grid-template-columns: repeat(6, 1fr); }
+    .event-summary-v9.teams-7 { grid-template-columns: repeat(7, 1fr); }
 
     .event-summary-v9 .team-column {
       background: #18181b;
@@ -3151,6 +3222,7 @@
     .event-summary-v10.teams-4 { grid-template-columns: repeat(4, 1fr); }
     .event-summary-v10.teams-5 { grid-template-columns: repeat(5, 1fr); }
     .event-summary-v10.teams-6 { grid-template-columns: repeat(6, 1fr); }
+    .event-summary-v10.teams-7 { grid-template-columns: repeat(7, 1fr); }
 
     .event-summary-v10 .team-column {
       background: #18181b;
@@ -3246,6 +3318,7 @@
     .event-summary-v11.teams-4 { grid-template-columns: repeat(4, 1fr); }
     .event-summary-v11.teams-5 { grid-template-columns: repeat(5, 1fr); }
     .event-summary-v11.teams-6 { grid-template-columns: repeat(6, 1fr); }
+    .event-summary-v11.teams-7 { grid-template-columns: repeat(7, 1fr); }
 
     .event-summary-v11 .team-column {
       background: #18181b;
@@ -3339,6 +3412,7 @@
     .event-summary-v12.teams-4 { grid-template-columns: repeat(4, 1fr); }
     .event-summary-v12.teams-5 { grid-template-columns: repeat(5, 1fr); }
     .event-summary-v12.teams-6 { grid-template-columns: repeat(6, 1fr); }
+    .event-summary-v12.teams-7 { grid-template-columns: repeat(7, 1fr); }
 
     .event-summary-v12 .team-column {
       background: #18181b;
@@ -3437,6 +3511,7 @@
     .event-summary-v13.teams-4 { grid-template-columns: repeat(4, 1fr); }
     .event-summary-v13.teams-5 { grid-template-columns: repeat(5, 1fr); }
     .event-summary-v13.teams-6 { grid-template-columns: repeat(6, 1fr); }
+    .event-summary-v13.teams-7 { grid-template-columns: repeat(7, 1fr); }
 
     .event-summary-v13 .team-column {
       background: #18181b;
@@ -3551,6 +3626,7 @@
     .event-summary-v14.teams-4 { grid-template-columns: repeat(4, 1fr); }
     .event-summary-v14.teams-5 { grid-template-columns: repeat(5, 1fr); }
     .event-summary-v14.teams-6 { grid-template-columns: repeat(6, 1fr); }
+    .event-summary-v14.teams-7 { grid-template-columns: repeat(7, 1fr); }
 
     .event-summary-v14 .team-column {
       background: #18181b;
@@ -3654,6 +3730,7 @@
     .event-summary-v15.teams-4 { grid-template-columns: repeat(4, 1fr); }
     .event-summary-v15.teams-5 { grid-template-columns: repeat(5, 1fr); }
     .event-summary-v15.teams-6 { grid-template-columns: repeat(6, 1fr); }
+    .event-summary-v15.teams-7 { grid-template-columns: repeat(7, 1fr); }
 
     .event-summary-v15 .team-column {
       background: #18181b;
@@ -3747,6 +3824,7 @@
     .event-summary-v16.teams-4 { grid-template-columns: repeat(4, 1fr); }
     .event-summary-v16.teams-5 { grid-template-columns: repeat(5, 1fr); }
     .event-summary-v16.teams-6 { grid-template-columns: repeat(6, 1fr); }
+    .event-summary-v16.teams-7 { grid-template-columns: repeat(7, 1fr); }
 
     .event-summary-v16 .team-column {
       background: #0f0d24;
@@ -3841,6 +3919,7 @@
     .event-summary-v17.teams-4 { grid-template-columns: repeat(4, 1fr); }
     .event-summary-v17.teams-5 { grid-template-columns: repeat(5, 1fr); }
     .event-summary-v17.teams-6 { grid-template-columns: repeat(6, 1fr); }
+    .event-summary-v17.teams-7 { grid-template-columns: repeat(7, 1fr); }
 
     .event-summary-v17 .team-column {
       background: #18181b;
@@ -3932,6 +4011,7 @@
     .event-summary-v18.teams-4 { grid-template-columns: repeat(4, 1fr); }
     .event-summary-v18.teams-5 { grid-template-columns: repeat(5, 1fr); }
     .event-summary-v18.teams-6 { grid-template-columns: repeat(6, 1fr); }
+    .event-summary-v18.teams-7 { grid-template-columns: repeat(7, 1fr); }
 
     .event-summary-v18 .team-column {
       background: #18181b;
@@ -4026,6 +4106,7 @@
     .event-summary-v19.teams-4 { grid-template-columns: repeat(4, 1fr); }
     .event-summary-v19.teams-5 { grid-template-columns: repeat(5, 1fr); }
     .event-summary-v19.teams-6 { grid-template-columns: repeat(6, 1fr); }
+    .event-summary-v19.teams-7 { grid-template-columns: repeat(7, 1fr); }
 
     .event-summary-v19 .team-column {
       background: #18181b;
@@ -4125,6 +4206,7 @@
     .event-summary-v20.teams-4 { grid-template-columns: repeat(4, 1fr); }
     .event-summary-v20.teams-5 { grid-template-columns: repeat(5, 1fr); }
     .event-summary-v20.teams-6 { grid-template-columns: repeat(6, 1fr); }
+    .event-summary-v20.teams-7 { grid-template-columns: repeat(7, 1fr); }
 
     .event-summary-v20 .team-column {
       background: #18181b;
@@ -4333,6 +4415,7 @@
     .event-summary-v21.teams-4 { grid-template-columns: repeat(4, 1fr); }
     .event-summary-v21.teams-5 { grid-template-columns: repeat(5, 1fr); }
     .event-summary-v21.teams-6 { grid-template-columns: repeat(6, 1fr); }
+    .event-summary-v21.teams-7 { grid-template-columns: repeat(7, 1fr); }
 
     .event-summary-v21 .team-column {
       background: #18181b;
@@ -4548,6 +4631,7 @@
     .event-summary-v22.teams-5 .team-column:nth-child(4) { grid-column: 2 / 4; }
     .event-summary-v22.teams-5 .team-column:nth-child(5) { grid-column: 4 / 6; }
     .event-summary-v22.teams-6 { grid-template-columns: repeat(6, 1fr); }
+    .event-summary-v22.teams-7 { grid-template-columns: repeat(7, 1fr); }
 
     .event-summary-v22 .team-column {
       background: #18181b;
@@ -4765,6 +4849,7 @@
     .event-summary-v23.teams-4 { grid-template-columns: repeat(4, 1fr); }
     .event-summary-v23.teams-5 { grid-template-columns: repeat(5, 1fr); }
     .event-summary-v23.teams-6 { grid-template-columns: repeat(6, 1fr); }
+    .event-summary-v23.teams-7 { grid-template-columns: repeat(7, 1fr); }
 
     .event-summary-v23 .team-column {
       background: #18181b;
@@ -4955,6 +5040,7 @@
     .event-summary-v24.teams-4 { grid-template-columns: repeat(4, 1fr); }
     .event-summary-v24.teams-5 { grid-template-columns: repeat(5, 1fr); }
     .event-summary-v24.teams-6 { grid-template-columns: repeat(6, 1fr); }
+    .event-summary-v24.teams-7 { grid-template-columns: repeat(7, 1fr); }
 
     .event-summary-v24 .team-column {
       background: var(--meet-overlay-bg, #18181b);
@@ -10463,7 +10549,7 @@
       'event-bar': (data) => `
         <div class="graphic-container graphic-event-bar">
           <div class="event-bar-logo">
-            <img src="${getTeamLogoUrl(data.team1Name, data.team1Logo)}" alt="Team">
+            <img src="${getEventLevelLogo(data.team1Name, data.team1Logo)}" alt="Team">
           </div>
           <div class="event-bar-content">
             <div class="event-bar-venue">${data.venue}</div>
@@ -10882,7 +10968,7 @@
         return `
           <div class="graphic-container graphic-warm-up">
             <div class="warm-up-logo-section">
-              <img src="${getTeamLogoUrl(data.team1Name, data.team1Logo)}" alt="Team">
+              <img src="${getEventLevelLogo(data.team1Name, data.team1Logo)}" alt="Team">
             </div>
             <div class="warm-up-content-section">
               <div class="warm-up-teams-row">
@@ -10899,7 +10985,7 @@
       'replay': (data) => `
         <div class="graphic-container graphic-replay">
           <div class="replay-logo-section">
-            <img src="${getTeamLogoUrl(data.team1Name, data.team1Logo)}" alt="Team">
+            <img src="${getEventLevelLogo(data.team1Name, data.team1Logo)}" alt="Team">
           </div>
           <div class="replay-content-section">
             <div class="replay-title-row">
@@ -11098,7 +11184,8 @@
         const teamLogo = data[`team${teamSlot}Logo`] || '';
 
         // Build iframe URL - use compId from data or competition context
-        const rosterUrl = `/overlays/team-roster.html?compId=${encodeURIComponent(competitionId)}&teamSlot=${teamSlot}`;
+        const activeMeetTheme = document.body.getAttribute('data-meet-theme') || '';
+        const rosterUrl = `/overlays/team-roster.html?compId=${encodeURIComponent(competitionId)}&teamSlot=${teamSlot}${activeMeetTheme ? `&meetTheme=${encodeURIComponent(activeMeetTheme)}` : ''}`;
 
         return `
           <div class="graphic-container" style="width: 100%; height: 100%; background: transparent;">

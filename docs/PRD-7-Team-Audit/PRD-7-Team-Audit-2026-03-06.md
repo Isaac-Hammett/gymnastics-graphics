@@ -48,7 +48,7 @@ The `womens-7` competition format was recently added to support 7-team women's g
 - **File:** `output.html` (~21 layout versions)
 - **Description:** Grid rules defined for `.teams-2` through `.teams-6` only. No `.teams-7` rule exists
 - **Impact:** 7-team event summary grid has no column template — layout collapse or overflow
-- **Status:** NOT STARTED
+- **Status:** COMPLETE
 
 ### Major (Incorrect Behavior)
 
