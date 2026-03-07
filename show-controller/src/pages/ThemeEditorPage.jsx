@@ -103,6 +103,7 @@ const DEFAULT_THEME = {
     meetTitle: '',
     subtitle: '',
   },
+  sponsors: [], // Array of { name: string, url: string } - event-level sponsors
 };
 
 // Extract dominant colors from an image URL using canvas pixel sampling
@@ -258,6 +259,7 @@ export default function ThemeEditorPage() {
         colors: { ...DEFAULT_THEME.colors, ...themes[themeId].colors },
         logos: { ...DEFAULT_THEME.logos, ...themes[themeId].logos },
         branding: { ...DEFAULT_THEME.branding, ...themes[themeId].branding },
+        sponsors: themes[themeId].sponsors || [], // Ensure sponsors array exists
       });
       setIsDirty(false);
     }
@@ -713,6 +715,84 @@ export default function ThemeEditorPage() {
                     className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500"
                   />
                 </div>
+              </div>
+            </div>
+
+            {/* Event Sponsors */}
+            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">Event Sponsors</h2>
+                <span className="text-xs text-zinc-500">{(editingTheme.sponsors || []).length}/8</span>
+              </div>
+              <p className="text-xs text-zinc-500 mb-4">
+                Event sponsors appear in sponsor graphics when this theme is active. Falls back to team sponsors if none are defined.
+              </p>
+
+              <div className="space-y-3">
+                {(editingTheme.sponsors || []).map((sponsor, index) => (
+                  <div key={index} className="flex items-start gap-2 p-3 bg-zinc-800 rounded-lg">
+                    <div className="flex-1 space-y-2">
+                      <input
+                        type="text"
+                        value={sponsor.name || ''}
+                        onChange={(e) => {
+                          const newSponsors = [...(editingTheme.sponsors || [])];
+                          newSponsors[index] = { ...newSponsors[index], name: e.target.value };
+                          setEditingTheme({ ...editingTheme, sponsors: newSponsors });
+                          setIsDirty(true);
+                        }}
+                        placeholder="Sponsor name"
+                        className="w-full px-3 py-2 bg-zinc-700 border border-zinc-600 rounded-lg text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-blue-500"
+                      />
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={sponsor.url || ''}
+                          onChange={(e) => {
+                            const newSponsors = [...(editingTheme.sponsors || [])];
+                            newSponsors[index] = { ...newSponsors[index], url: e.target.value };
+                            setEditingTheme({ ...editingTheme, sponsors: newSponsors });
+                            setIsDirty(true);
+                          }}
+                          placeholder="Logo URL (https://...)"
+                          className="flex-1 px-3 py-2 bg-zinc-700 border border-zinc-600 rounded-lg text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-blue-500"
+                        />
+                        {sponsor.url && (
+                          <img
+                            src={sponsor.url}
+                            alt={sponsor.name || 'Sponsor'}
+                            className="w-10 h-10 object-contain bg-white rounded"
+                            onError={(e) => e.target.style.display = 'none'}
+                          />
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const newSponsors = (editingTheme.sponsors || []).filter((_, i) => i !== index);
+                        setEditingTheme({ ...editingTheme, sponsors: newSponsors });
+                        setIsDirty(true);
+                      }}
+                      className="p-2 text-red-400 hover:text-red-300 hover:bg-zinc-700 rounded transition-colors"
+                      title="Remove sponsor"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+
+                {(editingTheme.sponsors || []).length < 8 && (
+                  <button
+                    onClick={() => {
+                      const newSponsors = [...(editingTheme.sponsors || []), { name: '', url: '' }];
+                      setEditingTheme({ ...editingTheme, sponsors: newSponsors });
+                      setIsDirty(true);
+                    }}
+                    className="w-full px-3 py-2 bg-zinc-800 hover:bg-zinc-700 border border-dashed border-zinc-600 rounded-lg text-sm text-zinc-400 hover:text-zinc-300 transition-colors"
+                  >
+                    + Add Sponsor
+                  </button>
+                )}
               </div>
             </div>
 
