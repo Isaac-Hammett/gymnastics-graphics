@@ -358,79 +358,58 @@ All overlays respond correctly to theme CSS variables and fall back to default c
 
 ---
 
-## Phase 8: Meet Logo Substitution - NOT STARTED
+## Phase 8: Meet Logo Substitution - COMPLETE
 
 When a theme has a `meetLogo`, event-level graphics should show that logo instead of team1's logo. Team-specific graphics (stats, coaches, roster, spotlight) keep the team logo.
 
-### Task 8.1: Extend theme-loader.js to expose meet logo URL as a data attribute - NOT STARTED
+### Task 8.1: Extend theme-loader.js to expose meet logo URL as a data attribute - COMPLETE
 
-Currently theme-loader.js sets `--meet-logo-url` as a CSS custom property using `url()` format. This can't be used to set `<img src>` attributes.
+**Completed 2026-03-06:** Updated both `overlays/theme-loader.js` and `output.html` to set data attributes:
 
-**Fix:** In addition to the CSS property, also set a plain-text data attribute:
 ```javascript
-// In applyTheme() function:
 if (theme.logos.meetLogo) {
   root.style.setProperty('--meet-logo-url', `url(${theme.logos.meetLogo})`);
-  document.body.setAttribute('data-meet-logo', theme.logos.meetLogo);  // NEW: plain URL for JS access
+  document.body.setAttribute('data-meet-logo', theme.logos.meetLogo);
 }
 if (theme.logos.causeLogo) {
   root.style.setProperty('--meet-cause-logo-url', `url(${theme.logos.causeLogo})`);
-  document.body.setAttribute('data-meet-cause-logo', theme.logos.causeLogo);  // NEW
+  document.body.setAttribute('data-meet-cause-logo', theme.logos.causeLogo);
 }
 ```
 
-### Task 8.2: Update overlay JS to use meet logo when available - NOT STARTED
+### Task 8.2: Update overlay JS to use meet logo when available - COMPLETE
 
-Each event-level overlay that shows a logo needs a check after theme-loader runs:
+**Completed 2026-03-06:** Added meet logo check to 4 event-level overlays:
+- `event-bar.html`
+- `warm-up.html`
+- `replay.html`
+- `stream.html`
 
-**Overlays to update (event-level — should show meet logo):**
-- `event-bar.html` — logo element reads `params.get('team1Logo')`, should check `data-meet-logo` first
-- `warm-up.html` — same pattern
-- `replay.html` — same pattern
-- `stream.html` — logo reads `params.get('logo')`, should check `data-meet-logo` first
+Each uses MutationObserver + setTimeout pattern to check `data-meet-logo` after theme-loader runs async.
 
-**Pattern for each overlay:**
+### Task 8.3: Update output.html leaderboard logo - COMPLETE
+
+**Completed 2026-03-06:** Added `getEventLevelLogo()` helper function to output.html:
+
 ```javascript
-// After existing logo setup code, add:
-// Override with meet logo if theme is active
-const checkMeetLogo = () => {
+function getEventLevelLogo(teamName, apiLogo) {
   const meetLogo = document.body.getAttribute('data-meet-logo');
-  if (meetLogo) {
-    document.getElementById('logo').src = meetLogo;
-  }
-};
-// theme-loader runs async, so check after a short delay and on mutation
-setTimeout(checkMeetLogo, 1000);
-new MutationObserver(checkMeetLogo).observe(document.body, { attributes: true, attributeFilter: ['data-meet-logo'] });
-```
-
-### Task 8.3: Update output.html leaderboard logo - NOT STARTED
-
-The leaderboard `frame-logo` uses `data.team1Logo`. When a theme is active, substitute the meet logo.
-
-**In the leaderboard rendering function:**
-```javascript
-// Check if meet theme has a logo
-const meetLogoUrl = document.body.getAttribute('data-meet-logo');
-const logoSrc = meetLogoUrl || getTeamLogoUrl(data.team1Name, data.team1Logo);
-```
-
-### Task 8.4: Update output.html to pass meet logo in sendGraphic data - NOT STARTED
-
-In `GraphicsControl.jsx`, when building the data object for `sendGraphic()`, include the meet logo URL from the theme if available. This allows output.html to use it when rendering graphics.
-
-**In GraphicsControl.jsx `sendGraphic()` function:**
-```javascript
-// After building data object, check for theme meet logo
-if (config?.meetTheme) {
-  // The meetLogo will be fetched by output.html's theme loader
-  // No action needed here — output.html handles it via data-meet-logo attribute
+  if (meetLogo) return meetLogo;
+  return getTeamLogoUrl(teamName, apiLogo);
 }
 ```
 
-Actually, output.html already fetches the theme via the `?meetTheme=` URL param and sets `data-meet-logo` on the body. So graphics rendered via output.html can check `document.body.getAttribute('data-meet-logo')` directly. No changes needed in GraphicsControl.jsx for this.
+Updated graphics to use this helper:
+- `virtius-leaderboard` — with MutationObserver for async theme loading
+- `event-frame`
+- `stream-starting`
+- `stream-thanks`
 
-### Task 8.5: Deploy and verify logo substitution - NOT STARTED
+### Task 8.4: Update output.html to pass meet logo in sendGraphic data - SKIPPED
+
+Not needed — output.html handles theme loading internally via `data-meet-logo` attribute.
+
+### Task 8.5: Deploy and verify logo substitution - IN PROGRESS
 
 - [ ] Event bar shows meet logo (not team1 logo) when theme active
 - [ ] Warm-up shows meet logo when theme active

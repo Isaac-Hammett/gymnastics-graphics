@@ -125,13 +125,17 @@
       }
     }
 
-    // Apply logo URLs as CSS custom properties
+    // Apply logo URLs as CSS custom properties AND data attributes
+    // CSS properties use url() format for background-image
+    // Data attributes use plain URL for JS img.src access
     if (theme.logos) {
       if (theme.logos.meetLogo) {
         root.style.setProperty('--meet-logo-url', `url(${theme.logos.meetLogo})`);
+        document.body.setAttribute('data-meet-logo', theme.logos.meetLogo);
       }
       if (theme.logos.causeLogo) {
         root.style.setProperty('--meet-cause-logo-url', `url(${theme.logos.causeLogo})`);
+        document.body.setAttribute('data-meet-cause-logo', theme.logos.causeLogo);
       }
     }
 

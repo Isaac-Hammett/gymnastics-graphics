@@ -111,6 +111,17 @@
     } else if (team1 && team2) {
       document.getElementById('teams').textContent = `${team1.toUpperCase()} VS ${team2.toUpperCase()}`;
     }
+
+    // Override with meet logo when theme is active (event-level graphic)
+    function checkMeetLogo() {
+      const meetLogo = document.body.getAttribute('data-meet-logo');
+      if (meetLogo) {
+        document.getElementById('logo').src = meetLogo;
+      }
+    }
+    // theme-loader runs async, check after delay and observe for changes
+    setTimeout(checkMeetLogo, 500);
+    new MutationObserver(checkMeetLogo).observe(document.body, { attributes: true, attributeFilter: ['data-meet-logo'] });
   </script>
   <script src="theme-loader.js"></script>
 </body>
