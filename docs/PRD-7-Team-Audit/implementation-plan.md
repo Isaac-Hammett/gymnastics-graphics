@@ -164,9 +164,23 @@ cd show-controller && npm run build
 
 ## Phase 5: Audit-Discovered Issues (Added 2026-03-07)
 
-### Task 5.1: Investigate rotation-slate blank output — NOT STARTED
+### Task 5.1: Investigate rotation-slate blank output — COMPLETE
 
 **Description:** Rotation Slate graphic triggered from producer results in blank output page. The `#output` container is empty.
+
+**Root Cause:** The `rotation-slate` graphic was missing from the `renderers` object in `output.html`. Additionally, the producer sent `rotation-slate` without a rotation number parameter.
+
+**Fix:**
+1. Added `rotation-slate` renderer to `output.html` that embeds the overlay in an iframe (similar to sponsor graphics)
+2. Added `sendRotationSlate(rotation)` function in `GraphicsControl.jsx` to pass rotation number to Firebase
+3. Modified producer UI to show R1-R7 buttons for rotation slate (similar to event summary rotation buttons)
+4. Added rotation `'7'` option to `graphicsRegistry.js` for 7-team competitions
+
+**Files Modified:**
+- `output.html` (line ~10898)
+- `show-controller/src/components/GraphicsControl.jsx`
+- `show-controller/src/lib/graphicsRegistry.js`
+
 **Fixes:** BUG-011
 
 ### Task 5.2: Fix Mixed Content errors from VM IP — NOT STARTED
@@ -189,7 +203,7 @@ cd show-controller && npm run build
 | Phase 2: Major | 3 | Low-Medium | 3 COMPLETE |
 | Phase 3: Minor | 3 | Low | 3 COMPLETE |
 | Phase 4: Deploy | 3 | Low | 3 COMPLETE |
-| Phase 5: Audit Issues | 3 | Low | NOT STARTED |
+| Phase 5: Audit Issues | 3 | Low | 1 COMPLETE, 2 NOT STARTED |
 | **Total** | **15** | | |
 
 ---

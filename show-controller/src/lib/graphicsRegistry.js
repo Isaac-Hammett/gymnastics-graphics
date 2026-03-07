@@ -1025,7 +1025,7 @@ export const GRAPHICS = {
       meetName: { type: 'string', source: 'competition' },
       rotation: {
         type: 'enum',
-        options: ['1', '2', '3', '4', '5', '6'],
+        options: ['1', '2', '3', '4', '5', '6', '7'],
         optionLabels: {
           '1': 'Rotation 1',
           '2': 'Rotation 2',
@@ -1033,6 +1033,7 @@ export const GRAPHICS = {
           '4': 'Rotation 4',
           '5': 'Rotation 5',
           '6': 'Rotation 6',
+          '7': 'Rotation 7',
         },
         required: true,
         default: '1',
