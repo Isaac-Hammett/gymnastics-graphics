@@ -100,6 +100,17 @@
   <script>
     const params = new URLSearchParams(window.location.search);
     document.getElementById('logo').src = params.get('team1Logo') || params.get('logo') || '';
+
+    // Override with meet logo when theme is active (event-level graphic)
+    function checkMeetLogo() {
+      const meetLogo = document.body.getAttribute('data-meet-logo');
+      if (meetLogo) {
+        document.getElementById('logo').src = meetLogo;
+      }
+    }
+    // theme-loader runs async, check after delay and observe for changes
+    setTimeout(checkMeetLogo, 500);
+    new MutationObserver(checkMeetLogo).observe(document.body, { attributes: true, attributeFilter: ['data-meet-logo'] });
   </script>
   <script src="theme-loader.js"></script>
 </body>

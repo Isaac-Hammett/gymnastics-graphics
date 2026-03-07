@@ -5560,13 +5560,17 @@
         }
       }
 
-      // Apply logo URLs as CSS custom properties
+      // Apply logo URLs as CSS custom properties AND data attributes
+      // CSS properties use url() format for background-image
+      // Data attributes use plain URL for JS img.src access
       if (theme.logos) {
         if (theme.logos.meetLogo) {
           root.style.setProperty('--meet-logo-url', `url(${theme.logos.meetLogo})`);
+          document.body.setAttribute('data-meet-logo', theme.logos.meetLogo);
         }
         if (theme.logos.causeLogo) {
           root.style.setProperty('--meet-cause-logo-url', `url(${theme.logos.causeLogo})`);
+          document.body.setAttribute('data-meet-cause-logo', theme.logos.causeLogo);
         }
       }
 
@@ -5840,6 +5844,23 @@
 
       console.log(`No logo found for team: "${teamName}" (normalized: "${normalized}", withoutGender: "${withoutGender}")`);
       return '';
+    }
+
+    /**
+     * Get logo for event-level graphics (leaderboard, event-frame, stream)
+     * Returns meet logo when theme is active, otherwise team logo
+     * @param {string} teamName - Team name
+     * @param {string} apiLogo - Logo URL from API
+     * @returns {string} Logo URL (meet logo or team logo)
+     */
+    function getEventLevelLogo(teamName, apiLogo) {
+      // Check for meet logo (set by theme-loader)
+      const meetLogo = document.body.getAttribute('data-meet-logo');
+      if (meetLogo) {
+        return meetLogo;
+      }
+      // Fall back to team logo
+      return getTeamLogoUrl(teamName, apiLogo);
     }
 
     // Initialize team logos loading
@@ -10365,7 +10386,7 @@
         <div class="graphic-container graphic-event-frame">
           <div class="frame-header">
             <div class="frame-title">${data.frameTitle}</div>
-            <img class="frame-logo" src="${getTeamLogoUrl(data.team1Name, data.team1Logo)}" alt="Team">
+            <img class="frame-logo" id="event-frame-logo" src="${getEventLevelLogo(data.team1Name, data.team1Logo)}" alt="Team">
           </div>
           <div class="frame-content"></div>
         </div>
@@ -10374,7 +10395,7 @@
       'stream-starting': (data) => `
         <div class="graphic-container graphic-stream">
           <div class="stream-title">STREAM STARTING SOON</div>
-          <img class="stream-logo" src="${getTeamLogoUrl(data.team1Name, data.team1Logo)}" alt="Team">
+          <img class="stream-logo" id="stream-logo" src="${getEventLevelLogo(data.team1Name, data.team1Logo)}" alt="Team">
           <div class="stream-event-name">${data.eventName}</div>
           <div class="stream-date">${data.meetDate}</div>
           <div class="stream-branding"><span>V</span>irtius</div>
@@ -10384,7 +10405,7 @@
       'stream-thanks': (data) => `
         <div class="graphic-container graphic-stream">
           <div class="stream-title">THANKS FOR WATCHING</div>
-          <img class="stream-logo" src="${getTeamLogoUrl(data.team1Name, data.team1Logo)}" alt="Team">
+          <img class="stream-logo" id="stream-logo" src="${getEventLevelLogo(data.team1Name, data.team1Logo)}" alt="Team">
           <div class="stream-event-name">${data.eventName}</div>
           <div class="stream-date">${data.meetDate}</div>
           <div class="stream-branding"><span>V</span>irtius</div>
@@ -10669,11 +10690,23 @@
         // Return loading state initially, then fetch and update
         setTimeout(() => fetchAndRenderLeaderboard(sessionId, apiEventName, shortCode, gender), 100);
 
-        // Only show logo if it exists and is valid
-        const resolvedLogo = getTeamLogoUrl(data.team1Name, data.team1Logo);
+        // Use event-level logo (meet logo when theme active, else team logo)
+        const resolvedLogo = getEventLevelLogo(data.team1Name, data.team1Logo);
         const logoHtml = resolvedLogo
-          ? `<img class="frame-logo" src="${resolvedLogo}" alt="">`
+          ? `<img class="frame-logo" id="leaderboard-logo" src="${resolvedLogo}" alt="">`
           : '';
+
+        // Setup observer to update logo if theme loads later (theme loads async)
+        setTimeout(() => {
+          const observer = new MutationObserver(() => {
+            const newMeetLogo = document.body.getAttribute('data-meet-logo');
+            const logoEl = document.getElementById('leaderboard-logo');
+            if (newMeetLogo && logoEl) {
+              logoEl.src = newMeetLogo;
+            }
+          });
+          observer.observe(document.body, { attributes: true, attributeFilter: ['data-meet-logo'] });
+        }, 100);
 
         return `
           <div class="graphic-container graphic-virtius-leaderboard">
