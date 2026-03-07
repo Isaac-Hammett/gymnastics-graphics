@@ -95,14 +95,20 @@ ${rotationCount <= 4 ? 'grid-cols-4' : rotationCount <= 6 ? 'grid-cols-6' : 'gri
 
 ## Phase 3: Minor Fixes (Polish)
 
-### Task 3.1: Add BYE visual indicator to team-bug — NOT STARTED
+### Task 3.1: Add BYE visual indicator to team-bug — COMPLETE
 
 **File:** `overlays/team-bug.html`
 
 **Change:** When a team has no active event for the current rotation:
-- Reduce row opacity to 0.4
+- Reduce row opacity to 0.4 with grayscale filter (`.on-bye` CSS class)
 - Show "BYE" text in the slot area
-- Gray out score display
+- Gray out team total display
+
+**Implementation:**
+- Added `.team-row.on-bye` CSS with opacity 0.4, grayscale 50%
+- Added `isTeamOnBye()` function to check if team has event for current rotation
+- Added `updateTeamByeStates()` function called on every poll and rotation change
+- BYE indicator only shows for meets with more teams than apparatus (7-team women's, etc.)
 
 **Fixes:** BUG-009 — No visual distinction for bye teams
 
@@ -174,7 +180,7 @@ cd show-controller && npm run build
 |-------|-------|------------|--------|
 | Phase 1: Critical | 3 | Medium | 3 COMPLETE |
 | Phase 2: Major | 3 | Low-Medium | 3 COMPLETE |
-| Phase 3: Minor | 3 | Low | NOT STARTED |
+| Phase 3: Minor | 3 | Low | 1 COMPLETE, 2 NOT STARTED |
 | Phase 4: Deploy | 3 | Low | NOT STARTED |
 | Phase 5: Audit Issues | 3 | Low | NOT STARTED |
 | **Total** | **15** | | |
