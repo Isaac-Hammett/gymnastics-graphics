@@ -5,7 +5,7 @@
 **Items Definition:** [checklist-items-definition.md](./checklist-items-definition.md)
 **Status:** IN PROGRESS
 **Created:** 2026-01-24
-**Last Updated:** 2026-03-07 (Tasks 1-16 complete)
+**Last Updated:** 2026-03-07 (Tasks 1-17 complete)
 
 ---
 
@@ -113,7 +113,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
-| Task 17 | Create `TeamContactsPanel.jsx` component | NOT STARTED | Panel with tabs for ALL teams in competition (N teams, not just 2). Use `buildTeamKey()` from `competitionUtils.js` to derive team keys. |
+| Task 17 | Create `TeamContactsPanel.jsx` component | COMPLETE | Panel with tabs for ALL teams in competition (N teams, not just 2). Integrated into ChecklistPage as sticky sidebar. Collapses by default for Day Of phases. |
 | Task 18 | Add contact display (name, role, phone, email) | NOT STARTED | Click-to-call (`tel:`), click-to-email (`mailto:`) links |
 | Task 19 | Add contact edit modal | NOT STARTED | Add/edit contact form with name, role, phone, email, notes fields |
 | Task 20 | Wire contacts to Firebase `teamsDatabase/contacts/{team-key}` | NOT STARTED | CRUD operations. Team key format: `buildTeamKey(school, gender)` e.g. "west-chester-womens" |
