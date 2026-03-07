@@ -5,7 +5,7 @@
 **Items Definition:** [checklist-items-definition.md](./checklist-items-definition.md)
 **Status:** IN PROGRESS
 **Created:** 2026-01-24
-**Last Updated:** 2026-03-07 (Tasks 3-7 complete)
+**Last Updated:** 2026-03-07 (Tasks 1-8 complete)
 
 ---
 
@@ -90,7 +90,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 5 | Create `ChecklistProgress.jsx` component | COMPLETE (merged into Task 3) | Built inline in ChecklistPage.jsx. |
 | Task 6 | Create `ChecklistCategory.jsx` component | COMPLETE (merged into Task 3) | Built inline in ChecklistPage.jsx. |
 | Task 7 | Create `ChecklistItem.jsx` component | COMPLETE (merged into Task 3) | Built inline in ChecklistPage.jsx. |
-| Task 8 | Wire manual item toggle to Firebase with rollback | NOT STARTED | Install `react-hot-toast`, add `<Toaster />` to App.jsx. Optimistic update with rollback on error. No `checkedBy` field. **Must also write `lastUpdated` timestamp** on each toggle. Use functional state update to avoid race condition on rapid toggles. |
+| Task 8 | Wire manual item toggle to Firebase with rollback | COMPLETE | Installed `react-hot-toast`, added `<Toaster />` to App.jsx with dark theme styling. Optimistic update with rollback on error. Toast shows on failure. lastUpdated timestamp written on each toggle. |
 
 ---
 
