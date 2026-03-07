@@ -183,9 +183,21 @@ cd show-controller && npm run build
 
 **Fixes:** BUG-011
 
-### Task 5.2: Fix Mixed Content errors from VM IP — NOT STARTED
+### Task 5.2: Fix Mixed Content errors from VM IP — COMPLETE
 
 **Description:** Producer page makes HTTP requests to VM IP that are blocked by HTTPS Mixed Content policy. Need to ensure all API calls use HTTPS or go through the coordinator proxy.
+
+**Root Cause:** `ProducerView.jsx` and `OverrideLog.jsx` used `VITE_SOCKET_SERVER` environment variable directly instead of `socketUrl` from `CompetitionContext`. The env var was set to `http://3.81.127.185:3003` which caused Mixed Content errors when the site is served over HTTPS.
+
+**Fix:**
+1. Updated `ProducerView.jsx` to extract `socketUrl` from `useCompetition()` context
+2. Updated `OverrideLog.jsx` to accept `serverUrl` as a prop instead of reading from env
+3. Now routes through `https://api.commentarygraphic.com` in production (handled by CompetitionContext)
+
+**Files Modified:**
+- `show-controller/src/views/ProducerView.jsx`
+- `show-controller/src/components/OverrideLog.jsx`
+
 **Fixes:** BUG-012
 
 ### Task 5.3: Fix Firebase /alerts permission denied — NOT STARTED
@@ -203,7 +215,7 @@ cd show-controller && npm run build
 | Phase 2: Major | 3 | Low-Medium | 3 COMPLETE |
 | Phase 3: Minor | 3 | Low | 3 COMPLETE |
 | Phase 4: Deploy | 3 | Low | 3 COMPLETE |
-| Phase 5: Audit Issues | 3 | Low | 1 COMPLETE, 2 NOT STARTED |
+| Phase 5: Audit Issues | 3 | Low | 2 COMPLETE, 1 NOT STARTED |
 | **Total** | **15** | | |
 
 ---

@@ -97,16 +97,14 @@ function getOverrideDetails(override) {
   }
 }
 
-export default function OverrideLog({ collapsed: initialCollapsed = true, defaultVisible = 5 }) {
+export default function OverrideLog({ collapsed: initialCollapsed = true, defaultVisible = 5, serverUrl: serverUrlProp }) {
   const { socket } = useShow();
   const [collapsed, setCollapsed] = useState(initialCollapsed);
   const [overrides, setOverrides] = useState([]);
   const [showAll, setShowAll] = useState(false);
 
-  // Server URL for REST API calls
-  const serverUrl = import.meta.env.PROD
-    ? (import.meta.env.VITE_SOCKET_SERVER || '')
-    : 'http://localhost:3003';
+  // Server URL for REST API calls - use prop from parent (with fallback for development)
+  const serverUrl = serverUrlProp || 'http://localhost:3003';
 
   // Fetch initial overrides
   useEffect(() => {
