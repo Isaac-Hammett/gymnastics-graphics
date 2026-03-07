@@ -300,6 +300,14 @@ Production testing revealed that many graphics don't fully pick up theme colors.
 | `.leaderboard-table td.col-team` | `--meet-accent-secondary` |
 | `.leaderboard-team-logo` | `--meet-header-bg` |
 | `.apparatus-badge` | `--meet-border-color`, `--meet-accent-secondary` |
+| `.graphic-virtius-leaderboard .frame-header` | `--meet-header-bg`, `--meet-header-text` |
+| `.graphic-virtius-leaderboard .frame-title` | `--meet-header-text` |
+| `.graphic-event-frame .frame-header` | `--meet-header-bg` |
+| `.graphic-event-frame .frame-title` | `--meet-header-text` |
+
+**Additional fixes during verification:**
+- Added auto-loading of meetTheme from competition config when `?comp=` is set (output.html now reads `competitions/{compId}/config/meetTheme` from Firebase)
+- Fixed `.frame-header` specificity issue: `.graphic-virtius-leaderboard .frame-header` had higher specificity than generic override, so added scoped `[data-meet-theme] .graphic-virtius-leaderboard .frame-header` rule
 
 ### Task 7.3: Fix event summary theme colors in output.html - NOT STARTED
 
@@ -553,7 +561,7 @@ Add to the `summaryThemes` array:
 | 4. Theme Editor | 1 | 2 | High | ✅ COMPLETE |
 | 5. Competition Assignment | 0 | 1 | Low | ✅ COMPLETE |
 | 6. Deploy & Verify | 0 | 0 | Medium | ✅ COMPLETE |
-| 7. Full Theme Color Coverage | 0 | ~10 | Medium | 🔲 NOT STARTED |
+| 7. Full Theme Color Coverage | 0 | ~10 | Medium | 🔶 IN PROGRESS |
 | 8. Meet Logo Substitution | 0 | ~8 | Medium | 🔲 NOT STARTED |
 | 9. Event-Level Sponsors | 0 | ~3 | High | 🔲 NOT STARTED |
 | 10. Event Summary V24 | 0 | 2 | Medium | 🔲 NOT STARTED |

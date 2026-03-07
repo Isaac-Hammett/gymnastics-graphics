@@ -1052,6 +1052,14 @@
        Applied via [data-meet-theme] attribute
        ========================================== */
 
+    /* Event frame header override */
+    [data-meet-theme] .graphic-event-frame .frame-header {
+      background: var(--meet-header-bg, #d4d4d8);
+    }
+    [data-meet-theme] .graphic-event-frame .frame-title {
+      color: var(--meet-header-text, #000);
+    }
+
     /* Header bar overrides - applies to all layouts */
     [data-meet-theme] .event-summary-header {
       background: var(--meet-header-bg, #d4d4d8);
@@ -1084,6 +1092,15 @@
     }
     [data-meet-theme] .leaderboard-footer {
       background: var(--meet-footer-bg, #18181b);
+    }
+
+    /* Leaderboard frame header override (needs higher specificity than .graphic-virtius-leaderboard .frame-header) */
+    [data-meet-theme] .graphic-virtius-leaderboard .frame-header {
+      background: var(--meet-header-bg, #d4d4d8);
+      color: var(--meet-header-text, #000);
+    }
+    [data-meet-theme] .graphic-virtius-leaderboard .frame-title {
+      color: var(--meet-header-text, #000);
     }
 
     /* Leaderboard table overrides */
@@ -5525,20 +5542,36 @@
       console.log('[meet-theme] Theme applied:', theme.name || meetThemeId);
     }
 
-    // Load meet theme if specified in URL
-    if (meetThemeId) {
-      console.log('[meet-theme] Loading theme:', meetThemeId);
-      db.ref(`themes/${meetThemeId}`).once('value')
+    // Load meet theme - from URL param or from competition config
+    function loadMeetTheme(themeId) {
+      console.log('[meet-theme] Loading theme:', themeId);
+      db.ref(`themes/${themeId}`).once('value')
         .then(snapshot => {
           const theme = snapshot.val();
           if (theme) {
             applyMeetTheme(theme);
           } else {
-            console.warn('[meet-theme] Theme not found:', meetThemeId);
+            console.warn('[meet-theme] Theme not found:', themeId);
           }
         })
         .catch(error => {
           console.error('[meet-theme] Error loading theme:', error);
+        });
+    }
+
+    if (meetThemeId) {
+      loadMeetTheme(meetThemeId);
+    } else if (competitionId) {
+      // Check competition config for a meetTheme
+      db.ref(`competitions/${competitionId}/config/meetTheme`).once('value')
+        .then(snapshot => {
+          const configThemeId = snapshot.val();
+          if (configThemeId) {
+            loadMeetTheme(configThemeId);
+          }
+        })
+        .catch(error => {
+          console.error('[meet-theme] Error reading competition config:', error);
         });
     }
 
