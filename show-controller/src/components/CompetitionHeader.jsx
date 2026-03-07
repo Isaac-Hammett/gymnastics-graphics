@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { ClipboardDocumentCheckIcon } from '@heroicons/react/24/outline';
 import { useCompetition } from '../context/CompetitionContext';
 import { useShow } from '../context/ShowContext';
 
@@ -63,6 +64,16 @@ export default function CompetitionHeader() {
               </span>
             )}
           </div>
+
+          {/* Checklist link */}
+          <Link
+            to={`/${compId}/checklist`}
+            className="text-gray-400 hover:text-white text-sm transition-colors flex items-center gap-1"
+            title="Production Checklist"
+          >
+            <ClipboardDocumentCheckIcon className="w-5 h-5" />
+            <span className="hidden sm:inline">Checklist</span>
+          </Link>
 
           {/* Change competition link */}
           <Link
