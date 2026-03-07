@@ -472,32 +472,55 @@ Firebase structure at `themes/{themeId}/sponsors`:
 
 ---
 
-## Phase 10: Event Summary V24 (Themed Layout) - NOT STARTED
+## Phase 10: Event Summary V24 (Themed Layout) - IN PROGRESS
 
 Create a new event summary layout that uses theme colors via `--meet-*` CSS variables.
 
-### Task 10.1: Identify V23 layout code in output.html - NOT STARTED
+### Task 10.1: Identify V23 layout code in output.html - COMPLETE
 
-Find the V23 ("No Rankings") layout code in `output.html`. It's referenced in the `summaryThemes` array in GraphicsControl.jsx as `layout-default-v23`.
+**Completed 2026-03-06:** Found V23 layout code in `output.html`:
+- CSS: lines 4756-4941 (`.event-summary-v23` selectors)
+- Rotation render function: `renderMultiTeamSummaryV23()` at line 8119
+- Apparatus render function: `renderMultiTeamSummaryApparatusV23()` at line 8713
+- Dispatch locations: 4 places in rotation/apparatus fetch functions
 
-### Task 10.2: Clone V23 as V24 "Meet Theme" layout - NOT STARTED
+### Task 10.2: Clone V23 as V24 "Meet Theme" layout - COMPLETE
 
-Duplicate the V23 rendering function and CSS, creating `layout-default-v24`:
-- Replace hardcoded header/footer/badge colors with `--meet-*` CSS variables
-- Keep team column colors using team variables (`--home-primary`, etc.)
-- Use `--meet-header-bg` for header bars
-- Use `--meet-badge-bg` / `--meet-badge-text` for rotation badges
-- Use `--meet-border-color` for dividers
-- Use `--meet-accent-secondary` for subtle accent areas
+**Completed 2026-03-06:** Created V24 layout by cloning V23 and replacing hardcoded colors with CSS variables:
 
-### Task 10.3: Register V24 in GraphicsControl.jsx - NOT STARTED
+| Element | Original (V23) | V24 Override |
+|---------|----------------|--------------|
+| Grid gap/dividers | `#3f3f46` | `var(--meet-border-color, #3f3f46)` |
+| Team column bg | `#18181b` | `var(--meet-overlay-bg, #18181b)` |
+| Header/footer bg | `#27272a` | `var(--meet-header-bg, #27272a)` |
+| Header text | `#fff` | `var(--meet-header-text, #fff)` |
+| Event name text | `#a1a1aa` | `var(--meet-accent-secondary, #a1a1aa)` |
+| Rank badge bg | `#52525b` | `var(--meet-badge-bg, #52525b)` |
+| Rank badge text | `#fff` | `var(--meet-badge-text, #fff)` |
+| Rank 1 (gold) | `#ca8a04` | `var(--meet-accent-primary, #ca8a04)` |
+| Rank 2 (silver) | `#64748b` | `var(--meet-accent-secondary, #64748b)` |
+| Rank 3 (bronze) | `#b45309` | `var(--meet-border-color, #b45309)` |
+| Athlete rows odd | `#18181b` | `var(--meet-overlay-bg, #18181b)` |
+| Athlete rows even | `#0f0f10` | `color-mix(...)` |
+| Athlete name | `#fff` | `var(--meet-overlay-text, #fff)` |
+| SV score | `#71717a` | `var(--meet-accent-secondary, #71717a)` |
+| Footer label | `#a1a1aa` | `var(--meet-accent-secondary, #a1a1aa)` |
+| Footer total | `#fff` | `var(--meet-header-text, #fff)` |
 
-Add to the `summaryThemes` array:
+Files modified:
+- `output.html`: Added `.event-summary-v24` CSS (~180 lines)
+- `output.html`: Added `renderMultiTeamSummaryV24()` function
+- `output.html`: Added `renderMultiTeamSummaryApparatusV24()` function
+- `output.html`: Added 4 dispatch cases for V24 in fetch functions
+
+### Task 10.3: Register V24 in GraphicsControl.jsx - COMPLETE
+
+**Completed 2026-03-06:** Added to `summaryThemes` array:
 ```javascript
 { id: 'layout-default-v24', label: '🎨 V24 Meet Theme', isLayout: true },
 ```
 
-### Task 10.4: Deploy and verify V24 layout - NOT STARTED
+### Task 10.4: Deploy and verify V24 layout - IN PROGRESS
 
 - [ ] V24 appears in Event Summary layout dropdown
 - [ ] V24 uses theme colors for chrome when theme is active
@@ -532,4 +555,4 @@ Add to the `summaryThemes` array:
 | 7. Full Theme Color Coverage | 0 | ~10 | Medium | ✅ COMPLETE |
 | 8. Meet Logo Substitution | 0 | ~8 | Medium | ✅ COMPLETE |
 | 9. Event-Level Sponsors | 0 | ~3 | High | ✅ COMPLETE |
-| 10. Event Summary V24 | 0 | 2 | Medium | 🔲 NOT STARTED |
+| 10. Event Summary V24 | 0 | 2 | Medium | ⏳ IN PROGRESS |
