@@ -5,7 +5,7 @@
 **Items Definition:** [checklist-items-definition.md](./checklist-items-definition.md)
 **Status:** IN PROGRESS
 **Created:** 2026-01-24
-**Last Updated:** 2026-03-07 (Phase 1D in progress: Task 24 complete)
+**Last Updated:** 2026-03-07 (Phase 1D in progress: Task 25 complete)
 
 ---
 
@@ -128,7 +128,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 |------|-------------|--------|-------|
 | Task 23 | Add checklist link to HomePage competition cards | COMPLETE | Added "Checklist" link alongside Producer/Talent/Graphics/Cameras buttons in CompetitionCard. |
 | Task 24 | Add checklist icon to CompetitionHeader | COMPLETE | Added ClipboardDocumentCheckIcon link to `/{compId}/checklist` in header next to Change link. |
-| Task 25 | Add checklist link to ProducerView sidebar | NOT STARTED | Prominent link — producers spend most time here |
+| Task 25 | Add checklist link to ProducerView sidebar | COMPLETE | Added ClipboardDocumentCheckIcon link to header nav alongside Home, Rundown Editor, OBS Manager links. |
 | Task 26 | Add phase completion indicators to tabs | NOT STARTED | ✓ complete, ◐ partial, ○ empty |
 | Task 27 | Add "Last updated" timestamp display | NOT STARTED | Show when checklist was last modified |
 | Task 28 | Polish error boundary + empty states | NOT STARTED | Error boundary fallback UI (moved from App.jsx wrapper). Empty state for each phase when no items match. Skeleton loading already built into Task 3. |

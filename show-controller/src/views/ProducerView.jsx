@@ -49,6 +49,7 @@ import {
   ServerIcon,
   EyeIcon,
   EyeSlashIcon,
+  ClipboardDocumentCheckIcon,
 } from '@heroicons/react/24/solid';
 
 // Health status colors for quick camera buttons
@@ -376,6 +377,13 @@ export default function ProducerView() {
             >
               <ComputerDesktopIcon className="w-3 h-3" />
               OBS Manager
+            </Link>
+            <Link
+              to={`/${compId}/checklist`}
+              className="flex items-center gap-2 px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-400 text-xs hover:bg-zinc-700 hover:text-zinc-300 transition-colors"
+            >
+              <ClipboardDocumentCheckIcon className="w-3 h-3" />
+              Checklist
             </Link>
             <div>
               <h1 className="text-lg font-bold text-white">
