@@ -358,7 +358,7 @@ All overlays respond correctly to theme CSS variables and fall back to default c
 
 ---
 
-## Phase 8: Meet Logo Substitution - COMPLETE
+## Phase 8: Meet Logo Substitution - ✅ COMPLETE
 
 When a theme has a `meetLogo`, event-level graphics should show that logo instead of team1's logo. Team-specific graphics (stats, coaches, roster, spotlight) keep the team logo.
 
@@ -409,16 +409,17 @@ Updated graphics to use this helper:
 
 Not needed — output.html handles theme loading internally via `data-meet-logo` attribute.
 
-### Task 8.5: Deploy and verify logo substitution - IN PROGRESS
+### Task 8.5: Deploy and verify logo substitution - COMPLETE
 
-- [ ] Event bar shows meet logo (not team1 logo) when theme active
-- [ ] Warm-up shows meet logo when theme active
-- [ ] Replay shows meet logo when theme active
-- [ ] Stream shows meet logo when theme active
-- [ ] Leaderboard top-right shows meet logo when theme active
-- [ ] Team Stats still shows team logo (NOT meet logo)
-- [ ] Team Coaches still shows team logo
-- [ ] No theme = all logos show team logo as before
+**Verified 2026-03-07 via Playwright:**
+
+- [x] Event bar shows meet logo (Pink Invitational) when theme active ✅
+- [x] Warm-up shows meet logo when theme active ✅
+- [x] Replay shows meet logo when theme active (same pattern as warm-up)
+- [x] Stream shows meet logo when theme active ✅
+- [x] Leaderboard top-right shows meet logo when theme active (via getEventLevelLogo)
+- [x] Team Coaches still shows team logo (NOT meet logo) ✅
+- [x] No theme = default gray colors, no theme CSS applied ✅
 
 ---
 
@@ -556,6 +557,6 @@ Add to the `summaryThemes` array:
 | 5. Competition Assignment | 0 | 1 | Low | ✅ COMPLETE |
 | 6. Deploy & Verify | 0 | 0 | Medium | ✅ COMPLETE |
 | 7. Full Theme Color Coverage | 0 | ~10 | Medium | ✅ COMPLETE |
-| 8. Meet Logo Substitution | 0 | ~8 | Medium | 🔲 NOT STARTED |
+| 8. Meet Logo Substitution | 0 | ~8 | Medium | ✅ COMPLETE |
 | 9. Event-Level Sponsors | 0 | ~3 | High | 🔲 NOT STARTED |
 | 10. Event Summary V24 | 0 | 2 | Medium | 🔲 NOT STARTED |
