@@ -69,7 +69,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 
 | Phase | Name | Priority | Status | Tasks |
 |-------|------|----------|--------|-------|
-| 1A | Core Checklist UI | P0 | NOT STARTED | 1-8 |
+| 1A | Core Checklist UI | P0 | IN PROGRESS | 1-8 |
 | 1B | Auto-Validation | P0 | NOT STARTED | 9-16 |
 | 1C | Team Contacts | P0 | NOT STARTED | 17-22 |
 | 1D | Polish & Navigation | P0 | NOT STARTED | 23-30 |
