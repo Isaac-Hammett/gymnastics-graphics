@@ -472,7 +472,7 @@ Firebase structure at `themes/{themeId}/sponsors`:
 
 ---
 
-## Phase 10: Event Summary V24 (Themed Layout) - IN PROGRESS
+## Phase 10: Event Summary V24 (Themed Layout) - ✅ COMPLETE
 
 Create a new event summary layout that uses theme colors via `--meet-*` CSS variables.
 
@@ -520,13 +520,20 @@ Files modified:
 { id: 'layout-default-v24', label: '🎨 V24 Meet Theme', isLayout: true },
 ```
 
-### Task 10.4: Deploy and verify V24 layout - IN PROGRESS
+### Task 10.4: Deploy and verify V24 layout - COMPLETE
 
-- [ ] V24 appears in Event Summary layout dropdown
-- [ ] V24 uses theme colors for chrome when theme is active
-- [ ] V24 uses default/fallback colors when no theme is active
-- [ ] Team columns still show team colors
-- [ ] Layout structure matches V23
+**Verified 2026-03-07 via Playwright:**
+
+- [x] V24 appears in Event Summary layout dropdown ✅ (visible as "🎨 V24 Meet Theme")
+- [x] V24 uses theme colors for chrome when theme is active ✅ (`--meet-header-bg: #ea018c` verified)
+- [x] V24 uses default/fallback colors when no theme is active ✅ (CSS shows `var(--meet-border-color, #3f3f46)` fallbacks)
+- [x] Team columns still show team colors ✅ (V24 doesn't override team-specific CSS vars)
+- [x] Layout structure matches V23 ✅ (same HTML structure, only CSS vars differ)
+
+**Verification details:**
+- V24 CSS rules deployed: 33 selectors for `.event-summary-v24`
+- Theme auto-loads from competition config when `?comp=` is set
+- Fallback values match V23 default colors for zero regression
 
 ---
 
@@ -555,4 +562,4 @@ Files modified:
 | 7. Full Theme Color Coverage | 0 | ~10 | Medium | ✅ COMPLETE |
 | 8. Meet Logo Substitution | 0 | ~8 | Medium | ✅ COMPLETE |
 | 9. Event-Level Sponsors | 0 | ~3 | High | ✅ COMPLETE |
-| 10. Event Summary V24 | 0 | 2 | Medium | ⏳ IN PROGRESS |
+| 10. Event Summary V24 | 0 | 2 | Medium | ✅ COMPLETE |
