@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { getGenderFromCompType } from '../lib/competitionUtils';
+import { getGenderFromCompType, getTeamCount } from '../lib/competitionUtils';
 import {
   getEventsForGender,
   getEventIdsForGender,
@@ -72,10 +72,10 @@ export function useEventConfig(compType) {
       eventCount: events.length,
 
       /**
-       * Number of rotations (same as eventCount)
+       * Number of rotations (max of event count and team count, for formats like womens-7)
        * @type {number}
        */
-      rotationCount: events.length,
+      rotationCount: Math.max(events.length, getTeamCount(compType)),
 
       /**
        * Get event object by ID

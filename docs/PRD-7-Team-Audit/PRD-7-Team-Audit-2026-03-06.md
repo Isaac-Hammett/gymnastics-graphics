@@ -42,7 +42,7 @@ The `womens-7` competition format was recently added to support 7-team women's g
 - **File:** `show-controller/src/hooks/useEventConfig.js` (line 78)
 - **Description:** `rotationCount: events.length` always returns 4 for women's, ignoring that 7-team meets need 7 rotations
 - **Impact:** Only R1-R4 rotation buttons visible in producer. R5-R7 inaccessible
-- **Status:** NOT STARTED
+- **Status:** COMPLETE
 
 #### BUG-005: Missing `.teams-7` CSS in event summary layouts
 - **File:** `output.html` (~21 layout versions)
