@@ -210,8 +210,65 @@ export const validators = {
 
   // ============================================
   // Rundown Validators (Task 12)
+  // Path: competitions/{compId}/rundown/segments
   // ============================================
-  // Placeholder for: rundown-created, segments-named, graphics-assigned
+
+  /**
+   * Check if a rundown has been created (has segments).
+   */
+  'rundown-created': (ctx) => {
+    const segments = ctx.rundownSegments;
+    const hasSegments = Array.isArray(segments) && segments.length > 0;
+
+    return {
+      status: hasSegments ? 'complete' : 'error',
+      detail: hasSegments ? `${segments.length} segments` : 'No segments',
+    };
+  },
+
+  /**
+   * Check if all segments have proper names (not "New Segment" or empty).
+   */
+  'segments-named': (ctx) => {
+    const segments = ctx.rundownSegments;
+
+    // No segments at all
+    if (!Array.isArray(segments) || segments.length === 0) {
+      return { status: 'error', detail: 'No segments' };
+    }
+
+    // Count unnamed segments
+    const unnamed = segments.filter(
+      s => !s.name || s.name.trim() === '' || s.name === 'New Segment'
+    ).length;
+
+    return {
+      status: unnamed === 0 ? 'complete' : 'warning',
+      detail: unnamed === 0 ? 'All named' : `${unnamed} unnamed`,
+    };
+  },
+
+  /**
+   * Check if segments have graphics assigned (>= 80% threshold).
+   * A segment has a graphic if segment.graphic?.graphicId exists.
+   */
+  'graphics-assigned': (ctx) => {
+    const segments = ctx.rundownSegments;
+
+    // No segments at all
+    if (!Array.isArray(segments) || segments.length === 0) {
+      return { status: 'error', detail: 'No segments' };
+    }
+
+    const total = segments.length;
+    const withGraphics = segments.filter(s => s.graphic?.graphicId).length;
+    const pct = Math.round((withGraphics / total) * 100);
+
+    return {
+      status: pct >= 80 ? 'complete' : pct >= 50 ? 'warning' : 'error',
+      detail: `${withGraphics}/${total} (${pct}%)`,
+    };
+  },
 };
 
 /**
