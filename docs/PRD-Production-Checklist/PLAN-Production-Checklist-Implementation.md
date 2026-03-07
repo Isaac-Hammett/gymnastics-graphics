@@ -5,7 +5,7 @@
 **Items Definition:** [checklist-items-definition.md](./checklist-items-definition.md)
 **Status:** IN PROGRESS
 **Created:** 2026-01-24
-**Last Updated:** 2026-03-07
+**Last Updated:** 2026-03-07 (Task 2 complete)
 
 ---
 
@@ -84,7 +84,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
 | Task 1 | Create `checklistItems.js` from items definition | COMPLETE | 75 items, 4 phases, 14 categories. Includes `getAllItems()`, `getItemById()`, `getItemCounts()` helpers. Auto-assist fields on camera-op-contact and talent-contacted items. |
-| Task 2 | Create `useProductionChecklist` hook (basic structure) | NOT STARTED | State management, Firebase subscription to `competitions/{compId}/checklist`. Subscribe to `competitions/{compId}/rundown/segments` (NOT `production/rundown/segments/`). |
+| Task 2 | Create `useProductionChecklist` hook (basic structure) | COMPLETE | State management, Firebase subscription to `competitions/{compId}/checklist`. Subscribe to `competitions/{compId}/rundown/segments` (NOT `production/rundown/segments/`). Returns: phases, summary, contacts, teamKeys, toggleItem, updateNote, updateContact, deleteContact, refresh, loading, lastUpdated. Validators return 'pending' placeholder until Task 9. |
 | Task 3 | Create `ChecklistPage.jsx` with basic layout + skeleton loading | NOT STARTED | Header, progress bar placeholder, phase tabs. **Include skeleton loading states from the start** (Tailwind `animate-pulse`) — don't defer to a later task. |
 | Task 4 | Add route `/{compId}/checklist` to App.jsx with error boundary | NOT STARTED | Inside CompetitionLayout routes. **Wrap in error boundary** to catch validator crashes on unexpected data shapes. |
 | Task 5 | Create `ChecklistProgress.jsx` component | NOT STARTED | Progress bar with stats: complete/warnings/errors/pending counts |
