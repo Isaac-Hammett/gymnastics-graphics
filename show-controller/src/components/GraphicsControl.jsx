@@ -61,8 +61,9 @@ const teamCounts = {
   'mens-dual': 2, 'womens-dual': 2,
   'mens-tri': 3, 'womens-tri': 3,
   'mens-quad': 4, 'womens-quad': 4,
-  'mens-5': 5,
-  'mens-6': 6
+  'mens-5': 5, 'womens-5': 5,
+  'mens-6': 6, 'womens-6': 6,
+  'womens-7': 7
 };
 
 // Available themes for Event Summary
@@ -94,6 +95,7 @@ const summaryThemes = [
   { id: 'layout-default-v21', label: '📺 V21 Extra Large', isLayout: true },
   { id: 'layout-default-v22', label: '🏅 V22 Integrated Rank', isLayout: true },
   { id: 'layout-default-v23', label: '📋 V23 No Rankings', isLayout: true },
+  { id: 'layout-default-v24', label: '🎨 V24 Meet Theme', isLayout: true },
   { id: 'layout-split-row', label: '📊 Split Row (5-team)', isLayout: true },
   { id: 'layout-dual-dynamic-v1', label: '📏 Dual Dynamic V1', isLayout: true },
   // COLOR THEMES - Same structure, different colors
