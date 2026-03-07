@@ -5,7 +5,7 @@
 **Items Definition:** [checklist-items-definition.md](./checklist-items-definition.md)
 **Status:** IN PROGRESS
 **Created:** 2026-01-24
-**Last Updated:** 2026-03-07 (Tasks 1-8 complete)
+**Last Updated:** 2026-03-07 (Tasks 1-9 complete)
 
 ---
 
@@ -98,7 +98,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
-| Task 9 | Create `checklistValidators.js` with config validators | NOT STARTED | `event-name`, `meet-date`, `venue-configured`, `teams-configured`, `theme-configured`. Teams validator must use `getTeamCount(compType)` to check N teams dynamically. Theme uses warning (not error) when missing. Can be built in parallel with Task 1 (no import dependency). |
+| Task 9 | Create `checklistValidators.js` with config validators | COMPLETE | `event-name`, `meet-date`, `venue-configured`, `teams-configured`, `theme-configured`. Teams validator uses `getTeamCount(compType)` to check N teams dynamically. Theme uses warning (not error) when missing. Includes `runValidator()` and `runAllValidators()` helpers. |
 | Task 10 | Add team data validators | NOT STARTED | `rosters-loaded`, `headshots-uploaded`. Must check N teams dynamically using `getTeamCount()`. |
 | Task 11 | Add infrastructure validators | NOT STARTED | `vm-assigned`, `vm-online`, `socket-connected`, `obs-connected`. Use `checkVmStatus()` standalone async function from `useCompetitions.js`. Custom VMs always show offline. |
 | Task 12 | Add rundown validators | NOT STARTED | `rundown-created`, `segments-named`, `graphics-assigned`. Read from `competitions/{compId}/rundown/segments` (**NOT** `production/rundown/segments/` — that path is analytics only). |
