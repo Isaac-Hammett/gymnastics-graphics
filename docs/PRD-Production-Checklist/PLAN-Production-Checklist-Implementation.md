@@ -114,11 +114,11 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
 | Task 17 | Create `TeamContactsPanel.jsx` component | COMPLETE | Panel with tabs for ALL teams in competition (N teams, not just 2). Integrated into ChecklistPage as sticky sidebar. Collapses by default for Day Of phases. |
-| Task 18 | Add contact display (name, role, phone, email) | NOT STARTED | Click-to-call (`tel:`), click-to-email (`mailto:`) links |
-| Task 19 | Add contact edit modal | NOT STARTED | Add/edit contact form with name, role, phone, email, notes fields |
-| Task 20 | Wire contacts to Firebase `teamsDatabase/contacts/{team-key}` | NOT STARTED | CRUD operations. Team key format: `buildTeamKey(school, gender)` e.g. "west-chester-womens" |
+| Task 18 | Add contact display (name, role, phone, email) | COMPLETE | Already implemented in Task 17. ContactCard shows name, role icon/label, click-to-call (`tel:`), click-to-email (`mailto:`), and notes. |
+| Task 19 | Add contact edit modal | COMPLETE | ContactEditModal with form fields for name, role, phone, email, notes. Includes delete functionality with confirmation. Role dropdown disabled when editing (can't change role after creation). |
+| Task 20 | Wire contacts to Firebase `teamsDatabase/contacts/{team-key}` | COMPLETE | Already implemented in useProductionChecklist.js Task 17. updateContact and deleteContact methods wired to TeamContactsPanel. |
 | Task 21 | Add contact auto-assist hints to manual items | NOT STARTED | Camera op contact exists → show "auto-checked" hint on `camera-op-contact` item. **This is NOT auto-validation** — item stays `type: manual`, checkbox stays interactive. See Tech Plan Section 7.2 for details. |
-| Task 22 | Add contact roles dropdown | NOT STARTED | Standard roles: head-coach, assistant-coach, sid, camera-op-primary, camera-op-backup, venue-operations, scoring-operations |
+| Task 22 | Add contact roles dropdown | COMPLETE | Implemented as part of Task 19. ROLE_OPTIONS array used in select dropdown with 7 standard roles. |
 
 ---
 
