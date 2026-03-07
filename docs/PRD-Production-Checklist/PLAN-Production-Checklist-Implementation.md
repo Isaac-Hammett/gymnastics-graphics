@@ -71,7 +71,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 |-------|------|----------|--------|-------|
 | 1A | Core Checklist UI | P0 | COMPLETE | 1-8 |
 | 1B | Auto-Validation | P0 | COMPLETE | 9-16 |
-| 1C | Team Contacts | P0 | NOT STARTED | 17-22 |
+| 1C | Team Contacts | P0 | IN PROGRESS | 17-22 |
 | 1D | Polish & Navigation | P0 | NOT STARTED | 23-30 |
 | 2 | Checklist Templates | P1 | NOT STARTED | 31-38 |
 | 3A | Site Evaluations | P2 | NOT STARTED | 39-46 |
