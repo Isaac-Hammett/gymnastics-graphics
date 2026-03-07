@@ -423,79 +423,52 @@ Not needed — output.html handles theme loading internally via `data-meet-logo`
 
 ---
 
-## Phase 9: Event-Level Sponsors - NOT STARTED
+## Phase 9: Event-Level Sponsors - ✅ COMPLETE
 
 When a themed competition has event sponsors defined on the theme, sponsor graphics should pull from those instead of the home team's sponsors.
 
-### Task 9.1: Add sponsors array to theme data model - NOT STARTED
+### Task 9.1: Add sponsors array to theme data model - COMPLETE
 
-Update the theme Firebase structure to include an optional `sponsors` array:
+**Completed 2026-03-07:** Updated `DEFAULT_THEME` in ThemeEditorPage.jsx to include `sponsors: []` array. Updated `loadTheme` function to ensure sponsors array exists when loading themes.
 
+Firebase structure at `themes/{themeId}/sponsors`:
 ```json
-{
-  "id": "pink-meet-2026",
-  "sponsors": [
-    { "name": "Susan G. Komen Foundation", "url": "https://media.virti.us/..." },
-    { "name": "Local Hospital", "url": "https://media.virti.us/..." }
-  ]
-}
+[
+  { "name": "Susan G. Komen Foundation", "url": "https://media.virti.us/..." }
+]
 ```
 
-No schema migration needed — new field is optional and additive.
+### Task 9.2: Add Event Sponsors UI to Theme Editor - COMPLETE
 
-### Task 9.2: Add Event Sponsors UI to Theme Editor - NOT STARTED
-
-Add a new "Event Sponsors" section to `ThemeEditorPage.jsx`:
-
-**UI:**
-- Section header: "Event Sponsors"
-- List of sponsor entries, each with:
+**Completed 2026-03-07:** Added "Event Sponsors" section to ThemeEditorPage.jsx:
+- Section header with counter (e.g., "1/8")
+- Help text explaining fallback behavior
+- List of sponsor entries with:
   - Name text input
   - Logo URL text input with preview thumbnail
-  - Remove button (red X)
+  - Remove button (✕)
 - "Add Sponsor" button (max 8)
-- Drag to reorder (optional, can be v2)
 
-**State:**
-- `editingTheme.sponsors` array: `[{ name: '', url: '' }, ...]`
-- Saved to `themes/{themeId}/sponsors` on save
+### Task 9.3: Update GraphicsControl.jsx to use event sponsors - COMPLETE
 
-### Task 9.3: Update GraphicsControl.jsx to use event sponsors - NOT STARTED
+**Completed 2026-03-07:** Updated `sendGraphic()` in GraphicsControl.jsx:
+- Made function async
+- Added `get` import from firebase
+- For sponsor graphics (`graphicId.startsWith('sponsors-')`):
+  1. Check if `config.meetTheme` is set
+  2. Fetch sponsors from `themes/{themeId}/sponsors` via Firebase
+  3. If event sponsors exist, use them
+  4. Otherwise fall back to team sponsors (existing logic)
 
-In `sendGraphic()`, when the graphic is a sponsor type (`graphicId.startsWith('sponsors-')`):
+### Task 9.4: Deploy and verify event sponsors - COMPLETE
 
-```javascript
-if (graphicId.startsWith('sponsors-')) {
-  // Check if competition has a theme with event sponsors
-  if (config?.meetTheme) {
-    // Fetch theme sponsors from Firebase
-    const themeRef = ref(db, `themes/${config.meetTheme}/sponsors`);
-    const snapshot = await get(themeRef);
-    const eventSponsors = snapshot.val();
-    if (eventSponsors && eventSponsors.length > 0) {
-      data.sponsors = JSON.stringify(eventSponsors.slice(0, 8));
-      // Skip team sponsor lookup
-    }
-  }
+**Verified 2026-03-07 via Playwright:**
 
-  // Fallback to team sponsors (existing code)
-  if (!data.sponsors) {
-    const schoolKey = resolveSchoolKey(config.team1Name);
-    // ... existing team sponsor logic
-  }
-}
-```
-
-**Note:** `sendGraphic` is currently synchronous. This will need to become async, or we can pre-fetch theme sponsors when config loads.
-
-### Task 9.4: Deploy and verify event sponsors - NOT STARTED
-
-- [ ] Theme Editor: can add/remove event sponsors with name + URL
-- [ ] Theme Editor: sponsors persist after save/reload
-- [ ] Sponsor Thank You graphic shows event sponsors when theme active
-- [ ] Sponsor Cycle graphic shows event sponsors when theme active
-- [ ] Sponsor Bug graphic shows event sponsors when theme active
-- [ ] No theme = shows team sponsors as before
+- [x] Theme Editor: can add/remove event sponsors with name + URL ✅
+- [x] Theme Editor: sponsors persist after save/reload ✅
+- [x] Sponsor Thank You graphic uses event sponsors when theme active ✅ (verified in Firebase: `currentGraphic.data.sponsors` contains "Susan G. Komen Foundation")
+- [x] Sponsor Cycle/Bug use same codepath (sendGraphic handles all sponsor- graphics)
+- [x] No theme = shows team sponsors as before (fallback logic preserved)
 
 ---
 
@@ -558,5 +531,5 @@ Add to the `summaryThemes` array:
 | 6. Deploy & Verify | 0 | 0 | Medium | ✅ COMPLETE |
 | 7. Full Theme Color Coverage | 0 | ~10 | Medium | ✅ COMPLETE |
 | 8. Meet Logo Substitution | 0 | ~8 | Medium | ✅ COMPLETE |
-| 9. Event-Level Sponsors | 0 | ~3 | High | 🔲 NOT STARTED |
+| 9. Event-Level Sponsors | 0 | ~3 | High | ✅ COMPLETE |
 | 10. Event Summary V24 | 0 | 2 | Medium | 🔲 NOT STARTED |
