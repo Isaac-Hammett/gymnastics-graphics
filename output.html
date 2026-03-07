@@ -1070,12 +1070,8 @@
 
     /* Footer bar overrides */
     [data-meet-theme] .event-summary-footer {
-      background: var(--meet-footer-bg, #27272a);
+      background: var(--meet-header-bg, #27272a);
       border-top-color: var(--meet-border-color, transparent);
-    }
-    [data-meet-theme] .event-summary-footer .event-abbr,
-    [data-meet-theme] .event-summary-footer .event-label {
-      color: var(--meet-accent-secondary, #a1a1aa);
     }
 
     /* Content area overrides */
@@ -1125,7 +1121,7 @@
       color: var(--meet-header-text, #fff);
     }
     [data-meet-theme] .leaderboard-footer {
-      background: var(--meet-footer-bg, #18181b);
+      background: var(--meet-header-bg, #18181b);
     }
 
     /* Leaderboard frame header override (needs higher specificity than .graphic-virtius-leaderboard .frame-header) */
@@ -1158,21 +1154,21 @@
       color: var(--meet-overlay-text, #fff);
     }
     [data-meet-theme] .leaderboard-table td.col-rank {
-      color: var(--meet-accent-secondary, #a1a1aa);
+      color: var(--meet-header-bg, #a1a1aa);
     }
     [data-meet-theme] .leaderboard-table td.col-diff,
     [data-meet-theme] .leaderboard-table td.col-exec {
-      color: var(--meet-accent-secondary, #a1a1aa);
+      color: var(--meet-header-bg, #a1a1aa);
     }
     [data-meet-theme] .leaderboard-table td.col-team {
-      color: var(--meet-accent-secondary, #d4d4d8);
+      color: var(--meet-header-bg, #d4d4d8);
     }
     [data-meet-theme] .leaderboard-team-logo {
       background: var(--meet-header-bg, #27272a);
     }
     [data-meet-theme] .apparatus-badge {
       border-color: var(--meet-border-color, #52525b);
-      color: var(--meet-accent-secondary, #a1a1aa);
+      color: var(--meet-header-bg, #a1a1aa);
     }
 
     /* Stats header override */
@@ -1193,14 +1189,14 @@
 
     /* Event bar overrides */
     [data-meet-theme] .event-bar-logo {
-      background: var(--meet-accent-secondary, #BFBFBF);
+      background: var(--meet-header-bg, #BFBFBF);
     }
     [data-meet-theme] .event-bar-venue {
-      background: var(--meet-accent-secondary, #BFBFBF);
+      background: var(--meet-header-bg, #BFBFBF);
       color: var(--meet-header-text, #000);
     }
     [data-meet-theme] .event-bar-details {
-      background: var(--meet-accent-primary, #000);
+      background: var(--meet-content-bg, #000);
     }
     [data-meet-theme] .event-bar-name,
     [data-meet-theme] .event-bar-location {
@@ -1209,16 +1205,16 @@
 
     /* Warm-up overrides */
     [data-meet-theme] .warm-up-logo-section {
-      background: var(--meet-accent-secondary, #BFBFBF);
+      background: var(--meet-header-bg, #BFBFBF);
     }
     [data-meet-theme] .warm-up-teams-row {
-      background: var(--meet-accent-secondary, #BFBFBF);
+      background: var(--meet-header-bg, #BFBFBF);
     }
     [data-meet-theme] .warm-up-teams-text {
       color: var(--meet-header-text, #000);
     }
     [data-meet-theme] .warm-up-status-row {
-      background: var(--meet-accent-primary, #000);
+      background: var(--meet-content-bg, #000);
     }
     [data-meet-theme] .warm-up-status-text {
       color: var(--meet-overlay-text, #fff);
@@ -1232,7 +1228,7 @@
       color: var(--meet-header-text, #000);
     }
     [data-meet-theme] .coaches-content {
-      background: var(--meet-accent-primary, #000);
+      background: var(--meet-content-bg, #000);
     }
     [data-meet-theme] .coach-name {
       color: var(--meet-overlay-text, #fff);
@@ -1240,16 +1236,16 @@
 
     /* Replay overrides */
     [data-meet-theme] .replay-logo-section {
-      background: var(--meet-accent-secondary, #BFBFBF);
+      background: var(--meet-header-bg, #BFBFBF);
     }
     [data-meet-theme] .replay-title-row {
-      background: var(--meet-accent-secondary, #BFBFBF);
+      background: var(--meet-header-bg, #BFBFBF);
     }
     [data-meet-theme] .replay-title-text {
       color: var(--meet-header-text, #000);
     }
     [data-meet-theme] .replay-status-row {
-      background: var(--meet-accent-primary, #000);
+      background: var(--meet-content-bg, #000);
     }
     [data-meet-theme] .replay-status-text {
       color: var(--meet-overlay-text, #fff);
@@ -5081,7 +5077,7 @@
 
     .event-summary-v24 .event-name {
       font-size: 20px;
-      color: var(--meet-accent-secondary, #a1a1aa);
+      color: var(--meet-header-bg, #a1a1aa);
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
@@ -5103,8 +5099,8 @@
     }
 
     /* Rank colors use theme accent when theme is active, otherwise gold/silver/bronze */
-    .event-summary-v24 .rank-badge.rank-1 { background: var(--meet-accent-primary, #ca8a04); }
-    .event-summary-v24 .rank-badge.rank-2 { background: var(--meet-accent-secondary, #64748b); }
+    .event-summary-v24 .rank-badge.rank-1 { background: var(--meet-badge-bg, #ca8a04); }
+    .event-summary-v24 .rank-badge.rank-2 { background: #64748b; }
     .event-summary-v24 .rank-badge.rank-3 { background: var(--meet-border-color, #b45309); }
 
     .event-summary-v24 .header-total {
@@ -5178,7 +5174,7 @@
     .event-summary-v24 .athlete-sv {
       font-size: 22px;
       font-weight: 500;
-      color: var(--meet-accent-secondary, #71717a);
+      color: #71717a;
       min-width: 60px;
       text-align: right;
       margin-right: 18px;
@@ -5207,7 +5203,7 @@
 
     .event-summary-v24 .footer-label {
       font-size: 22px;
-      color: var(--meet-accent-secondary, #a1a1aa);
+      color: #a1a1aa;
       font-weight: 500;
     }
 
@@ -5817,18 +5813,29 @@
       const root = document.documentElement;
       const colors = theme.colors;
 
-      // Map theme colors to CSS custom properties with --meet- prefix
+      // Map theme color fields to CSS custom properties
+      // Supports both v3.0 field names and v2.0 backward-compat names
       const colorMappings = {
-        accentPrimary: '--meet-accent-primary',
-        accentSecondary: '--meet-accent-secondary',
+        // v2.0 backward compat FIRST (old themes still work)
+        // v3.0 fields below will overwrite these if both exist
         headerBg: '--meet-header-bg',
+        accentPrimary: '--meet-content-bg',
+        accentSecondary: '--meet-header-bg',
+        footerBg: '--meet-header-bg',
         headerText: '--meet-header-text',
-        footerBg: '--meet-footer-bg',
         borderColor: '--meet-border-color',
         badgeBg: '--meet-badge-bg',
-        badgeText: '--meet-badge-text',
         overlayBg: '--meet-overlay-bg',
-        overlayText: '--meet-overlay-text'
+        overlayText: '--meet-overlay-text',
+        // v3.0 field names (8 colors) — applied LAST so they take precedence
+        headerBar: '--meet-header-bg',
+        contentArea: '--meet-content-bg',
+        bodyBackground: '--meet-overlay-bg',
+        borderDivider: '--meet-border-color',
+        badge: '--meet-badge-bg',
+        badgeText: '--meet-badge-text',
+        textOnHeader: '--meet-header-text',
+        textOnContent: '--meet-overlay-text',
       };
 
       for (const [themeKey, cssVar] of Object.entries(colorMappings)) {
@@ -10885,6 +10892,16 @@
       'sponsors-bug': (data) => {
         const sponsors = encodeURIComponent(data.sponsors || '[]');
         const overlayUrl = `/overlays/sponsors-bug.html?sponsors=${sponsors}`;
+        return `<iframe src="${overlayUrl}" style="width: 1920px; height: 1080px; border: none; overflow: hidden;"></iframe>`;
+      },
+
+      // Rotation Slate - full screen rotation interstitial
+      'rotation-slate': (data) => {
+        const logo = encodeURIComponent(data.team1Logo || '');
+        const meetName = encodeURIComponent(data.eventName || 'GYMNASTICS');
+        const rotation = data.rotation || '1';
+        const meetTheme = data.meetTheme ? `&meetTheme=${encodeURIComponent(data.meetTheme)}` : '';
+        const overlayUrl = `/overlays/rotation-slate.html?logo=${logo}&meetName=${meetName}&rotation=${rotation}${meetTheme}`;
         return `<iframe src="${overlayUrl}" style="width: 1920px; height: 1080px; border: none; overflow: hidden;"></iframe>`;
       },
 

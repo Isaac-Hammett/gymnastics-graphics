@@ -391,6 +391,25 @@ export default function GraphicsControl({ competitionId }) {
     });
   };
 
+  // Send rotation slate graphic with specific rotation number
+  const sendRotationSlate = (rotation) => {
+    if (!compId || !config) return;
+
+    const data = {
+      eventName: config.eventName || 'GYMNASTICS',
+      team1Logo: config.team1Logo || '',
+      rotation: String(rotation),
+      meetTheme: config.meetTheme || '',
+    };
+
+    set(ref(db, `competitions/${compId}/currentGraphic`), {
+      graphic: 'rotation-slate',
+      graphicId: `rotation-slate-r${rotation}`,
+      data: data,
+      timestamp: Date.now()
+    });
+  };
+
   // Send event summary graphic - can be rotation-based (R1-R4/R1-R6) or apparatus-based (gender-specific events)
   const sendEventSummary = (mode, value) => {
     if (!compId || !config) return;
@@ -591,8 +610,10 @@ export default function GraphicsControl({ competitionId }) {
             const maxTeams = teamCounts[config.compType] || 2;
 
             // Filter buttons by section and team count
+            // Exclude rotation-slate from regular buttons - it gets its own rotation selector
             const sectionButtons = graphicButtons.filter((btn) => {
               if (btn.section !== section) return false;
+              if (btn.id === 'rotation-slate') return false; // Handle separately below
               // If button has a team number, only show if within max teams
               if (btn.team && btn.team > maxTeams) return false;
               return true;
@@ -616,6 +637,30 @@ export default function GraphicsControl({ competitionId }) {
                     </button>
                   ))}
                 </div>
+                {/* Rotation Slate buttons - shown after In-Meet section */}
+                {section === 'In-Meet' && (
+                  <>
+                    <div className="text-xs text-zinc-600 mt-3 mb-1">Rotation Slate</div>
+                    <div className={`grid gap-1.5 ${rotationCount <= 4 ? 'grid-cols-4' : rotationCount <= 6 ? 'grid-cols-6' : 'grid-cols-7'}`}>
+                      {Array.from({ length: rotationCount }, (_, i) => i + 1).map((rotation) => {
+                        const graphicId = `rotation-slate-r${rotation}`;
+                        return (
+                          <button
+                            key={rotation}
+                            onClick={() => sendRotationSlate(rotation)}
+                            className={`px-2 py-2 rounded text-xs font-medium transition-colors ${
+                              currentGraphicId === graphicId
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-zinc-700 hover:bg-zinc-600 text-zinc-300'
+                            }`}
+                          >
+                            R{rotation}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
               </div>
             );
           })}
