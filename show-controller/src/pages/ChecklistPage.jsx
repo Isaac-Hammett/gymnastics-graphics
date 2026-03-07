@@ -33,6 +33,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useCompetition } from '../context/CompetitionContext';
 import { useProductionChecklist } from '../hooks/useProductionChecklist';
+import TeamContactsPanel from '../components/TeamContactsPanel';
 
 /**
  * Status icon component for checklist items
@@ -388,11 +389,24 @@ export default function ChecklistPage() {
   const {
     phases,
     summary,
+    contacts,
+    teamKeys,
     toggleItem,
     updateNote,
     loading,
     lastUpdated,
+    competitionConfig,
+    teamCount,
   } = useProductionChecklist();
+
+  // Build team names array for the contacts panel
+  const teamNames = [];
+  for (let i = 1; i <= teamCount; i++) {
+    const name = competitionConfig?.[`team${i}Name`];
+    if (name) {
+      teamNames.push(name);
+    }
+  }
 
   // Active phase tab
   const [activePhaseId, setActivePhaseId] = useState('setup');
@@ -489,7 +503,7 @@ export default function ChecklistPage() {
       </header>
 
       {/* Main content */}
-      <main className="max-w-5xl mx-auto px-6 py-6">
+      <main className="max-w-7xl mx-auto px-6 py-6">
         {loading ? (
           <ChecklistSkeleton />
         ) : (
@@ -510,18 +524,33 @@ export default function ChecklistPage() {
               ))}
             </div>
 
-            {/* Categories for active phase */}
-            <div className="space-y-4">
-              {activePhase?.categories.map(category => (
-                <ChecklistCategory
-                  key={category.id}
-                  category={category}
-                  expanded={expandedCategories.has(category.id)}
-                  onToggle={() => toggleCategory(category.id)}
-                  onItemToggle={handleItemToggle}
-                  onNoteChange={updateNote}
-                />
-              ))}
+            {/* Two-column layout: Checklist + Contacts */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Categories for active phase */}
+              <div className="lg:col-span-2 space-y-4">
+                {activePhase?.categories.map(category => (
+                  <ChecklistCategory
+                    key={category.id}
+                    category={category}
+                    expanded={expandedCategories.has(category.id)}
+                    onToggle={() => toggleCategory(category.id)}
+                    onItemToggle={handleItemToggle}
+                    onNoteChange={updateNote}
+                  />
+                ))}
+              </div>
+
+              {/* Team Contacts sidebar */}
+              <div className="lg:col-span-1">
+                <div className="sticky top-6">
+                  <TeamContactsPanel
+                    teamKeys={teamKeys}
+                    contacts={contacts}
+                    teamNames={teamNames}
+                    collapsed={activePhaseId === 'day-of-2hr' || activePhaseId === 'day-of-1hr'}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         )}
