@@ -223,6 +223,25 @@ export function useProductionChecklist() {
             fixLink = fixLink.replace('{compId}', compId);
           }
 
+          // Compute auto-assist hint for manual items with autoAssist field
+          // This provides a visual indicator when the related contact exists
+          // but does NOT change the item's status or make it auto-complete
+          let autoAssistHint = null;
+          if (item.type === 'manual' && item.autoAssist) {
+            // Check if any team has this contact role filled
+            for (const teamKey of teamKeys) {
+              const contact = contacts[teamKey]?.[item.autoAssist];
+              if (contact && contact.name) {
+                autoAssistHint = {
+                  contactName: contact.name,
+                  contactRole: contact.role || item.autoAssist,
+                  teamKey
+                };
+                break; // Found at least one, that's enough for hint
+              }
+            }
+          }
+
           return {
             ...item,
             status,
@@ -230,12 +249,13 @@ export function useProductionChecklist() {
             note,
             fixLink,
             checked: effectiveChecklistState.items?.[item.id]?.checked || false,
-            checkedAt: effectiveChecklistState.items?.[item.id]?.checkedAt || null
+            checkedAt: effectiveChecklistState.items?.[item.id]?.checkedAt || null,
+            autoAssistHint
           };
         })
       }))
     }));
-  }, [effectiveChecklistState, compId]);
+  }, [effectiveChecklistState, compId, validatorContext, teamKeys, contacts]);
 
   // Compute summary stats
   const summary = useMemo(() => {

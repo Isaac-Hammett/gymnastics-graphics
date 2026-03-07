@@ -30,6 +30,7 @@ import {
 import {
   ArrowLeftIcon,
   ChatBubbleLeftEllipsisIcon,
+  SparklesIcon,
 } from '@heroicons/react/24/outline';
 import { useCompetition } from '../context/CompetitionContext';
 import { useProductionChecklist } from '../hooks/useProductionChecklist';
@@ -235,6 +236,7 @@ function ChecklistItem({ item, onToggle, onNoteChange }) {
   const [showNoteInput, setShowNoteInput] = useState(false);
   const [noteValue, setNoteValue] = useState(item.note || '');
   const [isSaving, setIsSaving] = useState(false);
+  const [showAutoAssistTooltip, setShowAutoAssistTooltip] = useState(false);
 
   // Handle note save
   const handleNoteSave = useCallback(async () => {
@@ -289,6 +291,24 @@ function ChecklistItem({ item, onToggle, onNoteChange }) {
         <span className={`flex-1 ${item.status === 'complete' ? 'text-zinc-300' : 'text-white'}`}>
           {item.name}
         </span>
+
+        {/* Auto-assist hint - shows when related contact exists */}
+        {item.autoAssistHint && (
+          <div
+            className="relative"
+            onMouseEnter={() => setShowAutoAssistTooltip(true)}
+            onMouseLeave={() => setShowAutoAssistTooltip(false)}
+          >
+            <SparklesIcon className="w-4 h-4 text-amber-400" />
+            {showAutoAssistTooltip && (
+              <div className="absolute bottom-full right-0 mb-2 px-3 py-2 bg-zinc-700 rounded-lg shadow-lg text-sm whitespace-nowrap z-10">
+                <div className="text-amber-400 font-medium">Contact on file</div>
+                <div className="text-zinc-300">{item.autoAssistHint.contactName}</div>
+                <div className="text-zinc-400 text-xs">{item.autoAssistHint.contactRole}</div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Note indicator */}
         {item.note && !showNoteInput && (

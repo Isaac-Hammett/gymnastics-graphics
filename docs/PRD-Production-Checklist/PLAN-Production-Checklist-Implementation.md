@@ -5,7 +5,7 @@
 **Items Definition:** [checklist-items-definition.md](./checklist-items-definition.md)
 **Status:** IN PROGRESS
 **Created:** 2026-01-24
-**Last Updated:** 2026-03-07 (Tasks 1-20, 22 complete)
+**Last Updated:** 2026-03-07 (Phase 1C complete: Tasks 1-22)
 
 ---
 
@@ -71,7 +71,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 |-------|------|----------|--------|-------|
 | 1A | Core Checklist UI | P0 | COMPLETE | 1-8 |
 | 1B | Auto-Validation | P0 | COMPLETE | 9-16 |
-| 1C | Team Contacts | P0 | IN PROGRESS | 17-22 |
+| 1C | Team Contacts | P0 | COMPLETE | 17-22 |
 | 1D | Polish & Navigation | P0 | NOT STARTED | 23-30 |
 | 2 | Checklist Templates | P1 | NOT STARTED | 31-38 |
 | 3A | Site Evaluations | P2 | NOT STARTED | 39-46 |
@@ -117,7 +117,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 18 | Add contact display (name, role, phone, email) | COMPLETE | Already implemented in Task 17. ContactCard shows name, role icon/label, click-to-call (`tel:`), click-to-email (`mailto:`), and notes. |
 | Task 19 | Add contact edit modal | COMPLETE | ContactEditModal with form fields for name, role, phone, email, notes. Includes delete functionality with confirmation. Role dropdown disabled when editing (can't change role after creation). |
 | Task 20 | Wire contacts to Firebase `teamsDatabase/contacts/{team-key}` | COMPLETE | Already implemented in useProductionChecklist.js Task 17. updateContact and deleteContact methods wired to TeamContactsPanel. |
-| Task 21 | Add contact auto-assist hints to manual items | NOT STARTED | Camera op contact exists → show "auto-checked" hint on `camera-op-contact` item. **This is NOT auto-validation** — item stays `type: manual`, checkbox stays interactive. See Tech Plan Section 7.2 for details. |
+| Task 21 | Add contact auto-assist hints to manual items | COMPLETE | Added SparklesIcon hint on items with `autoAssist` field when contact exists. Tooltip shows contact name/role. Item stays `type: manual`, checkbox stays interactive. |
 | Task 22 | Add contact roles dropdown | COMPLETE | Implemented as part of Task 19. ROLE_OPTIONS array used in select dropdown with 7 standard roles. |
 
 ---
