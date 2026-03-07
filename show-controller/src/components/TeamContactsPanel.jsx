@@ -8,12 +8,13 @@
  * - Team tabs (dynamic count)
  * - Contact list with role icons
  * - Click-to-call (tel:) and click-to-email (mailto:)
- * - Add/Edit contact functionality (modal in Task 19)
+ * - Add/Edit contact modal with role selection
  *
  * Reference: docs/PRD-Production-Checklist/PLAN-Production-Checklist-2026-01-24.md
  */
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+import toast from 'react-hot-toast';
 import {
   UserGroupIcon,
   PhoneIcon,
@@ -21,6 +22,9 @@ import {
   UserIcon,
   ChevronDownIcon,
   ChevronUpIcon,
+  XMarkIcon,
+  TrashIcon,
+  PencilIcon,
 } from '@heroicons/react/24/solid';
 import {
   PlusIcon,
@@ -38,6 +42,260 @@ export const CONTACT_ROLES = {
   'venue-operations': { label: 'Venue Operations', icon: '🏟️' },
   'scoring-operations': { label: 'Scoring Operations', icon: '📊' },
 };
+
+/**
+ * Contact role options for dropdown
+ */
+const ROLE_OPTIONS = Object.entries(CONTACT_ROLES).map(([id, { label, icon }]) => ({
+  id,
+  label,
+  icon,
+}));
+
+/**
+ * ContactEditModal - Modal for adding/editing a contact
+ *
+ * @param {boolean} isOpen - Whether modal is open
+ * @param {Function} onClose - Close callback
+ * @param {Function} onSave - Save callback: (contactId, contactData) => Promise<void>
+ * @param {Function} onDelete - Delete callback: (contactId) => Promise<void>
+ * @param {string} teamName - Display name of the team
+ * @param {Object} existingContact - Existing contact data for editing (null for new)
+ * @param {string} existingRoleId - Existing role ID for editing (null for new)
+ */
+function ContactEditModal({ isOpen, onClose, onSave, onDelete, teamName, existingContact, existingRoleId }) {
+  const isEditing = !!existingContact;
+
+  // Form state
+  const [roleId, setRoleId] = useState(existingRoleId || '');
+  const [name, setName] = useState(existingContact?.name || '');
+  const [phone, setPhone] = useState(existingContact?.phone || '');
+  const [email, setEmail] = useState(existingContact?.email || '');
+  const [notes, setNotes] = useState(existingContact?.notes || '');
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Reset form when modal opens/closes
+  const handleClose = useCallback(() => {
+    setRoleId(existingRoleId || '');
+    setName(existingContact?.name || '');
+    setPhone(existingContact?.phone || '');
+    setEmail(existingContact?.email || '');
+    setNotes(existingContact?.notes || '');
+    setShowDeleteConfirm(false);
+    onClose();
+  }, [existingContact, existingRoleId, onClose]);
+
+  // Handle save
+  const handleSave = useCallback(async () => {
+    if (!roleId) {
+      toast.error('Please select a role');
+      return;
+    }
+    if (!name.trim()) {
+      toast.error('Please enter a name');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await onSave(roleId, {
+        name: name.trim(),
+        role: CONTACT_ROLES[roleId]?.label || roleId,
+        phone: phone.trim() || null,
+        email: email.trim() || null,
+        notes: notes.trim() || null,
+      });
+      toast.success(isEditing ? 'Contact updated' : 'Contact added');
+      handleClose();
+    } catch (error) {
+      toast.error('Failed to save contact');
+    } finally {
+      setIsSaving(false);
+    }
+  }, [roleId, name, phone, email, notes, isEditing, onSave, handleClose]);
+
+  // Handle delete
+  const handleDelete = useCallback(async () => {
+    if (!existingRoleId) return;
+
+    setIsDeleting(true);
+    try {
+      await onDelete(existingRoleId);
+      toast.success('Contact deleted');
+      handleClose();
+    } catch (error) {
+      toast.error('Failed to delete contact');
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [existingRoleId, onDelete, handleClose]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+      <div
+        className="bg-zinc-800 rounded-xl shadow-xl w-full max-w-md"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-700">
+          <h3 className="text-lg font-semibold text-white">
+            {isEditing ? 'Edit Contact' : 'Add Contact'}
+          </h3>
+          <button
+            onClick={handleClose}
+            className="text-zinc-400 hover:text-white transition-colors"
+          >
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Form */}
+        <div className="px-4 py-4 space-y-4">
+          {/* Team name display */}
+          <div className="text-sm text-zinc-400">
+            Team: <span className="text-zinc-200">{teamName}</span>
+          </div>
+
+          {/* Role dropdown */}
+          <div>
+            <label className="block text-sm font-medium text-zinc-300 mb-1">
+              Role <span className="text-red-400">*</span>
+            </label>
+            <select
+              value={roleId}
+              onChange={(e) => setRoleId(e.target.value)}
+              disabled={isEditing} // Can't change role when editing
+              className={`w-full bg-zinc-700 border border-zinc-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500 ${
+                isEditing ? 'opacity-60 cursor-not-allowed' : ''
+              }`}
+            >
+              <option value="">Select a role...</option>
+              {ROLE_OPTIONS.map((role) => (
+                <option key={role.id} value={role.id}>
+                  {role.icon} {role.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Name */}
+          <div>
+            <label className="block text-sm font-medium text-zinc-300 mb-1">
+              Name <span className="text-red-400">*</span>
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="John Smith"
+              className="w-full bg-zinc-700 border border-zinc-600 rounded-lg px-3 py-2 text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500"
+            />
+          </div>
+
+          {/* Phone */}
+          <div>
+            <label className="block text-sm font-medium text-zinc-300 mb-1">
+              Phone
+            </label>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="610-555-1234"
+              className="w-full bg-zinc-700 border border-zinc-600 rounded-lg px-3 py-2 text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500"
+            />
+          </div>
+
+          {/* Email */}
+          <div>
+            <label className="block text-sm font-medium text-zinc-300 mb-1">
+              Email
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="jsmith@university.edu"
+              className="w-full bg-zinc-700 border border-zinc-600 rounded-lg px-3 py-2 text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500"
+            />
+          </div>
+
+          {/* Notes */}
+          <div>
+            <label className="block text-sm font-medium text-zinc-300 mb-1">
+              Notes
+            </label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Best reached before 3pm..."
+              rows={2}
+              className="w-full bg-zinc-700 border border-zinc-600 rounded-lg px-3 py-2 text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500 resize-none"
+            />
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between px-4 py-3 border-t border-zinc-700">
+          {/* Delete button (only when editing) */}
+          {isEditing && !showDeleteConfirm && (
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-colors"
+            >
+              <TrashIcon className="w-4 h-4" />
+              Delete
+            </button>
+          )}
+
+          {/* Delete confirmation */}
+          {isEditing && showDeleteConfirm && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-zinc-400">Delete?</span>
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="px-2 py-1 bg-red-600 hover:bg-red-500 disabled:bg-zinc-600 rounded text-sm text-white transition-colors"
+              >
+                {isDeleting ? '...' : 'Yes'}
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-2 py-1 bg-zinc-700 hover:bg-zinc-600 rounded text-sm text-zinc-300 transition-colors"
+              >
+                No
+              </button>
+            </div>
+          )}
+
+          {/* Spacer when not editing */}
+          {!isEditing && <div />}
+
+          {/* Save/Cancel buttons */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleClose}
+              className="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 rounded-lg text-sm text-zinc-300 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-600 rounded-lg text-sm text-white transition-colors"
+            >
+              {isSaving ? 'Saving...' : isEditing ? 'Save' : 'Add Contact'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /**
  * Get display name from team key
@@ -72,7 +330,7 @@ function ContactCard({ contact, roleId, onEdit }) {
   const roleInfo = CONTACT_ROLES[roleId] || { label: roleId, icon: '👤' };
 
   return (
-    <div className="bg-zinc-700/50 rounded-lg p-3">
+    <div className="group bg-zinc-700/50 rounded-lg p-3">
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           {/* Role and name */}
@@ -84,6 +342,15 @@ function ContactCard({ contact, roleId, onEdit }) {
             {contact.name || 'No name'}
           </div>
         </div>
+
+        {/* Edit button */}
+        <button
+          onClick={onEdit}
+          className="p-1.5 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-600 rounded opacity-0 group-hover:opacity-100 transition-all"
+          title="Edit contact"
+        >
+          <PencilIcon className="w-3.5 h-3.5" />
+        </button>
       </div>
 
       {/* Contact methods */}
@@ -172,20 +439,25 @@ function TeamTab({ teamKey, teamName, isActive, onClick, contactCount }) {
  * @param {string[]} teamKeys - Array of team keys for the competition
  * @param {Object} contacts - Contacts data by team key: { [teamKey]: { [roleId]: contactData } }
  * @param {string[]} teamNames - Array of team display names (parallel to teamKeys)
- * @param {Function} onAddContact - Callback when user wants to add a contact (opens modal)
- * @param {Function} onEditContact - Callback when user wants to edit a contact
+ * @param {Function} onUpdateContact - Callback to save contact: (teamKey, roleId, data) => Promise<void>
+ * @param {Function} onDeleteContact - Callback to delete contact: (teamKey, roleId) => Promise<void>
  * @param {boolean} collapsed - Whether panel starts collapsed
  */
 export default function TeamContactsPanel({
   teamKeys = [],
   contacts = {},
   teamNames = [],
-  onAddContact,
-  onEditContact,
+  onUpdateContact,
+  onDeleteContact,
   collapsed: initialCollapsed = false
 }) {
   const [collapsed, setCollapsed] = useState(initialCollapsed);
   const [activeTeamKey, setActiveTeamKey] = useState(teamKeys[0] || null);
+
+  // Modal state
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingContact, setEditingContact] = useState(null); // { roleId, data } or null for new
+  const [editingTeamKey, setEditingTeamKey] = useState(null);
 
   // Get contacts for active team
   const activeTeamContacts = contacts[activeTeamKey] || {};
@@ -208,12 +480,40 @@ export default function TeamContactsPanel({
     return getTeamDisplayName(teamKey, teamNames);
   };
 
-  // Handle adding contact for active team
-  const handleAddContact = () => {
-    if (onAddContact && activeTeamKey) {
-      onAddContact(activeTeamKey);
+  // Open modal for adding a new contact
+  const handleAddContact = useCallback(() => {
+    if (activeTeamKey) {
+      setEditingTeamKey(activeTeamKey);
+      setEditingContact(null);
+      setModalOpen(true);
     }
-  };
+  }, [activeTeamKey]);
+
+  // Open modal for editing an existing contact
+  const handleEditContact = useCallback((teamKey, roleId, contact) => {
+    setEditingTeamKey(teamKey);
+    setEditingContact({ roleId, data: contact });
+    setModalOpen(true);
+  }, []);
+
+  // Save contact (add or update)
+  const handleSaveContact = useCallback(async (roleId, contactData) => {
+    if (!editingTeamKey || !onUpdateContact) return;
+    await onUpdateContact(editingTeamKey, roleId, contactData);
+  }, [editingTeamKey, onUpdateContact]);
+
+  // Delete contact
+  const handleDeleteContactModal = useCallback(async (roleId) => {
+    if (!editingTeamKey || !onDeleteContact) return;
+    await onDeleteContact(editingTeamKey, roleId);
+  }, [editingTeamKey, onDeleteContact]);
+
+  // Close modal
+  const handleCloseModal = useCallback(() => {
+    setModalOpen(false);
+    setEditingContact(null);
+    setEditingTeamKey(null);
+  }, []);
 
   // Empty state for no teams
   if (teamKeys.length === 0) {
@@ -286,12 +586,12 @@ export default function TeamContactsPanel({
                   key={roleId}
                   contact={contact}
                   roleId={roleId}
-                  onEdit={() => onEditContact?.(activeTeamKey, roleId, contact)}
+                  onEdit={() => handleEditContact(activeTeamKey, roleId, contact)}
                 />
               ))}
 
               {/* Add more button */}
-              {onAddContact && (
+              {onUpdateContact && (
                 <button
                   onClick={handleAddContact}
                   className="w-full flex items-center justify-center gap-1.5 px-3 py-2 border border-dashed border-zinc-600 hover:border-zinc-500 rounded-lg text-sm text-zinc-400 hover:text-zinc-300 transition-colors"
@@ -309,6 +609,17 @@ export default function TeamContactsPanel({
           )}
         </div>
       )}
+
+      {/* Contact Edit Modal */}
+      <ContactEditModal
+        isOpen={modalOpen}
+        onClose={handleCloseModal}
+        onSave={handleSaveContact}
+        onDelete={handleDeleteContactModal}
+        teamName={getDisplayName(editingTeamKey, teamKeys.indexOf(editingTeamKey))}
+        existingContact={editingContact?.data}
+        existingRoleId={editingContact?.roleId}
+      />
     </div>
   );
 }

@@ -393,6 +393,8 @@ export default function ChecklistPage() {
     teamKeys,
     toggleItem,
     updateNote,
+    updateContact,
+    deleteContact,
     loading,
     lastUpdated,
     competitionConfig,
@@ -547,6 +549,8 @@ export default function ChecklistPage() {
                     teamKeys={teamKeys}
                     contacts={contacts}
                     teamNames={teamNames}
+                    onUpdateContact={updateContact}
+                    onDeleteContact={deleteContact}
                     collapsed={activePhaseId === 'day-of-2hr' || activePhaseId === 'day-of-1hr'}
                   />
                 </div>
