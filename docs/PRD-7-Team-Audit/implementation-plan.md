@@ -43,7 +43,7 @@ Import `getTeamCount` from `competitionUtils.js`.
 
 ---
 
-### Task 1.3: Add `.teams-7` CSS to all event summary layouts — NOT STARTED
+### Task 1.3: Add `.teams-7` CSS to all event summary layouts — COMPLETE
 
 **File:** `output.html`
 
@@ -172,7 +172,7 @@ cd show-controller && npm run build
 
 | Phase | Tasks | Complexity | Status |
 |-------|-------|------------|--------|
-| Phase 1: Critical | 3 | Medium | 2 COMPLETE, 1 NOT STARTED |
+| Phase 1: Critical | 3 | Medium | 3 COMPLETE |
 | Phase 2: Major | 3 | Low-Medium | NOT STARTED |
 | Phase 3: Minor | 3 | Low | NOT STARTED |
 | Phase 4: Deploy | 3 | Low | NOT STARTED |
