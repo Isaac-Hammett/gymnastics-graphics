@@ -2,7 +2,7 @@
 
 **PRD:** PRD-7-Team-Audit-2026-03-06
 **Date:** 2026-03-06
-**Last Updated:** 2026-03-06
+**Last Updated:** 2026-03-07
 
 ---
 
@@ -149,12 +149,42 @@ cd show-controller && npm run build
 
 ---
 
+## Phase 5: Audit-Discovered Issues (Added 2026-03-07)
+
+### Task 5.1: Investigate rotation-slate blank output — NOT STARTED
+
+**Description:** Rotation Slate graphic triggered from producer results in blank output page. The `#output` container is empty.
+**Fixes:** BUG-011
+
+### Task 5.2: Fix Mixed Content errors from VM IP — NOT STARTED
+
+**Description:** Producer page makes HTTP requests to VM IP that are blocked by HTTPS Mixed Content policy. Need to ensure all API calls use HTTPS or go through the coordinator proxy.
+**Fixes:** BUG-012
+
+### Task 5.3: Fix Firebase /alerts permission denied — NOT STARTED
+
+**Description:** `useAlerts` hook tries to read `/alerts/sewj4d2b` but Firebase rules deny access.
+**Fixes:** BUG-013
+
+---
+
 ## Estimated Scope
 
 | Phase | Tasks | Complexity | Status |
 |-------|-------|------------|--------|
-| Phase 1: Critical | 3 | Medium | NOT STARTED |
+| Phase 1: Critical | 3 | Medium | 1 COMPLETE, 2 NOT STARTED |
 | Phase 2: Major | 3 | Low-Medium | NOT STARTED |
 | Phase 3: Minor | 3 | Low | NOT STARTED |
 | Phase 4: Deploy | 3 | Low | NOT STARTED |
-| **Total** | **12** | | |
+| Phase 5: Audit Issues | 3 | Low | NOT STARTED |
+| **Total** | **15** | | |
+
+---
+
+## Playwright Audit Priority
+
+Based on the audit, the **critical path** is:
+1. **Deploy the existing BUG-001 fix** (Task 4.1-4.2) — this single deploy will unblock most FAIL results
+2. **Fix BUG-003** (Task 1.2) — unblocks R5-R7 rotation buttons
+3. **Fix BUG-005** (Task 1.3) — enables 7-column grid layouts
+4. Then address remaining major/minor fixes
