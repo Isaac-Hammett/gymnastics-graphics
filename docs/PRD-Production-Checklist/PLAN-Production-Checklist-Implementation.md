@@ -5,7 +5,7 @@
 **Items Definition:** [checklist-items-definition.md](./checklist-items-definition.md)
 **Status:** IN PROGRESS
 **Created:** 2026-01-24
-**Last Updated:** 2026-03-07 (Task 2 complete)
+**Last Updated:** 2026-03-07 (Tasks 3-7 complete)
 
 ---
 
@@ -85,11 +85,11 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 |------|-------------|--------|-------|
 | Task 1 | Create `checklistItems.js` from items definition | COMPLETE | 75 items, 4 phases, 14 categories. Includes `getAllItems()`, `getItemById()`, `getItemCounts()` helpers. Auto-assist fields on camera-op-contact and talent-contacted items. |
 | Task 2 | Create `useProductionChecklist` hook (basic structure) | COMPLETE | State management, Firebase subscription to `competitions/{compId}/checklist`. Subscribe to `competitions/{compId}/rundown/segments` (NOT `production/rundown/segments/`). Returns: phases, summary, contacts, teamKeys, toggleItem, updateNote, updateContact, deleteContact, refresh, loading, lastUpdated. Validators return 'pending' placeholder until Task 9. |
-| Task 3 | Create `ChecklistPage.jsx` with basic layout + skeleton loading | NOT STARTED | Header, progress bar placeholder, phase tabs. **Include skeleton loading states from the start** (Tailwind `animate-pulse`) — don't defer to a later task. |
-| Task 4 | Add route `/{compId}/checklist` to App.jsx with error boundary | NOT STARTED | Inside CompetitionLayout routes. **Wrap in error boundary** to catch validator crashes on unexpected data shapes. |
-| Task 5 | Create `ChecklistProgress.jsx` component | NOT STARTED | Progress bar with stats: complete/warnings/errors/pending counts |
-| Task 6 | Create `ChecklistCategory.jsx` component | NOT STARTED | Collapsible category with items list |
-| Task 7 | Create `ChecklistItem.jsx` component | NOT STARTED | Individual item with checkbox, status icon, detail text |
+| Task 3 | Create `ChecklistPage.jsx` with basic layout + skeleton loading | COMPLETE | Header, progress bar, phase tabs, categories, items all in one page component. Skeleton loading states included (animate-pulse). Progress bar shows complete/warnings/errors/pending. Categories are collapsible. |
+| Task 4 | Add route `/{compId}/checklist` to App.jsx with error boundary | COMPLETE | Added ErrorBoundary.jsx component, route inside CompetitionLayout with error boundary wrapper. |
+| Task 5 | Create `ChecklistProgress.jsx` component | COMPLETE (merged into Task 3) | Built inline in ChecklistPage.jsx. |
+| Task 6 | Create `ChecklistCategory.jsx` component | COMPLETE (merged into Task 3) | Built inline in ChecklistPage.jsx. |
+| Task 7 | Create `ChecklistItem.jsx` component | COMPLETE (merged into Task 3) | Built inline in ChecklistPage.jsx. |
 | Task 8 | Wire manual item toggle to Firebase with rollback | NOT STARTED | Install `react-hot-toast`, add `<Toaster />` to App.jsx. Optimistic update with rollback on error. No `checkedBy` field. **Must also write `lastUpdated` timestamp** on each toggle. Use functional state update to avoid race condition on rapid toggles. |
 
 ---
