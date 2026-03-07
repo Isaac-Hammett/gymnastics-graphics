@@ -17,6 +17,7 @@
 
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import {
   ChevronDownIcon,
   ChevronRightIcon,
@@ -343,8 +344,7 @@ export default function ChecklistPage() {
     try {
       await toggleItem(itemId);
     } catch (error) {
-      // Toast will be added in Task 8
-      console.error('Failed to toggle item:', error);
+      toast.error('Failed to update checklist item');
     }
   };
 
