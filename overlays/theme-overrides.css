@@ -86,6 +86,14 @@
   background: var(--meet-accent-primary, #d4d4d8);
 }
 
+[data-meet-theme] .stream-branding {
+  color: var(--meet-accent-secondary, #666);
+}
+
+[data-meet-theme] .stream-branding span {
+  color: var(--meet-accent-primary, #3b82f6);
+}
+
 /* ============================================================
    ROTATION SLATE
    ============================================================ */
@@ -134,6 +142,36 @@
 }
 
 /* ============================================================
+   EVENT BAR (details row)
+   ============================================================ */
+
+[data-meet-theme] .details-row {
+  background: var(--meet-accent-primary);
+}
+
+[data-meet-theme] .teams-text,
+[data-meet-theme] .location-text {
+  color: var(--meet-overlay-text, #fff);
+}
+
+/* ============================================================
+   COACHES
+   ============================================================ */
+
+[data-meet-theme] .coaches-header {
+  background: var(--meet-header-bg);
+  color: var(--meet-header-text);
+}
+
+[data-meet-theme] .coaches-content {
+  background: var(--meet-accent-primary);
+}
+
+[data-meet-theme] .coach-name {
+  color: var(--meet-overlay-text, #fff);
+}
+
+/* ============================================================
    WARM-UP / REPLAY
    ============================================================ */
 
@@ -141,6 +179,14 @@
 [data-meet-theme] .replay-header {
   background: var(--meet-header-bg, #d4d4d8);
   color: var(--meet-header-text, #000);
+}
+
+[data-meet-theme] .status-row {
+  background: var(--meet-accent-primary);
+}
+
+[data-meet-theme] .status-text {
+  color: var(--meet-overlay-text, #fff);
 }
 
 /* ============================================================
