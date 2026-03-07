@@ -7,6 +7,16 @@
 - DO NOT parallelize file reads - read sequentially, one at a time
 - After each phase, output the checkpoint summary before continuing
 - If verification fails, record bug and STOP (handle in next context window)
+- **ONE TASK PER ITERATION** — implement one task from the implementation plan, then deploy and verify
+
+## TEST COMPETITION FOR VERIFICATION
+- **Competition ID:** `fr0ts7fj`
+- **Producer URL:** `https://commentarygraphic.com/fr0ts7fj/producer`
+- **Output URL:** `https://commentarygraphic.com/output.html?comp=fr0ts7fj`
+- **Name:** Pink Invitational 2026 (WAG, 4 teams: West Chester, Rutgers, Penn, Yale)
+- **Theme:** `pink-meet-2026` (already assigned in competition config)
+- Use this competition for all theme verification — it auto-loads the theme from Firebase config
+- **Note:** No Virtius session, so leaderboard will show "No results found" — but header/chrome theming is still verifiable
 
 ---
 
@@ -36,41 +46,23 @@ Read these files ONE AT A TIME. After EACH file, output the answers before readi
   - Tasks COMPLETE: [fill in]
   ```
 
-- [ ] **1.3** Read Current output.html (first 200 lines for structure): `output.html`
+- [ ] **1.3** Read theme-overrides.css: `overlays/theme-overrides.css`
 
   **Output before continuing:**
   ```
-  ✓ 1.3 output.html Read
-  - Has Firebase SDK: [yes/no]
-  - Has TEAM_COLORS: [yes/no]
-  - Has CSS theme classes: [yes/no]
+  ✓ 1.3 theme-overrides.css Read
+  - Number of CSS rule sections: [fill in]
+  - Selectors defined: [list]
   ```
 
-- [ ] **1.4** Read Current urlBuilder.js: `show-controller/src/lib/urlBuilder.js`
-
-  **Output before continuing:**
-  ```
-  ✓ 1.4 urlBuilder.js Read
-  - Number of build*URL functions: [fill in]
-  - Has generateGraphicURL: [yes/no]
-  ```
-
-- [ ] **1.5** Read Current graphicsRegistry.js: `show-controller/src/lib/graphicsRegistry.js`
+- [ ] **1.4** Read theme-loader.js: `overlays/theme-loader.js`
 
   **Output before continuing:**
   ```
-  ✓ 1.5 graphicsRegistry.js Read
-  - Total graphics registered: [fill in]
-  - Categories: [fill in]
-  ```
-
-- [ ] **1.6** List all overlay files: `ls overlays/`
-
-  **Output before continuing:**
-  ```
-  ✓ 1.6 Overlay Files Listed
-  - Total overlay HTML files: [fill in]
-  - Files with Firebase SDK: [fill in]
+  ✓ 1.4 theme-loader.js Read
+  - CSS vars set: [list]
+  - Data attributes set: [list]
+  - Logo handling: [description]
   ```
 
 ---
@@ -166,10 +158,31 @@ Determine what changed and deploy accordingly:
 - [ ] **6.2** Take screenshot
 - [ ] **6.3** Check console for errors
 - [ ] **6.4** Test the specific feature changed:
-  - If theme-loader: Load a graphic URL with `&meetTheme=pink-meet-2026` and verify CSS vars applied
-  - If overlay integration: Load themed overlay and verify accent colors changed
-  - If URL transport: Generate URL from show controller and verify `meetTheme` param present
-  - If Theme Editor: Navigate to theme editor page and verify form loads
+
+  **For Phase 7 tasks (color coverage):**
+  - Load the modified overlay with `?meetTheme=pink-meet-2026` and any required params
+  - Verify accent colors are pink (#E91E8C) not default gray (#d4d4d8 or #BFBFBF)
+  - Verify text is readable on themed backgrounds
+  - Load the SAME overlay WITHOUT `?meetTheme` and verify it looks identical to before (zero regression)
+
+  **For Phase 8 tasks (logo substitution):**
+  - Load an event-level overlay (event-bar, warm-up, replay, stream) with `?meetTheme=pink-meet-2026`
+  - Verify the logo shown is the meet logo, NOT team1's logo
+  - Load a team-specific overlay (team-stats, coaches) and verify it still shows the team logo
+  - Load without theme and verify team logo shows as before
+
+  **For Phase 9 tasks (event sponsors):**
+  - Open Theme Editor, select a theme, add event sponsors
+  - Open producer view for a themed competition
+  - Click "Sponsor Thank You" and verify event sponsors appear (not team sponsors)
+  - Remove theme from competition and verify team sponsors appear again
+
+  **For Phase 10 tasks (Event Summary V24):**
+  - Open producer view for themed competition
+  - Select "V24 Meet Theme" from Event Summary layout dropdown
+  - Trigger an event summary (e.g., R1)
+  - Verify header/badges/borders use theme colors
+  - Verify team columns still use team colors
 
   **Output:**
   ```
@@ -242,7 +255,10 @@ Determine what changed and deploy accordingly:
   "branding": {
     "meetTitle": "PINK MEET 2026",
     "subtitle": "Supporting Breast Cancer Research"
-  }
+  },
+  "sponsors": [
+    { "name": "Sponsor Name", "url": "https://logo-url..." }
+  ]
 }
 ```
 
@@ -254,6 +270,16 @@ All meet-theme CSS variables use the `--meet-` prefix:
 - `--meet-badge-bg`, `--meet-badge-text`
 - `--meet-overlay-bg`, `--meet-overlay-text`
 - `--meet-logo-url`, `--meet-cause-logo-url`
+
+### Data Attributes (set by theme-loader.js)
+- `data-meet-theme` on `<body>` — theme ID (enables CSS selector targeting)
+- `data-meet-logo` on `<body>` — plain meet logo URL (for JS img src substitution)
+- `data-meet-cause-logo` on `<body>` — plain cause logo URL
+
+### Logo Substitution Rule
+- **Event-level graphics** (event-bar, warm-up, replay, stream, leaderboards): show meet logo when theme active
+- **Team-specific graphics** (stats, coaches, roster, spotlight): always show team logo
+- **No theme active**: all graphics show team logo as before
 
 ### Blending Rule
 Theme colors override CHROME elements (headers, footers, borders, badges, dividers).
