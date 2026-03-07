@@ -85,7 +85,7 @@ The `womens-7` competition format was recently added to support 7-team women's g
 #### BUG-009: No BYE visual indicator in team-bug overlay
 - **File:** `overlays/team-bug.html`
 - **Description:** Teams on bye look identical to competing teams — no visual distinction
-- **Status:** NOT STARTED
+- **Status:** COMPLETE
 
 ### Discovered During Playwright Audit
 

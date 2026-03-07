@@ -209,6 +209,28 @@
       padding: 6px 14px;
     }
 
+    /* BYE state styling (BUG-009) */
+    .team-row.on-bye {
+      opacity: 0.4;
+      filter: grayscale(50%);
+    }
+
+    .team-row.on-bye .team-total {
+      color: #71717a;
+    }
+
+    .team-row.on-bye .slot-content {
+      color: #71717a;
+    }
+
+    .bye-indicator {
+      font-size: 16px;
+      font-weight: 600;
+      color: #71717a;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
     /* Fixed left section: logo + total */
     .team-fixed {
       display: flex;
@@ -1392,6 +1414,9 @@
         // Update team total displays (A4)
         updateAllTeamTotals();
 
+        // Update bye states on every poll (BUG-009)
+        updateTeamByeStates();
+
       } catch (err) {
         // Error handling with exponential backoff (A3c)
         state.consecutiveErrors++;
@@ -1587,6 +1612,9 @@
         await safeWrite(scoreBugRef.child('liveData/isFinal'), 'set', newRotation.isFinal);
 
         console.log('Rotation updated:', newRotation);
+
+        // Update team bye states when rotation changes (BUG-009)
+        updateTeamByeStates();
       }
 
       // Detect now-competing athletes (B1)
@@ -2165,6 +2193,71 @@
     // ============================================================
     // ROTATION DETECTION (Task A10)
     // ============================================================
+
+    /**
+     * Determine if a team is on BYE for the current rotation (BUG-009).
+     * A team is on bye if they have no event scheduled for the current rotation.
+     * This only applies to meets with more teams than apparatus (e.g., 7-team women's).
+     * @param {Object} apiTeam - Team data from Virtius API
+     * @param {number} currentRotation - Current rotation number (1-based)
+     * @returns {boolean} True if team is on bye
+     */
+    function isTeamOnBye(apiTeam, currentRotation) {
+      if (!apiTeam || !apiTeam.events) return false;
+
+      // Check if any event is scheduled for this rotation
+      const eventThisRotation = apiTeam.events.find(e => e.rotation === currentRotation);
+      return !eventThisRotation;
+    }
+
+    /**
+     * Update team row bye states based on current rotation.
+     * Called after rotation is detected from API data.
+     */
+    function updateTeamByeStates() {
+      const apiTeams = state.lastApiTeams || [];
+      const currentRotation = state.rotation.current;
+      const eventCount = state.gender === 'womens' ? 4 : 6;
+      const hasByes = state.teams.length > eventCount;
+
+      // Only process bye states for meets with byes
+      if (!hasByes) {
+        // Remove any stale bye classes
+        state.teams.forEach((team) => {
+          const rowEl = document.querySelector(`.team-row[data-team-index="${team.index}"]`);
+          if (rowEl) rowEl.classList.remove('on-bye');
+        });
+        return;
+      }
+
+      state.teams.forEach((team, idx) => {
+        const apiTeam = apiTeams[idx];
+        const rowEl = document.querySelector(`.team-row[data-team-index="${team.index}"]`);
+        if (!rowEl) return;
+
+        const onBye = isTeamOnBye(apiTeam, currentRotation);
+
+        if (onBye) {
+          rowEl.classList.add('on-bye');
+          // Show BYE indicator in slot if no active flash
+          if (!state.activeFlashes[team.index]) {
+            const slotContent = document.getElementById(`slotContent${team.index}`);
+            if (slotContent && !slotContent.innerHTML.includes('bye-indicator')) {
+              slotContent.innerHTML = '<span class="bye-indicator">BYE</span>';
+              slotContent.classList.add('visible');
+            }
+          }
+        } else {
+          rowEl.classList.remove('on-bye');
+          // Clear BYE indicator if it was showing
+          const slotContent = document.getElementById(`slotContent${team.index}`);
+          if (slotContent && slotContent.innerHTML.includes('bye-indicator')) {
+            slotContent.innerHTML = '';
+            slotContent.classList.remove('visible');
+          }
+        }
+      });
+    }
 
     /**
      * Detect current rotation from API data using ALL teams.
