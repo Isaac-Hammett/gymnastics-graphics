@@ -5,7 +5,7 @@
 **Items Definition:** [checklist-items-definition.md](./checklist-items-definition.md)
 **Status:** IN PROGRESS
 **Created:** 2026-01-24
-**Last Updated:** 2026-03-07 (Tasks 1-11 complete)
+**Last Updated:** 2026-03-07 (Tasks 1-12 complete)
 
 ---
 
@@ -101,7 +101,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 9 | Create `checklistValidators.js` with config validators | COMPLETE | `event-name`, `meet-date`, `venue-configured`, `teams-configured`, `theme-configured`. Teams validator uses `getTeamCount(compType)` to check N teams dynamically. Theme uses warning (not error) when missing. Includes `runValidator()` and `runAllValidators()` helpers. |
 | Task 10 | Add team data validators | COMPLETE | `rosters-loaded`, `headshots-uploaded`. Checks N teams dynamically using `getTeamCount()`. Uses 80% threshold for headshots, warning status for missing rosters. |
 | Task 11 | Add infrastructure validators | COMPLETE | `vm-assigned`, `vm-online`, `socket-connected`, `obs-connected`. VM status uses polling from useProductionChecklist hook. Socket/OBS use context values. Custom VMs show offline. |
-| Task 12 | Add rundown validators | NOT STARTED | `rundown-created`, `segments-named`, `graphics-assigned`. Read from `competitions/{compId}/rundown/segments` (**NOT** `production/rundown/segments/` — that path is analytics only). |
+| Task 12 | Add rundown validators | COMPLETE | `rundown-created`, `segments-named`, `graphics-assigned`. Read from `competitions/{compId}/rundown/segments` (**NOT** `production/rundown/segments/` — that path is analytics only). |
 | Task 13 | Add VM status polling (30s interval) | NOT STARTED | Call `await checkVmStatus(vmAddress)` in a `useEffect` with `setInterval(30000)`. Clean up on unmount. |
 | Task 14 | Add real-time status updates | NOT STARTED | Firebase `onValue` subscriptions update validators automatically. Context values (connected, obsConnected) trigger recompute via `useMemo` deps. |
 | Task 15 | Add "Fix" links to auto-validated items | NOT STARTED | Links: config items → `/`, theme → `/themes`, rosters/headshots → `/media-manager`, VM/socket → `/_admin/vm-pool`, rundown → `/{compId}/rundown`, OBS → `/{compId}/obs-manager`. See Tech Plan Section 7.3 for full table. |
