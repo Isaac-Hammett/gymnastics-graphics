@@ -99,7 +99,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task | Description | Status | Notes |
 |------|-------------|--------|-------|
 | Task 9 | Create `checklistValidators.js` with config validators | COMPLETE | `event-name`, `meet-date`, `venue-configured`, `teams-configured`, `theme-configured`. Teams validator uses `getTeamCount(compType)` to check N teams dynamically. Theme uses warning (not error) when missing. Includes `runValidator()` and `runAllValidators()` helpers. |
-| Task 10 | Add team data validators | NOT STARTED | `rosters-loaded`, `headshots-uploaded`. Must check N teams dynamically using `getTeamCount()`. |
+| Task 10 | Add team data validators | COMPLETE | `rosters-loaded`, `headshots-uploaded`. Checks N teams dynamically using `getTeamCount()`. Uses 80% threshold for headshots, warning status for missing rosters. |
 | Task 11 | Add infrastructure validators | NOT STARTED | `vm-assigned`, `vm-online`, `socket-connected`, `obs-connected`. Use `checkVmStatus()` standalone async function from `useCompetitions.js`. Custom VMs always show offline. |
 | Task 12 | Add rundown validators | NOT STARTED | `rundown-created`, `segments-named`, `graphics-assigned`. Read from `competitions/{compId}/rundown/segments` (**NOT** `production/rundown/segments/` — that path is analytics only). |
 | Task 13 | Add VM status polling (30s interval) | NOT STARTED | Call `await checkVmStatus(vmAddress)` in a `useEffect` with `setInterval(30000)`. Clean up on unmount. |
