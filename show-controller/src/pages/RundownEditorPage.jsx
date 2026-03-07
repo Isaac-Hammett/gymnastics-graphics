@@ -3512,6 +3512,7 @@ export default function RundownEditorPage() {
     if (teamCount <= 4) types.push(`${genderPrefix}quad`);
     if (teamCount <= 5) types.push(`${genderPrefix}5`);
     if (teamCount <= 6) types.push(`${genderPrefix}6`);
+    if (teamCount <= 7) types.push(`${genderPrefix}7`);
 
     return types;
   }

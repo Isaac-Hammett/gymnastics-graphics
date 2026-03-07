@@ -125,6 +125,7 @@ export default function GraphicsControl({ competitionId }) {
   const [currentGraphicId, setCurrentGraphicId] = useState(null); // Track the specific button ID (e.g., 'floor', 'pommel')
   const [config, setConfig] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [copiedTheme, setCopiedTheme] = useState(false);
   const [summaryTheme, setSummaryTheme] = useState('default');
   const [liveAthletes, setLiveAthletes] = useState([]); // Athletes currently competing - now read from Firebase
   const [scoreBugPolling, setScoreBugPolling] = useState(false); // Whether scoreBug overlay is polling
@@ -307,6 +308,13 @@ export default function GraphicsControl({ competitionId }) {
       team6High: config.team6High || '',
       team6Con: config.team6Con || '',
       team6Coaches: config.team6Coaches || '',
+      // Team 7
+      team7Name: config.team7Name || '',
+      team7Logo: config.team7Logo || '',
+      team7Ave: config.team7Ave || '',
+      team7High: config.team7High || '',
+      team7Con: config.team7Con || '',
+      team7Coaches: config.team7Coaches || '',
     };
 
     if (frameTitle) {
@@ -462,6 +470,15 @@ export default function GraphicsControl({ competitionId }) {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const themeOutputUrl = compId && config?.meetTheme ? `${OUTPUT_BASE_URL}?comp=${compId}&meetTheme=${config.meetTheme}` : '';
+
+  const copyThemeUrl = () => {
+    if (!themeOutputUrl) return;
+    navigator.clipboard.writeText(themeOutputUrl);
+    setCopiedTheme(true);
+    setTimeout(() => setCopiedTheme(false), 2000);
+  };
+
   return (
     <div className="bg-zinc-800 rounded-xl p-4">
       <div className="flex items-center justify-between mb-3">
@@ -499,6 +516,28 @@ export default function GraphicsControl({ competitionId }) {
               </>
             )}
           </button>
+          {config?.meetTheme && (
+            <button
+              onClick={copyThemeUrl}
+              className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                copiedTheme
+                  ? 'bg-green-600 text-white'
+                  : 'bg-purple-700 hover:bg-purple-600 text-zinc-100'
+              }`}
+            >
+              {copiedTheme ? (
+                <>
+                  <CheckIcon className="w-4 h-4" />
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <ClipboardDocumentIcon className="w-4 h-4" />
+                  Copy Theme URL
+                </>
+              )}
+            </button>
+          )}
           <a
             href={localOutputUrl}
             target="_blank"

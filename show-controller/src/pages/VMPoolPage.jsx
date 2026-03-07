@@ -35,6 +35,11 @@ export default function VMPoolPage() {
   const [showLaunchModal, setShowLaunchModal] = useState(false);
   const [selectedInstanceType, setSelectedInstanceType] = useState('t3.large');
 
+  // Custom VM modal state
+  const [showCustomVMModal, setShowCustomVMModal] = useState(false);
+  const [customVMForm, setCustomVMForm] = useState({ name: '', ip: '', username: '', password: '' });
+  const [addingCustomVM, setAddingCustomVM] = useState(false);
+
   // Assignment modal state
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedVMForAssign, setSelectedVMForAssign] = useState(null);
@@ -230,13 +235,18 @@ export default function VMPoolPage() {
   };
 
   // Release VM from competition
-  const handleReleaseVM = async (vmId) => {
+  // For custom VMs with multiple assignments, competitionId specifies which to release
+  const handleReleaseVM = async (vmId, competitionId = null) => {
     const vm = vms.find(v => v.vmId === vmId);
     if (!vm?.assignedTo) return;
 
+    // Determine which competition to release
+    const compToRelease = competitionId || (Array.isArray(vm.assignedTo) ? null : vm.assignedTo);
+    if (!compToRelease) return; // Multi-assigned custom VM needs explicit competitionId
+
     setActionLoading(prev => ({ ...prev, [vmId]: 'releasing' }));
     try {
-      const result = await releaseVM(vm.assignedTo);
+      const result = await releaseVM(compToRelease);
       if (!result.success) {
         throw new Error(result.error || 'Failed to release VM');
       }
@@ -249,7 +259,50 @@ export default function VMPoolPage() {
     }
   };
 
-  // Get competitions available for assignment (not already assigned to a VM)
+  // Add a custom (externally-managed) VM
+  const handleAddCustomVM = async () => {
+    setAddingCustomVM(true);
+    try {
+      const res = await fetch(`${SERVER_URL}/api/admin/vm-pool/custom`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(customVMForm),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to add custom VM');
+      }
+      setShowCustomVMModal(false);
+      setCustomVMForm({ name: '', ip: '', username: '', password: '' });
+      await fetchPoolStatus();
+    } catch (err) {
+      console.error('Failed to add custom VM:', err);
+      alert(`Failed to add custom VM: ${err.message}`);
+    } finally {
+      setAddingCustomVM(false);
+    }
+  };
+
+  // Delete a custom VM
+  const handleDeleteVM = async (vmId) => {
+    if (!confirm('Remove this custom VM from the pool?')) return;
+    setActionLoading(prev => ({ ...prev, [vmId]: 'deleting' }));
+    try {
+      const res = await fetch(`${SERVER_URL}/api/admin/vm-pool/${vmId}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to delete VM');
+      }
+      await fetchPoolStatus();
+    } catch (err) {
+      console.error('Failed to delete VM:', err);
+      alert(`Failed to delete VM: ${err.message}`);
+    } finally {
+      setActionLoading(prev => ({ ...prev, [vmId]: null }));
+    }
+  };
+
+  // Get competitions available for assignment
   const availableCompetitions = useMemo(() => {
     const compList = Object.entries(competitions).map(([id, data]) => ({
       id,
@@ -261,12 +314,22 @@ export default function VMPoolPage() {
       vmAddress: data.config?.vmAddress,
     }));
 
-    // Filter out competitions that already have a VM assigned
+    // Custom VMs can be assigned to multiple competitions, so show all
+    // For AWS VMs, filter out competitions that already have a VM assigned
+    if (selectedVMForAssign?.isCustom) {
+      // For custom VMs: only filter out competitions already assigned to THIS specific VM
+      const currentAssignments = Array.isArray(selectedVMForAssign.assignedTo)
+        ? selectedVMForAssign.assignedTo
+        : (selectedVMForAssign.assignedTo ? [selectedVMForAssign.assignedTo] : []);
+      return compList.filter(comp => !currentAssignments.includes(comp.id));
+    }
+
+    // For AWS VMs: filter out competitions that already have any VM assigned
     return compList.filter(comp => {
       const assignedVM = getVMForCompetition(comp.id);
       return !assignedVM;
     });
-  }, [competitions, getVMForCompetition]);
+  }, [competitions, getVMForCompetition, selectedVMForAssign]);
 
   // Filter competitions by search
   const filteredCompetitions = useMemo(() => {
@@ -446,6 +509,13 @@ export default function VMPoolPage() {
               {launchingVM ? 'Launching...' : 'Launch VM'}
             </button>
             <button
+              onClick={() => setShowCustomVMModal(true)}
+              className="flex items-center gap-2 px-3 py-1.5 bg-teal-600 hover:bg-teal-500 rounded-lg text-white text-xs transition-colors"
+            >
+              <PlusIcon className="w-4 h-4" />
+              Add Custom VM
+            </button>
+            <button
               onClick={handleRefresh}
               disabled={refreshing}
               className="flex items-center gap-2 px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-400 text-xs hover:bg-zinc-700 hover:text-zinc-300 transition-colors disabled:opacity-50"
@@ -573,6 +643,7 @@ export default function VMPoolPage() {
                 vm={vm}
                 onStart={handleStartVM}
                 onStop={handleStopVM}
+                onDelete={handleDeleteVM}
                 onAssign={() => handleOpenAssignModal(vm)}
                 onRelease={handleReleaseVM}
                 actionLoading={actionLoading[vm.vmId]}
@@ -653,6 +724,95 @@ export default function VMPoolPage() {
                 className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg text-white text-sm font-medium transition-colors"
               >
                 Launch VM
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Custom VM Modal */}
+      {showCustomVMModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+          <div className="bg-zinc-800 rounded-xl p-6 max-w-md w-full mx-4 border border-zinc-700">
+            <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <PlusIcon className="w-5 h-5 text-teal-400" />
+              Add Custom VM
+            </h2>
+
+            <div className="space-y-3 mb-4">
+              <div>
+                <label className="block text-sm text-zinc-400 mb-1">Name (optional)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Client Studio VM"
+                  value={customVMForm.name}
+                  onChange={(e) => setCustomVMForm(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full px-3 py-2 bg-zinc-700/50 border border-zinc-600 rounded-lg text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-teal-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-zinc-400 mb-1">IP Address *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. 203.0.113.50"
+                  value={customVMForm.ip}
+                  onChange={(e) => setCustomVMForm(prev => ({ ...prev, ip: e.target.value }))}
+                  className="w-full px-3 py-2 bg-zinc-700/50 border border-zinc-600 rounded-lg text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-teal-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-zinc-400 mb-1">Username *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. producer"
+                  value={customVMForm.username}
+                  onChange={(e) => setCustomVMForm(prev => ({ ...prev, username: e.target.value }))}
+                  className="w-full px-3 py-2 bg-zinc-700/50 border border-zinc-600 rounded-lg text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-teal-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-zinc-400 mb-1">Password *</label>
+                <input
+                  type="password"
+                  placeholder="VM password"
+                  value={customVMForm.password}
+                  onChange={(e) => setCustomVMForm(prev => ({ ...prev, password: e.target.value }))}
+                  className="w-full px-3 py-2 bg-zinc-700/50 border border-zinc-600 rounded-lg text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-teal-500"
+                />
+              </div>
+            </div>
+
+            <div className="bg-zinc-700/30 rounded-lg p-3 mb-4">
+              <div className="text-xs text-zinc-400">
+                Add an externally-managed VM to the pool. It can be assigned to competitions
+                like a regular VM, and producers will see the connection credentials.
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowCustomVMModal(false);
+                  setCustomVMForm({ name: '', ip: '', username: '', password: '' });
+                }}
+                disabled={addingCustomVM}
+                className="flex-1 px-4 py-2 bg-zinc-700 hover:bg-zinc-600 rounded-lg text-zinc-300 text-sm transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddCustomVM}
+                disabled={addingCustomVM || !customVMForm.ip || !customVMForm.username || !customVMForm.password}
+                className="flex-1 px-4 py-2 bg-teal-600 hover:bg-teal-500 rounded-lg text-white text-sm font-medium transition-colors disabled:opacity-50"
+              >
+                {addingCustomVM ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <ArrowPathIcon className="w-4 h-4 animate-spin" />
+                    Adding...
+                  </span>
+                ) : (
+                  'Add Custom VM'
+                )}
               </button>
             </div>
           </div>

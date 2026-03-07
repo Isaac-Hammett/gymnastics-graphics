@@ -96,6 +96,7 @@ export default function HomePage() {
       team4Name: '', team4Logo: '', team4Tricode: '',
       team5Name: '', team5Logo: '', team5Tricode: '',
       team6Name: '', team6Logo: '', team6Tricode: '',
+      team7Name: '', team7Logo: '', team7Tricode: '',
     };
   }
 
@@ -218,7 +219,7 @@ export default function HomePage() {
     const suffix = teamCount === 2 ? 'dual' :
                    teamCount === 3 ? 'tri' :
                    teamCount === 4 ? 'quad' :
-                   teamCount === 5 ? '5-team' : '6-team';
+                   `${teamCount}`;
     return `${prefix}-${suffix}`;
   }
 
@@ -264,6 +265,9 @@ export default function HomePage() {
         team6Name: sortedTeams[5]?.name || prev.team6Name,
         team6Logo: getTeamLogo(sortedTeams[5]?.name, gender) || prev.team6Logo,
         team6Tricode: sortedTeams[5]?.tricode || prev.team6Tricode,
+        team7Name: sortedTeams[6]?.name || prev.team7Name,
+        team7Logo: getTeamLogo(sortedTeams[6]?.name, gender) || prev.team7Logo,
+        team7Tricode: sortedTeams[6]?.tricode || prev.team7Tricode,
         virtiusSessionId: virtiusSessionId.trim(),
       }));
     } catch (error) {
@@ -301,6 +305,7 @@ export default function HomePage() {
       team4Name: config.team4Name || '', team4Logo: config.team4Logo || '', team4Tricode: config.team4Tricode || '',
       team5Name: config.team5Name || '', team5Logo: config.team5Logo || '', team5Tricode: config.team5Tricode || '',
       team6Name: config.team6Name || '', team6Logo: config.team6Logo || '', team6Tricode: config.team6Tricode || '',
+      team7Name: config.team7Name || '', team7Logo: config.team7Logo || '', team7Tricode: config.team7Tricode || '',
       virtiusSessionId: config.virtiusSessionId || '',
     });
     setVirtiusSessionId(config.virtiusSessionId || '');
@@ -346,6 +351,10 @@ export default function HomePage() {
       team6Logo: formData.team6Logo || 'https://via.placeholder.com/200/000080/FFFFFF?text=T6',
       team6Tricode: formData.team6Tricode || '',
       team6Key: formData.team6Name ? buildTeamKey(formData.team6Name, gender) : '',
+      team7Name: formData.team7Name,
+      team7Logo: formData.team7Logo || 'https://via.placeholder.com/200/000080/FFFFFF?text=T7',
+      team7Tricode: formData.team7Tricode || '',
+      team7Key: formData.team7Name ? buildTeamKey(formData.team7Name, gender) : '',
       hosts: 'Host Name',
       team1Ave: '0.000', team1High: '0.000', team1Con: '0%', team1Coaches: 'Coach Name',
       team2Ave: '0.000', team2High: '0.000', team2Con: '0%', team2Coaches: 'Coach Name',
@@ -419,7 +428,7 @@ export default function HomePage() {
   const getTeams = (config) => {
     return [
       config?.team1Name, config?.team2Name, config?.team3Name,
-      config?.team4Name, config?.team5Name, config?.team6Name
+      config?.team4Name, config?.team5Name, config?.team6Name, config?.team7Name
     ].filter(Boolean);
   };
 
@@ -1361,6 +1370,18 @@ function CompetitionModal({
               teamLogo={formData.team6Logo}
               onNameChange={(val) => setFormData({ ...formData, team6Name: val })}
               onLogoChange={(val) => setFormData({ ...formData, team6Logo: val })}
+              gender={formData.gender}
+              getTeamLogo={getTeamLogo}
+              required
+            />
+          )}
+          {teamCount >= 7 && (
+            <TeamLogoInput
+              teamNum={7}
+              teamName={formData.team7Name}
+              teamLogo={formData.team7Logo}
+              onNameChange={(val) => setFormData({ ...formData, team7Name: val })}
+              onLogoChange={(val) => setFormData({ ...formData, team7Logo: val })}
               gender={formData.gender}
               getTeamLogo={getTeamLogo}
               required

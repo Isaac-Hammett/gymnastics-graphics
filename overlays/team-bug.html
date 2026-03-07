@@ -169,6 +169,46 @@
       padding: 8px 16px;
     }
 
+    /* Multi-team scaling: 7 teams - ultra compact */
+    .teams-7 .team-row {
+      min-height: 44px;
+    }
+    .teams-7 .team-fixed {
+      padding: 4px 8px;
+      min-width: 80px;
+    }
+    .teams-7 .team-logo {
+      width: 24px;
+      height: 24px;
+    }
+    .teams-7 .team-total {
+      font-size: 14px;
+      margin-top: 1px;
+    }
+    .teams-7 .slot-headshot {
+      width: 22px;
+      height: 22px;
+    }
+    .teams-7 .slot-name {
+      font-size: 16px;
+    }
+    .teams-7 .slot-score {
+      font-size: 20px;
+    }
+    .teams-7 .slot-apparatus {
+      font-size: 12px;
+    }
+    .teams-7 .slot-sv {
+      font-size: 12px;
+    }
+    .teams-7 .team-slot {
+      padding: 4px 12px;
+    }
+    .teams-7 .rotation-tag {
+      font-size: 16px;
+      padding: 6px 14px;
+    }
+
     /* Fixed left section: logo + total */
     .team-fixed {
       display: flex;
@@ -873,9 +913,9 @@
         state.virtiusSessionId = config.virtiusSessionId || null;
         state.gender = config.gender || 'mens';
 
-        // Build teams array from config (up to 6 teams)
+        // Build teams array from config (up to 7 teams)
         state.teams = [];
-        for (let i = 1; i <= 6; i++) {
+        for (let i = 1; i <= 7; i++) {
           const teamName = config[`team${i}Name`];
           if (teamName) {
             state.teams.push({
@@ -888,8 +928,11 @@
           }
         }
 
-        // Determine total rotations based on gender (6 for men, 4 for women)
-        state.rotation.total = state.gender === 'womens' ? 4 : 6;
+        // Determine total rotations based on gender and team count
+        // For women's: normally 4, but more if team count exceeds apparatus count
+        // For men's: normally 6, but more if team count exceeds apparatus count
+        const eventCount = state.gender === 'womens' ? 4 : 6;
+        state.rotation.total = Math.max(eventCount, state.teams.length);
 
         console.log('Competition config loaded:', {
           compId,
@@ -925,10 +968,10 @@
       const scoreBug = document.getElementById('scoreBug');
       if (scoreBug) {
         // Remove any existing team count classes
-        scoreBug.classList.remove('teams-2', 'teams-3', 'teams-4', 'teams-5', 'teams-6');
+        scoreBug.classList.remove('teams-2', 'teams-3', 'teams-4', 'teams-5', 'teams-6', 'teams-7');
         // Add class based on team count
         const teamCount = state.teams.length;
-        if (teamCount >= 2 && teamCount <= 6) {
+        if (teamCount >= 2 && teamCount <= 7) {
           scoreBug.classList.add(`teams-${teamCount}`);
         }
       }
@@ -2125,7 +2168,10 @@
 
     /**
      * Detect current rotation from API data using ALL teams.
-     * Rotation only advances when ALL teams have completed their current event.
+     * For standard meets (teams <= apparatus): rotation advances when ALL teams
+     * have completed their current event.
+     * For meets with byes (teams > apparatus, e.g., 7-team women's): uses the
+     * API's rotation field on events to determine the current rotation.
      * @param {Array} apiTeams - Teams array from Virtius API
      * @returns {Object} { current: number, total: number, isFinal: boolean }
      */
@@ -2134,11 +2180,18 @@
         return state.rotation;  // Keep existing state if no data
       }
 
-      // Total events based on gender (6 for men, 4 for women)
-      const totalEvents = state.rotation.total;
+      const totalRotations = state.rotation.total;
+      const eventCount = state.gender === 'womens' ? 4 : 6;
+      const hasByes = state.teams.length > eventCount;
 
-      // Find minimum completed events across ALL teams
-      let minCompletedAcrossTeams = totalEvents;
+      if (hasByes) {
+        // For meets with byes, use the API's rotation field on events
+        // to detect which rotation is currently in progress or most recently completed
+        return detectRotationFromApiFields(apiTeams, totalRotations);
+      }
+
+      // Standard detection: min completed events across ALL teams
+      let minCompletedAcrossTeams = totalRotations;
 
       apiTeams.forEach((team) => {
         const events = team.events || [];
@@ -2157,13 +2210,50 @@
       });
 
       // All events complete for all teams = Final
-      if (minCompletedAcrossTeams === totalEvents) {
-        return { current: totalEvents, total: totalEvents, isFinal: true };
+      if (minCompletedAcrossTeams === totalRotations) {
+        return { current: totalRotations, total: totalRotations, isFinal: true };
       }
 
       // Current rotation = completed events + 1
       const currentRotation = minCompletedAcrossTeams + 1;
-      return { current: currentRotation, total: totalEvents, isFinal: false };
+      return { current: currentRotation, total: totalRotations, isFinal: false };
+    }
+
+    /**
+     * Detect rotation for meets with byes using the API's rotation field.
+     * Finds the highest rotation number that has at least one score in progress.
+     * @param {Array} apiTeams - Teams array from Virtius API
+     * @param {number} totalRotations - Total rotation count for this meet
+     * @returns {Object} { current: number, total: number, isFinal: boolean }
+     */
+    function detectRotationFromApiFields(apiTeams, totalRotations) {
+      let maxRotationWithScores = 0;
+      let allEventsComplete = true;
+
+      apiTeams.forEach((team) => {
+        (team.events || []).forEach((event) => {
+          const rotation = event.rotation;
+          if (!rotation) return;
+
+          const gymnasts = event.gymnasts || [];
+          const scored = gymnasts.filter(g => g.final_score != null);
+
+          if (scored.length > 0) {
+            maxRotationWithScores = Math.max(maxRotationWithScores, rotation);
+          }
+          // Check if any event is still incomplete
+          if (scored.length < gymnasts.length) {
+            allEventsComplete = false;
+          }
+        });
+      });
+
+      if (allEventsComplete && maxRotationWithScores > 0) {
+        return { current: totalRotations, total: totalRotations, isFinal: true };
+      }
+
+      const currentRotation = Math.max(1, maxRotationWithScores);
+      return { current: currentRotation, total: totalRotations, isFinal: false };
     }
 
     /**

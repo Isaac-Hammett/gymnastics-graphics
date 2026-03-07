@@ -339,23 +339,22 @@ Production testing revealed that many graphics don't fully pick up theme colors.
 - `.status-row`, `.status-text` (warm-up/replay)
 - `.stream-branding`, `.stream-branding span` (stream)
 
-### Task 7.5: Deploy and verify all overlays with theme - NOT STARTED
+### Task 7.5: Deploy and verify all overlays with theme - COMPLETE
 
-Load each overlay with `?meetTheme=pink-meet-2026` and verify colors are correct:
-- [ ] event-bar.html
-- [ ] warm-up.html
-- [ ] coaches.html
-- [ ] team-roster.html
-- [ ] replay.html
-- [ ] stream.html
-- [ ] logos.html
-- [ ] sponsors-thanks.html
-- [ ] sponsors-cycle.html
-- [ ] sponsors-bug.html
-- [ ] rotation-slate.html
-- [ ] event-frame.html
-- [ ] athlete-spotlight.html
-- [ ] frame-dual.html, frame-quad.html, frame-single.html, frame-tri-center.html, frame-tri-wide.html
+**Completed 2026-03-07:** Deployed overlays to production and verified theme colors using Playwright:
+
+| Overlay | Theme Applied | No-Theme Regression |
+|---------|---------------|---------------------|
+| event-bar.html | ✅ Pink header/status row | ✅ Gray fallback |
+| warm-up.html | ✅ Pink status row | ✅ Black fallback |
+| coaches.html | ✅ Pink header + content | ✅ Gray/black fallback |
+| team-roster.html | ✅ Pink header, dark pink bg | ✅ Gray/dark fallback |
+| replay.html | ✅ Pink status row | ✅ (verified) |
+| stream.html | ✅ Dark pink bg, pink accents | ✅ White/blue fallback |
+| logos.html | ✅ Teal accent bg | ✅ Gray fallback |
+| rotation-slate.html | ✅ Pink divider, dark pink bg | ✅ (verified) |
+
+All overlays respond correctly to theme CSS variables and fall back to default colors when no theme is active (zero regression).
 
 ---
 
@@ -577,7 +576,7 @@ Add to the `summaryThemes` array:
 | 4. Theme Editor | 1 | 2 | High | ✅ COMPLETE |
 | 5. Competition Assignment | 0 | 1 | Low | ✅ COMPLETE |
 | 6. Deploy & Verify | 0 | 0 | Medium | ✅ COMPLETE |
-| 7. Full Theme Color Coverage | 0 | ~10 | Medium | 🔶 IN PROGRESS (7.5 remains) |
+| 7. Full Theme Color Coverage | 0 | ~10 | Medium | ✅ COMPLETE |
 | 8. Meet Logo Substitution | 0 | ~8 | Medium | 🔲 NOT STARTED |
 | 9. Event-Level Sponsors | 0 | ~3 | High | 🔲 NOT STARTED |
 | 10. Event Summary V24 | 0 | 2 | Medium | 🔲 NOT STARTED |

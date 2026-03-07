@@ -6,6 +6,7 @@
         "-y",
         "@playwright/mcp@latest",
         "--headless",
+        "--isolated",
         "--output-dir",
         "./screenshots"
       ]
