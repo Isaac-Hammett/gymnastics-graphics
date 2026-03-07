@@ -309,11 +309,27 @@ Production testing revealed that many graphics don't fully pick up theme colors.
 - Added auto-loading of meetTheme from competition config when `?comp=` is set (output.html now reads `competitions/{compId}/config/meetTheme` from Firebase)
 - Fixed `.frame-header` specificity issue: `.graphic-virtius-leaderboard .frame-header` had higher specificity than generic override, so added scoped `[data-meet-theme] .graphic-virtius-leaderboard .frame-header` rule
 
-### Task 7.3: Fix event summary theme colors in output.html - NOT STARTED
+### Task 7.3: Fix event summary theme colors in output.html - COMPLETE
 
-The event summary in `output.html` has chrome elements (header bar, footer bar, rotation badges, center divider) that need CSS variable fallbacks.
+**Completed 2026-03-06:** Audited existing overrides and filled gaps:
 
-**Check:** Some of these may already have been partially done in Phase 1. Audit what's covered and fill gaps.
+**Already covered (from Phase 1):**
+- `.event-summary-header` background
+- `.event-summary-title` color
+- `.event-summary-footer` background + border-top
+- `.center-divider` background
+- `.rotation-badge` background + color
+
+**New overrides added:**
+| Selector | Override |
+|----------|----------|
+| `.event-summary-footer .event-abbr`, `.event-label` | `--meet-accent-secondary` |
+| `.event-summary-content` | `--meet-overlay-bg` |
+| `.event-summary-dual .diff-row` | `--meet-overlay-bg` (odd/even) |
+| `.event-summary-quad`, `.event-summary-quad-v3` | `--meet-border-color` (grid gaps) |
+| `.event-summary-quad .team-header`, v3 | `--meet-border-color` (border-bottom) |
+| `.event-summary-quad .team-footer`, v3 | `--meet-overlay-bg` + `--meet-border-color` |
+| `.event-summary-quad .athlete-row`, v3 | `--meet-border-color` (border-bottom) |
 
 ### Task 7.4: Update theme-overrides.css with missing selectors - COMPLETE
 
@@ -561,7 +577,7 @@ Add to the `summaryThemes` array:
 | 4. Theme Editor | 1 | 2 | High | ✅ COMPLETE |
 | 5. Competition Assignment | 0 | 1 | Low | ✅ COMPLETE |
 | 6. Deploy & Verify | 0 | 0 | Medium | ✅ COMPLETE |
-| 7. Full Theme Color Coverage | 0 | ~10 | Medium | 🔶 IN PROGRESS |
+| 7. Full Theme Color Coverage | 0 | ~10 | Medium | 🔶 IN PROGRESS (7.5 remains) |
 | 8. Meet Logo Substitution | 0 | ~8 | Medium | 🔲 NOT STARTED |
 | 9. Event-Level Sponsors | 0 | ~3 | High | 🔲 NOT STARTED |
 | 10. Event Summary V24 | 0 | 2 | Medium | 🔲 NOT STARTED |
