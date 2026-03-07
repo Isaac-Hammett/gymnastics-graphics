@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 
 // Pages
 import HomePage from './pages/HomePage';
@@ -32,6 +33,30 @@ import ImportView from './views/ImportView';
 function App() {
   return (
     <BrowserRouter>
+      {/* Toast notifications for the app */}
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: '#27272a',
+            color: '#fff',
+            border: '1px solid #3f3f46',
+          },
+          success: {
+            iconTheme: {
+              primary: '#22c55e',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: '#ef4444',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
       <Routes>
         {/* Home page - consolidated landing page */}
         <Route path="/" element={<HomePage />} />
