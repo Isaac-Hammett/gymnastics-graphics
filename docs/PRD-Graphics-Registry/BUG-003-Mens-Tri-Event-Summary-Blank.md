@@ -84,6 +84,7 @@ After fix:
 ## Related Issues
 
 - BUG: Rotation schedule was also incorrect (fixed in commit cf3473d)
+- BUG-004: 5-Team Men's Event Summary Missing Apparatus (similar issue, different fix)
 - The correct mens-tri rotation schedule is:
   ```javascript
   'mens-tri': {
@@ -99,3 +100,9 @@ After fix:
     },
   }
   ```
+
+## Note on Multi-Team Rotation Handling
+
+For **tri and quad meets (2-4 teams)**, hardcoded rotation schedules work because the rotation patterns are standardized.
+
+For **5+ team meets**, hardcoded schedules don't work because each meet may have different starting positions. The fix for 5+ teams uses the Virtius API `rotation` field on each event to determine the correct team-apparatus assignments. See BUG-004 for details.

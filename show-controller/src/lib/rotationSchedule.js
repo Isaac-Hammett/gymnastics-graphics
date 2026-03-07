@@ -261,7 +261,8 @@ export function generateRotationSchedule(compType, format = null) {
 function generateCustomSchedule(gender, teamCount) {
   const eventIds = EVENT_ORDER[gender] || EVENT_ORDER.mens;
   const eventCount = eventIds.length;
-  const rotationCount = eventCount;
+  // When more teams than apparatus (e.g., 7-team women's), rotation count = team count
+  const rotationCount = Math.max(eventCount, teamCount);
 
   const schedule = {};
 

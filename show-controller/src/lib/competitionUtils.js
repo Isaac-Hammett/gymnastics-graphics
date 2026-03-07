@@ -153,6 +153,7 @@ export function getTeamCount(compType) {
   if (normalized.includes('quad')) return 4;
   if (normalized.includes('-5') || normalized.includes('5-team')) return 5;
   if (normalized.includes('-6') || normalized.includes('6-team')) return 6;
+  if (normalized.includes('-7') || normalized.includes('7-team')) return 7;
 
   return 2;
 }

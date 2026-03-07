@@ -79,45 +79,56 @@ The Firebase config defines teams in order (team1=Stanford, team2=Cal, etc.), bu
 
 ## Fix Applied
 
-### Fix 1: Added rotation schedules (partial fix)
-Added `mens-5` and `mens-6` rotation schedules to handle 5 and 6 team meets. This fixed the "NULL" apparatus issue but didn't fix the incorrect assignments.
+### Fix 1: Added rotation schedules (partial fix - superseded)
+Added `mens-5` and `mens-6` rotation schedules to handle 5 and 6 team meets. This fixed the "NULL" apparatus issue but didn't fix incorrect assignments because hardcoded schedules don't match how each meet actually assigns teams to apparatus.
 
-### Fix 2: API-based event detection (complete fix)
-Added `detectEventFromApiData()` function that detects each team's event from the actual Virtius API data instead of using hardcoded rotation schedules. For 5+ team meets, the code now:
-1. Looks at each team's `events` array
-2. Finds events where gymnasts have scores
-3. Returns the correct event for the requested rotation
+### Fix 2: Score-based detection (broken - superseded)
+Added `detectEventFromApiData()` function that sorted events with scores by olympic order and returned the Nth event for rotation N. This was flawed because:
+- Teams don't compete in olympic order in 5-team meets
+- Looking at rotation N when only N-1 rotations are complete showed wrong data
+- The function returned the last event with scores for future rotations
 
-### Men's 5-Team Schedule
-
-For 5-team meets, teams rotate through all 6 apparatus over 6 rotations with one apparatus having a "bye" each rotation:
+### Fix 3: Virtius API rotation field (final fix)
+The Virtius API includes a `rotation` field on each event indicating which rotation it was scored in. The fix reads this field directly:
 
 ```javascript
-'mens-5': {
-  rotationCount: 6,
-  eventOrder: ['FLOOR', 'HORSE', 'RINGS', 'VAULT', 'PBARS', 'BAR'],
-  schedule: {
-    1: { FLOOR: 0, HORSE: 1, RINGS: 2, VAULT: 3, PBARS: 4, BAR: null },
-    2: { FLOOR: 4, HORSE: 0, RINGS: 1, VAULT: 2, PBARS: 3, BAR: null },
-    // ... rotates with HB joining and other apparatus cycling out
-  },
+function detectEventFromApiData(team, rotation, gender) {
+  // Virtius API includes a 'rotation' field on each event indicating which rotation it was scored in
+  // This is the most reliable way to determine team-event assignments
+  const eventForRotation = (team.events || []).find(e => e.rotation === rotation);
+  if (eventForRotation) {
+    return eventForRotation.event_name;
+  }
+  // Fallback: If no event has the requested rotation, the team may have a bye
+  // or the rotation hasn't happened yet - return null to indicate no data
+  return null;
 }
 ```
 
-### Men's 6-Team Schedule
+### Virtius API Rotation Data Example
 
-For 6-team meets, all teams compete on all apparatus simultaneously:
+For Stanford International (session `zXgUOkJuM_`), the API returns rotation assignments for all 6 rotations:
 
-```javascript
-'mens-6': {
-  rotationCount: 6,
-  eventOrder: ['FLOOR', 'HORSE', 'RINGS', 'VAULT', 'PBARS', 'BAR'],
-  schedule: {
-    1: { FLOOR: 0, HORSE: 1, RINGS: 2, VAULT: 3, PBARS: 4, BAR: 5 },
-    // ... standard rotation
-  },
-}
-```
+| Team | FLOOR | HORSE | RINGS | VAULT | PBARS | BAR |
+|------|-------|-------|-------|-------|-------|-----|
+| Stanford | 4 | 5 | 6 | 1 | 2 | 3 |
+| California | 6 | 1 | 2 | 3 | 4 | 5 |
+| USA | 3 | 4 | 5 | 6 | 1 | 2 |
+| Mexico | 1 | 2 | 3 | 4 | 5 | 6 |
+| All Stars | 5 | 6 | 1 | 2 | 3 | 4 |
+
+### Complete Rotation Matrix
+
+| Rotation | Stanford | California | USA | Mexico | All Stars |
+|----------|----------|------------|-----|--------|-----------|
+| R1 | Vault | Pommel Horse | Parallel Bars | Floor | Still Rings |
+| R2 | Parallel Bars | Still Rings | High Bar | Pommel Horse | Vault |
+| R3 | High Bar | Vault | Floor | Still Rings | Parallel Bars |
+| R4 | Floor | Parallel Bars | Pommel Horse | Vault | High Bar |
+| R5 | Pommel Horse | High Bar | Still Rings | Parallel Bars | Floor |
+| R6 | Still Rings | Floor | Vault | High Bar | Pommel Horse |
+
+The `rotation` field is assigned when the meet is set up in Virtius, so the fix works for all rotations (R1-R6) regardless of whether scores have been entered yet.
 
 ## Verification
 
@@ -134,4 +145,4 @@ After fix:
 
 ## Notes
 
-For future consideration: Rather than hardcoding all possible rotation schedules, consider reading the event assignment directly from the Virtius API data. Each team's `events` array contains which events they competed in, which could be used to infer the current rotation's apparatus.
+The Virtius API `rotation` field on each event is the authoritative source for team-apparatus assignments. This eliminates the need for hardcoded rotation schedules for 5+ team meets, as the API directly tells us which rotation each event was competed in.

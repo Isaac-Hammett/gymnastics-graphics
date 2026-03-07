@@ -70,7 +70,7 @@
     const header = document.getElementById('logoHeader');
 
     // Collect all logos from URL params (supports up to 6 teams)
-    for (let i = 1; i <= 6; i++) {
+    for (let i = 1; i <= 7; i++) {
       const logo = params.get(`team${i}Logo`);
       if (logo && logo.trim()) {
         const img = document.createElement('img');

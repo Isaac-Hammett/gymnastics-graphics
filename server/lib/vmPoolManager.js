@@ -194,6 +194,9 @@ class VMPoolManager extends EventEmitter {
 
       // Remove VMs from Firebase that no longer exist in AWS
       for (const [vmId, vm] of Object.entries(firebaseVms)) {
+        // Skip custom VMs - they're not managed by AWS
+        if (vm.isCustom) continue;
+
         if (!processedInstanceIds.has(vm.instanceId)) {
           console.log(`[VMPoolManager] Removing terminated VM ${vmId} from Firebase`);
           updates[`vmPool/vms/${vmId}`] = null;
@@ -338,7 +341,14 @@ class VMPoolManager extends EventEmitter {
       if (!vm) {
         throw new Error(`VM ${preferredVmId} not found`);
       }
-      if (vm.status !== VM_STATUS.AVAILABLE) {
+      // Custom VMs can be assigned to multiple competitions
+      if (vm.isCustom) {
+        // Check if already assigned to this specific competition
+        const assignments = Array.isArray(vm.assignedTo) ? vm.assignedTo : (vm.assignedTo ? [vm.assignedTo] : []);
+        if (assignments.includes(competitionId)) {
+          throw new Error(`VM ${preferredVmId} is already assigned to competition ${competitionId}`);
+        }
+      } else if (vm.status !== VM_STATUS.AVAILABLE) {
         throw new Error(`VM ${preferredVmId} is not available (status: ${vm.status})`);
       }
       vmId = preferredVmId;
@@ -359,10 +369,20 @@ class VMPoolManager extends EventEmitter {
     }
 
     try {
+      // Build the new assignedTo value
+      let newAssignedTo;
+      if (vm.isCustom) {
+        // Custom VMs: use array for multi-assignment
+        const current = Array.isArray(vm.assignedTo) ? vm.assignedTo : (vm.assignedTo ? [vm.assignedTo] : []);
+        newAssignedTo = [...current, competitionId];
+      } else {
+        newAssignedTo = competitionId;
+      }
+
       // Update VM state in Firebase
       const updates = {
         [`vmPool/vms/${vmId}/status`]: VM_STATUS.ASSIGNED,
-        [`vmPool/vms/${vmId}/assignedTo`]: competitionId,
+        [`vmPool/vms/${vmId}/assignedTo`]: newAssignedTo,
         [`vmPool/vms/${vmId}/lastStateChange`]: new Date().toISOString()
       };
 
@@ -371,11 +391,19 @@ class VMPoolManager extends EventEmitter {
         updates[`competitions/${competitionId}/config/vmAddress`] = `${vm.publicIp}:${this._poolConfig.servicePort}`;
       }
 
+      // Store custom VM credentials in competition config for producer view
+      if (vm.isCustom) {
+        updates[`competitions/${competitionId}/config/vmCredentials`] = {
+          username: vm.username,
+          password: vm.password
+        };
+      }
+
       await this._db.ref().update(updates);
 
       // Update local cache
       vm.status = VM_STATUS.ASSIGNED;
-      vm.assignedTo = competitionId;
+      vm.assignedTo = newAssignedTo;
       this._vms.set(vmId, vm);
 
       console.log(`[VMPoolManager] Assigned VM ${vmId} to competition ${competitionId}`);
@@ -415,7 +443,13 @@ class VMPoolManager extends EventEmitter {
     let vm = null;
 
     for (const [id, v] of this._vms) {
-      if (v.assignedTo === competitionId) {
+      if (Array.isArray(v.assignedTo)) {
+        if (v.assignedTo.includes(competitionId)) {
+          vmId = id;
+          vm = v;
+          break;
+        }
+      } else if (v.assignedTo === competitionId) {
         vmId = id;
         vm = v;
         break;
@@ -428,21 +462,36 @@ class VMPoolManager extends EventEmitter {
     }
 
     try {
+      // For custom VMs with multiple assignments, remove just this competition
+      let newAssignedTo;
+      let newStatus;
+      if (vm.isCustom && Array.isArray(vm.assignedTo)) {
+        newAssignedTo = vm.assignedTo.filter(id => id !== competitionId);
+        // Only go back to AVAILABLE if no more assignments
+        newStatus = newAssignedTo.length > 0 ? VM_STATUS.ASSIGNED : VM_STATUS.AVAILABLE;
+        // Store empty array as null for cleanliness
+        if (newAssignedTo.length === 0) newAssignedTo = null;
+      } else {
+        newAssignedTo = null;
+        newStatus = VM_STATUS.AVAILABLE;
+      }
+
       // Update VM state in Firebase
       const updates = {
-        [`vmPool/vms/${vmId}/status`]: VM_STATUS.AVAILABLE,
-        [`vmPool/vms/${vmId}/assignedTo`]: null,
+        [`vmPool/vms/${vmId}/status`]: newStatus,
+        [`vmPool/vms/${vmId}/assignedTo`]: newAssignedTo,
         [`vmPool/vms/${vmId}/lastStateChange`]: new Date().toISOString()
       };
 
-      // Clear vmAddress from competition config
+      // Clear vmAddress and credentials from competition config
       updates[`competitions/${competitionId}/config/vmAddress`] = null;
+      updates[`competitions/${competitionId}/config/vmCredentials`] = null;
 
       await this._db.ref().update(updates);
 
       // Update local cache
-      vm.status = VM_STATUS.AVAILABLE;
-      vm.assignedTo = null;
+      vm.status = newStatus;
+      vm.assignedTo = newAssignedTo;
       this._vms.set(vmId, vm);
 
       console.log(`[VMPoolManager] Released VM ${vmId} from competition ${competitionId}`);
@@ -476,6 +525,10 @@ class VMPoolManager extends EventEmitter {
     const vm = this._vms.get(vmId);
     if (!vm) {
       throw new Error(`VM ${vmId} not found`);
+    }
+
+    if (vm.isCustom) {
+      throw new Error(`Cannot start custom VM ${vmId} - it is externally managed`);
     }
 
     if (vm.status !== VM_STATUS.STOPPED) {
@@ -583,6 +636,10 @@ class VMPoolManager extends EventEmitter {
       throw new Error(`VM ${vmId} not found`);
     }
 
+    if (vm.isCustom) {
+      throw new Error(`Cannot stop custom VM ${vmId} - it is externally managed`);
+    }
+
     if (vm.assignedTo) {
       throw new Error(`VM ${vmId} is assigned to competition ${vm.assignedTo}. Release it first.`);
     }
@@ -646,6 +703,68 @@ class VMPoolManager extends EventEmitter {
         lastStateChange: new Date().toISOString()
       });
     }
+  }
+
+  /**
+   * Create a custom (externally-managed) VM
+   * @param {Object} params - { name, ip, username, password }
+   * @returns {Promise<Object>} Created VM data
+   */
+  async createCustomVM({ name, ip, username, password }) {
+    if (!this._initialized) {
+      throw new Error('Pool manager not initialized');
+    }
+
+    const vmId = `custom-${Date.now().toString(36)}`;
+    const vmData = {
+      isCustom: true,
+      name: name || `Custom VM (${ip})`,
+      publicIp: ip,
+      username,
+      password,
+      status: VM_STATUS.AVAILABLE,
+      assignedTo: null,
+      lastStateChange: new Date().toISOString()
+    };
+
+    await this._db.ref(`vmPool/vms/${vmId}`).set(vmData);
+    this._vms.set(vmId, vmData);
+
+    console.log(`[VMPoolManager] Created custom VM ${vmId} at ${ip}`);
+    this.emit('customVMCreated', { vmId, ...vmData });
+
+    return { success: true, vmId, ...vmData };
+  }
+
+  /**
+   * Delete a custom VM from the pool
+   * @param {string} vmId - VM ID to delete
+   * @returns {Promise<Object>} Deletion result
+   */
+  async deleteCustomVM(vmId) {
+    if (!this._initialized) {
+      throw new Error('Pool manager not initialized');
+    }
+
+    const vm = this._vms.get(vmId);
+    if (!vm) {
+      throw new Error(`VM ${vmId} not found`);
+    }
+    if (!vm.isCustom) {
+      throw new Error(`VM ${vmId} is not a custom VM`);
+    }
+    const hasAssignments = Array.isArray(vm.assignedTo) ? vm.assignedTo.length > 0 : !!vm.assignedTo;
+    if (hasAssignments) {
+      throw new Error(`VM ${vmId} is assigned to ${vm.assignedTo}. Release it first.`);
+    }
+
+    await this._db.ref(`vmPool/vms/${vmId}`).remove();
+    this._vms.delete(vmId);
+
+    console.log(`[VMPoolManager] Deleted custom VM ${vmId}`);
+    this.emit('customVMDeleted', { vmId });
+
+    return { success: true, vmId };
   }
 
   /**
@@ -719,7 +838,12 @@ class VMPoolManager extends EventEmitter {
    */
   getVMForCompetition(competitionId) {
     for (const [vmId, vm] of this._vms) {
-      if (vm.assignedTo === competitionId) {
+      // Custom VMs use an array for assignedTo (multi-assignment)
+      if (Array.isArray(vm.assignedTo)) {
+        if (vm.assignedTo.includes(competitionId)) {
+          return { vmId, ...vm };
+        }
+      } else if (vm.assignedTo === competitionId) {
         return { vmId, ...vm };
       }
     }

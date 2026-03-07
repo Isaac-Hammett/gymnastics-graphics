@@ -1893,7 +1893,28 @@ app.post('/api/admin/vm-pool/launch', async (req, res) => {
   }
 });
 
-// DELETE /api/admin/vm-pool/:vmId - Terminate a VM
+// POST /api/admin/vm-pool/custom - Create a custom (externally-managed) VM
+app.post('/api/admin/vm-pool/custom', async (req, res) => {
+  try {
+    const vmPoolManager = getVMPoolManager();
+    if (!vmPoolManager.isInitialized()) {
+      return res.status(503).json({ error: 'VM pool manager not initialized' });
+    }
+
+    const { name, ip, username, password } = req.body || {};
+    if (!ip || !username || !password) {
+      return res.status(400).json({ error: 'ip, username, and password are required' });
+    }
+
+    const result = await vmPoolManager.createCustomVM({ name, ip, username, password });
+    res.json(result);
+  } catch (error) {
+    console.error('Failed to create custom VM:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /api/admin/vm-pool/:vmId - Terminate or delete a VM
 app.delete('/api/admin/vm-pool/:vmId', async (req, res) => {
   try {
     const vmPoolManager = getVMPoolManager();
@@ -1906,15 +1927,23 @@ app.delete('/api/admin/vm-pool/:vmId', async (req, res) => {
       return res.status(404).json({ error: 'VM not found', vmId });
     }
 
-    // Don't allow terminating assigned VMs
-    if (vm.assignedTo) {
+    // Don't allow deleting assigned VMs
+    const hasAssignments = Array.isArray(vm.assignedTo) ? vm.assignedTo.length > 0 : !!vm.assignedTo;
+    if (hasAssignments) {
       return res.status(400).json({
-        error: 'Cannot terminate assigned VM',
+        error: 'Cannot delete assigned VM',
         assignedTo: vm.assignedTo,
         message: 'Release the VM from its competition first'
       });
     }
 
+    // Custom VMs just get removed from Firebase
+    if (vm.isCustom) {
+      const result = await vmPoolManager.deleteCustomVM(vmId);
+      return res.json({ success: true, vmId, message: 'Custom VM removed' });
+    }
+
+    // AWS VMs get terminated
     const awsService = getAWSService();
     const result = await awsService.terminateInstance(vm.instanceId);
 
@@ -1926,7 +1955,55 @@ app.delete('/api/admin/vm-pool/:vmId', async (req, res) => {
       message: 'VM termination initiated'
     });
   } catch (error) {
-    console.error('Failed to terminate VM:', error);
+    console.error('Failed to delete VM:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================
+// Theme Management API Endpoints
+// ============================================
+
+// GET /api/admin/themes - List all themes
+app.get('/api/admin/themes', async (req, res) => {
+  try {
+    const db = productionConfigService.getDb();
+    const snapshot = await db.ref('themes').once('value');
+    res.json(snapshot.val() || {});
+  } catch (error) {
+    console.error('Failed to list themes:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /api/admin/themes/:themeId - Create or update a theme
+app.put('/api/admin/themes/:themeId', async (req, res) => {
+  try {
+    const { themeId } = req.params;
+    const themeData = req.body;
+
+    if (!themeData.name) {
+      return res.status(400).json({ error: 'Theme name is required' });
+    }
+
+    const db = productionConfigService.getDb();
+    await db.ref(`themes/${themeId}`).set(themeData);
+    res.json({ success: true, themeId, message: 'Theme saved' });
+  } catch (error) {
+    console.error('Failed to save theme:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /api/admin/themes/:themeId - Delete a theme
+app.delete('/api/admin/themes/:themeId', async (req, res) => {
+  try {
+    const { themeId } = req.params;
+    const db = productionConfigService.getDb();
+    await db.ref(`themes/${themeId}`).remove();
+    res.json({ success: true, themeId, message: 'Theme deleted' });
+  } catch (error) {
+    console.error('Failed to delete theme:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -1947,8 +2024,9 @@ app.post('/api/competitions/:compId/vm/assign', async (req, res) => {
     const { preferredVmId } = req.body || {};
 
     // Check if competition already has a VM assigned
+    // Custom VMs can be assigned to multiple competitions, so only block for AWS VMs
     const existingVM = vmPoolManager.getVMForCompetition(compId);
-    if (existingVM) {
+    if (existingVM && !existingVM.isCustom) {
       return res.status(400).json({
         error: 'Competition already has a VM assigned',
         competitionId: compId,
@@ -2029,7 +2107,10 @@ app.get('/api/vm/:compId/status', async (req, res) => {
     // Find VM assigned to this competition
     let vm = null;
     for (const [, v] of vmPoolManager._vms) {
-      if (v.assignedTo === compId) {
+      const isAssigned = Array.isArray(v.assignedTo)
+        ? v.assignedTo.includes(compId)
+        : v.assignedTo === compId;
+      if (isAssigned) {
         vm = v;
         break;
       }

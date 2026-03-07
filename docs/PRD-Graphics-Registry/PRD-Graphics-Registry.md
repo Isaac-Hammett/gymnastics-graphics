@@ -644,3 +644,44 @@ Each graphic can have a `labelTemplate` for dynamic substitution:
 When `getGraphicsForCompetition(compType, teamNames)` is called with `teamNames = {1: 'Simpson', 2: 'Northwestern'}`:
 - Returns `{ id: 'team1-coaches', label: 'Simpson Coaches', ... }`
 - Returns `{ id: 'team2-coaches', label: 'Northwestern Coaches', ... }`
+
+---
+
+## Technical Notes: Multi-Team Rotation Handling
+
+### Event Summary Rotation Detection
+
+The Event Summary graphic needs to determine which apparatus each team is competing on for a given rotation. This is handled differently based on team count:
+
+#### 2-4 Teams (Dual, Tri, Quad)
+Uses hardcoded `ROTATION_SCHEDULES` in `output.html`. These work because:
+- Rotation patterns are standardized for these meet formats
+- Teams always start in predictable positions
+
+#### 5-6 Teams
+Uses the Virtius API `rotation` field on each event. This is required because:
+- Different meets have different starting positions
+- Hardcoded schedules don't match actual meet assignments
+- Each event object in the API includes `rotation: 1-6` indicating which rotation it's competed in
+
+```javascript
+// In output.html - detectEventFromApiData()
+function detectEventFromApiData(team, rotation, gender) {
+  const eventForRotation = (team.events || []).find(e => e.rotation === rotation);
+  return eventForRotation?.event_name || null;
+}
+```
+
+### Virtius API Event Structure
+```json
+{
+  "event_name": "VAULT",
+  "rotation": 1,
+  "event_score": 54.250,
+  "gymnasts": [...]
+}
+```
+
+### Related Bug Fixes
+- **BUG-003**: Men's Tri Event Summary Blank - Fixed rotation schedule + event name matching
+- **BUG-004**: 5-Team Event Summary Missing Apparatus - Fixed by using API rotation field

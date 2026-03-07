@@ -45,7 +45,10 @@ import {
   StarIcon,
   MusicalNoteIcon,
   SpeakerWaveIcon,
-  SpeakerXMarkIcon
+  SpeakerXMarkIcon,
+  ServerIcon,
+  EyeIcon,
+  EyeSlashIcon,
 } from '@heroicons/react/24/solid';
 
 // Health status colors for quick camera buttons
@@ -971,6 +974,14 @@ export default function ProducerView() {
             {/* Score Bug Panel - Team scores overlay control */}
             <ScoreBugPanel compId={compId} collapsed={true} />
 
+            {/* VM Connection Panel - Custom VM credentials for producers */}
+            {competitionConfig?.vmCredentials && (
+              <VMConnectionPanel
+                vmAddress={competitionConfig?.vmAddress}
+                credentials={competitionConfig.vmCredentials}
+              />
+            )}
+
             {/* AI Context Panel - Talking Points & Milestones */}
             {aiRunning && (
               <div className="bg-zinc-800 rounded-xl overflow-hidden border border-purple-500/30">
@@ -1187,6 +1198,67 @@ export default function ProducerView() {
           </div>
         </div>
       </main>
+    </div>
+  );
+}
+
+/**
+ * VMConnectionPanel - Shows custom VM connection credentials in producer sidebar
+ */
+function VMConnectionPanel({ vmAddress, credentials }) {
+  const [expanded, setExpanded] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
+
+  return (
+    <div className="bg-zinc-800 rounded-xl overflow-hidden border border-teal-500/30">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full bg-teal-500/10 px-4 py-3 flex items-center justify-between hover:bg-teal-500/20 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <ServerIcon className="w-4 h-4 text-teal-400" />
+          <span className="text-sm font-medium text-teal-400 uppercase tracking-wide">VM Connection</span>
+        </div>
+        {expanded ? (
+          <ChevronUpIcon className="w-4 h-4 text-zinc-400" />
+        ) : (
+          <ChevronDownIcon className="w-4 h-4 text-zinc-400" />
+        )}
+      </button>
+
+      {expanded && (
+        <div className="px-4 py-3 space-y-2">
+          {vmAddress && (
+            <div>
+              <div className="text-xs text-zinc-400">IP Address</div>
+              <div className="text-white font-mono text-sm">{vmAddress}</div>
+            </div>
+          )}
+          <div>
+            <div className="text-xs text-zinc-400">Username</div>
+            <div className="text-white font-mono text-sm">{credentials.username}</div>
+          </div>
+          <div>
+            <div className="text-xs text-zinc-400 flex items-center gap-1">
+              Password
+              <button
+                onClick={() => setShowPassword(!showPassword)}
+                className="text-zinc-500 hover:text-zinc-300 transition-colors"
+                title={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? (
+                  <EyeSlashIcon className="w-3.5 h-3.5" />
+                ) : (
+                  <EyeIcon className="w-3.5 h-3.5" />
+                )}
+              </button>
+            </div>
+            <div className="text-white font-mono text-sm">
+              {showPassword ? credentials.password : '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022'}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

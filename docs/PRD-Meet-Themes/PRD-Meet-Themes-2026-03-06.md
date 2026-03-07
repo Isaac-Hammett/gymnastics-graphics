@@ -1,14 +1,17 @@
 # PRD: Custom Meet Theme System
 
-**Version:** 1.0
+**Version:** 2.0
 **Date:** 2026-03-06
-**Status:** COMPLETE
-**Last Updated:** 2026-03-06
+**Status:** IN PROGRESS
+**Last Updated:** 2026-03-07
 **Depends On:** PRD-Graphics-Registry (foundation)
 **Blocks:** Pink Meet production (March 2026)
 
-### ✅ Implementation Complete
-All phases deployed and verified on production (2026-03-06).
+### Phase 1 Complete (Infrastructure)
+Phases 1-6 deployed and verified (2026-03-06). Theme Editor, theme-loader.js, theme-overrides.css, competition dropdown, and URL transport all working.
+
+### Phase 2 In Progress (Full Graphics Coverage)
+Phases 7-10 address gaps found during production testing: many graphics don't fully pick up theme colors, logos show team1 instead of meet logo, no event-level sponsors, and event summary needs a themed layout.
 
 ---
 
@@ -48,9 +51,12 @@ This means every special event requires developer intervention to create themed 
 |-------|-------------|--------|---------|
 | 1 | Producer Creates a Meet Theme | ✅ Complete | -- |
 | 2 | Producer Assigns Theme to Competition | ✅ Complete | -- |
-| 3 | Theme Renders Across All Graphics | ✅ Complete | -- |
+| 3 | Theme Renders Across All Graphics | ⚠️ Partial | Colors and logos not applied to all graphics |
 | 4 | Producer Uses Built-in Presets | ✅ Complete | -- |
 | 5 | No-Theme Competitions Work Unchanged | ✅ Complete | -- |
+| 6 | Meet Logo Replaces Team Logo Where Appropriate | 🔲 Not Started | -- |
+| 7 | Event-Level Sponsors | 🔲 Not Started | -- |
+| 8 | Themed Event Summary Layout | 🔲 Not Started | -- |
 
 ---
 
@@ -67,7 +73,7 @@ This means every special event requires developer intervention to create themed 
 4. Paste meet logo URL and cause logo URL (with preview thumbnails)
 5. Enter meet title ("PINK MEET 2026") and subtitle ("Supporting Breast Cancer Research")
 6. See live preview of a sample graphic with theme applied
-7. Click "Save Theme" -- stored in Firebase at `themes/{themeId}`
+7. Click "Save Theme" -- saved via coordinator server API (`PUT /api/admin/themes/:themeId`), which uses the Firebase Admin SDK to write to `themes/{themeId}`
 
 **Acceptance Criteria:**
 - [ ] Theme Editor page accessible from Hub
@@ -75,7 +81,8 @@ This means every special event requires developer intervention to create themed 
 - [ ] Logo URL inputs with preview thumbnails
 - [ ] Meet title and subtitle text fields
 - [ ] Live preview iframe showing themed sample graphic
-- [ ] Save/load to Firebase `themes/{themeId}`
+- [ ] Save/delete via server API (Admin SDK bypasses Firebase client rules)
+- [ ] Real-time reads via Firebase client SDK `onValue` listener
 - [ ] Theme appears in theme list after saving
 
 ---
@@ -157,6 +164,75 @@ This means every special event requires developer intervention to create themed 
 - [ ] All CSS variable overrides use fallback values matching current hardcoded colors
 - [ ] Theme-loader.js is a no-op when no theme ID is present
 - [ ] No additional Firebase reads when no theme is set
+
+---
+
+### Story 6: Meet Logo Replaces Team Logo Where Appropriate
+
+**As a** Producer running a themed competition
+**I want** the meet logo to appear on event-level graphics instead of the home team logo
+**So that** the broadcast showcases the event branding, not just one team
+
+**Logo Placement Rules:**
+| Graphic Type | Logo Shown | Reason |
+|---|---|---|
+| Event Info (event-bar) | Meet Logo | Event-level graphic |
+| Warm-up | Meet Logo | Event-level graphic |
+| Replay | Meet Logo | Event-level graphic |
+| Leaderboards | Meet Logo (top-right) | Event-level graphic |
+| Stream (Starting Soon / Thanks) | Meet Logo | Event-level graphic |
+| Team Stats | Team Logo | Team-specific graphic |
+| Team Coaches | Team Logo | Team-specific graphic |
+| Team Roster | Team Logo | Team-specific graphic |
+| Team Spotlight | Team Logo | Team-specific graphic |
+
+**Acceptance Criteria:**
+- [ ] When a theme with `meetLogo` is active, event-level graphics show the meet logo
+- [ ] Team-specific graphics still show the team's own logo
+- [ ] When no theme is active, all graphics show team logo as before (zero regression)
+
+---
+
+### Story 7: Event-Level Sponsors
+
+**As a** Producer running a themed competition with event sponsors
+**I want to** define sponsors for the event itself (not tied to a team)
+**So that** sponsor graphics show event sponsors instead of the home team's sponsors
+
+**Flow:**
+1. Open Theme Editor, select a theme
+2. Add event sponsors (name + logo URL) in a new "Event Sponsors" section
+3. Sponsor graphics (Thank You, Cycle, Bug) pull from theme sponsors when a theme is active
+4. Falls back to team sponsors when no theme is active
+
+**Data Model:**
+Sponsors stored on the theme at `themes/{themeId}/sponsors`:
+```json
+[
+  { "name": "Susan G. Komen Foundation", "url": "https://..." },
+  { "name": "Local Hospital", "url": "https://..." }
+]
+```
+
+**Acceptance Criteria:**
+- [ ] Theme Editor has an "Event Sponsors" section with add/remove UI
+- [ ] Up to 8 sponsors with name + logo URL
+- [ ] Sponsor graphics use event sponsors when theme is active
+- [ ] Falls back to team sponsors when no theme
+
+---
+
+### Story 8: Themed Event Summary Layout (V24)
+
+**As a** Producer running a themed competition
+**I want** an event summary layout that uses the theme colors
+**So that** the event summary matches the rest of the themed broadcast
+
+**Acceptance Criteria:**
+- [ ] New Event Summary layout "V24 Meet Theme" available in the layout dropdown
+- [ ] Uses `--meet-*` CSS variables for header, badges, borders, accent colors
+- [ ] Team columns still use team colors
+- [ ] Based on V23 layout structure
 
 ---
 

@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Clip Playback Test</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #111; color: #fff; font-family: -apple-system, sans-serif; padding: 20px; }
+
+    .video-container {
+      position: relative;
+      width: 960px;
+      margin: 0 auto;
+      background: #000;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    video { width: 100%; display: block; }
+
+    /* Graphics overlay - like output.html would render */
+    .overlay {
+      position: absolute;
+      bottom: 40px;
+      left: 40px;
+      background: rgba(0,0,0,0.75);
+      padding: 12px 20px;
+      border-radius: 8px;
+      border-left: 4px solid #e91e63;
+      display: none;
+    }
+    .overlay.visible { display: block; }
+    .overlay .badge {
+      display: inline-block;
+      background: #e91e63;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-bottom: 6px;
+      letter-spacing: 1px;
+    }
+    .overlay .badge.slo-mo { background: #ff9800; }
+    .overlay .athlete { font-size: 22px; font-weight: 700; }
+    .overlay .details { font-size: 14px; color: #aaa; margin-top: 4px; }
+    .overlay .score { font-size: 28px; font-weight: 700; color: #4caf50; margin-top: 4px; }
+
+    /* Controls */
+    .controls {
+      width: 960px;
+      margin: 20px auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .control-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    label { font-size: 13px; color: #888; min-width: 100px; }
+    input[type="text"], input[type="number"] {
+      background: #222;
+      border: 1px solid #444;
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 14px;
+      width: 200px;
+    }
+    input[type="range"] { flex: 1; }
+    button {
+      padding: 10px 24px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-play { background: #4caf50; color: #fff; }
+    .btn-play:hover { background: #45a049; }
+    .btn-highlight { background: #ff9800; color: #fff; }
+    .btn-highlight:hover { background: #e68a00; }
+    .btn-reel { background: #e91e63; color: #fff; }
+    .btn-reel:hover { background: #c2185b; }
+    .btn-stop { background: #666; color: #fff; }
+    .btn-stop:hover { background: #555; }
+
+    .status {
+      width: 960px;
+      margin: 10px auto;
+      padding: 12px;
+      background: #1a1a1a;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 13px;
+      color: #4caf50;
+    }
+
+    h1 { text-align: center; margin-bottom: 4px; font-size: 24px; }
+    p.subtitle { text-align: center; color: #666; margin-bottom: 20px; font-size: 14px; }
+    h3 { margin-bottom: 8px; color: #888; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
+    .section { margin-bottom: 12px; }
+
+    .speed-buttons { display: flex; gap: 6px; }
+    .speed-buttons button {
+      padding: 6px 14px;
+      font-size: 13px;
+      background: #333;
+      color: #fff;
+      border-radius: 4px;
+    }
+    .speed-buttons button.active { background: #ff9800; }
+    .speed-buttons button:hover { background: #444; }
+  </style>
+</head>
+<body>
+  <h1>Video Clip Playback Test</h1>
+  <p class="subtitle">Testing in-point / out-point seeking, slow motion, and highlight reels</p>
+
+  <div class="video-container">
+    <video id="video" crossorigin="anonymous"></video>
+    <div class="overlay" id="overlay">
+      <div class="badge" id="badge">REPLAY</div>
+      <div class="athlete" id="overlay-athlete">Sarah Smith</div>
+      <div class="details" id="overlay-details">Beam — Stanford</div>
+      <div class="score" id="overlay-score">9.875</div>
+    </div>
+  </div>
+
+  <div class="status" id="status">Ready — enter a video URL to begin</div>
+
+  <div class="controls">
+    <div class="section">
+      <h3>Video Source</h3>
+      <div class="control-row">
+        <label>Video URL</label>
+        <input type="text" id="videoUrl" placeholder="Paste any MP4 URL" style="flex:1">
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Playback Controls</h3>
+      <div class="control-row">
+        <label>In Point (sec)</label>
+        <input type="number" id="inPoint" value="0" step="0.5" style="width:100px">
+        <label>Out Point (sec)</label>
+        <input type="number" id="outPoint" value="" placeholder="end" style="width:100px">
+      </div>
+      <div class="control-row">
+        <label>Speed</label>
+        <div class="speed-buttons">
+          <button onclick="setSpeed(0.25)">0.25x</button>
+          <button onclick="setSpeed(0.5)">0.5x</button>
+          <button class="active" onclick="setSpeed(1.0)">1.0x</button>
+          <button onclick="setSpeed(1.5)">1.5x</button>
+          <button onclick="setSpeed(2.0)">2.0x</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Overlay Info</h3>
+      <div class="control-row">
+        <label>Athlete</label>
+        <input type="text" id="athleteName" value="Sarah Smith" style="width:150px">
+        <label>Apparatus</label>
+        <input type="text" id="apparatus" value="Beam" style="width:100px">
+        <label>Score</label>
+        <input type="text" id="score" value="9.875" style="width:80px">
+        <label>Team</label>
+        <input type="text" id="team" value="Stanford" style="width:120px">
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="control-row">
+        <button class="btn-play" onclick="playFull()">▶ Play Full Routine</button>
+        <button class="btn-highlight" onclick="playHighlight()">✂ Play Highlight (In/Out)</button>
+        <button class="btn-stop" onclick="stopPlayback()">⏹ Stop</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Highlight Reel Test (plays 3 segments back-to-back)</h3>
+      <div class="control-row">
+        <button class="btn-reel" onclick="playHighlightReel()">▶ Play Highlight Reel Demo</button>
+        <span style="color:#666; font-size:13px;">Uses the loaded video with 3 different in/out segments</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const video = document.getElementById('video');
+    const overlay = document.getElementById('overlay');
+    const statusEl = document.getElementById('status');
+    let currentSpeed = 1.0;
+    let outPointTime = null;
+    let reelQueue = [];
+    let isPlayingReel = false;
+
+    function log(msg) {
+      statusEl.textContent = msg;
+      console.log(msg);
+    }
+
+    function setSpeed(speed) {
+      currentSpeed = speed;
+      video.playbackRate = speed;
+      document.querySelectorAll('.speed-buttons button').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+      log(`Speed set to ${speed}x`);
+    }
+
+    function showOverlay(isHighlight) {
+      document.getElementById('overlay-athlete').textContent = document.getElementById('athleteName').value;
+      document.getElementById('overlay-details').textContent =
+        document.getElementById('apparatus').value + ' — ' + document.getElementById('team').value;
+      document.getElementById('overlay-score').textContent = document.getElementById('score').value;
+
+      const badge = document.getElementById('badge');
+      if (isHighlight) {
+        badge.textContent = 'SLO-MO';
+        badge.className = 'badge slo-mo';
+      } else {
+        badge.textContent = 'REPLAY';
+        badge.className = 'badge';
+      }
+      overlay.classList.add('visible');
+    }
+
+    function hideOverlay() {
+      overlay.classList.remove('visible');
+    }
+
+    function loadVideo() {
+      const url = document.getElementById('videoUrl').value;
+      if (!url) {
+        log('Error: Enter a video URL first');
+        return false;
+      }
+      if (video.src !== url) {
+        video.src = url;
+      }
+      return true;
+    }
+
+    function playFull() {
+      if (!loadVideo()) return;
+      outPointTime = null;
+      video.currentTime = 0;
+      video.playbackRate = currentSpeed;
+      video.play();
+      showOverlay(false);
+      log(`Playing full routine at ${currentSpeed}x speed`);
+    }
+
+    function playHighlight() {
+      if (!loadVideo()) return;
+
+      const inPoint = parseFloat(document.getElementById('inPoint').value) || 0;
+      const outPoint = parseFloat(document.getElementById('outPoint').value) || null;
+
+      outPointTime = outPoint;
+      video.currentTime = inPoint;
+      video.playbackRate = currentSpeed;
+      video.play();
+      showOverlay(true);
+
+      log(`Playing highlight: ${inPoint}s → ${outPoint ? outPoint + 's' : 'end'} at ${currentSpeed}x`);
+    }
+
+    function playHighlightReel() {
+      if (!loadVideo()) return;
+
+      // Get the video duration to create demo segments
+      // We'll create 3 segments spread across the video
+      video.addEventListener('loadedmetadata', function onMeta() {
+        video.removeEventListener('loadedmetadata', onMeta);
+        startReel(video.duration);
+      });
+
+      if (video.duration) {
+        startReel(video.duration);
+      } else {
+        video.load();
+      }
+    }
+
+    function startReel(duration) {
+      const segLen = 5; // 5 seconds each
+      const gap = Math.max(segLen, (duration - segLen * 3) / 3);
+
+      reelQueue = [
+        { inPoint: 0, outPoint: Math.min(segLen, duration), speed: 0.5,
+          athlete: 'Clip 1 of 3', badge: 'SLO-MO' },
+        { inPoint: Math.min(gap, duration - segLen), outPoint: Math.min(gap + segLen, duration), speed: 0.5,
+          athlete: 'Clip 2 of 3', badge: 'SLO-MO' },
+        { inPoint: Math.max(0, duration - segLen), outPoint: duration, speed: 0.25,
+          athlete: 'Clip 3 of 3', badge: 'SLO-MO' }
+      ];
+
+      isPlayingReel = true;
+      log(`Starting highlight reel: 3 clips from ${Math.round(duration)}s video`);
+      playNextInReel();
+    }
+
+    function playNextInReel() {
+      if (reelQueue.length === 0) {
+        isPlayingReel = false;
+        hideOverlay();
+        log('Highlight reel complete');
+        return;
+      }
+
+      const clip = reelQueue.shift();
+      outPointTime = clip.outPoint;
+      video.currentTime = clip.inPoint;
+      video.playbackRate = clip.speed;
+
+      document.getElementById('overlay-athlete').textContent = clip.athlete;
+      const badge = document.getElementById('badge');
+      badge.textContent = clip.badge;
+      badge.className = 'badge slo-mo';
+      overlay.classList.add('visible');
+
+      video.play();
+      log(`Reel: ${clip.athlete} — ${clip.inPoint.toFixed(1)}s → ${clip.outPoint.toFixed(1)}s at ${clip.speed}x`);
+    }
+
+    function stopPlayback() {
+      video.pause();
+      hideOverlay();
+      outPointTime = null;
+      reelQueue = [];
+      isPlayingReel = false;
+      log('Stopped');
+    }
+
+    // Monitor playback position — stop at out-point
+    video.addEventListener('timeupdate', () => {
+      const pos = video.currentTime.toFixed(1);
+      const dur = video.duration ? video.duration.toFixed(1) : '?';
+      const speedLabel = video.playbackRate !== 1 ? ` @ ${video.playbackRate}x` : '';
+
+      if (!video.paused) {
+        statusEl.textContent = `Playing: ${pos}s / ${dur}s${speedLabel}` +
+          (outPointTime ? ` (stop at ${outPointTime}s)` : '');
+      }
+
+      if (outPointTime && video.currentTime >= outPointTime) {
+        video.pause();
+        if (isPlayingReel) {
+          // Small delay for visual transition between reel clips
+          setTimeout(playNextInReel, 300);
+        } else {
+          hideOverlay();
+          log(`Highlight complete — stopped at ${pos}s`);
+        }
+      }
+    });
+
+    video.addEventListener('ended', () => {
+      hideOverlay();
+      if (isPlayingReel) {
+        setTimeout(playNextInReel, 300);
+      } else {
+        log('Playback ended');
+      }
+    });
+
+    video.addEventListener('error', (e) => {
+      log(`Video error: ${video.error?.message || 'Failed to load video'}`);
+    });
+  </script>
+</body>
+</html>

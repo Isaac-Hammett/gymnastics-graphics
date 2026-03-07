@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { db, ref, onValue, set, get, remove } from '../lib/firebase';
+import { db, ref, onValue } from '../lib/firebase';
+import { SERVER_URL } from '../lib/serverUrl';
 
 /**
  * Theme Editor Page
@@ -104,6 +105,94 @@ const DEFAULT_THEME = {
   },
 };
 
+// Extract dominant colors from an image URL using canvas pixel sampling
+function extractColorsFromImage(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        const size = 50;
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, size, size);
+        const { data } = ctx.getImageData(0, 0, size, size);
+
+        // Collect non-white, non-black, non-transparent pixels
+        const pixels = [];
+        for (let i = 0; i < data.length; i += 4) {
+          const [r, g, b, a] = [data[i], data[i + 1], data[i + 2], data[i + 3]];
+          if (a < 128) continue; // skip transparent
+          const brightness = (r + g + b) / 3;
+          if (brightness > 240 || brightness < 15) continue; // skip near-white/black
+          pixels.push([r, g, b]);
+        }
+
+        if (pixels.length === 0) {
+          resolve([]);
+          return;
+        }
+
+        // Simple color clustering: group pixels within distance threshold
+        const clusters = [];
+        const threshold = 45;
+        for (const px of pixels) {
+          let found = false;
+          for (const c of clusters) {
+            const dist = Math.sqrt(
+              (px[0] - c.avg[0]) ** 2 + (px[1] - c.avg[1]) ** 2 + (px[2] - c.avg[2]) ** 2
+            );
+            if (dist < threshold) {
+              c.count++;
+              c.sum[0] += px[0]; c.sum[1] += px[1]; c.sum[2] += px[2];
+              c.avg = [c.sum[0] / c.count, c.sum[1] / c.count, c.sum[2] / c.count];
+              found = true;
+              break;
+            }
+          }
+          if (!found) {
+            clusters.push({ avg: [...px], sum: [...px], count: 1 });
+          }
+        }
+
+        // Sort by frequency, return top colors as hex
+        clusters.sort((a, b) => b.count - a.count);
+        const colors = clusters.slice(0, 5).map(c => {
+          const [r, g, b] = c.avg.map(v => Math.round(v));
+          return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+        });
+        resolve(colors);
+      } catch (err) {
+        reject(new Error('Could not read image pixels. Cross-origin restrictions may be blocking access.'));
+      }
+    };
+    img.onerror = () => reject(new Error('Failed to load image. Check the URL.'));
+    img.src = url;
+  });
+}
+
+// Pick white or black text based on background luminance
+function autoTextColor(bgHex) {
+  const rgb = parseInt(bgHex.slice(1), 16);
+  const r = (rgb >> 16) / 255;
+  const g = ((rgb >> 8) & 0xff) / 255;
+  const b = (rgb & 0xff) / 255;
+  const toLinear = (c) => c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  const lum = 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
+  return lum > 0.35 ? '#1a1a1a' : '#FFFFFF';
+}
+
+// Darken a hex color for overlay backgrounds
+function darkenColor(hex, factor = 0.2) {
+  const rgb = parseInt(hex.slice(1), 16);
+  const r = Math.round(((rgb >> 16) & 0xff) * factor);
+  const g = Math.round(((rgb >> 8) & 0xff) * factor);
+  const b = Math.round((rgb & 0xff) * factor);
+  return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+}
+
 // Color property labels for display
 const COLOR_LABELS = {
   accentPrimary: 'Primary Accent',
@@ -133,6 +222,8 @@ export default function ThemeEditorPage() {
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [extracting, setExtracting] = useState(false);
+  const [extractError, setExtractError] = useState(null);
 
   // Subscribe to themes from Firebase
   useEffect(() => {
@@ -211,7 +302,49 @@ export default function ThemeEditorPage() {
     setIsDirty(true);
   };
 
-  // Save theme to Firebase
+  // Extract colors from the meet logo and populate color fields
+  const extractColors = async () => {
+    const logoUrl = editingTheme.logos?.meetLogo;
+    if (!logoUrl) return;
+
+    setExtracting(true);
+    setExtractError(null);
+    try {
+      const colors = await extractColorsFromImage(logoUrl);
+      if (colors.length === 0) {
+        setExtractError('No distinct colors found in the image.');
+        setExtracting(false);
+        return;
+      }
+
+      const primary = colors[0];
+      const secondary = colors[1] || colors[0];
+      const primaryText = autoTextColor(primary);
+      const secondaryText = autoTextColor(secondary);
+
+      setEditingTheme(prev => ({
+        ...prev,
+        colors: {
+          accentPrimary: primary,
+          accentSecondary: secondary,
+          headerBg: primary,
+          headerText: primaryText,
+          footerBg: primary,
+          borderColor: primary,
+          badgeBg: primary,
+          badgeText: primaryText,
+          overlayBg: darkenColor(primary),
+          overlayText: '#FFFFFF',
+        },
+      }));
+      setIsDirty(true);
+    } catch (err) {
+      setExtractError(err.message);
+    }
+    setExtracting(false);
+  };
+
+  // Save theme via server API (uses Admin SDK to bypass Firebase rules)
   const saveTheme = async () => {
     if (!editingTheme.name) {
       setSaveMessage({ type: 'error', text: 'Theme name is required' });
@@ -230,7 +363,16 @@ export default function ThemeEditorPage() {
         createdAt: selectedThemeId ? themes[selectedThemeId]?.createdAt : new Date().toISOString(),
       };
 
-      await set(ref(db, `themes/${themeId}`), themeData);
+      const res = await fetch(`${SERVER_URL}/api/admin/themes/${themeId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(themeData),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to save theme');
+      }
 
       setSelectedThemeId(themeId);
       setIsDirty(false);
@@ -243,13 +385,21 @@ export default function ThemeEditorPage() {
     setTimeout(() => setSaveMessage(null), 5000);
   };
 
-  // Delete theme from Firebase
+  // Delete theme via server API
   const deleteTheme = async () => {
     if (!selectedThemeId) return;
 
     setSaving(true);
     try {
-      await remove(ref(db, `themes/${selectedThemeId}`));
+      const res = await fetch(`${SERVER_URL}/api/admin/themes/${selectedThemeId}`, {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to delete theme');
+      }
+
       setSelectedThemeId(null);
       setEditingTheme({ ...DEFAULT_THEME });
       setIsDirty(false);
@@ -498,6 +648,20 @@ export default function ThemeEditorPage() {
                       />
                     )}
                   </div>
+                  {editingTheme.logos?.meetLogo && (
+                    <div className="mt-2">
+                      <button
+                        onClick={extractColors}
+                        disabled={extracting}
+                        className="px-3 py-1 text-sm bg-zinc-700 hover:bg-zinc-600 disabled:opacity-50 rounded-lg transition-colors"
+                      >
+                        {extracting ? 'Extracting...' : 'Extract Colors from Logo'}
+                      </button>
+                      {extractError && (
+                        <p className="text-xs text-red-400 mt-1">{extractError}</p>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div>

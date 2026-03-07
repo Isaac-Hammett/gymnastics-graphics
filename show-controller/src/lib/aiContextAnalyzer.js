@@ -391,10 +391,14 @@ export function analyzeCompetitionFormat(competition) {
   } else if (compType.includes('6') || compType.includes('six')) {
     analysis.teamCount = 6;
     analysis.format = 'multi';
+  } else if (compType.includes('7') || compType.includes('seven')) {
+    analysis.teamCount = 7;
+    analysis.format = 'multi';
   }
 
-  // Calculate rotations
-  analysis.rotations = analysis.gender === 'womens' ? 4 : 6;
+  // Calculate rotations (more teams than events = more rotations)
+  const eventCount = analysis.gender === 'womens' ? 4 : 6;
+  analysis.rotations = Math.max(eventCount, analysis.teamCount || 2);
 
   return analysis;
 }
@@ -758,7 +762,8 @@ const SEGMENT_ORDER_RULES = [
     description: 'Rotation/event summaries should follow the rotation they summarize',
     check: (segments, format) => {
       // Check for rotation segments without summaries
-      const rotations = format?.gender === 'womens' ? 4 : 6;
+      const eventCount = format?.gender === 'womens' ? 4 : 6;
+      const rotations = Math.max(eventCount, format?.teamCount || 2);
       const missingRecaps = [];
 
       for (let r = 1; r <= rotations; r++) {
@@ -818,7 +823,8 @@ const SEGMENT_ORDER_RULES = [
     description: 'Leaderboard check-ins should appear after rotation 2+ to maintain engagement',
     check: (segments, format) => {
       const leaderboardPatterns = ['leaderboard', 'standings', 'scores'];
-      const rotationCount = format?.gender === 'womens' ? 4 : 6;
+      const eventCt = format?.gender === 'womens' ? 4 : 6;
+      const rotationCount = Math.max(eventCt, format?.teamCount || 2);
 
       const hasLeaderboard = segments.some(s =>
         leaderboardPatterns.some(p => s.name.toLowerCase().includes(p)) ||

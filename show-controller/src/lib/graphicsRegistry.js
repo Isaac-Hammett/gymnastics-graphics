@@ -14,7 +14,7 @@
  *   keywords: ['search', 'terms'],  // For smart recommendations
  *   gender: 'both',             // 'mens' | 'womens' | 'both'
  *   minTeams: 1,                // Optional: minimum teams required
- *   maxTeams: 6,                // Optional: maximum teams supported
+ *   maxTeams: 7,                // Optional: maximum teams supported
  *   renderer: 'overlay',        // 'overlay' (overlays/*.html) | 'output' (output.html)
  *   file: 'filename.html',      // File path or graphic name
  *   transparent: true,          // For OBS background handling
@@ -61,7 +61,7 @@ export const GRAPHICS = {
     keywords: ['logo', 'logos', 'team', 'teams', 'intro', 'introduction'],
     gender: 'both',
     minTeams: 1,
-    maxTeams: 6,
+    maxTeams: 7,
     renderer: 'overlay',
     file: 'logos.html',
     transparent: false,
@@ -128,7 +128,7 @@ export const GRAPHICS = {
     transparent: true,
     perTeam: true,
     params: {
-      teamSlot: { type: 'number', min: 1, max: 6, required: true, label: 'Team' },
+      teamSlot: { type: 'number', min: 1, max: 7, required: true, label: 'Team' },
       teamName: { type: 'string', source: 'competition', required: true },
       logo: { type: 'string', source: 'competition', required: true },
       ave: { type: 'string', label: 'Average Score' },
@@ -148,7 +148,7 @@ export const GRAPHICS = {
     transparent: true,
     perTeam: true,
     params: {
-      teamSlot: { type: 'number', min: 1, max: 6, required: true, label: 'Team' },
+      teamSlot: { type: 'number', min: 1, max: 7, required: true, label: 'Team' },
       logo: { type: 'string', source: 'competition', required: true },
       coaches: { type: 'string', source: 'competition', label: 'Coaches (one per line)' },
     },
@@ -166,7 +166,7 @@ export const GRAPHICS = {
     transparent: false,
     perTeam: true,
     params: {
-      teamSlot: { type: 'number', min: 1, max: 6, required: true, label: 'Team' },
+      teamSlot: { type: 'number', min: 1, max: 7, required: true, label: 'Team' },
       logo: { type: 'string', source: 'competition', required: true },
       teamName: { type: 'string', source: 'competition', required: true },
     },
@@ -184,7 +184,7 @@ export const GRAPHICS = {
     transparent: true,
     perTeam: true,
     params: {
-      teamSlot: { type: 'number', min: 1, max: 6, required: true, label: 'Team' },
+      teamSlot: { type: 'number', min: 1, max: 7, required: true, label: 'Team' },
       logo: { type: 'string', source: 'competition', required: true },
       event: { type: 'string', required: true, label: 'Event Name', default: 'FLOOR EXERCISE' },
       athlete1Name: { type: 'string', required: true, label: 'Athlete 1 Name' },
@@ -426,7 +426,7 @@ export const GRAPHICS = {
     keywords: ['quad', 'four', '4', 'frame', 'overlay'],
     gender: 'both',
     minTeams: 4,
-    maxTeams: 6,
+    maxTeams: 7,
     renderer: 'overlay',
     file: 'frame-quad.html',
     transparent: true,
@@ -442,7 +442,7 @@ export const GRAPHICS = {
     keywords: ['tri', 'three', '3', 'center', 'frame', 'overlay'],
     gender: 'both',
     minTeams: 3,
-    maxTeams: 6,
+    maxTeams: 7,
     renderer: 'overlay',
     file: 'frame-tri-center.html',
     transparent: true,
@@ -458,7 +458,7 @@ export const GRAPHICS = {
     keywords: ['tri', 'three', '3', 'wide', 'frame', 'overlay'],
     gender: 'both',
     minTeams: 3,
-    maxTeams: 6,
+    maxTeams: 7,
     renderer: 'overlay',
     file: 'frame-tri-wide.html',
     transparent: true,
@@ -474,7 +474,7 @@ export const GRAPHICS = {
     keywords: ['dual', 'two', '2', 'header', 'team', 'frame', 'overlay'],
     gender: 'both',
     minTeams: 2,
-    maxTeams: 6,
+    maxTeams: 7,
     renderer: 'overlay',
     file: 'frame-team-header.html',
     transparent: true,
@@ -490,7 +490,7 @@ export const GRAPHICS = {
     keywords: ['single', 'one', '1', 'frame', 'overlay'],
     gender: 'both',
     minTeams: 1,
-    maxTeams: 6,
+    maxTeams: 7,
     renderer: 'overlay',
     file: 'frame-single.html',
     transparent: true,
@@ -506,7 +506,7 @@ export const GRAPHICS = {
     keywords: ['dual', 'two', '2', 'view', 'frame', 'overlay'],
     gender: 'both',
     minTeams: 2,
-    maxTeams: 6,
+    maxTeams: 7,
     renderer: 'overlay',
     file: 'frame-dual.html',
     transparent: true,
@@ -1004,6 +1004,40 @@ export const GRAPHICS = {
     transparent: true,
     params: {
       sponsors: { type: 'string', source: 'computed' },
+    },
+  },
+
+  // ============================================================
+  // ROTATION GRAPHICS
+  // ============================================================
+
+  'rotation-slate': {
+    id: 'rotation-slate',
+    label: 'Rotation Slate',
+    category: 'in-meet',
+    keywords: ['rotation', 'slate', 'intro', 'title', 'round', 'start'],
+    gender: 'both',
+    renderer: 'overlay',
+    file: 'rotation-slate.html',
+    transparent: false,
+    params: {
+      logo: { type: 'string', source: 'competition' },
+      meetName: { type: 'string', source: 'competition' },
+      rotation: {
+        type: 'enum',
+        options: ['1', '2', '3', '4', '5', '6'],
+        optionLabels: {
+          '1': 'Rotation 1',
+          '2': 'Rotation 2',
+          '3': 'Rotation 3',
+          '4': 'Rotation 4',
+          '5': 'Rotation 5',
+          '6': 'Rotation 6',
+        },
+        required: true,
+        default: '1',
+        label: 'Rotation',
+      },
     },
   },
 };

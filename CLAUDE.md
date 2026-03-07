@@ -145,6 +145,150 @@ tar -czf /tmp/claude/overlays.tar.gz overlays/
 
 ---
 
+## Coordinator Server (api.commentarygraphic.com)
+
+**Server IP**: `44.193.31.120`
+**Directory on VM**: `/opt/gymnastics-graphics`
+**Process Manager**: PM2
+
+The coordinator server handles:
+- Socket.io connections for real-time updates
+- Rundown loading and show execution (timesheet engine)
+- OBS scene switching commands
+- Multi-competition coordination
+
+### Check Server Status
+```bash
+# SSH to coordinator
+ssh_exec target: 44.193.31.120
+
+# Check PM2 status
+pm2 status
+
+# View logs
+pm2 logs coordinator --lines 50
+```
+
+### Restart Coordinator (CRITICAL - Firebase Credentials Required)
+
+**IMPORTANT:** The coordinator requires Firebase Admin SDK credentials. If you restart PM2 without the credentials, the server will fail to load rundowns and other Firebase operations.
+
+```bash
+# SSH to coordinator
+cd /opt/gymnastics-graphics/server
+
+# Stop existing process
+pm2 delete coordinator
+
+# Start with Firebase credentials (REQUIRED)
+GOOGLE_APPLICATION_CREDENTIALS=/opt/gymnastics-graphics/firebase-service-account.json pm2 start index.js --name coordinator
+
+# Save PM2 config for auto-restart on reboot
+pm2 save
+```
+
+### Common Issues
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| PM2 crash-looping (high restart count) | Port 3003 already in use | `sudo fuser -k 3003/tcp` then restart PM2 |
+| "Load Rundown" stuck on loading | Firebase credentials not set | Restart with `GOOGLE_APPLICATION_CREDENTIALS` env var |
+| Socket disconnects | PM2 process crashed | Check `pm2 logs`, restart if needed |
+
+### Verify Coordinator is Working
+```bash
+# Check the server is responding
+curl http://44.193.31.120:3003/health
+
+# Check PM2 shows 0 restarts and "online" status
+pm2 status
+```
+
+---
+
+## VM Pool & Custom VMs
+
+The VM Pool manages EC2 instances for live production streaming. VMs are assigned to competitions and provide OBS + Node services.
+
+### VM Types
+
+| Type | Description | Actions |
+|------|-------------|---------|
+| **AWS VM** | EC2 instance managed by our account | Start, Stop, Assign, Release, Terminate |
+| **Custom VM** | Externally-managed VM (not in our AWS) | Assign, Release, Delete |
+
+### Custom VMs
+
+Custom VMs allow producers to register externally-hosted VMs by providing IP, username, and password. They appear in the VM Pool alongside AWS VMs and can be assigned to competitions.
+
+**Creating:** VM Pool Page > "Add Custom VM" button (teal) > fill IP, username, password
+
+**Multi-Assignment:** Unlike AWS VMs (single competition only), custom VMs can be assigned to **multiple competitions simultaneously**. The `assignedTo` field uses an array instead of a string. The VM card shows all assigned competitions with individual release buttons for each.
+
+**Firebase structure** at `vmPool/vms/custom-{id}/`:
+```json
+{
+  "isCustom": true,
+  "name": "Client Studio VM",
+  "publicIp": "203.0.113.50",
+  "username": "producer",
+  "password": "pass123",
+  "status": "assigned",
+  "assignedTo": ["comp-id-1", "comp-id-2"]
+}
+```
+
+Note: `assignedTo` is `null` when unassigned, and an array of competition IDs when assigned. AWS VMs still use a single string for `assignedTo`.
+
+**When assigned to a competition**, credentials are stored at:
+```
+competitions/{compId}/config/vmAddress: "203.0.113.50:3003"
+competitions/{compId}/config/vmCredentials: { username, password }
+```
+
+**Producer view:** When a competition has a custom VM, the producer sidebar shows a "VM Connection" panel with IP, username, and password (with show/hide toggle).
+
+### API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/admin/vm-pool` | GET | List all VMs (AWS + custom) |
+| `/api/admin/vm-pool/launch` | POST | Launch new AWS VM from AMI |
+| `/api/admin/vm-pool/custom` | POST | Create custom VM (`{ name, ip, username, password }`) |
+| `/api/admin/vm-pool/:vmId/start` | POST | Start stopped AWS VM |
+| `/api/admin/vm-pool/:vmId/stop` | POST | Stop AWS VM |
+| `/api/admin/vm-pool/:vmId` | DELETE | Terminate AWS VM or delete custom VM |
+| `/api/competitions/:compId/vm/assign` | POST | Assign VM to competition |
+| `/api/competitions/:compId/vm/release` | POST | Release VM from competition |
+| `/api/admin/themes` | GET | List all themes |
+| `/api/admin/themes/:themeId` | PUT | Create or update a theme |
+| `/api/admin/themes/:themeId` | DELETE | Delete a theme |
+
+### Key Files
+
+| Component | File |
+|-----------|------|
+| VM Pool Manager (backend) | `server/lib/vmPoolManager.js` |
+| VM Health Monitor | `server/lib/vmHealthMonitor.js` |
+| AWS Service | `server/lib/awsService.js` |
+| API Routes | `server/index.js` (search "vm-pool") |
+| VM Pool Page (admin UI) | `show-controller/src/pages/VMPoolPage.jsx` |
+| VM Card Component | `show-controller/src/components/VMCard.jsx` |
+| VM Pool Hook | `show-controller/src/hooks/useVMPool.js` |
+| Producer View (VM panel) | `show-controller/src/views/ProducerView.jsx` |
+
+### Important: Custom VM Guards
+
+- **AWS sync**: `_syncWithAWS()` skips VMs with `isCustom: true` so they aren't deleted during EC2 reconciliation
+- **Start/Stop**: Backend throws error if called on custom VMs
+- **Health checks**: Skipped for custom VMs (no service monitoring)
+- **Multi-assignment**: Custom VMs use `assignedTo` as an array; all `assignedTo` checks must handle both string (AWS) and array (custom) forms using `Array.isArray()`
+- **Release**: `releaseVM()` removes only the specified competition from the array; status returns to `AVAILABLE` only when the array is empty
+- **Credentials cleanup**: `releaseVM()` clears `vmAddress` and `vmCredentials` for the released competition only
+- **Delete guard**: Custom VMs cannot be deleted while they have any assignments (array length > 0)
+
+---
+
 ## Competition Formats
 
 ### Alternating Format (Default for Dual Meets - used in "By Rotation" view)
@@ -181,6 +325,57 @@ Both teams compete on the SAME apparatus - used when viewing event summary by ap
 - mens-tri, womens-tri (3 teams)
 - mens-quad, womens-quad (4 teams)
 - mens-5, mens-6 (5-6 teams)
+- womens-5, womens-6, womens-7 (5-7 teams)
+  - womens-7: 7 rotations, 4 apparatus, 4 teams compete per rotation, 3 teams on bye each rotation
+
+---
+
+## Multi-Team Rotation Handling (5+ Teams) - IMPORTANT
+
+For competitions with 5 or more teams, **DO NOT use hardcoded rotation schedules**. The Virtius API provides a `rotation` field on each event that indicates which rotation it was scored in.
+
+### Why Hardcoded Schedules Don't Work
+- Different meets have different starting positions for teams
+- Teams don't compete in olympic order
+- Hardcoded schedules assume a fixed rotation pattern that varies by meet
+
+### The Correct Approach
+The `detectEventFromApiData()` function in `output.html` reads the rotation field directly from the Virtius API:
+
+```javascript
+function detectEventFromApiData(team, rotation, gender) {
+  // Virtius API includes a 'rotation' field on each event
+  const eventForRotation = (team.events || []).find(e => e.rotation === rotation);
+  if (eventForRotation) {
+    return eventForRotation.event_name;
+  }
+  return null; // Team has a bye or rotation hasn't happened
+}
+```
+
+### Virtius API Event Structure
+Each team's events array contains objects with:
+- `event_name`: "FLOOR", "HORSE", "RINGS", "VAULT", "PBARS", "BAR"
+- `rotation`: 1-6 (which rotation this event is competed in)
+- `gymnasts`: Array of gymnast scores
+- `event_score`: Team's total for this event
+
+### Example (5-Team Meet)
+```
+| Team      | FLOOR | HORSE | RINGS | VAULT | PBARS | BAR |
+|-----------|-------|-------|-------|-------|-------|-----|
+| Stanford  |   4   |   5   |   6   |   1   |   2   |  3  |
+| California|   6   |   1   |   2   |   3   |   4   |  5  |
+| USA       |   3   |   4   |   5   |   6   |   1   |  2  |
+| Mexico    |   1   |   2   |   3   |   4   |   5   |  6  |
+| All Stars |   5   |   6   |   1   |   2   |   3   |  4  |
+```
+
+This means for R1: Stanford=VAULT, California=HORSE, USA=PBARS, Mexico=FLOOR, All Stars=RINGS
+
+### Related Bug Fixes
+- BUG-003: Men's Tri Event Summary Blank
+- BUG-004: 5-Team Men's Event Summary Missing Apparatus
 
 ---
 
@@ -214,8 +409,16 @@ Required fields:
 
 ### Step 2: Add Athlete Headshots
 ```
-Path: teamsDatabase/headshots/{athlete-name-lowercase}
+Path: teamsDatabase/headshots/{normalized-name-with-spaces}
 ```
+
+**CRITICAL: Headshot keys use SPACES, not underscores.**
+The key is `normalizeName(name)` which lowercases and keeps spaces.
+- Correct: `teamsDatabase/headshots/alexis schulman`
+- WRONG: `teamsDatabase/headshots/alexis_schulman`
+
+`getSafeFirebaseKey()` only replaces `.#$[]/` — it does NOT replace spaces with underscores. Firebase allows spaces in keys.
+
 Required fields:
 - `name`: "First Last" (proper case)
 - `teamKey`: "{school}-mens" or "{school}-womens"

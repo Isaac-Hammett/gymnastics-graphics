@@ -184,7 +184,13 @@ export function useVMPool() {
   // Helper: get VM assigned to a specific competition
   const getVMForCompetition = useCallback((competitionId) => {
     if (!competitionId) return null;
-    return vms.find(vm => vm.assignedTo === competitionId) || null;
+    return vms.find(vm => {
+      // Custom VMs use an array for assignedTo (multi-assignment)
+      if (Array.isArray(vm.assignedTo)) {
+        return vm.assignedTo.includes(competitionId);
+      }
+      return vm.assignedTo === competitionId;
+    }) || null;
   }, [vms]);
 
   // Helper: check if a competition has a VM assigned

@@ -89,7 +89,7 @@ export const graphicNames = Object.fromEntries([
   ['clear', 'None'],
   ...getAllGraphics().map(g => [g.id, g.label]),
   // Add team-specific entries for backwards compatibility
-  ...Array.from({ length: 6 }, (_, i) => [
+  ...Array.from({ length: 7 }, (_, i) => [
     [`team${i + 1}-stats`, `Team ${i + 1} Stats`],
     [`team${i + 1}-coaches`, `Team ${i + 1} Coaches`],
   ]).flat(),
@@ -104,6 +104,9 @@ export const teamCounts = {
   'womens-quad': 4,
   'mens-5': 5,
   'mens-6': 6,
+  'womens-5': 5,
+  'womens-6': 6,
+  'womens-7': 7,
 };
 
 export const competitionTypes = [
@@ -115,6 +118,9 @@ export const competitionTypes = [
   { value: 'womens-dual', label: "Women's Dual Meet (2 teams)" },
   { value: 'womens-tri', label: "Women's Tri Meet (3 teams)" },
   { value: 'womens-quad', label: "Women's Quad Meet (4 teams)" },
+  { value: 'womens-5', label: "Women's 5-Team Meet" },
+  { value: 'womens-6', label: "Women's 6-Team Meet" },
+  { value: 'womens-7', label: "Women's 7-Team Meet" },
 ];
 
 export const typeLabels = {
@@ -126,6 +132,9 @@ export const typeLabels = {
   'womens-dual': "Women's Dual",
   'womens-tri': "Women's Tri",
   'womens-quad': "Women's Quad",
+  'womens-5': "Women's 5-Team",
+  'womens-6': "Women's 6-Team",
+  'womens-7': "Women's 7-Team",
 };
 
 export const eventFrameIds = ['floor', 'pommel', 'rings', 'vault', 'pbars', 'hbar', 'ubars', 'beam', 'allaround', 'final', 'order', 'lineups', 'summary'];
@@ -141,7 +150,7 @@ export const transparentGraphics = getAllGraphics()
   .map(g => g.id)
   .concat(
     // Add team-specific graphics
-    Array.from({ length: 6 }, (_, i) => [`team${i + 1}-stats`, `team${i + 1}-coaches`]).flat()
+    Array.from({ length: 7 }, (_, i) => [`team${i + 1}-stats`, `team${i + 1}-coaches`]).flat()
   );
 
 export function getApparatusButtons(compType) {
@@ -215,22 +224,27 @@ export function isMensCompetition(compType) {
 }
 
 /**
- * Get the number of rotations for a competition type
- * Men's has 6 rotations, Women's has 4 rotations
- * @param {string} compType - Competition type (e.g., 'womens-quad', 'mens-dual')
+ * Get the number of rotations for a competition type.
+ * Usually equals the number of events (6 for men's, 4 for women's),
+ * but for meets with more teams than apparatus (e.g., womens-7),
+ * the rotation count equals the team count.
+ * @param {string} compType - Competition type (e.g., 'womens-quad', 'mens-dual', 'womens-7')
  * @returns {number} Number of rotations
  */
 export function getRotationCount(compType) {
   const isMens = compType?.startsWith('mens');
-  return isMens ? 6 : 4;
+  const eventCount = isMens ? 6 : 4;
+  const teams = teamCounts[compType] || 2;
+  return Math.max(eventCount, teams);
 }
 
 /**
- * Get the number of events for a competition type
- * Alias for getRotationCount for semantic clarity
+ * Get the number of events (apparatus) for a competition type.
+ * Always 6 for men's, 4 for women's — does not change with team count.
  * @param {string} compType
  * @returns {number}
  */
 export function getEventCount(compType) {
-  return getRotationCount(compType);
+  const isMens = compType?.startsWith('mens');
+  return isMens ? 6 : 4;
 }
