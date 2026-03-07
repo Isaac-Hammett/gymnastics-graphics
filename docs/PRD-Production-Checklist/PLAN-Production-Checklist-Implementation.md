@@ -5,7 +5,7 @@
 **Items Definition:** [checklist-items-definition.md](./checklist-items-definition.md)
 **Status:** IN PROGRESS
 **Created:** 2026-01-24
-**Last Updated:** 2026-03-07 (Tasks 1-12 complete)
+**Last Updated:** 2026-03-07 (Tasks 1-16 complete)
 
 ---
 
@@ -69,8 +69,8 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 
 | Phase | Name | Priority | Status | Tasks |
 |-------|------|----------|--------|-------|
-| 1A | Core Checklist UI | P0 | IN PROGRESS | 1-8 |
-| 1B | Auto-Validation | P0 | NOT STARTED | 9-16 |
+| 1A | Core Checklist UI | P0 | COMPLETE | 1-8 |
+| 1B | Auto-Validation | P0 | COMPLETE | 9-16 |
 | 1C | Team Contacts | P0 | NOT STARTED | 17-22 |
 | 1D | Polish & Navigation | P0 | NOT STARTED | 23-30 |
 | 2 | Checklist Templates | P1 | NOT STARTED | 31-38 |
@@ -102,10 +102,10 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 10 | Add team data validators | COMPLETE | `rosters-loaded`, `headshots-uploaded`. Checks N teams dynamically using `getTeamCount()`. Uses 80% threshold for headshots, warning status for missing rosters. |
 | Task 11 | Add infrastructure validators | COMPLETE | `vm-assigned`, `vm-online`, `socket-connected`, `obs-connected`. VM status uses polling from useProductionChecklist hook. Socket/OBS use context values. Custom VMs show offline. |
 | Task 12 | Add rundown validators | COMPLETE | `rundown-created`, `segments-named`, `graphics-assigned`. Read from `competitions/{compId}/rundown/segments` (**NOT** `production/rundown/segments/` — that path is analytics only). |
-| Task 13 | Add VM status polling (30s interval) | NOT STARTED | Call `await checkVmStatus(vmAddress)` in a `useEffect` with `setInterval(30000)`. Clean up on unmount. |
-| Task 14 | Add real-time status updates | NOT STARTED | Firebase `onValue` subscriptions update validators automatically. Context values (connected, obsConnected) trigger recompute via `useMemo` deps. |
-| Task 15 | Add "Fix" links to auto-validated items | NOT STARTED | Links: config items → `/`, theme → `/themes`, rosters/headshots → `/media-manager`, VM/socket → `/_admin/vm-pool`, rundown → `/{compId}/rundown`, OBS → `/{compId}/obs-manager`. See Tech Plan Section 7.3 for full table. |
-| Task 16 | Add notes field per item | NOT STARTED | Expandable text input below item. Firebase persist to `competitions/{compId}/checklist/notes/{itemId}`. |
+| Task 13 | Add VM status polling (30s interval) | COMPLETE | Implemented in `useProductionChecklist.js` lines 155-175. Polls every 30s with `checkVmStatus()`, cleans up on unmount. |
+| Task 14 | Add real-time status updates | COMPLETE | Firebase `onValue` subscriptions (lines 86-130) update validators automatically. Context values trigger recompute via `validatorContext` useMemo deps. |
+| Task 15 | Add "Fix" links to auto-validated items | COMPLETE | Fix links defined in `checklistItems.js` for all auto-validated items. `useProductionChecklist.js` substitutes `{compId}` placeholder. UI shows "Fix" link on error status items. |
+| Task 16 | Add notes field per item | COMPLETE | Expandable text input below each item. Shows "+ Note" on hover, expands to input field with Save/Cancel. Notes persist to `competitions/{compId}/checklist/notes/{itemId}`. Enter to save, Escape to cancel. |
 
 ---
 
