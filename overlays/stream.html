@@ -74,6 +74,11 @@
       color: var(--meet-accent-primary, #3b82f6);
       font-weight: 900;
     }
+
+    /* When themed, apply overlay background (stream is full-screen, not a composited overlay) */
+    body[data-meet-theme] {
+      background: var(--meet-overlay-bg, #18181b);
+    }
   </style>
 </head>
 <body>
