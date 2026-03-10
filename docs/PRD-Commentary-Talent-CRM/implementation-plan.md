@@ -109,11 +109,11 @@ Use `csv-parse` for CSV parsing (install if not present). Use a simple Levenshte
 **Steps:**
 1. Create screenshots directory: `mkdir -p docs/PRD-Commentary-Talent-CRM/screenshots`
 2. Dry-run first: `GOOGLE_APPLICATION_CREDENTIALS=/opt/gymnastics-graphics/firebase-service-account.json node server/scripts/migrateCommentaryCSV.js --dry-run`
-2. Review output — confirm counts look correct (expect ~428 contacts)
-3. Live run: `GOOGLE_APPLICATION_CREDENTIALS=/opt/gymnastics-graphics/firebase-service-account.json node server/scripts/migrateCommentaryCSV.js`
-4. Navigate to `https://commentarygraphic.com/talent` with Playwright
-5. Take screenshot → `docs/PRD-Commentary-Talent-CRM/screenshots/verify-phase0-talent-list.png`
-6. Verify talent count shown matches expected (~428)
+3. Review output — confirm counts look correct (expect ~428 contacts)
+4. Live run: `GOOGLE_APPLICATION_CREDENTIALS=/opt/gymnastics-graphics/firebase-service-account.json node server/scripts/migrateCommentaryCSV.js`
+5. Navigate to `https://commentarygraphic.com/talent` with Playwright
+6. Take screenshot → `docs/PRD-Commentary-Talent-CRM/screenshots/verify-phase0-talent-list.png`
+7. Verify talent count shown matches expected (~428)
 
 **Checks:**
 - [ ] No crash during dry-run
