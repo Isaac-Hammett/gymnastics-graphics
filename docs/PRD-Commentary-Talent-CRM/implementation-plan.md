@@ -53,7 +53,24 @@
 // Summary line: "X created, Y enriched (survey), Z assignments added, N flagged"
 ```
 
-Use the Firebase Admin SDK (`firebase-admin`) already used in `server/index.js`. Use `csv-parse` for CSV parsing (install if not present). Use a simple Levenshtein function for duplicate detection.
+**Firebase Admin initialization (required in script):**
+```javascript
+const path = require('path');
+const admin = require('firebase-admin');
+// Must run with GOOGLE_APPLICATION_CREDENTIALS set (same as coordinator server)
+admin.initializeApp({ credential: admin.credential.applicationDefault() });
+const db = admin.database();
+```
+
+**CSV path resolution:** Use `path.resolve(__dirname, '../../', 'docs/PRD-Commentary-Talent-CRM/...')` — paths are relative to the script file, not `process.cwd()`.
+
+**talentId format:** Generate as sanitized lowercase-dashed name: `name.toLowerCase().replace(/[^a-z0-9]+/g, '-')`. If a collision is detected (same key, different email), append `-2`, `-3` etc. This format is consistent with how other roster entries reference talent across phases.
+
+**Idempotency:** Before writing each record, check `talentRoster/{talentId}`. If it exists (match by email), UPDATE (merge) rather than overwrite. Log "enriched" for updates, "created" for new records.
+
+**compId mapping for history:** The assignment CSV has meet names/dates, not Firebase push-key IDs. There is no lookup table. Write `competitionHistory` using the raw meet name as a placeholder compId (e.g., `"2025-01-18-stanford-vs-cal"`). This data is informational; the `compId` field is best-effort and will not link to live Firebase competition records.
+
+Use `csv-parse` for CSV parsing (install if not present). Use a simple Levenshtein function for duplicate detection.
 
 **Schema written to Firebase:**
 ```json
@@ -90,9 +107,10 @@ Use the Firebase Admin SDK (`firebase-admin`) already used in `server/index.js`.
 ### Task 0-D.1: Run migration and verify data in Firebase — NOT STARTED
 
 **Steps:**
-1. Dry-run first: `node server/scripts/migrateCommentaryCSV.js --dry-run`
+1. Create screenshots directory: `mkdir -p docs/PRD-Commentary-Talent-CRM/screenshots`
+2. Dry-run first: `GOOGLE_APPLICATION_CREDENTIALS=/opt/gymnastics-graphics/firebase-service-account.json node server/scripts/migrateCommentaryCSV.js --dry-run`
 2. Review output — confirm counts look correct (expect ~428 contacts)
-3. Live run: `node server/scripts/migrateCommentaryCSV.js`
+3. Live run: `GOOGLE_APPLICATION_CREDENTIALS=/opt/gymnastics-graphics/firebase-service-account.json node server/scripts/migrateCommentaryCSV.js`
 4. Navigate to `https://commentarygraphic.com/talent` with Playwright
 5. Take screenshot → `docs/PRD-Commentary-Talent-CRM/screenshots/verify-phase0-talent-list.png`
 6. Verify talent count shown matches expected (~428)
@@ -114,30 +132,54 @@ Use the Firebase Admin SDK (`firebase-admin`) already used in `server/index.js`.
 
 **File:** `server/index.js`
 
-**Change:** Add three new endpoints after existing talent routes:
+**Architecture note:** `BookingPage` is a public page accessed by talent (no login, no session). The coordinator server (`44.193.31.120:3003`) has an auto-shutdown feature and may be offline when a talent clicks a link 2 weeks later. The frontend has no established pattern for calling the coordinator directly from the browser.
+
+**Solution: BookingPage reads/writes Firebase directly, not via coordinator.** Only the token generation endpoint (called by the authenticated coordinator UI) goes through the coordinator server. All public-facing operations use Firebase with appropriate security rules.
 
 ```javascript
-// POST /api/book/generate — creates a booking token
+// POST /api/book/generate — creates a booking token (coordinator-side, auth required)
 // Body: { talentId, compId, role }
-// Writes: bookingTokens/{uuid} = { talentId, compId, role, createdAt, expiresAt (30 days), responded: false }
+// Writes: bookingTokens/{uuid} = { talentId, compId, role, createdAt, expiresAt (30 days from now, ISO), responded: false }
+// Also updates: competitions/{compId}/commentary/{talentId}.status = 'invited', invitedAt = now
 // Returns: { token, url: `https://commentarygraphic.com/book/${uuid}` }
-
-// GET /api/book/:token — reads booking details for public page
-// Reads bookingTokens/{token} + competitions/{compId} + talentRoster/{talentId}
-// Returns: { talent: { name }, competition: { name, date, venue }, role, responded, response }
-
-// POST /api/book/:token/respond — talent responds yes or no
-// Body: { response: 'yes' | 'no', interestedIn: ['compId1', 'compId2'] }
-// If yes: update competitions/{compId}/commentary/{talentId}.status = 'confirmed', confirmedAt = now
-// If no: save interestedIn to talentRoster/{talentId}.interested = [...compIds]
-// Update bookingTokens/{token}.responded = true, response = 'yes'|'no'
 ```
 
-Also add an endpoint to fetch upcoming competitions for the "No" flow:
+**Public-facing (BookingPage reads Firebase directly, no coordinator):**
 ```javascript
-// GET /api/competitions/upcoming — returns next 5 competitions sorted by date
-// Filter: date > now, exclude compId already responded to
+// BookingPage reads these Firebase paths directly:
+//   bookingTokens/{token}          → token metadata (talentId, compId, role, expiresAt, responded)
+//   competitions/{compId}/config   → { eventName, meetDate, venue }
+//   talentRoster/{talentId}        → { name }
+//
+// BookingPage writes these Firebase paths directly:
+//   On "Yes":
+//     competitions/{compId}/commentary/{talentId}: { status: 'confirmed', confirmedAt: now }
+//     bookingTokens/{token}: { responded: true, response: 'yes' }
+//
+//   On "No" (save interested comps):
+//     For each selected compId: talentRoster/{talentId}/interested/{compId} = true
+//     (keyed object, not array — avoids overwriting previous interests)
+//     bookingTokens/{token}: { responded: true, response: 'no' }
+//
+// BookingPage fetches upcoming competitions from Firebase:
+//   competitions/ — filter by config.meetDate > now, exclude original compId
+//   Show next 5 sorted by meetDate asc
+//
+// Expiry + double-response guards (client-side):
+//   If token.expiresAt < now → show "This link has expired"
+//   If token.responded === true → show "You've already responded"
 ```
+
+**Firebase security rules update required** (in `database.rules.json`):
+```json
+"bookingTokens": {
+  "$token": {
+    ".read": true,
+    ".write": "auth == null || auth != null"
+  }
+}
+```
+(public read of token; public write to `responded` and `response` fields — scope carefully)
 
 **Implements:** Booking token generation, Yes/No response flow
 
@@ -147,16 +189,18 @@ Also add an endpoint to fetch upcoming competitions for the "No" flow:
 
 **File:** `show-controller/src/pages/BookingPage.jsx` (new file)
 
-**Change:** Create a public page (no auth required) that:
-- Reads `GET /api/book/:token` from the coordinator server
-- Shows: competition name, date, venue, talent's name, assigned role
+**Change:** Create a public page (no auth required) that reads/writes Firebase directly (NOT the coordinator server — see Task 2.1 architecture note):
+- Imports `{ db, ref, get, update, set }` from `../lib/firebase`
+- Reads `bookingTokens/{token}`, `competitions/{compId}/config`, `talentRoster/{talentId}` on load
+- Guards: if token expired → "This link has expired"; if already responded → "You've already responded"
+- Shows: competition eventName, meetDate, venue, talent's name, assigned role
 - Has two primary buttons: "Yes, I'm available" and "No, not this one"
-- On "Yes": calls `POST /api/book/:token/respond { response: 'yes' }`, shows confirmation screen
-- On "No": shows next 5 upcoming competitions as checkboxes, submit saves `interestedIn` array
+- On "Yes": writes to Firebase directly (see Task 2.1), shows confirmation screen
+- On "No": queries `competitions/` from Firebase, filters meetDate > now, shows next 5 as checkboxes; submit writes `talentRoster/{talentId}/interested/{compId} = true` for each checked
 - Mobile-first layout (talent opens this on their phone)
 - No navbar, no auth, standalone page with minimal styling
 
-Reference [CommentaryPage.jsx](../show-controller/src/pages/CommentaryPage.jsx) for Firebase/server call patterns.
+Reference `../lib/firebase` import pattern from `useCommentaryStaff.js`.
 
 **Implements:** Public booking response flow
 
@@ -278,9 +322,10 @@ cd show-controller && npm run build
 // Returns message ID on success, throws on failure
 
 // Email templates (inline):
-// - inviteEmail(talent, competition, role) → HTML invite with event details + booking link
+// - inviteEmail(talent, competition, role, bookingUrl) → HTML invite with event details + booking link
+//   NOTE: bookingUrl is required — the invite endpoint (Task 3.3) must generate the token FIRST
 // - briefingEmail(talent, competition, virtiusUrl, discordInfo, preProdTime) → HTML briefing
-// - reminderEmail(talent, competition) → HTML reminder with booking link
+// - reminderEmail(talent, competition, bookingUrl) → HTML reminder with booking link
 ```
 
 Install `googleapis` if not already in `server/package.json`.
@@ -318,23 +363,34 @@ Install `googleapis` if not already in `server/package.json`.
 
 ```javascript
 // POST /api/commentary/:compId/:talentId/invite
-//   Sends invite email, updates competitions/{compId}/commentary/{talentId}.invitedAt = now
-//   Logs to talentRoster/{talentId}.communicationLog
+//   Step 1: Generate a booking token (reuse Task 2.1 token generation logic)
+//           bookingTokens/{uuid} = { talentId, compId, role, ... }
+//           bookingUrl = `https://commentarygraphic.com/book/${uuid}`
+//   Step 2: Send invite email via gmailService.sendEmail(inviteEmail(talent, competition, role, bookingUrl))
+//   Step 3: Update competitions/{compId}/commentary/{talentId}: { status: 'invited', invitedAt: now }
+//   Step 4: Append to communicationLog (see log shape below)
 
 // POST /api/commentary/:compId/:talentId/briefing
-//   Sends briefing email with Virtius URL, Discord info, pre-prod time
-//   Updates .briefedAt = now, logs to communicationLog
+//   Body: { virtiusUrl: string, discordInfo: string, preProdTime: ISO string }
+//   All three fields are required — return 400 if any are missing
+//   Sends briefing email, updates .briefedAt = now, status = 'briefed'
+//   Appends to communicationLog
 
 // POST /api/commentary/:compId/:talentId/calendar-invite
-//   Creates GCal event, updates .calendarInviteSent = true, logs to communicationLog
+//   Creates GCal event 1 hour before competition start (read meetDate from competitions/{compId}/config)
+//   Updates .calendarInviteSent = true
+//   Appends to communicationLog
 
 // POST /api/commentary/:compId/:talentId/schedule-preproduction
-//   Body: { meetingTime (ISO) }
-//   Creates pre-prod GCal event, updates .preProductionMeetingScheduled = meetingTime
+//   Body: { meetingTime: ISO string }
+//   Creates pre-prod GCal event, adds talent as attendee
+//   Updates .preProductionMeetingScheduled = meetingTime
+//   Appends to communicationLog
 
-// Communication log entry shape:
-// { type: 'invite'|'briefing'|'calendar'|'imessage', sentAt: ISO, note: '...' }
-// Appended to talentRoster/{talentId}.communicationLog array
+// communicationLog — use Firebase push keys, NOT an array:
+//   talentRoster/{talentId}/communicationLog/{pushKey} = { type, sentAt, note }
+//   Firebase RTDB has no arrayUnion — push keys avoid read-then-write race conditions
+// Log entry shape: { type: 'invite'|'briefing'|'calendar'|'preproduction'|'imessage', sentAt: ISO, note: '...' }
 ```
 
 **Implements:** All outreach server actions
@@ -347,12 +403,19 @@ Install `googleapis` if not already in `server/package.json`.
 
 **Change:** In the assignment detail view (when a talent card is expanded/selected):
 1. Add outreach action buttons: "Send Invite", "Send Briefing", "Calendar Invite", "Schedule Pre-Prod"
-2. Each button calls its corresponding server endpoint
-3. Each button has a sibling "📋 Copy for iMessage" button that:
+2. "Send Invite" calls endpoint directly (endpoint generates token internally — no extra input needed)
+3. "Send Briefing" must open a small modal first to collect 3 required fields:
+   - Virtius session URL (text input)
+   - Discord info (text input, e.g. room name/link)
+   - Pre-production meeting time (datetime-local input)
+   Only after the coordinator fills these and clicks "Send" does the modal call the briefing endpoint.
+   Without this modal, the briefing endpoint has no data to put in the email.
+4. "Schedule Pre-Prod" opens a datetime picker modal; submits `{ meetingTime }` to endpoint
+5. Each button has a sibling "📋 Copy for iMessage" button that:
    - Formats the same message as the email (plain text)
    - Copies to clipboard
    - Shows: "Sent via iMessage?" → [Yes] → logs `{ type: 'imessage', sentAt: now }` to server
-4. Show a "Sent ✓" indicator when the server confirms the email was sent
+6. Show a "Sent ✓" indicator when the server confirms the email was sent
 
 **Implements:** Coordinator-facing outreach UI
 
@@ -375,6 +438,10 @@ Add new server endpoint:
 // Calls Claude API with image, extracts availability mentions
 // Returns: { extractedText, availablePeriods, unavailableDates }
 // Writes extracted note to talent's notes field (prepended)
+//
+// IMPORTANT: Add body size limit for this endpoint — screenshots base64-encoded are 2–7MB.
+// Express default JSON limit is 100KB. Add before this route:
+//   app.use('/api/talent/:talentId/parse-screenshot', express.json({ limit: '10mb' }));
 ```
 
 **Implements:** Communication log UI, screenshot-to-availability parsing
@@ -427,14 +494,25 @@ cd show-controller && npm run build
 //   URL pattern: https://www.rtnathletics.com/teams/{slug}/roster (research correct URL)
 //   Parse HTML for athlete names, graduation years
 //
-// Step 2: For each athlete, call Claude API (claude-haiku-4-5-20251001) with:
-//   "Given this person competed in gymnastics at {school}, rate their suitability
-//    as a remote gymnastics commentator (1-5). Return JSON:
-//    { score: N, explanation: '...', linkedIn: '...'|null, instagram: '...'|null }"
-//   (Include name, school, graduation year in the prompt)
+// Step 2: Score ALL athletes in ONE Claude API call (NOT one call per athlete)
+//   CRITICAL: N+1 calls (one per athlete) = 50-300 seconds for a typical roster → HTTP timeout.
+//   Instead, batch all athletes into a single prompt:
+//   "Here is a list of former collegiate gymnasts from {school}. For each person,
+//    rate their suitability as a remote gymnastics commentator (1-5). Consider:
+//    years competed, graduation year (more recent = more relevant).
+//    Do NOT guess social media URLs — return null for linkedIn and instagram.
+//    Return a JSON array: [{ name, score, explanation, linkedIn: null, instagram: null }, ...]"
+//
+//   Include all names + graduation years in the prompt.
+//   Parse the returned JSON array.
+//
+//   NOTE on social links: Claude does not have real-time web access and cannot reliably find
+//   specific athletes' social accounts. Always instruct Claude to return null for social links.
+//   The UI should label any non-null links as "Unverified — may not be correct."
+//   If social link discovery is desired later, use a separate web-search step.
 //
 // Step 3: Return array of CandidateCards:
-//   { name, school, graduationYear, score, explanation, linkedIn, instagram, rtnAthleteId }
+//   { name, school, graduationYear, score, explanation, linkedIn: null, instagram: null, rtnAthleteId }
 //
 // Dedup check: compare against talentRoster in Firebase by name fuzzy match
 // Mark alreadyInRoster: true if found
@@ -460,9 +538,9 @@ cd show-controller && npm run build
 // POST /api/talent/discover/add
 // Body: { candidate: CandidateCard }
 // Creates talentRoster entry:
-//   status: candidate.email ? 'has-contact' : 'need-info'
+//   status: 'need-info'  ← always; CandidateCard has no email field (RTN doesn't expose emails)
 //   discoveredFrom: 'rtn-alumni'
-//   name, school (→ affiliation), linkedIn, instagram
+//   name, school (→ affiliation), linkedIn (null per Task 4.1), instagram (null per Task 4.1)
 // Returns: { talentId }
 ```
 
@@ -560,10 +638,27 @@ cd show-controller && npm run build
 
 **Change:** Create a public survey page at `/survey/:year`:
 - No auth required
-- Fields: name, email, WAG/MAG selection, competition availability checkboxes (list upcoming competitions from Firebase), internet upload/download Mbps, mic type (text), has headphones (checkbox), Discord username, role preference (PBP / Analyst / Either)
-- Submit: matches to existing `talentRoster` by email (update) or creates new entry with status `need-info`
-- Writes to `talentRoster/{id}.surveyCompleted = true` and all survey field values
+- Reads `competitions/` from Firebase directly to populate availability checkboxes (filter by config.meetDate > now, show eventName + meetDate)
+- Fields: name, email, WAG/MAG selection, competition availability checkboxes, internet upload/download Mbps, mic type (text), has headphones (checkbox), Discord username, role preference (PBP / Analyst / Either)
+- Submit: scan `talentRoster/` for existing record with matching email → update if found, create new with status `need-info` if not
+- Writes to Firebase:
+  ```
+  talentRoster/{id}.surveyCompleted = true
+  talentRoster/{id}.surveyYear = year (from URL param)
+  talentRoster/{id}.surveyAvailability = { compId1: true, compId2: true }  ← keyed object, NOT array
+  talentRoster/{id}.internetUploadMbps = N
+  talentRoster/{id}.internetDownloadMbps = N
+  talentRoster/{id}.micType = "..."
+  talentRoster/{id}.hasHeadphones = true/false
+  talentRoster/{id}.discordUsername = "..."
+  talentRoster/{id}.commentaryRole = "pbp"|"analyst"|"both"
+  ```
+  NOTE: `surveyAvailability` is a keyed object (`{ compId: true }`) — Task 5.3's filter uses `talent.surveyAvailability?.[compId] === true`.
 - Confirmation screen: "Thanks! We'll be in touch."
+
+**Firebase security rules update required** — SurveyPage writes to `talentRoster/` from unauthenticated browser. Without a rules update, writes silently fail with permission denied. Add a rule that allows unauthenticated users to write to paths matching their survey submission (scope by email field or use a dedicated `surveyResponses/` path and merge server-side via a Netlify function to avoid opening talentRoster/ writes to the public).
+
+**Recommended approach**: Instead of writing directly to `talentRoster/`, write to `surveyResponses/{year}/{pushKey}` (with open write rules for this path only). Then a Netlify function or server-side job merges survey responses into talentRoster. This avoids opening `talentRoster/` writes to unauthenticated users.
 
 Reference [BookingPage.jsx](../show-controller/src/pages/BookingPage.jsx) for public (no-auth) page patterns.
 
@@ -595,10 +690,11 @@ There is no global auth wrapper — just insert before `<Route path="/:compId" e
 
 **Change:** In the talent search panel (right side), add an "Available" tab alongside existing search:
 1. "Available" tab filters talent by:
-   - `talent.interested` array contains current `compId` (flagged via booking link), OR
-   - `talent.surveyCompleted = true` AND survey competition availability includes this date
+   - `talent.interested?.[compId] === true` (flagged via booking link "No" flow), OR
+   - `talent.surveyAvailability?.[compId] === true` (checked this competition in survey)
    - AND status is `ready` or `has-contact`
-   - AND no same-day booking conflict (check `competitions/*/commentary/` for same date)
+   - AND no same-day booking conflict: check other competitions with same `config.meetDate`, exclude talent who have `confirmed` status there
+   NOTE: Same-day conflict check requires reading all competitions from Firebase — load them via the existing `useCompetitions` hook data already available on this page.
 2. Add "📋 Copy talent list" button above the list — copies `Name — Phone\n` lines for each available talent to clipboard
 
 **Implements:** Smart available talent filtering + copy list
@@ -614,12 +710,24 @@ There is no global auth wrapper — just insert before `<Route path="/:compId" e
 ```javascript
 // useProductionAlerts() → { alerts: Alert[], loading }
 //
+// Competition date field: competitions/{compId}/config.meetDate (ISO date string "YYYY-MM-DD")
+// Parse with: new Date(competition.config?.meetDate)
+// Only process competitions with a valid meetDate > now (skip past competitions)
+//
 // Alert types generated by scanning competitions + commentary/:talentId:
-// - 'start-outreach': competition.date is 6 weeks away AND no commentary assigned
-// - 'no-confirmed': competition.date is 3 weeks away AND no confirmed commentary
-// - 'send-calendar': talent is confirmed AND calendarInviteSent !== true
-// - 'schedule-preproduction': competition.date is 1 week away AND preProductionMeetingScheduled is falsy
-// - 'follow-up': talent was invited > 5 days ago AND status is still 'invited'
+// - 'start-outreach': daysUntil(meetDate) <= 42 (6 weeks) AND no commentary assigned at all
+// - 'no-confirmed': daysUntil(meetDate) <= 21 (3 weeks) AND no talent has status 'confirmed'
+// - 'send-calendar': talent.status === 'confirmed'
+//                    AND talent.calendarInviteSent !== true
+//                    AND daysUntil(meetDate) <= 28 (4 weeks)  ← time fence required
+//                    (Without the 4-week fence, every confirmed talent for future meets floods the dashboard)
+// - 'schedule-preproduction': daysUntil(meetDate) <= 7 (1 week)
+//                              AND preProductionMeetingScheduled is falsy
+// - 'follow-up': talent.status === 'invited'
+//                AND talent.invitedAt is defined
+//                AND daysSince(invitedAt) > 5
+//                (status becomes 'invited' when Task 3.3 invite endpoint is called —
+//                 the endpoint sets status='invited' AND invitedAt=now)
 //
 // Alert shape: { id, type, message, compId, talentId (optional), compName, talentName (optional) }
 // Refreshes in real-time via Firebase onValue listener on competitions/
