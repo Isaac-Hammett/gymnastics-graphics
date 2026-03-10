@@ -640,27 +640,42 @@ cd show-controller && npm run build
 - No auth required
 - Reads `competitions/` from Firebase directly to populate availability checkboxes (filter by config.meetDate > now, show eventName + meetDate)
 - Fields: name, email, WAG/MAG selection, competition availability checkboxes, internet upload/download Mbps, mic type (text), has headphones (checkbox), Discord username, role preference (PBP / Analyst / Either)
-- Submit: scan `talentRoster/` for existing record with matching email → update if found, create new with status `need-info` if not
-- Writes to Firebase:
-  ```
-  talentRoster/{id}.surveyCompleted = true
-  talentRoster/{id}.surveyYear = year (from URL param)
-  talentRoster/{id}.surveyAvailability = { compId1: true, compId2: true }  ← keyed object, NOT array
-  talentRoster/{id}.internetUploadMbps = N
-  talentRoster/{id}.internetDownloadMbps = N
-  talentRoster/{id}.micType = "..."
-  talentRoster/{id}.hasHeadphones = true/false
-  talentRoster/{id}.discordUsername = "..."
-  talentRoster/{id}.commentaryRole = "pbp"|"analyst"|"both"
-  ```
-  NOTE: `surveyAvailability` is a keyed object (`{ compId: true }`) — Task 5.3's filter uses `talent.surveyAvailability?.[compId] === true`.
+- Submit writes to `surveyResponses/{year}/{pushKey}` in Firebase (see approach below)
 - Confirmation screen: "Thanks! We'll be in touch."
 
-**Firebase security rules update required** — SurveyPage writes to `talentRoster/` from unauthenticated browser. Without a rules update, writes silently fail with permission denied. Add a rule that allows unauthenticated users to write to paths matching their survey submission (scope by email field or use a dedicated `surveyResponses/` path and merge server-side via a Netlify function to avoid opening talentRoster/ writes to the public).
+**Write approach (definitive):** Write to `surveyResponses/{year}/{pushKey}`, NOT directly to `talentRoster/`. Opening `talentRoster/` to unauthenticated writes would allow anyone to corrupt talent profiles. The `surveyResponses/` path is append-only by unauthenticated users.
 
-**Recommended approach**: Instead of writing directly to `talentRoster/`, write to `surveyResponses/{year}/{pushKey}` (with open write rules for this path only). Then a Netlify function or server-side job merges survey responses into talentRoster. This avoids opening `talentRoster/` writes to unauthenticated users.
+**Firebase security rules update required** — add to `database.rules.json`:
+```json
+"surveyResponses": {
+  "$year": {
+    ".write": true,
+    ".read": "auth != null"
+  }
+}
+```
 
-Reference [BookingPage.jsx](../show-controller/src/pages/BookingPage.jsx) for public (no-auth) page patterns.
+**Survey record written to `surveyResponses/{year}/{pushKey}`:**
+```json
+{
+  "name": "First Last",
+  "email": "...",
+  "wagMag": "WAG | MAG | Both",
+  "surveyAvailability": { "compId1": true, "compId2": true },
+  "internetUploadMbps": 50,
+  "internetDownloadMbps": 100,
+  "micType": "...",
+  "hasHeadphones": true,
+  "discordUsername": "...",
+  "commentaryRole": "pbp | analyst | both",
+  "submittedAt": "ISO timestamp",
+  "surveyYear": 2027
+}
+```
+
+NOTE: `surveyAvailability` is a keyed object — Task 5.3's filter reads from `talentRoster` (after merge), not directly from `surveyResponses`. The Settings page CSV import (Task 5.6) is also used to merge survey responses into `talentRoster` by email after the season.
+
+Reference [BookingPage.jsx](../show-controller/src/pages/BookingPage.jsx) for public (no-auth) Firebase write patterns.
 
 **Implements:** Annual talent survey
 
@@ -737,21 +752,23 @@ There is no global auth wrapper — just insert before `<Route path="/:compId" e
 
 ---
 
-### Task 5.5: Add pre-production alert panel to DashboardPage — NOT STARTED
+### Task 5.5: Add pre-production alert panel to HomePage — NOT STARTED
 
-**File:** `show-controller/src/pages/DashboardPage.jsx`
+**File:** `show-controller/src/pages/HomePage.jsx`
 
-**Change:** Import `useProductionAlerts` and add an alert panel section:
-1. Alert panel appears at the top of the dashboard, above existing content
+**IMPORTANT:** The plan originally referenced `DashboardPage.jsx`, but that file has no route in App.jsx (the `/dashboard` path redirects to `/`). DashboardPage.jsx is not rendered anywhere. The PRD says "my homepage shows a pre-production alert panel" — the homepage is `HomePage.jsx` at route `/`.
+
+**Change:** Import `useProductionAlerts` and add an alert panel section to `HomePage.jsx`:
+1. Alert panel appears at the top of the page, above the competition list
 2. Each alert is a card with: icon (⚠ or 🔔), message, and an action button
 3. Action buttons:
-   - "Go to Commentary" → navigates to `/compId/commentary`
+   - "Go to Commentary" → navigates to `/${compId}/commentary`
    - "Send Invite" → calls invite endpoint inline
    - "Send Calendar" → calls calendar endpoint inline
 4. When an action is taken, the alert disappears (Firebase real-time will clear it)
 5. If no alerts: show "✓ All caught up" with green background
 
-Read `show-controller/src/pages/DashboardPage.jsx` first to understand existing layout before inserting.
+Read `show-controller/src/pages/HomePage.jsx` first to understand existing layout before inserting.
 
 **Implements:** Pre-production alert UI
 
@@ -797,7 +814,7 @@ cd show-controller && npm run build
 
 **Verify:**
 - [ ] Navigate to `/survey/2027` — survey form renders without auth prompt
-- [ ] Dashboard shows alert panel (or "✓ All caught up" if no alerts)
+- [ ] HomePage (`/`) shows alert panel (or "✓ All caught up" if no alerts)
 - [ ] CommentaryPage has an "Available" talent tab
 - [ ] Take screenshot → `docs/PRD-Commentary-Talent-CRM/screenshots/verify-phase5-survey.png`
 - [ ] Take screenshot → `docs/PRD-Commentary-Talent-CRM/screenshots/verify-phase5-alerts.png`
@@ -832,7 +849,7 @@ Screenshots: `docs/PRD-Commentary-Talent-CRM/screenshots/final-verify-*.png`
 
 **Phase 5 checks:**
 - [ ] `/survey/2027` loads without login
-- [ ] Dashboard shows alert panel
+- [ ] HomePage (`/`) shows alert panel
 - [ ] CommentaryPage has Available tab with "📋 Copy talent list"
 
 ### Task F.2: Mark PRD complete — NOT STARTED
