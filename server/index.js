@@ -36,6 +36,7 @@ import { randomUUID } from 'crypto';
 import Anthropic from '@anthropic-ai/sdk';
 import { sendEmail, inviteEmail, briefingEmail, reminderEmail } from './lib/gmailService.js';
 import { createCompetitionEvent, createPreProdMeeting } from './lib/googleCalendarService.js';
+import { discoverAlumni } from './lib/talentDiscoveryService.js';
 
 dotenv.config();
 
@@ -3457,6 +3458,106 @@ If no availability information is found, return empty arrays.`
   } catch (error) {
     console.error('[Screenshot Parsing] Failed to parse screenshot:', error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================
+// Talent Discovery Endpoints (Phase 4)
+// ============================================
+
+// POST /api/talent/discover - Discover alumni candidates for a school
+app.post('/api/talent/discover', async (req, res) => {
+  const { schoolName } = req.body;
+
+  if (!schoolName) {
+    return res.status(400).json({
+      error: 'Missing required field',
+      required: ['schoolName']
+    });
+  }
+
+  updateLastActivity();
+
+  try {
+    console.log(`[Talent Discovery] Starting discovery for school: ${schoolName}`);
+
+    // Call talent discovery service
+    const candidates = await discoverAlumni(schoolName);
+
+    console.log(`[Talent Discovery] Found ${candidates.length} candidates for ${schoolName}`);
+
+    res.json({
+      candidates,
+      school: schoolName
+    });
+  } catch (error) {
+    console.error('[Talent Discovery] Error:', error.message);
+    res.status(500).json({
+      error: 'Failed to discover candidates',
+      message: error.message
+    });
+  }
+});
+
+// POST /api/talent/discover/add - Add a discovered candidate to the roster
+app.post('/api/talent/discover/add', async (req, res) => {
+  const { candidate } = req.body;
+
+  if (!candidate || !candidate.name || !candidate.school) {
+    return res.status(400).json({
+      error: 'Missing required fields',
+      required: ['candidate.name', 'candidate.school']
+    });
+  }
+
+  updateLastActivity();
+
+  try {
+    console.log(`[Talent Discovery] Adding candidate to roster: ${candidate.name} from ${candidate.school}`);
+
+    // Generate talentId (sanitized lowercase-dashed name)
+    const talentId = candidate.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+    // Check if already exists
+    const db = admin.database();
+    const existingSnapshot = await db.ref(`talentRoster/${talentId}`).once('value');
+
+    if (existingSnapshot.exists()) {
+      return res.status(409).json({
+        error: 'Talent already exists in roster',
+        talentId
+      });
+    }
+
+    const now = new Date().toISOString();
+
+    // Create talentRoster entry
+    // Status is always 'need-info' (RTN doesn't expose emails)
+    const talentEntry = {
+      name: candidate.name,
+      affiliation: candidate.school, // school → affiliation field
+      status: 'need-info',
+      discoveredFrom: 'rtn-alumni',
+      graduationYear: candidate.graduationYear || null,
+      linkedIn: null, // Always null per Task 4.1
+      instagram: null, // Always null per Task 4.1
+      score: candidate.score || null,
+      explanation: candidate.explanation || null,
+      createdAt: now,
+      updatedAt: now
+    };
+
+    await db.ref(`talentRoster/${talentId}`).set(talentEntry);
+
+    console.log(`[Talent Discovery] Added ${candidate.name} with ID: ${talentId}`);
+
+    res.json({ talentId });
+  } catch (error) {
+    console.error('[Talent Discovery] Error adding candidate:', error.message);
+    res.status(500).json({
+      error: 'Failed to add candidate to roster',
+      message: error.message
+    });
   }
 });
 

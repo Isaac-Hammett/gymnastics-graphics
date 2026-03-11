@@ -556,7 +556,7 @@ cd show-controller && npm run build
 
 ---
 
-### Task 4.2: Add talent discovery server endpoint — NOT STARTED
+### Task 4.2: Add talent discovery server endpoint — COMPLETE
 
 **File:** `server/index.js`
 
