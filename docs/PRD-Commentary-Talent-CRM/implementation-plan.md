@@ -20,8 +20,18 @@
 | Phase 4-Deploy | Deploy Phase 4 changes | 1 | COMPLETE |
 | Phase 5 | Annual Survey + Pre-Production Alerts | 6 | COMPLETE |
 | Phase 5-Deploy | Deploy Phase 5 changes | 1 | COMPLETE ✓ |
-| Final-Deploy | Full acceptance criteria check | 2 | NOT STARTED |
-| **Total** | | **30** | |
+| Final-Deploy (Phases 0-5) | Full acceptance criteria check | 2 | COMPLETE |
+| Phase 6 | UI Foundation: Cross-competition data hook + design tokens | 2 | NOT STARTED |
+| Phase 6-Deploy | Deploy Phase 6 changes | 2 | NOT STARTED |
+| Phase 7 | TalentPage table view + assignment/availability columns | 4 | NOT STARTED |
+| Phase 7-Deploy | Deploy Phase 7 changes | 2 | NOT STARTED |
+| Phase 8 | CommentaryPage: kebab menu + conflict badges + kanban | 3 | NOT STARTED |
+| Phase 8-Deploy | Deploy Phase 8 changes | 2 | NOT STARTED |
+| Phase 9 | TalentProfilePage: collapsible sections + activity timeline | 2 | NOT STARTED |
+| Phase 9-Deploy | Deploy Phase 9 changes | 2 | NOT STARTED |
+| Phase 10 | Power features: Cmd+K, saved filters, bulk ops | 3 | NOT STARTED |
+| Final-Deploy (UI) | Final deploy + full UI verification | 2 | NOT STARTED |
+| **Total** | | **54** | |
 
 ---
 
@@ -819,9 +829,9 @@ cd show-controller && npm run build
 
 ---
 
-## Final-Deploy: Full Verification
+## Final-Deploy (Phases 0-5): Full Verification
 
-### Task F.1: Full acceptance criteria check — COMPLETE
+### Task F.1: Full acceptance criteria check (Phases 0-5) — COMPLETE
 
 Run through all acceptance criteria from the PRD using Playwright.
 Screenshots: `docs/PRD-Commentary-Talent-CRM/screenshots/`
@@ -859,6 +869,529 @@ Screenshots: `docs/PRD-Commentary-Talent-CRM/screenshots/`
 - All public pages (survey, booking, discovery) work without auth
 - All authenticated pages (talent roster, commentary) properly gated
 
-### Task F.2: Mark PRD complete — COMPLETE
+### Task F.2: Mark Phases 0-5 complete — COMPLETE
 
 Update `PRD-Commentary-Talent-CRM-2026-03-10.md` status to `COMPLETE`. Commit.
+
+---
+
+## Phase 6: UI Foundation — Cross-Competition Data + Design Tokens
+
+> **Deploy rule:** Commit each task. Do NOT deploy until Phase 6-Deploy.
+
+### Task 6.1: Create `useTalentAssignments` hook — NOT STARTED
+
+**File:** `show-controller/src/hooks/useTalentAssignments.js` (NEW)
+
+**Why this is needed:** TalentPage currently only reads `talentRoster/`. Commentary assignments live at `competitions/{compId}/commentary/{talentId}` — completely siloed per competition. Without joining these, you can't see who is assigned to what, who was invited, or who has responded.
+
+**What it does:**
+- Listens to `competitions/` path via `onValue`
+- For each competition, extracts `commentary` assignments
+- Builds a map: `{ [talentId]: [ { compId, compName, meetDate, role, status, invitedAt, confirmedAt, ... } ] }`
+- Derives per-talent summary fields:
+  - `assignments` — array of current assignments with competition details
+  - `lastOutreach` — most recent `invitedAt` or `briefedAt` timestamp across all competitions
+  - `lastOutreachType` — "invite" | "briefing" | "calendar" based on which timestamp is newest
+  - `pendingCount` — number of assignments where status is `invited` (awaiting response)
+  - `confirmedCount` — number of assignments where status is `confirmed` or `briefed`
+- Also computes availability data per talent:
+  - `availableFor` — array of `{ compId, compName, source }` where source is "interested" or "survey"
+  - `availabilityDot` — "green" (available for 1+ upcoming), "yellow" (did prior season but hasn't responded), "gray" (no availability data)
+- Exports: `useTalentAssignments(talentList)` returning `{ assignmentsByTalent, loading }`
+
+**Pattern to follow:** `show-controller/src/hooks/useCommentaryStaff.js` — same Firebase listener pattern, but reads across all competitions instead of one.
+
+**Important:** This hook reads `competitions/` which is a large path. Only extract `config.eventName`, `config.meetDate`, and `commentary` from each competition — do NOT store the entire competition object in state.
+
+```javascript
+// Return shape per talent:
+{
+  assignments: [
+    { compId: 'comp-abc', compName: 'Stanford vs Cal', meetDate: '2026-03-15', role: 'pbp', status: 'confirmed' },
+    { compId: 'comp-def', compName: 'Big Ten Quad', meetDate: '2026-03-22', role: 'analyst', status: 'invited' },
+  ],
+  lastOutreach: '2026-03-10T14:30:00Z',
+  lastOutreachType: 'invite',
+  pendingCount: 1,
+  confirmedCount: 1,
+  availableFor: [
+    { compId: 'comp-ghi', compName: 'SEC Quad', source: 'survey' },
+  ],
+  availabilityDot: 'green',
+}
+```
+
+---
+
+### Task 6.2: Normalize design tokens across CRM pages — NOT STARTED
+
+**Files:**
+- `show-controller/src/pages/TalentPage.jsx`
+- `show-controller/src/pages/TalentProfilePage.jsx`
+- `show-controller/src/pages/CommentaryPage.jsx`
+
+**Problem:** TalentPage uses `bg-gray-900/800/700` while CommentaryPage uses `bg-zinc-950/900/800`. Border colors vary between `border-gray-700`, `border-zinc-800`, `border-zinc-700`. Modals use either `bg-black/60` or `bg-black bg-opacity-75`.
+
+**Change:** Standardize ALL CRM pages to the `zinc` scale (matching `index.css` CSS variables which use zinc-based hex values):
+
+| Element | Before (mixed) | After (standardized) |
+|---------|----------------|---------------------|
+| Page background | `bg-gray-900` / `bg-zinc-950` | `bg-zinc-950` |
+| Card/section background | `bg-gray-800` / `bg-zinc-800` | `bg-zinc-900` |
+| Card hover | `bg-gray-750` / `bg-zinc-750` | `bg-zinc-800` |
+| Input background | `bg-gray-700` / `bg-zinc-800` | `bg-zinc-800` |
+| Borders | `border-gray-700` / `border-zinc-700` | `border-zinc-800` |
+| Border hover | `border-gray-600` / `border-zinc-600` | `border-zinc-700` |
+| Secondary text | `text-gray-400` / `text-zinc-400` | `text-zinc-400` |
+| Muted text | `text-gray-500` / `text-zinc-500` | `text-zinc-500` |
+| Modal overlay | `bg-black/60` / `bg-black bg-opacity-75` | `bg-black/60` |
+| Header bar | `bg-gray-800` / `bg-zinc-900` | `bg-zinc-900` |
+| Header border | `border-gray-700` / `border-zinc-800` | `border-zinc-800` |
+
+**How:** Find-and-replace in each file. Do NOT change any functional code — only Tailwind class names.
+
+**Important:** Do NOT touch status badge colors (green, blue, amber, red, pink, purple, teal) — only normalize the gray/zinc background/border/text tokens.
+
+---
+
+## Phase 6-Deploy: Deploy Phase 6 Changes
+
+> **This is a deploy task.** Build, upload, and verify all Phase 6 changes together.
+
+### Task 6-D.1: Build and deploy to production — NOT STARTED
+
+**Frontend changed?** Yes — show-controller files modified.
+```bash
+cd show-controller && npm run build
+# then upload dist per CLAUDE.md Step 1
+```
+
+**Graphics files changed?** No.
+**Server changed?** No.
+
+### Task 6-D.2: Verify Phase 6 on production — NOT STARTED
+
+Navigate to test URLs with Playwright. Take screenshots to `docs/PRD-Commentary-Talent-CRM/screenshots/`.
+
+**Checks:**
+- [ ] Navigate to `https://commentarygraphic.com/talent` — page renders with consistent zinc color scheme (no gray-900 backgrounds visible)
+- [ ] Navigate to any competition's commentary page — consistent zinc colors
+- [ ] No console errors on either page
+- [ ] Screenshot → `verify-phase6-talent.png`
+- [ ] Screenshot → `verify-phase6-commentary.png`
+
+---
+
+## Phase 7: TalentPage Table View + Cross-Competition Visibility
+
+> **Deploy rule:** Commit each task. Do NOT deploy until Phase 7-Deploy.
+
+### Task 7.1: Create TalentTable component with sortable columns — NOT STARTED
+
+**File:** `show-controller/src/components/crm/TalentTable.jsx` (NEW)
+
+**Prerequisite:** Create `show-controller/src/components/crm/` directory (does not exist yet). All Phase 7, 8, and 10 component files live here.
+
+**What it does:** A table component that renders the talent roster with sortable columns, replacing the card list as the default view.
+
+**Columns:**
+| Column | Source | Sortable | Width |
+|--------|--------|----------|-------|
+| Name | `talent.name` | Yes (alpha) | flex |
+| Status | `talent.status` | Yes (tier order) | 100px |
+| WAG/MAG | `talent.wagMag` | Yes | 80px |
+| Role | `talent.commentaryRole` | Yes | 140px |
+| Assignments | from `useTalentAssignments` | Yes (count) | 200px |
+| Available For | from `interested` + `surveyAvailability` | Yes (count) | 140px |
+| Last Outreach | from `useTalentAssignments` | Yes (date) | 120px |
+| Phone | `talent.phone` | No | 130px |
+
+**Behavior:**
+- Click column header to sort (toggle asc/desc, show arrow indicator)
+- Click row to navigate to `/talent/{id}` (entire row is a link)
+- Status and WAG/MAG render as colored badges (reuse existing `getStatusColor`, `wagMagLabel`)
+- Assignments column shows up to 2 competition name pills with role abbreviation and status color, then "+N more" if >2
+- Available For column shows green dot + count of competitions where `interested[compId]` or `surveyAvailability[compId]` is true
+- Last Outreach shows relative time ("2d ago") with full date on hover via `title` attribute
+- Fixed table header (sticky top) so it stays visible while scrolling
+- Accept `talents` array and `assignmentsByTalent` map as props
+
+**Pattern to follow:** Standard React table with `useState` for sort column/direction. No external table library needed.
+
+---
+
+### Task 7.2: Add view toggle and integrate TalentTable into TalentPage — NOT STARTED
+
+**File:** `show-controller/src/pages/TalentPage.jsx`
+
+**Changes:**
+1. Import `TalentTable` and `useTalentAssignments`
+2. Add `viewMode` state: `'table'` (default) or `'cards'`
+3. Persist view preference in `localStorage` key `crm-talent-view`
+4. Add toggle buttons in the filter row (right side, before the count): `TableCellsIcon` / `Squares2X2Icon` from Heroicons
+5. Conditionally render `<TalentTable>` or the existing card list based on `viewMode`
+6. Pass `filtered` (already-filtered talent list) and `assignmentsByTalent` to `TalentTable`
+
+**Do NOT delete the card view code.** Keep both views.
+
+---
+
+### Task 7.3: Add assignment details to card view — NOT STARTED
+
+**File:** `show-controller/src/pages/TalentPage.jsx` (TalentCard component, line ~362)
+
+**Changes:**
+1. Pass `assignmentsByTalent` down to `TalentCard` as a prop
+2. Replace the generic "3 events" count with actual competition names (up to 2, then "+N"):
+   ```
+   Before: "3 events"
+   After:  "Stanford vs Cal (PBP, Confirmed) · Big Ten Quad (Analyst, Invited) · +1"
+   ```
+3. Add a small "last outreach" line if the talent has been contacted:
+   ```
+   Last contacted: 2d ago (invite)
+   ```
+4. Show green dot before name if `availabilityDot === 'green'`
+
+**Keep the card layout compact.** These additions go into the existing structure.
+
+---
+
+### Task 7.4: Add availability indicator dots — NOT STARTED
+
+**File:** `show-controller/src/components/crm/TalentTable.jsx` (modify — created in Task 7.1)
+
+**Changes:** In the "Available For" column, render the availability dot and count:
+- Green dot (●) + count: talent has `interested` or `surveyAvailability` for any competition
+- Yellow dot (●): talent status starts with `did-` (prior season, hasn't responded yet)
+- Gray dot (●): no availability data
+- On hover, show tooltip with competition names they're available for
+
+---
+
+## Phase 7-Deploy: Deploy Phase 7 Changes
+
+> **This is a deploy task.** Build, upload, and verify all Phase 7 changes together.
+
+### Task 7-D.1: Build and deploy to production — NOT STARTED
+
+**Frontend changed?** Yes.
+```bash
+cd show-controller && npm run build
+# then upload dist per CLAUDE.md Step 1
+```
+
+**Graphics files changed?** No.
+**Server changed?** No.
+
+### Task 7-D.2: Verify Phase 7 on production — NOT STARTED
+
+**Checks:**
+- [ ] Navigate to `https://commentarygraphic.com/talent` — table view renders by default
+- [ ] Table has sortable column headers (click "Name" → sorts alphabetically)
+- [ ] Assignments column shows competition names with colored status pills
+- [ ] Available For column shows green/yellow/gray dots
+- [ ] Last Outreach column shows relative dates
+- [ ] Click a table row — navigates to talent profile
+- [ ] Toggle to card view — cards show assignment details instead of generic count
+- [ ] No console errors
+- [ ] Screenshot → `verify-phase7-table.png`
+- [ ] Screenshot → `verify-phase7-cards.png`
+
+---
+
+## Phase 8: CommentaryPage Cleanup — Kebab Menu + Conflicts + Kanban
+
+> **Deploy rule:** Commit each task. Do NOT deploy until Phase 8-Deploy.
+
+### Task 8.1: Replace button overload with kebab overflow menu — NOT STARTED
+
+**File:** `show-controller/src/pages/CommentaryPage.jsx`
+
+**Problem:** Each assignment card (lines 559-651) shows 8+ visible buttons: Mark as X, Copy Link, Mark Declined, Send Invite, Copy for iMessage, Send Briefing, Copy for iMessage (again), Calendar Invite, Schedule Pre-Prod.
+
+**Change:** Keep only the primary workflow action visible. Move everything else into a kebab (three-dot) menu.
+
+**Visible on card (always):**
+- Status badge (existing)
+- Primary action button: the `flowEntry?.next` "Mark as X" button
+- Kebab menu button (`EllipsisVerticalIcon` from Heroicons)
+
+**Kebab menu structure (dropdown positioned relative to button):**
+```
+── Workflow ──
+Mark as [next status]
+Mark Declined             (only if status === 'invited')
+
+── Outreach ──
+Send Invite
+Copy Invite for iMessage
+Send Briefing
+Copy Briefing for iMessage
+Calendar Invite
+Schedule Pre-Prod
+
+── Links ──
+Copy Booking Link
+
+── Danger ──
+Remove from Competition   (red text)
+```
+
+**Implementation:**
+1. Create a `KebabMenu` component at `show-controller/src/components/crm/KebabMenu.jsx` (extracted — reused by KanbanBoard in Task 8.3)
+2. `useState` for open/closed, close on click outside (`useEffect` + `document.addEventListener('mousedown', ...)`)
+3. Position: absolute, right-aligned, `z-50`
+4. Section headers as small gray uppercase text, items as clickable rows with icon + label
+5. Delete the existing inline button rows (lines 559-651) and replace with: primary action + kebab
+
+**All existing handler functions stay unchanged.** Only the rendering changes.
+
+---
+
+### Task 8.2: Add conflict detection badges with hover popovers — NOT STARTED
+
+**File:** `show-controller/src/pages/CommentaryPage.jsx`
+
+**Problem:** `sameDayConflicts` is computed (lines 71-85) but only used to filter the "Available" tab sidebar. No visual warning on assigned talent who have conflicts.
+
+**Changes:**
+
+1. **Extend conflict data:** Build a map with conflict details instead of just a Set:
+   ```javascript
+   // Before: sameDayConflicts = Set of talentIds
+   // After: sameDayConflictDetails = Map<talentId, [{ compId, compName, role, status }]>
+   ```
+
+2. **Assignment card badge:** Orange warning badge next to name with hover popover:
+   ```jsx
+   {sameDayConflictDetails.has(assignment.talentId) && (
+     <span className="relative group">
+       <span className="px-1.5 py-0.5 bg-orange-700 text-orange-100 text-xs rounded flex items-center gap-1">
+         <ExclamationTriangleIcon className="w-3 h-3" /> Conflict
+       </span>
+       <div className="absolute left-0 top-full mt-1 bg-zinc-800 border border-zinc-700 rounded-lg p-3 text-xs z-50 w-64 hidden group-hover:block shadow-lg">
+         <div className="font-semibold text-orange-300 mb-1">Same-day conflict</div>
+         {sameDayConflictDetails.get(assignment.talentId).map(c => (
+           <div key={c.compId}>Also {c.status} for {c.compName} as {getRoleLabel(c.role)}</div>
+         ))}
+       </div>
+     </span>
+   )}
+   ```
+
+3. **Sidebar badge:** Show orange badge on conflicted talent in search results, sort to bottom.
+
+---
+
+### Task 8.3: Add kanban pipeline board toggle — NOT STARTED
+
+**File:** `show-controller/src/components/crm/KanbanBoard.jsx` (NEW) + modify `CommentaryPage.jsx`
+
+**Columns:** Assigned | Invited | Confirmed | Briefed | Declined
+
+**Each column:**
+- Header: status label + count badge
+- Cards: talent name, role badge, phone link, primary action button, kebab menu (reuse from Task 8.1)
+
+**Drag and drop:** HTML5 drag-and-drop API (no external library). `draggable="true"`, `onDragStart`, `onDragOver` (prevent default), `onDrop`. Validate transitions.
+
+**Integration with CommentaryPage:**
+1. Add `viewMode` state: `'list'` (default) or `'kanban'`
+2. Toggle buttons in header
+3. Persist in `localStorage` key `crm-commentary-view`
+4. Right sidebar (talent search) stays visible in both views
+
+---
+
+## Phase 8-Deploy: Deploy Phase 8 Changes
+
+> **This is a deploy task.**
+
+### Task 8-D.1: Build and deploy to production — NOT STARTED
+
+**Frontend changed?** Yes.
+```bash
+cd show-controller && npm run build
+# then upload dist per CLAUDE.md Step 1
+```
+
+### Task 8-D.2: Verify Phase 8 on production — NOT STARTED
+
+**Checks:**
+- [ ] Assignment cards show only primary action button + kebab menu (no button overload)
+- [ ] Click kebab — dropdown opens with grouped sections
+- [ ] Click outside kebab — closes
+- [ ] If talent has same-day conflict, orange badge visible with hover popover
+- [ ] Toggle to kanban view — columns render for each status
+- [ ] Toggle back to list view — original layout
+- [ ] No console errors
+- [ ] Screenshot → `verify-phase8-kebab.png`
+- [ ] Screenshot → `verify-phase8-kanban.png`
+
+---
+
+## Phase 9: TalentProfilePage — Collapsible Sections + Activity Timeline
+
+> **Deploy rule:** Commit each task. Do NOT deploy until Phase 9-Deploy.
+
+### Task 9.1: Refactor profile into collapsible sections — NOT STARTED
+
+**File:** `show-controller/src/pages/TalentProfilePage.jsx`
+
+**Changes:**
+
+1. Create a `CollapsibleSection` component (inline, like the existing `Field` component):
+   ```jsx
+   function CollapsibleSection({ title, defaultOpen = true, children }) {
+     const [open, setOpen] = useState(defaultOpen);
+     return (
+       <div className="border border-zinc-800 rounded-lg overflow-hidden">
+         <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between px-4 py-3 bg-zinc-900 hover:bg-zinc-800">
+           <span className="text-sm font-semibold text-zinc-300">{title}</span>
+           <ChevronDownIcon className={`w-4 h-4 text-zinc-500 transition-transform ${open ? '' : '-rotate-90'}`} />
+         </button>
+         {open && <div className="p-4">{children}</div>}
+       </div>
+     );
+   }
+   ```
+
+2. Organize existing fields into sections:
+   - **Contact Info** (always open): name, phone, email, discord
+   - **Role & Expertise** (open): wagMag, commentaryRole, canProduce, affiliation, conference
+   - **Availability & Assignments** (open): current assignments from `useTalentAssignments`, interested/survey availability, parsed availability notes
+   - **Notes & Interests** (open): notes, otherInterests, linkedIn, instagram
+   - **History** (collapsed by default): competitionHistory, discoveredFrom, createdAt
+
+---
+
+### Task 9.2: Replace communications log with activity timeline — NOT STARTED
+
+**File:** `show-controller/src/pages/TalentProfilePage.jsx`
+
+**Changes:**
+
+1. Timeline with type-based styling:
+
+   | Type | Icon | Color |
+   |------|------|-------|
+   | `imessage` | `ChatBubbleLeftIcon` | `text-blue-400` |
+   | `invite` | `PaperAirplaneIcon` | `text-green-400` |
+   | `briefing` | `DocumentTextIcon` | `text-purple-400` |
+   | `calendar` | `CalendarIcon` | `text-blue-400` |
+   | `note` | `PencilIcon` | `text-zinc-400` |
+
+2. Timeline layout: vertical line on left, dots at each entry, content to right
+
+3. Filter chips at top: `['all', 'imessage', 'invite', 'briefing', 'calendar']`
+
+4. Relative timestamps via inline `timeAgo` helper (no library)
+
+---
+
+## Phase 9-Deploy: Deploy Phase 9 Changes
+
+### Task 9-D.1: Build and deploy to production — NOT STARTED
+
+**Frontend changed?** Yes.
+```bash
+cd show-controller && npm run build
+# then upload dist per CLAUDE.md Step 1
+```
+
+### Task 9-D.2: Verify Phase 9 on production — NOT STARTED
+
+**Checks:**
+- [ ] Navigate to talent profile with assignments — collapsible sections visible
+- [ ] "Availability & Assignments" section shows cross-competition data
+- [ ] Click chevron on "History" — section toggles
+- [ ] Communications tab shows timeline with type icons
+- [ ] Filter chips work
+- [ ] No console errors
+- [ ] Screenshot → `verify-phase9-profile.png`
+- [ ] Screenshot → `verify-phase9-timeline.png`
+
+---
+
+## Phase 10: Power Features — Cmd+K, Saved Filters, Bulk Ops
+
+> **Deploy rule:** Commit each task. Do NOT deploy until Final-Deploy (UI).
+
+### Task 10.1: Add Cmd+K command palette — NOT STARTED
+
+**File:** `show-controller/src/components/crm/CommandPalette.jsx` (NEW) + modify `show-controller/src/App.jsx`
+
+**What it does:** Global search overlay activated by Cmd+K (Ctrl+K on non-Mac). Searches talent and competitions.
+
+**Implementation:**
+1. Global `keydown` listener (`e.metaKey && e.key === 'k'` or `e.ctrlKey && e.key === 'k'`)
+2. Modal overlay with auto-focused search input
+3. Results grouped: "Talent" and "Competitions"
+4. Arrow keys to navigate, Enter to select, Escape to close
+5. "Recent" section (last 5 items from `localStorage` key `crm-recent-items`)
+6. Use `createPortal` to render at document root
+7. Add `<CommandPalette />` inside `App.jsx`
+
+---
+
+### Task 10.2: Add URL-persisted filters and saved views — NOT STARTED
+
+**File:** `show-controller/src/pages/TalentPage.jsx`
+
+**Changes:**
+1. Replace `useState` for filters with `useSearchParams` from react-router-dom
+2. URL params: `q`, `status`, `wagMag`, `role`
+3. "Save View" button stores filter combos in `localStorage` key `crm-saved-views`
+4. Saved views dropdown next to filter row with delete option
+
+---
+
+### Task 10.3: Add bulk operations with multi-select — NOT STARTED
+
+**Files:**
+- `show-controller/src/pages/TalentPage.jsx`
+- `show-controller/src/components/crm/TalentTable.jsx`
+
+**Changes:**
+1. Checkbox column in table (select all / individual)
+2. Floating action bar when selection > 0: Set Status, Set WAG/MAG, Export CSV, Clear
+3. Bulk status change via dropdown
+4. CSV export via `Blob` + `URL.createObjectURL`
+5. Shift+click range select
+
+---
+
+## Final-Deploy (UI): Full UI Verification
+
+### Task UF.1: Full UI acceptance criteria check — NOT STARTED
+
+Run through every Phase 6-10 acceptance criterion using Playwright.
+Screenshots: `docs/PRD-Commentary-Talent-CRM/screenshots/final-verify-ui-*.png`
+
+**Checklist:**
+- [ ] `useTalentAssignments` hook loads cross-competition assignments
+- [ ] All CRM pages use consistent zinc color tokens
+- [ ] TalentPage table view with sortable columns
+- [ ] View toggle persisted (table/card)
+- [ ] Assignments column shows competition names with role + status pills
+- [ ] Availability dots (green/yellow/gray) visible
+- [ ] Last Outreach column with relative dates
+- [ ] Table rows clickable
+- [ ] CommentaryPage kebab menu with grouped sections
+- [ ] Conflict badges with hover popovers
+- [ ] Kanban toggle on CommentaryPage
+- [ ] TalentProfilePage collapsible sections
+- [ ] Availability & Assignments section with cross-competition data
+- [ ] Communications timeline with type icons and filters
+- [ ] Cmd+K command palette
+- [ ] TalentPage filters persist in URL
+- [ ] Multi-select + floating action bar
+- [ ] Export CSV works
+- [ ] No console errors
+- [ ] Pages render at 1024px width
+
+### Task UF.2: Mark PRD complete — NOT STARTED
+
+Update `PRD-Commentary-Talent-CRM-2026-03-10.md` status to COMPLETE. Commit.
