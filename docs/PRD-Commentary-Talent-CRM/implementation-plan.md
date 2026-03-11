@@ -187,9 +187,11 @@ Use `csv-parse` for CSV parsing (install if not present). Use a simple Levenshte
 
 ---
 
-### Task 2.2: Create public BookingPage — COMPLETE
+### Task 2.2: Create public BookingPage — COMPLETE ✓
 
-**File:** `show-controller/src/pages/BookingPage.jsx` (new file)
+**Status:** Already implemented at show-controller/src/pages/BookingPage.jsx
+
+**File:** `show-controller/src/pages/BookingPage.jsx` (exists)
 
 **Change:** Create a public page (no auth required) that reads/writes Firebase directly (NOT the coordinator server — see Task 2.1 architecture note):
 - Imports `{ db, ref, get, update, set }` from `../lib/firebase`
