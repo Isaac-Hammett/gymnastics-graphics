@@ -627,7 +627,7 @@ Place BEFORE the `/talent/:talentId` route to avoid the param catching `/talent/
 
 > **This is a deploy task.**
 
-### Task 4-D.1: Build, deploy, and verify Phase 4 — NOT STARTED
+### Task 4-D.1: Build, deploy, and verify Phase 4 — IN PROGRESS
 
 **Frontend changed?** Yes
 ```bash
