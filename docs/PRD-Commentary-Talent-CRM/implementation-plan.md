@@ -886,7 +886,7 @@ Update `PRD-Commentary-Talent-CRM-2026-03-10.md` status to `COMPLETE`. Commit.
 **Why this is needed:** TalentPage currently only reads `talentRoster/`. Commentary assignments live at `competitions/{compId}/commentary/{talentId}` — completely siloed per competition. Without joining these, you can't see who is assigned to what, who was invited, or who has responded.
 
 **What it does:**
-- Listens to `competitions/` path via `onValue`
+- Accepts the `competitions` object from `useCompetitions()` as a parameter — do NOT create a new `onValue` listener. `useCompetitions()` (in `show-controller/src/hooks/useCompetitions.js`) already loads the entire `competitions/` tree. Adding a second listener would double bandwidth and memory.
 - For each competition, extracts `commentary` assignments
 - Builds a map: `{ [talentId]: [ { compId, compName, meetDate, role, status, invitedAt, confirmedAt, ... } ] }`
 - Derives per-talent summary fields:
@@ -898,11 +898,11 @@ Update `PRD-Commentary-Talent-CRM-2026-03-10.md` status to `COMPLETE`. Commit.
 - Also computes availability data per talent:
   - `availableFor` — array of `{ compId, compName, source }` where source is "interested" or "survey"
   - `availabilityDot` — "green" (available for 1+ upcoming), "yellow" (did prior season but hasn't responded), "gray" (no availability data)
-- Exports: `useTalentAssignments(talentList)` returning `{ assignmentsByTalent, loading }`
+- Exports: `useTalentAssignments(talentList, competitions)` returning `{ assignmentsByTalent, loading }`
 
-**Pattern to follow:** `show-controller/src/hooks/useCommentaryStaff.js` — same Firebase listener pattern, but reads across all competitions instead of one.
+**Pattern to follow:** `show-controller/src/hooks/useCommentaryStaff.js` for data shape patterns, but this hook is a pure derivation (useMemo) over data already loaded by `useCompetitions()` — no new Firebase listeners.
 
-**Important:** This hook reads `competitions/` which is a large path. Only extract `config.eventName`, `config.meetDate`, and `commentary` from each competition — do NOT store the entire competition object in state.
+**Important:** The `competitions` parameter comes from `useCompetitions()` which already loads the full tree. This hook should use `useMemo` to derive assignment data from the passed-in competitions object — only extract `config.eventName`, `config.meetDate`, and `commentary` from each competition.
 
 ```javascript
 // Return shape per talent:
@@ -1026,8 +1026,9 @@ Navigate to test URLs with Playwright. Take screenshots to `docs/PRD-Commentary-
 **File:** `show-controller/src/pages/TalentPage.jsx`
 
 **Changes:**
-1. Import `TalentTable` and `useTalentAssignments`
-2. Add `viewMode` state: `'table'` (default) or `'cards'`
+1. Import `TalentTable`, `useTalentAssignments`, and `useCompetitions`
+2. Call `const { competitions } = useCompetitions()` then `const { assignmentsByTalent } = useTalentAssignments(talents, competitions)` — the hook takes `competitions` as its second arg (no new Firebase listener)
+3. Add `viewMode` state: `'table'` (default) or `'cards'`
 3. Persist view preference in `localStorage` key `crm-talent-view`
 4. Add toggle buttons in the filter row (right side, before the count): `TableCellsIcon` / `Squares2X2Icon` from Heroicons
 5. Conditionally render `<TalentTable>` or the existing card list based on `viewMode`
@@ -1062,11 +1063,13 @@ Navigate to test URLs with Playwright. Take screenshots to `docs/PRD-Commentary-
 
 **File:** `show-controller/src/components/crm/TalentTable.jsx` (modify — created in Task 7.1)
 
-**Changes:** In the "Available For" column, render the availability dot and count:
-- Green dot (●) + count: talent has `interested` or `surveyAvailability` for any competition
-- Yellow dot (●): talent status starts with `did-` (prior season, hasn't responded yet)
-- Gray dot (●): no availability data
-- On hover, show tooltip with competition names they're available for
+**Changes:** In the "Available For" column, consume the pre-computed fields from `useTalentAssignments` output (do NOT re-implement the dot logic — it's already computed in Task 6.1's hook):
+- Read `assignmentsByTalent[talentId].availabilityDot` for the dot color (green/yellow/gray)
+- Read `assignmentsByTalent[talentId].availableFor` for the count and competition names
+- Green dot (●) + count: `availabilityDot === 'green'`
+- Yellow dot (●): `availabilityDot === 'yellow'`
+- Gray dot (●): `availabilityDot === 'gray'`
+- On hover, show tooltip listing `availableFor` competition names + source ("survey" / "interested")
 
 ---
 
@@ -1121,8 +1124,8 @@ cd show-controller && npm run build
 **Kebab menu structure (dropdown positioned relative to button):**
 ```
 ── Workflow ──
-Mark as [next status]
 Mark Declined             (only if status === 'invited')
+(NOTE: "Mark as [next status]" is NOT in the kebab — it's already the visible primary action button)
 
 ── Outreach ──
 Send Invite
@@ -1158,10 +1161,12 @@ Remove from Competition   (red text)
 
 **Changes:**
 
-1. **Extend conflict data:** Build a map with conflict details instead of just a Set:
+1. **Extend conflict data:** Build a map with conflict details instead of just a Set. Also widen the scope — the existing code only checks `CONFIRMED` status, but conflicts should flag ALL non-declined statuses (assigned, invited, confirmed, briefed) so the coordinator sees warnings before double-booking:
    ```javascript
-   // Before: sameDayConflicts = Set of talentIds
+   // Before: sameDayConflicts = Set of talentIds (CONFIRMED only)
    // After: sameDayConflictDetails = Map<talentId, [{ compId, compName, role, status }]>
+   // Include ALL statuses except 'declined' — a talent who is 'invited' to another same-day
+   // meet is still a potential conflict the coordinator should know about.
    ```
 
 2. **Assignment card badge:** Orange warning badge next to name with hover popover:
@@ -1195,7 +1200,15 @@ Remove from Competition   (red text)
 - Header: status label + count badge
 - Cards: talent name, role badge, phone link, primary action button, kebab menu (reuse from Task 8.1)
 
-**Drag and drop:** HTML5 drag-and-drop API (no external library). `draggable="true"`, `onDragStart`, `onDragOver` (prevent default), `onDrop`. Validate transitions.
+**Drag and drop:** HTML5 drag-and-drop API (no external library). `draggable="true"`, `onDragStart`, `onDragOver` (prevent default), `onDrop`.
+
+**Valid drag transitions (must enforce):**
+- Forward only, matching `STATUS_FLOW`: assigned → invited → confirmed → briefed
+- Any status → declined (always allowed)
+- No backward drags (e.g., confirmed → invited is rejected)
+- No skipping statuses (e.g., assigned → confirmed is rejected)
+- Declined is terminal — cannot drag OUT of declined column
+- On invalid drop: show brief toast "Cannot move from X to Y" and snap card back
 
 **Integration with CommentaryPage:**
 1. Add `viewMode` state: `'list'` (default) or `'kanban'`
@@ -1261,7 +1274,7 @@ cd show-controller && npm run build
 2. Organize existing fields into sections:
    - **Contact Info** (always open): name, phone, email, discord
    - **Role & Expertise** (open): wagMag, commentaryRole, canProduce, affiliation, conference
-   - **Availability & Assignments** (open): current assignments from `useTalentAssignments`, interested/survey availability, parsed availability notes
+   - **Availability & Assignments** (open): current assignments, interested/survey availability, parsed availability notes. Call `useTalentAssignments([talent], competitions)` with a single-element array, then read `assignmentsByTalent[talentId]`. The hook uses `useMemo` so a 1-element input is cheap. `competitions` comes from `useCompetitions()` — call it in TalentProfilePage (it already loads on this page via the existing talent data flow).
    - **Notes & Interests** (open): notes, otherInterests, linkedIn, instagram
    - **History** (collapsed by default): competitionHistory, discoveredFrom, createdAt
 
@@ -1333,6 +1346,8 @@ cd show-controller && npm run build
 5. "Recent" section (last 5 items from `localStorage` key `crm-recent-items`)
 6. Use `createPortal` to render at document root
 7. Add `<CommandPalette />` inside `App.jsx`
+
+**Data source:** CommandPalette lives in App.jsx, outside any provider. Use one-shot Firebase `get()` reads (not `onValue` listeners) to fetch `talentRoster/` and `competitions/` when the palette opens. This avoids adding permanent listeners at the app root. Cache results in a `useRef` with a 30-second TTL so repeated opens don't re-fetch. Import `{ db, ref, get }` from `../lib/firebase`.
 
 ---
 
