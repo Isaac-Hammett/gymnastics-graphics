@@ -18,6 +18,7 @@ import BackgroundGeneratorPage from './pages/BackgroundGeneratorPage';
 import ChecklistPage from './pages/ChecklistPage';
 import TalentPage from './pages/TalentPage';
 import TalentProfilePage from './pages/TalentProfilePage';
+import TalentDiscoveryPage from './pages/TalentDiscoveryPage';
 import CommentaryPage from './pages/CommentaryPage';
 import BookingPage from './pages/BookingPage';
 
@@ -91,6 +92,7 @@ function App() {
 
         {/* Talent roster — global tool pages */}
         <Route path="/talent" element={<TalentPage />} />
+        <Route path="/talent/discover" element={<TalentDiscoveryPage />} />
         <Route path="/talent/:talentId" element={<TalentProfilePage />} />
 
         {/* Public booking page (no auth required) - MUST be before /:compId */}

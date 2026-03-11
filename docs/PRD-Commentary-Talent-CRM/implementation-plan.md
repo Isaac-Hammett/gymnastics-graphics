@@ -598,7 +598,7 @@ Reference existing card-based UI patterns from TalentPage.jsx.
 
 ---
 
-### Task 4.4: Add discovery route to App.jsx — NOT STARTED
+### Task 4.4: Add discovery route to App.jsx — COMPLETE
 
 **File:** `show-controller/src/App.jsx`
 
