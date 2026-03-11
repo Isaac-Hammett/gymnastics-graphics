@@ -37,7 +37,7 @@ This must be done before deploying — the app will redirect to `/login` for eve
 
 > **Deploy rule:** Commit each task. Do NOT deploy until Phase 1-Deploy.
 
-### Task 1.1: Add Firebase Auth to firebase.js — NOT STARTED
+### Task 1.1: Add Firebase Auth to firebase.js — COMPLETE
 
 **File:** `show-controller/src/lib/firebase.js`
 
