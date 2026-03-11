@@ -32,6 +32,7 @@ import { mapEditorSegmentsToEngine, validateEngineSegments, diffSegments, detect
 import aiSuggestionService from './lib/aiSuggestionService.js';
 import { getOrCreateContextService, getContextService, removeContextService } from './lib/aiContextService.js';
 import { ingestCompetitionStats, ingestTeamStats, syncStatsToConfig, snapshotStatsForCompetition, checkStaleness, parseCompetitionType, buildTeamDbKey, fetchLeagueRankings } from './lib/rtnStatsService.js';
+import { randomUUID } from 'crypto';
 
 dotenv.config();
 
@@ -2845,6 +2846,61 @@ app.post('/api/coordinator/keep-alive', (req, res) => {
     lastActivity: new Date(lastActivityTimestamp).toISOString(),
     message: 'Keep-alive received, activity timestamp updated'
   });
+});
+
+// ============================================
+// Booking & Talent Management API Endpoints
+// ============================================
+
+// POST /api/book/generate - Generate a booking token for talent invitation
+app.post('/api/book/generate', async (req, res) => {
+  const { talentId, compId, role } = req.body;
+
+  if (!talentId || !compId || !role) {
+    return res.status(400).json({
+      error: 'Missing required fields',
+      required: ['talentId', 'compId', 'role']
+    });
+  }
+
+  try {
+    const db = productionConfigService.getDb();
+    if (!db) {
+      return res.status(503).json({ error: 'Firebase not available' });
+    }
+
+    // Generate unique token
+    const token = randomUUID();
+    const now = new Date().toISOString();
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(); // 30 days
+
+    // Write token to Firebase
+    await db.ref(`bookingTokens/${token}`).set({
+      talentId,
+      compId,
+      role,
+      createdAt: now,
+      expiresAt,
+      responded: false
+    });
+
+    // Update competition commentary status
+    await db.ref(`competitions/${compId}/commentary/${talentId}`).update({
+      status: 'invited',
+      invitedAt: now
+    });
+
+    const url = `https://commentarygraphic.com/book/${token}`;
+
+    res.json({
+      token,
+      url,
+      expiresAt
+    });
+  } catch (error) {
+    console.error('[Booking] Failed to generate booking token:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 /**
