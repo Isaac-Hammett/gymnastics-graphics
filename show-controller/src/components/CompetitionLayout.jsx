@@ -1,5 +1,6 @@
-import { Outlet, useParams, Navigate } from 'react-router-dom';
+import { Outlet, useParams, Navigate, useLocation } from 'react-router-dom';
 import { CompetitionProvider, useCompetition, CompetitionErrorType } from '../context/CompetitionContext';
+import { useAuth } from '../context/AuthContext';
 import { ShowProvider } from '../context/ShowContext';
 import { OBSProvider } from '../context/OBSContext';
 import CompetitionError from './CompetitionError';
@@ -75,6 +76,8 @@ function CompetitionLayoutInner() {
  */
 export default function CompetitionLayout() {
   const { compId } = useParams();
+  const { user, loading } = useAuth();
+  const location = useLocation();
 
   // Check if this is a reserved path that shouldn't be treated as a competition
   // This handles cases where React Router incorrectly matches /:compId for admin routes
@@ -83,6 +86,14 @@ export default function CompetitionLayout() {
     // Since we're here, it means the route wasn't matched properly - try a hard navigation
     window.location.href = `/${compId}${window.location.pathname.slice(compId.length + 1)}`;
     return null;
+  }
+
+  // /:compId/talent is a public route (talent-facing view) — skip auth check
+  const isTalentPath = location.pathname.endsWith('/talent');
+
+  // Auth check for non-talent paths
+  if (!isTalentPath && !loading && !user) {
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   }
 
   return (

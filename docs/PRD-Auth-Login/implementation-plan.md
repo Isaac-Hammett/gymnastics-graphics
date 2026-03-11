@@ -12,7 +12,7 @@
 |-------|-------------|-------|--------|
 | Phase 1 | Firebase Auth + Context + Login Page | 3 | COMPLETE |
 | Phase 1-Deploy | Deploy Phase 1 changes | 2 | COMPLETE |
-| Phase 2 | Route Protection | 2 | IN PROGRESS |
+| Phase 2 | Route Protection | 2 | COMPLETE |
 | Phase 2-Deploy | Deploy Phase 2 changes | 2 | NOT STARTED |
 | Phase 3 | Sign-Out UI | 1 | NOT STARTED |
 | Phase 3-Deploy | Deploy Phase 3 changes | 1 | NOT STARTED |
@@ -182,7 +182,7 @@ Navigate to test URLs with Playwright. Take screenshots to `docs/PRD-Auth-Login/
 
 ---
 
-### Task 2.2: Wrap coordinator routes + CompetitionLayout auth check — NOT STARTED
+### Task 2.2: Wrap coordinator routes + CompetitionLayout auth check — COMPLETE
 
 **File:** `show-controller/src/App.jsx`
 
@@ -337,7 +337,7 @@ Update `PRD-Auth-Login-2026-03-11.md` status to COMPLETE. Commit.
 |-------|-------|------------|--------|
 | Phase 1 | 3 | Low | COMPLETE |
 | Phase 1-Deploy | 2 | Low | COMPLETE |
-| Phase 2 | 2 | Medium | NOT STARTED |
+| Phase 2 | 2 | Medium | COMPLETE |
 | Phase 2-Deploy | 2 | Low | NOT STARTED |
 | Phase 3 | 1 | Low | NOT STARTED |
 | Phase 3-Deploy | 1 | Low | NOT STARTED |
