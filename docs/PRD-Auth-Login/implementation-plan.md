@@ -58,7 +58,7 @@ export { auth, signInWithEmailAndPassword, signOut, onAuthStateChanged };
 
 ---
 
-### Task 1.2: Create AuthContext — NOT STARTED
+### Task 1.2: Create AuthContext — COMPLETE
 
 **File:** `show-controller/src/context/AuthContext.jsx` (new file)
 
