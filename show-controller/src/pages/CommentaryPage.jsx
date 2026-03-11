@@ -12,6 +12,7 @@ import {
   UserGroupIcon,
   ChevronRightIcon,
   CheckIcon,
+  LinkIcon,
 } from '@heroicons/react/24/solid';
 import toast from 'react-hot-toast';
 
@@ -108,6 +109,24 @@ export default function CommentaryPage() {
     await updateNotes(talentId, notesDraft);
     setEditingNotes(null);
     toast.success('Notes saved');
+  }
+
+  async function handleCopyBookingLink(talentId, role) {
+    try {
+      const response = await fetch(`https://api.commentarygraphic.com/api/book/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ talentId, compId, role }),
+      });
+
+      if (!response.ok) throw new Error('Failed to generate booking link');
+
+      const data = await response.json();
+      await navigator.clipboard.writeText(data.url);
+      toast.success('Booking link copied!', { duration: 2000 });
+    } catch (e) {
+      toast.error('Failed to generate link');
+    }
   }
 
   // Group staff by role
@@ -227,6 +246,14 @@ export default function CommentaryPage() {
                               Mark as {getStaffStatusLabel(flowEntry.next)}
                             </button>
                           )}
+                          <button
+                            onClick={() => handleCopyBookingLink(assignment.talentId, assignment.role)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-700 hover:bg-zinc-600 rounded text-xs font-medium transition-colors"
+                            title="Generate and copy booking link"
+                          >
+                            <LinkIcon className="w-3 h-3" />
+                            Copy Link
+                          </button>
                           {assignment.status === STAFF_STATUS.INVITED && (
                             <button
                               onClick={() => handleDecline(assignment.talentId)}
@@ -315,39 +342,48 @@ export default function CommentaryPage() {
             ) : sortedAvailable.length === 0 ? (
               <div className="text-center py-8 text-zinc-500 text-sm">No talent found</div>
             ) : (
-              sortedAvailable.map(talent => (
-                <div
-                  key={talent.id}
-                  className="bg-zinc-800 hover:bg-zinc-750 border border-zinc-700 rounded-lg px-3 py-2.5 group"
-                >
-                  <div className="flex items-start gap-2">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 mb-0.5">
-                        <span className="text-sm font-medium text-white truncate">{talent.name}</span>
-                        <span className={`flex-shrink-0 px-1.5 py-0.5 rounded text-xs ${getStatusColor(talent.status)}`}>
-                          {getStatusLabel(talent.status)}
-                        </span>
+              sortedAvailable.map(talent => {
+                const isInterested = talent.interested && talent.interested[compId] === true;
+                return (
+                  <div
+                    key={talent.id}
+                    className="bg-zinc-800 hover:bg-zinc-750 border border-zinc-700 rounded-lg px-3 py-2.5 group"
+                  >
+                    <div className="flex items-start gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <span className="text-sm font-medium text-white truncate">{talent.name}</span>
+                          <span className={`flex-shrink-0 px-1.5 py-0.5 rounded text-xs ${getStatusColor(talent.status)}`}>
+                            {getStatusLabel(talent.status)}
+                          </span>
+                          {isInterested && (
+                            <span className="flex-shrink-0 px-1.5 py-0.5 rounded text-xs bg-green-900 text-green-200 flex items-center gap-1">
+                              <CheckIcon className="w-2.5 h-2.5" />
+                              Interested
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs text-zinc-500 truncate">
+                          {talent.commentaryRole}{talent.affiliation ? ` · ${talent.affiliation}` : ''}
+                        </div>
+                        {talent.phone && (
+                          <a href={`tel:${talent.phone}`} className="text-xs text-blue-500 hover:text-blue-400 flex items-center gap-1 mt-0.5">
+                            <PhoneIcon className="w-2.5 h-2.5" />
+                            {talent.phone}
+                          </a>
+                        )}
                       </div>
-                      <div className="text-xs text-zinc-500 truncate">
-                        {talent.commentaryRole}{talent.affiliation ? ` · ${talent.affiliation}` : ''}
-                      </div>
-                      {talent.phone && (
-                        <a href={`tel:${talent.phone}`} className="text-xs text-blue-500 hover:text-blue-400 flex items-center gap-1 mt-0.5">
-                          <PhoneIcon className="w-2.5 h-2.5" />
-                          {talent.phone}
-                        </a>
-                      )}
+                      <button
+                        onClick={() => handleAssign(talent)}
+                        className="flex-shrink-0 p-1.5 bg-blue-600 hover:bg-blue-500 rounded transition-colors opacity-0 group-hover:opacity-100"
+                        title={`Add as ${getRoleLabel(activeRole)}`}
+                      >
+                        <PlusIcon className="w-3.5 h-3.5" />
+                      </button>
                     </div>
-                    <button
-                      onClick={() => handleAssign(talent)}
-                      className="flex-shrink-0 p-1.5 bg-blue-600 hover:bg-blue-500 rounded transition-colors opacity-0 group-hover:opacity-100"
-                      title={`Add as ${getRoleLabel(activeRole)}`}
-                    >
-                      <PlusIcon className="w-3.5 h-3.5" />
-                    </button>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
 
