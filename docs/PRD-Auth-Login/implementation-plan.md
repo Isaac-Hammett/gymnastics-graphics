@@ -14,7 +14,7 @@
 | Phase 1-Deploy | Deploy Phase 1 changes | 2 | COMPLETE |
 | Phase 2 | Route Protection | 2 | COMPLETE |
 | Phase 2-Deploy | Deploy Phase 2 changes | 2 | COMPLETE |
-| Phase 3 | Sign-Out UI | 1 | NOT STARTED |
+| Phase 3 | Sign-Out UI | 1 | COMPLETE |
 | Phase 3-Deploy | Deploy Phase 3 changes | 1 | NOT STARTED |
 | Final-Deploy | Full verification + mark complete | 2 | NOT STARTED |
 | **Total** | | **13** | |
@@ -255,7 +255,7 @@ cd show-controller && npm run build
 
 > **Deploy rule:** Commit, then deploy in Phase 3-Deploy.
 
-### Task 3.1: Add sign-out button to RequireAuth wrapper — NOT STARTED
+### Task 3.1: Add sign-out button to RequireAuth wrapper — COMPLETE
 
 **File:** `show-controller/src/components/RequireAuth.jsx`
 
@@ -339,7 +339,7 @@ Update `PRD-Auth-Login-2026-03-11.md` status to COMPLETE. Commit.
 | Phase 1-Deploy | 2 | Low | COMPLETE |
 | Phase 2 | 2 | Medium | COMPLETE |
 | Phase 2-Deploy | 2 | Low | COMPLETE |
-| Phase 3 | 1 | Low | NOT STARTED |
+| Phase 3 | 1 | Low | COMPLETE |
 | Phase 3-Deploy | 1 | Low | NOT STARTED |
 | Final-Deploy | 2 | Low | NOT STARTED |
 | **Total** | **13** | | |
