@@ -210,7 +210,7 @@ Reference `../lib/firebase` import pattern from `useCommentaryStaff.js`.
 
 ---
 
-### Task 2.3: Add public route for booking page — NOT STARTED
+### Task 2.3: Add public route for booking page — COMPLETE
 
 **File:** `show-controller/src/App.jsx`
 
