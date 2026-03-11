@@ -11,7 +11,7 @@
 | Phase | Description | Tasks | Status |
 |-------|-------------|-------|--------|
 | Phase 1 | Firebase Auth + Context + Login Page | 3 | COMPLETE |
-| Phase 1-Deploy | Deploy Phase 1 changes | 2 | NOT STARTED |
+| Phase 1-Deploy | Deploy Phase 1 changes | 2 | COMPLETE |
 | Phase 2 | Route Protection | 2 | NOT STARTED |
 | Phase 2-Deploy | Deploy Phase 2 changes | 2 | NOT STARTED |
 | Phase 3 | Sign-Out UI | 1 | NOT STARTED |
@@ -126,7 +126,7 @@ export { auth, signInWithEmailAndPassword, signOut, onAuthStateChanged };
 - Confirm Firebase Console → Authentication → Users has at least ONE account for testing
 - If either is missing: **do not deploy** — the app will lock out all users once route protection is added in Phase 2
 
-### Task 1-D.1: Build and deploy to production — NOT STARTED
+### Task 1-D.1: Build and deploy to production — COMPLETE
 
 **Frontend changed?** Yes
 ```bash
@@ -138,15 +138,15 @@ cd show-controller && npm run build
 
 **Server changed?** No — auth is entirely client-side (Firebase Auth SDK).
 
-### Task 1-D.2: Verify Phase 1 on production — NOT STARTED
+### Task 1-D.2: Verify Phase 1 on production — COMPLETE
 
 Navigate to test URLs with Playwright. Take screenshots to `docs/PRD-Auth-Login/screenshots/`.
 
 **Checks:**
-- [ ] Navigate to `https://commentarygraphic.com/login` — login page renders (centered card, email + password fields)
-- [ ] Take screenshot → `docs/PRD-Auth-Login/screenshots/verify-login-page.png`
-- [ ] No console errors (`browser_console_messages`)
-- [ ] Note: route protection is NOT active yet — `/` and other pages still load without login
+- [x] Navigate to `https://commentarygraphic.com/login` — login page renders (centered card, email + password fields)
+- [x] Take screenshot → `docs/PRD-Auth-Login/screenshots/verify-login-page.png`
+- [x] No console errors (`browser_console_messages`)
+- [x] Note: route protection is NOT active yet — `/` and other pages still load without login
 
 ---
 
@@ -336,7 +336,7 @@ Update `PRD-Auth-Login-2026-03-11.md` status to COMPLETE. Commit.
 | Phase | Tasks | Complexity | Status |
 |-------|-------|------------|--------|
 | Phase 1 | 3 | Low | COMPLETE |
-| Phase 1-Deploy | 2 | Low | NOT STARTED |
+| Phase 1-Deploy | 2 | Low | COMPLETE |
 | Phase 2 | 2 | Medium | NOT STARTED |
 | Phase 2-Deploy | 2 | Low | NOT STARTED |
 | Phase 3 | 1 | Low | NOT STARTED |
