@@ -13,6 +13,7 @@ import StatsStatusBadge from '../components/StatsStatusBadge';
 import StatsDetailPanel from '../components/StatsDetailPanel';
 import RankingsPanel from '../components/RankingsPanel';
 import { db, ref, onValue } from '../lib/firebase';
+import { useProductionAlerts } from '../hooks/useProductionAlerts';
 
 /**
  * HomePage - Consolidated landing page combining:
@@ -49,6 +50,7 @@ export default function HomePage() {
     wake,
   } = useCoordinator();
   const { getTeamLogo } = useTeamsDatabase();
+  const { alerts, loading: alertsLoading } = useProductionAlerts();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [vmStatuses, setVmStatuses] = useState({});
@@ -585,6 +587,36 @@ export default function HomePage() {
                 </p>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Pre-Production Alerts */}
+        {!alertsLoading && (
+          <div className="mb-8">
+            {alerts.length === 0 ? (
+              <div className="bg-green-900/20 border-2 border-green-800/50 rounded-xl p-5">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-green-900/50 rounded-full flex items-center justify-center">
+                    <span className="text-xl text-green-400">✓</span>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-white">All Caught Up</h3>
+                    <p className="text-sm text-green-300/70">
+                      No pre-production alerts at this time.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide mb-2">
+                  Pre-Production Alerts ({alerts.length})
+                </h2>
+                {alerts.map((alert) => (
+                  <AlertCard key={alert.id} alert={alert} navigate={navigate} />
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -1586,6 +1618,106 @@ function CommentaryStatusBadge({ compId }) {
     }`}>
       <span>{allConfirmed ? '✓' : '⋯'}</span>
       Commentary: {confirmed}/{total} confirmed
+    </div>
+  );
+}
+
+/**
+ * AlertCard - Displays a single pre-production alert with an action button.
+ */
+function AlertCard({ alert, navigate }) {
+  const [processing, setProcessing] = useState(false);
+
+  const handleAction = async () => {
+    setProcessing(true);
+    try {
+      if (alert.type === 'start-outreach' || alert.type === 'no-confirmed' || alert.type === 'follow-up' || alert.type === 'schedule-preproduction') {
+        // Navigate to commentary page
+        navigate(`/${alert.compId}/commentary`);
+      } else if (alert.type === 'send-calendar') {
+        // Call calendar endpoint inline
+        const response = await fetch(`/api/commentary/${alert.compId}/${alert.talentId}/calendar-invite`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        if (!response.ok) {
+          throw new Error('Failed to send calendar invite');
+        }
+        // Alert will disappear automatically via Firebase real-time sync
+      }
+    } catch (error) {
+      console.error('Alert action error:', error);
+      alert('Failed to complete action. Check console for details.');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const getAlertStyle = () => {
+    switch (alert.type) {
+      case 'no-confirmed':
+      case 'follow-up':
+        return 'bg-red-900/30 border-red-800 text-red-300';
+      case 'send-calendar':
+      case 'schedule-preproduction':
+        return 'bg-blue-900/30 border-blue-800 text-blue-300';
+      default:
+        return 'bg-yellow-900/30 border-yellow-800 text-yellow-300';
+    }
+  };
+
+  const getAlertIcon = () => {
+    switch (alert.type) {
+      case 'no-confirmed':
+      case 'follow-up':
+        return '⚠';
+      case 'send-calendar':
+      case 'schedule-preproduction':
+        return '🔔';
+      default:
+        return 'ⓘ';
+    }
+  };
+
+  const getActionLabel = () => {
+    switch (alert.type) {
+      case 'send-calendar':
+        return 'Send Invite';
+      case 'start-outreach':
+      case 'no-confirmed':
+      case 'follow-up':
+      case 'schedule-preproduction':
+      default:
+        return 'Go to Commentary';
+    }
+  };
+
+  return (
+    <div className={`border-2 rounded-xl p-4 ${getAlertStyle()}`}>
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3 flex-1">
+          <div className="w-8 h-8 bg-zinc-900/50 rounded-full flex items-center justify-center text-lg flex-shrink-0">
+            {getAlertIcon()}
+          </div>
+          <p className="text-sm text-white">{alert.message}</p>
+        </div>
+        <button
+          onClick={handleAction}
+          disabled={processing}
+          className={`px-4 py-2 bg-white/10 hover:bg-white/20 disabled:bg-zinc-800 disabled:text-zinc-500 text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap ${
+            processing ? 'cursor-not-allowed' : ''
+          }`}
+        >
+          {processing ? (
+            <span className="flex items-center gap-2">
+              <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              Sending...
+            </span>
+          ) : (
+            getActionLabel()
+          )}
+        </button>
+      </div>
     </div>
   );
 }
