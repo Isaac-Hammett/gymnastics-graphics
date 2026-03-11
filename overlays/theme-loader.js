@@ -105,18 +105,29 @@
     const root = document.documentElement;
     const colors = theme.colors;
 
-    // Map theme colors to CSS custom properties with --meet- prefix
+    // Map theme color fields to CSS custom properties
+    // Supports both v3.0 field names and v2.0 backward-compat names
     const colorMappings = {
-      accentPrimary: '--meet-accent-primary',
-      accentSecondary: '--meet-accent-secondary',
+      // v2.0 backward compat FIRST (old themes still work)
+      // v3.0 fields below will overwrite these if both exist
       headerBg: '--meet-header-bg',
+      accentPrimary: '--meet-content-bg',
+      accentSecondary: '--meet-header-bg',
+      footerBg: '--meet-header-bg',
       headerText: '--meet-header-text',
-      footerBg: '--meet-footer-bg',
       borderColor: '--meet-border-color',
       badgeBg: '--meet-badge-bg',
-      badgeText: '--meet-badge-text',
       overlayBg: '--meet-overlay-bg',
-      overlayText: '--meet-overlay-text'
+      overlayText: '--meet-overlay-text',
+      // v3.0 field names (8 colors) — applied LAST so they take precedence
+      headerBar: '--meet-header-bg',
+      contentArea: '--meet-content-bg',
+      bodyBackground: '--meet-overlay-bg',
+      borderDivider: '--meet-border-color',
+      badge: '--meet-badge-bg',
+      badgeText: '--meet-badge-text',
+      textOnHeader: '--meet-header-text',
+      textOnContent: '--meet-overlay-text',
     };
 
     for (const [themeKey, cssVar] of Object.entries(colorMappings)) {

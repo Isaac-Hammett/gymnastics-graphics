@@ -276,13 +276,16 @@ export function buildSponsorsThanksURL({ logo, sponsorsJson, baseUrl, meetTheme 
  * @param {string} [options.meetTheme] - Meet theme ID for themed graphics
  * @returns {string} Complete URL
  */
-export function buildSponsorsCycleURL({ logo, sponsorsJson, baseUrl, meetTheme }) {
+export function buildSponsorsCycleURL({ logo, sponsorsJson, baseUrl, meetTheme, lockedIndex, showBounds, showGuides }) {
   const base = baseUrl || getBaseURL();
   const params = new URLSearchParams();
 
   if (logo) params.set('logo', logo);
   if (sponsorsJson) params.set('sponsors', sponsorsJson);
   if (meetTheme) params.set('meetTheme', meetTheme);
+  if (lockedIndex != null && lockedIndex >= 0) params.set('lockedIndex', String(lockedIndex));
+  if (showBounds) params.set('showBounds', 'true');
+  if (showGuides) params.set('showGuides', 'true');
 
   return `${base}/overlays/sponsors-cycle.html?${params.toString()}`;
 }
@@ -433,7 +436,7 @@ export function buildEventSummaryURL({ mode, rotation, apparatus, virtiusSession
  */
 export function generateGraphicURL(graphicId, formData, teamCount, baseUrl, options = {}) {
   const base = baseUrl || getBaseURL();
-  const { compType, virtiusSessionId, compId, summaryTheme, sponsors, meetTheme } = options;
+  const { compType, virtiusSessionId, compId, summaryTheme, sponsors, meetTheme, meetThemeLogo, lockedIndex, showBounds, showGuides } = options;
 
   // Helper to get team logo with placeholder fallback
   const getTeamLogo = (teamNum) => {
@@ -491,7 +494,7 @@ export function generateGraphicURL(graphicId, formData, teamCount, baseUrl, opti
   }
 
   // Handle frame overlay graphics
-  const frameMatch = graphicId.match(/^frame-(quad|tri-center|tri-wide|team-header|single|dual)$/);
+  const frameMatch = graphicId.match(/^frame-(quad|tri-center|tri-wide-top|tri-wide|team-header|single|dual)$/);
   if (frameMatch) {
     return buildFrameOverlayURL({
       frameType: frameMatch[1],
@@ -665,6 +668,9 @@ export function generateGraphicURL(graphicId, formData, teamCount, baseUrl, opti
         sponsorsJson: sponsors || '[]',
         baseUrl: base,
         meetTheme,
+        lockedIndex,
+        showBounds,
+        showGuides,
       });
 
     case 'sponsors-bug':
@@ -677,14 +683,41 @@ export function generateGraphicURL(graphicId, formData, teamCount, baseUrl, opti
     case 'rotation-slate':
       // Rotation Slate - full screen with team logo, meet name, rotation number
       const rotationSlateParams = new URLSearchParams();
-      rotationSlateParams.set('logo', getTeamLogo(1));
+      rotationSlateParams.set('logo', (meetTheme && meetThemeLogo) ? meetThemeLogo : getTeamLogo(1));
       rotationSlateParams.set('meetName', formData.eventName || 'GYMNASTICS');
       rotationSlateParams.set('rotation', options.rotation || '1');
+      if (options.layout && options.layout !== 'classic') rotationSlateParams.set('layout', options.layout);
       if (meetTheme) rotationSlateParams.set('meetTheme', meetTheme);
       return `${base}/overlays/rotation-slate.html?${rotationSlateParams.toString()}`;
 
-    default:
+    case 'rotation-slate-auto': {
+      // Auto-updating Rotation Slate - reads current rotation from Virtius API
+      const autoSlateParams = new URLSearchParams();
+      if (options.compId) autoSlateParams.set('compId', options.compId);
+      if (meetTheme) autoSlateParams.set('meetTheme', meetTheme);
+      return `${base}/overlays/rotation-slate-auto.html?${autoSlateParams.toString()}`;
+    }
+
+    case 'event-calendar': {
+      const calendarParams = new URLSearchParams();
+      const calendarLogo = (meetTheme && meetThemeLogo) ? meetThemeLogo : formData.team1Logo || '';
+      if (calendarLogo) calendarParams.set('logo', calendarLogo);
+      if (formData.calendarTitle) calendarParams.set('title', formData.calendarTitle);
+      if (formData.calendarEvents) calendarParams.set('events', formData.calendarEvents);
+      if (formData.calendarColumns && formData.calendarColumns !== 'auto') calendarParams.set('columns', formData.calendarColumns);
+      if (meetTheme) calendarParams.set('meetTheme', meetTheme);
+      return `${base}/overlays/event-calendar.html?${calendarParams.toString()}`;
+    }
+
+    default: {
+      // Fallback: try building URL from registry schema for overlay graphics
+      const registryUrl = buildGraphicUrlFromRegistry(graphicId, formData, teamCount, {
+        baseUrl: base,
+        meetTheme,
+      });
+      if (registryUrl) return registryUrl;
       return '';
+    }
   }
 }
 
@@ -768,9 +801,11 @@ export function buildGraphicUrlFromRegistry(graphicId, formData, teamCount, opti
     for (const [paramKey, paramSchema] of Object.entries(graphic.params)) {
       let value = null;
 
-      if (paramSchema.source === 'competition') {
+      // Check formData first (works for competition-sourced AND user-provided params)
+      if (paramKey in formData && formData[paramKey]) {
+        value = formData[paramKey];
+      } else if (paramSchema.source === 'competition') {
         // Auto-fill from formData based on param name
-        // Handle team-specific params like team1Logo
         if (paramKey in formData) {
           value = formData[paramKey];
         }

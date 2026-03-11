@@ -167,6 +167,23 @@
       headerLogo.style.display = 'none';
     }
 
+    // Override with meet logo when theme is active (event-level graphic)
+    function checkMeetLogo() {
+      const meetLogo = document.body.getAttribute('data-meet-logo');
+      if (meetLogo) {
+        headerLogo.src = meetLogo;
+        headerLogo.style.display = '';
+      }
+      // When theme is applied, clear any auto-calculated inline background
+      // so the CSS variable --meet-overlay-bg takes effect
+      if (document.body.hasAttribute('data-meet-theme')) {
+        const cont = document.querySelector('.sponsors-container');
+        if (cont) cont.style.background = '';
+      }
+    }
+    setTimeout(checkMeetLogo, 500);
+    new MutationObserver(checkMeetLogo).observe(document.body, { attributes: true, attributeFilter: ['data-meet-logo', 'data-meet-theme'] });
+
     // Parse sponsors
     let sponsors = [];
     if (sponsorsParam) {
@@ -278,6 +295,9 @@
 
       // Function to update background after analyzing logos
       async function updateBackground() {
+        // When a theme is active, respect the theme's --meet-overlay-bg instead of auto-calculating
+        if (document.body.hasAttribute('data-meet-theme')) return;
+
         const colors = [];
         for (const img of loadedImages) {
           const color = await getImageColors(img);
@@ -304,6 +324,17 @@
 
         const name = sponsor.name || 'Sponsor';
         const url = sponsor.url || '';
+
+        // Apply per-sponsor overrides (scale, offsetX, offsetY)
+        const scale = (sponsor.scale || 100) / 100;
+        const ox = sponsor.offsetX || 0;
+        const oy = sponsor.offsetY || 0;
+        const transforms = [];
+        if (scale !== 1) transforms.push(`scale(${scale})`);
+        if (ox || oy) transforms.push(`translate(${ox}px, ${oy}px)`);
+        if (transforms.length > 0) {
+          item.style.transform = transforms.join(' ');
+        }
 
         if (url) {
           const img = document.createElement('img');
@@ -355,6 +386,6 @@
       }
     }
   </script>
-  <script src="theme-loader.js"></script>
+  <script src="theme-loader.js?v=2"></script>
 </body>
 </html>

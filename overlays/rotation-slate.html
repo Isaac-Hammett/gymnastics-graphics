@@ -17,36 +17,9 @@
       flex-direction: row;
     }
 
-    .logo-section {
-      flex: 0 0 700px;
-      height: 100%;
-      background: var(--meet-accent-secondary, #f0f0f0);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      animation: slideRight 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
     @keyframes slideRight {
       from { opacity: 0; transform: translateX(-60px); }
       to { opacity: 1; transform: translateX(0); }
-    }
-
-    .team-logo {
-      width: 500px;
-      height: 500px;
-      object-fit: contain;
-    }
-
-    .content-section {
-      flex: 1;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      padding: 100px 120px;
-      background-color: var(--meet-overlay-bg, #E5E5E5);
-      animation: fadeIn 0.6s ease-out 0.2s both;
     }
 
     @keyframes fadeIn {
@@ -54,7 +27,43 @@
       to { opacity: 1; }
     }
 
-    .meet-name {
+    @keyframes scaleIn {
+      from { opacity: 0; transform: scale(0.8); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    /* ========== CLASSIC LAYOUT (default) ========== */
+    .layout-classic {
+      flex-direction: row;
+    }
+
+    .layout-classic .logo-section {
+      flex: 0 0 700px;
+      height: 100%;
+      background: var(--meet-header-bg, #f0f0f0);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: slideRight 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .layout-classic .team-logo {
+      width: 500px;
+      height: 500px;
+      object-fit: contain;
+    }
+
+    .layout-classic .content-section {
+      flex: 1;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 100px 120px;
+      animation: fadeIn 0.6s ease-out 0.2s both;
+    }
+
+    .layout-classic .meet-name {
       font-size: 86px;
       font-weight: 700;
       color: var(--meet-overlay-text, #222);
@@ -64,7 +73,7 @@
       line-height: 1.1;
     }
 
-    .divider {
+    .layout-classic .divider {
       width: 200px;
       height: 10px;
       background: var(--meet-border-color, #111);
@@ -72,7 +81,7 @@
       margin-bottom: 50px;
     }
 
-    .rotation-label {
+    .layout-classic .rotation-label {
       font-size: 64px;
       font-weight: 600;
       color: var(--meet-overlay-text, #666);
@@ -81,12 +90,966 @@
       margin-bottom: 10px;
     }
 
-    .rotation-number {
+    .layout-classic .rotation-number {
       font-size: 500px;
       font-weight: 900;
       color: var(--meet-overlay-text, #111);
       line-height: 0.75;
       letter-spacing: -20px;
+    }
+
+    /* ========== CENTERED LAYOUT ========== */
+    .layout-centered {
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .layout-centered .logo-section {
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 40px;
+      animation: scaleIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .layout-centered .team-logo {
+      width: 280px;
+      height: 280px;
+      object-fit: contain;
+    }
+
+    .layout-centered .content-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      animation: fadeIn 0.6s ease-out 0.2s both;
+    }
+
+    .layout-centered .meet-name {
+      font-size: 72px;
+      font-weight: 700;
+      color: var(--meet-overlay-text, #222);
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      margin-bottom: 30px;
+      line-height: 1.1;
+    }
+
+    .layout-centered .divider {
+      width: 160px;
+      height: 8px;
+      background: var(--meet-border-color, #111);
+      border-radius: 4px;
+      margin-bottom: 30px;
+    }
+
+    .layout-centered .rotation-label {
+      font-size: 52px;
+      font-weight: 600;
+      color: var(--meet-overlay-text, #666);
+      text-transform: uppercase;
+      letter-spacing: 16px;
+      margin-bottom: 10px;
+    }
+
+    .layout-centered .rotation-number {
+      font-size: 320px;
+      font-weight: 900;
+      color: var(--meet-overlay-text, #111);
+      line-height: 0.85;
+      letter-spacing: -15px;
+    }
+
+    /* ========== MINIMAL LAYOUT ========== */
+    .layout-minimal {
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .layout-minimal .logo-section {
+      display: none;
+    }
+
+    .layout-minimal .content-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 0.5s ease-out both;
+    }
+
+    .layout-minimal .meet-name {
+      font-size: 60px;
+      font-weight: 600;
+      color: var(--meet-overlay-text, #666);
+      text-transform: uppercase;
+      letter-spacing: 6px;
+      margin-bottom: 40px;
+      line-height: 1.1;
+    }
+
+    .layout-minimal .divider {
+      display: none;
+    }
+
+    .layout-minimal .rotation-label {
+      font-size: 72px;
+      font-weight: 600;
+      color: var(--meet-overlay-text, #444);
+      text-transform: uppercase;
+      letter-spacing: 20px;
+      margin-bottom: 0;
+    }
+
+    .layout-minimal .rotation-number {
+      font-size: 600px;
+      font-weight: 900;
+      color: var(--meet-overlay-text, #111);
+      line-height: 0.8;
+      letter-spacing: -25px;
+    }
+
+    /* Hide banner-specific elements by default */
+    .rotation-badge { display: none; }
+
+    /* ========== BANNER LAYOUT ========== */
+    .layout-banner {
+      flex-direction: row;
+      align-items: center;
+    }
+
+    .layout-banner .logo-section {
+      flex: 0 0 auto;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 80px;
+      animation: slideRight 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .layout-banner .team-logo {
+      width: 300px;
+      height: 300px;
+      object-fit: contain;
+    }
+
+    .layout-banner .content-section {
+      flex: 1;
+      height: 100%;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 80px;
+      padding: 0 100px;
+      animation: fadeIn 0.6s ease-out 0.2s both;
+    }
+
+    .layout-banner .meet-name {
+      font-size: 64px;
+      font-weight: 700;
+      color: var(--meet-overlay-text, #222);
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      line-height: 1.1;
+      margin-bottom: 0;
+      flex: 1;
+    }
+
+    .layout-banner .divider {
+      display: none;
+    }
+
+    .layout-banner .rotation-label {
+      display: none;
+    }
+
+    .layout-banner .rotation-number {
+      display: none;
+    }
+
+    .layout-banner .rotation-badge {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .layout-banner .rotation-badge-label {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--meet-overlay-text, #444);
+      text-transform: uppercase;
+      letter-spacing: 8px;
+      margin-bottom: 10px;
+    }
+
+    .layout-banner .rotation-badge-num {
+      font-size: 200px;
+      font-weight: 900;
+      color: var(--meet-overlay-text, #111);
+      line-height: 0.85;
+    }
+
+    /* ========== JUMBO LAYOUT — everything maxed out ========== */
+    .layout-jumbo {
+      flex-direction: row;
+    }
+    .layout-jumbo .logo-section {
+      flex: 0 0 860px;
+      height: 100%;
+      background: var(--meet-header-bg, #f0f0f0);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: slideRight 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .layout-jumbo .team-logo {
+      width: 700px;
+      height: 700px;
+      object-fit: contain;
+    }
+    .layout-jumbo .content-section {
+      flex: 1;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 60px 80px;
+      animation: fadeIn 0.6s ease-out 0.2s both;
+    }
+    .layout-jumbo .meet-name {
+      font-size: 110px;
+      font-weight: 900;
+      color: var(--meet-overlay-text, #222);
+      text-transform: uppercase;
+      letter-spacing: 4px;
+      margin-bottom: 30px;
+      line-height: 1.05;
+    }
+    .layout-jumbo .divider {
+      width: 250px;
+      height: 12px;
+      background: var(--meet-border-color, #111);
+      border-radius: 6px;
+      margin-bottom: 30px;
+    }
+    .layout-jumbo .rotation-label {
+      font-size: 80px;
+      font-weight: 700;
+      color: var(--meet-overlay-text, #555);
+      text-transform: uppercase;
+      letter-spacing: 18px;
+      margin-bottom: 0;
+    }
+    .layout-jumbo .rotation-number {
+      font-size: 520px;
+      font-weight: 900;
+      color: var(--meet-overlay-text, #111);
+      line-height: 0.75;
+      letter-spacing: -20px;
+    }
+
+    /* ========== HERO LAYOUT — huge logo top, big text below ========== */
+    .layout-hero {
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .layout-hero .logo-section {
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 30px;
+      animation: scaleIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .layout-hero .team-logo {
+      width: 480px;
+      height: 480px;
+      object-fit: contain;
+    }
+    .layout-hero .content-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      animation: fadeIn 0.6s ease-out 0.2s both;
+    }
+    .layout-hero .meet-name {
+      font-size: 100px;
+      font-weight: 800;
+      color: var(--meet-overlay-text, #222);
+      text-transform: uppercase;
+      letter-spacing: 5px;
+      margin-bottom: 20px;
+      line-height: 1.05;
+    }
+    .layout-hero .divider {
+      width: 200px;
+      height: 10px;
+      background: var(--meet-border-color, #111);
+      border-radius: 5px;
+      margin-bottom: 15px;
+    }
+    .layout-hero .rotation-label {
+      font-size: 64px;
+      font-weight: 600;
+      color: var(--meet-overlay-text, #666);
+      text-transform: uppercase;
+      letter-spacing: 16px;
+      margin-bottom: 0;
+    }
+    .layout-hero .rotation-number {
+      font-size: 280px;
+      font-weight: 900;
+      color: var(--meet-overlay-text, #111);
+      line-height: 0.85;
+      letter-spacing: -12px;
+    }
+
+    /* ========== SPLIT LAYOUT — 50/50, big logo left, big text right ========== */
+    .layout-split {
+      flex-direction: row;
+    }
+    .layout-split .logo-section {
+      flex: 0 0 960px;
+      height: 100%;
+      background: var(--meet-header-bg, #f0f0f0);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: slideRight 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .layout-split .team-logo {
+      width: 750px;
+      height: 750px;
+      object-fit: contain;
+    }
+    .layout-split .content-section {
+      flex: 1;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 60px 40px;
+      animation: fadeIn 0.6s ease-out 0.2s both;
+    }
+    .layout-split .meet-name {
+      font-size: 72px;
+      font-weight: 800;
+      color: var(--meet-overlay-text, #222);
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      margin-bottom: 40px;
+      line-height: 1.1;
+    }
+    .layout-split .divider {
+      width: 150px;
+      height: 8px;
+      background: var(--meet-border-color, #111);
+      border-radius: 4px;
+      margin-bottom: 40px;
+    }
+    .layout-split .rotation-label {
+      font-size: 56px;
+      font-weight: 600;
+      color: var(--meet-overlay-text, #666);
+      text-transform: uppercase;
+      letter-spacing: 14px;
+      margin-bottom: 5px;
+    }
+    .layout-split .rotation-number {
+      font-size: 480px;
+      font-weight: 900;
+      color: var(--meet-overlay-text, #111);
+      line-height: 0.75;
+      letter-spacing: -18px;
+    }
+
+    /* ========== BOLD LAYOUT — no logo, massive text fills screen ========== */
+    .layout-bold {
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .layout-bold .logo-section { display: none; }
+    .layout-bold .content-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 0.4s ease-out both;
+    }
+    .layout-bold .meet-name {
+      font-size: 120px;
+      font-weight: 900;
+      color: var(--meet-overlay-text, #222);
+      text-transform: uppercase;
+      letter-spacing: 8px;
+      margin-bottom: 20px;
+      line-height: 1.05;
+    }
+    .layout-bold .divider { display: none; }
+    .layout-bold .rotation-label {
+      font-size: 80px;
+      font-weight: 700;
+      color: var(--meet-overlay-text, #444);
+      text-transform: uppercase;
+      letter-spacing: 24px;
+      margin-bottom: 0;
+    }
+    .layout-bold .rotation-number {
+      font-size: 700px;
+      font-weight: 900;
+      color: var(--meet-overlay-text, #111);
+      line-height: 0.75;
+      letter-spacing: -30px;
+    }
+
+    /* ========== WATERMARK LAYOUT — giant faded number bg, logo + text foreground ========== */
+    .layout-watermark {
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      position: relative;
+    }
+    .layout-watermark .logo-section {
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      z-index: 2;
+      animation: scaleIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .layout-watermark .team-logo {
+      width: 420px;
+      height: 420px;
+      object-fit: contain;
+    }
+    .layout-watermark .content-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      z-index: 2;
+      animation: fadeIn 0.6s ease-out 0.2s both;
+    }
+    .layout-watermark .meet-name {
+      font-size: 96px;
+      font-weight: 800;
+      color: var(--meet-overlay-text, #222);
+      text-transform: uppercase;
+      letter-spacing: 5px;
+      margin-bottom: 15px;
+      line-height: 1.1;
+    }
+    .layout-watermark .divider { display: none; }
+    .layout-watermark .rotation-label {
+      font-size: 60px;
+      font-weight: 600;
+      color: var(--meet-overlay-text, #666);
+      text-transform: uppercase;
+      letter-spacing: 16px;
+      margin-bottom: 0;
+    }
+    .layout-watermark .rotation-number {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 900px;
+      font-weight: 900;
+      color: var(--meet-overlay-text, #111);
+      opacity: 0.06;
+      line-height: 1;
+      letter-spacing: -40px;
+      z-index: 1;
+    }
+
+    /* ========== FRAME LAYOUT — logo centered, text frames above & below ========== */
+    .layout-frame {
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .layout-frame .logo-section {
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      order: 2;
+      animation: scaleIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .layout-frame .team-logo {
+      width: 500px;
+      height: 500px;
+      object-fit: contain;
+    }
+    .layout-frame .content-section {
+      display: contents;
+      animation: fadeIn 0.6s ease-out 0.2s both;
+    }
+    .layout-frame .meet-name {
+      order: 1;
+      font-size: 100px;
+      font-weight: 900;
+      color: var(--meet-overlay-text, #222);
+      text-transform: uppercase;
+      letter-spacing: 6px;
+      margin-bottom: 30px;
+      line-height: 1.05;
+      animation: fadeIn 0.6s ease-out both;
+    }
+    .layout-frame .divider { display: none; }
+    .layout-frame .rotation-label {
+      order: 3;
+      font-size: 48px;
+      font-weight: 600;
+      color: var(--meet-overlay-text, #666);
+      text-transform: uppercase;
+      letter-spacing: 14px;
+      margin-top: 20px;
+      margin-bottom: 0;
+      animation: fadeIn 0.6s ease-out 0.3s both;
+    }
+    .layout-frame .rotation-number {
+      order: 4;
+      font-size: 200px;
+      font-weight: 900;
+      color: var(--meet-overlay-text, #111);
+      line-height: 0.85;
+      letter-spacing: -10px;
+      animation: fadeIn 0.6s ease-out 0.4s both;
+    }
+
+    /* ========== STACKED LAYOUT — big logo top, huge number bottom, small meet name ========== */
+    .layout-stacked {
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .layout-stacked .logo-section {
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      animation: scaleIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .layout-stacked .team-logo {
+      width: 500px;
+      height: 500px;
+      object-fit: contain;
+    }
+    .layout-stacked .content-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      animation: fadeIn 0.6s ease-out 0.2s both;
+    }
+    .layout-stacked .meet-name {
+      font-size: 48px;
+      font-weight: 600;
+      color: var(--meet-overlay-text, #666);
+      text-transform: uppercase;
+      letter-spacing: 10px;
+      margin-bottom: 10px;
+      line-height: 1.1;
+    }
+    .layout-stacked .divider { display: none; }
+    .layout-stacked .rotation-label { display: none; }
+    .layout-stacked .rotation-number {
+      font-size: 400px;
+      font-weight: 900;
+      color: var(--meet-overlay-text, #111);
+      line-height: 0.8;
+      letter-spacing: -15px;
+    }
+
+    /* ========== CINEMA LAYOUT — letterbox bars, wide content strip ========== */
+    .layout-cinema {
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .layout-cinema::before,
+    .layout-cinema::after {
+      content: '';
+      display: block;
+      width: 100%;
+      height: 200px;
+      background: #000;
+      flex-shrink: 0;
+    }
+    .layout-cinema .logo-section {
+      position: absolute;
+      left: 80px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: slideRight 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .layout-cinema .team-logo {
+      width: 500px;
+      height: 500px;
+      object-fit: contain;
+    }
+    .layout-cinema .content-section {
+      position: absolute;
+      right: 80px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      text-align: right;
+      animation: fadeIn 0.6s ease-out 0.2s both;
+    }
+    .layout-cinema .meet-name {
+      font-size: 90px;
+      font-weight: 800;
+      color: var(--meet-overlay-text, #222);
+      text-transform: uppercase;
+      letter-spacing: 4px;
+      margin-bottom: 20px;
+      line-height: 1.1;
+    }
+    .layout-cinema .divider {
+      width: 200px;
+      height: 10px;
+      background: var(--meet-border-color, #111);
+      border-radius: 5px;
+      margin-bottom: 20px;
+    }
+    .layout-cinema .rotation-label {
+      font-size: 56px;
+      font-weight: 600;
+      color: var(--meet-overlay-text, #666);
+      text-transform: uppercase;
+      letter-spacing: 14px;
+      margin-bottom: 0;
+    }
+    .layout-cinema .rotation-number {
+      font-size: 350px;
+      font-weight: 900;
+      color: var(--meet-overlay-text, #111);
+      line-height: 0.8;
+      letter-spacing: -15px;
+    }
+
+    /* ========== CORNER LAYOUT — big number in corner, logo + text center ========== */
+    .layout-corner {
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      position: relative;
+    }
+    .layout-corner .logo-section {
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 30px;
+      z-index: 2;
+      animation: scaleIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .layout-corner .team-logo {
+      width: 500px;
+      height: 500px;
+      object-fit: contain;
+    }
+    .layout-corner .content-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      z-index: 2;
+      animation: fadeIn 0.6s ease-out 0.2s both;
+    }
+    .layout-corner .meet-name {
+      font-size: 96px;
+      font-weight: 800;
+      color: var(--meet-overlay-text, #222);
+      text-transform: uppercase;
+      letter-spacing: 5px;
+      margin-bottom: 0;
+      line-height: 1.1;
+    }
+    .layout-corner .divider { display: none; }
+    .layout-corner .rotation-label { display: none; }
+    .layout-corner .rotation-number {
+      position: absolute;
+      bottom: -80px;
+      right: -30px;
+      font-size: 800px;
+      font-weight: 900;
+      color: var(--meet-overlay-text, #111);
+      opacity: 0.08;
+      line-height: 1;
+      z-index: 1;
+    }
+
+    /* ========== WIDE LAYOUT — horizontal, big logo, big text, no rotation label ========== */
+    .layout-wide {
+      flex-direction: row;
+      align-items: center;
+    }
+    .layout-wide .logo-section {
+      flex: 0 0 auto;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 60px;
+      background: var(--meet-header-bg, #f0f0f0);
+      animation: slideRight 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .layout-wide .team-logo {
+      width: 550px;
+      height: 550px;
+      object-fit: contain;
+    }
+    .layout-wide .content-section {
+      flex: 1;
+      height: 100%;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      padding: 0 80px;
+      animation: fadeIn 0.6s ease-out 0.2s both;
+    }
+    .layout-wide .meet-name {
+      font-size: 90px;
+      font-weight: 800;
+      color: var(--meet-overlay-text, #222);
+      text-transform: uppercase;
+      letter-spacing: 4px;
+      line-height: 1.1;
+      margin-bottom: 0;
+      flex: 1;
+    }
+    .layout-wide .divider { display: none; }
+    .layout-wide .rotation-label { display: none; }
+    .layout-wide .rotation-number {
+      font-size: 600px;
+      font-weight: 900;
+      color: var(--meet-overlay-text, #111);
+      line-height: 0.75;
+      letter-spacing: -25px;
+      opacity: 0.2;
+      flex-shrink: 0;
+    }
+
+    /* ========== SIDE LAYOUT — logo right instead of left ========== */
+    .layout-side {
+      flex-direction: row-reverse;
+    }
+    .layout-side .logo-section {
+      flex: 0 0 800px;
+      height: 100%;
+      background: var(--meet-header-bg, #f0f0f0);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 0.5s ease-out both;
+    }
+    .layout-side .team-logo {
+      width: 650px;
+      height: 650px;
+      object-fit: contain;
+    }
+    .layout-side .content-section {
+      flex: 1;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 80px 100px;
+      animation: fadeIn 0.6s ease-out 0.2s both;
+    }
+    .layout-side .meet-name {
+      font-size: 96px;
+      font-weight: 800;
+      color: var(--meet-overlay-text, #222);
+      text-transform: uppercase;
+      letter-spacing: 4px;
+      margin-bottom: 40px;
+      line-height: 1.05;
+    }
+    .layout-side .divider {
+      width: 220px;
+      height: 10px;
+      background: var(--meet-border-color, #111);
+      border-radius: 5px;
+      margin-bottom: 40px;
+    }
+    .layout-side .rotation-label {
+      font-size: 72px;
+      font-weight: 700;
+      color: var(--meet-overlay-text, #555);
+      text-transform: uppercase;
+      letter-spacing: 18px;
+      margin-bottom: 5px;
+    }
+    .layout-side .rotation-number {
+      font-size: 500px;
+      font-weight: 900;
+      color: var(--meet-overlay-text, #111);
+      line-height: 0.75;
+      letter-spacing: -20px;
+    }
+
+    /* ========== STRIPE LAYOUT — colored stripe accent ========== */
+    .layout-stripe {
+      flex-direction: row;
+      position: relative;
+    }
+    .layout-stripe::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 40px;
+      height: 100%;
+      background: var(--meet-border-color, #111);
+    }
+    .layout-stripe .logo-section {
+      flex: 0 0 auto;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 60px 0 100px;
+      background: transparent;
+      animation: slideRight 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .layout-stripe .team-logo {
+      width: 520px;
+      height: 520px;
+      object-fit: contain;
+    }
+    .layout-stripe .content-section {
+      flex: 1;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 80px 100px;
+      animation: fadeIn 0.6s ease-out 0.2s both;
+    }
+    .layout-stripe .meet-name {
+      font-size: 96px;
+      font-weight: 800;
+      color: var(--meet-overlay-text, #222);
+      text-transform: uppercase;
+      letter-spacing: 4px;
+      margin-bottom: 30px;
+      line-height: 1.05;
+    }
+    .layout-stripe .divider {
+      width: 200px;
+      height: 10px;
+      background: var(--meet-border-color, #111);
+      border-radius: 5px;
+      margin-bottom: 30px;
+    }
+    .layout-stripe .rotation-label {
+      font-size: 68px;
+      font-weight: 700;
+      color: var(--meet-overlay-text, #555);
+      text-transform: uppercase;
+      letter-spacing: 16px;
+      margin-bottom: 5px;
+    }
+    .layout-stripe .rotation-number {
+      font-size: 480px;
+      font-weight: 900;
+      color: var(--meet-overlay-text, #111);
+      line-height: 0.75;
+      letter-spacing: -20px;
+    }
+
+    /* ========== OVERLAP LAYOUT — number behind logo, text overlapping ========== */
+    .layout-overlap {
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .layout-overlap .logo-section {
+      position: absolute;
+      left: 100px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2;
+      animation: slideRight 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .layout-overlap .team-logo {
+      width: 600px;
+      height: 600px;
+      object-fit: contain;
+    }
+    .layout-overlap .content-section {
+      position: absolute;
+      right: 80px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      text-align: right;
+      z-index: 3;
+      animation: fadeIn 0.6s ease-out 0.2s both;
+    }
+    .layout-overlap .meet-name {
+      font-size: 100px;
+      font-weight: 900;
+      color: var(--meet-overlay-text, #222);
+      text-transform: uppercase;
+      letter-spacing: 5px;
+      margin-bottom: 20px;
+      line-height: 1.05;
+    }
+    .layout-overlap .divider {
+      width: 200px;
+      height: 10px;
+      background: var(--meet-border-color, #111);
+      border-radius: 5px;
+      margin-bottom: 20px;
+    }
+    .layout-overlap .rotation-label {
+      font-size: 68px;
+      font-weight: 700;
+      color: var(--meet-overlay-text, #555);
+      text-transform: uppercase;
+      letter-spacing: 16px;
+      margin-bottom: 0;
+    }
+    .layout-overlap .rotation-number {
+      font-size: 360px;
+      font-weight: 900;
+      color: var(--meet-overlay-text, #111);
+      line-height: 0.8;
+      letter-spacing: -15px;
     }
   </style>
 </head>
@@ -99,6 +1062,11 @@
     <div class="divider"></div>
     <div class="rotation-label">Rotation</div>
     <div id="rotationNumber" class="rotation-number">1</div>
+    <!-- Banner layout uses a badge instead of giant number -->
+    <div class="rotation-badge">
+      <div class="rotation-badge-label">Rotation</div>
+      <div id="rotationBadgeNum" class="rotation-badge-num">1</div>
+    </div>
   </div>
 
   <script>
@@ -108,6 +1076,10 @@
     const logo = params.get('logo') || params.get('team1Logo') || '';
     const meetName = params.get('meetName') || params.get('eventName') || 'GYMNASTICS';
     const rotation = params.get('rotation') || '1';
+    const layout = params.get('layout') || 'classic';
+
+    // Apply layout class to body
+    document.body.classList.add('layout-' + layout);
 
     // Set logo
     const logoEl = document.getElementById('logo');
@@ -122,7 +1094,20 @@
 
     // Set rotation number
     document.getElementById('rotationNumber').textContent = rotation;
+    document.getElementById('rotationBadgeNum').textContent = rotation;
+
+    // Override with meet logo when theme is active (event-level graphic)
+    function checkMeetLogo() {
+      const meetLogo = document.body.getAttribute('data-meet-logo');
+      if (meetLogo) {
+        document.getElementById('logo').src = meetLogo;
+        document.getElementById('logo').style.display = '';
+      }
+    }
+    // theme-loader runs async, check after delay and observe for changes
+    setTimeout(checkMeetLogo, 500);
+    new MutationObserver(checkMeetLogo).observe(document.body, { attributes: true, attributeFilter: ['data-meet-logo'] });
   </script>
-  <script src="theme-loader.js"></script>
+  <script src="theme-loader.js?v=2"></script>
 </body>
 </html>

@@ -1,8 +1,8 @@
 # PRD: 7-Team Women's Competition — Audit & Bug Fix
 
-**Status:** COMPLETE (1 infrastructure issue deferred)
+**Status:** COMPLETE
 **Date:** 2026-03-06
-**Last Updated:** 2026-03-07
+**Last Updated:** 2026-03-08
 **Competition Type:** `womens-7` (7 teams, 4 apparatus, 7 rotations, 4 compete per rotation, 3 on bye)
 
 ---
@@ -118,13 +118,39 @@ The `womens-7` competition format was recently added to support 7-team women's g
 - **Screenshot:** audit-A1-producer-page-load.png
 - **Fix:** Updated ProducerView.jsx and OverrideLog.jsx to use `socketUrl` from CompetitionContext instead of `VITE_SOCKET_SERVER` env var. In production (HTTPS), this routes through `https://api.commentarygraphic.com`.
 
-#### BUG-013: Firebase permission_denied for /alerts path — DEFERRED
+#### BUG-013: Firebase permission_denied for /alerts path — FIXED
 - **Severity:** Minor (infrastructure, not 7-team specific)
 - **Description:** Producer console shows `[useAlerts] Firebase error: permission_denied at /alerts/sewj4d2b`
 - **Steps to Reproduce:** Open producer page → check console
 - **Expected:** Alerts load without error
 - **Actual:** Permission denied error (UI shows "No active alerts" and continues working)
-- **Status:** DEFERRED — Firebase Realtime Database rules need to be updated in Firebase console (not in this repo). The alerts feature works when server writes alerts; client gracefully handles permission error.
+- **Status:** COMPLETE — Firebase Realtime Database rules updated to allow read/write access to `/alerts` path.
+
+### Discovered During Post-Audit Testing
+
+#### BUG-014: Event summary shows all 7 teams per rotation (no bye filtering) — FIXED
+- **Severity:** Major
+- **Description:** Event summary displays 7 columns per rotation instead of the 4 teams actually competing. Bye teams show empty columns.
+- **Fix:** Added `filteredRotationData` filter in `fetchAndRenderEventSummary()` to remove teams with null eventName for 5+ team competitions.
+- **Status:** COMPLETE
+
+#### BUG-015: detectEventFromApiData type coercion bug — FIXED
+- **Severity:** Critical
+- **Description:** URL params pass rotation as string ("2") but Virtius API returns number (2). Strict equality `===` fails, causing all teams to appear as bye.
+- **Fix:** Added `parseInt()` conversion in `detectEventFromApiData()`.
+- **Status:** COMPLETE
+
+#### BUG-016: RIC shows American flag instead of correct logo — FIXED
+- **Severity:** Minor
+- **Description:** Rhode Island College shows American flag logo in event summary. The Virtius API returns a wrong logo for RIC, and `getTeamLogoUrl()` prioritized API logos over curated Firebase logos.
+- **Fix:** Changed `getTeamLogoUrl()` to check Firebase curated logos first, fall back to API logo only when Firebase has nothing. Also populated `ric-womens` Firebase entry with correct logo data.
+- **Status:** COMPLETE
+
+#### BUG-017: Missing stats and coaches for teams 3-7 — FIXED
+- **Severity:** Minor
+- **Description:** Teams 3-7 (Utica, RIC, Ursinus, Cortland, Springfield) had no stats (Ave/High/Con all 0). Springfield coaches showed "TBD".
+- **Fix:** Updated Firebase competition config with RTN Week 9 stats and actual Springfield coaches.
+- **Status:** COMPLETE
 
 ---
 
@@ -136,7 +162,7 @@ The `womens-7` competition format was recently added to support 7-team women's g
 - [x] Now Competing shows correct logo for all 7 teams ✓
 - [x] Team bug overlay renders all 7 teams with appropriate bye indicators ✓
 - [x] Leaderboard displays all 7 teams ✓
-- [ ] No console errors on producer or output pages (BUG-013 deferred - Firebase rules)
+- [x] No console errors on producer or output pages (BUG-013 fixed - Firebase rules updated) ✓
 - [x] All graphics deploy and render correctly on production ✓
 
 ---
@@ -185,8 +211,10 @@ OTHER GRAPHICS
   E5 Rotation Slate:      FAIL (blank output — BUG-011)
 
 TOTAL: 7 PASS / 13 FAIL / 3 BLOCKED / 2 NOT TESTED
-BUGS: 13 total (3 critical, 3 major, 7 minor)
+BUGS: 17 total (4 critical, 4 major, 9 minor)
   - Pre-existing (code analysis): BUG-001 through BUG-009
   - New (Playwright audit): BUG-010 through BUG-013
+  - New (post-audit testing): BUG-014 through BUG-017
+ALL BUGS FIXED (BUG-013 deferred to infrastructure)
 ═══════════════════════════════════════
 ```

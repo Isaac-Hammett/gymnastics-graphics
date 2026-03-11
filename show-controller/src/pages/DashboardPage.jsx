@@ -594,7 +594,7 @@ export default function DashboardPage() {
                   <div className="mt-2 flex items-center gap-2">
                     <div
                       className="w-4 h-4 rounded-sm border border-zinc-600"
-                      style={{ backgroundColor: availableThemes[formData.meetTheme]?.colors?.accentPrimary }}
+                      style={{ backgroundColor: availableThemes[formData.meetTheme]?.colors?.headerBar || availableThemes[formData.meetTheme]?.colors?.accentPrimary }}
                     />
                     <span className="text-xs text-zinc-400">
                       {availableThemes[formData.meetTheme]?.description || 'Custom theme'}

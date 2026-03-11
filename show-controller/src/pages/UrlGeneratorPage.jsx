@@ -5,6 +5,8 @@ import { useTeamsDatabase } from '../hooks/useTeamsDatabase';
 import { graphicButtons, getApparatusButtons, getPreMeetButtons, getLeaderboardButtons, getEventSummaryRotationButtons, getEventSummaryApparatusButtons, transparentGraphics, isTransparentGraphic } from '../lib/graphicButtons';
 import { getTeamCount, getGenderFromCompType } from '../lib/competitionUtils';
 import { generateGraphicURL, copyToClipboard } from '../lib/urlBuilder';
+import { db, ref, get } from '../lib/firebase';
+import SponsorAdjustControls from '../components/SponsorAdjustControls';
 
 // Available themes for Event Summary (same as GraphicsControl.jsx)
 const summaryThemes = [
@@ -72,10 +74,12 @@ const baseGraphicTitles = {
   // In-Meet
   replay: 'Instant Replay',
   'rotation-slate': 'Rotation Slate',
+  'rotation-slate-auto': 'Rotation Slate (Auto)',
   // Frame Overlays
   'frame-quad': 'Quad View',
   'frame-tri-center': 'Tri Center',
   'frame-tri-wide': 'Tri Wide',
+  'frame-tri-wide-top': 'Tri Wide Top',
   'frame-team-header': 'Team Header',
   'frame-single': 'Single',
   // Leaderboards
@@ -108,6 +112,8 @@ const baseGraphicTitles = {
   'sponsors-thanks': 'Thank You Sponsors',
   'sponsors-cycle': 'Cycling Sponsors',
   'sponsors-bug': 'Sponsor Bug',
+  // Event Calendar
+  'event-calendar': 'Event Calendar',
 };
 
 // Generate team-specific graphic titles dynamically
@@ -130,23 +136,59 @@ export default function UrlGeneratorPage() {
   const [hasChanges, setHasChanges] = useState(false);
   const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [calendarJsonMode, setCalendarJsonMode] = useState(false);
 
   const [currentGraphic, setCurrentGraphic] = useState('logos');
   const [activeTab, setActiveTab] = useState('meet');
   const [toast, setToast] = useState('');
   const [summaryTheme, setSummaryTheme] = useState('layout-default-v4');
   const [rotationSlateNum, setRotationSlateNum] = useState('1');
+  const [slateLayout, setSlateLayout] = useState('classic');
+  const [meetThemeLogo, setMeetThemeLogo] = useState('');
+  const [meetThemeSponsors, setMeetThemeSponsors] = useState([]);
+  const [sponsorOverrides, setSponsorOverrides] = useState({}); // { index: { scale, offsetX, offsetY, cropX, cropY, cropW, cropH } }
+  const [selectedSponsorIndex, setSelectedSponsorIndex] = useState(-1);
+  const [showSponsorBounds, setShowSponsorBounds] = useState(false);
+  const [showSponsorCropControls, setShowSponsorCropControls] = useState(false);
+  const [showSponsorGuides, setShowSponsorGuides] = useState(false);
 
-  // Get team count from competition type (supports 2-6 teams)
+  // Fetch meet theme logo and sponsors when theme is set
+  useEffect(() => {
+    if (!config?.meetTheme) { setMeetThemeLogo(''); setMeetThemeSponsors([]); setSponsorOverrides({}); return; }
+    get(ref(db, `themes/${config.meetTheme}`)).then(snap => {
+      const theme = snap.val() || {};
+      setMeetThemeLogo(theme.logos?.meetLogo || '');
+      const sponsors = Array.isArray(theme.sponsors) ? theme.sponsors : [];
+      setMeetThemeSponsors(sponsors);
+      // Initialize overrides from theme data (including crop fields)
+      const overrides = {};
+      sponsors.forEach((s, i) => {
+        if (s.scale || s.offsetX || s.offsetY || s.cropX != null || s.cropY != null || s.cropW != null || s.cropH != null) {
+          overrides[i] = {
+            scale: s.scale || 100, offsetX: s.offsetX || 0, offsetY: s.offsetY || 0,
+            cropX: s.cropX ?? null, cropY: s.cropY ?? null, cropW: s.cropW ?? null, cropH: s.cropH ?? null,
+          };
+        }
+      });
+      setSponsorOverrides(overrides);
+      setSelectedSponsorIndex(-1);
+    });
+  }, [config?.meetTheme]);
+
+  // Get team count from competition type (supports 2-7 teams)
   const teamCount = useMemo(() => getTeamCount(config?.compType), [config?.compType]);
 
-  // Initialize form data with support for up to 6 teams
+  // Initialize form data with support for up to 7 teams
   const [formData, setFormData] = useState({
     eventName: 'Big Ten Dual Meet',
     meetDate: 'January 15, 2025',
     venue: 'Crisler Center',
     location: 'Ann Arbor, MI',
     hosts: 'John Smith\nSarah Johnson',
+    // Event Calendar
+    calendarTitle: 'Event Calendar',
+    calendarEvents: '[{"date":"March 15","name":"vs UCLA","location":"Los Angeles, CA"},{"date":"March 22","name":"at Oregon","location":"Eugene, OR"}]',
+    calendarColumns: 'auto',
     // Team 1
     team1Name: 'Michigan',
     team1Logo: '',
@@ -183,6 +225,12 @@ export default function UrlGeneratorPage() {
     team6Ave: '',
     team6High: '',
     team6Coaches: '',
+    // Team 7
+    team7Name: '',
+    team7Logo: '',
+    team7Ave: '',
+    team7High: '',
+    team7Coaches: '',
   });
 
   // Load config from Firebase if competition is selected
@@ -196,10 +244,14 @@ export default function UrlGeneratorPage() {
         venue: config.venue || '',
         location: config.location || '',
         hosts: config.hosts || '',
+        // Event Calendar
+        calendarTitle: config.calendarTitle || 'Event Calendar',
+        calendarEvents: config.calendarEvents || '[]',
+        calendarColumns: config.calendarColumns || 'auto',
       };
 
-      // Load all team data (1-6)
-      for (let i = 1; i <= 6; i++) {
+      // Load all team data (1-7)
+      for (let i = 1; i <= 7; i++) {
         newFormData[`team${i}Name`] = config[`team${i}Name`] || '';
         newFormData[`team${i}Logo`] = config[`team${i}Logo`] || '';
         newFormData[`team${i}Ave`] = config[`team${i}Ave`] || '';
@@ -318,11 +370,36 @@ export default function UrlGeneratorPage() {
   const generateURLWithOptions = (graphic) => {
     let sponsorsJson = null;
     if (graphic.startsWith('sponsors-')) {
-      const homeTeamKey = resolveHomeTeamKey(formData, config);
-      if (homeTeamKey) {
-        const teamSponsors = getTeamSponsors(homeTeamKey);
-        const capped = teamSponsors.slice(0, 8).map(s => ({ name: s.name, url: s.url }));
+      // Prefer theme-level sponsors over team-level sponsors
+      if (meetThemeSponsors.length > 0) {
+        const capped = meetThemeSponsors.slice(0, 8).map((s, i) => {
+          const ov = sponsorOverrides[i] || {};
+          const scale = ov.scale || s.scale || 100;
+          const offsetX = ov.offsetX ?? s.offsetX ?? 0;
+          const offsetY = ov.offsetY ?? s.offsetY ?? 0;
+          const cropX = ov.cropX ?? s.cropX ?? null;
+          const cropY = ov.cropY ?? s.cropY ?? null;
+          const cropW = ov.cropW ?? s.cropW ?? null;
+          const cropH = ov.cropH ?? s.cropH ?? null;
+          return {
+            name: s.name, url: s.url,
+            ...(scale !== 100 ? { scale } : {}),
+            ...(offsetX ? { offsetX } : {}),
+            ...(offsetY ? { offsetY } : {}),
+            ...(cropX != null ? { cropX } : {}),
+            ...(cropY != null ? { cropY } : {}),
+            ...(cropW != null ? { cropW } : {}),
+            ...(cropH != null ? { cropH } : {}),
+          };
+        });
         sponsorsJson = JSON.stringify(capped);
+      } else {
+        const homeTeamKey = resolveHomeTeamKey(formData, config);
+        if (homeTeamKey) {
+          const teamSponsors = getTeamSponsors(homeTeamKey);
+          const capped = teamSponsors.slice(0, 8).map(s => ({ name: s.name, url: s.url }));
+          sponsorsJson = JSON.stringify(capped);
+        }
       }
     }
     return generateGraphicURL(graphic, formData, teamCount, undefined, {
@@ -332,7 +409,13 @@ export default function UrlGeneratorPage() {
       summaryTheme: summaryTheme,
       sponsors: sponsorsJson,
       rotation: rotationSlateNum,
+      layout: slateLayout,
       meetTheme: config?.meetTheme,
+      meetThemeLogo,
+      // Sponsor editing aids (only for preview, not for production URLs)
+      ...(graphic.startsWith('sponsors-') && selectedSponsorIndex >= 0 ? { lockedIndex: selectedSponsorIndex } : {}),
+      ...(graphic.startsWith('sponsors-') && showSponsorBounds ? { showBounds: true } : {}),
+      ...(graphic.startsWith('sponsors-') && showSponsorGuides ? { showGuides: true } : {}),
     });
   };
 
@@ -341,7 +424,7 @@ export default function UrlGeneratorPage() {
     return generateURLWithOptions(graphic);
   };
 
-  const currentUrl = useMemo(() => generateURL(currentGraphic), [currentGraphic, formData, teamCount, config?.compType, config?.virtiusSessionId, config?.meetTheme, summaryTheme, rotationSlateNum]);
+  const currentUrl = useMemo(() => generateURL(currentGraphic), [currentGraphic, formData, teamCount, config?.compType, config?.virtiusSessionId, config?.meetTheme, summaryTheme, rotationSlateNum, slateLayout, meetThemeLogo, meetThemeSponsors, sponsorOverrides, selectedSponsorIndex, showSponsorBounds, showSponsorGuides]);
 
   return (
     <div className="h-screen bg-zinc-950 flex">
@@ -376,7 +459,7 @@ export default function UrlGeneratorPage() {
         </GraphicSection>
 
         <GraphicSection title="In-Meet">
-          {graphicButtons.inMeet.filter(btn => btn.id !== 'rotation-slate').map((btn) => (
+          {graphicButtons.inMeet.filter(btn => btn.id !== 'rotation-slate' && btn.id !== 'rotation-slate-auto').map((btn) => (
             <GraphicSidebarButton
               key={btn.id}
               id={btn.id}
@@ -388,7 +471,35 @@ export default function UrlGeneratorPage() {
           ))}
           {/* Rotation Slate with rotation picker */}
           <div className="mt-2">
-            <div className="text-xs text-zinc-500 mb-1">Rotation Slate</div>
+            <div className="flex items-center justify-between mb-1">
+              <div className="text-xs text-zinc-500">Rotation Slate</div>
+              <select
+                value={slateLayout}
+                onChange={(e) => {
+                  setSlateLayout(e.target.value);
+                  setCurrentGraphic('rotation-slate');
+                }}
+                className="text-xs bg-zinc-700 text-zinc-300 border border-zinc-600 rounded px-1.5 py-0.5 focus:outline-none focus:border-blue-500"
+              >
+                <option value="classic">Classic</option>
+                <option value="centered">Centered</option>
+                <option value="minimal">Minimal</option>
+                <option value="banner">Banner</option>
+                <option value="jumbo">Jumbo</option>
+                <option value="hero">Hero</option>
+                <option value="split">Split</option>
+                <option value="bold">Bold</option>
+                <option value="watermark">Watermark</option>
+                <option value="frame">Frame</option>
+                <option value="stacked">Stacked</option>
+                <option value="cinema">Cinema</option>
+                <option value="corner">Corner</option>
+                <option value="wide">Wide</option>
+                <option value="side">Side</option>
+                <option value="stripe">Stripe</option>
+                <option value="overlap">Overlap</option>
+              </select>
+            </div>
             <div className="grid grid-cols-6 gap-1">
               {['1', '2', '3', '4', '5', '6'].map((num) => (
                 <button
@@ -407,6 +518,17 @@ export default function UrlGeneratorPage() {
                 </button>
               ))}
             </div>
+            {/* Auto-updating rotation slate */}
+            <button
+              onClick={() => setCurrentGraphic('rotation-slate-auto')}
+              className={`mt-1 w-full px-2 py-1.5 rounded text-xs font-medium transition-colors ${
+                currentGraphic === 'rotation-slate-auto'
+                  ? 'bg-green-600 text-white'
+                  : 'bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700'
+              }`}
+            >
+              Auto (Live)
+            </button>
           </div>
         </GraphicSection>
 
@@ -616,6 +738,180 @@ export default function UrlGeneratorPage() {
             <ConfigInput label="Location" value={formData.location} onChange={(v) => updateFormData({ location: v })} />
             <ConfigTextarea label="Hosts (one per line)" value={formData.hosts} onChange={(v) => updateFormData({ hosts: v })} />
           </div>
+        )}
+
+        {/* Event Calendar config - shown when event-calendar graphic is selected */}
+        {currentGraphic === 'event-calendar' && (() => {
+          let calendarEventsList = [];
+          try { calendarEventsList = JSON.parse(formData.calendarEvents || '[]'); } catch { calendarEventsList = []; }
+          if (!Array.isArray(calendarEventsList)) calendarEventsList = [];
+
+          const updateCalendarEvents = (newList) => {
+            updateFormData({ calendarEvents: JSON.stringify(newList) });
+          };
+          const updateEvent = (index, field, value) => {
+            const updated = [...calendarEventsList];
+            updated[index] = { ...updated[index], [field]: value };
+            updateCalendarEvents(updated);
+          };
+          const addEvent = () => {
+            updateCalendarEvents([...calendarEventsList, { date: '', name: '', location: '' }]);
+          };
+          const removeEvent = (index) => {
+            updateCalendarEvents(calendarEventsList.filter((_, i) => i !== index));
+          };
+          const moveEvent = (index, dir) => {
+            const updated = [...calendarEventsList];
+            const swapIdx = index + dir;
+            if (swapIdx < 0 || swapIdx >= updated.length) return;
+            [updated[index], updated[swapIdx]] = [updated[swapIdx], updated[index]];
+            updateCalendarEvents(updated);
+          };
+
+          return (
+            <div className="mb-4 p-3 bg-zinc-800 border border-zinc-700 rounded-lg">
+              <h3 className="text-sm font-semibold text-zinc-300 mb-3">Event Calendar Settings</h3>
+              <ConfigInput
+                label="Header Title"
+                value={formData.calendarTitle}
+                onChange={(v) => updateFormData({ calendarTitle: v })}
+                placeholder="Event Calendar"
+              />
+
+              <label className="block text-xs text-zinc-400 mb-1.5">Events ({calendarEventsList.length})</label>
+              {!calendarJsonMode && <div className="space-y-2 mb-2">
+                {calendarEventsList.map((evt, i) => (
+                  <div key={i} className="p-2 bg-zinc-900 rounded border border-zinc-700">
+                    <div className="flex items-center gap-1 mb-1.5">
+                      <span className="text-[10px] text-zinc-500 font-mono w-4">{i + 1}</span>
+                      <div className="flex-1" />
+                      <button
+                        onClick={() => moveEvent(i, -1)}
+                        disabled={i === 0}
+                        className="text-[10px] text-zinc-500 hover:text-zinc-300 disabled:opacity-30 px-1"
+                        title="Move up"
+                      >&#9650;</button>
+                      <button
+                        onClick={() => moveEvent(i, 1)}
+                        disabled={i === calendarEventsList.length - 1}
+                        className="text-[10px] text-zinc-500 hover:text-zinc-300 disabled:opacity-30 px-1"
+                        title="Move down"
+                      >&#9660;</button>
+                      <button
+                        onClick={() => removeEvent(i)}
+                        className="text-[10px] text-red-400 hover:text-red-300 px-1"
+                        title="Remove event"
+                      >&times;</button>
+                    </div>
+                    <input
+                      type="text"
+                      value={evt.date || ''}
+                      onChange={(e) => updateEvent(i, 'date', e.target.value)}
+                      placeholder="Date (e.g. March 15)"
+                      className="w-full text-xs bg-zinc-800 text-zinc-300 border border-zinc-700 rounded px-2 py-1 mb-1 focus:outline-none focus:border-blue-500"
+                    />
+                    <input
+                      type="text"
+                      value={evt.name || ''}
+                      onChange={(e) => updateEvent(i, 'name', e.target.value)}
+                      placeholder="Event name (e.g. vs UCLA)"
+                      className="w-full text-xs bg-zinc-800 text-zinc-300 border border-zinc-700 rounded px-2 py-1 mb-1 focus:outline-none focus:border-blue-500"
+                    />
+                    <input
+                      type="text"
+                      value={evt.location || ''}
+                      onChange={(e) => updateEvent(i, 'location', e.target.value)}
+                      placeholder="Location (optional)"
+                      className="w-full text-xs bg-zinc-800 text-zinc-300 border border-zinc-700 rounded px-2 py-1 focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+                ))}
+              </div>}
+              {!calendarJsonMode && (
+                <button
+                  onClick={addEvent}
+                  className="w-full text-xs bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded px-2 py-1.5 mb-2 transition-colors"
+                >+ Add Event</button>
+              )}
+
+              <button
+                onClick={() => setCalendarJsonMode(!calendarJsonMode)}
+                className="text-[10px] text-zinc-500 hover:text-zinc-300 mb-2 transition-colors"
+              >{calendarJsonMode ? 'Switch to visual editor' : 'Edit as JSON'}</button>
+
+              {calendarJsonMode && (
+                <div className="mb-2">
+                  <ConfigTextarea
+                    label="Events (JSON array)"
+                    value={formData.calendarEvents}
+                    onChange={(v) => updateFormData({ calendarEvents: v })}
+                    rows={6}
+                  />
+                  <p className="text-[10px] text-zinc-500 -mt-2 mb-2">
+                    Format: [&#123;"date":"Mar 15","name":"vs UCLA","location":"LA, CA"&#125;, ...]
+                  </p>
+                </div>
+              )}
+
+              <div className="mb-2">
+                <label className="block text-xs text-zinc-400 mb-1.5">Layout</label>
+                <select
+                  value={formData.calendarColumns}
+                  onChange={(e) => updateFormData({ calendarColumns: e.target.value })}
+                  className="w-full text-xs bg-zinc-900 text-zinc-300 border border-zinc-700 rounded px-2 py-1.5 focus:outline-none focus:border-blue-500"
+                >
+                  <option value="auto">Auto (2 cols at 7+)</option>
+                  <option value="1">Single Column</option>
+                  <option value="2">Two Columns</option>
+                </select>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Sponsor logo adjustments - shown when a sponsor graphic is selected */}
+        {currentGraphic.startsWith('sponsors-') && meetThemeSponsors.length > 0 && (
+          <SponsorAdjustControls
+            sponsors={meetThemeSponsors}
+            getOverride={(index) => {
+              const ov = sponsorOverrides[index] || {};
+              const s = meetThemeSponsors[index] || {};
+              return {
+                scale: ov.scale ?? s.scale ?? 100,
+                offsetX: ov.offsetX ?? s.offsetX ?? 0,
+                offsetY: ov.offsetY ?? s.offsetY ?? 0,
+                cropX: ov.cropX ?? s.cropX ?? null,
+                cropY: ov.cropY ?? s.cropY ?? null,
+                cropW: ov.cropW ?? s.cropW ?? null,
+                cropH: ov.cropH ?? s.cropH ?? null,
+              };
+            }}
+            onUpdate={(index, field, value) => {
+              setSponsorOverrides(prev => {
+                const existing = prev[index] || {};
+                const s = meetThemeSponsors[index] || {};
+                return {
+                  ...prev,
+                  [index]: {
+                    scale: existing.scale ?? s.scale ?? 100,
+                    offsetX: existing.offsetX ?? s.offsetX ?? 0,
+                    offsetY: existing.offsetY ?? s.offsetY ?? 0,
+                    cropX: existing.cropX ?? s.cropX ?? null,
+                    cropY: existing.cropY ?? s.cropY ?? null,
+                    cropW: existing.cropW ?? s.cropW ?? null,
+                    cropH: existing.cropH ?? s.cropH ?? null,
+                    [field]: value,
+                  },
+                };
+              });
+            }}
+            selectedIndex={selectedSponsorIndex}
+            onSelectIndex={setSelectedSponsorIndex}
+            showBounds={showSponsorBounds}
+            onToggleBounds={() => setShowSponsorBounds(prev => !prev)}
+            showGuides={showSponsorGuides}
+            onToggleGuides={() => setShowSponsorGuides(prev => !prev)}
+          />
         )}
 
         {/* Dynamic team tabs - render for each team in the competition */}

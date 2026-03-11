@@ -491,7 +491,7 @@ export default function RundownEditorPage() {
   const competition = useMemo(() => {
     if (!competitionConfig) return DUMMY_COMPETITION;
     const teams = {};
-    for (let i = 1; i <= 6; i++) {
+    for (let i = 1; i <= 7; i++) {
       const name = competitionConfig[`team${i}Name`];
       if (name) {
         teams[i] = {
@@ -523,7 +523,32 @@ export default function RundownEditorPage() {
 
   // Memoize grouped scenes and graphics for pickers (Task 16)
   const groupedScenes = useMemo(() => getGroupedScenes(liveScenes), [liveScenes]);
-  const groupedGraphics = useMemo(() => getGroupedGraphics(liveCompType, liveTeamNames), [liveCompType, liveTeamNames]);
+  const baseGroupedGraphics = useMemo(() => getGroupedGraphics(liveCompType, liveTeamNames), [liveCompType, liveTeamNames]);
+
+  // Load custom graphics for this competition
+  const [customGraphics, setCustomGraphics] = useState({});
+  useEffect(() => {
+    if (!compId) { setCustomGraphics({}); return; }
+    const customRef = ref(db, `competitions/${compId}/customGraphics`);
+    const unsub = onValue(customRef, (snap) => setCustomGraphics(snap.val() || {}));
+    return () => unsub();
+  }, [compId]);
+
+  // Merge custom graphics into grouped graphics
+  const groupedGraphics = useMemo(() => {
+    const groups = { ...baseGroupedGraphics };
+    const customEntries = Object.entries(customGraphics);
+    if (customEntries.length > 0) {
+      groups['custom'] = customEntries.map(([id, cg]) => ({
+        id: `custom-${id}`,
+        label: cg.label,
+        category: 'custom',
+        renderer: 'custom',
+        customUrl: cg.url,
+      }));
+    }
+    return groups;
+  }, [baseGroupedGraphics, customGraphics]);
 
   // State management per PRD
   const [segments, setSegments] = useState(DUMMY_SEGMENTS);
@@ -5027,6 +5052,9 @@ export default function RundownEditorPage() {
               {Object.keys(GRAPHICS).map(graphicId => (
                 <option key={graphicId} value={graphicId}>{GRAPHICS[graphicId].label}</option>
               ))}
+              {Object.entries(customGraphics).map(([id, cg]) => (
+                <option key={`custom-${id}`} value={`custom-${id}`}>{cg.label}</option>
+              ))}
             </select>
             <div className="relative">
               <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
@@ -5901,6 +5929,7 @@ const GRAPHICS_CATEGORY_LABELS = {
   'leaderboards': 'Leaderboards',
   'event-summary': 'Event Summary',
   'stream': 'Stream',
+  'custom': 'Custom Graphics',
 };
 
 // Group scenes by category
@@ -5927,7 +5956,7 @@ function getTeamNames(competitionConfig, fallbackTeams) {
   const teamNames = {};
   if (competitionConfig) {
     // Extract team names from Firebase competition config format
-    for (let i = 1; i <= 6; i++) {
+    for (let i = 1; i <= 7; i++) {
       const name = competitionConfig[`team${i}Name`];
       if (name) {
         teamNames[i] = name;

@@ -11,7 +11,7 @@
 | Phase | Description | Tasks | Status |
 |-------|-------------|-------|--------|
 | Phase 0 | Data Migration Script | 1 | COMPLETE |
-| Phase 0-Deploy | Run migration + verify Firebase | 1 | NOT STARTED |
+| Phase 0-Deploy | Run migration + verify Firebase | 1 | COMPLETE |
 | Phase 2 | Booking Links + Smart Availability | 6 | NOT STARTED |
 | Phase 2-Deploy | Deploy Phase 2 changes | 1 | NOT STARTED |
 | Phase 3 | Gmail + Google Calendar Outreach | 5 | NOT STARTED |
@@ -104,7 +104,7 @@ Use `csv-parse` for CSV parsing (install if not present). Use a simple Levenshte
 
 > **This is a deploy/run task.** No build needed — just run the script and verify Firebase.
 
-### Task 0-D.1: Run migration and verify data in Firebase — NOT STARTED
+### Task 0-D.1: Run migration and verify data in Firebase — COMPLETE
 
 **Steps:**
 1. Create screenshots directory: `mkdir -p docs/PRD-Commentary-Talent-CRM/screenshots`

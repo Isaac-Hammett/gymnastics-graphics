@@ -385,6 +385,13 @@ export default function ProducerView() {
               <ClipboardDocumentCheckIcon className="w-3 h-3" />
               Checklist
             </Link>
+            <Link
+              to={`/${compId}/commentary`}
+              className="flex items-center gap-2 px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-400 text-xs hover:bg-zinc-700 hover:text-zinc-300 transition-colors"
+            >
+              <UsersIcon className="w-3 h-3" />
+              Commentary
+            </Link>
             <div>
               <h1 className="text-lg font-bold text-white">
                 {competitionConfig?.eventName || showConfig?.showName || 'Show Controller'}

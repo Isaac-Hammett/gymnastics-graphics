@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { db, ref, set, get, onValue } from '../lib/firebase';
-import { PhotoIcon, XMarkIcon, ClipboardDocumentIcon, CheckIcon, Cog6ToothIcon } from '@heroicons/react/24/solid';
+import { db, ref, set, get, onValue, push, remove } from '../lib/firebase';
+import { PhotoIcon, XMarkIcon, ClipboardDocumentIcon, CheckIcon, Cog6ToothIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/solid';
 import useEventConfig from '../hooks/useEventConfig';
 import useTeamsDatabase from '../hooks/useTeamsDatabase';
 import { getGraphicsForCompetition, getGraphicsByCategory } from '../lib/graphicsRegistry';
@@ -131,6 +131,11 @@ export default function GraphicsControl({ competitionId }) {
   const [summaryTheme, setSummaryTheme] = useState('default');
   const [liveAthletes, setLiveAthletes] = useState([]); // Athletes currently competing - now read from Firebase
   const [scoreBugPolling, setScoreBugPolling] = useState(false); // Whether scoreBug overlay is polling
+  const [customGraphics, setCustomGraphics] = useState({}); // Custom URL graphics for this competition
+  const [showAddCustom, setShowAddCustom] = useState(false);
+  const [newCustomLabel, setNewCustomLabel] = useState('');
+  const [newCustomUrl, setNewCustomUrl] = useState('');
+  const [slateLayout, setSlateLayout] = useState('classic');
 
   // Use competitionId directly from props (no local state needed)
   const compId = competitionId || '';
@@ -258,6 +263,57 @@ export default function GraphicsControl({ competitionId }) {
     };
   }, [compId]);
 
+  // Listen for custom graphics
+  useEffect(() => {
+    if (!compId) {
+      setCustomGraphics({});
+      return;
+    }
+
+    const customRef = ref(db, `competitions/${compId}/customGraphics`);
+    const unsubscribe = onValue(customRef, (snapshot) => {
+      setCustomGraphics(snapshot.val() || {});
+    });
+
+    return () => unsubscribe();
+  }, [compId]);
+
+  // Add a custom graphic
+  const addCustomGraphic = () => {
+    if (!compId || !newCustomLabel.trim() || !newCustomUrl.trim()) return;
+
+    const customRef = ref(db, `competitions/${compId}/customGraphics`);
+    push(customRef, {
+      label: newCustomLabel.trim(),
+      url: newCustomUrl.trim(),
+    });
+
+    setNewCustomLabel('');
+    setNewCustomUrl('');
+    setShowAddCustom(false);
+  };
+
+  // Delete a custom graphic
+  const deleteCustomGraphic = (customId) => {
+    if (!compId) return;
+    remove(ref(db, `competitions/${compId}/customGraphics/${customId}`));
+  };
+
+  // Send a custom graphic to the output
+  const sendCustomGraphic = (customId, customGraphic) => {
+    if (!compId) return;
+
+    set(ref(db, `competitions/${compId}/currentGraphic`), {
+      graphic: 'custom',
+      graphicId: `custom-${customId}`,
+      data: {
+        customUrl: customGraphic.url,
+        customLabel: customGraphic.label,
+      },
+      timestamp: Date.now(),
+    });
+  };
+
   const sendGraphic = async (graphicId, frameTitle = null, leaderboardEvent = null) => {
     if (!compId || !config) return;
 
@@ -326,6 +382,13 @@ export default function GraphicsControl({ competitionId }) {
     if (leaderboardEvent) {
       data.leaderboardEvent = leaderboardEvent;
       data.leaderboardGender = gender; // Pass gender for column visibility (women don't have Exec/SB)
+    }
+
+    // Handle event calendar - load events from competition config
+    if (graphicId === 'event-calendar') {
+      data.calendarTitle = config.calendarTitle || 'Event Calendar';
+      data.calendarEvents = config.calendarEvents || '[]';
+      data.calendarColumns = config.calendarColumns || 'auto';
     }
 
     // Handle sponsor graphics - check for event sponsors from theme first, then fall back to team sponsors
@@ -400,6 +463,7 @@ export default function GraphicsControl({ competitionId }) {
       team1Logo: config.team1Logo || '',
       rotation: String(rotation),
       meetTheme: config.meetTheme || '',
+      layout: slateLayout || 'classic',
     };
 
     set(ref(db, `competitions/${compId}/currentGraphic`), {
@@ -640,7 +704,32 @@ export default function GraphicsControl({ competitionId }) {
                 {/* Rotation Slate buttons - shown after In-Meet section */}
                 {section === 'In-Meet' && (
                   <>
-                    <div className="text-xs text-zinc-600 mt-3 mb-1">Rotation Slate</div>
+                    <div className="flex items-center justify-between mt-3 mb-1">
+                      <div className="text-xs text-zinc-600">Rotation Slate</div>
+                      <select
+                        value={slateLayout}
+                        onChange={(e) => setSlateLayout(e.target.value)}
+                        className="text-xs bg-zinc-700 text-zinc-300 border border-zinc-600 rounded px-1.5 py-0.5 focus:outline-none focus:border-blue-500"
+                      >
+                        <option value="classic">Classic</option>
+                        <option value="centered">Centered</option>
+                        <option value="minimal">Minimal</option>
+                        <option value="banner">Banner</option>
+                        <option value="jumbo">Jumbo</option>
+                        <option value="hero">Hero</option>
+                        <option value="split">Split</option>
+                        <option value="bold">Bold</option>
+                        <option value="watermark">Watermark</option>
+                        <option value="frame">Frame</option>
+                        <option value="stacked">Stacked</option>
+                        <option value="cinema">Cinema</option>
+                        <option value="corner">Corner</option>
+                        <option value="wide">Wide</option>
+                        <option value="side">Side</option>
+                        <option value="stripe">Stripe</option>
+                        <option value="overlap">Overlap</option>
+                      </select>
+                    </div>
                     <div className={`grid gap-1.5 ${rotationCount <= 4 ? 'grid-cols-4' : rotationCount <= 6 ? 'grid-cols-6' : 'grid-cols-7'}`}>
                       {Array.from({ length: rotationCount }, (_, i) => i + 1).map((rotation) => {
                         const graphicId = `rotation-slate-r${rotation}`;
@@ -773,6 +862,87 @@ export default function GraphicsControl({ competitionId }) {
               )}
             </div>
           )}
+
+          {/* Custom Graphics Section */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-xs text-zinc-500 uppercase">Custom Graphics</div>
+              <button
+                onClick={() => setShowAddCustom(!showAddCustom)}
+                className="text-xs px-2 py-1 rounded font-medium bg-teal-700 hover:bg-teal-600 text-white transition-colors flex items-center gap-1"
+              >
+                <PlusIcon className="w-3 h-3" />
+                Add
+              </button>
+            </div>
+
+            {/* Add Custom Graphic Form */}
+            {showAddCustom && (
+              <div className="bg-zinc-800 border border-zinc-700 rounded-lg p-3 mb-2 space-y-2">
+                <input
+                  type="text"
+                  placeholder="Label (e.g. Halftime Show)"
+                  value={newCustomLabel}
+                  onChange={(e) => setNewCustomLabel(e.target.value)}
+                  className="w-full px-3 py-2 bg-zinc-900 border border-zinc-600 rounded text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-teal-500"
+                />
+                <input
+                  type="text"
+                  placeholder="URL (e.g. https://example.com/graphic.html)"
+                  value={newCustomUrl}
+                  onChange={(e) => setNewCustomUrl(e.target.value)}
+                  className="w-full px-3 py-2 bg-zinc-900 border border-zinc-600 rounded text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-teal-500"
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={addCustomGraphic}
+                    disabled={!newCustomLabel.trim() || !newCustomUrl.trim()}
+                    className="flex-1 px-3 py-2 bg-teal-600 hover:bg-teal-500 disabled:bg-zinc-700 disabled:text-zinc-500 text-white rounded text-sm font-medium transition-colors"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={() => { setShowAddCustom(false); setNewCustomLabel(''); setNewCustomUrl(''); }}
+                    className="px-3 py-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded text-sm transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Custom Graphic Buttons */}
+            {Object.keys(customGraphics).length > 0 ? (
+              <div className="space-y-1.5">
+                {Object.entries(customGraphics).map(([id, cg]) => (
+                  <div key={id} className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => sendCustomGraphic(id, cg)}
+                      className={`flex-1 text-left px-3 py-2 rounded text-xs font-medium transition-colors truncate ${
+                        currentGraphicId === `custom-${id}`
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-zinc-700 hover:bg-zinc-600 text-zinc-300'
+                      }`}
+                      title={cg.url}
+                    >
+                      {cg.label}
+                    </button>
+                    <button
+                      onClick={() => deleteCustomGraphic(id)}
+                      className="p-2 rounded bg-zinc-700 hover:bg-red-600 text-zinc-400 hover:text-white transition-colors shrink-0"
+                      title="Delete custom graphic"
+                    >
+                      <TrashIcon className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : !showAddCustom && (
+              <div className="text-xs text-zinc-500 text-center py-3 bg-zinc-700/50 rounded">
+                No custom graphics added
+              </div>
+            )}
+          </div>
 
           {/* Clear Button */}
           <button

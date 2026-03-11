@@ -3281,15 +3281,16 @@ io.on('connection', async (socket) => {
           console.log(`[Socket] Competition ${clientCompId} has VM at ${vm.publicIp}`);
 
           // Connect to OBS on that VM (if not already connected)
+          // IMPORTANT: Do NOT await this - OBS connection can timeout for 30-60s
+          // which blocks socket event handler registration (loadRundown, etc.)
           const obsConnManager = getOBSConnectionManager();
           if (!obsConnManager.isConnected(clientCompId)) {
-            try {
-              await obsConnManager.connectToVM(clientCompId, vm.publicIp);
+            obsConnManager.connectToVM(clientCompId, vm.publicIp).then(() => {
               console.log(`[Socket] Connected to OBS for competition ${clientCompId}`);
-            } catch (obsError) {
+            }).catch((obsError) => {
               console.warn(`[Socket] Failed to connect to OBS for ${clientCompId}: ${obsError.message}`);
               // Continue without OBS - some features won't work
-            }
+            });
           }
         } else {
           console.log(`[Socket] No VM assigned to competition ${clientCompId}`);
@@ -3301,13 +3302,13 @@ io.on('connection', async (socket) => {
       console.log(`[Socket] Active competition set to ${clientCompId}`);
 
       // Initialize OBS State Sync for this competition (enables REST API routes)
-      try {
-        await initializeOBSStateSync(clientCompId);
+      // Don't await - let it run in background so socket handlers register immediately
+      initializeOBSStateSync(clientCompId).then(() => {
         console.log(`[Socket] OBS State Sync initialized for competition ${clientCompId}`);
-      } catch (syncError) {
+      }).catch((syncError) => {
         console.warn(`[Socket] Failed to initialize OBS State Sync for ${clientCompId}: ${syncError.message}`);
         // Continue - Socket.io events will still work, but REST API endpoints won't
-      }
+      });
     } catch (error) {
       console.error(`[Socket] Error setting up competition ${clientCompId}:`, error.message);
     }

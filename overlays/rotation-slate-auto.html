@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1920, height=1080">
+  <title>Rotation Slate (Auto)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      font-family: 'Inter', sans-serif;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background-color: var(--meet-overlay-bg, #E5E5E5);
+      display: flex;
+      flex-direction: row;
+    }
+
+    .logo-section {
+      flex: 0 0 700px;
+      height: 100%;
+      background: var(--meet-header-bg, #f0f0f0);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: slideRight 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes slideRight {
+      from { opacity: 0; transform: translateX(-60px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .team-logo {
+      width: 500px;
+      height: 500px;
+      object-fit: contain;
+    }
+
+    .content-section {
+      flex: 1;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 100px 120px;
+      background-color: var(--meet-overlay-bg, #E5E5E5);
+      animation: fadeIn 0.6s ease-out 0.2s both;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .meet-name {
+      font-size: 86px;
+      font-weight: 700;
+      color: var(--meet-overlay-text, #222);
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      margin-bottom: 50px;
+      line-height: 1.1;
+    }
+
+    .divider {
+      width: 200px;
+      height: 10px;
+      background: var(--meet-border-color, #111);
+      border-radius: 5px;
+      margin-bottom: 50px;
+    }
+
+    .rotation-label {
+      font-size: 64px;
+      font-weight: 600;
+      color: var(--meet-overlay-text, #666);
+      text-transform: uppercase;
+      letter-spacing: 16px;
+      margin-bottom: 10px;
+    }
+
+    .rotation-number {
+      font-size: 500px;
+      font-weight: 900;
+      color: var(--meet-overlay-text, #111);
+      line-height: 0.75;
+      letter-spacing: -20px;
+      transition: opacity 0.3s ease;
+    }
+
+    .rotation-number.changing {
+      animation: pulseChange 0.4s ease;
+    }
+
+    @keyframes pulseChange {
+      0% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.95); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    .status-label {
+      font-size: 36px;
+      font-weight: 600;
+      color: var(--meet-overlay-text, #999);
+      text-transform: uppercase;
+      letter-spacing: 8px;
+      margin-top: 30px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .status-label.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="logo-section">
+    <img id="logo" class="team-logo" src="" alt="Team Logo">
+  </div>
+  <div class="content-section">
+    <div id="meetName" class="meet-name">GYMNASTICS</div>
+    <div class="divider"></div>
+    <div class="rotation-label">Rotation</div>
+    <div id="rotationNumber" class="rotation-number">-</div>
+    <div id="statusLabel" class="status-label"></div>
+  </div>
+
+  <script>
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyCh0aZUvKl6Qvqsva3hvOgJJlleP1OwcTY",
+      authDomain: "gymnastics-graphics.firebaseapp.com",
+      databaseURL: "https://gymnastics-graphics-default-rtdb.firebaseio.com",
+      projectId: "gymnastics-graphics",
+      storageBucket: "gymnastics-graphics.firebasestorage.app",
+      messagingSenderId: "702072609550",
+      appId: "1:702072609550:web:ac74a811186d3ff45b955f"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Parse URL parameters
+    const params = new URLSearchParams(window.location.search);
+    const compId = params.get('compId');
+
+    if (!compId) {
+      console.error('Missing compId parameter');
+      document.getElementById('rotationNumber').textContent = '?';
+    }
+
+    // State
+    const state = {
+      virtiusSessionId: null,
+      gender: 'mens',
+      teamCount: 0,
+      totalRotations: 6,
+      currentRotation: 0,
+      isFinal: false,
+      pollInterval: 10000
+    };
+
+    const rotationNumberEl = document.getElementById('rotationNumber');
+    const statusLabelEl = document.getElementById('statusLabel');
+
+    // Load competition config from Firebase
+    async function loadCompetitionConfig() {
+      try {
+        const snapshot = await db.ref(`competitions/${compId}/config`).once('value');
+        const config = snapshot.val();
+        if (!config) {
+          console.error('No competition config found for compId:', compId);
+          return false;
+        }
+
+        state.virtiusSessionId = config.virtiusSessionId || null;
+        state.gender = config.gender || 'mens';
+
+        // Count teams
+        let teamCount = 0;
+        for (let i = 1; i <= 7; i++) {
+          if (config[`team${i}Name`]) teamCount++;
+        }
+        state.teamCount = teamCount;
+
+        // Set total rotations
+        const eventCount = state.gender === 'womens' ? 4 : 6;
+        state.totalRotations = Math.max(eventCount, teamCount);
+
+        // Set logo (team1 logo)
+        const logoEl = document.getElementById('logo');
+        const logo = config.team1Logo || '';
+        if (logo) {
+          logoEl.src = logo;
+        } else {
+          logoEl.style.display = 'none';
+        }
+
+        // Set meet name
+        document.getElementById('meetName').textContent = config.eventName || 'GYMNASTICS';
+
+        console.log('Config loaded:', {
+          compId,
+          virtiusSessionId: state.virtiusSessionId,
+          gender: state.gender,
+          teamCount: state.teamCount,
+          totalRotations: state.totalRotations
+        });
+
+        return true;
+      } catch (err) {
+        console.error('Failed to load config:', err);
+        return false;
+      }
+    }
+
+    // Detect current rotation from Virtius API data
+    function detectRotation(apiTeams) {
+      if (!apiTeams || apiTeams.length === 0) return null;
+
+      const totalRotations = state.totalRotations;
+      const eventCount = state.gender === 'womens' ? 4 : 6;
+      const hasByes = state.teamCount > eventCount;
+
+      if (hasByes) {
+        return detectRotationFromApiFields(apiTeams, totalRotations);
+      }
+
+      // Standard detection: min completed events across ALL teams
+      let minCompleted = totalRotations;
+      apiTeams.forEach((team) => {
+        let completed = 0;
+        (team.events || []).forEach((event) => {
+          const gymnasts = event.gymnasts || [];
+          const scored = gymnasts.filter(g => g.final_score != null);
+          if (scored.length === gymnasts.length && gymnasts.length > 0) {
+            completed++;
+          }
+        });
+        minCompleted = Math.min(minCompleted, completed);
+      });
+
+      if (minCompleted === totalRotations) {
+        return { current: totalRotations, total: totalRotations, isFinal: true };
+      }
+
+      return { current: minCompleted + 1, total: totalRotations, isFinal: false };
+    }
+
+    function detectRotationFromApiFields(apiTeams, totalRotations) {
+      let maxRotationWithScores = 0;
+      let allEventsComplete = true;
+
+      apiTeams.forEach((team) => {
+        (team.events || []).forEach((event) => {
+          const rotation = event.rotation;
+          if (!rotation) return;
+          const gymnasts = event.gymnasts || [];
+          const scored = gymnasts.filter(g => g.final_score != null);
+          if (scored.length > 0) {
+            maxRotationWithScores = Math.max(maxRotationWithScores, rotation);
+          }
+          if (scored.length < gymnasts.length) {
+            allEventsComplete = false;
+          }
+        });
+      });
+
+      if (allEventsComplete && maxRotationWithScores > 0) {
+        return { current: totalRotations, total: totalRotations, isFinal: true };
+      }
+
+      return { current: Math.max(1, maxRotationWithScores), total: totalRotations, isFinal: false };
+    }
+
+    // Update the displayed rotation number
+    function updateDisplay(rotation) {
+      if (!rotation) return;
+
+      const changed = rotation.current !== state.currentRotation || rotation.isFinal !== state.isFinal;
+      state.currentRotation = rotation.current;
+      state.isFinal = rotation.isFinal;
+
+      if (changed) {
+        rotationNumberEl.classList.add('changing');
+        setTimeout(() => rotationNumberEl.classList.remove('changing'), 400);
+      }
+
+      rotationNumberEl.textContent = rotation.current;
+
+      if (rotation.isFinal) {
+        statusLabelEl.textContent = 'Final';
+        statusLabelEl.classList.add('visible');
+      } else {
+        statusLabelEl.classList.remove('visible');
+      }
+    }
+
+    // Poll the Virtius API
+    async function poll() {
+      if (!state.virtiusSessionId) return;
+
+      try {
+        const response = await fetch(`https://api.virti.us/session/${state.virtiusSessionId}/json`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const data = await response.json();
+        const apiTeams = data?.results?.team_results || [];
+        const rotation = detectRotation(apiTeams);
+        if (rotation) updateDisplay(rotation);
+      } catch (err) {
+        console.error('Poll error:', err);
+      }
+    }
+
+    // Initialize
+    async function init() {
+      if (!compId) return;
+
+      const loaded = await loadCompetitionConfig();
+      if (!loaded) return;
+
+      if (!state.virtiusSessionId) {
+        rotationNumberEl.textContent = '-';
+        console.warn('No Virtius session ID - cannot auto-detect rotation');
+        return;
+      }
+
+      // Initial poll
+      await poll();
+
+      // Start polling
+      setInterval(poll, state.pollInterval);
+    }
+
+    init();
+  </script>
+  <script src="theme-loader.js?v=2"></script>
+</body>
+</html>

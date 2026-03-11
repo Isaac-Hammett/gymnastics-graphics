@@ -467,6 +467,22 @@ export const GRAPHICS = {
     },
   },
 
+  'frame-tri-wide-top': {
+    id: 'frame-tri-wide-top',
+    label: 'Tri Wide Top',
+    category: 'frame-overlays',
+    keywords: ['tri', 'three', '3', 'wide', 'top', 'frame', 'overlay'],
+    gender: 'both',
+    minTeams: 3,
+    maxTeams: 7,
+    renderer: 'overlay',
+    file: 'frame-tri-wide-top.html',
+    transparent: true,
+    params: {
+      // Dynamic: team1Logo through team3Logo
+    },
+  },
+
   'frame-team-header': {
     id: 'frame-team-header',
     label: 'Team Header Dual',
@@ -1008,6 +1024,43 @@ export const GRAPHICS = {
   },
 
   // ============================================================
+  // EVENT CALENDAR
+  // ============================================================
+
+  'event-calendar': {
+    id: 'event-calendar',
+    label: 'Event Calendar',
+    category: 'pre-meet',
+    keywords: ['event', 'events', 'calendar', 'schedule', 'dates', 'upcoming', 'promo', 'future', 'season'],
+    gender: 'both',
+    renderer: 'overlay',
+    file: 'event-calendar.html',
+    transparent: false,
+    params: {
+      logo: { type: 'string', source: 'competition' },
+      title: {
+        type: 'string',
+        default: 'Event Calendar',
+        label: 'Header Title',
+        description: 'Text shown in the header bar',
+      },
+      events: {
+        type: 'string',
+        label: 'Events (JSON)',
+        description: 'JSON array: [{"date":"Mar 15","name":"vs UCLA","location":"Los Angeles, CA"}]',
+        required: true,
+      },
+      columns: {
+        type: 'enum',
+        options: ['auto', '1', '2'],
+        optionLabels: { 'auto': 'Auto (2 cols at 7+)', '1': 'Single Column', '2': 'Two Columns' },
+        default: 'auto',
+        label: 'Layout',
+      },
+    },
+  },
+
+  // ============================================================
   // ROTATION GRAPHICS
   // ============================================================
 
@@ -1039,6 +1092,33 @@ export const GRAPHICS = {
         default: '1',
         label: 'Rotation',
       },
+      layout: {
+        type: 'enum',
+        options: ['classic', 'centered', 'minimal', 'banner', 'jumbo', 'hero', 'split', 'bold', 'watermark', 'frame', 'stacked', 'cinema', 'corner', 'wide', 'side', 'stripe', 'overlap'],
+        optionLabels: {
+          'classic': 'Classic', 'centered': 'Centered', 'minimal': 'Minimal', 'banner': 'Banner',
+          'jumbo': 'Jumbo', 'hero': 'Hero', 'split': 'Split', 'bold': 'Bold',
+          'watermark': 'Watermark', 'frame': 'Frame', 'stacked': 'Stacked', 'cinema': 'Cinema',
+          'corner': 'Corner', 'wide': 'Wide', 'side': 'Side', 'stripe': 'Stripe', 'overlap': 'Overlap',
+        },
+        required: false,
+        default: 'classic',
+        label: 'Layout',
+      },
+    },
+  },
+
+  'rotation-slate-auto': {
+    id: 'rotation-slate-auto',
+    label: 'Rotation Slate (Auto)',
+    category: 'in-meet',
+    keywords: ['rotation', 'slate', 'auto', 'live', 'current'],
+    gender: 'both',
+    renderer: 'overlay',
+    file: 'rotation-slate-auto.html',
+    transparent: false,
+    params: {
+      compId: { type: 'string', source: 'competition', required: true },
     },
   },
 };

@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1920, height=1080">
+  <title>Event Calendar</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: transparent;
+    }
+
+    .card-container {
+      position: absolute;
+      top: 50px;
+      left: 70px;
+      right: 70px;
+      bottom: 50px;
+      display: flex;
+      flex-direction: column;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+
+    .header-bar {
+      background: var(--meet-header-bg, #d4d4d8);
+      padding: 18px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .header-title {
+      font-size: 42px;
+      font-weight: 800;
+      color: var(--meet-header-text, #000);
+      text-transform: uppercase;
+    }
+
+    .header-logo {
+      width: 80px;
+      height: 80px;
+      object-fit: contain;
+    }
+
+    .events-container {
+      flex: 1;
+      background: var(--meet-overlay-bg, #18181b);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-evenly;
+      padding: 30px 80px;
+      gap: 0;
+    }
+
+    .event-item {
+      display: flex;
+      flex-direction: column;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      animation: fadeSlideIn 0.5s ease-out both;
+    }
+
+    .event-item:last-child {
+      border-bottom: none;
+    }
+
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .event-date {
+      font-weight: 800;
+      color: var(--meet-accent, #a78bfa);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .event-name {
+      font-weight: 700;
+      color: #fff;
+      margin-top: 4px;
+    }
+
+    .event-location {
+      font-weight: 400;
+      color: #a1a1aa;
+      margin-top: 2px;
+    }
+
+    /* Size tiers based on event count */
+    .tier-large .event-item { padding: 30px 0; }
+    .tier-large .event-date { font-size: 36px; }
+    .tier-large .event-name { font-size: 56px; margin-top: 8px; }
+    .tier-large .event-location { font-size: 32px; margin-top: 6px; }
+
+    .tier-medium .event-item { padding: 22px 0; }
+    .tier-medium .event-date { font-size: 30px; }
+    .tier-medium .event-name { font-size: 46px; margin-top: 6px; }
+    .tier-medium .event-location { font-size: 28px; margin-top: 4px; }
+
+    .tier-compact .event-item { padding: 16px 0; }
+    .tier-compact .event-date { font-size: 26px; }
+    .tier-compact .event-name { font-size: 38px; margin-top: 4px; }
+    .tier-compact .event-location { font-size: 24px; margin-top: 3px; }
+
+    .tier-dense .event-item { padding: 12px 0; }
+    .tier-dense .event-date { font-size: 22px; }
+    .tier-dense .event-name { font-size: 32px; margin-top: 3px; }
+    .tier-dense .event-location { font-size: 20px; margin-top: 2px; }
+
+    /* Two-column layout for 7+ events */
+    .two-column {
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-content: space-evenly;
+      gap: 0 60px;
+    }
+
+    .two-column .event-item {
+      width: calc(50% - 30px);
+    }
+
+    .no-events-message {
+      font-size: 36px;
+      font-weight: 700;
+      color: #71717a;
+      text-align: center;
+      align-self: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="card-container">
+    <div class="header-bar">
+      <div class="header-title" id="headerTitle">Event Calendar</div>
+      <img id="headerLogo" class="header-logo" src="" alt="Logo">
+    </div>
+    <div class="events-container" id="eventsContainer"></div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const logoUrl = params.get('logo') || '';
+    const title = params.get('title') || 'Event Calendar';
+    const eventsParam = params.get('events') || '';
+    const columns = params.get('columns') || 'auto';
+
+    // Set header title
+    document.getElementById('headerTitle').textContent = title;
+
+    // Handle header logo
+    const headerLogo = document.getElementById('headerLogo');
+    if (logoUrl) {
+      headerLogo.src = logoUrl;
+      headerLogo.onerror = () => { headerLogo.style.display = 'none'; };
+    } else {
+      headerLogo.style.display = 'none';
+    }
+
+    // Override with meet logo when theme is active
+    function checkMeetLogo() {
+      const meetLogo = document.body.getAttribute('data-meet-logo');
+      if (meetLogo) {
+        headerLogo.src = meetLogo;
+        headerLogo.style.display = '';
+      }
+    }
+    setTimeout(checkMeetLogo, 500);
+    new MutationObserver(checkMeetLogo).observe(document.body, {
+      attributes: true,
+      attributeFilter: ['data-meet-logo', 'data-meet-theme']
+    });
+
+    // Parse events
+    let events = [];
+    if (eventsParam) {
+      try {
+        events = JSON.parse(eventsParam);
+        if (!Array.isArray(events)) events = [];
+      } catch (e) {
+        // Try pipe-separated fallback: "date~name~location|date~name~location"
+        events = eventsParam.split('|').map(entry => {
+          const parts = entry.split('~');
+          return {
+            date: (parts[0] || '').trim(),
+            name: (parts[1] || '').trim(),
+            location: (parts[2] || '').trim()
+          };
+        }).filter(e => e.date || e.name);
+      }
+    }
+
+    const container = document.getElementById('eventsContainer');
+    const count = events.length;
+
+    if (count === 0) {
+      container.innerHTML = '<div class="no-events-message">No events configured</div>';
+    } else {
+      // Determine size tier
+      let tier;
+      if (count <= 3) tier = 'tier-large';
+      else if (count <= 5) tier = 'tier-medium';
+      else if (count <= 7) tier = 'tier-compact';
+      else tier = 'tier-dense';
+
+      container.classList.add(tier);
+
+      // Use two columns for 7+ events (or if forced)
+      const useTwoColumns = columns === '2' || (columns === 'auto' && count >= 7);
+      if (useTwoColumns) {
+        container.classList.add('two-column');
+      }
+
+      // Render events
+      events.forEach((event, i) => {
+        const item = document.createElement('div');
+        item.className = 'event-item';
+        item.style.animationDelay = `${i * 0.08}s`;
+
+        const dateEl = document.createElement('div');
+        dateEl.className = 'event-date';
+        dateEl.textContent = event.date || '';
+
+        const nameEl = document.createElement('div');
+        nameEl.className = 'event-name';
+        nameEl.textContent = event.name || '';
+
+        item.appendChild(dateEl);
+        item.appendChild(nameEl);
+
+        if (event.location) {
+          const locEl = document.createElement('div');
+          locEl.className = 'event-location';
+          locEl.textContent = event.location;
+          item.appendChild(locEl);
+        }
+
+        container.appendChild(item);
+      });
+    }
+  </script>
+  <script src="theme-loader.js?v=2"></script>
+</body>
+</html>

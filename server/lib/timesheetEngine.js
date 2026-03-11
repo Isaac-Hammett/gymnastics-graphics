@@ -895,8 +895,24 @@ class TimesheetEngine extends EventEmitter {
       }
     }
 
+    // Handle custom graphics - load URL from Firebase customGraphics collection
+    if (graphicId.startsWith('custom-') && this.firebase && this.compId) {
+      const customKey = graphicId.replace('custom-', '');
+      try {
+        const db = typeof this.firebase.ref === 'function' ? this.firebase : this.firebase.database();
+        const customSnapshot = await db.ref(`competitions/${this.compId}/customGraphics/${customKey}`).once('value');
+        const customGraphic = customSnapshot.val();
+        if (customGraphic) {
+          data.customUrl = customGraphic.url;
+          data.customLabel = customGraphic.label;
+        }
+      } catch (error) {
+        console.warn(`[Timesheet${this.compId ? ':' + this.compId : ''}] Failed to load custom graphic: ${error.message}`);
+      }
+    }
+
     const graphicData = {
-      graphic: graphicId,
+      graphic: graphicId.startsWith('custom-') ? 'custom' : graphicId,
       graphicId: graphicId, // For button highlighting in GraphicsControl
       data: data,
       segmentId: segment.id,

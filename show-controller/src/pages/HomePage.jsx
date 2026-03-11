@@ -65,6 +65,7 @@ export default function HomePage() {
   const [virtiusFetching, setVirtiusFetching] = useState(false);
   const [virtiusError, setVirtiusError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [refreshResult, setRefreshResult] = useState(null); // 'success' | 'error' | null
   const [availableThemes, setAvailableThemes] = useState({});
 
   // Load meet themes from Firebase
@@ -407,12 +408,17 @@ export default function HomePage() {
   async function handleRefreshTeamData() {
     if (!editingCompId) return;
     setRefreshing(true);
+    setRefreshResult(null);
     try {
-      await refreshTeamData(editingCompId);
+      const result = await refreshTeamData(editingCompId);
+      setRefreshResult(result?.success ? 'success' : 'error');
     } catch (err) {
       console.error('Failed to refresh team data:', err);
+      setRefreshResult('error');
     }
     setRefreshing(false);
+    // Auto-clear the result message after 4 seconds
+    setTimeout(() => setRefreshResult(null), 4000);
   }
 
   // Helper functions
@@ -812,6 +818,12 @@ export default function HomePage() {
             description="Create custom meet themes for branded graphics"
           />
           <ToolCard
+            to="/background-generator"
+            icon="[bg]"
+            title="Background Generator"
+            description="Create animated looping backgrounds from logo colors"
+          />
+          <ToolCard
             to="/import"
             icon="[csv]"
             title="Import Shows"
@@ -866,6 +878,7 @@ export default function HomePage() {
           fetchFromVirtius={fetchFromVirtius}
           teamCount={teamCount}
           refreshing={refreshing}
+          refreshResult={refreshResult}
           onSubmit={handleSubmit}
           onDelete={handleDelete}
           onRefreshTeamData={handleRefreshTeamData}
@@ -948,6 +961,7 @@ function CompetitionCard({
         <StatsStatusBadge compId={compId} config={config} />
         <StatsDetailPanel compId={compId} config={config} />
         <RankingsPanel compId={compId} config={config} />
+        <CommentaryStatusBadge compId={compId} />
       </div>
 
       {vmBadge?.vm?.publicIp && (
@@ -989,6 +1003,12 @@ function CompetitionCard({
           className="px-3 py-1.5 bg-zinc-800 text-zinc-300 text-sm font-medium rounded-lg hover:bg-zinc-700 transition-colors"
         >
           Checklist
+        </Link>
+        <Link
+          to={`/${compId}/commentary`}
+          className="px-3 py-1.5 bg-zinc-800 text-zinc-300 text-sm font-medium rounded-lg hover:bg-zinc-700 transition-colors"
+        >
+          Commentary
         </Link>
       </div>
 
@@ -1148,6 +1168,7 @@ function CompetitionModal({
   fetchFromVirtius,
   teamCount,
   refreshing,
+  refreshResult,
   onSubmit,
   onDelete,
   onRefreshTeamData,
@@ -1409,6 +1430,12 @@ function CompetitionModal({
               >
                 {refreshing ? 'Refreshing...' : 'Refresh Team Data'}
               </button>
+              {refreshResult === 'success' && (
+                <span className="ml-3 text-green-400 text-sm">Rosters and headshots updated!</span>
+              )}
+              {refreshResult === 'error' && (
+                <span className="ml-3 text-red-400 text-sm">Failed to refresh — check console for details</span>
+              )}
             </div>
           )}
 
@@ -1525,6 +1552,40 @@ function TeamLogoInput({ teamNum, teamName, teamLogo, onNameChange, onLogoChange
           />
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * CommentaryStatusBadge - Shows commentary staffing status on a competition card.
+ * Reads competitions/{compId}/commentary from Firebase.
+ */
+function CommentaryStatusBadge({ compId }) {
+  const [staff, setStaff] = useState(null);
+
+  useEffect(() => {
+    const staffRef = ref(db, `competitions/${compId}/commentary`);
+    const unsubscribe = onValue(staffRef, (snapshot) => {
+      setStaff(snapshot.val());
+    });
+    return () => unsubscribe();
+  }, [compId]);
+
+  if (!staff) return null;
+
+  const entries = Object.values(staff);
+  if (entries.length === 0) return null;
+
+  const confirmed = entries.filter(s => s.status === 'confirmed' || s.status === 'briefed').length;
+  const total = entries.length;
+  const allConfirmed = confirmed === total;
+
+  return (
+    <div className={`inline-flex items-center gap-1.5 mt-1 px-2 py-0.5 rounded text-xs font-medium ${
+      allConfirmed ? 'bg-green-900/40 text-green-300 border border-green-800' : 'bg-yellow-900/40 text-yellow-300 border border-yellow-800'
+    }`}>
+      <span>{allConfirmed ? '✓' : '⋯'}</span>
+      Commentary: {confirmed}/{total} confirmed
     </div>
   );
 }
