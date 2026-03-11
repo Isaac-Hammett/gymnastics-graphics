@@ -18,7 +18,7 @@
 | Phase 3-Deploy | Deploy Phase 3 changes | 1 | COMPLETE |
 | Phase 4 | AI-Powered Talent Discovery | 5 | COMPLETE |
 | Phase 4-Deploy | Deploy Phase 4 changes | 1 | COMPLETE |
-| Phase 5 | Annual Survey + Pre-Production Alerts | 6 | NOT STARTED |
+| Phase 5 | Annual Survey + Pre-Production Alerts | 6 | IN PROGRESS |
 | Phase 5-Deploy | Deploy Phase 5 changes | 1 | NOT STARTED |
 | Final-Deploy | Full acceptance criteria check | 2 | NOT STARTED |
 | **Total** | | **30** | |
@@ -738,7 +738,7 @@ There is no global auth wrapper — just insert before `<Route path="/:compId" e
 
 ---
 
-### Task 5.4: Create useProductionAlerts hook — NOT STARTED
+### Task 5.4: Create useProductionAlerts hook — COMPLETE
 
 **File:** `show-controller/src/hooks/useProductionAlerts.js` (new file)
 
