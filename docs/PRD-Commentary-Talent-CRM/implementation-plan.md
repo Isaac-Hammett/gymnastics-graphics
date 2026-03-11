@@ -185,7 +185,7 @@ Use `csv-parse` for CSV parsing (install if not present). Use a simple Levenshte
 
 ---
 
-### Task 2.2: Create public BookingPage — NOT STARTED
+### Task 2.2: Create public BookingPage — COMPLETE
 
 **File:** `show-controller/src/pages/BookingPage.jsx` (new file)
 
