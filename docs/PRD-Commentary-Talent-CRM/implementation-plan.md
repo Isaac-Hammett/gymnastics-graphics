@@ -10,7 +10,7 @@
 
 | Phase | Description | Tasks | Status |
 |-------|-------------|-------|--------|
-| Phase 0 | Data Migration Script | 1 | NOT STARTED |
+| Phase 0 | Data Migration Script | 1 | COMPLETE |
 | Phase 0-Deploy | Run migration + verify Firebase | 1 | NOT STARTED |
 | Phase 2 | Booking Links + Smart Availability | 6 | NOT STARTED |
 | Phase 2-Deploy | Deploy Phase 2 changes | 1 | NOT STARTED |
@@ -30,7 +30,7 @@
 > **Deploy rule:** This is a server-side script, not a frontend build. The deploy task runs the script
 > directly (no npm build needed). Firebase-only changes.
 
-### Task 0.1: Create CSV migration script — NOT STARTED
+### Task 0.1: Create CSV migration script — COMPLETE
 
 **File:** `server/scripts/migrateCommentaryCSV.js` (new file)
 
