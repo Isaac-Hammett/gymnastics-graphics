@@ -34,6 +34,9 @@ import CompetitionLayout from './components/CompetitionLayout';
 // Route guard for coordinator-dependent pages
 import CoordinatorGate from './components/CoordinatorGate';
 
+// Auth guard for protected pages
+import RequireAuth from './components/RequireAuth';
+
 // Existing views (for show controller functionality)
 import TalentView from './views/TalentView';
 import ProducerView from './views/ProducerView';
@@ -68,7 +71,7 @@ function App() {
       />
       <Routes>
         {/* Home page - consolidated landing page */}
-        <Route path="/" element={<HomePage />} />
+        <Route path="/" element={<RequireAuth><HomePage /></RequireAuth>} />
 
         {/* Legacy routes redirect to home */}
         <Route path="/select" element={<Navigate to="/" replace />} />
@@ -76,30 +79,32 @@ function App() {
         <Route path="/dashboard" element={<Navigate to="/" replace />} />
 
         {/* Standalone tool pages */}
-        <Route path="/controller" element={<ControllerPage />} />
-        <Route path="/url-generator" element={<UrlGeneratorPage />} />
-        <Route path="/media-manager" element={<MediaManagerPage />} />
-        <Route path="/graphics-manager" element={<GraphicsManagerPage />} />
-        <Route path="/theme-editor" element={<ThemeEditorPage />} />
-        <Route path="/background-generator" element={<BackgroundGeneratorPage />} />
-        <Route path="/import" element={<ImportView />} />
+        <Route path="/controller" element={<RequireAuth><ControllerPage /></RequireAuth>} />
+        <Route path="/url-generator" element={<RequireAuth><UrlGeneratorPage /></RequireAuth>} />
+        <Route path="/media-manager" element={<RequireAuth><MediaManagerPage /></RequireAuth>} />
+        <Route path="/graphics-manager" element={<RequireAuth><GraphicsManagerPage /></RequireAuth>} />
+        <Route path="/theme-editor" element={<RequireAuth><ThemeEditorPage /></RequireAuth>} />
+        <Route path="/background-generator" element={<RequireAuth><BackgroundGeneratorPage /></RequireAuth>} />
+        <Route path="/import" element={<RequireAuth><ImportView /></RequireAuth>} />
 
         {/* Admin routes - use _admin prefix to avoid /:compId catching it */}
         <Route path="/_admin/vm-pool" element={
-          <CoordinatorGate>
-            <VMPoolPage />
-          </CoordinatorGate>
+          <RequireAuth>
+            <CoordinatorGate>
+              <VMPoolPage />
+            </CoordinatorGate>
+          </RequireAuth>
         } />
-        <Route path="/_admin/system-offline" element={<SystemOfflinePage />} />
-        <Route path="/_admin/setup-guide" element={<SetupGuidePage />} />
+        <Route path="/_admin/system-offline" element={<RequireAuth><SystemOfflinePage /></RequireAuth>} />
+        <Route path="/_admin/setup-guide" element={<RequireAuth><SetupGuidePage /></RequireAuth>} />
 
         {/* Talent roster — global tool pages */}
-        <Route path="/talent" element={<TalentPage />} />
-        <Route path="/talent/discover" element={<TalentDiscoveryPage />} />
-        <Route path="/talent/:talentId" element={<TalentProfilePage />} />
+        <Route path="/talent" element={<RequireAuth><TalentPage /></RequireAuth>} />
+        <Route path="/talent/discover" element={<RequireAuth><TalentDiscoveryPage /></RequireAuth>} />
+        <Route path="/talent/:talentId" element={<RequireAuth><TalentProfilePage /></RequireAuth>} />
 
         {/* Settings page */}
-        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/settings" element={<RequireAuth><SettingsPage /></RequireAuth>} />
 
         {/* Public pages (no auth required) - MUST be before /:compId */}
         <Route path="/login" element={<LoginPage />} />
