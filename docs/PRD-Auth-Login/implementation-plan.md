@@ -12,7 +12,7 @@
 |-------|-------------|-------|--------|
 | Phase 1 | Firebase Auth + Context + Login Page | 3 | COMPLETE |
 | Phase 1-Deploy | Deploy Phase 1 changes | 2 | COMPLETE |
-| Phase 2 | Route Protection | 2 | NOT STARTED |
+| Phase 2 | Route Protection | 2 | IN PROGRESS |
 | Phase 2-Deploy | Deploy Phase 2 changes | 2 | NOT STARTED |
 | Phase 3 | Sign-Out UI | 1 | NOT STARTED |
 | Phase 3-Deploy | Deploy Phase 3 changes | 1 | NOT STARTED |
@@ -154,7 +154,7 @@ Navigate to test URLs with Playwright. Take screenshots to `docs/PRD-Auth-Login/
 
 > **Deploy rule:** Commit each task. Do NOT deploy until Phase 2-Deploy.
 
-### Task 2.1: Create RequireAuth component — NOT STARTED
+### Task 2.1: Create RequireAuth component — COMPLETE
 
 **File:** `show-controller/src/components/RequireAuth.jsx` (new file)
 
