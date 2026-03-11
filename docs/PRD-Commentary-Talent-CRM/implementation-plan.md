@@ -128,7 +128,9 @@ Use `csv-parse` for CSV parsing (install if not present). Use a simple Levenshte
 > **Deploy rule:** Commit each task. Do NOT deploy until Phase 2-Deploy.
 > **Prerequisite:** `ANTHROPIC_API_KEY` must be set in server `.env` on `44.193.31.120` (used by Task 2.4 note parsing endpoint).
 
-### Task 2.1: Add booking token server endpoints — COMPLETE
+### Task 2.1: Add booking token server endpoints — COMPLETE ✓
+
+**Status:** Already implemented at server/index.js:2855-2904
 
 **File:** `server/index.js`
 
