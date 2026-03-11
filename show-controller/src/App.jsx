@@ -23,6 +23,7 @@ import CommentaryPage from './pages/CommentaryPage';
 import BookingPage from './pages/BookingPage';
 import SurveyPage from './pages/SurveyPage';
 import SettingsPage from './pages/SettingsPage';
+import LoginPage from './pages/LoginPage';
 
 // Error boundary for catching component errors
 import ErrorBoundary from './components/ErrorBoundary';
@@ -101,6 +102,7 @@ function App() {
         <Route path="/settings" element={<SettingsPage />} />
 
         {/* Public pages (no auth required) - MUST be before /:compId */}
+        <Route path="/login" element={<LoginPage />} />
         <Route path="/book/:token" element={<BookingPage />} />
         <Route path="/survey/:year" element={<SurveyPage />} />
 
