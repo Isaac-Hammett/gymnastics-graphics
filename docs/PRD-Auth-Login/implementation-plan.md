@@ -15,7 +15,7 @@
 | Phase 2 | Route Protection | 2 | COMPLETE |
 | Phase 2-Deploy | Deploy Phase 2 changes | 2 | COMPLETE |
 | Phase 3 | Sign-Out UI | 1 | COMPLETE |
-| Phase 3-Deploy | Deploy Phase 3 changes | 1 | NOT STARTED |
+| Phase 3-Deploy | Deploy Phase 3 changes | 1 | COMPLETE |
 | Final-Deploy | Full verification + mark complete | 2 | NOT STARTED |
 | **Total** | | **13** | |
 
@@ -285,7 +285,7 @@ cd show-controller && npm run build
 
 ## Phase 3-Deploy: Deploy Phase 3 Changes
 
-### Task 3-D.1: Build, deploy, and verify sign-out — NOT STARTED
+### Task 3-D.1: Build, deploy, and verify sign-out — COMPLETE
 
 **Frontend changed?** Yes
 ```bash
@@ -296,13 +296,13 @@ cd show-controller && npm run build
 **Credentials:** Read test account email/password from `~/.claude/projects/-Users-juliacosmiano-code-gymnastics-graphics/memory/playwright-credentials.md`
 
 **Verify:**
-- [ ] Navigate to `https://commentarygraphic.com/login`
-- [ ] Log in with test credentials (fill email, fill password, click "Sign In")
-- [ ] Confirm redirected to `/` and sign-out button visible in top-right corner with user email
-- [ ] Click "Sign Out" — redirects to `/login`
-- [ ] Take screenshot → `docs/PRD-Auth-Login/screenshots/verify-sign-out.png`
-- [ ] Log in again, navigate to a different protected page (e.g. `/talent`) — confirm sign-out button appears there too
-- [ ] No console errors
+- [x] Navigate to `https://commentarygraphic.com/login`
+- [x] Log in with test credentials (fill email, fill password, click "Sign In")
+- [x] Confirm redirected to `/` and sign-out button visible in top-right corner with user email
+- [x] Click "Sign Out" — redirects to `/login`
+- [x] Take screenshot → `docs/PRD-Auth-Login/screenshots/verify-sign-out.png`
+- [x] Log in again, navigate to a different protected page (e.g. `/talent`) — confirm sign-out button appears there too
+- [x] No console errors
 
 ---
 
@@ -340,6 +340,6 @@ Update `PRD-Auth-Login-2026-03-11.md` status to COMPLETE. Commit.
 | Phase 2 | 2 | Medium | COMPLETE |
 | Phase 2-Deploy | 2 | Low | COMPLETE |
 | Phase 3 | 1 | Low | COMPLETE |
-| Phase 3-Deploy | 1 | Low | NOT STARTED |
+| Phase 3-Deploy | 1 | Low | COMPLETE |
 | Final-Deploy | 2 | Low | NOT STARTED |
 | **Total** | **13** | | |
