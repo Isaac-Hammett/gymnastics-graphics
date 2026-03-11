@@ -33,6 +33,7 @@ import aiSuggestionService from './lib/aiSuggestionService.js';
 import { getOrCreateContextService, getContextService, removeContextService } from './lib/aiContextService.js';
 import { ingestCompetitionStats, ingestTeamStats, syncStatsToConfig, snapshotStatsForCompetition, checkStaleness, parseCompetitionType, buildTeamDbKey, fetchLeagueRankings } from './lib/rtnStatsService.js';
 import { randomUUID } from 'crypto';
+import Anthropic from '@anthropic-ai/sdk';
 
 dotenv.config();
 
@@ -2899,6 +2900,88 @@ app.post('/api/book/generate', async (req, res) => {
     });
   } catch (error) {
     console.error('[Booking] Failed to generate booking token:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/talent/:talentId/notes/parse - Parse talent notes for availability hints
+app.post('/api/talent/:talentId/notes/parse', async (req, res) => {
+  const { talentId } = req.params;
+  const { noteText } = req.body;
+
+  if (!noteText) {
+    return res.status(400).json({
+      error: 'Missing required field',
+      required: ['noteText']
+    });
+  }
+
+  // Check if ANTHROPIC_API_KEY is configured
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return res.status(503).json({
+      error: 'AI note parsing not configured',
+      message: 'ANTHROPIC_API_KEY not set in server environment'
+    });
+  }
+
+  try {
+    const db = productionConfigService.getDb();
+    if (!db) {
+      return res.status(503).json({ error: 'Firebase not available' });
+    }
+
+    // Initialize Anthropic client
+    const anthropic = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY
+    });
+
+    // Call Claude API to extract date hints
+    const message = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 512,
+      messages: [{
+        role: 'user',
+        content: `Extract any date mentions or availability hints from this note about a gymnastics commentator's availability.
+Return JSON only (no markdown code blocks) with this structure:
+{
+  "availablePeriods": ["late February", "first week of March"],
+  "unavailableDates": ["January 15", "Feb 20-22"]
+}
+
+Note text:
+${noteText}`
+      }]
+    });
+
+    // Parse Claude's response
+    const responseText = message.content[0].text;
+    let parsedData;
+    try {
+      // Remove any markdown code blocks if present
+      const cleanedText = responseText.replace(/```json\n?|\n?```/g, '').trim();
+      parsedData = JSON.parse(cleanedText);
+    } catch (parseError) {
+      console.error('[Note Parsing] Failed to parse Claude response:', responseText);
+      return res.status(500).json({
+        error: 'Failed to parse AI response',
+        rawResponse: responseText
+      });
+    }
+
+    // Write parsed hints to Firebase
+    await db.ref(`talentRoster/${talentId}/parsedAvailability`).set({
+      availablePeriods: parsedData.availablePeriods || [],
+      unavailableDates: parsedData.unavailableDates || [],
+      parsedAt: new Date().toISOString(),
+      sourceNote: noteText
+    });
+
+    res.json({
+      availablePeriods: parsedData.availablePeriods || [],
+      unavailableDates: parsedData.unavailableDates || []
+    });
+  } catch (error) {
+    console.error('[Note Parsing] Failed to parse notes:', error);
     res.status(500).json({ error: error.message });
   }
 });

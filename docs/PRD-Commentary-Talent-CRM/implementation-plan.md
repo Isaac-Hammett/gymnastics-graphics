@@ -231,7 +231,7 @@ Read App.jsx first to confirm placement.
 
 ---
 
-### Task 2.4: Add note parsing endpoint — NOT STARTED
+### Task 2.4: Add note parsing endpoint — COMPLETE
 
 **File:** `server/index.js`
 
