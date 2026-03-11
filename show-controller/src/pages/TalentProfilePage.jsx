@@ -10,6 +10,7 @@ import {
   TrashIcon,
   TrophyIcon,
   ChatBubbleLeftRightIcon,
+  ArrowUpTrayIcon,
 } from '@heroicons/react/24/solid';
 import toast from 'react-hot-toast';
 
@@ -37,6 +38,8 @@ export default function TalentProfilePage() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [noteText, setNoteText] = useState('');
   const [savingNote, setSavingNote] = useState(false);
+  const [activeTab, setActiveTab] = useState('profile'); // 'profile' | 'communications'
+  const [uploadingScreenshot, setUploadingScreenshot] = useState(false);
 
   const talent = talents[talentId];
 
@@ -135,8 +138,78 @@ export default function TalentProfilePage() {
     setForm(p => ({ ...p, otherInterests: updated }));
   }
 
+  async function handleScreenshotUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Image must be less than 10MB');
+      return;
+    }
+
+    setUploadingScreenshot(true);
+    try {
+      // Convert to base64
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+
+      await new Promise((resolve, reject) => {
+        reader.onload = async () => {
+          try {
+            const base64 = reader.result;
+            const [metadata, data] = base64.split(',');
+            const mimeType = file.type;
+
+            // Call screenshot parsing endpoint
+            const response = await fetch(`https://api.commentarygraphic.com/api/talent/${talentId}/parse-screenshot`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ imageBase64: data, mimeType })
+            });
+
+            if (!response.ok) {
+              const error = await response.json();
+              throw new Error(error.error || 'Failed to parse screenshot');
+            }
+
+            const result = await response.json();
+
+            if (result.extractedText) {
+              toast.success('Screenshot parsed successfully');
+              // The note will appear automatically via the real-time listener
+            } else {
+              toast.error('No availability text found in screenshot');
+            }
+
+            resolve();
+          } catch (err) {
+            reject(err);
+          }
+        };
+        reader.onerror = () => reject(new Error('Failed to read file'));
+      });
+    } catch (error) {
+      console.error('Screenshot upload failed:', error);
+      toast.error(error.message || 'Failed to upload screenshot');
+    } finally {
+      setUploadingScreenshot(false);
+      // Reset file input
+      e.target.value = '';
+    }
+  }
+
   const wm = wagMagLabel(talent.wagMag);
   const history = talent.competitionHistory || [];
+  const communications = talent.communicationLog
+    ? Object.entries(talent.communicationLog).map(([key, value]) => ({ id: key, ...value })).sort((a, b) => new Date(b.sentAt) - new Date(a.sentAt))
+    : [];
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
@@ -445,92 +518,211 @@ export default function TalentProfilePage() {
           </div>
         </div>
 
-        {/* Right: History + Notes */}
+        {/* Right: Tabs + Content */}
         <div className="space-y-5">
-          {/* Competition history */}
-          <div className="bg-gray-800 rounded-xl border border-gray-700 p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <TrophyIcon className="w-4 h-4 text-yellow-400" />
-              <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wide">
-                History
-              </h2>
-              <span className="ml-auto text-xs text-gray-500">{talent.totalCompetitions || history.length} events</span>
-            </div>
-            {history.length === 0 ? (
-              <p className="text-xs text-gray-500 italic">No competitions recorded yet.</p>
-            ) : (
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                {[...history].reverse().map((h, i) => (
-                  <div key={i} className="text-xs border-b border-gray-700 pb-2 last:border-0">
-                    <div className="text-white font-medium">{h.eventName || h.compId}</div>
-                    <div className="text-gray-400">{h.date} · {h.role}</div>
-                  </div>
-                ))}
-              </div>
-            )}
+          {/* Tab Switcher */}
+          <div className="bg-gray-800 rounded-xl border border-gray-700 p-1 flex gap-1">
+            <button
+              onClick={() => setActiveTab('profile')}
+              className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === 'profile'
+                  ? 'bg-gray-700 text-white'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              Profile
+            </button>
+            <button
+              onClick={() => setActiveTab('communications')}
+              className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === 'communications'
+                  ? 'bg-gray-700 text-white'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              Communications
+              {communications.length > 0 && (
+                <span className="ml-1.5 px-1.5 py-0.5 bg-blue-600 text-white text-xs rounded-full">
+                  {communications.length}
+                </span>
+              )}
+            </button>
           </div>
 
-          {/* Notes */}
-          <div className="bg-gray-800 rounded-xl border border-gray-700 p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <ChatBubbleLeftRightIcon className="w-4 h-4 text-blue-400" />
-              <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wide">Notes</h2>
-            </div>
-            {editing ? (
-              <textarea
-                value={form.notes || ''}
-                onChange={e => setForm(p => ({ ...p, notes: e.target.value }))}
-                rows={6}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500 resize-none"
-                placeholder="Notes about this person..."
-              />
-            ) : (
-              <>
-                {talent.notes ? (
-                  <pre className="text-xs text-gray-300 whitespace-pre-wrap font-sans max-h-48 overflow-y-auto mb-3">
-                    {talent.notes}
-                  </pre>
+          {/* Profile Tab */}
+          {activeTab === 'profile' && (
+            <>
+              {/* Competition history */}
+              <div className="bg-gray-800 rounded-xl border border-gray-700 p-5">
+                <div className="flex items-center gap-2 mb-4">
+                  <TrophyIcon className="w-4 h-4 text-yellow-400" />
+                  <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wide">
+                    History
+                  </h2>
+                  <span className="ml-auto text-xs text-gray-500">{talent.totalCompetitions || history.length} events</span>
+                </div>
+                {history.length === 0 ? (
+                  <p className="text-xs text-gray-500 italic">No competitions recorded yet.</p>
                 ) : (
-                  <p className="text-xs text-gray-500 italic mb-3">No notes yet.</p>
-                )}
-                <form onSubmit={handleAddNote} className="flex gap-2">
-                  <input
-                    value={noteText}
-                    onChange={e => setNoteText(e.target.value)}
-                    placeholder="Add a note..."
-                    className="flex-1 px-3 py-1.5 bg-gray-700 border border-gray-600 rounded text-sm text-white focus:outline-none focus:border-blue-500"
-                  />
-                  <button
-                    type="submit"
-                    disabled={savingNote || !noteText.trim()}
-                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded text-sm disabled:opacity-50 transition-colors"
-                  >
-                    Add
-                  </button>
-                </form>
-                <p className="text-xs text-gray-600 mt-1.5">Notes are timestamped automatically.</p>
-
-                {/* Parsed availability hints */}
-                {(talent.parsedAvailability?.availablePeriods?.length > 0 || talent.parsedAvailability?.unavailableDates?.length > 0) && (
-                  <div className="mt-3 pt-3 border-t border-gray-700">
-                    <p className="text-xs text-gray-500 mb-2">Extracted availability:</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {(talent.parsedAvailability?.availablePeriods || []).map((period, i) => (
-                        <span key={`avail-${i}`} className="px-2 py-0.5 bg-green-900/30 text-green-400 text-xs rounded border border-green-700">
-                          Available: {period}
-                        </span>
-                      ))}
-                      {(talent.parsedAvailability?.unavailableDates || []).map((date, i) => (
-                        <span key={`busy-${i}`} className="px-2 py-0.5 bg-red-900/30 text-red-400 text-xs rounded border border-red-700">
-                          Busy: {date}
-                        </span>
-                      ))}
-                    </div>
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {[...history].reverse().map((h, i) => (
+                      <div key={i} className="text-xs border-b border-gray-700 pb-2 last:border-0">
+                        <div className="text-white font-medium">{h.eventName || h.compId}</div>
+                        <div className="text-gray-400">{h.date} · {h.role}</div>
+                      </div>
+                    ))}
                   </div>
                 )}
-              </>
-            )}
-          </div>
+              </div>
+
+              {/* Notes */}
+              <div className="bg-gray-800 rounded-xl border border-gray-700 p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <ChatBubbleLeftRightIcon className="w-4 h-4 text-blue-400" />
+                  <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wide">Notes</h2>
+                </div>
+                {editing ? (
+                  <textarea
+                    value={form.notes || ''}
+                    onChange={e => setForm(p => ({ ...p, notes: e.target.value }))}
+                    rows={6}
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500 resize-none"
+                    placeholder="Notes about this person..."
+                  />
+                ) : (
+                  <>
+                    {talent.notes ? (
+                      <pre className="text-xs text-gray-300 whitespace-pre-wrap font-sans max-h-48 overflow-y-auto mb-3">
+                        {talent.notes}
+                      </pre>
+                    ) : (
+                      <p className="text-xs text-gray-500 italic mb-3">No notes yet.</p>
+                    )}
+                    <form onSubmit={handleAddNote} className="flex gap-2">
+                      <input
+                        value={noteText}
+                        onChange={e => setNoteText(e.target.value)}
+                        placeholder="Add a note..."
+                        className="flex-1 px-3 py-1.5 bg-gray-700 border border-gray-600 rounded text-sm text-white focus:outline-none focus:border-blue-500"
+                      />
+                      <button
+                        type="submit"
+                        disabled={savingNote || !noteText.trim()}
+                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded text-sm disabled:opacity-50 transition-colors"
+                      >
+                        Add
+                      </button>
+                    </form>
+                    <p className="text-xs text-gray-600 mt-1.5">Notes are timestamped automatically.</p>
+
+                    {/* Parsed availability hints */}
+                    {(talent.parsedAvailability?.availablePeriods?.length > 0 || talent.parsedAvailability?.unavailableDates?.length > 0) && (
+                      <div className="mt-3 pt-3 border-t border-gray-700">
+                        <p className="text-xs text-gray-500 mb-2">Extracted availability:</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {(talent.parsedAvailability?.availablePeriods || []).map((period, i) => (
+                            <span key={`avail-${i}`} className="px-2 py-0.5 bg-green-900/30 text-green-400 text-xs rounded border border-green-700">
+                              Available: {period}
+                            </span>
+                          ))}
+                          {(talent.parsedAvailability?.unavailableDates || []).map((date, i) => (
+                            <span key={`busy-${i}`} className="px-2 py-0.5 bg-red-900/30 text-red-400 text-xs rounded border border-red-700">
+                              Busy: {date}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Communications Tab */}
+          {activeTab === 'communications' && (
+            <>
+              {/* Screenshot Upload */}
+              <div className="bg-gray-800 rounded-xl border border-gray-700 p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <ArrowUpTrayIcon className="w-4 h-4 text-purple-400" />
+                  <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wide">Upload Screenshot</h2>
+                </div>
+                <p className="text-xs text-gray-400 mb-3">
+                  Upload a screenshot of a text conversation to extract availability mentions automatically.
+                </p>
+                <label className="block">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleScreenshotUpload}
+                    disabled={uploadingScreenshot}
+                    className="hidden"
+                  />
+                  <span className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+                    uploadingScreenshot
+                      ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                      : 'bg-purple-600 hover:bg-purple-500 text-white'
+                  }`}>
+                    <ArrowUpTrayIcon className="w-4 h-4" />
+                    {uploadingScreenshot ? 'Processing...' : 'Upload Screenshot'}
+                  </span>
+                </label>
+              </div>
+
+              {/* Communication Log */}
+              <div className="bg-gray-800 rounded-xl border border-gray-700 p-5">
+                <div className="flex items-center gap-2 mb-4">
+                  <ChatBubbleLeftRightIcon className="w-4 h-4 text-blue-400" />
+                  <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wide">
+                    Communication Log
+                  </h2>
+                  <span className="ml-auto text-xs text-gray-500">{communications.length} messages</span>
+                </div>
+                {communications.length === 0 ? (
+                  <p className="text-xs text-gray-500 italic">No communications recorded yet.</p>
+                ) : (
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {communications.map((comm) => (
+                      <div key={comm.id} className="border-b border-gray-700 pb-3 last:border-0">
+                        <div className="flex items-start justify-between mb-1">
+                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                            comm.type === 'invite' ? 'bg-blue-900/30 text-blue-400 border border-blue-700' :
+                            comm.type === 'briefing' ? 'bg-purple-900/30 text-purple-400 border border-purple-700' :
+                            comm.type === 'calendar' ? 'bg-green-900/30 text-green-400 border border-green-700' :
+                            comm.type === 'preproduction' ? 'bg-yellow-900/30 text-yellow-400 border border-yellow-700' :
+                            comm.type === 'imessage' ? 'bg-teal-900/30 text-teal-400 border border-teal-700' :
+                            'bg-gray-700 text-gray-300'
+                          }`}>
+                            {comm.type}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {new Date(comm.sentAt).toLocaleString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              hour: 'numeric',
+                              minute: '2-digit'
+                            })}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-300">{comm.note}</p>
+                        {comm.bookingUrl && (
+                          <a
+                            href={comm.bookingUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-blue-400 hover:text-blue-300 mt-1 inline-block"
+                          >
+                            View booking link →
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
 

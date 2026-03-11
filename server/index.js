@@ -3337,6 +3337,129 @@ app.post('/api/commentary/:compId/:talentId/schedule-preproduction', async (req,
   }
 });
 
+// POST /api/talent/:talentId/parse-screenshot - Parse screenshot for availability mentions
+app.post('/api/talent/:talentId/parse-screenshot', express.json({ limit: '10mb' }), async (req, res) => {
+  const { talentId } = req.params;
+  const { imageBase64, mimeType } = req.body;
+
+  if (!imageBase64 || !mimeType) {
+    return res.status(400).json({
+      error: 'Missing required fields',
+      required: ['imageBase64', 'mimeType']
+    });
+  }
+
+  // Check if ANTHROPIC_API_KEY is configured
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return res.status(503).json({
+      error: 'AI screenshot parsing not configured',
+      message: 'ANTHROPIC_API_KEY not set in server environment'
+    });
+  }
+
+  try {
+    const db = productionConfigService.getDb();
+    if (!db) {
+      return res.status(503).json({ error: 'Firebase not available' });
+    }
+
+    // Fetch talent to verify they exist
+    const talentSnapshot = await db.ref(`talentRoster/${talentId}`).once('value');
+    const talent = talentSnapshot.val();
+    if (!talent) {
+      return res.status(404).json({ error: 'Talent not found' });
+    }
+
+    // Initialize Anthropic client
+    const anthropic = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY
+    });
+
+    // Call Claude API with vision to extract availability text from screenshot
+    const message = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 1024,
+      messages: [{
+        role: 'user',
+        content: [
+          {
+            type: 'image',
+            source: {
+              type: 'base64',
+              media_type: mimeType,
+              data: imageBase64
+            }
+          },
+          {
+            type: 'text',
+            text: `This is a screenshot of a text message conversation about a gymnastics commentator's availability.
+Extract any mentions of dates, availability, or scheduling from the conversation.
+Return JSON only (no markdown code blocks) with this structure:
+{
+  "extractedText": "Full text of the relevant availability message",
+  "availablePeriods": ["late February", "first week of March"],
+  "unavailableDates": ["January 15", "Feb 20-22"]
+}
+
+If no availability information is found, return empty arrays.`
+          }
+        ]
+      }]
+    });
+
+    // Parse Claude's response
+    const responseText = message.content[0].text;
+    let parsedData;
+    try {
+      // Remove any markdown code blocks if present
+      const cleanedText = responseText.replace(/```json\n?|\n?```/g, '').trim();
+      parsedData = JSON.parse(cleanedText);
+    } catch (parseError) {
+      console.error('[Screenshot Parsing] Failed to parse Claude response:', responseText);
+      return res.status(500).json({
+        error: 'Failed to parse AI response',
+        rawResponse: responseText
+      });
+    }
+
+    const now = new Date().toISOString();
+
+    // If we extracted text, prepend it to the talent's notes
+    if (parsedData.extractedText) {
+      const timestamp = new Date().toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
+      });
+      const notePrefix = `[${timestamp}] [From screenshot] ${parsedData.extractedText}`;
+      const existing = talent.notes || '';
+      const updatedNotes = existing ? `${notePrefix}\n\n${existing}` : notePrefix;
+
+      await db.ref(`talentRoster/${talentId}/notes`).set(updatedNotes);
+    }
+
+    // Write parsed hints to Firebase (same as note parsing)
+    if (parsedData.availablePeriods?.length > 0 || parsedData.unavailableDates?.length > 0) {
+      await db.ref(`talentRoster/${talentId}/parsedAvailability`).set({
+        availablePeriods: parsedData.availablePeriods || [],
+        unavailableDates: parsedData.unavailableDates || [],
+        parsedAt: now,
+        sourceNote: parsedData.extractedText || 'Screenshot upload'
+      });
+    }
+
+    res.json({
+      extractedText: parsedData.extractedText || '',
+      availablePeriods: parsedData.availablePeriods || [],
+      unavailableDates: parsedData.unavailableDates || []
+    });
+  } catch (error) {
+    console.error('[Screenshot Parsing] Failed to parse screenshot:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 /**
  * Format uptime seconds into human readable string
  * @param {number} seconds - Uptime in seconds

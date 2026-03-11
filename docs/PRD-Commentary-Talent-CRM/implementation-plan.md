@@ -14,7 +14,7 @@
 | Phase 0-Deploy | Run migration + verify Firebase | 1 | COMPLETE |
 | Phase 2 | Booking Links + Smart Availability | 6 | COMPLETE |
 | Phase 2-Deploy | Deploy Phase 2 changes | 1 | BLOCKED (Firebase rules) |
-| Phase 3 | Gmail + Google Calendar Outreach | 5 | IN PROGRESS |
+| Phase 3 | Gmail + Google Calendar Outreach | 5 | COMPLETE |
 | Phase 3-Deploy | Deploy Phase 3 changes | 1 | NOT STARTED |
 | Phase 4 | AI-Powered Talent Discovery | 5 | NOT STARTED |
 | Phase 4-Deploy | Deploy Phase 4 changes | 1 | NOT STARTED |
@@ -453,7 +453,7 @@ Install `googleapis` if not already in `server/package.json`.
 
 ---
 
-### Task 3.5: Add screenshot upload + communications tab to TalentProfilePage — NOT STARTED
+### Task 3.5: Add screenshot upload + communications tab to TalentProfilePage — COMPLETE
 
 **File:** `show-controller/src/pages/TalentProfilePage.jsx`
 
