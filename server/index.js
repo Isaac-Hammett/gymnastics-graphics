@@ -34,6 +34,8 @@ import { getOrCreateContextService, getContextService, removeContextService } fr
 import { ingestCompetitionStats, ingestTeamStats, syncStatsToConfig, snapshotStatsForCompetition, checkStaleness, parseCompetitionType, buildTeamDbKey, fetchLeagueRankings } from './lib/rtnStatsService.js';
 import { randomUUID } from 'crypto';
 import Anthropic from '@anthropic-ai/sdk';
+import { sendEmail, inviteEmail, briefingEmail, reminderEmail } from './lib/gmailService.js';
+import { createCompetitionEvent, createPreProdMeeting } from './lib/googleCalendarService.js';
 
 dotenv.config();
 
@@ -2982,6 +2984,355 @@ ${noteText}`
     });
   } catch (error) {
     console.error('[Note Parsing] Failed to parse notes:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/commentary/:compId/:talentId/invite - Send invite email with booking link
+app.post('/api/commentary/:compId/:talentId/invite', async (req, res) => {
+  const { compId, talentId } = req.params;
+
+  try {
+    const db = productionConfigService.getDb();
+    if (!db) {
+      return res.status(503).json({ error: 'Firebase not available' });
+    }
+
+    // Fetch talent and competition data
+    const talentSnapshot = await db.ref(`talentRoster/${talentId}`).once('value');
+    const talent = talentSnapshot.val();
+    if (!talent) {
+      return res.status(404).json({ error: 'Talent not found' });
+    }
+
+    const compSnapshot = await db.ref(`competitions/${compId}/config`).once('value');
+    const competition = compSnapshot.val();
+    if (!competition) {
+      return res.status(404).json({ error: 'Competition not found' });
+    }
+
+    const commentarySnapshot = await db.ref(`competitions/${compId}/commentary/${talentId}`).once('value');
+    const commentary = commentarySnapshot.val();
+    if (!commentary) {
+      return res.status(404).json({ error: 'Commentary assignment not found' });
+    }
+
+    // Step 1: Generate booking token
+    const token = randomUUID();
+    const now = new Date().toISOString();
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(); // 30 days
+
+    await db.ref(`bookingTokens/${token}`).set({
+      talentId,
+      compId,
+      role: commentary.role,
+      createdAt: now,
+      expiresAt,
+      responded: false
+    });
+
+    const bookingUrl = `https://commentarygraphic.com/book/${token}`;
+
+    // Step 2: Send invite email
+    const emailTemplate = inviteEmail(
+      { name: talent.name },
+      { eventName: competition.eventName, meetDate: competition.meetDate, venue: competition.venue },
+      commentary.role,
+      bookingUrl
+    );
+
+    const emailResult = await sendEmail({
+      to: talent.email,
+      subject: emailTemplate.subject,
+      html: emailTemplate.html
+    });
+
+    if (emailResult.error) {
+      return res.status(503).json({
+        error: emailResult.error,
+        message: 'Gmail not configured or unavailable'
+      });
+    }
+
+    // Step 3: Update commentary status
+    await db.ref(`competitions/${compId}/commentary/${talentId}`).update({
+      status: 'invited',
+      invitedAt: now
+    });
+
+    // Step 4: Append to communication log
+    const logRef = db.ref(`talentRoster/${talentId}/communicationLog`).push();
+    await logRef.set({
+      type: 'invite',
+      sentAt: now,
+      note: `Invite sent for ${competition.eventName} (${commentary.role})`,
+      compId,
+      bookingUrl
+    });
+
+    res.json({
+      success: true,
+      messageId: emailResult.messageId,
+      bookingUrl,
+      sentAt: now
+    });
+  } catch (error) {
+    console.error('[Outreach] Failed to send invite:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/commentary/:compId/:talentId/briefing - Send briefing email
+app.post('/api/commentary/:compId/:talentId/briefing', async (req, res) => {
+  const { compId, talentId } = req.params;
+  const { virtiusUrl, discordInfo, preProdTime } = req.body;
+
+  // Validate required fields
+  if (!virtiusUrl || !discordInfo || !preProdTime) {
+    return res.status(400).json({
+      error: 'Missing required fields',
+      required: ['virtiusUrl', 'discordInfo', 'preProdTime']
+    });
+  }
+
+  try {
+    const db = productionConfigService.getDb();
+    if (!db) {
+      return res.status(503).json({ error: 'Firebase not available' });
+    }
+
+    // Fetch talent and competition data
+    const talentSnapshot = await db.ref(`talentRoster/${talentId}`).once('value');
+    const talent = talentSnapshot.val();
+    if (!talent) {
+      return res.status(404).json({ error: 'Talent not found' });
+    }
+
+    const compSnapshot = await db.ref(`competitions/${compId}/config`).once('value');
+    const competition = compSnapshot.val();
+    if (!competition) {
+      return res.status(404).json({ error: 'Competition not found' });
+    }
+
+    // Send briefing email
+    const emailTemplate = briefingEmail(
+      { name: talent.name },
+      { eventName: competition.eventName, meetDate: competition.meetDate, venue: competition.venue },
+      virtiusUrl,
+      discordInfo,
+      preProdTime
+    );
+
+    const emailResult = await sendEmail({
+      to: talent.email,
+      subject: emailTemplate.subject,
+      html: emailTemplate.html
+    });
+
+    if (emailResult.error) {
+      return res.status(503).json({
+        error: emailResult.error,
+        message: 'Gmail not configured or unavailable'
+      });
+    }
+
+    const now = new Date().toISOString();
+
+    // Update commentary record
+    await db.ref(`competitions/${compId}/commentary/${talentId}`).update({
+      briefedAt: now,
+      status: 'briefed',
+      virtiusUrl,
+      discordInfo,
+      preProdTime
+    });
+
+    // Append to communication log
+    const logRef = db.ref(`talentRoster/${talentId}/communicationLog`).push();
+    await logRef.set({
+      type: 'briefing',
+      sentAt: now,
+      note: `Briefing sent for ${competition.eventName}`,
+      compId,
+      virtiusUrl,
+      discordInfo,
+      preProdTime
+    });
+
+    res.json({
+      success: true,
+      messageId: emailResult.messageId,
+      sentAt: now
+    });
+  } catch (error) {
+    console.error('[Outreach] Failed to send briefing:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/commentary/:compId/:talentId/calendar-invite - Send calendar invite
+app.post('/api/commentary/:compId/:talentId/calendar-invite', async (req, res) => {
+  const { compId, talentId } = req.params;
+
+  try {
+    const db = productionConfigService.getDb();
+    if (!db) {
+      return res.status(503).json({ error: 'Firebase not available' });
+    }
+
+    // Fetch talent and competition data
+    const talentSnapshot = await db.ref(`talentRoster/${talentId}`).once('value');
+    const talent = talentSnapshot.val();
+    if (!talent) {
+      return res.status(404).json({ error: 'Talent not found' });
+    }
+
+    const compSnapshot = await db.ref(`competitions/${compId}/config`).once('value');
+    const competition = compSnapshot.val();
+    if (!competition) {
+      return res.status(404).json({ error: 'Competition not found' });
+    }
+
+    const commentarySnapshot = await db.ref(`competitions/${compId}/commentary/${talentId}`).once('value');
+    const commentary = commentarySnapshot.val();
+    if (!commentary) {
+      return res.status(404).json({ error: 'Commentary assignment not found' });
+    }
+
+    // Get Discord info from commentary record (set during briefing)
+    const discordInfo = commentary.discordInfo || 'TBD';
+
+    // Parse meetDate and create calendar event
+    // meetDate is typically in "YYYY-MM-DD" or ISO format
+    let startTime;
+    if (competition.meetDate) {
+      // If it's just a date, assume noon for the event
+      const dateStr = competition.meetDate.includes('T')
+        ? competition.meetDate
+        : `${competition.meetDate}T12:00:00.000Z`;
+      startTime = dateStr;
+    } else {
+      return res.status(400).json({ error: 'Competition meetDate not set' });
+    }
+
+    // Create calendar event
+    const calendarResult = await createCompetitionEvent({
+      talentEmail: talent.email,
+      competitionName: competition.eventName,
+      startTime,
+      discordInfo
+    });
+
+    if (calendarResult.error) {
+      return res.status(503).json({
+        error: calendarResult.error,
+        message: 'Google Calendar not configured or unavailable'
+      });
+    }
+
+    const now = new Date().toISOString();
+
+    // Update commentary record
+    await db.ref(`competitions/${compId}/commentary/${talentId}`).update({
+      calendarInviteSent: true,
+      calendarInviteSentAt: now,
+      calendarEventId: calendarResult.eventId
+    });
+
+    // Append to communication log
+    const logRef = db.ref(`talentRoster/${talentId}/communicationLog`).push();
+    await logRef.set({
+      type: 'calendar',
+      sentAt: now,
+      note: `Calendar invite sent for ${competition.eventName}`,
+      compId,
+      eventId: calendarResult.eventId
+    });
+
+    res.json({
+      success: true,
+      eventId: calendarResult.eventId,
+      sentAt: now
+    });
+  } catch (error) {
+    console.error('[Outreach] Failed to send calendar invite:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/commentary/:compId/:talentId/schedule-preproduction - Schedule pre-production meeting
+app.post('/api/commentary/:compId/:talentId/schedule-preproduction', async (req, res) => {
+  const { compId, talentId } = req.params;
+  const { meetingTime } = req.body;
+
+  if (!meetingTime) {
+    return res.status(400).json({
+      error: 'Missing required field',
+      required: ['meetingTime']
+    });
+  }
+
+  try {
+    const db = productionConfigService.getDb();
+    if (!db) {
+      return res.status(503).json({ error: 'Firebase not available' });
+    }
+
+    // Fetch talent and competition data
+    const talentSnapshot = await db.ref(`talentRoster/${talentId}`).once('value');
+    const talent = talentSnapshot.val();
+    if (!talent) {
+      return res.status(404).json({ error: 'Talent not found' });
+    }
+
+    const compSnapshot = await db.ref(`competitions/${compId}/config`).once('value');
+    const competition = compSnapshot.val();
+    if (!competition) {
+      return res.status(404).json({ error: 'Competition not found' });
+    }
+
+    // Create pre-prod meeting
+    const calendarResult = await createPreProdMeeting({
+      talentEmail: talent.email,
+      meetingTime,
+      competitionName: competition.eventName
+    });
+
+    if (calendarResult.error) {
+      return res.status(503).json({
+        error: calendarResult.error,
+        message: 'Google Calendar not configured or unavailable'
+      });
+    }
+
+    const now = new Date().toISOString();
+
+    // Update commentary record
+    await db.ref(`competitions/${compId}/commentary/${talentId}`).update({
+      preProductionMeetingScheduled: meetingTime,
+      preProductionScheduledAt: now,
+      preProductionEventId: calendarResult.eventId
+    });
+
+    // Append to communication log
+    const logRef = db.ref(`talentRoster/${talentId}/communicationLog`).push();
+    await logRef.set({
+      type: 'preproduction',
+      sentAt: now,
+      note: `Pre-production meeting scheduled for ${competition.eventName}`,
+      compId,
+      meetingTime,
+      eventId: calendarResult.eventId
+    });
+
+    res.json({
+      success: true,
+      eventId: calendarResult.eventId,
+      meetingTime,
+      sentAt: now
+    });
+  } catch (error) {
+    console.error('[Outreach] Failed to schedule pre-production:', error);
     res.status(500).json({ error: error.message });
   }
 });
