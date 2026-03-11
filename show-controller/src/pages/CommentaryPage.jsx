@@ -13,6 +13,10 @@ import {
   ChevronRightIcon,
   CheckIcon,
   LinkIcon,
+  PaperAirplaneIcon,
+  CalendarIcon,
+  DocumentTextIcon,
+  ClipboardDocumentIcon,
 } from '@heroicons/react/24/solid';
 import toast from 'react-hot-toast';
 
@@ -44,6 +48,14 @@ export default function CommentaryPage() {
   const [activeRole, setActiveRole] = useState('pbp');
   const [editingNotes, setEditingNotes] = useState(null);
   const [notesDraft, setNotesDraft] = useState('');
+
+  // Outreach modals
+  const [briefingModalOpen, setBriefingModalOpen] = useState(null); // talentId when open
+  const [briefingForm, setBriefingForm] = useState({ virtiusUrl: '', discordInfo: '', preProdTime: '' });
+  const [preProdModalOpen, setPreProdModalOpen] = useState(null); // talentId when open
+  const [preProdTime, setPreProdTime] = useState('');
+  const [iMessageConfirmOpen, setIMessageConfirmOpen] = useState(null); // { talentId, type, message } when open
+  const [sendingOutreach, setSendingOutreach] = useState(false);
 
   // Filter talent list for the right panel — match gender and status
   const targetWagMag = gender === 'mens' ? 'MAG' : 'WAG';
@@ -129,6 +141,134 @@ export default function CommentaryPage() {
     }
   }
 
+  // Outreach handlers
+  async function handleSendInvite(talentId, role) {
+    setSendingOutreach(true);
+    try {
+      const response = await fetch(`https://api.commentarygraphic.com/api/commentary/${compId}/${talentId}/invite`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role }),
+      });
+
+      if (!response.ok) throw new Error('Failed to send invite');
+
+      toast.success('Invite sent ✓');
+    } catch (e) {
+      toast.error(e.message || 'Failed to send invite');
+    } finally {
+      setSendingOutreach(false);
+    }
+  }
+
+  async function handleSendBriefing(talentId) {
+    if (!briefingForm.virtiusUrl || !briefingForm.discordInfo || !briefingForm.preProdTime) {
+      toast.error('All fields are required');
+      return;
+    }
+
+    setSendingOutreach(true);
+    try {
+      const response = await fetch(`https://api.commentarygraphic.com/api/commentary/${compId}/${talentId}/briefing`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(briefingForm),
+      });
+
+      if (!response.ok) throw new Error('Failed to send briefing');
+
+      toast.success('Briefing sent ✓');
+      setBriefingModalOpen(null);
+      setBriefingForm({ virtiusUrl: '', discordInfo: '', preProdTime: '' });
+    } catch (e) {
+      toast.error(e.message || 'Failed to send briefing');
+    } finally {
+      setSendingOutreach(false);
+    }
+  }
+
+  async function handleSendCalendarInvite(talentId) {
+    setSendingOutreach(true);
+    try {
+      const response = await fetch(`https://api.commentarygraphic.com/api/commentary/${compId}/${talentId}/calendar-invite`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!response.ok) throw new Error('Failed to send calendar invite');
+
+      toast.success('Calendar invite sent ✓');
+    } catch (e) {
+      toast.error(e.message || 'Failed to send calendar invite');
+    } finally {
+      setSendingOutreach(false);
+    }
+  }
+
+  async function handleSchedulePreProd(talentId) {
+    if (!preProdTime) {
+      toast.error('Meeting time is required');
+      return;
+    }
+
+    setSendingOutreach(true);
+    try {
+      const response = await fetch(`https://api.commentarygraphic.com/api/commentary/${compId}/${talentId}/schedule-preproduction`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ meetingTime: preProdTime }),
+      });
+
+      if (!response.ok) throw new Error('Failed to schedule meeting');
+
+      toast.success('Pre-production meeting scheduled ✓');
+      setPreProdModalOpen(null);
+      setPreProdTime('');
+    } catch (e) {
+      toast.error(e.message || 'Failed to schedule meeting');
+    } finally {
+      setSendingOutreach(false);
+    }
+  }
+
+  function generateInviteMessage(talent, role) {
+    const eventName = competitionConfig?.eventName || 'the competition';
+    const meetDate = competitionConfig?.meetDate || 'TBD';
+    return `Hi ${talent?.name?.split(' ')[0] || 'there'}! Would you be available for ${eventName} on ${meetDate}? You'd be joining as ${getRoleLabel(role)}. Let me know!`;
+  }
+
+  function generateBriefingMessage(talent) {
+    const eventName = competitionConfig?.eventName || 'the competition';
+    return `Hi ${talent?.name?.split(' ')[0]}! Here's your briefing for ${eventName}:\n\nVirtius: ${briefingForm.virtiusUrl}\nDiscord: ${briefingForm.discordInfo}\nPre-production meeting: ${briefingForm.preProdTime}\n\nSee you soon!`;
+  }
+
+  async function handleCopyForIMessage(talentId, type, message) {
+    await navigator.clipboard.writeText(message);
+    setIMessageConfirmOpen({ talentId, type, message });
+  }
+
+  async function confirmIMessageSent(talentId, type) {
+    try {
+      const talent = talentList.find(t => t.id === talentId);
+      const response = await fetch(`https://api.commentarygraphic.com/api/talent/${talentId}/communication-log`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'imessage',
+          sentAt: new Date().toISOString(),
+          note: `${type} sent via iMessage`,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to log iMessage');
+
+      toast.success('Logged as sent via iMessage ✓');
+      setIMessageConfirmOpen(null);
+    } catch (e) {
+      toast.error('Failed to log message');
+    }
+  }
+
   // Group staff by role
   const byRole = SLOT_ROLES.reduce((acc, { role }) => {
     acc[role] = staffList.filter(s => s.role === role);
@@ -139,6 +279,126 @@ export default function CommentaryPage() {
   const totalCount = staffList.length;
 
   return (
+    <>
+      {/* Briefing Modal */}
+      {briefingModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6 w-full max-w-md">
+            <h3 className="text-lg font-bold mb-4">Send Briefing</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1">Virtius Session URL</label>
+                <input
+                  type="text"
+                  value={briefingForm.virtiusUrl}
+                  onChange={(e) => setBriefingForm({ ...briefingForm, virtiusUrl: e.target.value })}
+                  placeholder="https://..."
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-sm text-white focus:outline-none focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1">Discord Info</label>
+                <input
+                  type="text"
+                  value={briefingForm.discordInfo}
+                  onChange={(e) => setBriefingForm({ ...briefingForm, discordInfo: e.target.value })}
+                  placeholder="Room name or link"
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-sm text-white focus:outline-none focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1">Pre-Production Meeting Time</label>
+                <input
+                  type="datetime-local"
+                  value={briefingForm.preProdTime}
+                  onChange={(e) => setBriefingForm({ ...briefingForm, preProdTime: e.target.value })}
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-sm text-white focus:outline-none focus:border-blue-500"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2 mt-5">
+              <button
+                onClick={() => handleSendBriefing(briefingModalOpen)}
+                disabled={sendingOutreach}
+                className="flex-1 py-2 bg-blue-600 hover:bg-blue-500 rounded font-medium text-sm disabled:opacity-50"
+              >
+                {sendingOutreach ? 'Sending...' : 'Send Briefing'}
+              </button>
+              <button
+                onClick={() => setBriefingModalOpen(null)}
+                disabled={sendingOutreach}
+                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded text-sm"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pre-Production Scheduling Modal */}
+      {preProdModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6 w-full max-w-md">
+            <h3 className="text-lg font-bold mb-4">Schedule Pre-Production Meeting</h3>
+            <div>
+              <label className="block text-xs text-zinc-400 mb-1">Meeting Time</label>
+              <input
+                type="datetime-local"
+                value={preProdTime}
+                onChange={(e) => setPreProdTime(e.target.value)}
+                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-sm text-white focus:outline-none focus:border-blue-500"
+              />
+            </div>
+            <div className="flex gap-2 mt-5">
+              <button
+                onClick={() => handleSchedulePreProd(preProdModalOpen)}
+                disabled={sendingOutreach}
+                className="flex-1 py-2 bg-blue-600 hover:bg-blue-500 rounded font-medium text-sm disabled:opacity-50"
+              >
+                {sendingOutreach ? 'Scheduling...' : 'Schedule Meeting'}
+              </button>
+              <button
+                onClick={() => setPreProdModalOpen(null)}
+                disabled={sendingOutreach}
+                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded text-sm"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* iMessage Confirmation Modal */}
+      {iMessageConfirmOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6 w-full max-w-md">
+            <h3 className="text-lg font-bold mb-3">Message Copied!</h3>
+            <p className="text-sm text-zinc-400 mb-4">
+              The message has been copied to your clipboard. After you send it via iMessage, click "Yes" to log it in the system.
+            </p>
+            <div className="bg-zinc-800 p-3 rounded text-xs text-zinc-300 mb-4 max-h-32 overflow-y-auto whitespace-pre-wrap">
+              {iMessageConfirmOpen.message}
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => confirmIMessageSent(iMessageConfirmOpen.talentId, iMessageConfirmOpen.type)}
+                className="flex-1 py-2 bg-green-600 hover:bg-green-500 rounded font-medium text-sm"
+              >
+                Yes, I sent it
+              </button>
+              <button
+                onClick={() => setIMessageConfirmOpen(null)}
+                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded text-sm"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     <div className="min-h-screen bg-zinc-950 text-white">
       {/* Header */}
       <div className="bg-zinc-900 border-b border-zinc-800 px-6 py-4">
@@ -270,6 +530,65 @@ export default function CommentaryPage() {
                           )}
                         </div>
 
+                        {/* Outreach buttons */}
+                        <div className="border-t border-zinc-700 mt-3 pt-3">
+                          <div className="text-xs font-semibold text-zinc-400 mb-2">Outreach Actions</div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <button
+                              onClick={() => handleSendInvite(assignment.talentId, assignment.role)}
+                              disabled={sendingOutreach}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-green-700 hover:bg-green-600 rounded text-xs font-medium transition-colors disabled:opacity-50"
+                            >
+                              <PaperAirplaneIcon className="w-3 h-3" />
+                              Send Invite
+                            </button>
+                            <button
+                              onClick={() => handleCopyForIMessage(assignment.talentId, 'invite', generateInviteMessage(talent, assignment.role))}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-700 hover:bg-zinc-600 rounded text-xs font-medium transition-colors"
+                              title="Copy invite for iMessage"
+                            >
+                              <ClipboardDocumentIcon className="w-3 h-3" />
+                              Copy for iMessage
+                            </button>
+                          </div>
+                          <div className="flex items-center gap-2 flex-wrap mt-2">
+                            <button
+                              onClick={() => setBriefingModalOpen(assignment.talentId)}
+                              disabled={sendingOutreach}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-700 hover:bg-purple-600 rounded text-xs font-medium transition-colors disabled:opacity-50"
+                            >
+                              <DocumentTextIcon className="w-3 h-3" />
+                              Send Briefing
+                            </button>
+                            <button
+                              onClick={() => handleCopyForIMessage(assignment.talentId, 'briefing', generateBriefingMessage(talent))}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-700 hover:bg-zinc-600 rounded text-xs font-medium transition-colors"
+                              title="Copy briefing for iMessage"
+                            >
+                              <ClipboardDocumentIcon className="w-3 h-3" />
+                              Copy for iMessage
+                            </button>
+                          </div>
+                          <div className="flex items-center gap-2 flex-wrap mt-2">
+                            <button
+                              onClick={() => handleSendCalendarInvite(assignment.talentId)}
+                              disabled={sendingOutreach}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-700 hover:bg-blue-600 rounded text-xs font-medium transition-colors disabled:opacity-50"
+                            >
+                              <CalendarIcon className="w-3 h-3" />
+                              Calendar Invite
+                            </button>
+                            <button
+                              onClick={() => setPreProdModalOpen(assignment.talentId)}
+                              disabled={sendingOutreach}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-700 hover:bg-teal-600 rounded text-xs font-medium transition-colors disabled:opacity-50"
+                            >
+                              <CalendarIcon className="w-3 h-3" />
+                              Schedule Pre-Prod
+                            </button>
+                          </div>
+                        </div>
+
                         {/* Notes */}
                         <div className="mt-2">
                           {isEditingNotes ? (
@@ -399,5 +718,6 @@ export default function CommentaryPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

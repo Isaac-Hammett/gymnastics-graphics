@@ -429,7 +429,7 @@ Install `googleapis` if not already in `server/package.json`.
 
 ---
 
-### Task 3.4: Add outreach buttons to CommentaryPage — NOT STARTED
+### Task 3.4: Add outreach buttons to CommentaryPage — COMPLETE
 
 **File:** `show-controller/src/pages/CommentaryPage.jsx`
 
