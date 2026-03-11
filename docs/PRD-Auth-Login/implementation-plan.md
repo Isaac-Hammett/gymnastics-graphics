@@ -13,7 +13,7 @@
 | Phase 1 | Firebase Auth + Context + Login Page | 3 | COMPLETE |
 | Phase 1-Deploy | Deploy Phase 1 changes | 2 | COMPLETE |
 | Phase 2 | Route Protection | 2 | COMPLETE |
-| Phase 2-Deploy | Deploy Phase 2 changes | 2 | NOT STARTED |
+| Phase 2-Deploy | Deploy Phase 2 changes | 2 | COMPLETE |
 | Phase 3 | Sign-Out UI | 1 | NOT STARTED |
 | Phase 3-Deploy | Deploy Phase 3 changes | 1 | NOT STARTED |
 | Final-Deploy | Full verification + mark complete | 2 | NOT STARTED |
@@ -226,7 +226,7 @@ This keeps `/:compId/talent` public while protecting all other competition route
 
 ## Phase 2-Deploy: Deploy Phase 2 Changes
 
-### Task 2-D.1: Build and deploy to production — NOT STARTED
+### Task 2-D.1: Build and deploy to production — COMPLETE
 
 **Frontend changed?** Yes
 ```bash
@@ -234,20 +234,20 @@ cd show-controller && npm run build
 # then upload dist per CLAUDE.md Step 1
 ```
 
-### Task 2-D.2: Verify Phase 2 on production — NOT STARTED
+### Task 2-D.2: Verify Phase 2 on production — COMPLETE
 
 **Credentials:** Read test account email/password from `~/.claude/projects/-Users-juliacosmiano-code-gymnastics-graphics/memory/playwright-credentials.md`
 
 **Checks:**
-- [ ] Navigate to `https://commentarygraphic.com/` (unauthenticated) — redirects to `/login`
-- [ ] Take screenshot → `docs/PRD-Auth-Login/screenshots/verify-protected-redirect.png`
-- [ ] Log in with test credentials (fill email, fill password, click "Sign In") — redirects to `/`
-- [ ] Take screenshot → `docs/PRD-Auth-Login/screenshots/verify-login-success.png`
-- [ ] Refresh the page — stays on `/`, does NOT redirect to `/login` (session persists)
-- [ ] Navigate to `https://commentarygraphic.com/book/test-invalid` — loads without login prompt
-- [ ] Take screenshot → `docs/PRD-Auth-Login/screenshots/verify-public-booking.png`
-- [ ] Navigate to `https://commentarygraphic.com/survey/2027` — loads without login prompt
-- [ ] No console errors (`browser_console_messages`)
+- [x] Navigate to `https://commentarygraphic.com/` (unauthenticated) — redirects to `/login`
+- [x] Take screenshot → `docs/PRD-Auth-Login/screenshots/verify-protected-redirect.png`
+- [x] Log in with test credentials (fill email, fill password, click "Sign In") — redirects to `/`
+- [x] Take screenshot → `docs/PRD-Auth-Login/screenshots/verify-login-success.png`
+- [x] Refresh the page — stays on `/`, does NOT redirect to `/login` (session persists)
+- [x] Navigate to `https://commentarygraphic.com/book/test-invalid` — loads without login prompt
+- [x] Take screenshot → `docs/PRD-Auth-Login/screenshots/verify-public-booking.png`
+- [x] Navigate to `https://commentarygraphic.com/survey/2027` — loads without login prompt
+- [x] No console errors (`browser_console_messages`)
 
 ---
 
@@ -338,7 +338,7 @@ Update `PRD-Auth-Login-2026-03-11.md` status to COMPLETE. Commit.
 | Phase 1 | 3 | Low | COMPLETE |
 | Phase 1-Deploy | 2 | Low | COMPLETE |
 | Phase 2 | 2 | Medium | COMPLETE |
-| Phase 2-Deploy | 2 | Low | NOT STARTED |
+| Phase 2-Deploy | 2 | Low | COMPLETE |
 | Phase 3 | 1 | Low | NOT STARTED |
 | Phase 3-Deploy | 1 | Low | NOT STARTED |
 | Final-Deploy | 2 | Low | NOT STARTED |
