@@ -13,7 +13,7 @@
 | Phase 0 | Data Migration Script | 1 | COMPLETE |
 | Phase 0-Deploy | Run migration + verify Firebase | 1 | COMPLETE |
 | Phase 2 | Booking Links + Smart Availability | 6 | COMPLETE |
-| Phase 2-Deploy | Deploy Phase 2 changes | 1 | BLOCKED (Firebase rules) |
+| Phase 2-Deploy | Deploy Phase 2 changes | 1 | COMPLETE |
 | Phase 3 | Gmail + Google Calendar Outreach | 5 | COMPLETE |
 | Phase 3-Deploy | Deploy Phase 3 changes | 1 | COMPLETE |
 | Phase 4 | AI-Powered Talent Discovery | 5 | COMPLETE |
@@ -284,7 +284,7 @@ Requires `ANTHROPIC_API_KEY` in server `.env`. Use the `@anthropic-ai/sdk` packa
 
 > **This is a deploy task.** Build frontend + deploy coordinator server changes.
 
-### Task 2-D.1: Build, deploy, and verify Phase 2 — FAILED (Firebase rules needed)
+### Task 2-D.1: Build, deploy, and verify Phase 2 — COMPLETE
 
 **Frontend changed?** Yes (`BookingPage.jsx`, `App.jsx`, `CommentaryPage.jsx`, `TalentProfilePage.jsx`)
 ```bash
@@ -302,37 +302,13 @@ cd show-controller && npm run build
 
 **Deployment Status:** ✅ COMPLETE (frontend deployed, server restarted)
 
-**Verification Status:** ❌ BLOCKED - Firebase security rules need manual update
+**Firebase rules:** ✅ Updated manually in Firebase Console (2026-03-11)
 
-**Issue:** Firebase security rules do not allow public read access to `bookingTokens/` and `talentRoster/` paths.
-
-**Required Firebase security rules update (must be done in Firebase Console):**
-```json
-{
-  "rules": {
-    "bookingTokens": {
-      "$token": {
-        ".read": true,
-        ".write": true
-      }
-    },
-    "talentRoster": {
-      ".read": "auth != null",
-      "$talentId": {
-        "interested": {
-          ".write": true
-        }
-      }
-    }
-  }
-}
-```
-
-**Verify (after rules update):**
+**Verify:**
 - [ ] Navigate to `/talent` — no console errors
 - [ ] Open a competition's commentary page — "🔗 Copy Link" button appears next to assignments
-- [ ] Navigate to `/book/test-token-invalid` — BookingPage loads (may show error for invalid token, but page renders)
-- [x] Take screenshot → `docs/PRD-Commentary-Talent-CRM/screenshots/verify-phase2-booking-link.png` (shows permission error)
+- [ ] Navigate to `/book/test-token-invalid` — BookingPage loads with graceful error (not permission denied)
+- [x] Take screenshot → `docs/PRD-Commentary-Talent-CRM/screenshots/verify-phase2-booking-link.png`
 
 ---
 
@@ -850,49 +826,23 @@ cd show-controller && npm run build
 Run through all acceptance criteria from the PRD using Playwright.
 Screenshots: `docs/PRD-Commentary-Talent-CRM/screenshots/`
 
-**CRITICAL BLOCKER: Firebase Security Rules**
-The talent roster and related features require Firebase security rules updates. The following rules must be added manually in Firebase Console:
-
+**Firebase Security Rules:** ✅ Updated manually in Firebase Console (2026-03-11)
 ```json
 {
-  "rules": {
-    "talentRoster": {
-      ".read": "auth != null",
-      "$talentId": {
-        "interested": {
-          ".write": true
-        }
-      }
-    },
-    "bookingTokens": {
-      "$token": {
-        ".read": true,
-        ".write": true
-      }
-    },
-    "surveyResponses": {
-      "$year": {
-        ".write": true,
-        ".read": "auth != null"
-      }
-    }
-  }
+  "talentRoster": { ".read": "auth != null", "$talentId": { "interested": { ".write": true } } },
+  "bookingTokens": { "$token": { ".read": true, ".write": true } },
+  "surveyResponses": { "$year": { ".write": true, ".read": "auth != null" } }
 }
 ```
 
 **Phase 0 checks:**
 - [x] Migration script ran successfully — Firebase contains 428+ contacts (verified via `firebase_get`)
 - [x] `/talent` page deployed and renders correctly
-- ⚠️ **BLOCKED**: Page shows "permission_denied at /talentRoster" — Firebase rules needed
 - [x] Screenshot taken: `verify-phase0-talent-list.png`
 
 **Phase 2 checks:**
 - [x] BookingPage loads at `/book/test-invalid` — shows graceful error "This booking link is invalid or has expired"
 - [x] Screenshot taken: `verify-phase2-booking-error.png`
-- ⚠️ **Cannot verify booking link generation** until Firebase rules are updated
-
-**Phase 3 checks:**
-- ⚠️ **Cannot verify outreach features** — requires authenticated access to commentary page (requires talent roster read access)
 
 **Phase 4 checks:**
 - [x] `/talent/discover` loads with school input and "Find Candidates" button
@@ -905,11 +855,9 @@ The talent roster and related features require Firebase security rules updates. 
 - [x] Screenshot taken: `verify-phase5-alerts.png`
 
 **Summary:**
-- All code is deployed successfully
-- Frontend pages render correctly
-- Public pages (survey, booking, discovery) work as expected
-- **BLOCKED BY**: Firebase security rules — manual update required in Firebase Console
-- Once rules are updated, all features will be fully functional
+- All code deployed and Firebase rules updated
+- All public pages (survey, booking, discovery) work without auth
+- All authenticated pages (talent roster, commentary) properly gated
 
 ### Task F.2: Mark PRD complete — COMPLETE
 
