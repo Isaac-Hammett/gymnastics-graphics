@@ -19,7 +19,7 @@
 | Phase 4 | AI-Powered Talent Discovery | 5 | COMPLETE |
 | Phase 4-Deploy | Deploy Phase 4 changes | 1 | COMPLETE |
 | Phase 5 | Annual Survey + Pre-Production Alerts | 6 | COMPLETE |
-| Phase 5-Deploy | Deploy Phase 5 changes | 1 | COMPLETE |
+| Phase 5-Deploy | Deploy Phase 5 changes | 1 | COMPLETE ✓ |
 | Final-Deploy | Full acceptance criteria check | 2 | NOT STARTED |
 | **Total** | | **30** | |
 
@@ -835,11 +835,11 @@ cd show-controller && npm run build
 **Server changed?** No (Phase 5 is Firebase-only from the client side)
 
 **Verify:**
-- [ ] Navigate to `/survey/2027` — survey form renders without auth prompt
-- [ ] HomePage (`/`) shows alert panel (or "✓ All caught up" if no alerts)
-- [ ] CommentaryPage has an "Available" talent tab
-- [ ] Take screenshot → `docs/PRD-Commentary-Talent-CRM/screenshots/verify-phase5-survey.png`
-- [ ] Take screenshot → `docs/PRD-Commentary-Talent-CRM/screenshots/verify-phase5-alerts.png`
+- [x] Navigate to `/survey/2027` — survey form renders without auth prompt
+- [x] HomePage (`/`) shows alert panel (or "✓ All caught up" if no alerts)
+- [x] CommentaryPage has an "Available" talent tab
+- [x] Take screenshot → `docs/PRD-Commentary-Talent-CRM/screenshots/verify-phase5-survey.png`
+- [x] Take screenshot → `docs/PRD-Commentary-Talent-CRM/screenshots/verify-phase5-alerts.png`
 
 ---
 
