@@ -703,7 +703,7 @@ Reference [BookingPage.jsx](../show-controller/src/pages/BookingPage.jsx) for pu
 
 ---
 
-### Task 5.2: Add survey route to App.jsx — NOT STARTED
+### Task 5.2: Add survey route to App.jsx — COMPLETE
 
 **File:** `show-controller/src/App.jsx`
 

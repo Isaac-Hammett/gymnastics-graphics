@@ -21,6 +21,7 @@ import TalentProfilePage from './pages/TalentProfilePage';
 import TalentDiscoveryPage from './pages/TalentDiscoveryPage';
 import CommentaryPage from './pages/CommentaryPage';
 import BookingPage from './pages/BookingPage';
+import SurveyPage from './pages/SurveyPage';
 
 // Error boundary for catching component errors
 import ErrorBoundary from './components/ErrorBoundary';
@@ -95,8 +96,9 @@ function App() {
         <Route path="/talent/discover" element={<TalentDiscoveryPage />} />
         <Route path="/talent/:talentId" element={<TalentProfilePage />} />
 
-        {/* Public booking page (no auth required) - MUST be before /:compId */}
+        {/* Public pages (no auth required) - MUST be before /:compId */}
         <Route path="/book/:token" element={<BookingPage />} />
+        <Route path="/survey/:year" element={<SurveyPage />} />
 
         {/* Legacy route redirects - redirect to home */}
         <Route path="/producer" element={<Navigate to="/" replace />} />
