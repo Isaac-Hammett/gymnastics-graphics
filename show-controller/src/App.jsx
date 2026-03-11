@@ -22,6 +22,7 @@ import TalentDiscoveryPage from './pages/TalentDiscoveryPage';
 import CommentaryPage from './pages/CommentaryPage';
 import BookingPage from './pages/BookingPage';
 import SurveyPage from './pages/SurveyPage';
+import SettingsPage from './pages/SettingsPage';
 
 // Error boundary for catching component errors
 import ErrorBoundary from './components/ErrorBoundary';
@@ -95,6 +96,9 @@ function App() {
         <Route path="/talent" element={<TalentPage />} />
         <Route path="/talent/discover" element={<TalentDiscoveryPage />} />
         <Route path="/talent/:talentId" element={<TalentProfilePage />} />
+
+        {/* Settings page */}
+        <Route path="/settings" element={<SettingsPage />} />
 
         {/* Public pages (no auth required) - MUST be before /:compId */}
         <Route path="/book/:token" element={<BookingPage />} />

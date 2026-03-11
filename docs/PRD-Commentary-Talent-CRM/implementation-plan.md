@@ -18,7 +18,7 @@
 | Phase 3-Deploy | Deploy Phase 3 changes | 1 | COMPLETE |
 | Phase 4 | AI-Powered Talent Discovery | 5 | COMPLETE |
 | Phase 4-Deploy | Deploy Phase 4 changes | 1 | COMPLETE |
-| Phase 5 | Annual Survey + Pre-Production Alerts | 6 | IN PROGRESS |
+| Phase 5 | Annual Survey + Pre-Production Alerts | 6 | COMPLETE |
 | Phase 5-Deploy | Deploy Phase 5 changes | 1 | NOT STARTED |
 | Final-Deploy | Full acceptance criteria check | 2 | NOT STARTED |
 | **Total** | | **30** | |
@@ -796,9 +796,9 @@ Read `show-controller/src/pages/HomePage.jsx` first to understand existing layou
 
 ---
 
-### Task 5.6: Add CSV batch import to SettingsPage — NOT STARTED
+### Task 5.6: Add CSV batch import to SettingsPage — COMPLETE
 
-**File:** `show-controller/src/pages/SettingsPage.jsx` (new file — confirmed does not exist)
+**File:** `show-controller/src/pages/SettingsPage.jsx` (new file)
 
 **Note:** SettingsPage.jsx does not exist (verified during discovery). Create this file as a new page and add a route to App.jsx:
 ```jsx
