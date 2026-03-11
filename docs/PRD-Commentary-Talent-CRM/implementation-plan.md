@@ -17,7 +17,7 @@
 | Phase 3 | Gmail + Google Calendar Outreach | 5 | COMPLETE |
 | Phase 3-Deploy | Deploy Phase 3 changes | 1 | COMPLETE |
 | Phase 4 | AI-Powered Talent Discovery | 5 | COMPLETE |
-| Phase 4-Deploy | Deploy Phase 4 changes | 1 | NOT STARTED |
+| Phase 4-Deploy | Deploy Phase 4 changes | 1 | COMPLETE |
 | Phase 5 | Annual Survey + Pre-Production Alerts | 6 | NOT STARTED |
 | Phase 5-Deploy | Deploy Phase 5 changes | 1 | NOT STARTED |
 | Final-Deploy | Full acceptance criteria check | 2 | NOT STARTED |
@@ -627,7 +627,7 @@ Place BEFORE the `/talent/:talentId` route to avoid the param catching `/talent/
 
 > **This is a deploy task.**
 
-### Task 4-D.1: Build, deploy, and verify Phase 4 — IN PROGRESS
+### Task 4-D.1: Build, deploy, and verify Phase 4 — COMPLETE
 
 **Frontend changed?** Yes
 ```bash
@@ -643,10 +643,10 @@ cd show-controller && npm run build
 ```
 
 **Verify:**
-- [ ] Navigate to `/talent` → "Discover Talent" button → navigates to `/talent/discover`
-- [ ] TalentDiscoveryPage renders with school input and button
-- [ ] Searching for a school returns candidate cards (or a clear error if ANTHROPIC_API_KEY not set)
-- [ ] Take screenshot → `docs/PRD-Commentary-Talent-CRM/screenshots/verify-phase4-discovery.png`
+- [x] Navigate to `/talent` → "Discover Talent" button → navigates to `/talent/discover`
+- [x] TalentDiscoveryPage renders with school input and button
+- [x] Searching for a school returns candidate cards (or a clear error if ANTHROPIC_API_KEY not set)
+- [x] Take screenshot → `docs/PRD-Commentary-Talent-CRM/screenshots/verify-phase4-discovery.png`
 
 ---
 
