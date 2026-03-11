@@ -1,6 +1,6 @@
 # PRD: Coordinator Login / Authentication
 
-**Status:** NOT STARTED
+**Status:** COMPLETE
 **Date:** 2026-03-11
 **Last Updated:** 2026-03-11
 
@@ -39,14 +39,14 @@ email allowlist. Email/password keeps access control simple and fully in the adm
 - As a survey respondent, I fill out `/survey/2027` without any login prompt.
 
 ### Acceptance Criteria
-- [ ] Navigating to any coordinator URL while unauthenticated redirects to `/login`
-- [ ] After login, the user is redirected to the page they originally requested (not always `/`)
-- [ ] Session persists on page refresh (Firebase Auth persistence is enabled)
-- [ ] Sign-out button appears on every protected page and clears the session, redirecting to `/login`
-- [ ] `/book/:token` loads without login
-- [ ] `/survey/:year` loads without login
-- [ ] `/:compId/talent` loads without login (talent-facing view)
-- [ ] Firebase rules for `talentRoster` and `surveyResponses` rely on `auth != null` (already set)
+- [x] Navigating to any coordinator URL while unauthenticated redirects to `/login`
+- [x] After login, the user is redirected to the page they originally requested (not always `/`)
+- [x] Session persists on page refresh (Firebase Auth persistence is enabled)
+- [x] Sign-out button appears on every protected page and clears the session, redirecting to `/login`
+- [x] `/book/:token` loads without login
+- [x] `/survey/:year` loads without login
+- [x] `/:compId/talent` loads without login (talent-facing view)
+- [x] Firebase rules for `talentRoster` and `surveyResponses` rely on `auth != null` (already set)
 
 ---
 

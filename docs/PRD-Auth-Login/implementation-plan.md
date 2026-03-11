@@ -16,7 +16,7 @@
 | Phase 2-Deploy | Deploy Phase 2 changes | 2 | COMPLETE |
 | Phase 3 | Sign-Out UI | 1 | COMPLETE |
 | Phase 3-Deploy | Deploy Phase 3 changes | 1 | COMPLETE |
-| Final-Deploy | Full verification + mark complete | 2 | NOT STARTED |
+| Final-Deploy | Full verification + mark complete | 2 | COMPLETE |
 | **Total** | | **13** | |
 
 ---
@@ -308,7 +308,7 @@ cd show-controller && npm run build
 
 ## Final-Deploy: Full Verification
 
-### Task F.1: Full acceptance criteria check — NOT STARTED
+### Task F.1: Full acceptance criteria check — COMPLETE
 
 Run through every acceptance criterion in the PRD using Playwright.
 Screenshots: `docs/PRD-Auth-Login/screenshots/final-verify-*.png`
@@ -316,16 +316,16 @@ Screenshots: `docs/PRD-Auth-Login/screenshots/final-verify-*.png`
 **Credentials:** Read test account email/password from `~/.claude/projects/-Users-juliacosmiano-code-gymnastics-graphics/memory/playwright-credentials.md`
 
 **Checklist:**
-- [ ] Navigate to `https://commentarygraphic.com/talent` (unauthenticated) — redirects to `/login`
-- [ ] Log in with test credentials (fill email, fill password, click "Sign In") — redirects to `/talent` (the originally requested page, not `/`)
-- [ ] Session persists on page refresh (Firebase Auth persistence is enabled)
-- [ ] Sign-out button appears on every protected page and clears the session, redirecting to `/login`
-- [ ] `/book/:token` loads without login (open in new unauthenticated context or verify URL is not redirected)
-- [ ] `/survey/:year` loads without login
-- [ ] `/:compId/talent` loads without login (talent-facing view)
-- [ ] No console errors on any page
+- [x] Navigate to `https://commentarygraphic.com/talent` (unauthenticated) — redirects to `/login`
+- [x] Log in with test credentials (fill email, fill password, click "Sign In") — redirects to `/talent` (the originally requested page, not `/`)
+- [x] Session persists on page refresh (Firebase Auth persistence is enabled)
+- [x] Sign-out button appears on every protected page and clears the session, redirecting to `/login`
+- [x] `/book/:token` loads without login (open in new unauthenticated context or verify URL is not redirected)
+- [x] `/survey/:year` loads without login
+- [x] `/:compId/talent` loads without login (talent-facing view)
+- [x] No console errors on any page
 
-### Task F.2: Mark PRD complete — NOT STARTED
+### Task F.2: Mark PRD complete — COMPLETE
 
 Update `PRD-Auth-Login-2026-03-11.md` status to COMPLETE. Commit.
 
@@ -341,5 +341,5 @@ Update `PRD-Auth-Login-2026-03-11.md` status to COMPLETE. Commit.
 | Phase 2-Deploy | 2 | Low | COMPLETE |
 | Phase 3 | 1 | Low | COMPLETE |
 | Phase 3-Deploy | 1 | Low | COMPLETE |
-| Final-Deploy | 2 | Low | NOT STARTED |
+| Final-Deploy | 2 | Low | COMPLETE |
 | **Total** | **13** | | |
