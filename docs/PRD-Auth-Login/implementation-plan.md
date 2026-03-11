@@ -236,10 +236,12 @@ cd show-controller && npm run build
 
 ### Task 2-D.2: Verify Phase 2 on production — NOT STARTED
 
+**Credentials:** Read test account email/password from `~/.claude/projects/-Users-juliacosmiano-code-gymnastics-graphics/memory/playwright-credentials.md`
+
 **Checks:**
 - [ ] Navigate to `https://commentarygraphic.com/` (unauthenticated) — redirects to `/login`
 - [ ] Take screenshot → `docs/PRD-Auth-Login/screenshots/verify-protected-redirect.png`
-- [ ] Log in with a valid coordinator account — redirects to `/`
+- [ ] Log in with test credentials (fill email, fill password, click "Sign In") — redirects to `/`
 - [ ] Take screenshot → `docs/PRD-Auth-Login/screenshots/verify-login-success.png`
 - [ ] Refresh the page — stays on `/`, does NOT redirect to `/login` (session persists)
 - [ ] Navigate to `https://commentarygraphic.com/book/test-invalid` — loads without login prompt
@@ -291,12 +293,15 @@ cd show-controller && npm run build
 # then upload dist per CLAUDE.md Step 1
 ```
 
+**Credentials:** Read test account email/password from `~/.claude/projects/-Users-juliacosmiano-code-gymnastics-graphics/memory/playwright-credentials.md`
+
 **Verify:**
-- [ ] Navigate to `https://commentarygraphic.com/` — log in if needed
-- [ ] Confirm sign-out button visible in top-right corner with user email
+- [ ] Navigate to `https://commentarygraphic.com/login`
+- [ ] Log in with test credentials (fill email, fill password, click "Sign In")
+- [ ] Confirm redirected to `/` and sign-out button visible in top-right corner with user email
 - [ ] Click "Sign Out" — redirects to `/login`
 - [ ] Take screenshot → `docs/PRD-Auth-Login/screenshots/verify-sign-out.png`
-- [ ] Navigate to a different protected page (e.g. `/talent`) — confirm sign-out button appears there too
+- [ ] Log in again, navigate to a different protected page (e.g. `/talent`) — confirm sign-out button appears there too
 - [ ] No console errors
 
 ---
@@ -308,12 +313,14 @@ cd show-controller && npm run build
 Run through every acceptance criterion in the PRD using Playwright.
 Screenshots: `docs/PRD-Auth-Login/screenshots/final-verify-*.png`
 
+**Credentials:** Read test account email/password from `~/.claude/projects/-Users-juliacosmiano-code-gymnastics-graphics/memory/playwright-credentials.md`
+
 **Checklist:**
-- [ ] Navigating to any coordinator URL while unauthenticated redirects to `/login`
-- [ ] After login, the user is redirected to the page they originally requested (not always `/`)
+- [ ] Navigate to `https://commentarygraphic.com/talent` (unauthenticated) — redirects to `/login`
+- [ ] Log in with test credentials (fill email, fill password, click "Sign In") — redirects to `/talent` (the originally requested page, not `/`)
 - [ ] Session persists on page refresh (Firebase Auth persistence is enabled)
 - [ ] Sign-out button appears on every protected page and clears the session, redirecting to `/login`
-- [ ] `/book/:token` loads without login
+- [ ] `/book/:token` loads without login (open in new unauthenticated context or verify URL is not redirected)
 - [ ] `/survey/:year` loads without login
 - [ ] `/:compId/talent` loads without login (talent-facing view)
 - [ ] No console errors on any page
