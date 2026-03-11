@@ -16,7 +16,7 @@
 | Phase 2-Deploy | Deploy Phase 2 changes | 1 | BLOCKED (Firebase rules) |
 | Phase 3 | Gmail + Google Calendar Outreach | 5 | COMPLETE |
 | Phase 3-Deploy | Deploy Phase 3 changes | 1 | COMPLETE |
-| Phase 4 | AI-Powered Talent Discovery | 5 | IN PROGRESS |
+| Phase 4 | AI-Powered Talent Discovery | 5 | COMPLETE |
 | Phase 4-Deploy | Deploy Phase 4 changes | 1 | NOT STARTED |
 | Phase 5 | Annual Survey + Pre-Production Alerts | 6 | NOT STARTED |
 | Phase 5-Deploy | Deploy Phase 5 changes | 1 | NOT STARTED |
@@ -613,21 +613,11 @@ Place BEFORE the `/talent/:talentId` route to avoid the param catching `/talent/
 
 ---
 
-### Task 4.5: Wire "Discover Talent" button in TalentPage — NOT STARTED
+### Task 4.5: Wire "Discover Talent" button in TalentPage — COMPLETE
 
 **File:** `show-controller/src/pages/TalentPage.jsx`
 
-**Change:** The TalentPage already has a "Discover Talent" button (purple, mentioned in Phase 1). Update its `onClick` to navigate to `/talent/discover` using `useNavigate`:
-
-```jsx
-// Before: button may link to placeholder or have no action
-// After:
-const navigate = useNavigate();
-// ...
-<button onClick={() => navigate('/talent/discover')}>Discover Talent</button>
-```
-
-Read the existing button implementation first to see what change is actually needed.
+**Status:** Already implemented at lines 124-130. The "Discover Talent" button uses a `<Link to="/talent/discover">` component from react-router-dom, which correctly navigates to the discovery page. No changes needed.
 
 **Implements:** Navigation entry point to discovery
 
