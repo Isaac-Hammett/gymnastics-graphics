@@ -12,7 +12,7 @@
 |-------|-------------|-------|--------|
 | Phase 0 | Data Migration Script | 1 | COMPLETE |
 | Phase 0-Deploy | Run migration + verify Firebase | 1 | COMPLETE |
-| Phase 2 | Booking Links + Smart Availability | 6 | NOT STARTED |
+| Phase 2 | Booking Links + Smart Availability | 6 | IN PROGRESS (4/6 complete) |
 | Phase 2-Deploy | Deploy Phase 2 changes | 1 | NOT STARTED |
 | Phase 3 | Gmail + Google Calendar Outreach | 5 | NOT STARTED |
 | Phase 3-Deploy | Deploy Phase 3 changes | 1 | NOT STARTED |
@@ -253,7 +253,7 @@ Requires `ANTHROPIC_API_KEY` in server `.env`. Use the `@anthropic-ai/sdk` packa
 
 ---
 
-### Task 2.5: Add "Interested" badge + note parsing trigger to TalentProfilePage — NOT STARTED
+### Task 2.5: Add "Interested" badge + note parsing trigger to TalentProfilePage — COMPLETE
 
 **File:** `show-controller/src/pages/TalentProfilePage.jsx`
 
