@@ -484,7 +484,7 @@ Add new server endpoint:
 
 > **This is a deploy task.**
 
-### Task 3-D.1: Build, deploy, and verify Phase 3 — NOT STARTED
+### Task 3-D.1: Build, deploy, and verify Phase 3 — COMPLETE
 
 **Frontend changed?** Yes
 ```bash
