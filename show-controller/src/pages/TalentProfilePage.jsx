@@ -102,6 +102,24 @@ export default function TalentProfilePage() {
       await updateTalent(talentId, { notes: updated });
       setNoteText('');
       toast.success('Note added');
+
+      // Parse the note for availability hints
+      try {
+        const response = await fetch(`https://api.commentarygraphic.com/api/talent/${talentId}/notes/parse`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ noteText: noteText.trim() })
+        });
+        if (response.ok) {
+          const parsed = await response.json();
+          if (parsed.availablePeriods?.length > 0 || parsed.unavailableDates?.length > 0) {
+            toast.success('Availability hints extracted');
+          }
+        }
+      } catch (parseError) {
+        console.error('Note parsing failed:', parseError);
+        // Don't show error to user - parsing is a bonus feature
+      }
     } catch (e) {
       toast.error('Failed to add note');
     } finally {
@@ -491,6 +509,25 @@ export default function TalentProfilePage() {
                   </button>
                 </form>
                 <p className="text-xs text-gray-600 mt-1.5">Notes are timestamped automatically.</p>
+
+                {/* Parsed availability hints */}
+                {(talent.parsedAvailability?.availablePeriods?.length > 0 || talent.parsedAvailability?.unavailableDates?.length > 0) && (
+                  <div className="mt-3 pt-3 border-t border-gray-700">
+                    <p className="text-xs text-gray-500 mb-2">Extracted availability:</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {(talent.parsedAvailability?.availablePeriods || []).map((period, i) => (
+                        <span key={`avail-${i}`} className="px-2 py-0.5 bg-green-900/30 text-green-400 text-xs rounded border border-green-700">
+                          Available: {period}
+                        </span>
+                      ))}
+                      {(talent.parsedAvailability?.unavailableDates || []).map((date, i) => (
+                        <span key={`busy-${i}`} className="px-2 py-0.5 bg-red-900/30 text-red-400 text-xs rounded border border-red-700">
+                          Busy: {date}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </div>
