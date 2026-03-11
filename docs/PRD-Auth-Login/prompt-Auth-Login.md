@@ -5,7 +5,7 @@
 - Complete each phase FULLY before moving to the next
 - Mark checkboxes [x] as you complete each step
 - **ONE TASK PER ITERATION** — implement exactly one task, then stop
-- **Deploy batching** — code tasks (1.x, 2.x, 3.x) commit only; deploy tasks (3-D.x) build + deploy + verify
+- **Deploy batching** — code tasks (1.x, 2.x, 3.x) commit only; deploy tasks (x-D.x, F.x) build + upload + verify
 - Screenshots save to `docs/PRD-Auth-Login/screenshots/`
 
 ## TEST URLS
@@ -57,7 +57,7 @@ Read these files ONE AT A TIME. After EACH file, output the answers before readi
 
 - [ ] **2.2** Determine task type:
   - **Code task** (Task 1.x, 2.x, 3.x) → implement + commit only, no deploy
-  - **Deploy task** (Task 3-D.x) → build + deploy + verify
+  - **Deploy task** (Task x-D.x or Task F.x) → build + deploy + verify
 
 - [ ] **2.3** Output your selection:
   ```
@@ -72,14 +72,15 @@ Read these files ONE AT A TIME. After EACH file, output the answers before readi
 
 ## Phase 2.5: Read Required Files
 
-- [ ] **2.5.1** For each file you plan to modify, read it fully before making any changes.
+- [ ] **2.5.1** For each file you plan to modify, read it fully before making any changes
 - [ ] **2.5.2** For new files, read the most similar existing file for patterns:
-  - New context (`AuthContext.jsx`) → read `show-controller/src/hooks/useTalentRoster.js` for Firebase patterns
-  - New page (`LoginPage.jsx`) → read `show-controller/src/pages/BookingPage.jsx` (also a standalone, no-nav page)
-  - New component (`RequireAuth.jsx`) → read `show-controller/src/components/CoordinatorGate.jsx` (similar guard pattern)
+  - New context (`AuthContext.jsx`) → read `show-controller/src/context/CompetitionContext.jsx` for provider pattern
+  - New page (`LoginPage.jsx`) → read `show-controller/src/pages/BookingPage.jsx` (standalone, no-nav page)
+  - New component (`RequireAuth.jsx`) → read `show-controller/src/components/CoordinatorGate.jsx` (guard pattern)
   - Modifying `App.jsx` → read it fully — understand ALL existing routes before touching anything
   - Modifying `firebase.js` → read it fully first
-  - Modifying `HomePage.jsx` for sign-out → read it fully first
+  - Modifying `CompetitionLayout.jsx` → read it fully first
+  - Modifying `main.jsx` → read it fully first
 
   **Output:**
   ```
@@ -102,34 +103,41 @@ Read these files ONE AT A TIME. After EACH file, output the answers before readi
   - `firebase/auth` is part of the existing `firebase` package — no `npm install` needed
 
   **Task 1.2 (AuthContext):**
+  - Follow `CompetitionContext.jsx` pattern for context + provider + hook
   - Firebase Auth's default persistence is `LOCAL` — session survives page refresh automatically, no extra config needed
   - The `loading` state is critical: without it, there's a flash where `user` is null (not yet resolved) and the app incorrectly redirects to `/login` on every page load
   - `onAuthStateChanged` returns an unsubscribe function — call it in the useEffect cleanup
+  - Wrap `<App />` in `main.jsx` with `<AuthProvider>`
 
   **Task 1.3 (LoginPage):**
-  - Read `BookingPage.jsx` for the standalone page pattern (no navbar, centered card)
+  - Follow `BookingPage.jsx` pattern: standalone page, dark bg, centered card, no navbar
   - Use `useLocation` to read `state.from` so after login the user lands on the page they originally requested
   - Only show the error message after a failed attempt — not on initial render
-  - Keep the UI minimal: email input, password input, sign-in button, error text. No extra features.
-  - Add the `/login` route to App.jsx as part of this task (it's a single-line change)
+  - If user is already signed in, redirect to `/` immediately
+  - Keep the UI minimal: email input, password input, sign-in button, error text
+  - Add the `/login` route to App.jsx (place before protected routes)
 
   **Task 2.1 (RequireAuth):**
-  - Read `CoordinatorGate.jsx` first — follow the same structural pattern
-  - The loading spinner can be a simple `<div>Loading...</div>` — style isn't critical
+  - Follow `CoordinatorGate.jsx` pattern for the guard structure
+  - Loading state: full-screen dark bg with "Loading..." text (matches app aesthetic)
   - Pass `state={{ from: location.pathname }}` to the Navigate component so LoginPage knows where to redirect after login
+  - **Do NOT add the sign-out button yet** — that's Task 3.1
 
-  **Task 2.2 (App.jsx route wrapping):**
+  **Task 2.2 (App.jsx + CompetitionLayout):**
   - Read App.jsx fully before making any changes
-  - The `/:compId/talent` route (TalentView) must remain public — talent open this URL during a live meet
-  - For the nested competition routes: the simplest approach is to add RequireAuth inside CompetitionLayout.jsx
-    (read CompetitionLayout.jsx to confirm) rather than trying to wrap individual nested routes in App.jsx
-  - Double-check: `/login`, `/book/:token`, `/survey/:year` must NOT be wrapped
+  - Wrap each protected route with `<RequireAuth>` individually
+  - Leave unwrapped: `/login`, `/book/:token`, `/survey/:year`
+  - Inside CompetitionLayout: add auth check that skips for the `/talent` child path
+    - `const isTalentPath = location.pathname.endsWith('/talent')`
+    - If not talent path and not authenticated → redirect to `/login`
+  - Double-check: public routes must NOT be wrapped
 
-  **Task 3.1 (Sign-out on HomePage):**
-  - Read `HomePage.jsx` fully first
-  - Place the sign-out button in the top-right of the existing header — do not redesign the layout
-  - Show the signed-in user's email alongside the button so coordinators can confirm who they're logged in as
+  **Task 3.1 (Sign-out in RequireAuth):**
+  - Add a floating sign-out button inside RequireAuth (top-right corner, fixed position, high z-index)
+  - Show signed-in user's email alongside the button
   - After `signOut()`, navigate to `/login`
+  - Style: subtle, small, doesn't interfere with page content
+  - This makes sign-out available on EVERY protected page without modifying individual pages
 
   **Output:**
   ```
@@ -143,9 +151,13 @@ Read these files ONE AT A TIME. After EACH file, output the answers before readi
 ## Phase 4: Commit
 
 - [ ] **4.1** Update the task status in the implementation plan: IN PROGRESS → COMPLETE
-- [ ] **4.2** Stage and commit:
+- [ ] **4.2** Stage and commit — use specific file paths, not `git add -A`:
   ```bash
-  git add -A && git commit -m "PRD-Auth-Login: [brief task description]" && git push origin main
+  # Stage only the files you modified (from Phase 3.1) + the implementation plan
+  git add docs/PRD-Auth-Login/implementation-plan.md
+  git add [each file modified in Phase 3.1]
+  git commit -m "PRD-Auth-Login: [brief task description]"
+  git push origin main
   ```
 
   **Output:**
@@ -158,53 +170,77 @@ Read these files ONE AT A TIME. After EACH file, output the answers before readi
 
 ## Phase 5: Deploy (Deploy tasks only — skip for code tasks)
 
-**If this is a CODE task:** Skip to Phase 6.
+**If this is a CODE task:** Skip to Phase 7 (there is no verification needed until the deploy task).
 
-**If this is Task 3-D.1 (Deploy):**
+**If this is a DEPLOY task:**
 
-**STOP — check this before deploying:**
-- [ ] Confirm Firebase Console → Authentication → Sign-in method → Email/Password is ENABLED
-- [ ] Confirm Firebase Console → Authentication → Users has at least ONE account for testing
-- If either is missing: **do not deploy** — the app will lock out all users including you
+**STOP — check this before first deploy (Phase 1-Deploy):**
+- Confirm Firebase Console → Authentication → Sign-in method → Email/Password is ENABLED
+- Confirm Firebase Console → Authentication → Users has at least ONE account for testing
+- If either is missing: **do not deploy** — the app will lock out all users
 
-- [ ] **5.1** Build frontend:
+- [ ] **5.1** Frontend changed? Yes — all deploys in this PRD are frontend-only:
   ```bash
   cd show-controller && npm run build
-  # upload dist per CLAUDE.md Step 1
+  # then upload dist per CLAUDE.md Step 1
   ```
 
-- [ ] **5.2** Server changed? No — skip coordinator restart
+- [ ] **5.2** Graphics files changed? No — skip Step 2 for all tasks.
+
+- [ ] **5.3** Server changed? No — skip coordinator restart for all tasks.
 
   **Output:**
   ```
   ✓ 5 Deploy Complete
   - Frontend deployed: [YES / NO / SKIPPED]
-  - Server deployed: [YES / NO / SKIPPED]
+  - Graphics deployed: SKIPPED
   ```
 
 ---
 
 ## Phase 6: Verify (Deploy tasks only — skip for code tasks)
 
-**If this is a CODE task:** Skip to Phase 7.
+**If this is a CODE task:** Skip to Phase 7. Verification happens at the deploy task.
+
+**If this is a DEPLOY task:**
 
 - [ ] **6.1** Run `browser_install`
-- [ ] **6.2** Navigate to `https://commentarygraphic.com/` (unauthenticated)
-  - Expected: redirects to `/login`
-  - Take screenshot → `docs/PRD-Auth-Login/screenshots/verify-protected-redirect.png`
-- [ ] **6.3** Log in with a valid coordinator account
-  - Expected: redirects to `/` (or the originally requested page)
-  - Take screenshot → `docs/PRD-Auth-Login/screenshots/verify-login-success.png`
-- [ ] **6.4** Refresh the page
-  - Expected: stays on `/`, does NOT redirect to `/login`
-- [ ] **6.5** Navigate to `https://commentarygraphic.com/book/test-invalid`
-  - Expected: loads BookingPage with graceful error, NO login redirect
-  - Take screenshot → `docs/PRD-Auth-Login/screenshots/verify-public-booking.png`
-- [ ] **6.6** Navigate to `https://commentarygraphic.com/survey/2027`
-  - Expected: loads survey form, NO login redirect
-- [ ] **6.7** Click "Sign Out"
-  - Expected: redirects to `/login`
-- [ ] **6.8** Check console: `browser_console_messages` — no auth errors
+- [ ] **6.2** Run the specific verification steps from the deploy task in the implementation plan
+- [ ] **6.3** Take screenshots → `docs/PRD-Auth-Login/screenshots/`
+- [ ] **6.4** Check console: `browser_console_messages`
+
+**Credentials (for Tasks 2-D.2, 3-D.1, F.1):** Read test account email/password from `~/.claude/projects/-Users-juliacosmiano-code-gymnastics-graphics/memory/playwright-credentials.md`
+
+**Deploy-specific verification:**
+
+**Task 1-D.2:**
+- Navigate to `https://commentarygraphic.com/login` — login page renders
+- Screenshot → `verify-login-page.png`
+- Note: route protection NOT active yet — no login needed for verification
+
+**Task 2-D.2:**
+- Navigate to `https://commentarygraphic.com/` (unauthenticated) — should redirect to `/login`
+- Screenshot → `verify-protected-redirect.png`
+- Log in with test credentials from memory file (fill email, fill password, click "Sign In") — should redirect to `/`
+- Screenshot → `verify-login-success.png`
+- Refresh page — stays logged in
+- Navigate to `https://commentarygraphic.com/book/test-invalid` — loads without login
+- Screenshot → `verify-public-booking.png`
+- Navigate to `https://commentarygraphic.com/survey/2027` — loads without login
+
+**Task 3-D.1:**
+- Navigate to `https://commentarygraphic.com/login`
+- Log in with test credentials from memory file (fill email, fill password, click "Sign In")
+- Confirm sign-out button visible in top-right with user email
+- Click "Sign Out" — redirects to `/login`
+- Screenshot → `verify-sign-out.png`
+- Log in again, navigate to another protected page — confirm sign-out button appears there too
+
+**Task F.1:**
+- Navigate to `https://commentarygraphic.com/talent` (unauthenticated) — redirects to `/login`
+- Log in with test credentials from memory file — redirects to `/talent` (the originally requested page, not `/`)
+- Run remaining acceptance criteria checklist from PRD
+- Screenshots → `final-verify-*.png`
 
 **If verification FAILS:**
 - Record what failed and why in the implementation plan
@@ -225,13 +261,25 @@ Read these files ONE AT A TIME. After EACH file, output the answers before readi
 
 - [ ] **7.1** If ALL tasks in the implementation plan are COMPLETE:
   - Update PRD status to COMPLETE in `PRD-Auth-Login-2026-03-11.md`
-  - Commit: `git add -A && git commit -m "PRD-Auth-Login: Mark complete" && git push origin main`
+  - Commit: `git add docs/PRD-Auth-Login/ && git commit -m "PRD-Auth-Login: Mark complete" && git push origin main`
 
-- [ ] **7.2** If tasks remain: leave PRD status as IN PROGRESS
+- [ ] **7.2** If tasks remain: leave PRD status as IN PROGRESS (the loop will continue)
 
   **Output:**
   ```
   ✓ 7 Status Update
-  - PRD status: [NOT STARTED / IN PROGRESS / COMPLETE]
+  - PRD status: [IN PROGRESS / COMPLETE]
   - Remaining tasks: [count]
   ```
+
+---
+
+## Deploy Reference
+
+| Change Type | Deploy Step |
+|-------------|-------------|
+| Frontend only (show-controller) | `npm run build` + upload dist per CLAUDE.md Step 1 |
+| Graphics files (output.html, overlays/) | Upload per CLAUDE.md Step 2 + `chmod 644 overlays/*` |
+| Both | Deploy frontend first, then graphics files |
+| Firebase data only | No deploy needed |
+| Server (coordinator) | `ssh_exec` → `pm2 restart coordinator` with credentials per CLAUDE.md |

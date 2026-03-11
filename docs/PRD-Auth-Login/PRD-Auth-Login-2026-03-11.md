@@ -34,7 +34,7 @@ email allowlist. Email/password keeps access control simple and fully in the adm
 - As a coordinator, when I navigate to `commentarygraphic.com`, I see a login page if I'm not signed in.
 - As a coordinator, I enter my email and password and click "Sign In" — I'm taken to the home page.
 - As a coordinator, my session persists across browser tabs and page refreshes until I explicitly sign out.
-- As a coordinator, I can sign out from a button in the app header.
+- As a coordinator, I can sign out from a button visible on every protected page.
 - As a talent invitee, I open my booking link (`/book/:token`) without any login prompt.
 - As a survey respondent, I fill out `/survey/2027` without any login prompt.
 
@@ -42,7 +42,7 @@ email allowlist. Email/password keeps access control simple and fully in the adm
 - [ ] Navigating to any coordinator URL while unauthenticated redirects to `/login`
 - [ ] After login, the user is redirected to the page they originally requested (not always `/`)
 - [ ] Session persists on page refresh (Firebase Auth persistence is enabled)
-- [ ] Sign-out button appears in the app and clears the session, redirecting to `/login`
+- [ ] Sign-out button appears on every protected page and clears the session, redirecting to `/login`
 - [ ] `/book/:token` loads without login
 - [ ] `/survey/:year` loads without login
 - [ ] `/:compId/talent` loads without login (talent-facing view)
@@ -73,6 +73,47 @@ email allowlist. Email/password keeps access control simple and fully in the adm
 | `/survey/:year` | **No** | Annual talent survey (public link) |
 | `/:compId/talent` | **No** | Talent-facing competition view |
 | `/login` | **No** | Login page itself |
+
+---
+
+## Autonomous Playwright Verification
+
+Once auth is deployed, every autonomous Playwright verification step that navigates to a protected URL will be redirected to `/login`. This affects all future PRD deploy tasks, not just Auth-Login.
+
+### Solution: Memory-File Credentials + Playwright Login Sequence
+
+**Credentials storage:** Test account credentials are stored in a Claude memory file (not committed to git):
+```
+~/.claude/projects/-Users-juliacosmiano-code-gymnastics-graphics/memory/playwright-credentials.md
+```
+
+**Login sequence** (inserted before any protected-page navigation):
+1. `browser_navigate` → `https://commentarygraphic.com/login`
+2. `browser_snapshot` → confirm login form is visible
+3. `browser_fill_form` → email field with test email
+4. `browser_fill_form` → password field with test password
+5. `browser_click` → "Sign In" button
+6. `browser_snapshot` → confirm redirect away from `/login`
+
+**Session persistence:** Login persists within a single Playwright browser session (one Claude conversation). Each new conversation must log in again.
+
+### What does NOT need login
+
+| URL Pattern | Reason |
+|-------------|--------|
+| `/output.html`, `/overlays/*` | Static files served by nginx — bypass React entirely |
+| `/book/:token` | Public React route (talent booking) |
+| `/survey/:year` | Public React route (annual survey) |
+| `/:compId/talent` | Public React route (talent-facing view) |
+
+### Touchpoints to update
+
+When auth goes live, these must include the login sequence:
+- **CLAUDE.md** — "Step 3: Verify Deployment" section
+- **`docs/_template/prompt-TEMPLATE.md`** — Phase 6 (Verify), before the "Navigate to test URL" step
+- **Any in-progress PRD** with deploy tasks that navigate to protected URLs
+
+The dedicated prompt `prompt-Auth-Login-Playwright-Fix.md` handles all of these updates.
 
 ---
 
