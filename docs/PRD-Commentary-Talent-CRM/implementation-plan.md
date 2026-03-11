@@ -513,7 +513,7 @@ cd show-controller && npm run build
 > **Deploy rule:** Commit each task. Do NOT deploy until Phase 4-Deploy.
 > **Prerequisite:** `ANTHROPIC_API_KEY` must be set in server `.env` on `44.193.31.120`.
 
-### Task 4.1: Create talent discovery service — NOT STARTED
+### Task 4.1: Create talent discovery service — COMPLETE
 
 **File:** `server/lib/talentDiscoveryService.js` (new file)
 
