@@ -19,7 +19,7 @@
 | Phase 4 | AI-Powered Talent Discovery | 5 | COMPLETE |
 | Phase 4-Deploy | Deploy Phase 4 changes | 1 | COMPLETE |
 | Phase 5 | Annual Survey + Pre-Production Alerts | 6 | COMPLETE |
-| Phase 5-Deploy | Deploy Phase 5 changes | 1 | NOT STARTED |
+| Phase 5-Deploy | Deploy Phase 5 changes | 1 | COMPLETE |
 | Final-Deploy | Full acceptance criteria check | 2 | NOT STARTED |
 | **Total** | | **30** | |
 
@@ -824,7 +824,7 @@ CSV format accepted: same columns as the Google Form export (match by email fiel
 
 > **This is a deploy task.**
 
-### Task 5-D.1: Build, deploy, and verify Phase 5 — NOT STARTED
+### Task 5-D.1: Build, deploy, and verify Phase 5 — COMPLETE
 
 **Frontend changed?** Yes
 ```bash
