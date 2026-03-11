@@ -366,7 +366,7 @@ Install `googleapis` if not already in `server/package.json`.
 
 ---
 
-### Task 3.2: Create Google Calendar service — NOT STARTED
+### Task 3.2: Create Google Calendar service — COMPLETE
 
 **File:** `server/lib/googleCalendarService.js` (new file)
 
