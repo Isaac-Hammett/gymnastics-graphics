@@ -774,7 +774,7 @@ There is no global auth wrapper — just insert before `<Route path="/:compId" e
 
 ---
 
-### Task 5.5: Add pre-production alert panel to HomePage — NOT STARTED
+### Task 5.5: Add pre-production alert panel to HomePage — COMPLETE
 
 **File:** `show-controller/src/pages/HomePage.jsx`
 
