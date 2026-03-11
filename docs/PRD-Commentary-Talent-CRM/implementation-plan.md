@@ -845,7 +845,7 @@ cd show-controller && npm run build
 
 ## Final-Deploy: Full Verification
 
-### Task F.1: Full acceptance criteria check — NOT STARTED
+### Task F.1: Full acceptance criteria check — IN PROGRESS
 
 Run through all acceptance criteria from the PRD using Playwright.
 Screenshots: `docs/PRD-Commentary-Talent-CRM/screenshots/final-verify-*.png`
