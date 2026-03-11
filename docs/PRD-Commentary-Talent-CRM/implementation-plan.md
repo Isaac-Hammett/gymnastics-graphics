@@ -654,7 +654,7 @@ cd show-controller && npm run build
 
 > **Deploy rule:** Commit each task. Do NOT deploy until Phase 5-Deploy.
 
-### Task 5.1: Create public SurveyPage — NOT STARTED
+### Task 5.1: Create public SurveyPage — COMPLETE
 
 **File:** `show-controller/src/pages/SurveyPage.jsx` (new file)
 
