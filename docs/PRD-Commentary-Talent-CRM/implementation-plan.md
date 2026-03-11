@@ -721,7 +721,7 @@ There is no global auth wrapper — just insert before `<Route path="/:compId" e
 
 ---
 
-### Task 5.3: Add smart "Available Talent" filter to CommentaryPage — NOT STARTED
+### Task 5.3: Add smart "Available Talent" filter to CommentaryPage — COMPLETE
 
 **File:** `show-controller/src/pages/CommentaryPage.jsx`
 
