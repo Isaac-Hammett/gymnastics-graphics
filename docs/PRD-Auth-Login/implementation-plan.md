@@ -1,6 +1,8 @@
 # Auth Login — Implementation Plan
 
 **PRD:** PRD-Auth-Login-2026-03-11.md
+**Date:** 2026-03-11
+**Last Updated:** 2026-03-11
 
 ---
 
@@ -9,14 +11,17 @@
 | Phase | Description | Tasks | Status |
 |-------|-------------|-------|--------|
 | Phase 1 | Firebase Auth + Context + Login Page | 3 | NOT STARTED |
+| Phase 1-Deploy | Deploy Phase 1 changes | 2 | NOT STARTED |
 | Phase 2 | Route Protection | 2 | NOT STARTED |
+| Phase 2-Deploy | Deploy Phase 2 changes | 2 | NOT STARTED |
 | Phase 3 | Sign-Out UI | 1 | NOT STARTED |
-| Phase 3-Deploy | Build, deploy, verify | 1 | NOT STARTED |
-| **Total** | | **7** | |
+| Phase 3-Deploy | Deploy Phase 3 changes | 1 | NOT STARTED |
+| Final-Deploy | Full verification + mark complete | 2 | NOT STARTED |
+| **Total** | | **13** | |
 
 ---
 
-## Prerequisites (Manual — done before running tasks)
+## Prerequisites (Manual — done before running deploy tasks)
 
 **Enable Firebase Email/Password Auth in Firebase Console:**
 1. Go to Firebase Console → Authentication → Sign-in method
@@ -29,6 +34,8 @@ This must be done before deploying — the app will redirect to `/login` for eve
 ---
 
 ## Phase 1: Firebase Auth + Context + Login Page
+
+> **Deploy rule:** Commit each task. Do NOT deploy until Phase 1-Deploy.
 
 ### Task 1.1: Add Firebase Auth to firebase.js — NOT STARTED
 
@@ -55,6 +62,8 @@ export { auth, signInWithEmailAndPassword, signOut, onAuthStateChanged };
 
 **File:** `show-controller/src/context/AuthContext.jsx` (new file)
 
+**Pattern to follow:** `show-controller/src/context/CompetitionContext.jsx`
+
 **Change:** Create a React context that tracks auth state and exposes sign-in/sign-out:
 
 ```jsx
@@ -66,12 +75,13 @@ export { auth, signInWithEmailAndPassword, signOut, onAuthStateChanged };
 
 // Use onAuthStateChanged in a useEffect to set user state.
 // Firebase Auth persistence is LOCAL by default — sessions survive page refresh automatically.
+// onAuthStateChanged returns an unsubscribe function — call it in useEffect cleanup.
 
 // Wrap the app: export AuthProvider (wraps children in AuthContext.Provider)
 // Export useAuth hook: const useAuth = () => useContext(AuthContext)
 ```
 
-**File:** `show-controller/src/main.jsx` (or wherever `<App />` is rendered)
+**File:** `show-controller/src/main.jsx`
 - Wrap `<App />` with `<AuthProvider>`
 
 **Implements:** Auth state available to all components
@@ -82,10 +92,12 @@ export { auth, signInWithEmailAndPassword, signOut, onAuthStateChanged };
 
 **File:** `show-controller/src/pages/LoginPage.jsx` (new file)
 
-**Change:** Create a simple, standalone login page (no navbar, no auth required):
+**Pattern to follow:** `show-controller/src/pages/BookingPage.jsx` (standalone, no navbar, centered card)
+
+**Change:** Create a simple, standalone login page:
 
 ```jsx
-// Layout: centered card on a dark background, consistent with app aesthetic
+// Layout: centered card on a dark background (min-h-screen bg-gray-900), consistent with app aesthetic
 // Fields: email (text input), password (password input), "Sign In" button
 // On submit: calls signIn(email, password) from useAuth
 // On success: navigate to the `from` location (the page the user originally requested),
@@ -93,24 +105,60 @@ export { auth, signInWithEmailAndPassword, signOut, onAuthStateChanged };
 //             Use: const location = useLocation(); location.state?.from || '/'
 // On error: show inline error message (e.g. "Incorrect email or password")
 // Loading state: disable button + show spinner while sign-in is in progress
+// If user is already signed in: redirect to `/` immediately (don't show the login form)
 // No "Forgot password" link — admin resets passwords directly in Firebase Console
 ```
 
-**Add route in App.jsx:**
-```jsx
-<Route path="/login" element={<LoginPage />} />
-```
-Place before all protected routes.
+**File:** `show-controller/src/App.jsx`
+- Add route: `<Route path="/login" element={<LoginPage />} />`
+- Place before all protected routes
 
-**Implements:** Login UI
+**Implements:** Login UI + route
+
+---
+
+## Phase 1-Deploy: Deploy Phase 1 Changes
+
+> **This is a deploy task.** Build, upload, and verify all Phase 1 changes together.
+
+**STOP — check before deploying:**
+- Confirm Firebase Console → Authentication → Sign-in method → Email/Password is ENABLED
+- Confirm Firebase Console → Authentication → Users has at least ONE account for testing
+- If either is missing: **do not deploy** — the app will lock out all users once route protection is added in Phase 2
+
+### Task 1-D.1: Build and deploy to production — NOT STARTED
+
+**Frontend changed?** Yes
+```bash
+cd show-controller && npm run build
+# then upload dist per CLAUDE.md Step 1
+```
+
+**Graphics files changed?** No — skip Step 2.
+
+**Server changed?** No — auth is entirely client-side (Firebase Auth SDK).
+
+### Task 1-D.2: Verify Phase 1 on production — NOT STARTED
+
+Navigate to test URLs with Playwright. Take screenshots to `docs/PRD-Auth-Login/screenshots/`.
+
+**Checks:**
+- [ ] Navigate to `https://commentarygraphic.com/login` — login page renders (centered card, email + password fields)
+- [ ] Take screenshot → `docs/PRD-Auth-Login/screenshots/verify-login-page.png`
+- [ ] No console errors (`browser_console_messages`)
+- [ ] Note: route protection is NOT active yet — `/` and other pages still load without login
 
 ---
 
 ## Phase 2: Route Protection
 
+> **Deploy rule:** Commit each task. Do NOT deploy until Phase 2-Deploy.
+
 ### Task 2.1: Create RequireAuth component — NOT STARTED
 
 **File:** `show-controller/src/components/RequireAuth.jsx` (new file)
+
+**Pattern to follow:** `show-controller/src/components/CoordinatorGate.jsx`
 
 **Change:** Create a wrapper component that guards protected routes:
 
@@ -122,7 +170,9 @@ Place before all protected routes.
 //   const { user, loading } = useAuth()
 //   const location = useLocation()
 //
-//   if (loading) return <div>Loading...</div>   // brief flash while Firebase resolves session
+//   if (loading) return <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+//     <div className="text-gray-400">Loading...</div>
+//   </div>
 //   if (!user) return <Navigate to="/login" state={{ from: location.pathname }} replace />
 //   return children
 // }
@@ -132,15 +182,14 @@ Place before all protected routes.
 
 ---
 
-### Task 2.2: Wrap coordinator routes in App.jsx — NOT STARTED
+### Task 2.2: Wrap coordinator routes + CompetitionLayout auth check — NOT STARTED
 
 **File:** `show-controller/src/App.jsx`
 
-**Change:** Wrap all coordinator-facing routes with `<RequireAuth>`. Public routes (`/login`, `/book/:token`,
-`/survey/:year`, `/:compId/talent`) are NOT wrapped.
+**Change:** Wrap all coordinator-facing routes with `<RequireAuth>`. Public routes (`/login`, `/book/:token`, `/survey/:year`) are NOT wrapped.
 
 ```jsx
-// Pattern — wrap each protected route or group:
+// Pattern — wrap each protected route:
 <Route path="/" element={<RequireAuth><HomePage /></RequireAuth>} />
 <Route path="/talent" element={<RequireAuth><TalentPage /></RequireAuth>} />
 // ... repeat for all protected routes (see PRD routes table)
@@ -151,66 +200,139 @@ Place before all protected routes.
 <Route path="/survey/:year" element={<SurveyPage />} />
 ```
 
-**IMPORTANT:** The `/:compId/talent` route (TalentView) is public — talent open this URL without a login.
-All other `/:compId/*` routes (producer, graphics, obs-manager, commentary, rundown, checklist) ARE protected.
-Since these are nested under `/:compId`, wrap the parent `CompetitionLayout` but carve out the `talent` child:
+**File:** `show-controller/src/components/CompetitionLayout.jsx`
+
+**Change:** Add auth check inside CompetitionLayout that skips auth for the `/talent` child path:
 
 ```jsx
-// Wrap CompetitionLayout at the parent level,
-// but the /talent child route must remain public.
-// Simplest approach: wrap individual child routes rather than the parent,
-// OR keep CompetitionLayout unwrapped and add RequireAuth inside it
-// (checking useAuth and redirecting if needed), skipping the check for the talent path.
-// Read CompetitionLayout.jsx before deciding which approach fits better.
+// import { useAuth } from '../context/AuthContext'
+// import { Navigate, useLocation } from 'react-router-dom'
+//
+// Inside CompetitionLayout:
+// const { user, loading } = useAuth()
+// const location = useLocation()
+// const isTalentPath = location.pathname.endsWith('/talent')
+//
+// if (!isTalentPath && !loading && !user) {
+//   return <Navigate to="/login" state={{ from: location.pathname }} replace />
+// }
 ```
+
+This keeps `/:compId/talent` public while protecting all other competition routes (producer, graphics, obs-manager, commentary, rundown, checklist, camera-setup).
 
 **Implements:** All coordinator routes protected, public routes unchanged
 
 ---
 
-## Phase 3: Sign-Out UI
+## Phase 2-Deploy: Deploy Phase 2 Changes
 
-### Task 3.1: Add sign-out button to HomePage — NOT STARTED
+### Task 2-D.1: Build and deploy to production — NOT STARTED
 
-**File:** `show-controller/src/pages/HomePage.jsx`
-
-**Change:** Add a "Sign Out" button to the page header (top-right corner or alongside existing header controls):
-
-```jsx
-// import { useAuth } from '../context/AuthContext'
-// const { user, signOut } = useAuth()
-//
-// Show: small "Sign Out" button and user's email (or just the button)
-// On click: call signOut(), then navigate to '/login'
-// Read HomePage.jsx first to find the right place to insert without disrupting existing layout
+**Frontend changed?** Yes
+```bash
+cd show-controller && npm run build
+# then upload dist per CLAUDE.md Step 1
 ```
 
-**Implements:** Sign-out capability
+### Task 2-D.2: Verify Phase 2 on production — NOT STARTED
+
+**Checks:**
+- [ ] Navigate to `https://commentarygraphic.com/` (unauthenticated) — redirects to `/login`
+- [ ] Take screenshot → `docs/PRD-Auth-Login/screenshots/verify-protected-redirect.png`
+- [ ] Log in with a valid coordinator account — redirects to `/`
+- [ ] Take screenshot → `docs/PRD-Auth-Login/screenshots/verify-login-success.png`
+- [ ] Refresh the page — stays on `/`, does NOT redirect to `/login` (session persists)
+- [ ] Navigate to `https://commentarygraphic.com/book/test-invalid` — loads without login prompt
+- [ ] Take screenshot → `docs/PRD-Auth-Login/screenshots/verify-public-booking.png`
+- [ ] Navigate to `https://commentarygraphic.com/survey/2027` — loads without login prompt
+- [ ] No console errors (`browser_console_messages`)
 
 ---
 
-## Phase 3-Deploy: Build, Deploy, Verify
+## Phase 3: Sign-Out UI
 
-### Task 3-D.1: Build, deploy, and verify auth — NOT STARTED
+> **Deploy rule:** Commit, then deploy in Phase 3-Deploy.
 
-**IMPORTANT: Before deploying, confirm Firebase Auth is enabled and at least one user account exists.**
-If no accounts exist in Firebase Console → Authentication → Users, the app will lock everyone out.
+### Task 3.1: Add sign-out button to RequireAuth wrapper — NOT STARTED
 
-**Frontend changed?** Yes (new files + App.jsx changes)
-```bash
-cd show-controller && npm run build
-# upload dist per CLAUDE.md Step 1
+**File:** `show-controller/src/components/RequireAuth.jsx`
+
+**Change:** Add a floating sign-out button (top-right corner) that appears on every protected page:
+
+```jsx
+// Inside RequireAuth, after the loading/redirect checks, wrap children with a container:
+//
+// return (
+//   <>
+//     <div style={{ position: 'fixed', top: 12, right: 16, zIndex: 9999, display: 'flex', alignItems: 'center', gap: 8 }}>
+//       <span style={{ color: '#9CA3AF', fontSize: 13 }}>{user.email}</span>
+//       <button onClick={handleSignOut} style={signOutButtonStyles}>Sign Out</button>
+//     </div>
+//     {children}
+//   </>
+// )
+//
+// handleSignOut: calls signOut from useAuth, then navigate('/login')
+// Style: subtle, small button that doesn't interfere with page content
+// Use inline styles or Tailwind classes matching the dark theme
 ```
 
-**Server changed?** No — auth is entirely client-side (Firebase Auth SDK)
+**Implements:** Sign-out accessible from every protected page without modifying individual page components
+
+---
+
+## Phase 3-Deploy: Deploy Phase 3 Changes
+
+### Task 3-D.1: Build, deploy, and verify sign-out — NOT STARTED
+
+**Frontend changed?** Yes
+```bash
+cd show-controller && npm run build
+# then upload dist per CLAUDE.md Step 1
+```
 
 **Verify:**
-- [ ] Navigate to `https://commentarygraphic.com/` — redirects to `/login`
-- [ ] Log in with a valid coordinator account — redirects to `/`
-- [ ] Page refresh — stays logged in (session persists)
+- [ ] Navigate to `https://commentarygraphic.com/` — log in if needed
+- [ ] Confirm sign-out button visible in top-right corner with user email
 - [ ] Click "Sign Out" — redirects to `/login`
-- [ ] Navigate to `https://commentarygraphic.com/book/test-invalid` — loads without login prompt
-- [ ] Navigate to `https://commentarygraphic.com/survey/2027` — loads without login prompt
-- [ ] Take screenshot → `docs/PRD-Auth-Login/screenshots/verify-login-page.png`
-- [ ] Take screenshot → `docs/PRD-Auth-Login/screenshots/verify-protected-redirect.png`
-- [ ] Take screenshot → `docs/PRD-Auth-Login/screenshots/verify-public-booking.png`
+- [ ] Take screenshot → `docs/PRD-Auth-Login/screenshots/verify-sign-out.png`
+- [ ] Navigate to a different protected page (e.g. `/talent`) — confirm sign-out button appears there too
+- [ ] No console errors
+
+---
+
+## Final-Deploy: Full Verification
+
+### Task F.1: Full acceptance criteria check — NOT STARTED
+
+Run through every acceptance criterion in the PRD using Playwright.
+Screenshots: `docs/PRD-Auth-Login/screenshots/final-verify-*.png`
+
+**Checklist:**
+- [ ] Navigating to any coordinator URL while unauthenticated redirects to `/login`
+- [ ] After login, the user is redirected to the page they originally requested (not always `/`)
+- [ ] Session persists on page refresh (Firebase Auth persistence is enabled)
+- [ ] Sign-out button appears on every protected page and clears the session, redirecting to `/login`
+- [ ] `/book/:token` loads without login
+- [ ] `/survey/:year` loads without login
+- [ ] `/:compId/talent` loads without login (talent-facing view)
+- [ ] No console errors on any page
+
+### Task F.2: Mark PRD complete — NOT STARTED
+
+Update `PRD-Auth-Login-2026-03-11.md` status to COMPLETE. Commit.
+
+---
+
+## Estimated Scope
+
+| Phase | Tasks | Complexity | Status |
+|-------|-------|------------|--------|
+| Phase 1 | 3 | Low | NOT STARTED |
+| Phase 1-Deploy | 2 | Low | NOT STARTED |
+| Phase 2 | 2 | Medium | NOT STARTED |
+| Phase 2-Deploy | 2 | Low | NOT STARTED |
+| Phase 3 | 1 | Low | NOT STARTED |
+| Phase 3-Deploy | 1 | Low | NOT STARTED |
+| Final-Deploy | 2 | Low | NOT STARTED |
+| **Total** | **13** | | |
