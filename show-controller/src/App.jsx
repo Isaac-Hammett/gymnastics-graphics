@@ -19,6 +19,7 @@ import ChecklistPage from './pages/ChecklistPage';
 import TalentPage from './pages/TalentPage';
 import TalentProfilePage from './pages/TalentProfilePage';
 import CommentaryPage from './pages/CommentaryPage';
+import BookingPage from './pages/BookingPage';
 
 // Error boundary for catching component errors
 import ErrorBoundary from './components/ErrorBoundary';
@@ -91,6 +92,9 @@ function App() {
         {/* Talent roster — global tool pages */}
         <Route path="/talent" element={<TalentPage />} />
         <Route path="/talent/:talentId" element={<TalentProfilePage />} />
+
+        {/* Public booking page (no auth required) - MUST be before /:compId */}
+        <Route path="/book/:token" element={<BookingPage />} />
 
         {/* Legacy route redirects - redirect to home */}
         <Route path="/producer" element={<Navigate to="/" replace />} />
