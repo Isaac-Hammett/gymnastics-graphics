@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useCompetition } from '../context/CompetitionContext';
 import { useCommentaryStaff, getStaffStatusLabel, getStaffStatusColor, getRoleLabel, STAFF_STATUS } from '../hooks/useCommentaryStaff';
 import { useTalentRoster, getStatusLabel, getStatusColor, wagMagLabel } from '../hooks/useTalentRoster';
+import { useCompetitions } from '../hooks/useCompetitions';
 import {
   MagnifyingGlassIcon,
   PhoneIcon,
@@ -42,12 +43,14 @@ export default function CommentaryPage() {
   const { compId, competitionConfig } = useCompetition();
   const { staffList, loading: staffLoading, assignTalent, updateStatus, updateNotes, removeAssignment } = useCommentaryStaff(compId);
   const { talentList, loading: talentLoading } = useTalentRoster();
+  const { competitions, loading: competitionsLoading } = useCompetitions();
 
   const gender = competitionConfig?.gender || 'womens';
   const [search, setSearch] = useState('');
   const [activeRole, setActiveRole] = useState('pbp');
   const [editingNotes, setEditingNotes] = useState(null);
   const [notesDraft, setNotesDraft] = useState('');
+  const [talentTab, setTalentTab] = useState('search'); // 'search' or 'available'
 
   // Outreach modals
   const [briefingModalOpen, setBriefingModalOpen] = useState(null); // talentId when open
@@ -61,7 +64,28 @@ export default function CommentaryPage() {
   const targetWagMag = gender === 'mens' ? 'MAG' : 'WAG';
   const assignedIds = new Set(staffList.map(s => s.talentId));
 
-  const availableTalent = talentList.filter(t => {
+  // Get this competition's date for same-day conflict checking
+  const currentMeetDate = competitionConfig?.meetDate;
+
+  // Build a set of talent IDs who have same-day conflicts
+  const sameDayConflicts = new Set();
+  if (currentMeetDate && competitions) {
+    Object.entries(competitions).forEach(([otherCompId, otherComp]) => {
+      if (otherCompId === compId) return; // Skip current competition
+      if (otherComp?.config?.meetDate !== currentMeetDate) return; // Different date
+
+      // Check commentary assignments for this same-day competition
+      const commentary = otherComp.commentary || {};
+      Object.entries(commentary).forEach(([talentId, assignment]) => {
+        if (assignment.status === STAFF_STATUS.CONFIRMED) {
+          sameDayConflicts.add(talentId);
+        }
+      });
+    });
+  }
+
+  // Filter logic for "Search" tab
+  const searchTalent = talentList.filter(t => {
     // Already assigned to this competition
     if (assignedIds.has(t.id)) return false;
     // Must match gender or be "Both"
@@ -73,6 +97,30 @@ export default function CommentaryPage() {
     }
     return true;
   });
+
+  // Filter logic for "Available" tab
+  const availableFilteredTalent = talentList.filter(t => {
+    // Already assigned to this competition
+    if (assignedIds.has(t.id)) return false;
+    // Must match gender or be "Both"
+    if (t.wagMag && t.wagMag !== 'Both' && t.wagMag !== targetWagMag) return false;
+
+    // Must be interested (via booking link "No" flow) OR survey availability
+    const isInterested = t.interested?.[compId] === true;
+    const inSurvey = t.surveyAvailability?.[compId] === true;
+    if (!isInterested && !inSurvey) return false;
+
+    // Must be ready or has-contact status
+    if (t.status !== 'ready' && t.status !== 'has-contact') return false;
+
+    // Must NOT have same-day conflict
+    if (sameDayConflicts.has(t.id)) return false;
+
+    return true;
+  });
+
+  // Use the appropriate list based on active tab
+  const availableTalent = talentTab === 'available' ? availableFilteredTalent : searchTalent;
 
   // Sort: ready first, then has-contact, then others
   const sortedAvailable = [...availableTalent].sort((a, b) => {
@@ -266,6 +314,19 @@ export default function CommentaryPage() {
       setIMessageConfirmOpen(null);
     } catch (e) {
       toast.error('Failed to log message');
+    }
+  }
+
+  async function handleCopyTalentList() {
+    const lines = sortedAvailable
+      .map(t => `${t.name}${t.phone ? ` — ${t.phone}` : ''}`)
+      .join('\n');
+
+    if (lines) {
+      await navigator.clipboard.writeText(lines);
+      toast.success(`Copied ${sortedAvailable.length} talent to clipboard`, { duration: 2000 });
+    } else {
+      toast.error('No available talent to copy');
     }
   }
 
@@ -643,16 +704,55 @@ export default function CommentaryPage() {
                 </button>
               ))}
             </div>
-            <div className="relative">
-              <MagnifyingGlassIcon className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder={`Search ${targetWagMag} talent...`}
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500"
-              />
+            {/* Tab selector: Search / Available */}
+            <div className="flex gap-1.5 mb-3">
+              <button
+                onClick={() => setTalentTab('search')}
+                className={`flex-1 py-1.5 rounded text-xs font-medium transition-colors ${
+                  talentTab === 'search'
+                    ? 'bg-green-600 text-white'
+                    : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                }`}
+              >
+                Search
+              </button>
+              <button
+                onClick={() => setTalentTab('available')}
+                className={`flex-1 py-1.5 rounded text-xs font-medium transition-colors ${
+                  talentTab === 'available'
+                    ? 'bg-green-600 text-white'
+                    : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                }`}
+              >
+                Available
+              </button>
             </div>
+            {talentTab === 'search' && (
+              <div className="relative">
+                <MagnifyingGlassIcon className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder={`Search ${targetWagMag} talent...`}
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+            )}
+            {talentTab === 'available' && (
+              <div>
+                <button
+                  onClick={handleCopyTalentList}
+                  className="w-full flex items-center justify-center gap-2 py-2 bg-teal-700 hover:bg-teal-600 rounded-lg text-xs font-medium text-white transition-colors"
+                >
+                  <ClipboardDocumentIcon className="w-4 h-4" />
+                  Copy talent list ({sortedAvailable.length})
+                </button>
+                <p className="text-xs text-zinc-500 mt-2">
+                  Showing talent who flagged this competition and are ready/have contact, no same-day conflicts
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
