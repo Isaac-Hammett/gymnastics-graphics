@@ -1,0 +1,308 @@
+{
+  "runAt": "2026-03-11T00:55:56.467Z",
+  "dryRun": false,
+  "summary": {
+    "total": 448,
+    "surveyEnriched": 30,
+    "assignmentsAdded": 31,
+    "flagged": 50
+  },
+  "flaggedRows": [
+    {
+      "name": "Baliey Perez",
+      "field": "phone",
+      "value": "phone",
+      "reason": "Malformed phone number"
+    },
+    {
+      "name": "Cassie Hageman",
+      "field": "phone",
+      "value": "Barb said no",
+      "reason": "Malformed phone number"
+    },
+    {
+      "name": "Doctor Sam (Sam Marshall)",
+      "field": "phone",
+      "value": "https://www.samanthamarshallphd.com/",
+      "reason": "Malformed phone number"
+    },
+    {
+      "name": "Janette Doucette",
+      "field": "phone",
+      "value": "W&M Cindy",
+      "reason": "Malformed phone number"
+    },
+    {
+      "name": "Jeff Robinson",
+      "field": "email",
+      "value": "jeffreydalrobinson@gmail.com jeffreydrobinson@aol.com",
+      "reason": "Malformed email"
+    },
+    {
+      "name": "Josh Horwitz",
+      "field": "phone",
+      "value": "Missing",
+      "reason": "Malformed phone number"
+    },
+    {
+      "name": "Stephanie Relova",
+      "field": "phone",
+      "value": "https://www.instagram.com/stephrelova_/",
+      "reason": "Malformed phone number"
+    },
+    {
+      "name": "Yoli Nodarse",
+      "field": "phone",
+      "value": "ll",
+      "reason": "Malformed phone number"
+    },
+    {
+      "name": "madison.lieurance",
+      "reason": "Possible duplicate of \"madison lieurance\" (similarity > 90%)"
+    },
+    {
+      "name": "Will Pearce",
+      "reason": "Possible duplicate of \"will pearse\" (similarity > 90%)"
+    },
+    {
+      "name": "Sara Beck",
+      "field": "phone",
+      "value": "2025",
+      "reason": "Malformed phone number"
+    },
+    {
+      "name": "Sara Beck",
+      "field": "email",
+      "value": "Uneven Parallel Bar",
+      "reason": "Malformed email"
+    },
+    {
+      "name": "Kyla Dickson",
+      "field": "phone",
+      "value": "2025",
+      "reason": "Malformed phone number"
+    },
+    {
+      "name": "Kyla Dickson",
+      "field": "email",
+      "value": "Vault/Balance Beam/Floor Exercise",
+      "reason": "Malformed email"
+    },
+    {
+      "name": "Jordan Halcom",
+      "field": "phone",
+      "value": "2025",
+      "reason": "Malformed phone number"
+    },
+    {
+      "name": "Jordan Halcom",
+      "field": "email",
+      "value": "Uneven Parallel Bars/Balance Beam",
+      "reason": "Malformed email"
+    },
+    {
+      "name": "Abby Mitchell",
+      "field": "phone",
+      "value": "2025",
+      "reason": "Malformed phone number"
+    },
+    {
+      "name": "Abby Mitchell",
+      "field": "email",
+      "value": "Vault/Uneven Parallel Bars",
+      "reason": "Malformed email"
+    },
+    {
+      "name": "Jessica Taylor",
+      "field": "phone",
+      "value": "2025",
+      "reason": "Malformed phone number"
+    },
+    {
+      "name": "Jessica Taylor",
+      "field": "email",
+      "value": "Vault/Floor Exercise",
+      "reason": "Malformed email"
+    },
+    {
+      "name": "Hannah Hautala",
+      "field": "phone",
+      "value": "2024",
+      "reason": "Malformed phone number"
+    },
+    {
+      "name": "Hannah Hautala",
+      "field": "email",
+      "value": "Vault/Balance Beam/Floor Exercise",
+      "reason": "Malformed email"
+    },
+    {
+      "name": "Caelen Lansing",
+      "field": "phone",
+      "value": "2024",
+      "reason": "Malformed phone number"
+    },
+    {
+      "name": "Caelen Lansing",
+      "field": "email",
+      "value": "Vault/Balance Beam/Floor Exercise",
+      "reason": "Malformed email"
+    },
+    {
+      "name": "Claudia Walter",
+      "field": "phone",
+      "value": "2024",
+      "reason": "Malformed phone number"
+    },
+    {
+      "name": "Claudia Walter",
+      "field": "email",
+      "value": "Vault/Uneven Parallel Bars/Floor Exercise",
+      "reason": "Malformed email"
+    },
+    {
+      "name": "Alex Wood",
+      "field": "phone",
+      "value": "2024",
+      "reason": "Malformed phone number"
+    },
+    {
+      "name": "Alex Wood",
+      "field": "email",
+      "value": "All-Around",
+      "reason": "Malformed email"
+    },
+    {
+      "name": "Marisa Zepeda",
+      "field": "phone",
+      "value": "2024",
+      "reason": "Malformed phone number"
+    },
+    {
+      "name": "Marisa Zepeda",
+      "field": "email",
+      "value": "Balance Beam/Floor Exercise",
+      "reason": "Malformed email"
+    },
+    {
+      "name": "Jordyn Faust",
+      "field": "phone",
+      "value": "2023",
+      "reason": "Malformed phone number"
+    },
+    {
+      "name": "Jordyn Faust",
+      "field": "email",
+      "value": "All-Around",
+      "reason": "Malformed email"
+    },
+    {
+      "name": "Kerrie Legault",
+      "field": "phone",
+      "value": "2023",
+      "reason": "Malformed phone number"
+    },
+    {
+      "name": "Kerrie Legault",
+      "field": "email",
+      "value": "Uneven Parallel Bars/Balance Beam",
+      "reason": "Malformed email"
+    },
+    {
+      "name": "Cate Sandvik",
+      "field": "phone",
+      "value": "2023",
+      "reason": "Malformed phone number"
+    },
+    {
+      "name": "Cate Sandvik",
+      "field": "email",
+      "value": "Uneven Parallel Bars/Balance Beam",
+      "reason": "Malformed email"
+    },
+    {
+      "name": "Madi Vanderpool",
+      "field": "phone",
+      "value": "2023",
+      "reason": "Malformed phone number"
+    },
+    {
+      "name": "Madi Vanderpool",
+      "field": "email",
+      "value": "All-Around",
+      "reason": "Malformed email"
+    },
+    {
+      "name": "Emma Grant",
+      "field": "phone",
+      "value": "2022",
+      "reason": "Malformed phone number"
+    },
+    {
+      "name": "Emma Grant",
+      "field": "email",
+      "value": "All-Around",
+      "reason": "Malformed email"
+    },
+    {
+      "name": "Megan Hawkins",
+      "field": "phone",
+      "value": "2022",
+      "reason": "Malformed phone number"
+    },
+    {
+      "name": "Megan Hawkins",
+      "field": "email",
+      "value": "Vault/Balance Beam/Floor Exercise",
+      "reason": "Malformed email"
+    },
+    {
+      "name": "Olivia Opheim",
+      "field": "phone",
+      "value": "2022",
+      "reason": "Malformed phone number"
+    },
+    {
+      "name": "Olivia Opheim",
+      "field": "email",
+      "value": "Vault/Balance Beam/Floor Exercise",
+      "reason": "Malformed email"
+    },
+    {
+      "name": "Jenna Danninger",
+      "field": "phone",
+      "value": "2021",
+      "reason": "Malformed phone number"
+    },
+    {
+      "name": "Jenna Danninger",
+      "field": "email",
+      "value": "Vault/Balance Beam/Floor Exercise",
+      "reason": "Malformed email"
+    },
+    {
+      "name": "Molly Lyngaas",
+      "field": "phone",
+      "value": "2021",
+      "reason": "Malformed phone number"
+    },
+    {
+      "name": "Molly Lyngaas",
+      "field": "email",
+      "value": "Uneven Parallel Bars",
+      "reason": "Malformed email"
+    },
+    {
+      "name": "Alexis Sands",
+      "field": "phone",
+      "value": "2021",
+      "reason": "Malformed phone number"
+    },
+    {
+      "name": "Alexis Sands",
+      "field": "email",
+      "value": "Vault/Balance Beam",
+      "reason": "Malformed email"
+    }
+  ]
+}

@@ -14,7 +14,11 @@ import OBSManager from './pages/OBSManager';
 import RundownEditorPage from './pages/RundownEditorPage';
 import GraphicsManagerPage from './pages/GraphicsManagerPage';
 import ThemeEditorPage from './pages/ThemeEditorPage';
+import BackgroundGeneratorPage from './pages/BackgroundGeneratorPage';
 import ChecklistPage from './pages/ChecklistPage';
+import TalentPage from './pages/TalentPage';
+import TalentProfilePage from './pages/TalentProfilePage';
+import CommentaryPage from './pages/CommentaryPage';
 
 // Error boundary for catching component errors
 import ErrorBoundary from './components/ErrorBoundary';
@@ -72,6 +76,7 @@ function App() {
         <Route path="/media-manager" element={<MediaManagerPage />} />
         <Route path="/graphics-manager" element={<GraphicsManagerPage />} />
         <Route path="/theme-editor" element={<ThemeEditorPage />} />
+        <Route path="/background-generator" element={<BackgroundGeneratorPage />} />
         <Route path="/import" element={<ImportView />} />
 
         {/* Admin routes - use _admin prefix to avoid /:compId catching it */}
@@ -83,10 +88,13 @@ function App() {
         <Route path="/_admin/system-offline" element={<SystemOfflinePage />} />
         <Route path="/_admin/setup-guide" element={<SetupGuidePage />} />
 
+        {/* Talent roster — global tool pages */}
+        <Route path="/talent" element={<TalentPage />} />
+        <Route path="/talent/:talentId" element={<TalentProfilePage />} />
+
         {/* Legacy route redirects - redirect to home */}
         <Route path="/producer" element={<Navigate to="/" replace />} />
         <Route path="/show-producer" element={<Navigate to="/" replace />} />
-        <Route path="/talent" element={<Navigate to="/" replace />} />
         <Route path="/camera-setup" element={<Navigate to="/" replace />} />
 
         {/* Competition-bound routes */}
@@ -100,6 +108,7 @@ function App() {
           <Route path="camera-setup" element={<CameraSetupPage />} />
           <Route path="graphics" element={<ControllerPage />} />
           <Route path="obs-manager" element={<OBSManager />} />
+          <Route path="commentary" element={<CommentaryPage />} />
           <Route path="rundown" element={<RundownEditorPage />} />
           <Route path="checklist" element={
             <ErrorBoundary>

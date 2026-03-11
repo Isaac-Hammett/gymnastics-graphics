@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { db, ref, onValue } from '../lib/firebase';
 import { SERVER_URL } from '../lib/serverUrl';
+import SponsorAdjustControls from '../components/SponsorAdjustControls';
+import { buildSponsorsCycleURL } from '../lib/urlBuilder';
 
 /**
  * Theme Editor Page
@@ -17,64 +19,56 @@ const PRESET_THEMES = {
     name: 'Pink Meet',
     description: 'Breast cancer awareness fundraiser',
     colors: {
-      accentPrimary: '#E91E8C',
-      accentSecondary: '#FFB6D9',
-      headerBg: '#E91E8C',
-      headerText: '#FFFFFF',
-      footerBg: '#E91E8C',
-      borderColor: '#E91E8C',
-      badgeBg: '#E91E8C',
+      headerBar: '#E91E8C',
+      contentArea: '#000000',
+      bodyBackground: '#1a0a12',
+      borderDivider: '#E91E8C',
+      badge: '#E91E8C',
       badgeText: '#FFFFFF',
-      overlayBg: '#1a0a12',
-      overlayText: '#FFFFFF',
+      textOnHeader: '#FFFFFF',
+      textOnContent: '#FFFFFF',
     },
   },
   'military-appreciation': {
     name: 'Military Appreciation',
     description: 'Military appreciation night',
     colors: {
-      accentPrimary: '#4A5C3E',
-      accentSecondary: '#C5A55A',
-      headerBg: '#4A5C3E',
-      headerText: '#FFFFFF',
-      footerBg: '#4A5C3E',
-      borderColor: '#C5A55A',
-      badgeBg: '#C5A55A',
+      headerBar: '#4A5C3E',
+      contentArea: '#000000',
+      bodyBackground: '#1a1f17',
+      borderDivider: '#C5A55A',
+      badge: '#C5A55A',
       badgeText: '#1a1a1a',
-      overlayBg: '#1a1f17',
-      overlayText: '#FFFFFF',
+      textOnHeader: '#FFFFFF',
+      textOnContent: '#FFFFFF',
     },
   },
   'senior-night': {
     name: 'Senior Night',
     description: 'Senior recognition ceremony',
     colors: {
-      accentPrimary: '#FFD700',
-      accentSecondary: '#1a1a1a',
-      headerBg: '#FFD700',
-      headerText: '#1a1a1a',
-      footerBg: '#1a1a1a',
-      borderColor: '#FFD700',
-      badgeBg: '#FFD700',
+      headerBar: '#FFD700',
+      contentArea: '#1a1a1a',
+      bodyBackground: '#1a1a1a',
+      borderDivider: '#FFD700',
+      badge: '#FFD700',
       badgeText: '#1a1a1a',
-      overlayBg: '#1a1a1a',
-      overlayText: '#FFD700',
+      textOnHeader: '#1a1a1a',
+      textOnContent: '#FFD700',
     },
   },
   'blackout': {
     name: 'Blackout',
     description: 'Blackout theme events',
     colors: {
-      accentPrimary: '#000000',
-      accentSecondary: '#00FF88',
-      headerBg: '#000000',
-      headerText: '#00FF88',
-      footerBg: '#000000',
-      borderColor: '#00FF88',
-      badgeBg: '#00FF88',
+      headerBar: '#000000',
+      contentArea: '#000000',
+      bodyBackground: '#000000',
+      borderDivider: '#00FF88',
+      badge: '#00FF88',
       badgeText: '#000000',
-      overlayBg: '#000000',
-      overlayText: '#00FF88',
+      textOnHeader: '#00FF88',
+      textOnContent: '#00FF88',
     },
   },
 };
@@ -84,16 +78,14 @@ const DEFAULT_THEME = {
   name: '',
   description: '',
   colors: {
-    accentPrimary: '#E91E8C',
-    accentSecondary: '#FFB6D9',
-    headerBg: '#E91E8C',
-    headerText: '#FFFFFF',
-    footerBg: '#E91E8C',
-    borderColor: '#E91E8C',
-    badgeBg: '#E91E8C',
+    headerBar: '#E91E8C',
+    contentArea: '#000000',
+    bodyBackground: '#1a0a12',
+    borderDivider: '#E91E8C',
+    badge: '#E91E8C',
     badgeText: '#FFFFFF',
-    overlayBg: '#1a0a12',
-    overlayText: '#FFFFFF',
+    textOnHeader: '#FFFFFF',
+    textOnContent: '#FFFFFF',
   },
   logos: {
     meetLogo: '',
@@ -196,16 +188,14 @@ function darkenColor(hex, factor = 0.2) {
 
 // Color property labels for display
 const COLOR_LABELS = {
-  accentPrimary: 'Primary Accent',
-  accentSecondary: 'Secondary Accent',
-  headerBg: 'Header Background',
-  headerText: 'Header Text',
-  footerBg: 'Footer Background',
-  borderColor: 'Border Color',
-  badgeBg: 'Badge Background',
+  headerBar: 'Header Bar',
+  contentArea: 'Content Area',
+  bodyBackground: 'Body Background',
+  borderDivider: 'Border / Divider',
+  badge: 'Badge',
   badgeText: 'Badge Text',
-  overlayBg: 'Overlay Background',
-  overlayText: 'Overlay Text',
+  textOnHeader: 'Text on Header',
+  textOnContent: 'Text on Content',
 };
 
 export default function ThemeEditorPage() {
@@ -225,6 +215,35 @@ export default function ThemeEditorPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [extracting, setExtracting] = useState(false);
   const [extractError, setExtractError] = useState(null);
+
+  // Sponsor adjustment state
+  const [selectedSponsorIndex, setSelectedSponsorIndex] = useState(-1);
+  const [showSponsorBounds, setShowSponsorBounds] = useState(false);
+  const [showSponsorCropControls, setShowSponsorCropControls] = useState(false);
+  const [showSponsorGuides, setShowSponsorGuides] = useState(false);
+  const [sponsorPreviewExpanded, setSponsorPreviewExpanded] = useState(false);
+
+  // Preview URL for sponsor cycle when adjusting sponsors
+  const sponsorPreviewUrl = useMemo(() => {
+    const sponsors = editingTheme.sponsors || [];
+    if (sponsors.length === 0) return null;
+    const sponsorsJson = JSON.stringify(sponsors.slice(0, 8).map(s => ({
+      name: s.name, url: s.url,
+      ...(s.scale && s.scale !== 100 ? { scale: s.scale } : {}),
+      ...(s.offsetX ? { offsetX: s.offsetX } : {}),
+      ...(s.offsetY ? { offsetY: s.offsetY } : {}),
+      ...(s.cropX != null ? { cropX: s.cropX } : {}),
+      ...(s.cropY != null ? { cropY: s.cropY } : {}),
+      ...(s.cropW != null ? { cropW: s.cropW } : {}),
+      ...(s.cropH != null ? { cropH: s.cropH } : {}),
+    })));
+    return buildSponsorsCycleURL({
+      sponsorsJson,
+      lockedIndex: selectedSponsorIndex >= 0 ? selectedSponsorIndex : undefined,
+      showBounds: showSponsorBounds || undefined,
+      showGuides: showSponsorGuides || undefined,
+    });
+  }, [editingTheme.sponsors, selectedSponsorIndex, showSponsorBounds, showSponsorGuides]);
 
   // Subscribe to themes from Firebase
   useEffect(() => {
@@ -327,16 +346,14 @@ export default function ThemeEditorPage() {
       setEditingTheme(prev => ({
         ...prev,
         colors: {
-          accentPrimary: primary,
-          accentSecondary: secondary,
-          headerBg: primary,
-          headerText: primaryText,
-          footerBg: primary,
-          borderColor: primary,
-          badgeBg: primary,
+          headerBar: primary,
+          contentArea: '#000000',
+          bodyBackground: darkenColor(primary),
+          borderDivider: primary,
+          badge: primary,
           badgeText: primaryText,
-          overlayBg: darkenColor(primary),
-          overlayText: '#FFFFFF',
+          textOnHeader: primaryText,
+          textOnContent: '#FFFFFF',
         },
       }));
       setIsDirty(true);
@@ -549,7 +566,7 @@ export default function ThemeEditorPage() {
                   >
                     <div
                       className="w-6 h-6 rounded"
-                      style={{ background: preset.colors.accentPrimary }}
+                      style={{ background: preset.colors.headerBar }}
                     />
                     <div>
                       <div className="font-medium text-zinc-300">{preset.name}</div>
@@ -728,52 +745,52 @@ export default function ThemeEditorPage() {
                 Event sponsors appear in sponsor graphics when this theme is active. Falls back to team sponsors if none are defined.
               </p>
 
-              <div className="space-y-3">
+              {/* Sponsor name/URL entry list */}
+              <div className="space-y-2 mb-3">
                 {(editingTheme.sponsors || []).map((sponsor, index) => (
-                  <div key={index} className="flex items-start gap-2 p-3 bg-zinc-800 rounded-lg">
-                    <div className="flex-1 space-y-2">
-                      <input
-                        type="text"
-                        value={sponsor.name || ''}
-                        onChange={(e) => {
-                          const newSponsors = [...(editingTheme.sponsors || [])];
-                          newSponsors[index] = { ...newSponsors[index], name: e.target.value };
-                          setEditingTheme({ ...editingTheme, sponsors: newSponsors });
-                          setIsDirty(true);
-                        }}
-                        placeholder="Sponsor name"
-                        className="w-full px-3 py-2 bg-zinc-700 border border-zinc-600 rounded-lg text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-blue-500"
+                  <div key={index} className="flex items-center gap-2 p-2 bg-zinc-800 rounded-lg">
+                    <span className="text-xs text-zinc-500 font-mono w-5 text-center flex-shrink-0">{index + 1}</span>
+                    <input
+                      type="text"
+                      value={sponsor.name || ''}
+                      onChange={(e) => {
+                        const newSponsors = [...(editingTheme.sponsors || [])];
+                        newSponsors[index] = { ...newSponsors[index], name: e.target.value };
+                        setEditingTheme({ ...editingTheme, sponsors: newSponsors });
+                        setIsDirty(true);
+                      }}
+                      placeholder="Name"
+                      className="w-28 px-2 py-1.5 bg-zinc-700 border border-zinc-600 rounded text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-blue-500"
+                    />
+                    <input
+                      type="text"
+                      value={sponsor.url || ''}
+                      onChange={(e) => {
+                        const newSponsors = [...(editingTheme.sponsors || [])];
+                        newSponsors[index] = { ...newSponsors[index], url: e.target.value };
+                        setEditingTheme({ ...editingTheme, sponsors: newSponsors });
+                        setIsDirty(true);
+                      }}
+                      placeholder="Logo URL (https://...)"
+                      className="flex-1 px-2 py-1.5 bg-zinc-700 border border-zinc-600 rounded text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-blue-500"
+                    />
+                    {sponsor.url && (
+                      <img
+                        src={sponsor.url}
+                        alt={sponsor.name || 'Sponsor'}
+                        className="w-8 h-8 object-contain bg-white rounded flex-shrink-0"
+                        onError={(e) => e.target.style.display = 'none'}
                       />
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={sponsor.url || ''}
-                          onChange={(e) => {
-                            const newSponsors = [...(editingTheme.sponsors || [])];
-                            newSponsors[index] = { ...newSponsors[index], url: e.target.value };
-                            setEditingTheme({ ...editingTheme, sponsors: newSponsors });
-                            setIsDirty(true);
-                          }}
-                          placeholder="Logo URL (https://...)"
-                          className="flex-1 px-3 py-2 bg-zinc-700 border border-zinc-600 rounded-lg text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-blue-500"
-                        />
-                        {sponsor.url && (
-                          <img
-                            src={sponsor.url}
-                            alt={sponsor.name || 'Sponsor'}
-                            className="w-10 h-10 object-contain bg-white rounded"
-                            onError={(e) => e.target.style.display = 'none'}
-                          />
-                        )}
-                      </div>
-                    </div>
+                    )}
                     <button
                       onClick={() => {
                         const newSponsors = (editingTheme.sponsors || []).filter((_, i) => i !== index);
                         setEditingTheme({ ...editingTheme, sponsors: newSponsors });
                         setIsDirty(true);
+                        if (selectedSponsorIndex === index) setSelectedSponsorIndex(-1);
+                        else if (selectedSponsorIndex > index) setSelectedSponsorIndex(prev => prev - 1);
                       }}
-                      className="p-2 text-red-400 hover:text-red-300 hover:bg-zinc-700 rounded transition-colors"
+                      className="p-1 text-red-400 hover:text-red-300 hover:bg-zinc-700 rounded transition-colors flex-shrink-0"
                       title="Remove sponsor"
                     >
                       ✕
@@ -794,6 +811,120 @@ export default function ThemeEditorPage() {
                   </button>
                 )}
               </div>
+
+              {/* Sponsor adjustment controls (scale, offset, crop, bounds) */}
+              {(editingTheme.sponsors || []).length > 0 && (
+                <>
+                  <SponsorAdjustControls
+                    sponsors={editingTheme.sponsors || []}
+                    getOverride={(index) => {
+                      const s = (editingTheme.sponsors || [])[index] || {};
+                      return {
+                        scale: s.scale ?? 100,
+                        offsetX: s.offsetX ?? 0,
+                        offsetY: s.offsetY ?? 0,
+                        cropX: s.cropX ?? null,
+                        cropY: s.cropY ?? null,
+                        cropW: s.cropW ?? null,
+                        cropH: s.cropH ?? null,
+                      };
+                    }}
+                    onUpdate={(index, field, value) => {
+                      const newSponsors = [...(editingTheme.sponsors || [])];
+                      newSponsors[index] = { ...newSponsors[index], [field]: value };
+                      setEditingTheme({ ...editingTheme, sponsors: newSponsors });
+                      setIsDirty(true);
+                    }}
+                    selectedIndex={selectedSponsorIndex}
+                    onSelectIndex={setSelectedSponsorIndex}
+                    showBounds={showSponsorBounds}
+                    onToggleBounds={() => setShowSponsorBounds(prev => !prev)}
+                    showGuides={showSponsorGuides}
+                    onToggleGuides={() => setShowSponsorGuides(prev => !prev)}
+                  />
+
+                  {/* Live sponsor preview - expandable */}
+                  {sponsorPreviewUrl && !sponsorPreviewExpanded && (
+                    <div className="mt-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Sponsor Preview</h3>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setSponsorPreviewExpanded(true)}
+                            className="text-[10px] text-blue-400 hover:text-blue-300 transition-colors"
+                          >
+                            Expand
+                          </button>
+                          <button
+                            onClick={() => window.open(sponsorPreviewUrl, '_blank')}
+                            className="text-[10px] text-zinc-400 hover:text-zinc-300 transition-colors"
+                          >
+                            Open Full Size
+                          </button>
+                        </div>
+                      </div>
+                      <div className="relative bg-zinc-800 rounded-lg overflow-hidden border border-zinc-700" style={{ height: Math.round(1080 * 0.3) + 'px' }}>
+                        <iframe
+                          src={sponsorPreviewUrl}
+                          className="w-[1920px] h-[1080px] origin-top-left"
+                          style={{ border: 'none', transform: 'scale(0.3)' }}
+                          title="Sponsor Preview"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Expanded sponsor preview - fullscreen overlay */}
+                  {sponsorPreviewUrl && sponsorPreviewExpanded && (
+                    <div className="fixed inset-0 z-50 bg-black/90 flex flex-col">
+                      <div className="flex items-center justify-between px-4 py-2 bg-zinc-900 border-b border-zinc-700">
+                        <h3 className="text-sm font-semibold text-zinc-300">Sponsor Preview</h3>
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => window.open(sponsorPreviewUrl, '_blank')}
+                            className="text-xs text-zinc-400 hover:text-zinc-300 transition-colors"
+                          >
+                            Open Full Size
+                          </button>
+                          <button
+                            onClick={() => setSponsorPreviewExpanded(false)}
+                            className="px-3 py-1 text-xs bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded transition-colors"
+                          >
+                            Close
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex-1 flex items-center justify-center overflow-hidden p-4">
+                        <div className="relative" style={{ width: '100%', maxWidth: '1440px', aspectRatio: '16/9' }}>
+                          <iframe
+                            src={sponsorPreviewUrl}
+                            className="w-[1920px] h-[1080px] origin-top-left absolute top-0 left-0"
+                            style={{ border: 'none', transform: 'scale(var(--preview-scale))', '--preview-scale': 'calc(min(100cqw / 1920, 100cqh / 1080))' }}
+                            title="Sponsor Preview"
+                            ref={(el) => {
+                              if (el) {
+                                const resize = () => {
+                                  const parent = el.parentElement;
+                                  if (!parent) return;
+                                  const scaleX = parent.clientWidth / 1920;
+                                  const scaleY = parent.clientHeight / 1080;
+                                  const s = Math.min(scaleX, scaleY);
+                                  el.style.transform = `scale(${s})`;
+                                  el.style.width = '1920px';
+                                  el.style.height = '1080px';
+                                };
+                                resize();
+                                window.addEventListener('resize', resize);
+                                el._cleanup = () => window.removeEventListener('resize', resize);
+                              }
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
 
             {/* Delete Button */}
@@ -834,12 +965,12 @@ export default function ThemeEditorPage() {
               <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide mb-4">Live Preview</h2>
 
               {/* Color Preview Swatches */}
-              <div className="mb-4 p-4 rounded-lg" style={{ background: editingTheme.colors.overlayBg }}>
+              <div className="mb-4 p-4 rounded-lg" style={{ background: editingTheme.colors.bodyBackground }}>
                 <div
                   className="p-3 rounded mb-2"
                   style={{
-                    background: editingTheme.colors.headerBg,
-                    color: editingTheme.colors.headerText,
+                    background: editingTheme.colors.headerBar,
+                    color: editingTheme.colors.textOnHeader,
                   }}
                 >
                   <div className="text-sm font-bold">Header Preview</div>
@@ -849,7 +980,7 @@ export default function ThemeEditorPage() {
                   <div
                     className="px-3 py-1 rounded text-sm font-medium"
                     style={{
-                      background: editingTheme.colors.badgeBg,
+                      background: editingTheme.colors.badge,
                       color: editingTheme.colors.badgeText,
                     }}
                   >
@@ -858,23 +989,23 @@ export default function ThemeEditorPage() {
                   <div
                     className="px-3 py-1 rounded text-sm"
                     style={{
-                      background: editingTheme.colors.accentSecondary,
-                      color: editingTheme.colors.headerText,
+                      background: editingTheme.colors.contentArea,
+                      color: editingTheme.colors.textOnContent,
                     }}
                   >
-                    Accent
+                    Content
                   </div>
                 </div>
 
                 <div
                   className="p-3 rounded border-t-4"
                   style={{
-                    background: editingTheme.colors.footerBg,
-                    borderColor: editingTheme.colors.borderColor,
-                    color: editingTheme.colors.overlayText,
+                    background: editingTheme.colors.bodyBackground,
+                    borderColor: editingTheme.colors.borderDivider,
+                    color: editingTheme.colors.textOnContent,
                   }}
                 >
-                  <div className="text-sm">Footer with border</div>
+                  <div className="text-sm">Body with border</div>
                 </div>
               </div>
 

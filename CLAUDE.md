@@ -114,7 +114,7 @@ tar -czf /tmp/claude/overlays.tar.gz overlays/
 # target: 3.87.107.201
 
 # Extract overlays (ssh_exec) - IMPORTANT: Fix permissions after extract!
-# command: cd /var/www/commentarygraphic && tar -xzf /tmp/overlays.tar.gz && find /var/www/commentarygraphic -name '._*' -delete && chmod 644 /var/www/commentarygraphic/overlays/*.html
+# command: cd /var/www/commentarygraphic && tar -xzf /tmp/overlays.tar.gz && find /var/www/commentarygraphic -name '._*' -delete && chmod 644 /var/www/commentarygraphic/overlays/*
 ```
 
 **Why this matters:** Without these files, the URL Generator preview will be blank and OBS browser sources won't work. The React SPA will incorrectly intercept requests to `/output.html` and `/overlays/*`.
@@ -137,11 +137,49 @@ tar -czf /tmp/claude/overlays.tar.gz overlays/
 - [ ] React SPA deployed (`show-controller/dist/`)
 - [ ] `output.html` deployed (from project root)
 - [ ] `overlays/` directory deployed (from project root)
-- [ ] Overlay file permissions set to 644 (`chmod 644 overlays/*.html`)
+- [ ] Overlay file permissions set to 644 (`chmod 644 overlays/*`)
 - [ ] No console errors on main site
 - [ ] URL Generator preview works (including sponsor graphics)
 
 **Note:** SSL auto-renews via Certbot. Certificate expires 2026-04-17.
+
+---
+
+## Meet Theme System - IMPORTANT (Dual CSS Locations)
+
+**Theme CSS lives in TWO places that must stay in sync:**
+
+| Location | Used By | Scope |
+|----------|---------|-------|
+| `overlays/theme-overrides.css` | All overlay HTML files (`overlays/*.html`) | Loaded dynamically by `theme-loader.js` |
+| `output.html` (inline `<style>`) | Producer view, URL Generator preview | Search for "MEET THEME OVERRIDES" section |
+
+**Why two places?** The overlay HTML files load `theme-overrides.css` via `theme-loader.js`. But `output.html` is a standalone page with its own inline styles — it does NOT load `theme-overrides.css`.
+
+**When making theme CSS changes, you MUST update BOTH locations.** If you only update `theme-overrides.css`, the overlays will look correct but the producer view and URL generator will not reflect the changes.
+
+### Key class name differences
+
+| Overlay class | output.html class | Used in |
+|---------------|-------------------|---------|
+| `.logo-section` | `.event-bar-logo` | Event bar logo container |
+| `.logo-section` | `.warm-up-logo-section` | Warm-up logo container |
+| `.logo-section` | `.replay-logo-section` | Replay logo container |
+
+### Logo Contrast Fix
+When a theme is active, logo containers get a white background (`rgba(255,255,255,0.92)`) so the logo pops against theme colors. The logo image itself is set to `background: transparent` to avoid box-in-box effect.
+
+### Theme CSS Variables
+```
+--meet-header-bg    : Header bar background
+--meet-content-bg   : Content area background (below header)
+--meet-header-text  : Header bar text
+--meet-overlay-bg   : Full-screen / body background
+--meet-overlay-text : Content/body text
+--meet-border-color : Borders and dividers
+--meet-badge-bg     : Badges/labels background
+--meet-badge-text   : Badges/labels text
+```
 
 ---
 
@@ -193,7 +231,26 @@ pm2 save
 |---------|-------|-----|
 | PM2 crash-looping (high restart count) | Port 3003 already in use | `sudo fuser -k 3003/tcp` then restart PM2 |
 | "Load Rundown" stuck on loading | Firebase credentials not set | Restart with `GOOGLE_APPLICATION_CREDENTIALS` env var |
+| "Load Rundown" stuck on loading (credentials OK) | OBS VM unreachable, blocking socket handler registration | See BUG-021 — never `await` slow ops in `io.on('connection')` before registering `socket.on()` handlers |
 | Socket disconnects | PM2 process crashed | Check `pm2 logs`, restart if needed |
+
+### Socket.io Connection Handler — IMPORTANT
+
+**Never `await` slow or external operations inside `io.on('connection', async (socket) => { ... })` before registering `socket.on(...)` event handlers.** Any `await` that can timeout (OBS connections, external APIs) creates a window where client events are silently dropped because the handlers don't exist yet. The client sees "Connected" but events go nowhere.
+
+**Pattern to follow:**
+```javascript
+io.on('connection', async (socket) => {
+  // 1. Register ALL socket.on() handlers FIRST (synchronous)
+  socket.on('loadRundown', handler);
+  socket.on('startShow', handler);
+
+  // 2. THEN do async initialization (fire-and-forget)
+  someSlowOperation().then(...).catch(...);
+});
+```
+
+**See:** [BUG-021](docs/PRD-Rundown-System/BUGS.md#bug-021) for the full incident report.
 
 ### Verify Coordinator is Working
 ```bash

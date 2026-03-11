@@ -1,10 +1,43 @@
 # PRD-Graphics-Registry: Schema-Driven Graphics System
 
-**Version:** 1.2
-**Date:** 2026-02-13
+**Version:** 1.4
+**Date:** 2026-03-08
 **Status:** COMPLETE
 **Depends On:** None (Foundation)
 **Blocks:** PRD-Rundown-04-Pickers, URL Generator improvements
+
+---
+
+## Recent Updates (v1.4 - 2026-03-08)
+
+### Event Calendar Visual Editor & Save Fix
+- **Visual event editor** — replaced raw JSON textarea with a user-friendly form: individual Date, Name, and Location fields per event, with add/remove/reorder controls
+- **JSON toggle** — "Edit as JSON" link switches to the raw JSON textarea for power users who want to paste bulk data; both modes read/write the same `calendarEvents` field seamlessly
+- **Save bug fix** — `calendarTitle`, `calendarEvents`, and `calendarColumns` were not loaded from Firebase when config was fetched, causing saved values to be overwritten with defaults on page reload. Added these fields to the `useEffect` config loader.
+
+### Files Modified
+- `show-controller/src/pages/UrlGeneratorPage.jsx` — Added visual event editor with per-event cards (date/name/location inputs, reorder arrows, remove button), "+ Add Event" button, "Edit as JSON" toggle, and fixed config loading to include calendar fields
+
+---
+
+## Recent Updates (v1.3 - 2026-03-08)
+
+### Sponsor Logo Manual Overrides
+- **Per-sponsor adjustment controls** for fine-tuning logo display in both the Theme Editor (persistent) and URL Generator (session-level)
+- Each sponsor entry now supports optional `scale`, `offsetX`, and `offsetY` fields
+- **Scale** (50%–200%, default 100%) — multiplier applied on top of auto-trim sizing
+- **X Offset** (-200px to +200px, default 0) — horizontal nudge from center
+- **Y Offset** (-200px to +200px, default 0) — vertical nudge from center
+- Overrides are stored in Firebase at `themes/{themeId}/sponsors[]` alongside existing `name` and `url` fields
+- Applied in both `sponsors-cycle.html` (cycling view) and `sponsors-thanks.html` (grid view)
+- **URL Generator** shows a "Sponsor Logo Adjustments" panel when any sponsor graphic is selected, allowing live per-session tweaks that update the preview immediately without saving to the theme
+- URL Generator serialization merges session overrides on top of theme defaults
+
+### Files Modified
+- `show-controller/src/pages/ThemeEditorPage.jsx` — Added 3 compact sliders (scale, X, Y) per sponsor entry (persistent, saves to Firebase)
+- `show-controller/src/pages/UrlGeneratorPage.jsx` — Added session-level sponsor override panel with sliders; merges local overrides into URL generation
+- `overlays/sponsors-cycle.html` — Added `applyOverrides()` function; applies scale via CSS width/height and offset via CSS transform
+- `overlays/sponsors-thanks.html` — Applies scale and offset via CSS transform on `.sponsor-item` elements
 
 ---
 
@@ -393,7 +426,7 @@ Generates URL from graphic definition and params:
 - **pre-meet:** logos, event-bar, warm-up, hosts, team{1-6}-stats, team{1-6}-coaches
 - **in-meet:** replay
 - **event-frames:** floor, pommel, rings, vault, pbars, hbar, ubars, beam, allaround, final, order, lineups, summary
-- **frame-overlays:** frame-quad, frame-tri-center, frame-tri-wide, frame-team-header, frame-single, frame-dual
+- **frame-overlays:** frame-quad, frame-tri-center, frame-tri-wide, frame-tri-wide-top, frame-team-header, frame-single, frame-dual
 - **leaderboards:** leaderboard-{fx,ph,sr,vt,pb,hb,ub,bb,aa}
 - **event-summary:** summary-r{1-6}, summary-{fx,ph,sr,vt,pb,hb,ub,bb}
 - **stream:** stream-starting, stream-thanks

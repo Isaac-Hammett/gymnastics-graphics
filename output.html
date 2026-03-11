@@ -1189,7 +1189,10 @@
 
     /* Event bar overrides */
     [data-meet-theme] .event-bar-logo {
-      background: var(--meet-header-bg, #BFBFBF);
+      background: rgba(255, 255, 255, 0.92);
+    }
+    [data-meet-theme] .event-bar-logo img {
+      background: transparent;
     }
     [data-meet-theme] .event-bar-venue {
       background: var(--meet-header-bg, #BFBFBF);
@@ -1205,7 +1208,10 @@
 
     /* Warm-up overrides */
     [data-meet-theme] .warm-up-logo-section {
-      background: var(--meet-header-bg, #BFBFBF);
+      background: rgba(255, 255, 255, 0.92);
+    }
+    [data-meet-theme] .warm-up-logo-section img {
+      background: transparent;
     }
     [data-meet-theme] .warm-up-teams-row {
       background: var(--meet-header-bg, #BFBFBF);
@@ -1236,7 +1242,10 @@
 
     /* Replay overrides */
     [data-meet-theme] .replay-logo-section {
-      background: var(--meet-header-bg, #BFBFBF);
+      background: rgba(255, 255, 255, 0.92);
+    }
+    [data-meet-theme] .replay-logo-section img {
+      background: transparent;
     }
     [data-meet-theme] .replay-title-row {
       background: var(--meet-header-bg, #BFBFBF);
@@ -5040,8 +5049,8 @@
 
     .event-summary-v24 .team-column {
       background: var(--meet-overlay-bg, #18181b);
-      display: flex;
-      flex-direction: column;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
       height: 100%;
       overflow: hidden;
     }
@@ -5049,14 +5058,17 @@
     .event-summary-v24 .team-header {
       display: flex;
       align-items: center;
-      padding: 16px 18px;
+      padding: 10px 10px;
       background: var(--meet-header-bg, #27272a);
-      gap: 16px;
+      gap: 8px;
+      height: 80px;
+      box-sizing: border-box;
+      overflow: hidden;
     }
 
     .event-summary-v24 .team-logo {
-      width: 60px;
-      height: 60px;
+      width: 50px;
+      height: 50px;
       object-fit: contain;
       flex-shrink: 0;
     }
@@ -5064,10 +5076,11 @@
     .event-summary-v24 .header-left {
       flex: 1;
       min-width: 0;
+      overflow: hidden;
     }
 
     .event-summary-v24 .team-name {
-      font-size: 30px;
+      font-size: 26px;
       font-weight: 700;
       color: var(--meet-header-text, #fff);
       white-space: nowrap;
@@ -5076,25 +5089,29 @@
     }
 
     .event-summary-v24 .event-name {
-      font-size: 20px;
-      color: var(--meet-header-bg, #a1a1aa);
+      font-size: 16px;
+      color: var(--meet-header-text, #a1a1aa);
       text-transform: uppercase;
       letter-spacing: 0.5px;
+      opacity: 0.7;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .event-summary-v24 .header-right {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 8px;
       flex-shrink: 0;
     }
 
     .event-summary-v24 .rank-badge {
-      font-size: 20px;
+      font-size: 16px;
       font-weight: 700;
       color: var(--meet-badge-text, #fff);
       background: var(--meet-badge-bg, #52525b);
-      padding: 8px 16px;
+      padding: 6px 10px;
       border-radius: 4px;
     }
 
@@ -5104,9 +5121,10 @@
     .event-summary-v24 .rank-badge.rank-3 { background: var(--meet-border-color, #b45309); }
 
     .event-summary-v24 .header-total {
-      font-size: 36px;
+      font-size: 30px;
       font-weight: 800;
       color: var(--meet-header-text, #fff);
+      white-space: nowrap;
     }
 
     .event-summary-v24 .athlete-list {
@@ -5743,6 +5761,10 @@
       max-width: 200px;
       object-fit: contain;
     }
+    /* Frame overlay logos must stay transparent — no theme background */
+    [data-meet-theme] .graphic-frame-overlay .team-logo {
+      background: transparent !important;
+    }
     .frame-team-header .frame-overlay-container {
       top: 200px;
       display: grid;
@@ -6098,10 +6120,13 @@
     // Get team logo - checks Firebase first, then falls back to API logo
     // Skips placeholder URLs (via.placeholder.com)
     function getTeamLogoUrl(teamName, apiLogo) {
-      // Use API logo if it exists and isn't a placeholder
-      if (apiLogo && !apiLogo.includes('via.placeholder.com')) return apiLogo;
-      if (!teamName) return '';
+      if (!teamName) {
+        // No team name to look up - use API logo if available
+        if (apiLogo && !apiLogo.includes('via.placeholder.com')) return apiLogo;
+        return '';
+      }
 
+      // Check Firebase first (curated logos take priority over API)
       const normalized = teamName.toLowerCase().trim();
       if (firebaseTeamLogos[normalized]) return firebaseTeamLogos[normalized];
 
@@ -6125,6 +6150,9 @@
           return logoUrl;
         }
       }
+
+      // Fall back to API logo if Firebase has nothing
+      if (apiLogo && !apiLogo.includes('via.placeholder.com')) return apiLogo;
 
       console.log(`No logo found for team: "${teamName}" (normalized: "${normalized}", withoutGender: "${withoutGender}")`);
       return '';
@@ -7055,7 +7083,8 @@
     function detectEventFromApiData(team, rotation, gender) {
       // Virtius API includes a 'rotation' field on each event indicating which rotation it was scored in
       // This is the most reliable way to determine team-event assignments
-      const eventForRotation = (team.events || []).find(e => e.rotation === rotation);
+      const rot = parseInt(rotation, 10);
+      const eventForRotation = (team.events || []).find(e => parseInt(e.rotation, 10) === rot);
       if (eventForRotation) {
         return eventForRotation.event_name;
       }
@@ -7164,116 +7193,124 @@
           };
         });
 
+        // For 5+ team competitions, filter out teams on bye (no event this rotation)
+        // This avoids showing empty columns for teams not competing
+        const filteredRotationData = actualNumTeams >= 5
+          ? rotationData.filter(t => t.eventName !== null && t.eventName !== undefined)
+          : rotationData;
+        const displayNumTeams = filteredRotationData.length;
+
         // Render based on meet type and layout
+        // Use filteredRotationData (bye teams removed) and displayNumTeams for column count
         if (isDual) {
           // Check if using a specific layout
           if (layout === 'broadcast-table') {
-            renderBroadcastTableLayout(contentEl, rotationData, rotation);
+            renderBroadcastTableLayout(contentEl, filteredRotationData, rotation);
           } else if (layout === 'classic-broadcast') {
-            renderClassicBroadcastLayout(contentEl, rotationData, rotation);
+            renderClassicBroadcastLayout(contentEl, filteredRotationData, rotation);
           } else if (layout === 'default-v2') {
-            renderDefaultV2Layout(contentEl, rotationData, rotation);
+            renderDefaultV2Layout(contentEl, filteredRotationData, rotation);
           } else if (layout === 'dual-dynamic-v1') {
-            renderDualDynamicV1Layout(contentEl, rotationData, rotation);
+            renderDualDynamicV1Layout(contentEl, filteredRotationData, rotation);
           } else if (layout === 'default-v3') {
-            renderMultiTeamSummaryV3(contentEl, rotationData, rotation, actualNumTeams);
+            renderMultiTeamSummaryV3(contentEl, filteredRotationData, rotation, displayNumTeams);
           } else if (layout === 'default-v4') {
-            renderMultiTeamSummaryV4(contentEl, rotationData, rotation, actualNumTeams);
+            renderMultiTeamSummaryV4(contentEl, filteredRotationData, rotation, displayNumTeams);
           } else if (layout === 'default-v5') {
-            renderMultiTeamSummaryV5(contentEl, rotationData, rotation, actualNumTeams);
+            renderMultiTeamSummaryV5(contentEl, filteredRotationData, rotation, displayNumTeams);
           } else if (layout === 'default-v6') {
-            renderMultiTeamSummaryV6(contentEl, rotationData, rotation, actualNumTeams);
+            renderMultiTeamSummaryV6(contentEl, filteredRotationData, rotation, displayNumTeams);
           } else if (layout === 'default-v7') {
-            renderMultiTeamSummaryV7(contentEl, rotationData, rotation, actualNumTeams);
+            renderMultiTeamSummaryV7(contentEl, filteredRotationData, rotation, displayNumTeams);
           } else if (layout === 'default-v8') {
-            renderMultiTeamSummaryV8(contentEl, rotationData, rotation, actualNumTeams);
+            renderMultiTeamSummaryV8(contentEl, filteredRotationData, rotation, displayNumTeams);
           } else if (layout === 'default-v9') {
-            renderMultiTeamSummaryV9(contentEl, rotationData, rotation, actualNumTeams);
+            renderMultiTeamSummaryV9(contentEl, filteredRotationData, rotation, displayNumTeams);
           } else if (layout === 'default-v10') {
-            renderMultiTeamSummaryV10(contentEl, rotationData, rotation, actualNumTeams);
+            renderMultiTeamSummaryV10(contentEl, filteredRotationData, rotation, displayNumTeams);
           } else if (layout === 'default-v11') {
-            renderMultiTeamSummaryV11(contentEl, rotationData, rotation, actualNumTeams);
+            renderMultiTeamSummaryV11(contentEl, filteredRotationData, rotation, displayNumTeams);
           } else if (layout === 'default-v12') {
-            renderMultiTeamSummaryV12(contentEl, rotationData, rotation, actualNumTeams);
+            renderMultiTeamSummaryV12(contentEl, filteredRotationData, rotation, displayNumTeams);
           } else if (layout === 'default-v13') {
-            renderMultiTeamSummaryV13(contentEl, rotationData, rotation, actualNumTeams);
+            renderMultiTeamSummaryV13(contentEl, filteredRotationData, rotation, displayNumTeams);
           } else if (layout === 'default-v14') {
-            renderMultiTeamSummaryV14(contentEl, rotationData, rotation, actualNumTeams);
+            renderMultiTeamSummaryV14(contentEl, filteredRotationData, rotation, displayNumTeams);
           } else if (layout === 'default-v15') {
-            renderMultiTeamSummaryV15(contentEl, rotationData, rotation, actualNumTeams);
+            renderMultiTeamSummaryV15(contentEl, filteredRotationData, rotation, displayNumTeams);
           } else if (layout === 'default-v16') {
-            renderMultiTeamSummaryV16(contentEl, rotationData, rotation, actualNumTeams);
+            renderMultiTeamSummaryV16(contentEl, filteredRotationData, rotation, displayNumTeams);
           } else if (layout === 'default-v17') {
-            renderMultiTeamSummaryV17(contentEl, rotationData, rotation, actualNumTeams);
+            renderMultiTeamSummaryV17(contentEl, filteredRotationData, rotation, displayNumTeams);
           } else if (layout === 'default-v18') {
-            renderMultiTeamSummaryV18(contentEl, rotationData, rotation, actualNumTeams);
+            renderMultiTeamSummaryV18(contentEl, filteredRotationData, rotation, displayNumTeams);
           } else if (layout === 'default-v19') {
-            renderMultiTeamSummaryV19(contentEl, rotationData, rotation, actualNumTeams);
+            renderMultiTeamSummaryV19(contentEl, filteredRotationData, rotation, displayNumTeams);
           } else if (layout === 'default-v20') {
-            renderMultiTeamSummaryV20(contentEl, rotationData, rotation, actualNumTeams, apparatusRankings);
+            renderMultiTeamSummaryV20(contentEl, filteredRotationData, rotation, displayNumTeams, apparatusRankings);
           } else if (layout === 'default-v21') {
-            renderMultiTeamSummaryV21(contentEl, rotationData, rotation, actualNumTeams, apparatusRankings);
+            renderMultiTeamSummaryV21(contentEl, filteredRotationData, rotation, displayNumTeams, apparatusRankings);
           } else if (layout === 'default-v22') {
-            renderMultiTeamSummaryV22(contentEl, rotationData, rotation, actualNumTeams, apparatusRankings);
+            renderMultiTeamSummaryV22(contentEl, filteredRotationData, rotation, displayNumTeams, apparatusRankings);
           } else if (layout === 'default-v23') {
-            renderMultiTeamSummaryV23(contentEl, rotationData, rotation, actualNumTeams, apparatusRankings);
+            renderMultiTeamSummaryV23(contentEl, filteredRotationData, rotation, displayNumTeams, apparatusRankings);
           } else if (layout === 'default-v24') {
-            renderMultiTeamSummaryV24(contentEl, rotationData, rotation, actualNumTeams, apparatusRankings);
+            renderMultiTeamSummaryV24(contentEl, filteredRotationData, rotation, displayNumTeams, apparatusRankings);
           } else if (layout === 'split-row') {
-            renderMultiTeamSummarySplitRow(contentEl, rotationData, rotation, actualNumTeams, apparatusRankings);
+            renderMultiTeamSummarySplitRow(contentEl, filteredRotationData, rotation, displayNumTeams, apparatusRankings);
           } else {
-            renderDualMeetSummary(contentEl, rotationData, rotation);
+            renderDualMeetSummary(contentEl, filteredRotationData, rotation);
           }
         } else {
           // Multi-team meet (3+ teams)
           if (layout === 'default-v3') {
-            renderMultiTeamSummaryV3(contentEl, rotationData, rotation, actualNumTeams);
+            renderMultiTeamSummaryV3(contentEl, filteredRotationData, rotation, displayNumTeams);
           } else if (layout === 'default-v4') {
-            renderMultiTeamSummaryV4(contentEl, rotationData, rotation, actualNumTeams);
+            renderMultiTeamSummaryV4(contentEl, filteredRotationData, rotation, displayNumTeams);
           } else if (layout === 'default-v5') {
-            renderMultiTeamSummaryV5(contentEl, rotationData, rotation, actualNumTeams);
+            renderMultiTeamSummaryV5(contentEl, filteredRotationData, rotation, displayNumTeams);
           } else if (layout === 'default-v6') {
-            renderMultiTeamSummaryV6(contentEl, rotationData, rotation, actualNumTeams);
+            renderMultiTeamSummaryV6(contentEl, filteredRotationData, rotation, displayNumTeams);
           } else if (layout === 'default-v7') {
-            renderMultiTeamSummaryV7(contentEl, rotationData, rotation, actualNumTeams);
+            renderMultiTeamSummaryV7(contentEl, filteredRotationData, rotation, displayNumTeams);
           } else if (layout === 'default-v8') {
-            renderMultiTeamSummaryV8(contentEl, rotationData, rotation, actualNumTeams);
+            renderMultiTeamSummaryV8(contentEl, filteredRotationData, rotation, displayNumTeams);
           } else if (layout === 'default-v9') {
-            renderMultiTeamSummaryV9(contentEl, rotationData, rotation, actualNumTeams);
+            renderMultiTeamSummaryV9(contentEl, filteredRotationData, rotation, displayNumTeams);
           } else if (layout === 'default-v10') {
-            renderMultiTeamSummaryV10(contentEl, rotationData, rotation, actualNumTeams);
+            renderMultiTeamSummaryV10(contentEl, filteredRotationData, rotation, displayNumTeams);
           } else if (layout === 'default-v11') {
-            renderMultiTeamSummaryV11(contentEl, rotationData, rotation, actualNumTeams);
+            renderMultiTeamSummaryV11(contentEl, filteredRotationData, rotation, displayNumTeams);
           } else if (layout === 'default-v12') {
-            renderMultiTeamSummaryV12(contentEl, rotationData, rotation, actualNumTeams);
+            renderMultiTeamSummaryV12(contentEl, filteredRotationData, rotation, displayNumTeams);
           } else if (layout === 'default-v13') {
-            renderMultiTeamSummaryV13(contentEl, rotationData, rotation, actualNumTeams);
+            renderMultiTeamSummaryV13(contentEl, filteredRotationData, rotation, displayNumTeams);
           } else if (layout === 'default-v14') {
-            renderMultiTeamSummaryV14(contentEl, rotationData, rotation, actualNumTeams);
+            renderMultiTeamSummaryV14(contentEl, filteredRotationData, rotation, displayNumTeams);
           } else if (layout === 'default-v15') {
-            renderMultiTeamSummaryV15(contentEl, rotationData, rotation, actualNumTeams);
+            renderMultiTeamSummaryV15(contentEl, filteredRotationData, rotation, displayNumTeams);
           } else if (layout === 'default-v16') {
-            renderMultiTeamSummaryV16(contentEl, rotationData, rotation, actualNumTeams);
+            renderMultiTeamSummaryV16(contentEl, filteredRotationData, rotation, displayNumTeams);
           } else if (layout === 'default-v17') {
-            renderMultiTeamSummaryV17(contentEl, rotationData, rotation, actualNumTeams);
+            renderMultiTeamSummaryV17(contentEl, filteredRotationData, rotation, displayNumTeams);
           } else if (layout === 'default-v18') {
-            renderMultiTeamSummaryV18(contentEl, rotationData, rotation, actualNumTeams);
+            renderMultiTeamSummaryV18(contentEl, filteredRotationData, rotation, displayNumTeams);
           } else if (layout === 'default-v19') {
-            renderMultiTeamSummaryV19(contentEl, rotationData, rotation, actualNumTeams);
+            renderMultiTeamSummaryV19(contentEl, filteredRotationData, rotation, displayNumTeams);
           } else if (layout === 'default-v20') {
-            renderMultiTeamSummaryV20(contentEl, rotationData, rotation, actualNumTeams, apparatusRankings);
+            renderMultiTeamSummaryV20(contentEl, filteredRotationData, rotation, displayNumTeams, apparatusRankings);
           } else if (layout === 'default-v21') {
-            renderMultiTeamSummaryV21(contentEl, rotationData, rotation, actualNumTeams, apparatusRankings);
+            renderMultiTeamSummaryV21(contentEl, filteredRotationData, rotation, displayNumTeams, apparatusRankings);
           } else if (layout === 'default-v22') {
-            renderMultiTeamSummaryV22(contentEl, rotationData, rotation, actualNumTeams, apparatusRankings);
+            renderMultiTeamSummaryV22(contentEl, filteredRotationData, rotation, displayNumTeams, apparatusRankings);
           } else if (layout === 'default-v23') {
-            renderMultiTeamSummaryV23(contentEl, rotationData, rotation, actualNumTeams, apparatusRankings);
+            renderMultiTeamSummaryV23(contentEl, filteredRotationData, rotation, displayNumTeams, apparatusRankings);
           } else if (layout === 'default-v24') {
-            renderMultiTeamSummaryV24(contentEl, rotationData, rotation, actualNumTeams, apparatusRankings);
+            renderMultiTeamSummaryV24(contentEl, filteredRotationData, rotation, displayNumTeams, apparatusRankings);
           } else if (layout === 'split-row') {
-            renderMultiTeamSummarySplitRow(contentEl, rotationData, rotation, actualNumTeams, apparatusRankings);
+            renderMultiTeamSummarySplitRow(contentEl, filteredRotationData, rotation, displayNumTeams, apparatusRankings);
           } else {
-            renderMultiTeamSummary(contentEl, rotationData, rotation, actualNumTeams);
+            renderMultiTeamSummary(contentEl, filteredRotationData, rotation, displayNumTeams);
           }
         }
 
@@ -10534,6 +10571,11 @@
     const renderers = {
       clear: () => '',
 
+      custom: (data) => {
+        if (!data.customUrl) return '';
+        return `<div class="graphic-container" style="width:100%;height:100%;"><iframe src="${data.customUrl}" style="width:100%;height:100%;border:none;" allowtransparency="true"></iframe></div>`;
+      },
+
       logos: (data) => {
         // Collect all team logos that exist (filter out empty/placeholder)
         const logos = [];
@@ -10878,20 +10920,34 @@
       'sponsors-thanks': (data) => {
         const logo = encodeURIComponent(getTeamLogoUrl(data.team1Name, data.team1Logo) || '');
         const sponsors = encodeURIComponent(data.sponsors || '[]');
-        const overlayUrl = `/overlays/sponsors-thanks.html?logo=${logo}&sponsors=${sponsors}`;
+        const meetTheme = data.meetTheme ? `&meetTheme=${encodeURIComponent(data.meetTheme)}` : '';
+        const overlayUrl = `/overlays/sponsors-thanks.html?logo=${logo}&sponsors=${sponsors}${meetTheme}`;
         return `<iframe src="${overlayUrl}" style="width: 1920px; height: 1080px; border: none; overflow: hidden;"></iframe>`;
       },
 
       'sponsors-cycle': (data) => {
         const logo = encodeURIComponent(getTeamLogoUrl(data.team1Name, data.team1Logo) || '');
         const sponsors = encodeURIComponent(data.sponsors || '[]');
-        const overlayUrl = `/overlays/sponsors-cycle.html?logo=${logo}&sponsors=${sponsors}`;
+        const meetTheme = data.meetTheme ? `&meetTheme=${encodeURIComponent(data.meetTheme)}` : '';
+        const overlayUrl = `/overlays/sponsors-cycle.html?logo=${logo}&sponsors=${sponsors}${meetTheme}`;
         return `<iframe src="${overlayUrl}" style="width: 1920px; height: 1080px; border: none; overflow: hidden;"></iframe>`;
       },
 
       'sponsors-bug': (data) => {
         const sponsors = encodeURIComponent(data.sponsors || '[]');
-        const overlayUrl = `/overlays/sponsors-bug.html?sponsors=${sponsors}`;
+        const meetTheme = data.meetTheme ? `&meetTheme=${encodeURIComponent(data.meetTheme)}` : '';
+        const overlayUrl = `/overlays/sponsors-bug.html?sponsors=${sponsors}${meetTheme}`;
+        return `<iframe src="${overlayUrl}" style="width: 1920px; height: 1080px; border: none; overflow: hidden;"></iframe>`;
+      },
+
+      // Event Calendar - upcoming events list
+      'event-calendar': (data) => {
+        const logo = encodeURIComponent(getTeamLogoUrl(data.team1Name, data.team1Logo) || '');
+        const title = encodeURIComponent(data.calendarTitle || 'Event Calendar');
+        const events = encodeURIComponent(data.calendarEvents || '[]');
+        const columns = data.calendarColumns || 'auto';
+        const meetTheme = data.meetTheme ? `&meetTheme=${encodeURIComponent(data.meetTheme)}` : '';
+        const overlayUrl = `/overlays/event-calendar.html?logo=${logo}&title=${title}&events=${events}&columns=${columns}${meetTheme}`;
         return `<iframe src="${overlayUrl}" style="width: 1920px; height: 1080px; border: none; overflow: hidden;"></iframe>`;
       },
 
@@ -10900,8 +10956,9 @@
         const logo = encodeURIComponent(data.team1Logo || '');
         const meetName = encodeURIComponent(data.eventName || 'GYMNASTICS');
         const rotation = data.rotation || '1';
+        const layout = data.layout || 'classic';
         const meetTheme = data.meetTheme ? `&meetTheme=${encodeURIComponent(data.meetTheme)}` : '';
-        const overlayUrl = `/overlays/rotation-slate.html?logo=${logo}&meetName=${meetName}&rotation=${rotation}${meetTheme}`;
+        const overlayUrl = `/overlays/rotation-slate.html?logo=${logo}&meetName=${meetName}&rotation=${rotation}&layout=${layout}${meetTheme}`;
         return `<iframe src="${overlayUrl}" style="width: 1920px; height: 1080px; border: none; overflow: hidden;"></iframe>`;
       },
 

@@ -2,7 +2,8 @@
 
 **PRD:** PRD-Meet-Themes-2026-03-06
 **Date:** 2026-03-06
-**Last Updated:** 2026-03-06
+**Last Updated:** 2026-03-08
+**Bug Tracker:** [BUGS.md](./BUGS.md)
 
 ---
 
@@ -537,6 +538,258 @@ Files modified:
 
 ---
 
+## Phase 11: Quick Actions Theme Support (output.html inline renderers) - ✅ COMPLETE
+
+Phases 7-8 fixed theme support for overlay HTML files (loaded via URL Generator / OBS), but Quick Actions renders graphics **inline in output.html** using a separate set of renderers and CSS. These had hardcoded colors and used `getTeamLogoUrl()` instead of `getEventLevelLogo()`.
+
+### Task 11.1: Add [data-meet-theme] CSS overrides for inline renderers - COMPLETE
+
+**Completed 2026-03-07:** Added CSS override rules scoped under `[data-meet-theme]` for 4 graphic types in output.html:
+
+| Graphic | Selectors Added | Color Mappings |
+|---------|----------------|----------------|
+| event-bar | `.event-bar-logo`, `.event-bar-venue`, `.event-bar-details`, `.event-bar-name`, `.event-bar-location` | accent-secondary, header-text, accent-primary, overlay-text |
+| warm-up | `.warm-up-logo-section`, `.warm-up-teams-row`, `.warm-up-teams-text`, `.warm-up-status-row`, `.warm-up-status-text` | accent-secondary, header-text, accent-primary, overlay-text |
+| coaches | `.coaches-header`, `.coaches-title`, `.coaches-content`, `.coach-name` | header-bg, header-text, accent-primary, overlay-text |
+| replay | `.replay-logo-section`, `.replay-title-row`, `.replay-title-text`, `.replay-status-row`, `.replay-status-text` | accent-secondary, header-text, accent-primary, overlay-text |
+
+### Task 11.2: Switch event-level logos to getEventLevelLogo() - COMPLETE
+
+**Completed 2026-03-07:** Updated 3 renderer functions in output.html to use `getEventLevelLogo()` instead of `getTeamLogoUrl()`:
+- `event-bar` renderer (~line 10530)
+- `warm-up` renderer (~line 10949)
+- `replay` renderer (~line 10966)
+
+Coaches keeps `getTeamLogoUrl()` — it's a team-specific graphic per PRD Story 6.
+
+### Task 11.3: Pass meetTheme to team-roster iframe URL - COMPLETE
+
+**Completed 2026-03-07:** The team-roster renderer loads `team-roster.html` in an iframe. Updated the iframe URL to include `meetTheme` param read from `document.body.getAttribute('data-meet-theme')`, so theme-loader.js inside the iframe can apply theme colors.
+
+### Task 11.4: Deploy and verify - COMPLETE
+
+**Verified 2026-03-07 via Playwright (Pink Invitational 2026, comp=fr0ts7fj):**
+
+| Graphic | Theme Colors | Logo | Status |
+|---------|-------------|------|--------|
+| Event Info | Teal + pink accents | Meet logo ✅ | PASS |
+| Warm Up | Teal + pink accents | Meet logo ✅ | PASS |
+| Replay | Teal + pink accents | Meet logo ✅ | PASS |
+| Coaches | Pink header + content | Team logo ✅ (correct) | PASS |
+| Roster | Pink header, dark bg | Team logo ✅ (correct) | PASS |
+
+---
+
+## Phase 12: Color Model Simplification (10 → 8 colors) - ✅ COMPLETE
+
+Simplify the confusing 10-field color model to 8 clear fields. Fix inconsistent overlay rendering so all overlays follow the same visual pattern: **header bar + content area + body background**.
+
+### Problem
+
+- 10 color fields with unclear names (accentPrimary, accentSecondary, footerBg)
+- Different overlays use different CSS variables for the same visual element
+- Event-bar/warm-up/replay show teal+pink, hosts/stats show pink+black, coaches show all-pink
+- Sponsors-thanks doesn't show theme colors or meet logo at all
+
+### New Color Model
+
+| Firebase Key | UI Label | CSS Variable | Replaces |
+|---|---|---|---|
+| `headerBar` | Header Bar | `--meet-header-bg` | headerBg, accentSecondary (in header areas) |
+| `contentArea` | Content Area | `--meet-content-bg` **(NEW)** | accentPrimary (in content areas) |
+| `bodyBackground` | Body Background | `--meet-overlay-bg` | overlayBg |
+| `borderDivider` | Border / Divider | `--meet-border-color` | borderColor |
+| `badge` | Badge | `--meet-badge-bg` | badgeBg |
+| `badgeText` | Badge Text | `--meet-badge-text` | badgeText |
+| `textOnHeader` | Text on Header | `--meet-header-text` | headerText |
+| `textOnContent` | Text on Content | `--meet-overlay-text` | overlayText |
+
+**Removed:** accentPrimary, accentSecondary, footerBg
+
+### Task 12.1: Update theme-loader.js — COMPLETE
+
+**Completed 2026-03-07:** Replaced old 10-field mapping with new 8-field mapping plus v2.0 backward-compat entries. New fields map to CSS vars: `headerBar→--meet-header-bg`, `contentArea→--meet-content-bg` (new), `bodyBackground→--meet-overlay-bg`, etc. Old field names (`accentPrimary`, `accentSecondary`, `footerBg`, `headerBg`, etc.) still work via backward-compat mapping.
+
+**File:** `overlays/theme-loader.js`
+
+### Task 12.2: Update output.html theme mapping + CSS overrides — COMPLETE
+
+**Completed 2026-03-07:** Updated JS colorMappings object with same dual v3.0/v2.0 mapping. Replaced all CSS variable references:
+- `--meet-accent-secondary` → `--meet-header-bg` (header/sidebar areas, leaderboard accent text)
+- `--meet-accent-primary` → `--meet-content-bg` (content area backgrounds)
+- `--meet-footer-bg` → `--meet-header-bg` (footer = header)
+- V24 rank-1 badge → `--meet-badge-bg`; rank-2 hardcoded silver
+- V24 muted text (SV scores, footer labels) → hardcoded fallbacks (not branding elements)
+
+**File:** `output.html`
+
+### Task 12.3: Update theme-overrides.css — COMPLETE
+
+**Completed 2026-03-07:** Full rewrite of theme-overrides.css:
+- Updated header comment with v3.0 variable list
+- Replaced all `--meet-accent-secondary` → `--meet-header-bg`
+- Replaced all `--meet-accent-primary` → `--meet-content-bg` (content areas) or `--meet-header-bg` (accent elements)
+- Removed `--meet-footer-bg` references
+- Added comments per section noting the header/content pattern
+
+**File:** `overlays/theme-overrides.css`
+
+### Task 12.4: Fix overlay HTML files for consistent pattern — COMPLETE
+
+**Completed 2026-03-07:** Updated 7 overlay HTML files for consistent pink header + black content pattern:
+
+| File | Header Change | Content Change |
+|---|---|---|
+| `event-bar.html` | Already `--meet-header-bg` ✅ | `#000` → `--meet-content-bg, #000` |
+| `warm-up.html` | `--meet-accent-secondary` → `--meet-header-bg` | `--meet-accent-primary` → `--meet-content-bg` |
+| `replay.html` | `--meet-accent-secondary` → `--meet-header-bg` | `--meet-accent-primary` → `--meet-content-bg` |
+| `coaches.html` | Already `--meet-header-bg` ✅ | `--meet-accent-primary` → `--meet-content-bg` |
+| `stream.html` | n/a | `--meet-accent-secondary` → `--meet-overlay-text`, `--meet-accent-primary` → `--meet-header-bg` |
+| `logos.html` | n/a | `--meet-accent-secondary` → `--meet-header-bg` |
+| `rotation-slate.html` | n/a | `--meet-accent-secondary` → `--meet-header-bg` |
+
+### Task 12.5: Fix sponsors-thanks.html — COMPLETE
+
+**Completed 2026-03-07:**
+- Added `checkMeetLogo()` with MutationObserver + setTimeout pattern to swap header logo for meet logo when theme active
+- Added early return in `updateBackground()` when `data-meet-theme` is present — respects `--meet-overlay-bg` CSS variable instead of JS-calculated background
+
+**File:** `overlays/sponsors-thanks.html`
+
+### Task 12.6: Update ThemeEditorPage.jsx — COMPLETE
+
+**Completed 2026-03-07:**
+- Updated `DEFAULT_THEME.colors` from 10 fields to 8 new field names
+- Updated all 4 `PRESET_THEMES` with new field names
+- Updated `COLOR_LABELS` with descriptive labels (Header Bar, Content Area, Body Background, etc.)
+- Updated `computeThemeFromPrimary()` to use new keys (contentArea defaults to `#000000`)
+- Updated swatch preview: `overlayBg→bodyBackground`, `headerBg→headerBar`, `headerText→textOnHeader`, `accentSecondary→contentArea`, `footerBg→bodyBackground`, `badgeBg→badge`
+
+**File:** `show-controller/src/pages/ThemeEditorPage.jsx`
+
+### Task 12.7: Update DashboardPage.jsx + HomePage.jsx — COMPLETE
+
+**Completed 2026-03-07:** Changed theme color swatch from `accentPrimary` to `headerBar || accentPrimary` (fallback for backward compat with old themes in Firebase).
+
+**Files:** `show-controller/src/pages/DashboardPage.jsx`, `show-controller/src/pages/HomePage.jsx`
+
+### Task 12.8: Migrate Firebase theme data — COMPLETE
+
+**Completed 2026-03-07:** Used `firebase_update` to add new v3.0 field names to `themes/pink-meet-2026/colors`:
+- `headerBar: #ea018c`, `contentArea: #000000`, `bodyBackground: #2f001c`
+- `borderDivider: #ea018c`, `badge: #ea018c`, `badgeText: #FFFFFF`
+- `textOnHeader: #FFFFFF`, `textOnContent: #FFFFFF`
+- Old v2.0 fields retained for backward compatibility
+
+### Task 12.9: Deploy and verify — COMPLETE
+
+**Deployed 2026-03-07:**
+1. Built React SPA (`npm run build`) ✅
+2. Deployed SPA, output.html, and overlays to commentarygraphic.com ✅
+3. Set file permissions (`chmod 644`) ✅
+
+**Bug found during verification:** v2.0/v3.0 color mapping ordering issue. In `theme-loader.js` and `output.html`, the `colorMappings` object had v3.0 entries first and v2.0 backward-compat entries second. Since themes with both old and new field names (like `pink-meet-2026`) had the old `accentPrimary: #ea018c` value, iterating v2.0 entries AFTER v3.0 overwrote the correct `contentArea: #000000` with the old pink value. **Fix:** Reordered so v2.0 compat entries come FIRST and v3.0 entries come LAST (last write wins).
+
+**Bug found during verification:** Sponsors-thanks race condition. The auto-background-calculation for sponsor logos would run before the theme loaded from Firebase, setting an inline `background` style that overrode the CSS variable `--meet-overlay-bg`. **Fix:** Added logic to `checkMeetLogo()` MutationObserver to clear inline background when `data-meet-theme` is detected, and added `'data-meet-theme'` to the observer's attribute filter.
+
+**Verification (2026-03-07 via Playwright, all with `&meetTheme=pink-meet-2026`):**
+
+| Overlay | Expected | Result |
+|---------|----------|--------|
+| event-bar | Pink header + black content | ✅ PASS |
+| warm-up | Pink header + black content | ✅ PASS |
+| replay | Pink header + black content | ✅ PASS |
+| hosts | Pink header + black content | ✅ PASS |
+| team-stats | Pink header + black content | ✅ PASS |
+| coaches | Pink header + black content | ✅ PASS |
+| sponsors-thanks | Pink header + meet logo + dark maroon body | ✅ PASS |
+| team-roster | Pink header + dark maroon body | ✅ PASS |
+| event-bar (no theme) | Gray header + black content (default) | ✅ PASS |
+
+**Theme Editor verification:**
+- 8 color fields present (Header Bar, Content Area, Body Background, Border/Divider, Badge, Badge Text, Text on Header, Text on Content) ✅
+- No legacy fields (Primary Accent, Secondary Accent, Footer Background) ✅
+- 4 preset templates visible and functional ✅
+- Live preview with header, content, body, badge swatches ✅
+
+---
+
+## Post-Completion Bug Fixes
+
+### Bug Fix: Sponsor inline renderers missing meetTheme param — COMPLETE
+
+**Found:** 2026-03-07
+**Symptom:** Sponsors-thanks (and sponsors-cycle, sponsors-bug) showed wrong logo and default dark colors instead of theme colors when rendered via Quick Actions in output.html.
+**Root Cause:** The three sponsor iframe renderers in output.html did not pass the `meetTheme` URL parameter to the overlay iframe URL. Without this param, `theme-loader.js` inside the iframe never fired, so CSS variables weren't set and `data-meet-logo` was never applied.
+**Comparison:** The `rotation-slate` renderer already had this correctly implemented.
+
+**Fix:** Added `meetTheme` param forwarding to all 3 sponsor iframe renderers in output.html:
+- `sponsors-thanks` renderer
+- `sponsors-cycle` renderer
+- `sponsors-bug` renderer
+
+**File:** `output.html`
+
+**Verified 2026-03-07 via Playwright:**
+- Sponsors-thanks with `meetTheme=pink-meet-2026`: Pink header bar + meet logo + dark maroon body ✅
+- Theme-loader logs confirm theme applied ✅
+
+---
+
+## Phase 13: Logo Contrast Fix - COMPLETE
+
+When theme colors are extracted from a logo, the logo washes out against the matching background color. The fix makes logo container panels white so logos always pop.
+
+### Task 13.1: Make .logo-section containers white when themed - COMPLETE
+
+**Completed 2026-03-08:** Added LOGO CONTRAST section to `theme-overrides.css`:
+
+```css
+[data-meet-theme] .logo-section {
+  background: rgba(255, 255, 255, 0.92);
+}
+[data-meet-theme] .logo-section .team-logo,
+[data-meet-theme] .logo-section img {
+  background: transparent;
+}
+[data-meet-theme] .container > .team-logo {
+  background: rgba(255, 255, 255, 0.92);
+}
+```
+
+**Affected overlays:**
+- `rotation-slate.html` — entire left panel becomes white
+- `rotation-slate-auto.html` — same
+- `event-bar.html` — logo section becomes white
+- `warm-up.html` — logo section becomes white
+- `replay.html` — logo section becomes white
+- `logos.html` — individual logo cards become white
+
+**Also removed:** Old `.team-logo { background: var(--meet-header-bg) }` rule that was causing the washout.
+
+### Task 13.2: Make stream.html background transparent - COMPLETE
+
+**Completed 2026-03-08:** The stream starting/thanks page had `background: var(--meet-overlay-bg)` when themed, making it opaque gold/brown. Changed to `background: transparent` so it works as an OBS browser source overlay.
+
+**Files modified:**
+- `overlays/stream.html` — `body[data-meet-theme]` background → transparent
+- `overlays/theme-overrides.css` — `.stream-container` background → transparent
+
+### Task 13.3: Deploy and verify - COMPLETE
+
+**Verified 2026-03-08 via Playwright (ISLA HBCU Classic, meetTheme=isla-hbcu):**
+
+| Overlay | Logo Visible | Status |
+|---------|-------------|--------|
+| rotation-slate | White panel, logo pops | PASS |
+| event-bar | White logo section | PASS |
+| warm-up | White logo section | PASS |
+| replay | White logo section | PASS |
+| logos | White card backgrounds | PASS |
+| stream | Transparent background | PASS |
+
+---
+
 ## Risk Mitigation
 
 | Risk | Mitigation |
@@ -563,3 +816,6 @@ Files modified:
 | 8. Meet Logo Substitution | 0 | ~8 | Medium | ✅ COMPLETE |
 | 9. Event-Level Sponsors | 0 | ~3 | High | ✅ COMPLETE |
 | 10. Event Summary V24 | 0 | 2 | Medium | ✅ COMPLETE |
+| 11. Quick Actions Theme | 0 | 1 | Medium | ✅ COMPLETE |
+| 12. Color Model Simplification | 0 | ~15 | Medium | ✅ COMPLETE |
+| 13. Logo Contrast Fix | 0 | 3 | Low | ✅ COMPLETE |

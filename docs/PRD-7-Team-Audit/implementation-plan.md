@@ -2,7 +2,7 @@
 
 **PRD:** PRD-7-Team-Audit-2026-03-06
 **Date:** 2026-03-06
-**Last Updated:** 2026-03-07
+**Last Updated:** 2026-03-08
 
 ---
 
@@ -200,7 +200,7 @@ cd show-controller && npm run build
 
 **Fixes:** BUG-012
 
-### Task 5.3: Fix Firebase /alerts permission denied — DEFERRED (Infrastructure)
+### Task 5.3: Fix Firebase /alerts permission denied — COMPLETE
 
 **Description:** `useAlerts` hook tries to read `/alerts/sewj4d2b` but Firebase rules deny access.
 
@@ -226,6 +226,101 @@ This is an infrastructure configuration issue, not a code bug. The fix requires:
 
 ---
 
+## Phase 6: Post-Audit Fixes (Added 2026-03-07)
+
+### Task 6.1: Filter bye teams from event summary — COMPLETE
+
+**File:** `output.html` (line ~7168)
+
+**Description:** For 7-team women's competitions, event summary showed all 7 team columns per rotation including 3 empty bye columns.
+
+**Change:** After building `rotationData`, added filter to remove teams with null `eventName`:
+```javascript
+const filteredRotationData = actualNumTeams >= 5
+  ? rotationData.filter(t => t.eventName !== null && t.eventName !== undefined)
+  : rotationData;
+const displayNumTeams = filteredRotationData.length;
+```
+Updated all render function calls to use `filteredRotationData` and `displayNumTeams`.
+
+**Fixes:** BUG-014 — Event summary shows 7 columns instead of 4 per rotation
+
+### Task 6.2: Fix parseInt type coercion in detectEventFromApiData — COMPLETE
+
+**File:** `output.html` (line ~7058)
+
+**Description:** `detectEventFromApiData` used strict equality `===` comparing string rotation (from URL params) with number rotation (from Virtius API), causing all teams to appear as bye.
+
+**Change:**
+```javascript
+// Before: const eventForRotation = (team.events || []).find(e => e.rotation === rotation);
+const rot = parseInt(rotation, 10);
+const eventForRotation = (team.events || []).find(e => parseInt(e.rotation, 10) === rot);
+```
+
+**Fixes:** BUG-015 — All teams filtered as bye in URL preview mode
+
+### Task 6.3: Fix RIC logo showing American flag — COMPLETE
+
+**File:** `output.html` (line ~6100)
+
+**Description:** `getTeamLogoUrl()` prioritized the Virtius API logo over curated Firebase logos. The Virtius API returned an American flag for Rhode Island College instead of the correct RIC Anchormen logo.
+
+**Change:** Reversed logo priority — Firebase curated logos are now checked first, API logo is fallback:
+```javascript
+// Before: if (apiLogo && !apiLogo.includes('via.placeholder.com')) return apiLogo;
+// Now: Check Firebase first, fall back to API logo only if Firebase has nothing
+```
+
+Also updated Firebase `teamsDatabase/teams/ric-womens` to include full team data (logo, school, displayName, gender) matching the existing `rhode-island-college-womens` entry.
+
+**Fixes:** BUG-016 — RIC shows American flag instead of Anchormen logo
+
+### Task 6.4: Populate missing team stats — COMPLETE
+
+**Path:** `competitions/sewj4d2b/config`
+
+**Description:** Stats for Utica, RIC, Ursinus, Cortland, Springfield were all showing 0. Updated from RTN Week 9 data.
+
+**Changes:**
+- Utica: Ave=186.857, High=188.500, Con=N/A
+- RIC: Ave=189.050, High=190.475, Con=N/A
+- Ursinus: Ave=189.271, High=191.950, Con=N/A
+- Cortland: Ave=190.459, High=192.800, Con=N/A
+- Springfield: Ave=185.841, High=189.875, Con=N/A
+
+Also updated Springfield coaches from "TBD" to actual names (Diana Gallagher, MacKenzie MacLeod, Sophie Parquet).
+
+**Fixes:** BUG-017 — Missing stats/coaches for teams 3-7
+
+### Task 6.5: Deploy Phase 6 fixes — COMPLETE
+
+- Built frontend ✓
+- Deployed output.html, overlays, SPA ✓
+- Verified: 4-team bye filter working, RIC logo correct, stats populated ✓
+- Screenshot: verify-ric-logo-v24.png
+
+---
+
+## Phase 7: Visual Polish (Added 2026-03-08)
+
+### Task 7.1: Fix v24 event summary header alignment — COMPLETE
+
+**File:** `output.html` (line ~5049)
+
+**Description:** In the v24 event summary layout with 4 teams, the header cards had inconsistent heights and team names were not level. Additionally, the score for "West Chester" was being cropped/clipped off the right edge. The `.event-name` color was also using `var(--meet-header-bg)` which made it invisible against themed backgrounds.
+
+**Changes:**
+1. Changed `.team-column` from `display: flex` to `display: grid` with `grid-template-rows: auto 1fr auto` for consistent section alignment
+2. Set fixed `height: 80px` on `.team-header` (was `min-height` which allowed variance)
+3. Tightened spacing: reduced padding (18→10px), gaps (16→8px), logo (60→50px), team-name font (30→26px), score font (36→30px), rank badge (20→16px)
+4. Added `white-space: nowrap` on `.header-total` and `overflow: hidden` on `.header-left` to prevent score cropping
+5. Fixed `.event-name` color from `var(--meet-header-bg)` to `var(--meet-header-text)` with `opacity: 0.7`
+
+**Fixes:** Header cards now uniform size, team names level, scores fully visible
+
+---
+
 ## Estimated Scope
 
 | Phase | Tasks | Complexity | Status |
@@ -234,8 +329,10 @@ This is an infrastructure configuration issue, not a code bug. The fix requires:
 | Phase 2: Major | 3 | Low-Medium | 3 COMPLETE |
 | Phase 3: Minor | 3 | Low | 3 COMPLETE |
 | Phase 4: Deploy | 3 | Low | 3 COMPLETE |
-| Phase 5: Audit Issues | 3 | Low | 2 COMPLETE, 1 DEFERRED |
-| **Total** | **15** | | |
+| Phase 5: Audit Issues | 3 | Low | 3 COMPLETE |
+| Phase 6: Post-Audit | 5 | Low | 5 COMPLETE |
+| Phase 7: Visual Polish | 1 | Low | 1 COMPLETE |
+| **Total** | **21** | | |
 
 ---
 

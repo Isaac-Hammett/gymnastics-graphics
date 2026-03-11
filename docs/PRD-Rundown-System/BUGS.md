@@ -1,9 +1,10 @@
 # Rundown System - Bug Tracker
 
-## Open Bug Summary (2026-02-13)
+## Open Bug Summary (2026-03-07)
 
 | Bug | Severity | Phase | Status | Fix Task | Description |
 |-----|----------|-------|--------|----------|-------------|
+| BUG-021 | Critical | A | FIXED | — | Load Rundown silently fails — async OBS connection blocks socket handler registration |
 | BUG-020 | Critical | X | FIXED | — | Rundown editor blank screen — talentRoster/equipmentList not passed as props to sub-components |
 | BUG-012 | High | B | FIXED | — | Talent View shows wrong competition name |
 | BUG-013 | Critical | J | FIXED | — | Timing analytics broken — data structure mismatch + status filter |
@@ -16,6 +17,75 @@
 | BUG-011 | Critical | A | FIXED | — | Start Show button hidden by stale isPlaying |
 
 **See:** [PLAN-Rundown-System-Implementation.md](./PLAN-Rundown-System-Implementation.md#phase-x-bug-fixes-p0---not-started-010) for detailed fix tasks.
+
+---
+
+## BUG-021: Load Rundown Silently Fails — Async OBS Connection Blocks Socket Handler Registration (FIXED)
+
+**Date Identified:** 2026-03-07
+**Date Fixed:** 2026-03-07
+**Severity:** Critical
+**Status:** FIXED
+**Phase:** A (Connect Editor to Engine)
+
+### Symptoms
+
+1. Navigate to `/{compId}/producer` — page loads, shows "Connected" (green dot)
+2. Click "Load Rundown" — button changes to "Loading..." and stays stuck forever
+3. No error toast, no console error — event is silently dropped
+4. Server logs show zero `loadRundown` events received
+
+### Root Cause
+
+The `io.on('connection')` handler in `server/index.js` is `async` and contained two `await` calls that block before socket event handlers are registered:
+
+```javascript
+// Line 3287 — blocks for 30-60s if OBS VM is unreachable
+await obsConnManager.connectToVM(clientCompId, vm.publicIp);
+
+// Line 3305 — blocks if OBS state sync depends on connection
+await initializeOBSStateSync(clientCompId);
+```
+
+All `socket.on(...)` handlers (including `loadRundown` at line 5887) are registered **after** these awaits resolve. When the OBS VM is unreachable (TCP timeout), the await blocks for 30-60 seconds. During this window:
+
+- The client sees "Connected" (socket transport is established)
+- The client clicks "Load Rundown" and emits the event
+- The server has **no handler registered yet** — the event is silently dropped
+- The client waits forever for `loadRundownResult` that never comes
+
+### Why This Was Hard to Diagnose
+
+- No error on client or server — the event is simply ignored
+- The socket shows "Connected" — the transport layer works fine
+- The handler code itself is correct — it just hasn't been registered yet
+- Only happens when the competition's OBS VM is unreachable (common during setup/pre-show)
+
+### Fix
+
+Changed both `await` calls to fire-and-forget with `.then()/.catch()`:
+
+```javascript
+// BEFORE (blocking):
+await obsConnManager.connectToVM(clientCompId, vm.publicIp);
+
+// AFTER (non-blocking):
+obsConnManager.connectToVM(clientCompId, vm.publicIp).then(() => {
+  console.log(`[Socket] Connected to OBS for competition ${clientCompId}`);
+}).catch((obsError) => {
+  console.warn(`[Socket] Failed to connect to OBS for ${clientCompId}: ${obsError.message}`);
+});
+```
+
+This ensures all socket event handlers are registered immediately when the client connects, regardless of OBS connection status.
+
+### Key Lesson
+
+**Never `await` slow/external operations inside `io.on('connection')` before registering `socket.on(...)` handlers.** Any await that can timeout will create a window where client events are silently dropped. Fire-and-forget pattern for non-critical initialization, register handlers synchronously.
+
+### Files Changed
+
+- `server/index.js` — Lines 3283-3292 (OBS connect), Lines 3303-3310 (OBS state sync)
 
 ---
 

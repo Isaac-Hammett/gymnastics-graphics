@@ -67,17 +67,17 @@
       margin-top: 50px;
       font-size: 48px;
       font-weight: 700;
-      color: var(--meet-accent-secondary, #666);
+      color: var(--meet-overlay-text, #666);
     }
 
     .stream-branding span {
-      color: var(--meet-accent-primary, #3b82f6);
+      color: var(--meet-header-bg, #3b82f6);
       font-weight: 900;
     }
 
-    /* When themed, apply overlay background (stream is full-screen, not a composited overlay) */
+    /* Stream is used as OBS browser source — keep background transparent */
     body[data-meet-theme] {
-      background: var(--meet-overlay-bg, #18181b);
+      background: transparent;
     }
   </style>
 </head>
@@ -105,6 +105,6 @@
     setTimeout(checkMeetLogo, 500);
     new MutationObserver(checkMeetLogo).observe(document.body, { attributes: true, attributeFilter: ['data-meet-logo'] });
   </script>
-  <script src="theme-loader.js"></script>
+  <script src="theme-loader.js?v=2"></script>
 </body>
 </html>

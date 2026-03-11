@@ -472,7 +472,121 @@ Theme:     [ESPN ▼]
     team4Logo: { type: 'string', source: 'competition' },
   },
 },
+
+// Tri Wide Top: long box on top, two small boxes on bottom (flipped Tri Wide)
+'frame-tri-wide-top': {
+  id: 'frame-tri-wide-top',
+  label: 'Tri Wide Top',
+  category: 'frame-overlays',
+  keywords: ['tri', 'three', '3', 'wide', 'top', 'frame', 'overlay'],
+  gender: 'both',
+  minTeams: 3,
+  maxTeams: 7,
+  renderer: 'overlay',
+  file: 'frame-tri-wide-top.html',
+  transparent: true,
+  params: {
+    // Dynamic: team1Logo through team3Logo
+  },
+},
 ```
+
+**Frame overlay variants:**
+
+| Graphic | Layout |
+|---------|--------|
+| `frame-quad` | 2x2 grid (4 equal panels) |
+| `frame-tri-center` | Large center panel, two small side panels |
+| `frame-tri-wide` | Two small panels on top, one long panel on bottom |
+| `frame-tri-wide-top` | One long panel on top, two small panels on bottom |
+| `frame-dual` | Two equal side-by-side panels |
+| `frame-single` | One full-width panel |
+| `frame-team-header` | Dual panels with team name headers |
+
+---
+
+### Type 6: Full-Screen Card with JSON Data
+
+**Use for:** Graphics that display user-provided structured data (event calendars, schedules, lists)
+
+**Example: Event Calendar** — Shows a list of upcoming events with dates, names, and locations. Modeled after the sponsors-thanks card layout (header bar + dark body + rounded border).
+
+```javascript
+'event-calendar': {
+  id: 'event-calendar',
+  label: 'Event Calendar',
+  category: 'pre-meet',
+  keywords: ['event', 'events', 'calendar', 'schedule', 'dates', 'upcoming', 'promo', 'future', 'season'],
+  gender: 'both',
+  renderer: 'overlay',
+  file: 'event-calendar.html',
+  transparent: false,
+  params: {
+    logo: { type: 'string', source: 'competition' },
+    title: {
+      type: 'string',
+      default: 'Event Calendar',
+      label: 'Header Title',
+    },
+    events: {
+      type: 'string',
+      label: 'Events (JSON)',
+      description: 'JSON array: [{"date":"Mar 15","name":"vs UCLA","location":"Los Angeles, CA"}]',
+      required: true,
+    },
+    columns: {
+      type: 'enum',
+      options: ['auto', '1', '2'],
+      default: 'auto',
+      label: 'Layout',
+    },
+  },
+},
+```
+
+**Events data format:**
+```json
+[
+  {"date": "March 6-8", "name": "HBCU Classic", "location": "Atlanta, GA"},
+  {"date": "April 14", "name": "Isla Soirée", "location": "Studio Isla, Atlanta"},
+  {"date": "April 15", "name": "HBCU Gymnastics Day"}
+]
+```
+
+Each event has:
+- `date` (required) — Date or date range, shown in purple accent
+- `name` (required) — Event name, shown in bold white
+- `location` (optional) — Location, shown in grey below the name
+
+**Auto-scaling tiers:**
+
+| Event Count | Font Size | Layout |
+|-------------|-----------|--------|
+| 1–3 | Large (44px name) | Single column |
+| 4–5 | Medium (36px name) | Single column |
+| 6–7 | Compact (28px name) | Single column |
+| 7+ | Dense (24px name) | Two columns (auto) |
+
+**URL Generator UI:**
+
+The Event Calendar config panel provides two editing modes:
+
+- **Visual editor** (default) — Per-event cards with Date, Name, and Location text inputs. Includes "+ Add Event" button, per-event remove (x) button, and up/down reorder arrows.
+- **JSON mode** — Toggle "Edit as JSON" to switch to a raw JSON textarea for pasting bulk data. Both modes read/write the same `calendarEvents` field.
+
+The calendar fields (`calendarTitle`, `calendarEvents`, `calendarColumns`) are saved to Firebase at `competitions/{compId}/config` and loaded back on page reload.
+
+**Additional integration required for JSON-data graphics:**
+
+Unlike simple overlay graphics, graphics that accept user-provided JSON data need additional wiring:
+
+1. **URL builder case** — Add a `case` in `generateGraphicURL()` in `urlBuilder.js` to map `formData` keys to URL params
+2. **Output.html renderer** — Add a renderer in the `renderers` object so the producer view can display it live
+3. **Producer view handler** — Add data passthrough in `sendGraphic()` in `GraphicsControl.jsx` to read from competition config
+4. **URL Generator config panel** — Add a form section in `UrlGeneratorPage.jsx` for editing the JSON data
+5. **Config loader** — Ensure the fields are included in the `useEffect` that loads config from Firebase (the config loader in `UrlGeneratorPage.jsx` must explicitly map each field or they'll be lost on reload)
+
+See the Event Calendar implementation for a complete example of all five integration points.
 
 ---
 
@@ -602,11 +716,15 @@ open "http://localhost:5173/overlays/technical.html?team1Logo=https://example.co
 
 ## Checklist: Adding a New Graphic
 
+### Step 1: Create the overlay HTML
 - [ ] Create `overlays/newgraphic.html` with:
   - [ ] 1920x1080 viewport
   - [ ] `background: transparent` on body
   - [ ] URL parameter reading via `URLSearchParams`
   - [ ] Animation for entrance
+  - [ ] `<script src="theme-loader.js?v=2"></script>` if it should support meet themes
+
+### Step 2: Add to the registry
 - [ ] Add entry to `graphicsRegistry.js` with:
   - [ ] Unique `id`
   - [ ] Descriptive `label`
@@ -617,11 +735,26 @@ open "http://localhost:5173/overlays/technical.html?team1Logo=https://example.co
   - [ ] Correct `file` path
   - [ ] `transparent: true` if overlay
   - [ ] All `params` the graphic accepts
+
+### Step 3: Wire up URL generation (if graphic has custom/user-provided data)
+
+Skip this step if all params are `source: 'competition'` or have `default` values — the registry fallback in `generateGraphicURL()` handles those automatically.
+
+For graphics with user-provided data (JSON arrays, custom text, etc.):
+- [ ] Add a `case` in `generateGraphicURL()` (`urlBuilder.js`) to build the URL from `formData`
+- [ ] Add a renderer in the `renderers` object in `output.html` so the producer view can display it
+- [ ] Add data passthrough in `sendGraphic()` (`GraphicsControl.jsx`) to read from competition config
+- [ ] Add a config panel in `UrlGeneratorPage.jsx` for editing the data (shown when graphic is selected)
+- [ ] Add `formData` defaults in `UrlGeneratorPage.jsx` for the new fields
+- [ ] Add fields to the config loader `useEffect` in `UrlGeneratorPage.jsx` so saved values load from Firebase on page reload
+- [ ] Add entry to `baseGraphicTitles` in `UrlGeneratorPage.jsx`
+
+### Step 4: Build, deploy, verify
 - [ ] Build: `cd show-controller && npm run build`
-- [ ] Deploy per CLAUDE.md
-- [ ] Verify graphic appears in URL Generator
+- [ ] Deploy per CLAUDE.md (SPA + overlays + output.html)
+- [ ] Verify graphic appears in URL Generator sidebar
 - [ ] **Test search finds your graphic** (search for keywords)
-- [ ] Test preview renders correctly
+- [ ] Test preview renders correctly at 1920x1080
 - [ ] Test in OBS browser source
 
 ---
@@ -644,8 +777,12 @@ open "http://localhost:5173/overlays/technical.html?team1Logo=https://example.co
 | File | Purpose |
 |------|---------|
 | `overlays/*.html` | Overlay graphic renderers |
-| `output.html` | Complex graphic renderer (leaderboards, summaries) |
+| `output.html` | Complex graphic renderer (leaderboards, summaries) + live producer renderers |
 | `show-controller/src/lib/graphicsRegistry.js` | **Single source of truth for all graphics** |
+| `show-controller/src/lib/urlBuilder.js` | URL generation for all graphics (dedicated builders + registry fallback) |
+| `show-controller/src/components/GraphicsControl.jsx` | Producer view — sends graphics via Firebase |
+| `show-controller/src/pages/UrlGeneratorPage.jsx` | URL Generator — sidebar, preview, config panels |
+| `show-controller/src/lib/graphicButtons.js` | Derives button lists from registry (auto-updates) |
 
 ---
 
@@ -708,3 +845,47 @@ Use V23 when you want the extra large fonts without the individual athlete ranki
 - `calculateApparatusRankings(teams)` - Computes top 3 scores per apparatus across all teams
 - `renderMultiTeamSummaryV20/V21/V22/V23()` - Renders rotation view
 - `renderMultiTeamSummaryApparatusV20/V21/V22/V23()` - Renders apparatus view
+
+---
+
+## Sponsor Logo Manual Overrides
+
+The sponsor overlays (`sponsors-cycle.html`, `sponsors-thanks.html`) use canvas-based auto-trimming to normalize logo sizes. For logos that still need fine-tuning, per-sponsor manual overrides are available.
+
+### Override Fields
+
+Each sponsor object in `themes/{themeId}/sponsors[]` supports these optional fields alongside `name` and `url`:
+
+| Field | Type | Range | Default | Description |
+|-------|------|-------|---------|-------------|
+| `scale` | number | 50–200 | 100 | Scale percentage applied on top of auto-trim sizing |
+| `offsetX` | number | -200–200 | 0 | Horizontal pixel offset from center |
+| `offsetY` | number | -200–200 | 0 | Vertical pixel offset from center |
+
+### Data Flow
+
+Overrides can be set in two places:
+
+1. **Theme Editor** (`ThemeEditorPage.jsx`) — Sliders below each sponsor's URL field set `scale`, `offsetX`, `offsetY`. These are **persistent** — saved to Firebase with the theme.
+2. **URL Generator** (`UrlGeneratorPage.jsx`) — A "Sponsor Logo Adjustments" panel appears when any sponsor graphic is selected. Sliders here are **session-level** — they override the theme defaults for the current session and update the preview live, but are not saved back to Firebase.
+
+The full flow:
+
+1. **Firebase** — Theme stores sponsor objects: `{ name, url, scale?, offsetX?, offsetY? }`
+2. **URL Generator** — Loads theme sponsors, initializes local overrides from theme data, merges any session-level slider changes on top
+3. **URL serialization** — Merges session overrides with theme defaults, omits default values (100% scale, 0px offsets) to keep URLs compact
+4. **Overlays** — Read from URL param and apply:
+   - `sponsors-cycle.html`: Adjusts canvas element `width`/`height` for scale, `transform: translate()` for offset
+   - `sponsors-thanks.html`: Applies `transform: scale() translate()` on the `.sponsor-item` container
+
+### Example Sponsor Object
+
+```json
+{
+  "name": "BACA Gymnastics",
+  "url": "https://example.com/baca-logo.png",
+  "scale": 120,
+  "offsetX": -15,
+  "offsetY": 10
+}
+```

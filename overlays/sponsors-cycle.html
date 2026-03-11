@@ -31,7 +31,6 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 60px;
       opacity: 0;
       transition: opacity 0.5s ease-in-out;
     }
@@ -40,10 +39,10 @@
       opacity: 1;
     }
 
-    .sponsor-logo {
-      max-width: 1800px;
-      max-height: 960px;
-      object-fit: contain;
+    .sponsor-slide canvas {
+      display: block;
+      max-width: 1600px;
+      max-height: 950px;
     }
 
     .no-sponsors-message {
@@ -53,67 +52,357 @@
       color: #999;
       text-align: center;
     }
+
+    /* Bounding box overlay for debugging */
+    .bounds-overlay {
+      position: absolute;
+      border: 3px dashed #ff00ff;
+      pointer-events: none;
+      z-index: 10;
+    }
+    .bounds-label {
+      position: absolute;
+      top: -24px;
+      left: 0;
+      font-family: monospace;
+      font-size: 14px;
+      color: #ff00ff;
+      background: rgba(0,0,0,0.7);
+      padding: 2px 6px;
+      border-radius: 3px;
+      white-space: nowrap;
+    }
+    .crop-overlay {
+      position: absolute;
+      border: 3px solid #00ff00;
+      pointer-events: none;
+      z-index: 11;
+    }
+    .crop-label {
+      position: absolute;
+      bottom: -24px;
+      left: 0;
+      font-family: monospace;
+      font-size: 14px;
+      color: #00ff00;
+      background: rgba(0,0,0,0.7);
+      padding: 2px 6px;
+      border-radius: 3px;
+      white-space: nowrap;
+    }
+    /* Guide overlays: center lines + safe margins */
+    #guides-overlay {
+      position: absolute;
+      top: 0; left: 0;
+      width: 1920px;
+      height: 1080px;
+      pointer-events: none;
+      z-index: 20;
+      display: none;
+    }
+    #guides-overlay.visible { display: block; }
+
+    /* Center crosshair lines */
+    .guide-center-h, .guide-center-v {
+      position: absolute;
+      background: rgba(255, 255, 0, 0.4);
+    }
+    .guide-center-h {
+      top: 540px; left: 0;
+      width: 1920px; height: 1px;
+    }
+    .guide-center-v {
+      top: 0; left: 960px;
+      width: 1px; height: 1080px;
+    }
+    /* Center crosshair dot */
+    .guide-center-dot {
+      position: absolute;
+      top: 536px; left: 956px;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: rgba(255, 255, 0, 0.6);
+    }
+
+    /* Action safe (93% - standard broadcast) */
+    .guide-action-safe {
+      position: absolute;
+      top: 37px; left: 67px;       /* 3.5% inset */
+      width: 1786px; height: 1006px;
+      border: 1px solid rgba(255, 100, 100, 0.5);
+    }
+    .guide-action-safe-label {
+      position: absolute;
+      top: 2px; right: 4px;
+      font-family: monospace;
+      font-size: 11px;
+      color: rgba(255, 100, 100, 0.7);
+    }
+
+    /* Title safe (80%) */
+    .guide-title-safe {
+      position: absolute;
+      top: 108px; left: 192px;     /* 10% inset */
+      width: 1536px; height: 864px;
+      border: 1px dashed rgba(100, 180, 255, 0.5);
+    }
+    .guide-title-safe-label {
+      position: absolute;
+      top: 2px; right: 4px;
+      font-family: monospace;
+      font-size: 11px;
+      color: rgba(100, 180, 255, 0.7);
+    }
   </style>
 </head>
 <body>
   <div id="container"></div>
 
+  <!-- Guide overlay: center lines + safe margins -->
+  <div id="guides-overlay">
+    <div class="guide-center-h"></div>
+    <div class="guide-center-v"></div>
+    <div class="guide-center-dot"></div>
+    <div class="guide-action-safe"><span class="guide-action-safe-label">Action Safe</span></div>
+    <div class="guide-title-safe"><span class="guide-title-safe-label">Title Safe</span></div>
+  </div>
+
   <script>
+    const TARGET_HEIGHT = 900; // All logos render at this height
     const params = new URLSearchParams(window.location.search);
     const sponsorsParam = params.get('sponsors') || '';
+    const lockedIndex = params.has('lockedIndex') ? parseInt(params.get('lockedIndex'), 10) : -1;
+    const showBounds = params.get('showBounds') === 'true';
+    const showGuides = params.get('showGuides') === 'true';
 
-    // Parse sponsors
+    // Show guide overlay if requested
+    if (showGuides) {
+      document.getElementById('guides-overlay').classList.add('visible');
+    }
+
     let sponsors = [];
     if (sponsorsParam) {
       try {
         sponsors = JSON.parse(sponsorsParam);
-        if (!Array.isArray(sponsors)) {
-          sponsors = [];
-        }
-      } catch (e) {
-        sponsors = [];
-      }
+        if (!Array.isArray(sponsors)) sponsors = [];
+      } catch (e) { sponsors = []; }
     }
 
     const container = document.getElementById('container');
     let currentIndex = 0;
     let slides = [];
 
-    // Show message if no sponsors
+    // Detect content bounding box by scanning for non-transparent pixels
+    function getContentBounds(imageData, w, h) {
+      const d = imageData.data;
+      let top = h, bottom = 0, left = w, right = 0;
+      const alphaThreshold = 20;
+
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const a = d[(y * w + x) * 4 + 3];
+          if (a > alphaThreshold) {
+            if (y < top) top = y;
+            if (y > bottom) bottom = y;
+            if (x < left) left = x;
+            if (x > right) right = x;
+          }
+        }
+      }
+
+      if (top > bottom || left > right) {
+        return { x: 0, y: 0, w, h }; // Fallback: use entire image
+      }
+
+      // Add small padding (2% of content size)
+      const padX = Math.round((right - left) * 0.02);
+      const padY = Math.round((bottom - top) * 0.02);
+      return {
+        x: Math.max(0, left - padX),
+        y: Math.max(0, top - padY),
+        w: Math.min(w, right - left + padX * 2),
+        h: Math.min(h, bottom - top + padY * 2),
+      };
+    }
+
+    // Get effective bounds: use crop overrides if provided, otherwise auto-detect
+    function getEffectiveBounds(img, sponsor, autoBounds) {
+      // If sponsor has crop overrides, use them (values are in pixels relative to original image)
+      if (sponsor.cropX != null || sponsor.cropY != null || sponsor.cropW != null || sponsor.cropH != null) {
+        return {
+          x: sponsor.cropX ?? autoBounds.x,
+          y: sponsor.cropY ?? autoBounds.y,
+          w: sponsor.cropW ?? autoBounds.w,
+          h: sponsor.cropH ?? autoBounds.h,
+        };
+      }
+      return autoBounds;
+    }
+
+    // Render a trimmed, uniformly-sized logo onto a canvas
+    // Returns { canvas, autoBounds, usedBounds } for bounds visualization
+    function renderTrimmedLogo(img, sponsor) {
+      // Draw full image to offscreen canvas for pixel scanning
+      const offscreen = document.createElement('canvas');
+      offscreen.width = img.naturalWidth;
+      offscreen.height = img.naturalHeight;
+      const octx = offscreen.getContext('2d');
+      octx.drawImage(img, 0, 0);
+
+      let autoBounds;
+      try {
+        const imageData = octx.getImageData(0, 0, offscreen.width, offscreen.height);
+        autoBounds = getContentBounds(imageData, offscreen.width, offscreen.height);
+      } catch (e) {
+        // CORS blocked — fall back to full image
+        autoBounds = { x: 0, y: 0, w: img.naturalWidth, h: img.naturalHeight };
+      }
+
+      const usedBounds = getEffectiveBounds(img, sponsor || {}, autoBounds);
+
+      // Scale content to TARGET_HEIGHT, maintaining aspect ratio
+      const scale = TARGET_HEIGHT / usedBounds.h;
+      const outW = Math.round(usedBounds.w * scale);
+      const outH = TARGET_HEIGHT;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = outW;
+      canvas.height = outH;
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, usedBounds.x, usedBounds.y, usedBounds.w, usedBounds.h, 0, 0, outW, outH);
+
+      return { canvas, autoBounds, usedBounds };
+    }
+
+    // Apply per-sponsor overrides (scale, offsetX, offsetY) to a canvas element
+    function applyOverrides(canvas, sponsor) {
+      const scale = (sponsor.scale || 100) / 100;
+      const ox = sponsor.offsetX || 0;
+      const oy = sponsor.offsetY || 0;
+      if (scale !== 1) {
+        canvas.style.width = Math.round(canvas.width * scale) + 'px';
+        canvas.style.height = Math.round(canvas.height * scale) + 'px';
+      }
+      if (ox || oy) {
+        canvas.style.transform = `translate(${ox}px, ${oy}px)`;
+      }
+    }
+
+    // Draw bounding box overlays on a slide
+    function drawBoundsOverlay(slide, canvas, autoBounds, usedBounds, sponsor) {
+      // We need to show bounds relative to the rendered canvas position
+      // The canvas is centered in the slide, so compute its position
+      const scale = (sponsor.scale || 100) / 100;
+      const canvasDisplayW = canvas.width * scale;
+      const canvasDisplayH = canvas.height * scale;
+      const ox = sponsor.offsetX || 0;
+      const oy = sponsor.offsetY || 0;
+
+      // Canvas is centered in the 1920x1080 slide
+      const canvasLeft = (1920 - canvasDisplayW) / 2 + ox;
+      const canvasTop = (1080 - canvasDisplayH) / 2 + oy;
+
+      // Show the full rendered canvas boundary (green = what's being used)
+      const cropDiv = document.createElement('div');
+      cropDiv.className = 'crop-overlay';
+      cropDiv.style.left = canvasLeft + 'px';
+      cropDiv.style.top = canvasTop + 'px';
+      cropDiv.style.width = canvasDisplayW + 'px';
+      cropDiv.style.height = canvasDisplayH + 'px';
+      const cropLabel = document.createElement('div');
+      cropLabel.className = 'crop-label';
+      cropLabel.textContent = `Rendered: ${Math.round(canvasDisplayW)}×${Math.round(canvasDisplayH)}px (crop: ${usedBounds.x},${usedBounds.y} ${usedBounds.w}×${usedBounds.h})`;
+      cropDiv.appendChild(cropLabel);
+      slide.appendChild(cropDiv);
+
+      // Show auto-detected bounds as magenta dashed (for comparison)
+      if (autoBounds.x !== usedBounds.x || autoBounds.y !== usedBounds.y ||
+          autoBounds.w !== usedBounds.w || autoBounds.h !== usedBounds.h) {
+        // Map auto bounds into rendered space
+        const renderScale = TARGET_HEIGHT / usedBounds.h * scale;
+        const autoLeft = canvasLeft + (autoBounds.x - usedBounds.x) * renderScale;
+        const autoTop = canvasTop + (autoBounds.y - usedBounds.y) * renderScale;
+        const autoW = autoBounds.w * renderScale;
+        const autoH = autoBounds.h * renderScale;
+
+        const boundsDiv = document.createElement('div');
+        boundsDiv.className = 'bounds-overlay';
+        boundsDiv.style.left = autoLeft + 'px';
+        boundsDiv.style.top = autoTop + 'px';
+        boundsDiv.style.width = autoW + 'px';
+        boundsDiv.style.height = autoH + 'px';
+        const boundsLabel = document.createElement('div');
+        boundsLabel.className = 'bounds-label';
+        boundsLabel.textContent = `Auto-detect: ${autoBounds.x},${autoBounds.y} ${autoBounds.w}×${autoBounds.h}`;
+        boundsDiv.appendChild(boundsLabel);
+        slide.appendChild(boundsDiv);
+      }
+    }
+
     if (sponsors.length === 0) {
       container.innerHTML = '<div class="no-sponsors-message">No sponsors configured</div>';
     } else {
-      // Create slide for each sponsor
-      sponsors.forEach((sponsor, index) => {
+      sponsors.forEach((sponsor, idx) => {
         const url = sponsor.url || '';
-        if (!url) return; // Skip sponsors without URLs
+        if (!url) return;
+
+        // If locked to a specific index, skip others
+        if (lockedIndex >= 0 && idx !== lockedIndex) {
+          slides.push(null); // placeholder to keep indices aligned
+          return;
+        }
 
         const slide = document.createElement('div');
         slide.className = 'sponsor-slide';
+        slide.style.position = 'relative'; // for bounds overlay positioning
 
-        const img = document.createElement('img');
-        img.className = 'sponsor-logo';
-        img.src = url;
-        img.alt = sponsor.name || 'Sponsor';
-        img.onerror = () => {
-          slide.dataset.broken = 'true';
-          if (slide.classList.contains('active')) {
-            advanceToNext();
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          const { canvas, autoBounds, usedBounds } = renderTrimmedLogo(img, sponsor);
+          applyOverrides(canvas, sponsor);
+          slide.appendChild(canvas);
+          if (showBounds) {
+            drawBoundsOverlay(slide, canvas, autoBounds, usedBounds, sponsor);
           }
         };
-        slide.appendChild(img);
+        img.onerror = () => {
+          // Try without CORS (won't trim but will display)
+          const fallback = new Image();
+          fallback.onload = () => {
+            const { canvas, autoBounds, usedBounds } = renderTrimmedLogo(fallback, sponsor);
+            applyOverrides(canvas, sponsor);
+            slide.appendChild(canvas);
+            if (showBounds) {
+              drawBoundsOverlay(slide, canvas, autoBounds, usedBounds, sponsor);
+            }
+          };
+          fallback.onerror = () => {
+            slide.dataset.broken = 'true';
+            if (slide.classList.contains('active')) advanceToNext();
+          };
+          fallback.src = url;
+        };
+        img.src = url;
 
         container.appendChild(slide);
         slides.push(slide);
       });
 
-      // Show first slide if we have any
-      if (slides.length > 0) {
-        showSlide(0);
+      // Filter out null placeholders for locked mode
+      const activeSlides = slides.filter(s => s !== null);
 
-        // Only start cycling if more than 1 sponsor
-        if (slides.length > 1) {
-          setInterval(advanceToNext, 3000);
+      if (activeSlides.length > 0) {
+        if (lockedIndex >= 0) {
+          // Locked mode: show only the locked slide, no cycling
+          activeSlides[0].classList.add('active');
+        } else {
+          showSlide(0);
+          if (activeSlides.length > 1) {
+            setInterval(advanceToNext, 3000);
+          }
         }
       } else {
         container.innerHTML = '<div class="no-sponsors-message">No sponsors configured</div>';
@@ -121,35 +410,31 @@
     }
 
     function showSlide(index) {
-      // Skip broken slides
-      if (slides[index].dataset.broken === 'true') {
-        currentIndex = (index + 1) % slides.length;
-        if (currentIndex !== index) {
-          showSlide(currentIndex);
-        }
+      const activeSlides = slides.filter(s => s !== null);
+      if (!activeSlides[index]) return;
+      if (activeSlides[index].dataset.broken === 'true') {
+        currentIndex = (index + 1) % activeSlides.length;
+        if (currentIndex !== index) showSlide(currentIndex);
         return;
       }
-
-      slides.forEach((slide, i) => {
+      activeSlides.forEach((slide, i) => {
         slide.classList.toggle('active', i === index);
       });
       currentIndex = index;
     }
 
     function advanceToNext() {
-      let nextIndex = (currentIndex + 1) % slides.length;
+      if (lockedIndex >= 0) return; // Don't cycle in locked mode
+      const activeSlides = slides.filter(s => s !== null);
+      let nextIndex = (currentIndex + 1) % activeSlides.length;
       let attempts = 0;
-
-      while (slides[nextIndex].dataset.broken === 'true' && attempts < slides.length) {
-        nextIndex = (nextIndex + 1) % slides.length;
+      while (activeSlides[nextIndex].dataset.broken === 'true' && attempts < activeSlides.length) {
+        nextIndex = (nextIndex + 1) % activeSlides.length;
         attempts++;
       }
-
-      if (attempts < slides.length) {
-        showSlide(nextIndex);
-      }
+      if (attempts < activeSlides.length) showSlide(nextIndex);
     }
   </script>
-  <script src="theme-loader.js"></script>
+  <script src="theme-loader.js?v=2"></script>
 </body>
 </html>

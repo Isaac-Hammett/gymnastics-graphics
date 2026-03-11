@@ -22,20 +22,20 @@
       align-items: center;
       gap: 100px;
     }
-    /* Grid layout for 5-6 teams */
+    /* Grid layout for 5+ teams */
     .container.grid-layout {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      grid-template-rows: repeat(2, 1fr);
       gap: 60px;
       padding: 100px;
       place-items: center;
+      align-content: center;
     }
     .team-logo {
       width: 250px;
       height: 250px;
       object-fit: contain;
-      background: var(--meet-accent-secondary, #f4f4f5);
+      background: var(--meet-header-bg, #f4f4f5);
       border-radius: 24px;
       padding: 25px;
     }
@@ -82,6 +82,6 @@
       container.appendChild(img);
     });
   </script>
-  <script src="theme-loader.js"></script>
+  <script src="theme-loader.js?v=2"></script>
 </body>
 </html>

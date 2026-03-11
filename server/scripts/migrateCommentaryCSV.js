@@ -24,7 +24,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const DRY_RUN = process.argv.includes('--dry-run');
 
 // ── Firebase init ────────────────────────────────────────────────────────────
-admin.initializeApp({ credential: admin.credential.applicationDefault() });
+const databaseURL = 'https://gymnastics-graphics-default-rtdb.firebaseio.com';
+admin.initializeApp({
+  credential: admin.credential.applicationDefault(),
+  databaseURL
+});
 const db = admin.database();
 
 // ── CSV paths ────────────────────────────────────────────────────────────────

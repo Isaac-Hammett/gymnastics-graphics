@@ -4,17 +4,15 @@
  * CSS rules scoped under [data-meet-theme] that override chrome elements.
  * This stylesheet is only loaded when a meetTheme is active.
  *
- * Color mappings:
- * --meet-accent-primary   : Primary accent (most prominent)
- * --meet-accent-secondary : Secondary accent (lighter/complementary)
- * --meet-header-bg        : Header bar background
- * --meet-header-text      : Header bar text
- * --meet-footer-bg        : Footer bar background
- * --meet-border-color     : Borders and dividers
- * --meet-badge-bg         : Badges/labels background
- * --meet-badge-text       : Badges/labels text
- * --meet-overlay-bg       : Full-screen overlay background
- * --meet-overlay-text     : Full-screen overlay text
+ * Color mappings (v3.0):
+ * --meet-header-bg    : Header bar background
+ * --meet-content-bg   : Content area background (below header)
+ * --meet-header-text  : Header bar text
+ * --meet-overlay-bg   : Full-screen / body background
+ * --meet-overlay-text : Content/body text
+ * --meet-border-color : Borders and dividers
+ * --meet-badge-bg     : Badges/labels background
+ * --meet-badge-text   : Badges/labels text
  *
  * Important: Team colors are NOT affected - they continue using
  * --home-primary, --away-primary, etc.
@@ -41,15 +39,25 @@
 
 /* ============================================================
    EVENT BAR (lower-third info bar)
+   Header row = --meet-header-bg, Details row = --meet-content-bg
    ============================================================ */
 
 [data-meet-theme] .event-bar-logo {
-  background: var(--meet-accent-secondary, #BFBFBF);
+  background: var(--meet-header-bg, #BFBFBF);
 }
 
 [data-meet-theme] .event-bar-venue {
-  background: var(--meet-accent-secondary, #BFBFBF);
+  background: var(--meet-header-bg, #BFBFBF);
   color: var(--meet-header-text, #000);
+}
+
+[data-meet-theme] .details-row {
+  background: var(--meet-content-bg, #000);
+}
+
+[data-meet-theme] .teams-text,
+[data-meet-theme] .location-text {
+  color: var(--meet-overlay-text, #fff);
 }
 
 /* ============================================================
@@ -73,25 +81,25 @@
    ============================================================ */
 
 [data-meet-theme] .stream-container {
-  background: var(--meet-overlay-bg, #18181b);
+  background: transparent;
 }
 
 [data-meet-theme] .stream-title,
 [data-meet-theme] .stream-event-name,
 [data-meet-theme] .stream-date {
-  color: var(--meet-overlay-text, #fff);
+  color: var(--meet-header-text, #000);
 }
 
 [data-meet-theme] .stream-accent-bar {
-  background: var(--meet-accent-primary, #d4d4d8);
+  background: var(--meet-header-bg, #d4d4d8);
 }
 
 [data-meet-theme] .stream-branding {
-  color: var(--meet-accent-secondary, #666);
+  color: var(--meet-header-text, #666);
 }
 
 [data-meet-theme] .stream-branding span {
-  color: var(--meet-accent-primary, #3b82f6);
+  color: var(--meet-header-bg, #3b82f6);
 }
 
 /* ============================================================
@@ -135,27 +143,12 @@
 
 /* ============================================================
    LOGOS GRAPHIC (team logos display)
+   White pad applied in LOGO WHITE PAD section below
    ============================================================ */
-
-[data-meet-theme] .team-logo {
-  background: var(--meet-accent-secondary, #f4f4f5);
-}
-
-/* ============================================================
-   EVENT BAR (details row)
-   ============================================================ */
-
-[data-meet-theme] .details-row {
-  background: var(--meet-accent-primary);
-}
-
-[data-meet-theme] .teams-text,
-[data-meet-theme] .location-text {
-  color: var(--meet-overlay-text, #fff);
-}
 
 /* ============================================================
    COACHES
+   Header = --meet-header-bg, Content = --meet-content-bg
    ============================================================ */
 
 [data-meet-theme] .coaches-header {
@@ -164,7 +157,7 @@
 }
 
 [data-meet-theme] .coaches-content {
-  background: var(--meet-accent-primary);
+  background: var(--meet-content-bg, #000);
 }
 
 [data-meet-theme] .coach-name {
@@ -173,6 +166,7 @@
 
 /* ============================================================
    WARM-UP / REPLAY
+   Header = --meet-header-bg, Status row = --meet-content-bg
    ============================================================ */
 
 [data-meet-theme] .warmup-header,
@@ -182,7 +176,7 @@
 }
 
 [data-meet-theme] .status-row {
-  background: var(--meet-accent-primary);
+  background: var(--meet-content-bg, #000);
 }
 
 [data-meet-theme] .status-text {
@@ -194,11 +188,22 @@
    ============================================================ */
 
 [data-meet-theme] .frame-overlay .team-label-bg {
-  background: var(--meet-accent-secondary, rgba(255,255,255,0.9));
+  background: var(--meet-header-bg, rgba(255,255,255,0.9));
 }
 
 [data-meet-theme] .frame-overlay .divider-line {
   background: var(--meet-border-color, #fff);
+}
+
+/* Frame overlay logos must stay transparent — no theme background */
+[data-meet-theme] .header-row .team-logo,
+[data-meet-theme] .logo-header .team-logo {
+  background: transparent !important;
+}
+
+/* output.html frame overlays */
+[data-meet-theme] .graphic-frame-overlay .team-logo {
+  background: transparent !important;
 }
 
 /* ============================================================
@@ -215,13 +220,71 @@
 }
 
 /* ============================================================
+   MEET LOGO SIZING
+   Meet logos are often wider/different aspect ratio than team logos.
+   Enlarge them when a theme is active so they aren't tiny.
+   ============================================================ */
+
+/* Rotation slate: fill the 700px panel as much as possible */
+[data-meet-theme] .logo-section .team-logo {
+  width: 680px;
+  height: auto;
+  max-height: 100%;
+}
+
+/* Lower-third bars (event-bar, warm-up, replay): bigger logo section */
+[data-meet-theme] .logo-section {
+  width: 140px;
+  min-width: 140px;
+}
+[data-meet-theme] .logo-section img {
+  width: 130px;
+  height: 130px;
+}
+
+/* Stream starting/thanks: larger centered logo */
+[data-meet-theme] .stream-logo {
+  width: 600px;
+  height: auto;
+}
+
+/* Header logos (sponsors, team-roster): larger */
+[data-meet-theme] .header-logo {
+  width: 120px;
+  height: 120px;
+}
+
+/* ============================================================
+   LOGO CONTRAST
+   When theme colors are extracted from a logo, the logo can
+   wash out against the matching background. Make the logo
+   container itself white so the logo pops.
+   ============================================================ */
+
+/* Logo containers — make the whole panel white so logo pops */
+[data-meet-theme] .logo-section {
+  background: rgba(255, 255, 255, 0.92);
+}
+
+/* Logo image itself must be transparent so it doesn't create a box-in-box */
+[data-meet-theme] .logo-section .team-logo,
+[data-meet-theme] .logo-section img {
+  background: transparent;
+}
+
+/* Logos graphic (standalone logo cards, no .logo-section parent) */
+[data-meet-theme] .container > .team-logo {
+  background: rgba(255, 255, 255, 0.92);
+}
+
+/* ============================================================
    GENERIC ACCENT ELEMENTS
    These catch any elements using generic class names
    ============================================================ */
 
 [data-meet-theme] .accent-bar,
 [data-meet-theme] .accent-stripe {
-  background: var(--meet-accent-primary);
+  background: var(--meet-header-bg);
 }
 
 [data-meet-theme] .accent-border {

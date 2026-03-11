@@ -1,18 +1,20 @@
 # PRD: Custom Meet Theme System
 
-**Version:** 2.0
+**Version:** 3.0
 **Date:** 2026-03-06
 **Status:** COMPLETE
-**Last Updated:** 2026-03-07
+**Last Updated:** 2026-03-07 (post-completion bug fix: sponsor inline renderer meetTheme passthrough)
 **Depends On:** PRD-Graphics-Registry (foundation)
 **Blocks:** Pink Meet production (March 2026)
 
-### All Phases Complete
-- **Phases 1-6** (Infrastructure): Theme Editor, theme-loader.js, theme-overrides.css, competition dropdown, URL transport
-- **Phase 7** (Color Coverage): All overlays now respond to `--meet-*` CSS variables
-- **Phase 8** (Logo Substitution): Event-level graphics show meet logo when theme active
-- **Phase 9** (Event Sponsors): Theme Editor supports event-level sponsors
-- **Phase 10** (Event Summary V24): New themed Event Summary layout using `--meet-*` variables
+### Phase Summary
+- **Phases 1-6** (Infrastructure): Theme Editor, theme-loader.js, theme-overrides.css, competition dropdown, URL transport ✅
+- **Phase 7** (Color Coverage): All overlays now respond to `--meet-*` CSS variables ✅
+- **Phase 8** (Logo Substitution): Event-level graphics show meet logo when theme active ✅
+- **Phase 9** (Event Sponsors): Theme Editor supports event-level sponsors ✅
+- **Phase 10** (Event Summary V24): New themed Event Summary layout using `--meet-*` variables ✅
+- **Phase 11** (Quick Actions): output.html inline renderers now use theme colors and meet logos ✅
+- **Phase 12** (Color Model Simplification): Reduce 10 confusing color fields to 8 clear ones, fix inconsistent overlay rendering ✅
 
 ---
 
@@ -255,7 +257,7 @@ theme-loader.js reads URL param, fetches theme from Firebase
          |
          v
 CSS Variables set on document.documentElement
-(--meet-accent-primary, --meet-header-bg, --meet-border-color, etc.)
+(--meet-header-bg, --meet-content-bg, --meet-overlay-bg, --meet-border-color, etc.)
          |
          v
 CSS rules using [data-meet-theme] selector override chrome elements
@@ -272,16 +274,14 @@ Team-specific areas use existing team color CSS vars (unchanged)
   "name": "Pink Meet 2026",
   "description": "Breast cancer awareness fundraiser",
   "colors": {
-    "accentPrimary": "#E91E8C",
-    "accentSecondary": "#FFB6D9",
-    "headerBg": "#E91E8C",
-    "headerText": "#FFFFFF",
-    "footerBg": "#E91E8C",
-    "borderColor": "#E91E8C",
-    "badgeBg": "#E91E8C",
+    "headerBar": "#E91E8C",
+    "contentArea": "#000000",
+    "bodyBackground": "#2f001c",
+    "borderDivider": "#E91E8C",
+    "badge": "#E91E8C",
     "badgeText": "#FFFFFF",
-    "overlayBg": "#1a0a12",
-    "overlayText": "#FFFFFF"
+    "textOnHeader": "#FFFFFF",
+    "textOnContent": "#FFFFFF"
   },
   "logos": {
     "meetLogo": "https://...",
@@ -303,12 +303,25 @@ Team-specific areas use existing team color CSS vars (unchanged)
 
 ### CSS Variable Strategy
 
+**8 CSS custom properties** map to the 8 theme color fields:
+
+| Firebase Key | CSS Variable | Where It Appears |
+|---|---|---|
+| `headerBar` | `--meet-header-bg` | Header bars on all overlays, event summary header/footer |
+| `contentArea` | `--meet-content-bg` | Content area below header bars (coaches list, event-bar details) |
+| `bodyBackground` | `--meet-overlay-bg` | Full-screen backgrounds (roster body, sponsors grid, stream) |
+| `borderDivider` | `--meet-border-color` | Grid lines, frame borders, separators |
+| `badge` | `--meet-badge-bg` | Rotation badges, rank indicators |
+| `badgeText` | `--meet-badge-text` | Text on badges |
+| `textOnHeader` | `--meet-header-text` | Text when on header bar backgrounds |
+| `textOnContent` | `--meet-overlay-text` | Text on content/body area backgrounds |
+
 Theme colors are applied via CSS custom properties with fallbacks:
 
 ```css
 /* Only active when [data-meet-theme] is set */
 [data-meet-theme] .event-summary-header {
-  background: var(--meet-header-bg, #27272a);       /* falls back to current dark */
+  background: var(--meet-header-bg, #27272a);
   border-bottom: 3px solid var(--meet-border-color, transparent);
 }
 [data-meet-theme] .rotation-badge {
@@ -317,7 +330,14 @@ Theme colors are applied via CSS custom properties with fallbacks:
 }
 ```
 
+**Consistent overlay pattern:** All overlays follow the same visual structure:
+- **Header bar** → `--meet-header-bg` + `--meet-header-text`
+- **Content area** → `--meet-content-bg` + `--meet-overlay-text`
+- **Body/full-screen** → `--meet-overlay-bg` + `--meet-overlay-text`
+
 Team columns are NOT affected -- they continue using `--home-primary`, `--away-primary` etc.
+
+**Backward compatibility:** `theme-loader.js` accepts both old (v2.0) and new (v3.0) field names. Old themes with `accentPrimary`, `accentSecondary`, `headerBg`, etc. still work.
 
 ---
 
@@ -370,7 +390,17 @@ Different graphic types have different available zones:
 
 ---
 
-## 7. Out of Scope (v1.0)
+## 7. Post-Completion Bug Fixes
+
+| Bug | Symptom | Root Cause | Fix | Date |
+|-----|---------|------------|-----|------|
+| v2.0/v3.0 color ordering | `contentArea` overwritten by legacy `accentPrimary` | Mapping iteration order — v3.0 entries processed before v2.0 | Reorder: v2.0 first, v3.0 last (last write wins) | 2026-03-07 |
+| Sponsors-thanks race condition | Inline JS background overrides CSS variable | `updateBackground()` runs before theme loads from Firebase | MutationObserver clears inline bg when `data-meet-theme` detected | 2026-03-07 |
+| Sponsor iframe renderers missing meetTheme | Sponsors-thanks/cycle/bug show wrong logo + default colors via Quick Actions | 3 sponsor iframe renderers in output.html didn't pass `meetTheme` URL param | Added `meetTheme` forwarding to all 3 sponsor renderers | 2026-03-07 |
+
+---
+
+## 8. Out of Scope (v1.0)
 
 - **Mid-show theme toggle** -- Turning theme on/off during a broadcast (e.g., only for one rotation)
 - **Per-graphic theme overrides** -- Different theme settings per graphic type
