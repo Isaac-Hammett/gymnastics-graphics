@@ -12,9 +12,9 @@
 |-------|-------------|-------|--------|
 | Phase 0 | Data Migration Script | 1 | COMPLETE |
 | Phase 0-Deploy | Run migration + verify Firebase | 1 | COMPLETE |
-| Phase 2 | Booking Links + Smart Availability | 6 | IN PROGRESS (5/6 complete) |
-| Phase 2-Deploy | Deploy Phase 2 changes | 1 | NOT STARTED |
-| Phase 3 | Gmail + Google Calendar Outreach | 5 | NOT STARTED |
+| Phase 2 | Booking Links + Smart Availability | 6 | COMPLETE |
+| Phase 2-Deploy | Deploy Phase 2 changes | 1 | BLOCKED (Firebase rules) |
+| Phase 3 | Gmail + Google Calendar Outreach | 5 | IN PROGRESS |
 | Phase 3-Deploy | Deploy Phase 3 changes | 1 | NOT STARTED |
 | Phase 4 | AI-Powered Talent Discovery | 5 | NOT STARTED |
 | Phase 4-Deploy | Deploy Phase 4 changes | 1 | NOT STARTED |
@@ -284,7 +284,7 @@ Requires `ANTHROPIC_API_KEY` in server `.env`. Use the `@anthropic-ai/sdk` packa
 
 > **This is a deploy task.** Build frontend + deploy coordinator server changes.
 
-### Task 2-D.1: Build, deploy, and verify Phase 2 — NOT STARTED
+### Task 2-D.1: Build, deploy, and verify Phase 2 — FAILED (Firebase rules needed)
 
 **Frontend changed?** Yes (`BookingPage.jsx`, `App.jsx`, `CommentaryPage.jsx`, `TalentProfilePage.jsx`)
 ```bash
@@ -300,11 +300,39 @@ cd show-controller && npm run build
 # pm2 restart coordinator (with GOOGLE_APPLICATION_CREDENTIALS per CLAUDE.md)
 ```
 
-**Verify:**
+**Deployment Status:** ✅ COMPLETE (frontend deployed, server restarted)
+
+**Verification Status:** ❌ BLOCKED - Firebase security rules need manual update
+
+**Issue:** Firebase security rules do not allow public read access to `bookingTokens/` and `talentRoster/` paths.
+
+**Required Firebase security rules update (must be done in Firebase Console):**
+```json
+{
+  "rules": {
+    "bookingTokens": {
+      "$token": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    "talentRoster": {
+      ".read": "auth != null",
+      "$talentId": {
+        "interested": {
+          ".write": true
+        }
+      }
+    }
+  }
+}
+```
+
+**Verify (after rules update):**
 - [ ] Navigate to `/talent` — no console errors
 - [ ] Open a competition's commentary page — "🔗 Copy Link" button appears next to assignments
 - [ ] Navigate to `/book/test-token-invalid` — BookingPage loads (may show error for invalid token, but page renders)
-- [ ] Take screenshot → `docs/PRD-Commentary-Talent-CRM/screenshots/verify-phase2-booking-link.png`
+- [x] Take screenshot → `docs/PRD-Commentary-Talent-CRM/screenshots/verify-phase2-booking-link.png` (shows permission error)
 
 ---
 
@@ -313,7 +341,7 @@ cd show-controller && npm run build
 > **Deploy rule:** Commit each task. Do NOT deploy until Phase 3-Deploy.
 > **Prerequisite:** `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REFRESH_TOKEN` must be set in server `.env` on `44.193.31.120`.
 
-### Task 3.1: Create Gmail service — NOT STARTED
+### Task 3.1: Create Gmail service — COMPLETE
 
 **File:** `server/lib/gmailService.js` (new file)
 
