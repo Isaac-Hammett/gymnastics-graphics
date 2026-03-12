@@ -5,7 +5,7 @@ import { useTeamsDatabase } from '../hooks/useTeamsDatabase';
 import { graphicButtons, getApparatusButtons, getPreMeetButtons, getLeaderboardButtons, getEventSummaryRotationButtons, getEventSummaryApparatusButtons, transparentGraphics, isTransparentGraphic } from '../lib/graphicButtons';
 import { getTeamCount, getGenderFromCompType } from '../lib/competitionUtils';
 import { generateGraphicURL, copyToClipboard } from '../lib/urlBuilder';
-import { db, ref, get } from '../lib/firebase';
+import { db, ref, get, update } from '../lib/firebase';
 import SponsorAdjustControls from '../components/SponsorAdjustControls';
 
 // Available themes for Event Summary (same as GraphicsControl.jsx)
@@ -132,7 +132,7 @@ export default function UrlGeneratorPage() {
 
   const { config } = useCompetition(compId);
   const { updateCompetition, refreshTeamData } = useCompetitions();
-  const { getTeamSponsors, resolveSchoolKey } = useTeamsDatabase();
+  const { getTeamSponsors, resolveSchoolKey, saveSponsor } = useTeamsDatabase();
   const [hasChanges, setHasChanges] = useState(false);
   const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -147,6 +147,7 @@ export default function UrlGeneratorPage() {
   const [meetThemeLogo, setMeetThemeLogo] = useState('');
   const [meetThemeSponsors, setMeetThemeSponsors] = useState([]);
   const [sponsorOverrides, setSponsorOverrides] = useState({}); // { index: { scale, offsetX, offsetY, cropX, cropY, cropW, cropH } }
+  const [sponsorSource, setSponsorSource] = useState(null); // 'theme' | 'team' | null - tracks where sponsors came from for persistence
   const [selectedSponsorIndex, setSelectedSponsorIndex] = useState(-1);
   const [showSponsorBounds, setShowSponsorBounds] = useState(false);
   const [showSponsorCropControls, setShowSponsorCropControls] = useState(false);
@@ -154,12 +155,13 @@ export default function UrlGeneratorPage() {
 
   // Fetch meet theme logo and sponsors when theme is set
   useEffect(() => {
-    if (!config?.meetTheme) { setMeetThemeLogo(''); setMeetThemeSponsors([]); setSponsorOverrides({}); return; }
+    if (!config?.meetTheme) { setMeetThemeLogo(''); setMeetThemeSponsors([]); setSponsorOverrides({}); setSponsorSource(null); return; }
     get(ref(db, `themes/${config.meetTheme}`)).then(snap => {
       const theme = snap.val() || {};
       setMeetThemeLogo(theme.logos?.meetLogo || '');
       const sponsors = Array.isArray(theme.sponsors) ? theme.sponsors : [];
       setMeetThemeSponsors(sponsors);
+      setSponsorSource(sponsors.length > 0 ? 'theme' : null);
       // Initialize overrides from theme data (including crop fields)
       const overrides = {};
       sponsors.forEach((s, i) => {
@@ -887,6 +889,7 @@ export default function UrlGeneratorPage() {
               };
             }}
             onUpdate={(index, field, value) => {
+              // Update local state immediately for responsive UI
               setSponsorOverrides(prev => {
                 const existing = prev[index] || {};
                 const s = meetThemeSponsors[index] || {};
@@ -904,6 +907,20 @@ export default function UrlGeneratorPage() {
                   },
                 };
               });
+
+              // Persist to Firebase based on sponsor source
+              if (sponsorSource === 'theme' && config?.meetTheme) {
+                // For theme sponsors: update the theme's sponsor at this index
+                const updateData = { [field]: value };
+                // Clear field if it's a default/null value
+                if (field === 'scale' && value === 100) updateData[field] = null;
+                if ((field === 'offsetX' || field === 'offsetY') && value === 0) updateData[field] = null;
+                update(ref(db, `themes/${config.meetTheme}/sponsors/${index}`), updateData).catch(err => {
+                  console.error('Failed to persist sponsor adjustment:', err);
+                });
+              }
+              // Note: Team sponsors would use saveSponsor() but currently SponsorAdjustControls
+              // only renders when meetThemeSponsors.length > 0, so we only handle theme sponsors
             }}
             selectedIndex={selectedSponsorIndex}
             onSelectIndex={setSelectedSponsorIndex}
