@@ -168,7 +168,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 
 **Verification:** Rankings panel now shows Week 4 (dated 2026-02-02) which is the correct week for Feb 7, 2026.
 
-### Phase 6: Bug Fixes (P0) - IN PROGRESS (12/17)
+### Phase 6: Bug Fixes (P0) - IN PROGRESS (13/17)
 
 **See:** [BUGS.md](./BUGS.md) for full details on each bug.
 
@@ -185,7 +185,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 35 | BUG-030 | Low | Fix `normalizeTeamName()` stripping "state" — false matches for state schools | COMPLETE | Removed "state" from regex pattern in both `show-controller/src/lib/roadToNationals.js:206` and `show-controller/src/hooks/useRoadToNationals.js:248`. Now "Penn State" → "pennstate" and "Penn" → "penn" (no collision). Added explanatory comment. |
 | Task 36 | BUG-025 | Low | Document `parseScore()` zero-as-null assumption | COMPLETE | Added comprehensive JSDoc explaining RTN's use of 0.0000 as "no score recorded" placeholder, why this is safe for gymnastics (NCAA Code of Points ensures all completed routines score > 0), and how to handle future edge cases if needed. Added inline comment at the check itself. Build not required (docs-only change). |
 | Task 37 | BUG-031, BUG-038 | Low | Fix "8 endpoints" → "7 endpoints" across code and docs | COMPLETE | Updated `server/lib/rtnStatsService.js:8` comment. Updated PRD Section 1 (line 20), Section 5 Phase 1 (line 211), Story 2 (line 84). Updated tech plan Section 5.2 table (lines 483-484). Build not required (docs-only change). |
-| Task 38 | BUG-033 | Low | Add dashboard staff fallback for teams with null coach data in RTN teams endpoint | NOT STARTED | When `hc_first`/`hc_last` are null, fall back to `getCoachingStaff()` (dashboard endpoint). Affects 5 women's teams: George Washington, Northern Illinois, Pennsylvania, Utah, UW-Stout. |
+| Task 38 | BUG-033 | Low | Add dashboard staff fallback for teams with null coach data in RTN teams endpoint | COMPLETE | Updated `getHeadCoach()` and `getHeadCoaches()` in `show-controller/src/lib/roadToNationals.js` to fall back to `getCoachingStaff()` when `hc_first`/`hc_last` are null. Updated `useHeadCoaches` hook in `show-controller/src/hooks/useRoadToNationals.js` with same fallback pattern. Now works for George Washington, Northern Illinois, Pennsylvania, Utah, UW-Stout. Build verified. |
 | Task 39 | BUG-034 | Medium | Fix `useRtnStats` client hook hardcoded team loop (6 → dynamic teamCount) | NOT STARTED | Replace `for (let i = 1; i <= 6; i++)` with `for (let i = 1; i <= teamCount; i++)` at `show-controller/src/hooks/useRtnStats.js:101`. Required alongside Task 28 for `womens-7` to work end-to-end. |
 | Task 40 | BUG-035 | High | Fix `ingestTeamStats` to use `update()` instead of `set()` — preserve previous good data | NOT STARTED | Change `statsRef.set(writeData)` to `statsRef.update(filteredData)` at `server/lib/rtnStatsService.js:828-829`. Filter out null values before writing so partial re-ingestion doesn't destroy previously-good endpoint data. |
 | Task 41 | BUG-036 | Medium | Add fallback to `syncStatsToConfig` for unranked teams using individualAverages | NOT STARTED | When `teamRanking` is null, compute approximate Ave/High from `individualAverages` and `individualHighs` data. Affects `server/lib/rtnStatsService.js:1006-1018`. |

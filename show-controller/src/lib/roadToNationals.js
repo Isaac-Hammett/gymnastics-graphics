@@ -51,6 +51,8 @@ export async function fetchTeams(gender) {
 
 /**
  * Get head coach for a team
+ * Falls back to dashboard staff endpoint if teams endpoint returns null for coach
+ * (BUG-033: 5 women's teams have null hc_first/hc_last in teams endpoint)
  * @param {string} teamName - Team name (e.g., "California", "Navy", "Stanford")
  * @param {'mens' | 'womens'} gender - Gender of the team
  * @returns {Promise<{firstName: string, lastName: string, fullName: string} | null>}
@@ -76,6 +78,19 @@ export async function getHeadCoach(teamName, gender = 'mens') {
         firstName: team.hc_first.trim(),
         lastName: team.hc_last.trim(),
         fullName: `${team.hc_first.trim()} ${team.hc_last.trim()}`,
+      };
+    }
+
+    // Fallback to dashboard staff endpoint if teams endpoint has null coach data
+    // This handles teams like George Washington, Northern Illinois, Pennsylvania, Utah, UW-Stout
+    // where hc_first/hc_last are null in the teams endpoint but staff data exists in dashboard
+    const staff = await getCoachingStaff(teamName, gender);
+    const headCoach = staff.find(s => s.position.toLowerCase().includes('head'));
+    if (headCoach) {
+      return {
+        firstName: headCoach.firstName,
+        lastName: headCoach.lastName,
+        fullName: headCoach.fullName,
       };
     }
 
@@ -131,11 +146,14 @@ export async function getTeamInfo(teamName, gender = 'mens') {
 
 /**
  * Get head coaches for multiple teams
+ * Falls back to dashboard staff endpoint if teams endpoint returns null for coach
+ * (BUG-033: 5 women's teams have null hc_first/hc_last in teams endpoint)
  * @param {Array<{name: string, gender: 'mens' | 'womens'}>} teams
  * @returns {Promise<Map<string, {firstName: string, lastName: string, fullName: string}>>}
  */
 export async function getHeadCoaches(teams) {
   const results = new Map();
+  const teamsNeedingFallback = [];
 
   // Group by gender to minimize API calls
   const mensTeams = teams.filter(t => t.gender === 'mens');
@@ -152,6 +170,8 @@ export async function getHeadCoaches(teams) {
     const coach = findCoachInData(team.name, mensData.teams);
     if (coach) {
       results.set(team.name, coach);
+    } else {
+      teamsNeedingFallback.push(team);
     }
   }
 
@@ -160,6 +180,26 @@ export async function getHeadCoaches(teams) {
     const coach = findCoachInData(team.name, womensData.teams);
     if (coach) {
       results.set(team.name, coach);
+    } else {
+      teamsNeedingFallback.push(team);
+    }
+  }
+
+  // Fallback to dashboard staff endpoint for teams with null coach data
+  // This handles teams like George Washington, Northern Illinois, Pennsylvania, Utah, UW-Stout
+  for (const team of teamsNeedingFallback) {
+    try {
+      const staff = await getCoachingStaff(team.name, team.gender);
+      const headCoach = staff.find(s => s.position.toLowerCase().includes('head'));
+      if (headCoach) {
+        results.set(team.name, {
+          firstName: headCoach.firstName,
+          lastName: headCoach.lastName,
+          fullName: headCoach.fullName,
+        });
+      }
+    } catch {
+      // Fallback failed, skip this team
     }
   }
 
