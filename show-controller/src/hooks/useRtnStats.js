@@ -99,7 +99,8 @@ export function useRtnStats(compId, config) {
   const teamKeys = useMemo(() => {
     if (!config) return [];
     const keys = [];
-    for (let i = 1; i <= 6; i++) {
+    // Use dynamic teamCount from parseCompetitionType() to support womens-7 (BUG-034)
+    for (let i = 1; i <= teamCount; i++) {
       const teamName = config[`team${i}Name`];
       if (teamName) {
         const teamKey = buildTeamDbKey(teamName, gender);
@@ -109,7 +110,7 @@ export function useRtnStats(compId, config) {
       }
     }
     return keys;
-  }, [config, gender]);
+  }, [config, gender, teamCount]);
 
   // Subscribe to shared stats store (teamsDatabase/stats/{teamKey}/) for pre-show
   useEffect(() => {
@@ -221,14 +222,15 @@ export function useRtnStats(compId, config) {
 
   // Derive meta from the first team that has it
   const meta = useMemo(() => {
-    for (let i = 1; i <= 6; i++) {
+    // Use dynamic teamCount to support womens-7 (BUG-034)
+    for (let i = 1; i <= teamCount; i++) {
       const teamStats = stats[`team${i}`];
       if (teamStats?.meta) {
         return teamStats.meta;
       }
     }
     return null;
-  }, [stats]);
+  }, [stats, teamCount]);
 
   // Check staleness from meta.fetchedAt
   const isStale = useMemo(() => {
