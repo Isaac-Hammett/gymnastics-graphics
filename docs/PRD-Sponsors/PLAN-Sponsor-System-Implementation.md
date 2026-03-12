@@ -1,7 +1,7 @@
 # Plan: Sponsor System — Implementation Tracker
 
-**Status:** IN PROGRESS (17/18 tasks complete)
-**Last Updated:** 2026-03-11
+**Status:** COMPLETE (18/18 tasks complete)
+**Last Updated:** 2026-03-12
 
 ---
 
@@ -26,7 +26,7 @@
 | T15 | K | `show-controller/src/pages/MediaManagerPage.jsx` | Add per-sponsor adjustment controls (crop, scale, offset) to SponsorsView with inline preview | COMPLETE |
 | T16 | L | `show-controller/src/components/GraphicsControl.jsx` | Fix sponsor serialization to include all adjustment fields (scale, offset, crop) — currently only passes name and url | COMPLETE |
 | T17 | M | `show-controller/src/pages/UrlGeneratorPage.jsx` | Persist sponsor overrides back to Firebase via saveSponsor (currently session-only local state) | COMPLETE |
-| T18 | N | — | Build + deploy SPA + overlay files to production; verify sponsor logos center correctly and adjustments persist | NOT STARTED |
+| T18 | N | — | Build + deploy SPA + overlay files to production; verify sponsor logos center correctly and adjustments persist | COMPLETE |
 
 ---
 
@@ -47,7 +47,7 @@
 | **K** | Media Manager: Adjust Controls | T15 | COMPLETE |
 | **L** | GraphicsControl: Pass All Fields | T16 | COMPLETE |
 | **M** | URL Generator: Persist Overrides | T17 | COMPLETE |
-| **N** | Build & Deploy v2 | T18 | NOT STARTED |
+| **N** | Build & Deploy v2 | T18 | COMPLETE |
 
 ---
 
