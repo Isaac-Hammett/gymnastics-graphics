@@ -20,6 +20,8 @@ import {
   ArrowUpIcon,
   ArrowDownIcon,
   TrashIcon,
+  AdjustmentsHorizontalIcon,
+  ArrowPathIcon,
 } from '@heroicons/react/24/solid';
 
 export default function MediaManagerPage() {
@@ -688,8 +690,69 @@ function SponsorsView({ teamKey, getTeamSponsors, saveSponsor, deleteSponsor, re
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [logoError, setLogoError] = useState(false);
+  const [expandedSponsorKey, setExpandedSponsorKey] = useState(null);
+  const [adjustSaving, setAdjustSaving] = useState(false);
 
   const sponsors = getTeamSponsors(teamKey);
+
+  // Build preview iframe URL for a single sponsor
+  const buildPreviewUrl = (sponsor) => {
+    const sponsorData = [{
+      name: sponsor.name || '',
+      url: sponsor.url || '',
+      ...(sponsor.scale != null && sponsor.scale !== 100 ? { scale: sponsor.scale } : {}),
+      ...(sponsor.offsetX ? { offsetX: sponsor.offsetX } : {}),
+      ...(sponsor.offsetY ? { offsetY: sponsor.offsetY } : {}),
+      ...(sponsor.cropX != null ? { cropX: sponsor.cropX } : {}),
+      ...(sponsor.cropY != null ? { cropY: sponsor.cropY } : {}),
+      ...(sponsor.cropW != null ? { cropW: sponsor.cropW } : {}),
+      ...(sponsor.cropH != null ? { cropH: sponsor.cropH } : {}),
+    }];
+    const params = new URLSearchParams();
+    params.set('sponsors', JSON.stringify(sponsorData));
+    params.set('lockedIndex', '0');
+    return `/overlays/sponsors-cycle.html?${params.toString()}`;
+  };
+
+  // Handle adjustment field change with auto-save
+  const handleAdjustmentChange = async (sponsor, field, value) => {
+    setAdjustSaving(true);
+    const updatedData = {
+      name: sponsor.name,
+      url: sponsor.url,
+      tier: sponsor.tier,
+      order: sponsor.order,
+      scale: sponsor.scale,
+      offsetX: sponsor.offsetX,
+      offsetY: sponsor.offsetY,
+      cropX: sponsor.cropX,
+      cropY: sponsor.cropY,
+      cropW: sponsor.cropW,
+      cropH: sponsor.cropH,
+      [field]: value,
+    };
+    await saveSponsor(teamKey, sponsor.key, updatedData);
+    setAdjustSaving(false);
+  };
+
+  // Reset all adjustments
+  const handleResetAdjustments = async (sponsor) => {
+    setAdjustSaving(true);
+    await saveSponsor(teamKey, sponsor.key, {
+      name: sponsor.name,
+      url: sponsor.url,
+      tier: sponsor.tier,
+      order: sponsor.order,
+      scale: null,
+      offsetX: null,
+      offsetY: null,
+      cropX: null,
+      cropY: null,
+      cropW: null,
+      cropH: null,
+    });
+    setAdjustSaving(false);
+  };
 
   // Convert name to URL-safe key
   const slugify = (name) => {
@@ -765,78 +828,232 @@ function SponsorsView({ teamKey, getTeamSponsors, saveSponsor, deleteSponsor, re
       {/* Sponsor List */}
       {sponsors.length > 0 ? (
         <div className="space-y-2 mb-4">
-          {sponsors.map((sponsor, idx) => (
-            <div
-              key={sponsor.key}
-              className="flex items-center gap-3 p-2 bg-zinc-700/50 rounded"
-            >
-              {/* Logo thumbnail */}
-              <div className="w-12 h-12 bg-zinc-600 rounded flex items-center justify-center overflow-hidden flex-shrink-0">
-                <img
-                  src={sponsor.url}
-                  alt={sponsor.name}
-                  className="w-12 h-12 object-contain"
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                    e.target.nextSibling.style.display = 'flex';
-                  }}
-                />
-                <div className="w-12 h-12 items-center justify-center text-zinc-500 text-xs hidden">
-                  No img
+          {sponsors.map((sponsor, idx) => {
+            const isExpanded = expandedSponsorKey === sponsor.key;
+            const hasAdjustments = sponsor.scale != null || sponsor.offsetX != null || sponsor.offsetY != null ||
+              sponsor.cropX != null || sponsor.cropY != null || sponsor.cropW != null || sponsor.cropH != null;
+
+            return (
+              <div key={sponsor.key} className="bg-zinc-700/50 rounded overflow-hidden">
+                {/* Main sponsor row */}
+                <div className="flex items-center gap-3 p-2">
+                  {/* Logo thumbnail */}
+                  <div className="w-12 h-12 bg-zinc-600 rounded flex items-center justify-center overflow-hidden flex-shrink-0">
+                    <img
+                      src={sponsor.url}
+                      alt={sponsor.name}
+                      className="w-12 h-12 object-contain"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'flex';
+                      }}
+                    />
+                    <div className="w-12 h-12 items-center justify-center text-zinc-500 text-xs hidden">
+                      No img
+                    </div>
+                  </div>
+
+                  {/* Name */}
+                  <span className="text-sm text-zinc-200 flex-1 truncate">{sponsor.name}</span>
+
+                  {/* Tier badge */}
+                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${tierColors[sponsor.tier] || tierColors.official}`}>
+                    {sponsor.tier}
+                  </span>
+
+                  {/* URL (truncated) */}
+                  {sponsor.url ? (
+                    <a
+                      href={sponsor.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-zinc-500 hover:text-zinc-300 truncate max-w-[120px]"
+                      title={sponsor.url}
+                    >
+                      {sponsor.url.replace(/^https?:\/\//, '').slice(0, 20)}...
+                    </a>
+                  ) : (
+                    <span className="text-xs text-zinc-600">No URL</span>
+                  )}
+
+                  {/* Adjust button */}
+                  <button
+                    onClick={() => setExpandedSponsorKey(isExpanded ? null : sponsor.key)}
+                    className={`p-1 rounded transition-colors ${isExpanded ? 'text-amber-400 bg-amber-400/10' : hasAdjustments ? 'text-amber-400/70 hover:text-amber-400' : 'text-zinc-500 hover:text-zinc-300'}`}
+                    title="Adjust logo positioning"
+                  >
+                    <AdjustmentsHorizontalIcon className="w-4 h-4" />
+                  </button>
+
+                  {/* Reorder buttons */}
+                  <button
+                    onClick={() => handleMove(idx, -1)}
+                    disabled={idx === 0}
+                    className="p-1 text-zinc-500 hover:text-zinc-300 disabled:opacity-30"
+                    title="Move up"
+                  >
+                    <ArrowUpIcon className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleMove(idx, 1)}
+                    disabled={idx === sponsors.length - 1}
+                    className="p-1 text-zinc-500 hover:text-zinc-300 disabled:opacity-30"
+                    title="Move down"
+                  >
+                    <ArrowDownIcon className="w-4 h-4" />
+                  </button>
+
+                  {/* Delete button */}
+                  <button
+                    onClick={() => handleDelete(sponsor.key)}
+                    className="p-1 text-red-500/50 hover:text-red-400"
+                    title="Delete sponsor"
+                  >
+                    <TrashIcon className="w-4 h-4" />
+                  </button>
                 </div>
+
+                {/* Adjustment Panel (collapsible) */}
+                {isExpanded && (
+                  <div className="p-4 bg-zinc-800/50 border-t border-zinc-600">
+                    <div className="flex gap-4">
+                      {/* Live Preview */}
+                      <div className="flex-shrink-0">
+                        <div className="text-xs text-zinc-500 mb-1">Preview</div>
+                        <div className="w-80 h-44 bg-zinc-900 rounded overflow-hidden border border-zinc-600">
+                          <iframe
+                            key={`${sponsor.key}-${sponsor.scale}-${sponsor.offsetX}-${sponsor.offsetY}-${sponsor.cropX}-${sponsor.cropY}-${sponsor.cropW}-${sponsor.cropH}`}
+                            src={buildPreviewUrl(sponsor)}
+                            className="w-full h-full border-0"
+                            title={`Preview ${sponsor.name}`}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Adjustment Controls */}
+                      <div className="flex-1 space-y-3">
+                        {/* Crop Controls */}
+                        <div>
+                          <div className="text-xs text-zinc-500 mb-1">Crop (source pixels)</div>
+                          <div className="flex gap-2 flex-wrap">
+                            <label className="flex items-center gap-1">
+                              <span className="text-xs text-zinc-400">X:</span>
+                              <input
+                                type="number"
+                                value={sponsor.cropX ?? ''}
+                                onChange={(e) => handleAdjustmentChange(sponsor, 'cropX', e.target.value === '' ? null : parseInt(e.target.value, 10))}
+                                placeholder="auto"
+                                className="w-16 px-2 py-1 bg-zinc-700 border border-zinc-600 rounded text-xs text-white"
+                              />
+                            </label>
+                            <label className="flex items-center gap-1">
+                              <span className="text-xs text-zinc-400">Y:</span>
+                              <input
+                                type="number"
+                                value={sponsor.cropY ?? ''}
+                                onChange={(e) => handleAdjustmentChange(sponsor, 'cropY', e.target.value === '' ? null : parseInt(e.target.value, 10))}
+                                placeholder="auto"
+                                className="w-16 px-2 py-1 bg-zinc-700 border border-zinc-600 rounded text-xs text-white"
+                              />
+                            </label>
+                            <label className="flex items-center gap-1">
+                              <span className="text-xs text-zinc-400">W:</span>
+                              <input
+                                type="number"
+                                value={sponsor.cropW ?? ''}
+                                onChange={(e) => handleAdjustmentChange(sponsor, 'cropW', e.target.value === '' ? null : parseInt(e.target.value, 10))}
+                                placeholder="auto"
+                                className="w-16 px-2 py-1 bg-zinc-700 border border-zinc-600 rounded text-xs text-white"
+                              />
+                            </label>
+                            <label className="flex items-center gap-1">
+                              <span className="text-xs text-zinc-400">H:</span>
+                              <input
+                                type="number"
+                                value={sponsor.cropH ?? ''}
+                                onChange={(e) => handleAdjustmentChange(sponsor, 'cropH', e.target.value === '' ? null : parseInt(e.target.value, 10))}
+                                placeholder="auto"
+                                className="w-16 px-2 py-1 bg-zinc-700 border border-zinc-600 rounded text-xs text-white"
+                              />
+                            </label>
+                          </div>
+                        </div>
+
+                        {/* Scale Control */}
+                        <div>
+                          <div className="text-xs text-zinc-500 mb-1">Scale</div>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="range"
+                              min="10"
+                              max="300"
+                              value={sponsor.scale ?? 100}
+                              onChange={(e) => handleAdjustmentChange(sponsor, 'scale', parseInt(e.target.value, 10))}
+                              className="flex-1 h-1 bg-zinc-600 rounded appearance-none cursor-pointer accent-amber-500"
+                            />
+                            <input
+                              type="number"
+                              min="10"
+                              max="300"
+                              value={sponsor.scale ?? 100}
+                              onChange={(e) => handleAdjustmentChange(sponsor, 'scale', parseInt(e.target.value, 10) || 100)}
+                              className="w-16 px-2 py-1 bg-zinc-700 border border-zinc-600 rounded text-xs text-white text-center"
+                            />
+                            <span className="text-xs text-zinc-400">%</span>
+                          </div>
+                        </div>
+
+                        {/* Offset Controls */}
+                        <div>
+                          <div className="text-xs text-zinc-500 mb-1">Offset (pixels)</div>
+                          <div className="flex gap-4">
+                            <label className="flex items-center gap-1">
+                              <span className="text-xs text-zinc-400">X:</span>
+                              <input
+                                type="number"
+                                min="-500"
+                                max="500"
+                                value={sponsor.offsetX ?? 0}
+                                onChange={(e) => handleAdjustmentChange(sponsor, 'offsetX', parseInt(e.target.value, 10) || 0)}
+                                className="w-20 px-2 py-1 bg-zinc-700 border border-zinc-600 rounded text-xs text-white text-center"
+                              />
+                              <span className="text-xs text-zinc-400">px</span>
+                            </label>
+                            <label className="flex items-center gap-1">
+                              <span className="text-xs text-zinc-400">Y:</span>
+                              <input
+                                type="number"
+                                min="-500"
+                                max="500"
+                                value={sponsor.offsetY ?? 0}
+                                onChange={(e) => handleAdjustmentChange(sponsor, 'offsetY', parseInt(e.target.value, 10) || 0)}
+                                className="w-20 px-2 py-1 bg-zinc-700 border border-zinc-600 rounded text-xs text-white text-center"
+                              />
+                              <span className="text-xs text-zinc-400">px</span>
+                            </label>
+                          </div>
+                        </div>
+
+                        {/* Reset Button */}
+                        <div className="flex items-center gap-2 pt-2">
+                          <button
+                            onClick={() => handleResetAdjustments(sponsor)}
+                            disabled={!hasAdjustments || adjustSaving}
+                            className="px-3 py-1 bg-zinc-700 hover:bg-zinc-600 disabled:bg-zinc-800 disabled:text-zinc-600 text-zinc-300 text-xs rounded transition-colors flex items-center gap-1"
+                          >
+                            <ArrowPathIcon className="w-3 h-3" />
+                            Reset All
+                          </button>
+                          {adjustSaving && <span className="text-xs text-amber-400">Saving...</span>}
+                          {hasAdjustments && !adjustSaving && <span className="text-xs text-green-400">Adjustments active</span>}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-
-              {/* Name */}
-              <span className="text-sm text-zinc-200 flex-1 truncate">{sponsor.name}</span>
-
-              {/* Tier badge */}
-              <span className={`px-2 py-0.5 rounded text-xs font-medium ${tierColors[sponsor.tier] || tierColors.official}`}>
-                {sponsor.tier}
-              </span>
-
-              {/* URL (truncated) */}
-              {sponsor.url ? (
-                <a
-                  href={sponsor.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-zinc-500 hover:text-zinc-300 truncate max-w-[120px]"
-                  title={sponsor.url}
-                >
-                  {sponsor.url.replace(/^https?:\/\//, '').slice(0, 20)}...
-                </a>
-              ) : (
-                <span className="text-xs text-zinc-600">No URL</span>
-              )}
-
-              {/* Reorder buttons */}
-              <button
-                onClick={() => handleMove(idx, -1)}
-                disabled={idx === 0}
-                className="p-1 text-zinc-500 hover:text-zinc-300 disabled:opacity-30"
-                title="Move up"
-              >
-                <ArrowUpIcon className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => handleMove(idx, 1)}
-                disabled={idx === sponsors.length - 1}
-                className="p-1 text-zinc-500 hover:text-zinc-300 disabled:opacity-30"
-                title="Move down"
-              >
-                <ArrowDownIcon className="w-4 h-4" />
-              </button>
-
-              {/* Delete button */}
-              <button
-                onClick={() => handleDelete(sponsor.key)}
-                className="p-1 text-red-500/50 hover:text-red-400"
-                title="Delete sponsor"
-              >
-                <TrashIcon className="w-4 h-4" />
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <p className="text-zinc-500 text-sm mb-4">No sponsors for this team</p>
