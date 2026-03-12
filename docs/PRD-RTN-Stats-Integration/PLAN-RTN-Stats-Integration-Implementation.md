@@ -168,7 +168,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 
 **Verification:** Rankings panel now shows Week 4 (dated 2026-02-02) which is the correct week for Feb 7, 2026.
 
-### Phase 6: Bug Fixes (P0) - IN PROGRESS (1/17)
+### Phase 6: Bug Fixes (P0) - IN PROGRESS (3/17)
 
 **See:** [BUGS.md](./BUGS.md) for full details on each bug.
 
@@ -177,7 +177,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 27 | BUG-022 | High | Fix `buildTeamDbKey()` to preserve `&` in team names (server + client copies) | COMPLETE | Updated regex from `[^a-z0-9\s-]` to `[^a-z0-9\s&-]` in both `server/lib/rtnStatsService.js:694` and `show-controller/src/hooks/useRtnStats.js:34`. Now "William & Mary" → `william-&-mary-womens` which matches Firebase key. Verify with deploy. |
 | Task 28 | BUG-024 | Medium | Add `'7': 7` to `parseCompetitionType()` typeMap (server + client copies) | COMPLETE | Added `'7': 7` to typeMap in both `server/lib/rtnStatsService.js:676` and `show-controller/src/hooks/useRtnStats.js:57`. Now `womens-7` competitions will correctly parse to `teamCount: 7`. Note: Task 39 (BUG-034) also required to fix client hook loop from 6 → dynamic teamCount. |
 | Task 29 | BUG-023 | Medium | Fix client-side RTN coach fetch — proxy through coordinator or read from Firebase cache | COMPLETE | Added proxy endpoints `/api/rtn/teams/:gender` and `/api/rtn/dashboard/:gender/:year/:teamId` to `server/index.js`. Updated `fetchWomensTeams()`, `fetchMensTeams()`, and `fetchTeamDashboard()` in `show-controller/src/lib/roadToNationals.js` to use `SERVER_URL` proxy instead of direct RTN API calls. Proxy caches to Firebase with 24h TTL. `getWeeklySchedule()` and `getYearWeeks()` marked as TODO with local RTN_DIRECT_URL (unused functions). Verify with deploy. |
-| Task 30 | BUG-032 | Medium | Fix `StatsStatusBadge` refresh — ensure socket receives `rtnStatsResult` | NOT STARTED | Temporary socket may not join competition room in time. Either emit result directly to requesting socket, or remove socket wait and rely on Firebase `onValue` listener for badge update. Affects `show-controller/src/components/StatsStatusBadge.jsx:88-110`. |
+| Task 30 | BUG-032 | Medium | Fix `StatsStatusBadge` refresh — ensure socket receives `rtnStatsResult` | COMPLETE | Changed to fire-and-forget pattern: emit `refreshRtnStats`, disconnect after 500ms, rely on existing Firebase `onValue` listener to update badge. Spinner stops after 10s timeout. Removed waiting for `rtnStatsResult` which was unreliable due to room-join race. |
 | Task 31 | BUG-029 | Medium | Write error meta to Firebase in `refreshRtnStats` handler for missing `rtnId` | NOT STARTED | Add Firebase meta write (same as `ingestCompetitionStats` does) to the inline `!rtnId` branch at `server/index.js:6966-6968`. |
 | Task 32 | BUG-027 | Medium | Fix `useRtnStats` loadedCountRef race condition on teamKeys change | NOT STARTED | Use generation/epoch counter so callbacks from stale effects are ignored. Affects `show-controller/src/hooks/useRtnStats.js:86-151`. |
 | Task 33 | BUG-028 | Low | Add teams 3-6 to useEffect dependency arrays in `StatsStatusBadge` and `StatsDetailPanel` | NOT STARTED | Derive stable key from teamKeys array. Update deps at `StatsStatusBadge.jsx:50` and `StatsDetailPanel.jsx:59`. |

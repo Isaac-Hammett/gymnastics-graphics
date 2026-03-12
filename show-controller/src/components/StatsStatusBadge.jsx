@@ -79,7 +79,10 @@ export default function StatsStatusBadge({ compId, config }) {
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
-  // Refresh handler using temporary socket
+  // Refresh handler using temporary socket (fire-and-forget)
+  // We don't wait for rtnStatsResult because the socket may not join the
+  // competition room in time (BUG-032). Instead, we rely on the Firebase
+  // onValue listener above to update the badge when stats change.
   const handleRefresh = useCallback(() => {
     if (refreshing || !compId) return;
     setRefreshing(true);
@@ -90,24 +93,22 @@ export default function StatsStatusBadge({ compId, config }) {
         query: { compId },
       });
 
-      const cleanup = () => {
-        setRefreshing(false);
-        try { socket.disconnect(); } catch { /* ignore */ }
-      };
-
       socket.on('connect', () => {
         socket.emit('refreshRtnStats', { compId });
-      });
-
-      socket.on('rtnStatsResult', () => {
-        cleanup();
+        // Disconnect immediately after emitting - Firebase listener will update UI
+        setTimeout(() => {
+          try { socket.disconnect(); } catch { /* ignore */ }
+        }, 500); // Small delay to ensure emit is sent
       });
 
       socket.on('connect_error', () => {
-        cleanup();
+        setRefreshing(false);
+        try { socket.disconnect(); } catch { /* ignore */ }
       });
 
-      setTimeout(cleanup, 60000);
+      // Stop spinner after 10 seconds (refresh should complete by then)
+      // The Firebase listener will update the actual badge state
+      setTimeout(() => setRefreshing(false), 10000);
     } catch {
       setRefreshing(false);
     }
