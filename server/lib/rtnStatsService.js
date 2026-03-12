@@ -1028,40 +1028,134 @@ async function syncStatsToConfig(compId) {
       console.warn(`[rtnStatsService] Failed to read teamRanking for ${teamKey}:`, err.message);
     }
 
+    // If teamRanking is null (unranked team), try fallback to individualAverages/individualHighs
+    // See BUG-036: "syncStatsToConfig silently skips unranked teams — no fallback to individualAverages"
+    let fallbackValues = null;
     if (!teamRanking) {
-      console.log(`[rtnStatsService] No teamRanking data for ${teamKey}, skipping config sync`);
-      skipped[`team${i}`] = { teamKey, reason: 'no ranking data' };
-      continue;
+      console.log(`[rtnStatsService] No teamRanking data for ${teamKey}, attempting fallback to individual stats`);
+
+      try {
+        // Read individualAverages and individualHighs for fallback computation
+        const [avgSnapshot, highSnapshot] = await Promise.all([
+          db.ref(`teamsDatabase/stats/${teamKey}/individualAverages`).once('value'),
+          db.ref(`teamsDatabase/stats/${teamKey}/individualHighs`).once('value'),
+        ]);
+
+        const individualAverages = avgSnapshot.val();
+        const individualHighs = highSnapshot.val();
+
+        if (individualAverages || individualHighs) {
+          // Compute approximate team average and high from individual data
+          // For each event, take the top athletes' scores and sum them
+          const isWomens = gender === 'womens';
+          const eventCodes = isWomens ? ['VT', 'UB', 'BB', 'FX'] : ['FX', 'PH', 'SR', 'VT', 'PB', 'HB'];
+          const athletesPerEvent = isWomens ? 5 : 5; // Top 5 scores count per event
+
+          // Compute team average from individualAverages
+          let computedAve = null;
+          if (individualAverages && Array.isArray(individualAverages)) {
+            let eventTotals = [];
+
+            for (const eventCode of eventCodes) {
+              // Get all athletes' averages for this event, sorted descending
+              const athleteScores = individualAverages
+                .map(a => a.events?.[eventCode])
+                .filter(score => score !== null && score !== undefined && score > 0)
+                .sort((a, b) => b - a);
+
+              // Take top N scores
+              const topScores = athleteScores.slice(0, athletesPerEvent);
+              if (topScores.length > 0) {
+                const eventTotal = topScores.reduce((sum, s) => sum + s, 0);
+                eventTotals.push(eventTotal);
+              }
+            }
+
+            // Sum all event totals for approximate team average
+            if (eventTotals.length === eventCodes.length) {
+              computedAve = Math.round(eventTotals.reduce((s, t) => s + t, 0) * 1000) / 1000;
+            }
+          }
+
+          // Compute team high from individualHighs
+          let computedHigh = null;
+          if (individualHighs && Array.isArray(individualHighs)) {
+            let eventTotals = [];
+
+            for (const eventCode of eventCodes) {
+              // Get all athletes' highs for this event, sorted descending
+              const athleteScores = individualHighs
+                .map(a => a.events?.[eventCode])
+                .filter(score => score !== null && score !== undefined && score > 0)
+                .sort((a, b) => b - a);
+
+              // Take top N scores
+              const topScores = athleteScores.slice(0, athletesPerEvent);
+              if (topScores.length > 0) {
+                const eventTotal = topScores.reduce((sum, s) => sum + s, 0);
+                eventTotals.push(eventTotal);
+              }
+            }
+
+            // Sum all event totals for approximate team high
+            if (eventTotals.length === eventCodes.length) {
+              computedHigh = Math.round(eventTotals.reduce((s, t) => s + t, 0) * 1000) / 1000;
+            }
+          }
+
+          if (computedAve !== null || computedHigh !== null) {
+            fallbackValues = {
+              ave: computedAve !== null ? String(computedAve) : null,
+              high: computedHigh !== null ? String(computedHigh) : null,
+            };
+            console.log(`[rtnStatsService] Computed fallback values for ${teamKey}: ave=${fallbackValues.ave}, high=${fallbackValues.high}`);
+          }
+        }
+      } catch (err) {
+        console.warn(`[rtnStatsService] Failed to compute fallback for ${teamKey}:`, err.message);
+      }
+
+      // If still no data, skip this team
+      if (!fallbackValues) {
+        console.log(`[rtnStatsService] No fallback data available for ${teamKey}, skipping config sync`);
+        skipped[`team${i}`] = { teamKey, reason: 'no ranking or individual data' };
+        continue;
+      }
     }
+
+    // Use teamRanking if available, otherwise use fallback values
+    const statsSource = teamRanking || fallbackValues;
 
     // Build updates for this team, respecting locks
     const updates = {};
     const teamSynced = [];
     const teamSkipped = [];
+    const isFallback = !teamRanking && fallbackValues;
 
-    // team{N}Ave — from ranking average
+    // team{N}Ave — from ranking average or fallback
     const aveField = `team${i}Ave`;
     if (locks[aveField] === true) {
       teamSkipped.push(aveField);
-    } else if (teamRanking.ave) {
-      updates[aveField] = teamRanking.ave;
-      teamSynced.push(aveField);
+    } else if (statsSource.ave) {
+      updates[aveField] = statsSource.ave;
+      teamSynced.push(aveField + (isFallback ? ' (fallback)' : ''));
     }
 
-    // team{N}High — from ranking high
+    // team{N}High — from ranking high or fallback
     const highField = `team${i}High`;
     if (locks[highField] === true) {
       teamSkipped.push(highField);
-    } else if (teamRanking.high) {
-      updates[highField] = teamRanking.high;
-      teamSynced.push(highField);
+    } else if (statsSource.high) {
+      updates[highField] = statsSource.high;
+      teamSynced.push(highField + (isFallback ? ' (fallback)' : ''));
     }
 
     // team{N}Con — overall ranking string (e.g., "#1", "#3(t)")
+    // Only available from teamRanking, not from fallback (unranked teams have no rank)
     const conField = `team${i}Con`;
     if (locks[conField] === true) {
       teamSkipped.push(conField);
-    } else if (teamRanking.rank) {
+    } else if (teamRanking?.rank) {
       updates[conField] = `#${teamRanking.rank}`;
       teamSynced.push(conField);
     }
