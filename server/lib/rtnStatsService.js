@@ -673,7 +673,7 @@ function parseCompetitionType(compType) {
   const gender = parts[0] === 'mens' ? 'mens' : 'womens';
   let teamCount = 2;
   if (parts[1]) {
-    const typeMap = { dual: 2, tri: 3, quad: 4, '5': 5, '6': 6 };
+    const typeMap = { dual: 2, tri: 3, quad: 4, '5': 5, '6': 6, '7': 7 };
     teamCount = typeMap[parts[1]] || 2;
   }
   return { gender, teamCount };
