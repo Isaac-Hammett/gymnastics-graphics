@@ -192,12 +192,16 @@
     let currentIndex = 0;
     let slides = [];
 
-    // Detect content bounding box by scanning for non-transparent pixels
+    // Detect content bounding box using two-pass strategy:
+    // Pass 1: Detect non-transparent pixels (for PNGs with alpha channel)
+    // Pass 2: If Pass 1 returns full image (opaque), detect non-white pixels (for JPEGs/white-bg PNGs)
     function getContentBounds(imageData, w, h) {
       const d = imageData.data;
-      let top = h, bottom = 0, left = w, right = 0;
       const alphaThreshold = 20;
+      const whiteThreshold = 240; // R,G,B all above this = "near-white" background
 
+      // Pass 1: Scan for non-transparent pixels
+      let top = h, bottom = 0, left = w, right = 0;
       for (let y = 0; y < h; y++) {
         for (let x = 0; x < w; x++) {
           const a = d[(y * w + x) * 4 + 3];
@@ -210,19 +214,60 @@
         }
       }
 
-      if (top > bottom || left > right) {
-        return { x: 0, y: 0, w, h }; // Fallback: use entire image
+      // Check if Pass 1 found meaningful content (smaller than full image)
+      const pass1Found = top <= bottom && left <= right;
+      const pass1IsFullImage = pass1Found && top === 0 && left === 0 && bottom === h - 1 && right === w - 1;
+
+      // If Pass 1 found content smaller than full image, use it (logo has transparency)
+      if (pass1Found && !pass1IsFullImage) {
+        const padX = Math.round((right - left) * 0.02);
+        const padY = Math.round((bottom - top) * 0.02);
+        return {
+          x: Math.max(0, left - padX),
+          y: Math.max(0, top - padY),
+          w: Math.min(w, right - left + padX * 2),
+          h: Math.min(h, bottom - top + padY * 2),
+        };
       }
 
-      // Add small padding (2% of content size)
-      const padX = Math.round((right - left) * 0.02);
-      const padY = Math.round((bottom - top) * 0.02);
-      return {
-        x: Math.max(0, left - padX),
-        y: Math.max(0, top - padY),
-        w: Math.min(w, right - left + padX * 2),
-        h: Math.min(h, bottom - top + padY * 2),
-      };
+      // Pass 2: Full opaque image detected - scan for non-white pixels
+      // This handles JPEGs and PNGs with white backgrounds
+      top = h; bottom = 0; left = w; right = 0;
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const idx = (y * w + x) * 4;
+          const r = d[idx];
+          const g = d[idx + 1];
+          const b = d[idx + 2];
+          // Pixel is "content" if it's NOT near-white
+          const isNearWhite = r > whiteThreshold && g > whiteThreshold && b > whiteThreshold;
+          if (!isNearWhite) {
+            if (y < top) top = y;
+            if (y > bottom) bottom = y;
+            if (x < left) left = x;
+            if (x > right) right = x;
+          }
+        }
+      }
+
+      // Check if Pass 2 found content smaller than full image
+      const pass2Found = top <= bottom && left <= right;
+      const pass2IsFullImage = pass2Found && top === 0 && left === 0 && bottom === h - 1 && right === w - 1;
+
+      // If Pass 2 found meaningful content (smaller than full), use it
+      if (pass2Found && !pass2IsFullImage) {
+        const padX = Math.round((right - left) * 0.02);
+        const padY = Math.round((bottom - top) * 0.02);
+        return {
+          x: Math.max(0, left - padX),
+          y: Math.max(0, top - padY),
+          w: Math.min(w, right - left + padX * 2),
+          h: Math.min(h, bottom - top + padY * 2),
+        };
+      }
+
+      // Fallback: no trimming possible (colored background or all-white image)
+      return { x: 0, y: 0, w, h };
     }
 
     // Get effective bounds: use crop overrides if provided, otherwise auto-detect
