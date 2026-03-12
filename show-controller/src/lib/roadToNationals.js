@@ -197,13 +197,14 @@ function findCoachInData(teamName, teamsData) {
 
 /**
  * Normalize team name for comparison
+ * Note: Do NOT strip "state" - it creates false matches between e.g. "Penn State" and "Penn"
  * @private
  */
 function normalizeTeamName(name) {
   if (!name) return '';
   return name
     .toLowerCase()
-    .replace(/university|college|of|the|state/gi, '')
+    .replace(/university|college|of|the/gi, '')
     .replace(/[^a-z0-9]/g, '')
     .trim();
 }
