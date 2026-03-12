@@ -833,11 +833,18 @@ async function ingestTeamStats(teamKey, rtnId, gender, year, io, compId) {
   };
 
   // Write to Firebase: teamsDatabase/stats/{teamKey}/
+  // Use update() instead of set() to preserve previously-good data for failed endpoints.
+  // Filter out null values so partial re-ingestion doesn't destroy existing data.
+  // See BUG-035: "ingestTeamStats uses set() which destroys previous good data on partial re-ingestion"
   try {
     const statsRef = db.ref(`teamsDatabase/stats/${teamKey}`);
-    const writeData = { ...normalized, meta };
-    await statsRef.set(writeData);
-    console.log(`[rtnStatsService] Wrote stats for ${teamKey} (status: ${overallStatus})`);
+    // Filter out null endpoint data to preserve existing values; always include meta
+    const filteredData = Object.fromEntries(
+      Object.entries(normalized).filter(([_, v]) => v !== null)
+    );
+    const writeData = { ...filteredData, meta };
+    await statsRef.update(writeData);
+    console.log(`[rtnStatsService] Wrote stats for ${teamKey} (status: ${overallStatus}, endpoints: ${Object.keys(filteredData).length})`);
   } catch (err) {
     console.error(`[rtnStatsService] Failed to write stats for ${teamKey}:`, err.message);
     return { status: 'error', endpointStatus, errors: { ...errors, firebase: err.message } };
