@@ -5,7 +5,7 @@ import {
   getCachedTeams,
   clearTeamCache,
   getTeamDashboard,
-  getCoachingStaff,
+  getCoachingStaff,  // Also used for fallback in useHeadCoaches (BUG-033)
   getTeamSocialLinks,
   getTeamRankings,
   getRtnRoster,
@@ -136,6 +136,8 @@ export function useRtnTeams(gender = 'mens') {
 
 /**
  * Hook to fetch head coaches for multiple teams at once
+ * Falls back to dashboard staff endpoint if teams endpoint returns null for coach
+ * (BUG-033: 5 women's teams have null hc_first/hc_last in teams endpoint)
  * @param {Array<{name: string, gender: 'mens' | 'womens'}>} teamsList
  * @returns {{ coaches: Map, loading: boolean, error: Error | null }}
  */
@@ -156,6 +158,7 @@ export function useHeadCoaches(teamsList) {
 
     const fetchAll = async () => {
       const results = new Map();
+      const teamsNeedingFallback = [];
 
       // Group by gender to minimize API calls
       const byGender = {
@@ -171,6 +174,8 @@ export function useHeadCoaches(teamsList) {
             const coach = findCoachInTeams(team.name, mensData.teams);
             if (coach) {
               results.set(team.name, coach);
+            } else {
+              teamsNeedingFallback.push(team);
             }
           }
         }
@@ -182,7 +187,27 @@ export function useHeadCoaches(teamsList) {
             const coach = findCoachInTeams(team.name, womensData.teams);
             if (coach) {
               results.set(team.name, coach);
+            } else {
+              teamsNeedingFallback.push(team);
             }
+          }
+        }
+
+        // Fallback to dashboard staff endpoint for teams with null coach data
+        // This handles teams like George Washington, Northern Illinois, Pennsylvania, Utah, UW-Stout
+        for (const team of teamsNeedingFallback) {
+          try {
+            const staff = await getCoachingStaff(team.name, team.gender);
+            const headCoach = staff.find(s => s.position.toLowerCase().includes('head'));
+            if (headCoach) {
+              results.set(team.name, {
+                firstName: headCoach.firstName,
+                lastName: headCoach.lastName,
+                fullName: headCoach.fullName,
+              });
+            }
+          } catch {
+            // Fallback failed, skip this team
           }
         }
 
