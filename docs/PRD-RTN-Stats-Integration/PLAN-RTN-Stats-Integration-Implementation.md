@@ -1,7 +1,7 @@
 # PLAN-RTN-Stats-Integration-Implementation
 
 **PRD:** [PRD-RTN-Stats-Integration-2026-02-01.md](./PRD-RTN-Stats-Integration-2026-02-01.md)
-**Status:** COMPLETE | Audit: COMPLETE
+**Status:** IN PROGRESS | Audit: COMPLETE
 **Created:** 2026-02-01
 **Last Updated:** 2026-02-01
 
@@ -19,6 +19,7 @@ This implementation plan covers all phases of the RTN Statistics Integration. Ph
 |----------|---------|
 | [PRD-RTN-Stats-Integration-2026-02-01.md](./PRD-RTN-Stats-Integration-2026-02-01.md) | Product requirements |
 | [PLAN-RTN-Stats-Integration-2026-02-01.md](./PLAN-RTN-Stats-Integration-2026-02-01.md) | Technical reference (architecture, data model, API normalization, error handling) |
+| [BUGS.md](./BUGS.md) | Bug tracker — 17 bugs (BUG-022 through BUG-038), full details on each (symptoms, root cause, affected files, suggested fix) |
 
 ---
 
@@ -43,6 +44,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 - Each task number is unique and independent
 - Example: "Task 8" is ONE task, not a subtask
 - Tasks 25-26 were added by audit Category G and belong to Phases 2 and 4 respectively
+- Tasks 27-43 are bug fixes added in Phase 6
 
 ---
 
@@ -55,6 +57,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | 3 | League Rankings | P1 | COMPLETE | 15-17 |
 | 4 | AI Enhancement | P1 | COMPLETE | 18-21, 26 |
 | 5 | Playwright Integration Tests | P1 | COMPLETE | 22-24 |
+| 6 | Bug Fixes | P0 | IN PROGRESS | 27-43 |
 
 ---
 
@@ -165,6 +168,30 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 
 **Verification:** Rankings panel now shows Week 4 (dated 2026-02-02) which is the correct week for Feb 7, 2026.
 
+### Phase 6: Bug Fixes (P0) - IN PROGRESS (1/17)
+
+**See:** [BUGS.md](./BUGS.md) for full details on each bug.
+
+| Task | Bug | Severity | Description | Status | Notes |
+|------|-----|----------|-------------|--------|-------|
+| Task 27 | BUG-022 | High | Fix `buildTeamDbKey()` to preserve `&` in team names (server + client copies) | COMPLETE | Updated regex from `[^a-z0-9\s-]` to `[^a-z0-9\s&-]` in both `server/lib/rtnStatsService.js:694` and `show-controller/src/hooks/useRtnStats.js:34`. Now "William & Mary" → `william-&-mary-womens` which matches Firebase key. Verify with deploy. |
+| Task 28 | BUG-024 | Medium | Add `'7': 7` to `parseCompetitionType()` typeMap (server + client copies) | NOT STARTED | Update `server/lib/rtnStatsService.js:676` and `show-controller/src/hooks/useRtnStats.js:57`. Without this, `womens-7` competitions only ingest 2 teams' stats. Cascades through ingestion, config sync, snapshot, and rankings. |
+| Task 29 | BUG-023 | Medium | Fix client-side RTN coach fetch — proxy through coordinator or read from Firebase cache | NOT STARTED | Client `fetch()` to `roadtonationals.com` fails due to CORS. Options: (A) proxy via coordinator `/api/rtn/teams/:gender`, (B) read from `rtnCache/` in Firebase, (C) return stale cache on CORS failure. Affects `show-controller/src/lib/roadToNationals.js` and all hooks in `useRoadToNationals.js`. |
+| Task 30 | BUG-032 | Medium | Fix `StatsStatusBadge` refresh — ensure socket receives `rtnStatsResult` | NOT STARTED | Temporary socket may not join competition room in time. Either emit result directly to requesting socket, or remove socket wait and rely on Firebase `onValue` listener for badge update. Affects `show-controller/src/components/StatsStatusBadge.jsx:88-110`. |
+| Task 31 | BUG-029 | Medium | Write error meta to Firebase in `refreshRtnStats` handler for missing `rtnId` | NOT STARTED | Add Firebase meta write (same as `ingestCompetitionStats` does) to the inline `!rtnId` branch at `server/index.js:6966-6968`. |
+| Task 32 | BUG-027 | Medium | Fix `useRtnStats` loadedCountRef race condition on teamKeys change | NOT STARTED | Use generation/epoch counter so callbacks from stale effects are ignored. Affects `show-controller/src/hooks/useRtnStats.js:86-151`. |
+| Task 33 | BUG-028 | Low | Add teams 3-6 to useEffect dependency arrays in `StatsStatusBadge` and `StatsDetailPanel` | NOT STARTED | Derive stable key from teamKeys array. Update deps at `StatsStatusBadge.jsx:50` and `StatsDetailPanel.jsx:59`. |
+| Task 34 | BUG-026 | Low | Filter null scores in consistency trend calculation | NOT STARTED | Filter nulls before `reduce()` at `StatsDetailPanel.jsx:449`. Note: `null + number` produces `number` in JS (not NaN) — the real issue is an incorrectly deflated average, not NaN propagation. Also fix trend detection at line 443-444 to ignore nulls. |
+| Task 35 | BUG-030 | Low | Fix `normalizeTeamName()` stripping "state" — false matches for state schools | NOT STARTED | Remove "state" from strip list in `show-controller/src/lib/roadToNationals.js:201` and `show-controller/src/hooks/useRoadToNationals.js:244`. Or match by RTN ID instead of fuzzy name. |
+| Task 36 | BUG-025 | Low | Document `parseScore()` zero-as-null assumption | NOT STARTED | Add explicit comment at `server/lib/rtnStatsService.js:345` explaining that `0.0000` is treated as "no score recorded" per RTN convention. Optionally, only treat as null when value is exactly the string `"0.0000"`, not numeric `0`. |
+| Task 37 | BUG-031, BUG-038 | Low | Fix "8 endpoints" → "7 endpoints" across code and docs | NOT STARTED | Update comment at `server/lib/rtnStatsService.js:8`. Also update PRD Section 1, Section 5 Phase 1, Story 2, and tech plan Section 1.2 data flow diagram. |
+| Task 38 | BUG-033 | Low | Add dashboard staff fallback for teams with null coach data in RTN teams endpoint | NOT STARTED | When `hc_first`/`hc_last` are null, fall back to `getCoachingStaff()` (dashboard endpoint). Affects 5 women's teams: George Washington, Northern Illinois, Pennsylvania, Utah, UW-Stout. |
+| Task 39 | BUG-034 | Medium | Fix `useRtnStats` client hook hardcoded team loop (6 → dynamic teamCount) | NOT STARTED | Replace `for (let i = 1; i <= 6; i++)` with `for (let i = 1; i <= teamCount; i++)` at `show-controller/src/hooks/useRtnStats.js:101`. Required alongside Task 28 for `womens-7` to work end-to-end. |
+| Task 40 | BUG-035 | High | Fix `ingestTeamStats` to use `update()` instead of `set()` — preserve previous good data | NOT STARTED | Change `statsRef.set(writeData)` to `statsRef.update(filteredData)` at `server/lib/rtnStatsService.js:828-829`. Filter out null values before writing so partial re-ingestion doesn't destroy previously-good endpoint data. |
+| Task 41 | BUG-036 | Medium | Add fallback to `syncStatsToConfig` for unranked teams using individualAverages | NOT STARTED | When `teamRanking` is null, compute approximate Ave/High from `individualAverages` and `individualHighs` data. Affects `server/lib/rtnStatsService.js:1006-1018`. |
+| Task 42 | BUG-037 | Medium | Fix show-start snapshot race with stale refresh | NOT STARTED | Either wait for in-progress refresh before snapshotting, or re-snapshot after refresh completes during a running show. Affects `server/index.js` showStarted handler and `refreshRtnStats` handler coordination. |
+| Task 43 | BUG-038 | Low | Update all "8 endpoints" references to "7" in documentation | NOT STARTED | Combined with Task 37. Update PRD Sections 1, 5, Story 2. Update tech plan Section 1.2. Update implementation plan Task 3 description. |
+
 ---
 
 ## Verification Checklist
@@ -227,3 +254,20 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 - [ ] Config lock behavior verified
 - [ ] AI talking points verified to contain stats-backed content
 - [ ] No console errors during any test
+
+### After Phase 6 (Bug Fixes)
+- [ ] William & Mary (and other `&` teams) stats load successfully (BUG-022)
+- [ ] `womens-7` competitions ingest all 7 teams' stats (BUG-024)
+- [ ] Client hook subscribes to all 7 teams in `womens-7` (BUG-034)
+- [ ] Head coach data displays in UI (via proxy or Firebase cache) (BUG-023)
+- [ ] Stats refresh badge updates immediately (not after 60s timeout) (BUG-032)
+- [ ] Refresh on missing `rtnId` shows "Stats error" badge (BUG-029)
+- [ ] Switching competitions doesn't cause stale loading state (BUG-027)
+- [ ] Teams 3-6 name changes trigger resubscription (BUG-028)
+- [ ] Consistency chart handles null scores (incorrect average fixed, not NaN) (BUG-026)
+- [ ] "Penn State" does not false-match "Penn" in coach lookup (BUG-030)
+- [ ] Re-ingestion preserves previously-good data for failed endpoints (BUG-035)
+- [ ] Unranked teams get Ave/High populated via individualAverages fallback (BUG-036)
+- [ ] Show-start snapshot contains fresh data when stale refresh is triggered (BUG-037)
+- [ ] All "8 endpoints" references updated to "7" in code and docs (BUG-038)
+- [ ] No console errors on production
