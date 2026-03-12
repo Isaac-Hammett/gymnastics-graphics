@@ -1,6 +1,6 @@
 # Plan: Sponsor System — Implementation Tracker
 
-**Status:** IN PROGRESS (15/18 tasks complete)
+**Status:** IN PROGRESS (16/18 tasks complete)
 **Last Updated:** 2026-03-11
 
 ---
@@ -24,7 +24,7 @@
 | T13 | I | `overlays/sponsors-cycle.html` | Enhanced content detection: trim white/near-white background pixels (not just transparent), so JPEG and white-bg PNG logos center correctly | COMPLETE |
 | T14 | J | `show-controller/src/hooks/useTeamsDatabase.js` | Add adjustment fields (scale, offsetX, offsetY, cropX, cropY, cropW, cropH) to `saveSponsor()` write and `getTeamSponsors()` return | COMPLETE |
 | T15 | K | `show-controller/src/pages/MediaManagerPage.jsx` | Add per-sponsor adjustment controls (crop, scale, offset) to SponsorsView with inline preview | COMPLETE |
-| T16 | L | `show-controller/src/components/GraphicsControl.jsx` | Fix sponsor serialization to include all adjustment fields (scale, offset, crop) — currently only passes name and url | NOT STARTED |
+| T16 | L | `show-controller/src/components/GraphicsControl.jsx` | Fix sponsor serialization to include all adjustment fields (scale, offset, crop) — currently only passes name and url | COMPLETE |
 | T17 | M | `show-controller/src/pages/UrlGeneratorPage.jsx` | Persist sponsor overrides back to Firebase via saveSponsor (currently session-only local state) | NOT STARTED |
 | T18 | N | — | Build + deploy SPA + overlay files to production; verify sponsor logos center correctly and adjustments persist | NOT STARTED |
 
@@ -45,7 +45,7 @@
 | **I** | Overlay: Smart Content Detection | T13 | COMPLETE |
 | **J** | Data Model: Adjustment Fields | T14 | COMPLETE |
 | **K** | Media Manager: Adjust Controls | T15 | COMPLETE |
-| **L** | GraphicsControl: Pass All Fields | T16 | NOT STARTED |
+| **L** | GraphicsControl: Pass All Fields | T16 | COMPLETE |
 | **M** | URL Generator: Persist Overrides | T17 | NOT STARTED |
 | **N** | Build & Deploy v2 | T18 | NOT STARTED |
 
@@ -440,7 +440,7 @@ Add per-sponsor adjustment controls to the `SponsorsView` component (line 684). 
 
 2. **Team sponsors fallback path (line 426):** Same pattern — include all adjustment fields from `getTeamSponsors()` return values.
 
-**Status:** NOT STARTED
+**Status:** COMPLETE
 
 ---
 

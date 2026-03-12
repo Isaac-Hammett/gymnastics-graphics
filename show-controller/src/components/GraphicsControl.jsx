@@ -402,10 +402,17 @@ export default function GraphicsControl({ competitionId }) {
           const snapshot = await get(themeRef);
           const eventSponsors = snapshot.val();
           if (eventSponsors && Array.isArray(eventSponsors) && eventSponsors.length > 0) {
-            // Use event sponsors from theme
+            // Use event sponsors from theme (include all adjustment fields)
             data.sponsors = JSON.stringify(eventSponsors.slice(0, 8).map(s => ({
               name: s.name || '',
-              url: s.url || ''
+              url: s.url || '',
+              ...(s.scale != null && s.scale !== 100 ? { scale: s.scale } : {}),
+              ...(s.offsetX ? { offsetX: s.offsetX } : {}),
+              ...(s.offsetY ? { offsetY: s.offsetY } : {}),
+              ...(s.cropX != null ? { cropX: s.cropX } : {}),
+              ...(s.cropY != null ? { cropY: s.cropY } : {}),
+              ...(s.cropW != null ? { cropW: s.cropW } : {}),
+              ...(s.cropH != null ? { cropH: s.cropH } : {}),
             })));
             sponsorsFound = true;
           }
@@ -422,10 +429,17 @@ export default function GraphicsControl({ competitionId }) {
         const homeTeamKey = schoolKey ? `${schoolKey}-${gender}` : null;
         if (homeTeamKey) {
           const teamSponsors = getTeamSponsors(homeTeamKey);
-          // Convert to JSON for the overlay
+          // Convert to JSON for the overlay (include all adjustment fields)
           data.sponsors = JSON.stringify(teamSponsors.slice(0, 8).map(s => ({
             name: s.name,
-            url: s.url
+            url: s.url,
+            ...(s.scale != null && s.scale !== 100 ? { scale: s.scale } : {}),
+            ...(s.offsetX ? { offsetX: s.offsetX } : {}),
+            ...(s.offsetY ? { offsetY: s.offsetY } : {}),
+            ...(s.cropX != null ? { cropX: s.cropX } : {}),
+            ...(s.cropY != null ? { cropY: s.cropY } : {}),
+            ...(s.cropW != null ? { cropW: s.cropW } : {}),
+            ...(s.cropH != null ? { cropH: s.cropH } : {}),
           })));
         } else {
           data.sponsors = '[]';
