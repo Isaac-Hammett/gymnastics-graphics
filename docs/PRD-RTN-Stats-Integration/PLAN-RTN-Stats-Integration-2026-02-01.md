@@ -64,7 +64,7 @@ RTN API (stats fetch)            SERVER                          CLIENT / VIEWS
 │  ├── Reads: teamsDatabase/teams/{teamKey}/rtnId for each team             │
 │  ├── Checks: teamsDatabase/stats/{teamKey}/meta/fetchedAt for staleness   │
 │  ├── If stale (>24h) or missing:                                          │
-│  │   ├── Fetches 8 RTN endpoints per team (rate-limited, sequential)      │
+│  │   ├── Fetches 7 RTN endpoints per team (rate-limited, sequential)      │
 │  │   ├── Normalizes raw RTN JSON → standard schema                        │
 │  │   └── Writes to: teamsDatabase/stats/{teamKey}/                        │
 │  ├── Auto-syncs: team{N}Ave, team{N}High, team{N}Con → config            │
@@ -480,8 +480,8 @@ const TEAM_RANKING_TYPE = { womens: 5, mens: 7 };
 
 | Function | Description | RTN Endpoints Called |
 |----------|-------------|---------------------|
-| `ingestCompetitionStats(compId, io)` | Full ingestion for all teams — checks staleness first | All 8 per team (if stale) |
-| `ingestTeamStats(teamKey, rtnId, gender, year, io, compId)` | Fetch all stats for one team | All 8 endpoints |
+| `ingestCompetitionStats(compId, io)` | Full ingestion for all teams — checks staleness first | All 7 per team (if stale) |
+| `ingestTeamStats(teamKey, rtnId, gender, year, io, compId)` | Fetch all stats for one team | All 7 endpoints |
 | `fetchTeamRanking(gender, year, week, tid)` | Team's position in league | `results/{week}/0/{type}` |
 | `fetchConsistency(gender, year, tid)` | Event scores over time | `teamConsistency/{tid}` |
 | `fetchMVP(gender, year, tid)` | Athlete contribution totals | `mvp/{tid}` |
