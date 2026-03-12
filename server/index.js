@@ -7090,6 +7090,24 @@ io.on('connection', async (socket) => {
         console.error(`[RTN Stats] Config sync failed for ${targetCompId}:`, syncErr.message);
       }
 
+      // BUG-037: If a show is running for this competition, re-snapshot the stats
+      // This handles the race condition where show starts with stale stats,
+      // fires a non-blocking refresh, and the snapshot was taken before refresh completed
+      let reSnapshotResult = null;
+      const engine = getEngine(targetCompId);
+      if (engine && engine.isRunning) {
+        try {
+          reSnapshotResult = await snapshotStatsForCompetition(targetCompId);
+          if (reSnapshotResult.success) {
+            console.log(`[RTN Stats] Re-snapshotted stats during running show (${reSnapshotResult.teamsSnapshotted} teams)`);
+          } else {
+            console.warn(`[RTN Stats] Re-snapshot failed: ${reSnapshotResult.error}`);
+          }
+        } catch (snapErr) {
+          console.error(`[RTN Stats] Re-snapshot error:`, snapErr.message);
+        }
+      }
+
       const roomName = `competition:${targetCompId}`;
       io.to(roomName).emit('rtnStatsResult', {
         success: true,
@@ -7097,9 +7115,10 @@ io.on('connection', async (socket) => {
         teams: teamResults,
         sync: syncResult,
         refreshed: true,
+        reSnapshot: reSnapshotResult,
       });
 
-      console.log(`[RTN Stats] Force refresh complete for ${targetCompId}`);
+      console.log(`[RTN Stats] Force refresh complete for ${targetCompId}${engine?.isRunning ? ' (re-snapshotted for running show)' : ''}`);
     } catch (error) {
       console.error(`[RTN Stats] Error refreshing stats for ${targetCompId}:`, error.message);
       socket.emit('rtnStatsResult', {

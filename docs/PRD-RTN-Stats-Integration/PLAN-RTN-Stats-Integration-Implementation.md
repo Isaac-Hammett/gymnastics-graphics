@@ -1,9 +1,9 @@
 # PLAN-RTN-Stats-Integration-Implementation
 
 **PRD:** [PRD-RTN-Stats-Integration-2026-02-01.md](./PRD-RTN-Stats-Integration-2026-02-01.md)
-**Status:** IN PROGRESS | Audit: COMPLETE
+**Status:** COMPLETE | Audit: COMPLETE
 **Created:** 2026-02-01
-**Last Updated:** 2026-02-01
+**Last Updated:** 2026-03-11
 
 ---
 
@@ -57,7 +57,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | 3 | League Rankings | P1 | COMPLETE | 15-17 |
 | 4 | AI Enhancement | P1 | COMPLETE | 18-21, 26 |
 | 5 | Playwright Integration Tests | P1 | COMPLETE | 22-24 |
-| 6 | Bug Fixes | P0 | IN PROGRESS | 27-43 |
+| 6 | Bug Fixes | P0 | COMPLETE | 27-43 |
 
 ---
 
@@ -168,7 +168,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 
 **Verification:** Rankings panel now shows Week 4 (dated 2026-02-02) which is the correct week for Feb 7, 2026.
 
-### Phase 6: Bug Fixes (P0) - IN PROGRESS (13/17)
+### Phase 6: Bug Fixes (P0) - COMPLETE (17/17)
 
 **See:** [BUGS.md](./BUGS.md) for full details on each bug.
 
@@ -189,7 +189,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 39 | BUG-034 | Medium | Fix `useRtnStats` client hook hardcoded team loop (6 → dynamic teamCount) | COMPLETE | Replaced `for (let i = 1; i <= 6; i++)` with `for (let i = 1; i <= teamCount; i++)` at lines 102 and 225 in `show-controller/src/hooks/useRtnStats.js`. Added `teamCount` to useMemo dependency arrays. Now supports womens-7 competitions alongside Task 28. Build verified. |
 | Task 40 | BUG-035 | High | Fix `ingestTeamStats` to use `update()` instead of `set()` — preserve previous good data | COMPLETE | Changed `statsRef.set(writeData)` to `statsRef.update(writeData)` at `server/lib/rtnStatsService.js:839`. Added `Object.fromEntries(Object.entries(normalized).filter(...))` to filter out null values before writing. Now partial re-ingestion preserves previously-good endpoint data. Verify with deploy. |
 | Task 41 | BUG-036 | Medium | Add fallback to `syncStatsToConfig` for unranked teams using individualAverages | COMPLETE | When `teamRanking` is null, now computes approximate Ave/High from `individualAverages` and `individualHighs` data. For each event, takes top 5 athlete scores and sums them to compute team total. Works for both men's (6 events) and women's (4 events). Logs "(fallback)" in synced fields array. `team{N}Con` (rank) is only synced from teamRanking since unranked teams have no rank. Verify with deploy. |
-| Task 42 | BUG-037 | Medium | Fix show-start snapshot race with stale refresh | NOT STARTED | Either wait for in-progress refresh before snapshotting, or re-snapshot after refresh completes during a running show. Affects `server/index.js` showStarted handler and `refreshRtnStats` handler coordination. |
+| Task 42 | BUG-037 | Medium | Fix show-start snapshot race with stale refresh | COMPLETE | Implemented Option B from bug report: after `refreshRtnStats` completes, check if a show is running via `getEngine(compId).isRunning`. If running, call `snapshotStatsForCompetition(compId)` to re-snapshot fresh data. Added `reSnapshot` field to socket result. Logs "(re-snapshotted for running show)" when triggered. Verify with deploy. |
 | Task 43 | BUG-038 | Low | Update all "8 endpoints" references to "7" in documentation | COMPLETE | Combined with Task 37 — all changes applied there. |
 
 ---
