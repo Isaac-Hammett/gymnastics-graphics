@@ -691,7 +691,7 @@ function buildTeamDbKey(schoolName, gender) {
   const normalized = schoolName
     .toLowerCase()
     .replace(/['']/g, '')
-    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/[^a-z0-9\s&-]/g, '')
     .replace(/-mens$/, '')
     .replace(/-womens$/, '')
     .replace(/ mens$/, '')
