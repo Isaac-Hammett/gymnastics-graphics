@@ -7063,6 +7063,16 @@ io.on('connection', async (socket) => {
         }
 
         if (!rtnId) {
+          // BUG-029: Write error meta to Firebase so UI shows "Stats error" badge
+          try {
+            await db.ref(`teamsDatabase/stats/${key}/meta`).update({
+              status: 'error',
+              errors: { rtnId: 'RTN ID not set. Run Media Manager team setup first.' },
+              fetchedAt: new Date().toISOString(),
+            });
+          } catch (metaErr) {
+            console.error(`[RTN Stats] Failed to write error meta for ${key}:`, metaErr.message);
+          }
           teamResults[`team${index}`] = { teamKey: key, status: 'error', error: 'Missing RTN ID' };
           continue;
         }
