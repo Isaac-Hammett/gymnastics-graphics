@@ -1,7 +1,7 @@
 # Plan: Sponsor System — Implementation Tracker
 
-**Status:** COMPLETE (12/12 tasks + 3 bug fixes + 2 design updates)
-**Last Updated:** 2026-02-13
+**Status:** IN PROGRESS (13/18 tasks complete)
+**Last Updated:** 2026-03-11
 
 ---
 
@@ -21,6 +21,12 @@
 | T10 | G | `overlays/sponsors-bug.html` | Create transparent corner bug overlay (bottom-right 200x80, 10s cycling, 0.8s fade, semi-transparent pill) | COMPLETE |
 | T11 | H | — | `cd show-controller && npm run build` — verify no errors | COMPLETE |
 | T12 | H | — | Deploy SPA + 3 overlay files to production; verify overlay URLs serve overlays (not React SPA) | COMPLETE |
+| T13 | I | `overlays/sponsors-cycle.html` | Enhanced content detection: trim white/near-white background pixels (not just transparent), so JPEG and white-bg PNG logos center correctly | COMPLETE |
+| T14 | J | `show-controller/src/hooks/useTeamsDatabase.js` | Add adjustment fields (scale, offsetX, offsetY, cropX, cropY, cropW, cropH) to `saveSponsor()` write and `getTeamSponsors()` return | NOT STARTED |
+| T15 | K | `show-controller/src/pages/MediaManagerPage.jsx` | Add per-sponsor adjustment controls (crop, scale, offset) to SponsorsView with inline preview | NOT STARTED |
+| T16 | L | `show-controller/src/components/GraphicsControl.jsx` | Fix sponsor serialization to include all adjustment fields (scale, offset, crop) — currently only passes name and url | NOT STARTED |
+| T17 | M | `show-controller/src/pages/UrlGeneratorPage.jsx` | Persist sponsor overrides back to Firebase via saveSponsor (currently session-only local state) | NOT STARTED |
+| T18 | N | — | Build + deploy SPA + overlay files to production; verify sponsor logos center correctly and adjustments persist | NOT STARTED |
 
 ---
 
@@ -36,6 +42,12 @@
 | **F** | Overlay: Cycle | T9 | COMPLETE |
 | **G** | Overlay: Bug | T10 | COMPLETE |
 | **H** | Build & Deploy | T11, T12 | COMPLETE |
+| **I** | Overlay: Smart Content Detection | T13 | COMPLETE |
+| **J** | Data Model: Adjustment Fields | T14 | NOT STARTED |
+| **K** | Media Manager: Adjust Controls | T15 | NOT STARTED |
+| **L** | GraphicsControl: Pass All Fields | T16 | NOT STARTED |
+| **M** | URL Generator: Persist Overrides | T17 | NOT STARTED |
+| **N** | Build & Deploy v2 | T18 | NOT STARTED |
 
 ---
 
@@ -52,12 +64,19 @@ T2 (registry) ─────────┬──→ T3 (GraphicsManager)
 T8, T9, T10 (overlays) ── no dependencies, can run in parallel
 
 T1-T10 all ──→ T11 (build) ──→ T12 (deploy)
+
+--- Phase 2 (Sponsor Adjustments) ---
+
+T13 (overlay fix) ── no dependencies (standalone overlay HTML)
+
+T14 (data model) ──┬──→ T15 (Media Manager adjust controls)
+                    ├──→ T16 (GraphicsControl fix)
+                    └──→ T17 (URL Generator persist)
+
+T13-T17 all ──→ T18 (build + deploy)
 ```
 
-**Parallelizable first batch:** T1 + T2 + T8 + T9 + T10 (no dependencies between them)
-**Second batch (after T2):** T3 + T4 + T5
-**Third batch (after T1 + T4 + T5):** T6 + T7
-**Final:** T11 → T12
+**Phase 2 parallelization:** T13 can run independently. T14 must complete first, then T15 + T16 + T17 can run in parallel. T18 last.
 
 ---
 
@@ -275,9 +294,201 @@ All use `URLSearchParams` for proper encoding.
 
 ---
 
+---
+
+### T13: Overlay — Smart Content Detection for White Backgrounds
+
+**File:** `overlays/sponsors-cycle.html`
+**Dependencies:** None
+**Plan Reference:** [PLAN Section 10](#10-smart-content-detection)
+
+**Problem:** `getContentBounds()` (line 196) only detects transparent pixels (`alpha > 20`) as content. JPEG images and PNGs with white/opaque backgrounds have alpha=255 for ALL pixels, so the entire image (including asymmetric whitespace) is treated as content. The canvas is centered by flexbox, but the visual content within it is off-center if the source image has uneven padding.
+
+**Changes:**
+1. Enhance `getContentBounds()` to also detect near-white/near-background pixels as "background" — not just transparent ones
+2. Add a two-pass detection strategy:
+   - **Pass 1 (existing):** Scan for non-transparent pixels (alpha threshold). If the detected content is significantly smaller than the full image, use it (logo has transparency).
+   - **Pass 2 (new):** If Pass 1 returns the full image (opaque image detected), scan for non-white/non-near-white pixels using a luminance or RGB threshold. Treat pixels where R>240, G>240, B>240 as background.
+3. The threshold should be configurable but default to RGB > 240 for "near-white" detection
+4. Keep the existing crop override system — manual crop always wins over auto-detection
+
+**Test cases:**
+- Transparent PNG: Should trim to content bounds (existing behavior, unchanged)
+- JPEG with white background: Should now trim white borders and center the actual logo content
+- JPEG with colored background: Should fall back to full image (no trimming)
+- Logo with light gray background (#E5E5E5): Should NOT trim since background matches page background
+
+**Status:** COMPLETE
+
+---
+
+### T14: Data Model — Add Adjustment Fields to Sponsor CRUD
+
+**File:** `show-controller/src/hooks/useTeamsDatabase.js`
+**Dependencies:** None (extends existing T1 work)
+
+**Changes:**
+
+1. **`saveSponsor()` (line 260):** Add optional adjustment fields to the Firebase write. These fields should only be written when they have non-default values (to keep Firebase clean):
+   ```js
+   await set(ref(db, `teamsDatabase/sponsors/${teamKey}/${sponsorKey}`), {
+     name: sponsorData.name,
+     url: sponsorData.url,
+     tier: sponsorData.tier || 'official',
+     order: sponsorData.order ?? 0,
+     // Adjustment fields (only write if non-default)
+     ...(sponsorData.scale != null && sponsorData.scale !== 100 ? { scale: sponsorData.scale } : {}),
+     ...(sponsorData.offsetX ? { offsetX: sponsorData.offsetX } : {}),
+     ...(sponsorData.offsetY ? { offsetY: sponsorData.offsetY } : {}),
+     ...(sponsorData.cropX != null ? { cropX: sponsorData.cropX } : {}),
+     ...(sponsorData.cropY != null ? { cropY: sponsorData.cropY } : {}),
+     ...(sponsorData.cropW != null ? { cropW: sponsorData.cropW } : {}),
+     ...(sponsorData.cropH != null ? { cropH: sponsorData.cropH } : {}),
+     updatedAt: new Date().toISOString(),
+   });
+   ```
+
+2. **`getTeamSponsors()` (line 507):** Include adjustment fields in the returned objects:
+   ```js
+   .map(([key, data]) => ({
+     key,
+     name: data.name,
+     url: data.logoUrl || data.url,
+     tier: data.tier || 'official',
+     order: data.order ?? 0,
+     // Adjustment fields
+     scale: data.scale ?? null,
+     offsetX: data.offsetX ?? null,
+     offsetY: data.offsetY ?? null,
+     cropX: data.cropX ?? null,
+     cropY: data.cropY ?? null,
+     cropW: data.cropW ?? null,
+     cropH: data.cropH ?? null,
+   }))
+   ```
+
+**Status:** NOT STARTED
+
+---
+
+### T15: Media Manager — Sponsor Adjustment Controls
+
+**File:** `show-controller/src/pages/MediaManagerPage.jsx`
+**Dependencies:** T14
+
+**Changes:**
+
+Add per-sponsor adjustment controls to the `SponsorsView` component (line 684). Each sponsor row should have an "Adjust" expand/collapse button that reveals:
+
+1. **Inline preview:** A small (320x180) preview container showing the sponsor logo rendered the same way `sponsors-cycle.html` does — with content detection, crop, scale, and offset applied. This lets the user see the effect of their adjustments.
+
+2. **Crop controls:** X, Y, W, H stepper inputs (same pattern as `SponsorAdjustControls.jsx`). Values are in source image pixels.
+
+3. **Scale control:** 10-300% stepper with slider.
+
+4. **Offset controls:** X and Y pixel offsets (-500 to +500).
+
+5. **Reset button:** Clears all adjustment fields back to null/defaults.
+
+6. **Save on change:** Each adjustment change immediately calls `saveSponsor(teamKey, sponsorKey, { ...existingSponsorData, [field]: value })` to persist to Firebase. No separate "Save" button needed.
+
+**Implementation approach:**
+- Import `SponsorAdjustControls` or create a simpler inline version that works per-sponsor (the existing component is designed for a list with locking — the Media Manager needs a single-sponsor version)
+- The preview should use a `<canvas>` element that replicates the `renderTrimmedLogo` logic from `sponsors-cycle.html`, or use a small iframe pointing to `sponsors-cycle.html?sponsors=[{...}]&lockedIndex=0` for pixel-perfect preview
+- Using an iframe preview is simpler and guarantees visual parity with the actual overlay
+
+**UI layout for expanded sponsor row:**
+```
+[48x48 logo] [Name] [Tier badge] [URL] [Adjust ▸] [Up] [Down] [Delete]
+  └─ [Expanded adjustment panel - only visible when Adjust is clicked]
+     ┌────────────────────────────────────────────────┐
+     │ [320x180 live preview iframe]                  │
+     │                                                │
+     │ Crop: [X ±] [Y ±] [W ±] [H ±]  [Reset Auto]  │
+     │ Scale: [±100%]  X Offset: [±0px]  Y: [±0px]   │
+     │                                    [Reset All] │
+     └────────────────────────────────────────────────┘
+```
+
+**Status:** NOT STARTED
+
+---
+
+### T16: GraphicsControl — Pass All Sponsor Adjustment Fields
+
+**File:** `show-controller/src/components/GraphicsControl.jsx`
+**Dependencies:** T14
+
+**Problem:** Lines 406-409 and 426-429 map sponsors to `{ name, url }` only, dropping `scale`, `offsetX`, `offsetY`, `cropX`, `cropY`, `cropW`, `cropH`. This means adjustments made in the Media Manager or Theme Editor are lost when sending sponsor graphics from the producer view.
+
+**Changes:**
+
+1. **Theme sponsors path (line 406):** Include all fields:
+   ```js
+   data.sponsors = JSON.stringify(eventSponsors.slice(0, 8).map(s => ({
+     name: s.name || '',
+     url: s.url || '',
+     ...(s.scale != null && s.scale !== 100 ? { scale: s.scale } : {}),
+     ...(s.offsetX ? { offsetX: s.offsetX } : {}),
+     ...(s.offsetY ? { offsetY: s.offsetY } : {}),
+     ...(s.cropX != null ? { cropX: s.cropX } : {}),
+     ...(s.cropY != null ? { cropY: s.cropY } : {}),
+     ...(s.cropW != null ? { cropW: s.cropW } : {}),
+     ...(s.cropH != null ? { cropH: s.cropH } : {}),
+   })));
+   ```
+
+2. **Team sponsors fallback path (line 426):** Same pattern — include all adjustment fields from `getTeamSponsors()` return values.
+
+**Status:** NOT STARTED
+
+---
+
+### T17: URL Generator — Persist Sponsor Overrides to Firebase
+
+**File:** `show-controller/src/pages/UrlGeneratorPage.jsx`
+**Dependencies:** T14
+
+**Problem:** The `SponsorAdjustControls` in the URL Generator modify local React state (`sponsorOverrides`) but never persist changes back to Firebase. Adjustments are lost when the page reloads.
+
+**Changes:**
+
+1. **Load persisted values:** When sponsors are loaded (from theme or team), pre-populate `sponsorOverrides` with existing adjustment fields from the sponsor data, so the controls show current saved values.
+
+2. **Save on change:** When the user modifies a crop/scale/offset value via the `SponsorAdjustControls` `onUpdate` callback, also persist the change to Firebase:
+   - **For theme sponsors:** Call `firebase.update()` on `themes/{themeId}/sponsors/{index}/` with the changed field
+   - **For team sponsors:** Call `saveSponsor(teamKey, sponsorKey, updatedData)` to persist the adjustment
+
+3. **Determine source:** Track whether current sponsors came from a theme or from the team database, so the save targets the correct Firebase path.
+
+**Note:** The existing `meetThemeSponsors` state in UrlGeneratorPage already contains theme-sourced sponsors. For team-sourced sponsors, the `resolveHomeTeamKey` helper resolves the team key. The save path depends on which source was used.
+
+**Status:** NOT STARTED
+
+---
+
+### T18: Build & Deploy v2
+
+**Dependencies:** T13-T17
+
+**Steps:**
+1. `cd show-controller && npm run build` — verify no errors
+2. Deploy React SPA (tarball → upload → extract)
+3. Deploy overlay files (rebuild overlays tarball including updated `sponsors-cycle.html`)
+4. Set permissions: `chmod 644 /var/www/commentarygraphic/overlays/*`
+5. Verify:
+   - Open URL Generator, select sponsors-cycle, check that white-bg logos now center correctly
+   - Open Media Manager, expand a team with sponsors, verify adjust controls appear
+   - Send a sponsor graphic from producer view, verify adjustments are applied in output
+   - Reload URL Generator, verify previously-saved adjustments persist
+
+**Status:** NOT STARTED
+
+---
+
 ## Verification Checklist
 
-After all tasks complete:
+### Phase 1 (T1-T12) — COMPLETE
 
 - [x] **Hook** — `saveSponsor('test-mens', 'test-sponsor', {...})` → Firebase path exists with all fields
 - [x] **Media Manager** — Expand team → SponsorsView appears → add/reorder/delete works → badge updates
@@ -286,6 +497,15 @@ After all tasks complete:
 - [x] **Build** — `npm run build` no errors
 - [x] **Deploy** — Production URLs serve overlays (not React SPA)
 - [x] **OBS test** — `sponsors-bug.html` as Browser Source → transparency works
+
+### Phase 2 (T13-T18) — NOT STARTED
+
+- [ ] **Content detection** — JPEG logos with white backgrounds now auto-center correctly in sponsors-cycle
+- [ ] **Data model** — `saveSponsor` persists adjustment fields; `getTeamSponsors` returns them
+- [ ] **Media Manager adjustments** — Expand team → click Adjust on a sponsor → crop/scale/offset controls appear with live preview → changes persist to Firebase
+- [ ] **GraphicsControl** — Send sponsor graphic from producer view → adjustment fields are included in the overlay URL
+- [ ] **URL Generator persist** — Adjust a sponsor in URL Generator → reload page → adjustments are still there
+- [ ] **End-to-end** — Add a JPEG white-bg sponsor logo → it auto-centers → fine-tune with crop/offset → send from producer → output shows centered, adjusted logo
 
 ---
 
