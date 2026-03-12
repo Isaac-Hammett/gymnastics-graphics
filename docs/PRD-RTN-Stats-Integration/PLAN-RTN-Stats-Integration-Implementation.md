@@ -168,7 +168,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 
 **Verification:** Rankings panel now shows Week 4 (dated 2026-02-02) which is the correct week for Feb 7, 2026.
 
-### Phase 6: Bug Fixes (P0) - IN PROGRESS (3/17)
+### Phase 6: Bug Fixes (P0) - IN PROGRESS (4/17)
 
 **See:** [BUGS.md](./BUGS.md) for full details on each bug.
 
@@ -180,7 +180,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | Task 30 | BUG-032 | Medium | Fix `StatsStatusBadge` refresh — ensure socket receives `rtnStatsResult` | COMPLETE | Changed to fire-and-forget pattern: emit `refreshRtnStats`, disconnect after 500ms, rely on existing Firebase `onValue` listener to update badge. Spinner stops after 10s timeout. Removed waiting for `rtnStatsResult` which was unreliable due to room-join race. |
 | Task 31 | BUG-029 | Medium | Write error meta to Firebase in `refreshRtnStats` handler for missing `rtnId` | COMPLETE | Added Firebase meta write at `server/index.js:7065-7073`. Now when `rtnId` is missing, writes `{status: 'error', errors: {rtnId: '...'}, fetchedAt}` to `teamsDatabase/stats/{teamKey}/meta` so UI shows "Stats error" badge. |
 | Task 32 | BUG-027 | Medium | Fix `useRtnStats` loadedCountRef race condition on teamKeys change | COMPLETE | Added `effectEpochRef` generation counter. Each useEffect invocation increments epoch and captures it in closure. Callbacks check `currentEpoch !== effectEpochRef.current` to ignore stale callbacks. Also clears `sharedStats` on teamKeys change to prevent mixing old/new data. Build verified. |
-| Task 33 | BUG-028 | Low | Add teams 3-6 to useEffect dependency arrays in `StatsStatusBadge` and `StatsDetailPanel` | NOT STARTED | Derive stable key from teamKeys array. Update deps at `StatsStatusBadge.jsx:50` and `StatsDetailPanel.jsx:59`. |
+| Task 33 | BUG-028 | Low | Add teams 3-6 to useEffect dependency arrays in `StatsStatusBadge` and `StatsDetailPanel` | COMPLETE | Added `teamKeysStr = teamKeys.map(t => t.teamKey).join(',')` to derive stable key from teamKeys array. Updated useEffect deps from `[compId, config?.compType, config?.team1Name, config?.team2Name]` to `[compId, teamKeysStr]` in StatsStatusBadge.jsx:32 and `[expanded, compId, teamKeysStr]` in StatsDetailPanel.jsx:44. Now any team name change (1-6) triggers resubscription. Build verified. |
 | Task 34 | BUG-026 | Low | Filter null scores in consistency trend calculation | NOT STARTED | Filter nulls before `reduce()` at `StatsDetailPanel.jsx:449`. Note: `null + number` produces `number` in JS (not NaN) — the real issue is an incorrectly deflated average, not NaN propagation. Also fix trend detection at line 443-444 to ignore nulls. |
 | Task 35 | BUG-030 | Low | Fix `normalizeTeamName()` stripping "state" — false matches for state schools | NOT STARTED | Remove "state" from strip list in `show-controller/src/lib/roadToNationals.js:201` and `show-controller/src/hooks/useRoadToNationals.js:244`. Or match by RTN ID instead of fuzzy name. |
 | Task 36 | BUG-025 | Low | Document `parseScore()` zero-as-null assumption | NOT STARTED | Add explicit comment at `server/lib/rtnStatsService.js:345` explaining that `0.0000` is treated as "no score recorded" per RTN convention. Optionally, only treat as null when value is exactly the string `"0.0000"`, not numeric `0`. |

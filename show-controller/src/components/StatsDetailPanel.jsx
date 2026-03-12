@@ -36,6 +36,9 @@ export default function StatsDetailPanel({ compId, config }) {
     }
   }
 
+  // Derive stable key from teamKeys array for useEffect dependency
+  const teamKeysStr = teamKeys.map(t => t.teamKey).join(',');
+
   // Subscribe to full stats for each team when expanded
   useEffect(() => {
     if (!expanded || !teamKeys.length) return;
@@ -56,7 +59,7 @@ export default function StatsDetailPanel({ compId, config }) {
 
     return () => unsubs.forEach(u => u());
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [expanded, compId, config?.compType, config?.team1Name, config?.team2Name]);
+  }, [expanded, compId, teamKeysStr]);
 
   if (!teamKeys.length) return null;
 

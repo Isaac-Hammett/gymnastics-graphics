@@ -27,6 +27,9 @@ export default function StatsStatusBadge({ compId, config }) {
     }
   }
 
+  // Derive stable key from teamKeys array for useEffect dependency
+  const teamKeysStr = teamKeys.map(t => t.teamKey).join(',');
+
   // Subscribe to meta for each team
   useEffect(() => {
     if (!teamKeys.length) return;
@@ -47,7 +50,7 @@ export default function StatsStatusBadge({ compId, config }) {
 
     return () => unsubs.forEach(u => u());
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [compId, config?.compType, config?.team1Name, config?.team2Name]);
+  }, [compId, teamKeysStr]);
 
   // Determine overall status from all team metas
   const metas = Object.values(teamMetas).filter(Boolean);
