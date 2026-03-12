@@ -2014,6 +2014,105 @@ app.delete('/api/admin/themes/:themeId', async (req, res) => {
 });
 
 // ============================================
+// RTN (Road to Nationals) Proxy API Endpoints
+// ============================================
+// These endpoints proxy RTN API calls through the server to avoid CORS issues
+// in the browser. Data is cached to Firebase for subsequent requests.
+
+const RTN_BASE_URL = 'https://www.roadtonationals.com/api';
+const RTN_CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+
+// GET /api/rtn/teams/:gender - Get RTN teams data (with caching)
+app.get('/api/rtn/teams/:gender', async (req, res) => {
+  try {
+    const { gender } = req.params;
+    if (gender !== 'mens' && gender !== 'womens') {
+      return res.status(400).json({ error: 'Invalid gender. Use "mens" or "womens"' });
+    }
+
+    const db = productionConfigService.getDb();
+    const cacheKey = gender;
+    const now = Date.now();
+
+    // Check Firebase cache first
+    const cacheRef = db.ref(`rtnCache/${cacheKey}`);
+    const snapshot = await cacheRef.once('value');
+
+    if (snapshot.exists()) {
+      const cached = snapshot.val();
+      if (cached.timestamp && (now - cached.timestamp) < RTN_CACHE_DURATION) {
+        return res.json(cached.data);
+      }
+    }
+
+    // Cache miss or stale - fetch from RTN API
+    const genderPath = gender === 'womens' ? 'women' : 'men';
+    const response = await fetch(`${RTN_BASE_URL}/${genderPath}/teams`);
+    if (!response.ok) {
+      throw new Error(`RTN API returned ${response.status}`);
+    }
+    const data = await response.json();
+
+    // Store in Firebase cache
+    await cacheRef.set({
+      data: data,
+      timestamp: now,
+      fetchedAt: new Date(now).toISOString(),
+    });
+
+    res.json(data);
+  } catch (error) {
+    console.error('[RTN Proxy] Failed to fetch teams:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/rtn/dashboard/:gender/:year/:teamId - Get team dashboard data (with caching)
+app.get('/api/rtn/dashboard/:gender/:year/:teamId', async (req, res) => {
+  try {
+    const { gender, year, teamId } = req.params;
+    if (gender !== 'mens' && gender !== 'womens') {
+      return res.status(400).json({ error: 'Invalid gender. Use "mens" or "womens"' });
+    }
+
+    const db = productionConfigService.getDb();
+    const cacheKey = `${gender}-${teamId}`;
+    const now = Date.now();
+
+    // Check Firebase cache first
+    const cacheRef = db.ref(`rtnCache/dashboards/${cacheKey}`);
+    const snapshot = await cacheRef.once('value');
+
+    if (snapshot.exists()) {
+      const cached = snapshot.val();
+      if (cached.timestamp && (now - cached.timestamp) < RTN_CACHE_DURATION) {
+        return res.json(cached.data);
+      }
+    }
+
+    // Cache miss or stale - fetch from RTN API
+    const genderPath = gender === 'womens' ? 'women' : 'men';
+    const response = await fetch(`${RTN_BASE_URL}/${genderPath}/dashboard/${year}/${teamId}`);
+    if (!response.ok) {
+      throw new Error(`RTN API returned ${response.status}`);
+    }
+    const data = await response.json();
+
+    // Store in Firebase cache
+    await cacheRef.set({
+      data: data,
+      timestamp: now,
+      fetchedAt: new Date(now).toISOString(),
+    });
+
+    res.json(data);
+  } catch (error) {
+    console.error('[RTN Proxy] Failed to fetch dashboard:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================
 // Competition VM Assignment API Endpoints
 // ============================================
 

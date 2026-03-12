@@ -12,15 +12,16 @@
 
 import { db, ref, get, set } from './firebase';
 
-const RTN_BASE_URL = 'https://www.roadtonationals.com/api';
+// Use coordinator server as proxy to avoid CORS issues with direct RTN API calls
+const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'https://api.commentarygraphic.com';
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours (data rarely changes)
 
 /**
- * Fetch all women's teams from Road to Nationals
+ * Fetch all women's teams via coordinator proxy (avoids CORS)
  * @returns {Promise<{year: string, teams: Array}>}
  */
 export async function fetchWomensTeams() {
-  const response = await fetch(`${RTN_BASE_URL}/women/teams`);
+  const response = await fetch(`${SERVER_URL}/api/rtn/teams/womens`);
   if (!response.ok) {
     throw new Error(`Failed to fetch women's teams: ${response.status}`);
   }
@@ -28,11 +29,11 @@ export async function fetchWomensTeams() {
 }
 
 /**
- * Fetch all men's teams from Road to Nationals
+ * Fetch all men's teams via coordinator proxy (avoids CORS)
  * @returns {Promise<{year: string, teams: Array}>}
  */
 export async function fetchMensTeams() {
-  const response = await fetch(`${RTN_BASE_URL}/men/teams`);
+  const response = await fetch(`${SERVER_URL}/api/rtn/teams/mens`);
   if (!response.ok) {
     throw new Error(`Failed to fetch men's teams: ${response.status}`);
   }
@@ -40,7 +41,7 @@ export async function fetchMensTeams() {
 }
 
 /**
- * Fetch teams for a specific gender
+ * Fetch teams for a specific gender via coordinator proxy
  * @param {'mens' | 'womens'} gender
  * @returns {Promise<{year: string, teams: Array}>}
  */
@@ -209,14 +210,19 @@ function normalizeTeamName(name) {
 
 /**
  * Get weekly schedule for a specific date
+ * NOTE: This function is currently unused and would fail due to CORS.
+ * If needed in the future, add a proxy endpoint at /api/rtn/schedule/:gender/:date
  * @param {string} date - Date in YYYY-MM-DD format
  * @param {'mens' | 'womens'} gender
  * @returns {Promise<Object>}
  */
 export async function getWeeklySchedule(date, gender = 'womens') {
+  // TODO: Add proxy endpoint if this function is needed
+  // Direct RTN API calls fail due to CORS - use SERVER_URL proxy pattern
+  const RTN_DIRECT_URL = 'https://www.roadtonationals.com/api';
   const endpoint = gender === 'womens'
-    ? `${RTN_BASE_URL}/women/schedule2/${date}/0`
-    : `${RTN_BASE_URL}/men/schedulesplit/${date}/0`;
+    ? `${RTN_DIRECT_URL}/women/schedule2/${date}/0`
+    : `${RTN_DIRECT_URL}/men/schedulesplit/${date}/0`;
 
   const response = await fetch(endpoint);
   if (!response.ok) {
@@ -227,13 +233,18 @@ export async function getWeeklySchedule(date, gender = 'womens') {
 
 /**
  * Get year weeks (dates for each week of the season)
+ * NOTE: This function is currently unused and would fail due to CORS.
+ * If needed in the future, add a proxy endpoint at /api/rtn/yearweeks/:gender/:year
  * @param {number} year
  * @param {'mens' | 'womens'} gender
  * @returns {Promise<Array>}
  */
 export async function getYearWeeks(year, gender = 'womens') {
+  // TODO: Add proxy endpoint if this function is needed
+  // Direct RTN API calls fail due to CORS - use SERVER_URL proxy pattern
+  const RTN_DIRECT_URL = 'https://www.roadtonationals.com/api';
   const genderPath = gender === 'womens' ? 'women' : 'men';
-  const response = await fetch(`${RTN_BASE_URL}/${genderPath}/yearweeks/${year}`);
+  const response = await fetch(`${RTN_DIRECT_URL}/${genderPath}/yearweeks/${year}`);
   if (!response.ok) {
     throw new Error(`Failed to fetch year weeks: ${response.status}`);
   }
@@ -278,9 +289,8 @@ export async function fetchTeamDashboard(teamId, gender = 'womens', year = new D
     // Firebase cache miss
   }
 
-  // Fetch from API
-  const genderPath = gender === 'womens' ? 'women' : 'men';
-  const response = await fetch(`${RTN_BASE_URL}/${genderPath}/dashboard/${year}/${teamId}`);
+  // Fetch from API via coordinator proxy (avoids CORS)
+  const response = await fetch(`${SERVER_URL}/api/rtn/dashboard/${gender}/${year}/${teamId}`);
   if (!response.ok) {
     throw new Error(`Failed to fetch team dashboard: ${response.status}`);
   }
