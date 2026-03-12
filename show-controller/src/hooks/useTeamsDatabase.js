@@ -264,6 +264,14 @@ export function useTeamsDatabase() {
         url: sponsorData.url,
         tier: sponsorData.tier || 'official',
         order: sponsorData.order ?? 0,
+        // Adjustment fields (only write if non-default to keep Firebase clean)
+        ...(sponsorData.scale != null && sponsorData.scale !== 100 ? { scale: sponsorData.scale } : {}),
+        ...(sponsorData.offsetX ? { offsetX: sponsorData.offsetX } : {}),
+        ...(sponsorData.offsetY ? { offsetY: sponsorData.offsetY } : {}),
+        ...(sponsorData.cropX != null ? { cropX: sponsorData.cropX } : {}),
+        ...(sponsorData.cropY != null ? { cropY: sponsorData.cropY } : {}),
+        ...(sponsorData.cropW != null ? { cropW: sponsorData.cropW } : {}),
+        ...(sponsorData.cropH != null ? { cropH: sponsorData.cropH } : {}),
         updatedAt: new Date().toISOString(),
       });
       return { success: true };
@@ -513,6 +521,14 @@ export function useTeamsDatabase() {
         url: data.logoUrl || data.url,
         tier: data.tier || 'official',
         order: data.order ?? 0,
+        // Adjustment fields
+        scale: data.scale ?? null,
+        offsetX: data.offsetX ?? null,
+        offsetY: data.offsetY ?? null,
+        cropX: data.cropX ?? null,
+        cropY: data.cropY ?? null,
+        cropW: data.cropW ?? null,
+        cropH: data.cropH ?? null,
       }))
       .sort((a, b) => a.order - b.order);
   }, [sponsors]);

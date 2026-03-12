@@ -1,6 +1,6 @@
 # Plan: Sponsor System — Implementation Tracker
 
-**Status:** IN PROGRESS (13/18 tasks complete)
+**Status:** IN PROGRESS (14/18 tasks complete)
 **Last Updated:** 2026-03-11
 
 ---
@@ -22,7 +22,7 @@
 | T11 | H | — | `cd show-controller && npm run build` — verify no errors | COMPLETE |
 | T12 | H | — | Deploy SPA + 3 overlay files to production; verify overlay URLs serve overlays (not React SPA) | COMPLETE |
 | T13 | I | `overlays/sponsors-cycle.html` | Enhanced content detection: trim white/near-white background pixels (not just transparent), so JPEG and white-bg PNG logos center correctly | COMPLETE |
-| T14 | J | `show-controller/src/hooks/useTeamsDatabase.js` | Add adjustment fields (scale, offsetX, offsetY, cropX, cropY, cropW, cropH) to `saveSponsor()` write and `getTeamSponsors()` return | NOT STARTED |
+| T14 | J | `show-controller/src/hooks/useTeamsDatabase.js` | Add adjustment fields (scale, offsetX, offsetY, cropX, cropY, cropW, cropH) to `saveSponsor()` write and `getTeamSponsors()` return | COMPLETE |
 | T15 | K | `show-controller/src/pages/MediaManagerPage.jsx` | Add per-sponsor adjustment controls (crop, scale, offset) to SponsorsView with inline preview | NOT STARTED |
 | T16 | L | `show-controller/src/components/GraphicsControl.jsx` | Fix sponsor serialization to include all adjustment fields (scale, offset, crop) — currently only passes name and url | NOT STARTED |
 | T17 | M | `show-controller/src/pages/UrlGeneratorPage.jsx` | Persist sponsor overrides back to Firebase via saveSponsor (currently session-only local state) | NOT STARTED |
@@ -43,7 +43,7 @@
 | **G** | Overlay: Bug | T10 | COMPLETE |
 | **H** | Build & Deploy | T11, T12 | COMPLETE |
 | **I** | Overlay: Smart Content Detection | T13 | COMPLETE |
-| **J** | Data Model: Adjustment Fields | T14 | NOT STARTED |
+| **J** | Data Model: Adjustment Fields | T14 | COMPLETE |
 | **K** | Media Manager: Adjust Controls | T15 | NOT STARTED |
 | **L** | GraphicsControl: Pass All Fields | T16 | NOT STARTED |
 | **M** | URL Generator: Persist Overrides | T17 | NOT STARTED |
@@ -367,7 +367,7 @@ All use `URLSearchParams` for proper encoding.
    }))
    ```
 
-**Status:** NOT STARTED
+**Status:** COMPLETE
 
 ---
 
