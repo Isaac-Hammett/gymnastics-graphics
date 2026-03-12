@@ -338,10 +338,20 @@ function buildTeamStatUrls(gender, year, tid, week) {
  * - null/undefined/empty string -> null
  * - Results are rounded to 4 decimal places
  *
+ * IMPORTANT: Zero values (0, "0.0000") are treated as "no score recorded" per RTN convention.
+ * RTN uses 0.0000 as a placeholder when an athlete did not compete on an event (e.g., not in lineup).
+ * This is safe for gymnastics because a legitimate 0.000 score is virtually impossible — even a fall
+ * on vault with no other execution deductions would score above 0. The NCAA Code of Points minimum
+ * start value ensures all completed routines score above zero.
+ *
+ * If this assumption ever needs to change (e.g., for a disqualification stored as 0), the check
+ * should be moved to the normalization layer where context about why the score is 0 is available.
+ *
  * @param {*} val - Raw score value from RTN
  * @returns {number|null}
  */
 function parseScore(val) {
+  // Zero values treated as "no score recorded" — see JSDoc above for rationale
   if (val === null || val === undefined || val === '' || val === '0.0000' || val === 0) return null;
   const num = typeof val === 'number' ? val : parseFloat(val);
   if (isNaN(num)) return null;
