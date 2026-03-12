@@ -5,7 +5,7 @@
  * statistics from Road To Nationals (roadtonationals.com).
  *
  * This service handles:
- * - Fetching all 8 RTN stat endpoints per team (rate-limited)
+ * - Fetching all 7 RTN stat endpoints per team (rate-limited)
  * - Rate limiting (200ms between requests, 10s timeout, retry on 500)
  * - Event code translation for men's and women's gymnastics
  *

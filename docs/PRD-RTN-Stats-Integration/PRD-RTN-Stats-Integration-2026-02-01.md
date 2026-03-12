@@ -1,9 +1,9 @@
 # PRD: RTN Statistics Integration
 
-**Version:** 2.0
+**Version:** 2.1
 **Date:** 2026-02-01
-**Status:** Complete
-**Last Updated:** 2026-02-01 (All 5 phases complete, all 26 tasks done)
+**Status:** In Progress
+**Last Updated:** 2026-03-11 (Phases 1-5 complete, Phase 6 bug fixes added — 17 bugs identified)
 
 ---
 
@@ -17,7 +17,7 @@ The broadcast system has limited access to team and athlete statistics. Currentl
 4. **No RTN IDs stored for athletes** - RTN athlete IDs are available in Virtius but not captured during team setup, making individual stat lookups impossible
 5. **League rankings are not tracked** - No national/conference rankings for teams or individuals
 6. **AI talking points lack depth** - The AI context and suggestion services generate generic commentary because they don't have rich statistical data
-7. **Road To Nationals API is underutilized** - We only use the `dashboard` endpoint for coach names; RTN provides 8 additional endpoints with detailed stats
+7. **Road To Nationals API is underutilized** - We only use the `dashboard` endpoint for coach names; RTN provides 7 additional stat endpoints with detailed stats
 
 The result: talent gets shallow talking points, graphics show manually-entered (often outdated) stats, and producers spend time looking up data that could be automated.
 
@@ -81,7 +81,7 @@ The result: talent gets shallow talking points, graphics show manually-entered (
 3. Click "Refresh Stats" to pull latest data from RTN
 
 **Acceptance:**
-- [ ] All 8 RTN stat categories displayed per team
+- [ ] All 7 RTN stat categories displayed per team
 - [ ] Refresh button triggers re-fetch from RTN and updates shared store
 - [ ] Data persists in Firebase across sessions
 
@@ -200,6 +200,7 @@ The result: talent gets shallow talking points, graphics show manually-entered (
 | **3** | League Rankings | P1 | Team + individual national/conference rankings | 15-17 |
 | **4** | AI Enhancement | P1 | Feed stats into AI context and suggestion services | 18-21 |
 | **5** | Playwright Integration Tests | P1 | End-to-end tests for all features | 22-24 |
+| **6** | Bug Fixes | P0 | Fix 17 bugs found in production audit (BUG-022 through BUG-038) | 27-43 |
 
 ---
 
@@ -207,7 +208,7 @@ The result: talent gets shallow talking points, graphics show manually-entered (
 
 ### Phase 1 Complete When:
 - [ ] RTN IDs captured for teams and athletes during Media Manager setup
-- [ ] Server service fetches all 8 RTN stat endpoints per team
+- [ ] Server service fetches all 7 RTN stat endpoints per team
 - [ ] Data normalized and written to shared `teamsDatabase/stats/{teamKey}/`
 - [ ] Competition snapshot copied to `competitions/{compId}/rtnStats/`
 - [ ] `team{N}Ave`, `team{N}High` auto-synced to competition config
@@ -242,6 +243,23 @@ The result: talent gets shallow talking points, graphics show manually-entered (
 - [ ] Playwright tests verify config auto-sync and manual lock behavior
 - [ ] Playwright tests verify AI talking points contain stats-backed content
 - [ ] Tests run against production after deploy
+
+### Phase 6 Complete When:
+- [ ] Teams with `&` in name (William & Mary, Texas A&M) load stats successfully (BUG-022)
+- [ ] `womens-7` competitions ingest all 7 teams (BUG-024)
+- [ ] Head coach data accessible in browser without CORS errors (BUG-023)
+- [ ] Stats refresh badge updates immediately, no 60s timeout (BUG-032)
+- [ ] Missing `rtnId` refresh writes error to Firebase (BUG-029)
+- [ ] Competition switching doesn't leave stale loading state (BUG-027)
+- [ ] Teams 3-6 changes trigger listener resubscription (BUG-028)
+- [ ] Consistency chart handles null scores correctly (incorrect average, not NaN) (BUG-026)
+- [ ] State school names don't false-match (BUG-030)
+- [ ] Client hook subscribes to all 7 teams in `womens-7` (BUG-034)
+- [ ] Re-ingestion with partial failures preserves previously-good data (BUG-035)
+- [ ] Unranked teams get Ave/High auto-populated via fallback (BUG-036)
+- [ ] Show-start snapshot contains fresh data when stale refresh triggered (BUG-037)
+- [ ] All "8 endpoints" references updated to "7" (BUG-038)
+- [ ] No console errors on production
 
 ---
 
@@ -352,3 +370,4 @@ competitions/{compId}/rtnStats/
 |----------|---------|
 | [PLAN-RTN-Stats-Integration-2026-02-01.md](./PLAN-RTN-Stats-Integration-2026-02-01.md) | Technical architecture, data model, API normalization, error handling |
 | [PLAN-RTN-Stats-Integration-Implementation.md](./PLAN-RTN-Stats-Integration-Implementation.md) | Implementation task tracking (use this for day-to-day execution) |
+| [BUGS.md](./BUGS.md) | Bug tracker — 17 bugs identified in production audit (BUG-022 through BUG-038) |
