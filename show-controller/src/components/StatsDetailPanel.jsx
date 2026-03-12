@@ -439,17 +439,21 @@ function ConsistencyTab({ stats, events }) {
         const scores = toArray(eventData[event]);
         if (!scores.length) return null;
 
-        // Detect trend
-        const recent = scores.slice(-3);
+        // Filter out null/undefined scores for calculations
+        const validScores = scores.filter(v => v !== null && v !== undefined);
+        if (!validScores.length) return null;
+
+        // Detect trend using last 3 valid scores
+        const recentValid = validScores.slice(-3);
         let trend = 'stable';
-        if (recent.length >= 3) {
-          if (recent[2] > recent[0] && recent[2] > recent[1]) trend = 'up';
-          else if (recent[2] < recent[0] && recent[2] < recent[1]) trend = 'down';
+        if (recentValid.length >= 3) {
+          if (recentValid[2] > recentValid[0] && recentValid[2] > recentValid[1]) trend = 'up';
+          else if (recentValid[2] < recentValid[0] && recentValid[2] < recentValid[1]) trend = 'down';
         }
 
         const trendColor = trend === 'up' ? 'text-green-400' : trend === 'down' ? 'text-red-400' : 'text-zinc-400';
         const trendIcon = trend === 'up' ? '\u2191' : trend === 'down' ? '\u2193' : '\u2194';
-        const avg = scores.reduce((s, v) => s + v, 0) / scores.length;
+        const avg = validScores.reduce((s, v) => s + v, 0) / validScores.length;
 
         return (
           <div key={event} className="bg-zinc-900/50 rounded p-2">
@@ -461,14 +465,18 @@ function ConsistencyTab({ stats, events }) {
             </div>
             <div className="flex gap-1 items-end h-6">
               {scores.map((score, i) => {
-                const min = Math.min(...scores) - 0.5;
-                const max = Math.max(...scores) + 0.1;
+                // Use validScores for min/max to avoid null coercion issues
+                const min = Math.min(...validScores) - 0.5;
+                const max = Math.max(...validScores) + 0.1;
                 const range = max - min || 1;
-                const height = Math.max(4, ((score - min) / range) * 24);
+                // Null scores render as minimal height bar
+                const height = (score === null || score === undefined)
+                  ? 2
+                  : Math.max(4, ((score - min) / range) * 24);
                 return (
                   <div key={i} className="flex-1 flex flex-col items-center">
                     <div
-                      className="w-full bg-blue-500/40 rounded-sm"
+                      className={`w-full rounded-sm ${(score === null || score === undefined) ? 'bg-zinc-700' : 'bg-blue-500/40'}`}
                       style={{ height: `${height}px` }}
                       title={`${labels[i] || `Meet ${i + 1}`}: ${formatScore(score)}`}
                     />
