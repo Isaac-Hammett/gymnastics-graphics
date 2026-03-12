@@ -84,6 +84,7 @@ export function useRtnStats(compId, config) {
   const [error, setError] = useState(null);
   const [progress, setProgress] = useState(null);
   const loadedCountRef = useRef(0);
+  const effectEpochRef = useRef(0); // Generation counter to ignore stale effect callbacks
 
   const showIsRunning = useMemo(() => {
     return timesheetState?.isRunning || false;
@@ -117,14 +118,23 @@ export function useRtnStats(compId, config) {
       return;
     }
 
+    // Increment epoch to invalidate callbacks from previous effect invocations
+    effectEpochRef.current++;
+    const currentEpoch = effectEpochRef.current;
+
     setLoading(true);
     loadedCountRef.current = 0;
+    // Clear stale stats when teamKeys change
+    setSharedStats({});
     const expectedCount = teamKeys.length;
     const unsubs = [];
 
     for (const { index, teamKey } of teamKeys) {
       const statsRef = ref(db, `teamsDatabase/stats/${teamKey}`);
       const unsub = onValue(statsRef, (snapshot) => {
+        // Ignore callbacks from stale effect invocations
+        if (currentEpoch !== effectEpochRef.current) return;
+
         const data = snapshot.val();
         setSharedStats(prev => ({
           ...prev,
@@ -135,6 +145,9 @@ export function useRtnStats(compId, config) {
           setLoading(false);
         }
       }, (err) => {
+        // Ignore callbacks from stale effect invocations
+        if (currentEpoch !== effectEpochRef.current) return;
+
         console.error(`[useRtnStats] Firebase error for ${teamKey}:`, err);
         setError(err.message);
         loadedCountRef.current++;
