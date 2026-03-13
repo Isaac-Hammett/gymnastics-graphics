@@ -607,10 +607,6 @@ function normalizeTeamRanking(raw, gender, tid) {
     return null;
   }
 
-  // TEMP LOGGING: Dump all raw fields to identify NQS/four-count average fields
-  console.log(`[rtnStatsService] TASK44_DEBUG: Raw team object for tid=${tid} (${gender}):`);
-  console.log(`[rtnStatsService] TASK44_DEBUG: ${JSON.stringify(team, null, 2)}`);
-
   return {
     rank: team.rank ? String(team.rank) : null,
     ave: team.ave ? String(team.ave) : null,
