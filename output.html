@@ -5483,6 +5483,34 @@
       object-fit: contain;
       margin-bottom: 50px;
     }
+    /* Multi-logo container for stream graphics */
+    .stream-logos-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 40px;
+      margin-bottom: 50px;
+    }
+    .stream-logos-container.dual .stream-team-logo {
+      width: 250px;
+      height: 250px;
+      object-fit: contain;
+    }
+    .stream-logos-container.dual .stream-vs-text {
+      font-size: 48px;
+      font-weight: 900;
+      color: #000;
+    }
+    .stream-logos-container.multi .stream-team-logo {
+      width: 180px;
+      height: 180px;
+      object-fit: contain;
+    }
+    .stream-logos-container.many .stream-team-logo {
+      width: 130px;
+      height: 130px;
+      object-fit: contain;
+    }
     .stream-event-name {
       font-size: 54px;
       font-weight: 800;
@@ -6177,6 +6205,48 @@
       }
       // Fall back to team logo
       return getTeamLogoUrl(teamName, apiLogo);
+    }
+
+    /**
+     * Build HTML for stream logos section
+     * Single logo: returns <img> element
+     * Dual logos: returns Logo1 VS Logo2 layout
+     * 3+ logos: returns row of logos
+     */
+    function buildStreamLogosHtml(data) {
+      // Collect all team logos from data (team1Logo through team7Logo)
+      const logos = [];
+      for (let i = 1; i <= 7; i++) {
+        const teamName = data[`team${i}Name`];
+        const teamLogo = data[`team${i}Logo`];
+        if (teamName || teamLogo) {
+          const logoUrl = getTeamLogoUrl(teamName, teamLogo);
+          if (logoUrl) logos.push(logoUrl);
+        }
+      }
+
+      if (logos.length === 0) {
+        return '';
+      } else if (logos.length === 1) {
+        // Single logo (backwards compat)
+        return `<img class="stream-logo" src="${logos[0]}" alt="Team">`;
+      } else if (logos.length === 2) {
+        // Dual logos with VS
+        return `
+          <div class="stream-logos-container dual">
+            <img class="stream-team-logo" src="${logos[0]}" alt="Team 1">
+            <span class="stream-vs-text">VS</span>
+            <img class="stream-team-logo" src="${logos[1]}" alt="Team 2">
+          </div>
+        `;
+      } else {
+        // 3+ logos in a row
+        const sizeClass = logos.length >= 5 ? 'many' : 'multi';
+        const logoImgs = logos.map((url, idx) =>
+          `<img class="stream-team-logo" src="${url}" alt="Team ${idx + 1}">`
+        ).join('');
+        return `<div class="stream-logos-container ${sizeClass}">${logoImgs}</div>`;
+      }
     }
 
     // Initialize team logos loading
@@ -10903,7 +10973,7 @@
       'stream-starting': (data) => `
         <div class="graphic-container graphic-stream">
           <div class="stream-title">STREAM STARTING SOON</div>
-          <img class="stream-logo" id="stream-logo" src="${getEventLevelLogo(data.team1Name, data.team1Logo)}" alt="Team">
+          ${buildStreamLogosHtml(data)}
           <div class="stream-event-name">${data.eventName}</div>
           <div class="stream-date">${data.meetDate}</div>
           <div class="stream-branding"><span>V</span>irtius</div>
@@ -10913,7 +10983,7 @@
       'stream-thanks': (data) => `
         <div class="graphic-container graphic-stream">
           <div class="stream-title">THANKS FOR WATCHING</div>
-          <img class="stream-logo" id="stream-logo" src="${getEventLevelLogo(data.team1Name, data.team1Logo)}" alt="Team">
+          ${buildStreamLogosHtml(data)}
           <div class="stream-event-name">${data.eventName}</div>
           <div class="stream-date">${data.meetDate}</div>
           <div class="stream-branding"><span>V</span>irtius</div>

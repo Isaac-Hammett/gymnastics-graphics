@@ -24,7 +24,7 @@
 | V21-EXTRA-LARGE | COMPLETE | Created V21 layout with even larger fonts for big displays |
 | GFX-T1 | COMPLETE | Fix "AVE" → "AVG" label in team-stats graphics |
 | GFX-T2 | COMPLETE | Fix "ALL AROUND" → "ALL-AROUND" hyphenation |
-| GFX-T3 | NOT STARTED | Multi-team logos + VS on stream starting page |
+| GFX-T3 | COMPLETE | Multi-team logos + VS on stream starting page |
 | GFX-T6 | NOT STARTED | Top-align coaches/stats cards (matching width, shared top position) |
 | GFX-T7 | NOT STARTED | Header typography audit (consistent ALL CAPS rules) |
 
@@ -390,34 +390,31 @@ The graphic will automatically:
 
 ### Task GFX-T3: Multi-team logos on stream starting page
 
-**Status:** NOT STARTED
+**Status:** COMPLETE
 
 **Description:** The stream starting page (`overlays/stream.html`) currently shows only one team logo. Update to show all competing team logos. For dual meets, show Logo1 — VS — Logo2.
 
-**Current state:** `stream.html` reads a single `logo` URL param and displays it at 360x360px.
-
-**Implementation:**
-1. Update `overlays/stream.html`:
-   - Accept `logo` (backwards compat for single logo) plus `logo2` through `logo7` params
-   - For 2 logos: Display side by side with "VS" text between them (similar to matchup graphic)
-   - For 3+ logos: Display in a row, scale down logo size as count increases
-   - Keep single-logo behavior when only `logo` is provided
-2. Update `show-controller/src/lib/graphicsRegistry.js`:
-   - Add `logo2` through `logo7` params to `stream-starting` and `stream-thanks` definitions
-3. Update `show-controller/src/lib/urlBuilder.js`:
-   - Update `buildStreamURL()` to pass all team logos
-4. Update `output.html`:
-   - Update the inline stream renderer to pass multiple logos
-
-**CSS layout guidance:**
-- 2 logos: `display: flex; align-items: center; gap: 40px;` with logos at ~280px and VS text at ~60px font-size
-- 3-4 logos: Row with ~200px logos
-- 5-7 logos: Row with ~150px logos (similar to `logos` graphic grid scaling)
+**What was done:**
+1. Updated `overlays/stream.html`:
+   - Added CSS for multi-logo layouts: `.logos-container.dual` (280px logos + VS text), `.logos-container.multi` (200px for 3-4 teams), `.logos-container.many` (150px for 5-7 teams)
+   - Added JavaScript to read `logo`, `logo2` through `logo7` params
+   - Single logo: renders as before (backwards compat)
+   - 2 logos: Logo1 — VS — Logo2 layout with 60px "VS" text
+   - 3+ logos: row of logos scaling down with count
+2. Updated `show-controller/src/lib/graphicsRegistry.js`:
+   - Added `logo2` through `logo7` params (optional) to `stream-starting` and `stream-thanks` definitions
+3. Updated `show-controller/src/lib/urlBuilder.js`:
+   - Updated `buildStreamURL()` signature and JSDoc to accept `logo2`-`logo7`
+   - Updated `generateGraphicURL()` cases for 'starting' and 'thanks' to pass all team logos via `getTeamLogo(1)` through `getTeamLogo(7)`
+4. Updated `output.html`:
+   - Added CSS for `.stream-logos-container`, `.stream-team-logo`, `.stream-vs-text` with size variants
+   - Added `buildStreamLogosHtml(data)` helper function that builds appropriate HTML based on team count
+   - Updated `stream-starting` and `stream-thanks` renderers to use the helper
 
 **Acceptance:**
-- [ ] Single logo still works (backwards compat)
-- [ ] Dual meet shows Logo1 — VS — Logo2
-- [ ] 3+ teams shows row of logos
+- [x] Single logo still works (backwards compat)
+- [x] Dual meet shows Logo1 — VS — Logo2
+- [x] 3+ teams shows row of logos
 - [ ] Build passes
 - [ ] Deploy frontend + overlays
 - [ ] Verify on production with a dual meet competition

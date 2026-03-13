@@ -224,22 +224,35 @@ export function buildEventFrameURL({ eventId, logo, baseUrl, meetTheme }) {
 
 /**
  * Build URL for Stream graphic (Starting/Thanks)
+ * Supports multi-team logos: dual meets show Logo1 VS Logo2, 3+ teams show row of logos
  * @param {Object} options
  * @param {string} options.type - 'starting' or 'thanks'
- * @param {string} options.logo - Team logo URL
+ * @param {string} options.logo - Team 1 logo URL
+ * @param {string} [options.logo2] - Team 2 logo URL
+ * @param {string} [options.logo3] - Team 3 logo URL
+ * @param {string} [options.logo4] - Team 4 logo URL
+ * @param {string} [options.logo5] - Team 5 logo URL
+ * @param {string} [options.logo6] - Team 6 logo URL
+ * @param {string} [options.logo7] - Team 7 logo URL
  * @param {string} options.eventName - Event/meet name
  * @param {string} options.meetDate - Date of the meet
  * @param {string} [options.baseUrl] - Override base URL
  * @param {string} [options.meetTheme] - Meet theme ID for themed graphics
  * @returns {string} Complete URL
  */
-export function buildStreamURL({ type, logo, eventName, meetDate, baseUrl, meetTheme }) {
+export function buildStreamURL({ type, logo, logo2, logo3, logo4, logo5, logo6, logo7, eventName, meetDate, baseUrl, meetTheme }) {
   const base = baseUrl || getBaseURL();
   const title = type === 'starting' ? 'STREAM STARTING SOON' : 'THANKS FOR WATCHING';
   const params = new URLSearchParams();
 
   params.set('title', title);
   if (logo) params.set('logo', logo);
+  if (logo2) params.set('logo2', logo2);
+  if (logo3) params.set('logo3', logo3);
+  if (logo4) params.set('logo4', logo4);
+  if (logo5) params.set('logo5', logo5);
+  if (logo6) params.set('logo6', logo6);
+  if (logo7) params.set('logo7', logo7);
   if (eventName) params.set('eventName', eventName);
   if (meetDate) params.set('meetDate', meetDate);
   if (meetTheme) params.set('meetTheme', meetTheme);
@@ -638,6 +651,12 @@ export function generateGraphicURL(graphicId, formData, teamCount, baseUrl, opti
       return buildStreamURL({
         type: 'starting',
         logo: getTeamLogo(1),
+        logo2: getTeamLogo(2),
+        logo3: getTeamLogo(3),
+        logo4: getTeamLogo(4),
+        logo5: getTeamLogo(5),
+        logo6: getTeamLogo(6),
+        logo7: getTeamLogo(7),
         eventName: formData.eventName,
         meetDate: formData.meetDate,
         baseUrl: base,
@@ -648,6 +667,12 @@ export function generateGraphicURL(graphicId, formData, teamCount, baseUrl, opti
       return buildStreamURL({
         type: 'thanks',
         logo: getTeamLogo(1),
+        logo2: getTeamLogo(2),
+        logo3: getTeamLogo(3),
+        logo4: getTeamLogo(4),
+        logo5: getTeamLogo(5),
+        logo6: getTeamLogo(6),
+        logo7: getTeamLogo(7),
         eventName: formData.eventName,
         meetDate: formData.meetDate,
         baseUrl: base,
