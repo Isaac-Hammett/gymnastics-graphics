@@ -30,7 +30,7 @@ const eventButtonConfig = {
 
 // Common event buttons that appear for all genders
 const commonEventButtons = [
-  { id: 'allaround', label: 'All Around', title: 'ALL AROUND' },
+  { id: 'allaround', label: 'All-Around', title: 'ALL-AROUND' },
   { id: 'final', label: 'Final Scores', title: 'FINAL SCORES' },
 ];
 

@@ -350,7 +350,7 @@ export const GRAPHICS = {
     file: 'event-frame.html',
     transparent: true,
     params: {
-      title: { type: 'string', default: 'ALL AROUND' },
+      title: { type: 'string', default: 'ALL-AROUND' },
       logo: { type: 'string', source: 'competition' },
     },
   },
