@@ -95,8 +95,8 @@
     </div>
     <div class="stats-content">
       <div class="stat-item">
-        <div class="stat-label">AVG</div>
-        <div class="stat-value" id="ave">0.000</div>
+        <div class="stat-label" id="statLabel">AVG</div>
+        <div class="stat-value" id="statValue">0.000</div>
       </div>
       <div class="stat-item">
         <div class="stat-label">HIGH</div>
@@ -108,7 +108,12 @@
     const params = new URLSearchParams(window.location.search);
     document.getElementById('teamName').textContent = (params.get('teamName') || 'TEAM NAME').toUpperCase();
     document.getElementById('logo').src = params.get('logo') || '';
-    document.getElementById('ave').textContent = params.get('ave') || '0.000';
+    // Support dynamic stat type: statLabel (display label) and statValue (the value to show)
+    // Defaults: label=AVG, value from 'ave' param for backwards compatibility
+    const statLabel = params.get('statLabel') || 'AVG';
+    const statValue = params.get('statValue') || params.get('ave') || '0.000';
+    document.getElementById('statLabel').textContent = statLabel;
+    document.getElementById('statValue').textContent = statValue;
     document.getElementById('high').textContent = params.get('high') || '0.000';
   </script>
   <script src="theme-loader.js?v=2"></script>

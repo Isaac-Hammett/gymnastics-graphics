@@ -58,7 +58,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | 4 | AI Enhancement | P1 | COMPLETE | 18-21, 26 |
 | 5 | Playwright Integration Tests | P1 | COMPLETE | 22-24 |
 | 6 | Bug Fixes | P0 | COMPLETE | 27-43 |
-| 7 | Configurable Stat Types | P1 | NOT STARTED | 44-45 |
+| 7 | Configurable Stat Types | P1 | COMPLETE | 44-45 |
 
 ---
 
@@ -275,7 +275,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 
 ---
 
-## Phase 7: Configurable Stat Types (P1) — IN PROGRESS (1/2)
+## Phase 7: Configurable Stat Types (P1) — COMPLETE (2/2)
 
 ### Task 44: Capture NQS and four-count average from RTN API
 
@@ -329,7 +329,7 @@ Dumped raw RTN API responses for both women's and men's team rankings:
 
 | Field | Value |
 |-------|-------|
-| Status | NOT STARTED |
+| Status | COMPLETE |
 | Priority | P1 |
 | Files | `graphicsRegistry.js`, `urlBuilder.js`, `UrlGeneratorPage.jsx`, `team-stats.html`, `output.html` |
 | Depends On | Task 44 |
@@ -340,31 +340,39 @@ Add a dropdown in the URL Generator that lets the producer choose which stat to 
 
 **Note:** Per Task 44 investigation, RTN API provides: `ave` (season average), `high` (season high), `rqs` (NQS). There is NO four-count average field in the API. The stat type options are the same for men's and women's.
 
-**Steps:**
-1. Update `overlays/team-stats.html`:
-   - Read new `statLabel` URL param (default: "AVG")
-   - Use `statLabel` value as the label text instead of hardcoded "AVG"
-2. Update `output.html`:
-   - Same change in the inline team-stats renderer — use a `statLabel` field from data
-3. Update `show-controller/src/lib/graphicsRegistry.js`:
-   - Add `statType` enum param to `team-stats` definition with options: `avg`, `nqs`, `high`
-   - Add `statLabel` string param (derived from statType)
-4. Update `show-controller/src/lib/urlBuilder.js`:
-   - `buildTeamStatsURL()` accepts and passes `statLabel` param
-5. Update `show-controller/src/pages/UrlGeneratorPage.jsx`:
-   - Add stat type dropdown per team (or global) — options:
-     - "Season Average" (AVG) — uses `team{N}Ave`
-     - "NQS" — uses `team{N}Nqs`
-     - "Season High" (HIGH) — uses `team{N}High`
-   - When dropdown changes, auto-fill the value field with the correct value from config
-   - Pass `statLabel` to URL builder
+**What was done:**
+1. Updated `overlays/team-stats.html`:
+   - Added `statLabel` and `statValue` URL params
+   - Changed element IDs from `ave` to `statLabel`/`statValue`
+   - Falls back to `ave` param for backwards compatibility
+2. Updated `output.html`:
+   - Added `statLabel` and `statValue` fields to team-stats renderer
+   - Added `nqs` data field support (`team${slot}Nqs`)
+   - Label and value are now dynamic
+3. Updated `show-controller/src/lib/graphicsRegistry.js`:
+   - Added `statType` enum param with options: `avg`, `nqs`, `high`
+   - Added `statLabel` and `statValue` params
+   - Added 'nqs' to keywords
+4. Updated `show-controller/src/lib/urlBuilder.js`:
+   - Extended `buildTeamStatsURL()` to accept `statLabel` and `statValue`
+   - Maintains backwards compatibility (falls back to `ave` if `statValue` not set)
+   - Updated `generateGraphicURL()` to pass `statLabel`/`statValue` from options
+5. Updated `show-controller/src/pages/UrlGeneratorPage.jsx`:
+   - Added `teamStatTypes` state for per-team stat type selection
+   - Added `team{N}Nqs` to formData (initial values and config loading)
+   - Added NQS input field alongside AVG and HIGH
+   - Added "Display Stat Type" dropdown that appears when team-stats graphic is selected
+   - Dropdown options: "Season Average (AVG)", "NQS", "Season High (HIGH)"
+   - Shows current value preview below dropdown
+   - Updated `generateURLWithOptions()` to compute `statLabel`/`statValue` based on selection
+   - Added `teamStatTypes` to useMemo dependency array for URL updates
 
 **Acceptance:**
-- [ ] team-stats.html reads `statLabel` param and displays it
-- [ ] output.html inline renderer uses dynamic stat label
-- [ ] URL Generator shows stat type dropdown
-- [ ] Selecting "NQS" fills the value field with NQS score and sets label to "NQS"
-- [ ] Selecting "HIGH" fills with season high and sets label to "HIGH"
-- [ ] Build passes
+- [x] team-stats.html reads `statLabel` param and displays it
+- [x] output.html inline renderer uses dynamic stat label
+- [x] URL Generator shows stat type dropdown
+- [x] Selecting "NQS" fills the value field with NQS score and sets label to "NQS"
+- [x] Selecting "HIGH" fills with season high and sets label to "HIGH"
+- [x] Build passes
 - [ ] Deploy frontend + overlays
 - [ ] Verify on production

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useCompetition, useCompetitions } from '../hooks/useCompetitions';
 import { useTeamsDatabase } from '../hooks/useTeamsDatabase';
@@ -146,12 +146,32 @@ export default function UrlGeneratorPage() {
   const [slateLayout, setSlateLayout] = useState('classic');
   const [meetThemeLogo, setMeetThemeLogo] = useState('');
   const [meetThemeSponsors, setMeetThemeSponsors] = useState([]);
+  // Stat type selector per team: 'avg' (default), 'nqs', 'high'
+  const [teamStatTypes, setTeamStatTypes] = useState({});
   const [sponsorOverrides, setSponsorOverrides] = useState({}); // { index: { scale, offsetX, offsetY, cropX, cropY, cropW, cropH } }
   const [sponsorSource, setSponsorSource] = useState(null); // 'theme' | 'team' | null - tracks where sponsors came from for persistence
   const [selectedSponsorIndex, setSelectedSponsorIndex] = useState(-1);
   const [showSponsorBounds, setShowSponsorBounds] = useState(false);
   const [showSponsorCropControls, setShowSponsorCropControls] = useState(false);
   const [showSponsorGuides, setShowSponsorGuides] = useState(false);
+
+  // Responsive preview scaling — dynamically fit 1920×1080 iframe into available space
+  const previewContainerRef = useRef(null);
+  const [previewScale, setPreviewScale] = useState(null);
+  useEffect(() => {
+    const el = previewContainerRef.current;
+    if (!el) return;
+    const update = () => {
+      const { width, height } = el.getBoundingClientRect();
+      if (width > 0 && height > 0) {
+        setPreviewScale(Math.min(width / 1920, height / 1080));
+      }
+    };
+    update(); // measure immediately
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   // Fetch meet theme logo and sponsors when theme is set
   useEffect(() => {
@@ -196,42 +216,49 @@ export default function UrlGeneratorPage() {
     team1Logo: '',
     team1Ave: '406.850',
     team1High: '409.200',
+    team1Nqs: '',
     team1Coaches: 'Kurt Golder\nBrian Coddington\nTyler Balthazor',
     // Team 2
     team2Name: 'Ohio State',
     team2Logo: '',
     team2Ave: '403.450',
     team2High: '406.100',
+    team2Nqs: '',
     team2Coaches: 'Rustam Sharipov\nSergio Santana\nJames Moore',
     // Team 3 (for tri/quad meets)
     team3Name: '',
     team3Logo: '',
     team3Ave: '',
     team3High: '',
+    team3Nqs: '',
     team3Coaches: '',
     // Team 4 (for quad meets)
     team4Name: '',
     team4Logo: '',
     team4Ave: '',
     team4High: '',
+    team4Nqs: '',
     team4Coaches: '',
     // Team 5
     team5Name: '',
     team5Logo: '',
     team5Ave: '',
     team5High: '',
+    team5Nqs: '',
     team5Coaches: '',
     // Team 6
     team6Name: '',
     team6Logo: '',
     team6Ave: '',
     team6High: '',
+    team6Nqs: '',
     team6Coaches: '',
     // Team 7
     team7Name: '',
     team7Logo: '',
     team7Ave: '',
     team7High: '',
+    team7Nqs: '',
     team7Coaches: '',
   });
 
@@ -258,6 +285,7 @@ export default function UrlGeneratorPage() {
         newFormData[`team${i}Logo`] = config[`team${i}Logo`] || '';
         newFormData[`team${i}Ave`] = config[`team${i}Ave`] || '';
         newFormData[`team${i}High`] = config[`team${i}High`] || '';
+        newFormData[`team${i}Nqs`] = config[`team${i}Nqs`] || '';
         newFormData[`team${i}Coaches`] = config[`team${i}Coaches`] || '';
       }
 
@@ -368,6 +396,18 @@ export default function UrlGeneratorPage() {
     return `${schoolKey}-${gender}`;
   };
 
+  // Fall back to per-team sponsors when no theme sponsors exist
+  const teamHomeKey = useMemo(() => resolveHomeTeamKey(formData, config), [formData.team1Name, config?.compType, resolveSchoolKey]);
+  const teamSponsorsRaw = useMemo(() => {
+    if (meetThemeSponsors.length > 0) return []; // theme sponsors take priority
+    if (!teamHomeKey) return [];
+    return getTeamSponsors(teamHomeKey);
+  }, [meetThemeSponsors.length, teamHomeKey, getTeamSponsors]);
+
+  // Combined sponsors list: theme sponsors first, then team sponsors as fallback
+  const activeSponsorList = meetThemeSponsors.length > 0 ? meetThemeSponsors : teamSponsorsRaw;
+  const activeSponsorSource = meetThemeSponsors.length > 0 ? 'theme' : (teamSponsorsRaw.length > 0 ? 'team' : null);
+
   // Generate URL with options for new graphic types
   const generateURLWithOptions = (graphic) => {
     let sponsorsJson = null;
@@ -395,15 +435,49 @@ export default function UrlGeneratorPage() {
           };
         });
         sponsorsJson = JSON.stringify(capped);
-      } else {
-        const homeTeamKey = resolveHomeTeamKey(formData, config);
-        if (homeTeamKey) {
-          const teamSponsors = getTeamSponsors(homeTeamKey);
-          const capped = teamSponsors.slice(0, 8).map(s => ({ name: s.name, url: s.url }));
-          sponsorsJson = JSON.stringify(capped);
-        }
+      } else if (teamSponsorsRaw.length > 0) {
+        const capped = teamSponsorsRaw.slice(0, 8).map((s, i) => {
+          const ov = sponsorOverrides[i] || {};
+          const scale = ov.scale || s.scale || 100;
+          const offsetX = ov.offsetX ?? s.offsetX ?? 0;
+          const offsetY = ov.offsetY ?? s.offsetY ?? 0;
+          const cropX = ov.cropX ?? s.cropX ?? null;
+          const cropY = ov.cropY ?? s.cropY ?? null;
+          const cropW = ov.cropW ?? s.cropW ?? null;
+          const cropH = ov.cropH ?? s.cropH ?? null;
+          return {
+            name: s.name, url: s.url,
+            ...(scale !== 100 ? { scale } : {}),
+            ...(offsetX ? { offsetX } : {}),
+            ...(offsetY ? { offsetY } : {}),
+            ...(cropX != null ? { cropX } : {}),
+            ...(cropY != null ? { cropY } : {}),
+            ...(cropW != null ? { cropW } : {}),
+            ...(cropH != null ? { cropH } : {}),
+          };
+        });
+        sponsorsJson = JSON.stringify(capped);
       }
     }
+    // Determine stat type for team-stats graphics
+    let statLabel = undefined;
+    let statValue = undefined;
+    const teamStatsMatch = graphic.match(/^team(\d+)-stats$/);
+    if (teamStatsMatch) {
+      const teamNum = parseInt(teamStatsMatch[1]);
+      const statType = teamStatTypes[teamNum] || 'avg';
+      if (statType === 'nqs') {
+        statLabel = 'NQS';
+        statValue = formData[`team${teamNum}Nqs`];
+      } else if (statType === 'high') {
+        statLabel = 'HIGH';
+        statValue = formData[`team${teamNum}High`];
+      } else {
+        statLabel = 'AVG';
+        statValue = formData[`team${teamNum}Ave`];
+      }
+    }
+
     return generateGraphicURL(graphic, formData, teamCount, undefined, {
       compType: config?.compType,
       virtiusSessionId: config?.virtiusSessionId,
@@ -414,6 +488,9 @@ export default function UrlGeneratorPage() {
       layout: slateLayout,
       meetTheme: config?.meetTheme,
       meetThemeLogo,
+      // Stat type for team-stats graphics
+      statLabel,
+      statValue,
       // Sponsor editing aids (only for preview, not for production URLs)
       ...(graphic.startsWith('sponsors-') && selectedSponsorIndex >= 0 ? { lockedIndex: selectedSponsorIndex } : {}),
       ...(graphic.startsWith('sponsors-') && showSponsorBounds ? { showBounds: true } : {}),
@@ -426,7 +503,7 @@ export default function UrlGeneratorPage() {
     return generateURLWithOptions(graphic);
   };
 
-  const currentUrl = useMemo(() => generateURL(currentGraphic), [currentGraphic, formData, teamCount, config?.compType, config?.virtiusSessionId, config?.meetTheme, summaryTheme, rotationSlateNum, slateLayout, meetThemeLogo, meetThemeSponsors, sponsorOverrides, selectedSponsorIndex, showSponsorBounds, showSponsorGuides]);
+  const currentUrl = useMemo(() => generateURL(currentGraphic), [currentGraphic, formData, teamCount, config?.compType, config?.virtiusSessionId, config?.meetTheme, summaryTheme, rotationSlateNum, slateLayout, meetThemeLogo, meetThemeSponsors, teamSponsorsRaw, sponsorOverrides, selectedSponsorIndex, showSponsorBounds, showSponsorGuides, teamStatTypes]);
 
   return (
     <div className="h-screen bg-zinc-950 flex">
@@ -667,20 +744,26 @@ export default function UrlGeneratorPage() {
           </button>
         </div>
 
-        <div className="flex-1 flex items-center justify-center bg-zinc-950 p-6">
+        <div className="flex-1 flex items-center justify-center bg-zinc-950 p-4 min-w-0 min-h-0">
           <div
-            className={`relative w-[960px] h-[540px] rounded-lg overflow-hidden shadow-2xl ${
+            ref={previewContainerRef}
+            className={`relative w-full h-full max-w-[960px] max-h-[540px] rounded-lg overflow-hidden shadow-2xl ${
               isTransparent ? 'bg-checkered' : 'bg-black'
             }`}
-            style={isTransparent ? {
-              background: 'repeating-conic-gradient(#222 0% 25%, #1a1a1a 0% 50%) 50% / 20px 20px'
-            } : {}}
+            style={{
+              aspectRatio: '16 / 9',
+              ...(isTransparent ? {
+                background: 'repeating-conic-gradient(#222 0% 25%, #1a1a1a 0% 50%) 50% / 20px 20px'
+              } : {})
+            }}
           >
-            <iframe
-              src={currentUrl}
-              className="w-[1920px] h-[1080px] origin-top-left"
-              style={{ transform: 'scale(0.5)' }}
-            />
+            {previewScale != null && (
+              <iframe
+                src={currentUrl}
+                className="w-[1920px] h-[1080px] origin-top-left absolute top-0 left-0"
+                style={{ transform: `scale(${previewScale})` }}
+              />
+            )}
           </div>
         </div>
       </div>
@@ -872,12 +955,12 @@ export default function UrlGeneratorPage() {
         })()}
 
         {/* Sponsor logo adjustments - shown when a sponsor graphic is selected */}
-        {currentGraphic.startsWith('sponsors-') && meetThemeSponsors.length > 0 && (
+        {currentGraphic.startsWith('sponsors-') && activeSponsorList.length > 0 && (
           <SponsorAdjustControls
-            sponsors={meetThemeSponsors}
+            sponsors={activeSponsorList}
             getOverride={(index) => {
               const ov = sponsorOverrides[index] || {};
-              const s = meetThemeSponsors[index] || {};
+              const s = activeSponsorList[index] || {};
               return {
                 scale: ov.scale ?? s.scale ?? 100,
                 offsetX: ov.offsetX ?? s.offsetX ?? 0,
@@ -888,11 +971,14 @@ export default function UrlGeneratorPage() {
                 cropH: ov.cropH ?? s.cropH ?? null,
               };
             }}
-            onUpdate={(index, field, value) => {
+            onUpdate={(index, fieldOrBatch, value) => {
+              // Support both single field updates and batch: onUpdate(i, 'field', val) or onUpdate(i, { field: val, ... })
+              const updates = typeof fieldOrBatch === 'object' ? fieldOrBatch : { [fieldOrBatch]: value };
+
               // Update local state immediately for responsive UI
               setSponsorOverrides(prev => {
                 const existing = prev[index] || {};
-                const s = meetThemeSponsors[index] || {};
+                const s = activeSponsorList[index] || {};
                 return {
                   ...prev,
                   [index]: {
@@ -903,24 +989,34 @@ export default function UrlGeneratorPage() {
                     cropY: existing.cropY ?? s.cropY ?? null,
                     cropW: existing.cropW ?? s.cropW ?? null,
                     cropH: existing.cropH ?? s.cropH ?? null,
-                    [field]: value,
+                    ...updates,
                   },
                 };
               });
 
+              // Normalize default values to null for clean Firebase storage
+              const persistData = { ...updates };
+              for (const [k, v] of Object.entries(persistData)) {
+                if (k === 'scale' && v === 100) persistData[k] = null;
+                if ((k === 'offsetX' || k === 'offsetY') && v === 0) persistData[k] = null;
+              }
+
               // Persist to Firebase based on sponsor source
-              if (sponsorSource === 'theme' && config?.meetTheme) {
-                // For theme sponsors: update the theme's sponsor at this index
-                const updateData = { [field]: value };
-                // Clear field if it's a default/null value
-                if (field === 'scale' && value === 100) updateData[field] = null;
-                if ((field === 'offsetX' || field === 'offsetY') && value === 0) updateData[field] = null;
-                update(ref(db, `themes/${config.meetTheme}/sponsors/${index}`), updateData).catch(err => {
+              if (activeSponsorSource === 'theme' && config?.meetTheme) {
+                update(ref(db, `themes/${config.meetTheme}/sponsors/${index}`), persistData).catch(err => {
                   console.error('Failed to persist sponsor adjustment:', err);
                 });
+              } else if (activeSponsorSource === 'team' && teamSponsorsRaw[index]) {
+                const sponsor = teamSponsorsRaw[index];
+                saveSponsor(teamHomeKey, sponsor.key, {
+                  name: sponsor.name, url: sponsor.url, tier: sponsor.tier, order: sponsor.order,
+                  scale: sponsor.scale, offsetX: sponsor.offsetX, offsetY: sponsor.offsetY,
+                  cropX: sponsor.cropX, cropY: sponsor.cropY, cropW: sponsor.cropW, cropH: sponsor.cropH,
+                  ...persistData,
+                }).catch(err => {
+                  console.error('Failed to persist team sponsor adjustment:', err);
+                });
               }
-              // Note: Team sponsors would use saveSponsor() but currently SponsorAdjustControls
-              // only renders when meetThemeSponsors.length > 0, so we only handle theme sponsors
             }}
             selectedIndex={selectedSponsorIndex}
             onSelectIndex={setSelectedSponsorIndex}
@@ -947,9 +1043,9 @@ export default function UrlGeneratorPage() {
                 onChange={(v) => updateFormData({ [`team${num}Logo`]: v })}
                 placeholder="https://..."
               />
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <ConfigInput
-                  label="AVE"
+                  label="AVG"
                   value={formData[`team${num}Ave`]}
                   onChange={(v) => updateFormData({ [`team${num}Ave`]: v })}
                 />
@@ -958,7 +1054,34 @@ export default function UrlGeneratorPage() {
                   value={formData[`team${num}High`]}
                   onChange={(v) => updateFormData({ [`team${num}High`]: v })}
                 />
+                <ConfigInput
+                  label="NQS"
+                  value={formData[`team${num}Nqs`]}
+                  onChange={(v) => updateFormData({ [`team${num}Nqs`]: v })}
+                />
               </div>
+              {/* Stat Type Selector for team-stats graphic */}
+              {currentGraphic === `team${num}-stats` && (
+                <div className="mb-4 p-3 bg-zinc-800 border border-zinc-700 rounded-lg">
+                  <label className="block text-xs text-zinc-400 mb-1.5">Display Stat Type</label>
+                  <select
+                    value={teamStatTypes[num] || 'avg'}
+                    onChange={(e) => setTeamStatTypes(prev => ({ ...prev, [num]: e.target.value }))}
+                    className="w-full text-xs bg-zinc-900 text-zinc-300 border border-zinc-700 rounded px-2 py-1.5 focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="avg">Season Average (AVG)</option>
+                    <option value="nqs">NQS</option>
+                    <option value="high">Season High (HIGH)</option>
+                  </select>
+                  <p className="text-[10px] text-zinc-500 mt-1">
+                    Selected: {teamStatTypes[num] === 'nqs' ? 'NQS' : teamStatTypes[num] === 'high' ? 'HIGH' : 'AVG'} = {
+                      teamStatTypes[num] === 'nqs' ? (formData[`team${num}Nqs`] || '—') :
+                      teamStatTypes[num] === 'high' ? (formData[`team${num}High`] || '—') :
+                      (formData[`team${num}Ave`] || '—')
+                    }
+                  </p>
+                </div>
+              )}
               <ConfigTextarea
                 label="Coaches (one per line)"
                 value={formData[`team${num}Coaches`]}
