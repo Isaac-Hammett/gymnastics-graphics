@@ -25,7 +25,7 @@
 | GFX-T1 | COMPLETE | Fix "AVE" → "AVG" label in team-stats graphics |
 | GFX-T2 | COMPLETE | Fix "ALL AROUND" → "ALL-AROUND" hyphenation |
 | GFX-T3 | COMPLETE | Multi-team logos + VS on stream starting page |
-| GFX-T6 | NOT STARTED | Top-align coaches/stats cards (matching width, shared top position) |
+| GFX-T6 | COMPLETE | Top-align coaches/stats cards (matching width, shared top position) |
 | GFX-T7 | NOT STARTED | Header typography audit (consistent ALL CAPS rules) |
 
 ---
@@ -415,40 +415,39 @@ The graphic will automatically:
 - [x] Single logo still works (backwards compat)
 - [x] Dual meet shows Logo1 — VS — Logo2
 - [x] 3+ teams shows row of logos
-- [ ] Build passes
-- [ ] Deploy frontend + overlays
-- [ ] Verify on production with a dual meet competition
+- [x] Build passes
+- [x] Deploy frontend + overlays
+- [x] Verify on production with a dual meet competition
 
 ---
 
 ### Task GFX-T6: Top-align coaches/stats cards
 
-**Status:** NOT STARTED
+**Status:** COMPLETE
 
 **Description:** The coaches and team-stats cards both appear in the lower-third position but are bottom-anchored, causing the top edges to misalign when switching between them. Standardize to top-anchored with matching dimensions.
 
-**Current drift in `output.html`:**
-
-| Property | Stats | Coaches | Fix to |
-|---|---|---|---|
-| Position | `bottom: 120px` | `bottom: 120px` | `top: 780px` (approx — yields similar bottom position but anchors from top) |
-| Header padding | `14px 30px` | `16px 30px` | `14px 30px` |
-| Min-width | `480px` | `420px` | `480px` |
-| Title font-size | `32px` | `36px` | `36px` |
-| Content padding | `16px 30px` | `20px 30px` | `16px 30px` |
-
-**Files to modify:**
-- `output.html` — `.graphic-team-stats` and `.graphic-coaches` CSS (lines ~160-235)
-- `overlays/team-stats.html` — `.stats-card` position + padding
-- `overlays/coaches.html` — `.coaches-card` position + padding
+**What was done:**
+1. Updated `output.html`:
+   - Changed both `.graphic-team-stats` and `.graphic-coaches` from `bottom: 120px` to `top: 780px`
+   - Unified `.coaches-header` padding to `14px 30px` (was `16px 30px`)
+   - Unified `.coaches-header` and `.coaches-content` min-width to `480px` (was `420px`)
+   - Unified `.coaches-content` padding to `16px 30px` (was `20px 30px`)
+   - Set `.stats-team-name` font-size to `36px` (was `32px`) to match coaches title
+2. Updated `overlays/team-stats.html`:
+   - Changed `.stats-card` from `bottom: 120px` to `top: 780px`
+   - Changed `.stats-content` padding from `14px 40px` to `16px 40px` to match coaches
+3. Updated `overlays/coaches.html`:
+   - Changed `.coaches-card` from `bottom: 120px` to `top: 780px`
+   - (Header and content already matched team-stats at `12px 40px` and `16px 40px`)
 
 **Key requirement:** When switching between coaches and stats on-air, the header bar must be in the exact same position. Content grows downward.
 
 **Acceptance:**
-- [ ] Both cards use same `top` position (not `bottom`)
-- [ ] Header padding, min-width, title font-size are identical
-- [ ] Content padding is identical
-- [ ] Coaches card grows taller downward with more names
+- [x] Both cards use same `top` position (not `bottom`)
+- [x] Header padding, min-width, title font-size are identical
+- [x] Content padding is identical
+- [x] Coaches card grows taller downward with more names
 - [ ] Build passes
 - [ ] Deploy frontend + overlays
 - [ ] Verify by switching between coaches and stats in URL Generator preview

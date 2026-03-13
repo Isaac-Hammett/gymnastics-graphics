@@ -156,10 +156,10 @@
       line-height: 1.5;
     }
 
-    /* Team Stats Card */
+    /* Team Stats Card - top-anchored so header aligns with coaches card */
     .graphic-team-stats {
       position: absolute;
-      bottom: 120px;
+      top: 780px;
       left: 100px;
     }
     .stats-header {
@@ -171,7 +171,7 @@
       min-width: 480px;
     }
     .stats-team-name {
-      font-size: 32px;
+      font-size: 36px;
       font-weight: 800;
       color: #000;
       flex: 1;
@@ -198,19 +198,19 @@
       font-weight: 700;
     }
 
-    /* Coaches Card */
+    /* Coaches Card - top-anchored so header aligns with stats card */
     .graphic-coaches {
       position: absolute;
-      bottom: 120px;
+      top: 780px;
       left: 100px;
     }
     .coaches-header {
       background: #d4d4d8;
-      padding: 16px 30px;
+      padding: 14px 30px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      min-width: 420px;
+      min-width: 480px;
     }
     .coaches-title {
       font-size: 36px;
@@ -224,8 +224,8 @@
     }
     .coaches-content {
       background: #000;
-      padding: 20px 30px;
-      min-width: 420px;
+      padding: 16px 30px;
+      min-width: 480px;
     }
     .coach-name {
       font-size: 24px;
