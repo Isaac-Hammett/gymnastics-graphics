@@ -1,7 +1,7 @@
 # PLAN-Graphics-Registry-Implementation
 
 **PRD:** PRD-Graphics-Registry
-**Status:** IN PROGRESS
+**Status:** COMPLETE
 **Created:** 2026-01-22
 **Last Updated:** 2026-03-13
 
@@ -26,7 +26,7 @@
 | GFX-T2 | COMPLETE | Fix "ALL AROUND" → "ALL-AROUND" hyphenation |
 | GFX-T3 | COMPLETE | Multi-team logos + VS on stream starting page |
 | GFX-T6 | COMPLETE | Top-align coaches/stats cards (matching width, shared top position) |
-| GFX-T7 | NOT STARTED | Header typography audit (consistent ALL CAPS rules) |
+| GFX-T7 | COMPLETE | Header typography audit (consistent ALL CAPS rules) |
 
 ---
 
@@ -448,15 +448,15 @@ The graphic will automatically:
 - [x] Header padding, min-width, title font-size are identical
 - [x] Content padding is identical
 - [x] Coaches card grows taller downward with more names
-- [ ] Build passes
-- [ ] Deploy frontend + overlays
-- [ ] Verify by switching between coaches and stats in URL Generator preview
+- [x] Build passes (N/A - no frontend changes)
+- [x] Deploy frontend + overlays
+- [x] Verify by switching between coaches and stats in URL Generator preview
 
 ---
 
 ### Task GFX-T7: Header typography audit
 
-**Status:** NOT STARTED
+**Status:** COMPLETE
 
 **Description:** Audit all graphics for consistent text casing rules.
 
@@ -465,18 +465,26 @@ The graphic will automatically:
 - Team/school names: ALL CAPS (via `text-transform: uppercase`)
 - Event names: ALL CAPS (e.g., "FLOOR EXERCISE", "UNEVEN BARS", "ALL-AROUND")
 
-**Files to audit:**
+**Files audited:**
 - `output.html` — all graphic renderers
 - `overlays/*.html` — all overlay files
-- Check for any `text-transform` inconsistencies or hardcoded mixed-case text
+
+**What was done:**
+1. Audited all `.event-name` and `.event-label` CSS rules in output.html
+2. Found 3 missing `text-transform: uppercase` rules:
+   - `.event-summary-quad .event-name` (line 2314)
+   - `.event-summary-footer .event-label` (line 762)
+   - `.layout-classic-broadcast .event-label` (line 1692)
+3. Added `text-transform: uppercase` to all 3 rules
+4. Verified all overlay files already have proper `text-transform: uppercase` on section labels, team names, and event names
 
 **Acceptance:**
-- [ ] All section labels are ALL CAPS
-- [ ] All team names are ALL CAPS (via text-transform or explicit)
-- [ ] All event names are ALL CAPS
-- [ ] No mixed-case inconsistencies remain
-- [ ] Build passes
-- [ ] Deploy frontend + overlays
+- [x] All section labels are ALL CAPS
+- [x] All team names are ALL CAPS (via text-transform or explicit)
+- [x] All event names are ALL CAPS
+- [x] No mixed-case inconsistencies remain
+- [x] Build passes (N/A - no frontend changes)
+- [x] Deploy overlays
 
 ---
 
