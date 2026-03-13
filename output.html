@@ -10934,12 +10934,18 @@
       },
 
       // Dynamic team-stats renderer - uses teamSlot parameter to select team data
+      // Supports statType param: 'avg' (default), 'nqs', 'high' with corresponding statLabel
       'team-stats': (data) => {
         const slot = data.teamSlot || 1;
         const name = data[`team${slot}Name`] || '';
         const logo = data[`team${slot}Logo`] || '';
         const ave = data[`team${slot}Ave`] || '';
         const high = data[`team${slot}High`] || '';
+        const nqs = data[`team${slot}Nqs`] || '';
+        // Support dynamic stat type: statLabel (display label) and statValue (the value)
+        // Defaults: label=AVG, value=ave for backwards compatibility
+        const statLabel = data.statLabel || 'AVG';
+        const statValue = data.statValue || ave;
         return `
         <div class="graphic-container graphic-team-stats">
           <div class="stats-header">
@@ -10948,8 +10954,8 @@
           </div>
           <div class="stats-content">
             <div class="stat-item">
-              <div class="stat-label">AVG</div>
-              <div class="stat-value">${ave}</div>
+              <div class="stat-label">${statLabel}</div>
+              <div class="stat-value">${statValue}</div>
             </div>
             <div class="stat-item">
               <div class="stat-label">HIGH</div>

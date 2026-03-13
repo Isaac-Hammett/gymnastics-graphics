@@ -136,19 +136,24 @@ export function buildHostsURL({ hosts, baseUrl, meetTheme }) {
  * @param {Object} options
  * @param {string} options.teamName - Team name
  * @param {string} options.logo - Team logo URL
- * @param {string} options.ave - Average score
+ * @param {string} [options.statLabel] - Label for the primary stat (e.g., 'AVG', 'NQS', 'HIGH')
+ * @param {string} [options.statValue] - Value for the primary stat
+ * @param {string} [options.ave] - Average score (backwards compat, used if statValue not set)
  * @param {string} options.high - High score
  * @param {string} [options.baseUrl] - Override base URL
  * @param {string} [options.meetTheme] - Meet theme ID for themed graphics
  * @returns {string} Complete URL
  */
-export function buildTeamStatsURL({ teamName, logo, ave, high, baseUrl, meetTheme }) {
+export function buildTeamStatsURL({ teamName, logo, statLabel, statValue, ave, high, baseUrl, meetTheme }) {
   const base = baseUrl || getBaseURL();
   const params = new URLSearchParams();
 
   if (teamName) params.set('teamName', teamName);
   if (logo) params.set('logo', logo);
-  if (ave) params.set('ave', ave);
+  // Use statLabel/statValue if provided, otherwise fall back to 'AVG'/ave for backwards compat
+  if (statLabel) params.set('statLabel', statLabel);
+  if (statValue) params.set('statValue', statValue);
+  if (!statValue && ave) params.set('ave', ave); // Backwards compat: overlay reads 'ave' if no statValue
   if (high) params.set('high', high);
   if (meetTheme) params.set('meetTheme', meetTheme);
 
@@ -475,6 +480,8 @@ export function generateGraphicURL(graphicId, formData, teamCount, baseUrl, opti
     return buildTeamStatsURL({
       teamName: formData[`team${num}Name`],
       logo: getTeamLogo(num),
+      statLabel: options.statLabel,
+      statValue: options.statValue,
       ave: formData[`team${num}Ave`],
       high: formData[`team${num}High`],
       baseUrl: base,
