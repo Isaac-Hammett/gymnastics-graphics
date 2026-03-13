@@ -1,9 +1,9 @@
 # PLAN-Graphics-Registry-Implementation
 
 **PRD:** PRD-Graphics-Registry
-**Status:** COMPLETE
+**Status:** IN PROGRESS
 **Created:** 2026-01-22
-**Last Updated:** 2026-02-13
+**Last Updated:** 2026-03-13
 
 ---
 
@@ -22,6 +22,11 @@
 | VERIFY | COMPLETE | Verify all pickers show correct graphics |
 | V20-ENHANCEMENTS | COMPLETE | Added start values, meet-wide apparatus rankings, larger fonts |
 | V21-EXTRA-LARGE | COMPLETE | Created V21 layout with even larger fonts for big displays |
+| GFX-T1 | COMPLETE | Fix "AVE" → "AVG" label in team-stats graphics |
+| GFX-T2 | NOT STARTED | Fix "ALL AROUND" → "ALL-AROUND" hyphenation |
+| GFX-T3 | NOT STARTED | Multi-team logos + VS on stream starting page |
+| GFX-T6 | NOT STARTED | Top-align coaches/stats cards (matching width, shared top position) |
+| GFX-T7 | NOT STARTED | Header typography audit (consistent ALL CAPS rules) |
 
 ---
 
@@ -334,6 +339,145 @@ The graphic will automatically:
 - Phase 1 creates the registry without changing any existing behavior
 - Phase 2 gradually migrates existing code to use the registry
 - Phase 3 adds the admin UI
+
+---
+
+## Phase 5: Feedback-Driven Graphics Improvements (2026-03-13)
+
+### Task GFX-T1: Fix "AVE" → "AVG" label
+
+**Status:** COMPLETE
+
+**Description:** The team-stats graphic uses "AVE" as the label for season average. The correct abbreviation is "AVG".
+
+**Files to modify:**
+- `output.html` — 8 occurrences of `>AVE<` in team stats rendering (search for `AVE</div>` near lines 10638, 10669, 10700, 10731, 10762, 10793, 10824, 10881)
+- `overlays/team-stats.html` — 1 occurrence at line 98
+
+**What was done:**
+- Changed all 8 occurrences of "AVE" to "AVG" in output.html using replace_all
+- Changed "AVE" to "AVG" in overlays/team-stats.html line 98
+
+**Acceptance:**
+- [x] All "AVE" labels changed to "AVG" in output.html
+- [x] "AVE" label changed to "AVG" in overlays/team-stats.html
+- [ ] Build passes
+- [ ] Deploy frontend + overlays
+- [ ] Verify team-stats graphic shows "AVG" on production
+
+---
+
+### Task GFX-T2: Fix "ALL AROUND" → "ALL-AROUND" hyphenation
+
+**Status:** NOT STARTED
+
+**Description:** The event name "ALL AROUND" should be hyphenated as "ALL-AROUND" per proper gymnastics terminology.
+
+**Files to modify:**
+- `output.html` — event title mapping (search for `'ALL AROUND'` near line 11186)
+- `show-controller/src/lib/graphicsRegistry.js` — default title for the allaround graphic (search for `ALL AROUND`)
+
+**Acceptance:**
+- [ ] All "ALL AROUND" text changed to "ALL-AROUND"
+- [ ] Build passes
+- [ ] Deploy frontend + overlays
+- [ ] Verify all-around leaderboard/event frame shows "ALL-AROUND"
+
+---
+
+### Task GFX-T3: Multi-team logos on stream starting page
+
+**Status:** NOT STARTED
+
+**Description:** The stream starting page (`overlays/stream.html`) currently shows only one team logo. Update to show all competing team logos. For dual meets, show Logo1 — VS — Logo2.
+
+**Current state:** `stream.html` reads a single `logo` URL param and displays it at 360x360px.
+
+**Implementation:**
+1. Update `overlays/stream.html`:
+   - Accept `logo` (backwards compat for single logo) plus `logo2` through `logo7` params
+   - For 2 logos: Display side by side with "VS" text between them (similar to matchup graphic)
+   - For 3+ logos: Display in a row, scale down logo size as count increases
+   - Keep single-logo behavior when only `logo` is provided
+2. Update `show-controller/src/lib/graphicsRegistry.js`:
+   - Add `logo2` through `logo7` params to `stream-starting` and `stream-thanks` definitions
+3. Update `show-controller/src/lib/urlBuilder.js`:
+   - Update `buildStreamURL()` to pass all team logos
+4. Update `output.html`:
+   - Update the inline stream renderer to pass multiple logos
+
+**CSS layout guidance:**
+- 2 logos: `display: flex; align-items: center; gap: 40px;` with logos at ~280px and VS text at ~60px font-size
+- 3-4 logos: Row with ~200px logos
+- 5-7 logos: Row with ~150px logos (similar to `logos` graphic grid scaling)
+
+**Acceptance:**
+- [ ] Single logo still works (backwards compat)
+- [ ] Dual meet shows Logo1 — VS — Logo2
+- [ ] 3+ teams shows row of logos
+- [ ] Build passes
+- [ ] Deploy frontend + overlays
+- [ ] Verify on production with a dual meet competition
+
+---
+
+### Task GFX-T6: Top-align coaches/stats cards
+
+**Status:** NOT STARTED
+
+**Description:** The coaches and team-stats cards both appear in the lower-third position but are bottom-anchored, causing the top edges to misalign when switching between them. Standardize to top-anchored with matching dimensions.
+
+**Current drift in `output.html`:**
+
+| Property | Stats | Coaches | Fix to |
+|---|---|---|---|
+| Position | `bottom: 120px` | `bottom: 120px` | `top: 780px` (approx — yields similar bottom position but anchors from top) |
+| Header padding | `14px 30px` | `16px 30px` | `14px 30px` |
+| Min-width | `480px` | `420px` | `480px` |
+| Title font-size | `32px` | `36px` | `36px` |
+| Content padding | `16px 30px` | `20px 30px` | `16px 30px` |
+
+**Files to modify:**
+- `output.html` — `.graphic-team-stats` and `.graphic-coaches` CSS (lines ~160-235)
+- `overlays/team-stats.html` — `.stats-card` position + padding
+- `overlays/coaches.html` — `.coaches-card` position + padding
+
+**Key requirement:** When switching between coaches and stats on-air, the header bar must be in the exact same position. Content grows downward.
+
+**Acceptance:**
+- [ ] Both cards use same `top` position (not `bottom`)
+- [ ] Header padding, min-width, title font-size are identical
+- [ ] Content padding is identical
+- [ ] Coaches card grows taller downward with more names
+- [ ] Build passes
+- [ ] Deploy frontend + overlays
+- [ ] Verify by switching between coaches and stats in URL Generator preview
+
+---
+
+### Task GFX-T7: Header typography audit
+
+**Status:** NOT STARTED
+
+**Description:** Audit all graphics for consistent text casing rules.
+
+**Rules:**
+- Section labels/category headers: ALL CAPS (e.g., "COACHES", "ROSTER", "SEASON STATS")
+- Team/school names: ALL CAPS (via `text-transform: uppercase`)
+- Event names: ALL CAPS (e.g., "FLOOR EXERCISE", "UNEVEN BARS", "ALL-AROUND")
+
+**Files to audit:**
+- `output.html` — all graphic renderers
+- `overlays/*.html` — all overlay files
+- Check for any `text-transform` inconsistencies or hardcoded mixed-case text
+
+**Acceptance:**
+- [ ] All section labels are ALL CAPS
+- [ ] All team names are ALL CAPS (via text-transform or explicit)
+- [ ] All event names are ALL CAPS
+- [ ] No mixed-case inconsistencies remain
+- [ ] Build passes
+- [ ] Deploy frontend + overlays
 
 ---
 
