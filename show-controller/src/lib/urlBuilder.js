@@ -50,7 +50,7 @@ const EVENT_TITLES = {
   hbar: 'HORIZONTAL BAR',
   ubars: 'UNEVEN BARS',
   beam: 'BALANCE BEAM',
-  allaround: 'ALL AROUND',
+  allaround: 'ALL-AROUND',
   final: 'FINAL SCORES',
   order: 'COMPETITION ORDER',
   lineups: 'NEXT EVENT LINEUPS',

@@ -23,7 +23,7 @@
 | V20-ENHANCEMENTS | COMPLETE | Added start values, meet-wide apparatus rankings, larger fonts |
 | V21-EXTRA-LARGE | COMPLETE | Created V21 layout with even larger fonts for big displays |
 | GFX-T1 | COMPLETE | Fix "AVE" → "AVG" label in team-stats graphics |
-| GFX-T2 | NOT STARTED | Fix "ALL AROUND" → "ALL-AROUND" hyphenation |
+| GFX-T2 | COMPLETE | Fix "ALL AROUND" → "ALL-AROUND" hyphenation |
 | GFX-T3 | NOT STARTED | Multi-team logos + VS on stream starting page |
 | GFX-T6 | NOT STARTED | Top-align coaches/stats cards (matching width, shared top position) |
 | GFX-T7 | NOT STARTED | Header typography audit (consistent ALL CAPS rules) |
@@ -369,19 +369,22 @@ The graphic will automatically:
 
 ### Task GFX-T2: Fix "ALL AROUND" → "ALL-AROUND" hyphenation
 
-**Status:** NOT STARTED
+**Status:** COMPLETE
 
 **Description:** The event name "ALL AROUND" should be hyphenated as "ALL-AROUND" per proper gymnastics terminology.
 
-**Files to modify:**
-- `output.html` — event title mapping (search for `'ALL AROUND'` near line 11186)
-- `show-controller/src/lib/graphicsRegistry.js` — default title for the allaround graphic (search for `ALL AROUND`)
+**Files modified:**
+- `output.html:11186` — changed `'aa': 'ALL AROUND'` to `'aa': 'ALL-AROUND'`
+- `show-controller/src/lib/urlBuilder.js:53` — changed `allaround: 'ALL AROUND'` to `allaround: 'ALL-AROUND'`
+- `show-controller/src/lib/graphicButtons.js:53,64` — changed `title: 'ALL AROUND'` and `label: 'All Around'` to hyphenated forms
+- `show-controller/src/lib/graphicsRegistry.js:353` — changed `default: 'ALL AROUND'` to `default: 'ALL-AROUND'`
+- `show-controller/src/components/GraphicsControl.jsx:33` — changed `title: 'ALL AROUND'` and `label: 'All Around'` to hyphenated forms
 
 **Acceptance:**
-- [ ] All "ALL AROUND" text changed to "ALL-AROUND"
-- [ ] Build passes
-- [ ] Deploy frontend + overlays
-- [ ] Verify all-around leaderboard/event frame shows "ALL-AROUND"
+- [x] All "ALL AROUND" text changed to "ALL-AROUND"
+- [x] Build passes
+- [x] Deploy frontend + overlays
+- [x] Verify all-around leaderboard/event frame shows "ALL-AROUND"
 
 ---
 
