@@ -1,9 +1,9 @@
 # PLAN-RTN-Stats-Integration-Implementation
 
 **PRD:** [PRD-RTN-Stats-Integration-2026-02-01.md](./PRD-RTN-Stats-Integration-2026-02-01.md)
-**Status:** COMPLETE | Audit: COMPLETE
+**Status:** IN PROGRESS
 **Created:** 2026-02-01
-**Last Updated:** 2026-03-11
+**Last Updated:** 2026-03-13
 
 ---
 
@@ -58,6 +58,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | 4 | AI Enhancement | P1 | COMPLETE | 18-21, 26 |
 | 5 | Playwright Integration Tests | P1 | COMPLETE | 22-24 |
 | 6 | Bug Fixes | P0 | COMPLETE | 27-43 |
+| 7 | Configurable Stat Types | P1 | NOT STARTED | 44-45 |
 
 ---
 
@@ -271,3 +272,99 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 - [ ] Show-start snapshot contains fresh data when stale refresh is triggered (BUG-037)
 - [ ] All "8 endpoints" references updated to "7" in code and docs (BUG-038)
 - [ ] No console errors on production
+
+---
+
+## Phase 7: Configurable Stat Types (P1) — IN PROGRESS (1/2)
+
+### Task 44: Capture NQS and four-count average from RTN API
+
+| Field | Value |
+|-------|-------|
+| Status | COMPLETE |
+| Priority | P1 |
+| Files | `server/lib/rtnStatsService.js` |
+| Depends On | None (Phase 1-6 complete) |
+
+**Description:**
+
+The `normalizeTeamRanking()` function currently extracts only `ave`, `high`, `rqs` from the raw RTN API data. The raw `team` object likely contains additional fields (e.g., `nqs` for National Qualifying Score, and potentially a four-count average field for men's).
+
+**Investigation Results (2026-03-13):**
+
+Dumped raw RTN API responses for both women's and men's team rankings:
+
+**Women's API fields:** `rank`, `name`, `tid`, `rqs`, `reg`, `con`, `div`, `usag`, `ave`, `high`
+
+**Men's API fields:** `rank`, `name`, `tid`, `rqs`, `usag`, `reg`, `con`, `club`, `ave`, `high`, `gymactaa`
+
+**Findings:**
+
+1. **NQS (National Qualifying Score):** RTN uses the field name `rqs` (Regional Qualifying Score) which IS the NQS. This field was ALREADY being captured by `normalizeTeamRanking()` and synced to `team{N}Nqs` by `syncStatsToConfig()`. No changes needed.
+
+2. **Four-count average for men's:** The RTN API does NOT provide a dedicated four-count average field. The `ave` field is the season average (already captured). The `gymactaa` field is for GymACT club all-around scores and is always "0.000" for NCAA Division I teams.
+
+3. **Additional fields discovered:**
+   - `usag`: USAG membership flag (0 or 1)
+   - `club`: Club team flag (0 or 1, men's only)
+   - `gymactaa`: GymACT all-around score (men's only, "0.000" for NCAA)
+
+**What was done:**
+- Added temporary logging to identify all raw fields (commit 06e112a)
+- Verified via direct API calls that NQS is already captured as `rqs`
+- Verified `syncStatsToConfig()` already syncs `team{N}Nqs` (lines 1163-1171)
+- Removed temporary logging
+- No code changes required — implementation was already complete
+
+**Acceptance:**
+- [x] Raw RTN fields identified and documented
+- [x] `normalizeTeamRanking()` captures NQS for women's teams (already implemented as `rqs`)
+- [x] `normalizeTeamRanking()` captures four-count average for men's teams — N/A, field does not exist in RTN API
+- [x] `syncStatsToConfig()` writes new fields to competition config (already implemented)
+- [x] Deploy coordinator, ingest stats, verify fields in Firebase
+
+---
+
+### Task 45: Stat type selector in URL Generator
+
+| Field | Value |
+|-------|-------|
+| Status | NOT STARTED |
+| Priority | P1 |
+| Files | `graphicsRegistry.js`, `urlBuilder.js`, `UrlGeneratorPage.jsx`, `team-stats.html`, `output.html` |
+| Depends On | Task 44 |
+
+**Description:**
+
+Add a dropdown in the URL Generator that lets the producer choose which stat to display on the team-stats graphic. The overlay label should update dynamically.
+
+**Note:** Per Task 44 investigation, RTN API provides: `ave` (season average), `high` (season high), `rqs` (NQS). There is NO four-count average field in the API. The stat type options are the same for men's and women's.
+
+**Steps:**
+1. Update `overlays/team-stats.html`:
+   - Read new `statLabel` URL param (default: "AVG")
+   - Use `statLabel` value as the label text instead of hardcoded "AVG"
+2. Update `output.html`:
+   - Same change in the inline team-stats renderer — use a `statLabel` field from data
+3. Update `show-controller/src/lib/graphicsRegistry.js`:
+   - Add `statType` enum param to `team-stats` definition with options: `avg`, `nqs`, `high`
+   - Add `statLabel` string param (derived from statType)
+4. Update `show-controller/src/lib/urlBuilder.js`:
+   - `buildTeamStatsURL()` accepts and passes `statLabel` param
+5. Update `show-controller/src/pages/UrlGeneratorPage.jsx`:
+   - Add stat type dropdown per team (or global) — options:
+     - "Season Average" (AVG) — uses `team{N}Ave`
+     - "NQS" — uses `team{N}Nqs`
+     - "Season High" (HIGH) — uses `team{N}High`
+   - When dropdown changes, auto-fill the value field with the correct value from config
+   - Pass `statLabel` to URL builder
+
+**Acceptance:**
+- [ ] team-stats.html reads `statLabel` param and displays it
+- [ ] output.html inline renderer uses dynamic stat label
+- [ ] URL Generator shows stat type dropdown
+- [ ] Selecting "NQS" fills the value field with NQS score and sets label to "NQS"
+- [ ] Selecting "HIGH" fills with season high and sets label to "HIGH"
+- [ ] Build passes
+- [ ] Deploy frontend + overlays
+- [ ] Verify on production
