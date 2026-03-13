@@ -275,6 +275,7 @@
       bottom: 50px;
       display: flex;
       flex-direction: column;
+      font-variant-numeric: tabular-nums;
     }
     .graphic-virtius-leaderboard .frame-header {
       background: #d4d4d8;
@@ -489,6 +490,7 @@
       bottom: 50px;
       display: flex;
       flex-direction: column;
+      font-variant-numeric: tabular-nums;
     }
     .event-summary-header {
       background: #d4d4d8;
@@ -748,7 +750,7 @@
       flex-direction: row-reverse;
     }
     .event-summary-footer .event-abbr {
-      font-size: 24px;
+      font-size: 32px;
       font-weight: 800;
       color: #a1a1aa;
     }
@@ -758,19 +760,21 @@
       opacity: 0.6;
     }
     .event-summary-footer .event-label {
-      font-size: 20px;
+      font-size: 32px;
       font-weight: 600;
       color: #a1a1aa;
     }
     .event-summary-footer .event-total {
-      font-size: 32px;
+      font-size: 48px;
       font-weight: 800;
       color: #fff;
       margin-left: auto;
     }
     .event-summary-footer .footer-team.right .event-total {
       margin-left: 0;
-      margin-right: auto;
+    }
+    .event-summary-footer .footer-team.right .event-label {
+      margin-left: auto;
     }
     .event-summary-footer .footer-center {
       width: 140px;
@@ -1691,7 +1695,7 @@
       color: #a1a1aa;
     }
     .layout-classic-broadcast .event-total {
-      font-size: 32px;
+      font-size: 48px;
       font-weight: 800;
       color: #fff;
       margin-left: auto;
@@ -1991,10 +1995,10 @@
       height: 32px;
     }
     .layout-default-v2-footer .event-label {
-      font-size: 18px;
+      font-size: 32px;
     }
     .layout-default-v2-footer .event-total {
-      font-size: 36px;
+      font-size: 48px;
       font-weight: 800;
     }
     .layout-default-v2-footer .footer-center {
@@ -2268,10 +2272,10 @@
       height: 32px;
     }
     .layout-dual-dynamic-v1-footer .event-label {
-      font-size: 18px;
+      font-size: 32px;
     }
     .layout-dual-dynamic-v1-footer .event-total {
-      font-size: 36px;
+      font-size: 48px;
       font-weight: 800;
     }
     .layout-dual-dynamic-v1-footer .footer-center {
@@ -10631,7 +10635,7 @@
           </div>
           <div class="stats-content">
             <div class="stat-item">
-              <div class="stat-label">AVE</div>
+              <div class="stat-label">AVG</div>
               <div class="stat-value">${data.team1Ave}</div>
             </div>
             <div class="stat-item">
@@ -10662,7 +10666,7 @@
           </div>
           <div class="stats-content">
             <div class="stat-item">
-              <div class="stat-label">AVE</div>
+              <div class="stat-label">AVG</div>
               <div class="stat-value">${data.team2Ave}</div>
             </div>
             <div class="stat-item">
@@ -10693,7 +10697,7 @@
           </div>
           <div class="stats-content">
             <div class="stat-item">
-              <div class="stat-label">AVE</div>
+              <div class="stat-label">AVG</div>
               <div class="stat-value">${data.team3Ave}</div>
             </div>
             <div class="stat-item">
@@ -10724,7 +10728,7 @@
           </div>
           <div class="stats-content">
             <div class="stat-item">
-              <div class="stat-label">AVE</div>
+              <div class="stat-label">AVG</div>
               <div class="stat-value">${data.team4Ave}</div>
             </div>
             <div class="stat-item">
@@ -10755,7 +10759,7 @@
           </div>
           <div class="stats-content">
             <div class="stat-item">
-              <div class="stat-label">AVE</div>
+              <div class="stat-label">AVG</div>
               <div class="stat-value">${data.team5Ave}</div>
             </div>
             <div class="stat-item">
@@ -10786,7 +10790,7 @@
           </div>
           <div class="stats-content">
             <div class="stat-item">
-              <div class="stat-label">AVE</div>
+              <div class="stat-label">AVG</div>
               <div class="stat-value">${data.team6Ave}</div>
             </div>
             <div class="stat-item">
@@ -10817,7 +10821,7 @@
           </div>
           <div class="stats-content">
             <div class="stat-item">
-              <div class="stat-label">AVE</div>
+              <div class="stat-label">AVG</div>
               <div class="stat-value">${data.team7Ave}</div>
             </div>
             <div class="stat-item">
@@ -10874,7 +10878,7 @@
           </div>
           <div class="stats-content">
             <div class="stat-item">
-              <div class="stat-label">AVE</div>
+              <div class="stat-label">AVG</div>
               <div class="stat-value">${ave}</div>
             </div>
             <div class="stat-item">
@@ -11127,9 +11131,7 @@
           ? `<img class="event-summary-header-logo" src="${hostLogo}" alt="">`
           : '';
 
-        const loadingText = mode === 'apparatus'
-          ? `Loading ${apparatus.toUpperCase()}...`
-          : `Loading rotation ${rotation}...`;
+        const loadingText = '';
 
         // Build theme class and CSS variables for team colors
         // Only apply color theme class if not using a layout theme
@@ -11244,7 +11246,7 @@
               ${logoHtml}
             </div>
             <div class="frame-content" id="leaderboard-content">
-              <div class="leaderboard-loading">Loading leaderboard...</div>
+              <div class="leaderboard-loading"></div>
             </div>
           </div>
         `;
