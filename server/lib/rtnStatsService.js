@@ -607,6 +607,9 @@ function normalizeTeamRanking(raw, gender, tid) {
     return null;
   }
 
+  // TEMPORARY: Log all fields in the raw team object to identify available stats
+  console.log(`[rtnStatsService] Raw team data for tid=${tid} (${gender}):`, JSON.stringify(team, null, 2));
+
   return {
     rank: team.rank ? String(team.rank) : null,
     ave: team.ave ? String(team.ave) : null,
