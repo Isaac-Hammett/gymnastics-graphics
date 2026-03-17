@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTalentRoster, getStatusLabel, getStatusColor, wagMagLabel } from '../hooks/useTalentRoster';
 import { useTalentAssignments } from '../hooks/useTalentAssignments';
 import TalentTable from '../components/crm/TalentTable';
@@ -13,6 +13,9 @@ import {
   XMarkIcon,
   TableCellsIcon,
   Squares2X2Icon,
+  BookmarkIcon,
+  TrashIcon,
+  ChevronDownIcon,
 } from '@heroicons/react/24/solid';
 
 const STATUS_OPTIONS = [
@@ -37,6 +40,9 @@ const ROLE_OPTIONS = [
   { value: 'Does not matter', label: 'Flexible' },
 ];
 
+const SAVED_VIEWS_KEY = 'crm-saved-views';
+const MAX_SAVED_VIEWS = 10;
+
 /**
  * TalentPage - Global talent roster management page.
  * URL: /talent
@@ -45,14 +51,102 @@ export default function TalentPage() {
   const { talentList, loading, error, createTalent } = useTalentRoster();
   const { assignmentsByTalent, loading: assignmentsLoading } = useTalentAssignments(talentList);
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [wagMagFilter, setWagMagFilter] = useState('');
-  const [roleFilter, setRoleFilter] = useState('');
+  // Read initial values from URL params
+  const urlSearch = searchParams.get('q') || '';
+  const urlStatus = searchParams.get('status') || '';
+  const urlWagMag = searchParams.get('wagMag') || '';
+  const urlRole = searchParams.get('role') || '';
+
+  // Local state for instant UI feedback (debounced sync to URL)
+  const [search, setSearch] = useState(urlSearch);
+  const [statusFilter, setStatusFilter] = useState(urlStatus);
+  const [wagMagFilter, setWagMagFilter] = useState(urlWagMag);
+  const [roleFilter, setRoleFilter] = useState(urlRole);
   const [showAddModal, setShowAddModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [viewMode, setViewMode] = useState(() => localStorage.getItem('crm-talent-view') || 'table');
+
+  // Saved views state
+  const [savedViews, setSavedViews] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(SAVED_VIEWS_KEY)) || [];
+    } catch { return []; }
+  });
+  const [showSaveViewModal, setShowSaveViewModal] = useState(false);
+  const [newViewName, setNewViewName] = useState('');
+  const [showViewsDropdown, setShowViewsDropdown] = useState(false);
+  const viewsDropdownRef = useRef(null);
+
+  // Debounce search input → URL sync (300ms)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams();
+      if (search) params.set('q', search);
+      if (statusFilter) params.set('status', statusFilter);
+      if (wagMagFilter) params.set('wagMag', wagMagFilter);
+      if (roleFilter) params.set('role', roleFilter);
+      setSearchParams(params, { replace: true });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search, statusFilter, wagMagFilter, roleFilter, setSearchParams]);
+
+  // Close views dropdown on click outside
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (viewsDropdownRef.current && !viewsDropdownRef.current.contains(e.target)) {
+        setShowViewsDropdown(false);
+      }
+    }
+    if (showViewsDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showViewsDropdown]);
+
+  // Persist saved views to localStorage
+  useEffect(() => {
+    localStorage.setItem(SAVED_VIEWS_KEY, JSON.stringify(savedViews));
+  }, [savedViews]);
+
+  function handleSaveView(e) {
+    e.preventDefault();
+    if (!newViewName.trim()) return;
+    if (savedViews.length >= MAX_SAVED_VIEWS) {
+      alert(`Maximum ${MAX_SAVED_VIEWS} saved views. Remove one first.`);
+      return;
+    }
+    const newView = {
+      id: Date.now(),
+      name: newViewName.trim(),
+      filters: { q: search, status: statusFilter, wagMag: wagMagFilter, role: roleFilter },
+    };
+    setSavedViews([...savedViews, newView]);
+    setNewViewName('');
+    setShowSaveViewModal(false);
+  }
+
+  function loadView(view) {
+    setSearch(view.filters.q || '');
+    setStatusFilter(view.filters.status || '');
+    setWagMagFilter(view.filters.wagMag || '');
+    setRoleFilter(view.filters.role || '');
+    setShowViewsDropdown(false);
+  }
+
+  function deleteView(id) {
+    setSavedViews(savedViews.filter(v => v.id !== id));
+  }
+
+  function clearFilters() {
+    setSearch('');
+    setStatusFilter('');
+    setWagMagFilter('');
+    setRoleFilter('');
+  }
+
+  const hasActiveFilters = search || statusFilter || wagMagFilter || roleFilter;
 
   const [newTalent, setNewTalent] = useState({
     name: '',
@@ -198,15 +292,62 @@ export default function TalentPage() {
           >
             {ROLE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
-          {(search || statusFilter || wagMagFilter || roleFilter) && (
+          {hasActiveFilters && (
             <button
-              onClick={() => { setSearch(''); setStatusFilter(''); setWagMagFilter(''); setRoleFilter(''); }}
+              onClick={clearFilters}
               className="text-zinc-400 hover:text-white text-sm flex items-center gap-1"
             >
               <XMarkIcon className="w-4 h-4" />
               Clear
             </button>
           )}
+          {/* Saved Views */}
+          <div className="relative" ref={viewsDropdownRef}>
+            <button
+              onClick={() => setShowViewsDropdown(!showViewsDropdown)}
+              className="flex items-center gap-1 px-2 py-1.5 text-zinc-400 hover:text-white text-sm border border-zinc-700 rounded-lg hover:border-zinc-600 transition-colors"
+            >
+              <BookmarkIcon className="w-3.5 h-3.5" />
+              Views
+              <ChevronDownIcon className={`w-3 h-3 transition-transform ${showViewsDropdown ? 'rotate-180' : ''}`} />
+            </button>
+            {showViewsDropdown && (
+              <div className="absolute top-full left-0 mt-1 bg-zinc-800 border border-zinc-700 rounded-lg shadow-lg z-50 min-w-48">
+                {savedViews.length > 0 ? (
+                  <div className="py-1">
+                    {savedViews.map(view => (
+                      <div key={view.id} className="flex items-center justify-between px-3 py-1.5 hover:bg-zinc-700">
+                        <button
+                          onClick={() => loadView(view)}
+                          className="flex-1 text-left text-sm text-zinc-200 hover:text-white"
+                        >
+                          {view.name}
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); deleteView(view.id); }}
+                          className="p-1 text-zinc-500 hover:text-red-400 transition-colors"
+                          title="Delete view"
+                        >
+                          <TrashIcon className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="px-3 py-2 text-xs text-zinc-500">No saved views</div>
+                )}
+                <div className="border-t border-zinc-700">
+                  <button
+                    onClick={() => { setShowViewsDropdown(false); setShowSaveViewModal(true); }}
+                    disabled={!hasActiveFilters}
+                    className="w-full px-3 py-2 text-left text-sm text-blue-400 hover:bg-zinc-700 disabled:text-zinc-600 disabled:cursor-not-allowed"
+                  >
+                    {hasActiveFilters ? 'Save current filters...' : 'Set filters to save'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
           <div className="flex items-center gap-1 ml-auto">
             <span className="text-zinc-500 text-sm mr-2">{filtered.length} shown</span>
             <button
@@ -377,6 +518,54 @@ export default function TalentPage() {
                   className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 rounded-lg text-sm font-medium transition-colors"
                 >
                   {saving ? 'Saving...' : 'Add & Open Profile'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Save View Modal */}
+      {showSaveViewModal && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-zinc-900 rounded-xl border border-zinc-800 w-full max-w-sm">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
+              <h2 className="text-lg font-semibold text-white">Save Filter View</h2>
+              <button onClick={() => setShowSaveViewModal(false)} className="text-zinc-400 hover:text-white">
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveView} className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1">View Name</label>
+                <input
+                  autoFocus
+                  required
+                  value={newViewName}
+                  onChange={e => setNewViewName(e.target.value)}
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500"
+                  placeholder="e.g., Available WAG Analysts"
+                />
+              </div>
+              <div className="text-xs text-zinc-500">
+                <div className="font-medium mb-1">Current filters:</div>
+                <ul className="space-y-0.5">
+                  {search && <li>Search: "{search}"</li>}
+                  {statusFilter && <li>Status: {STATUS_OPTIONS.find(o => o.value === statusFilter)?.label}</li>}
+                  {wagMagFilter && <li>WAG/MAG: {wagMagFilter}</li>}
+                  {roleFilter && <li>Role: {ROLE_OPTIONS.find(o => o.value === roleFilter)?.label}</li>}
+                </ul>
+              </div>
+              <div className="flex justify-end gap-3">
+                <button type="button" onClick={() => setShowSaveViewModal(false)} className="px-4 py-2 text-zinc-400 hover:text-white text-sm">
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!newViewName.trim()}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 rounded-lg text-sm font-medium transition-colors"
+                >
+                  Save View
                 </button>
               </div>
             </form>
