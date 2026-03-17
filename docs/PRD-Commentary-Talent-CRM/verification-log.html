@@ -407,8 +407,8 @@
   </div>
 
   <div class="summary" id="summary">
-        <div class="summary-card"><div class="count">10</div><div class="label">Total</div></div>
-        <div class="summary-card pass"><div class="count">9</div><div class="label">Passed</div></div>
+        <div class="summary-card"><div class="count">11</div><div class="label">Total</div></div>
+        <div class="summary-card pass"><div class="count">10</div><div class="label">Passed</div></div>
         <div class="summary-card fail"><div class="count">0</div><div class="label">Failed</div></div>
         <div class="summary-card rejected"><div class="count">1</div><div class="label">Rejected</div></div>
         <div class="summary-card review"><div class="count">0</div><div class="label">Needs Review</div></div>
@@ -914,6 +914,21 @@
     ],
     "consoleErrors": "Pre-existing VM pool permission error only (unrelated to command palette)",
     "notes": "Command palette opens with Cmd+K, searches talent by name/phone/affiliation, debounces input at 300ms, caches data with 60s TTL. Results show talent grouped under TALENT section. Arrow keys navigate, Enter selects, Escape closes. Recent items stored in localStorage (max 5)."
+  },
+  {
+    "taskId": "10.2",
+    "taskName": "Add URL-persisted filters and saved views",
+    "description": "Added URL-persisted filter state using useSearchParams from react-router-dom. Filter params (q, status, wagMag, role) are synced to URL with 300ms debounce and { replace: true } to avoid polluting browser history. Added saved views feature with localStorage persistence (max 10 views). Views dropdown allows saving current filters with a custom name, loading saved views, and deleting views.",
+    "expectedInScreenshot": "The /talent page should show the Save Filter View modal open with 'Stanford MAG Talent' typed as the view name. The URL should show ?q=akash reflecting the current search filter. The 'Views' dropdown button should be visible. 'Current filters' should display the active search term.",
+    "timestamp": "2026-03-17T22:00:00Z",
+    "result": "PASS",
+    "screenshot": "screenshots/verify-task-10.2.png",
+    "commitHash": "5440b02",
+    "filesModified": [
+      "show-controller/src/pages/TalentPage.jsx"
+    ],
+    "consoleErrors": "none",
+    "notes": "URL params sync with 300ms debounce working correctly. Views dropdown shows saved views list with delete option. Save View modal captures current filters and allows naming. localStorage persists views across sessions. Max 10 views enforced."
   }
 ]
   </script>
