@@ -25,7 +25,7 @@
 | Phase 7 | TalentPage table view + assignment/availability columns | 6 | NOT STARTED |
 | Phase 8 | CommentaryPage: kebab menu + conflict badges + kanban | 3 | NOT STARTED |
 | Phase 9 | TalentProfilePage: collapsible sections + activity timeline | 2 | NOT STARTED |
-| Phase 10 | Power features: Cmd+K, saved filters, bulk ops | 3 | NOT STARTED |
+| Phase 10 | Power features: Cmd+K, saved filters, bulk ops | 3 | IN PROGRESS |
 | **Total** | | **47** | |
 
 ---
@@ -1310,7 +1310,7 @@ update(ref(db, `competitions/${compId}/commentary/${talentId}`), { status: newSt
 
 ## Phase 10: Power Features — Cmd+K, Saved Filters, Bulk Ops
 
-### Task 10.1: Add Cmd+K command palette — NOT STARTED
+### Task 10.1: Add Cmd+K command palette — COMPLETE
 
 **File:** `show-controller/src/components/crm/CommandPalette.jsx` (NEW) + modify `show-controller/src/App.jsx`
 
