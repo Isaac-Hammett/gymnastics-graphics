@@ -173,19 +173,19 @@ export default function BookingPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
-        <div className="text-gray-400">Loading...</div>
+      <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center">
+        <div className="text-zinc-400">Loading...</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center px-4">
-        <div className="max-w-md w-full bg-gray-800 border border-gray-700 rounded-xl p-6 text-center">
+      <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center px-4">
+        <div className="max-w-md w-full bg-zinc-900 border border-zinc-800 rounded-xl p-6 text-center">
           <XCircleIcon className="w-16 h-16 text-red-500 mx-auto mb-4" />
           <h1 className="text-xl font-bold text-white mb-2">Booking Error</h1>
-          <p className="text-gray-400">{error}</p>
+          <p className="text-zinc-400">{error}</p>
         </div>
       </div>
     );
@@ -193,11 +193,11 @@ export default function BookingPage() {
 
   if (confirmed) {
     return (
-      <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center px-4">
-        <div className="max-w-md w-full bg-gray-800 border border-gray-700 rounded-xl p-6 text-center">
+      <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center px-4">
+        <div className="max-w-md w-full bg-zinc-900 border border-zinc-800 rounded-xl p-6 text-center">
           <CheckCircleIcon className="w-16 h-16 text-green-500 mx-auto mb-4" />
           <h1 className="text-xl font-bold text-white mb-2">Thank You!</h1>
-          <p className="text-gray-400">
+          <p className="text-zinc-400">
             {showAlternatives
               ? "Your availability has been saved. We'll be in touch!"
               : "You're confirmed! We'll send you more details soon."}
@@ -209,16 +209,16 @@ export default function BookingPage() {
 
   if (showAlternatives) {
     return (
-      <div className="min-h-screen bg-gray-900 text-white px-4 py-8">
+      <div className="min-h-screen bg-zinc-950 text-white px-4 py-8">
         <div className="max-w-2xl mx-auto">
-          <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
             <h1 className="text-xl font-bold text-white mb-2">Which meets could you do?</h1>
-            <p className="text-gray-400 mb-6 text-sm">
+            <p className="text-zinc-400 mb-6 text-sm">
               Select any upcoming competitions you're available for:
             </p>
 
             {upcomingCompetitions.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">No upcoming competitions found.</p>
+              <p className="text-zinc-500 text-center py-8">No upcoming competitions found.</p>
             ) : (
               <div className="space-y-3 mb-6">
                 {upcomingCompetitions.map(comp => (
@@ -227,7 +227,7 @@ export default function BookingPage() {
                     className={`flex items-start gap-3 p-4 border rounded-lg cursor-pointer transition-colors ${
                       selectedCompIds.includes(comp.compId)
                         ? 'bg-blue-900/30 border-blue-600'
-                        : 'bg-gray-700 border-gray-600 hover:border-gray-500'
+                        : 'bg-zinc-800 border-zinc-700 hover:border-zinc-600'
                     }`}
                   >
                     <input
@@ -238,7 +238,7 @@ export default function BookingPage() {
                     />
                     <div className="flex-1">
                       <div className="font-semibold text-white">{comp.eventName}</div>
-                      <div className="text-sm text-gray-400 flex items-center gap-3 mt-1">
+                      <div className="text-sm text-zinc-400 flex items-center gap-3 mt-1">
                         <span className="flex items-center gap-1">
                           <CalendarIcon className="w-3.5 h-3.5" />
                           {comp.meetDate}
@@ -259,7 +259,7 @@ export default function BookingPage() {
             <div className="flex gap-3">
               <button
                 onClick={() => setShowAlternatives(false)}
-                className="flex-1 px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium transition-colors"
+                className="flex-1 px-4 py-3 bg-zinc-800 hover:bg-zinc-700 rounded-lg font-medium transition-colors"
               >
                 Back
               </button>
@@ -278,20 +278,20 @@ export default function BookingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center px-4">
-      <div className="max-w-md w-full bg-gray-800 border border-gray-700 rounded-xl p-6">
+    <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center px-4">
+      <div className="max-w-md w-full bg-zinc-900 border border-zinc-800 rounded-xl p-6">
         <h1 className="text-2xl font-bold text-white mb-1">Commentary Invitation</h1>
-        <p className="text-gray-400 mb-6 text-sm">Hi {talentData?.name || 'there'}!</p>
+        <p className="text-zinc-400 mb-6 text-sm">Hi {talentData?.name || 'there'}!</p>
 
         <div className="space-y-4 mb-6">
-          <div className="bg-gray-700 rounded-lg p-4">
-            <div className="text-xs text-gray-400 mb-1">Event</div>
+          <div className="bg-zinc-800 rounded-lg p-4">
+            <div className="text-xs text-zinc-400 mb-1">Event</div>
             <div className="font-semibold text-white">{competitionData?.eventName || 'Event'}</div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-gray-700 rounded-lg p-4">
-              <div className="text-xs text-gray-400 mb-1 flex items-center gap-1">
+            <div className="bg-zinc-800 rounded-lg p-4">
+              <div className="text-xs text-zinc-400 mb-1 flex items-center gap-1">
                 <CalendarIcon className="w-3.5 h-3.5" />
                 Date
               </div>
@@ -301,8 +301,8 @@ export default function BookingPage() {
             </div>
 
             {competitionData?.venue && (
-              <div className="bg-gray-700 rounded-lg p-4">
-                <div className="text-xs text-gray-400 mb-1 flex items-center gap-1">
+              <div className="bg-zinc-800 rounded-lg p-4">
+                <div className="text-xs text-zinc-400 mb-1 flex items-center gap-1">
                   <MapPinIcon className="w-3.5 h-3.5" />
                   Venue
                 </div>
@@ -311,8 +311,8 @@ export default function BookingPage() {
             )}
           </div>
 
-          <div className="bg-gray-700 rounded-lg p-4">
-            <div className="text-xs text-gray-400 mb-1">Your Role</div>
+          <div className="bg-zinc-800 rounded-lg p-4">
+            <div className="text-xs text-zinc-400 mb-1">Your Role</div>
             <div className="font-semibold text-white capitalize">
               {tokenData?.role || 'Commentary'}
             </div>
@@ -332,7 +332,7 @@ export default function BookingPage() {
           <button
             onClick={handleNo}
             disabled={submitting}
-            className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 rounded-lg font-medium transition-colors"
+            className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 rounded-lg font-medium transition-colors"
           >
             <XCircleIcon className="w-5 h-5" />
             No, not this one

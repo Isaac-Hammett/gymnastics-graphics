@@ -172,20 +172,20 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-zinc-950 text-white">
       {/* Header */}
-      <div className="bg-gray-800 border-b border-gray-700 px-6 py-4">
+      <div className="bg-zinc-900 border-b border-zinc-800 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link to="/" className="text-gray-400 hover:text-white text-sm transition-colors">
+            <Link to="/" className="text-zinc-400 hover:text-white text-sm transition-colors">
               ← Home
             </Link>
             <div>
               <h1 className="text-xl font-bold text-white flex items-center gap-2">
-                <Cog6ToothIcon className="w-6 h-6 text-gray-400" />
+                <Cog6ToothIcon className="w-6 h-6 text-zinc-400" />
                 Settings
               </h1>
-              <p className="text-gray-400 text-sm">System configuration and batch imports</p>
+              <p className="text-zinc-400 text-sm">System configuration and batch imports</p>
             </div>
           </div>
         </div>
@@ -193,12 +193,12 @@ export default function SettingsPage() {
 
       <div className="max-w-4xl mx-auto px-6 py-8">
         {/* CSV Batch Import Section */}
-        <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
+        <div className="bg-zinc-900 rounded-lg border border-zinc-800 p-6">
           <div className="flex items-center gap-3 mb-4">
             <DocumentArrowUpIcon className="w-6 h-6 text-blue-400" />
             <div>
               <h2 className="text-lg font-semibold text-white">Batch Import Survey Responses</h2>
-              <p className="text-sm text-gray-400 mt-0.5">
+              <p className="text-sm text-zinc-400 mt-0.5">
                 Upload a CSV export from the annual survey (Google Forms export format)
               </p>
             </div>
@@ -207,7 +207,7 @@ export default function SettingsPage() {
           {/* File Input */}
           <div className="space-y-4">
             <div>
-              <label className="block text-sm text-gray-300 mb-2">Select CSV File</label>
+              <label className="block text-sm text-zinc-300 mb-2">Select CSV File</label>
               <input
                 type="file"
                 accept=".csv"
@@ -217,7 +217,7 @@ export default function SettingsPage() {
                   setPreview(null);
                   setImportResult(null);
                 }}
-                className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-600 file:text-white hover:file:bg-blue-500 file:cursor-pointer cursor-pointer"
+                className="block w-full text-sm text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-600 file:text-white hover:file:bg-blue-500 file:cursor-pointer cursor-pointer"
               />
             </div>
 
@@ -233,28 +233,28 @@ export default function SettingsPage() {
 
             {/* Preview Results */}
             {preview && (
-              <div className="bg-gray-900 rounded-lg border border-gray-700 p-4">
+              <div className="bg-zinc-950 rounded-lg border border-zinc-800 p-4">
                 <h3 className="text-sm font-semibold text-white mb-3">Import Preview</h3>
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center gap-2">
                     <CheckCircleIcon className="w-4 h-4 text-green-400" />
-                    <span className="text-gray-300">
+                    <span className="text-zinc-300">
                       <span className="font-semibold text-white">{preview.matched}</span> records matched by email (will be updated)
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircleIcon className="w-4 h-4 text-blue-400" />
-                    <span className="text-gray-300">
+                    <span className="text-zinc-300">
                       <span className="font-semibold text-white">{preview.new}</span> new records (will be created with status "Need Info")
                     </span>
                   </div>
-                  <div className="text-gray-400 text-xs mt-3 pt-3 border-t border-gray-700">
+                  <div className="text-zinc-400 text-xs mt-3 pt-3 border-t border-zinc-800">
                     Total rows in CSV: {preview.total}
                   </div>
                 </div>
 
                 {/* Confirm Import Button */}
-                <div className="flex items-center gap-3 mt-4 pt-4 border-t border-gray-700">
+                <div className="flex items-center gap-3 mt-4 pt-4 border-t border-zinc-800">
                   <button
                     onClick={handleConfirmImport}
                     disabled={importing}
@@ -269,7 +269,7 @@ export default function SettingsPage() {
                       setCsvFile(null);
                     }}
                     disabled={importing}
-                    className="px-4 py-2 text-gray-400 hover:text-white disabled:opacity-50 text-sm"
+                    className="px-4 py-2 text-zinc-400 hover:text-white disabled:opacity-50 text-sm"
                   >
                     Cancel
                   </button>
@@ -311,13 +311,13 @@ export default function SettingsPage() {
           </div>
 
           {/* CSV Format Guide */}
-          <div className="mt-6 pt-6 border-t border-gray-700">
+          <div className="mt-6 pt-6 border-t border-zinc-800">
             <h3 className="text-sm font-semibold text-white mb-2">CSV Format</h3>
-            <p className="text-xs text-gray-400 mb-3">
+            <p className="text-xs text-zinc-400 mb-3">
               The CSV should contain columns matching the survey form. Records are matched by email address.
               Common column names:
             </p>
-            <ul className="text-xs text-gray-500 space-y-1">
+            <ul className="text-xs text-zinc-500 space-y-1">
               <li>• Email Address (or Email)</li>
               <li>• Name (or Full Name)</li>
               <li>• WAG/MAG</li>
