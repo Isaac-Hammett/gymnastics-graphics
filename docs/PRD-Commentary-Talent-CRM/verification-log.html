@@ -898,6 +898,22 @@
     ],
     "consoleErrors": "none",
     "notes": "Activity Timeline renders with all 7 filter chips visible. Empty state displays correctly. Type-based icons and colors configured for imessage, invite, briefing, calendar, preproduction, and note types. timeAgo helper supports seconds, minutes, hours, and days."
+  },
+  {
+    "taskId": "10.1",
+    "taskName": "Add Cmd+K command palette",
+    "description": "Added a global command palette (Cmd+K / Ctrl+K) for quickly searching talent and competitions from any page. Results are grouped by type with keyboard navigation support. Recent items persist in localStorage.",
+    "expectedInScreenshot": "The command palette modal should be visible overlaid on the homepage. The search input should show 'akash' typed, with 'TALENT' section header below. Search results should show 'Akash Modi' (highlighted as selected) and 'Josiah Eng'. Footer should show keyboard navigation hints (↑ ↓ navigate, ↵ select, esc close).",
+    "timestamp": "2026-03-17T21:30:00Z",
+    "result": "PASS",
+    "screenshot": "screenshots/verify-task-10.1.png",
+    "commitHash": "419242c",
+    "filesModified": [
+      "show-controller/src/components/crm/CommandPalette.jsx",
+      "show-controller/src/App.jsx"
+    ],
+    "consoleErrors": "Pre-existing VM pool permission error only (unrelated to command palette)",
+    "notes": "Command palette opens with Cmd+K, searches talent by name/phone/affiliation, debounces input at 300ms, caches data with 60s TTL. Results show talent grouped under TALENT section. Arrow keys navigate, Enter selects, Escape closes. Recent items stored in localStorage (max 5)."
   }
 ]
   </script>
