@@ -1171,7 +1171,7 @@ Remove from Competition   (red text)
 
 ---
 
-### Task 8.2: Add conflict detection badges with hover popovers — NOT STARTED
+### Task 8.2: Add conflict detection badges with hover popovers — COMPLETE
 
 **File:** `show-controller/src/pages/CommentaryPage.jsx`
 

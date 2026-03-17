@@ -19,6 +19,7 @@ import {
   ClipboardDocumentIcon,
   NoSymbolIcon,
   TrashIcon,
+  ExclamationTriangleIcon,
 } from '@heroicons/react/24/solid';
 import toast from 'react-hot-toast';
 import KebabMenu from '../components/crm/KebabMenu';
@@ -69,8 +70,8 @@ export default function CommentaryPage() {
   // Get this competition's date for same-day conflict checking
   const currentMeetDate = competitionConfig?.meetDate;
 
-  // Build a set of talent IDs who have same-day conflicts
-  const sameDayConflicts = new Set();
+  // Build a map of talent IDs to their same-day conflict details
+  const sameDayConflictDetails = new Map();
   if (currentMeetDate && competitions) {
     Object.entries(competitions).forEach(([otherCompId, otherComp]) => {
       if (otherCompId === compId) return; // Skip current competition
@@ -79,12 +80,25 @@ export default function CommentaryPage() {
       // Check commentary assignments for this same-day competition
       const commentary = otherComp.commentary || {};
       Object.entries(commentary).forEach(([talentId, assignment]) => {
-        if (assignment.status === STAFF_STATUS.CONFIRMED) {
-          sameDayConflicts.add(talentId);
+        // Include invited, confirmed, and briefed — active commitments
+        // Skip 'assigned' (pre-outreach, speculative) and 'declined'
+        if (assignment.status === STAFF_STATUS.INVITED ||
+            assignment.status === STAFF_STATUS.CONFIRMED ||
+            assignment.status === STAFF_STATUS.BRIEFED) {
+          const existing = sameDayConflictDetails.get(talentId) || [];
+          existing.push({
+            compId: otherCompId,
+            compName: otherComp?.config?.eventName || otherCompId,
+            role: assignment.role,
+            status: assignment.status,
+          });
+          sameDayConflictDetails.set(talentId, existing);
         }
       });
     });
   }
+  // Keep a Set for backward-compatible filtering (available tab)
+  const sameDayConflicts = new Set(sameDayConflictDetails.keys());
 
   // Filter logic for "Search" tab
   const searchTalent = talentList.filter(t => {
@@ -124,8 +138,11 @@ export default function CommentaryPage() {
   // Use the appropriate list based on active tab
   const availableTalent = talentTab === 'available' ? availableFilteredTalent : searchTalent;
 
-  // Sort: ready first, then has-contact, then others
+  // Sort: non-conflicted first, then by status (ready first, then has-contact, then others)
   const sortedAvailable = [...availableTalent].sort((a, b) => {
+    const aConflict = sameDayConflictDetails.has(a.id) ? 1 : 0;
+    const bConflict = sameDayConflictDetails.has(b.id) ? 1 : 0;
+    if (aConflict !== bConflict) return aConflict - bConflict;
     const order = { ready: 0, 'has-contact': 1, 'did-2025': 2, 'need-info': 3 };
     return (order[a.status] ?? 4) - (order[b.status] ?? 4);
   });
@@ -531,6 +548,21 @@ export default function CommentaryPage() {
                               <span className={`px-2 py-0.5 rounded text-xs font-medium ${getStaffStatusColor(assignment.status)}`}>
                                 {getStaffStatusLabel(assignment.status)}
                               </span>
+                              {sameDayConflictDetails.has(assignment.talentId) && (
+                                <span className="relative group">
+                                  <span className="px-1.5 py-0.5 bg-orange-700 text-orange-100 text-xs rounded flex items-center gap-1 cursor-default">
+                                    <ExclamationTriangleIcon className="w-3 h-3" /> Conflict
+                                  </span>
+                                  <div className="absolute left-0 top-full mt-1 bg-zinc-800 border border-zinc-700 rounded-lg p-3 text-xs z-50 w-64 hidden group-hover:block shadow-lg">
+                                    <div className="font-semibold text-orange-300 mb-1">Same-day conflict</div>
+                                    {sameDayConflictDetails.get(assignment.talentId).map(c => (
+                                      <div key={c.compId} className="text-zinc-300">
+                                        Also {getStaffStatusLabel(c.status).toLowerCase()} for {c.compName} as {getRoleLabel(c.role)}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </span>
+                              )}
                             </div>
                             {talent && (
                               <div className="flex items-center gap-3 text-xs text-zinc-400">
@@ -772,6 +804,21 @@ export default function CommentaryPage() {
                             <span className="flex-shrink-0 px-1.5 py-0.5 rounded text-xs bg-green-900 text-green-200 flex items-center gap-1">
                               <CheckIcon className="w-2.5 h-2.5" />
                               Interested
+                            </span>
+                          )}
+                          {sameDayConflictDetails.has(talent.id) && (
+                            <span className="relative group flex-shrink-0">
+                              <span className="px-1.5 py-0.5 bg-orange-700 text-orange-100 text-xs rounded flex items-center gap-1 cursor-default">
+                                <ExclamationTriangleIcon className="w-2.5 h-2.5" /> Conflict
+                              </span>
+                              <div className="absolute right-0 top-full mt-1 bg-zinc-800 border border-zinc-700 rounded-lg p-3 text-xs z-50 w-56 hidden group-hover:block shadow-lg">
+                                <div className="font-semibold text-orange-300 mb-1">Same-day conflict</div>
+                                {sameDayConflictDetails.get(talent.id).map(c => (
+                                  <div key={c.compId} className="text-zinc-300">
+                                    {getStaffStatusLabel(c.status)} for {c.compName} as {getRoleLabel(c.role)}
+                                  </div>
+                                ))}
+                              </div>
                             </span>
                           )}
                         </div>
