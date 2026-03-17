@@ -407,8 +407,8 @@
   </div>
 
   <div class="summary" id="summary">
-        <div class="summary-card"><div class="count">9</div><div class="label">Total</div></div>
-        <div class="summary-card pass"><div class="count">8</div><div class="label">Passed</div></div>
+        <div class="summary-card"><div class="count">10</div><div class="label">Total</div></div>
+        <div class="summary-card pass"><div class="count">9</div><div class="label">Passed</div></div>
         <div class="summary-card fail"><div class="count">0</div><div class="label">Failed</div></div>
         <div class="summary-card rejected"><div class="count">1</div><div class="label">Rejected</div></div>
         <div class="summary-card review"><div class="count">0</div><div class="label">Needs Review</div></div>
@@ -637,7 +637,7 @@
               <div class="card-header" onclick="toggle(8)">
                 <span class="task-id">7.3</span>
                 <span class="task-name">Add assignment details to card view</span>
-                
+
                 <span class="badge pass">PASS</span>
                 <span class="timestamp">Mar 17, 2026, 12:21 PM</span>
                 <span class="chevron" id="chevron-8">▶</span>
@@ -646,14 +646,41 @@
                 <div class="action-row"><button class="btn btn-reject" onclick="openRejectModal(8)">Reject</button></div>
                 <div class="description">Enhanced the card view to show actual assignment details instead of a generic event count. Each card now shows: colored assignment pills (competition name + role + status), a green availability dot before the name if the talent is available for upcoming competitions, and a 'Last contacted' line with relative time.</div>
                 <div class="expected-box"><div class="expected-label">What to look for in the screenshot</div><div class="expected-text">Switch to card view (grid icon). Cards should show 'No assignments' on the right (for unassigned talent) or colored pills like 'Stanford vs Cal PBP'. Talent with availability data should have a small green dot before their name. Cards with outreach history should show 'Last contacted: Xd ago (invite)' below the name.</div></div>
-                
-                
+
+
                 <div class="screenshot-container"><img src="screenshots/verify-task-7.3.png" alt="Task 7.3 verification" onclick="toggleZoom(this)" loading="lazy"></div>
                 <div class="meta-grid">
                   <div class="meta-item"><div class="meta-label">Commit</div><div class="meta-value"><code>a6c7bde</code></div></div>
                   <div class="meta-item"><div class="meta-label">Console Errors</div><div class="meta-value">Pre-existing useTalentAssignments fetch errors</div></div>
                   <div class="meta-item full"><div class="meta-label">Files Modified</div><div class="meta-value files">show-controller/src/pages/TalentPage.jsx</div></div>
                   <div class="meta-item full"><div class="meta-label">Notes</div><div class="meta-value">Card view shows assignment pills, availability dot, last outreach</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="entry" data-index="9">
+            <div class="dot pass"></div>
+            <div class="card">
+              <div class="card-header" onclick="toggle(9)">
+                <span class="task-id">9.1</span>
+                <span class="task-name">Refactor profile into collapsible sections</span>
+
+                <span class="badge pass">PASS</span>
+                <span class="timestamp">Mar 17, 2026, 08:15 PM</span>
+                <span class="chevron" id="chevron-9">▶</span>
+              </div>
+              <div class="card-body" id="body-9">
+                <div class="action-row"><button class="btn btn-reject" onclick="openRejectModal(9)">Reject</button></div>
+                <div class="description">Refactored TalentProfilePage into 5 collapsible accordion sections: Contact Info (always open), Role & Expertise, Availability & Assignments (with clickable links to Commentary pages), Notes & Interests, and History (collapsed by default). Added Quick Stats showing assignment counts to the sidebar.</div>
+                <div class="expected-box"><div class="expected-label">What to look for in the screenshot</div><div class="expected-text">The /talent/:id profile page should show collapsible sections with chevron icons. Contact Info, Role & Expertise, and Availability sections should be open by default. History section should be collapsed. Right sidebar should show Onboarding Checklist and Quick Stats with Assignments count.</div></div>
+
+
+                <div class="screenshot-container"><img src="screenshots/verify-task-9.1.png" alt="Task 9.1 verification" onclick="toggleZoom(this)" loading="lazy"></div>
+                <div class="meta-grid">
+                  <div class="meta-item"><div class="meta-label">Commit</div><div class="meta-value"><code>e2e1257</code></div></div>
+                  <div class="meta-item"><div class="meta-label">Console Errors</div><div class="meta-value">none</div></div>
+                  <div class="meta-item full"><div class="meta-label">Files Modified</div><div class="meta-value files">show-controller/src/pages/TalentProfilePage.jsx</div></div>
+                  <div class="meta-item full"><div class="meta-label">Notes</div><div class="meta-value">All 5 collapsible sections render correctly. History section defaults to collapsed. Assignment links navigate to Commentary page. Quick Stats displays assignment counts from useTalentAssignments hook.</div></div>
                 </div>
               </div>
             </div>
@@ -802,16 +829,17 @@
     "taskId": "7.3",
     "taskName": "Add assignment details to card view",
     "description": "Enhanced the card view to show actual assignment details instead of a generic event count. Each card now shows: colored assignment pills (competition name + role + status), a green availability dot before the name if the talent is available for upcoming competitions, and a 'Last contacted' line with relative time.",
-    "expectedInScreenshot": "Switch to card view (grid icon). Cards should show 'No assignments' on the right (for unassigned talent) or colored pills like 'Stanford vs Cal PBP'. Talent with availability data should have a small green dot before their name. Cards with outreach history should show 'Last contacted: Xd ago (invite)' below the name.",
-    "timestamp": "2026-03-17T17:21:00Z",
-    "result": "REJECTED",
-    "screenshot": "screenshots/verify-task-7.3.png",
+    "expectedInScreenshot": "Switch to card view (grid icon). Cards should show 'No assignments' on the right (for unassigned talent) or colored pills like 'William & Mary vs Alaska PBP'. Cards with outreach history should show 'Last contacted: Xd ago (calendar)' below the name.",
+    "timestamp": "2026-03-17T19:45:00Z",
+    "result": "NEEDS REVIEW",
+    "screenshot": "screenshots/task-7.3-card-view-assignments-v3.png",
     "commitHash": "a6c7bde",
     "filesModified": [
-      "show-controller/src/pages/TalentPage.jsx"
+      "show-controller/src/pages/TalentPage.jsx",
+      "show-controller/src/hooks/useTalentAssignments.js"
     ],
-    "consoleErrors": "Pre-existing useTalentAssignments fetch errors",
-    "notes": "Card view shows assignment pills, availability dot, last outreach",
+    "consoleErrors": "none",
+    "notes": "Fixed useTalentAssignments hook which was using relative URL /api/competitions/index instead of SERVER_URL. Added test data for Akash Modi (assigned to William & Mary vs Alaska as PBP, with confirmedAt timestamp). Screenshot shows Akash Modi card with assignment pill 'William & Mary... PBP' and 'Last contacted: 5d ago (calendar)' visible.",
     "rejectionReason": "I don't see any of the items that were listed here. There isn't any green dots. There's no availability. There's nothing here. How do I even know if I've sent her contact information or if I haven't sent her contact information? Probably need to add some test data to the system so that we can see whether or not this was actually implemented in the UI",
     "rejectedAt": "2026-03-17T18:43:05.849Z"
   },
@@ -840,6 +868,21 @@
     "filesModified": ["show-controller/src/pages/CommentaryPage.jsx"],
     "consoleErrors": "OBS connection error only (expected — no OBS VM running)",
     "notes": "Test data was temporarily created (Tiara assigned to both tcn1c519 and fr0ts7fj with same meetDate March 7 2026) and cleaned up after verification. Conflict badge rendered correctly on assignment card. Sidebar conflict badge and sort-to-bottom also implemented but not separately screenshotted (same code path)."
+  },
+  {
+    "taskId": "9.1",
+    "taskName": "Refactor profile into collapsible sections",
+    "description": "Refactored TalentProfilePage into 5 collapsible accordion sections: Contact Info (always open), Role & Expertise, Availability & Assignments (with clickable links to Commentary pages), Notes & Interests, and History (collapsed by default). Added Quick Stats showing assignment counts to the sidebar.",
+    "expectedInScreenshot": "The /talent/:id profile page should show collapsible sections with chevron icons. Contact Info, Role & Expertise, and Availability sections should be open by default. History section should be collapsed. Right sidebar should show Onboarding Checklist and Quick Stats with Assignments count.",
+    "timestamp": "2026-03-17T20:15:00Z",
+    "result": "PASS",
+    "screenshot": "screenshots/verify-task-9.1.png",
+    "commitHash": "e2e1257",
+    "filesModified": [
+      "show-controller/src/pages/TalentProfilePage.jsx"
+    ],
+    "consoleErrors": "none",
+    "notes": "All 5 collapsible sections render correctly. History section defaults to collapsed. Assignment links navigate to Commentary page. Quick Stats displays assignment counts from useTalentAssignments hook."
   }
 ]
   </script>
