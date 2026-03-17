@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTalentRoster, getStatusLabel, getStatusColor, wagMagLabel } from '../hooks/useTalentRoster';
 import { useTalentAssignments } from '../hooks/useTalentAssignments';
@@ -16,6 +16,8 @@ import {
   BookmarkIcon,
   TrashIcon,
   ChevronDownIcon,
+  ArrowDownTrayIcon,
+  CheckCircleIcon,
 } from '@heroicons/react/24/solid';
 
 const STATUS_OPTIONS = [
@@ -48,7 +50,7 @@ const MAX_SAVED_VIEWS = 10;
  * URL: /talent
  */
 export default function TalentPage() {
-  const { talentList, loading, error, createTalent } = useTalentRoster();
+  const { talentList, loading, error, createTalent, updateTalent } = useTalentRoster();
   const { assignmentsByTalent, loading: assignmentsLoading } = useTalentAssignments(talentList);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -67,6 +69,12 @@ export default function TalentPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [viewMode, setViewMode] = useState(() => localStorage.getItem('crm-talent-view') || 'table');
+
+  // Multi-select state
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [showBulkStatusModal, setShowBulkStatusModal] = useState(false);
+  const [bulkStatus, setBulkStatus] = useState('');
+  const [bulkUpdating, setBulkUpdating] = useState(false);
 
   // Saved views state
   const [savedViews, setSavedViews] = useState(() => {
@@ -147,6 +155,60 @@ export default function TalentPage() {
   }
 
   const hasActiveFilters = search || statusFilter || wagMagFilter || roleFilter;
+
+  // Clear selection when switching to card view
+  const handleViewChange = useCallback((mode) => {
+    setViewMode(mode);
+    localStorage.setItem('crm-talent-view', mode);
+    if (mode === 'cards') {
+      setSelectedIds([]); // Clear selection when switching to cards
+    }
+  }, []);
+
+  // Bulk CSV export
+  const handleExportCSV = useCallback(() => {
+    const selectedTalent = talentList.filter(t => selectedIds.includes(t.id));
+    const rows = selectedTalent.map(t => {
+      const aData = assignmentsByTalent[t.id] || {};
+      const assignmentNames = (aData.assignments || []).map(a => a.compName).join(', ');
+      const lastOutreachDate = aData.lastOutreach ? new Date(aData.lastOutreach).toLocaleDateString() : '';
+      return [
+        t.name || '',
+        getStatusLabel(t.status),
+        t.wagMag || '',
+        t.commentaryRole || '',
+        t.phone || '',
+        t.email || '',
+        assignmentNames,
+        lastOutreachDate,
+      ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(',');
+    });
+    const headers = 'Name,Status,WAG/MAG,Role,Phone,Email,Assignments,Last Outreach';
+    const csv = [headers, ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `talent-export-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [selectedIds, talentList, assignmentsByTalent]);
+
+  // Bulk status update
+  const handleBulkStatusUpdate = useCallback(async () => {
+    if (!bulkStatus) return;
+    setBulkUpdating(true);
+    try {
+      await Promise.all(selectedIds.map(id => updateTalent(id, { status: bulkStatus })));
+      setSelectedIds([]);
+      setShowBulkStatusModal(false);
+      setBulkStatus('');
+    } finally {
+      setBulkUpdating(false);
+    }
+  }, [selectedIds, bulkStatus]);
 
   const [newTalent, setNewTalent] = useState({
     name: '',
@@ -351,14 +413,14 @@ export default function TalentPage() {
           <div className="flex items-center gap-1 ml-auto">
             <span className="text-zinc-500 text-sm mr-2">{filtered.length} shown</span>
             <button
-              onClick={() => { setViewMode('table'); localStorage.setItem('crm-talent-view', 'table'); }}
+              onClick={() => handleViewChange('table')}
               className={`p-1.5 rounded ${viewMode === 'table' ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
               title="Table view"
             >
               <TableCellsIcon className="w-4 h-4" />
             </button>
             <button
-              onClick={() => { setViewMode('cards'); localStorage.setItem('crm-talent-view', 'cards'); }}
+              onClick={() => handleViewChange('cards')}
               className={`p-1.5 rounded ${viewMode === 'cards' ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
               title="Card view"
             >
@@ -381,6 +443,8 @@ export default function TalentPage() {
             talents={filtered}
             assignmentsByTalent={assignmentsByTalent}
             loading={assignmentsLoading}
+            selectedIds={selectedIds}
+            onSelectionChange={setSelectedIds}
           />
         ) : (
           <div className="space-y-2">
@@ -569,6 +633,83 @@ export default function TalentPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Status Confirmation Modal */}
+      {showBulkStatusModal && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-zinc-900 rounded-xl border border-zinc-800 w-full max-w-sm">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
+              <h2 className="text-lg font-semibold text-white">Confirm Status Change</h2>
+              <button onClick={() => setShowBulkStatusModal(false)} className="text-zinc-400 hover:text-white">
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <p className="text-zinc-300">
+                Update status to <span className="font-semibold text-white">{STATUS_OPTIONS.find(o => o.value === bulkStatus)?.label}</span> for <span className="font-semibold text-white">{selectedIds.length}</span> {selectedIds.length === 1 ? 'person' : 'people'}?
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowBulkStatusModal(false)}
+                  className="px-4 py-2 text-zinc-400 hover:text-white text-sm"
+                  disabled={bulkUpdating}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleBulkStatusUpdate}
+                  disabled={bulkUpdating}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 rounded-lg text-sm font-medium transition-colors"
+                >
+                  {bulkUpdating ? 'Updating...' : 'Confirm'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Action Bar (when selection > 0) */}
+      {selectedIds.length > 0 && viewMode === 'table' && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl px-4 py-3 flex items-center gap-4 z-40">
+          <div className="flex items-center gap-2">
+            <CheckCircleIcon className="w-5 h-5 text-blue-400" />
+            <span className="text-sm font-medium text-white">{selectedIds.length} selected</span>
+          </div>
+          <div className="w-px h-6 bg-zinc-700" />
+          <div className="flex items-center gap-2">
+            <select
+              value=""
+              onChange={(e) => {
+                if (e.target.value) {
+                  setBulkStatus(e.target.value);
+                  setShowBulkStatusModal(true);
+                }
+              }}
+              className="px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
+            >
+              <option value="">Set Status...</option>
+              {STATUS_OPTIONS.filter(o => o.value).map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+            <button
+              onClick={handleExportCSV}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-lg text-sm text-white transition-colors"
+            >
+              <ArrowDownTrayIcon className="w-4 h-4" />
+              Export CSV
+            </button>
+            <button
+              onClick={() => setSelectedIds([])}
+              className="px-3 py-1.5 text-zinc-400 hover:text-white text-sm transition-colors"
+            >
+              Clear
+            </button>
           </div>
         </div>
       )}

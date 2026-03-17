@@ -25,7 +25,7 @@
 | Phase 7 | TalentPage table view + assignment/availability columns | 6 | NOT STARTED |
 | Phase 8 | CommentaryPage: kebab menu + conflict badges + kanban | 3 | NOT STARTED |
 | Phase 9 | TalentProfilePage: collapsible sections + activity timeline | 2 | NOT STARTED |
-| Phase 10 | Power features: Cmd+K, saved filters, bulk ops | 3 | IN PROGRESS |
+| Phase 10 | Power features: Cmd+K, saved filters, bulk ops | 3 | COMPLETE |
 | **Total** | | **47** | |
 
 ---
@@ -1351,7 +1351,7 @@ For `talentRoster/`, a one-shot `get()` is fine — talent records are small (no
 
 ---
 
-### Task 10.3: Add bulk operations with multi-select — NOT STARTED
+### Task 10.3: Add bulk operations with multi-select — COMPLETE
 
 **Files:**
 - `show-controller/src/pages/TalentPage.jsx`

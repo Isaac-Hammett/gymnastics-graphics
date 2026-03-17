@@ -1,17 +1,58 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getStatusLabel, getStatusColor, wagMagLabel } from '../../hooks/useTalentRoster';
 import { PhoneIcon, ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/solid';
 
 /**
- * TalentTable - Sortable table view for talent roster.
+ * TalentTable - Sortable table view for talent roster with multi-select support.
  *
- * Columns: Name, Status, WAG/MAG, Role, Assignments, Available For, Last Outreach, Phone
+ * Columns: Checkbox, Name, Status, WAG/MAG, Role, Assignments, Available For, Last Outreach, Phone
  */
-export default function TalentTable({ talents, assignmentsByTalent, loading }) {
+export default function TalentTable({ talents, assignmentsByTalent, loading, selectedIds, onSelectionChange }) {
   const navigate = useNavigate();
   const [sortColumn, setSortColumn] = useState('name');
   const [sortDir, setSortDir] = useState('asc');
+  const lastClickedIndex = useRef(null);
+
+  // Selection helpers
+  const isSelectable = !!onSelectionChange;
+  const selectedSet = new Set(selectedIds || []);
+
+  const handleSelectAll = useCallback((e) => {
+    if (!onSelectionChange) return;
+    if (e.target.checked) {
+      // Select all currently visible/filtered talents
+      onSelectionChange(sorted.map(t => t.id));
+    } else {
+      onSelectionChange([]);
+    }
+  }, [onSelectionChange]);
+
+  const handleRowSelect = useCallback((talentId, index, e) => {
+    if (!onSelectionChange) return;
+    e.stopPropagation();
+
+    const newSelection = new Set(selectedSet);
+
+    if (e.shiftKey && lastClickedIndex.current !== null) {
+      // Shift+click range select
+      const start = Math.min(lastClickedIndex.current, index);
+      const end = Math.max(lastClickedIndex.current, index);
+      for (let i = start; i <= end; i++) {
+        newSelection.add(sorted[i].id);
+      }
+    } else {
+      // Regular click toggles the item
+      if (newSelection.has(talentId)) {
+        newSelection.delete(talentId);
+      } else {
+        newSelection.add(talentId);
+      }
+      lastClickedIndex.current = index;
+    }
+
+    onSelectionChange(Array.from(newSelection));
+  }, [onSelectionChange, selectedSet]);
 
   function handleSort(column) {
     if (sortColumn === column) {
@@ -79,6 +120,19 @@ export default function TalentTable({ talents, assignmentsByTalent, loading }) {
         <table className="w-full text-sm text-left">
           <thead className="sticky top-0 bg-zinc-900 border-b border-zinc-800 z-10">
             <tr>
+              {isSelectable && (
+                <th className="px-3 py-3 w-[40px]">
+                  <input
+                    type="checkbox"
+                    checked={sorted.length > 0 && selectedSet.size === sorted.length}
+                    ref={(el) => {
+                      if (el) el.indeterminate = selectedSet.size > 0 && selectedSet.size < sorted.length;
+                    }}
+                    onChange={handleSelectAll}
+                    className="rounded border-zinc-600 bg-zinc-800 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
+                  />
+                </th>
+              )}
               <SortableHeader
                 label="Name"
                 column="name"
@@ -141,12 +195,15 @@ export default function TalentTable({ talents, assignmentsByTalent, loading }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-800">
-            {sorted.map((talent) => (
+            {sorted.map((talent, index) => (
               <TalentRow
                 key={talent.id}
                 talent={talent}
                 assignmentData={assignmentsByTalent[talent.id]}
                 onClick={() => navigate(`/talent/${talent.id}`)}
+                isSelectable={isSelectable}
+                isSelected={selectedSet.has(talent.id)}
+                onSelect={(e) => handleRowSelect(talent.id, index, e)}
               />
             ))}
           </tbody>
@@ -179,7 +236,7 @@ function SortableHeader({ label, column, sortColumn, sortDir, onClick, className
   );
 }
 
-function TalentRow({ talent, assignmentData, onClick }) {
+function TalentRow({ talent, assignmentData, onClick, isSelectable, isSelected, onSelect }) {
   const statusBadge = getStatusColor(talent.status);
   const wm = wagMagLabel(talent.wagMag);
   const assignments = assignmentData?.assignments || [];
@@ -191,8 +248,20 @@ function TalentRow({ talent, assignmentData, onClick }) {
   return (
     <tr
       onClick={onClick}
-      className="bg-zinc-950 hover:bg-zinc-900 cursor-pointer transition-colors"
+      className={`bg-zinc-950 hover:bg-zinc-900 cursor-pointer transition-colors ${isSelected ? 'bg-blue-950/30' : ''}`}
     >
+      {/* Checkbox */}
+      {isSelectable && (
+        <td className="px-3 py-3">
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onClick={onSelect}
+            onChange={() => {}} // Controlled by onClick
+            className="rounded border-zinc-600 bg-zinc-800 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
+          />
+        </td>
+      )}
       {/* Name */}
       <td className="px-3 py-3">
         <div className="flex items-center gap-2">
