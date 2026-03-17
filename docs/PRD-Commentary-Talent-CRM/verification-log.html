@@ -829,6 +829,19 @@
     "filesModified": ["show-controller/src/components/crm/KebabMenu.jsx", "show-controller/src/pages/CommentaryPage.jsx"],
     "consoleErrors": "OBS connection errors only (expected — no OBS VM running)",
     "notes": "Kebab menu opens/closes correctly. 'Remove from Competition' in Danger section works (tested by assigning and removing talent). 'Mark Declined' hidden when status is Assigned (correct — only shows for Invited status). Close on click-outside and Escape key supported."
+  },
+  {
+    "taskId": "8.2",
+    "taskName": "Add conflict detection badges with hover popovers",
+    "description": "Widened same-day conflict detection from CONFIRMED-only to invited/confirmed/briefed statuses. Added orange 'Conflict' badge with hover popover on assignment cards showing which other competition the talent is committed to. Added same badge in sidebar search results and sorted conflicted talent to bottom.",
+    "expectedInScreenshot": "Tiara DeTommaso's assignment card under 'Play by Play / Lead' should show an orange 'Conflict' badge with warning triangle icon next to the 'Assigned' status badge. The badge appears because she is confirmed for Pink Invitational 2026 on the same date (March 7, 2026).",
+    "timestamp": "2026-03-17T19:10:00Z",
+    "result": "PASS",
+    "screenshot": "screenshots/verify-task-8.2.png",
+    "commitHash": "9f994d4",
+    "filesModified": ["show-controller/src/pages/CommentaryPage.jsx"],
+    "consoleErrors": "OBS connection error only (expected — no OBS VM running)",
+    "notes": "Test data was temporarily created (Tiara assigned to both tcn1c519 and fr0ts7fj with same meetDate March 7 2026) and cleaned up after verification. Conflict badge rendered correctly on assignment card. Sidebar conflict badge and sort-to-bottom also implemented but not separately screenshotted (same code path)."
   }
 ]
   </script>
