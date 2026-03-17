@@ -2,7 +2,7 @@
 
 **PRD:** PRD-Commentary-Talent-CRM-2026-03-10.md
 
-> **Phase 1 (Talent Roster UI) is already complete.** This plan covers Phases 0, 2, 3, 4, 5.
+> **Phase 1 (Talent Roster UI) is already complete.** Phases 0, 2, 3, 4, 5 are COMPLETE. Phases 6-10 (UI Overhaul) are NOT STARTED.
 
 ---
 
@@ -21,17 +21,12 @@
 | Phase 5 | Annual Survey + Pre-Production Alerts | 6 | COMPLETE |
 | Phase 5-Deploy | Deploy Phase 5 changes | 1 | COMPLETE ✓ |
 | Final-Deploy (Phases 0-5) | Full acceptance criteria check | 2 | COMPLETE |
-| Phase 6 | UI Foundation: Cross-competition data hook + design tokens | 2 | NOT STARTED |
-| Phase 6-Deploy | Deploy Phase 6 changes | 2 | NOT STARTED |
+| Phase 6 | UI Foundation: Competition index endpoint + cross-competition data hook + design tokens | 3 | NOT STARTED |
 | Phase 7 | TalentPage table view + assignment/availability columns | 4 | NOT STARTED |
-| Phase 7-Deploy | Deploy Phase 7 changes | 2 | NOT STARTED |
 | Phase 8 | CommentaryPage: kebab menu + conflict badges + kanban | 3 | NOT STARTED |
-| Phase 8-Deploy | Deploy Phase 8 changes | 2 | NOT STARTED |
 | Phase 9 | TalentProfilePage: collapsible sections + activity timeline | 2 | NOT STARTED |
-| Phase 9-Deploy | Deploy Phase 9 changes | 2 | NOT STARTED |
 | Phase 10 | Power features: Cmd+K, saved filters, bulk ops | 3 | NOT STARTED |
-| Final-Deploy (UI) | Final deploy + full UI verification | 2 | NOT STARTED |
-| **Total** | | **54** | |
+| **Total** | | **45** | |
 
 ---
 
@@ -877,7 +872,32 @@ Update `PRD-Commentary-Talent-CRM-2026-03-10.md` status to `COMPLETE`. Commit.
 
 ## Phase 6: UI Foundation — Cross-Competition Data + Design Tokens
 
-> **Deploy rule:** Commit each task. Do NOT deploy until Phase 6-Deploy.
+> **Every task must deploy + verify on production before being marked COMPLETE.**
+> **Server change:** Task 6.0 adds a new server endpoint — deploy must include coordinator restart.
+
+### Task 6.0: Add competition index server endpoint — IN PROGRESS
+
+**File:** `server/index.js`
+
+**Why this is needed:** Firebase RTDB client SDK has no shallow query — `get(ref(db, 'competitions'))` downloads the ENTIRE multi-MB competitions tree (scores, lineups, configs, rosters for 50+ competitions). The previous plan said "use `Object.keys()` to discover comp IDs" but that still downloads everything first. A server endpoint solves this by reading Firebase with the Admin SDK and returning only the minimal data needed.
+
+**Change:** Add a lightweight endpoint that returns competition IDs + minimal metadata:
+
+```javascript
+// GET /api/competitions/index
+// Returns: { [compId]: { eventName, meetDate, gender } }
+// Implementation: reads competitions/ from Firebase Admin SDK,
+//   extracts only config.eventName, config.meetDate, config.gender per competition
+//   (Firebase Admin SDK can read efficiently from the server)
+// Cache: Keep result in memory for 60 seconds (simple timestamp check)
+//   to avoid repeated full reads on concurrent requests
+```
+
+This endpoint is called once by `useTalentAssignments` to discover competition IDs, then the hook does targeted `get()` calls on `competitions/{compId}/commentary` only.
+
+**Implements:** Lightweight competition index for CRM queries
+
+---
 
 ### Task 6.1: Create `useTalentAssignments` hook — NOT STARTED
 
@@ -885,8 +905,30 @@ Update `PRD-Commentary-Talent-CRM-2026-03-10.md` status to `COMPLETE`. Commit.
 
 **Why this is needed:** TalentPage currently only reads `talentRoster/`. Commentary assignments live at `competitions/{compId}/commentary/{talentId}` — completely siloed per competition. Without joining these, you can't see who is assigned to what, who was invited, or who has responded.
 
+**PERFORMANCE WARNING:** `useCompetitions()` loads the ENTIRE `competitions/` tree (scores, lineups, configs, rosters — megabytes for 50+ competitions). TalentPage does NOT currently call `useCompetitions()`. Adding it would massively increase page load bandwidth.
+
+**DATA FETCHING STRATEGY — IMPORTANT:** Firebase RTDB `onValue` always downloads the entire node — you CANNOT filter server-side. Attaching `onValue` to `competitions/` would download the full multi-MB tree regardless of what you discard in the callback.
+
+Instead, use a **two-step approach**:
+
+```javascript
+// Step 1: Fetch competition index from coordinator server (lightweight):
+//   GET /api/competitions/index → { [compId]: { eventName, meetDate, gender } }
+//   This returns ONLY IDs + minimal metadata — NOT the full competition tree.
+//   The server endpoint (Task 6.0) reads Firebase server-side and caches for 60s.
+//
+// Step 2: For each compId, do targeted get() on ONLY:
+//   competitions/{compId}/commentary  (for assignment data)
+//   The eventName + meetDate already came from the index — no need to read config.
+//
+// Refresh: setInterval every 30 seconds re-fetches commentary data.
+//   Re-fetch the competition index every 5 minutes (it rarely changes).
+//
+// This avoids downloading scores, lineups, rosters, teamData etc.
+```
+
 **What it does:**
-- Accepts the `competitions` object from `useCompetitions()` as a parameter — do NOT create a new `onValue` listener. `useCompetitions()` (in `show-controller/src/hooks/useCompetitions.js`) already loads the entire `competitions/` tree. Adding a second listener would double bandwidth and memory.
+- Fetches competition IDs + metadata from `GET /api/competitions/index` (Task 6.0), then does targeted `get()` calls on `competitions/{compId}/commentary` only. Refreshes commentary every 30 seconds via `setInterval`. Pages that already have `useCompetitions()` loaded (like CommentaryPage) should pass their `competitions` object instead — the hook should accept an optional `competitions` parameter and skip creating its own fetcher when provided.
 - For each competition, extracts `commentary` assignments
 - Builds a map: `{ [talentId]: [ { compId, compName, meetDate, role, status, invitedAt, confirmedAt, ... } ] }`
 - Derives per-talent summary fields:
@@ -898,11 +940,15 @@ Update `PRD-Commentary-Talent-CRM-2026-03-10.md` status to `COMPLETE`. Commit.
 - Also computes availability data per talent:
   - `availableFor` — array of `{ compId, compName, source }` where source is "interested" or "survey"
   - `availabilityDot` — "green" (available for 1+ upcoming), "yellow" (did prior season but hasn't responded), "gray" (no availability data)
-- Exports: `useTalentAssignments(talentList, competitions)` returning `{ assignmentsByTalent, loading }`
+- Exports: `useTalentAssignments(talentList, competitions?)` returning `{ assignmentsByTalent, loading }`
+  - `competitions` is optional — if omitted, the hook creates its own targeted fetcher via the server endpoint
+  - `loading` is `true` until first fetch completes — consumers should show a loading indicator
 
-**Pattern to follow:** `show-controller/src/hooks/useCommentaryStaff.js` for data shape patterns, but this hook is a pure derivation (useMemo) over data already loaded by `useCompetitions()` — no new Firebase listeners.
+**Pattern to follow:** `show-controller/src/hooks/useCommentaryStaff.js` for Firebase `onValue` listener pattern.
 
-**Important:** The `competitions` parameter comes from `useCompetitions()` which already loads the full tree. This hook should use `useMemo` to derive assignment data from the passed-in competitions object — only extract `config.eventName`, `config.meetDate`, and `commentary` from each competition.
+**Important — dual mode:**
+- When `competitions` is passed (from a page that already calls `useCompetitions()`): use `useMemo` to derive data from the passed object — no new fetching.
+- When `competitions` is NOT passed (e.g., TalentPage): fetch competition index from `GET /api/competitions/index`, then do targeted `get()` calls on `competitions/{compId}/commentary` per competition, refreshed every 30 seconds via `setInterval`. Clean up the interval in the `useEffect` return function.
 
 ```javascript
 // Return shape per talent:
@@ -930,6 +976,13 @@ Update `PRD-Commentary-Talent-CRM-2026-03-10.md` status to `COMPLETE`. Commit.
 - `show-controller/src/pages/TalentPage.jsx`
 - `show-controller/src/pages/TalentProfilePage.jsx`
 - `show-controller/src/pages/CommentaryPage.jsx`
+- `show-controller/src/pages/BookingPage.jsx`
+- `show-controller/src/pages/SurveyPage.jsx`
+- `show-controller/src/pages/TalentDiscoveryPage.jsx`
+- `show-controller/src/pages/SettingsPage.jsx`
+- `show-controller/src/pages/HomePage.jsx`
+
+**Note:** Check ALL 8 files for `gray-*` usage. The first 3 are the primary targets (known mixed usage). The remaining 5 were built in Phases 2-5 and may have inherited `gray-*` tokens. Grep each file; skip any that already use only `zinc-*`.
 
 **Problem:** TalentPage uses `bg-gray-900/800/700` while CommentaryPage uses `bg-zinc-950/900/800`. Border colors vary between `border-gray-700`, `border-zinc-800`, `border-zinc-700`. Modals use either `bg-black/60` or `bg-black bg-opacity-75`.
 
@@ -955,37 +1008,7 @@ Update `PRD-Commentary-Talent-CRM-2026-03-10.md` status to `COMPLETE`. Commit.
 
 ---
 
-## Phase 6-Deploy: Deploy Phase 6 Changes
-
-> **This is a deploy task.** Build, upload, and verify all Phase 6 changes together.
-
-### Task 6-D.1: Build and deploy to production — NOT STARTED
-
-**Frontend changed?** Yes — show-controller files modified.
-```bash
-cd show-controller && npm run build
-# then upload dist per CLAUDE.md Step 1
-```
-
-**Graphics files changed?** No.
-**Server changed?** No.
-
-### Task 6-D.2: Verify Phase 6 on production — NOT STARTED
-
-Navigate to test URLs with Playwright. Take screenshots to `docs/PRD-Commentary-Talent-CRM/screenshots/`.
-
-**Checks:**
-- [ ] Navigate to `https://commentarygraphic.com/talent` — page renders with consistent zinc color scheme (no gray-900 backgrounds visible)
-- [ ] Navigate to any competition's commentary page — consistent zinc colors
-- [ ] No console errors on either page
-- [ ] Screenshot → `verify-phase6-talent.png`
-- [ ] Screenshot → `verify-phase6-commentary.png`
-
----
-
 ## Phase 7: TalentPage Table View + Cross-Competition Visibility
-
-> **Deploy rule:** Commit each task. Do NOT deploy until Phase 7-Deploy.
 
 ### Task 7.1: Create TalentTable component with sortable columns — NOT STARTED
 
@@ -1013,9 +1036,11 @@ Navigate to test URLs with Playwright. Take screenshots to `docs/PRD-Commentary-
 - Status and WAG/MAG render as colored badges (reuse existing `getStatusColor`, `wagMagLabel`)
 - Assignments column shows up to 2 competition name pills with role abbreviation and status color, then "+N more" if >2
 - Available For column shows green dot + count of competitions where `interested[compId]` or `surveyAvailability[compId]` is true
-- Last Outreach shows relative time ("2d ago") with full date on hover via `title` attribute
+- Last Outreach shows relative time ("2d ago") with full date on hover via `title` attribute. Show "—" when no outreach exists.
 - Fixed table header (sticky top) so it stays visible while scrolling
-- Accept `talents` array and `assignmentsByTalent` map as props
+- Accept `talents` array, `assignmentsByTalent` map, and `loading` boolean as props
+- When `loading` is true, show a subtle loading bar or spinner above the table (not a full-page spinner — the talent data is already available, only assignment data is loading)
+- **Horizontal scroll:** Wrap table in `overflow-x-auto` container. At 1024px width the 8 columns (~900px+ fixed widths) may overflow — horizontal scroll is acceptable.
 
 **Pattern to follow:** Standard React table with `useState` for sort column/direction. No external table library needed.
 
@@ -1026,13 +1051,13 @@ Navigate to test URLs with Playwright. Take screenshots to `docs/PRD-Commentary-
 **File:** `show-controller/src/pages/TalentPage.jsx`
 
 **Changes:**
-1. Import `TalentTable`, `useTalentAssignments`, and `useCompetitions`
-2. Call `const { competitions } = useCompetitions()` then `const { assignmentsByTalent } = useTalentAssignments(talents, competitions)` — the hook takes `competitions` as its second arg (no new Firebase listener)
+1. Import `TalentTable` and `useTalentAssignments`
+2. Call `const { assignmentsByTalent } = useTalentAssignments(talents)` — do NOT import `useCompetitions()` here. The hook will create its own lightweight listener when no `competitions` arg is passed (see Task 6.1 dual-mode design).
 3. Add `viewMode` state: `'table'` (default) or `'cards'`
-3. Persist view preference in `localStorage` key `crm-talent-view`
-4. Add toggle buttons in the filter row (right side, before the count): `TableCellsIcon` / `Squares2X2Icon` from Heroicons
-5. Conditionally render `<TalentTable>` or the existing card list based on `viewMode`
-6. Pass `filtered` (already-filtered talent list) and `assignmentsByTalent` to `TalentTable`
+4. Persist view preference in `localStorage` key `crm-talent-view`
+5. Add toggle buttons in the filter row (right side, before the count): `TableCellsIcon` / `Squares2X2Icon` from Heroicons
+6. Conditionally render `<TalentTable>` or the existing card list based on `viewMode`
+7. Pass `filtered` (already-filtered talent list) and `assignmentsByTalent` to `TalentTable`
 
 **Do NOT delete the card view code.** Keep both views.
 
@@ -1073,40 +1098,7 @@ Navigate to test URLs with Playwright. Take screenshots to `docs/PRD-Commentary-
 
 ---
 
-## Phase 7-Deploy: Deploy Phase 7 Changes
-
-> **This is a deploy task.** Build, upload, and verify all Phase 7 changes together.
-
-### Task 7-D.1: Build and deploy to production — NOT STARTED
-
-**Frontend changed?** Yes.
-```bash
-cd show-controller && npm run build
-# then upload dist per CLAUDE.md Step 1
-```
-
-**Graphics files changed?** No.
-**Server changed?** No.
-
-### Task 7-D.2: Verify Phase 7 on production — NOT STARTED
-
-**Checks:**
-- [ ] Navigate to `https://commentarygraphic.com/talent` — table view renders by default
-- [ ] Table has sortable column headers (click "Name" → sorts alphabetically)
-- [ ] Assignments column shows competition names with colored status pills
-- [ ] Available For column shows green/yellow/gray dots
-- [ ] Last Outreach column shows relative dates
-- [ ] Click a table row — navigates to talent profile
-- [ ] Toggle to card view — cards show assignment details instead of generic count
-- [ ] No console errors
-- [ ] Screenshot → `verify-phase7-table.png`
-- [ ] Screenshot → `verify-phase7-cards.png`
-
----
-
 ## Phase 8: CommentaryPage Cleanup — Kebab Menu + Conflicts + Kanban
-
-> **Deploy rule:** Commit each task. Do NOT deploy until Phase 8-Deploy.
 
 ### Task 8.1: Replace button overload with kebab overflow menu — NOT STARTED
 
@@ -1144,7 +1136,7 @@ Remove from Competition   (red text)
 
 **Implementation:**
 1. Create a `KebabMenu` component at `show-controller/src/components/crm/KebabMenu.jsx` (extracted — reused by KanbanBoard in Task 8.3)
-2. `useState` for open/closed, close on click outside (`useEffect` + `document.addEventListener('mousedown', ...)`)
+2. `useState` for open/closed, close on click outside (`useEffect` + `document.addEventListener('mousedown', ...)`), close on Escape key (`document.addEventListener('keydown', ...)` when open)
 3. Position: absolute, right-aligned, `z-50`
 4. Section headers as small gray uppercase text, items as clickable rows with icon + label
 5. Delete the existing inline button rows (lines 559-651) and replace with: primary action + kebab
@@ -1161,12 +1153,12 @@ Remove from Competition   (red text)
 
 **Changes:**
 
-1. **Extend conflict data:** Build a map with conflict details instead of just a Set. Also widen the scope — the existing code only checks `CONFIRMED` status, but conflicts should flag ALL non-declined statuses (assigned, invited, confirmed, briefed) so the coordinator sees warnings before double-booking:
+1. **Extend conflict data:** Build a map with conflict details instead of just a Set. Widen the scope from `CONFIRMED` only to include `invited`, `confirmed`, and `briefed` statuses (skip `assigned` — speculative assignments before outreach are not real conflicts and would create noisy false positives):
    ```javascript
    // Before: sameDayConflicts = Set of talentIds (CONFIRMED only)
    // After: sameDayConflictDetails = Map<talentId, [{ compId, compName, role, status }]>
-   // Include ALL statuses except 'declined' — a talent who is 'invited' to another same-day
-   // meet is still a potential conflict the coordinator should know about.
+   // Include invited, confirmed, and briefed — these represent active commitments.
+   // Skip 'assigned' (pre-outreach, speculative) and 'declined' (not competing).
    ```
 
 2. **Assignment card badge:** Orange warning badge next to name with hover popover:
@@ -1200,15 +1192,29 @@ Remove from Competition   (red text)
 - Header: status label + count badge
 - Cards: talent name, role badge, phone link, primary action button, kebab menu (reuse from Task 8.1)
 
+**Empty columns:** Show placeholder text "No talent in this status" with a subtle dashed border (`border-dashed border-zinc-700`) to indicate it's a valid drop target.
+
 **Drag and drop:** HTML5 drag-and-drop API (no external library). `draggable="true"`, `onDragStart`, `onDragOver` (prevent default), `onDrop`.
 
+**Visual drop-target feedback:** On `onDragEnter`, add `bg-zinc-800/50 border-blue-500/50` to the target column. On `onDragLeave`, remove it. Use a `dragOverColumn` state variable to track which column is highlighted. This gives the user clear visual feedback about where they're dropping.
+
+**Firebase write on drop:** When a valid drop occurs, update the status in Firebase:
+```javascript
+// On valid drop:
+import { db, ref, update } from '../../lib/firebase';
+update(ref(db, `competitions/${compId}/commentary/${talentId}`), { status: newStatus });
+// Firebase onValue listener will auto-update the UI — no local state mutation needed.
+```
+
 **Valid drag transitions (must enforce):**
-- Forward only, matching `STATUS_FLOW`: assigned → invited → confirmed → briefed
+- Forward movement matching `STATUS_FLOW`: assigned → invited → confirmed → briefed
+- Forward skipping IS allowed (e.g., assigned → confirmed is valid — coordinator confirmed talent via text without formal invite)
 - Any status → declined (always allowed)
 - No backward drags (e.g., confirmed → invited is rejected)
-- No skipping statuses (e.g., assigned → confirmed is rejected)
 - Declined is terminal — cannot drag OUT of declined column
 - On invalid drop: show brief toast "Cannot move from X to Y" and snap card back
+
+**Error handling on drop:** Wrap the Firebase `update()` call in a try/catch. On failure, show a red toast "Failed to update status — check your connection" so the coordinator knows the drag didn't persist.
 
 **Integration with CommentaryPage:**
 1. Add `viewMode` state: `'list'` (default) or `'kanban'`
@@ -1218,36 +1224,7 @@ Remove from Competition   (red text)
 
 ---
 
-## Phase 8-Deploy: Deploy Phase 8 Changes
-
-> **This is a deploy task.**
-
-### Task 8-D.1: Build and deploy to production — NOT STARTED
-
-**Frontend changed?** Yes.
-```bash
-cd show-controller && npm run build
-# then upload dist per CLAUDE.md Step 1
-```
-
-### Task 8-D.2: Verify Phase 8 on production — NOT STARTED
-
-**Checks:**
-- [ ] Assignment cards show only primary action button + kebab menu (no button overload)
-- [ ] Click kebab — dropdown opens with grouped sections
-- [ ] Click outside kebab — closes
-- [ ] If talent has same-day conflict, orange badge visible with hover popover
-- [ ] Toggle to kanban view — columns render for each status
-- [ ] Toggle back to list view — original layout
-- [ ] No console errors
-- [ ] Screenshot → `verify-phase8-kebab.png`
-- [ ] Screenshot → `verify-phase8-kanban.png`
-
----
-
 ## Phase 9: TalentProfilePage — Collapsible Sections + Activity Timeline
-
-> **Deploy rule:** Commit each task. Do NOT deploy until Phase 9-Deploy.
 
 ### Task 9.1: Refactor profile into collapsible sections — NOT STARTED
 
@@ -1274,7 +1251,7 @@ cd show-controller && npm run build
 2. Organize existing fields into sections:
    - **Contact Info** (always open): name, phone, email, discord
    - **Role & Expertise** (open): wagMag, commentaryRole, canProduce, affiliation, conference
-   - **Availability & Assignments** (open): current assignments, interested/survey availability, parsed availability notes. Call `useTalentAssignments([talent], competitions)` with a single-element array, then read `assignmentsByTalent[talentId]`. The hook uses `useMemo` so a 1-element input is cheap. `competitions` comes from `useCompetitions()` — call it in TalentProfilePage (it already loads on this page via the existing talent data flow).
+   - **Availability & Assignments** (open): current assignments, interested/survey availability, parsed availability notes. Call `useTalentAssignments([talent])` with a single-element array (no `competitions` arg — the hook will use its targeted fetcher), then read `assignmentsByTalent[talentId]`. Each assignment row should be a clickable `<Link to={/${compId}/commentary}>` so the coordinator can navigate directly to that competition's commentary page.
    - **Notes & Interests** (open): notes, otherInterests, linkedIn, instagram
    - **History** (collapsed by default): competitionHistory, discoveredFrom, createdAt
 
@@ -1295,42 +1272,17 @@ cd show-controller && npm run build
    | `briefing` | `DocumentTextIcon` | `text-purple-400` |
    | `calendar` | `CalendarIcon` | `text-blue-400` |
    | `note` | `PencilIcon` | `text-zinc-400` |
+   | `preproduction` | `VideoCameraIcon` | `text-amber-400` |
 
 2. Timeline layout: vertical line on left, dots at each entry, content to right
 
-3. Filter chips at top: `['all', 'imessage', 'invite', 'briefing', 'calendar']`
+3. Filter chips at top: `['all', 'imessage', 'invite', 'briefing', 'calendar', 'preproduction', 'note']` — must include `preproduction` type since Phase 3's Schedule Pre-Prod action writes entries with `type: 'preproduction'`, and `note` type since screenshot upload (Task 3.5) writes entries with `type: 'note'`
 
-4. Relative timestamps via inline `timeAgo` helper (no library)
-
----
-
-## Phase 9-Deploy: Deploy Phase 9 Changes
-
-### Task 9-D.1: Build and deploy to production — NOT STARTED
-
-**Frontend changed?** Yes.
-```bash
-cd show-controller && npm run build
-# then upload dist per CLAUDE.md Step 1
-```
-
-### Task 9-D.2: Verify Phase 9 on production — NOT STARTED
-
-**Checks:**
-- [ ] Navigate to talent profile with assignments — collapsible sections visible
-- [ ] "Availability & Assignments" section shows cross-competition data
-- [ ] Click chevron on "History" — section toggles
-- [ ] Communications tab shows timeline with type icons
-- [ ] Filter chips work
-- [ ] No console errors
-- [ ] Screenshot → `verify-phase9-profile.png`
-- [ ] Screenshot → `verify-phase9-timeline.png`
+4. Relative timestamps via inline `timeAgo` helper (no library). Reference existing pattern in `show-controller/src/components/ScoreBugPanel.jsx` lines 30-48 for the format (`Xs ago`, `Xm ago`). Extend it to handle hours and days: `Xh ago`, `Xd ago`.
 
 ---
 
 ## Phase 10: Power Features — Cmd+K, Saved Filters, Bulk Ops
-
-> **Deploy rule:** Commit each task. Do NOT deploy until Final-Deploy (UI).
 
 ### Task 10.1: Add Cmd+K command palette — NOT STARTED
 
@@ -1345,9 +1297,17 @@ cd show-controller && npm run build
 4. Arrow keys to navigate, Enter to select, Escape to close
 5. "Recent" section (last 5 items from `localStorage` key `crm-recent-items`)
 6. Use `createPortal` to render at document root
-7. Add `<CommandPalette />` inside `App.jsx`
+7. Add `<CommandPalette />` inside `App.jsx` — place inside the `<Router>` (needs `useNavigate`) but OUTSIDE `<RequireAuth>` wrappers. It renders via `createPortal` so placement in the JSX tree only matters for hook access. Add it as a sibling alongside the `<Routes>` block. It will only show data to authenticated users since `get()` calls to `talentRoster/` require auth per Firebase rules.
 
-**Data source:** CommandPalette lives in App.jsx, outside any provider. Use one-shot Firebase `get()` reads (not `onValue` listeners) to fetch `talentRoster/` and `competitions/` when the palette opens. This avoids adding permanent listeners at the app root. Cache results in a `useRef` with a 30-second TTL so repeated opens don't re-fetch. Import `{ db, ref, get }` from `../lib/firebase`.
+**Data source:** Use one-shot Firebase `get()` reads (not `onValue` listeners) when the palette opens. Cache results in a `useRef` with a 60-second TTL so repeated opens don't re-fetch. Import `{ db, ref, get }` from `../lib/firebase`.
+
+**Competition data source:** Use the same `GET /api/competitions/index` server endpoint from Task 6.0. This returns only `{ [compId]: { eventName, meetDate } }` — no multi-MB download. Cache the result in a `useRef` with a 60-second TTL so repeated opens don't re-fetch.
+
+For `talentRoster/`, a one-shot `get()` is fine — talent records are small (no nested score data).
+
+**UX requirements:**
+- Show a spinner/loading state while data is loading (first open or after TTL expiry)
+- **Debounce search input by 300ms** — filtering 428 talent + N competitions on every keystroke will lag. Keep a local `searchValue` state for instant display, debounce the filter computation.
 
 ---
 
@@ -1358,7 +1318,9 @@ cd show-controller && npm run build
 **Changes:**
 1. Replace `useState` for filters with `useSearchParams` from react-router-dom
 2. URL params: `q`, `status`, `wagMag`, `role`
-3. "Save View" button stores filter combos in `localStorage` key `crm-saved-views`
+   - **IMPORTANT:** Always use `{ replace: true }` when calling `setSearchParams` — otherwise every keystroke in the search box creates a browser history entry, polluting the back button.
+   - **Debounce the search input:** Keep a local `useState` for the text input value (for instant UI feedback), but debounce the `setSearchParams` call by 300ms so the URL doesn't update on every keystroke. Use a `useEffect` with `setTimeout`/`clearTimeout` pattern — no external library.
+3. "Save View" button stores filter combos in `localStorage` key `crm-saved-views` — cap at 10 maximum. If at limit, show "Remove a saved view first" instead of saving.
 4. Saved views dropdown next to filter row with delete option
 
 ---
@@ -1370,43 +1332,36 @@ cd show-controller && npm run build
 - `show-controller/src/components/crm/TalentTable.jsx`
 
 **Changes:**
-1. Checkbox column in table (select all / individual)
+1. Checkbox column in table (select all / individual). "Select all" selects only currently filtered/visible rows.
 2. Floating action bar when selection > 0: Set Status, Set WAG/MAG, Export CSV, Clear
-3. Bulk status change via dropdown
-4. CSV export via `Blob` + `URL.createObjectURL`
-5. Shift+click range select
+3. Bulk status change via dropdown — **MUST show confirmation dialog** before writing: "Update status to [X] for [N] people?" with Cancel/Confirm buttons. This prevents accidental mass status changes.
+4. CSV export via `Blob` + `URL.createObjectURL`. Columns: Name, Status, WAG/MAG, Role, Phone, Email, Assignments (comma-separated competition names), Last Outreach Date. Include all selected rows.
+5. Shift+click range select — track `lastClickedIndex` in a `useRef` to know the range anchor. On shift+click, select all rows between `lastClickedIndex` and the clicked row index.
+6. **Note:** Multi-select is only available in table view. Card view does not support selection (no checkboxes). If the user switches to card view while rows are selected, clear the selection.
 
 ---
 
-## Final-Deploy (UI): Full UI Verification
+## Final: Mark PRD Complete
 
-### Task UF.1: Full UI acceptance criteria check — NOT STARTED
-
-Run through every Phase 6-10 acceptance criterion using Playwright.
-Screenshots: `docs/PRD-Commentary-Talent-CRM/screenshots/final-verify-ui-*.png`
-
-**Checklist:**
-- [ ] `useTalentAssignments` hook loads cross-competition assignments
-- [ ] All CRM pages use consistent zinc color tokens
-- [ ] TalentPage table view with sortable columns
-- [ ] View toggle persisted (table/card)
-- [ ] Assignments column shows competition names with role + status pills
-- [ ] Availability dots (green/yellow/gray) visible
-- [ ] Last Outreach column with relative dates
-- [ ] Table rows clickable
-- [ ] CommentaryPage kebab menu with grouped sections
-- [ ] Conflict badges with hover popovers
-- [ ] Kanban toggle on CommentaryPage
-- [ ] TalentProfilePage collapsible sections
-- [ ] Availability & Assignments section with cross-competition data
-- [ ] Communications timeline with type icons and filters
-- [ ] Cmd+K command palette
-- [ ] TalentPage filters persist in URL
-- [ ] Multi-select + floating action bar
-- [ ] Export CSV works
-- [ ] No console errors
-- [ ] Pages render at 1024px width
-
-### Task UF.2: Mark PRD complete — NOT STARTED
+### Task F.3: Mark PRD complete — NOT STARTED
 
 Update `PRD-Commentary-Talent-CRM-2026-03-10.md` status to COMPLETE. Commit.
+
+---
+
+## Rollback Procedure
+
+If a deploy breaks production:
+
+1. **Identify the last working commit:** `git log --oneline -10`
+2. **Rebuild from that commit:**
+   ```bash
+   git stash  # if needed
+   git checkout <last-good-commit> -- show-controller/
+   cd show-controller && npm run build
+   # Upload dist per CLAUDE.md Step 1
+   git checkout main -- show-controller/  # restore working tree
+   git stash pop  # if needed
+   ```
+3. **Record the failure** in the implementation plan under the deploy task that broke
+4. **Fix in the next iteration** — do not attempt to fix + redeploy in the same context window
