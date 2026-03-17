@@ -1613,6 +1613,57 @@ app.post('/api/competitions/deactivate', (req, res) => {
   });
 });
 
+// ============================================
+// Competition Index (CRM - Phase 6)
+// ============================================
+
+// Cache for competition index (60-second TTL)
+let competitionIndexCache = null;
+let competitionIndexCacheTime = 0;
+const COMPETITION_INDEX_CACHE_TTL = 60 * 1000; // 60 seconds
+
+// GET /api/competitions/index - Lightweight competition index for CRM
+// Returns only { [compId]: { eventName, meetDate, gender } }
+// Used by useTalentAssignments hook to discover competition IDs without downloading full tree
+app.get('/api/competitions/index', async (req, res) => {
+  const db = productionConfigService.getDb();
+  if (!db) {
+    return res.status(503).json({ error: 'Firebase not available' });
+  }
+
+  try {
+    // Check cache
+    const now = Date.now();
+    if (competitionIndexCache && (now - competitionIndexCacheTime) < COMPETITION_INDEX_CACHE_TTL) {
+      return res.json(competitionIndexCache);
+    }
+
+    // Fetch competitions from Firebase
+    const snapshot = await db.ref('competitions').once('value');
+    const competitions = snapshot.val() || {};
+
+    // Extract only the minimal metadata needed
+    const index = {};
+    for (const [compId, compData] of Object.entries(competitions)) {
+      const config = compData.config || {};
+      index[compId] = {
+        eventName: config.eventName || null,
+        meetDate: config.meetDate || null,
+        gender: config.gender || null
+      };
+    }
+
+    // Update cache
+    competitionIndexCache = index;
+    competitionIndexCacheTime = now;
+
+    res.json(index);
+  } catch (error) {
+    console.error('[Competitions Index] Error fetching competition index:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // GET /api/competitions/:id/production - Get full production config
 app.get('/api/competitions/:id/production', async (req, res) => {
   const { id } = req.params;
@@ -7053,13 +7104,18 @@ io.on('connection', async (socket) => {
       }
 
       for (const { index, name, key } of teamsToRefresh) {
-        // Look up RTN ID
+        // Look up RTN ID and league
         let rtnId;
+        let league = 'ncaa';
         try {
-          const rtnIdSnapshot = await db.ref(`teamsDatabase/teams/${key}/rtnId`).once('value');
+          const [rtnIdSnapshot, leagueSnapshot] = await Promise.all([
+            db.ref(`teamsDatabase/teams/${key}/rtnId`).once('value'),
+            db.ref(`teamsDatabase/teams/${key}/league`).once('value'),
+          ]);
           rtnId = rtnIdSnapshot.val();
+          league = leagueSnapshot.val() || 'ncaa';
         } catch (err) {
-          console.error(`[RTN Stats] Failed to read rtnId for ${key}:`, err.message);
+          console.error(`[RTN Stats] Failed to read rtnId/league for ${key}:`, err.message);
         }
 
         if (!rtnId) {
@@ -7078,7 +7134,7 @@ io.on('connection', async (socket) => {
         }
 
         // Force fetch (no staleness check)
-        const result = await ingestTeamStats(key, rtnId, gender, year, io, targetCompId);
+        const result = await ingestTeamStats(key, rtnId, gender, year, io, targetCompId, league);
         teamResults[`team${index}`] = { teamKey: key, ...result };
       }
 
@@ -7130,7 +7186,7 @@ io.on('connection', async (socket) => {
   });
 
   // Fetch league rankings (team + individual) from RTN (Task 16)
-  socket.on('fetchLeagueRankings', async ({ gender, year, week }) => {
+  socket.on('fetchLeagueRankings', async ({ gender, year, week, league }) => {
     if (!gender) {
       socket.emit('leagueRankingsResult', {
         success: false,
@@ -7140,8 +7196,8 @@ io.on('connection', async (socket) => {
     }
 
     try {
-      console.log(`[RTN Rankings] Fetching league rankings: gender=${gender}, year=${year || 'auto'}, week=${week || 'auto'}`);
-      const result = await fetchLeagueRankings(gender, year, week);
+      console.log(`[RTN Rankings] Fetching league rankings: gender=${gender}, year=${year || 'auto'}, week=${week || 'auto'}${league === 'gymact' ? ', league=gymact' : ''}`);
+      const result = await fetchLeagueRankings(gender, year, week, league);
 
       socket.emit('leagueRankingsResult', {
         success: result.success,
