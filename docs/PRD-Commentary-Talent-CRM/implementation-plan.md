@@ -1126,7 +1126,7 @@ Instead, use a **two-step approach**:
 
 ## Phase 8: CommentaryPage Cleanup — Kebab Menu + Conflicts + Kanban
 
-### Task 8.1: Replace button overload with kebab overflow menu — NOT STARTED
+### Task 8.1: Replace button overload with kebab overflow menu — COMPLETE
 
 **File:** `show-controller/src/pages/CommentaryPage.jsx`
 

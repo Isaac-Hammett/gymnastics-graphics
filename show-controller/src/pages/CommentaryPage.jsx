@@ -9,7 +9,6 @@ import {
   PhoneIcon,
   EnvelopeIcon,
   PlusIcon,
-  XMarkIcon,
   UserGroupIcon,
   ChevronRightIcon,
   CheckIcon,
@@ -18,8 +17,11 @@ import {
   CalendarIcon,
   DocumentTextIcon,
   ClipboardDocumentIcon,
+  NoSymbolIcon,
+  TrashIcon,
 } from '@heroicons/react/24/solid';
 import toast from 'react-hot-toast';
+import KebabMenu from '../components/crm/KebabMenu';
 
 const STATUS_FLOW = [
   { status: STAFF_STATUS.ASSIGNED, label: 'Assigned', next: STAFF_STATUS.INVITED },
@@ -547,17 +549,10 @@ export default function CommentaryPage() {
                               </div>
                             )}
                           </div>
-                          <button
-                            onClick={() => handleRemove(assignment.talentId, talent?.name)}
-                            className="text-zinc-600 hover:text-red-400 transition-colors flex-shrink-0"
-                            title="Remove"
-                          >
-                            <XMarkIcon className="w-4 h-4" />
-                          </button>
                         </div>
 
-                        {/* Workflow status buttons */}
-                        <div className="flex items-center gap-2 mt-3 flex-wrap">
+                        {/* Primary action + kebab menu */}
+                        <div className="flex items-center gap-2 mt-3">
                           {flowEntry?.next && (
                             <button
                               onClick={() => handleAdvanceStatus(assignment.talentId, assignment.status)}
@@ -567,87 +562,85 @@ export default function CommentaryPage() {
                               Mark as {getStaffStatusLabel(flowEntry.next)}
                             </button>
                           )}
-                          <button
-                            onClick={() => handleCopyBookingLink(assignment.talentId, assignment.role)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-700 hover:bg-zinc-600 rounded text-xs font-medium transition-colors"
-                            title="Generate and copy booking link"
-                          >
-                            <LinkIcon className="w-3 h-3" />
-                            Copy Link
-                          </button>
-                          {assignment.status === STAFF_STATUS.INVITED && (
-                            <button
-                              onClick={() => handleDecline(assignment.talentId)}
-                              className="px-3 py-1.5 bg-red-900 hover:bg-red-800 rounded text-xs font-medium transition-colors"
-                            >
-                              Mark Declined
-                            </button>
-                          )}
                           {assignment.status === STAFF_STATUS.CONFIRMED && (
                             <div className="flex items-center gap-1.5 px-2 py-1 text-xs text-zinc-500">
                               <span className={`w-2 h-2 rounded-full ${assignment.calendarInviteSent ? 'bg-green-500' : 'bg-zinc-600'}`} />
                               Calendar invite
                             </div>
                           )}
-                        </div>
-
-                        {/* Outreach buttons */}
-                        <div className="border-t border-zinc-700 mt-3 pt-3">
-                          <div className="text-xs font-semibold text-zinc-400 mb-2">Outreach Actions</div>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <button
-                              onClick={() => handleSendInvite(assignment.talentId, assignment.role)}
-                              disabled={sendingOutreach}
-                              className="flex items-center gap-1.5 px-3 py-1.5 bg-green-700 hover:bg-green-600 rounded text-xs font-medium transition-colors disabled:opacity-50"
-                            >
-                              <PaperAirplaneIcon className="w-3 h-3" />
-                              Send Invite
-                            </button>
-                            <button
-                              onClick={() => handleCopyForIMessage(assignment.talentId, 'invite', generateInviteMessage(talent, assignment.role))}
-                              className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-700 hover:bg-zinc-600 rounded text-xs font-medium transition-colors"
-                              title="Copy invite for iMessage"
-                            >
-                              <ClipboardDocumentIcon className="w-3 h-3" />
-                              Copy for iMessage
-                            </button>
-                          </div>
-                          <div className="flex items-center gap-2 flex-wrap mt-2">
-                            <button
-                              onClick={() => setBriefingModalOpen(assignment.talentId)}
-                              disabled={sendingOutreach}
-                              className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-700 hover:bg-purple-600 rounded text-xs font-medium transition-colors disabled:opacity-50"
-                            >
-                              <DocumentTextIcon className="w-3 h-3" />
-                              Send Briefing
-                            </button>
-                            <button
-                              onClick={() => handleCopyForIMessage(assignment.talentId, 'briefing', generateBriefingMessage(talent))}
-                              className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-700 hover:bg-zinc-600 rounded text-xs font-medium transition-colors"
-                              title="Copy briefing for iMessage"
-                            >
-                              <ClipboardDocumentIcon className="w-3 h-3" />
-                              Copy for iMessage
-                            </button>
-                          </div>
-                          <div className="flex items-center gap-2 flex-wrap mt-2">
-                            <button
-                              onClick={() => handleSendCalendarInvite(assignment.talentId)}
-                              disabled={sendingOutreach}
-                              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-700 hover:bg-blue-600 rounded text-xs font-medium transition-colors disabled:opacity-50"
-                            >
-                              <CalendarIcon className="w-3 h-3" />
-                              Calendar Invite
-                            </button>
-                            <button
-                              onClick={() => setPreProdModalOpen(assignment.talentId)}
-                              disabled={sendingOutreach}
-                              className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-700 hover:bg-teal-600 rounded text-xs font-medium transition-colors disabled:opacity-50"
-                            >
-                              <CalendarIcon className="w-3 h-3" />
-                              Schedule Pre-Prod
-                            </button>
-                          </div>
+                          <KebabMenu sections={[
+                            {
+                              label: 'Workflow',
+                              items: [
+                                {
+                                  label: 'Mark Declined',
+                                  icon: NoSymbolIcon,
+                                  onClick: () => handleDecline(assignment.talentId),
+                                  hidden: assignment.status !== STAFF_STATUS.INVITED,
+                                },
+                              ],
+                            },
+                            {
+                              label: 'Outreach',
+                              items: [
+                                {
+                                  label: 'Send Invite',
+                                  icon: PaperAirplaneIcon,
+                                  onClick: () => handleSendInvite(assignment.talentId, assignment.role),
+                                  disabled: sendingOutreach,
+                                },
+                                {
+                                  label: 'Copy Invite for iMessage',
+                                  icon: ClipboardDocumentIcon,
+                                  onClick: () => handleCopyForIMessage(assignment.talentId, 'invite', generateInviteMessage(talent, assignment.role)),
+                                },
+                                {
+                                  label: 'Send Briefing',
+                                  icon: DocumentTextIcon,
+                                  onClick: () => setBriefingModalOpen(assignment.talentId),
+                                  disabled: sendingOutreach,
+                                },
+                                {
+                                  label: 'Copy Briefing for iMessage',
+                                  icon: ClipboardDocumentIcon,
+                                  onClick: () => handleCopyForIMessage(assignment.talentId, 'briefing', generateBriefingMessage(talent)),
+                                },
+                                {
+                                  label: 'Calendar Invite',
+                                  icon: CalendarIcon,
+                                  onClick: () => handleSendCalendarInvite(assignment.talentId),
+                                  disabled: sendingOutreach,
+                                },
+                                {
+                                  label: 'Schedule Pre-Prod',
+                                  icon: CalendarIcon,
+                                  onClick: () => setPreProdModalOpen(assignment.talentId),
+                                  disabled: sendingOutreach,
+                                },
+                              ],
+                            },
+                            {
+                              label: 'Links',
+                              items: [
+                                {
+                                  label: 'Copy Booking Link',
+                                  icon: LinkIcon,
+                                  onClick: () => handleCopyBookingLink(assignment.talentId, assignment.role),
+                                },
+                              ],
+                            },
+                            {
+                              label: 'Danger',
+                              items: [
+                                {
+                                  label: 'Remove from Competition',
+                                  icon: TrashIcon,
+                                  onClick: () => handleRemove(assignment.talentId, talent?.name),
+                                  danger: true,
+                                },
+                              ],
+                            },
+                          ]} />
                         </div>
 
                         {/* Notes */}
