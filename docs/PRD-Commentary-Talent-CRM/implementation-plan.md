@@ -1337,7 +1337,7 @@ For `talentRoster/`, a one-shot `get()` is fine — talent records are small (no
 
 ---
 
-### Task 10.2: Add URL-persisted filters and saved views — NOT STARTED
+### Task 10.2: Add URL-persisted filters and saved views — IN PROGRESS
 
 **File:** `show-controller/src/pages/TalentPage.jsx`
 
