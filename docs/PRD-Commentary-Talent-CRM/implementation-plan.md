@@ -22,11 +22,11 @@
 | Phase 5-Deploy | Deploy Phase 5 changes | 1 | COMPLETE ✓ |
 | Final-Deploy (Phases 0-5) | Full acceptance criteria check | 2 | COMPLETE |
 | Phase 6 | UI Foundation: Competition index endpoint + cross-competition data hook + design tokens | 3 | COMPLETE |
-| Phase 7 | TalentPage table view + assignment/availability columns | 4 | NOT STARTED |
+| Phase 7 | TalentPage table view + assignment/availability columns | 6 | NOT STARTED |
 | Phase 8 | CommentaryPage: kebab menu + conflict badges + kanban | 3 | NOT STARTED |
 | Phase 9 | TalentProfilePage: collapsible sections + activity timeline | 2 | NOT STARTED |
 | Phase 10 | Power features: Cmd+K, saved filters, bulk ops | 3 | NOT STARTED |
-| **Total** | | **45** | |
+| **Total** | | **47** | |
 
 ---
 
@@ -1010,43 +1010,69 @@ Instead, use a **two-step approach**:
 
 ## Phase 7: TalentPage Table View + Cross-Competition Visibility
 
-### Task 7.1: Create TalentTable component with sortable columns — IN PROGRESS
+### Task 7.1a: Create basic TalentTable with static columns — COMPLETE
 
 **File:** `show-controller/src/components/crm/TalentTable.jsx` (NEW)
 
 **Prerequisite:** Create `show-controller/src/components/crm/` directory (does not exist yet). All Phase 7, 8, and 10 component files live here.
 
-**What it does:** A table component that renders the talent roster with sortable columns, replacing the card list as the default view.
+**What it does:** A table component that renders the talent roster with basic columns from talent data only (no assignment data yet).
 
 **Columns:**
-| Column | Source | Sortable | Width |
-|--------|--------|----------|-------|
-| Name | `talent.name` | Yes (alpha) | flex |
-| Status | `talent.status` | Yes (tier order) | 100px |
-| WAG/MAG | `talent.wagMag` | Yes | 80px |
-| Role | `talent.commentaryRole` | Yes | 140px |
-| Assignments | from `useTalentAssignments` | Yes (count) | 200px |
-| Available For | from `interested` + `surveyAvailability` | Yes (count) | 140px |
-| Last Outreach | from `useTalentAssignments` | Yes (date) | 120px |
-| Phone | `talent.phone` | No | 130px |
+| Column | Source | Width |
+|--------|--------|-------|
+| Name | `talent.name` | flex |
+| Status | `talent.status` | 100px |
+| WAG/MAG | `talent.wagMag` | 80px |
+| Role | `talent.commentaryRole` | 140px |
+| Phone | `talent.phone` | 130px |
 
 **Behavior:**
-- Click column header to sort (toggle asc/desc, show arrow indicator)
 - Click row to navigate to `/talent/{id}` (entire row is a link)
-- Status and WAG/MAG render as colored badges (reuse existing `getStatusColor`, `wagMagLabel`)
-- Assignments column shows up to 2 competition name pills with role abbreviation and status color, then "+N more" if >2
-- Available For column shows green dot + count of competitions where `interested[compId]` or `surveyAvailability[compId]` is true
-- Last Outreach shows relative time ("2d ago") with full date on hover via `title` attribute. Show "—" when no outreach exists.
+- Status and WAG/MAG render as colored badges (reuse existing `getStatusColor`, `wagMagLabel` from TalentPage.jsx)
 - Fixed table header (sticky top) so it stays visible while scrolling
-- Accept `talents` array, `assignmentsByTalent` map, and `loading` boolean as props
-- When `loading` is true, show a subtle loading bar or spinner above the table (not a full-page spinner — the talent data is already available, only assignment data is loading)
-- **Horizontal scroll:** Wrap table in `overflow-x-auto` container. At 1024px width the 8 columns (~900px+ fixed widths) may overflow — horizontal scroll is acceptable.
+- Accept `talents` array as prop
+- **Horizontal scroll:** Wrap table in `overflow-x-auto` container
 
-**Pattern to follow:** Standard React table with `useState` for sort column/direction. No external table library needed.
+**Pattern to follow:** Standard React table. No external table library needed.
 
 ---
 
-### Task 7.2: Add view toggle and integrate TalentTable into TalentPage — NOT STARTED
+### Task 7.1b: Add sorting to TalentTable — COMPLETE
+
+**File:** `show-controller/src/components/crm/TalentTable.jsx` (modify)
+
+**Changes:**
+- Add `useState` for `sortColumn` and `sortDirection` (asc/desc)
+- Click column header to toggle sort — show arrow indicator (▲/▼)
+- Sort types: alpha (Name, Role), tier order (Status), alpha (WAG/MAG)
+- Phone column is not sortable
+
+---
+
+### Task 7.1c: Add assignment-derived columns to TalentTable — COMPLETE
+
+**File:** `show-controller/src/components/crm/TalentTable.jsx` (modify)
+
+**Changes:** Add three new columns that depend on `useTalentAssignments` data:
+
+| Column | Source | Sortable | Width |
+|--------|--------|----------|-------|
+| Assignments | from `assignmentsByTalent` | Yes (count) | 200px |
+| Available For | from `assignmentsByTalent` | Yes (count) | 140px |
+| Last Outreach | from `assignmentsByTalent` | Yes (date) | 120px |
+
+**Behavior:**
+- Accept `assignmentsByTalent` map and `loading` boolean as additional props
+- Assignments column shows up to 2 competition name pills with role abbreviation and status color, then "+N more" if >2
+- Available For column shows green dot + count of competitions where `interested[compId]` or `surveyAvailability[compId]` is true
+- Last Outreach shows relative time ("2d ago") with full date on hover via `title` attribute. Show "—" when no outreach exists.
+- When `loading` is true, show a subtle loading bar above the table (not a full-page spinner — the talent data is already available, only assignment columns populate when ready)
+- Add sorting support for the new columns: count (Assignments, Available For), date (Last Outreach)
+
+---
+
+### Task 7.2: Add view toggle and integrate TalentTable into TalentPage — COMPLETE
 
 **File:** `show-controller/src/pages/TalentPage.jsx`
 
@@ -1084,7 +1110,7 @@ Instead, use a **two-step approach**:
 
 ---
 
-### Task 7.4: Add availability indicator dots — NOT STARTED
+### Task 7.4: Add availability indicator dots — COMPLETE
 
 **File:** `show-controller/src/components/crm/TalentTable.jsx` (modify — created in Task 7.1)
 
