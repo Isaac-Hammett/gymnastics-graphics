@@ -1208,7 +1208,7 @@ Remove from Competition   (red text)
 
 ---
 
-### Task 8.3: Add kanban pipeline board toggle — NOT STARTED
+### Task 8.3: Add kanban pipeline board toggle — COMPLETE
 
 **File:** `show-controller/src/components/crm/KanbanBoard.jsx` (NEW) + modify `CommentaryPage.jsx`
 

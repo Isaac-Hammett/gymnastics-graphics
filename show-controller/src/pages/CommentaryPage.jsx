@@ -20,9 +20,12 @@ import {
   NoSymbolIcon,
   TrashIcon,
   ExclamationTriangleIcon,
+  ViewColumnsIcon,
+  ListBulletIcon,
 } from '@heroicons/react/24/solid';
 import toast from 'react-hot-toast';
 import KebabMenu from '../components/crm/KebabMenu';
+import KanbanBoard from '../components/crm/KanbanBoard';
 
 const STATUS_FLOW = [
   { status: STAFF_STATUS.ASSIGNED, label: 'Assigned', next: STAFF_STATUS.INVITED },
@@ -49,6 +52,7 @@ export default function CommentaryPage() {
   const { competitions, loading: competitionsLoading } = useCompetitions();
 
   const gender = competitionConfig?.gender || 'womens';
+  const [viewMode, setViewMode] = useState(() => localStorage.getItem('crm-commentary-view') || 'list');
   const [search, setSearch] = useState('');
   const [activeRole, setActiveRole] = useState('pbp');
   const [editingNotes, setEditingNotes] = useState(null);
@@ -349,6 +353,88 @@ export default function CommentaryPage() {
     }
   }
 
+  function handleSetViewMode(mode) {
+    setViewMode(mode);
+    localStorage.setItem('crm-commentary-view', mode);
+  }
+
+  // Build kebab menu sections for a given assignment (reused by list view and kanban)
+  function kebabSectionsForAssignment(assignment, talent) {
+    return [
+      {
+        label: 'Workflow',
+        items: [
+          {
+            label: 'Mark Declined',
+            icon: NoSymbolIcon,
+            onClick: () => handleDecline(assignment.talentId),
+            hidden: assignment.status !== STAFF_STATUS.INVITED,
+          },
+        ],
+      },
+      {
+        label: 'Outreach',
+        items: [
+          {
+            label: 'Send Invite',
+            icon: PaperAirplaneIcon,
+            onClick: () => handleSendInvite(assignment.talentId, assignment.role),
+            disabled: sendingOutreach,
+          },
+          {
+            label: 'Copy Invite for iMessage',
+            icon: ClipboardDocumentIcon,
+            onClick: () => handleCopyForIMessage(assignment.talentId, 'invite', generateInviteMessage(talent, assignment.role)),
+          },
+          {
+            label: 'Send Briefing',
+            icon: DocumentTextIcon,
+            onClick: () => setBriefingModalOpen(assignment.talentId),
+            disabled: sendingOutreach,
+          },
+          {
+            label: 'Copy Briefing for iMessage',
+            icon: ClipboardDocumentIcon,
+            onClick: () => handleCopyForIMessage(assignment.talentId, 'briefing', generateBriefingMessage(talent)),
+          },
+          {
+            label: 'Calendar Invite',
+            icon: CalendarIcon,
+            onClick: () => handleSendCalendarInvite(assignment.talentId),
+            disabled: sendingOutreach,
+          },
+          {
+            label: 'Schedule Pre-Prod',
+            icon: CalendarIcon,
+            onClick: () => setPreProdModalOpen(assignment.talentId),
+            disabled: sendingOutreach,
+          },
+        ],
+      },
+      {
+        label: 'Links',
+        items: [
+          {
+            label: 'Copy Booking Link',
+            icon: LinkIcon,
+            onClick: () => handleCopyBookingLink(assignment.talentId, assignment.role),
+          },
+        ],
+      },
+      {
+        label: 'Danger',
+        items: [
+          {
+            label: 'Remove from Competition',
+            icon: TrashIcon,
+            onClick: () => handleRemove(assignment.talentId, talent?.name),
+            danger: true,
+          },
+        ],
+      },
+    ];
+  }
+
   // Group staff by role
   const byRole = SLOT_ROLES.reduce((acc, { role }) => {
     acc[role] = staffList.filter(s => s.role === role);
@@ -497,20 +583,51 @@ export default function CommentaryPage() {
               </p>
             </div>
           </div>
-          <Link
-            to="/talent"
-            className="text-xs text-zinc-400 hover:text-white transition-colors flex items-center gap-1"
-          >
-            Manage Roster
-            <ChevronRightIcon className="w-3 h-3" />
-          </Link>
+          <div className="flex items-center gap-3">
+            <div className="flex bg-zinc-800 rounded-lg p-0.5">
+              <button
+                onClick={() => handleSetViewMode('list')}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                  viewMode === 'list' ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                <ListBulletIcon className="w-3.5 h-3.5" />
+                List
+              </button>
+              <button
+                onClick={() => handleSetViewMode('kanban')}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                  viewMode === 'kanban' ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                <ViewColumnsIcon className="w-3.5 h-3.5" />
+                Board
+              </button>
+            </div>
+            <Link
+              to="/talent"
+              className="text-xs text-zinc-400 hover:text-white transition-colors flex items-center gap-1"
+            >
+              Manage Roster
+              <ChevronRightIcon className="w-3 h-3" />
+            </Link>
+          </div>
         </div>
       </div>
 
       <div className="flex h-[calc(100vh-73px)]">
-        {/* Left: Current assignments */}
-        <div className="flex-1 overflow-y-auto p-5 border-r border-zinc-800">
-          <div className="space-y-6">
+        {/* Left: Current assignments (list) or Kanban board */}
+        <div className="flex-1 overflow-y-auto border-r border-zinc-800">
+          {viewMode === 'kanban' ? (
+            <KanbanBoard
+              staffList={staffList}
+              talentList={talentList}
+              updateStatus={updateStatus}
+              kebabSectionsForAssignment={kebabSectionsForAssignment}
+              sameDayConflictDetails={sameDayConflictDetails}
+            />
+          ) : (
+          <div className="space-y-6 p-5">
             {SLOT_ROLES.map(({ role, label, color }) => (
               <div key={role}>
                 <div className={`flex items-center gap-2 mb-3 pb-2 border-b ${color.replace('border', 'border-b')}`}>
@@ -600,79 +717,7 @@ export default function CommentaryPage() {
                               Calendar invite
                             </div>
                           )}
-                          <KebabMenu sections={[
-                            {
-                              label: 'Workflow',
-                              items: [
-                                {
-                                  label: 'Mark Declined',
-                                  icon: NoSymbolIcon,
-                                  onClick: () => handleDecline(assignment.talentId),
-                                  hidden: assignment.status !== STAFF_STATUS.INVITED,
-                                },
-                              ],
-                            },
-                            {
-                              label: 'Outreach',
-                              items: [
-                                {
-                                  label: 'Send Invite',
-                                  icon: PaperAirplaneIcon,
-                                  onClick: () => handleSendInvite(assignment.talentId, assignment.role),
-                                  disabled: sendingOutreach,
-                                },
-                                {
-                                  label: 'Copy Invite for iMessage',
-                                  icon: ClipboardDocumentIcon,
-                                  onClick: () => handleCopyForIMessage(assignment.talentId, 'invite', generateInviteMessage(talent, assignment.role)),
-                                },
-                                {
-                                  label: 'Send Briefing',
-                                  icon: DocumentTextIcon,
-                                  onClick: () => setBriefingModalOpen(assignment.talentId),
-                                  disabled: sendingOutreach,
-                                },
-                                {
-                                  label: 'Copy Briefing for iMessage',
-                                  icon: ClipboardDocumentIcon,
-                                  onClick: () => handleCopyForIMessage(assignment.talentId, 'briefing', generateBriefingMessage(talent)),
-                                },
-                                {
-                                  label: 'Calendar Invite',
-                                  icon: CalendarIcon,
-                                  onClick: () => handleSendCalendarInvite(assignment.talentId),
-                                  disabled: sendingOutreach,
-                                },
-                                {
-                                  label: 'Schedule Pre-Prod',
-                                  icon: CalendarIcon,
-                                  onClick: () => setPreProdModalOpen(assignment.talentId),
-                                  disabled: sendingOutreach,
-                                },
-                              ],
-                            },
-                            {
-                              label: 'Links',
-                              items: [
-                                {
-                                  label: 'Copy Booking Link',
-                                  icon: LinkIcon,
-                                  onClick: () => handleCopyBookingLink(assignment.talentId, assignment.role),
-                                },
-                              ],
-                            },
-                            {
-                              label: 'Danger',
-                              items: [
-                                {
-                                  label: 'Remove from Competition',
-                                  icon: TrashIcon,
-                                  onClick: () => handleRemove(assignment.talentId, talent?.name),
-                                  danger: true,
-                                },
-                              ],
-                            },
-                          ]} />
+                          <KebabMenu sections={kebabSectionsForAssignment(assignment, talent)} />
                         </div>
 
                         {/* Notes */}
@@ -705,6 +750,7 @@ export default function CommentaryPage() {
               </div>
             ))}
           </div>
+          )}
         </div>
 
         {/* Right: Talent search */}
