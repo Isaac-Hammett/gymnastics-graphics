@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTalentRoster, getStatusLabel, getStatusColor, wagMagLabel } from '../hooks/useTalentRoster';
+import { useTalentAssignments } from '../hooks/useTalentAssignments';
+import TalentTable from '../components/crm/TalentTable';
 import {
   PlusIcon,
   MagnifyingGlassIcon,
@@ -9,6 +11,8 @@ import {
   UserGroupIcon,
   SparklesIcon,
   XMarkIcon,
+  TableCellsIcon,
+  Squares2X2Icon,
 } from '@heroicons/react/24/solid';
 
 const STATUS_OPTIONS = [
@@ -39,6 +43,7 @@ const ROLE_OPTIONS = [
  */
 export default function TalentPage() {
   const { talentList, loading, error, createTalent } = useTalentRoster();
+  const { assignmentsByTalent, loading: assignmentsLoading } = useTalentAssignments(talentList);
   const navigate = useNavigate();
 
   const [search, setSearch] = useState('');
@@ -47,6 +52,7 @@ export default function TalentPage() {
   const [roleFilter, setRoleFilter] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [viewMode, setViewMode] = useState(() => localStorage.getItem('crm-talent-view') || 'table');
 
   const [newTalent, setNewTalent] = useState({
     name: '',
@@ -201,7 +207,23 @@ export default function TalentPage() {
               Clear
             </button>
           )}
-          <span className="text-zinc-500 text-sm ml-auto">{filtered.length} shown</span>
+          <div className="flex items-center gap-1 ml-auto">
+            <span className="text-zinc-500 text-sm mr-2">{filtered.length} shown</span>
+            <button
+              onClick={() => { setViewMode('table'); localStorage.setItem('crm-talent-view', 'table'); }}
+              className={`p-1.5 rounded ${viewMode === 'table' ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+              title="Table view"
+            >
+              <TableCellsIcon className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => { setViewMode('cards'); localStorage.setItem('crm-talent-view', 'cards'); }}
+              className={`p-1.5 rounded ${viewMode === 'cards' ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+              title="Card view"
+            >
+              <Squares2X2Icon className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Talent list */}
@@ -213,10 +235,16 @@ export default function TalentPage() {
           <div className="text-center py-20 text-zinc-500">
             {talentList.length === 0 ? 'No talent in roster yet. Add someone to get started.' : 'No results match your filters.'}
           </div>
+        ) : viewMode === 'table' ? (
+          <TalentTable
+            talents={filtered}
+            assignmentsByTalent={assignmentsByTalent}
+            loading={assignmentsLoading}
+          />
         ) : (
           <div className="space-y-2">
             {filtered.map((talent) => (
-              <TalentCard key={talent.id} talent={talent} />
+              <TalentCard key={talent.id} talent={talent} assignmentData={assignmentsByTalent[talent.id]} />
             ))}
           </div>
         )}
