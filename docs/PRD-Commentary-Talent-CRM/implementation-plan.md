@@ -875,7 +875,7 @@ Update `PRD-Commentary-Talent-CRM-2026-03-10.md` status to `COMPLETE`. Commit.
 > **Every task must deploy + verify on production before being marked COMPLETE.**
 > **Server change:** Task 6.0 adds a new server endpoint — deploy must include coordinator restart.
 
-### Task 6.0: Add competition index server endpoint — IN PROGRESS
+### Task 6.0: Add competition index server endpoint — COMPLETE
 
 **File:** `server/index.js`
 
