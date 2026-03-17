@@ -25,6 +25,9 @@ import SurveyPage from './pages/SurveyPage';
 import SettingsPage from './pages/SettingsPage';
 import LoginPage from './pages/LoginPage';
 
+// CRM Components
+import CommandPalette from './components/crm/CommandPalette';
+
 // Error boundary for catching component errors
 import ErrorBoundary from './components/ErrorBoundary';
 
@@ -45,6 +48,9 @@ import ImportView from './views/ImportView';
 function App() {
   return (
     <BrowserRouter>
+      {/* Global command palette (Cmd+K / Ctrl+K) */}
+      <CommandPalette />
+
       {/* Toast notifications for the app */}
       <Toaster
         position="top-right"
