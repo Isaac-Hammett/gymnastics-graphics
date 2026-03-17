@@ -11,9 +11,13 @@ import {
   TrashIcon,
   TrophyIcon,
   ChatBubbleLeftRightIcon,
+  ChatBubbleLeftIcon,
   ArrowUpTrayIcon,
   ChevronDownIcon,
   CalendarIcon,
+  PaperAirplaneIcon,
+  DocumentTextIcon,
+  VideoCameraIcon,
 } from '@heroicons/react/24/solid';
 import toast from 'react-hot-toast';
 
@@ -25,6 +29,35 @@ const OTHER_INTERESTS = [
   'Social Media',
   'Creative (Broadcast Graphics, Web Design, Social Graphics, etc)',
 ];
+
+// Timeline type configuration with icons and colors
+const TIMELINE_TYPES = {
+  imessage: { icon: ChatBubbleLeftIcon, color: 'text-blue-400', bgColor: 'bg-blue-900/30', borderColor: 'border-blue-700', label: 'iMessage' },
+  invite: { icon: PaperAirplaneIcon, color: 'text-green-400', bgColor: 'bg-green-900/30', borderColor: 'border-green-700', label: 'Invite' },
+  briefing: { icon: DocumentTextIcon, color: 'text-purple-400', bgColor: 'bg-purple-900/30', borderColor: 'border-purple-700', label: 'Briefing' },
+  calendar: { icon: CalendarIcon, color: 'text-blue-400', bgColor: 'bg-blue-900/30', borderColor: 'border-blue-700', label: 'Calendar' },
+  preproduction: { icon: VideoCameraIcon, color: 'text-amber-400', bgColor: 'bg-amber-900/30', borderColor: 'border-amber-700', label: 'Pre-Production' },
+  note: { icon: PencilIcon, color: 'text-zinc-400', bgColor: 'bg-zinc-800', borderColor: 'border-zinc-700', label: 'Note' },
+};
+
+// Filter options for the timeline
+const TIMELINE_FILTERS = ['all', 'imessage', 'invite', 'briefing', 'calendar', 'preproduction', 'note'];
+
+/**
+ * timeAgo - Converts a timestamp to a relative time string
+ * Extends the pattern from ScoreBugPanel.jsx to include hours and days
+ */
+function timeAgo(timestamp) {
+  if (!timestamp) return 'never';
+  const now = Date.now();
+  const date = new Date(timestamp);
+  const seconds = Math.floor((now - date.getTime()) / 1000);
+
+  if (seconds < 60) return `${seconds}s ago`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+  return `${Math.floor(seconds / 86400)}d ago`;
+}
 
 // Role label formatter
 function getRoleLabel(role) {
@@ -74,6 +107,7 @@ export default function TalentProfilePage() {
   const [savingNote, setSavingNote] = useState(false);
   const [activeTab, setActiveTab] = useState('profile'); // 'profile' | 'communications'
   const [uploadingScreenshot, setUploadingScreenshot] = useState(false);
+  const [timelineFilter, setTimelineFilter] = useState('all');
 
   const talent = talents[talentId];
 
@@ -820,54 +854,93 @@ export default function TalentProfilePage() {
                 </label>
               </div>
 
-              {/* Communication Log */}
+              {/* Activity Timeline */}
               <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-5">
                 <div className="flex items-center gap-2 mb-4">
                   <ChatBubbleLeftRightIcon className="w-4 h-4 text-blue-400" />
                   <h2 className="text-sm font-semibold text-zinc-300 uppercase tracking-wide">
-                    Communication Log
+                    Activity Timeline
                   </h2>
-                  <span className="ml-auto text-xs text-zinc-500">{communications.length} messages</span>
+                  <span className="ml-auto text-xs text-zinc-500">{communications.length} entries</span>
                 </div>
+
+                {/* Filter Chips */}
+                <div className="flex flex-wrap gap-1.5 mb-4">
+                  {TIMELINE_FILTERS.map((filter) => (
+                    <button
+                      key={filter}
+                      onClick={() => setTimelineFilter(filter)}
+                      className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                        timelineFilter === filter
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-300'
+                      }`}
+                    >
+                      {filter === 'all' ? 'All' : TIMELINE_TYPES[filter]?.label || filter}
+                    </button>
+                  ))}
+                </div>
+
                 {communications.length === 0 ? (
                   <p className="text-xs text-zinc-500 italic">No communications recorded yet.</p>
                 ) : (
-                  <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {communications.map((comm) => (
-                      <div key={comm.id} className="border-b border-zinc-800 pb-3 last:border-0">
-                        <div className="flex items-start justify-between mb-1">
-                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                            comm.type === 'invite' ? 'bg-blue-900/30 text-blue-400 border border-blue-700' :
-                            comm.type === 'briefing' ? 'bg-purple-900/30 text-purple-400 border border-purple-700' :
-                            comm.type === 'calendar' ? 'bg-green-900/30 text-green-400 border border-green-700' :
-                            comm.type === 'preproduction' ? 'bg-yellow-900/30 text-yellow-400 border border-yellow-700' :
-                            comm.type === 'imessage' ? 'bg-teal-900/30 text-teal-400 border border-teal-700' :
-                            'bg-zinc-800 text-zinc-300'
-                          }`}>
-                            {comm.type}
-                          </span>
-                          <span className="text-xs text-zinc-500">
-                            {new Date(comm.sentAt).toLocaleString('en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                              hour: 'numeric',
-                              minute: '2-digit'
-                            })}
-                          </span>
-                        </div>
-                        <p className="text-xs text-zinc-300">{comm.note}</p>
-                        {comm.bookingUrl && (
-                          <a
-                            href={comm.bookingUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-blue-400 hover:text-blue-300 mt-1 inline-block"
-                          >
-                            View booking link →
-                          </a>
-                        )}
-                      </div>
-                    ))}
+                  <div className="relative max-h-96 overflow-y-auto">
+                    {/* Vertical timeline line */}
+                    <div className="absolute left-3 top-0 bottom-0 w-px bg-zinc-700" />
+
+                    <div className="space-y-4">
+                      {communications
+                        .filter(comm => timelineFilter === 'all' || comm.type === timelineFilter)
+                        .map((comm) => {
+                          const typeConfig = TIMELINE_TYPES[comm.type] || TIMELINE_TYPES.note;
+                          const IconComponent = typeConfig.icon;
+                          const fullDate = new Date(comm.sentAt).toLocaleString('en-US', {
+                            weekday: 'short',
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                            hour: 'numeric',
+                            minute: '2-digit'
+                          });
+
+                          return (
+                            <div key={comm.id} className="relative pl-8">
+                              {/* Timeline dot with icon */}
+                              <div className={`absolute left-0 top-0 w-6 h-6 rounded-full ${typeConfig.bgColor} border ${typeConfig.borderColor} flex items-center justify-center`}>
+                                <IconComponent className={`w-3 h-3 ${typeConfig.color}`} />
+                              </div>
+
+                              {/* Content */}
+                              <div className="bg-zinc-800/50 rounded-lg p-3 border border-zinc-800">
+                                <div className="flex items-start justify-between mb-1">
+                                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${typeConfig.bgColor} ${typeConfig.color} border ${typeConfig.borderColor}`}>
+                                    {typeConfig.label}
+                                  </span>
+                                  <span className="text-xs text-zinc-500" title={fullDate}>
+                                    {timeAgo(comm.sentAt)}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-zinc-300 mt-1">{comm.note}</p>
+                                {comm.bookingUrl && (
+                                  <a
+                                    href={comm.bookingUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs text-blue-400 hover:text-blue-300 mt-2 inline-block"
+                                  >
+                                    View booking link →
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+
+                    {/* Empty state for filtered view */}
+                    {timelineFilter !== 'all' && communications.filter(c => c.type === timelineFilter).length === 0 && (
+                      <p className="text-xs text-zinc-500 italic pl-8">No {TIMELINE_TYPES[timelineFilter]?.label || timelineFilter} entries found.</p>
+                    )}
                   </div>
                 )}
               </div>
