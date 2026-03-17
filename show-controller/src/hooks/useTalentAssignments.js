@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { db, ref, get } from '../lib/firebase';
+import { SERVER_URL } from '../lib/serverUrl';
 
 /**
  * useTalentAssignments - Cross-competition talent assignment aggregator.
@@ -113,7 +114,7 @@ export function useTalentAssignments(talentList = [], competitions = null) {
       }
 
       try {
-        const response = await fetch('/api/competitions/index');
+        const response = await fetch(`${SERVER_URL}/api/competitions/index`);
         if (!response.ok) {
           throw new Error(`Server returned ${response.status}`);
         }
