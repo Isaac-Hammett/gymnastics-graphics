@@ -883,6 +883,21 @@
     ],
     "consoleErrors": "none",
     "notes": "All 5 collapsible sections render correctly. History section defaults to collapsed. Assignment links navigate to Commentary page. Quick Stats displays assignment counts from useTalentAssignments hook."
+  },
+  {
+    "taskId": "9.2",
+    "taskName": "Replace communications log with activity timeline",
+    "description": "Replaced the flat communications log with a vertical activity timeline featuring type-based icons and colors. Added filter chips (All, iMessage, Invite, Briefing, Calendar, Pre-Production, Note) to filter timeline entries by type. Each entry shows a colored icon dot, relative timestamp with full date on hover, and content.",
+    "expectedInScreenshot": "The Communications tab on TalentProfilePage should show an ACTIVITY TIMELINE section with filter chips at the top (All, iMessage, Invite, Briefing, Calendar, Pre-Production, Note). The 'All' chip should be highlighted as selected. Entry count should be displayed. Empty state should show 'No communications recorded yet.'",
+    "timestamp": "2026-03-17T21:30:00Z",
+    "result": "PASS",
+    "screenshot": "screenshots/verify-task-9.2.png",
+    "commitHash": "16adbe6",
+    "filesModified": [
+      "show-controller/src/pages/TalentProfilePage.jsx"
+    ],
+    "consoleErrors": "none",
+    "notes": "Activity Timeline renders with all 7 filter chips visible. Empty state displays correctly. Type-based icons and colors configured for imessage, invite, briefing, calendar, preproduction, and note types. timeAgo helper supports seconds, minutes, hours, and days."
   }
 ]
   </script>
