@@ -1089,7 +1089,7 @@ Instead, use a **two-step approach**:
 
 ---
 
-### Task 7.3: Add assignment details to card view — NOT STARTED
+### Task 7.3: Add assignment details to card view — COMPLETE
 
 **File:** `show-controller/src/pages/TalentPage.jsx` (TalentCard component, line ~362)
 

@@ -387,9 +387,43 @@ export default function TalentPage() {
   );
 }
 
-function TalentCard({ talent }) {
+function formatTimeAgo(dateStr) {
+  if (!dateStr) return null;
+  const now = Date.now();
+  const then = new Date(dateStr).getTime();
+  const diffMs = now - then;
+  if (diffMs < 0) return 'just now';
+  const seconds = Math.floor(diffMs / 1000);
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
+const ASSIGNMENT_STATUS_COLORS = {
+  assigned: 'bg-zinc-700 text-zinc-200',
+  invited: 'bg-blue-800 text-blue-200',
+  confirmed: 'bg-green-800 text-green-200',
+  briefed: 'bg-purple-800 text-purple-200',
+  declined: 'bg-red-800 text-red-200',
+};
+
+const ROLE_ABBREV = {
+  pbp: 'PBP',
+  analyst: 'Analyst',
+  'Play by Play / Lead': 'PBP',
+  'Color / Analyst': 'Analyst',
+};
+
+function TalentCard({ talent, assignmentData }) {
   const statusBadge = getStatusColor(talent.status);
   const wm = wagMagLabel(talent.wagMag);
+  const assignments = assignmentData?.assignments || [];
+  const showAssignments = assignments.slice(0, 2);
+  const moreCount = assignments.length - 2;
 
   return (
     <Link
@@ -412,6 +446,9 @@ function TalentCard({ talent }) {
         {/* Name + role */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
+            {assignmentData?.availabilityDot === 'green' && (
+              <span className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" title="Available for upcoming competitions" />
+            )}
             <span className="font-semibold text-white group-hover:text-blue-300 transition-colors">
               {talent.name}
             </span>
@@ -449,25 +486,39 @@ function TalentCard({ talent }) {
           )}
         </div>
 
-        {/* Competition count */}
-        <div className="text-right flex-shrink-0 w-16">
-          {(talent.totalCompetitions > 0 || talent.competitionHistory?.length > 0) && (
-            <div className="text-sm font-semibold text-white">
-              {talent.totalCompetitions || talent.competitionHistory?.length || 0}
+        {/* Assignments */}
+        <div className="text-right flex-shrink-0 max-w-52">
+          {assignments.length > 0 ? (
+            <div className="flex flex-wrap justify-end gap-1">
+              {showAssignments.map(a => (
+                <span key={a.compId} className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs ${ASSIGNMENT_STATUS_COLORS[a.status] || ASSIGNMENT_STATUS_COLORS.assigned}`}>
+                  <span className="truncate max-w-24">{a.compName}</span>
+                  <span className="opacity-70">{ROLE_ABBREV[a.role] || a.role}</span>
+                </span>
+              ))}
+              {moreCount > 0 && (
+                <span className="text-xs text-zinc-500">+{moreCount}</span>
+              )}
             </div>
+          ) : (
+            <div className="text-xs text-zinc-500">No assignments</div>
           )}
-          <div className="text-xs text-zinc-500">
-            {(talent.totalCompetitions || talent.competitionHistory?.length || 0) === 1 ? 'event' : 'events'}
-          </div>
         </div>
       </div>
 
-      {/* Notes snippet */}
-      {talent.notes && (
-        <div className="mt-2 text-xs text-zinc-500 truncate pl-27">
-          {talent.notes}
-        </div>
-      )}
+      {/* Last outreach + notes */}
+      <div className="mt-2 flex items-center gap-4 pl-27">
+        {assignmentData?.lastOutreach && (
+          <span className="text-xs text-zinc-500" title={new Date(assignmentData.lastOutreach).toLocaleString()}>
+            Last contacted: {formatTimeAgo(assignmentData.lastOutreach)} ({assignmentData.lastOutreachType})
+          </span>
+        )}
+        {talent.notes && (
+          <span className="text-xs text-zinc-500 truncate flex-1">
+            {talent.notes}
+          </span>
+        )}
+      </div>
     </Link>
   );
 }
