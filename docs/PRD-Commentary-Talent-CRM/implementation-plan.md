@@ -21,7 +21,7 @@
 | Phase 5 | Annual Survey + Pre-Production Alerts | 6 | COMPLETE |
 | Phase 5-Deploy | Deploy Phase 5 changes | 1 | COMPLETE ✓ |
 | Final-Deploy (Phases 0-5) | Full acceptance criteria check | 2 | COMPLETE |
-| Phase 6 | UI Foundation: Competition index endpoint + cross-competition data hook + design tokens | 3 | NOT STARTED |
+| Phase 6 | UI Foundation: Competition index endpoint + cross-competition data hook + design tokens | 3 | COMPLETE |
 | Phase 7 | TalentPage table view + assignment/availability columns | 4 | NOT STARTED |
 | Phase 8 | CommentaryPage: kebab menu + conflict badges + kanban | 3 | NOT STARTED |
 | Phase 9 | TalentProfilePage: collapsible sections + activity timeline | 2 | NOT STARTED |
@@ -970,7 +970,7 @@ Instead, use a **two-step approach**:
 
 ---
 
-### Task 6.2: Normalize design tokens across CRM pages — IN PROGRESS
+### Task 6.2: Normalize design tokens across CRM pages — COMPLETE
 
 **Files:**
 - `show-controller/src/pages/TalentPage.jsx`
