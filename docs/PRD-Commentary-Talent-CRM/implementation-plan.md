@@ -2,7 +2,7 @@
 
 **PRD:** PRD-Commentary-Talent-CRM-2026-03-10.md
 
-> **Phase 1 (Talent Roster UI) is already complete.** Phases 0, 2, 3, 4, 5 are COMPLETE. Phases 6-10 (UI Overhaul) are NOT STARTED.
+> **All phases COMPLETE.** PRD marked complete on 2026-03-17.
 
 ---
 
@@ -19,12 +19,12 @@
 | Phase 4 | AI-Powered Talent Discovery | 5 | COMPLETE |
 | Phase 4-Deploy | Deploy Phase 4 changes | 1 | COMPLETE |
 | Phase 5 | Annual Survey + Pre-Production Alerts | 6 | COMPLETE |
-| Phase 5-Deploy | Deploy Phase 5 changes | 1 | COMPLETE ✓ |
+| Phase 5-Deploy | Deploy Phase 5 changes | 1 | COMPLETE |
 | Final-Deploy (Phases 0-5) | Full acceptance criteria check | 2 | COMPLETE |
 | Phase 6 | UI Foundation: Competition index endpoint + cross-competition data hook + design tokens | 3 | COMPLETE |
-| Phase 7 | TalentPage table view + assignment/availability columns | 6 | NOT STARTED |
-| Phase 8 | CommentaryPage: kebab menu + conflict badges + kanban | 3 | NOT STARTED |
-| Phase 9 | TalentProfilePage: collapsible sections + activity timeline | 2 | NOT STARTED |
+| Phase 7 | TalentPage table view + assignment/availability columns | 6 | COMPLETE |
+| Phase 8 | CommentaryPage: kebab menu + conflict badges + kanban | 3 | COMPLETE |
+| Phase 9 | TalentProfilePage: collapsible sections + activity timeline | 2 | COMPLETE |
 | Phase 10 | Power features: Cmd+K, saved filters, bulk ops | 3 | COMPLETE |
 | **Total** | | **47** | |
 
@@ -1369,7 +1369,7 @@ For `talentRoster/`, a one-shot `get()` is fine — talent records are small (no
 
 ## Final: Mark PRD Complete
 
-### Task F.3: Mark PRD complete — NOT STARTED
+### Task F.3: Mark PRD complete — COMPLETE
 
 Update `PRD-Commentary-Talent-CRM-2026-03-10.md` status to COMPLETE. Commit.
 
