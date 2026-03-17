@@ -104,12 +104,12 @@ export default function TalentPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-zinc-950 text-white">
       {/* Header */}
-      <div className="bg-gray-800 border-b border-gray-700 px-6 py-4">
+      <div className="bg-zinc-900 border-b border-zinc-800 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link to="/" className="text-gray-400 hover:text-white text-sm transition-colors">
+            <Link to="/" className="text-zinc-400 hover:text-white text-sm transition-colors">
               ← Home
             </Link>
             <div>
@@ -117,7 +117,7 @@ export default function TalentPage() {
                 <UserGroupIcon className="w-6 h-6 text-blue-400" />
                 Talent Roster
               </h1>
-              <p className="text-gray-400 text-sm">{talentList.length} total contacts</p>
+              <p className="text-zinc-400 text-sm">{talentList.length} total contacts</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -146,7 +146,7 @@ export default function TalentPage() {
             { label: 'Ready', count: counts.ready, color: 'border-green-600 bg-green-900/20', filter: 'ready' },
             { label: 'Has Contact', count: counts.hasContact, color: 'border-blue-600 bg-blue-900/20', filter: 'has-contact' },
             { label: 'Did Prior Season', count: counts.didPrior, color: 'border-amber-600 bg-amber-900/20', filter: 'did-2025' },
-            { label: 'Need Info', count: counts.needInfo, color: 'border-gray-600 bg-gray-800/50', filter: 'need-info' },
+            { label: 'Need Info', count: counts.needInfo, color: 'border-zinc-700 bg-zinc-900/50', filter: 'need-info' },
           ].map(({ label, count, color, filter }) => (
             <button
               key={filter}
@@ -154,7 +154,7 @@ export default function TalentPage() {
               className={`rounded-lg border p-3 text-left transition-colors ${color} ${statusFilter === filter ? 'ring-2 ring-white/20' : 'hover:bg-opacity-30'}`}
             >
               <div className="text-2xl font-bold text-white">{count}</div>
-              <div className="text-xs text-gray-300 mt-0.5">{label}</div>
+              <div className="text-xs text-zinc-300 mt-0.5">{label}</div>
             </button>
           ))}
         </div>
@@ -162,55 +162,55 @@ export default function TalentPage() {
         {/* Filter row */}
         <div className="flex items-center gap-3 mb-5 flex-wrap">
           <div className="relative flex-1 min-w-48">
-            <MagnifyingGlassIcon className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <MagnifyingGlassIcon className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               placeholder="Search by name, affiliation, conference..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+              className="w-full pl-9 pr-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500"
             />
           </div>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
+            className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
           >
             {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
           <select
             value={wagMagFilter}
             onChange={(e) => setWagMagFilter(e.target.value)}
-            className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
+            className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
           >
             {WAG_MAG_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
-            className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
+            className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
           >
             {ROLE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
           {(search || statusFilter || wagMagFilter || roleFilter) && (
             <button
               onClick={() => { setSearch(''); setStatusFilter(''); setWagMagFilter(''); setRoleFilter(''); }}
-              className="text-gray-400 hover:text-white text-sm flex items-center gap-1"
+              className="text-zinc-400 hover:text-white text-sm flex items-center gap-1"
             >
               <XMarkIcon className="w-4 h-4" />
               Clear
             </button>
           )}
-          <span className="text-gray-500 text-sm ml-auto">{filtered.length} shown</span>
+          <span className="text-zinc-500 text-sm ml-auto">{filtered.length} shown</span>
         </div>
 
         {/* Talent list */}
         {loading ? (
-          <div className="text-center py-20 text-gray-500">Loading roster...</div>
+          <div className="text-center py-20 text-zinc-500">Loading roster...</div>
         ) : error ? (
           <div className="text-center py-20 text-red-400">{error}</div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-20 text-gray-500">
+          <div className="text-center py-20 text-zinc-500">
             {talentList.length === 0 ? 'No talent in roster yet. Add someone to get started.' : 'No results match your filters.'}
           </div>
         ) : (
@@ -225,50 +225,50 @@ export default function TalentPage() {
       {/* Add Talent Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 rounded-xl border border-gray-700 w-full max-w-lg">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-700">
+          <div className="bg-zinc-900 rounded-xl border border-zinc-800 w-full max-w-lg">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
               <h2 className="text-lg font-semibold text-white">Add Talent</h2>
-              <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-white">
+              <button onClick={() => setShowAddModal(false)} className="text-zinc-400 hover:text-white">
                 <XMarkIcon className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleCreate} className="p-5 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
-                  <label className="block text-xs text-gray-400 mb-1">Name *</label>
+                  <label className="block text-xs text-zinc-400 mb-1">Name *</label>
                   <input
                     required
                     value={newTalent.name}
                     onChange={e => setNewTalent(p => ({ ...p, name: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
                     placeholder="Full name"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">Phone</label>
+                  <label className="block text-xs text-zinc-400 mb-1">Phone</label>
                   <input
                     value={newTalent.phone}
                     onChange={e => setNewTalent(p => ({ ...p, phone: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
                     placeholder="(555) 123-4567"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">Email</label>
+                  <label className="block text-xs text-zinc-400 mb-1">Email</label>
                   <input
                     type="email"
                     value={newTalent.email}
                     onChange={e => setNewTalent(p => ({ ...p, email: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
                     placeholder="email@example.com"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">WAG / MAG</label>
+                  <label className="block text-xs text-zinc-400 mb-1">WAG / MAG</label>
                   <select
                     value={newTalent.wagMag}
                     onChange={e => setNewTalent(p => ({ ...p, wagMag: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
                   >
                     <option value="WAG">WAG</option>
                     <option value="MAG">MAG</option>
@@ -276,11 +276,11 @@ export default function TalentPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">Role</label>
+                  <label className="block text-xs text-zinc-400 mb-1">Role</label>
                   <select
                     value={newTalent.commentaryRole}
                     onChange={e => setNewTalent(p => ({ ...p, commentaryRole: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
                   >
                     <option value="Play by Play / Lead">Play by Play / Lead</option>
                     <option value="Color / Analyst">Color / Analyst</option>
@@ -288,11 +288,11 @@ export default function TalentPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">Status</label>
+                  <label className="block text-xs text-zinc-400 mb-1">Status</label>
                   <select
                     value={newTalent.status}
                     onChange={e => setNewTalent(p => ({ ...p, status: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
                   >
                     <option value="ready">Ready</option>
                     <option value="has-contact">Has Contact</option>
@@ -301,20 +301,20 @@ export default function TalentPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">Affiliation</label>
+                  <label className="block text-xs text-zinc-400 mb-1">Affiliation</label>
                   <input
                     value={newTalent.affiliation}
                     onChange={e => setNewTalent(p => ({ ...p, affiliation: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
                     placeholder="e.g. Stanford Alumni"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">Conference</label>
+                  <label className="block text-xs text-zinc-400 mb-1">Conference</label>
                   <input
                     value={newTalent.conference}
                     onChange={e => setNewTalent(p => ({ ...p, conference: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
                     placeholder="e.g. ECAC, GEC, NCGA"
                   />
                 </div>
@@ -326,21 +326,21 @@ export default function TalentPage() {
                     onChange={e => setNewTalent(p => ({ ...p, canProduce: e.target.checked }))}
                     className="rounded"
                   />
-                  <label htmlFor="canProduce" className="text-sm text-gray-300">Can also produce</label>
+                  <label htmlFor="canProduce" className="text-sm text-zinc-300">Can also produce</label>
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-xs text-gray-400 mb-1">Notes</label>
+                  <label className="block text-xs text-zinc-400 mb-1">Notes</label>
                   <textarea
                     value={newTalent.notes}
                     onChange={e => setNewTalent(p => ({ ...p, notes: e.target.value }))}
                     rows={2}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500 resize-none"
+                    className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500 resize-none"
                     placeholder="Any notes about this person..."
                   />
                 </div>
               </div>
               <div className="flex justify-end gap-3 pt-2">
-                <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 text-gray-400 hover:text-white text-sm">
+                <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 text-zinc-400 hover:text-white text-sm">
                   Cancel
                 </button>
                 <button
@@ -366,7 +366,7 @@ function TalentCard({ talent }) {
   return (
     <Link
       to={`/talent/${talent.id}`}
-      className="block bg-gray-800 hover:bg-gray-750 border border-gray-700 hover:border-gray-600 rounded-lg px-4 py-3 transition-colors group"
+      className="block bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 rounded-lg px-4 py-3 transition-colors group"
     >
       <div className="flex items-center gap-3">
         {/* Status + WAG/MAG badges */}
@@ -391,7 +391,7 @@ function TalentCard({ talent }) {
               <span className="px-1.5 py-0.5 bg-teal-800 text-teal-200 text-xs rounded">Producer</span>
             )}
           </div>
-          <div className="text-xs text-gray-400 mt-0.5 truncate">
+          <div className="text-xs text-zinc-400 mt-0.5 truncate">
             {[talent.commentaryRole, talent.affiliation, talent.conference].filter(Boolean).join(' · ')}
           </div>
         </div>
@@ -413,7 +413,7 @@ function TalentCard({ talent }) {
             <a
               href={`mailto:${talent.email}`}
               onClick={e => e.stopPropagation()}
-              className="flex items-center gap-1 text-gray-400 hover:text-gray-300 text-sm transition-colors"
+              className="flex items-center gap-1 text-zinc-400 hover:text-zinc-300 text-sm transition-colors"
               title={talent.email}
             >
               <EnvelopeIcon className="w-3.5 h-3.5" />
@@ -428,7 +428,7 @@ function TalentCard({ talent }) {
               {talent.totalCompetitions || talent.competitionHistory?.length || 0}
             </div>
           )}
-          <div className="text-xs text-gray-500">
+          <div className="text-xs text-zinc-500">
             {(talent.totalCompetitions || talent.competitionHistory?.length || 0) === 1 ? 'event' : 'events'}
           </div>
         </div>
@@ -436,7 +436,7 @@ function TalentCard({ talent }) {
 
       {/* Notes snippet */}
       {talent.notes && (
-        <div className="mt-2 text-xs text-gray-500 truncate pl-27">
+        <div className="mt-2 text-xs text-zinc-500 truncate pl-27">
           {talent.notes}
         </div>
       )}

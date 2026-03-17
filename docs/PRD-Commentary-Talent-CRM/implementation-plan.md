@@ -970,7 +970,7 @@ Instead, use a **two-step approach**:
 
 ---
 
-### Task 6.2: Normalize design tokens across CRM pages — NOT STARTED
+### Task 6.2: Normalize design tokens across CRM pages — IN PROGRESS
 
 **Files:**
 - `show-controller/src/pages/TalentPage.jsx`
