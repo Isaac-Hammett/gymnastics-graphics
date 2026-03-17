@@ -929,6 +929,22 @@
     ],
     "consoleErrors": "none",
     "notes": "URL params sync with 300ms debounce working correctly. Views dropdown shows saved views list with delete option. Save View modal captures current filters and allows naming. localStorage persists views across sessions. Max 10 views enforced."
+  },
+  {
+    "taskId": "10.3",
+    "taskName": "Add bulk operations with multi-select",
+    "description": "Added multi-select functionality to the TalentTable component with checkboxes, shift+click range selection, and a floating action bar for bulk operations. Bulk operations include: Set Status (dropdown with all status options and confirmation modal), Export CSV (exports selected talents with all relevant fields), and Clear selection. Selection auto-clears when switching from table to card view.",
+    "expectedInScreenshot": "The /talent page should show the table view with checkbox column visible. Two rows should have checkboxes checked (Abby Bang and Abby Carpenter). A floating action bar should appear showing '2 selected' with 'Set Status...' dropdown button, 'Export CSV' button, and 'Clear' button.",
+    "timestamp": "2026-03-17T22:30:00Z",
+    "result": "PASS",
+    "screenshot": "screenshots/verify-task-10.3.png",
+    "commitHash": "53eecb1",
+    "filesModified": [
+      "show-controller/src/components/crm/TalentTable.jsx",
+      "show-controller/src/pages/TalentPage.jsx"
+    ],
+    "consoleErrors": "none",
+    "notes": "Multi-select with checkboxes working correctly. Shift+click range selection implemented using useRef for lastClickedIndex. Floating action bar appears when selection > 0. Bulk status change shows confirmation modal with count. CSV export uses Blob and URL.createObjectURL. Selection clears automatically when switching to card view."
   }
 ]
   </script>
