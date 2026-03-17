@@ -90,6 +90,7 @@ const summaryThemes = [
   { id: 'layout-default-v23', label: '📋 V23 No Rankings' },
   { id: 'layout-split-row', label: '📊 Split Row (5-team)' },
   { id: 'layout-dual-dynamic-v1', label: '📏 Dual Dynamic V1' },
+  { id: 'layout-dual-dynamic-v2', label: '📏 Dual Dynamic V2' },
   // COLOR THEMES - Same structure, different colors
   { id: 'default', label: 'Default (Original)' },
   { id: 'espn', label: 'ESPN Colors' },

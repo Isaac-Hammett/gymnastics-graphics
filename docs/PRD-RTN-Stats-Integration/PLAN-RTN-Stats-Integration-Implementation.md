@@ -59,6 +59,7 @@ Each row in the task tables below is ONE task. Complete exactly ONE task per ite
 | 5 | Playwright Integration Tests | P1 | COMPLETE | 22-24 |
 | 6 | Bug Fixes | P0 | COMPLETE | 27-43 |
 | 7 | Configurable Stat Types | P1 | COMPLETE | 44-45 |
+| 8 | GymACT League Support | P1 | COMPLETE | 46 |
 
 ---
 
@@ -374,5 +375,51 @@ Add a dropdown in the URL Generator that lets the producer choose which stat to 
 - [x] Selecting "NQS" fills the value field with NQS score and sets label to "NQS"
 - [x] Selecting "HIGH" fills with season high and sets label to "HIGH"
 - [x] Build passes
-- [ ] Deploy frontend + overlays
-- [ ] Verify on production
+- [x] Deploy frontend + overlays
+- [x] Verify on production (verified 2026-03-13: NQS label displays correctly)
+
+---
+
+## Phase 8: GymACT League Support (P1) — COMPLETE (1/1)
+
+### Task 46: GymACT league-aware RTN stats fetching
+
+| Field | Value |
+|-------|-------|
+| Status | COMPLETE |
+| Priority | P1 |
+| Files | `server/lib/rtnStatsService.js`, `server/index.js`, `show-controller/src/hooks/useLeagueRankings.js` |
+| Depends On | None (Phases 1-7 complete) |
+
+**Problem:**
+
+GymACT teams (e.g., Temple) have their RTN rankings at `/men/resultsga/` instead of `/men/results/`. The service was hardcoded to NCAA endpoints, causing GymACT teams to get no `teamRanking` data. The fallback to individual stats produced wrong numbers (individual all-around sums instead of team totals).
+
+**What was done:**
+
+1. Added `getResultsPath(league)` helper — returns `'resultsga'` for GymACT, `'results'` for NCAA (default)
+2. Updated `buildTeamStatUrls()`, `getCurrentWeek()`, `fetchTeamRanking()` to accept optional `league` param
+3. Updated `ingestTeamStats()` to accept and pass `league` through the call chain
+4. Updated `ingestCompetitionStats()` to read `league` from `teamsDatabase/teams/{teamKey}/league` (defaults to `'ncaa'`)
+5. Updated `refreshRtnStats` socket handler in `server/index.js` to read and pass `league`
+6. Updated `fetchLeagueRankings()` to use league-prefixed cache keys (`gymact-mens-{year}-{week}`)
+7. Updated `fetchLeagueRankings` socket handler to accept and pass `league`
+8. Updated `useLeagueRankings` client hook to support `league` option for cache key prefix and socket emit
+9. Set `league: "gymact"` on `teamsDatabase/teams/temple-mens` in Firebase
+
+**Data model:**
+
+New optional field on `teamsDatabase/teams/{teamKey}`:
+- `league`: `"ncaa"` (default if absent) or `"gymact"`
+
+GymACT rankings are cached separately at `rtnCache/rankings/gymact-{gender}-{year}-{week}/`.
+
+**Acceptance:**
+- [x] `getResultsPath()` helper added and exported
+- [x] All fetch/URL functions use league-aware results path
+- [x] `ingestCompetitionStats()` reads league from Firebase per team
+- [x] `refreshRtnStats` handler reads and passes league
+- [x] `fetchLeagueRankings` supports league param with separate cache keys
+- [x] `useLeagueRankings` hook supports league option
+- [x] Temple set to `league: "gymact"` in Firebase
+- [x] Build passes

@@ -200,6 +200,12 @@ export default function UrlGeneratorPage() {
   // Get team count from competition type (supports 2-7 teams)
   const teamCount = useMemo(() => getTeamCount(config?.compType), [config?.compType]);
 
+  // Rotation count: max of event count and team count (5+ teams have byes)
+  const rotationCount = useMemo(() => {
+    const eventCount = config?.compType?.startsWith('womens') ? 4 : 6;
+    return Math.max(eventCount, teamCount);
+  }, [config?.compType, teamCount]);
+
   // Initialize form data with support for up to 7 teams
   const [formData, setFormData] = useState({
     eventName: 'Big Ten Dual Meet',
@@ -579,8 +585,8 @@ export default function UrlGeneratorPage() {
                 <option value="overlap">Overlap</option>
               </select>
             </div>
-            <div className="grid grid-cols-6 gap-1">
-              {['1', '2', '3', '4', '5', '6'].map((num) => (
+            <div className={`grid gap-1 ${rotationCount <= 4 ? 'grid-cols-4' : rotationCount <= 6 ? 'grid-cols-6' : 'grid-cols-7'}`}>
+              {Array.from({ length: rotationCount }, (_, i) => String(i + 1)).map((num) => (
                 <button
                   key={`rotation-slate-${num}`}
                   onClick={() => {

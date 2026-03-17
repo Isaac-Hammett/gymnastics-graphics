@@ -303,7 +303,9 @@ competitions/{compId}/config/vmAddress: "203.0.113.50:3003"
 competitions/{compId}/config/vmCredentials: { username, password }
 ```
 
-**Producer view:** When a competition has a custom VM, the producer sidebar shows a "VM Connection" panel with IP, username, and password (with show/hide toggle).
+**Producer view:** When a competition has a custom VM, the producer sidebar shows a "VM Connection" panel with IP, username, and password (with show/hide toggle and copy-to-clipboard button).
+
+**Copy buttons:** Both the VM Card (`VMCard.jsx`) and Producer View (`ProducerView.jsx`) have a clipboard copy button next to the password field for easy copying.
 
 ### API Endpoints
 
@@ -450,6 +452,7 @@ Required fields:
 - `logo`: Virtius URL (e.g., `https://media.virti.us/upload/images/team/...`)
 - `school`: "School Name"
 - `roster`: Array of athlete names (e.g., `["First Last", "First Last", ...]`)
+- `league`: (optional) `"ncaa"` (default) or `"gymact"` — determines which RTN results endpoint to use for stats
 - `updatedAt`: ISO timestamp
 
 **Example:**

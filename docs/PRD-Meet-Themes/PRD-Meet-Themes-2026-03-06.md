@@ -400,7 +400,17 @@ Different graphic types have different available zones:
 
 ---
 
-## 8. Out of Scope (v1.0)
+## 8. Future Visual Enhancements (Backlog)
+
+**Added:** 2026-03-13 — ideas from broadcast feedback for future iterations
+
+- **Animated team logos** — Motion graphics for intro sequences (logo fly-in, reveal animations)
+- **Texture elements** — Chalk dust texture overlays inspired by ESPN baseball aesthetic; could apply as CSS background patterns or canvas-based particle effects
+- **Enhanced visual theming** — Explore gymnastics-specific visual language beyond the current color-based theme system (apparatus silhouettes, dynamic backgrounds, etc.)
+
+---
+
+## 9. Out of Scope (v1.0)
 
 - **Mid-show theme toggle** -- Turning theme on/off during a broadcast (e.g., only for one rotation)
 - **Per-graphic theme overrides** -- Different theme settings per graphic type

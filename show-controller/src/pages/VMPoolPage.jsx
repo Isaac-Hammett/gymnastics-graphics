@@ -331,17 +331,27 @@ export default function VMPoolPage() {
     });
   }, [competitions, getVMForCompetition, selectedVMForAssign]);
 
-  // Filter competitions by search
+  // Filter and sort competitions by search
   const filteredCompetitions = useMemo(() => {
-    if (!assignSearch.trim()) return availableCompetitions;
+    let result = availableCompetitions;
 
-    const search = assignSearch.toLowerCase();
-    return availableCompetitions.filter(comp =>
-      comp.name.toLowerCase().includes(search) ||
-      comp.id.toLowerCase().includes(search) ||
-      comp.team1?.toLowerCase().includes(search) ||
-      comp.team2?.toLowerCase().includes(search)
-    );
+    if (assignSearch.trim()) {
+      const search = assignSearch.toLowerCase();
+      result = result.filter(comp =>
+        comp.name.toLowerCase().includes(search) ||
+        comp.id.toLowerCase().includes(search) ||
+        comp.team1?.toLowerCase().includes(search) ||
+        comp.team2?.toLowerCase().includes(search)
+      );
+    }
+
+    // Sort by date descending (newest first), undated competitions at the end
+    return [...result].sort((a, b) => {
+      if (!a.date && !b.date) return 0;
+      if (!a.date) return 1;
+      if (!b.date) return -1;
+      return new Date(b.date) - new Date(a.date);
+    });
   }, [availableCompetitions, assignSearch]);
 
   // Start a cold VM (first stopped VM found)

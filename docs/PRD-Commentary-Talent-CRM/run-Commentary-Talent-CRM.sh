@@ -11,7 +11,7 @@
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-LOG_FILE="$SCRIPT_DIR/logs/claude-output.jsonl"
+LOG_FILE="$SCRIPT_DIR/logs/summary.log"
 PRD_FILE="$SCRIPT_DIR/PRD-Commentary-Talent-CRM-2026-03-10.md"
 
 mkdir -p "$SCRIPT_DIR/logs"
@@ -23,7 +23,7 @@ MAX_ITERATIONS=40  # Safety limit
 cd "$PROJECT_ROOT"
 
 for i in $(seq 1 $MAX_ITERATIONS); do
-    echo "=== Iteration $i ($(date)) ===" | tee -a "$LOG_FILE"
+    echo "=== Iteration $i started at $(date) ===" | tee -a "$LOG_FILE"
 
     # Check if PRD is complete
     if grep -q "Status: COMPLETE" "$PRD_FILE" 2>/dev/null; then
@@ -35,20 +35,27 @@ for i in $(seq 1 $MAX_ITERATIONS); do
     # Snapshot task count before running
     TASKS_BEFORE=$(grep -c "— COMPLETE" "$SCRIPT_DIR/implementation-plan.md" 2>/dev/null || echo "0")
 
+    # Run Claude without streaming JSON — just capture exit code
     cat "$SCRIPT_DIR/prompt-Commentary-Talent-CRM.md" | \
-        claude -p --dangerously-skip-permissions --verbose --output-format stream-json \
-        --mcp-config "$MCP_CONFIG" 2>&1 | \
-        tee -a "$LOG_FILE"
+        claude -p --dangerously-skip-permissions \
+        --mcp-config "$MCP_CONFIG" > /dev/null 2>&1
+
+    EXIT_CODE=$?
 
     # Check if any task was completed this iteration
     TASKS_AFTER=$(grep -c "— COMPLETE" "$SCRIPT_DIR/implementation-plan.md" 2>/dev/null || echo "0")
 
+    echo "  Finished at $(date) | exit=$EXIT_CODE | tasks: $TASKS_BEFORE -> $TASKS_AFTER" | tee -a "$LOG_FILE"
+
     if [ "$TASKS_AFTER" -le "$TASKS_BEFORE" ]; then
-        echo "⚠️  WARNING: No tasks completed this iteration (before=$TASKS_BEFORE, after=$TASKS_AFTER)" | tee -a "$LOG_FILE"
+        echo "  WARNING: No tasks completed this iteration" | tee -a "$LOG_FILE"
         say "Warning: no progress made. Check the log."
-        # Stop instead of looping forever on a stuck state
         exit 1
     fi
+
+    # DEPLOY CHECK: After every code task, verify undeployed changes aren't accumulating.
+    # The prompt must include deploy as part of each task — not as a separate batched step.
+    # See CLAUDE.md "Deploy to Production" for the full deploy procedure.
 
     say "iteration $i complete, $TASKS_AFTER tasks done"
     sleep 3

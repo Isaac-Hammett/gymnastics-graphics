@@ -1,8 +1,8 @@
 # PRD: Commentary Talent CRM
 
-**Status:** COMPLETE
+**Status:** PHASES 0-5 COMPLETE · PHASES 6-10 IN PROGRESS
 **Date:** 2026-03-10
-**Last Updated:** 2026-03-11
+**Last Updated:** 2026-03-12
 
 ---
 
@@ -19,6 +19,12 @@ AI-powered talent discovery from alumni rosters, and automated pre-production al
 | Producer URL | `https://commentarygraphic.com/{compId}/producer` |
 | Commentary URL | `https://commentarygraphic.com/{compId}/commentary` |
 | Talent Roster | `https://commentarygraphic.com/talent` |
+
+---
+
+## Phase 1 — Talent Roster UI (COMPLETE — pre-dates this PRD)
+
+Phase 1 built the foundational talent roster UI: the `/talent` page with card-based browsing, search/filter, status badges, and the `/talent/:talentId` profile page with editable fields. This phase was completed before the PRD was written and is the baseline all subsequent phases build on.
 
 ---
 
@@ -56,6 +62,9 @@ AI-powered talent discovery from alumni rosters, and automated pre-production al
 - [ ] Clicking "No" shows next 5 competitions with checkboxes; checking saves to `talentRoster/{id}/interested`
 - [ ] Adding a note with a date mention (e.g., "available late February") extracts and saves date hints to `interestedDates`
 - [ ] "Interested" badge appears in the talent search panel on CommentaryPage for people who flagged that competition
+
+### Security Notes (Phase 2)
+- **Booking tokens are world-readable/writable** in Firebase (`bookingTokens.$token: { .read: true, .write: true }`). Tokens are unguessable UUIDs so the risk is low, but there is no expiration or revocation mechanism. Future improvement: add a `createdAt` field and reject tokens older than 30 days.
 
 ---
 
@@ -135,6 +144,102 @@ ANTHROPIC_API_KEY=...  (on coordinator server)
 - [ ] "Copy talent list" copies formatted `Name — Phone` lines to clipboard
 - [ ] Homepage shows pre-production alert panel with all 5 alert types
 - [ ] Completing each action causes its alert to disappear within 5 seconds (real-time Firebase sync)
+
+### Security Notes (Phase 5)
+- **Survey is public** (`/survey/:year`). Writes go to `surveyResponses/{year}/` (append-only), NOT directly to `talentRoster/`. A coordinator must manually trigger the merge from settings. This limits abuse to junk survey entries, not talent data corruption.
+- **No CAPTCHA or rate limiting** on survey submission. Acceptable for now (low-traffic, invite-only URL). If spam becomes an issue, add a simple honeypot field or Firebase App Check.
+
+### Security Notes (Phase 3 — Screenshot Upload)
+- **Claude API cost exposure:** Each screenshot-to-text call costs ~$0.01-0.05. No rate limit on the endpoint. Future improvement: add a per-hour cap (e.g., 20 calls/hour) in the server endpoint.
+
+---
+
+## Phase 6 — CRM UI Overhaul: Cross-Competition Visibility
+
+### Core Problems
+1. **"Who is attached to what competition?"** — TalentPage only shows a competition count. No way to see which competitions, what role, or what status without visiting each CommentaryPage individually.
+2. **"Who have I asked to do what?"** — Outreach status (invited/confirmed/briefed) is siloed per-competition. No cross-competition outreach view, no "last contacted" column, no "awaiting response" filter.
+3. **"Who has acknowledged availability?"** — `interested` and `surveyAvailability` data only surfaces in CommentaryPage's sidebar for one competition. TalentPage has no availability column at all.
+
+### User Stories
+- As a coordinator, I want to see all of a person's competition assignments in one row so that I don't have to click into each competition to find out who is doing what.
+- As a coordinator, I want to see who I've invited and who hasn't responded yet across all competitions so that I can follow up efficiently.
+- As a coordinator, I want to see who has flagged availability (via booking links or surveys) directly in the roster so that I can prioritize outreach.
+
+### Acceptance Criteria
+- [ ] A `useTalentAssignments` hook loads all commentary assignments across all competitions and merges them into talent records
+- [ ] Competition ID discovery uses a server endpoint (`GET /api/competitions/index`) that returns only `{ [compId]: { eventName, meetDate } }` — NOT a client-side `get()` on the full `competitions/` tree
+- [ ] All CRM pages use consistent color tokens (no more `gray-*` vs `zinc-*` mix)
+
+---
+
+## Phase 7 — TalentPage Table View + Assignment/Availability Columns
+
+### User Stories
+- As a coordinator, I want a table view of 428 contacts with sortable columns so that I can scan the roster quickly instead of scrolling through cards.
+- As a coordinator, I want to see assignments, availability, and last outreach date in the roster so that I have full context without clicking into profiles.
+
+### Acceptance Criteria
+- [ ] TalentPage has a table view with sortable columns: Name, Status, WAG/MAG, Role, Assignments, Available For, Last Outreach, Phone
+- [ ] Toggle between card view and table view (user preference persisted)
+- [ ] Assignments column shows competition names with role and status as colored pills
+- [ ] Availability column shows green/yellow/gray dots derived from `interested` + `surveyAvailability` data
+- [ ] "Last Outreach" column shows most recent contact date and type across all competitions
+- [ ] Table rows are clickable (navigate to talent profile)
+- [ ] Card view also shows assignment details instead of generic count
+- [ ] "Last Outreach" column shows "—" when no outreach exists
+- [ ] Loading indicator visible while `useTalentAssignments` fetches cross-competition data
+
+---
+
+## Phase 8 — CommentaryPage: Kebab Menu + Conflict Badges + Kanban
+
+### User Stories
+- As a coordinator, I want assignment card actions collapsed into a menu so that I can focus on the next workflow step instead of 8+ buttons.
+- As a coordinator, I want to see same-day conflicts prominently so that I don't double-book talent.
+- As a coordinator, I want a kanban view of assignments by status so that I can see broadcast readiness at a glance.
+
+### Acceptance Criteria
+- [ ] Assignment cards show only the primary workflow action inline; all other actions are in a kebab (three-dot) menu
+- [ ] Kebab menu groups actions into sections: Workflow, Outreach, Links, Danger
+- [ ] Same-day conflict talent show an orange warning badge with hover popover explaining the conflict (competition name + status)
+- [ ] Optional kanban toggle shows assignments as draggable columns: Assigned | Invited | Confirmed | Briefed | Declined
+- [ ] Kanban columns show visual drop-target feedback (highlight on drag-over) and empty-column placeholder text
+- [ ] Kebab menu closes on Escape key press
+
+---
+
+## Phase 9 — TalentProfilePage: Collapsible Sections + Activity Timeline
+
+### User Stories
+- As a coordinator, I want the profile page organized into collapsible sections so that I can control information density.
+- As a coordinator, I want a visual timeline of all communications with type-based icons so that I can quickly see outreach history.
+
+### Acceptance Criteria
+- [ ] Profile organized into collapsible sections: Contact Info, Role & Expertise, Availability & Assignments, Notes, History
+- [ ] "Availability & Assignments" section shows all current assignments (competition + role + status) with clickable links to `/{compId}/commentary`, plus interest flags
+- [ ] Communications tab shows a vertical timeline with type-based icons and color coding
+- [ ] Timeline has filter chips: All | iMessage | Invite | Briefing | Calendar | Pre-Production | Note
+
+---
+
+## Phase 10 — Power Features: Command Palette, Saved Filters, Bulk Operations
+
+### User Stories
+- As a coordinator, I want a command palette (Cmd+K) to find any talent or competition instantly during a live broadcast.
+- As a coordinator, I want to save filter combinations so that I can one-click to "Available WAG Analysts" or "Awaiting Response" views.
+- As a coordinator, I want to select multiple talent and perform bulk actions (status change, export) so that I'm not doing one-at-a-time operations.
+
+### Acceptance Criteria
+- [ ] Cmd+K command palette searches talent by name/phone/affiliation and competitions by name
+- [ ] Command palette shows recent items and allows direct navigation
+- [ ] TalentPage filter state persists in URL query params (bookmarkable)
+- [ ] Multi-select on TalentPage table with floating action bar: Set Status, Set WAG/MAG, Export CSV (with confirmation dialog for destructive bulk actions)
+- [ ] Saved views capped at 10 maximum
+- [ ] CSV export includes: Name, Status, WAG/MAG, Role, Phone, Email, Assignments (comma-separated), Last Outreach
+- [ ] Command palette debounces search input (300ms)
+- [ ] No console errors on any CRM page
+- [ ] All CRM pages render correctly at 1024px width (table has horizontal scroll if needed)
 
 ---
 

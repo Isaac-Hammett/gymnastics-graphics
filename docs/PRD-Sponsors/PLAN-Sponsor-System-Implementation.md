@@ -1,6 +1,6 @@
 # Plan: Sponsor System — Implementation Tracker
 
-**Status:** COMPLETE (18/18 tasks complete)
+**Status:** IN PROGRESS (18/20 tasks complete)
 **Last Updated:** 2026-03-12
 
 ---
@@ -27,6 +27,8 @@
 | T16 | L | `show-controller/src/components/GraphicsControl.jsx` | Fix sponsor serialization to include all adjustment fields (scale, offset, crop) — currently only passes name and url | COMPLETE |
 | T17 | M | `show-controller/src/pages/UrlGeneratorPage.jsx` | Persist sponsor overrides back to Firebase via saveSponsor (currently session-only local state) | COMPLETE |
 | T18 | N | — | Build + deploy SPA + overlay files to production; verify sponsor logos center correctly and adjustments persist | COMPLETE |
+| T19 | O | `overlays/sponsors-cycle.html` | SVG logo support: detect SVGs, skip canvas pipeline, render via `<img>` fallback with scale/offset | — | NOT STARTED |
+| T20 | P | — | Build + deploy overlays with SVG support | T19 | NOT STARTED |
 
 ---
 
@@ -48,6 +50,8 @@
 | **L** | GraphicsControl: Pass All Fields | T16 | COMPLETE |
 | **M** | URL Generator: Persist Overrides | T17 | COMPLETE |
 | **N** | Build & Deploy v2 | T18 | COMPLETE |
+| **O** | SVG Logo Support | T19 | NOT STARTED |
+| **P** | Build & Deploy v3 | T20 | NOT STARTED |
 
 ---
 
@@ -77,6 +81,12 @@ T13-T17 all ──→ T18 (build + deploy)
 ```
 
 **Phase 2 parallelization:** T13 can run independently. T14 must complete first, then T15 + T16 + T17 can run in parallel. T18 last.
+
+--- Phase 3 (SVG Support) ---
+
+T19 (SVG overlay fix) ── no dependencies (standalone overlay HTML)
+
+T19 ──→ T20 (build + deploy)
 
 ---
 
@@ -493,6 +503,112 @@ Add per-sponsor adjustment controls to the `SponsorsView` component (line 684). 
 
 ---
 
+### T19: Overlay — SVG Logo Support in sponsors-cycle.html
+
+**File:** `overlays/sponsors-cycle.html`
+**Dependencies:** None
+**Plan Reference:** [PLAN Section 12](./PLAN-Sponsor-System-2026-02-13.md#12-svg-sponsor-logo-support)
+
+**Problem:** The `renderTrimmedLogo()` function draws images to an offscreen canvas for pixel-level content detection. SVGs break this pipeline:
+1. SVGs without explicit `width`/`height` report `naturalWidth === 0`, creating a 0×0 canvas → blank output
+2. Cross-origin SVGs taint the canvas → `getImageData()` throws (existing fallback catches this, but still uses 0×0 dims)
+3. Canvas `drawImage()` with SVGs can produce inconsistent results across browsers
+
+**Changes:**
+
+1. **Add SVG detection helpers** (before `getContentBounds()`):
+   ```javascript
+   function isSvgUrl(url) {
+     try { return new URL(url).pathname.toLowerCase().endsWith('.svg'); }
+     catch (e) { return false; }
+   }
+   ```
+
+2. **Add SVG rendering function** (after `applyOverrides()`):
+   ```javascript
+   function renderSvgLogo(imgSrc, sponsor) {
+     const el = document.createElement('img');
+     el.src = imgSrc;
+     el.style.maxHeight = TARGET_HEIGHT + 'px';
+     el.style.maxWidth = MAX_WIDTH + 'px';
+     el.style.objectFit = 'contain';
+     // Apply scale/offset (same logic as applyOverrides but for <img>)
+     const scale = (sponsor.scale || 100) / 100;
+     const ox = sponsor.offsetX || 0;
+     const oy = sponsor.offsetY || 0;
+     const transforms = [];
+     if (scale !== 1) transforms.push(`scale(${scale})`);
+     if (ox || oy) transforms.push(`translate(${ox}px, ${oy}px)`);
+     if (transforms.length) el.style.transform = transforms.join(' ');
+     return el;
+   }
+   ```
+
+3. **Add SVG detection in BOTH load handlers** (lines 416 and 427). The `img.onload` handler AND the `fallback.onload` handler both call `renderTrimmedLogo()` — SVG detection must be in both:
+
+   ```javascript
+   // In img.onload (line 416):
+   img.onload = () => {
+     const isSvg = isSvgUrl(sponsor.url) || (img.naturalWidth === 0 && img.naturalHeight === 0);
+     if (isSvg) {
+       slide.appendChild(renderSvgLogo(img.src, sponsor));
+     } else {
+       const { canvas, autoBounds, usedBounds } = renderTrimmedLogo(img, sponsor);
+       applyOverrides(canvas, sponsor);
+       slide.appendChild(canvas);
+       if (showBounds) drawBoundsOverlay(slide, canvas, autoBounds, usedBounds, sponsor);
+     }
+   };
+
+   // In fallback.onload (line 427) — SAME pattern:
+   fallback.onload = () => {
+     const isSvg = isSvgUrl(sponsor.url) || (fallback.naturalWidth === 0 && fallback.naturalHeight === 0);
+     if (isSvg) {
+       slide.appendChild(renderSvgLogo(fallback.src, sponsor));
+     } else {
+       const { canvas, autoBounds, usedBounds } = renderTrimmedLogo(fallback, sponsor);
+       applyOverrides(canvas, sponsor);
+       slide.appendChild(canvas);
+       if (showBounds) drawBoundsOverlay(slide, canvas, autoBounds, usedBounds, sponsor);
+     }
+   };
+   ```
+
+   **IMPORTANT:** The onerror fallback path (line 424-439) retries without `crossOrigin` attribute. If an SVG fails CORS on first try but loads without CORS on fallback, it would still hit the broken canvas pipeline without this fix.
+
+**What NOT to change:**
+- `sponsors-thanks.html` — Canvas color analysis failure is graceful (null → default dark bg). No fix needed.
+- `sponsors-bug.html` — Already uses `<img>` tags. SVGs work perfectly.
+- Media Manager — Already uses `<img>` thumbnails. SVGs work perfectly.
+- Crop controls UI — Crop fields remain in the data model and UI but have no effect on SVGs in the overlay (this is acceptable; scale/offset still work)
+
+**Test cases:**
+- SVG with explicit width/height: Should render correctly, centered, at TARGET_HEIGHT
+- SVG without width/height (viewBox only): Should render correctly via `<img>` fallback
+- SVG from cross-origin CDN: Should render (no canvas taint issue since we skip canvas)
+- Raster images (PNG, JPEG): Unchanged behavior via canvas pipeline
+- SVG with scale/offset adjustments: Transform should apply correctly
+
+**Status:** NOT STARTED
+
+---
+
+### T20: Build & Deploy v3 (SVG Support)
+
+**Dependencies:** T19
+
+**Steps:**
+1. Deploy overlay files (rebuild overlays tarball including updated `sponsors-cycle.html`)
+2. Set permissions: `chmod 644 /var/www/commentarygraphic/overlays/*`
+3. Verify:
+   - Open sponsors-cycle overlay with an SVG sponsor URL → logo renders correctly
+   - Open sponsors-cycle overlay with a PNG sponsor URL → existing behavior unchanged
+   - Verify scale/offset adjustments work on SVG sponsors
+
+**Status:** NOT STARTED
+
+---
+
 ## Verification Checklist
 
 ### Phase 1 (T1-T12) — COMPLETE
@@ -505,7 +621,7 @@ Add per-sponsor adjustment controls to the `SponsorsView` component (line 684). 
 - [x] **Deploy** — Production URLs serve overlays (not React SPA)
 - [x] **OBS test** — `sponsors-bug.html` as Browser Source → transparency works
 
-### Phase 2 (T13-T18) — NOT STARTED
+### Phase 2 (T13-T18) — COMPLETE
 
 - [ ] **Content detection** — JPEG logos with white backgrounds now auto-center correctly in sponsors-cycle
 - [ ] **Data model** — `saveSponsor` persists adjustment fields; `getTeamSponsors` returns them
@@ -513,6 +629,14 @@ Add per-sponsor adjustment controls to the `SponsorsView` component (line 684). 
 - [ ] **GraphicsControl** — Send sponsor graphic from producer view → adjustment fields are included in the overlay URL
 - [ ] **URL Generator persist** — Adjust a sponsor in URL Generator → reload page → adjustments are still there
 - [ ] **End-to-end** — Add a JPEG white-bg sponsor logo → it auto-centers → fine-tune with crop/offset → send from producer → output shows centered, adjusted logo
+
+### Phase 3 (T19-T20) — NOT STARTED
+
+- [ ] **SVG in sponsors-cycle** — SVG sponsor URL renders correctly (not blank) in sponsors-cycle overlay
+- [ ] **SVG with viewBox only** — SVG without explicit width/height renders correctly
+- [ ] **Raster unchanged** — PNG/JPEG sponsors still use canvas pipeline with content detection
+- [ ] **Scale/offset on SVG** — Adjustment controls (scale, offsetX, offsetY) work on SVG sponsors
+- [ ] **Deploy** — Updated overlay file accessible on production
 
 ---
 

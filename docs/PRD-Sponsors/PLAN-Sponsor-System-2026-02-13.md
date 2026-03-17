@@ -517,6 +517,243 @@ Verify all three overlay files are accessible (should serve the overlay, NOT the
 
 ---
 
+## 10. Smart Content Detection — White Background Trimming
+
+**File**: `overlays/sponsors-cycle.html`
+
+### The Problem
+
+The `getContentBounds()` function (line 196) scans pixel alpha values to detect content vs background. Pixels with `alpha > 20` are considered content. This works for transparent PNGs but fails completely for:
+- **JPEG images** (no alpha channel — all pixels have alpha=255)
+- **PNGs with white backgrounds** (opaque white pixels are alpha=255)
+
+When detection fails, the entire image is used including any asymmetric whitespace. The canvas is centered by flexbox but the visible logo content appears off-center.
+
+### The Solution — Two-Pass Detection
+
+Replace the single alpha-based scan with a two-pass strategy:
+
+```javascript
+function getContentBounds(imageData, w, h) {
+  const d = imageData.data;
+
+  // Pass 1: Alpha-based detection (existing logic)
+  let top = h, bottom = 0, left = w, right = 0;
+  const alphaThreshold = 20;
+  let opaquePixelCount = 0;
+  let totalPixels = w * h;
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const idx = (y * w + x) * 4;
+      if (d[idx + 3] > alphaThreshold) {
+        opaquePixelCount++;
+        if (y < top) top = y;
+        if (y > bottom) bottom = y;
+        if (x < left) left = x;
+        if (x > right) right = x;
+      }
+    }
+  }
+
+  // If alpha detection found meaningful bounds (content < 90% of image), use it
+  const contentArea = (right - left) * (bottom - top);
+  if (contentArea > 0 && contentArea < totalPixels * 0.9) {
+    // Add 2% padding (existing logic)
+    const padX = Math.round((right - left) * 0.02);
+    const padY = Math.round((bottom - top) * 0.02);
+    return {
+      x: Math.max(0, left - padX),
+      y: Math.max(0, top - padY),
+      w: Math.min(w, right - left + padX * 2),
+      h: Math.min(h, bottom - top + padY * 2),
+    };
+  }
+
+  // Pass 2: White/near-white background detection
+  // For opaque images, treat near-white pixels as background
+  const WHITE_THRESHOLD = 240; // R, G, B all > 240 = "near white"
+  top = h; bottom = 0; left = w; right = 0;
+  let contentPixels = 0;
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const idx = (y * w + x) * 4;
+      const r = d[idx], g = d[idx + 1], b = d[idx + 2];
+      // Pixel is "content" if it's NOT near-white
+      if (r <= WHITE_THRESHOLD || g <= WHITE_THRESHOLD || b <= WHITE_THRESHOLD) {
+        contentPixels++;
+        if (y < top) top = y;
+        if (y > bottom) bottom = y;
+        if (x < left) left = x;
+        if (x > right) right = x;
+      }
+    }
+  }
+
+  // Only use white-trim bounds if we found meaningful content
+  // (at least 1% of pixels are non-white, and content area < 95% of image)
+  if (contentPixels > totalPixels * 0.01 && top <= bottom && left <= right) {
+    const trimmedArea = (right - left) * (bottom - top);
+    if (trimmedArea < totalPixels * 0.95) {
+      const padX = Math.round((right - left) * 0.02);
+      const padY = Math.round((bottom - top) * 0.02);
+      return {
+        x: Math.max(0, left - padX),
+        y: Math.max(0, top - padY),
+        w: Math.min(w, right - left + padX * 2),
+        h: Math.min(h, bottom - top + padY * 2),
+      };
+    }
+  }
+
+  // Fallback: use entire image
+  return { x: 0, y: 0, w, h };
+}
+```
+
+### Key Design Choices
+
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| White threshold | RGB > 240 (all three) | Catches pure white (#fff) and near-white (#f5f5f5) but not light gray logos |
+| Pass 1 threshold | Content < 90% of image area | If alpha trimming removes >10%, the logo has meaningful transparency — use it |
+| Pass 2 safety | Content > 1% of pixels, trimmed area < 95% | Prevents trimming logos that ARE mostly white (e.g., white text logo on white bg) |
+| Crop override | Still wins over both passes | Manual crop always takes priority (existing behavior, unchanged) |
+
+### What NOT to change
+- `sponsors-thanks.html` — Uses `object-fit: contain` with simple `<img>` tags, not canvas-based trimming. Centering is handled by CSS grid. No content detection needed.
+- `sponsors-bug.html` — Uses `object-fit: contain` in a small 200x80 container. No content detection.
+- Only `sponsors-cycle.html` has the `getContentBounds()` + `renderTrimmedLogo()` pipeline.
+
+---
+
+## 11. Sponsor Adjustment Fields — Data Model Extension
+
+### Firebase Data Model Update
+
+**Path**: `teamsDatabase/sponsors/{team-key}/{sponsor-key}` (existing, extended)
+
+```
+teamsDatabase/sponsors/
+  cal-womens/
+    nike/
+      name: "Nike"
+      url: "https://example.com/nike-logo.png"
+      tier: "presenting"
+      order: 0
+      scale: 120          # NEW - percentage (default: 100, omitted when default)
+      offsetX: -15         # NEW - pixels (default: 0, omitted when default)
+      offsetY: 10          # NEW - pixels (default: 0, omitted when default)
+      cropX: 50            # NEW - source image pixels (default: null/omitted)
+      cropY: 30            # NEW - source image pixels (default: null/omitted)
+      cropW: 400           # NEW - source image pixels (default: null/omitted)
+      cropH: 300           # NEW - source image pixels (default: null/omitted)
+      updatedAt: "2026-02-13T..."
+```
+
+**Convention**: Fields with default values (scale=100, offsetX=0, offsetY=0, crop=null) are omitted from Firebase to keep the data clean. The read side uses `?? null` / `?? 0` defaults.
+
+### Data Flow After Fix
+
+```
+Media Manager → saveSponsor(teamKey, key, {name, url, tier, order, scale, cropX, ...})
+                    ↓
+Firebase: teamsDatabase/sponsors/{teamKey}/{key} (includes adjustment fields)
+                    ↓
+getTeamSponsors() returns [{key, name, url, tier, order, scale, offsetX, offsetY, cropX, cropY, cropW, cropH}]
+                    ↓
+GraphicsControl.jsx → JSON.stringify([{name, url, scale, offsetX, offsetY, cropX, cropY, cropW, cropH}])
+                    ↓
+output.html → iframe src with ?sponsors=encoded-json
+                    ↓
+sponsors-cycle.html → getEffectiveBounds() uses crop → applyOverrides() uses scale/offset
+```
+
+---
+
+## 12. SVG Sponsor Logo Support
+
+### The Problem
+
+The sponsor system currently assumes raster images (PNG, JPEG). While SVG URLs are accepted (no format validation), SVGs break in `sponsors-cycle.html` due to its canvas-based rendering pipeline:
+
+1. **`naturalWidth`/`naturalHeight` = 0** — SVGs without explicit `width`/`height` attributes report 0 for these properties. This creates a 0×0 offscreen canvas in `renderTrimmedLogo()`, producing nothing.
+
+2. **Canvas taint from cross-origin SVGs** — `getImageData()` throws a security error when the canvas is tainted by a cross-origin SVG. The existing try/catch falls back to full-image bounds, but combined with issue #1 the fallback still uses 0×0 dimensions.
+
+3. **Canvas `drawImage()` with SVG** — Even SVGs with explicit dimensions may render inconsistently on canvas across browsers, especially when the SVG uses percentage-based sizing or relies on the container for dimensions.
+
+### Impact by Overlay
+
+| Overlay | Rendering Method | SVG Impact | Fix Needed |
+|---------|-----------------|------------|------------|
+| `sponsors-cycle.html` | Canvas pixel scanning + canvas render | **Broken** — 0×0 canvas, blank output | Yes |
+| `sponsors-thanks.html` | `<img>` tags + canvas color analysis | **Degraded** — color analysis fails silently, falls back to default dark background | Low priority (acceptable) |
+| `sponsors-bug.html` | `<img>` tags with `object-fit: contain` | **Works** — no canvas involved | None |
+| Media Manager preview | `<img>` 48×48 thumbnails | **Works** | None |
+
+### The Fix — SVG Detection + Fallback Rendering Path
+
+In `sponsors-cycle.html`, detect SVGs and use a direct `<img>` rendering path instead of the canvas pipeline:
+
+```javascript
+function isSvgUrl(url) {
+  try {
+    const pathname = new URL(url).pathname;
+    return pathname.toLowerCase().endsWith('.svg');
+  } catch (e) {
+    return false;
+  }
+}
+
+function isSvgImage(img) {
+  // Check both URL extension and zero natural dimensions (SVG without width/height)
+  return isSvgUrl(img.src) || (img.naturalWidth === 0 && img.naturalHeight === 0);
+}
+```
+
+When `isSvgImage()` returns true, skip `renderTrimmedLogo()` and create an `<img>` element directly:
+
+```javascript
+function renderSvgLogo(img, sponsor) {
+  // SVGs render natively in <img> — no canvas needed
+  const imgEl = document.createElement('img');
+  imgEl.src = img.src;
+  imgEl.style.maxHeight = TARGET_HEIGHT + 'px';
+  imgEl.style.maxWidth = MAX_WIDTH + 'px';
+  imgEl.style.objectFit = 'contain';
+
+  // Apply scale/offset overrides if present
+  const scale = (sponsor?.scale ?? 100) / 100;
+  const offsetX = sponsor?.offsetX ?? 0;
+  const offsetY = sponsor?.offsetY ?? 0;
+  imgEl.style.transform = `scale(${scale}) translate(${offsetX}px, ${offsetY}px)`;
+
+  return { element: imgEl, type: 'svg' };
+}
+```
+
+**Key decisions:**
+
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| Detection method | URL extension + zero dimensions | URL check catches explicit `.svg` files; zero-dim check catches SVGs served with wrong MIME type |
+| Rendering fallback | `<img>` with `object-fit: contain` | Browser's native SVG renderer handles all sizing, viewBox, and scaling correctly |
+| Content detection | Skipped for SVGs | Canvas pixel scanning can't work on SVGs; SVGs don't have whitespace padding issues like rasters |
+| Crop controls | Skipped for SVGs | Crop requires canvas `drawImage` source rect; not applicable to SVGs. Scale/offset still work. |
+| `sponsors-thanks.html` | No changes | Color analysis failure is graceful (default dark bg). Could enhance later but low priority. |
+
+### What about SVGs without `.svg` extension?
+
+Some CDNs serve SVGs from URLs like `https://cdn.example.com/image/abc123` with no file extension. These are detected by the zero-dimensions fallback check. If an SVG has explicit `width`/`height` attributes, it will have non-zero `naturalWidth`/`naturalHeight` and could enter the canvas pipeline — but modern browsers handle `drawImage()` with dimensioned SVGs correctly, so this is fine.
+
+### Security Note
+
+SVGs loaded via `<img>` tags have all scripts disabled by the browser (no `<script>`, no event handlers, no `<foreignObject>` with HTML). This is safe. We do NOT use `<object>`, `<embed>`, or inline SVG injection, which would be unsafe with untrusted SVG URLs.
+
+---
+
 ## Open Questions
 
 1. **Rundown Editor integration**: The Rundown Editor has a separate per-segment sponsor system (`sponsor.name`, `sponsor.logo`, `sponsor.tier` per segment) plus a SponsorFulfillmentModal. Should the segment sponsor picker pull from the per-team `teamsDatabase/sponsors` database? This would unify sponsor management but adds a dependency. Deferred to a future iteration.

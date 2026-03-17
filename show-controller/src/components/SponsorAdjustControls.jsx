@@ -206,10 +206,7 @@ export default function SponsorAdjustControls({
                     {hasCrop && (
                       <button
                         onClick={() => {
-                          onUpdate(index, 'cropX', null);
-                          onUpdate(index, 'cropY', null);
-                          onUpdate(index, 'cropW', null);
-                          onUpdate(index, 'cropH', null);
+                          onUpdate(index, { cropX: null, cropY: null, cropW: null, cropH: null });
                         }}
                         className="text-[10px] text-red-400 hover:text-red-300"
                       >

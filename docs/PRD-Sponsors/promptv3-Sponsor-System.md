@@ -167,18 +167,24 @@ tar -czf /tmp/claude/overlays.tar.gz overlays/
 
 | Task | Phase | File | Change | Deps | Status |
 |------|-------|------|--------|------|--------|
-| T1 | A | useTeamsDatabase.js | Per-team sponsor CRUD + helpers | — | NOT STARTED |
-| T2 | B | graphicsRegistry.js | 3 sponsor entries in `sponsors` category | — | NOT STARTED |
-| T3 | B | GraphicsManagerPage.jsx | CATEGORY_LABELS + preview data | T2 | NOT STARTED |
-| T4 | B | graphicButtons.js | `sponsors` button section (30+) | T2 | NOT STARTED |
-| T5 | B | urlBuilder.js | 3 builder functions + switch cases | T2 | NOT STARTED |
-| T6 | C | UrlGeneratorPage.jsx | Sidebar + sponsor JSON plumbing | T1,T4,T5 | NOT STARTED |
-| T7 | D | MediaManagerPage.jsx | SponsorsView + badge | T1 | NOT STARTED |
-| T8 | E | sponsors-thanks.html | Full-screen grid overlay | — | NOT STARTED |
-| T9 | F | sponsors-cycle.html | Full-screen cycling overlay | — | NOT STARTED |
-| T10 | G | sponsors-bug.html | Transparent corner bug overlay | — | NOT STARTED |
-| T11 | H | — | npm run build | T1-T10 | NOT STARTED |
-| T12 | H | — | Deploy SPA + overlays | T11 | NOT STARTED |
+| T1 | A | useTeamsDatabase.js | Per-team sponsor CRUD + helpers | — | COMPLETE |
+| T2 | B | graphicsRegistry.js | 3 sponsor entries in `sponsors` category | — | COMPLETE |
+| T3 | B | GraphicsManagerPage.jsx | CATEGORY_LABELS + preview data | T2 | COMPLETE |
+| T4 | B | graphicButtons.js | `sponsors` button section (30+) | T2 | COMPLETE |
+| T5 | B | urlBuilder.js | 3 builder functions + switch cases | T2 | COMPLETE |
+| T6 | C | UrlGeneratorPage.jsx | Sidebar + sponsor JSON plumbing | T1,T4,T5 | COMPLETE |
+| T7 | D | MediaManagerPage.jsx | SponsorsView + badge | T1 | COMPLETE |
+| T8 | E | sponsors-thanks.html | Full-screen grid overlay | — | COMPLETE |
+| T9 | F | sponsors-cycle.html | Full-screen cycling overlay | — | COMPLETE |
+| T10 | G | sponsors-bug.html | Transparent corner bug overlay | — | COMPLETE |
+| T11 | H | — | npm run build | T1-T10 | COMPLETE |
+| T12 | H | — | Deploy SPA + overlays | T11 | COMPLETE |
+| T13 | I | sponsors-cycle.html | Smart content detection: trim white/near-white backgrounds | — | NOT STARTED |
+| T14 | J | useTeamsDatabase.js | Add adjustment fields to saveSponsor/getTeamSponsors | — | NOT STARTED |
+| T15 | K | MediaManagerPage.jsx | Per-sponsor adjustment controls with preview | T14 | NOT STARTED |
+| T16 | L | GraphicsControl.jsx | Pass all sponsor fields (scale, offset, crop) in serialization | T14 | NOT STARTED |
+| T17 | M | UrlGeneratorPage.jsx | Persist sponsor overrides to Firebase | T14 | NOT STARTED |
+| T18 | N | — | Build + deploy SPA + overlays | T13-T17 | NOT STARTED |
 
 ---
 

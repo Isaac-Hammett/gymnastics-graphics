@@ -1010,7 +1010,7 @@ Instead, use a **two-step approach**:
 
 ## Phase 7: TalentPage Table View + Cross-Competition Visibility
 
-### Task 7.1: Create TalentTable component with sortable columns — NOT STARTED
+### Task 7.1: Create TalentTable component with sortable columns — IN PROGRESS
 
 **File:** `show-controller/src/components/crm/TalentTable.jsx` (NEW)
 

@@ -23,6 +23,8 @@
     }
 
     .sponsor-slide {
+      /* IMPORTANT: Must be position:absolute so slides stack on top of each other.
+         Do NOT override with position:relative — it breaks flex layout with 2+ sponsors (see BUG-S14). */
       position: absolute;
       top: 0;
       left: 0;
@@ -274,12 +276,15 @@
     function getEffectiveBounds(img, sponsor, autoBounds) {
       // If sponsor has crop overrides, use them (values are in pixels relative to original image)
       if (sponsor.cropX != null || sponsor.cropY != null || sponsor.cropW != null || sponsor.cropH != null) {
-        return {
+        const bounds = {
           x: sponsor.cropX ?? autoBounds.x,
           y: sponsor.cropY ?? autoBounds.y,
           w: sponsor.cropW ?? autoBounds.w,
           h: sponsor.cropH ?? autoBounds.h,
         };
+        // Guard: if crop dimensions are invalid (zero/negative), fall back to auto-detect
+        if (bounds.w <= 0 || bounds.h <= 0) return autoBounds;
+        return bounds;
       }
       return autoBounds;
     }
@@ -305,10 +310,13 @@
 
       const usedBounds = getEffectiveBounds(img, sponsor || {}, autoBounds);
 
-      // Scale content to TARGET_HEIGHT, maintaining aspect ratio
-      const scale = TARGET_HEIGHT / usedBounds.h;
+      // Scale content to fit within TARGET_HEIGHT and MAX_WIDTH, maintaining aspect ratio
+      const MAX_WIDTH = 1400; // Leave comfortable margins within 1920px viewport
+      const scaleH = TARGET_HEIGHT / usedBounds.h;
+      const scaleW = MAX_WIDTH / usedBounds.w;
+      const scale = Math.min(scaleH, scaleW); // Use whichever is smaller to fit both constraints
       const outW = Math.round(usedBounds.w * scale);
-      const outH = TARGET_HEIGHT;
+      const outH = Math.round(usedBounds.h * scale);
 
       const canvas = document.createElement('canvas');
       canvas.width = outW;
@@ -366,7 +374,7 @@
       if (autoBounds.x !== usedBounds.x || autoBounds.y !== usedBounds.y ||
           autoBounds.w !== usedBounds.w || autoBounds.h !== usedBounds.h) {
         // Map auto bounds into rendered space
-        const renderScale = TARGET_HEIGHT / usedBounds.h * scale;
+        const renderScale = canvas.height / usedBounds.h * scale;
         const autoLeft = canvasLeft + (autoBounds.x - usedBounds.x) * renderScale;
         const autoTop = canvasTop + (autoBounds.y - usedBounds.y) * renderScale;
         const autoW = autoBounds.w * renderScale;
@@ -401,7 +409,7 @@
 
         const slide = document.createElement('div');
         slide.className = 'sponsor-slide';
-        slide.style.position = 'relative'; // for bounds overlay positioning
+        // position: absolute is set in CSS; it also serves as positioning context for bounds overlays
 
         const img = new Image();
         img.crossOrigin = 'anonymous';

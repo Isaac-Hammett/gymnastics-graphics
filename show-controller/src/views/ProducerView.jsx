@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 import { useShow } from '../context/ShowContext';
 import { useCompetition } from '../context/CompetitionContext';
@@ -1265,6 +1266,16 @@ function VMConnectionPanel({ vmAddress, credentials }) {
                 ) : (
                   <EyeIcon className="w-3.5 h-3.5" />
                 )}
+              </button>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(credentials.password);
+                  toast.success('Copied to clipboard');
+                }}
+                className="text-zinc-500 hover:text-zinc-300 transition-colors"
+                title="Copy password"
+              >
+                <ClipboardDocumentCheckIcon className="w-3.5 h-3.5" />
               </button>
             </div>
             <div className="text-white font-mono text-sm">

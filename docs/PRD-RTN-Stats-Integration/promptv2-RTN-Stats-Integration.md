@@ -1,206 +1,210 @@
-# PRD-RTN-Stats-Integration Implementation Workflow
+# PRD-RTN-Stats-Integration — Implementation Workflow
 
 ## RULES
-
-**MOST IMPORTANT RULE: Implement EXACTLY ONE TASK per iteration.**
-
-- ONE task = one iteration. After completing ONE task, commit, deploy, verify, then STOP.
-- The bash loop will restart you for the next task. Do NOT continue to additional tasks.
-- Complete each workflow phase (1-7) FULLY before moving to the next phase
+- **FIRST**: Run `browser_install` before any verification steps
+- Complete each phase FULLY before moving to the next
 - Mark checkboxes [x] as you complete each step
-- DO NOT parallelize file reads - read sequentially, one at a time
-- After each phase, output the checkpoint summary before continuing
-- If verification fails, record bug and STOP (handle in next context window)
+- **ONE TASK PER ITERATION** — implement exactly one task, then stop
+- **Deploy batching** — code tasks commit only; deploy after every 3 code tasks or when a task requires server/frontend changes to verify
+- Screenshots save to `docs/PRD-RTN-Stats-Integration/screenshots/`
 
 **What counts as ONE task?**
-- A single row in `docs/PRD-RTN-Stats-Integration/PLAN-RTN-Stats-Integration-Implementation.md` (e.g., "Task 3: Create rtnStatsService.js with all 8 RTN fetch functions")
-- Each task has a unique whole number (Task 1, Task 2, etc.)
-- NOT a phase (a phase contains multiple tasks)
+- A single row in the Phase 6 or Phase 7 task table of `docs/PRD-RTN-Stats-Integration/PLAN-RTN-Stats-Integration-Implementation.md`
+- Each task has a unique number (Task 27, Task 28, ... Task 44, Task 45)
 - NOT multiple related tasks
 
 ---
 
 ## Phase 1: Load Context
 
-Read these files ONE AT A TIME. After EACH file, output the answers before reading the next file.
+Read these files ONE AT A TIME. After EACH file, output the answers before reading the next.
 
-- [ ] **1.1** Read PRD: `docs/PRD-RTN-Stats-Integration/PRD-RTN-Stats-Integration-2026-02-01.md`
-
-  **Output before continuing:**
-  ```
-  1.1 PRD Read
-  - Feature name: [fill in]
-  - Current PRD status: [fill in]
-  - Acceptance criteria count: [fill in]
-  ```
-
-- [ ] **1.2** Read Implementation Plan: `docs/PRD-RTN-Stats-Integration/PLAN-RTN-Stats-Integration-Implementation.md`
+- [ ] **1.1** Read Implementation Plan: `docs/PRD-RTN-Stats-Integration/PLAN-RTN-Stats-Integration-Implementation.md`
 
   **Output before continuing:**
   ```
-  1.2 Implementation Plan Read
+  ✓ 1.1 Implementation Plan Read
   - Total tasks: [fill in]
   - Tasks NOT STARTED: [fill in]
   - Tasks IN PROGRESS: [fill in]
   - Tasks COMPLETE: [fill in]
   ```
 
-- [ ] **1.3** Read Detailed Plan (for context): `docs/PRD-RTN-Stats-Integration/PLAN-RTN-Stats-Integration-2026-02-01.md`
+- [ ] **1.2** Read Bug Tracker: `docs/PRD-RTN-Stats-Integration/BUGS.md`
 
   **Output before continuing:**
   ```
-  1.3 Detailed Plan Read
-  - Current phase: [fill in]
-  - Relevant details noted: [fill in]
-  ```
-
-- [ ] **1.4** Read existing RTN integration (for reference patterns): `show-controller/src/lib/roadToNationals.js`
-
-  **Output before continuing:**
-  ```
-  1.4 RTN Reference Read
-  - Existing fetch patterns noted: [fill in]
-  - Caching strategy noted: [fill in]
+  ✓ 1.2 Bugs Read
+  - Total open bugs: [fill in]
+  - High severity: [fill in]
+  - Medium severity: [fill in]
+  - Low severity: [fill in]
   ```
 
 ---
 
-## Phase 2: Select ONE Task
+## Phase 2: Select Next Task
 
-- [ ] **2.1** From `docs/PRD-RTN-Stats-Integration/PLAN-RTN-Stats-Integration-Implementation.md`, identify the FIRST SINGLE task that is:
+- [ ] **2.1** From the Implementation Plan (Phase 6 or Phase 7 tables), identify the FIRST task that is:
   - Status = "IN PROGRESS", OR
   - Status = "NOT STARTED" (if none are IN PROGRESS)
 
-  **Select ONLY ONE task.** Example: "Task 3: Create rtnStatsService.js" - not "Phase 1" or "Tasks 3 and 4".
+- [ ] **2.2** Determine task type:
+  - **Code task** — changes to server or client code → implement + commit, no deploy
+  - **Deploy task** — after accumulating code tasks, or task needs live verification → build + deploy + verify
+  - **Docs-only task** (e.g., Task 37, 43) — update docs + commit, no deploy
 
-- [ ] **2.2** Output your selection:
+  **Guideline:** Tasks that change `server/` files need a coordinator deploy. Tasks that change `show-controller/` files need a frontend deploy. Tasks that only change docs need no deploy.
+
+- [ ] **2.3** Output your selection:
   ```
-  2.2 ONE Task Selected
-  - Task ID: [e.g., Task 3]
-  - Task name: [e.g., Create server/lib/rtnStatsService.js with all 8 RTN fetch functions and rate limiting]
-  - This is ONE task, not multiple: [yes]
+  ✓ 2.3 Task Selected
+  - Task ID: [fill in]
+  - Task name: [fill in]
+  - Task type: [CODE / DEPLOY / DOCS]
   - Files to modify: [fill in]
   ```
 
 ---
 
-## Phase 3: Implement ONE TASK ONLY
+## Phase 2.5: Read Required Files
 
-**CRITICAL: You must implement EXACTLY ONE task, then STOP and proceed to Phase 4.**
-
-Do NOT:
-- Implement multiple tasks
-- Start the "next" task after finishing one
-- Batch related tasks together
-- Continue to other tasks in the same phase
-
-- [ ] **3.1** Implement ONLY the single task identified in step 2.2
-- [ ] **3.2** STOP coding. Do not implement any other tasks.
-- [ ] **3.3** Update `docs/PRD-RTN-Stats-Integration/PLAN-RTN-Stats-Integration-Implementation.md` for THIS ONE TASK:
-  - Mark task status (NOT STARTED -> COMPLETE)
-  - Add notes about changes made
-  - Add any bugs discovered
+- [ ] **2.5.1** Read the specific BUGS.md section for this task's bug (search for the BUG-0XX heading)
+- [ ] **2.5.2** Read each file you plan to modify
 
   **Output:**
   ```
-  3.3 ONE Task Implementation Complete
-  - Task completed: [Task ID only]
-  - Changes made: [brief summary]
-  - Bugs found: [none / list]
-  - Next task: [will be handled in NEXT iteration]
+  ✓ 2.5 Files Read
+  - Files read: [list]
+  - Key patterns to follow: [brief notes]
   ```
-
-**STOP HERE. Proceed to Phase 4 (Commit). Do NOT implement more tasks.**
 
 ---
 
-## Phase 4: Commit & Push
+## Phase 3: Implement
 
-- [ ] **4.1** Stage and commit:
+- [ ] **3.1** Implement the selected task exactly as described in the implementation plan
+- [ ] **3.2** Update the task status in the implementation plan: NOT STARTED → COMPLETE, add notes
+
+  **Output:**
+  ```
+  ✓ 3.1 Implementation Complete
+  - Changes made: [brief summary]
+  - Files modified: [list]
+  ```
+
+---
+
+## Phase 4: Commit
+
+- [ ] **4.1** Stage and commit — use specific file paths, not `git add -A`:
   ```bash
-  git add -A && git commit -m "PRD-RTN-Stats: [brief description]" && git push origin main
+  git add docs/PRD-RTN-Stats-Integration/PLAN-RTN-Stats-Integration-Implementation.md
+  git add [each file modified in Phase 3.1]
+  git commit -m "PRD-RTN-Stats: [brief task description] (Task NN)"
+  git push origin main
   ```
 
   **Output:**
   ```
-  4.1 Committed and pushed
+  ✓ 4.1 Committed
   - Commit message: [fill in]
   ```
 
 ---
 
-## Phase 5: Deploy (if needed)
+## Phase 5: Deploy (skip for code-only and docs-only tasks)
 
-Determine what changed and deploy accordingly:
+**If this is a CODE or DOCS task:** Skip to Phase 7.
 
-- [ ] **5.1** Backend changes? -> `ssh_exec` to coordinator, restart PM2
-- [ ] **5.2** Frontend changes? -> Build and deploy per CLAUDE.md
-- [ ] **5.3** No deployment needed? -> Mark as skipped
+**If this task requires deploy:**
+
+- [ ] **5.1** Server changes? (`server/` files)
+  ```bash
+  # ssh_exec to coordinator (44.193.31.120)
+  # cd /opt/gymnastics-graphics && git pull origin main
+  # GOOGLE_APPLICATION_CREDENTIALS=/opt/gymnastics-graphics/firebase-service-account.json pm2 restart coordinator
+  ```
+
+- [ ] **5.2** Frontend changes? (`show-controller/` files)
+  ```bash
+  cd show-controller && npm run build
+  # then upload dist per CLAUDE.md Step 1
+  ```
 
   **Output:**
   ```
-  5.x Deploy
-  - Deploy type: [backend / frontend / both / none]
-  - Status: [success / skipped]
+  ✓ 5 Deploy Complete
+  - Server deployed: [YES / NO / SKIPPED]
+  - Frontend deployed: [YES / NO / SKIPPED]
   ```
 
 ---
 
-## Phase 6: Verify on Production
+## Phase 6: Verify (deploy tasks only — skip for code/docs tasks)
 
-- [ ] **6.1** Navigate to https://commentarygraphic.com using Playwright
-- [ ] **6.2** Take screenshot
-- [ ] **6.3** Check console for errors
-- [ ] **6.4** Test the specific feature changed
+**If this is a CODE or DOCS task:** Skip to Phase 7.
 
-  **Output:**
-  ```
-  6.4 Verification
-  - Screenshot taken: [yes/no]
-  - Console errors: [none / list]
-  - Feature works: [yes / no]
-  ```
+- [ ] **6.1** Run `browser_install`
+- [ ] **6.2** Navigate to `https://commentarygraphic.com`
+- [ ] **6.3** Take screenshot → `docs/PRD-RTN-Stats-Integration/screenshots/verify-task-NN.png`
+- [ ] **6.4** Check console: `browser_console_messages`
+- [ ] **6.5** Verify the specific bug fix works
 
 **If verification FAILS:**
-- Record bug in `docs/PRD-RTN-Stats-Integration/PLAN-RTN-Stats-Integration-Implementation.md` with details
-- STOP here - handle fix in next context window
-
----
-
-## Phase 7: Update PRD Status
-
-- [ ] **7.1** If ALL tasks complete -> Update `docs/PRD-RTN-Stats-Integration/PRD-RTN-Stats-Integration-2026-02-01.md` status to COMPLETE
-- [ ] **7.2** If tasks remain -> Update `docs/PRD-RTN-Stats-Integration/PRD-RTN-Stats-Integration-2026-02-01.md` status to IN PROGRESS
-- [ ] **7.3** Verify `docs/PRD-RTN-Stats-Integration/PLAN-RTN-Stats-Integration-Implementation.md` matches PRD (fix any discrepancies)
+- Record what failed in the implementation plan
+- STOP — fix in next context window
 
   **Output:**
   ```
-  7.3 Status Updated
-  - PRD status: [IN PROGRESS / COMPLETE]
-  - Tasks remaining: [count]
+  ✓ 6 Verification
+  - Result: [PASS / FAIL]
+  - Console errors: [none / list]
   ```
 
 ---
 
-## Quick Reference
+## Phase 7: Update Status
 
-| Change Type | Deploy Command |
-|-------------|----------------|
-| Backend only | `ssh_exec` to coordinator, restart PM2 |
-| Frontend only | `npm run build` + upload per CLAUDE.md |
-| Both | Deploy backend first, then frontend |
+- [ ] **7.1** If ALL Phase 6 tasks are COMPLETE:
+  - Update PRD status to COMPLETE
+  - Commit: `git add docs/PRD-RTN-Stats-Integration/ && git commit -m "PRD-RTN-Stats: Mark Phase 6 complete" && git push origin main`
+
+- [ ] **7.2** If tasks remain: leave as IN PROGRESS (the loop continues)
+
+  **Output:**
+  ```
+  ✓ 7 Status Update
+  - PRD status: [IN PROGRESS / COMPLETE]
+  - Remaining tasks: [count]
+  ```
+
+---
+
+## Deploy Reference
+
+| Change Type | Deploy Step |
+|-------------|-------------|
+| Server only (`server/`) | SSH → git pull → `pm2 restart coordinator` (with credentials) |
+| Frontend only (`show-controller/`) | `npm run build` + upload dist per CLAUDE.md Step 1 |
+| Both | Deploy server first, then frontend |
 | Docs only | No deploy needed |
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `server/lib/rtnStatsService.js` | **CREATE** -- Core stats service |
-| `server/index.js` | Wire socket events, show-start snapshot |
-| `show-controller/src/hooks/useRtnStats.js` | **CREATE** -- Stats hook |
-| `show-controller/src/hooks/useLeagueRankings.js` | **CREATE** -- Rankings hook |
-| `show-controller/src/hooks/useCompetitions.js` | Trigger ingestion, coach lock respect |
-| `show-controller/src/pages/DashboardPage.jsx` | Stats UI, locks, indicators |
-| `server/lib/aiContextService.js` | AI talking points from stats |
-| `server/lib/aiSuggestionService.js` | AI suggestions from stats |
-| Media Manager components | RTN ID capture |
+| `docs/PRD-RTN-Stats-Integration/BUGS.md` | Bug tracker — 17 bugs with full root cause analysis |
+| `server/lib/rtnStatsService.js` | Core stats service (Tasks 27-28, 36-37, 40-41) |
+| `server/index.js` | Socket events, show-start snapshot (Tasks 31, 42) |
+| `show-controller/src/hooks/useRtnStats.js` | Stats hook (Tasks 27-28, 32, 39) |
+| `show-controller/src/hooks/useRoadToNationals.js` | Coach hooks (Tasks 29, 35) |
+| `show-controller/src/lib/roadToNationals.js` | Client-side RTN API (Tasks 29, 35) |
+| `show-controller/src/components/StatsStatusBadge.jsx` | Stats badge (Tasks 30, 33) |
+| `show-controller/src/components/StatsDetailPanel.jsx` | Stats detail panel (Tasks 33, 34) |
+| PRD + tech plan docs | Documentation fixes (Tasks 37, 43) |
+| `show-controller/src/lib/graphicsRegistry.js` | Graphics registry (Task 45) |
+| `show-controller/src/lib/urlBuilder.js` | URL builder (Task 45) |
+| `show-controller/src/pages/UrlGeneratorPage.jsx` | URL Generator UI (Task 45) |
+| `overlays/team-stats.html` | Team stats overlay (Task 45) |
+| `output.html` | Main graphics renderer (Task 45) |

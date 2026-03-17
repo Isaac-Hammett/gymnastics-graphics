@@ -88,6 +88,10 @@ function getTeamRankingType(gender) {
   return TEAM_RANKING_TYPE[gender] || 5;
 }
 
+function getResultsPath(league) {
+  return league === 'gymact' ? 'resultsga' : 'results';
+}
+
 // ============================================================================
 // Rate-Limited Fetch
 // ============================================================================
@@ -226,9 +230,9 @@ async function fetchIndividualAverages(gender, year, tid) {
  *
  * Returns the full ranking results; caller should find the team by tid.
  */
-async function fetchTeamRanking(gender, year, week, tid) {
+async function fetchTeamRanking(gender, year, week, tid, league) {
   const type = getTeamRankingType(gender);
-  const url = `${RTN_BASE}/${getGenderPath(gender)}/results/${year}/${week}/0/${type}`;
+  const url = `${RTN_BASE}/${getGenderPath(gender)}/${getResultsPath(league)}/${year}/${week}/0/${type}`;
   return fetchWithRetry(url);
 }
 
@@ -242,12 +246,13 @@ async function fetchTeamRanking(gender, year, week, tid) {
  *
  * @param {string} gender - "mens" or "womens"
  * @param {number} year
+ * @param {string} [league] - "ncaa" (default) or "gymact"
  * @returns {Promise<number>} Week number (defaults to 1 on failure)
  */
-async function getCurrentWeek(gender, year) {
+async function getCurrentWeek(gender, year, league) {
   try {
     const type = getTeamRankingType(gender);
-    const url = `${RTN_BASE}/${getGenderPath(gender)}/results/${year}/1/0/${type}`;
+    const url = `${RTN_BASE}/${getGenderPath(gender)}/${getResultsPath(league)}/${year}/1/0/${type}`;
     const data = await fetchWithRetry(url);
 
     if (data?.schema?.weeks && Array.isArray(data.schema.weeks)) {
@@ -311,13 +316,14 @@ async function getCurrentWeek(gender, year) {
  * @param {number} year
  * @param {number|string} tid - RTN team ID
  * @param {number} week - Current RTN week
+ * @param {string} [league] - "ncaa" (default) or "gymact"
  * @returns {Array<{url: string, label: string}>}
  */
-function buildTeamStatUrls(gender, year, tid, week) {
+function buildTeamStatUrls(gender, year, tid, week, league) {
   const g = getGenderPath(gender);
   const type = getTeamRankingType(gender);
   return [
-    { url: `${RTN_BASE}/${g}/results/${year}/${week}/0/${type}`, label: 'teamRanking' },
+    { url: `${RTN_BASE}/${g}/${getResultsPath(league)}/${year}/${week}/0/${type}`, label: 'teamRanking' },
     { url: `${RTN_BASE}/${g}/teamConsistency/${year}/${tid}`, label: 'consistency' },
     { url: `${RTN_BASE}/${g}/mvp/${year}/${tid}`, label: 'mvp' },
     { url: `${RTN_BASE}/${g}/topscores/${year}/${tid}`, label: 'topScores' },
@@ -754,9 +760,10 @@ async function checkStaleness(teamKey) {
  * @param {number} year - Season year
  * @param {Object} [io] - Socket.IO server instance for progress events
  * @param {string} [compId] - Competition ID for progress events
+ * @param {string} [league] - "ncaa" (default) or "gymact"
  * @returns {Promise<{ status: string, endpointStatus: Object, errors: Object|null }>}
  */
-async function ingestTeamStats(teamKey, rtnId, gender, year, io, compId) {
+async function ingestTeamStats(teamKey, rtnId, gender, year, io, compId, league) {
   const db = productionConfigService.getDb();
   if (!db) {
     return { status: 'error', endpointStatus: {}, errors: { firebase: 'Firebase not available' } };
@@ -767,7 +774,7 @@ async function ingestTeamStats(teamKey, rtnId, gender, year, io, compId) {
   // Get current week for team ranking endpoint
   let week;
   try {
-    week = await getCurrentWeek(gender, year);
+    week = await getCurrentWeek(gender, year, league);
     if (typeof week !== 'number' || isNaN(week)) {
       console.warn(`[rtnStatsService] getCurrentWeek returned invalid value (${week}), using 1`);
       week = 1;
@@ -778,7 +785,7 @@ async function ingestTeamStats(teamKey, rtnId, gender, year, io, compId) {
   }
 
   // Build URLs and fetch all endpoints
-  const urls = buildTeamStatUrls(gender, year, tidStr, week);
+  const urls = buildTeamStatUrls(gender, year, tidStr, week, league);
 
   const onProgress = (label, step, total, status) => {
     console.log(`[rtnStatsService] ${teamKey}: ${label} (${step}/${total}) - ${status}`);
@@ -908,13 +915,18 @@ async function ingestCompetitionStats(compId, io) {
       continue;
     }
 
-    // Look up RTN ID from teamsDatabase
+    // Look up RTN ID and league from teamsDatabase
     let rtnId;
+    let league = 'ncaa';
     try {
-      const rtnIdSnapshot = await db.ref(`teamsDatabase/teams/${teamKey}/rtnId`).once('value');
+      const [rtnIdSnapshot, leagueSnapshot] = await Promise.all([
+        db.ref(`teamsDatabase/teams/${teamKey}/rtnId`).once('value'),
+        db.ref(`teamsDatabase/teams/${teamKey}/league`).once('value'),
+      ]);
       rtnId = rtnIdSnapshot.val();
+      league = leagueSnapshot.val() || 'ncaa';
     } catch (err) {
-      console.error(`[rtnStatsService] Failed to read rtnId for ${teamKey}:`, err.message);
+      console.error(`[rtnStatsService] Failed to read rtnId/league for ${teamKey}:`, err.message);
     }
 
     if (!rtnId) {
@@ -949,8 +961,8 @@ async function ingestCompetitionStats(compId, io) {
     }
 
     // Stats are stale or missing — fetch from RTN
-    console.log(`[rtnStatsService] ${teamKey}: Stats are stale/missing, fetching from RTN...`);
-    const result = await ingestTeamStats(teamKey, rtnId, gender, year, io, compId);
+    console.log(`[rtnStatsService] ${teamKey}: Stats are stale/missing, fetching from RTN${league === 'gymact' ? ' (GymACT)' : ''}...`);
+    const result = await ingestTeamStats(teamKey, rtnId, gender, year, io, compId, league);
     teamResults[`team${index}`] = { teamKey, ...result };
   }
 
@@ -1332,9 +1344,10 @@ function normalizeIndividualRankings(raw) {
  * @param {string} gender - "mens" or "womens"
  * @param {number} [year] - Season year (defaults to current year)
  * @param {number} [week] - RTN week number (defaults to current week)
+ * @param {string} [league] - "ncaa" (default) or "gymact"
  * @returns {Promise<{ success: boolean, gender: string, week: number, teamCount: number, individualEvents: number, error?: string }>}
  */
-async function fetchLeagueRankings(gender, year, week) {
+async function fetchLeagueRankings(gender, year, week, league) {
   const db = productionConfigService.getDb();
   if (!db) {
     return { success: false, gender, week: week || 0, teamCount: 0, individualEvents: 0, error: 'Firebase not available' };
@@ -1346,14 +1359,15 @@ async function fetchLeagueRankings(gender, year, week) {
   // Determine current week if not provided
   if (!resolvedWeek) {
     try {
-      resolvedWeek = await getCurrentWeek(gender, resolvedYear);
+      resolvedWeek = await getCurrentWeek(gender, resolvedYear, league);
     } catch (err) {
       console.error(`[rtnStatsService] Failed to get current week for rankings: ${err.message}`);
       return { success: false, gender, week: 0, teamCount: 0, individualEvents: 0, error: `Failed to determine current week: ${err.message}` };
     }
   }
 
-  const cacheKey = `${gender}-${resolvedYear}-${resolvedWeek}`;
+  const leaguePrefix = league === 'gymact' ? 'gymact-' : '';
+  const cacheKey = `${leaguePrefix}${gender}-${resolvedYear}-${resolvedWeek}`;
   console.log(`[rtnStatsService] Fetching league rankings: ${cacheKey}`);
 
   // Check existing cache TTL
@@ -1376,16 +1390,17 @@ async function fetchLeagueRankings(gender, year, week) {
   // Build URLs: team rankings + individual rankings per event
   const g = getGenderPath(gender);
   const type = getTeamRankingType(gender);
+  const resultsPath = getResultsPath(league);
   const individualEvents = getIndividualEventNumbers(gender);
 
   const urls = [
-    { url: `${RTN_BASE}/${g}/results/${resolvedYear}/${resolvedWeek}/0/${type}`, label: 'team' },
+    { url: `${RTN_BASE}/${g}/${resultsPath}/${resolvedYear}/${resolvedWeek}/0/${type}`, label: 'team' },
   ];
 
   // Add individual ranking URLs for each event
   for (const [eventNum, eventCode] of Object.entries(individualEvents)) {
     urls.push({
-      url: `${RTN_BASE}/${g}/results/${resolvedYear}/${resolvedWeek}/1/${eventNum}`,
+      url: `${RTN_BASE}/${g}/${resultsPath}/${resolvedYear}/${resolvedWeek}/1/${eventNum}`,
       label: `individual-${eventCode}`,
     });
   }
@@ -1475,6 +1490,7 @@ export {
   getIndividualEventNumbers,
   getTopScoreEvents,
   getTeamRankingType,
+  getResultsPath,
 
   // Fetch functions
   fetchWithRetry,
