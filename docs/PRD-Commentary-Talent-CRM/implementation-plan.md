@@ -899,7 +899,7 @@ This endpoint is called once by `useTalentAssignments` to discover competition I
 
 ---
 
-### Task 6.1: Create `useTalentAssignments` hook — NOT STARTED
+### Task 6.1: Create `useTalentAssignments` hook — IN PROGRESS
 
 **File:** `show-controller/src/hooks/useTalentAssignments.js` (NEW)
 
