@@ -507,13 +507,45 @@ export function useCompetitions() {
 
   const updateCompetition = useCallback(async (compId, config, options = {}) => {
     try {
+      // BUG-039: Auto-detect team name changes and refresh RTN data
+      // Read current config to compare team names before saving
+      let shouldRefreshRTN = options.refreshRTN || false;
+      if (!shouldRefreshRTN) {
+        try {
+          const currentSnap = await get(ref(db, `competitions/${compId}/config`));
+          const currentConfig = currentSnap.val();
+          if (currentConfig) {
+            for (let i = 1; i <= 7; i++) {
+              const field = `team${i}Name`;
+              if (config[field] !== undefined && config[field] !== currentConfig[field]) {
+                shouldRefreshRTN = true;
+                break;
+              }
+            }
+          }
+        } catch {
+          // If we can't read current config, proceed without auto-refresh
+        }
+      }
+
       await update(ref(db, `competitions/${compId}/config`), config);
 
-      // Optionally refresh RTN data (useful when team names change)
-      if (options.refreshRTN) {
+      // Refresh RTN data when team names change (or explicitly requested)
+      if (shouldRefreshRTN) {
         // Use explicit gender field if available, otherwise extract from compType (backward compatibility)
-        const gender = config.gender || (config.compType?.startsWith('womens') ? 'womens' : 'mens');
-        const teamData = await enrichTeamsWithRTN(config, gender);
+        const mergedConfig = { ...config };
+        // If config is partial (missing gender/compType), read the full config
+        if (!mergedConfig.gender && !mergedConfig.compType) {
+          try {
+            const fullSnap = await get(ref(db, `competitions/${compId}/config`));
+            const fullConfig = fullSnap.val();
+            if (fullConfig) Object.assign(mergedConfig, fullConfig);
+          } catch {
+            // Continue with what we have
+          }
+        }
+        const gender = mergedConfig.gender || (mergedConfig.compType?.startsWith('womens') ? 'womens' : 'mens');
+        const teamData = await enrichTeamsWithRTN(mergedConfig, gender);
         if (Object.keys(teamData).length > 0) {
           await set(ref(db, `competitions/${compId}/teamData`), teamData);
 

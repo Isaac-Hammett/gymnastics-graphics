@@ -920,11 +920,12 @@ function SponsorsView({ teamKey, getTeamSponsors, saveSponsor, deleteSponsor, re
                       {/* Live Preview */}
                       <div className="flex-shrink-0">
                         <div className="text-xs text-zinc-500 mb-1">Preview</div>
-                        <div className="w-80 h-44 bg-zinc-900 rounded overflow-hidden border border-zinc-600">
+                        <div className="w-80 h-44 bg-zinc-900 rounded overflow-hidden border border-zinc-600 relative">
                           <iframe
                             key={`${sponsor.key}-${sponsor.scale}-${sponsor.offsetX}-${sponsor.offsetY}-${sponsor.cropX}-${sponsor.cropY}-${sponsor.cropW}-${sponsor.cropH}`}
                             src={buildPreviewUrl(sponsor)}
-                            className="w-full h-full border-0"
+                            className="border-0 absolute top-0 left-0 origin-top-left"
+                            style={{ width: '1920px', height: '1080px', transform: 'scale(0.1667)' }}
                             title={`Preview ${sponsor.name}`}
                           />
                         </div>

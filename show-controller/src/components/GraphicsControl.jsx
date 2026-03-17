@@ -98,6 +98,7 @@ const summaryThemes = [
   { id: 'layout-default-v24', label: '🎨 V24 Meet Theme', isLayout: true },
   { id: 'layout-split-row', label: '📊 Split Row (5-team)', isLayout: true },
   { id: 'layout-dual-dynamic-v1', label: '📏 Dual Dynamic V1', isLayout: true },
+  { id: 'layout-dual-dynamic-v2', label: '📏 Dual Dynamic V2', isLayout: true },
   // COLOR THEMES - Same structure, different colors
   { id: 'default', label: 'Default (Original)' },
   { id: 'espn', label: 'ESPN Colors' },
@@ -488,6 +489,22 @@ export default function GraphicsControl({ competitionId }) {
     });
   };
 
+  // Send auto-updating rotation slate (polls Virtius API)
+  const sendAutoSlate = () => {
+    if (!compId || !config) return;
+
+    set(ref(db, `competitions/${compId}/currentGraphic`), {
+      graphic: 'rotation-slate-auto',
+      graphicId: 'rotation-slate-auto',
+      data: {
+        compId: compId,
+        layout: slateLayout || 'classic',
+        meetTheme: config.meetTheme || '',
+      },
+      timestamp: Date.now()
+    });
+  };
+
   // Send event summary graphic - can be rotation-based (R1-R4/R1-R6) or apparatus-based (gender-specific events)
   const sendEventSummary = (mode, value) => {
     if (!compId || !config) return;
@@ -762,6 +779,16 @@ export default function GraphicsControl({ competitionId }) {
                         );
                       })}
                     </div>
+                    <button
+                      onClick={() => sendAutoSlate()}
+                      className={`mt-1.5 w-full px-2 py-2 rounded text-xs font-medium transition-colors ${
+                        currentGraphicId === 'rotation-slate-auto'
+                          ? 'bg-green-600 text-white'
+                          : 'bg-zinc-700 hover:bg-zinc-600 text-zinc-300'
+                      }`}
+                    >
+                      Auto (Live)
+                    </button>
                   </>
                 )}
               </div>

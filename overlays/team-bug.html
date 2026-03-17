@@ -253,6 +253,7 @@
       font-weight: 900;
       color: #fff;
       margin-top: 4px;
+      font-variant-numeric: tabular-nums;
     }
 
     .team-total.highlight {
@@ -2343,6 +2344,25 @@
 
       if (allEventsComplete && maxRotationWithScores > 0) {
         return { current: totalRotations, total: totalRotations, isFinal: true };
+      }
+
+      // Check if the highest scored rotation is fully complete for all teams
+      // If so, advance to the next rotation
+      if (maxRotationWithScores > 0 && maxRotationWithScores < totalRotations) {
+        let highestRotationComplete = true;
+        apiTeams.forEach((team) => {
+          const eventInRotation = (team.events || []).find(e => e.rotation === maxRotationWithScores);
+          if (eventInRotation) {
+            const gymnasts = eventInRotation.gymnasts || [];
+            const scored = gymnasts.filter(g => g.final_score != null);
+            if (scored.length < gymnasts.length || gymnasts.length === 0) {
+              highestRotationComplete = false;
+            }
+          }
+        });
+        if (highestRotationComplete) {
+          return { current: maxRotationWithScores + 1, total: totalRotations, isFinal: false };
+        }
       }
 
       const currentRotation = Math.max(1, maxRotationWithScores);

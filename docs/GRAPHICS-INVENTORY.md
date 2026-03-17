@@ -47,6 +47,19 @@ Complete list of all graphics available in the gymnastics-graphics system.
 | BB Leaders (W) | Manual | 5-10s | Virtius API |
 | AA Leaders | Manual | 5-10s | Virtius API |
 
+### Leaderboard Column Visibility
+
+| Column | Men's Events | Women's Events | All Around |
+|--------|-------------|----------------|------------|
+| # (Rank) | Plain number | Plain number | Plain number |
+| Name | With color indicator (gold/silver/bronze circle for top 3) | With color indicator | With color indicator |
+| Team | Logo + name | Logo + name | Logo + name |
+| Apparatus | Event short code badge | Event short code badge | Hidden |
+| Score | 3 decimal places | 3 decimal places | 3 decimal places |
+| Diff. (D-score) | 2 decimal places | Hidden | Hidden |
+| Exec. (E-score) | 3 decimal places | Hidden | Hidden |
+| SB (Stick Bonus) | "S" indicator | Hidden | Hidden |
+
 ## Event Summary Graphics
 | Graphic Type | Trigger | Duration | Data Source |
 |--------------|---------|----------|-------------|

@@ -1,6 +1,6 @@
 # Meet Theme System - Bug Tracker
 
-## Open Bug Summary (2026-03-08)
+## Bug Summary (2026-03-12)
 
 | Bug | Severity | Status | Description |
 |-----|----------|--------|-------------|
@@ -9,6 +9,10 @@
 | BUG-T003 | Medium | FIXED | Stream overlay text invisible on transparent background |
 | BUG-T004 | Medium | FIXED | theme-loader.js and theme-overrides.css return 403 (file permissions) |
 | BUG-T005 | Medium | FIXED | Frame overlay logos get yellow/theme background instead of transparent |
+| BUG-T006 | High | FIXED | Virtius logo on start page uses text, not SVG |
+| BUG-T007 | Medium | FIXED | "Loading Leaderboard" message looks like a website |
+| BUG-T008 | High | FIXED | Event Summary Event Total text at bottom is TINY |
+| BUG-T009 | High | FIXED | All number fonts need `font-variant-numeric: tabular-nums` for vertical alignment |
 
 ---
 
@@ -136,6 +140,106 @@ Added explicit `background: transparent !important` rules for frame overlay logo
 
 **Key Lesson:**
 Frame overlays are designed for OBS compositing — they must always have transparent backgrounds on all elements (logos, panels, body). When adding theme support, frame overlays should be explicitly excluded from logo contrast fixes that add white backgrounds.
+
+---
+
+## Open Bugs (BZL Feedback 2026-03-12)
+
+| Bug | Severity | Status | Description |
+|-----|----------|--------|-------------|
+| BUG-T006 | High | FIXED | Virtius logo on start page uses text, not SVG |
+| BUG-T007 | Medium | FIXED | "Loading Leaderboard" message looks like a website |
+| BUG-T008 | High | FIXED | Event Summary Event Total text at bottom is TINY |
+| BUG-T009 | High | FIXED | All number fonts need `font-variant-numeric: tabular-nums` for vertical alignment |
+
+---
+
+## BUG-T006: Virtius Logo on Start/Thanks Page Uses Text, Not SVG (FIXED)
+
+**Date Identified:** 2026-03-12
+**Date Fixed:** 2026-03-12
+**Severity:** High
+**Status:** FIXED
+
+**Problem:**
+The "Stream Starting Soon" / "Thanks for Watching" overlay rendered "Virtius" as styled HTML text (`<span>V</span>irtius`) instead of using the official SVG logo. The font didn't match the real Virtius branding.
+
+**Fix:**
+Replaced the `.stream-branding` text element with an `<img>` tag pointing to `/assets/virtius-logo.svg`. Updated CSS to size the SVG (height: 40px, auto width). Both the "Starting Soon" and "Thanks for Watching" graphics use the same `stream.html` overlay, so both are fixed.
+
+**Files Changed:**
+- `overlays/stream.html` — Line 87 (HTML), lines 66-74 (CSS)
+
+**Note:** The SVG file (`assets/virtius-logo.svg`) was also deployed to `/var/www/commentarygraphic/assets/` with 644 permissions.
+
+---
+
+## BUG-T007: "Loading Leaderboard" Text Looks Like a Website (FIXED)
+
+**Date Identified:** 2026-03-12
+**Date Fixed:** 2026-03-12
+**Severity:** Medium
+**Status:** FIXED
+
+**Problem:**
+When a leaderboard graphic loaded, it showed "Loading leaderboard..." in large white text on black background. This looked like a website loading state, not broadcast graphics.
+
+**Fix:**
+Removed the "Loading leaderboard..." text from the HTML template. The loading div is now empty — shows a black screen while data loads.
+
+**Files Changed:**
+- `output.html` — Line 11247 (HTML template)
+
+---
+
+## BUG-T008: Event Summary Event Total Text at Bottom is TINY (FIXED)
+
+**Date Identified:** 2026-03-12
+**Date Fixed:** 2026-03-12
+**Severity:** High
+**Status:** FIXED
+
+**Problem:**
+The Event Total score at the bottom of the Event Summary graphic was too small (32-36px depending on layout).
+
+**Fix:**
+Increased all `.event-total` font-sizes to 48px across all layout variants:
+
+| Selector | Before | After |
+|----------|--------|-------|
+| `.event-summary-footer .event-total` | 32px | 48px |
+| `.layout-classic-broadcast .event-total` | 32px | 48px |
+| `.layout-default-v2-footer .event-total` | 36px | 48px |
+| `.layout-dual-dynamic-v1-footer .event-total` | 36px | 48px |
+
+**Files Changed:**
+- `output.html` — Lines 765, ~1693, ~1996, ~2273
+
+---
+
+## BUG-T009: Numbers Need `font-variant-numeric: tabular-nums` for Vertical Alignment (FIXED)
+
+**Date Identified:** 2026-03-12
+**Date Fixed:** 2026-03-12
+**Severity:** High
+**Status:** FIXED
+
+**Problem:**
+All score/number displays used proportional digit widths, causing numbers to not align vertically in columns.
+
+**Fix:**
+Added `font-variant-numeric: tabular-nums` at the container level where possible, and on specific selectors in overlays:
+
+| File | Selector Updated |
+|------|-----------------|
+| `output.html` | `.graphic-event-summary` (inherits to all scores) |
+| `output.html` | `.graphic-virtius-leaderboard` (inherits to all scores) |
+| `overlays/team-bug.html` | `.team-total` |
+| `overlays/team-stats.html` | `.stat-value` |
+| `overlays/rotation-slate.html` | `.layout-classic .rotation-number` |
+| `overlays/rotation-slate-auto.html` | `.rotation-number` |
+
+**Note:** Adding at the container level (`.graphic-event-summary`, `.graphic-virtius-leaderboard`) is more efficient than updating 40+ individual `.athlete-score` and `.team-total` rules.
 
 ---
 

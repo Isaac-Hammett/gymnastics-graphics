@@ -759,6 +759,57 @@ For graphics with user-provided data (JSON arrays, custom text, etc.):
 
 ---
 
+### Type 7: Live-Polling Graphic (Auto-Updating)
+
+**Use for:** Graphics that poll an external API and update in real-time without user interaction.
+
+**Example: Rotation Slate (Auto)** — Polls the Virtius API every 45 seconds to detect the current rotation and displays it automatically. Shows "Final" when all rotations are complete, then stops polling to avoid unnecessary API calls.
+
+```javascript
+'rotation-slate-auto': {
+  id: 'rotation-slate-auto',
+  label: 'Rotation Slate (Auto)',
+  category: 'in-meet',
+  keywords: ['rotation', 'slate', 'auto', 'live', 'current'],
+  gender: 'both',
+  renderer: 'overlay',
+  file: 'rotation-slate-auto.html',
+  transparent: false,
+  params: {
+    compId: {
+      type: 'string',
+      source: 'competition',
+      required: true,
+    },
+  },
+},
+```
+
+**Key implementation details:**
+
+| Concern | Approach |
+|---------|----------|
+| Data source | Virtius API: `https://api.virti.us/session/{virtiusSessionId}/json` |
+| API response path | `data.meet.teams` (NOT `data.results.team_results`) |
+| Config loading | Reads `competitions/{compId}/config` from Firebase for virtiusSessionId, gender, team count |
+| Rotation detection | Standard meets: count fully-scored events per team. 5+ team meets: read `event.rotation` field from API. **IMPORTANT:** Virtius returns `""` (empty string) for unscored `final_score`, not `null` — must check both `!= null && !== ''` |
+| Poll interval | 45 seconds (`state.pollInterval = 45000`) |
+| Auto-stop | Stops polling once meet is final (`clearInterval` on `isFinal`) — avoids hammering Virtius after meet ends |
+| Meet theme support | Accepts `meetTheme` URL param; theme-loader.js applies CSS variables |
+| Meet logo override | MutationObserver watches for `data-meet-logo` attribute set by theme-loader |
+| Layout variants | Accepts `layout` URL param (classic, centered, stacked, banner, etc.) — shares all 16 layouts with `rotation-slate.html` |
+
+**Wiring checklist for live-polling graphics:**
+
+1. Overlay HTML — Must load Firebase SDK to read competition config, then poll external API. Include all layout CSS if the graphic supports layout variants.
+2. Registry entry — Standard entry with `compId` param
+3. URL builder case — Build overlay URL with `compId`, `layout`, and optional `meetTheme`
+4. `output.html` renderer — Iframe pointing to the overlay with `compId` and `layout` params
+5. `GraphicsControl.jsx` — Dedicated send function that pushes `compId` and `layout` via Firebase `currentGraphic`
+6. `UrlGeneratorPage.jsx` — Button in the rotation slate section (layout selector is shared with the manual slate)
+
+---
+
 ## Troubleshooting
 
 | Problem | Cause | Solution |
@@ -769,6 +820,9 @@ For graphics with user-provided data (JSON arrays, custom text, etc.):
 | Parameters not showing in picker | Missing `params` in registry | Add full param schema with types |
 | Wrong graphics for competition type | Missing `gender` constraint | Add `gender: 'mens'` or `gender: 'womens'` |
 | Too many team buttons | Missing `maxTeams` | Add `maxTeams: 2` for dual-only graphics |
+| Auto slate shows "-" forever | Wrong API response path | Virtius API returns `data.meet.teams`, NOT `data.results.team_results` |
+| Auto graphic not rendering in producer view | Missing renderer in `output.html` | Add an iframe renderer in the `renderers` object in `output.html` |
+| Auto graphic button missing from producer panel | Not wired in `GraphicsControl.jsx` | Add a send function and button in the In-Meet section |
 
 ---
 
@@ -845,6 +899,48 @@ Use V23 when you want the extra large fonts without the individual athlete ranki
 - `calculateApparatusRankings(teams)` - Computes top 3 scores per apparatus across all teams
 - `renderMultiTeamSummaryV20/V21/V22/V23()` - Renders rotation view
 - `renderMultiTeamSummaryApparatusV20/V21/V22/V23()` - Renders apparatus view
+
+---
+
+## Dual Dynamic Layout Reference (V1/V2)
+
+The Dual Dynamic layouts are designed specifically for **dual meets (2 teams)** and dynamically scale elements based on athlete count (1-9 athletes).
+
+### Features
+- **Dynamic Sizing** - Photos, fonts, and padding scale down automatically when athlete count exceeds 6
+- **Start Values (SV)** - D-scores displayed alongside final scores
+- **Anchor Highlighting** - 6th athlete (anchor position) gets gold order bubble
+- **Center Diff Bars** - Visual score difference bars between matched athletes
+- **Self-contained Title Bar** - "Event Summary" header is inside the layout (no external header)
+
+### V1 vs V2 Comparison
+
+| Feature | V1 | V2 |
+|---------|----|----|
+| Number alignment | Score/SV can misalign | Fixed-width score (`min-width: 130px`) and SV (`min-width: 60px`) columns |
+| Footer clipping | Footer clips with 7+ athletes | Fixed — layout has `min-height: 0` to allow flex shrinking |
+| Layout class | `.layout-dual-dynamic-v1` | `.layout-dual-dynamic-v2` |
+
+### Dynamic Sizing Scale Factor
+
+```
+athletes <= 6: scale = 1.0 (full size)
+athletes = 7:  scale = 0.88
+athletes = 8:  scale = 0.76
+athletes = 9:  scale = 0.65 (minimum)
+```
+
+### Critical CSS: `min-height: 0` on Nested Flex Containers
+
+The V2 layout fixes a footer clipping bug caused by nested flex containers. **Root cause:** Without `min-height: 0` on the layout wrapper, CSS flex defaults `min-height` to `auto`, which resolves to the natural content height. This prevents the flex algorithm from shrinking the layout to make room for the footer, causing `overflow: hidden` on the parent to clip the bottom.
+
+**Rule:** Any flex item that is ALSO a flex container and needs to shrink below its content size MUST have `min-height: 0`. This applies at every level of nesting.
+
+### Key Functions (output.html)
+- `getDynamicSizes(athleteCount)` - Returns scaled sizes for photos, fonts, padding
+- `renderDualDynamicV1Layout()` / `renderDualDynamicV2Layout()` - Renders rotation view
+- `renderDualDynamicV1LayoutApparatus()` / `renderDualDynamicV2LayoutApparatus()` - Renders apparatus view
+- `buildDualDynamicV1Column()` / `buildDualDynamicV2Column()` - Builds a single team column
 
 ---
 

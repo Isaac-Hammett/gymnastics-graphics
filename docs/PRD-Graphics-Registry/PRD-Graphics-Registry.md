@@ -8,6 +8,40 @@
 
 ---
 
+## Recent Updates (v1.5 - 2026-03-13)
+
+### Feedback-Driven Graphics Improvements
+
+Based on broadcast feedback, the following improvements are planned:
+
+#### Text/Label Fixes
+- **T1: "AVE" → "AVG"** — Fix season average label in team-stats graphics. Affects `output.html` (8 occurrences) and `overlays/team-stats.html` (1 occurrence).
+- **T2: "ALL AROUND" → "ALL-AROUND"** — Fix event name hyphenation in `output.html` event title mapping and `graphicsRegistry.js` default title.
+
+#### Stream Starting Page Enhancement
+- **T3: Multi-team logos on stream starting page** — Currently `overlays/stream.html` shows only a single team logo. Update to accept multiple logo URLs and display all competing teams. For dual meets: show Logo1 — VS — Logo2. For 3+ teams: row of logos scaled by count.
+  - Files: `overlays/stream.html`, `graphicsRegistry.js`, `urlBuilder.js`
+
+#### Card Alignment (Coaches / Team Stats)
+- **T6: Top-align coaches and stats cards** — Both cards appear in the same lower-third position but have drifted apart visually. Standardize to:
+  - Same top position (change from `bottom: 120px` to shared `top` value so headers align)
+  - Same width (`min-width: 480px`), header padding (`14px 30px`), title font-size (`36px`)
+  - Content area grows downward as needed
+  - Files: `output.html` (lines ~160-235), `overlays/team-stats.html`, `overlays/coaches.html`
+
+#### Typography Audit
+- **T7: Header text casing audit** — Verify all graphics use consistent casing rules: section labels ALL CAPS, team names ALL CAPS (via text-transform), event names ALL CAPS.
+
+#### Future: Apparatus Icons
+- **T8: Apparatus-specific icons** — Replace team logo with apparatus icon on event-specific slides (UB, VT, etc.). Deferred until specific slide context is clarified. Would require SVG assets for all 10 apparatus types.
+
+#### Future: Visual Design Enhancements
+- Arena/venue info consolidation on slides
+- Team logos on score slides (ESPN logo → name → score pattern)
+- Lower-third graphics for athlete/coach identification during competition
+
+---
+
 ## Recent Updates (v1.4 - 2026-03-08)
 
 ### Event Calendar Visual Editor & Save Fix

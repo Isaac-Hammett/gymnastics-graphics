@@ -13,6 +13,7 @@
       height: 1080px;
       overflow: hidden;
       background: transparent;
+      transform-origin: top left;
     }
     #output {
       width: 100%;
@@ -175,6 +176,7 @@
       font-weight: 800;
       color: #000;
       flex: 1;
+      text-transform: uppercase;
     }
     .stats-logo {
       width: 70px;
@@ -516,12 +518,14 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      min-height: 0;
     }
 
     /* Dual Meet Layout - 2 teams with center divider */
     .event-summary-dual {
       display: flex;
       flex: 1;
+      min-height: 0;
     }
     .event-summary-dual .team-column {
       flex: 1;
@@ -566,12 +570,13 @@
       flex: 1;
       display: flex;
       flex-direction: column;
+      min-height: 0;
     }
     .event-summary-dual .athlete-row {
       display: flex;
       align-items: center;
       padding: 8px 20px;
-      min-height: 72px;
+      flex: 1;
     }
     .event-summary-dual .athlete-row:nth-child(odd) {
       background: #18181b;
@@ -610,18 +615,22 @@
     }
     .event-summary-dual .athlete-score-block {
       display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      min-width: 90px;
+      flex-direction: row;
+      align-items: baseline;
+      gap: 8px;
     }
     .event-summary-dual .athlete-score {
       font-size: 26px;
       font-weight: 700;
       color: #fff;
+      min-width: 88px;
+      text-align: right;
     }
     .event-summary-dual .athlete-start {
       font-size: 14px;
       color: #a1a1aa;
+      min-width: 42px;
+      text-align: right;
     }
     /* Left side layout */
     .event-summary-dual .team-column.left .athlete-row {
@@ -638,7 +647,6 @@
     }
     .event-summary-dual .team-column.left .athlete-score-block {
       order: 4;
-      align-items: flex-end;
     }
     /* Right side - reverse order for RTL layout */
     .event-summary-dual .team-column.right .athlete-row {
@@ -649,7 +657,13 @@
       text-align: right;
     }
     .event-summary-dual .team-column.right .athlete-score-block {
-      align-items: flex-start;
+      flex-direction: row-reverse;
+    }
+    .event-summary-dual .team-column.right .athlete-start {
+      text-align: left;
+    }
+    .event-summary-dual .team-column.right .athlete-score {
+      text-align: left;
     }
 
     /* Center divider with rotation info and score diff bars */
@@ -738,6 +752,7 @@
       background: #18181b;
       border-top: 2px solid #3f3f46;
       min-height: 80px;
+      flex-shrink: 0;
     }
     .event-summary-footer .footer-team {
       flex: 1;
@@ -2284,6 +2299,292 @@
       width: 160px;
     }
     .layout-dual-dynamic-v1-footer .footer-diff {
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    /* Layout: Dual Dynamic V2 - V1 with fixed number alignment and viewport scaling */
+    .layout-dual-dynamic-v2 {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      background: #18181b;
+    }
+    .layout-dual-dynamic-v2 .title-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 40px;
+      background: #d4d4d8;
+      min-height: 80px;
+      flex-shrink: 0;
+    }
+    .layout-dual-dynamic-v2 .title-bar .title-text {
+      font-size: 42px;
+      font-weight: 800;
+      color: #000;
+      font-style: italic;
+    }
+    .layout-dual-dynamic-v2 .title-bar .title-logos {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .layout-dual-dynamic-v2 .title-bar .title-logo {
+      width: 72px;
+      height: 72px;
+      object-fit: contain;
+    }
+    .layout-dual-dynamic-v2 .main-content {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+    }
+    .layout-dual-dynamic-v2 .team-column {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    .layout-dual-dynamic-v2 .team-header {
+      display: flex;
+      align-items: center;
+      padding: 16px 24px;
+      background: #27272a;
+      gap: 16px;
+      height: 88px;
+      flex-shrink: 0;
+    }
+    .layout-dual-dynamic-v2 .team-header.left {
+      justify-content: flex-start;
+    }
+    .layout-dual-dynamic-v2 .team-header.right {
+      justify-content: flex-end;
+      flex-direction: row-reverse;
+    }
+    .layout-dual-dynamic-v2 .team-logo {
+      width: 72px;
+      height: 72px;
+      object-fit: contain;
+      flex-shrink: 0;
+    }
+    .layout-dual-dynamic-v2 .team-name {
+      font-size: 32px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .layout-dual-dynamic-v2 .team-total {
+      font-size: 36px;
+      font-weight: 800;
+      color: #fff;
+      margin-left: auto;
+    }
+    .layout-dual-dynamic-v2 .team-header.right .team-total {
+      margin-left: 0;
+      margin-right: auto;
+    }
+    .layout-dual-dynamic-v2 .athlete-list {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #18181b;
+      gap: 4px;
+      padding: 4px 0;
+      min-height: 0;
+    }
+    .layout-dual-dynamic-v2 .athlete-row {
+      display: flex;
+      align-items: center;
+      padding: 12px 20px;
+      flex: 1;
+      min-height: 0;
+      background: #27272a;
+      gap: 16px;
+    }
+    .layout-dual-dynamic-v2 .team-column.left .athlete-row {
+      flex-direction: row;
+    }
+    .layout-dual-dynamic-v2 .team-column.left .athlete-score-block {
+      flex-direction: row-reverse;
+      justify-content: flex-end;
+    }
+    .layout-dual-dynamic-v2 .team-column.right .athlete-row {
+      flex-direction: row-reverse;
+    }
+    .layout-dual-dynamic-v2 .team-column.right .athlete-info {
+      text-align: right;
+    }
+    .layout-dual-dynamic-v2 .team-column.right .athlete-score-block {
+      flex-direction: row;
+      justify-content: flex-start;
+    }
+    .layout-dual-dynamic-v2 .athlete-order {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: #52525b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .layout-dual-dynamic-v2 .athlete-order.anchor {
+      background: #eab308;
+      color: #000;
+    }
+    .layout-dual-dynamic-v2 .athlete-photo {
+      width: 88px;
+      height: 88px;
+      border-radius: 8px;
+      object-fit: contain;
+      background: transparent;
+      flex-shrink: 0;
+    }
+    .layout-dual-dynamic-v2 .athlete-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-width: 0;
+    }
+    .layout-dual-dynamic-v2 .athlete-name {
+      font-size: 36px;
+      font-weight: 600;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .layout-dual-dynamic-v2 .athlete-score-block {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      min-width: 180px;
+    }
+    .layout-dual-dynamic-v2 .athlete-score {
+      font-size: 44px;
+      font-weight: 700;
+      color: #fff;
+      min-width: 130px;
+    }
+    .layout-dual-dynamic-v2 .team-column.left .athlete-score {
+      text-align: right;
+    }
+    .layout-dual-dynamic-v2 .team-column.right .athlete-score {
+      text-align: left;
+    }
+    .layout-dual-dynamic-v2 .athlete-start {
+      font-size: 24px;
+      font-weight: 500;
+      color: #a1a1aa;
+      margin-bottom: -4px;
+      min-width: 60px;
+    }
+    .layout-dual-dynamic-v2 .team-column.left .athlete-start {
+      text-align: right;
+    }
+    .layout-dual-dynamic-v2 .team-column.right .athlete-start {
+      text-align: left;
+    }
+    .layout-dual-dynamic-v2 .center-divider {
+      width: 140px;
+      display: flex;
+      flex-direction: column;
+      background: #18181b;
+      flex-shrink: 0;
+    }
+    .layout-dual-dynamic-v2 .center-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 88px;
+      background: #27272a;
+      flex-shrink: 0;
+    }
+    .layout-dual-dynamic-v2 .rotation-badge {
+      font-size: 36px;
+      font-weight: 800;
+      color: #fff;
+    }
+    .layout-dual-dynamic-v2 .diff-list {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 4px 0;
+      min-height: 0;
+    }
+    .layout-dual-dynamic-v2 .diff-row {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      min-height: 0;
+      background: #27272a;
+      padding: 8px 12px;
+    }
+    .layout-dual-dynamic-v2 .diff-value {
+      font-size: 22px;
+      font-weight: 600;
+      color: #a1a1aa;
+      margin-bottom: 8px;
+    }
+    .layout-dual-dynamic-v2 .diff-bar {
+      width: 100%;
+      height: 6px;
+      background: #3f3f46;
+      border-radius: 3px;
+      position: relative;
+      overflow: hidden;
+    }
+    .layout-dual-dynamic-v2 .diff-bar-fill {
+      position: absolute;
+      top: 0;
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+    .layout-dual-dynamic-v2 .diff-bar-fill.left {
+      right: 50%;
+      background: linear-gradient(to left, #22c55e, #16a34a);
+    }
+    .layout-dual-dynamic-v2 .diff-bar-fill.right {
+      left: 50%;
+      background: linear-gradient(to right, #ef4444, #dc2626);
+    }
+    .layout-dual-dynamic-v2 .diff-bar-fill.tie {
+      left: 50%;
+      transform: translateX(-50%);
+      width: 4px !important;
+      background: #a1a1aa;
+    }
+    .layout-dual-dynamic-v2-footer {
+      border-top: 2px solid #3f3f46;
+    }
+    .layout-dual-dynamic-v2-footer .event-abbr {
+      font-size: 28px;
+      font-weight: 800;
+    }
+    .layout-dual-dynamic-v2-footer .event-icon {
+      width: 32px;
+      height: 32px;
+    }
+    .layout-dual-dynamic-v2-footer .event-label {
+      font-size: 32px;
+    }
+    .layout-dual-dynamic-v2-footer .event-total {
+      font-size: 48px;
+      font-weight: 800;
+    }
+    .layout-dual-dynamic-v2-footer .footer-center {
+      width: 160px;
+    }
+    .layout-dual-dynamic-v2-footer .footer-diff {
       font-size: 24px;
       font-weight: 700;
     }
@@ -6217,15 +6518,15 @@
      * 3+ logos: returns row of logos
      */
     function buildStreamLogosHtml(data) {
-      // Collect all team logos from data (team1Logo through team7Logo)
+      // Collect team logos only for teams that have a name (non-empty)
+      // Placeholder teams (team3-7 in dual meets) have logos but no name
       const logos = [];
       for (let i = 1; i <= 7; i++) {
         const teamName = data[`team${i}Name`];
+        if (!teamName) continue;
         const teamLogo = data[`team${i}Logo`];
-        if (teamName || teamLogo) {
-          const logoUrl = getTeamLogoUrl(teamName, teamLogo);
-          if (logoUrl) logos.push(logoUrl);
-        }
+        const logoUrl = getTeamLogoUrl(teamName, teamLogo);
+        if (logoUrl) logos.push(logoUrl);
       }
 
       if (logos.length === 0) {
@@ -6332,10 +6633,13 @@
         if (isAllAround && (!eventResults || !eventResults.gymnasts || eventResults.gymnasts.length < 5)) {
           console.log('AA event_results incomplete, aggregating from individual events...');
 
-          // Define required events by gender
-          const mensEvents = ['Floor Exercise', 'Pommel Horse', 'Still Rings', 'Vault', 'Parallel Bars', 'High Bar'];
-          const womensEvents = ['Vault', 'Uneven Bars', 'Balance Beam', 'Floor Exercise'];
+          // Define required events by gender (both full names and API short names)
+          const mensEvents = ['Floor Exercise', 'Pommel Horse', 'Still Rings', 'Vault', 'Parallel Bars', 'High Bar',
+                              'FLOOR', 'HORSE', 'RINGS', 'VAULT', 'PBARS', 'BAR'];
+          const womensEvents = ['Vault', 'Uneven Bars', 'Balance Beam', 'Floor Exercise',
+                                'VAULT', 'BARS', 'BEAM', 'FLOOR'];
           const requiredEvents = isWomens ? womensEvents : mensEvents;
+          const requiredEventCount = isWomens ? 4 : 6;
 
           // Aggregate scores for each gymnast across all events
           const gymnastAA = {}; // Map: gymnast name -> { scores: {event: score}, teamInfo, total }
@@ -6347,8 +6651,10 @@
 
               if (team.events) {
                 team.events.forEach(event => {
-                  const eventName = event.event_name;
-                  if (!requiredEvents.includes(eventName)) return;
+                  const rawEventName = event.event_name;
+                  if (!requiredEvents.includes(rawEventName)) return;
+                  // Normalize to uppercase for dedup (API may use 'VAULT' or 'Vault')
+                  const eventName = rawEventName.toUpperCase();
 
                   if (event.gymnasts) {
                     event.gymnasts.forEach(g => {
@@ -6387,10 +6693,10 @@
 
           // Filter to gymnasts who completed ALL required events
           const completeGymnasts = Object.values(gymnastAA)
-            .filter(g => g.eventCount === requiredEvents.length)
+            .filter(g => g.eventCount === requiredEventCount)
             .sort((a, b) => b.total - a.total); // Sort by total descending
 
-          console.log(`Found ${completeGymnasts.length} gymnasts with complete AA (${requiredEvents.length} events)`);
+          console.log(`Found ${completeGymnasts.length} gymnasts with complete AA (${requiredEventCount} events)`);
 
           if (completeGymnasts.length > 0) {
             // Assign places (handle ties)
@@ -6499,7 +6805,7 @@
                 <th class="col-team">Team</th>
                 ${isAllAround ? '' : '<th class="col-apparatus">Apparatus</th>'}
                 <th class="col-score">Score</th>
-                ${isAllAround ? '' : '<th class="col-diff">Diff.</th>'}
+                ${isAllAround || isWomens ? '' : '<th class="col-diff">Diff.</th>'}
                 ${isWomens || isAllAround ? '' : '<th class="col-exec">Exec.</th>'}
                 ${isWomens || isAllAround ? '' : '<th class="col-sb">SB</th>'}
               </tr>
@@ -6526,17 +6832,8 @@
           // Stick bonus is indicated by bonus > 0 in the API
           const hasStick = detailedScores.bonus > 0;
 
-          // Rank display - medal for 1st/2nd/3rd, with T superscript for ties
-          let rankHtml = '';
-          if (place === 1) {
-            rankHtml = `<span class="leaderboard-medal medal-gold">1</span>`;
-          } else if (place === 2) {
-            rankHtml = isTied ? `${place}<sup>T</sup>` : `<span class="leaderboard-medal medal-silver">2</span>`;
-          } else if (place === 3) {
-            rankHtml = isTied ? `${place}<sup>T</sup>` : `<span class="leaderboard-medal medal-bronze">3</span>`;
-          } else {
-            rankHtml = isTied ? `${place}<sup>T</sup>` : place;
-          }
+          // Rank display - plain number, with T superscript for ties
+          const rankHtml = isTied ? `${place}<sup>T</sup>` : place;
 
           // Name with colored circle indicator for top 3
           const placeIndicator = place === 1 ? '<span class="place-indicator gold"></span>' :
@@ -6572,7 +6869,7 @@
               <td class="col-team">${logoHtml}${teamName}</td>
               ${isAllAround ? '' : `<td class="col-apparatus"><span class="apparatus-badge">${shortCode}</span></td>`}
               <td class="col-score">${score.toFixed(3)}</td>
-              ${isAllAround ? '' : `<td class="col-diff">${dScoreStr}</td>`}
+              ${isAllAround || isWomens ? '' : `<td class="col-diff">${dScoreStr}</td>`}
               ${isWomens || isAllAround ? '' : `<td class="col-exec">${eScoreStr}</td>`}
               ${isWomens || isAllAround ? '' : `<td class="col-sb">${stickHtml}</td>`}
             </tr>
@@ -7289,6 +7586,8 @@
             renderDefaultV2Layout(contentEl, filteredRotationData, rotation);
           } else if (layout === 'dual-dynamic-v1') {
             renderDualDynamicV1Layout(contentEl, filteredRotationData, rotation);
+          } else if (layout === 'dual-dynamic-v2') {
+            renderDualDynamicV2Layout(contentEl, filteredRotationData, rotation);
           } else if (layout === 'default-v3') {
             renderMultiTeamSummaryV3(contentEl, filteredRotationData, rotation, displayNumTeams);
           } else if (layout === 'default-v4') {
@@ -7513,7 +7812,7 @@
             </div>
           `;
         } else {
-          athletesHtml += `<div class="athlete-row" style="min-height: 72px;"></div>`;
+          athletesHtml += `<div class="athlete-row"></div>`;
         }
       }
 
@@ -9451,6 +9750,8 @@
             renderDefaultV2LayoutApparatus(contentEl, apparatusData, eventDisplayName, eventShortCode);
           } else if (layout === 'dual-dynamic-v1') {
             renderDualDynamicV1LayoutApparatus(contentEl, apparatusData, eventDisplayName, eventShortCode);
+          } else if (layout === 'dual-dynamic-v2') {
+            renderDualDynamicV2LayoutApparatus(contentEl, apparatusData, eventDisplayName, eventShortCode);
           } else if (layout === 'default-v3') {
             renderMultiTeamSummaryApparatusV3(contentEl, apparatusData, eventDisplayName, eventShortCode, actualNumTeams);
           } else if (layout === 'default-v4') {
@@ -10031,7 +10332,7 @@
             </div>
           `;
         } else {
-          athletesHtml += `<div class="athlete-row" style="min-height: 72px;"></div>`;
+          athletesHtml += `<div class="athlete-row"></div>`;
         }
       }
 
@@ -10644,6 +10945,235 @@
       `;
     }
 
+    // Dual Dynamic V2 Layout - V1 with fixed number alignment
+    function renderDualDynamicV2Layout(contentEl, rotationData, rotation) {
+      const team1 = rotationData[0];
+      const team2 = rotationData[1];
+
+      const maxAthletes = Math.max(team1.gymnasts.length, team2.gymnasts.length);
+      const sizes = getDynamicSizes(maxAthletes);
+
+      const team1Logo = getTeamLogoUrl(team1.team.name, team1.team.logo);
+
+      const titleHtml = `
+        <div class="title-bar">
+          <div class="title-text">Event Summary</div>
+          ${team1Logo ? `<img class="title-logo" src="${team1Logo}" alt="">` : ''}
+        </div>
+      `;
+
+      const leftColumn = buildDualDynamicV2Column(team1, 'left', maxAthletes, sizes);
+      const rightColumn = buildDualDynamicV2Column(team2, 'right', maxAthletes, sizes);
+
+      let diffRowsHtml = '';
+      for (let i = 0; i < maxAthletes; i++) {
+        const score1 = team1.gymnasts[i] ? parseFloat(team1.gymnasts[i].final_score) || 0 : 0;
+        const score2 = team2.gymnasts[i] ? parseFloat(team2.gymnasts[i].final_score) || 0 : 0;
+        const diff = score1 - score2;
+        const diffStr = (score1 === 0 && score2 === 0) ? '--' : diff.toFixed(3);
+
+        const barWidth = Math.min(Math.abs(diff) * 25, 50);
+        let barClass = 'tie';
+        if (diff > 0.001) barClass = 'left';
+        else if (diff < -0.001) barClass = 'right';
+
+        diffRowsHtml += `
+          <div class="diff-row">
+            <div class="diff-value">${diffStr}</div>
+            <div class="diff-bar">
+              <div class="diff-bar-fill ${barClass}" style="width: ${barWidth}%;"></div>
+            </div>
+          </div>
+        `;
+      }
+
+      const centerHtml = `
+        <div class="center-divider">
+          <div class="center-header"><div class="rotation-badge">R${rotation}</div></div>
+          <div class="diff-list">${diffRowsHtml}</div>
+        </div>
+      `;
+
+      const eventDiff = team1.eventScore - team2.eventScore;
+      const eventDiffStr = eventDiff.toFixed(3);
+      const eventBarWidth = Math.min(Math.abs(eventDiff) * 5, 50);
+      let eventBarClass = 'tie';
+      if (eventDiff > 0.001) eventBarClass = 'left';
+      else if (eventDiff < -0.001) eventBarClass = 'right';
+
+      const footerHtml = `
+        <div class="event-summary-footer layout-dual-dynamic-v2-footer">
+          <div class="footer-team left">
+            <div class="event-abbr">${team1.eventShortCode}</div>
+            ${EVENT_ICONS[team1.eventShortCode] || ''}
+            <div class="event-label">Event Total</div>
+            <div class="event-total">${team1.eventScore > 0 ? team1.eventScore.toFixed(3) : '—'}</div>
+          </div>
+          <div class="footer-center">
+            <div class="footer-diff">${eventDiffStr}</div>
+            <div class="footer-diff-bar">
+              <div class="footer-diff-fill ${eventBarClass}" style="width: ${eventBarWidth}%;"></div>
+            </div>
+          </div>
+          <div class="footer-team right">
+            <div class="event-abbr">${team2.eventShortCode}</div>
+            ${EVENT_ICONS[team2.eventShortCode] || ''}
+            <div class="event-label">Event Total</div>
+            <div class="event-total">${team2.eventScore > 0 ? team2.eventScore.toFixed(3) : '—'}</div>
+          </div>
+        </div>
+      `;
+
+      contentEl.innerHTML = `
+        <div class="layout-dual-dynamic-v2">
+          ${titleHtml}
+          <div class="main-content">
+            ${leftColumn}
+            ${centerHtml}
+            ${rightColumn}
+          </div>
+        </div>
+        ${footerHtml}
+      `;
+    }
+
+    function buildDualDynamicV2Column(teamData, side, maxAthletes, sizes) {
+      const { team, gymnasts, totalScore, eventShortCode } = teamData;
+
+      let athletesHtml = '';
+      for (let i = 0; i < maxAthletes; i++) {
+        const g = gymnasts[i];
+        if (g) {
+          const score = parseFloat(g.final_score) || 0;
+          const startValue = g.scores && g.scores.length > 0 ? parseFloat(g.scores[0].start) || 0 : 0;
+          const name = `${g.first_name?.charAt(0) || ''}. ${g.last_name || ''}`;
+          const photoUrl = getAthleteHeadshot(g.first_name, g.last_name, g.headshot);
+          const isAnchor = i === 5;
+
+          athletesHtml += `
+            <div class="athlete-row" style="padding: ${sizes.rowPadding}px 20px; gap: ${sizes.rowGap}px;">
+              <div class="athlete-order${isAnchor ? ' anchor' : ''}" style="width: ${sizes.orderSize}px; height: ${sizes.orderSize}px; font-size: ${sizes.orderFont}px;">${i + 1}</div>
+              <img class="athlete-photo" src="${photoUrl || ''}" alt="" style="width: ${sizes.photoSize}px; height: ${sizes.photoSize}px; ${!photoUrl ? 'display: none;' : ''}" onerror="this.style.display='none'">
+              <div class="athlete-info">
+                <div class="athlete-name" style="font-size: ${sizes.nameFont}px;">${name}</div>
+              </div>
+              <div class="athlete-score-block">
+                <div class="athlete-score" style="font-size: ${sizes.scoreFont}px;">${score > 0 ? score.toFixed(3) : 'On Eval'}</div>
+                ${startValue > 0 ? `<div class="athlete-start" style="font-size: ${sizes.startFont}px;">${startValue.toFixed(2)}</div>` : ''}
+              </div>
+            </div>
+          `;
+        } else {
+          athletesHtml += `<div class="athlete-row" style="padding: ${sizes.rowPadding}px 20px;"></div>`;
+        }
+      }
+
+      const logoUrl = getTeamLogoUrl(team.name, team.logo);
+      return `
+        <div class="team-column ${side}">
+          <div class="team-header ${side}">
+            ${logoUrl ? `<img class="team-logo" src="${logoUrl}" alt="">` : ''}
+            <div class="team-name">${team.name || team.tricode}</div>
+            <div class="team-total">${totalScore > 0 ? totalScore.toFixed(3) : '0.000'}</div>
+          </div>
+          <div class="athlete-list">
+            ${athletesHtml}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderDualDynamicV2LayoutApparatus(contentEl, apparatusData, eventDisplayName, eventShortCode) {
+      const team1 = apparatusData[0];
+      const team2 = apparatusData[1];
+
+      const maxAthletes = Math.max(team1.gymnasts.length, team2.gymnasts.length);
+      const sizes = getDynamicSizes(maxAthletes);
+
+      const team1Logo = getTeamLogoUrl(team1.team.name, team1.team.logo);
+
+      const titleHtml = `
+        <div class="title-bar">
+          <div class="title-text">Event Summary</div>
+          ${team1Logo ? `<img class="title-logo" src="${team1Logo}" alt="">` : ''}
+        </div>
+      `;
+
+      const leftColumn = buildDualDynamicV2Column(team1, 'left', maxAthletes, sizes);
+      const rightColumn = buildDualDynamicV2Column(team2, 'right', maxAthletes, sizes);
+
+      let diffRowsHtml = '';
+      for (let i = 0; i < maxAthletes; i++) {
+        const score1 = team1.gymnasts[i] ? parseFloat(team1.gymnasts[i].final_score) || 0 : 0;
+        const score2 = team2.gymnasts[i] ? parseFloat(team2.gymnasts[i].final_score) || 0 : 0;
+        const diff = score1 - score2;
+        const diffStr = (score1 === 0 && score2 === 0) ? '--' : diff.toFixed(3);
+
+        const barWidth = Math.min(Math.abs(diff) * 25, 50);
+        let barClass = 'tie';
+        if (diff > 0.001) barClass = 'left';
+        else if (diff < -0.001) barClass = 'right';
+
+        diffRowsHtml += `
+          <div class="diff-row">
+            <div class="diff-value">${diffStr}</div>
+            <div class="diff-bar">
+              <div class="diff-bar-fill ${barClass}" style="width: ${barWidth}%;"></div>
+            </div>
+          </div>
+        `;
+      }
+
+      const centerHtml = `
+        <div class="center-divider">
+          <div class="center-header"><div class="rotation-badge">${eventShortCode}</div></div>
+          <div class="diff-list">${diffRowsHtml}</div>
+        </div>
+      `;
+
+      const eventDiff = team1.eventScore - team2.eventScore;
+      const eventDiffStr = eventDiff.toFixed(3);
+      const eventBarWidth = Math.min(Math.abs(eventDiff) * 5, 50);
+      let eventBarClass = 'tie';
+      if (eventDiff > 0.001) eventBarClass = 'left';
+      else if (eventDiff < -0.001) eventBarClass = 'right';
+
+      const footerHtml = `
+        <div class="event-summary-footer layout-dual-dynamic-v2-footer">
+          <div class="footer-team left">
+            <div class="event-abbr">${eventShortCode}</div>
+            ${EVENT_ICONS[eventShortCode] || ''}
+            <div class="event-label">Event Total</div>
+            <div class="event-total">${team1.eventScore > 0 ? team1.eventScore.toFixed(3) : '—'}</div>
+          </div>
+          <div class="footer-center">
+            <div class="footer-diff">${eventDiffStr}</div>
+            <div class="footer-diff-bar">
+              <div class="footer-diff-fill ${eventBarClass}" style="width: ${eventBarWidth}%;"></div>
+            </div>
+          </div>
+          <div class="footer-team right">
+            <div class="event-abbr">${eventShortCode}</div>
+            ${EVENT_ICONS[eventShortCode] || ''}
+            <div class="event-label">Event Total</div>
+            <div class="event-total">${team2.eventScore > 0 ? team2.eventScore.toFixed(3) : '—'}</div>
+          </div>
+        </div>
+      `;
+
+      contentEl.innerHTML = `
+        <div class="layout-dual-dynamic-v2">
+          ${titleHtml}
+          <div class="main-content">
+            ${leftColumn}
+            ${centerHtml}
+            ${rightColumn}
+          </div>
+        </div>
+        ${footerHtml}
+      `;
+    }
+
     // Graphic renderers
     const renderers = {
       clear: () => '',
@@ -11045,6 +11575,16 @@
         return `<iframe src="${overlayUrl}" style="width: 1920px; height: 1080px; border: none; overflow: hidden;"></iframe>`;
       },
 
+      // Auto-updating Rotation Slate - polls Virtius API for current rotation
+      'rotation-slate-auto': (data) => {
+        const compId = data.compId || '';
+        const layout = data.layout || 'classic';
+        const layoutParam = layout !== 'classic' ? `&layout=${layout}` : '';
+        const meetTheme = data.meetTheme ? `&meetTheme=${encodeURIComponent(data.meetTheme)}` : '';
+        const overlayUrl = `/overlays/rotation-slate-auto.html?compId=${encodeURIComponent(compId)}${layoutParam}${meetTheme}`;
+        return `<iframe src="${overlayUrl}" style="width: 1920px; height: 1080px; border: none; overflow: hidden;"></iframe>`;
+      },
+
       // Frame Overlays for OBS
       'frame-quad': () => `
         <div class="graphic-frame-overlay frame-quad">
@@ -11400,6 +11940,18 @@
     }
     // Note: Keyboard shortcuts (like 'b' for bold mode) work in OBS via Interact mode,
     // but not in regular browsers due to cross-origin iframe restrictions.
+  </script>
+  <script>
+    // Viewport scaling: fit 1920x1080 graphic into any browser window
+    // In OBS (1920x1080 viewport), scale = 1.0 (no change)
+    function updateViewportScale() {
+      const sx = window.innerWidth / 1920;
+      const sy = window.innerHeight / 1080;
+      const s = Math.min(sx, sy);
+      document.body.style.transform = 'scale(' + s + ')';
+    }
+    window.addEventListener('resize', updateViewportScale);
+    updateViewportScale();
   </script>
 </body>
 </html>

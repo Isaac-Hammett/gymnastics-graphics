@@ -3,7 +3,7 @@
 **Version:** 2.1
 **Date:** 2026-02-01
 **Status:** In Progress
-**Last Updated:** 2026-03-11 (Phases 1-5 complete, Phase 6 bug fixes added — 17 bugs identified)
+**Last Updated:** 2026-03-14 (Phase 8 added: GymACT league support)
 
 ---
 
@@ -201,6 +201,8 @@ The result: talent gets shallow talking points, graphics show manually-entered (
 | **4** | AI Enhancement | P1 | Feed stats into AI context and suggestion services | 18-21 |
 | **5** | Playwright Integration Tests | P1 | End-to-end tests for all features | 22-24 |
 | **6** | Bug Fixes | P0 | Fix 17 bugs found in production audit (BUG-022 through BUG-038) | 27-43 |
+| **7** | Configurable Stat Types | P1 | Capture NQS/four-count average from RTN, stat type selector in URL Generator | T4-T5 |
+| **8** | GymACT League Support | P1 | Fetch GymACT team rankings from `/resultsga/` for non-NCAA teams | T46 |
 
 ---
 
@@ -272,7 +274,8 @@ All endpoints follow pattern: `https://www.roadtonationals.com/api/{gender}/...`
 | Endpoint | Description | Key Fields |
 |----------|-------------|------------|
 | `/{gender}/dashboard/{year}/{tid}` | Team overview (currently used for coaches only) | info, staff, ranks, meets, roster |
-| `/{gender}/results/{year}/{week}/0/{type}` | Team rankings | rank, ave, high, rqs, conference, region |
+| `/{gender}/results/{year}/{week}/0/{type}` | NCAA team rankings | rank, ave, high, rqs, conference, region |
+| `/{gender}/resultsga/{year}/{week}/0/{type}` | GymACT team rankings (same shape as NCAA) | rank, ave, high, rqs, conference, region |
 | `/{gender}/results/{year}/{week}/1/{event}` | Individual rankings (~500+ athletes) | rank, name, team, ave, high, rqs |
 | `/{gender}/teamConsistency/{year}/{tid}` | Per-meet event scores over season | date labels, VT/UB/BB/FX score arrays |
 | `/{gender}/mvp/{year}/{tid}` | Athlete contribution totals | per-athlete cumulative event sums |
@@ -302,6 +305,13 @@ RTN team IDs (`tid`) originate from the Virtius API. They are captured during te
 - **Athlete level:** `teamsDatabase/headshots/{athlete-name}/rtnId`
 
 The stats service reads these IDs for all subsequent RTN API calls. If an RTN ID is missing, the service logs a warning and skips that team/athlete.
+
+### League Field (GymACT Support)
+
+Teams can belong to different leagues which determine which RTN results endpoint to use:
+- **Team level:** `teamsDatabase/teams/{teamKey}/league` — `"ncaa"` (default if absent) or `"gymact"`
+
+GymACT teams use `/resultsga/` instead of `/results/` for team rankings. All other stat endpoints (consistency, mvp, topscores, lineup, rostermain) use the same path for both leagues. GymACT rankings are cached separately at `rtnCache/rankings/gymact-{gender}-{year}-{week}/`.
 
 ---
 
@@ -364,7 +374,62 @@ competitions/{compId}/rtnStats/
 
 ---
 
-## 9. Related Documents
+## 9. Phase 7: Configurable Stat Types (NQS / Four-Count Average)
+
+**Added:** 2026-03-13
+**Status:** Not Started
+**Priority:** P1
+
+### Problem
+The team-stats graphic currently only shows "Average" and "High" scores. For women's gymnastics, NQS (National Qualifying Score) is a more meaningful metric than raw average. For men's, the four-count average is preferred. These stats are available from RTN but not currently captured or configurable.
+
+### T4: Capture Additional RTN Stat Fields
+
+The `normalizeTeamRanking()` function in `server/lib/rtnStatsService.js` currently extracts only `ave`, `high`, `rqs` from the raw RTN data. The raw `team` object likely contains additional fields (e.g., `nqs`) that are being discarded.
+
+**Steps:**
+1. Inspect raw RTN API response to identify exact field names for NQS (women) and four-count average (men)
+2. Extend `normalizeTeamRanking()` to capture `nqs` and any four-count average field
+3. Update `syncStatsToConfig()` to sync new fields to competition config (e.g., `team{N}Nqs`, `team{N}FourCount`)
+4. Store in Firebase alongside existing `teamRanking` fields
+
+**Files:**
+- `server/lib/rtnStatsService.js` — `normalizeTeamRanking()` + `syncStatsToConfig()`
+
+### T5: Stat Type Selector in URL Generator
+
+Add a dropdown in the URL Generator that lets the producer choose which stat to display on the team-stats graphic.
+
+**Options by gender:**
+- Women's: "Season Average" (AVG), "NQS", "High"
+- Men's: "Season Average" (AVG), "Four-Count Average" (4-CT AVG), "High"
+
+**The overlay label should update dynamically** — instead of always saying "AVG", it should say "NQS" or "4-CT AVG" based on selection.
+
+**Implementation:**
+- Add `statType` param to team-stats graphic definition in `graphicsRegistry.js`
+- Update `buildTeamStatsURL()` in `urlBuilder.js` to pass a `statLabel` param
+- Update `team-stats.html` overlay to read `statLabel` param for label text
+- Update `output.html` inline rendering similarly
+- URL Generator form: add stat type dropdown that auto-fills the value from the correct RTN field
+
+**Files:**
+- `show-controller/src/lib/graphicsRegistry.js`
+- `show-controller/src/lib/urlBuilder.js`
+- `show-controller/src/pages/UrlGeneratorPage.jsx`
+- `overlays/team-stats.html`
+- `output.html`
+
+### Success Criteria
+- [ ] NQS field captured from RTN API for women's teams
+- [ ] Four-count average field captured for men's teams (if available from RTN)
+- [ ] URL Generator shows stat type dropdown per team
+- [ ] Overlay label updates dynamically based on selection
+- [ ] Auto-sync populates new fields alongside existing Ave/High
+
+---
+
+## 10. Related Documents
 
 | Document | Purpose |
 |----------|---------|

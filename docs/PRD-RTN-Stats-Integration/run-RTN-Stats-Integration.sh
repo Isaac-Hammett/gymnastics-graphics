@@ -1,254 +1,64 @@
 #!/bin/bash
-# =============================================================================
-# RTN Stats Integration Pipeline
-# Phase 1: Audit  — validate plan against codebase, Firebase, and RTN API
-# Phase 2: Implement — build one task per iteration
+# Autonomous implementation loop for PRD-RTN-Stats-Integration (Phase 6 bug fixes + Phase 7 stat types)
 #
-# Usage:
-#   ./run-RTN-Stats-Integration.sh              # full pipeline (audit → implement)
-#   ./run-RTN-Stats-Integration.sh --audit      # audit only
-#   ./run-RTN-Stats-Integration.sh --implement  # skip audit, implement only
-#   ./run-RTN-Stats-Integration.sh --status     # print progress, don't run
-# =============================================================================
+# Prerequisites (do these manually before running this script):
+#   1. Review complete: bugs documented in BUGS.md, tasks in implementation plan
+#   2. First iteration verified manually:
+#      cat promptv2-RTN-Stats-Integration.md | claude -p --dangerously-skip-permissions --mcp-config ../../.mcp.json
+#
+# Each iteration = a completely new Claude window (stateless).
+# The prompt file must be self-contained — no context carries between iterations.
 
-set -euo pipefail
-
-# --- Config ---
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-LOGS_DIR="$SCRIPT_DIR/logs"
-AUDIT_LOG="$LOGS_DIR/audit-output.jsonl"
-IMPL_LOG="$LOGS_DIR/impl-output.jsonl"
-MCP_CONFIG="$PROJECT_ROOT/.mcp.json"
+LOG_FILE="$SCRIPT_DIR/logs/summary.log"
 IMPL_PLAN="$SCRIPT_DIR/PLAN-RTN-Stats-Integration-Implementation.md"
 
-MAX_AUDIT=15   # 7 categories + buffer for retries
-MAX_IMPL=30    # 24 tasks + buffer for bug fixes
+mkdir -p "$SCRIPT_DIR/logs"
+mkdir -p "$SCRIPT_DIR/screenshots"
 
-# --- Colors ---
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-CYAN='\033[0;36m'
-BOLD='\033[1m'
-DIM='\033[2m'
-RESET='\033[0m'
+MCP_CONFIG="$PROJECT_ROOT/.mcp.json"
+MAX_ITERATIONS=25  # 17 tasks + buffer for retries
 
-# --- Helpers ---
-timestamp() { date "+%Y-%m-%d %H:%M:%S"; }
-elapsed() {
-    local secs=$1
-    printf '%dm %ds' $((secs / 60)) $((secs % 60))
-}
-banner() {
-    echo ""
-    echo -e "${CYAN}══════════════════════════════════════════${RESET}"
-    echo -e "${BOLD}  $1${RESET}"
-    echo -e "${CYAN}══════════════════════════════════════════${RESET}"
-    echo ""
-}
-divider() { echo -e "${DIM}──────────────────────────────────────────${RESET}"; }
-
-audit_done()  { grep -q "Audit: COMPLETE" "$IMPL_PLAN" 2>/dev/null; }
-impl_done()   { grep -q "^\\*\\*Status:\\*\\* COMPLETE" "$IMPL_PLAN" 2>/dev/null; }
-
-count_tasks() {
-    local status=$1
-    local n
-    n=$(grep -c "| $status |" "$IMPL_PLAN" 2>/dev/null) || true
-    echo "${n:-0}"
-}
-
-print_status() {
-    echo ""
-    echo -e "${BOLD}Pipeline Status${RESET} ($(timestamp))"
-    divider
-
-    if audit_done; then
-        echo -e "  Audit:      ${GREEN}COMPLETE${RESET}"
-    else
-        local cats_done
-        cats_done=$(grep -c "^## Category" "$SCRIPT_DIR/AUDIT-LOG.md" 2>/dev/null || echo 0)
-        echo -e "  Audit:      ${YELLOW}IN PROGRESS${RESET} ($cats_done/7 categories)"
-    fi
-
-    local done=$(count_tasks "COMPLETE")
-    local wip=$(count_tasks "IN PROGRESS")
-    local todo=$(count_tasks "NOT STARTED")
-    local total=$((done + wip + todo))
-
-    if impl_done; then
-        echo -e "  Implement:  ${GREEN}COMPLETE${RESET} ($total/$total tasks)"
-    elif [ "$done" -gt 0 ] || [ "$wip" -gt 0 ]; then
-        echo -e "  Implement:  ${YELLOW}IN PROGRESS${RESET} ($done/$total done, $wip in progress)"
-    else
-        echo -e "  Implement:  ${DIM}NOT STARTED${RESET} ($total tasks queued)"
-    fi
-
-    divider
-    echo ""
-}
-
-# --- Ctrl+C handler ---
-cleanup() {
-    echo ""
-    echo -e "${YELLOW}Interrupted.${RESET} Progress is saved — rerun to continue."
-    print_status
-    exit 130
-}
-trap cleanup SIGINT SIGTERM
-
-# --- Parse args ---
-MODE="full"
-case "${1:-}" in
-    --audit)     MODE="audit" ;;
-    --implement) MODE="implement" ;;
-    --status)    print_status; exit 0 ;;
-    --help|-h)
-        echo "Usage: $0 [--audit|--implement|--status|--help]"
-        echo "  (no flag)    Full pipeline: audit then implement"
-        echo "  --audit      Run audit phase only"
-        echo "  --implement  Skip audit, run implementation only"
-        echo "  --status     Print progress and exit"
-        exit 0 ;;
-    "") ;;
-    *)  echo "Unknown flag: $1. Use --help."; exit 1 ;;
-esac
-
-# --- Setup ---
-mkdir -p "$LOGS_DIR" "$SCRIPT_DIR/tests"
 cd "$PROJECT_ROOT"
 
-# Seed audit log if missing
-if [ ! -f "$SCRIPT_DIR/AUDIT-LOG.md" ]; then
-    cat > "$SCRIPT_DIR/AUDIT-LOG.md" << EOF
-# RTN Stats Integration — Audit Log
+for i in $(seq 1 $MAX_ITERATIONS); do
+    echo "=== Iteration $i started at $(date) ===" | tee -a "$LOG_FILE"
 
-**Started:** $(date +%Y-%m-%d)
-**Status:** IN PROGRESS
+    # Check if all Phase 6+7 tasks are complete
+    NOT_STARTED=$(grep -c "| NOT STARTED |" "$IMPL_PLAN" 2>/dev/null || echo "0")
+    IN_PROGRESS=$(grep -c "| IN PROGRESS |" "$IMPL_PLAN" 2>/dev/null || echo "0")
 
----
-
-EOF
-fi
-
-print_status
-
-# =============================================================================
-# PHASE 1: AUDIT
-# =============================================================================
-
-run_audit() {
-    if audit_done; then
-        echo -e "${GREEN}Audit already complete — skipping.${RESET}"
-        return 0
+    if [ "$NOT_STARTED" -eq 0 ] && [ "$IN_PROGRESS" -eq 0 ]; then
+        echo "All tasks complete!" | tee -a "$LOG_FILE"
+        say "All tasks complete"
+        exit 0
     fi
 
-    banner "PHASE 1: AUDIT"
-    say "Starting audit phase" &
+    # Snapshot task count before running
+    TASKS_BEFORE=$(grep -c "| COMPLETE |" "$IMPL_PLAN" 2>/dev/null || echo "0")
 
-    for i in $(seq 1 $MAX_AUDIT); do
-        if audit_done; then
-            echo -e "${GREEN}Audit complete after $((i - 1)) iterations.${RESET}"
-            say "Audit complete" &
-            return 0
-        fi
+    # Run Claude — suppress output, just capture exit code
+    cat "$SCRIPT_DIR/promptv2-RTN-Stats-Integration.md" | \
+        claude -p --dangerously-skip-permissions \
+        --mcp-config "$MCP_CONFIG" > /dev/null 2>&1
 
-        local iter_start=$SECONDS
-        echo -e "${BOLD}Audit iteration $i/$MAX_AUDIT${RESET}  ${DIM}($(timestamp))${RESET}"
+    EXIT_CODE=$?
 
-        cat "$SCRIPT_DIR/audit-RTN-Stats-Integration.md" | \
-            claude -p --dangerously-skip-permissions --verbose --output-format stream-json \
-            --mcp-config "$MCP_CONFIG" 2>&1 | \
-            tee -a "$AUDIT_LOG"
+    # Check if any task was completed this iteration
+    TASKS_AFTER=$(grep -c "| COMPLETE |" "$IMPL_PLAN" 2>/dev/null || echo "0")
 
-        local dur=$((SECONDS - iter_start))
-        echo -e "${DIM}Iteration $i took $(elapsed $dur)${RESET}"
-        divider
+    echo "  Finished at $(date) | exit=$EXIT_CODE | tasks: $TASKS_BEFORE -> $TASKS_AFTER | remaining: $((NOT_STARTED + IN_PROGRESS - (TASKS_AFTER - TASKS_BEFORE)))" | tee -a "$LOG_FILE"
 
-        say "audit $i done" &
-        sleep 5
-    done
-
-    if ! audit_done; then
-        echo -e "${RED}Audit did not complete in $MAX_AUDIT iterations.${RESET}"
-        say "Audit failed to complete" &
-        print_status
-        exit 1
-    fi
-}
-
-# =============================================================================
-# PHASE 2: IMPLEMENT
-# =============================================================================
-
-run_implement() {
-    if impl_done; then
-        echo -e "${GREEN}Implementation already complete.${RESET}"
-        return 0
-    fi
-
-    if ! audit_done && [ "$MODE" != "implement" ]; then
-        echo -e "${RED}Audit not complete. Run audit first or use --implement to skip.${RESET}"
+    if [ "$TASKS_AFTER" -le "$TASKS_BEFORE" ]; then
+        echo "  WARNING: No tasks completed this iteration" | tee -a "$LOG_FILE"
+        say "Warning: no progress made. Check the log."
         exit 1
     fi
 
-    banner "PHASE 2: IMPLEMENT"
-    say "Starting implementation phase" &
+    say "iteration $i complete, $TASKS_AFTER tasks done"
+    sleep 3
+done
 
-    for i in $(seq 1 $MAX_IMPL); do
-        if impl_done; then
-            echo -e "${GREEN}All tasks complete after $((i - 1)) iterations.${RESET}"
-            say "All tasks complete" &
-            return 0
-        fi
-
-        local iter_start=$SECONDS
-        local done=$(count_tasks "COMPLETE")
-        local total=$((done + $(count_tasks "IN PROGRESS") + $(count_tasks "NOT STARTED")))
-        echo -e "${BOLD}Impl iteration $i/$MAX_IMPL${RESET}  ${DIM}($done/$total tasks done)  ($(timestamp))${RESET}"
-
-        cat "$SCRIPT_DIR/promptv2-RTN-Stats-Integration.md" | \
-            claude -p --dangerously-skip-permissions --verbose --output-format stream-json \
-            --mcp-config "$MCP_CONFIG" 2>&1 | \
-            tee -a "$IMPL_LOG"
-
-        local dur=$((SECONDS - iter_start))
-        echo -e "${DIM}Iteration $i took $(elapsed $dur)${RESET}"
-        divider
-
-        say "task $i done" &
-        sleep 5
-    done
-
-    if ! impl_done; then
-        echo -e "${RED}Implementation did not complete in $MAX_IMPL iterations.${RESET}"
-        say "Max iterations reached" &
-        print_status
-        exit 1
-    fi
-}
-
-# =============================================================================
-# RUN
-# =============================================================================
-
-pipeline_start=$SECONDS
-
-case "$MODE" in
-    full)
-        run_audit
-        run_implement
-        ;;
-    audit)
-        run_audit
-        ;;
-    implement)
-        run_implement
-        ;;
-esac
-
-echo ""
-echo -e "${GREEN}${BOLD}Pipeline complete!${RESET}  Total time: $(elapsed $((SECONDS - pipeline_start)))"
-print_status
-say "Pipeline complete" &
+echo "Max iterations ($MAX_ITERATIONS) reached" | tee -a "$LOG_FILE"
+say "Max iterations reached"

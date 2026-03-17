@@ -858,24 +858,50 @@ class TimesheetEngine extends EventEmitter {
             const teamKey = config.team1Key;
             if (teamKey) {
               try {
+                let sponsorsData = null;
+                let resolvedKey = teamKey;
+
+                // Try exact key first
                 const sponsorsSnapshot = await db.ref(`teamsDatabase/sponsors/${teamKey}`).once('value');
-                const sponsorsData = sponsorsSnapshot.val();
+                sponsorsData = sponsorsSnapshot.val();
+
+                // Fallback: try normalized key (strip special chars like &)
+                // team1Key may contain characters that differ from the sponsors key
+                if (!sponsorsData) {
+                  const normalizedKey = teamKey.replace(/[&]+/g, '').replace(/-{2,}/g, '-').replace(/^-|-$/g, '');
+                  if (normalizedKey !== teamKey) {
+                    const fallbackSnapshot = await db.ref(`teamsDatabase/sponsors/${normalizedKey}`).once('value');
+                    sponsorsData = fallbackSnapshot.val();
+                    if (sponsorsData) {
+                      resolvedKey = normalizedKey;
+                      console.log(`[Timesheet${this.compId ? ':' + this.compId : ''}] Sponsors found via normalized key "${normalizedKey}" (original: "${teamKey}")`);
+                    }
+                  }
+                }
 
                 if (sponsorsData) {
                   // Convert sponsors object to array, sorted by order, limited to 8
+                  // Include all adjustment fields (scale, offset, crop) so overlays render consistently
                   const sponsorsArray = Object.entries(sponsorsData)
                     .map(([key, sponsor]) => ({
                       name: sponsor.name,
                       url: sponsor.logoUrl || sponsor.url,  // Handle both field names
-                      order: sponsor.order ?? 0
+                      order: sponsor.order ?? 0,
+                      ...(sponsor.scale != null && sponsor.scale !== 100 ? { scale: sponsor.scale } : {}),
+                      ...(sponsor.offsetX ? { offsetX: sponsor.offsetX } : {}),
+                      ...(sponsor.offsetY ? { offsetY: sponsor.offsetY } : {}),
+                      ...(sponsor.cropX != null ? { cropX: sponsor.cropX } : {}),
+                      ...(sponsor.cropY != null ? { cropY: sponsor.cropY } : {}),
+                      ...(sponsor.cropW != null ? { cropW: sponsor.cropW } : {}),
+                      ...(sponsor.cropH != null ? { cropH: sponsor.cropH } : {}),
                     }))
                     .filter(s => s.name && s.url)  // Only include sponsors with both name and url
                     .sort((a, b) => a.order - b.order)
                     .slice(0, 8)  // Max 8 sponsors
-                    .map(({ name, url }) => ({ name, url }));  // Remove order field for output
+                    .map(({ order, ...rest }) => rest);  // Remove order field for output
 
                   data.sponsors = JSON.stringify(sponsorsArray);
-                  console.log(`[Timesheet${this.compId ? ':' + this.compId : ''}] Loaded ${sponsorsArray.length} sponsors for team "${teamKey}"`);
+                  console.log(`[Timesheet${this.compId ? ':' + this.compId : ''}] Loaded ${sponsorsArray.length} sponsors for team "${resolvedKey}"`);
                 } else {
                   data.sponsors = '[]';
                   console.log(`[Timesheet${this.compId ? ':' + this.compId : ''}] No sponsors found for team "${teamKey}"`);

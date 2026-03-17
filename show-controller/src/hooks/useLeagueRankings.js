@@ -26,10 +26,11 @@ const RANKINGS_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
  * @param {object} [options] - Optional config
  * @param {number} [options.year] - Season year (defaults to current year)
  * @param {number} [options.week] - Specific week (defaults to latest available)
+ * @param {string} [options.league] - "ncaa" (default) or "gymact"
  * @returns {{ teamRankings, individualRankings, week, loading, error, refresh, isStale }}
  */
 export default function useLeagueRankings(gender, options = {}) {
-  const { year: optYear, week: optWeek } = options;
+  const { year: optYear, week: optWeek, league } = options;
   const resolvedYear = optYear || new Date().getFullYear();
 
   const [teamRankings, setTeamRankings] = useState([]);
@@ -57,7 +58,8 @@ export default function useLeagueRankings(gender, options = {}) {
       }
 
       const data = snapshot.val();
-      const prefix = `${gender}-${resolvedYear}-`;
+      const leaguePrefix = league === 'gymact' ? 'gymact-' : '';
+      const prefix = `${leaguePrefix}${gender}-${resolvedYear}-`;
       const weeks = Object.keys(data)
         .filter(k => k.startsWith(prefix))
         .map(k => parseInt(k.replace(prefix, ''), 10))
@@ -75,7 +77,7 @@ export default function useLeagueRankings(gender, options = {}) {
       setWeek(null);
       setLoading(false);
     });
-  }, [gender, resolvedYear, optWeek]);
+  }, [gender, resolvedYear, optWeek, league]);
 
   // Subscribe to rankings data for the resolved week
   useEffect(() => {
@@ -92,7 +94,8 @@ export default function useLeagueRankings(gender, options = {}) {
       return;
     }
 
-    const cacheKey = `${gender}-${resolvedYear}-${week}`;
+    const leaguePrefix = league === 'gymact' ? 'gymact-' : '';
+    const cacheKey = `${leaguePrefix}${gender}-${resolvedYear}-${week}`;
     const rankingsPath = ref(db, `rtnCache/rankings/${cacheKey}`);
 
     setLoading(true);
@@ -136,7 +139,7 @@ export default function useLeagueRankings(gender, options = {}) {
       unsub();
       unsubRef.current = null;
     };
-  }, [gender, resolvedYear, week]);
+  }, [gender, resolvedYear, week, league]);
 
   // Compute staleness
   const isStale = fetchedAt
@@ -164,6 +167,7 @@ export default function useLeagueRankings(gender, options = {}) {
           gender,
           year: resolvedYear,
           week: optWeek || undefined, // let server determine if not specified
+          league: league || undefined,
         });
       });
 
@@ -189,7 +193,7 @@ export default function useLeagueRankings(gender, options = {}) {
       setError(err.message);
       setRefreshing(false);
     }
-  }, [gender, resolvedYear, optWeek, week, refreshing]);
+  }, [gender, resolvedYear, optWeek, week, league, refreshing]);
 
   return {
     teamRankings,

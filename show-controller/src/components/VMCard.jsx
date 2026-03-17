@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import {
   ServerIcon,
   ArrowPathIcon,
@@ -155,6 +156,16 @@ export default function VMCard({
               ) : (
                 <EyeIcon className="w-3.5 h-3.5" />
               )}
+            </button>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(vm.password);
+                toast.success('Copied to clipboard');
+              }}
+              className="ml-1 text-zinc-500 hover:text-zinc-300 transition-colors"
+              title="Copy password"
+            >
+              <ClipboardIcon className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>

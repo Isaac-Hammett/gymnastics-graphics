@@ -27,6 +27,25 @@
 | GFX-T3 | COMPLETE | Multi-team logos + VS on stream starting page |
 | GFX-T6 | COMPLETE | Top-align coaches/stats cards (matching width, shared top position) |
 | GFX-T7 | COMPLETE | Header typography audit (consistent ALL CAPS rules) |
+| GFX-AUTO-SLATE | COMPLETE | Fix rotation-slate-auto: wrong API path, missing output.html renderer, missing producer button, hardcoded rotation count |
+
+---
+
+## Rotation Slate Auto Fix (2026-03-14)
+
+The `rotation-slate-auto.html` overlay was completely non-functional due to multiple issues:
+
+| Issue | Root Cause | Fix |
+|-------|-----------|-----|
+| Always shows "-" | Reads `data.results.team_results` but Virtius API returns `data.meet.teams` | Fixed API path in `rotation-slate-auto.html` |
+| Can't push from producer view | No renderer in `output.html` for `rotation-slate-auto` | Added iframe renderer |
+| No button in producer panel | `GraphicsControl.jsx` only had manual R1-R6 buttons | Added Auto (Live) button + `sendAutoSlate()` |
+| Always shows R1-R6 in URL Generator | Hardcoded `['1','2','3','4','5','6']` array | Made dynamic using `rotationCount` (gender + team count aware) |
+| No meet logo override | Missing `checkMeetLogo()` + MutationObserver | Added theme logo support matching `rotation-slate.html` |
+| Layout selector ignored | Auto slate had only classic layout CSS, no `layout` param support | Ported all 16 layout CSS blocks from `rotation-slate.html`, added `layout` URL param, wired through URL builder, `output.html` renderer, and `GraphicsControl.jsx` |
+| Poll too frequent | 10-second interval hammered Virtius API unnecessarily | Increased to 45 seconds (`state.pollInterval = 45000`) |
+| Polls forever after meet ends | No stop condition — kept polling Virtius even after final rotation | Added `isFinal` guard: `clearInterval` stops polling when all rotations scored; `init()` skips starting the timer if first poll already shows final |
+| Shows R6 + "Final" before meet starts | `final_score` from Virtius API is `""` (empty string) when unscored, not `null`. Filter `g.final_score != null` treats `""` as scored → all events "complete" → `isFinal: true` | Changed both `detectRotation()` and `detectRotationFromApiFields()` to filter `g.final_score != null && g.final_score !== ''` |
 
 ---
 
@@ -406,10 +425,12 @@ The graphic will automatically:
 3. Updated `show-controller/src/lib/urlBuilder.js`:
    - Updated `buildStreamURL()` signature and JSDoc to accept `logo2`-`logo7`
    - Updated `generateGraphicURL()` cases for 'starting' and 'thanks' to pass all team logos via `getTeamLogo(1)` through `getTeamLogo(7)`
+   - **Bug fix (2026-03-13):** Gated logo params on `teamCount` so only real teams are included — e.g., a dual meet only passes `logo` and `logo2`, not placeholder logos for teams 3-7
 4. Updated `output.html`:
    - Added CSS for `.stream-logos-container`, `.stream-team-logo`, `.stream-vs-text` with size variants
    - Added `buildStreamLogosHtml(data)` helper function that builds appropriate HTML based on team count
    - Updated `stream-starting` and `stream-thanks` renderers to use the helper
+   - **Bug fix (2026-03-13):** `buildStreamLogosHtml` now skips teams with empty `teamName` to filter out placeholder teams in dual meets
 
 **Acceptance:**
 - [x] Single logo still works (backwards compat)
@@ -477,6 +498,7 @@ The graphic will automatically:
    - `.layout-classic-broadcast .event-label` (line 1692)
 3. Added `text-transform: uppercase` to all 3 rules
 4. Verified all overlay files already have proper `text-transform: uppercase` on section labels, team names, and event names
+5. **Follow-up (2026-03-13):** Added `text-transform: uppercase` to `.stats-team-name` — team names in the stats panel header (e.g., "William & Mary") were rendering in title case while "COACHES" was all caps
 
 **Acceptance:**
 - [x] All section labels are ALL CAPS

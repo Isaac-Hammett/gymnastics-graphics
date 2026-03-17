@@ -657,13 +657,13 @@ export function generateGraphicURL(graphicId, formData, teamCount, baseUrl, opti
     case 'starting':
       return buildStreamURL({
         type: 'starting',
-        logo: getTeamLogo(1),
-        logo2: getTeamLogo(2),
-        logo3: getTeamLogo(3),
-        logo4: getTeamLogo(4),
-        logo5: getTeamLogo(5),
-        logo6: getTeamLogo(6),
-        logo7: getTeamLogo(7),
+        logo: teamCount >= 1 ? getTeamLogo(1) : undefined,
+        logo2: teamCount >= 2 ? getTeamLogo(2) : undefined,
+        logo3: teamCount >= 3 ? getTeamLogo(3) : undefined,
+        logo4: teamCount >= 4 ? getTeamLogo(4) : undefined,
+        logo5: teamCount >= 5 ? getTeamLogo(5) : undefined,
+        logo6: teamCount >= 6 ? getTeamLogo(6) : undefined,
+        logo7: teamCount >= 7 ? getTeamLogo(7) : undefined,
         eventName: formData.eventName,
         meetDate: formData.meetDate,
         baseUrl: base,
@@ -673,13 +673,13 @@ export function generateGraphicURL(graphicId, formData, teamCount, baseUrl, opti
     case 'thanks':
       return buildStreamURL({
         type: 'thanks',
-        logo: getTeamLogo(1),
-        logo2: getTeamLogo(2),
-        logo3: getTeamLogo(3),
-        logo4: getTeamLogo(4),
-        logo5: getTeamLogo(5),
-        logo6: getTeamLogo(6),
-        logo7: getTeamLogo(7),
+        logo: teamCount >= 1 ? getTeamLogo(1) : undefined,
+        logo2: teamCount >= 2 ? getTeamLogo(2) : undefined,
+        logo3: teamCount >= 3 ? getTeamLogo(3) : undefined,
+        logo4: teamCount >= 4 ? getTeamLogo(4) : undefined,
+        logo5: teamCount >= 5 ? getTeamLogo(5) : undefined,
+        logo6: teamCount >= 6 ? getTeamLogo(6) : undefined,
+        logo7: teamCount >= 7 ? getTeamLogo(7) : undefined,
         eventName: formData.eventName,
         meetDate: formData.meetDate,
         baseUrl: base,
@@ -726,6 +726,7 @@ export function generateGraphicURL(graphicId, formData, teamCount, baseUrl, opti
       // Auto-updating Rotation Slate - reads current rotation from Virtius API
       const autoSlateParams = new URLSearchParams();
       if (options.compId) autoSlateParams.set('compId', options.compId);
+      if (options.layout && options.layout !== 'classic') autoSlateParams.set('layout', options.layout);
       if (meetTheme) autoSlateParams.set('meetTheme', meetTheme);
       return `${base}/overlays/rotation-slate-auto.html?${autoSlateParams.toString()}`;
     }
