@@ -1283,7 +1283,7 @@ update(ref(db, `competitions/${compId}/commentary/${talentId}`), { status: newSt
 
 ---
 
-### Task 9.2: Replace communications log with activity timeline — NOT STARTED
+### Task 9.2: Replace communications log with activity timeline — COMPLETE
 
 **File:** `show-controller/src/pages/TalentProfilePage.jsx`
 
