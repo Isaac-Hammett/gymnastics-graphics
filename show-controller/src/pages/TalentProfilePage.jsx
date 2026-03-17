@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useTalentRoster, getStatusLabel, getStatusColor, wagMagLabel } from '../hooks/useTalentRoster';
+import { useTalentAssignments } from '../hooks/useTalentAssignments';
 import {
   PhoneIcon,
   EnvelopeIcon,
@@ -11,6 +12,8 @@ import {
   TrophyIcon,
   ChatBubbleLeftRightIcon,
   ArrowUpTrayIcon,
+  ChevronDownIcon,
+  CalendarIcon,
 } from '@heroicons/react/24/solid';
 import toast from 'react-hot-toast';
 
@@ -22,6 +25,37 @@ const OTHER_INTERESTS = [
   'Social Media',
   'Creative (Broadcast Graphics, Web Design, Social Graphics, etc)',
 ];
+
+// Role label formatter
+function getRoleLabel(role) {
+  if (!role) return '—';
+  if (role === 'pbp') return 'Play-by-Play';
+  if (role === 'analyst') return 'Analyst';
+  if (role === 'both') return 'Both';
+  return role;
+}
+
+/**
+ * CollapsibleSection - A collapsible container for profile sections
+ */
+function CollapsibleSection({ title, defaultOpen = true, children, icon: Icon }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="border border-zinc-800 rounded-lg overflow-hidden">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-4 py-3 bg-zinc-900 hover:bg-zinc-800 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          {Icon && <Icon className="w-4 h-4 text-zinc-400" />}
+          <span className="text-sm font-semibold text-zinc-300">{title}</span>
+        </div>
+        <ChevronDownIcon className={`w-4 h-4 text-zinc-500 transition-transform ${open ? '' : '-rotate-90'}`} />
+      </button>
+      {open && <div className="p-4 bg-zinc-900/50">{children}</div>}
+    </div>
+  );
+}
 
 /**
  * TalentProfilePage - Full profile for a single talent person.
@@ -42,6 +76,24 @@ export default function TalentProfilePage() {
   const [uploadingScreenshot, setUploadingScreenshot] = useState(false);
 
   const talent = talents[talentId];
+
+  // Create single-element array for useTalentAssignments
+  const talentListForAssignments = useMemo(() => {
+    if (!talent) return [];
+    return [{ id: talentId, ...talent }];
+  }, [talent, talentId]);
+
+  // Get assignment data from cross-competition hook
+  const { assignmentsByTalent, loading: assignmentsLoading } = useTalentAssignments(talentListForAssignments);
+  const talentAssignmentData = assignmentsByTalent[talentId] || {
+    assignments: [],
+    lastOutreach: null,
+    lastOutreachType: null,
+    pendingCount: 0,
+    confirmedCount: 0,
+    availableFor: [],
+    availabilityDot: 'gray',
+  };
 
   useEffect(() => {
     if (talent && !form) {
@@ -276,15 +328,14 @@ export default function TalentProfilePage() {
       </div>
 
       <div className="max-w-5xl mx-auto px-6 py-6 grid grid-cols-3 gap-6">
-        {/* Left: Profile fields */}
-        <div className="col-span-2 space-y-5">
+        {/* Left: Profile fields organized in collapsible sections */}
+        <div className="col-span-2 space-y-4">
 
-          {/* Contact info */}
-          <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-5">
-            <h2 className="text-sm font-semibold text-zinc-300 uppercase tracking-wide mb-4">Contact</h2>
+          {/* Contact Info Section (always open) */}
+          <CollapsibleSection title="Contact Info" defaultOpen={true} icon={PhoneIcon}>
             <div className="grid grid-cols-2 gap-4">
               <Field label="Name" editing={editing} value={form?.name || ''} onChange={v => setForm(p => ({ ...p, name: v }))}>
-                <a href={`tel:${talent.name}`} className="font-semibold text-white">{talent.name}</a>
+                <span className="font-semibold text-white">{talent.name}</span>
               </Field>
               <Field label="Phone" editing={editing} value={form?.phone || ''} onChange={v => setForm(p => ({ ...p, phone: v }))}>
                 {talent.phone ? (
@@ -306,11 +357,10 @@ export default function TalentProfilePage() {
                 <span className="text-sm text-white">{talent.discordHandle || <span className="text-zinc-500 italic">Not set</span>}</span>
               </Field>
             </div>
-          </div>
+          </CollapsibleSection>
 
-          {/* Commentary details */}
-          <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-5">
-            <h2 className="text-sm font-semibold text-zinc-300 uppercase tracking-wide mb-4">Commentary Profile</h2>
+          {/* Role & Expertise Section */}
+          <CollapsibleSection title="Role & Expertise" defaultOpen={true} icon={TrophyIcon}>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs text-zinc-500 mb-1">WAG / MAG</label>
@@ -402,10 +452,149 @@ export default function TalentProfilePage() {
                 )}
               </div>
             </div>
+          </CollapsibleSection>
+
+          {/* Availability & Assignments Section */}
+          <CollapsibleSection title="Availability & Assignments" defaultOpen={true} icon={CalendarIcon}>
+            {/* Current Assignments */}
+            <div className="mb-4">
+              <h3 className="text-xs text-zinc-500 uppercase tracking-wide mb-2">Current Assignments</h3>
+              {assignmentsLoading ? (
+                <div className="text-xs text-zinc-400 italic">Loading assignments...</div>
+              ) : talentAssignmentData.assignments.length === 0 ? (
+                <div className="text-xs text-zinc-500 italic">No current assignments</div>
+              ) : (
+                <div className="space-y-2">
+                  {talentAssignmentData.assignments.map((a, i) => (
+                    <Link
+                      key={i}
+                      to={`/${a.compId}/commentary`}
+                      className="flex items-center justify-between p-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors group"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-white group-hover:text-blue-300 transition-colors">{a.compName}</span>
+                        <span className={`px-1.5 py-0.5 text-xs rounded ${
+                          a.status === 'confirmed' ? 'bg-green-900/50 text-green-400' :
+                          a.status === 'briefed' ? 'bg-purple-900/50 text-purple-400' :
+                          a.status === 'invited' ? 'bg-blue-900/50 text-blue-400' :
+                          a.status === 'declined' ? 'bg-red-900/50 text-red-400' :
+                          'bg-zinc-700 text-zinc-400'
+                        }`}>
+                          {a.status || 'assigned'}
+                        </span>
+                      </div>
+                      <div className="text-xs text-zinc-500">
+                        {getRoleLabel(a.role)} · {a.meetDate || 'TBD'}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Interest Flags */}
+            <div className="mb-4">
+              <h3 className="text-xs text-zinc-500 uppercase tracking-wide mb-2">Available For (Interest Flags)</h3>
+              {talentAssignmentData.availableFor.length === 0 ? (
+                <div className="text-xs text-zinc-500 italic">No availability flagged</div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {talentAssignmentData.availableFor.map((a, i) => (
+                    <span key={i} className="px-2 py-1 bg-green-900/30 text-green-400 text-xs rounded border border-green-800">
+                      {a.compName} <span className="text-green-600">({a.source})</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Parsed Availability Hints */}
+            {(talent.parsedAvailability?.availablePeriods?.length > 0 || talent.parsedAvailability?.unavailableDates?.length > 0) && (
+              <div>
+                <h3 className="text-xs text-zinc-500 uppercase tracking-wide mb-2">Extracted Availability</h3>
+                <div className="flex flex-wrap gap-1.5">
+                  {(talent.parsedAvailability?.availablePeriods || []).map((period, i) => (
+                    <span key={`avail-${i}`} className="px-2 py-0.5 bg-green-900/30 text-green-400 text-xs rounded border border-green-700">
+                      Available: {period}
+                    </span>
+                  ))}
+                  {(talent.parsedAvailability?.unavailableDates || []).map((date, i) => (
+                    <span key={`busy-${i}`} className="px-2 py-0.5 bg-red-900/30 text-red-400 text-xs rounded border border-red-700">
+                      Busy: {date}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Tech Setup Summary */}
+            <div className="mt-4 pt-4 border-t border-zinc-800">
+              <h3 className="text-xs text-zinc-500 uppercase tracking-wide mb-2">Tech Setup</h3>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <span className="text-xs text-zinc-500">Internet</span>
+                  <div className="text-sm text-white">
+                    {talent.internetUploadMbps ? `↑${talent.internetUploadMbps} ↓${talent.internetDownloadMbps || '?'} Mbps` : '—'}
+                  </div>
+                </div>
+                <div>
+                  <span className="text-xs text-zinc-500">Headphones</span>
+                  <div className="text-sm text-white">{talent.hasHeadphones ? 'Yes' : '—'}</div>
+                </div>
+                <div>
+                  <span className="text-xs text-zinc-500">Discord</span>
+                  <div className={`text-sm ${talent.discordAdded ? 'text-green-400' : 'text-zinc-500'}`}>
+                    {talent.discordAdded ? '✓ Added' : 'Not added'}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CollapsibleSection>
+
+          {/* Notes & Interests Section */}
+          <CollapsibleSection title="Notes & Interests" defaultOpen={true} icon={ChatBubbleLeftRightIcon}>
+            {/* Notes */}
+            <div className="mb-4">
+              <h3 className="text-xs text-zinc-500 uppercase tracking-wide mb-2">Notes</h3>
+              {editing ? (
+                <textarea
+                  value={form.notes || ''}
+                  onChange={e => setForm(p => ({ ...p, notes: e.target.value }))}
+                  rows={4}
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500 resize-none"
+                  placeholder="Notes about this person..."
+                />
+              ) : (
+                <>
+                  {talent.notes ? (
+                    <pre className="text-xs text-zinc-300 whitespace-pre-wrap font-sans max-h-32 overflow-y-auto mb-3 bg-zinc-800/50 p-2 rounded">
+                      {talent.notes}
+                    </pre>
+                  ) : (
+                    <p className="text-xs text-zinc-500 italic mb-3">No notes yet.</p>
+                  )}
+                  <form onSubmit={handleAddNote} className="flex gap-2">
+                    <input
+                      value={noteText}
+                      onChange={e => setNoteText(e.target.value)}
+                      placeholder="Add a note..."
+                      className="flex-1 px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-sm text-white focus:outline-none focus:border-blue-500"
+                    />
+                    <button
+                      type="submit"
+                      disabled={savingNote || !noteText.trim()}
+                      className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded text-sm disabled:opacity-50 transition-colors"
+                    >
+                      Add
+                    </button>
+                  </form>
+                </>
+              )}
+            </div>
 
             {/* Other Interests */}
-            <div className="mt-4">
-              <label className="block text-xs text-zinc-500 mb-2">Other Interests</label>
+            <div className="mb-4">
+              <h3 className="text-xs text-zinc-500 uppercase tracking-wide mb-2">Other Interests</h3>
               {editing ? (
                 <div className="flex flex-wrap gap-2">
                   {OTHER_INTERESTS.map(interest => (
@@ -435,87 +624,61 @@ export default function TalentProfilePage() {
                 </div>
               )}
             </div>
-          </div>
 
-          {/* Tech onboarding */}
-          <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-5">
-            <h2 className="text-sm font-semibold text-zinc-300 uppercase tracking-wide mb-4">Tech & Onboarding</h2>
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <label className="block text-xs text-zinc-500 mb-1">2026 Survey</label>
-                {editing ? (
-                  <input
-                    type="checkbox"
-                    checked={form.surveyCompleted || false}
-                    onChange={e => setForm(p => ({ ...p, surveyCompleted: e.target.checked }))}
-                  />
-                ) : (
-                  <span className={`text-sm font-medium ${talent.surveyCompleted ? 'text-green-400' : 'text-zinc-500'}`}>
-                    {talent.surveyCompleted ? '✓ Completed' : 'Not completed'}
-                  </span>
-                )}
-              </div>
-              <div>
-                <label className="block text-xs text-zinc-500 mb-1">Text Sent</label>
-                {editing ? (
-                  <input
-                    type="checkbox"
-                    checked={form.textSent || false}
-                    onChange={e => setForm(p => ({ ...p, textSent: e.target.checked }))}
-                  />
-                ) : (
-                  <span className={`text-sm font-medium ${talent.textSent ? 'text-green-400' : 'text-zinc-500'}`}>
-                    {talent.textSent ? '✓ Sent' : 'Not sent'}
-                  </span>
-                )}
-              </div>
-              <div>
-                <label className="block text-xs text-zinc-500 mb-1">Discord Added</label>
-                {editing ? (
-                  <input
-                    type="checkbox"
-                    checked={form.discordAdded || false}
-                    onChange={e => setForm(p => ({ ...p, discordAdded: e.target.checked }))}
-                  />
-                ) : (
-                  <span className={`text-sm font-medium ${talent.discordAdded ? 'text-green-400' : 'text-zinc-500'}`}>
-                    {talent.discordAdded ? '✓ Added' : 'Not added'}
-                  </span>
-                )}
-              </div>
-              <div>
-                <label className="block text-xs text-zinc-500 mb-1">Headphones</label>
-                <span className="text-sm text-white">{talent.hasHeadphones ? 'Yes' : '—'}</span>
-              </div>
-              <div>
-                <label className="block text-xs text-zinc-500 mb-1">Upload / Download</label>
-                <span className="text-sm text-white">
-                  {talent.internetUploadMbps ? `${talent.internetUploadMbps} / ${talent.internetDownloadMbps || '?'} Mbps` : '—'}
-                </span>
+            {/* Social Links */}
+            <div>
+              <h3 className="text-xs text-zinc-500 uppercase tracking-wide mb-2">Social Links</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <Field label="LinkedIn" editing={editing} value={form?.linkedInUrl || ''} onChange={v => setForm(p => ({ ...p, linkedInUrl: v }))} inputType="url">
+                  {talent.linkedInUrl
+                    ? <a href={talent.linkedInUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 text-sm truncate">{talent.linkedInUrl}</a>
+                    : <span className="text-zinc-500 italic text-sm">Not found</span>}
+                </Field>
+                <Field label="Instagram" editing={editing} value={form?.instagramUrl || ''} onChange={v => setForm(p => ({ ...p, instagramUrl: v }))} inputType="url">
+                  {talent.instagramUrl
+                    ? <a href={talent.instagramUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 text-sm truncate">{talent.instagramUrl}</a>
+                    : <span className="text-zinc-500 italic text-sm">Not found</span>}
+                </Field>
               </div>
             </div>
-          </div>
+          </CollapsibleSection>
 
-          {/* Social links */}
-          <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-5">
-            <h2 className="text-sm font-semibold text-zinc-300 uppercase tracking-wide mb-4">Social / Discovery</h2>
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="LinkedIn" editing={editing} value={form?.linkedInUrl || ''} onChange={v => setForm(p => ({ ...p, linkedInUrl: v }))} inputType="url">
-                {talent.linkedInUrl
-                  ? <a href={talent.linkedInUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 text-sm truncate">{talent.linkedInUrl}</a>
-                  : <span className="text-zinc-500 italic text-sm">Not found</span>}
-              </Field>
-              <Field label="Instagram" editing={editing} value={form?.instagramUrl || ''} onChange={v => setForm(p => ({ ...p, instagramUrl: v }))} inputType="url">
-                {talent.instagramUrl
-                  ? <a href={talent.instagramUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 text-sm truncate">{talent.instagramUrl}</a>
-                  : <span className="text-zinc-500 italic text-sm">Not found</span>}
-              </Field>
-              <div className="col-span-2">
-                <label className="block text-xs text-zinc-500 mb-1">Discovered From</label>
-                <span className="text-sm text-zinc-400">{talent.discoveredFrom || 'manual'}</span>
+          {/* History Section (collapsed by default) */}
+          <CollapsibleSection title="History" defaultOpen={false} icon={TrophyIcon}>
+            {/* Competition History */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-xs text-zinc-500 uppercase tracking-wide">Competition History</h3>
+                <span className="text-xs text-zinc-500">{talent.totalCompetitions || history.length} events</span>
+              </div>
+              {history.length === 0 ? (
+                <p className="text-xs text-zinc-500 italic">No competitions recorded yet.</p>
+              ) : (
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {[...history].reverse().map((h, i) => (
+                    <div key={i} className="text-xs border-b border-zinc-800 pb-2 last:border-0">
+                      <div className="text-white font-medium">{h.eventName || h.compId}</div>
+                      <div className="text-zinc-400">{h.date} · {h.role}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Discovery & Timestamps */}
+            <div className="grid grid-cols-2 gap-4 pt-3 border-t border-zinc-800">
+              <div>
+                <span className="text-xs text-zinc-500">Discovered From</span>
+                <div className="text-sm text-zinc-400">{talent.discoveredFrom || 'manual'}</div>
+              </div>
+              <div>
+                <span className="text-xs text-zinc-500">Created</span>
+                <div className="text-sm text-zinc-400">
+                  {talent.createdAt ? new Date(talent.createdAt).toLocaleDateString() : '—'}
+                </div>
               </div>
             </div>
-          </div>
+          </CollapsibleSection>
         </div>
 
         {/* Right: Tabs + Content */}
@@ -549,94 +712,81 @@ export default function TalentProfilePage() {
             </button>
           </div>
 
-          {/* Profile Tab */}
+          {/* Profile Tab — Onboarding checklist */}
           {activeTab === 'profile' && (
-            <>
-              {/* Competition history */}
-              <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-5">
-                <div className="flex items-center gap-2 mb-4">
-                  <TrophyIcon className="w-4 h-4 text-yellow-400" />
-                  <h2 className="text-sm font-semibold text-zinc-300 uppercase tracking-wide">
-                    History
-                  </h2>
-                  <span className="ml-auto text-xs text-zinc-500">{talent.totalCompetitions || history.length} events</span>
+            <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-5">
+              <h2 className="text-sm font-semibold text-zinc-300 uppercase tracking-wide mb-4">Onboarding Checklist</h2>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-zinc-300">2026 Survey</span>
+                  {editing ? (
+                    <input
+                      type="checkbox"
+                      checked={form.surveyCompleted || false}
+                      onChange={e => setForm(p => ({ ...p, surveyCompleted: e.target.checked }))}
+                      className="rounded"
+                    />
+                  ) : (
+                    <span className={`text-sm font-medium ${talent.surveyCompleted ? 'text-green-400' : 'text-zinc-500'}`}>
+                      {talent.surveyCompleted ? '✓' : '—'}
+                    </span>
+                  )}
                 </div>
-                {history.length === 0 ? (
-                  <p className="text-xs text-zinc-500 italic">No competitions recorded yet.</p>
-                ) : (
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {[...history].reverse().map((h, i) => (
-                      <div key={i} className="text-xs border-b border-zinc-800 pb-2 last:border-0">
-                        <div className="text-white font-medium">{h.eventName || h.compId}</div>
-                        <div className="text-zinc-400">{h.date} · {h.role}</div>
-                      </div>
-                    ))}
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-zinc-300">Text Sent</span>
+                  {editing ? (
+                    <input
+                      type="checkbox"
+                      checked={form.textSent || false}
+                      onChange={e => setForm(p => ({ ...p, textSent: e.target.checked }))}
+                      className="rounded"
+                    />
+                  ) : (
+                    <span className={`text-sm font-medium ${talent.textSent ? 'text-green-400' : 'text-zinc-500'}`}>
+                      {talent.textSent ? '✓' : '—'}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-zinc-300">Discord Added</span>
+                  {editing ? (
+                    <input
+                      type="checkbox"
+                      checked={form.discordAdded || false}
+                      onChange={e => setForm(p => ({ ...p, discordAdded: e.target.checked }))}
+                      className="rounded"
+                    />
+                  ) : (
+                    <span className={`text-sm font-medium ${talent.discordAdded ? 'text-green-400' : 'text-zinc-500'}`}>
+                      {talent.discordAdded ? '✓' : '—'}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Quick Stats */}
+              <div className="mt-4 pt-4 border-t border-zinc-800">
+                <h3 className="text-xs text-zinc-500 uppercase tracking-wide mb-2">Quick Stats</h3>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <span className="text-zinc-500">Assignments:</span>{' '}
+                    <span className="text-white">{talentAssignmentData.assignments.length}</span>
                   </div>
-                )}
-              </div>
-
-              {/* Notes */}
-              <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-5">
-                <div className="flex items-center gap-2 mb-3">
-                  <ChatBubbleLeftRightIcon className="w-4 h-4 text-blue-400" />
-                  <h2 className="text-sm font-semibold text-zinc-300 uppercase tracking-wide">Notes</h2>
+                  <div>
+                    <span className="text-zinc-500">Confirmed:</span>{' '}
+                    <span className="text-green-400">{talentAssignmentData.confirmedCount}</span>
+                  </div>
+                  <div>
+                    <span className="text-zinc-500">Pending:</span>{' '}
+                    <span className="text-blue-400">{talentAssignmentData.pendingCount}</span>
+                  </div>
+                  <div>
+                    <span className="text-zinc-500">Available:</span>{' '}
+                    <span className="text-green-400">{talentAssignmentData.availableFor.length}</span>
+                  </div>
                 </div>
-                {editing ? (
-                  <textarea
-                    value={form.notes || ''}
-                    onChange={e => setForm(p => ({ ...p, notes: e.target.value }))}
-                    rows={6}
-                    className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500 resize-none"
-                    placeholder="Notes about this person..."
-                  />
-                ) : (
-                  <>
-                    {talent.notes ? (
-                      <pre className="text-xs text-zinc-300 whitespace-pre-wrap font-sans max-h-48 overflow-y-auto mb-3">
-                        {talent.notes}
-                      </pre>
-                    ) : (
-                      <p className="text-xs text-zinc-500 italic mb-3">No notes yet.</p>
-                    )}
-                    <form onSubmit={handleAddNote} className="flex gap-2">
-                      <input
-                        value={noteText}
-                        onChange={e => setNoteText(e.target.value)}
-                        placeholder="Add a note..."
-                        className="flex-1 px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-sm text-white focus:outline-none focus:border-blue-500"
-                      />
-                      <button
-                        type="submit"
-                        disabled={savingNote || !noteText.trim()}
-                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded text-sm disabled:opacity-50 transition-colors"
-                      >
-                        Add
-                      </button>
-                    </form>
-                    <p className="text-xs text-zinc-600 mt-1.5">Notes are timestamped automatically.</p>
-
-                    {/* Parsed availability hints */}
-                    {(talent.parsedAvailability?.availablePeriods?.length > 0 || talent.parsedAvailability?.unavailableDates?.length > 0) && (
-                      <div className="mt-3 pt-3 border-t border-zinc-800">
-                        <p className="text-xs text-zinc-500 mb-2">Extracted availability:</p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {(talent.parsedAvailability?.availablePeriods || []).map((period, i) => (
-                            <span key={`avail-${i}`} className="px-2 py-0.5 bg-green-900/30 text-green-400 text-xs rounded border border-green-700">
-                              Available: {period}
-                            </span>
-                          ))}
-                          {(talent.parsedAvailability?.unavailableDates || []).map((date, i) => (
-                            <span key={`busy-${i}`} className="px-2 py-0.5 bg-red-900/30 text-red-400 text-xs rounded border border-red-700">
-                              Busy: {date}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
               </div>
-            </>
+            </div>
           )}
 
           {/* Communications Tab */}

@@ -1252,7 +1252,7 @@ update(ref(db, `competitions/${compId}/commentary/${talentId}`), { status: newSt
 
 ## Phase 9: TalentProfilePage — Collapsible Sections + Activity Timeline
 
-### Task 9.1: Refactor profile into collapsible sections — NOT STARTED
+### Task 9.1: Refactor profile into collapsible sections — COMPLETE
 
 **File:** `show-controller/src/pages/TalentProfilePage.jsx`
 
