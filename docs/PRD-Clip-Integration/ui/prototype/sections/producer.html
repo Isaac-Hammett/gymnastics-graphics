@@ -1,0 +1,441 @@
+<div class="section-content section-producer">
+
+  <!-- Section Header -->
+  <div class="section-header" style="border-left: 4px solid var(--color-producer); padding-left: var(--space-md); margin-bottom: var(--space-lg);">
+    <h2 style="margin: 0; color: var(--text-primary);">Screen 2: ProducerView — Live Playout Dashboard</h2>
+    <p style="margin: var(--space-xs) 0 0; color: var(--text-secondary);">
+      <span class="section-badge" data-section="4">§4</span>
+      Real-time playout control and monitoring for the producer
+    </p>
+  </div>
+
+  <!-- Main Layout Grid -->
+  <div style="display: grid; grid-template-columns: 1fr 300px; gap: var(--space-md); margin-bottom: var(--space-lg);">
+
+    <!-- Left Column: Main Playout Panels -->
+    <div style="display: flex; flex-direction: column; gap: var(--space-md);">
+
+      <!-- 4.3 Playout Status Bar -->
+      <div class="card" style="border: 2px solid var(--color-producer);">
+        <div class="card-header">
+          <div class="card-title">
+            <span style="color: #4ade80;">▶</span> PLAYOUT ACTIVE — Rotation 1
+          </div>
+          <div style="display: flex; align-items: center; gap: var(--space-sm);">
+            <span class="section-badge" data-section="4.3">§4.3</span>
+            <span style="display: flex; align-items: center; gap: var(--space-xs); color: #4ade80; font-size: var(--font-size-sm);">
+              <span style="width: 8px; height: 8px; border-radius: 50%; background: #4ade80;"></span>
+              Coordinator
+            </span>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-md); padding: var(--space-md);">
+          <!-- NOW -->
+          <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-md);">
+            <div style="color: var(--text-secondary); font-size: var(--font-size-sm); margin-bottom: var(--space-xs);">NOW</div>
+            <div style="color: var(--text-primary); font-weight: 600;">CLIP</div>
+            <div style="color: var(--text-primary);">T. Singletary</div>
+            <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">Vault · 9.725</div>
+          </div>
+          <!-- NEXT -->
+          <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-md);">
+            <div style="color: var(--text-secondary); font-size: var(--font-size-sm); margin-bottom: var(--space-xs);">NEXT</div>
+            <div style="color: var(--text-primary); font-weight: 600;">Clip: H. Fitzgerald</div>
+            <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">Vault · 9.475</div>
+            <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">SCSU</div>
+            <div style="display: flex; align-items: center; gap: var(--space-xs); margin-top: var(--space-xs);">
+              <span style="color: #4ade80; font-size: var(--font-size-sm);">✓</span>
+              <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">Preloaded</span>
+            </div>
+          </div>
+          <!-- QUEUE -->
+          <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-md);">
+            <div style="color: var(--text-secondary); font-size: var(--font-size-sm); margin-bottom: var(--space-xs);">QUEUE</div>
+            <div style="color: var(--text-primary); font-weight: 600;">62 clips</div>
+            <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">~18:30 left</div>
+            <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">0 played</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4.4 Camera Status Panel -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">CAMERAS</div>
+          <span class="section-badge" data-section="4.4">§4.4</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-sm); padding: var(--space-md);">
+          <!-- Camera 1 - VT (Recording) -->
+          <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-sm); text-align: center; border: 1px solid var(--border-color);">
+            <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">VT</div>
+            <div style="color: var(--text-primary); font-weight: 600;">Camera 1</div>
+            <div style="display: flex; align-items: center; justify-content: center; gap: var(--space-xs); margin: var(--space-xs) 0;">
+              <span style="width: 8px; height: 8px; border-radius: 50%; background: #4ade80;"></span>
+              <span style="color: #4ade80; font-size: var(--font-size-sm);">Recording</span>
+            </div>
+            <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">0:45</div>
+            <button class="btn btn-secondary" style="margin-top: var(--space-xs); font-size: var(--font-size-sm); padding: 4px 8px;">Force</button>
+          </div>
+          <!-- Camera 2 - UB -->
+          <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-sm); text-align: center; border: 1px solid var(--border-color);">
+            <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">UB</div>
+            <div style="color: var(--text-primary); font-weight: 600;">Camera 2</div>
+            <div style="display: flex; align-items: center; justify-content: center; gap: var(--space-xs); margin: var(--space-xs) 0;">
+              <span style="width: 8px; height: 8px; border-radius: 50%; background: #666;"></span>
+              <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">Idle</span>
+            </div>
+            <button class="btn btn-secondary" style="margin-top: var(--space-xs); font-size: var(--font-size-sm); padding: 4px 8px;">Force</button>
+          </div>
+          <!-- Camera 3 - BB (LIVE) -->
+          <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-sm); text-align: center; border: 2px solid #ef4444;">
+            <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">BB</div>
+            <div style="color: var(--text-primary); font-weight: 600;">Camera 3</div>
+            <div style="display: flex; align-items: center; justify-content: center; gap: var(--space-xs); margin: var(--space-xs) 0;">
+              <span style="width: 8px; height: 8px; border-radius: 50%; background: #ef4444;"></span>
+              <span style="color: #ef4444; font-size: var(--font-size-sm);">LIVE</span>
+            </div>
+            <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">1:23</div>
+            <button class="btn btn-primary" style="margin-top: var(--space-xs); font-size: var(--font-size-sm); padding: 4px 8px; background: var(--color-producer);">Active</button>
+          </div>
+          <!-- Camera 4 - FX -->
+          <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-sm); text-align: center; border: 1px solid var(--border-color);">
+            <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">FX</div>
+            <div style="color: var(--text-primary); font-weight: 600;">Camera 4</div>
+            <div style="display: flex; align-items: center; justify-content: center; gap: var(--space-xs); margin: var(--space-xs) 0;">
+              <span style="width: 8px; height: 8px; border-radius: 50%; background: #666;"></span>
+              <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">Idle</span>
+            </div>
+            <button class="btn btn-secondary" style="margin-top: var(--space-xs); font-size: var(--font-size-sm); padding: 4px 8px;">Force</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4.6 Override Controls -->
+      <div class="card" style="border: 1px solid #4ade80;">
+        <div class="card-header">
+          <div class="card-title">OVERRIDE CONTROLS</div>
+          <span class="section-badge" data-section="4.6">§4.6</span>
+        </div>
+        <div style="padding: var(--space-md);">
+          <div style="display: flex; flex-wrap: wrap; gap: var(--space-sm); margin-bottom: var(--space-md);">
+            <button class="btn btn-secondary" style="display: flex; align-items: center; gap: var(--space-xs);">
+              <span>⏸</span> Pause <span class="kbd">Space</span>
+            </button>
+            <button class="btn btn-secondary" style="display: flex; align-items: center; gap: var(--space-xs);">
+              <span>⏭</span> Skip <span class="kbd">S</span>
+            </button>
+            <select class="btn btn-secondary" style="min-width: 140px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color);">
+              <option>Force Camera ▾</option>
+              <option>[1] VT</option>
+              <option>[2] UB</option>
+              <option>[3] BB</option>
+              <option>[4] FX</option>
+            </select>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: var(--space-sm);">
+            <button class="btn" style="background: var(--color-override); color: white;">
+              ◼ Stop Playout
+            </button>
+            <button class="btn btn-secondary" style="display: flex; align-items: center; gap: var(--space-xs);">
+              ↩ Release <span class="kbd">Esc</span>
+            </button>
+            <button class="btn btn-secondary">
+              ? Shortcuts
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4.6B Event Log Panel -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">EVENT LOG</div>
+          <div style="display: flex; align-items: center; gap: var(--space-sm);">
+            <span class="section-badge" data-section="4.6B">§4.6B</span>
+            <div style="display: flex; gap: var(--space-xs);">
+              <button class="btn btn-secondary" style="padding: 2px 8px; font-size: var(--font-size-sm);">5m</button>
+              <button class="btn btn-primary" style="padding: 2px 8px; font-size: var(--font-size-sm); background: var(--color-producer);">15m</button>
+              <button class="btn btn-secondary" style="padding: 2px 8px; font-size: var(--font-size-sm);">30m</button>
+              <button class="btn btn-secondary" style="padding: 2px 8px; font-size: var(--font-size-sm);">All</button>
+            </div>
+          </div>
+        </div>
+        <div style="padding: var(--space-md); font-family: var(--font-mono); font-size: var(--font-size-sm); max-height: 200px; overflow-y: auto;">
+          <div style="display: flex; gap: var(--space-sm); padding: var(--space-xs) 0; border-bottom: 1px solid var(--border-color);">
+            <span style="color: var(--text-secondary); min-width: 60px;">19:45:12</span>
+            <span style="color: #4ade80;">●</span>
+            <span style="color: var(--text-primary);">Clip played: T. Singletary · VT · 9.725</span>
+          </div>
+          <div style="display: flex; gap: var(--space-sm); padding: var(--space-xs) 0; border-bottom: 1px solid var(--border-color);">
+            <span style="color: var(--text-secondary); min-width: 60px;">19:44:58</span>
+            <span style="color: #fbbf24;">⚠</span>
+            <span style="color: var(--text-primary);">Clip skipped (stalled): G. Reed · UB</span>
+            <button class="btn btn-secondary" style="padding: 2px 6px; font-size: 10px; margin-left: auto;">Retry</button>
+          </div>
+          <div style="display: flex; gap: var(--space-sm); padding: var(--space-xs) 0; border-bottom: 1px solid var(--border-color);">
+            <span style="color: var(--text-secondary); min-width: 60px;">19:44:30</span>
+            <span style="color: #4ade80;">●</span>
+            <span style="color: var(--text-primary);">Clip played: H. Fitzgerald · VT · 9.475</span>
+          </div>
+          <div style="display: flex; gap: var(--space-sm); padding: var(--space-xs) 0; border-bottom: 1px solid var(--border-color);">
+            <span style="color: var(--text-secondary); min-width: 60px;">19:43:15</span>
+            <span style="color: #fbbf24;">⚠</span>
+            <span style="color: var(--text-primary);">API unreachable — using cached clips</span>
+          </div>
+          <div style="display: flex; gap: var(--space-sm); padding: var(--space-xs) 0; border-bottom: 1px solid var(--border-color);">
+            <span style="color: var(--text-secondary); min-width: 60px;">19:42:00</span>
+            <span style="color: #4ade80;">●</span>
+            <span style="color: var(--text-primary);">Auto-advanced to Rotation 1</span>
+          </div>
+          <div style="display: flex; gap: var(--space-sm); padding: var(--space-xs) 0;">
+            <span style="color: var(--text-secondary); min-width: 60px;">19:41:55</span>
+            <span style="color: #4ade80;">●</span>
+            <span style="color: var(--text-primary);">Playout started</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Column: Clip Queue Panel -->
+    <div style="display: flex; flex-direction: column; gap: var(--space-md);">
+
+      <!-- 4.5 Clip Queue Panel -->
+      <div class="card" style="flex: 1; display: flex; flex-direction: column;">
+        <div class="card-header">
+          <div class="card-title">CLIP QUEUE</div>
+          <div style="display: flex; align-items: center; gap: var(--space-sm);">
+            <span class="section-badge" data-section="4.5">§4.5</span>
+            <button class="btn btn-secondary" style="padding: 4px 8px; font-size: var(--font-size-sm);">Retry All</button>
+            <button class="btn btn-secondary" style="padding: 4px 8px; font-size: var(--font-size-sm);">↻ Refresh</button>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div style="display: flex; gap: 0; padding: 0 var(--space-md); border-bottom: 1px solid var(--border-color);">
+          <button style="background: transparent; border: none; color: var(--color-producer); padding: var(--space-sm) var(--space-md); border-bottom: 2px solid var(--color-producer); cursor: pointer;">All</button>
+          <button style="background: transparent; border: none; color: var(--text-secondary); padding: var(--space-sm) var(--space-md); border-bottom: 2px solid transparent; cursor: pointer;">Queued (60)</button>
+          <button style="background: transparent; border: none; color: var(--text-secondary); padding: var(--space-sm) var(--space-md); border-bottom: 2px solid transparent; cursor: pointer;">Played (2)</button>
+          <button style="background: transparent; border: none; color: var(--text-secondary); padding: var(--space-sm) var(--space-md); border-bottom: 2px solid transparent; cursor: pointer;">Live (0)</button>
+        </div>
+
+        <!-- Filters -->
+        <div style="display: flex; gap: var(--space-xs); padding: var(--space-sm) var(--space-md); border-bottom: 1px solid var(--border-color);">
+          <select style="background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 4px 8px; color: var(--text-primary); font-size: var(--font-size-sm); flex: 1;">
+            <option>All Apparatus</option>
+            <option>VT</option>
+            <option>UB</option>
+            <option>BB</option>
+            <option>FX</option>
+          </select>
+          <select style="background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 4px 8px; color: var(--text-primary); font-size: var(--font-size-sm); flex: 1;">
+            <option>All Teams</option>
+            <option>Bridgeport</option>
+            <option>Yale</option>
+            <option>SCSU</option>
+          </select>
+          <select style="background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 4px 8px; color: var(--text-primary); font-size: var(--font-size-sm); flex: 1;">
+            <option>All Rot.</option>
+            <option>R1</option>
+            <option>R2</option>
+            <option>R3</option>
+            <option>R4</option>
+          </select>
+        </div>
+
+        <!-- NOW PLAYING -->
+        <div style="padding: var(--space-md); border-bottom: 1px solid var(--border-color);">
+          <div style="color: var(--color-producer); font-size: var(--font-size-sm); font-weight: 600; margin-bottom: var(--space-sm);">▶ NOW PLAYING</div>
+          <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-sm); border: 2px solid var(--color-producer);">
+            <div style="display: flex; gap: var(--space-sm); margin-bottom: var(--space-sm);">
+              <!-- Thumbnail placeholder -->
+              <div style="width: 64px; height: 36px; background: linear-gradient(135deg, #8b5cf6, #6366f1); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: var(--font-size-sm);">VT</div>
+              <div style="flex: 1;">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                  <div>
+                    <div style="color: var(--text-primary); font-weight: 600;">Tamyra Singletary</div>
+                    <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">Vault · 9.725</div>
+                    <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">Bridgeport</div>
+                  </div>
+                  <span style="background: var(--bg-secondary); padding: 2px 6px; border-radius: 4px; font-size: 10px; color: var(--text-secondary);">R1</span>
+                </div>
+              </div>
+            </div>
+            <!-- Progress bar -->
+            <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-sm);">
+              <span style="color: var(--text-secondary); font-size: var(--font-size-sm); min-width: 32px;">0:12</span>
+              <div style="flex: 1; height: 6px; background: var(--bg-secondary); border-radius: 3px; overflow: hidden;">
+                <div style="width: 65%; height: 100%; background: var(--color-producer);"></div>
+              </div>
+              <span style="color: var(--text-secondary); font-size: var(--font-size-sm); min-width: 32px;">-0:06</span>
+            </div>
+            <!-- Controls -->
+            <div style="display: flex; gap: var(--space-xs);">
+              <button class="btn btn-secondary" style="padding: 4px 8px; font-size: var(--font-size-sm);">⏸ Pause</button>
+              <button class="btn btn-secondary" style="padding: 4px 8px; font-size: var(--font-size-sm);">⏭ Skip</button>
+              <button class="btn btn-secondary" style="padding: 4px 8px; font-size: var(--font-size-sm);">🚩 Flag Moment</button>
+              <button class="btn btn-secondary" style="padding: 4px 8px; font-size: var(--font-size-sm); margin-left: auto;">▶ Preview</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- UP NEXT -->
+        <div style="padding: var(--space-md); border-bottom: 1px solid var(--border-color);">
+          <div style="color: var(--text-secondary); font-size: var(--font-size-sm); font-weight: 600; margin-bottom: var(--space-sm);">UP NEXT</div>
+
+          <!-- Next clip 1 -->
+          <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-sm); margin-bottom: var(--space-xs); border-left: 3px solid var(--color-producer);">
+            <div style="display: flex; gap: var(--space-sm);">
+              <div style="width: 48px; height: 27px; background: linear-gradient(135deg, #8b5cf6, #6366f1); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 10px;">VT</div>
+              <div style="flex: 1;">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                  <div>
+                    <div style="color: var(--text-primary); font-size: var(--font-size-sm);">Haley Fitzgerald · 9.475</div>
+                    <div style="color: var(--text-secondary); font-size: 10px;">SCSU · R1</div>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: var(--space-xs);">
+                    <span style="color: #4ade80; font-size: 10px;">✓ Preloaded</span>
+                    <button style="background: transparent; border: none; color: var(--text-secondary); cursor: pointer; font-size: var(--font-size-sm);">✕</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Next clip 2 -->
+          <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-sm); border-left: 3px solid var(--border-color);">
+            <div style="display: flex; gap: var(--space-sm);">
+              <div style="width: 48px; height: 27px; background: linear-gradient(135deg, #8b5cf6, #6366f1); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 10px;">VT</div>
+              <div style="flex: 1;">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                  <div>
+                    <div style="color: var(--text-primary); font-size: var(--font-size-sm);">Madison Chen · 9.650</div>
+                    <div style="color: var(--text-secondary); font-size: 10px;">Yale · R1</div>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: var(--space-xs);">
+                    <span style="color: var(--text-secondary); font-size: 10px;">Preloading...</span>
+                    <button style="background: transparent; border: none; color: var(--text-secondary); cursor: pointer; font-size: var(--font-size-sm);">✕</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scrollable clip list -->
+        <div style="flex: 1; overflow-y: auto; padding: var(--space-md);">
+          <div style="color: var(--text-secondary); font-size: var(--font-size-sm); margin-bottom: var(--space-sm);">QUEUED (58 more)</div>
+
+          <!-- Sample queued clips -->
+          <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-sm); margin-bottom: var(--space-xs);">
+            <div style="display: flex; gap: var(--space-sm); align-items: center;">
+              <div style="width: 40px; height: 22px; background: linear-gradient(135deg, #f472b6, #ec4899); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 10px;">UB</div>
+              <div style="flex: 1;">
+                <div style="color: var(--text-primary); font-size: var(--font-size-sm);">Emily Torres · 9.825</div>
+                <div style="color: var(--text-secondary); font-size: 10px;">Bridgeport · R1</div>
+              </div>
+              <button style="background: transparent; border: none; color: var(--text-secondary); cursor: pointer; font-size: var(--font-size-sm);">✕</button>
+            </div>
+          </div>
+
+          <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-sm); margin-bottom: var(--space-xs);">
+            <div style="display: flex; gap: var(--space-sm); align-items: center;">
+              <div style="width: 40px; height: 22px; background: linear-gradient(135deg, #f472b6, #ec4899); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 10px;">UB</div>
+              <div style="flex: 1;">
+                <div style="color: var(--text-primary); font-size: var(--font-size-sm);">Sarah Kim · 9.700</div>
+                <div style="color: var(--text-secondary); font-size: 10px;">Yale · R1</div>
+              </div>
+              <button style="background: transparent; border: none; color: var(--text-secondary); cursor: pointer; font-size: var(--font-size-sm);">✕</button>
+            </div>
+          </div>
+
+          <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-sm); margin-bottom: var(--space-xs);">
+            <div style="display: flex; gap: var(--space-sm); align-items: center;">
+              <div style="width: 40px; height: 22px; background: linear-gradient(135deg, #34d399, #10b981); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 10px;">BB</div>
+              <div style="flex: 1;">
+                <div style="color: var(--text-primary); font-size: var(--font-size-sm);">Jessica Liu · 9.550</div>
+                <div style="color: var(--text-secondary); font-size: 10px;">SCSU · R1</div>
+              </div>
+              <button style="background: transparent; border: none; color: var(--text-secondary); cursor: pointer; font-size: var(--font-size-sm);">✕</button>
+            </div>
+          </div>
+
+          <div style="text-align: center; padding: var(--space-md); color: var(--text-muted); font-size: var(--font-size-sm);">
+            + 55 more clips...
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- 4.7 Moment Replay Dialog (shown separately) -->
+  <div class="card" style="max-width: 500px;">
+    <div class="card-header">
+      <div class="card-title">MOMENT FLAGGED — Tamyra Singletary · Vault</div>
+      <span class="section-badge" data-section="4.7">§4.7</span>
+    </div>
+    <div style="padding: var(--space-md);">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md); margin-bottom: var(--space-md);">
+        <div>
+          <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">Clip time</div>
+          <div style="color: var(--text-primary); font-weight: 600;">0:08</div>
+        </div>
+        <div>
+          <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">Replay window</div>
+          <div style="display: flex; align-items: center; gap: var(--space-xs);">
+            <input type="text" value="0:04" style="width: 50px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 4px 8px; color: var(--text-primary); text-align: center;">
+            <span style="color: var(--text-secondary);">to</span>
+            <input type="text" value="0:12" style="width: 50px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 4px 8px; color: var(--text-primary); text-align: center;">
+          </div>
+        </div>
+      </div>
+
+      <!-- Mini timeline -->
+      <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-sm); margin-bottom: var(--space-md);">
+        <div style="height: 8px; background: var(--bg-secondary); border-radius: 4px; position: relative;">
+          <div style="position: absolute; left: 20%; right: 35%; height: 100%; background: var(--color-producer); border-radius: 4px;"></div>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-top: var(--space-xs); color: var(--text-secondary); font-size: 10px;">
+          <span>0:00</span>
+          <span>0:18</span>
+        </div>
+      </div>
+
+      <!-- Speed controls -->
+      <div style="display: flex; gap: var(--space-md); margin-bottom: var(--space-md);">
+        <div>
+          <div style="color: var(--text-secondary); font-size: var(--font-size-sm); margin-bottom: var(--space-xs);">Speed</div>
+          <div style="display: flex; gap: var(--space-xs);">
+            <button class="btn btn-secondary" style="padding: 4px 8px; font-size: var(--font-size-sm);">0.25x</button>
+            <button class="btn btn-primary" style="padding: 4px 8px; font-size: var(--font-size-sm); background: var(--color-producer);">0.5x</button>
+            <button class="btn btn-secondary" style="padding: 4px 8px; font-size: var(--font-size-sm);">1x</button>
+          </div>
+        </div>
+        <div>
+          <div style="color: var(--text-secondary); font-size: var(--font-size-sm); margin-bottom: var(--space-xs);">Audio</div>
+          <button class="btn btn-secondary" style="padding: 4px 8px; font-size: var(--font-size-sm);">🔇 Muted</button>
+        </div>
+      </div>
+
+      <!-- Preview -->
+      <div style="margin-bottom: var(--space-md);">
+        <button class="btn btn-secondary" style="width: 100%;">▶ Preview</button>
+      </div>
+
+      <!-- Action buttons -->
+      <div style="display: flex; gap: var(--space-sm);">
+        <button class="btn btn-primary" style="flex: 1; background: var(--color-producer);">▶ Play Now</button>
+        <button class="btn btn-secondary" style="flex: 1;">💾 Save Only</button>
+        <button class="btn btn-secondary">✕ Cancel</button>
+      </div>
+
+      <div style="margin-top: var(--space-md); color: var(--text-secondary); font-size: var(--font-size-sm);">
+        <div><strong>Play Now:</strong> replay immediately after clip, before next</div>
+        <div><strong>Save Only:</strong> save to highlights pool for later use</div>
+      </div>
+    </div>
+  </div>
+
+</div>
