@@ -47,7 +47,7 @@
 **Also read:**
 - `docs/PRD-Clip-Integration/ui/prototype/sections/style-guide.md`
 
-### Task 3: Build data flow diagram — NOT STARTED
+### Task 3: Build data flow diagram — COMPLETE
 
 **File:** `docs/PRD-Clip-Integration/ui/prototype/sections/data-flow.html`
 
