@@ -3526,3 +3526,1029 @@
   });
 })();
 </script>
+
+<!-- Task 1.5: Moment Replay Dialog -->
+<style>
+  /* === Moment Replay Dialog === */
+  .moment-replay-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+  }
+
+  .moment-replay-overlay--visible {
+    display: block;
+  }
+
+  .moment-replay-dialog {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1001;
+    width: 540px;
+    max-height: 85vh;
+    background: var(--bg-secondary, #18181b);
+    border: 1px solid var(--border-color, #3f3f46);
+    border-radius: 12px;
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.6);
+    overflow: hidden;
+  }
+
+  .moment-replay-dialog--visible {
+    display: block;
+  }
+
+  .moment-replay-dialog__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-color, #3f3f46);
+    background: rgba(6, 182, 212, 0.05);
+  }
+
+  .moment-replay-dialog__title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary, #e4e4e7);
+  }
+
+  .moment-replay-dialog__title-icon {
+    width: 20px;
+    height: 20px;
+    color: var(--clip-mode-replay-text, #22d3ee);
+  }
+
+  .moment-replay-dialog__close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-muted, #71717a);
+    border: none;
+    cursor: pointer;
+    transition: all 150ms;
+  }
+
+  .moment-replay-dialog__close:hover {
+    background: var(--bg-tertiary, #27272a);
+    color: var(--text-primary, #e4e4e7);
+  }
+
+  .moment-replay-dialog__close svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .moment-replay-dialog__body {
+    padding: 20px;
+    overflow-y: auto;
+    max-height: calc(85vh - 140px);
+  }
+
+  /* Clip Info Section */
+  .moment-replay-clip-info {
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    background: var(--bg-tertiary, #27272a);
+    border-radius: 8px;
+    margin-bottom: 20px;
+  }
+
+  .moment-replay-thumbnail {
+    position: relative;
+    width: 80px;
+    height: 60px;
+    border-radius: 6px;
+    overflow: hidden;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(168, 85, 247, 0.1));
+  }
+
+  .moment-replay-thumbnail__icon {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--clip-apparatus-ub, #a855f7);
+    opacity: 0.7;
+  }
+
+  .moment-replay-clip-details {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .moment-replay-clip-details__athlete {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary, #e4e4e7);
+    margin-bottom: 4px;
+  }
+
+  .moment-replay-clip-details__meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-secondary, #a1a1aa);
+  }
+
+  .moment-replay-clip-details__score {
+    font-weight: 600;
+    color: var(--text-primary, #e4e4e7);
+  }
+
+  /* Timeline Section */
+  .moment-replay-timeline {
+    margin-bottom: 20px;
+  }
+
+  .moment-replay-timeline__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .moment-replay-timeline__label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted, #71717a);
+  }
+
+  .moment-replay-timeline__duration {
+    font-size: 12px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-secondary, #a1a1aa);
+  }
+
+  .moment-replay-timeline__bar {
+    position: relative;
+    height: 40px;
+    background: var(--bg-tertiary, #27272a);
+    border-radius: 6px;
+    overflow: hidden;
+    cursor: pointer;
+  }
+
+  .moment-replay-timeline__full {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(113, 113, 122, 0.2);
+  }
+
+  .moment-replay-timeline__selection {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background: rgba(6, 182, 212, 0.3);
+    border-left: 2px solid var(--clip-mode-replay-border, #06b6d4);
+    border-right: 2px solid var(--clip-mode-replay-border, #06b6d4);
+  }
+
+  .moment-replay-timeline__flag {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 3px;
+    height: 24px;
+    background: var(--clip-status-warning, #f59e0b);
+    border-radius: 2px;
+  }
+
+  .moment-replay-timeline__flag::after {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 8px;
+    height: 8px;
+    background: var(--clip-status-warning, #f59e0b);
+    border-radius: 2px;
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  }
+
+  .moment-replay-timeline__handle {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 12px;
+    background: var(--clip-mode-replay-border, #06b6d4);
+    cursor: ew-resize;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .moment-replay-timeline__handle::after {
+    content: '';
+    width: 2px;
+    height: 16px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 1px;
+  }
+
+  .moment-replay-timeline__handle--start {
+    left: 0;
+    border-radius: 6px 0 0 6px;
+  }
+
+  .moment-replay-timeline__handle--end {
+    right: 0;
+    border-radius: 0 6px 6px 0;
+  }
+
+  .moment-replay-timeline__timecodes {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted, #71717a);
+  }
+
+  /* Time Range Spinboxes */
+  .moment-replay-time-controls {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .moment-replay-time-input {
+    flex: 1;
+  }
+
+  .moment-replay-time-input__label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted, #71717a);
+    margin-bottom: 6px;
+  }
+
+  .moment-replay-spinbox {
+    display: flex;
+    align-items: stretch;
+    background: var(--bg-tertiary, #27272a);
+    border: 1px solid var(--border-color, #3f3f46);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .moment-replay-spinbox__value {
+    flex: 1;
+    padding: 10px 12px;
+    font-size: 14px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    font-family: inherit;
+    color: var(--text-primary, #e4e4e7);
+    background: transparent;
+    border: none;
+    text-align: center;
+    outline: none;
+  }
+
+  .moment-replay-spinbox__value:focus {
+    background: rgba(59, 130, 246, 0.1);
+  }
+
+  .moment-replay-spinbox__controls {
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid var(--border-color, #3f3f46);
+  }
+
+  .moment-replay-spinbox__btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    flex: 1;
+    background: transparent;
+    color: var(--text-secondary, #a1a1aa);
+    border: none;
+    cursor: pointer;
+    transition: all 150ms;
+  }
+
+  .moment-replay-spinbox__btn:hover {
+    background: var(--bg-secondary, #18181b);
+    color: var(--text-primary, #e4e4e7);
+  }
+
+  .moment-replay-spinbox__btn:first-child {
+    border-bottom: 1px solid var(--border-color, #3f3f46);
+  }
+
+  .moment-replay-spinbox__btn svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  /* Speed Controls */
+  .moment-replay-speed {
+    margin-bottom: 20px;
+  }
+
+  .moment-replay-speed__label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted, #71717a);
+    margin-bottom: 8px;
+  }
+
+  .moment-replay-speed__options {
+    display: flex;
+    gap: 8px;
+  }
+
+  .moment-replay-speed__btn {
+    flex: 1;
+    padding: 10px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 6px;
+    background: var(--bg-tertiary, #27272a);
+    color: var(--text-secondary, #a1a1aa);
+    border: 1px solid var(--border-color, #3f3f46);
+    cursor: pointer;
+    transition: all 150ms;
+  }
+
+  .moment-replay-speed__btn:hover {
+    background: var(--bg-secondary, #18181b);
+    color: var(--text-primary, #e4e4e7);
+    border-color: var(--text-muted, #71717a);
+  }
+
+  .moment-replay-speed__btn--active {
+    background: rgba(6, 182, 212, 0.2);
+    color: var(--clip-mode-replay-text, #22d3ee);
+    border-color: var(--clip-mode-replay-border, #06b6d4);
+  }
+
+  .moment-replay-speed__btn--active:hover {
+    background: rgba(6, 182, 212, 0.25);
+    color: var(--clip-mode-replay-text, #22d3ee);
+    border-color: var(--clip-mode-replay-border, #06b6d4);
+  }
+
+  /* Options Row (Muted Toggle) */
+  .moment-replay-options {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding: 12px 16px;
+    background: var(--bg-tertiary, #27272a);
+    border-radius: 8px;
+  }
+
+  .moment-replay-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+  }
+
+  .moment-replay-toggle__switch {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    background: var(--bg-secondary, #18181b);
+    border: 1px solid var(--border-color, #3f3f46);
+    border-radius: 10px;
+    transition: all 150ms;
+  }
+
+  .moment-replay-toggle__switch::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 14px;
+    height: 14px;
+    background: var(--text-muted, #71717a);
+    border-radius: 50%;
+    transition: all 150ms;
+  }
+
+  .moment-replay-toggle--active .moment-replay-toggle__switch {
+    background: var(--clip-mode-replay-border, #06b6d4);
+    border-color: var(--clip-mode-replay-border, #06b6d4);
+  }
+
+  .moment-replay-toggle--active .moment-replay-toggle__switch::after {
+    left: 18px;
+    background: white;
+  }
+
+  .moment-replay-toggle__label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary, #a1a1aa);
+  }
+
+  .moment-replay-toggle--active .moment-replay-toggle__label {
+    color: var(--text-primary, #e4e4e7);
+  }
+
+  /* Preview Section */
+  .moment-replay-preview {
+    margin-bottom: 20px;
+  }
+
+  .moment-replay-preview__label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted, #71717a);
+    margin-bottom: 8px;
+  }
+
+  .moment-replay-preview__area {
+    position: relative;
+    width: 100%;
+    height: 140px;
+    background: #000;
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .moment-replay-preview__placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-muted, #71717a);
+  }
+
+  .moment-replay-preview__placeholder svg {
+    width: 32px;
+    height: 32px;
+    opacity: 0.5;
+  }
+
+  .moment-replay-preview__placeholder span {
+    font-size: 12px;
+  }
+
+  .moment-replay-preview__timecode {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    padding: 3px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    border-radius: 4px;
+  }
+
+  /* Flagged Moments List */
+  .moment-replay-flagged {
+    border-top: 1px solid var(--border-color, #3f3f46);
+    padding-top: 16px;
+    margin-top: 16px;
+  }
+
+  .moment-replay-flagged__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .moment-replay-flagged__title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted, #71717a);
+  }
+
+  .moment-replay-flagged__count {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    background: rgba(245, 158, 11, 0.2);
+    color: var(--clip-status-warning, #f59e0b);
+    border-radius: 9999px;
+  }
+
+  .moment-replay-flagged__list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 120px;
+    overflow-y: auto;
+  }
+
+  .moment-replay-flagged__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    background: var(--bg-tertiary, #27272a);
+    border: 1px solid var(--border-color, #3f3f46);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 150ms;
+  }
+
+  .moment-replay-flagged__item:hover {
+    border-color: var(--text-muted, #71717a);
+  }
+
+  .moment-replay-flagged__item--selected {
+    border-color: var(--clip-status-warning, #f59e0b);
+    background: rgba(245, 158, 11, 0.05);
+  }
+
+  .moment-replay-flagged__item-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .moment-replay-flagged__item-source {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  .moment-replay-flagged__item-source--producer {
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+  }
+
+  .moment-replay-flagged__item-source--commentator {
+    background: rgba(168, 85, 247, 0.15);
+    color: #c084fc;
+  }
+
+  .moment-replay-flagged__item-source svg {
+    width: 10px;
+    height: 10px;
+  }
+
+  .moment-replay-flagged__item-time {
+    font-size: 12px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary, #e4e4e7);
+  }
+
+  .moment-replay-flagged__item-range {
+    font-size: 11px;
+    color: var(--text-muted, #71717a);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Dialog Footer */
+  .moment-replay-dialog__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 16px 20px;
+    border-top: 1px solid var(--border-color, #3f3f46);
+    background: var(--bg-tertiary, #27272a);
+  }
+
+  .moment-replay-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 150ms;
+  }
+
+  .moment-replay-btn:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+
+  .moment-replay-btn--cancel {
+    background: transparent;
+    color: var(--text-secondary, #a1a1aa);
+    border: 1px solid var(--border-color, #3f3f46);
+  }
+
+  .moment-replay-btn--cancel:hover {
+    background: var(--bg-secondary, #18181b);
+    color: var(--text-primary, #e4e4e7);
+    border-color: var(--text-muted, #71717a);
+  }
+
+  .moment-replay-btn--save {
+    background: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.4);
+  }
+
+  .moment-replay-btn--save:hover {
+    background: rgba(59, 130, 246, 0.3);
+    border-color: rgba(59, 130, 246, 0.6);
+  }
+
+  .moment-replay-btn--primary {
+    background: var(--clip-mode-replay-border, #06b6d4);
+    color: white;
+    border: 1px solid var(--clip-mode-replay-border, #06b6d4);
+  }
+
+  .moment-replay-btn--primary:hover {
+    background: #0891b2;
+    border-color: #0891b2;
+  }
+
+  .moment-replay-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  /* Demo Trigger */
+  .demo-moment-replay-trigger {
+    margin-top: 12px;
+    padding: 12px 16px;
+    background: var(--bg-secondary, #18181b);
+    border: 1px solid var(--border-color, #3f3f46);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+</style>
+
+<!-- Moment Replay Dialog -->
+<div class="moment-replay-overlay" id="momentReplayOverlay"></div>
+<div class="moment-replay-dialog" id="momentReplayDialog" role="dialog" aria-labelledby="moment-replay-title" aria-modal="true">
+  <div class="moment-replay-dialog__header">
+    <div class="moment-replay-dialog__title">
+      <svg class="moment-replay-dialog__title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 16 14"/>
+      </svg>
+      <span id="moment-replay-title">Moment Replay</span>
+    </div>
+    <button class="moment-replay-dialog__close" id="closeMomentReplayBtn" aria-label="Close moment replay dialog">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"/>
+        <line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="moment-replay-dialog__body">
+    <!-- Clip Info -->
+    <div class="moment-replay-clip-info">
+      <div class="moment-replay-thumbnail">
+        <span class="moment-replay-thumbnail__icon">UB</span>
+      </div>
+      <div class="moment-replay-clip-details">
+        <div class="moment-replay-clip-details__athlete">Helena Kriz</div>
+        <div class="moment-replay-clip-details__meta">
+          <span class="apparatus-badge apparatus-badge--ub">UB</span>
+          <span>Yale</span>
+          <span>·</span>
+          <span class="moment-replay-clip-details__score">9.875</span>
+          <span>·</span>
+          <span>R2</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Timeline Visualization -->
+    <div class="moment-replay-timeline">
+      <div class="moment-replay-timeline__header">
+        <span class="moment-replay-timeline__label">Replay Window</span>
+        <span class="moment-replay-timeline__duration">Clip: 0:38</span>
+      </div>
+      <div class="moment-replay-timeline__bar" id="momentTimelineBar">
+        <div class="moment-replay-timeline__full"></div>
+        <div class="moment-replay-timeline__selection" id="momentSelection" style="left: 35%; right: 25%;">
+          <div class="moment-replay-timeline__handle moment-replay-timeline__handle--start"></div>
+          <div class="moment-replay-timeline__handle moment-replay-timeline__handle--end"></div>
+        </div>
+        <div class="moment-replay-timeline__flag" style="left: 55%;"></div>
+      </div>
+      <div class="moment-replay-timeline__timecodes">
+        <span>0:00</span>
+        <span id="momentSelectionRange">0:13 — 0:29</span>
+        <span>0:38</span>
+      </div>
+    </div>
+
+    <!-- Time Range Spinboxes -->
+    <div class="moment-replay-time-controls">
+      <div class="moment-replay-time-input">
+        <label class="moment-replay-time-input__label">Start Time</label>
+        <div class="moment-replay-spinbox">
+          <input type="text" class="moment-replay-spinbox__value" id="momentStartTime" value="0:13" aria-label="Start time">
+          <div class="moment-replay-spinbox__controls">
+            <button class="moment-replay-spinbox__btn" data-action="increment" data-target="start" aria-label="Increase start time">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="18 15 12 9 6 15"/>
+              </svg>
+            </button>
+            <button class="moment-replay-spinbox__btn" data-action="decrement" data-target="start" aria-label="Decrease start time">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="moment-replay-time-input">
+        <label class="moment-replay-time-input__label">End Time</label>
+        <div class="moment-replay-spinbox">
+          <input type="text" class="moment-replay-spinbox__value" id="momentEndTime" value="0:29" aria-label="End time">
+          <div class="moment-replay-spinbox__controls">
+            <button class="moment-replay-spinbox__btn" data-action="increment" data-target="end" aria-label="Increase end time">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="18 15 12 9 6 15"/>
+              </svg>
+            </button>
+            <button class="moment-replay-spinbox__btn" data-action="decrement" data-target="end" aria-label="Decrease end time">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Speed Presets -->
+    <div class="moment-replay-speed">
+      <span class="moment-replay-speed__label">Playback Speed</span>
+      <div class="moment-replay-speed__options">
+        <button class="moment-replay-speed__btn" data-speed="0.25">0.25x</button>
+        <button class="moment-replay-speed__btn moment-replay-speed__btn--active" data-speed="0.5">0.5x</button>
+        <button class="moment-replay-speed__btn" data-speed="1">1x</button>
+      </div>
+    </div>
+
+    <!-- Options -->
+    <div class="moment-replay-options">
+      <label class="moment-replay-toggle moment-replay-toggle--active" id="mutedToggle">
+        <span class="moment-replay-toggle__switch"></span>
+        <span class="moment-replay-toggle__label">Muted (no audio)</span>
+      </label>
+    </div>
+
+    <!-- Preview Area -->
+    <div class="moment-replay-preview">
+      <span class="moment-replay-preview__label">Preview</span>
+      <div class="moment-replay-preview__area">
+        <div class="moment-replay-preview__placeholder">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
+          <span>Click to preview selection</span>
+        </div>
+        <span class="moment-replay-preview__timecode">0:16 / 0:38</span>
+      </div>
+    </div>
+
+    <!-- Flagged Moments from Commentator -->
+    <div class="moment-replay-flagged">
+      <div class="moment-replay-flagged__header">
+        <span class="moment-replay-flagged__title">Pending Flags</span>
+        <span class="moment-replay-flagged__count">2 awaiting review</span>
+      </div>
+      <div class="moment-replay-flagged__list">
+        <div class="moment-replay-flagged__item moment-replay-flagged__item--selected" data-flag="1">
+          <div class="moment-replay-flagged__item-info">
+            <span class="moment-replay-flagged__item-source moment-replay-flagged__item-source--producer">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+              Producer
+            </span>
+            <span class="moment-replay-flagged__item-time">Just now</span>
+          </div>
+          <span class="moment-replay-flagged__item-range">0:13 — 0:29</span>
+        </div>
+        <div class="moment-replay-flagged__item" data-flag="2">
+          <div class="moment-replay-flagged__item-info">
+            <span class="moment-replay-flagged__item-source moment-replay-flagged__item-source--commentator">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <line x1="12" y1="19" x2="12" y2="23"/>
+                <line x1="8" y1="23" x2="16" y2="23"/>
+              </svg>
+              Commentator
+            </span>
+            <span class="moment-replay-flagged__item-time">0:15 ago</span>
+          </div>
+          <span class="moment-replay-flagged__item-range">0:18 — 0:26</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="moment-replay-dialog__footer">
+    <button class="moment-replay-btn moment-replay-btn--cancel" id="momentCancelBtn">Cancel</button>
+    <button class="moment-replay-btn moment-replay-btn--save" id="momentSaveBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+        <polyline points="17 21 17 13 7 13 7 21"/>
+        <polyline points="7 3 7 8 15 8"/>
+      </svg>
+      Save Only
+    </button>
+    <button class="moment-replay-btn moment-replay-btn--primary" id="momentPlayNowBtn">
+      <svg viewBox="0 0 24 24" fill="currentColor">
+        <polygon points="5 3 19 12 5 21 5 3"/>
+      </svg>
+      Play Now
+    </button>
+  </div>
+</div>
+
+<!-- Demo Moment Replay Trigger -->
+<div class="demo-moment-replay-trigger">
+  <span class="demo-label">Demo:</span>
+  <button class="demo-state-btn" id="openMomentReplayBtn">Open Moment Replay Dialog</button>
+</div>
+
+<script>
+(function() {
+  // Moment Replay Dialog Management
+  const momentReplayDialog = document.getElementById('momentReplayDialog');
+  const momentReplayOverlay = document.getElementById('momentReplayOverlay');
+  const closeMomentReplayBtn = document.getElementById('closeMomentReplayBtn');
+  const openMomentReplayBtn = document.getElementById('openMomentReplayBtn');
+  const momentCancelBtn = document.getElementById('momentCancelBtn');
+  const momentSaveBtn = document.getElementById('momentSaveBtn');
+  const momentPlayNowBtn = document.getElementById('momentPlayNowBtn');
+  const flagMomentBtn = document.getElementById('flagMomentBtn');
+
+  function openMomentReplayDialog() {
+    momentReplayDialog.classList.add('moment-replay-dialog--visible');
+    momentReplayOverlay.classList.add('moment-replay-overlay--visible');
+    closeMomentReplayBtn.focus();
+  }
+
+  function closeMomentReplayDialog() {
+    momentReplayDialog.classList.remove('moment-replay-dialog--visible');
+    momentReplayOverlay.classList.remove('moment-replay-overlay--visible');
+  }
+
+  // Open dialog from demo button
+  openMomentReplayBtn.addEventListener('click', openMomentReplayDialog);
+
+  // Open dialog from Flag button in override controls
+  if (flagMomentBtn) {
+    flagMomentBtn.addEventListener('click', openMomentReplayDialog);
+  }
+
+  // Close handlers
+  closeMomentReplayBtn.addEventListener('click', closeMomentReplayDialog);
+  momentReplayOverlay.addEventListener('click', closeMomentReplayDialog);
+  momentCancelBtn.addEventListener('click', closeMomentReplayDialog);
+
+  // Action buttons with feedback
+  momentSaveBtn.addEventListener('click', () => {
+    const originalText = momentSaveBtn.innerHTML;
+    momentSaveBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="width:16px;height:16px;"><polyline points="20 6 9 17 4 12"></polyline></svg> Saved!';
+    momentSaveBtn.style.background = 'rgba(34, 197, 94, 0.2)';
+    momentSaveBtn.style.color = '#4ade80';
+    momentSaveBtn.style.borderColor = 'rgba(34, 197, 94, 0.4)';
+    setTimeout(() => {
+      momentSaveBtn.innerHTML = originalText;
+      momentSaveBtn.style.background = '';
+      momentSaveBtn.style.color = '';
+      momentSaveBtn.style.borderColor = '';
+      closeMomentReplayDialog();
+    }, 1200);
+  });
+
+  momentPlayNowBtn.addEventListener('click', () => {
+    const originalText = momentPlayNowBtn.innerHTML;
+    momentPlayNowBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="width:16px;height:16px;"><polyline points="20 6 9 17 4 12"></polyline></svg> Queued!';
+    momentPlayNowBtn.style.background = '#22c55e';
+    momentPlayNowBtn.style.borderColor = '#22c55e';
+    setTimeout(() => {
+      momentPlayNowBtn.innerHTML = originalText;
+      momentPlayNowBtn.style.background = '';
+      momentPlayNowBtn.style.borderColor = '';
+      closeMomentReplayDialog();
+    }, 1200);
+  });
+
+  // Speed button toggle
+  const speedBtns = document.querySelectorAll('.moment-replay-speed__btn');
+  speedBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      speedBtns.forEach(b => b.classList.remove('moment-replay-speed__btn--active'));
+      btn.classList.add('moment-replay-speed__btn--active');
+    });
+  });
+
+  // Muted toggle
+  const mutedToggle = document.getElementById('mutedToggle');
+  mutedToggle.addEventListener('click', () => {
+    mutedToggle.classList.toggle('moment-replay-toggle--active');
+  });
+
+  // Flagged item selection
+  const flaggedItems = document.querySelectorAll('.moment-replay-flagged__item');
+  flaggedItems.forEach(item => {
+    item.addEventListener('click', () => {
+      flaggedItems.forEach(i => i.classList.remove('moment-replay-flagged__item--selected'));
+      item.classList.add('moment-replay-flagged__item--selected');
+    });
+  });
+
+  // Spinbox controls
+  const startTimeInput = document.getElementById('momentStartTime');
+  const endTimeInput = document.getElementById('momentEndTime');
+  const selectionRangeLabel = document.getElementById('momentSelectionRange');
+
+  function parseTime(str) {
+    const parts = str.split(':');
+    return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+  }
+
+  function formatTime(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  }
+
+  function updateSelectionLabel() {
+    selectionRangeLabel.textContent = `${startTimeInput.value} — ${endTimeInput.value}`;
+  }
+
+  document.querySelectorAll('.moment-replay-spinbox__btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const action = btn.dataset.action;
+      const target = btn.dataset.target;
+      const input = target === 'start' ? startTimeInput : endTimeInput;
+      let seconds = parseTime(input.value);
+
+      if (action === 'increment') {
+        seconds = Math.min(38, seconds + 1);
+      } else {
+        seconds = Math.max(0, seconds - 1);
+      }
+
+      input.value = formatTime(seconds);
+      updateSelectionLabel();
+    });
+  });
+
+  // Close on Escape
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && momentReplayDialog.classList.contains('moment-replay-dialog--visible')) {
+      e.stopPropagation();
+      closeMomentReplayDialog();
+    }
+  });
+})();
+</script>
