@@ -1,584 +1,765 @@
-<div class="section-content section-rundown">
+<!-- Rundown Editor: Playout Rules Configuration -->
+<style>
+  :root {
+    /* Existing Show Controller theme */
+    --bg-primary: #0a0a0b;
+    --bg-secondary: #18181b;
+    --bg-tertiary: #27272a;
+    --text-primary: #e4e4e7;
+    --text-secondary: #a1a1aa;
+    --text-muted: #71717a;
+    --border-color: #3f3f46;
 
-  <!-- Section Header -->
-  <div class="section-header" style="border-left: 4px solid var(--color-rundown);">
-    <h1>Screen 1: Rundown Editor</h1>
-    <span class="role-badge rundown">Rundown</span>
-    <span class="section-badge" data-section="4">§4</span>
-    <p style="color: var(--text-secondary); margin-top: var(--space-sm);">
-      Playout Rules Configuration — Configure rotation breaks, content sequences, and gap fill behavior
-    </p>
+    /* Segment Type Colors */
+    --clip-segment-playout-bg: rgba(6, 182, 212, 0.2);
+    --clip-segment-playout-text: #22d3ee;
+    --clip-segment-content-bg: rgba(245, 158, 11, 0.2);
+    --clip-segment-content-text: #fbbf24;
+
+    /* Apparatus Colors */
+    --clip-apparatus-vt: #ef4444;
+    --clip-apparatus-ub: #a855f7;
+    --clip-apparatus-bb: #3b82f6;
+    --clip-apparatus-fx: #22c55e;
+    --clip-apparatus-ph: #f97316;
+    --clip-apparatus-sr: #14b8a6;
+    --clip-apparatus-pb: #6366f1;
+    --clip-apparatus-hb: #f59e0b;
+  }
+
+  .rundown-editor {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    padding: 24px;
+    min-height: 100vh;
+  }
+
+  .rundown-editor h2 {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0 0 16px;
+    color: var(--text-primary);
+  }
+
+  .segment-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+    max-width: 560px;
+  }
+
+  .segment-card--playout {
+    border-left: 3px solid var(--clip-segment-playout-text);
+  }
+
+  .segment-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .segment-name {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .segment-type-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .segment-type-badge--playout {
+    background: var(--clip-segment-playout-bg);
+    color: var(--clip-segment-playout-text);
+  }
+
+  .form-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .form-label {
+    width: 140px;
+    flex-shrink: 0;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .form-select {
+    flex: 1;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 8px 32px 8px 12px;
+    font-size: 13px;
+    color: var(--text-primary);
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+  }
+
+  .form-select:hover {
+    border-color: var(--text-muted);
+  }
+
+  .form-select:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+
+  .section-divider {
+    height: 1px;
+    background: var(--border-color);
+    margin: 16px 0;
+  }
+
+  .section-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 12px;
+  }
+
+  /* Crossfade Duration Slider */
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .slider-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .slider-input {
+    flex: 1;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    background: var(--bg-tertiary);
+    border-radius: 3px;
+    cursor: pointer;
+  }
+
+  .slider-input::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #3b82f6;
+    cursor: pointer;
+    border: 2px solid var(--bg-secondary);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+
+  .slider-input:focus {
+    outline: none;
+  }
+
+  .slider-input:focus::-webkit-slider-thumb {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+  }
+
+  .slider-value {
+    width: 60px;
+    text-align: right;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .slider-disabled {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+
+  /* Gap Fill Sequence */
+  .gap-fill-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .gap-fill-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    transition: border-color 150ms;
+  }
+
+  .gap-fill-item:hover {
+    border-color: var(--text-muted);
+  }
+
+  .gap-fill-item--dragging {
+    opacity: 0.5;
+    border-color: #3b82f6;
+  }
+
+  .drag-handle {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    cursor: grab;
+    padding: 4px;
+    color: var(--text-muted);
+  }
+
+  .drag-handle:active {
+    cursor: grabbing;
+  }
+
+  .drag-handle-line {
+    width: 12px;
+    height: 2px;
+    background: currentColor;
+    border-radius: 1px;
+  }
+
+  .gap-fill-order {
+    width: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-align: center;
+  }
+
+  .gap-fill-select {
+    flex: 1;
+    min-width: 120px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 6px 28px 6px 10px;
+    font-size: 12px;
+    color: var(--text-primary);
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+  }
+
+  .gap-fill-select:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 1px;
+  }
+
+  .gap-fill-duration {
+    width: 50px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 6px 8px;
+    font-size: 12px;
+    color: var(--text-primary);
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .gap-fill-duration:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 1px;
+  }
+
+  .gap-fill-unit {
+    font-size: 11px;
+    color: var(--text-muted);
+    width: 20px;
+  }
+
+  .toggle-container {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .toggle-checkbox {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 32px;
+    height: 18px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 9px;
+    cursor: pointer;
+    position: relative;
+    transition: background 150ms, border-color 150ms;
+  }
+
+  .toggle-checkbox::before {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 12px;
+    height: 12px;
+    background: var(--text-muted);
+    border-radius: 50%;
+    transition: transform 150ms, background 150ms;
+  }
+
+  .toggle-checkbox:checked {
+    background: rgba(34, 197, 94, 0.3);
+    border-color: #22c55e;
+  }
+
+  .toggle-checkbox:checked::before {
+    transform: translateX(14px);
+    background: #22c55e;
+  }
+
+  .toggle-checkbox:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+
+  .toggle-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .remove-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background 150ms, color 150ms;
+  }
+
+  .remove-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+  }
+
+  .remove-btn:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 1px;
+  }
+
+  .add-item-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: transparent;
+    border: 1px dashed var(--border-color);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 150ms, border-color 150ms, color 150ms;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .add-item-btn:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--text-muted);
+    color: var(--text-primary);
+  }
+
+  .add-item-btn:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+
+  .loop-toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .loop-toggle-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  /* Apparatus priority multi-select styling */
+  .apparatus-priority-hint {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+    margin-left: 152px;
+  }
+
+  /* Stinger tooltip */
+  .option-disabled {
+    color: var(--text-muted);
+    cursor: not-allowed;
+  }
+
+  .tooltip-wrapper {
+    position: relative;
+    display: inline-flex;
+  }
+
+  .tooltip-text {
+    visibility: hidden;
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    white-space: nowrap;
+    border: 1px solid var(--border-color);
+    margin-bottom: 4px;
+    z-index: 10;
+  }
+
+  .tooltip-wrapper:hover .tooltip-text {
+    visibility: visible;
+  }
+</style>
+
+<div class="rundown-editor">
+  <h2>Rundown Editor — Playout Rules</h2>
+
+  <!-- Playout Segment Example -->
+  <div class="segment-card segment-card--playout">
+    <div class="segment-header">
+      <span class="segment-name">Rotation 1</span>
+      <span class="segment-type-badge segment-type-badge--playout">Playout</span>
+    </div>
+
+    <!-- Clip Order -->
+    <div class="form-row">
+      <label class="form-label" for="clip-order">Clip Order</label>
+      <select class="form-select" id="clip-order" aria-label="Clip play order">
+        <option value="chronological" selected>Chronological</option>
+        <option value="by-score">By Score (Highest First)</option>
+        <option value="by-team">By Team (Alternating)</option>
+        <option value="by-apparatus">By Apparatus</option>
+      </select>
+    </div>
+
+    <!-- Apparatus Priority -->
+    <div class="form-row">
+      <label class="form-label" for="apparatus-priority">Apparatus Priority</label>
+      <select class="form-select" id="apparatus-priority" aria-label="Apparatus priority">
+        <option value="" selected>No Priority (First Available)</option>
+        <option value="VT">Vault (VT)</option>
+        <option value="UB">Uneven Bars (UB)</option>
+        <option value="BB">Balance Beam (BB)</option>
+        <option value="FX">Floor Exercise (FX)</option>
+      </select>
+    </div>
+
+    <!-- Clip Transition -->
+    <div class="form-row">
+      <label class="form-label" for="transition-type">Clip Transition</label>
+      <select class="form-select" id="transition-type" aria-label="Transition type between clips">
+        <option value="cut" selected>Cut</option>
+        <option value="crossfade">Crossfade</option>
+        <option value="stinger" disabled class="option-disabled">Stinger (Coming Soon)</option>
+      </select>
+    </div>
+
+    <!-- Crossfade Duration (shown when crossfade selected) -->
+    <div class="form-row slider-row" id="crossfade-duration-row" style="display: none;">
+      <label class="form-label" for="crossfade-duration">Crossfade Duration</label>
+      <div class="slider-container">
+        <input
+          type="range"
+          class="slider-input"
+          id="crossfade-duration"
+          min="100"
+          max="2000"
+          step="50"
+          value="500"
+          aria-label="Crossfade duration in milliseconds"
+        >
+        <span class="slider-value" id="crossfade-value">500ms</span>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- Gap Fill Sequence -->
+    <div class="section-title">Gap Fill Sequence</div>
+
+    <div class="gap-fill-list" id="gap-fill-list" role="list" aria-label="Gap fill sequence items">
+      <!-- Item 1 -->
+      <div class="gap-fill-item" role="listitem" draggable="true" data-index="0">
+        <div class="drag-handle" aria-label="Drag to reorder" tabindex="0">
+          <span class="drag-handle-line"></span>
+          <span class="drag-handle-line"></span>
+          <span class="drag-handle-line"></span>
+        </div>
+        <span class="gap-fill-order">1.</span>
+        <select class="gap-fill-select" aria-label="Graphic type for item 1">
+          <option value="quad-view" selected>Quad View</option>
+          <option value="event-summary">Event Summary</option>
+          <option value="standings">Standings</option>
+          <option value="sponsor">Sponsor</option>
+          <option value="calendar">Calendar</option>
+          <option value="highlight-reel">Highlight Reel</option>
+        </select>
+        <input type="number" class="gap-fill-duration" value="20" min="5" max="120" aria-label="Duration in seconds for item 1">
+        <span class="gap-fill-unit">sec</span>
+        <div class="toggle-container">
+          <input type="checkbox" class="toggle-checkbox" id="bg-toggle-1" aria-label="Show background for item 1">
+          <label class="toggle-label" for="bg-toggle-1">BG</label>
+        </div>
+        <button class="remove-btn" aria-label="Remove item 1" title="Remove item">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Item 2 -->
+      <div class="gap-fill-item" role="listitem" draggable="true" data-index="1">
+        <div class="drag-handle" aria-label="Drag to reorder" tabindex="0">
+          <span class="drag-handle-line"></span>
+          <span class="drag-handle-line"></span>
+          <span class="drag-handle-line"></span>
+        </div>
+        <span class="gap-fill-order">2.</span>
+        <select class="gap-fill-select" aria-label="Graphic type for item 2">
+          <option value="quad-view">Quad View</option>
+          <option value="event-summary">Event Summary</option>
+          <option value="standings" selected>Standings</option>
+          <option value="sponsor">Sponsor</option>
+          <option value="calendar">Calendar</option>
+          <option value="highlight-reel">Highlight Reel</option>
+        </select>
+        <input type="number" class="gap-fill-duration" value="15" min="5" max="120" aria-label="Duration in seconds for item 2">
+        <span class="gap-fill-unit">sec</span>
+        <div class="toggle-container">
+          <input type="checkbox" class="toggle-checkbox" id="bg-toggle-2" checked aria-label="Show background for item 2">
+          <label class="toggle-label" for="bg-toggle-2">BG</label>
+        </div>
+        <button class="remove-btn" aria-label="Remove item 2" title="Remove item">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Item 3 -->
+      <div class="gap-fill-item" role="listitem" draggable="true" data-index="2">
+        <div class="drag-handle" aria-label="Drag to reorder" tabindex="0">
+          <span class="drag-handle-line"></span>
+          <span class="drag-handle-line"></span>
+          <span class="drag-handle-line"></span>
+        </div>
+        <span class="gap-fill-order">3.</span>
+        <select class="gap-fill-select" aria-label="Graphic type for item 3">
+          <option value="quad-view">Quad View</option>
+          <option value="event-summary">Event Summary</option>
+          <option value="standings">Standings</option>
+          <option value="sponsor" selected>Sponsor</option>
+          <option value="calendar">Calendar</option>
+          <option value="highlight-reel">Highlight Reel</option>
+        </select>
+        <input type="number" class="gap-fill-duration" value="10" min="5" max="120" aria-label="Duration in seconds for item 3">
+        <span class="gap-fill-unit">sec</span>
+        <div class="toggle-container">
+          <input type="checkbox" class="toggle-checkbox" id="bg-toggle-3" checked aria-label="Show background for item 3">
+          <label class="toggle-label" for="bg-toggle-3">BG</label>
+        </div>
+        <button class="remove-btn" aria-label="Remove item 3" title="Remove item">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Add Item Button -->
+    <button class="add-item-btn" id="add-gap-fill-btn" aria-label="Add gap fill item">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      Add Gap Fill Item
+    </button>
+
+    <!-- Loop Toggle -->
+    <div class="loop-toggle-row">
+      <input type="checkbox" class="toggle-checkbox" id="loop-sequence" checked aria-label="Loop gap fill sequence">
+      <label class="loop-toggle-label" for="loop-sequence">Loop sequence</label>
+    </div>
   </div>
+</div>
 
-  <!-- State Toggle Bar -->
-  <div class="state-toggle" style="display: flex; gap: var(--space-sm); margin-top: var(--space-md); margin-bottom: var(--space-md); padding: var(--space-sm); background: var(--bg-secondary); border-radius: var(--border-radius); border: 1px solid var(--border-color);">
-    <span style="color: var(--text-secondary); font-size: var(--font-size-sm); padding: var(--space-sm); display: flex; align-items: center;">Show:</span>
-    <button class="btn btn-primary state-toggle-btn active" data-state="premeet" onclick="setRundownState('premeet')" style="font-size: var(--font-size-sm);">
-      Pre-Meet Setup
-    </button>
-    <button class="btn btn-secondary state-toggle-btn" data-state="live" onclick="setRundownState('live')" style="font-size: var(--font-size-sm);">
-      Live Monitoring
-    </button>
-    <button class="btn btn-secondary state-toggle-btn" data-state="editing" onclick="setRundownState('editing')" style="font-size: var(--font-size-sm);">
-      Editing Sequence
-    </button>
-  </div>
+<script>
+  (function() {
+    // Transition type toggle for crossfade duration
+    const transitionSelect = document.getElementById('transition-type');
+    const crossfadeRow = document.getElementById('crossfade-duration-row');
+    const crossfadeSlider = document.getElementById('crossfade-duration');
+    const crossfadeValue = document.getElementById('crossfade-value');
 
-  <!-- State Toggle Script -->
-  <script>
-    function setRundownState(state) {
-      // Update button styles
-      document.querySelectorAll('.state-toggle-btn').forEach(btn => {
-        btn.classList.remove('active', 'btn-primary');
-        btn.classList.add('btn-secondary');
-      });
-      const activeBtn = document.querySelector('[data-state="' + state + '"]');
-      if (activeBtn) {
-        activeBtn.classList.remove('btn-secondary');
-        activeBtn.classList.add('active', 'btn-primary');
-      }
-      // Show/hide state-specific elements
-      document.querySelectorAll('.state-premeet, .state-live, .state-editing').forEach(el => {
-        el.style.display = 'none';
-      });
-      document.querySelectorAll('.state-' + state).forEach(el => {
-        el.style.display = '';
-      });
-      // Toggle readonly/disabled states
-      const isLive = state === 'live';
-      document.querySelectorAll('.rundown-input').forEach(input => {
-        input.disabled = isLive;
-        input.style.opacity = isLive ? '0.6' : '1';
-        input.style.cursor = isLive ? 'not-allowed' : '';
-      });
-      document.querySelectorAll('.rundown-select').forEach(select => {
-        select.disabled = isLive;
-        select.style.opacity = isLive ? '0.6' : '1';
-        select.style.cursor = isLive ? 'not-allowed' : '';
-      });
-      // Highlight drag handles in editing mode
-      const isEditing = state === 'editing';
-      document.querySelectorAll('.drag-handle').forEach(handle => {
-        handle.style.color = isEditing ? 'var(--color-rundown)' : 'var(--text-muted)';
-        handle.style.transform = isEditing ? 'scale(1.2)' : '';
-      });
-      document.querySelectorAll('.sequence-item').forEach(item => {
-        item.style.border = isEditing ? '2px dashed var(--color-rundown)' : '';
-        item.style.cursor = isEditing ? 'grab' : '';
+    transitionSelect.addEventListener('change', function() {
+      crossfadeRow.style.display = this.value === 'crossfade' ? 'flex' : 'none';
+    });
+
+    crossfadeSlider.addEventListener('input', function() {
+      crossfadeValue.textContent = this.value + 'ms';
+    });
+
+    // Gap fill list management
+    const gapFillList = document.getElementById('gap-fill-list');
+    const addBtn = document.getElementById('add-gap-fill-btn');
+    let itemCount = 3;
+
+    function updateOrderNumbers() {
+      const items = gapFillList.querySelectorAll('.gap-fill-item');
+      items.forEach((item, index) => {
+        item.querySelector('.gap-fill-order').textContent = (index + 1) + '.';
+        item.dataset.index = index;
       });
     }
-    // Initialize to premeet state
-    setTimeout(() => setRundownState('premeet'), 0);
-  </script>
 
-  <!-- Two-column layout: Playout Segment | Content Sequence Segment -->
-  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); margin-top: var(--space-lg);">
+    function createGapFillItem(index) {
+      const div = document.createElement('div');
+      div.className = 'gap-fill-item';
+      div.setAttribute('role', 'listitem');
+      div.setAttribute('draggable', 'true');
+      div.dataset.index = index;
 
-    <!-- ===== PLAYOUT SEGMENT (§4.1) ===== -->
-    <div class="card" style="border-top: 3px solid var(--color-rundown);">
-      <div class="card-header">
-        <div class="card-title">Rotation Segment (Playout Type)</div>
-        <span class="section-badge" data-section="4.1">§4.1</span>
-      </div>
-
-      <!-- Segment Header -->
-      <div style="padding: var(--space-md); border-bottom: 1px solid var(--border-color);">
-        <div style="display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-sm);">
-          <label style="color: var(--text-secondary); min-width: 80px;">Segment:</label>
-          <input type="text" value="Rotation 1" class="rundown-input" style="flex: 1; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-sm) var(--space-md); color: var(--text-primary);">
+      div.innerHTML = `
+        <div class="drag-handle" aria-label="Drag to reorder" tabindex="0">
+          <span class="drag-handle-line"></span>
+          <span class="drag-handle-line"></span>
+          <span class="drag-handle-line"></span>
         </div>
-        <div style="display: flex; align-items: center; gap: var(--space-md);">
-          <label style="color: var(--text-secondary); min-width: 80px;">Type:</label>
-          <select class="rundown-select" style="flex: 1; background: var(--bg-tertiary); border: 1px solid var(--color-rundown); border-radius: var(--border-radius); padding: var(--space-sm) var(--space-md); color: cyan;">
-            <option selected>Playout</option>
-            <option>Content Sequence</option>
-            <option>Standard</option>
-          </select>
+        <span class="gap-fill-order">${index + 1}.</span>
+        <select class="gap-fill-select" aria-label="Graphic type for item ${index + 1}">
+          <option value="quad-view">Quad View</option>
+          <option value="event-summary">Event Summary</option>
+          <option value="standings" selected>Standings</option>
+          <option value="sponsor">Sponsor</option>
+          <option value="calendar">Calendar</option>
+          <option value="highlight-reel">Highlight Reel</option>
+        </select>
+        <input type="number" class="gap-fill-duration" value="15" min="5" max="120" aria-label="Duration in seconds for item ${index + 1}">
+        <span class="gap-fill-unit">sec</span>
+        <div class="toggle-container">
+          <input type="checkbox" class="toggle-checkbox" id="bg-toggle-${index + 1}" checked aria-label="Show background for item ${index + 1}">
+          <label class="toggle-label" for="bg-toggle-${index + 1}">BG</label>
         </div>
-      </div>
-
-      <!-- Playout Rules Panel -->
-      <div style="padding: var(--space-md); border-bottom: 1px solid var(--border-color);">
-        <div style="font-weight: 600; color: var(--text-primary); margin-bottom: var(--space-md);">
-          Playout Rules <span class="role-badge rundown" style="font-size: 10px; padding: 2px 6px;">PlayoutRulesEditor.jsx</span>
-        </div>
-
-        <!-- Clip Order -->
-        <div style="display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-sm);">
-          <label style="color: var(--text-secondary); min-width: 140px;">Clip Order:</label>
-          <select class="rundown-select" style="flex: 1; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-sm) var(--space-md); color: var(--text-primary);">
-            <option selected>Chronological</option>
-            <option>By Score (Highest First)</option>
-            <option>By Team (Alternating)</option>
-            <option>By Apparatus</option>
-          </select>
-        </div>
-
-        <!-- Apparatus Priority -->
-        <div style="display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-sm);">
-          <label style="color: var(--text-secondary); min-width: 140px;">Apparatus Priority:</label>
-          <select class="rundown-select" style="flex: 1; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-sm) var(--space-md); color: var(--text-primary);">
-            <option selected>No Priority</option>
-            <option>BB (Balance Beam)</option>
-            <option>UB (Uneven Bars)</option>
-            <option>VT (Vault)</option>
-            <option>FX (Floor Exercise)</option>
-          </select>
-        </div>
-
-        <!-- Clip Transition -->
-        <div style="display: flex; align-items: center; gap: var(--space-md);">
-          <label style="color: var(--text-secondary); min-width: 140px;">Clip Transition:</label>
-          <select class="rundown-select" style="flex: 1; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-sm) var(--space-md); color: var(--text-primary);">
-            <option selected>Cut</option>
-            <option>Crossfade</option>
-            <option disabled style="color: var(--text-muted);">Stinger (Coming soon)</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- Gap Fill Sequence -->
-      <div style="padding: var(--space-md);">
-        <div style="font-weight: 600; color: var(--text-primary); margin-bottom: var(--space-md);">
-          Gap Fill Sequence
-          <span style="color: var(--text-secondary); font-weight: normal; font-size: var(--font-size-sm);">
-            (plays when no clips available)
-          </span>
-        </div>
-
-        <!-- Gap Fill Items -->
-        <div style="display: flex; flex-direction: column; gap: var(--space-sm);">
-
-          <!-- Item 1 -->
-          <div class="sequence-item" style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
-            <span style="color: var(--text-muted); width: 20px;">1.</span>
-            <select class="rundown-select" style="flex: 2; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm); color: var(--text-primary); font-size: var(--font-size-sm);">
-              <option selected>Quad View</option>
-              <option>Standings</option>
-              <option>Sponsor</option>
-              <option>Event Summary</option>
-              <option>Calendar</option>
-            </select>
-            <input type="number" value="20" class="rundown-input" style="width: 50px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs); color: var(--text-primary); text-align: center; font-size: var(--font-size-sm);">
-            <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">sec</span>
-            <label style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: var(--font-size-sm);">
-              <input type="checkbox" class="rundown-input"> BG
-            </label>
-            <button class="btn-icon state-premeet state-editing" title="Remove" style="color: var(--color-override);">✕</button>
-            <button class="btn-icon drag-handle" title="Drag to reorder" style="color: var(--text-muted); cursor: grab;">↕</button>
-          </div>
-
-          <!-- Item 2 -->
-          <div class="sequence-item" style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
-            <span style="color: var(--text-muted); width: 20px;">2.</span>
-            <select class="rundown-select" style="flex: 2; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm); color: var(--text-primary); font-size: var(--font-size-sm);">
-              <option>Quad View</option>
-              <option selected>Standings</option>
-              <option>Sponsor</option>
-              <option>Event Summary</option>
-              <option>Calendar</option>
-            </select>
-            <input type="number" value="15" class="rundown-input" style="width: 50px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs); color: var(--text-primary); text-align: center; font-size: var(--font-size-sm);">
-            <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">sec</span>
-            <label style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: var(--font-size-sm);">
-              <input type="checkbox" checked class="rundown-input"> BG
-            </label>
-            <button class="btn-icon state-premeet state-editing" title="Remove" style="color: var(--color-override);">✕</button>
-            <button class="btn-icon drag-handle" title="Drag to reorder" style="color: var(--text-muted); cursor: grab;">↕</button>
-          </div>
-
-          <!-- Item 3 -->
-          <div class="sequence-item" style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
-            <span style="color: var(--text-muted); width: 20px;">3.</span>
-            <select class="rundown-select" style="flex: 2; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm); color: var(--text-primary); font-size: var(--font-size-sm);">
-              <option>Quad View</option>
-              <option>Standings</option>
-              <option selected>Sponsor</option>
-              <option>Event Summary</option>
-              <option>Calendar</option>
-            </select>
-            <input type="number" value="10" class="rundown-input" style="width: 50px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs); color: var(--text-primary); text-align: center; font-size: var(--font-size-sm);">
-            <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">sec</span>
-            <label style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: var(--font-size-sm);">
-              <input type="checkbox" checked class="rundown-input"> BG
-            </label>
-            <button class="btn-icon state-premeet state-editing" title="Remove" style="color: var(--color-override);">✕</button>
-            <button class="btn-icon drag-handle" title="Drag to reorder" style="color: var(--text-muted); cursor: grab;">↕</button>
-          </div>
-
-        </div>
-
-        <!-- Add Button (hidden in Live mode) -->
-        <button class="btn btn-secondary state-premeet state-editing" style="margin-top: var(--space-md); width: 100%; border-style: dashed;">
-          + Add Gap Fill Item
+        <button class="remove-btn" aria-label="Remove item ${index + 1}" title="Remove item">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
         </button>
+      `;
 
-        <!-- Loop Toggle -->
-        <label style="display: flex; align-items: center; gap: var(--space-sm); margin-top: var(--space-md); color: var(--text-primary);">
-          <input type="checkbox" checked class="rundown-input"> Loop sequence
-          <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">(when last item finishes, restart from first)</span>
-        </label>
-      </div>
+      return div;
+    }
 
-      <!-- Live Monitoring Status Panel (only shown in Live mode) -->
-      <div class="state-live" style="display: none; padding: var(--space-md); border-bottom: 1px solid var(--border-color); background: rgba(181, 106, 255, 0.05);">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-sm);">
-          <span style="font-weight: 600; color: var(--text-primary);">Live Status</span>
-          <span class="state-indicator playing">playing</span>
-        </div>
-        <div style="display: flex; gap: var(--space-lg); font-size: var(--font-size-sm);">
-          <div>
-            <span style="color: var(--text-secondary);">Current:</span>
-            <span style="color: var(--text-primary); margin-left: var(--space-xs);">Standings</span>
-          </div>
-          <div>
-            <span style="color: var(--text-secondary);">Elapsed:</span>
-            <span style="color: var(--color-rundown); margin-left: var(--space-xs); font-family: var(--font-mono);">0:12</span>
-            <span style="color: var(--text-muted);">/ 15s</span>
-          </div>
-          <div>
-            <span style="color: var(--text-secondary);">Cycle:</span>
-            <span style="color: var(--text-primary); margin-left: var(--space-xs);">2 of 3</span>
-          </div>
-        </div>
-      </div>
+    addBtn.addEventListener('click', function() {
+      itemCount++;
+      const newItem = createGapFillItem(itemCount - 1);
+      gapFillList.appendChild(newItem);
+      updateOrderNumbers();
+    });
 
-      <!-- Validation Note -->
-      <div class="state-premeet state-editing" style="padding: var(--space-sm) var(--space-md); background: rgba(181, 106, 255, 0.1); border-top: 1px solid var(--border-color); font-size: var(--font-size-sm); color: var(--text-secondary);">
-        Requires at least one gap fill item to save
-      </div>
-    </div>
+    // Remove item handler
+    gapFillList.addEventListener('click', function(e) {
+      const removeBtn = e.target.closest('.remove-btn');
+      if (removeBtn) {
+        const item = removeBtn.closest('.gap-fill-item');
+        item.remove();
+        itemCount--;
+        updateOrderNumbers();
+      }
+    });
 
-    <!-- ===== CONTENT SEQUENCE SEGMENT (§4.2) ===== -->
-    <div class="card" style="border-top: 3px solid #f0b429;">
-      <div class="card-header">
-        <div class="card-title">Rotation Break Segment (Content Sequence Type)</div>
-        <span class="section-badge" data-section="4.2">§4.2</span>
-      </div>
+    // Drag and drop reordering
+    let draggedItem = null;
 
-      <!-- Segment Header -->
-      <div style="padding: var(--space-md); border-bottom: 1px solid var(--border-color);">
-        <div style="display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-sm);">
-          <label style="color: var(--text-secondary); min-width: 80px;">Segment:</label>
-          <input type="text" value="Rotation 1 Break" class="rundown-input" style="flex: 1; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-sm) var(--space-md); color: var(--text-primary);">
-        </div>
-        <div style="display: flex; align-items: center; gap: var(--space-md);">
-          <label style="color: var(--text-secondary); min-width: 80px;">Type:</label>
-          <select class="rundown-select" style="flex: 1; background: var(--bg-tertiary); border: 1px solid #f0b429; border-radius: var(--border-radius); padding: var(--space-sm) var(--space-md); color: #f0b429;">
-            <option>Playout</option>
-            <option selected>Content Sequence</option>
-            <option>Standard</option>
-          </select>
-        </div>
-      </div>
+    gapFillList.addEventListener('dragstart', function(e) {
+      const item = e.target.closest('.gap-fill-item');
+      if (item) {
+        draggedItem = item;
+        item.classList.add('gap-fill-item--dragging');
+        e.dataTransfer.effectAllowed = 'move';
+      }
+    });
 
-      <!-- Content Sequence Editor -->
-      <div style="padding: var(--space-md); border-bottom: 1px solid var(--border-color);">
-        <div style="font-weight: 600; color: var(--text-primary); margin-bottom: var(--space-md);">
-          Content <span class="role-badge rundown" style="font-size: 10px; padding: 2px 6px; background: #f0b429;">ContentSequenceEditor.jsx</span>
-        </div>
+    gapFillList.addEventListener('dragend', function(e) {
+      if (draggedItem) {
+        draggedItem.classList.remove('gap-fill-item--dragging');
+        draggedItem = null;
+        updateOrderNumbers();
+      }
+    });
 
-        <!-- Content Items -->
-        <div style="display: flex; flex-direction: column; gap: var(--space-sm);">
+    gapFillList.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      const afterElement = getDragAfterElement(gapFillList, e.clientY);
+      if (draggedItem) {
+        if (afterElement == null) {
+          gapFillList.appendChild(draggedItem);
+        } else {
+          gapFillList.insertBefore(draggedItem, afterElement);
+        }
+      }
+    });
 
-          <!-- Item 1: Event Summary -->
-          <div class="sequence-item" style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
-            <span style="color: var(--text-muted); width: 20px;">1.</span>
-            <select class="rundown-select" style="flex: 2; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm); color: var(--text-primary); font-size: var(--font-size-sm);">
-              <option selected>Event Summary</option>
-              <option>Sponsor</option>
-              <option>Highlight Reel</option>
-              <option>Calendar</option>
-              <option>Quad View</option>
-              <option>Standings</option>
-            </select>
-            <input type="number" value="30" class="rundown-input" style="width: 50px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs); color: var(--text-primary); text-align: center; font-size: var(--font-size-sm);">
-            <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">sec</span>
-            <label style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: var(--font-size-sm);" title="Background">
-              <input type="checkbox" checked class="rundown-input"> BG
-            </label>
-            <label style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: var(--font-size-sm);" title="Skip if no data">
-              <input type="checkbox" checked class="rundown-input"> Skip∅
-            </label>
-            <button class="btn-icon state-premeet state-editing" title="Remove" style="color: var(--color-override);">✕</button>
-            <button class="btn-icon drag-handle" title="Drag to reorder" style="color: var(--text-muted); cursor: grab;">↕</button>
-          </div>
+    function getDragAfterElement(container, y) {
+      const draggableElements = [...container.querySelectorAll('.gap-fill-item:not(.gap-fill-item--dragging)')];
 
-          <!-- Item 2: Sponsor -->
-          <div class="sequence-item" style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
-            <span style="color: var(--text-muted); width: 20px;">2.</span>
-            <select class="rundown-select" style="flex: 2; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm); color: var(--text-primary); font-size: var(--font-size-sm);">
-              <option>Event Summary</option>
-              <option selected>Sponsor</option>
-              <option>Highlight Reel</option>
-              <option>Calendar</option>
-              <option>Quad View</option>
-              <option>Standings</option>
-            </select>
-            <input type="number" value="10" class="rundown-input" style="width: 50px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs); color: var(--text-primary); text-align: center; font-size: var(--font-size-sm);">
-            <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">sec</span>
-            <label style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: var(--font-size-sm);" title="Background">
-              <input type="checkbox" checked class="rundown-input"> BG
-            </label>
-            <label style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: var(--font-size-sm);" title="Skip if no data">
-              <input type="checkbox" class="rundown-input"> Skip∅
-            </label>
-            <button class="btn-icon state-premeet state-editing" title="Remove" style="color: var(--color-override);">✕</button>
-            <button class="btn-icon drag-handle" title="Drag to reorder" style="color: var(--text-muted); cursor: grab;">↕</button>
-          </div>
-
-          <!-- Item 3: Highlight Reel -->
-          <div class="sequence-item" style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
-            <span style="color: var(--text-muted); width: 20px;">3.</span>
-            <select class="rundown-select" style="flex: 2; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm); color: var(--text-primary); font-size: var(--font-size-sm);">
-              <option>Event Summary</option>
-              <option>Sponsor</option>
-              <option selected>Highlight Reel</option>
-              <option>Calendar</option>
-              <option>Quad View</option>
-              <option>Standings</option>
-            </select>
-            <span style="width: 50px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs); color: var(--text-muted); text-align: center; font-size: var(--font-size-sm);">auto</span>
-            <span style="color: var(--text-secondary); font-size: var(--font-size-sm); visibility: hidden;">sec</span>
-            <label style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: var(--font-size-sm);" title="Background">
-              <input type="checkbox" checked class="rundown-input"> BG
-            </label>
-            <label style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: var(--font-size-sm);" title="Skip if no data">
-              <input type="checkbox" checked class="rundown-input"> Skip∅
-            </label>
-            <button class="btn-icon state-premeet state-editing" title="Remove" style="color: var(--color-override);">✕</button>
-            <button class="btn-icon drag-handle" title="Drag to reorder" style="color: var(--text-muted); cursor: grab;">↕</button>
-          </div>
-
-          <!-- Item 4: Calendar -->
-          <div class="sequence-item" style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
-            <span style="color: var(--text-muted); width: 20px;">4.</span>
-            <select class="rundown-select" style="flex: 2; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm); color: var(--text-primary); font-size: var(--font-size-sm);">
-              <option>Event Summary</option>
-              <option>Sponsor</option>
-              <option>Highlight Reel</option>
-              <option selected>Calendar</option>
-              <option>Quad View</option>
-              <option>Standings</option>
-            </select>
-            <input type="number" value="15" class="rundown-input" style="width: 50px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs); color: var(--text-primary); text-align: center; font-size: var(--font-size-sm);">
-            <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">sec</span>
-            <label style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: var(--font-size-sm);" title="Background">
-              <input type="checkbox" checked class="rundown-input"> BG
-            </label>
-            <label style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: var(--font-size-sm);" title="Skip if no data">
-              <input type="checkbox" class="rundown-input"> Skip∅
-            </label>
-            <button class="btn-icon state-premeet state-editing" title="Remove" style="color: var(--color-override);">✕</button>
-            <button class="btn-icon drag-handle" title="Drag to reorder" style="color: var(--text-muted); cursor: grab;">↕</button>
-          </div>
-
-          <!-- Item 5: Quad View (hold) -->
-          <div class="sequence-item" style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
-            <span style="color: var(--text-muted); width: 20px;">5.</span>
-            <select class="rundown-select" style="flex: 2; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm); color: var(--text-primary); font-size: var(--font-size-sm);">
-              <option>Event Summary</option>
-              <option>Sponsor</option>
-              <option>Highlight Reel</option>
-              <option>Calendar</option>
-              <option selected>Quad View</option>
-              <option>Standings</option>
-            </select>
-            <select class="rundown-select" style="width: 60px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs); color: var(--color-rundown); text-align: center; font-size: var(--font-size-sm);">
-              <option>5</option>
-              <option>10</option>
-              <option>15</option>
-              <option>30</option>
-              <option selected>hold</option>
-            </select>
-            <span style="color: var(--text-secondary); font-size: var(--font-size-sm); visibility: hidden;">sec</span>
-            <label style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: var(--font-size-sm);" title="Background">
-              <input type="checkbox" class="rundown-input"> BG
-            </label>
-            <label style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: var(--font-size-sm);" title="Skip if no data">
-              <input type="checkbox" class="rundown-input"> Skip∅
-            </label>
-            <button class="btn-icon state-premeet state-editing" title="Remove" style="color: var(--color-override);">✕</button>
-            <button class="btn-icon drag-handle" title="Drag to reorder" style="color: var(--text-muted); cursor: grab;">↕</button>
-          </div>
-
-        </div>
-
-        <!-- Add Button (hidden in Live mode) -->
-        <button class="btn btn-secondary state-premeet state-editing" style="margin-top: var(--space-md); width: 100%; border-style: dashed;">
-          + Add Content Item
-        </button>
-      </div>
-
-      <!-- Advance Condition -->
-      <div style="padding: var(--space-md);">
-        <div style="font-weight: 600; color: var(--text-primary); margin-bottom: var(--space-md);">
-          Auto-advance to next segment when:
-        </div>
-
-        <div style="display: flex; flex-direction: column; gap: var(--space-sm);">
-          <label style="display: flex; align-items: flex-start; gap: var(--space-sm); color: var(--text-primary); cursor: pointer;">
-            <input type="radio" name="advance-condition" checked class="rundown-input" style="margin-top: 3px;">
-            <span>
-              Next rotation scores detected
-              <span style="color: var(--text-secondary); font-size: var(--font-size-sm); display: block;">(Virtius API)</span>
-            </span>
-          </label>
-          <label style="display: flex; align-items: flex-start; gap: var(--space-sm); color: var(--text-primary); cursor: pointer;">
-            <input type="radio" name="advance-condition" class="rundown-input" style="margin-top: 3px;">
-            <span>
-              All content items complete
-              <span style="color: var(--text-secondary); font-size: var(--font-size-sm); display: block;">(hold items wait for advance)</span>
-            </span>
-          </label>
-          <label style="display: flex; align-items: flex-start; gap: var(--space-sm); color: var(--text-primary); cursor: pointer;">
-            <input type="radio" name="advance-condition" class="rundown-input" style="margin-top: 3px;">
-            <span>Manual advance only</span>
-          </label>
-        </div>
-      </div>
-
-      <!-- Live Monitoring Status Panel (only shown in Live mode) -->
-      <div class="state-live" style="display: none; padding: var(--space-md); border-bottom: 1px solid var(--border-color); background: rgba(240, 180, 41, 0.05);">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-sm);">
-          <span style="font-weight: 600; color: var(--text-primary);">Live Status</span>
-          <span class="state-indicator playing" style="background: #f0b429; color: #000;">playing</span>
-        </div>
-        <div style="display: flex; gap: var(--space-lg); font-size: var(--font-size-sm);">
-          <div>
-            <span style="color: var(--text-secondary);">Current:</span>
-            <span style="color: var(--text-primary); margin-left: var(--space-xs);">Sponsor (2/5)</span>
-          </div>
-          <div>
-            <span style="color: var(--text-secondary);">Elapsed:</span>
-            <span style="color: #f0b429; margin-left: var(--space-xs); font-family: var(--font-mono);">0:07</span>
-            <span style="color: var(--text-muted);">/ 10s</span>
-          </div>
-          <div>
-            <span style="color: var(--text-secondary);">Advance:</span>
-            <span style="color: var(--text-primary); margin-left: var(--space-xs);">Waiting for scores</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Validation Note (hidden in Live mode) -->
-      <div class="state-premeet state-editing" style="padding: var(--space-sm) var(--space-md); background: rgba(240, 180, 41, 0.1); border-top: 1px solid var(--border-color); font-size: var(--font-size-sm); color: var(--text-secondary);">
-        Requires at least one content item to save
-      </div>
-    </div>
-
-  </div>
-
-  <!-- ===== GRAPHIC TYPES REFERENCE TABLE ===== -->
-  <div class="card" style="margin-top: var(--space-lg); border-top: 3px solid var(--color-rundown);">
-    <div class="card-header">
-      <div class="card-title">Content Sequence Graphic Types</div>
-      <span class="section-badge" data-section="4.2">§4.2</span>
-    </div>
-    <div style="padding: var(--space-md); overflow-x: auto;">
-      <table style="width: 100%; border-collapse: collapse; font-size: var(--font-size-sm);">
-        <thead>
-          <tr style="border-bottom: 1px solid var(--border-color);">
-            <th style="text-align: left; padding: var(--space-sm); color: var(--text-secondary);">graphicType</th>
-            <th style="text-align: left; padding: var(--space-sm); color: var(--text-secondary);">output.html renderer</th>
-            <th style="text-align: left; padding: var(--space-sm); color: var(--text-secondary);">Notes</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr style="border-bottom: 1px solid var(--border-color);">
-            <td style="padding: var(--space-sm); color: var(--text-primary);"><code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 3px;">event-summary</code></td>
-            <td style="padding: var(--space-sm); color: var(--text-primary);"><code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 3px;">event-summary</code></td>
-            <td style="padding: var(--space-sm); color: var(--text-secondary);">Existing renderer</td>
-          </tr>
-          <tr style="border-bottom: 1px solid var(--border-color);">
-            <td style="padding: var(--space-sm); color: var(--text-primary);"><code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 3px;">standings</code></td>
-            <td style="padding: var(--space-sm); color: var(--text-primary);"><code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 3px;">virtius-leaderboard</code></td>
-            <td style="padding: var(--space-sm); color: var(--text-secondary);">Renderer name differs</td>
-          </tr>
-          <tr style="border-bottom: 1px solid var(--border-color);">
-            <td style="padding: var(--space-sm); color: var(--text-primary);"><code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 3px;">sponsor</code></td>
-            <td style="padding: var(--space-sm); color: var(--text-primary);"><code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 3px;">sponsors-cycle</code></td>
-            <td style="padding: var(--space-sm); color: var(--text-secondary);">Existing sponsor cycling</td>
-          </tr>
-          <tr style="border-bottom: 1px solid var(--border-color);">
-            <td style="padding: var(--space-sm); color: var(--text-primary);"><code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 3px;">calendar</code></td>
-            <td style="padding: var(--space-sm); color: var(--text-primary);"><code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 3px;">event-calendar</code></td>
-            <td style="padding: var(--space-sm); color: var(--text-secondary);">Existing renderer</td>
-          </tr>
-          <tr style="border-bottom: 1px solid var(--border-color);">
-            <td style="padding: var(--space-sm); color: var(--text-primary);"><code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 3px;">quad-view</code></td>
-            <td style="padding: var(--space-sm); color: var(--text-primary);"><code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 3px;">clear</code> + OBS command</td>
-            <td style="padding: var(--space-sm); color: var(--text-secondary);">Triggers OBS multi-view switch</td>
-          </tr>
-          <tr>
-            <td style="padding: var(--space-sm); color: var(--text-primary);"><code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 3px;">highlight-reel</code></td>
-            <td style="padding: var(--space-sm); color: var(--text-primary);"><span style="color: var(--text-muted);">N/A (Stage A: placeholder)</span></td>
-            <td style="padding: var(--space-sm); color: var(--text-secondary);">Stage A: static title card. Stage B: auto-plays.</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- ===== DATA SHAPE REFERENCE ===== -->
-  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); margin-top: var(--space-lg);">
-
-    <!-- Playout Data Shape -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">Playout Segment Data Shape</div>
-        <span class="section-badge" data-section="4.1">§4.1</span>
-      </div>
-      <div style="padding: var(--space-md);">
-        <pre style="background: var(--bg-tertiary); padding: var(--space-md); border-radius: var(--border-radius); overflow-x: auto; font-family: var(--font-mono); font-size: var(--font-size-sm); color: var(--text-primary); margin: 0;"><code>{
-  type: 'playout',
-  name: 'Rotation 1',
-  playoutRules: {
-    clipOrder: 'chronological',
-    apparatusPriority: null,
-    transitionType: 'cut',
-    crossfadeDuration: 500,
-    gapFillSequence: [
-      { graphicType: 'quad-view',
-        duration: 20, background: false },
-      { graphicType: 'standings',
-        duration: 15, background: true },
-      { graphicType: 'sponsor',
-        duration: 10, background: true }
-    ],
-    gapFillLoop: true
-  }
-}</code></pre>
-      </div>
-    </div>
-
-    <!-- Content Sequence Data Shape -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">Content Sequence Segment Data Shape</div>
-        <span class="section-badge" data-section="4.2">§4.2</span>
-      </div>
-      <div style="padding: var(--space-md);">
-        <pre style="background: var(--bg-tertiary); padding: var(--space-md); border-radius: var(--border-radius); overflow-x: auto; font-family: var(--font-mono); font-size: var(--font-size-sm); color: var(--text-primary); margin: 0;"><code>{
-  type: 'content-sequence',
-  name: 'Rotation 1 Break',
-  contentSequence: [
-    { graphicType: 'event-summary',
-      duration: 30, background: true,
-      skipIfNoData: true,
-      params: { rotation: 'current' } },
-    { graphicType: 'sponsor',
-      duration: 10, background: true,
-      skipIfNoData: false },
-    { graphicType: 'quad-view',
-      duration: null, background: false,
-      skipIfNoData: false }
-  ],
-  advanceCondition: 'next-rotation-detected'
-}</code></pre>
-      </div>
-    </div>
-
-  </div>
-
-</div>
+      return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) {
+          return { offset: offset, element: child };
+        } else {
+          return closest;
+        }
+      }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+  })();
+</script>
