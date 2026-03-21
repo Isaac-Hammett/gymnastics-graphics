@@ -1,162 +1,373 @@
-# PRD Visualizer Style Guide
+# Clip Integration UI — Style Guide
 
-Reference for all loops building section HTML files.
-
----
-
-## Section File Contract
-
-- **No wrapper tags**: Section files are raw HTML fragments — no `<html>`, `<head>`, or `<body>` tags
-- **Injected via innerHTML**: Loaded into `#content` div via `fetch('sections/{name}.html').then(r => r.text()).then(html => content.innerHTML = html)`
-- **Inherit all CSS**: All variables and classes from `index.html` are available
-- **Self-contained**: Each section file should work independently when loaded
+This style guide defines the visual language for the Clip Integration UI prototype. All parallel loops must reference these tokens to ensure visual consistency.
 
 ---
 
-## CSS Variables
+## 1. CSS Variables
 
-### Theme Colors
-| Variable | Value | Usage |
-|----------|-------|-------|
-| `--bg-primary` | `#1a1a2e` | Main background, content area |
-| `--bg-secondary` | `#16213e` | Sidebar, panels, cards |
-| `--bg-tertiary` | `#0f3460` | Hover states, inputs, highlights |
-| `--text-primary` | `#e0e0e0` | Main text |
-| `--text-secondary` | `#a0a0a0` | Labels, subtitles |
-| `--text-muted` | `#666` | Disabled text, placeholders |
-| `--border-color` | `#2a2a4e` | All borders |
+These variables extend the existing Show Controller zinc/dark theme.
 
-### Role Colors (Color Coding System)
-| Variable | Value | Role | Usage |
-|----------|-------|------|-------|
-| `--color-producer` | `#4a9eff` | Producer | ProducerView, primary actions |
-| `--color-talent` | `#4ecdc4` | Talent/Commentator | TalentView, talent-specific elements |
-| `--color-output` | `#ff8c42` | Output | output.html, broadcast elements |
-| `--color-rundown` | `#b56aff` | Rundown | RundownEditor, timing elements |
-| `--color-override` | `#ff4757` | Override/Warning | Emergency controls, errors |
-| `--color-disabled` | `#666` | Disabled | Inactive states |
+```css
+:root {
+  /* === Existing Show Controller theme (reference) === */
+  --bg-primary: #0a0a0b;       /* zinc-950 */
+  --bg-secondary: #18181b;     /* zinc-900 */
+  --bg-tertiary: #27272a;      /* zinc-800 */
+  --text-primary: #e4e4e7;     /* zinc-200 */
+  --text-secondary: #a1a1aa;   /* zinc-400 */
+  --text-muted: #71717a;       /* zinc-500 */
+  --border-color: #3f3f46;     /* zinc-700 */
 
-### Spacing
-| Variable | Value |
-|----------|-------|
-| `--space-xs` | `4px` |
-| `--space-sm` | `8px` |
-| `--space-md` | `16px` |
-| `--space-lg` | `24px` |
-| `--space-xl` | `32px` |
+  /* === Clip Integration additions === */
 
-### Typography
-| Variable | Value |
-|----------|-------|
-| `--font-family` | `-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif` |
-| `--font-mono` | `'SF Mono', 'Fira Code', monospace` |
-| `--font-size-sm` | `12px` |
-| `--font-size-base` | `14px` |
-| `--font-size-lg` | `16px` |
-| `--font-size-xl` | `20px` |
-| `--font-size-2xl` | `24px` |
+  /* Apparatus Colors (EVS color-coding pattern) */
+  --clip-apparatus-vt: #ef4444;     /* red-500 — Vault */
+  --clip-apparatus-ub: #a855f7;     /* purple-500 — Uneven Bars */
+  --clip-apparatus-bb: #3b82f6;     /* blue-500 — Balance Beam */
+  --clip-apparatus-fx: #22c55e;     /* green-500 — Floor Exercise */
+  --clip-apparatus-ph: #f97316;     /* orange-500 — Pommel Horse */
+  --clip-apparatus-sr: #14b8a6;     /* teal-500 — Still Rings */
+  --clip-apparatus-pb: #6366f1;     /* indigo-500 — Parallel Bars */
+  --clip-apparatus-hb: #f59e0b;     /* amber-500 — High Bar */
 
-### Layout
-| Variable | Value |
-|----------|-------|
-| `--sidebar-width` | `250px` |
-| `--panel-width` | `300px` |
-| `--header-height` | `48px` |
-| `--border-radius` | `6px` |
+  /* Segment Type Colors */
+  --clip-segment-playout-bg: rgba(6, 182, 212, 0.2);     /* cyan-500/20 */
+  --clip-segment-playout-text: #22d3ee;                   /* cyan-400 */
+  --clip-segment-content-bg: rgba(245, 158, 11, 0.2);    /* amber-500/20 */
+  --clip-segment-content-text: #fbbf24;                   /* amber-400 */
 
----
+  /* Playout Mode Colors */
+  --clip-mode-live-bg: rgba(34, 197, 94, 0.2);           /* green-500/20 */
+  --clip-mode-live-text: #4ade80;                         /* green-400 */
+  --clip-mode-live-border: #22c55e;                       /* green-500 */
 
-## Shared Classes
+  --clip-mode-clip-bg: rgba(34, 197, 94, 0.2);           /* green-500/20 (same as LIVE) */
+  --clip-mode-clip-text: #4ade80;                         /* green-400 */
+  --clip-mode-clip-border: #22c55e;                       /* green-500 */
 
-### Cards
-```html
-<div class="card">
-  <div class="card-header">
-    <div class="card-title">Title Here</div>
-    <span class="role-badge producer">Producer</span>
-  </div>
-  <!-- Content -->
-</div>
-```
+  --clip-mode-replay-bg: rgba(6, 182, 212, 0.2);         /* cyan-500/20 */
+  --clip-mode-replay-text: #22d3ee;                       /* cyan-400 */
+  --clip-mode-replay-border: #06b6d4;                     /* cyan-500 */
 
-### Buttons
-```html
-<button class="btn btn-primary">Primary Action</button>
-<button class="btn btn-secondary">Secondary Action</button>
-<button class="btn-icon" title="Icon Button">X</button>
-```
+  --clip-mode-queued-bg: rgba(59, 130, 246, 0.2);        /* blue-500/20 */
+  --clip-mode-queued-text: #60a5fa;                       /* blue-400 */
+  --clip-mode-queued-border: #3b82f6;                     /* blue-500 */
 
-### Role Badges
-Color-coded badges for indicating which role owns a feature.
-```html
-<span class="role-badge producer">Producer</span>
-<span class="role-badge talent">Talent</span>
-<span class="role-badge output">Output</span>
-<span class="role-badge rundown">Rundown</span>
-```
+  --clip-mode-break-bg: rgba(113, 113, 122, 0.2);        /* zinc-500/20 */
+  --clip-mode-break-text: #a1a1aa;                        /* zinc-400 */
+  --clip-mode-break-border: #71717a;                      /* zinc-500 */
 
-### Section Badges
-Link to PRD sections. Clickable, opens feedback panel to that section.
-```html
-<span class="section-badge" data-section="4.2">§4.2</span>
-```
+  --clip-mode-fallback-bg: rgba(113, 113, 122, 0.15);    /* zinc-500/15 */
+  --clip-mode-fallback-text: #a1a1aa;                     /* zinc-400 */
+  --clip-mode-fallback-border: #52525b;                   /* zinc-600 */
 
-### State Indicators
-Show current state of a component.
-```html
-<span class="state-indicator idle">idle</span>
-<span class="state-indicator loading">loading</span>
-<span class="state-indicator playing">playing</span>
-<span class="state-indicator error">error</span>
-```
+  --clip-mode-override-bg: rgba(245, 158, 11, 0.2);      /* amber-500/20 */
+  --clip-mode-override-text: #fbbf24;                     /* amber-400 */
+  --clip-mode-override-border: #f59e0b;                   /* amber-500 */
 
-### Placeholders
-For sections not yet built.
-```html
-<div class="placeholder">
-  <div class="placeholder-icon">🔨</div>
-  <div class="placeholder-title">Building...</div>
-  <p>Description text</p>
-  <div class="placeholder-loop">loop: loop-name</div>
-</div>
-```
+  --clip-mode-paused-bg: rgba(234, 179, 8, 0.2);         /* yellow-500/20 */
+  --clip-mode-paused-text: #facc15;                       /* yellow-400 */
+  --clip-mode-paused-border: #eab308;                     /* yellow-500 */
 
-### Keyboard Hint
-```html
-<span class="kbd">⌘G</span>
+  /* Status Colors (general) */
+  --clip-status-success: #22c55e;    /* green-500 */
+  --clip-status-warning: #f59e0b;    /* amber-500 */
+  --clip-status-error: #ef4444;      /* red-500 */
+  --clip-status-info: #3b82f6;       /* blue-500 */
+}
 ```
 
 ---
 
-## Color Coding Reference
+## 2. Apparatus Colors
 
-Use these consistently across all sections:
+Used for clip thumbnails, filter badges, and camera status panel.
 
-| Color | Hex | Meaning |
-|-------|-----|---------|
-| Blue | `#4a9eff` | Producer controls, primary actions, ProducerView |
-| Green | `#4ecdc4` | Talent/Commentator features, TalentView |
-| Orange | `#ff8c42` | Broadcast output, output.html |
-| Purple | `#b56aff` | Rundown/timing, RundownEditor |
-| Red | `#ff4757` | Override, warning, error states |
-| Gray | `#666` | Disabled, inactive |
+| Apparatus | Code | Color Name | Hex | CSS Variable |
+|-----------|------|------------|-----|--------------|
+| Vault | VT | Red | `#ef4444` | `--clip-apparatus-vt` |
+| Uneven Bars | UB | Purple | `#a855f7` | `--clip-apparatus-ub` |
+| Balance Beam | BB | Blue | `#3b82f6` | `--clip-apparatus-bb` |
+| Floor Exercise | FX | Green | `#22c55e` | `--clip-apparatus-fx` |
+| Pommel Horse | PH | Orange | `#f97316` | `--clip-apparatus-ph` |
+| Still Rings | SR | Teal | `#14b8a6` | `--clip-apparatus-sr` |
+| Parallel Bars | PB | Indigo | `#6366f1` | `--clip-apparatus-pb` |
+| High Bar | HB | Amber | `#f59e0b` | `--clip-apparatus-hb` |
 
----
-
-## Navigation Data Attributes
-
-Nav items use these attributes:
-- `data-section="name"` — Section file to load (e.g., `producer` loads `sections/producer.html`)
-- `data-color="role"` — Color for the dot indicator (producer, talent, output, rundown)
-- `data-scroll="id"` — Element ID to scroll to after loading
+**Apparatus ordering (Olympic order):**
+- Women's: VT, UB, BB, FX
+- Men's: FX, PH, SR, VT, PB, HB
 
 ---
 
-## Best Practices
+## 3. Segment Type Colors
 
-1. **Use CSS variables** — Never hardcode colors or spacing
-2. **Use role badges** — Mark which role owns each feature
-3. **Use section badges** — Link features back to PRD sections
-4. **Keep it dark** — Maintain the dark theme aesthetic
-5. **Cards for grouping** — Use `.card` for distinct UI components
-6. **State indicators** — Show dynamic state with `.state-indicator`
+| Segment Type | Background | Text | Tailwind Classes |
+|--------------|------------|------|------------------|
+| playout | `rgba(6, 182, 212, 0.2)` | `#22d3ee` | `bg-cyan-500/20 text-cyan-400` |
+| content-sequence | `rgba(245, 158, 11, 0.2)` | `#fbbf24` | `bg-amber-500/20 text-amber-400` |
+
+---
+
+## 4. Status/Mode Colors
+
+| Mode | Background | Text | Border | Badge Text |
+|------|------------|------|--------|------------|
+| LIVE | `rgba(34, 197, 94, 0.2)` | `#4ade80` | `#22c55e` | LIVE |
+| CLIP | `rgba(34, 197, 94, 0.2)` | `#4ade80` | `#22c55e` | CLIP |
+| MOMENT_REPLAY | `rgba(6, 182, 212, 0.2)` | `#22d3ee` | `#06b6d4` | REPLAY |
+| QUEUED | `rgba(59, 130, 246, 0.2)` | `#60a5fa` | `#3b82f6` | QUEUED |
+| BREAK | `rgba(113, 113, 122, 0.2)` | `#a1a1aa` | `#71717a` | BREAK |
+| FALLBACK | `rgba(113, 113, 122, 0.15)` | `#a1a1aa` | `#52525b` | FALLBACK |
+| OVERRIDE | `rgba(245, 158, 11, 0.2)` | `#fbbf24` | `#f59e0b` | OVERRIDE |
+| PAUSED | `rgba(234, 179, 8, 0.2)` | `#facc15` | `#eab308` | PAUSED |
+
+**Note:** MOMENT_REPLAY displays as "REPLAY" on badges (short form).
+
+---
+
+## 5. Badge Styles
+
+Badges are small rounded pills with text and background color.
+
+```css
+.clip-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 9999px;           /* fully rounded */
+  font-size: 0.625rem;             /* 10px */
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Mode badges */
+.clip-badge-live {
+  background: var(--clip-mode-live-bg);
+  color: var(--clip-mode-live-text);
+}
+
+.clip-badge-clip {
+  background: var(--clip-mode-clip-bg);
+  color: var(--clip-mode-clip-text);
+}
+
+.clip-badge-replay {
+  background: var(--clip-mode-replay-bg);
+  color: var(--clip-mode-replay-text);
+}
+
+.clip-badge-queued {
+  background: var(--clip-mode-queued-bg);
+  color: var(--clip-mode-queued-text);
+}
+
+.clip-badge-break {
+  background: var(--clip-mode-break-bg);
+  color: var(--clip-mode-break-text);
+}
+
+.clip-badge-fallback {
+  background: var(--clip-mode-fallback-bg);
+  color: var(--clip-mode-fallback-text);
+}
+
+.clip-badge-override {
+  background: var(--clip-mode-override-bg);
+  color: var(--clip-mode-override-text);
+}
+
+.clip-badge-paused {
+  background: var(--clip-mode-paused-bg);
+  color: var(--clip-mode-paused-text);
+}
+
+/* Apparatus badges */
+.clip-badge-apparatus {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 6px;
+  font-size: 0.625rem;
+  font-weight: 700;
+}
+
+.clip-badge-vt { color: var(--clip-apparatus-vt); }
+.clip-badge-ub { color: var(--clip-apparatus-ub); }
+.clip-badge-bb { color: var(--clip-apparatus-bb); }
+.clip-badge-fx { color: var(--clip-apparatus-fx); }
+.clip-badge-ph { color: var(--clip-apparatus-ph); }
+.clip-badge-sr { color: var(--clip-apparatus-sr); }
+.clip-badge-pb { color: var(--clip-apparatus-pb); }
+.clip-badge-hb { color: var(--clip-apparatus-hb); }
+```
+
+**Tailwind equivalents:**
+```html
+<!-- Mode badge -->
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide bg-green-500/20 text-green-400">
+  LIVE
+</span>
+
+<!-- Apparatus badge -->
+<span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-white/10 text-red-500">
+  VT
+</span>
+```
+
+---
+
+## 6. Component Patterns
+
+### Status Bar States
+
+The status bar displays current playout mode with colored border indicator.
+
+```css
+.clip-status-bar {
+  background: var(--bg-secondary);
+  border-left: 3px solid transparent;
+  padding: 8px 12px;
+}
+
+.clip-status-bar--autonomous {
+  border-left-color: var(--clip-mode-live-border);  /* green */
+}
+
+.clip-status-bar--override {
+  border-left-color: var(--clip-mode-override-border);  /* amber */
+}
+
+.clip-status-bar--paused {
+  border-left-color: var(--clip-mode-paused-border);  /* yellow */
+}
+```
+
+### Button Styles
+
+Follow existing Show Controller patterns:
+
+```css
+/* Primary action button */
+.clip-btn-primary {
+  background: #3b82f6;           /* blue-500 */
+  color: white;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: background 150ms;
+}
+
+.clip-btn-primary:hover {
+  background: #2563eb;           /* blue-600 */
+}
+
+/* Secondary/outline button */
+.clip-btn-outline {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 150ms;
+}
+
+.clip-btn-outline:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* Danger button */
+.clip-btn-danger {
+  background: rgba(239, 68, 68, 0.2);   /* red-500/20 */
+  color: #f87171;                        /* red-400 */
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: background 150ms;
+}
+
+.clip-btn-danger:hover {
+  background: rgba(239, 68, 68, 0.3);
+}
+```
+
+**Tailwind equivalents:**
+```html
+<!-- Primary -->
+<button class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md font-medium transition-colors">
+  Take
+</button>
+
+<!-- Outline -->
+<button class="px-4 py-2 bg-transparent border border-zinc-700 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 rounded-md font-medium transition-colors">
+  Skip
+</button>
+
+<!-- Danger -->
+<button class="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-md font-medium transition-colors">
+  Clear
+</button>
+```
+
+---
+
+## 7. Typography
+
+| Element | Size | Weight | Color | Tailwind |
+|---------|------|--------|-------|----------|
+| Panel header | 14px | 600 | `--text-primary` | `text-sm font-semibold text-zinc-200` |
+| Card title | 13px | 500 | `--text-primary` | `text-[13px] font-medium text-zinc-200` |
+| Card subtitle | 12px | 400 | `--text-secondary` | `text-xs text-zinc-400` |
+| Badge text | 10px | 600 | (per mode) | `text-[10px] font-semibold` |
+| Timestamp | 11px | 500 | `--text-muted` | `text-[11px] font-medium text-zinc-500` |
+| Icon button | 18px | — | `--text-secondary` | `w-[18px] h-[18px] text-zinc-400` |
+
+---
+
+## 8. Spacing Scale
+
+Follow Tailwind 4px base:
+
+| Token | Value | Tailwind |
+|-------|-------|----------|
+| xs | 4px | `p-1`, `gap-1` |
+| sm | 8px | `p-2`, `gap-2` |
+| md | 12px | `p-3`, `gap-3` |
+| lg | 16px | `p-4`, `gap-4` |
+| xl | 24px | `p-6`, `gap-6` |
+
+---
+
+## 9. Border Radius
+
+| Element | Radius | Tailwind |
+|---------|--------|----------|
+| Cards | 8px | `rounded-lg` |
+| Buttons | 6px | `rounded-md` |
+| Badges | 9999px | `rounded-full` |
+| Thumbnails | 4px | `rounded` |
+| Input fields | 6px | `rounded-md` |
+
+---
+
+## 10. Shadows
+
+```css
+/* Card hover shadow */
+.clip-card-shadow {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Modal/dropdown shadow */
+.clip-modal-shadow {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+```
+
+**Tailwind:**
+```html
+<div class="shadow-lg">...</div>
+<div class="shadow-xl">...</div>
+```
