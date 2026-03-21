@@ -27,7 +27,7 @@
 **Also read:**
 - `docs/PRD-Clip-Integration/ui/prototype/sections/style-guide.md` (for CSS conventions)
 
-### Task 2: Build workflow walkthroughs — NOT STARTED
+### Task 2: Build workflow walkthroughs — COMPLETE
 
 **File:** `docs/PRD-Clip-Integration/ui/prototype/sections/workflows.html`
 
