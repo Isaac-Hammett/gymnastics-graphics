@@ -1,0 +1,536 @@
+<div class="section-content section-flows">
+  <h2>User Workflows</h2>
+  <p class="section-intro">Step-by-step walkthroughs showing how each role interacts with the system during a live competition.</p>
+
+  <!-- Producer Workflow -->
+  <div class="card workflow-card">
+    <div class="card-header">
+      <div class="card-title">Producer Workflow</div>
+      <span class="role-badge producer">Producer</span>
+    </div>
+
+    <div class="workflow-phases">
+      <!-- Phase 1: Pre-Meet Setup -->
+      <div class="workflow-phase">
+        <div class="phase-header">
+          <span class="phase-label">Phase 1</span>
+          <span class="phase-name">Pre-Meet Setup</span>
+          <span class="phase-timing">Before competition</span>
+        </div>
+
+        <div class="workflow-steps">
+          <div class="workflow-step">
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <div class="step-title">Load Rundown</div>
+              <div class="step-description">Open Rundown Editor, select competition</div>
+              <span class="screen-badge rundown">Rundown Editor</span>
+            </div>
+          </div>
+          <div class="workflow-arrow">→</div>
+
+          <div class="workflow-step">
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <div class="step-title">Configure Playout Rules</div>
+              <div class="step-description">Set clip priority stack, timing rules</div>
+              <span class="screen-badge rundown">Rundown Editor</span>
+            </div>
+          </div>
+          <div class="workflow-arrow">→</div>
+
+          <div class="workflow-step">
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <div class="step-title">Set Break Content</div>
+              <div class="step-description">Define rotation break sequences, fallbacks</div>
+              <span class="screen-badge rundown">Rundown Editor</span>
+            </div>
+          </div>
+          <div class="workflow-arrow">→</div>
+
+          <div class="workflow-step">
+            <div class="step-number">4</div>
+            <div class="step-content">
+              <div class="step-title">Apparatus Priorities</div>
+              <div class="step-description">Set which events take precedence for clips</div>
+              <span class="screen-badge rundown">Rundown Editor</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Phase 2: Live Monitoring -->
+      <div class="workflow-phase">
+        <div class="phase-header">
+          <span class="phase-label">Phase 2</span>
+          <span class="phase-name">Live Monitoring</span>
+          <span class="phase-timing">During competition</span>
+        </div>
+
+        <div class="workflow-steps">
+          <div class="workflow-step">
+            <div class="step-number">5</div>
+            <div class="step-content">
+              <div class="step-title">Go Live</div>
+              <div class="step-description">Start show, playout engine begins</div>
+              <span class="screen-badge producer">ProducerView</span>
+              <span class="state-ref">→ idle → live-camera</span>
+            </div>
+          </div>
+          <div class="workflow-arrow">→</div>
+
+          <div class="workflow-step">
+            <div class="step-number">6</div>
+            <div class="step-content">
+              <div class="step-title">Monitor Clip Queue</div>
+              <div class="step-description">Watch pending clips, preload status</div>
+              <span class="screen-badge producer">ProducerView</span>
+            </div>
+          </div>
+          <div class="workflow-arrow">→</div>
+
+          <div class="workflow-step">
+            <div class="step-number">7</div>
+            <div class="step-content">
+              <div class="step-title">Watch Playout Status</div>
+              <div class="step-description">Current clip progress, camera states</div>
+              <span class="screen-badge producer">ProducerView</span>
+              <span class="state-ref">playing-clip ↔ live-camera</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Phase 3: Override & Control -->
+      <div class="workflow-phase">
+        <div class="phase-header">
+          <span class="phase-label">Phase 3</span>
+          <span class="phase-name">Override & Control</span>
+          <span class="phase-timing">As needed</span>
+        </div>
+
+        <div class="workflow-steps">
+          <div class="workflow-step override-step">
+            <div class="step-number">8</div>
+            <div class="step-content">
+              <div class="step-title">Force Camera</div>
+              <div class="step-description">Override playout, cut to specific camera</div>
+              <span class="screen-badge producer">ProducerView</span>
+              <span class="state-ref">→ override-active</span>
+            </div>
+          </div>
+          <div class="workflow-arrow">→</div>
+
+          <div class="workflow-step override-step">
+            <div class="step-number">9</div>
+            <div class="step-content">
+              <div class="step-title">Skip/Un-skip Clips</div>
+              <div class="step-description">Remove or restore clips from queue</div>
+              <span class="screen-badge producer">ProducerView</span>
+            </div>
+          </div>
+          <div class="workflow-arrow">→</div>
+
+          <div class="workflow-step override-step">
+            <div class="step-number">10</div>
+            <div class="step-content">
+              <div class="step-title">Flag Moment Replay</div>
+              <div class="step-description">Mark for immediate replay insertion</div>
+              <span class="screen-badge producer">ProducerView</span>
+              <span class="state-ref">→ moment-replay</span>
+            </div>
+          </div>
+          <div class="workflow-arrow">→</div>
+
+          <div class="workflow-step">
+            <div class="step-number">11</div>
+            <div class="step-content">
+              <div class="step-title">End Show</div>
+              <div class="step-description">Stop playout, return to idle</div>
+              <span class="screen-badge producer">ProducerView</span>
+              <span class="state-ref">→ idle</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Commentator Workflow -->
+  <div class="card workflow-card">
+    <div class="card-header">
+      <div class="card-title">Commentator Workflow</div>
+      <span class="role-badge talent">Talent</span>
+    </div>
+
+    <div class="workflow-phases">
+      <!-- Single Phase: Live Commentary -->
+      <div class="workflow-phase">
+        <div class="phase-header">
+          <span class="phase-label">Phase 1</span>
+          <span class="phase-name">Live Commentary</span>
+          <span class="phase-timing">During competition</span>
+        </div>
+
+        <div class="workflow-steps">
+          <div class="workflow-step">
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <div class="step-title">Join Show</div>
+              <div class="step-description">Open TalentView, connect to active competition</div>
+              <span class="screen-badge talent">TalentView</span>
+            </div>
+          </div>
+          <div class="workflow-arrow">→</div>
+
+          <div class="workflow-step">
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <div class="step-title">See Current Content</div>
+              <div class="step-description">View clip athlete/team/apparatus or live camera info</div>
+              <span class="screen-badge talent">TalentView</span>
+            </div>
+          </div>
+          <div class="workflow-arrow">→</div>
+
+          <div class="workflow-step">
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <div class="step-title">Read Talking Points</div>
+              <div class="step-description">Access prepared commentary notes</div>
+              <span class="screen-badge talent">TalentView</span>
+            </div>
+          </div>
+          <div class="workflow-arrow">→</div>
+
+          <div class="workflow-step">
+            <div class="step-number">4</div>
+            <div class="step-content">
+              <div class="step-title">See Upcoming Content</div>
+              <div class="step-description">Preview next clip/camera to prepare</div>
+              <span class="screen-badge talent">TalentView</span>
+            </div>
+          </div>
+          <div class="workflow-arrow">→</div>
+
+          <div class="workflow-step override-step">
+            <div class="step-number">5</div>
+            <div class="step-content">
+              <div class="step-title">Handle Overrides</div>
+              <div class="step-description">See override alerts, adapt commentary</div>
+              <span class="screen-badge talent">TalentView</span>
+              <span class="state-ref">override-active</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Viewer Workflow (simplified) -->
+  <div class="card workflow-card">
+    <div class="card-header">
+      <div class="card-title">Viewer Experience</div>
+      <span class="role-badge output">Output</span>
+    </div>
+
+    <div class="workflow-phases">
+      <div class="workflow-phase">
+        <div class="phase-header">
+          <span class="phase-label">Phase 1</span>
+          <span class="phase-name">Watching Stream</span>
+          <span class="phase-timing">During competition</span>
+        </div>
+
+        <div class="workflow-steps viewer-steps">
+          <div class="workflow-step">
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <div class="step-title">Full-Screen Video</div>
+              <div class="step-description">Live camera or clip playback</div>
+              <span class="screen-badge output">output.html</span>
+            </div>
+          </div>
+          <div class="workflow-arrow">→</div>
+
+          <div class="workflow-step">
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <div class="step-title">Graphic Overlay</div>
+              <div class="step-description">Score bug, athlete info, team graphics</div>
+              <span class="screen-badge output">output.html</span>
+            </div>
+          </div>
+          <div class="workflow-arrow">→</div>
+
+          <div class="workflow-step">
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <div class="step-title">Score Reveal</div>
+              <div class="step-description">Animated score display after routine</div>
+              <span class="screen-badge output">output.html</span>
+            </div>
+          </div>
+          <div class="workflow-arrow">→</div>
+
+          <div class="workflow-step">
+            <div class="step-number">4</div>
+            <div class="step-content">
+              <div class="step-title">Transitions</div>
+              <div class="step-description">Smooth crossfade between clips/cameras</div>
+              <span class="screen-badge output">output.html</span>
+              <span class="state-ref">crossfading</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="workflow-legend">
+    <div class="legend-title">Legend</div>
+    <div class="legend-items">
+      <div class="legend-item">
+        <span class="screen-badge producer">Screen</span>
+        <span class="legend-label">ProducerView screens</span>
+      </div>
+      <div class="legend-item">
+        <span class="screen-badge talent">Screen</span>
+        <span class="legend-label">TalentView screens</span>
+      </div>
+      <div class="legend-item">
+        <span class="screen-badge rundown">Screen</span>
+        <span class="legend-label">Rundown Editor screens</span>
+      </div>
+      <div class="legend-item">
+        <span class="screen-badge output">Screen</span>
+        <span class="legend-label">Broadcast output</span>
+      </div>
+      <div class="legend-item">
+        <span class="state-ref">→ state</span>
+        <span class="legend-label">State machine transition</span>
+      </div>
+      <div class="legend-item">
+        <div class="workflow-step override-step mini">
+          <div class="step-number">N</div>
+        </div>
+        <span class="legend-label">Override action</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .section-flows {
+    padding: var(--space-lg);
+    max-width: 1200px;
+  }
+
+  .section-intro {
+    color: var(--text-secondary);
+    margin-bottom: var(--space-xl);
+    font-size: var(--font-size-lg);
+  }
+
+  .workflow-card {
+    margin-bottom: var(--space-xl);
+  }
+
+  .workflow-phases {
+    padding: var(--space-md);
+  }
+
+  .workflow-phase {
+    margin-bottom: var(--space-xl);
+  }
+
+  .workflow-phase:last-child {
+    margin-bottom: 0;
+  }
+
+  .phase-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    margin-bottom: var(--space-md);
+    padding-bottom: var(--space-sm);
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .phase-label {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--border-radius);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .phase-name {
+    color: var(--text-primary);
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+  }
+
+  .phase-timing {
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+    font-style: italic;
+    margin-left: auto;
+  }
+
+  .workflow-steps {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--space-sm);
+  }
+
+  .workflow-step {
+    display: flex;
+    gap: var(--space-sm);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: var(--space-md);
+    min-width: 180px;
+    max-width: 220px;
+  }
+
+  .workflow-step.override-step {
+    border-color: var(--color-override);
+    box-shadow: 0 0 0 1px var(--color-override);
+  }
+
+  .workflow-step.mini {
+    min-width: auto;
+    max-width: auto;
+    padding: var(--space-xs) var(--space-sm);
+  }
+
+  .step-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border-radius: 50%;
+    font-weight: 700;
+    font-size: var(--font-size-sm);
+  }
+
+  .override-step .step-number {
+    background: var(--color-override);
+    color: white;
+  }
+
+  .step-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+  }
+
+  .step-title {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: var(--font-size-base);
+  }
+
+  .step-description {
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    line-height: 1.4;
+  }
+
+  .screen-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .screen-badge.producer {
+    background: color-mix(in srgb, var(--color-producer) 20%, transparent);
+    color: var(--color-producer);
+  }
+
+  .screen-badge.talent {
+    background: color-mix(in srgb, var(--color-talent) 20%, transparent);
+    color: var(--color-talent);
+  }
+
+  .screen-badge.rundown {
+    background: color-mix(in srgb, var(--color-rundown) 20%, transparent);
+    color: var(--color-rundown);
+  }
+
+  .screen-badge.output {
+    background: color-mix(in srgb, var(--color-output) 20%, transparent);
+    color: var(--color-output);
+  }
+
+  .state-ref {
+    display: inline-block;
+    color: var(--text-muted);
+    font-size: 10px;
+    font-family: var(--font-mono);
+    background: var(--bg-primary);
+    padding: 2px 4px;
+    border-radius: 3px;
+  }
+
+  .workflow-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: var(--font-size-xl);
+    padding: var(--space-sm);
+  }
+
+  .viewer-steps .workflow-step {
+    min-width: 160px;
+    max-width: 180px;
+  }
+
+  .workflow-legend {
+    margin-top: var(--space-xl);
+    padding: var(--space-md);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+  }
+
+  .legend-title {
+    color: var(--text-primary);
+    font-weight: 600;
+    margin-bottom: var(--space-md);
+    font-size: var(--font-size-base);
+  }
+
+  .legend-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-lg);
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+  }
+
+  .legend-label {
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+  }
+</style>
