@@ -1,5 +1,6 @@
 <!-- Producer View — Live Playout Dashboard -->
 <!-- Task 1.1: Playout Status Bar -->
+<!-- Task 1.2: Camera Status Panel -->
 
 <style>
   /* === Playout Status Bar === */
@@ -349,6 +350,268 @@
     margin-right: 8px;
     align-self: center;
   }
+
+  /* === Camera Status Panel === */
+  .camera-panel {
+    background: var(--bg-secondary, #18181b);
+    border: 1px solid var(--border-color, #3f3f46);
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 16px;
+  }
+
+  .camera-panel__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .camera-panel__title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary, #e4e4e7);
+  }
+
+  .camera-panel__subtitle {
+    font-size: 11px;
+    color: var(--text-muted, #71717a);
+  }
+
+  /* Camera Grid */
+  .camera-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+
+  .camera-grid--mens {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  /* Camera Card */
+  .camera-card {
+    background: var(--bg-tertiary, #27272a);
+    border: 1px solid var(--border-color, #3f3f46);
+    border-radius: 6px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: all 150ms;
+  }
+
+  .camera-card:hover {
+    border-color: var(--text-muted, #71717a);
+  }
+
+  .camera-card--live {
+    border-color: var(--clip-status-error, #ef4444);
+    background: rgba(239, 68, 68, 0.05);
+  }
+
+  .camera-card--recording {
+    border-color: var(--clip-status-success, #22c55e);
+    background: rgba(34, 197, 94, 0.05);
+  }
+
+  .camera-card--recording-live {
+    border-color: var(--clip-status-error, #ef4444);
+    background: rgba(239, 68, 68, 0.08);
+    box-shadow: inset 0 0 0 2px rgba(34, 197, 94, 0.3);
+  }
+
+  .camera-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .camera-card__info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .camera-card__apparatus {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary, #e4e4e7);
+  }
+
+  .camera-card__name {
+    font-size: 11px;
+    color: var(--text-secondary, #a1a1aa);
+  }
+
+  /* Camera State Indicator */
+  .camera-state {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .camera-state__dot {
+    position: relative;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .camera-state__dot--idle {
+    background: var(--text-muted, #71717a);
+  }
+
+  .camera-state__dot--recording {
+    background: var(--clip-status-success, #22c55e);
+    box-shadow: 0 0 6px rgba(34, 197, 94, 0.5);
+    animation: pulse-recording 1.5s ease-in-out infinite;
+  }
+
+  .camera-state__dot--live {
+    background: var(--clip-status-error, #ef4444);
+    box-shadow: 0 0 6px rgba(239, 68, 68, 0.5);
+    animation: pulse-live 1s ease-in-out infinite;
+  }
+
+  .camera-state__dot--recording-live {
+    background: var(--clip-status-error, #ef4444);
+    box-shadow: 0 0 6px rgba(239, 68, 68, 0.5);
+    animation: pulse-live 1s ease-in-out infinite;
+  }
+
+  .camera-state__dot--recording-live::after {
+    content: '';
+    position: absolute;
+    top: -3px;
+    left: -3px;
+    right: -3px;
+    bottom: -3px;
+    border: 2px solid var(--clip-status-success, #22c55e);
+    border-radius: 50%;
+    animation: ring-pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse-recording {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+
+  @keyframes pulse-live {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.8; transform: scale(1.1); }
+  }
+
+  @keyframes ring-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .camera-state__label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .camera-state__label--idle {
+    color: var(--text-muted, #71717a);
+  }
+
+  .camera-state__label--recording {
+    color: var(--clip-status-success, #22c55e);
+  }
+
+  .camera-state__label--live {
+    color: var(--clip-status-error, #ef4444);
+  }
+
+  .camera-state__label--recording-live {
+    color: var(--clip-status-error, #ef4444);
+  }
+
+  /* Camera Timer */
+  .camera-timer {
+    font-size: 12px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary, #e4e4e7);
+    margin-top: auto;
+  }
+
+  .camera-timer--hidden {
+    visibility: hidden;
+  }
+
+  /* Force Camera Button */
+  .force-camera-btn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 6px 10px;
+    font-size: 11px;
+    font-weight: 500;
+    border-radius: 4px;
+    background: var(--bg-secondary, #18181b);
+    color: var(--text-secondary, #a1a1aa);
+    border: 1px solid var(--border-color, #3f3f46);
+    cursor: pointer;
+    transition: all 150ms;
+  }
+
+  .force-camera-btn:hover {
+    background: var(--bg-tertiary, #27272a);
+    color: var(--text-primary, #e4e4e7);
+    border-color: var(--text-muted, #71717a);
+  }
+
+  .force-camera-btn:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+
+  .force-camera-btn--active {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+    border-color: var(--clip-status-error, #ef4444);
+    cursor: default;
+  }
+
+  .force-camera-btn--active:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+  }
+
+  .force-camera-btn__recording-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--clip-status-success, #22c55e);
+    flex-shrink: 0;
+  }
+
+  .force-camera-btn__shortcut {
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--text-muted, #71717a);
+    background: var(--bg-tertiary, #27272a);
+    padding: 1px 4px;
+    border-radius: 2px;
+    margin-left: 4px;
+  }
+
+  /* Demo Camera State Switcher */
+  .demo-camera-switcher {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color, #3f3f46);
+  }
 </style>
 
 <div class="playout-status-bar playout-status-bar--autonomous" id="playoutStatusBar">
@@ -432,6 +695,103 @@
     <button class="demo-state-btn" data-health="healthy">Healthy</button>
     <button class="demo-state-btn" data-health="slow">Slow</button>
     <button class="demo-state-btn" data-health="offline">Offline</button>
+  </div>
+</div>
+
+<!-- Camera Status Panel -->
+<div class="camera-panel" id="cameraPanel">
+  <div class="camera-panel__header">
+    <div class="camera-panel__title">CAMERAS</div>
+    <div class="camera-panel__subtitle">Women's Tri-Meet · 4 cameras</div>
+  </div>
+
+  <div class="camera-grid" id="cameraGrid">
+    <!-- Camera 1: VT -->
+    <div class="camera-card" id="camera1" data-camera="1">
+      <div class="camera-card__header">
+        <div class="camera-card__info">
+          <span class="camera-card__apparatus apparatus-badge apparatus-badge--vt">VT</span>
+          <span class="camera-card__name">Camera 1</span>
+        </div>
+        <div class="camera-state" id="cameraState1">
+          <span class="camera-state__dot camera-state__dot--idle"></span>
+          <span class="camera-state__label camera-state__label--idle">Idle</span>
+        </div>
+      </div>
+      <div class="camera-timer camera-timer--hidden" id="cameraTimer1">0:00</div>
+      <button class="force-camera-btn" id="forceBtn1" aria-label="Force Camera 1 (Vault)" title="Force Camera 1 (Vault)">
+        Force
+        <span class="force-camera-btn__shortcut">1</span>
+      </button>
+    </div>
+
+    <!-- Camera 2: UB -->
+    <div class="camera-card camera-card--recording" id="camera2" data-camera="2">
+      <div class="camera-card__header">
+        <div class="camera-card__info">
+          <span class="camera-card__apparatus apparatus-badge apparatus-badge--ub">UB</span>
+          <span class="camera-card__name">Camera 2</span>
+        </div>
+        <div class="camera-state" id="cameraState2">
+          <span class="camera-state__dot camera-state__dot--recording"></span>
+          <span class="camera-state__label camera-state__label--recording">Recording</span>
+        </div>
+      </div>
+      <div class="camera-timer" id="cameraTimer2">1:23</div>
+      <button class="force-camera-btn" id="forceBtn2" aria-label="Force Camera 2 (Uneven Bars) - Recording" title="Force Camera 2 (Uneven Bars) - Recording">
+        <span class="force-camera-btn__recording-dot"></span>
+        Force
+        <span class="force-camera-btn__shortcut">2</span>
+      </button>
+    </div>
+
+    <!-- Camera 3: BB (LIVE) -->
+    <div class="camera-card camera-card--live" id="camera3" data-camera="3">
+      <div class="camera-card__header">
+        <div class="camera-card__info">
+          <span class="camera-card__apparatus apparatus-badge apparatus-badge--bb">BB</span>
+          <span class="camera-card__name">Camera 3</span>
+        </div>
+        <div class="camera-state" id="cameraState3">
+          <span class="camera-state__dot camera-state__dot--live"></span>
+          <span class="camera-state__label camera-state__label--live">LIVE</span>
+        </div>
+      </div>
+      <div class="camera-timer" id="cameraTimer3">0:45</div>
+      <button class="force-camera-btn force-camera-btn--active" id="forceBtn3" aria-label="Camera 3 (Balance Beam) - Currently Live" title="Camera 3 (Balance Beam) - Currently Live">
+        Active
+        <span class="force-camera-btn__shortcut">3</span>
+      </button>
+    </div>
+
+    <!-- Camera 4: FX -->
+    <div class="camera-card" id="camera4" data-camera="4">
+      <div class="camera-card__header">
+        <div class="camera-card__info">
+          <span class="camera-card__apparatus apparatus-badge apparatus-badge--fx">FX</span>
+          <span class="camera-card__name">Camera 4</span>
+        </div>
+        <div class="camera-state" id="cameraState4">
+          <span class="camera-state__dot camera-state__dot--idle"></span>
+          <span class="camera-state__label camera-state__label--idle">Idle</span>
+        </div>
+      </div>
+      <div class="camera-timer camera-timer--hidden" id="cameraTimer4">0:00</div>
+      <button class="force-camera-btn" id="forceBtn4" aria-label="Force Camera 4 (Floor Exercise)" title="Force Camera 4 (Floor Exercise)">
+        Force
+        <span class="force-camera-btn__shortcut">4</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Demo Camera State Switcher -->
+  <div class="demo-camera-switcher">
+    <span class="demo-label">Demo Camera States:</span>
+    <button class="demo-state-btn" data-camera-demo="idle">All Idle</button>
+    <button class="demo-state-btn" data-camera-demo="recording">Show Recording</button>
+    <button class="demo-state-btn" data-camera-demo="live">Show Live</button>
+    <button class="demo-state-btn demo-state-btn--active" data-camera-demo="mixed">Mixed</button>
+    <button class="demo-state-btn" data-camera-demo="recording-live">Recording+Live</button>
   </div>
 </div>
 
@@ -590,5 +950,204 @@
       `;
     }
   }, 4000);
+
+  // ========================================
+  // Camera Status Panel Interactivity
+  // ========================================
+
+  const cameraStates = {
+    idle: {
+      cardClass: '',
+      dotClass: 'camera-state__dot--idle',
+      labelClass: 'camera-state__label--idle',
+      label: 'Idle',
+      showTimer: false,
+      btnClass: '',
+      btnLabel: 'Force',
+      showRecordingDot: false
+    },
+    recording: {
+      cardClass: 'camera-card--recording',
+      dotClass: 'camera-state__dot--recording',
+      labelClass: 'camera-state__label--recording',
+      label: 'Recording',
+      showTimer: true,
+      btnClass: '',
+      btnLabel: 'Force',
+      showRecordingDot: true
+    },
+    live: {
+      cardClass: 'camera-card--live',
+      dotClass: 'camera-state__dot--live',
+      labelClass: 'camera-state__label--live',
+      label: 'LIVE',
+      showTimer: true,
+      btnClass: 'force-camera-btn--active',
+      btnLabel: 'Active',
+      showRecordingDot: false
+    },
+    'recording-live': {
+      cardClass: 'camera-card--recording-live',
+      dotClass: 'camera-state__dot--recording-live',
+      labelClass: 'camera-state__label--recording-live',
+      label: 'REC+LIVE',
+      showTimer: true,
+      btnClass: 'force-camera-btn--active',
+      btnLabel: 'Active',
+      showRecordingDot: true
+    }
+  };
+
+  const apparatusNames = {
+    1: 'Vault',
+    2: 'Uneven Bars',
+    3: 'Balance Beam',
+    4: 'Floor Exercise',
+    5: 'Pommel Horse',
+    6: 'High Bar'
+  };
+
+  // Timer values for each camera (in seconds, for demo)
+  const cameraTimers = {
+    1: 0,
+    2: 83, // 1:23
+    3: 45, // 0:45
+    4: 0
+  };
+
+  // Current state for each camera
+  const currentCameraStates = {
+    1: 'idle',
+    2: 'recording',
+    3: 'live',
+    4: 'idle'
+  };
+
+  function formatTime(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  }
+
+  function updateCameraState(cameraNum, state) {
+    const config = cameraStates[state];
+    if (!config) return;
+
+    const card = document.getElementById(`camera${cameraNum}`);
+    const stateEl = document.getElementById(`cameraState${cameraNum}`);
+    const timer = document.getElementById(`cameraTimer${cameraNum}`);
+    const btn = document.getElementById(`forceBtn${cameraNum}`);
+
+    if (!card) return;
+
+    // Update card class
+    card.className = 'camera-card ' + config.cardClass;
+
+    // Update state indicator
+    stateEl.innerHTML = `
+      <span class="camera-state__dot ${config.dotClass}"></span>
+      <span class="camera-state__label ${config.labelClass}">${config.label}</span>
+    `;
+
+    // Update timer visibility
+    if (config.showTimer) {
+      timer.classList.remove('camera-timer--hidden');
+    } else {
+      timer.classList.add('camera-timer--hidden');
+    }
+
+    // Update button
+    btn.className = 'force-camera-btn ' + config.btnClass;
+    const apparatusName = apparatusNames[cameraNum] || `Camera ${cameraNum}`;
+    const stateNote = state === 'recording' ? ' - Recording' : (state === 'live' || state === 'recording-live' ? ' - Currently Live' : '');
+    btn.setAttribute('aria-label', `${state === 'live' || state === 'recording-live' ? 'Camera' : 'Force Camera'} ${cameraNum} (${apparatusName})${stateNote}`);
+    btn.setAttribute('title', `${state === 'live' || state === 'recording-live' ? 'Camera' : 'Force Camera'} ${cameraNum} (${apparatusName})${stateNote}`);
+
+    btn.innerHTML = `
+      ${config.showRecordingDot ? '<span class="force-camera-btn__recording-dot"></span>' : ''}
+      ${config.btnLabel}
+      <span class="force-camera-btn__shortcut">${cameraNum}</span>
+    `;
+
+    currentCameraStates[cameraNum] = state;
+  }
+
+  function setAllCameraStates(stateConfig) {
+    Object.keys(stateConfig).forEach(num => {
+      updateCameraState(parseInt(num), stateConfig[num]);
+      // Reset or set timers
+      if (stateConfig[num] === 'idle') {
+        cameraTimers[num] = 0;
+      } else if (!cameraTimers[num]) {
+        cameraTimers[num] = Math.floor(Math.random() * 120);
+      }
+      const timer = document.getElementById(`cameraTimer${num}`);
+      if (timer) timer.textContent = formatTime(cameraTimers[num]);
+    });
+  }
+
+  // Demo camera state presets
+  const cameraDemoPresets = {
+    'idle': { 1: 'idle', 2: 'idle', 3: 'idle', 4: 'idle' },
+    'recording': { 1: 'idle', 2: 'recording', 3: 'idle', 4: 'recording' },
+    'live': { 1: 'idle', 2: 'idle', 3: 'live', 4: 'idle' },
+    'mixed': { 1: 'idle', 2: 'recording', 3: 'live', 4: 'idle' },
+    'recording-live': { 1: 'idle', 2: 'recording', 3: 'recording-live', 4: 'recording' }
+  };
+
+  // Handle demo button clicks
+  const cameraDemoButtons = document.querySelectorAll('[data-camera-demo]');
+  cameraDemoButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const preset = btn.dataset.cameraDemo;
+      if (cameraDemoPresets[preset]) {
+        setAllCameraStates(cameraDemoPresets[preset]);
+
+        // Update active button state
+        cameraDemoButtons.forEach(b => b.classList.remove('demo-state-btn--active'));
+        btn.classList.add('demo-state-btn--active');
+      }
+    });
+  });
+
+  // Handle Force Camera button clicks
+  const forceButtons = document.querySelectorAll('.force-camera-btn');
+  forceButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const cameraNum = parseInt(btn.id.replace('forceBtn', ''));
+      const currentState = currentCameraStates[cameraNum];
+
+      // If clicking on a non-live camera, make it live and make others not-live
+      if (currentState !== 'live' && currentState !== 'recording-live') {
+        Object.keys(currentCameraStates).forEach(num => {
+          const numInt = parseInt(num);
+          if (numInt === cameraNum) {
+            // This camera becomes live (or recording-live if it was recording)
+            updateCameraState(numInt, currentState === 'recording' ? 'recording-live' : 'live');
+          } else {
+            // Other cameras lose their live state
+            const otherState = currentCameraStates[numInt];
+            if (otherState === 'live') {
+              updateCameraState(numInt, 'idle');
+            } else if (otherState === 'recording-live') {
+              updateCameraState(numInt, 'recording');
+            }
+          }
+        });
+      }
+    });
+  });
+
+  // Timer update simulation
+  setInterval(() => {
+    Object.keys(currentCameraStates).forEach(num => {
+      const state = currentCameraStates[num];
+      if (state === 'recording' || state === 'live' || state === 'recording-live') {
+        cameraTimers[num] = (cameraTimers[num] || 0) + 1;
+        const timer = document.getElementById(`cameraTimer${num}`);
+        if (timer) timer.textContent = formatTime(cameraTimers[num]);
+      }
+    });
+  }, 1000);
 })();
 </script>
