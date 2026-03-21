@@ -326,6 +326,286 @@
   color: white;
   border-color: #3b82f6;
 }
+
+/* === Talking Points Section === */
+.talking-points {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.talking-points__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.talking-points__title {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.talking-points__source {
+  font-size: 10px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.talking-points__source-icon {
+  font-size: 12px;
+}
+
+.talking-points__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.talking-points__item {
+  font-size: 14px;
+  color: var(--text-primary);
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-color);
+  padding-left: 16px;
+  position: relative;
+  line-height: 1.4;
+}
+
+.talking-points__item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.talking-points__item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 14px;
+  width: 6px;
+  height: 6px;
+  background: var(--text-muted);
+  border-radius: 50%;
+}
+
+.talking-points__item--highlight::before {
+  background: #f59e0b;
+}
+
+.talking-points__stat {
+  font-weight: 600;
+  color: var(--clip-mode-clip-text);
+}
+
+/* === UP NEXT Section === */
+.up-next {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.up-next__header {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  margin: 0 0 12px 0;
+}
+
+.up-next__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.up-next__item {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.up-next__position {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  min-width: 20px;
+}
+
+.up-next__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.up-next__name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin: 0 0 2px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.up-next__meta {
+  font-size: 11px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.up-next__score {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.up-next__score--pending {
+  color: var(--text-muted);
+  font-weight: 400;
+  font-style: italic;
+}
+
+/* === Flag Moment Button === */
+.flag-moment-container {
+  margin-bottom: 16px;
+}
+
+.flag-moment-btn {
+  width: 100%;
+  padding: 16px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 150ms;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #3b82f6;
+  color: white;
+}
+
+.flag-moment-btn:hover:not(:disabled) {
+  background: #2563eb;
+  transform: scale(1.02);
+}
+
+.flag-moment-btn:focus-visible {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+}
+
+.flag-moment-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.flag-moment-btn:disabled {
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  cursor: not-allowed;
+  border-color: var(--border-color);
+}
+
+.flag-moment-btn__icon {
+  font-size: 20px;
+}
+
+.flag-moment-btn__shortcut {
+  font-size: 11px;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 8px;
+}
+
+.flag-moment-btn:disabled .flag-moment-btn__shortcut {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Tooltip */
+.tooltip-wrapper {
+  position: relative;
+}
+
+.tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 150ms;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-color);
+  z-index: 10;
+}
+
+.tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--bg-tertiary);
+}
+
+.tooltip-wrapper:hover .tooltip,
+.flag-moment-btn:disabled:hover + .tooltip,
+.tooltip-wrapper:focus-within .tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Flag success feedback */
+.flag-moment-btn--flagged {
+  background: var(--clip-mode-clip-bg);
+  border-color: var(--clip-mode-clip-border);
+  color: var(--clip-mode-clip-text);
+}
+
+.flag-moment-btn--flagged:hover:not(:disabled) {
+  background: rgba(34, 197, 94, 0.3);
+}
+
+/* === Empty state for no clips === */
+.up-next--empty {
+  text-align: center;
+  padding: 24px 16px;
+}
+
+.up-next--empty .up-next__list {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-style: italic;
+}
 </style>
 
 <section class="talent-view" id="talentView">
@@ -388,6 +668,88 @@
     <p class="mode-message__subtitle">Waiting for next clip...</p>
   </div>
 
+  <!-- Talking Points Section -->
+  <section class="talking-points" id="talkingPoints" role="region" aria-labelledby="talkingPointsTitle">
+    <div class="talking-points__header">
+      <h3 class="talking-points__title" id="talkingPointsTitle">Talking Points</h3>
+      <span class="talking-points__source">
+        <span class="talking-points__source-icon">&#9733;</span>
+        AI + RTN Stats
+      </span>
+    </div>
+    <ul class="talking-points__list" id="talkingPointsList">
+      <li class="talking-points__item talking-points__item--highlight">
+        Season high on bars is <span class="talking-points__stat">9.925</span> (vs. Stanford, Feb 15)
+      </li>
+      <li class="talking-points__item">
+        Leads Yale in bars average at <span class="talking-points__stat">9.856</span> this season
+      </li>
+      <li class="talking-points__item">
+        Qualified for NCAA Regionals in 2024 as an individual
+      </li>
+      <li class="talking-points__item">
+        Junior from Woodlands, TX — club background at World Olympic Gymnastics Academy
+      </li>
+    </ul>
+  </section>
+
+  <!-- UP NEXT Section -->
+  <section class="up-next" id="upNext" role="region" aria-labelledby="upNextTitle">
+    <h3 class="up-next__header" id="upNextTitle">Up Next</h3>
+    <div class="up-next__list" id="upNextList">
+      <div class="up-next__item">
+        <span class="up-next__position">1</span>
+        <div class="up-next__info">
+          <p class="up-next__name">Ellie Kearns</p>
+          <div class="up-next__meta">
+            <span class="clip-badge clip-badge-apparatus clip-badge-ub">UB</span>
+            <span>Yale</span>
+          </div>
+        </div>
+        <span class="up-next__score">9.850</span>
+      </div>
+      <div class="up-next__item">
+        <span class="up-next__position">2</span>
+        <div class="up-next__info">
+          <p class="up-next__name">Raena Worley</p>
+          <div class="up-next__meta">
+            <span class="clip-badge clip-badge-apparatus clip-badge-vt">VT</span>
+            <span>Kentucky</span>
+          </div>
+        </div>
+        <span class="up-next__score up-next__score--pending">pending</span>
+      </div>
+      <div class="up-next__item">
+        <span class="up-next__position">3</span>
+        <div class="up-next__info">
+          <p class="up-next__name">Sunisa Lee</p>
+          <div class="up-next__meta">
+            <span class="clip-badge clip-badge-apparatus clip-badge-bb">BB</span>
+            <span>Auburn</span>
+          </div>
+        </div>
+        <span class="up-next__score">9.950</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Flag Moment Button -->
+  <div class="flag-moment-container tooltip-wrapper" id="flagMomentContainer">
+    <button
+      type="button"
+      class="flag-moment-btn"
+      id="flagMomentBtn"
+      aria-label="Flag this moment for replay"
+    >
+      <span class="flag-moment-btn__icon">&#9873;</span>
+      <span>Flag Moment</span>
+      <span class="flag-moment-btn__shortcut">F</span>
+    </button>
+    <div class="tooltip" id="flagMomentTooltip" role="tooltip">
+      Available during clip playback
+    </div>
+  </div>
+
   <!-- Demo mode switcher -->
   <div class="demo-controls">
     <div class="demo-controls__label">Demo Mode</div>
@@ -406,23 +768,49 @@
   const state = {
     mode: 'clip',
     scorePending: false,
+    flagged: false,
     data: {
       clip: {
         athleteName: 'Hailey Kriz',
         apparatus: 'UB',
         apparatusName: 'Uneven Bars',
         team: 'Yale University',
-        score: 9.875
+        score: 9.875,
+        talkingPoints: [
+          { text: 'Season high on bars is <span class="talking-points__stat">9.925</span> (vs. Stanford, Feb 15)', highlight: true },
+          { text: 'Leads Yale in bars average at <span class="talking-points__stat">9.856</span> this season', highlight: false },
+          { text: 'Qualified for NCAA Regionals in 2024 as an individual', highlight: false },
+          { text: 'Junior from Woodlands, TX — club background at World Olympic Gymnastics Academy', highlight: false }
+        ]
       },
       live: {
         camera: 2,
-        apparatus: 'Uneven Bars'
+        apparatus: 'Uneven Bars',
+        team: 'Yale',
+        talkingPoints: [
+          { text: 'Yale leads the meet <span class="talking-points__stat">98.125 - 97.850</span> after 2 rotations', highlight: true },
+          { text: 'Third rotation: Yale on bars, Kentucky on beam', highlight: false },
+          { text: 'Hailey Kriz anchors for Yale on bars', highlight: false }
+        ]
       },
       replay: {
         athleteName: 'Hailey Kriz',
         moment: 'Pak salto release',
         speed: '0.5x'
-      }
+      },
+      fallback: {
+        nextClip: 'Ellie Kearns · Bars · Yale',
+        rotationSummary: 'R3: Yale 49.325 · Kentucky 49.175',
+        talkingPoints: [
+          { text: 'Kentucky trails by <span class="talking-points__stat">0.15</span> heading into rotation 3', highlight: true },
+          { text: 'Next rotation: Beam for Yale, Bars for Kentucky', highlight: false }
+        ]
+      },
+      upNext: [
+        { name: 'Ellie Kearns', apparatus: 'UB', team: 'Yale', score: 9.850 },
+        { name: 'Raena Worley', apparatus: 'VT', team: 'Kentucky', score: null },
+        { name: 'Sunisa Lee', apparatus: 'BB', team: 'Auburn', score: 9.950 }
+      ]
     }
   };
 
@@ -434,12 +822,120 @@
     scoreHint: document.getElementById('scoreHint'),
     liveMessage: document.getElementById('liveMessage'),
     replayMessage: document.getElementById('replayMessage'),
-    fallbackMessage: document.getElementById('fallbackMessage')
+    fallbackMessage: document.getElementById('fallbackMessage'),
+    talkingPoints: document.getElementById('talkingPoints'),
+    talkingPointsList: document.getElementById('talkingPointsList'),
+    upNext: document.getElementById('upNext'),
+    upNextList: document.getElementById('upNextList'),
+    flagMomentBtn: document.getElementById('flagMomentBtn'),
+    flagMomentTooltip: document.getElementById('flagMomentTooltip')
   };
+
+  function renderTalkingPoints(points) {
+    if (!points || points.length === 0) {
+      elements.talkingPointsList.innerHTML = '<li class="talking-points__item" style="font-style: italic; color: var(--text-muted);">No talking points available</li>';
+      return;
+    }
+
+    elements.talkingPointsList.innerHTML = points.map(point =>
+      `<li class="talking-points__item${point.highlight ? ' talking-points__item--highlight' : ''}">${point.text}</li>`
+    ).join('');
+  }
+
+  function renderUpNext(items, mode) {
+    if (mode === 'fallback' && (!items || items.length === 0)) {
+      elements.upNextList.innerHTML = '<span style="color: var(--text-muted); font-style: italic;">Waiting for clips...</span>';
+      return;
+    }
+
+    if (!items || items.length === 0) {
+      elements.upNextList.innerHTML = '<span style="color: var(--text-muted); font-style: italic;">No upcoming clips</span>';
+      return;
+    }
+
+    elements.upNextList.innerHTML = items.slice(0, 3).map((item, index) => {
+      const apparatusClass = `clip-badge-${item.apparatus.toLowerCase()}`;
+      const scoreDisplay = item.score
+        ? `<span class="up-next__score">${item.score.toFixed(3)}</span>`
+        : `<span class="up-next__score up-next__score--pending">pending</span>`;
+
+      return `
+        <div class="up-next__item">
+          <span class="up-next__position">${index + 1}</span>
+          <div class="up-next__info">
+            <p class="up-next__name">${item.name}</p>
+            <div class="up-next__meta">
+              <span class="clip-badge clip-badge-apparatus ${apparatusClass}">${item.apparatus}</span>
+              <span>${item.team}</span>
+            </div>
+          </div>
+          ${scoreDisplay}
+        </div>
+      `;
+    }).join('');
+  }
+
+  function updateFlagButton(mode) {
+    const btn = elements.flagMomentBtn;
+    const tooltip = elements.flagMomentTooltip;
+
+    // Flag is only enabled during CLIP mode
+    const isEnabled = mode === 'clip';
+    btn.disabled = !isEnabled;
+
+    if (state.flagged && isEnabled) {
+      btn.className = 'flag-moment-btn flag-moment-btn--flagged';
+      btn.innerHTML = `
+        <span class="flag-moment-btn__icon">&#10003;</span>
+        <span>Moment Flagged</span>
+        <span class="flag-moment-btn__shortcut">F</span>
+      `;
+      tooltip.textContent = 'Moment sent to producer for replay';
+    } else if (isEnabled) {
+      btn.className = 'flag-moment-btn';
+      btn.innerHTML = `
+        <span class="flag-moment-btn__icon">&#9873;</span>
+        <span>Flag Moment</span>
+        <span class="flag-moment-btn__shortcut">F</span>
+      `;
+      tooltip.textContent = 'Press to mark this moment for replay';
+    } else {
+      btn.className = 'flag-moment-btn';
+      btn.innerHTML = `
+        <span class="flag-moment-btn__icon">&#9873;</span>
+        <span>Flag Moment</span>
+        <span class="flag-moment-btn__shortcut">F</span>
+      `;
+
+      // Mode-specific tooltip messages
+      const tooltipMessages = {
+        live: 'Available during clip playback',
+        replay: 'Cannot flag during replay — this is already a flagged moment',
+        fallback: 'Available during clip playback'
+      };
+      tooltip.textContent = tooltipMessages[mode] || 'Available during clip playback';
+    }
+
+    btn.setAttribute('aria-label', isEnabled ? 'Flag this moment for replay' : 'Flag moment (disabled)');
+  }
+
+  function handleFlagMoment() {
+    if (state.mode !== 'clip') return;
+
+    state.flagged = true;
+    updateFlagButton(state.mode);
+
+    // Reset after 3 seconds
+    setTimeout(() => {
+      state.flagged = false;
+      updateFlagButton(state.mode);
+    }, 3000);
+  }
 
   function updateMode(mode, scorePending = false) {
     state.mode = mode;
     state.scorePending = scorePending;
+    state.flagged = false;
 
     // Update badge
     const badgeClasses = {
@@ -480,6 +976,29 @@
       elements.scoreHint.textContent = 'Shown to viewers at ~60% of clip';
     }
 
+    // Update talking points based on mode
+    const talkingPointsMap = {
+      clip: state.data.clip.talkingPoints,
+      live: state.data.live.talkingPoints,
+      replay: state.data.clip.talkingPoints, // Same athlete context
+      fallback: state.data.fallback.talkingPoints
+    };
+    renderTalkingPoints(talkingPointsMap[mode]);
+
+    // Show/hide talking points section (always visible, content changes)
+    elements.talkingPoints.style.display = 'block';
+
+    // Update up next section
+    if (mode === 'fallback') {
+      // Show next clip info in fallback mode
+      renderUpNext(state.data.upNext, mode);
+    } else {
+      renderUpNext(state.data.upNext, mode);
+    }
+
+    // Update flag button
+    updateFlagButton(mode);
+
     // Update demo button states
     document.querySelectorAll('.demo-btn').forEach(btn => {
       btn.classList.toggle('demo-btn--active',
@@ -497,6 +1016,20 @@
         updateMode(mode, false);
       }
     });
+  });
+
+  // Flag moment button handler
+  elements.flagMomentBtn.addEventListener('click', handleFlagMoment);
+
+  // Keyboard shortcut for flagging (F key)
+  document.addEventListener('keydown', function(e) {
+    // Skip if in input/textarea
+    if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) return;
+
+    if (e.key === 'f' || e.key === 'F') {
+      e.preventDefault();
+      handleFlagMoment();
+    }
   });
 
   // Initialize
