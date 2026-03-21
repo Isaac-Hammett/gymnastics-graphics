@@ -688,6 +688,131 @@
     outline: 2px solid #3b82f6;
     outline-offset: 2px;
   }
+
+  /* Save Button */
+  .save-btn-container {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .save-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 150ms, opacity 150ms;
+  }
+
+  .save-btn:hover:not(:disabled) {
+    background: #2563eb;
+  }
+
+  .save-btn:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+
+  .save-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Validation Error States */
+  .validation-error {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #f87171;
+  }
+
+  .validation-error-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+
+  .list-empty-warning {
+    padding: 12px 16px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px dashed rgba(239, 68, 68, 0.4);
+    border-radius: 6px;
+    color: #f87171;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .list-empty-warning.hidden {
+    display: none;
+  }
+
+  /* Tooltip for disabled save button */
+  .save-btn-wrapper {
+    position: relative;
+    display: inline-flex;
+  }
+
+  .save-btn-tooltip {
+    visibility: hidden;
+    opacity: 0;
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    white-space: nowrap;
+    border: 1px solid var(--border-color);
+    margin-bottom: 6px;
+    z-index: 10;
+    transition: visibility 0ms 150ms, opacity 150ms;
+  }
+
+  .save-btn-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 5px;
+    border-style: solid;
+    border-color: var(--border-color) transparent transparent transparent;
+  }
+
+  .save-btn-wrapper:hover .save-btn-tooltip {
+    visibility: visible;
+    opacity: 1;
+    transition: visibility 0ms 0ms, opacity 150ms;
+  }
+
+  .save-btn-wrapper:not(.has-errors) .save-btn-tooltip {
+    display: none;
+  }
+
+  /* Segment validation state */
+  .segment-card--invalid {
+    border-color: rgba(239, 68, 68, 0.5);
+  }
+
+  .segment-card--invalid .segment-header {
+    border-bottom-color: rgba(239, 68, 68, 0.3);
+  }
 </style>
 
 <div class="rundown-editor">
@@ -861,6 +986,31 @@
     <div class="loop-toggle-row">
       <input type="checkbox" class="toggle-checkbox" id="loop-sequence" checked aria-label="Loop gap fill sequence">
       <label class="loop-toggle-label" for="loop-sequence">Loop sequence</label>
+    </div>
+
+    <!-- Empty List Warning -->
+    <div class="list-empty-warning hidden" id="gap-fill-empty-warning">
+      <svg class="validation-error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      At least one gap fill item is required for playout segments
+    </div>
+
+    <!-- Save Button -->
+    <div class="save-btn-container">
+      <div class="save-btn-wrapper" id="playout-save-wrapper">
+        <button class="save-btn" id="playout-save-btn" aria-label="Save playout rules">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+            <polyline points="7 3 7 8 15 8"></polyline>
+          </svg>
+          Save Changes
+        </button>
+        <span class="save-btn-tooltip">Add at least one gap fill item</span>
+      </div>
     </div>
   </div>
 
@@ -1105,11 +1255,84 @@
         </label>
       </div>
     </div>
+
+    <!-- Empty List Warning -->
+    <div class="list-empty-warning hidden" id="content-empty-warning">
+      <svg class="validation-error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      At least one content item is required for content sequence segments
+    </div>
+
+    <!-- Save Button -->
+    <div class="save-btn-container">
+      <div class="save-btn-wrapper" id="content-save-wrapper">
+        <button class="save-btn" id="content-save-btn" aria-label="Save content sequence">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+            <polyline points="7 3 7 8 15 8"></polyline>
+          </svg>
+          Save Changes
+        </button>
+        <span class="save-btn-tooltip">Add at least one content item</span>
+      </div>
+    </div>
   </div>
 </div>
 
 <script>
   (function() {
+    // === VALIDATION STATE ===
+    const playoutSegmentCard = document.querySelector('.segment-card--playout');
+    const contentSegmentCard = document.querySelector('.segment-card--content-sequence');
+    const gapFillEmptyWarning = document.getElementById('gap-fill-empty-warning');
+    const contentEmptyWarning = document.getElementById('content-empty-warning');
+    const playoutSaveBtn = document.getElementById('playout-save-btn');
+    const playoutSaveWrapper = document.getElementById('playout-save-wrapper');
+    const contentSaveBtn = document.getElementById('content-save-btn');
+    const contentSaveWrapper = document.getElementById('content-save-wrapper');
+
+    // Validate gap fill list (requires ≥1 item)
+    function validateGapFillList() {
+      const gapFillList = document.getElementById('gap-fill-list');
+      const items = gapFillList.querySelectorAll('.gap-fill-item');
+      const isValid = items.length >= 1;
+
+      // Update warning visibility
+      gapFillEmptyWarning.classList.toggle('hidden', isValid);
+
+      // Update save button state
+      playoutSaveBtn.disabled = !isValid;
+      playoutSaveWrapper.classList.toggle('has-errors', !isValid);
+
+      // Update segment card border
+      playoutSegmentCard.classList.toggle('segment-card--invalid', !isValid);
+
+      return isValid;
+    }
+
+    // Validate content sequence list (requires ≥1 item)
+    function validateContentList() {
+      const contentSequenceList = document.getElementById('content-sequence-list');
+      const items = contentSequenceList.querySelectorAll('.content-item');
+      const isValid = items.length >= 1;
+
+      // Update warning visibility
+      contentEmptyWarning.classList.toggle('hidden', isValid);
+
+      // Update save button state
+      contentSaveBtn.disabled = !isValid;
+      contentSaveWrapper.classList.toggle('has-errors', !isValid);
+
+      // Update segment card border
+      contentSegmentCard.classList.toggle('segment-card--invalid', !isValid);
+
+      return isValid;
+    }
+
     // Transition type toggle for crossfade duration
     const transitionSelect = document.getElementById('transition-type');
     const crossfadeRow = document.getElementById('crossfade-duration-row');
@@ -1135,8 +1358,11 @@
         item.querySelector('.gap-fill-order').textContent = (index + 1) + '.';
         item.dataset.index = index;
       });
+      // Validate after reorder
+      validateGapFillList();
     }
 
+    // New gap fill item defaults: graphicType: 'standings', duration: 15, background: true
     function createGapFillItem(index) {
       const div = document.createElement('div');
       div.className = 'gap-fill-item';
@@ -1144,6 +1370,7 @@
       div.setAttribute('draggable', 'true');
       div.dataset.index = index;
 
+      // Default values per PRD: standings, 15 sec, background: true
       div.innerHTML = `
         <div class="drag-handle" aria-label="Drag to reorder" tabindex="0">
           <span class="drag-handle-line"></span>
@@ -1162,8 +1389,8 @@
         <input type="number" class="gap-fill-duration" value="15" min="5" max="120" aria-label="Duration in seconds for item ${index + 1}">
         <span class="gap-fill-unit">sec</span>
         <div class="toggle-container">
-          <input type="checkbox" class="toggle-checkbox" id="bg-toggle-${index + 1}" checked aria-label="Show background for item ${index + 1}">
-          <label class="toggle-label" for="bg-toggle-${index + 1}">BG</label>
+          <input type="checkbox" class="toggle-checkbox" id="bg-toggle-new-${Date.now()}" checked aria-label="Show background for item ${index + 1}">
+          <label class="toggle-label" for="bg-toggle-new-${Date.now()}">BG</label>
         </div>
         <button class="remove-btn" aria-label="Remove item ${index + 1}" title="Remove item">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1181,6 +1408,7 @@
       const newItem = createGapFillItem(itemCount - 1);
       gapFillList.appendChild(newItem);
       updateOrderNumbers();
+      validateGapFillList();
     });
 
     // Remove item handler
@@ -1191,6 +1419,7 @@
         item.remove();
         itemCount--;
         updateOrderNumbers();
+        validateGapFillList();
       }
     });
 
@@ -1251,8 +1480,11 @@
         item.querySelector('.content-item-order').textContent = (index + 1) + '.';
         item.dataset.index = index;
       });
+      // Validate after reorder
+      validateContentList();
     }
 
+    // New content item defaults per PRD: graphicType: 'sponsor', duration: 10, background: true, skipIfNoData: false
     function createContentItem(index) {
       const div = document.createElement('div');
       div.className = 'content-item';
@@ -1260,7 +1492,9 @@
       div.setAttribute('draggable', 'true');
       div.dataset.index = index;
 
-      // New items default to sponsor, 10 sec, background on, skip-if-no-data off
+      const uniqueId = Date.now();
+
+      // Default values per PRD: sponsor, 10 sec, background: true, skipIfNoData: false
       div.innerHTML = `
         <div class="drag-handle" aria-label="Drag to reorder" tabindex="0">
           <span class="drag-handle-line"></span>
@@ -1282,12 +1516,12 @@
         </div>
         <div class="content-toggles">
           <div class="toggle-container">
-            <input type="checkbox" class="toggle-checkbox" id="content-bg-${index + 1}" checked aria-label="Show background for item ${index + 1}">
-            <label class="toggle-label" for="content-bg-${index + 1}">BG</label>
+            <input type="checkbox" class="toggle-checkbox" id="content-bg-new-${uniqueId}" checked aria-label="Show background for item ${index + 1}">
+            <label class="toggle-label" for="content-bg-new-${uniqueId}">BG</label>
           </div>
           <div class="toggle-container">
-            <input type="checkbox" class="toggle-checkbox" id="content-skip-${index + 1}" aria-label="Skip if no data for item ${index + 1}">
-            <label class="toggle-label" for="content-skip-${index + 1}">Skip∅</label>
+            <input type="checkbox" class="toggle-checkbox" id="content-skip-new-${uniqueId}" aria-label="Skip if no data for item ${index + 1}">
+            <label class="toggle-label" for="content-skip-new-${uniqueId}">Skip∅</label>
           </div>
         </div>
         <button class="remove-btn" aria-label="Remove item ${index + 1}" title="Remove item">
@@ -1306,6 +1540,7 @@
       const newItem = createContentItem(contentItemCount - 1);
       contentSequenceList.appendChild(newItem);
       updateContentOrderNumbers();
+      validateContentList();
     });
 
     // Remove content item handler
@@ -1316,6 +1551,7 @@
         item.remove();
         contentItemCount--;
         updateContentOrderNumbers();
+        validateContentList();
       }
     });
 
@@ -1458,5 +1694,114 @@
         }
       }, { offset: Number.NEGATIVE_INFINITY }).element;
     }
+
+    // === SAVE BUTTON HANDLERS ===
+    playoutSaveBtn.addEventListener('click', function() {
+      if (validateGapFillList()) {
+        // Collect form data
+        const formData = {
+          type: 'playout',
+          name: 'Rotation 1',
+          playoutRules: {
+            clipOrder: document.getElementById('clip-order').value,
+            apparatusPriority: document.getElementById('apparatus-priority').value || null,
+            transitionType: document.getElementById('transition-type').value,
+            crossfadeDuration: parseInt(document.getElementById('crossfade-duration').value),
+            gapFillSequence: [],
+            gapFillLoop: document.getElementById('loop-sequence').checked
+          }
+        };
+
+        // Collect gap fill items
+        const gapFillItems = gapFillList.querySelectorAll('.gap-fill-item');
+        gapFillItems.forEach(item => {
+          formData.playoutRules.gapFillSequence.push({
+            graphicType: item.querySelector('.gap-fill-select').value,
+            duration: parseInt(item.querySelector('.gap-fill-duration').value),
+            background: item.querySelector('.toggle-checkbox').checked
+          });
+        });
+
+        console.log('Playout segment saved:', formData);
+
+        // Visual feedback
+        playoutSaveBtn.textContent = 'Saved!';
+        playoutSaveBtn.style.background = '#22c55e';
+        setTimeout(() => {
+          playoutSaveBtn.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              <polyline points="17 21 17 13 7 13 7 21"></polyline>
+              <polyline points="7 3 7 8 15 8"></polyline>
+            </svg>
+            Save Changes
+          `;
+          playoutSaveBtn.style.background = '';
+        }, 1500);
+      }
+    });
+
+    contentSaveBtn.addEventListener('click', function() {
+      if (validateContentList()) {
+        // Collect form data
+        const formData = {
+          type: 'content-sequence',
+          name: 'Rotation 1 Break',
+          contentSequence: [],
+          advanceCondition: document.querySelector('input[name="advance-condition"]:checked').value
+        };
+
+        // Collect content items
+        const contentItems = contentSequenceList.querySelectorAll('.content-item');
+        contentItems.forEach(item => {
+          const graphicType = item.querySelector('.content-item-select').value;
+          const durationInput = item.querySelector('.content-item-duration');
+          const durationSelect = item.querySelector('.content-item-duration-select');
+
+          let duration;
+          if (durationSelect) {
+            const selectValue = durationSelect.value;
+            duration = selectValue === 'hold' ? null : (selectValue === 'auto' ? 'auto' : parseInt(durationInput?.value || 15));
+          } else if (durationInput) {
+            duration = parseInt(durationInput.value);
+          } else {
+            duration = 15;
+          }
+
+          const bgToggle = item.querySelector('[id^="content-bg-"]');
+          const skipToggle = item.querySelector('[id^="content-skip-"]');
+
+          formData.contentSequence.push({
+            graphicType: graphicType,
+            duration: duration,
+            background: bgToggle ? bgToggle.checked : true,
+            skipIfNoData: skipToggle ? skipToggle.checked : false,
+            params: {}
+          });
+        });
+
+        console.log('Content sequence saved:', formData);
+
+        // Visual feedback
+        contentSaveBtn.textContent = 'Saved!';
+        contentSaveBtn.style.background = '#22c55e';
+        setTimeout(() => {
+          contentSaveBtn.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              <polyline points="17 21 17 13 7 13 7 21"></polyline>
+              <polyline points="7 3 7 8 15 8"></polyline>
+            </svg>
+            Save Changes
+          `;
+          contentSaveBtn.style.background = '';
+        }, 1500);
+      }
+    });
+
+    // === INITIAL VALIDATION ===
+    // Run validation on page load to set initial state
+    validateGapFillList();
+    validateContentList();
   })();
 </script>
