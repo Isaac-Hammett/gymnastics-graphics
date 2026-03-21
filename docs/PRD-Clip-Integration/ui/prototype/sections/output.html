@@ -403,6 +403,185 @@
   background: #ef4444;
 }
 
+/* === Animated Background (Gap Fill / Break Content) === */
+.animated-background {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(
+    135deg,
+    var(--meet-header-bg, #1a1a2e) 0%,
+    var(--meet-content-bg, #16213e) 50%,
+    var(--meet-header-bg, #1a1a2e) 100%
+  );
+  background-size: 400% 400%;
+  animation: gradientShift 8s ease infinite;
+  opacity: 0;
+  transition: opacity 300ms ease-in-out;
+}
+
+.animated-background.active {
+  opacity: 1;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Subtle particle overlay effect */
+.animated-background::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 20% 80%, rgba(255,255,255,0.03) 0%, transparent 50%),
+              radial-gradient(circle at 80% 20%, rgba(255,255,255,0.03) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+/* === Stall Detection Indicator === */
+.stall-indicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 32px;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(12px);
+  border-radius: 12px;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  z-index: 20;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 200ms, visibility 200ms;
+}
+
+.stall-indicator.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.stall-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: #ef4444;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.stall-message {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+  text-align: center;
+}
+
+.stall-timer {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: #f87171;
+}
+
+/* === Firebase Write-Back Status === */
+.writeback-status {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 500;
+  z-index: 15;
+  opacity: 0;
+  transition: opacity 200ms;
+}
+
+.writeback-status.visible {
+  opacity: 1;
+}
+
+.writeback-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.writeback-dot--syncing {
+  background: #fbbf24;
+  animation: pulse-writeback 1s ease-in-out infinite;
+}
+
+@keyframes pulse-writeback {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+
+.writeback-dot--synced {
+  background: var(--clip-mode-clip-border);
+}
+
+.writeback-dot--error {
+  background: #ef4444;
+}
+
+.writeback-text--syncing {
+  color: #fbbf24;
+}
+
+.writeback-text--synced {
+  color: var(--clip-mode-clip-text);
+}
+
+.writeback-text--error {
+  color: #f87171;
+}
+
+/* === Heartbeat Indicator (hidden, for debugging) === */
+.heartbeat-indicator {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 4px;
+  font-size: 9px;
+  color: var(--text-muted);
+  z-index: 5;
+  opacity: 0.5;
+}
+
+.heartbeat-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--clip-mode-clip-border);
+  animation: heartbeat 2s ease-in-out infinite;
+}
+
+@keyframes heartbeat {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
 /* === DOM Architecture Diagram === */
 .dom-diagram {
   padding: 16px;
@@ -1319,6 +1498,478 @@ if (score === null || score === undefined) {
         </div>
       </div>
     </div>
+
+    <!-- ANIMATED BACKGROUND RENDERER -->
+    <div class="prototype-section">
+      <div class="prototype-section-header">
+        <span class="prototype-section-title">Animated Background Renderer</span>
+        <span class="prototype-section-tag">Gap Fill / Break Content</span>
+      </div>
+
+      <div class="output-frame" data-mode="break" id="animated-bg-demo">
+        <!-- Layer 0: clipBackground (ACTIVE during breaks) -->
+        <div class="layer-clipBackground">
+          <div class="animated-background active" id="demo-animated-bg"></div>
+        </div>
+
+        <!-- Layer 1: output (graphic content renders here) -->
+        <div class="layer-output">
+          <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; padding: 32px 48px; background: rgba(0,0,0,0.7); backdrop-filter: blur(12px); border-radius: 16px;">
+            <div style="font-size: 20px; font-weight: 600; color: white; margin-bottom: 8px;">Event Summary Graphic</div>
+            <div style="font-size: 13px; color: rgba(255,255,255,0.7);">Content renders on z:1 above animated background</div>
+          </div>
+        </div>
+
+        <!-- Video layers hidden during break -->
+        <div class="layer-clipVideo" style="display: none;"></div>
+        <div class="layer-clipVideoNext" style="display: none;"></div>
+      </div>
+
+      <div class="dom-diagram">
+        <div class="dom-diagram-title">Animated Background CSS Spec</div>
+        <pre style="margin: 0; color: var(--text-secondary); white-space: pre-wrap; font-size: 11px; font-family: 'SF Mono', 'Consolas', monospace;">
+/* Uses meet theme CSS variables */
+background: linear-gradient(
+  135deg,
+  var(--meet-header-bg, #1a1a2e) 0%,
+  var(--meet-content-bg, #16213e) 50%,
+  var(--meet-header-bg, #1a1a2e) 100%
+);
+
+/* 8-second animation cycle */
+background-size: 400% 400%;
+animation: gradientShift 8s ease infinite;
+
+/* Smooth transitions */
+opacity: 0 → 1 (300ms ease-in)   /* activate */
+opacity: 1 → 0 (300ms ease-out)  /* deactivate */</pre>
+      </div>
+
+      <div class="dom-diagram" style="border-top: 1px solid var(--border-color);">
+        <div class="dom-diagram-title">Trigger Conditions</div>
+        <div class="dom-layer">
+          <span class="dom-layer-element">background: true</span>
+          <span class="dom-layer-desc">— Firebase currentGraphic field</span>
+        </div>
+        <div class="dom-layer">
+          <span class="dom-layer-element">graphic: "event-summary"</span>
+          <span class="dom-layer-desc">— With background flag enabled</span>
+        </div>
+        <div class="dom-layer">
+          <span class="dom-layer-element">graphic: "sponsor"</span>
+          <span class="dom-layer-desc">— With background flag enabled</span>
+        </div>
+        <div class="dom-layer">
+          <span class="dom-layer-element">Fallback state</span>
+          <span class="dom-layer-desc">— During break/gap between clips</span>
+        </div>
+      </div>
+
+      <div class="mode-toggle-container">
+        <button class="mode-toggle-btn active" onclick="toggleAnimatedBg(this, true)">Background ON</button>
+        <button class="mode-toggle-btn" onclick="toggleAnimatedBg(this, false)">Background OFF</button>
+      </div>
+    </div>
+
+    <!-- ANIMATED BACKGROUND THEME VARIANTS -->
+    <div class="prototype-section">
+      <div class="prototype-section-header">
+        <span class="prototype-section-title">Theme-Based Background Variants</span>
+        <span class="prototype-section-tag">CSS Variables</span>
+      </div>
+
+      <div style="padding: 16px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+        <!-- Default (no theme) -->
+        <div>
+          <div style="height: 80px; border-radius: 8px; overflow: hidden; position: relative;">
+            <div class="animated-background active" style="--meet-header-bg: #1a1a2e; --meet-content-bg: #16213e;"></div>
+          </div>
+          <div style="font-size: 11px; color: var(--text-secondary); margin-top: 8px; text-align: center;">Default (no theme)</div>
+          <div style="font-size: 9px; color: var(--text-muted); text-align: center; font-family: monospace;">#1a1a2e → #16213e</div>
+        </div>
+
+        <!-- UCLA Theme -->
+        <div>
+          <div style="height: 80px; border-radius: 8px; overflow: hidden; position: relative;">
+            <div class="animated-background active" style="--meet-header-bg: #2774AE; --meet-content-bg: #FFD100;"></div>
+          </div>
+          <div style="font-size: 11px; color: var(--text-secondary); margin-top: 8px; text-align: center;">UCLA Theme</div>
+          <div style="font-size: 9px; color: var(--text-muted); text-align: center; font-family: monospace;">#2774AE → #FFD100</div>
+        </div>
+
+        <!-- Stanford Theme -->
+        <div>
+          <div style="height: 80px; border-radius: 8px; overflow: hidden; position: relative;">
+            <div class="animated-background active" style="--meet-header-bg: #8C1515; --meet-content-bg: #2E2D29;"></div>
+          </div>
+          <div style="font-size: 11px; color: var(--text-secondary); margin-top: 8px; text-align: center;">Stanford Theme</div>
+          <div style="font-size: 9px; color: var(--text-muted); text-align: center; font-family: monospace;">#8C1515 → #2E2D29</div>
+        </div>
+      </div>
+
+      <div class="dom-diagram">
+        <div class="dom-diagram-title">Firebase Background Trigger</div>
+        <pre style="margin: 0; color: var(--text-secondary); white-space: pre-wrap; font-size: 11px; font-family: 'SF Mono', 'Consolas', monospace;">
+{
+  "graphic": "event-summary",
+  "data": { ... },
+  "background": true  // ← triggers animated background
+}</pre>
+      </div>
+    </div>
+
+    <!-- LIVE CAMERA WITH BREAK MODE -->
+    <div class="prototype-section">
+      <div class="prototype-section-header">
+        <span class="prototype-section-title">Live Camera States</span>
+        <span class="prototype-section-tag">LIVE vs Break Mode</span>
+      </div>
+
+      <div class="output-frame" data-apparatus="BB" data-mode="live-states" id="live-states-demo">
+        <!-- Layer 0: clipBackground -->
+        <div class="layer-clipBackground">
+          <div class="animated-background" id="live-states-bg"></div>
+        </div>
+
+        <!-- Layer 1: output -->
+        <div class="layer-output" id="live-states-output">
+          <div class="live-camera-overlay">
+            <div class="live-camera-label">
+              <div class="mode-badge mode-badge-live">LIVE</div>
+              <div class="live-camera-apparatus" style="color: var(--clip-apparatus-bb)">Balance Beam</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Simulated camera feed -->
+        <div class="video-placeholder" style="position: absolute; inset: 0; z-index: -1;">
+          <div class="video-placeholder-content">
+            <div class="video-placeholder-icon">📹</div>
+            <div class="video-placeholder-text">Camera Feed via OBS</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dom-diagram">
+        <div class="dom-diagram-title">Live Camera Overlay Data Shape</div>
+        <pre style="margin: 0; color: var(--text-secondary); white-space: pre-wrap; font-size: 11px; font-family: 'SF Mono', 'Consolas', monospace;">
+// For live camera overlay
+{
+  "graphic": "live-camera",
+  "data": {
+    "apparatus": "BB"  // VT, UB, BB, FX, PH, SR, PB, HB
+  }
+}
+
+// Video elements hidden in live mode
+// Camera feed comes from OBS scene (not output.html)</pre>
+      </div>
+
+      <div class="mode-toggle-container">
+        <button class="mode-toggle-btn active" onclick="setLiveStatesMode(this, 'live')">LIVE</button>
+        <button class="mode-toggle-btn" onclick="setLiveStatesMode(this, 'break-bg')">Break + BG</button>
+        <button class="mode-toggle-btn" onclick="setLiveStatesMode(this, 'break-transparent')">Break (transparent)</button>
+      </div>
+    </div>
+
+    <!-- STALL DETECTION -->
+    <div class="prototype-section">
+      <div class="prototype-section-header">
+        <span class="prototype-section-title">Stall Detection Overlay</span>
+        <span class="prototype-section-tag">Network Issues</span>
+      </div>
+
+      <div class="output-frame" data-apparatus="FX" data-mode="clip" id="stall-demo">
+        <div class="layer-clipBackground"></div>
+        <div class="layer-output"></div>
+
+        <div class="layer-clipVideo">
+          <div class="video-placeholder clip-video clip-active">
+            <div class="video-placeholder-content">
+              <div class="video-placeholder-icon">▶</div>
+              <div class="video-placeholder-text">Video Stalled</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Info Bar -->
+        <div class="clip-info-bar">
+          <div class="clip-info-logo">
+            <div class="clip-info-logo-placeholder"></div>
+          </div>
+          <div class="clip-info-details" style="border-left-color: var(--clip-apparatus-fx)">
+            <div class="clip-info-athlete">Jordan Chiles</div>
+            <div class="clip-info-apparatus" style="color: var(--clip-apparatus-fx)">Floor Exercise</div>
+            <div class="clip-info-team">UCLA</div>
+          </div>
+        </div>
+
+        <div class="mode-badge mode-badge-clip">CLIP</div>
+
+        <!-- Stall Detection Indicator (visible when stalled) -->
+        <div class="stall-indicator visible" id="demo-stall-indicator">
+          <div class="stall-spinner"></div>
+          <div class="stall-message">Buffering...</div>
+          <div class="stall-timer">Stalled 3.2s</div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="clip-progress-container">
+          <div class="clip-progress-bar">
+            <div class="clip-progress-fill" style="width: 42%"></div>
+          </div>
+          <div class="clip-progress-times">
+            <span class="clip-progress-elapsed">0:18</span>
+            <span class="clip-progress-remaining">-0:25</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="dom-diagram">
+        <div class="dom-diagram-title">Stall Detection Logic</div>
+        <div class="dom-layer">
+          <span class="dom-layer-element">waiting event</span>
+          <span class="dom-layer-desc">— Video element fires when buffer empties</span>
+        </div>
+        <div class="dom-layer">
+          <span class="dom-layer-element">Threshold: 2s</span>
+          <span class="dom-layer-desc">— Show indicator after 2 seconds stalled</span>
+        </div>
+        <div class="dom-layer">
+          <span class="dom-layer-element">playing event</span>
+          <span class="dom-layer-desc">— Hides indicator, resets timer</span>
+        </div>
+        <div class="dom-layer">
+          <span class="dom-layer-element">Auto-skip</span>
+          <span class="dom-layer-desc">— After 10s stall, skip to next clip</span>
+        </div>
+      </div>
+
+      <div style="padding: 16px; display: flex; gap: 16px; align-items: flex-start;">
+        <!-- Stall indicator states -->
+        <div style="flex: 1;">
+          <div style="font-size: 11px; font-weight: 500; color: var(--text-primary); margin-bottom: 8px;">Stall Indicator States</div>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div class="stall-indicator" style="position: static; opacity: 1; visibility: visible; padding: 8px 12px;">
+                <div class="stall-spinner" style="width: 16px; height: 16px; border-width: 2px;"></div>
+                <div class="stall-message" style="font-size: 10px;">Buffering...</div>
+              </div>
+              <span style="font-size: 10px; color: var(--text-muted);">0-5s stall</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div class="stall-indicator" style="position: static; opacity: 1; visibility: visible; padding: 8px 12px; border-color: rgba(239, 68, 68, 0.5);">
+                <div class="stall-spinner" style="width: 16px; height: 16px; border-width: 2px;"></div>
+                <div class="stall-message" style="font-size: 10px;">Connection issue</div>
+                <div class="stall-timer" style="font-size: 9px;">7.4s</div>
+              </div>
+              <span style="font-size: 10px; color: var(--text-muted);">5-10s stall</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Implementation -->
+        <div style="flex: 1;">
+          <div style="font-size: 11px; font-weight: 500; color: var(--text-primary); margin-bottom: 8px;">Implementation</div>
+          <pre style="margin: 0; color: var(--text-secondary); font-size: 10px; font-family: 'SF Mono', 'Consolas', monospace; background: var(--bg-tertiary); padding: 8px; border-radius: 4px;">
+video.on('waiting', () => {
+  stallStart = Date.now();
+  stallTimeout = setTimeout(
+    showIndicator, 2000
+  );
+});
+
+video.on('playing', () => {
+  clearTimeout(stallTimeout);
+  hideIndicator();
+});</pre>
+        </div>
+      </div>
+
+      <div class="mode-toggle-container">
+        <button class="mode-toggle-btn" onclick="toggleStall(this, false)">No Stall</button>
+        <button class="mode-toggle-btn active" onclick="toggleStall(this, true)">Stalled</button>
+      </div>
+    </div>
+
+    <!-- FIREBASE WRITE-BACK STATUS -->
+    <div class="prototype-section">
+      <div class="prototype-section-header">
+        <span class="prototype-section-title">Firebase Write-Back Status</span>
+        <span class="prototype-section-tag">Sync Indicator</span>
+      </div>
+
+      <div class="output-frame" data-apparatus="VT" data-mode="clip" id="writeback-demo">
+        <div class="layer-clipBackground"></div>
+        <div class="layer-output"></div>
+
+        <div class="layer-clipVideo">
+          <div class="video-placeholder clip-video clip-active">
+            <div class="video-placeholder-content">
+              <div class="video-placeholder-icon">▶</div>
+              <div class="video-placeholder-text">Clip Playing</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Write-back status indicator -->
+        <div class="writeback-status visible" id="demo-writeback-status">
+          <span class="writeback-dot writeback-dot--synced"></span>
+          <span class="writeback-text--synced">Synced</span>
+        </div>
+
+        <!-- Info Bar -->
+        <div class="clip-info-bar">
+          <div class="clip-info-logo">
+            <div class="clip-info-logo-placeholder"></div>
+          </div>
+          <div class="clip-info-details">
+            <div class="clip-info-athlete">Simone Biles</div>
+            <div class="clip-info-apparatus">Vault</div>
+            <div class="clip-info-team">Team USA</div>
+          </div>
+        </div>
+
+        <div class="mode-badge mode-badge-clip">CLIP</div>
+
+        <!-- Progress Bar -->
+        <div class="clip-progress-container">
+          <div class="clip-progress-bar">
+            <div class="clip-progress-fill" style="width: 28%"></div>
+          </div>
+          <div class="clip-progress-times">
+            <span class="clip-progress-elapsed">0:04</span>
+            <span class="clip-progress-remaining">-0:10</span>
+          </div>
+        </div>
+
+        <!-- Heartbeat indicator (debug only) -->
+        <div class="heartbeat-indicator">
+          <span class="heartbeat-dot"></span>
+          <span>2s</span>
+        </div>
+      </div>
+
+      <div style="padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+        <div style="font-size: 11px; font-weight: 500; color: var(--text-primary);">Write-Back Status States</div>
+
+        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+          <div class="writeback-status visible" style="position: static;">
+            <span class="writeback-dot writeback-dot--syncing"></span>
+            <span class="writeback-text--syncing">Writing...</span>
+          </div>
+          <div class="writeback-status visible" style="position: static;">
+            <span class="writeback-dot writeback-dot--synced"></span>
+            <span class="writeback-text--synced">Synced</span>
+          </div>
+          <div class="writeback-status visible" style="position: static;">
+            <span class="writeback-dot writeback-dot--error"></span>
+            <span class="writeback-text--error">Sync failed</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="dom-diagram">
+        <div class="dom-diagram-title">Write-Back Behavior</div>
+        <div class="dom-layer">
+          <span class="dom-layer-element">Clip start</span>
+          <span class="dom-layer-desc">— output.html writes playback state to Firebase</span>
+        </div>
+        <div class="dom-layer">
+          <span class="dom-layer-element">Progress updates</span>
+          <span class="dom-layer-desc">— Throttled writes (every 2s) for currentTime</span>
+        </div>
+        <div class="dom-layer">
+          <span class="dom-layer-element">Clip end</span>
+          <span class="dom-layer-desc">— Write "ended" state, coordinator advances queue</span>
+        </div>
+        <div class="dom-layer">
+          <span class="dom-layer-element">Heartbeat</span>
+          <span class="dom-layer-desc">— Every 2s to detect stale players</span>
+        </div>
+      </div>
+
+      <div class="dom-diagram" style="border-top: 1px solid var(--border-color);">
+        <div class="dom-diagram-title">Firebase Write Path</div>
+        <pre style="margin: 0; color: var(--text-secondary); white-space: pre-wrap; font-size: 11px; font-family: 'SF Mono', 'Consolas', monospace;">
+// Write-back state (output.html → Firebase)
+competitions/{compId}/clipPlayback: {
+  draftId: "f7894797-...",
+  state: "playing" | "paused" | "ended" | "stalled",
+  currentTime: 12.4,
+  duration: 39.2,
+  heartbeat: 1711234567890  // timestamp
+}</pre>
+      </div>
+
+      <div class="mode-toggle-container">
+        <button class="mode-toggle-btn" onclick="setWritebackState(this, 'syncing')">Writing...</button>
+        <button class="mode-toggle-btn active" onclick="setWritebackState(this, 'synced')">Synced</button>
+        <button class="mode-toggle-btn" onclick="setWritebackState(this, 'error')">Error</button>
+        <button class="mode-toggle-btn" onclick="setWritebackState(this, 'hidden')">Hidden</button>
+      </div>
+    </div>
+
+    <!-- HEARTBEAT SYSTEM -->
+    <div class="prototype-section">
+      <div class="prototype-section-header">
+        <span class="prototype-section-title">Heartbeat System</span>
+        <span class="prototype-section-tag">Stale Player Detection</span>
+      </div>
+
+      <div class="dom-diagram" style="border-top: none;">
+        <div class="dom-diagram-title">Heartbeat Mechanism</div>
+        <div class="dom-layer">
+          <span class="dom-layer-element">Interval</span>
+          <span class="dom-layer-desc">— Every 2 seconds while clip is active</span>
+        </div>
+        <div class="dom-layer">
+          <span class="dom-layer-element">Firebase path</span>
+          <span class="dom-layer-desc">— competitions/{compId}/clipPlayback/heartbeat</span>
+        </div>
+        <div class="dom-layer">
+          <span class="dom-layer-element">Value</span>
+          <span class="dom-layer-desc">— Unix timestamp (Date.now())</span>
+        </div>
+        <div class="dom-layer">
+          <span class="dom-layer-element">Coordinator checks</span>
+          <span class="dom-layer-desc">— If heartbeat > 10s old, player is stale</span>
+        </div>
+      </div>
+
+      <div style="padding: 16px;">
+        <div style="font-size: 11px; font-weight: 500; color: var(--text-primary); margin-bottom: 12px;">Stale Player Handling</div>
+
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+          <div style="padding: 12px; background: var(--bg-tertiary); border-radius: 6px;">
+            <div style="font-size: 10px; font-weight: 600; color: #fbbf24; margin-bottom: 4px;">Stale Detected</div>
+            <div style="font-size: 10px; color: var(--text-secondary);">Coordinator marks player as disconnected, may auto-advance queue</div>
+          </div>
+          <div style="padding: 12px; background: var(--bg-tertiary); border-radius: 6px;">
+            <div style="font-size: 10px; font-weight: 600; color: var(--clip-mode-clip-text); margin-bottom: 4px;">Recovery</div>
+            <div style="font-size: 10px; color: var(--text-secondary);">If player reconnects, resumes from last known position</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dom-diagram" style="border-top: 1px solid var(--border-color);">
+        <div class="dom-diagram-title">Implementation</div>
+        <pre style="margin: 0; color: var(--text-secondary); white-space: pre-wrap; font-size: 11px; font-family: 'SF Mono', 'Consolas', monospace;">
+// output.html heartbeat loop
+setInterval(() => {
+  if (clipState === 'playing') {
+    firebase.database()
+      .ref(`competitions/${compId}/clipPlayback/heartbeat`)
+      .set(Date.now());
+  }
+}, 2000);
+
+// Coordinator stale check
+const heartbeat = await getHeartbeat(compId);
+const isStale = Date.now() - heartbeat > 10000;
+if (isStale) handleStalePlayer(compId);</pre>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1448,4 +2099,113 @@ console.log('8s vault:', calculateScoreRevealTime(8), 's');
 console.log('14s vault:', calculateScoreRevealTime(14), 's');
 console.log('25s bars:', calculateScoreRevealTime(25), 's');
 console.log('39s floor:', calculateScoreRevealTime(39), 's');
+
+// Toggle animated background
+function toggleAnimatedBg(btn, active) {
+  const container = btn.closest('.prototype-section');
+  const buttons = container.querySelectorAll('.mode-toggle-btn');
+  const bg = document.getElementById('demo-animated-bg');
+
+  buttons.forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  if (active) {
+    bg.classList.add('active');
+  } else {
+    bg.classList.remove('active');
+  }
+}
+
+// Live states mode toggle
+function setLiveStatesMode(btn, mode) {
+  const container = btn.closest('.prototype-section');
+  const buttons = container.querySelectorAll('.mode-toggle-btn');
+  const bg = document.getElementById('live-states-bg');
+  const output = document.getElementById('live-states-output');
+
+  buttons.forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  if (mode === 'live') {
+    bg.classList.remove('active');
+    output.innerHTML = `
+      <div class="live-camera-overlay">
+        <div class="live-camera-label">
+          <div class="mode-badge mode-badge-live">LIVE</div>
+          <div class="live-camera-apparatus" style="color: var(--clip-apparatus-bb)">Balance Beam</div>
+        </div>
+      </div>
+    `;
+  } else if (mode === 'break-bg') {
+    bg.classList.add('active');
+    output.innerHTML = `
+      <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; padding: 24px 32px; background: rgba(0,0,0,0.7); backdrop-filter: blur(12px); border-radius: 12px;">
+        <div style="font-size: 16px; font-weight: 600; color: white; margin-bottom: 4px;">Break</div>
+        <div style="font-size: 11px; color: rgba(255,255,255,0.6);">Animated background active</div>
+      </div>
+    `;
+  } else if (mode === 'break-transparent') {
+    bg.classList.remove('active');
+    output.innerHTML = `
+      <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;">
+        <div style="text-align: center; padding: 24px 32px; background: rgba(0,0,0,0.5); backdrop-filter: blur(8px); border-radius: 12px; border: 1px dashed var(--border-color);">
+          <div style="font-size: 14px; font-weight: 500; color: var(--text-secondary); margin-bottom: 4px;">Transparent Background</div>
+          <div style="font-size: 10px; color: var(--text-muted);">Graphic on transparent, OBS shows camera</div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+// Stall indicator toggle
+function toggleStall(btn, stalled) {
+  const container = btn.closest('.prototype-section');
+  const buttons = container.querySelectorAll('.mode-toggle-btn');
+  const indicator = document.getElementById('demo-stall-indicator');
+
+  buttons.forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  if (stalled) {
+    indicator.classList.add('visible');
+  } else {
+    indicator.classList.remove('visible');
+  }
+}
+
+// Write-back status toggle
+function setWritebackState(btn, state) {
+  const container = btn.closest('.prototype-section');
+  const buttons = container.querySelectorAll('.mode-toggle-btn');
+  const status = document.getElementById('demo-writeback-status');
+
+  buttons.forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  const dot = status.querySelector('.writeback-dot');
+  const text = status.querySelector('span:last-child');
+
+  // Reset classes
+  dot.className = 'writeback-dot';
+  text.className = '';
+
+  if (state === 'syncing') {
+    status.classList.add('visible');
+    dot.classList.add('writeback-dot--syncing');
+    text.classList.add('writeback-text--syncing');
+    text.textContent = 'Writing...';
+  } else if (state === 'synced') {
+    status.classList.add('visible');
+    dot.classList.add('writeback-dot--synced');
+    text.classList.add('writeback-text--synced');
+    text.textContent = 'Synced';
+  } else if (state === 'error') {
+    status.classList.add('visible');
+    dot.classList.add('writeback-dot--error');
+    text.classList.add('writeback-text--error');
+    text.textContent = 'Sync failed';
+  } else if (state === 'hidden') {
+    status.classList.remove('visible');
+  }
+}
 </script>
