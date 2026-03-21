@@ -1,1139 +1,594 @@
-<div class="section-content section-producer">
+<!-- Producer View — Live Playout Dashboard -->
+<!-- Task 1.1: Playout Status Bar -->
 
-  <!-- State Toggle Bar -->
-  <div class="state-toggle" style="margin-bottom: var(--space-lg); padding: var(--space-md); background: var(--bg-secondary); border-radius: var(--border-radius); border: 1px solid var(--border-color);">
-    <div style="display: flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap;">
-      <span style="color: var(--text-secondary); font-size: var(--font-size-sm); margin-right: var(--space-sm);">Show State:</span>
-      <button class="state-toggle-btn active" data-state="playing" style="background: var(--color-producer); color: white; border: none; padding: 6px 12px; border-radius: var(--border-radius); cursor: pointer; font-size: var(--font-size-sm);">Playing Clip</button>
-      <button class="state-toggle-btn" data-state="live" style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); padding: 6px 12px; border-radius: var(--border-radius); cursor: pointer; font-size: var(--font-size-sm);">Live Camera</button>
-      <button class="state-toggle-btn" data-state="override" style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); padding: 6px 12px; border-radius: var(--border-radius); cursor: pointer; font-size: var(--font-size-sm);">Override Active</button>
-      <button class="state-toggle-btn" data-state="fallback" style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); padding: 6px 12px; border-radius: var(--border-radius); cursor: pointer; font-size: var(--font-size-sm);">Fallback Mode</button>
-      <button class="state-toggle-btn" data-state="paused" style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); padding: 6px 12px; border-radius: var(--border-radius); cursor: pointer; font-size: var(--font-size-sm);">Paused</button>
-      <button class="state-toggle-btn" data-state="stalled" style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); padding: 6px 12px; border-radius: var(--border-radius); cursor: pointer; font-size: var(--font-size-sm);">Stalled</button>
-      <button class="state-toggle-btn" data-state="moment-replay" style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); padding: 6px 12px; border-radius: var(--border-radius); cursor: pointer; font-size: var(--font-size-sm);">Moment Replay</button>
-      <button class="state-toggle-btn" data-state="break" style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); padding: 6px 12px; border-radius: var(--border-radius); cursor: pointer; font-size: var(--font-size-sm);">Break</button>
+<style>
+  /* === Playout Status Bar === */
+  .playout-status-bar {
+    background: var(--bg-secondary, #18181b);
+    border: 1px solid var(--border-color, #3f3f46);
+    border-radius: 8px;
+    padding: 16px;
+  }
+
+  .playout-status-bar--autonomous {
+    border-left: 3px solid var(--clip-mode-live-border, #22c55e);
+  }
+
+  .playout-status-bar--override {
+    border-left: 3px solid var(--clip-mode-override-border, #f59e0b);
+  }
+
+  .playout-status-bar--paused {
+    border-left: 3px solid var(--clip-mode-paused-border, #eab308);
+  }
+
+  .playout-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .playout-header__title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary, #e4e4e7);
+  }
+
+  .playout-header__play-icon {
+    width: 16px;
+    height: 16px;
+    color: var(--clip-mode-live-text, #4ade80);
+  }
+
+  .playout-header__rotation {
+    font-weight: 400;
+    color: var(--text-secondary, #a1a1aa);
+    margin-left: 8px;
+  }
+
+  /* Coordinator Health Indicator */
+  .coordinator-health {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-secondary, #a1a1aa);
+  }
+
+  .coordinator-health__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .coordinator-health__dot--healthy {
+    background: var(--clip-status-success, #22c55e);
+    box-shadow: 0 0 6px rgba(34, 197, 94, 0.5);
+    animation: pulse-healthy 2s ease-in-out infinite;
+  }
+
+  .coordinator-health__dot--slow {
+    background: var(--clip-status-warning, #f59e0b);
+    box-shadow: 0 0 6px rgba(245, 158, 11, 0.5);
+  }
+
+  .coordinator-health__dot--offline {
+    background: var(--clip-status-error, #ef4444);
+    box-shadow: 0 0 6px rgba(239, 68, 68, 0.5);
+    animation: pulse-error 1s ease-in-out infinite;
+  }
+
+  @keyframes pulse-healthy {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+
+  @keyframes pulse-error {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* Status Cards Container */
+  .playout-status-cards {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr 1fr;
+    gap: 12px;
+  }
+
+  /* Individual Status Card */
+  .status-card {
+    background: var(--bg-tertiary, #27272a);
+    border: 1px solid var(--border-color, #3f3f46);
+    border-radius: 6px;
+    padding: 12px;
+  }
+
+  .status-card__label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted, #71717a);
+    margin-bottom: 8px;
+  }
+
+  .status-card__mode {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+
+  .status-card__primary {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary, #e4e4e7);
+  }
+
+  .status-card__secondary {
+    font-size: 12px;
+    color: var(--text-secondary, #a1a1aa);
+  }
+
+  .status-card__meta {
+    font-size: 11px;
+    color: var(--text-muted, #71717a);
+    margin-top: 4px;
+  }
+
+  /* NOW Card - Active State Highlight */
+  .status-card--now {
+    border-color: var(--clip-mode-live-border, #22c55e);
+    background: rgba(34, 197, 94, 0.05);
+  }
+
+  .status-card--now.status-card--clip {
+    border-color: var(--clip-mode-clip-border, #22c55e);
+  }
+
+  .status-card--now.status-card--replay {
+    border-color: var(--clip-mode-replay-border, #06b6d4);
+    background: rgba(6, 182, 212, 0.05);
+  }
+
+  .status-card--now.status-card--override {
+    border-color: var(--clip-mode-override-border, #f59e0b);
+    background: rgba(245, 158, 11, 0.05);
+  }
+
+  .status-card--now.status-card--paused {
+    border-color: var(--clip-mode-paused-border, #eab308);
+    background: rgba(234, 179, 8, 0.05);
+  }
+
+  .status-card--now.status-card--break {
+    border-color: var(--clip-mode-break-border, #71717a);
+    background: rgba(113, 113, 122, 0.05);
+  }
+
+  .status-card--now.status-card--fallback {
+    border-color: var(--clip-mode-fallback-border, #52525b);
+    background: rgba(113, 113, 122, 0.03);
+  }
+
+  /* Mode Badges */
+  .mode-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .mode-badge--live {
+    background: var(--clip-mode-live-bg, rgba(34, 197, 94, 0.2));
+    color: var(--clip-mode-live-text, #4ade80);
+  }
+
+  .mode-badge--clip {
+    background: var(--clip-mode-clip-bg, rgba(34, 197, 94, 0.2));
+    color: var(--clip-mode-clip-text, #4ade80);
+  }
+
+  .mode-badge--replay {
+    background: var(--clip-mode-replay-bg, rgba(6, 182, 212, 0.2));
+    color: var(--clip-mode-replay-text, #22d3ee);
+  }
+
+  .mode-badge--queued {
+    background: var(--clip-mode-queued-bg, rgba(59, 130, 246, 0.2));
+    color: var(--clip-mode-queued-text, #60a5fa);
+  }
+
+  .mode-badge--break {
+    background: var(--clip-mode-break-bg, rgba(113, 113, 122, 0.2));
+    color: var(--clip-mode-break-text, #a1a1aa);
+  }
+
+  .mode-badge--fallback {
+    background: var(--clip-mode-fallback-bg, rgba(113, 113, 122, 0.15));
+    color: var(--clip-mode-fallback-text, #a1a1aa);
+  }
+
+  .mode-badge--override {
+    background: var(--clip-mode-override-bg, rgba(245, 158, 11, 0.2));
+    color: var(--clip-mode-override-text, #fbbf24);
+  }
+
+  .mode-badge--paused {
+    background: var(--clip-mode-paused-bg, rgba(234, 179, 8, 0.2));
+    color: var(--clip-mode-paused-text, #facc15);
+  }
+
+  /* Apparatus Badges */
+  .apparatus-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 6px;
+    border-radius: 9999px;
+    font-size: 10px;
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .apparatus-badge--vt { color: var(--clip-apparatus-vt, #ef4444); }
+  .apparatus-badge--ub { color: var(--clip-apparatus-ub, #a855f7); }
+  .apparatus-badge--bb { color: var(--clip-apparatus-bb, #3b82f6); }
+  .apparatus-badge--fx { color: var(--clip-apparatus-fx, #22c55e); }
+  .apparatus-badge--ph { color: var(--clip-apparatus-ph, #f97316); }
+  .apparatus-badge--sr { color: var(--clip-apparatus-sr, #14b8a6); }
+  .apparatus-badge--pb { color: var(--clip-apparatus-pb, #6366f1); }
+  .apparatus-badge--hb { color: var(--clip-apparatus-hb, #f59e0b); }
+
+  /* Preload Indicator */
+  .preload-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    color: var(--text-muted, #71717a);
+  }
+
+  .preload-indicator__spinner {
+    width: 10px;
+    height: 10px;
+    border: 1.5px solid var(--border-color, #3f3f46);
+    border-top-color: var(--clip-status-info, #3b82f6);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  .preload-indicator__check {
+    width: 10px;
+    height: 10px;
+    color: var(--clip-status-success, #22c55e);
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* Queue Stats */
+  .queue-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .queue-stats__row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+  }
+
+  .queue-stats__label {
+    color: var(--text-secondary, #a1a1aa);
+  }
+
+  .queue-stats__value {
+    color: var(--text-primary, #e4e4e7);
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+  }
+
+  .queue-stats__time {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary, #e4e4e7);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Demo State Switcher */
+  .demo-state-switcher {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color, #3f3f46);
+  }
+
+  .demo-state-btn {
+    padding: 4px 8px;
+    font-size: 10px;
+    font-weight: 500;
+    border-radius: 4px;
+    background: var(--bg-tertiary, #27272a);
+    color: var(--text-secondary, #a1a1aa);
+    border: 1px solid var(--border-color, #3f3f46);
+    cursor: pointer;
+    transition: all 150ms;
+  }
+
+  .demo-state-btn:hover {
+    background: var(--bg-secondary, #18181b);
+    color: var(--text-primary, #e4e4e7);
+    border-color: var(--text-muted, #71717a);
+  }
+
+  .demo-state-btn--active {
+    background: var(--clip-status-info, #3b82f6);
+    color: white;
+    border-color: var(--clip-status-info, #3b82f6);
+  }
+
+  .demo-label {
+    font-size: 10px;
+    color: var(--text-muted, #71717a);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-right: 8px;
+    align-self: center;
+  }
+</style>
+
+<div class="playout-status-bar playout-status-bar--autonomous" id="playoutStatusBar">
+  <!-- Header Row -->
+  <div class="playout-header">
+    <div class="playout-header__title">
+      <svg class="playout-header__play-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M8 5v14l11-7z"/>
+      </svg>
+      <span>PLAYOUT ACTIVE</span>
+      <span class="playout-header__rotation">— Rotation 2</span>
     </div>
-    <div style="margin-top: var(--space-sm); display: flex; gap: var(--space-md); font-size: var(--font-size-sm);">
-      <span style="display: flex; align-items: center; gap: var(--space-xs);"><span style="width: 8px; height: 8px; background: #4ade80; border-radius: 2px;"></span> <span style="color: var(--text-secondary);">Added in this state</span></span>
-      <span style="display: flex; align-items: center; gap: var(--space-xs);"><span style="width: 8px; height: 8px; background: #fbbf24; border-radius: 2px;"></span> <span style="color: var(--text-secondary);">Changed in this state</span></span>
-      <span style="display: flex; align-items: center; gap: var(--space-xs);"><span style="width: 8px; height: 8px; background: #ef4444; border-radius: 2px;"></span> <span style="color: var(--text-secondary);">Hidden in this state</span></span>
+    <div class="coordinator-health" id="coordinatorHealth">
+      <span class="coordinator-health__dot coordinator-health__dot--healthy" id="healthDot"></span>
+      <span id="healthLabel">Coordinator</span>
     </div>
   </div>
 
-  <!-- Section Header -->
-  <div class="section-header" style="border-left: 4px solid var(--color-producer); padding-left: var(--space-md); margin-bottom: var(--space-lg);">
-    <h2 style="margin: 0; color: var(--text-primary);">Screen 2: ProducerView — Live Playout Dashboard</h2>
-    <p style="margin: var(--space-xs) 0 0; color: var(--text-secondary);">
-      <span class="section-badge" data-section="4">§4</span>
-      Real-time playout control and monitoring for the producer
-    </p>
-  </div>
-
-  <!-- Main Layout Grid -->
-  <div style="display: grid; grid-template-columns: 1fr 300px; gap: var(--space-md); margin-bottom: var(--space-lg);">
-
-    <!-- Left Column: Main Playout Panels -->
-    <div style="display: flex; flex-direction: column; gap: var(--space-md);">
-
-      <!-- 4.3 Playout Status Bar -->
-      <div class="card state-status-bar" style="border: 2px solid var(--color-producer); transition: border-color 0.2s;">
-        <div class="card-header">
-          <div class="card-title state-title">
-            <!-- CLIP state (default) -->
-            <span class="state-playing"><span style="color: #4ade80;">▶</span> PLAYOUT ACTIVE — Rotation 1</span>
-            <!-- LIVE state -->
-            <span class="state-live" style="display: none;"><span style="color: #ef4444;">●</span> LIVE — Balance Beam</span>
-            <!-- OVERRIDE state -->
-            <span class="state-override" style="display: none;"><span style="color: #fbbf24;">⚠</span> OVERRIDE ACTIVE — Camera 3</span>
-            <!-- FALLBACK state -->
-            <span class="state-fallback" style="display: none;"><span style="color: #a78bfa;">◐</span> FALLBACK — Team Standings</span>
-            <!-- PAUSED state -->
-            <span class="state-paused" style="display: none;"><span style="color: #fbbf24;">⏸</span> PAUSED — Awaiting Resume</span>
-            <!-- STALLED state -->
-            <span class="state-stalled" style="display: none;"><span style="color: #ef4444;">⚠</span> STALLED — Clip Load Failed</span>
-            <!-- MOMENT_REPLAY state -->
-            <span class="state-moment-replay" style="display: none;"><span style="color: #f472b6;">↻</span> MOMENT REPLAY — T. Singletary</span>
-            <!-- BREAK state -->
-            <span class="state-break" style="display: none;"><span style="color: #f97316;">◆</span> BREAK — Sponsor Logo</span>
-          </div>
-          <div style="display: flex; align-items: center; gap: var(--space-sm);">
-            <span class="section-badge" data-section="4.3">§4.3</span>
-            <!-- Coordinator health indicator -->
-            <span class="state-coordinator state-playing state-live state-fallback state-moment-replay state-break" style="display: flex; align-items: center; gap: var(--space-xs); color: #4ade80; font-size: var(--font-size-sm);">
-              <span style="width: 8px; height: 8px; border-radius: 50%; background: #4ade80;"></span>
-              Coordinator
-            </span>
-            <span class="state-coordinator-warn state-override state-paused" style="display: none; align-items: center; gap: var(--space-xs); color: #fbbf24; font-size: var(--font-size-sm);">
-              <span style="width: 8px; height: 8px; border-radius: 50%; background: #fbbf24;"></span>
-              Coordinator
-            </span>
-            <span class="state-coordinator-error state-stalled" style="display: none; align-items: center; gap: var(--space-xs); color: #ef4444; font-size: var(--font-size-sm);">
-              <span style="width: 8px; height: 8px; border-radius: 50%; background: #ef4444; animation: pulse 1s infinite;"></span>
-              Stalled
-            </span>
-          </div>
-        </div>
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-md); padding: var(--space-md);">
-          <!-- NOW - varies by state -->
-          <div class="state-now-panel" style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-md); transition: all 0.2s;">
-            <div style="color: var(--text-secondary); font-size: var(--font-size-sm); margin-bottom: var(--space-xs);">NOW</div>
-            <!-- CLIP state (default) -->
-            <div class="state-playing">
-              <div style="color: var(--text-primary); font-weight: 600;">CLIP</div>
-              <div style="color: var(--text-primary);">T. Singletary</div>
-              <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">Vault · 9.725</div>
-            </div>
-            <!-- LIVE state -->
-            <div class="state-live" style="display: none;">
-              <div style="color: #ef4444; font-weight: 600;">LIVE</div>
-              <div style="color: var(--text-primary);">Balance Beam</div>
-              <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">Camera 3 · 1:23</div>
-            </div>
-            <!-- OVERRIDE state -->
-            <div class="state-override" style="display: none;">
-              <div style="color: #fbbf24; font-weight: 600;">OVERRIDE</div>
-              <div style="color: var(--text-primary);">Camera 3 (BB)</div>
-              <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">Forced by producer</div>
-            </div>
-            <!-- FALLBACK state -->
-            <div class="state-fallback" style="display: none;">
-              <div style="color: #a78bfa; font-weight: 600;">FALLBACK</div>
-              <div style="color: var(--text-primary);">Team Standings</div>
-              <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">Gap fill sequence</div>
-            </div>
-            <!-- PAUSED state -->
-            <div class="state-paused" style="display: none;">
-              <div style="color: #fbbf24; font-weight: 600;">PAUSED</div>
-              <div style="color: var(--text-primary);">Playout frozen</div>
-              <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">Manual control active</div>
-            </div>
-            <!-- STALLED state -->
-            <div class="state-stalled" style="display: none;">
-              <div style="color: #ef4444; font-weight: 600;">STALLED</div>
-              <div style="color: var(--text-primary);">G. Reed · Bars</div>
-              <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">Load timeout</div>
-            </div>
-            <!-- MOMENT_REPLAY state -->
-            <div class="state-moment-replay" style="display: none;">
-              <div style="color: #f472b6; font-weight: 600;">MOMENT REPLAY</div>
-              <div style="color: var(--text-primary);">T. Singletary</div>
-              <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">Vault · 0.5x</div>
-            </div>
-            <!-- BREAK state -->
-            <div class="state-break" style="display: none;">
-              <div style="color: #f97316; font-weight: 600;">BREAK</div>
-              <div style="color: var(--text-primary);">Sponsor Logo</div>
-              <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">Rotation break</div>
-            </div>
-          </div>
-          <!-- NEXT -->
-          <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-md);">
-            <div style="color: var(--text-secondary); font-size: var(--font-size-sm); margin-bottom: var(--space-xs);">NEXT</div>
-            <!-- Normal next (CLIP, LIVE, OVERRIDE, MOMENT_REPLAY, BREAK states) -->
-            <div class="state-playing state-live state-override state-moment-replay state-break">
-              <div style="color: var(--text-primary); font-weight: 600;">Clip: H. Fitzgerald</div>
-              <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">Vault · 9.475</div>
-              <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">SCSU</div>
-              <div style="display: flex; align-items: center; gap: var(--space-xs); margin-top: var(--space-xs);">
-                <span style="color: #4ade80; font-size: var(--font-size-sm);">✓</span>
-                <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">Preloaded</span>
-              </div>
-            </div>
-            <!-- FALLBACK state - no clips -->
-            <div class="state-fallback" style="display: none;">
-              <div style="color: var(--text-secondary); font-weight: 600;">—</div>
-              <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">No clips queued</div>
-              <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">Waiting for routines</div>
-            </div>
-            <!-- PAUSED state -->
-            <div class="state-paused" style="display: none;">
-              <div style="color: #fbbf24; font-weight: 600;">On hold</div>
-              <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">Resume to continue</div>
-            </div>
-            <!-- STALLED state - recovery pending -->
-            <div class="state-stalled" style="display: none;">
-              <div style="color: #ef4444; font-weight: 600;">Recovery pending</div>
-              <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">Auto-skip in 5s...</div>
-              <button class="btn btn-secondary" style="margin-top: var(--space-xs); font-size: 10px; padding: 2px 6px;">Skip Now</button>
-            </div>
-          </div>
-          <!-- QUEUE -->
-          <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-md);">
-            <div style="color: var(--text-secondary); font-size: var(--font-size-sm); margin-bottom: var(--space-xs);">QUEUE</div>
-            <!-- Normal queue (CLIP, LIVE, OVERRIDE, PAUSED, STALLED, MOMENT_REPLAY, BREAK states) -->
-            <div class="state-playing state-live state-override state-paused state-stalled state-moment-replay state-break">
-              <div style="color: var(--text-primary); font-weight: 600;">62 clips</div>
-              <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">~18:30 left</div>
-              <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">0 played</div>
-            </div>
-            <!-- FALLBACK state - empty queue -->
-            <div class="state-fallback" style="display: none;">
-              <div style="color: var(--text-secondary); font-weight: 600;">0 clips</div>
-              <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">Queue empty</div>
-              <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">Cycling fallback</div>
-            </div>
-          </div>
-        </div>
+  <!-- Status Cards: NOW / NEXT / QUEUE -->
+  <div class="playout-status-cards">
+    <!-- NOW Card -->
+    <div class="status-card status-card--now" id="nowCard">
+      <div class="status-card__label">NOW</div>
+      <div class="status-card__mode" id="nowMode">
+        <span class="mode-badge mode-badge--live" id="nowBadge">LIVE</span>
       </div>
-
-      <!-- 4.4 Camera Status Panel -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">CAMERAS</div>
-          <span class="section-badge" data-section="4.4">§4.4</span>
-        </div>
-        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-sm); padding: var(--space-md);">
-          <!-- Camera 1 - VT (Recording) -->
-          <div class="camera-card" style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-sm); text-align: center; border: 1px solid var(--border-color); transition: all 0.2s;">
-            <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">VT</div>
-            <div style="color: var(--text-primary); font-weight: 600;">Camera 1</div>
-            <div style="display: flex; align-items: center; justify-content: center; gap: var(--space-xs); margin: var(--space-xs) 0;">
-              <span style="width: 8px; height: 8px; border-radius: 50%; background: #4ade80;"></span>
-              <span style="color: #4ade80; font-size: var(--font-size-sm);">Recording</span>
-            </div>
-            <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">0:45</div>
-            <button class="btn btn-secondary" style="margin-top: var(--space-xs); font-size: var(--font-size-sm); padding: 4px 8px;">Force</button>
-          </div>
-          <!-- Camera 2 - UB (Idle - varies by state) -->
-          <div class="camera-card camera-2" style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-sm); text-align: center; border: 1px solid var(--border-color); transition: all 0.2s;">
-            <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">UB</div>
-            <div style="color: var(--text-primary); font-weight: 600;">Camera 2</div>
-            <div style="display: flex; align-items: center; justify-content: center; gap: var(--space-xs); margin: var(--space-xs) 0;">
-              <span style="width: 8px; height: 8px; border-radius: 50%; background: #666;"></span>
-              <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">Idle</span>
-            </div>
-            <button class="btn btn-secondary" style="margin-top: var(--space-xs); font-size: var(--font-size-sm); padding: 4px 8px;">Force</button>
-          </div>
-          <!-- Camera 3 - BB (state varies) -->
-          <div class="camera-card camera-3" style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-sm); text-align: center; transition: all 0.2s;">
-            <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">BB</div>
-            <div style="color: var(--text-primary); font-weight: 600;">Camera 3</div>
-            <!-- CLIP state - idle -->
-            <div class="state-playing camera-3-playing" style="display: flex; flex-direction: column; align-items: center;">
-              <div style="display: flex; align-items: center; justify-content: center; gap: var(--space-xs); margin: var(--space-xs) 0;">
-                <span style="width: 8px; height: 8px; border-radius: 50%; background: #666;"></span>
-                <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">Idle</span>
-              </div>
-              <button class="btn btn-secondary" style="margin-top: var(--space-xs); font-size: var(--font-size-sm); padding: 4px 8px;">Force</button>
-            </div>
-            <!-- LIVE state - LIVE on this camera -->
-            <div class="state-live camera-3-live" style="display: none; flex-direction: column; align-items: center;">
-              <div style="display: flex; align-items: center; justify-content: center; gap: var(--space-xs); margin: var(--space-xs) 0;">
-                <span style="width: 8px; height: 8px; border-radius: 50%; background: #ef4444;"></span>
-                <span style="color: #ef4444; font-size: var(--font-size-sm);">LIVE</span>
-              </div>
-              <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">1:23</div>
-              <button class="btn btn-primary" style="margin-top: var(--space-xs); font-size: var(--font-size-sm); padding: 4px 8px; background: var(--color-producer);">Active</button>
-            </div>
-            <!-- OVERRIDE state - forced -->
-            <div class="state-override camera-3-override" style="display: none; flex-direction: column; align-items: center;">
-              <div style="display: flex; align-items: center; justify-content: center; gap: var(--space-xs); margin: var(--space-xs) 0;">
-                <span style="width: 8px; height: 8px; border-radius: 50%; background: #fbbf24;"></span>
-                <span style="color: #fbbf24; font-size: var(--font-size-sm);">FORCED</span>
-              </div>
-              <button class="btn" style="margin-top: var(--space-xs); font-size: var(--font-size-sm); padding: 4px 8px; background: #fbbf24; color: #000;">Override</button>
-            </div>
-            <!-- FALLBACK, PAUSED, STALLED, MOMENT_REPLAY, BREAK - idle -->
-            <div class="state-fallback state-paused state-stalled state-moment-replay state-break camera-3-idle" style="display: none; flex-direction: column; align-items: center;">
-              <div style="display: flex; align-items: center; justify-content: center; gap: var(--space-xs); margin: var(--space-xs) 0;">
-                <span style="width: 8px; height: 8px; border-radius: 50%; background: #666;"></span>
-                <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">Idle</span>
-              </div>
-              <button class="btn btn-secondary" style="margin-top: var(--space-xs); font-size: var(--font-size-sm); padding: 4px 8px;">Force</button>
-            </div>
-          </div>
-          <!-- Camera 4 - FX -->
-          <div class="camera-card" style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-sm); text-align: center; border: 1px solid var(--border-color); transition: all 0.2s;">
-            <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">FX</div>
-            <div style="color: var(--text-primary); font-weight: 600;">Camera 4</div>
-            <div style="display: flex; align-items: center; justify-content: center; gap: var(--space-xs); margin: var(--space-xs) 0;">
-              <span style="width: 8px; height: 8px; border-radius: 50%; background: #666;"></span>
-              <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">Idle</span>
-            </div>
-            <button class="btn btn-secondary" style="margin-top: var(--space-xs); font-size: var(--font-size-sm); padding: 4px 8px;">Force</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- 4.6 Override Controls -->
-      <div class="card override-controls-card" style="border: 1px solid #4ade80; transition: all 0.2s;">
-        <div class="card-header">
-          <div class="card-title">OVERRIDE CONTROLS</div>
-          <span class="section-badge" data-section="4.6">§4.6</span>
-        </div>
-        <div style="padding: var(--space-md);">
-          <!-- Default controls (CLIP, LIVE, FALLBACK, MOMENT_REPLAY, BREAK states) -->
-          <div class="state-playing state-live state-fallback state-moment-replay state-break override-default">
-            <div style="display: flex; flex-wrap: wrap; gap: var(--space-sm); margin-bottom: var(--space-md);">
-              <button class="btn btn-secondary" style="display: flex; align-items: center; gap: var(--space-xs);">
-                <span>⏸</span> Pause <span class="kbd">Space</span>
-              </button>
-              <button class="btn btn-secondary" style="display: flex; align-items: center; gap: var(--space-xs);">
-                <span>⏭</span> Skip <span class="kbd">S</span>
-              </button>
-              <select class="btn btn-secondary" style="min-width: 140px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color);">
-                <option>Force Camera ▾</option>
-                <option>[1] VT</option>
-                <option>[2] UB</option>
-                <option>[3] BB</option>
-                <option>[4] FX</option>
-              </select>
-            </div>
-            <div style="display: flex; flex-wrap: wrap; gap: var(--space-sm);">
-              <button class="btn" style="background: var(--color-override); color: white;">
-                ◼ Stop Playout
-              </button>
-              <button class="btn btn-secondary" style="display: flex; align-items: center; gap: var(--space-xs); opacity: 0.5;" disabled>
-                ↩ Release <span class="kbd">Esc</span>
-              </button>
-              <button class="btn btn-secondary">
-                ? Shortcuts
-              </button>
-            </div>
-          </div>
-
-          <!-- OVERRIDE state controls - Release highlighted -->
-          <div class="state-override override-active" style="display: none;">
-            <div style="background: rgba(251, 191, 36, 0.1); border: 1px dashed #fbbf24; border-radius: var(--border-radius); padding: var(--space-sm); margin-bottom: var(--space-md);">
-              <span style="color: #fbbf24; font-weight: 600;">⚠ Override Active:</span>
-              <span style="color: var(--text-primary);"> Forced to Camera 3 (BB)</span>
-            </div>
-            <div style="display: flex; flex-wrap: wrap; gap: var(--space-sm); margin-bottom: var(--space-md);">
-              <button class="btn btn-secondary" style="display: flex; align-items: center; gap: var(--space-xs);">
-                <span>⏸</span> Pause <span class="kbd">Space</span>
-              </button>
-              <button class="btn btn-secondary" style="display: flex; align-items: center; gap: var(--space-xs);">
-                <span>⏭</span> Skip <span class="kbd">S</span>
-              </button>
-              <select class="btn btn-secondary" style="min-width: 140px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color);">
-                <option>Force Camera ▾</option>
-                <option>[1] VT</option>
-                <option>[2] UB</option>
-                <option>[3] BB ✓</option>
-                <option>[4] FX</option>
-              </select>
-            </div>
-            <div style="display: flex; flex-wrap: wrap; gap: var(--space-sm);">
-              <button class="btn" style="background: var(--color-override); color: white;">
-                ◼ Stop Playout
-              </button>
-              <button class="btn" style="background: #4ade80; color: #000; display: flex; align-items: center; gap: var(--space-xs);">
-                ↩ Release Override <span class="kbd">Esc</span>
-              </button>
-              <button class="btn btn-secondary">
-                ? Shortcuts
-              </button>
-            </div>
-          </div>
-
-          <!-- PAUSED state controls - Resume highlighted -->
-          <div class="state-paused override-paused" style="display: none;">
-            <div style="background: rgba(251, 191, 36, 0.1); border: 1px dashed #fbbf24; border-radius: var(--border-radius); padding: var(--space-sm); margin-bottom: var(--space-md);">
-              <span style="color: #fbbf24; font-weight: 600;">⏸ Playout Paused</span>
-              <span style="color: var(--text-secondary);"> — nothing will advance automatically</span>
-            </div>
-            <div style="display: flex; flex-wrap: wrap; gap: var(--space-sm); margin-bottom: var(--space-md);">
-              <button class="btn" style="background: #4ade80; color: #000; display: flex; align-items: center; gap: var(--space-xs);">
-                <span>▶</span> Resume <span class="kbd">Space</span>
-              </button>
-              <button class="btn btn-secondary" style="display: flex; align-items: center; gap: var(--space-xs);">
-                <span>⏭</span> Skip <span class="kbd">S</span>
-              </button>
-              <select class="btn btn-secondary" style="min-width: 140px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color);">
-                <option>Force Camera ▾</option>
-                <option>[1] VT</option>
-                <option>[2] UB</option>
-                <option>[3] BB</option>
-                <option>[4] FX</option>
-              </select>
-            </div>
-            <div style="display: flex; flex-wrap: wrap; gap: var(--space-sm);">
-              <button class="btn" style="background: var(--color-override); color: white;">
-                ◼ Stop Playout
-              </button>
-              <button class="btn btn-secondary">
-                ? Shortcuts
-              </button>
-            </div>
-          </div>
-
-          <!-- STALLED state controls - Recovery actions -->
-          <div class="state-stalled override-stalled" style="display: none;">
-            <div style="background: rgba(239, 68, 71, 0.1); border: 1px dashed #ef4444; border-radius: var(--border-radius); padding: var(--space-sm); margin-bottom: var(--space-md);">
-              <span style="color: #ef4444; font-weight: 600;">⚠ Clip Stalled:</span>
-              <span style="color: var(--text-primary);"> G. Reed · Bars — load timeout after 15s</span>
-              <div style="margin-top: var(--space-xs); color: var(--text-secondary); font-size: var(--font-size-sm);">Auto-skip in 5 seconds...</div>
-            </div>
-            <div style="display: flex; flex-wrap: wrap; gap: var(--space-sm); margin-bottom: var(--space-md);">
-              <button class="btn" style="background: #ef4444; color: white; display: flex; align-items: center; gap: var(--space-xs);">
-                <span>⏭</span> Skip Now
-              </button>
-              <button class="btn btn-secondary" style="display: flex; align-items: center; gap: var(--space-xs);">
-                <span>🔄</span> Retry Clip
-              </button>
-              <select class="btn btn-secondary" style="min-width: 140px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color);">
-                <option>Force Camera ▾</option>
-                <option>[1] VT</option>
-                <option>[2] UB</option>
-                <option>[3] BB</option>
-                <option>[4] FX</option>
-              </select>
-            </div>
-            <div style="display: flex; flex-wrap: wrap; gap: var(--space-sm);">
-              <button class="btn" style="background: var(--color-override); color: white;">
-                ◼ Stop Playout
-              </button>
-              <button class="btn btn-secondary">
-                ? Shortcuts
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 4.6B Event Log Panel -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">EVENT LOG</div>
-          <div style="display: flex; align-items: center; gap: var(--space-sm);">
-            <span class="section-badge" data-section="4.6B">§4.6B</span>
-            <div style="display: flex; gap: var(--space-xs);">
-              <button class="btn btn-secondary" style="padding: 2px 8px; font-size: var(--font-size-sm);">5m</button>
-              <button class="btn btn-primary" style="padding: 2px 8px; font-size: var(--font-size-sm); background: var(--color-producer);">15m</button>
-              <button class="btn btn-secondary" style="padding: 2px 8px; font-size: var(--font-size-sm);">30m</button>
-              <button class="btn btn-secondary" style="padding: 2px 8px; font-size: var(--font-size-sm);">All</button>
-            </div>
-          </div>
-        </div>
-        <div style="padding: var(--space-md); font-family: var(--font-mono); font-size: var(--font-size-sm); max-height: 200px; overflow-y: auto;">
-          <!-- CLIP state log -->
-          <div class="state-playing event-log-clip">
-            <div style="display: flex; gap: var(--space-sm); padding: var(--space-xs) 0; border-bottom: 1px solid var(--border-color);">
-              <span style="color: var(--text-secondary); min-width: 60px;">19:45:12</span>
-              <span style="color: #4ade80;">●</span>
-              <span style="color: var(--text-primary);">Clip playing: T. Singletary · VT · 9.725</span>
-            </div>
-            <div style="display: flex; gap: var(--space-sm); padding: var(--space-xs) 0; border-bottom: 1px solid var(--border-color);">
-              <span style="color: var(--text-secondary); min-width: 60px;">19:44:58</span>
-              <span style="color: #4ade80;">●</span>
-              <span style="color: var(--text-primary);">Clip played: H. Fitzgerald · VT · 9.475</span>
-            </div>
-            <div style="display: flex; gap: var(--space-sm); padding: var(--space-xs) 0; border-bottom: 1px solid var(--border-color);">
-              <span style="color: var(--text-secondary); min-width: 60px;">19:44:30</span>
-              <span style="color: #4ade80;">●</span>
-              <span style="color: var(--text-primary);">Playout started — Rotation 1</span>
-            </div>
-          </div>
-
-          <!-- LIVE state log -->
-          <div class="state-live event-log-live" style="display: none;">
-            <div style="display: flex; gap: var(--space-sm); padding: var(--space-xs) 0; border-bottom: 1px solid var(--border-color);">
-              <span style="color: var(--text-secondary); min-width: 60px;">19:46:30</span>
-              <span style="color: #ef4444;">●</span>
-              <span style="color: var(--text-primary);">Live camera: BB (Camera 3) — routine in progress</span>
-            </div>
-            <div style="display: flex; gap: var(--space-sm); padding: var(--space-xs) 0; border-bottom: 1px solid var(--border-color);">
-              <span style="color: var(--text-secondary); min-width: 60px;">19:46:15</span>
-              <span style="color: #4ade80;">●</span>
-              <span style="color: var(--text-primary);">Clip played: T. Singletary · VT · 9.725</span>
-            </div>
-            <div style="display: flex; gap: var(--space-sm); padding: var(--space-xs) 0; border-bottom: 1px solid var(--border-color);">
-              <span style="color: var(--text-secondary); min-width: 60px;">19:45:12</span>
-              <span style="color: #4ade80;">●</span>
-              <span style="color: var(--text-primary);">Playout started — Rotation 1</span>
-            </div>
-          </div>
-
-          <!-- OVERRIDE state log -->
-          <div class="state-override event-log-override" style="display: none;">
-            <div style="display: flex; gap: var(--space-sm); padding: var(--space-xs) 0; border-bottom: 1px solid var(--border-color);">
-              <span style="color: var(--text-secondary); min-width: 60px;">19:47:05</span>
-              <span style="color: #fbbf24;">⚠</span>
-              <span style="color: var(--text-primary);">Override: Force Camera 3 (BB)</span>
-            </div>
-            <div style="display: flex; gap: var(--space-sm); padding: var(--space-xs) 0; border-bottom: 1px solid var(--border-color);">
-              <span style="color: var(--text-secondary); min-width: 60px;">19:46:50</span>
-              <span style="color: #fbbf24;">⚠</span>
-              <span style="color: var(--text-primary);">Clip skipped (producer override): H. Fitzgerald</span>
-            </div>
-            <div style="display: flex; gap: var(--space-sm); padding: var(--space-xs) 0; border-bottom: 1px solid var(--border-color);">
-              <span style="color: var(--text-secondary); min-width: 60px;">19:46:30</span>
-              <span style="color: #4ade80;">●</span>
-              <span style="color: var(--text-primary);">Clip played: T. Singletary · VT · 9.725</span>
-            </div>
-          </div>
-
-          <!-- FALLBACK state log -->
-          <div class="state-fallback event-log-fallback" style="display: none;">
-            <div style="display: flex; gap: var(--space-sm); padding: var(--space-xs) 0; border-bottom: 1px solid var(--border-color);">
-              <span style="color: var(--text-secondary); min-width: 60px;">19:48:00</span>
-              <span style="color: #a78bfa;">◐</span>
-              <span style="color: var(--text-primary);">Fallback: Team Standings (no clips queued)</span>
-            </div>
-            <div style="display: flex; gap: var(--space-sm); padding: var(--space-xs) 0; border-bottom: 1px solid var(--border-color);">
-              <span style="color: var(--text-secondary); min-width: 60px;">19:47:45</span>
-              <span style="color: #4ade80;">●</span>
-              <span style="color: var(--text-primary);">Clip played: M. Chen · VT · 9.650</span>
-            </div>
-            <div style="display: flex; gap: var(--space-sm); padding: var(--space-xs) 0; border-bottom: 1px solid var(--border-color);">
-              <span style="color: var(--text-secondary); min-width: 60px;">19:47:30</span>
-              <span style="color: #a78bfa;">◐</span>
-              <span style="color: var(--text-primary);">Queue exhausted — entering fallback mode</span>
-            </div>
-          </div>
-
-          <!-- PAUSED state log -->
-          <div class="state-paused event-log-paused" style="display: none;">
-            <div style="display: flex; gap: var(--space-sm); padding: var(--space-xs) 0; border-bottom: 1px solid var(--border-color);">
-              <span style="color: var(--text-secondary); min-width: 60px;">19:48:30</span>
-              <span style="color: #fbbf24;">⏸</span>
-              <span style="color: var(--text-primary);">Playout paused by producer</span>
-            </div>
-            <div style="display: flex; gap: var(--space-sm); padding: var(--space-xs) 0; border-bottom: 1px solid var(--border-color);">
-              <span style="color: var(--text-secondary); min-width: 60px;">19:48:15</span>
-              <span style="color: #4ade80;">●</span>
-              <span style="color: var(--text-primary);">Clip played: T. Singletary · VT · 9.725</span>
-            </div>
-            <div style="display: flex; gap: var(--space-sm); padding: var(--space-xs) 0; border-bottom: 1px solid var(--border-color);">
-              <span style="color: var(--text-secondary); min-width: 60px;">19:47:50</span>
-              <span style="color: #4ade80;">●</span>
-              <span style="color: var(--text-primary);">Playout started — Rotation 1</span>
-            </div>
-          </div>
-
-          <!-- STALLED state log -->
-          <div class="state-stalled event-log-stalled" style="display: none;">
-            <div style="display: flex; gap: var(--space-sm); padding: var(--space-xs) 0; border-bottom: 1px solid var(--border-color);">
-              <span style="color: var(--text-secondary); min-width: 60px;">19:49:00</span>
-              <span style="color: #ef4444;">⚠</span>
-              <span style="color: var(--text-primary);">Clip stalled: G. Reed · UB — load timeout</span>
-              <button class="btn btn-secondary" style="padding: 2px 6px; font-size: 10px; margin-left: auto;">Retry</button>
-            </div>
-            <div style="display: flex; gap: var(--space-sm); padding: var(--space-xs) 0; border-bottom: 1px solid var(--border-color);">
-              <span style="color: var(--text-secondary); min-width: 60px;">19:48:45</span>
-              <span style="color: #fbbf24;">⚠</span>
-              <span style="color: var(--text-primary);">Clip loading: G. Reed · UB — slow connection</span>
-            </div>
-            <div style="display: flex; gap: var(--space-sm); padding: var(--space-xs) 0; border-bottom: 1px solid var(--border-color);">
-              <span style="color: var(--text-secondary); min-width: 60px;">19:48:30</span>
-              <span style="color: #4ade80;">●</span>
-              <span style="color: var(--text-primary);">Clip played: T. Singletary · VT · 9.725</span>
-            </div>
-          </div>
-
-          <!-- MOMENT_REPLAY state log -->
-          <div class="state-moment-replay event-log-moment-replay" style="display: none;">
-            <div style="display: flex; gap: var(--space-sm); padding: var(--space-xs) 0; border-bottom: 1px solid var(--border-color);">
-              <span style="color: var(--text-secondary); min-width: 60px;">19:46:00</span>
-              <span style="color: #f472b6;">↻</span>
-              <span style="color: var(--text-primary);">Moment replay: T. Singletary · VT · 0.5x</span>
-            </div>
-            <div style="display: flex; gap: var(--space-sm); padding: var(--space-xs) 0; border-bottom: 1px solid var(--border-color);">
-              <span style="color: var(--text-secondary); min-width: 60px;">19:45:55</span>
-              <span style="color: #f472b6;">🚩</span>
-              <span style="color: var(--text-primary);">Moment flagged: 0:04–0:12 (Play Now)</span>
-            </div>
-            <div style="display: flex; gap: var(--space-sm); padding: var(--space-xs) 0; border-bottom: 1px solid var(--border-color);">
-              <span style="color: var(--text-secondary); min-width: 60px;">19:45:30</span>
-              <span style="color: #4ade80;">●</span>
-              <span style="color: var(--text-primary);">Clip played: T. Singletary · VT · 9.725</span>
-            </div>
-          </div>
-
-          <!-- BREAK state log -->
-          <div class="state-break event-log-break" style="display: none;">
-            <div style="display: flex; gap: var(--space-sm); padding: var(--space-xs) 0; border-bottom: 1px solid var(--border-color);">
-              <span style="color: var(--text-secondary); min-width: 60px;">19:50:15</span>
-              <span style="color: #f97316;">◆</span>
-              <span style="color: var(--text-primary);">Break item: Sponsor Logo (2 of 5)</span>
-            </div>
-            <div style="display: flex; gap: var(--space-sm); padding: var(--space-xs) 0; border-bottom: 1px solid var(--border-color);">
-              <span style="color: var(--text-secondary); min-width: 60px;">19:50:00</span>
-              <span style="color: #f97316;">◆</span>
-              <span style="color: var(--text-primary);">Rotation break started — 5 items</span>
-            </div>
-            <div style="display: flex; gap: var(--space-sm); padding: var(--space-xs) 0; border-bottom: 1px solid var(--border-color);">
-              <span style="color: var(--text-secondary); min-width: 60px;">19:49:45</span>
-              <span style="color: #4ade80;">●</span>
-              <span style="color: var(--text-primary);">Rotation 1 complete — 24 clips played</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
+      <div class="status-card__primary" id="nowPrimary">Balance Beam</div>
+      <div class="status-card__meta" id="nowMeta">Camera 3</div>
     </div>
 
-    <!-- Right Column: Clip Queue Panel -->
-    <div style="display: flex; flex-direction: column; gap: var(--space-md);">
-
-      <!-- 4.5 Clip Queue Panel -->
-      <div class="card" style="flex: 1; display: flex; flex-direction: column;">
-        <div class="card-header">
-          <div class="card-title">CLIP QUEUE</div>
-          <div style="display: flex; align-items: center; gap: var(--space-sm);">
-            <span class="section-badge" data-section="4.5">§4.5</span>
-            <button class="btn btn-secondary" style="padding: 4px 8px; font-size: var(--font-size-sm);">Retry All</button>
-            <button class="btn btn-secondary" style="padding: 4px 8px; font-size: var(--font-size-sm);">↻ Refresh</button>
-          </div>
-        </div>
-
-        <!-- Tabs -->
-        <div style="display: flex; gap: 0; padding: 0 var(--space-md); border-bottom: 1px solid var(--border-color);">
-          <button style="background: transparent; border: none; color: var(--color-producer); padding: var(--space-sm) var(--space-md); border-bottom: 2px solid var(--color-producer); cursor: pointer;">All</button>
-          <button style="background: transparent; border: none; color: var(--text-secondary); padding: var(--space-sm) var(--space-md); border-bottom: 2px solid transparent; cursor: pointer;">Queued (60)</button>
-          <button style="background: transparent; border: none; color: var(--text-secondary); padding: var(--space-sm) var(--space-md); border-bottom: 2px solid transparent; cursor: pointer;">Played (2)</button>
-          <button style="background: transparent; border: none; color: var(--text-secondary); padding: var(--space-sm) var(--space-md); border-bottom: 2px solid transparent; cursor: pointer;">Shown Live (0)</button>
-        </div>
-
-        <!-- Filters -->
-        <div style="display: flex; gap: var(--space-xs); padding: var(--space-sm) var(--space-md); border-bottom: 1px solid var(--border-color);">
-          <select style="background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 4px 8px; color: var(--text-primary); font-size: var(--font-size-sm); flex: 1;">
-            <option>All Apparatus</option>
-            <option>VT</option>
-            <option>UB</option>
-            <option>BB</option>
-            <option>FX</option>
-          </select>
-          <select style="background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 4px 8px; color: var(--text-primary); font-size: var(--font-size-sm); flex: 1;">
-            <option>All Teams</option>
-            <option>Bridgeport</option>
-            <option>Yale</option>
-            <option>SCSU</option>
-          </select>
-          <select style="background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 4px 8px; color: var(--text-primary); font-size: var(--font-size-sm); flex: 1;">
-            <option>All Rot.</option>
-            <option>R1</option>
-            <option>R2</option>
-            <option>R3</option>
-            <option>R4</option>
-          </select>
-        </div>
-
-        <!-- NOW PLAYING section - varies by state -->
-        <div class="now-playing-section" style="padding: var(--space-md); border-bottom: 1px solid var(--border-color);">
-          <!-- CLIP state - showing clip -->
-          <div class="state-playing now-playing-clip">
-            <div style="color: var(--color-producer); font-size: var(--font-size-sm); font-weight: 600; margin-bottom: var(--space-sm);">▶ NOW PLAYING</div>
-            <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-sm); border: 2px solid var(--color-producer);">
-              <div style="display: flex; gap: var(--space-sm); margin-bottom: var(--space-sm);">
-                <div style="width: 64px; height: 36px; background: linear-gradient(135deg, #8b5cf6, #6366f1); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: var(--font-size-sm);">VT</div>
-                <div style="flex: 1;">
-                  <div style="display: flex; justify-content: space-between; align-items: start;">
-                    <div>
-                      <div style="color: var(--text-primary); font-weight: 600;">Tamyra Singletary</div>
-                      <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">Vault · 9.725</div>
-                      <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">Bridgeport</div>
-                    </div>
-                    <span style="background: var(--bg-secondary); padding: 2px 6px; border-radius: 4px; font-size: 10px; color: var(--text-secondary);">R1</span>
-                  </div>
-                </div>
-              </div>
-              <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-sm);">
-                <span style="color: var(--text-secondary); font-size: var(--font-size-sm); min-width: 32px;">0:12</span>
-                <div style="flex: 1; height: 6px; background: var(--bg-secondary); border-radius: 3px; overflow: hidden;">
-                  <div style="width: 65%; height: 100%; background: var(--color-producer);"></div>
-                </div>
-                <span style="color: var(--text-secondary); font-size: var(--font-size-sm); min-width: 32px;">-0:06</span>
-              </div>
-              <div style="display: flex; gap: var(--space-xs);">
-                <button class="btn btn-secondary" style="padding: 4px 8px; font-size: var(--font-size-sm);">⏸ Pause</button>
-                <button class="btn btn-secondary" style="padding: 4px 8px; font-size: var(--font-size-sm);">⏭ Skip</button>
-                <button class="btn btn-secondary" style="padding: 4px 8px; font-size: var(--font-size-sm);">🚩 Flag Moment</button>
-                <button class="btn btn-secondary" style="padding: 4px 8px; font-size: var(--font-size-sm); margin-left: auto;">▶ Preview</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- LIVE state - showing live camera -->
-          <div class="state-live now-playing-live" style="display: none;">
-            <div style="color: #ef4444; font-size: var(--font-size-sm); font-weight: 600; margin-bottom: var(--space-sm);">● LIVE CAMERA</div>
-            <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-sm); border: 2px solid #ef4444;">
-              <div style="display: flex; gap: var(--space-sm); align-items: center;">
-                <div style="width: 64px; height: 36px; background: linear-gradient(135deg, #34d399, #10b981); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: var(--font-size-sm);">BB</div>
-                <div style="flex: 1;">
-                  <div style="color: var(--text-primary); font-weight: 600;">Balance Beam — Camera 3</div>
-                  <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">Routine in progress · 1:23</div>
-                </div>
-                <span style="width: 12px; height: 12px; border-radius: 50%; background: #ef4444; animation: pulse 1s infinite;"></span>
-              </div>
-            </div>
-          </div>
-
-          <!-- OVERRIDE state - forced camera -->
-          <div class="state-override now-playing-override" style="display: none;">
-            <div style="color: #fbbf24; font-size: var(--font-size-sm); font-weight: 600; margin-bottom: var(--space-sm);">⚠ OVERRIDE ACTIVE</div>
-            <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-sm); border: 2px solid #fbbf24;">
-              <div style="display: flex; gap: var(--space-sm); align-items: center;">
-                <div style="width: 64px; height: 36px; background: linear-gradient(135deg, #34d399, #10b981); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: var(--font-size-sm);">BB</div>
-                <div style="flex: 1;">
-                  <div style="color: var(--text-primary); font-weight: 600;">Forced: Camera 3 (BB)</div>
-                  <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">Producer override active</div>
-                </div>
-                <button class="btn btn-secondary" style="padding: 4px 8px; font-size: var(--font-size-sm);">↩ Release</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- FALLBACK state - gap fill -->
-          <div class="state-fallback now-playing-fallback" style="display: none;">
-            <div style="color: #a78bfa; font-size: var(--font-size-sm); font-weight: 600; margin-bottom: var(--space-sm);">◐ FALLBACK — GAP FILL</div>
-            <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-sm); border: 2px solid #a78bfa;">
-              <div style="display: flex; gap: var(--space-sm); align-items: center;">
-                <div style="width: 64px; height: 36px; background: linear-gradient(135deg, #a78bfa, #8b5cf6); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 10px;">STND</div>
-                <div style="flex: 1;">
-                  <div style="color: var(--text-primary); font-weight: 600;">Team Standings</div>
-                  <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">Gap fill sequence · cycling</div>
-                </div>
-              </div>
-              <div style="margin-top: var(--space-sm); color: var(--text-secondary); font-size: var(--font-size-sm);">
-                Next: Sponsor Logo (10s) → Quad View (15s) → Standings...
-              </div>
-            </div>
-          </div>
-
-          <!-- PAUSED state - frozen -->
-          <div class="state-paused now-playing-paused" style="display: none;">
-            <div style="color: #fbbf24; font-size: var(--font-size-sm); font-weight: 600; margin-bottom: var(--space-sm);">⏸ PAUSED</div>
-            <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-sm); border: 2px dashed #fbbf24;">
-              <div style="text-align: center; padding: var(--space-md);">
-                <div style="color: var(--text-primary); font-weight: 600;">Playout Frozen</div>
-                <div style="color: var(--text-secondary); font-size: var(--font-size-sm); margin-top: var(--space-xs);">Nothing will advance automatically</div>
-                <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">Press Resume or use manual controls</div>
-                <button class="btn" style="margin-top: var(--space-md); background: #4ade80; color: #000;">▶ Resume Playout</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- STALLED state - error -->
-          <div class="state-stalled now-playing-stalled" style="display: none;">
-            <div style="color: #ef4444; font-size: var(--font-size-sm); font-weight: 600; margin-bottom: var(--space-sm);">⚠ STALLED</div>
-            <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-sm); border: 2px solid #ef4444;">
-              <div style="display: flex; gap: var(--space-sm); margin-bottom: var(--space-sm);">
-                <div style="width: 64px; height: 36px; background: linear-gradient(135deg, #f472b6, #ec4899); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: var(--font-size-sm);">UB</div>
-                <div style="flex: 1;">
-                  <div style="display: flex; justify-content: space-between; align-items: start;">
-                    <div>
-                      <div style="color: var(--text-primary); font-weight: 600;">Georgia Reed</div>
-                      <div style="color: #ef4444; font-size: var(--font-size-sm);">Load timeout — clip failed to buffer</div>
-                      <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">Yale</div>
-                    </div>
-                    <span style="background: #ef4444; padding: 2px 6px; border-radius: 4px; font-size: 10px; color: white;">FAILED</span>
-                  </div>
-                </div>
-              </div>
-              <div style="display: flex; gap: var(--space-xs);">
-                <button class="btn" style="padding: 4px 8px; font-size: var(--font-size-sm); background: #ef4444; color: white;">⏭ Skip Now</button>
-                <button class="btn btn-secondary" style="padding: 4px 8px; font-size: var(--font-size-sm);">🔄 Retry</button>
-                <div style="flex: 1; text-align: right; color: var(--text-secondary); font-size: var(--font-size-sm);">Auto-skip in 5s...</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- MOMENT_REPLAY state - playing moment replay -->
-          <div class="state-moment-replay now-playing-moment-replay" style="display: none;">
-            <div style="color: #f472b6; font-size: var(--font-size-sm); font-weight: 600; margin-bottom: var(--space-sm);">↻ MOMENT REPLAY</div>
-            <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-sm); border: 2px solid #f472b6;">
-              <div style="display: flex; gap: var(--space-sm); margin-bottom: var(--space-sm);">
-                <div style="width: 64px; height: 36px; background: linear-gradient(135deg, #8b5cf6, #6366f1); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: var(--font-size-sm);">VT</div>
-                <div style="flex: 1;">
-                  <div style="display: flex; justify-content: space-between; align-items: start;">
-                    <div>
-                      <div style="color: var(--text-primary); font-weight: 600;">Tamyra Singletary</div>
-                      <div style="color: #f472b6; font-size: var(--font-size-sm);">Moment replay · 0.5x speed</div>
-                      <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">Bridgeport</div>
-                    </div>
-                    <span style="background: #f472b6; padding: 2px 6px; border-radius: 4px; font-size: 10px; color: white;">REPLAY</span>
-                  </div>
-                </div>
-              </div>
-              <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-sm);">
-                <span style="color: var(--text-secondary); font-size: var(--font-size-sm); min-width: 32px;">0:04</span>
-                <div style="flex: 1; height: 6px; background: var(--bg-secondary); border-radius: 3px; overflow: hidden;">
-                  <div style="width: 50%; height: 100%; background: #f472b6;"></div>
-                </div>
-                <span style="color: var(--text-secondary); font-size: var(--font-size-sm); min-width: 32px;">-0:04</span>
-              </div>
-              <div style="display: flex; gap: var(--space-xs);">
-                <button class="btn btn-secondary" style="padding: 4px 8px; font-size: var(--font-size-sm);">⏭ Skip</button>
-                <span style="color: var(--text-secondary); font-size: var(--font-size-sm); margin-left: auto; display: flex; align-items: center; gap: var(--space-xs);">🔇 Muted</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- BREAK state - rotation break sequence -->
-          <div class="state-break now-playing-break" style="display: none;">
-            <div style="color: #f97316; font-size: var(--font-size-sm); font-weight: 600; margin-bottom: var(--space-sm);">◆ BREAK SEQUENCE</div>
-            <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-sm); border: 2px solid #f97316;">
-              <div style="display: flex; gap: var(--space-sm); margin-bottom: var(--space-sm);">
-                <div style="width: 64px; height: 36px; background: linear-gradient(135deg, #f97316, #ea580c); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 10px;">SPON</div>
-                <div style="flex: 1;">
-                  <div style="display: flex; justify-content: space-between; align-items: start;">
-                    <div>
-                      <div style="color: var(--text-primary); font-weight: 600;">Sponsor Logo</div>
-                      <div style="color: #f97316; font-size: var(--font-size-sm);">Rotation break · item 2 of 5</div>
-                    </div>
-                    <span style="background: #f97316; padding: 2px 6px; border-radius: 4px; font-size: 10px; color: white;">BREAK</span>
-                  </div>
-                </div>
-              </div>
-              <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-sm);">
-                <span style="color: var(--text-secondary); font-size: var(--font-size-sm); min-width: 32px;">0:05</span>
-                <div style="flex: 1; height: 6px; background: var(--bg-secondary); border-radius: 3px; overflow: hidden;">
-                  <div style="width: 50%; height: 100%; background: #f97316;"></div>
-                </div>
-                <span style="color: var(--text-secondary); font-size: var(--font-size-sm); min-width: 32px;">-0:05</span>
-              </div>
-              <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">
-                Next: Team Standings (15s) → Quad View (20s) → Resume Rotation 2
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- UP NEXT -->
-        <div style="padding: var(--space-md); border-bottom: 1px solid var(--border-color);">
-          <div style="color: var(--text-secondary); font-size: var(--font-size-sm); font-weight: 600; margin-bottom: var(--space-sm);">UP NEXT</div>
-
-          <!-- Shows in CLIP, LIVE, OVERRIDE, MOMENT_REPLAY, BREAK states -->
-          <div class="state-playing state-live state-override state-moment-replay state-break up-next-normal">
-            <!-- Next clip 1 -->
-            <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-sm); margin-bottom: var(--space-xs); border-left: 3px solid var(--color-producer);">
-              <div style="display: flex; gap: var(--space-sm);">
-                <div style="width: 48px; height: 27px; background: linear-gradient(135deg, #8b5cf6, #6366f1); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 10px;">VT</div>
-                <div style="flex: 1;">
-                  <div style="display: flex; justify-content: space-between; align-items: start;">
-                    <div>
-                      <div style="color: var(--text-primary); font-size: var(--font-size-sm);">Haley Fitzgerald · 9.475</div>
-                      <div style="color: var(--text-secondary); font-size: 10px;">SCSU · R1</div>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: var(--space-xs);">
-                      <span style="color: #4ade80; font-size: 10px;">✓ Preloaded</span>
-                      <button style="background: transparent; border: none; color: var(--text-secondary); cursor: pointer; font-size: var(--font-size-sm);">✕</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Next clip 2 -->
-            <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-sm); border-left: 3px solid var(--border-color);">
-              <div style="display: flex; gap: var(--space-sm);">
-                <div style="width: 48px; height: 27px; background: linear-gradient(135deg, #8b5cf6, #6366f1); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 10px;">VT</div>
-                <div style="flex: 1;">
-                  <div style="display: flex; justify-content: space-between; align-items: start;">
-                    <div>
-                      <div style="color: var(--text-primary); font-size: var(--font-size-sm);">Madison Chen · 9.650</div>
-                      <div style="color: var(--text-secondary); font-size: 10px;">Yale · R1</div>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: var(--space-xs);">
-                      <span style="color: var(--text-secondary); font-size: 10px;">Preloading...</span>
-                      <button style="background: transparent; border: none; color: var(--text-secondary); cursor: pointer; font-size: var(--font-size-sm);">✕</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- FALLBACK state - empty queue message -->
-          <div class="state-fallback up-next-fallback" style="display: none;">
-            <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-md); text-align: center; border: 1px dashed var(--border-color);">
-              <div style="color: var(--text-secondary);">No clips queued</div>
-              <div style="color: var(--text-muted); font-size: var(--font-size-sm); margin-top: var(--space-xs);">Waiting for routines to be recorded...</div>
-            </div>
-          </div>
-
-          <!-- PAUSED state - on hold -->
-          <div class="state-paused up-next-paused" style="display: none;">
-            <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-sm); margin-bottom: var(--space-xs); border-left: 3px solid #fbbf24; opacity: 0.7;">
-              <div style="display: flex; gap: var(--space-sm);">
-                <div style="width: 48px; height: 27px; background: linear-gradient(135deg, #8b5cf6, #6366f1); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 10px;">VT</div>
-                <div style="flex: 1;">
-                  <div style="color: var(--text-primary); font-size: var(--font-size-sm);">Haley Fitzgerald · 9.475</div>
-                  <div style="color: #fbbf24; font-size: 10px;">On hold (playout paused)</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- STALLED state - recovery queue -->
-          <div class="state-stalled up-next-stalled" style="display: none;">
-            <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-sm); margin-bottom: var(--space-xs); border-left: 3px solid var(--color-producer);">
-              <div style="display: flex; gap: var(--space-sm);">
-                <div style="width: 48px; height: 27px; background: linear-gradient(135deg, #8b5cf6, #6366f1); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 10px;">VT</div>
-                <div style="flex: 1;">
-                  <div style="display: flex; justify-content: space-between; align-items: start;">
-                    <div>
-                      <div style="color: var(--text-primary); font-size: var(--font-size-sm);">Haley Fitzgerald · 9.475</div>
-                      <div style="color: var(--text-secondary); font-size: 10px;">SCSU · R1</div>
-                    </div>
-                    <span style="color: #4ade80; font-size: 10px;">✓ Ready</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div style="color: var(--text-secondary); font-size: 10px; text-align: center;">Will play after skip/retry</div>
-          </div>
-        </div>
-
-        <!-- Scrollable clip list -->
-        <div style="flex: 1; overflow-y: auto; padding: var(--space-md);">
-          <div style="color: var(--text-secondary); font-size: var(--font-size-sm); margin-bottom: var(--space-sm);">QUEUED (58 more)</div>
-
-          <!-- Sample queued clips -->
-          <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-sm); margin-bottom: var(--space-xs);">
-            <div style="display: flex; gap: var(--space-sm); align-items: center;">
-              <div style="width: 40px; height: 22px; background: linear-gradient(135deg, #f472b6, #ec4899); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 10px;">UB</div>
-              <div style="flex: 1;">
-                <div style="color: var(--text-primary); font-size: var(--font-size-sm);">Emily Torres · 9.825</div>
-                <div style="color: var(--text-secondary); font-size: 10px;">Bridgeport · R1</div>
-              </div>
-              <button style="background: transparent; border: none; color: var(--text-secondary); cursor: pointer; font-size: var(--font-size-sm);">✕</button>
-            </div>
-          </div>
-
-          <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-sm); margin-bottom: var(--space-xs);">
-            <div style="display: flex; gap: var(--space-sm); align-items: center;">
-              <div style="width: 40px; height: 22px; background: linear-gradient(135deg, #f472b6, #ec4899); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 10px;">UB</div>
-              <div style="flex: 1;">
-                <div style="color: var(--text-primary); font-size: var(--font-size-sm);">Sarah Kim · 9.700</div>
-                <div style="color: var(--text-secondary); font-size: 10px;">Yale · R1</div>
-              </div>
-              <button style="background: transparent; border: none; color: var(--text-secondary); cursor: pointer; font-size: var(--font-size-sm);">✕</button>
-            </div>
-          </div>
-
-          <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-sm); margin-bottom: var(--space-xs);">
-            <div style="display: flex; gap: var(--space-sm); align-items: center;">
-              <div style="width: 40px; height: 22px; background: linear-gradient(135deg, #34d399, #10b981); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 10px;">BB</div>
-              <div style="flex: 1;">
-                <div style="color: var(--text-primary); font-size: var(--font-size-sm);">Jessica Liu · 9.550</div>
-                <div style="color: var(--text-secondary); font-size: 10px;">SCSU · R1</div>
-              </div>
-              <button style="background: transparent; border: none; color: var(--text-secondary); cursor: pointer; font-size: var(--font-size-sm);">✕</button>
-            </div>
-          </div>
-
-          <div style="text-align: center; padding: var(--space-md); color: var(--text-muted); font-size: var(--font-size-sm);">
-            + 55 more clips...
-          </div>
-        </div>
+    <!-- NEXT Card -->
+    <div class="status-card" id="nextCard">
+      <div class="status-card__label">NEXT</div>
+      <div class="status-card__mode">
+        <span class="mode-badge mode-badge--queued">CLIP</span>
+        <span class="apparatus-badge apparatus-badge--ub">UB</span>
+        <span class="preload-indicator" id="preloadIndicator">
+          <span class="preload-indicator__check">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </span>
+          <span>Ready</span>
+        </span>
       </div>
-
+      <div class="status-card__primary" id="nextAthlete">Helena Kriz</div>
+      <div class="status-card__secondary" id="nextTeam">Yale · 9.875</div>
     </div>
 
-  </div>
-
-  <!-- 4.7 Moment Replay Dialog (shown separately) -->
-  <div class="card" style="max-width: 500px;">
-    <div class="card-header">
-      <div class="card-title">MOMENT FLAGGED — Tamyra Singletary · Vault</div>
-      <span class="section-badge" data-section="4.7">§4.7</span>
-    </div>
-    <div style="padding: var(--space-md);">
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md); margin-bottom: var(--space-md);">
-        <div>
-          <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">Clip time</div>
-          <div style="color: var(--text-primary); font-weight: 600;">0:08</div>
+    <!-- QUEUE Card -->
+    <div class="status-card">
+      <div class="status-card__label">QUEUE</div>
+      <div class="queue-stats">
+        <div class="queue-stats__row">
+          <span class="queue-stats__label">Queued</span>
+          <span class="queue-stats__value" id="queuedCount">4 clips</span>
         </div>
-        <div>
-          <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">Replay window</div>
-          <div style="display: flex; align-items: center; gap: var(--space-xs);">
-            <input type="text" value="0:04" style="width: 50px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 4px 8px; color: var(--text-primary); text-align: center;">
-            <span style="color: var(--text-secondary);">to</span>
-            <input type="text" value="0:12" style="width: 50px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 4px 8px; color: var(--text-primary); text-align: center;">
-          </div>
+        <div class="queue-stats__row">
+          <span class="queue-stats__label">Est. time</span>
+          <span class="queue-stats__time" id="queueTime">~2:45</span>
         </div>
-      </div>
-
-      <!-- Mini timeline -->
-      <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-sm); margin-bottom: var(--space-md);">
-        <div style="height: 8px; background: var(--bg-secondary); border-radius: 4px; position: relative;">
-          <div style="position: absolute; left: 20%; right: 35%; height: 100%; background: var(--color-producer); border-radius: 4px;"></div>
-        </div>
-        <div style="display: flex; justify-content: space-between; margin-top: var(--space-xs); color: var(--text-secondary); font-size: 10px;">
-          <span>0:00</span>
-          <span>0:18</span>
-        </div>
-      </div>
-
-      <!-- Speed controls -->
-      <div style="display: flex; gap: var(--space-md); margin-bottom: var(--space-md);">
-        <div>
-          <div style="color: var(--text-secondary); font-size: var(--font-size-sm); margin-bottom: var(--space-xs);">Speed</div>
-          <div style="display: flex; gap: var(--space-xs);">
-            <button class="btn btn-secondary" style="padding: 4px 8px; font-size: var(--font-size-sm);">0.25x</button>
-            <button class="btn btn-primary" style="padding: 4px 8px; font-size: var(--font-size-sm); background: var(--color-producer);">0.5x</button>
-            <button class="btn btn-secondary" style="padding: 4px 8px; font-size: var(--font-size-sm);">1x</button>
-          </div>
-        </div>
-        <div>
-          <div style="color: var(--text-secondary); font-size: var(--font-size-sm); margin-bottom: var(--space-xs);">Audio</div>
-          <button class="btn btn-secondary" style="padding: 4px 8px; font-size: var(--font-size-sm);">🔇 Muted</button>
-        </div>
-      </div>
-
-      <!-- Preview -->
-      <div style="margin-bottom: var(--space-md);">
-        <button class="btn btn-secondary" style="width: 100%;">▶ Preview</button>
-      </div>
-
-      <!-- Action buttons -->
-      <div style="display: flex; gap: var(--space-sm);">
-        <button class="btn btn-primary" style="flex: 1; background: var(--color-producer);">▶ Play Now</button>
-        <button class="btn btn-secondary" style="flex: 1;">💾 Save Only</button>
-        <button class="btn btn-secondary">✕ Cancel</button>
-      </div>
-
-      <div style="margin-top: var(--space-md); color: var(--text-secondary); font-size: var(--font-size-sm);">
-        <div><strong>Play Now:</strong> replay immediately after clip, before next</div>
-        <div><strong>Save Only:</strong> save to highlights pool for later use</div>
-      </div>
-
-      <!-- Flagged Moments List (when multiple moments flagged on same clip) -->
-      <div style="margin-top: var(--space-lg); padding-top: var(--space-md); border-top: 1px solid var(--border-color);">
-        <div style="color: var(--text-secondary); font-size: var(--font-size-sm); font-weight: 600; margin-bottom: var(--space-sm);">FLAGGED MOMENTS (this clip)</div>
-        <div style="display: flex; flex-direction: column; gap: var(--space-xs);">
-          <!-- Moment 1 -->
-          <div style="display: flex; align-items: center; gap: var(--space-sm); background: var(--bg-tertiary); padding: var(--space-sm); border-radius: var(--border-radius);">
-            <span style="color: var(--text-secondary); font-size: var(--font-size-sm); min-width: 24px;">1.</span>
-            <span style="color: var(--text-primary); font-size: var(--font-size-sm);">0:04–0:12</span>
-            <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">0.5x</span>
-            <span style="color: var(--color-producer); font-size: var(--font-size-sm); margin-left: auto;">▶ Play Now</span>
-            <button style="background: transparent; border: none; color: var(--text-secondary); cursor: pointer; font-size: var(--font-size-sm);">✕</button>
-          </div>
-          <!-- Moment 2 -->
-          <div style="display: flex; align-items: center; gap: var(--space-sm); background: var(--bg-tertiary); padding: var(--space-sm); border-radius: var(--border-radius);">
-            <span style="color: var(--text-secondary); font-size: var(--font-size-sm); min-width: 24px;">2.</span>
-            <span style="color: var(--text-primary); font-size: var(--font-size-sm);">0:14–0:22</span>
-            <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">0.25x</span>
-            <span style="color: #4ade80; font-size: var(--font-size-sm); margin-left: auto;">💾 Saved</span>
-            <button style="background: transparent; border: none; color: var(--text-secondary); cursor: pointer; font-size: var(--font-size-sm);">✕</button>
-          </div>
+        <div class="queue-stats__row">
+          <span class="queue-stats__label">Played</span>
+          <span class="queue-stats__value" id="playedCount">12</span>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- State Toggle JavaScript -->
-  <script>
-    (function() {
-      const toggleBtns = document.querySelectorAll('.state-toggle-btn');
-      const section = document.querySelector('.section-producer');
-
-      // State to border color mapping
-      const stateBorders = {
-        playing: 'var(--color-producer)',
-        live: '#ef4444',
-        override: '#fbbf24',
-        fallback: '#a78bfa',
-        paused: '#fbbf24',
-        stalled: '#ef4444',
-        'moment-replay': '#f472b6',
-        'break': '#f97316'
-      };
-
-      // State to override card border
-      const overrideBorders = {
-        playing: '#4ade80',
-        live: '#4ade80',
-        override: '#fbbf24',
-        fallback: '#4ade80',
-        paused: '#fbbf24',
-        stalled: '#ef4444',
-        'moment-replay': '#4ade80',
-        'break': '#4ade80'
-      };
-
-      // Camera 3 border states
-      const camera3Borders = {
-        playing: '1px solid var(--border-color)',
-        live: '2px solid #ef4444',
-        override: '2px solid #fbbf24',
-        fallback: '1px solid var(--border-color)',
-        paused: '1px solid var(--border-color)',
-        stalled: '1px solid var(--border-color)',
-        'moment-replay': '1px solid var(--border-color)',
-        'break': '1px solid var(--border-color)'
-      };
-
-      function setState(state) {
-        // Update toggle button active states
-        toggleBtns.forEach(btn => {
-          if (btn.dataset.state === state) {
-            btn.style.background = 'var(--color-producer)';
-            btn.style.color = 'white';
-            btn.style.border = 'none';
-            btn.classList.add('active');
-          } else {
-            btn.style.background = 'var(--bg-tertiary)';
-            btn.style.color = 'var(--text-primary)';
-            btn.style.border = '1px solid var(--border-color)';
-            btn.classList.remove('active');
-          }
-        });
-
-        // Hide all state-specific elements
-        const stateClasses = ['playing', 'live', 'override', 'fallback', 'paused', 'stalled', 'moment-replay', 'break'];
-        stateClasses.forEach(s => {
-          section.querySelectorAll('.state-' + s).forEach(el => {
-            el.style.display = 'none';
-          });
-        });
-
-        // Show elements for the selected state
-        section.querySelectorAll('.state-' + state).forEach(el => {
-          // Determine appropriate display type
-          const tagName = el.tagName.toLowerCase();
-          if (tagName === 'span') {
-            el.style.display = 'inline-flex';
-          } else if (el.classList.contains('camera-3-playing') ||
-                     el.classList.contains('camera-3-live') ||
-                     el.classList.contains('camera-3-override') ||
-                     el.classList.contains('camera-3-idle')) {
-            el.style.display = 'flex';
-          } else {
-            el.style.display = 'block';
-          }
-        });
-
-        // Update status bar border
-        const statusBar = section.querySelector('.state-status-bar');
-        if (statusBar) {
-          statusBar.style.borderColor = stateBorders[state];
-        }
-
-        // Update override controls card border
-        const overrideCard = section.querySelector('.override-controls-card');
-        if (overrideCard) {
-          overrideCard.style.borderColor = overrideBorders[state];
-        }
-
-        // Update Camera 3 border
-        const camera3 = section.querySelector('.camera-3');
-        if (camera3) {
-          camera3.style.border = camera3Borders[state];
-        }
-      }
-
-      // Add click handlers
-      toggleBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-          setState(btn.dataset.state);
-        });
-      });
-
-      // Initialize with "playing" state
-      setState('playing');
-    })();
-  </script>
-
-  <!-- Pulse animation for live indicators -->
-  <style>
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
-  </style>
-
+  <!-- Demo State Switcher (for prototype interactivity) -->
+  <div class="demo-state-switcher">
+    <span class="demo-label">Demo Mode:</span>
+    <button class="demo-state-btn demo-state-btn--active" data-mode="live">LIVE</button>
+    <button class="demo-state-btn" data-mode="clip">CLIP</button>
+    <button class="demo-state-btn" data-mode="replay">REPLAY</button>
+    <button class="demo-state-btn" data-mode="break">BREAK</button>
+    <button class="demo-state-btn" data-mode="fallback">FALLBACK</button>
+    <button class="demo-state-btn" data-mode="override">OVERRIDE</button>
+    <button class="demo-state-btn" data-mode="paused">PAUSED</button>
+    <span class="demo-label" style="margin-left: 16px;">Health:</span>
+    <button class="demo-state-btn" data-health="healthy">Healthy</button>
+    <button class="demo-state-btn" data-health="slow">Slow</button>
+    <button class="demo-state-btn" data-health="offline">Offline</button>
+  </div>
 </div>
+
+<script>
+(function() {
+  // Mode configurations
+  const modeConfigs = {
+    live: {
+      badge: 'LIVE',
+      badgeClass: 'mode-badge--live',
+      cardClass: '',
+      barClass: 'playout-status-bar--autonomous',
+      primary: 'Balance Beam',
+      meta: 'Camera 3'
+    },
+    clip: {
+      badge: 'CLIP',
+      badgeClass: 'mode-badge--clip',
+      cardClass: 'status-card--clip',
+      barClass: 'playout-status-bar--autonomous',
+      primary: 'Tamyra Singletary',
+      meta: 'Bridgeport · VT · 9.725'
+    },
+    replay: {
+      badge: 'REPLAY',
+      badgeClass: 'mode-badge--replay',
+      cardClass: 'status-card--replay',
+      barClass: 'playout-status-bar--autonomous',
+      primary: 'Haley Fitzgerald',
+      meta: 'Moment Replay · 0.5x'
+    },
+    break: {
+      badge: 'BREAK',
+      badgeClass: 'mode-badge--break',
+      cardClass: 'status-card--break',
+      barClass: 'playout-status-bar--autonomous',
+      primary: 'Rotation Break',
+      meta: 'Standings Graphic'
+    },
+    fallback: {
+      badge: 'FALLBACK',
+      badgeClass: 'mode-badge--fallback',
+      cardClass: 'status-card--fallback',
+      barClass: 'playout-status-bar--autonomous',
+      primary: 'Quad View',
+      meta: 'No clips ready'
+    },
+    override: {
+      badge: 'OVERRIDE',
+      badgeClass: 'mode-badge--override',
+      cardClass: 'status-card--override',
+      barClass: 'playout-status-bar--override',
+      primary: 'Camera 2 (Manual)',
+      meta: 'Producer override active'
+    },
+    paused: {
+      badge: 'PAUSED',
+      badgeClass: 'mode-badge--paused',
+      cardClass: 'status-card--paused',
+      barClass: 'playout-status-bar--paused',
+      primary: 'Playout Frozen',
+      meta: 'Press Space to resume'
+    }
+  };
+
+  // Health configurations
+  const healthConfigs = {
+    healthy: {
+      dotClass: 'coordinator-health__dot--healthy',
+      label: 'Coordinator'
+    },
+    slow: {
+      dotClass: 'coordinator-health__dot--slow',
+      label: 'Coordinator (slow)'
+    },
+    offline: {
+      dotClass: 'coordinator-health__dot--offline',
+      label: 'Coordinator Offline'
+    }
+  };
+
+  // DOM elements
+  const statusBar = document.getElementById('playoutStatusBar');
+  const nowCard = document.getElementById('nowCard');
+  const nowBadge = document.getElementById('nowBadge');
+  const nowPrimary = document.getElementById('nowPrimary');
+  const nowMeta = document.getElementById('nowMeta');
+  const healthDot = document.getElementById('healthDot');
+  const healthLabel = document.getElementById('healthLabel');
+  const demoButtons = document.querySelectorAll('.demo-state-btn');
+
+  // Update mode
+  function setMode(mode) {
+    const config = modeConfigs[mode];
+    if (!config) return;
+
+    // Update status bar border
+    statusBar.className = 'playout-status-bar ' + config.barClass;
+
+    // Update NOW card
+    nowCard.className = 'status-card status-card--now ' + config.cardClass;
+    nowBadge.className = 'mode-badge ' + config.badgeClass;
+    nowBadge.textContent = config.badge;
+    nowPrimary.textContent = config.primary;
+    nowMeta.textContent = config.meta;
+
+    // Update button states
+    demoButtons.forEach(btn => {
+      if (btn.dataset.mode === mode) {
+        btn.classList.add('demo-state-btn--active');
+      } else if (btn.dataset.mode) {
+        btn.classList.remove('demo-state-btn--active');
+      }
+    });
+  }
+
+  // Update coordinator health
+  function setHealth(health) {
+    const config = healthConfigs[health];
+    if (!config) return;
+
+    healthDot.className = 'coordinator-health__dot ' + config.dotClass;
+    healthLabel.textContent = config.label;
+  }
+
+  // Event listeners
+  demoButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.mode) {
+        setMode(btn.dataset.mode);
+      } else if (btn.dataset.health) {
+        setHealth(btn.dataset.health);
+      }
+    });
+  });
+
+  // Simulate preload state changes
+  const preloadIndicator = document.getElementById('preloadIndicator');
+  let preloadReady = true;
+
+  setInterval(() => {
+    preloadReady = !preloadReady;
+    if (preloadReady) {
+      preloadIndicator.innerHTML = `
+        <span class="preload-indicator__check">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </span>
+        <span>Ready</span>
+      `;
+    } else {
+      preloadIndicator.innerHTML = `
+        <span class="preload-indicator__spinner"></span>
+        <span>Preloading</span>
+      `;
+    }
+  }, 4000);
+})();
+</script>
