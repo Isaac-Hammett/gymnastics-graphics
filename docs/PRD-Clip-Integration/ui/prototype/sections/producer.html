@@ -1151,3 +1151,1173 @@
   }, 1000);
 })();
 </script>
+
+<!-- Task 1.3: Clip Queue Panel -->
+<style>
+  /* === Clip Queue Panel === */
+  .clip-queue-panel {
+    background: var(--bg-secondary, #18181b);
+    border: 1px solid var(--border-color, #3f3f46);
+    border-radius: 8px;
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    max-height: 600px;
+  }
+
+  .clip-queue-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-color, #3f3f46);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .clip-queue-header__left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .clip-queue-header__title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary, #e4e4e7);
+  }
+
+  .clip-queue-header__actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .clip-queue-refresh-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 10px;
+    font-size: 11px;
+    font-weight: 500;
+    border-radius: 4px;
+    background: var(--bg-tertiary, #27272a);
+    color: var(--text-secondary, #a1a1aa);
+    border: 1px solid var(--border-color, #3f3f46);
+    cursor: pointer;
+    transition: all 150ms;
+  }
+
+  .clip-queue-refresh-btn:hover {
+    background: var(--bg-secondary, #18181b);
+    color: var(--text-primary, #e4e4e7);
+    border-color: var(--text-muted, #71717a);
+  }
+
+  .clip-queue-refresh-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .clip-queue-refresh-btn--spinning svg {
+    animation: spin 1s linear infinite;
+  }
+
+  /* Tab Navigation */
+  .clip-queue-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border-color, #3f3f46);
+    padding: 0 16px;
+    flex-shrink: 0;
+  }
+
+  .clip-queue-tab {
+    padding: 10px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary, #a1a1aa);
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    transition: all 150ms;
+    margin-bottom: -1px;
+  }
+
+  .clip-queue-tab:hover {
+    color: var(--text-primary, #e4e4e7);
+  }
+
+  .clip-queue-tab--active {
+    color: var(--text-primary, #e4e4e7);
+    border-bottom-color: #3b82f6;
+  }
+
+  .clip-queue-tab__count {
+    margin-left: 4px;
+    padding: 1px 6px;
+    font-size: 10px;
+    font-weight: 600;
+    border-radius: 9999px;
+    background: var(--bg-tertiary, #27272a);
+    color: var(--text-muted, #71717a);
+  }
+
+  .clip-queue-tab--active .clip-queue-tab__count {
+    background: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+  }
+
+  /* Filters */
+  .clip-queue-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-color, #3f3f46);
+    flex-shrink: 0;
+  }
+
+  .clip-filter-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .clip-filter-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted, #71717a);
+  }
+
+  .clip-filter-btn {
+    padding: 4px 8px;
+    font-size: 11px;
+    font-weight: 500;
+    border-radius: 4px;
+    background: var(--bg-tertiary, #27272a);
+    color: var(--text-secondary, #a1a1aa);
+    border: 1px solid var(--border-color, #3f3f46);
+    cursor: pointer;
+    transition: all 150ms;
+  }
+
+  .clip-filter-btn:hover {
+    background: var(--bg-secondary, #18181b);
+    color: var(--text-primary, #e4e4e7);
+    border-color: var(--text-muted, #71717a);
+  }
+
+  .clip-filter-btn--active {
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+    border-color: #3b82f6;
+  }
+
+  .clip-filter-btn--apparatus {
+    font-weight: 700;
+  }
+
+  .clip-filter-btn--vt.clip-filter-btn--active {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    border-color: #ef4444;
+  }
+  .clip-filter-btn--ub.clip-filter-btn--active {
+    background: rgba(168, 85, 247, 0.15);
+    color: #a855f7;
+    border-color: #a855f7;
+  }
+  .clip-filter-btn--bb.clip-filter-btn--active {
+    background: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+    border-color: #3b82f6;
+  }
+  .clip-filter-btn--fx.clip-filter-btn--active {
+    background: rgba(34, 197, 94, 0.15);
+    color: #22c55e;
+    border-color: #22c55e;
+  }
+
+  /* Bulk Actions Bar */
+  .clip-bulk-actions {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    background: rgba(59, 130, 246, 0.1);
+    border-bottom: 1px solid rgba(59, 130, 246, 0.3);
+    flex-shrink: 0;
+  }
+
+  .clip-bulk-actions--visible {
+    display: flex;
+  }
+
+  .clip-bulk-actions__info {
+    font-size: 12px;
+    color: #60a5fa;
+  }
+
+  .clip-bulk-actions__buttons {
+    display: flex;
+    gap: 8px;
+  }
+
+  .clip-bulk-btn {
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 500;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 150ms;
+  }
+
+  .clip-bulk-btn--queue {
+    background: rgba(34, 197, 94, 0.2);
+    color: #4ade80;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+  }
+
+  .clip-bulk-btn--queue:hover {
+    background: rgba(34, 197, 94, 0.3);
+  }
+
+  .clip-bulk-btn--skip {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+  }
+
+  .clip-bulk-btn--skip:hover {
+    background: rgba(239, 68, 68, 0.3);
+  }
+
+  /* UP NEXT Section */
+  .clip-up-next {
+    padding: 12px 16px;
+    background: rgba(59, 130, 246, 0.05);
+    border-bottom: 1px solid var(--border-color, #3f3f46);
+    flex-shrink: 0;
+  }
+
+  .clip-up-next__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .clip-up-next__title {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #60a5fa;
+  }
+
+  .clip-up-next__preload {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    color: var(--clip-status-success, #22c55e);
+  }
+
+  .clip-up-next__preload svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  .clip-up-next__cards {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* Clip Card */
+  .clip-card {
+    display: flex;
+    gap: 12px;
+    padding: 10px;
+    background: var(--bg-tertiary, #27272a);
+    border: 1px solid var(--border-color, #3f3f46);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 150ms;
+  }
+
+  .clip-card:hover {
+    background: rgba(39, 39, 42, 0.8);
+    border-color: var(--text-muted, #71717a);
+  }
+
+  .clip-card--up-next {
+    border-color: rgba(59, 130, 246, 0.4);
+    background: rgba(59, 130, 246, 0.05);
+  }
+
+  .clip-card--up-next:hover {
+    border-color: rgba(59, 130, 246, 0.6);
+  }
+
+  .clip-card--played {
+    opacity: 0.6;
+  }
+
+  .clip-card--skipped {
+    opacity: 0.5;
+    border-style: dashed;
+  }
+
+  .clip-card--failed {
+    border-color: var(--clip-status-error, #ef4444);
+    background: rgba(239, 68, 68, 0.05);
+  }
+
+  /* Clip Thumbnail */
+  .clip-thumbnail {
+    position: relative;
+    width: 64px;
+    height: 48px;
+    border-radius: 4px;
+    overflow: hidden;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .clip-thumbnail--vt { background: linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(239, 68, 68, 0.1)); }
+  .clip-thumbnail--ub { background: linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(168, 85, 247, 0.1)); }
+  .clip-thumbnail--bb { background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(59, 130, 246, 0.1)); }
+  .clip-thumbnail--fx { background: linear-gradient(135deg, rgba(34, 197, 94, 0.3), rgba(34, 197, 94, 0.1)); }
+
+  .clip-thumbnail__icon {
+    font-size: 14px;
+    font-weight: 700;
+    opacity: 0.6;
+  }
+
+  .clip-thumbnail--vt .clip-thumbnail__icon { color: var(--clip-apparatus-vt, #ef4444); }
+  .clip-thumbnail--ub .clip-thumbnail__icon { color: var(--clip-apparatus-ub, #a855f7); }
+  .clip-thumbnail--bb .clip-thumbnail__icon { color: var(--clip-apparatus-bb, #3b82f6); }
+  .clip-thumbnail--fx .clip-thumbnail__icon { color: var(--clip-apparatus-fx, #22c55e); }
+
+  .clip-thumbnail__duration {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    padding: 1px 4px;
+    font-size: 9px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    background: rgba(0, 0, 0, 0.75);
+    color: white;
+    border-radius: 2px;
+  }
+
+  .clip-thumbnail__playing {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: 8px;
+    height: 8px;
+    background: var(--clip-mode-live-text, #4ade80);
+    border-radius: 50%;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  /* Clip Content */
+  .clip-content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .clip-content__header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .clip-content__athlete {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary, #e4e4e7);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .clip-content__badges {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .clip-rotation-badge {
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-secondary, #a1a1aa);
+    border-radius: 4px;
+  }
+
+  .clip-content__meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-secondary, #a1a1aa);
+  }
+
+  .clip-content__team {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .clip-content__score {
+    font-weight: 600;
+    color: var(--text-primary, #e4e4e7);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .clip-content__preload {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    color: var(--text-muted, #71717a);
+    margin-top: 2px;
+  }
+
+  .clip-content__preload--ready {
+    color: var(--clip-status-success, #22c55e);
+  }
+
+  .clip-content__preload svg {
+    width: 10px;
+    height: 10px;
+  }
+
+  .clip-preload-spinner {
+    width: 10px;
+    height: 10px;
+    border: 1.5px solid var(--border-color, #3f3f46);
+    border-top-color: var(--clip-status-info, #3b82f6);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  /* Clip Actions */
+  .clip-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .clip-action-btn {
+    padding: 4px 8px;
+    font-size: 10px;
+    font-weight: 500;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 150ms;
+    white-space: nowrap;
+  }
+
+  .clip-action-btn--skip {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border: 1px solid transparent;
+  }
+
+  .clip-action-btn--skip:hover {
+    background: rgba(239, 68, 68, 0.25);
+    border-color: rgba(239, 68, 68, 0.3);
+  }
+
+  .clip-action-btn--queue {
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+    border: 1px solid transparent;
+  }
+
+  .clip-action-btn--queue:hover {
+    background: rgba(34, 197, 94, 0.25);
+    border-color: rgba(34, 197, 94, 0.3);
+  }
+
+  .clip-action-btn--retry {
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+    border: 1px solid transparent;
+  }
+
+  .clip-action-btn--retry:hover {
+    background: rgba(59, 130, 246, 0.25);
+    border-color: rgba(59, 130, 246, 0.3);
+  }
+
+  .clip-action-btn--flag {
+    background: rgba(168, 85, 247, 0.15);
+    color: #c084fc;
+    border: 1px solid transparent;
+  }
+
+  .clip-action-btn--flag:hover {
+    background: rgba(168, 85, 247, 0.25);
+    border-color: rgba(168, 85, 247, 0.3);
+  }
+
+  .clip-action-btn--preview {
+    background: var(--bg-secondary, #18181b);
+    color: var(--text-muted, #71717a);
+    border: 1px solid var(--border-color, #3f3f46);
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  /* Clip Queue List */
+  .clip-queue-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .clip-queue-list::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .clip-queue-list::-webkit-scrollbar-track {
+    background: var(--bg-tertiary, #27272a);
+    border-radius: 3px;
+  }
+
+  .clip-queue-list::-webkit-scrollbar-thumb {
+    background: var(--text-muted, #71717a);
+    border-radius: 3px;
+  }
+
+  .clip-queue-list::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary, #a1a1aa);
+  }
+
+  /* Empty State */
+  .clip-queue-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 16px;
+    text-align: center;
+  }
+
+  .clip-queue-empty__icon {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 12px;
+    color: var(--text-muted, #71717a);
+    opacity: 0.5;
+  }
+
+  .clip-queue-empty__title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary, #a1a1aa);
+    margin-bottom: 4px;
+  }
+
+  .clip-queue-empty__subtitle {
+    font-size: 12px;
+    color: var(--text-muted, #71717a);
+  }
+
+  /* API Error Banner */
+  .clip-queue-error {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: rgba(239, 68, 68, 0.1);
+    border-bottom: 1px solid rgba(239, 68, 68, 0.3);
+    flex-shrink: 0;
+  }
+
+  .clip-queue-error--visible {
+    display: flex;
+  }
+
+  .clip-queue-error__icon {
+    width: 16px;
+    height: 16px;
+    color: #f87171;
+    flex-shrink: 0;
+  }
+
+  .clip-queue-error__text {
+    font-size: 12px;
+    color: #f87171;
+    flex: 1;
+  }
+
+  .clip-queue-error__dismiss {
+    padding: 4px;
+    background: transparent;
+    border: none;
+    color: #f87171;
+    cursor: pointer;
+    opacity: 0.7;
+  }
+
+  .clip-queue-error__dismiss:hover {
+    opacity: 1;
+  }
+
+  /* Demo Tab Switcher */
+  .demo-queue-switcher {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--border-color, #3f3f46);
+    flex-shrink: 0;
+  }
+</style>
+
+<div class="clip-queue-panel" id="clipQueuePanel">
+  <!-- Header -->
+  <div class="clip-queue-header">
+    <div class="clip-queue-header__left">
+      <span class="clip-queue-header__title">CLIP QUEUE</span>
+    </div>
+    <div class="clip-queue-header__actions">
+      <button class="clip-queue-refresh-btn" id="refreshBtn" aria-label="Refresh clips">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M1 4v6h6M23 20v-6h-6"/>
+          <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+        </svg>
+        Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- API Error Banner (hidden by default) -->
+  <div class="clip-queue-error" id="clipQueueError">
+    <svg class="clip-queue-error__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="12" y1="8" x2="12" y2="12"/>
+      <line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
+    <span class="clip-queue-error__text">Clip Engine API unreachable — showing cached clips (last updated 2m ago)</span>
+    <button class="clip-queue-error__dismiss" aria-label="Dismiss error">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M18 6L6 18M6 6l12 12"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Tabs -->
+  <div class="clip-queue-tabs" role="tablist" aria-label="Clip queue tabs">
+    <button class="clip-queue-tab clip-queue-tab--active" role="tab" aria-selected="true" data-tab="all">
+      All<span class="clip-queue-tab__count" id="tabCountAll">8</span>
+    </button>
+    <button class="clip-queue-tab" role="tab" aria-selected="false" data-tab="queued">
+      Queued<span class="clip-queue-tab__count" id="tabCountQueued">4</span>
+    </button>
+    <button class="clip-queue-tab" role="tab" aria-selected="false" data-tab="played">
+      Played<span class="clip-queue-tab__count" id="tabCountPlayed">3</span>
+    </button>
+    <button class="clip-queue-tab" role="tab" aria-selected="false" data-tab="shown-live">
+      Shown Live<span class="clip-queue-tab__count" id="tabCountShownLive">1</span>
+    </button>
+  </div>
+
+  <!-- Filters -->
+  <div class="clip-queue-filters">
+    <div class="clip-filter-group">
+      <span class="clip-filter-label">Apparatus:</span>
+      <button class="clip-filter-btn clip-filter-btn--apparatus clip-filter-btn--vt" data-filter-apparatus="VT">VT</button>
+      <button class="clip-filter-btn clip-filter-btn--apparatus clip-filter-btn--ub" data-filter-apparatus="UB">UB</button>
+      <button class="clip-filter-btn clip-filter-btn--apparatus clip-filter-btn--bb" data-filter-apparatus="BB">BB</button>
+      <button class="clip-filter-btn clip-filter-btn--apparatus clip-filter-btn--fx" data-filter-apparatus="FX">FX</button>
+    </div>
+    <div class="clip-filter-group">
+      <span class="clip-filter-label">Rotation:</span>
+      <button class="clip-filter-btn clip-filter-btn--active" data-filter-rotation="2">R2</button>
+      <button class="clip-filter-btn" data-filter-rotation="1">R1</button>
+      <button class="clip-filter-btn" data-filter-rotation="all">All</button>
+    </div>
+    <div class="clip-filter-group">
+      <span class="clip-filter-label">Team:</span>
+      <button class="clip-filter-btn" data-filter-team="bridgeport">Bridgeport</button>
+      <button class="clip-filter-btn" data-filter-team="yale">Yale</button>
+      <button class="clip-filter-btn" data-filter-team="scsu">SCSU</button>
+    </div>
+  </div>
+
+  <!-- Bulk Actions (shown when filter is active) -->
+  <div class="clip-bulk-actions" id="bulkActions">
+    <span class="clip-bulk-actions__info">4 clips match filter</span>
+    <div class="clip-bulk-actions__buttons">
+      <button class="clip-bulk-btn clip-bulk-btn--queue">Queue All (4)</button>
+      <button class="clip-bulk-btn clip-bulk-btn--skip">Skip All (4)</button>
+    </div>
+  </div>
+
+  <!-- UP NEXT Section -->
+  <div class="clip-up-next">
+    <div class="clip-up-next__header">
+      <span class="clip-up-next__title">UP NEXT</span>
+      <span class="clip-up-next__preload">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+        2 preloaded
+      </span>
+    </div>
+    <div class="clip-up-next__cards">
+      <!-- Up Next Card 1 -->
+      <div class="clip-card clip-card--up-next" role="button" tabindex="0" aria-label="Up next: Helena Kriz, Uneven Bars, 9.875">
+        <div class="clip-thumbnail clip-thumbnail--ub">
+          <span class="clip-thumbnail__icon">UB</span>
+          <span class="clip-thumbnail__duration">0:38</span>
+        </div>
+        <div class="clip-content">
+          <div class="clip-content__header">
+            <span class="clip-content__athlete">Helena Kriz</span>
+            <div class="clip-content__badges">
+              <span class="apparatus-badge apparatus-badge--ub">UB</span>
+              <span class="clip-rotation-badge">R2</span>
+            </div>
+          </div>
+          <div class="clip-content__meta">
+            <span class="clip-content__team">Yale</span>
+            <span>·</span>
+            <span class="clip-content__score">9.875</span>
+          </div>
+          <div class="clip-content__preload clip-content__preload--ready">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            Preloaded
+          </div>
+        </div>
+        <div class="clip-actions">
+          <button class="clip-action-btn clip-action-btn--skip" aria-label="Skip clip">Skip</button>
+          <button class="clip-action-btn clip-action-btn--flag" aria-label="Flag moment">Flag</button>
+        </div>
+      </div>
+
+      <!-- Up Next Card 2 -->
+      <div class="clip-card clip-card--up-next" role="button" tabindex="0" aria-label="Up next: Georgia Reed, Uneven Bars, 9.525">
+        <div class="clip-thumbnail clip-thumbnail--ub">
+          <span class="clip-thumbnail__icon">UB</span>
+          <span class="clip-thumbnail__duration">0:42</span>
+        </div>
+        <div class="clip-content">
+          <div class="clip-content__header">
+            <span class="clip-content__athlete">Georgia Reed</span>
+            <div class="clip-content__badges">
+              <span class="apparatus-badge apparatus-badge--ub">UB</span>
+              <span class="clip-rotation-badge">R2</span>
+            </div>
+          </div>
+          <div class="clip-content__meta">
+            <span class="clip-content__team">Bridgeport</span>
+            <span>·</span>
+            <span class="clip-content__score">9.525</span>
+          </div>
+          <div class="clip-content__preload">
+            <span class="clip-preload-spinner"></span>
+            Preloading...
+          </div>
+        </div>
+        <div class="clip-actions">
+          <button class="clip-action-btn clip-action-btn--skip" aria-label="Skip clip">Skip</button>
+          <button class="clip-action-btn clip-action-btn--flag" aria-label="Flag moment">Flag</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Clip Queue List -->
+  <div class="clip-queue-list" id="clipQueueList">
+    <!-- Clip Card: Queued -->
+    <div class="clip-card" role="button" tabindex="0" aria-label="Select clip: Tamyra Singletary, Vault, 9.725">
+      <div class="clip-thumbnail clip-thumbnail--vt">
+        <span class="clip-thumbnail__icon">VT</span>
+        <span class="clip-thumbnail__duration">0:18</span>
+      </div>
+      <div class="clip-content">
+        <div class="clip-content__header">
+          <span class="clip-content__athlete">Tamyra Singletary</span>
+          <div class="clip-content__badges">
+            <span class="apparatus-badge apparatus-badge--vt">VT</span>
+            <span class="clip-rotation-badge">R1</span>
+          </div>
+        </div>
+        <div class="clip-content__meta">
+          <span class="clip-content__team">Bridgeport</span>
+          <span>·</span>
+          <span class="clip-content__score">9.725</span>
+        </div>
+      </div>
+      <div class="clip-actions">
+        <button class="clip-action-btn clip-action-btn--skip" aria-label="Skip clip">Skip</button>
+        <button class="clip-action-btn clip-action-btn--preview" aria-label="Preview unavailable" title="Preview available with live clips">Preview</button>
+      </div>
+    </div>
+
+    <!-- Clip Card: Queued -->
+    <div class="clip-card" role="button" tabindex="0" aria-label="Select clip: Haley Fitzgerald, Vault, 9.475">
+      <div class="clip-thumbnail clip-thumbnail--vt">
+        <span class="clip-thumbnail__icon">VT</span>
+        <span class="clip-thumbnail__duration">0:14</span>
+      </div>
+      <div class="clip-content">
+        <div class="clip-content__header">
+          <span class="clip-content__athlete">Haley Fitzgerald</span>
+          <div class="clip-content__badges">
+            <span class="apparatus-badge apparatus-badge--vt">VT</span>
+            <span class="clip-rotation-badge">R1</span>
+          </div>
+        </div>
+        <div class="clip-content__meta">
+          <span class="clip-content__team">SCSU</span>
+          <span>·</span>
+          <span class="clip-content__score">9.475</span>
+        </div>
+      </div>
+      <div class="clip-actions">
+        <button class="clip-action-btn clip-action-btn--skip" aria-label="Skip clip">Skip</button>
+        <button class="clip-action-btn clip-action-btn--preview" aria-label="Preview unavailable" title="Preview available with live clips">Preview</button>
+      </div>
+    </div>
+
+    <!-- Clip Card: Played -->
+    <div class="clip-card clip-card--played" role="button" tabindex="0" aria-label="Played clip: Sophia Martinez, Beam, 9.650">
+      <div class="clip-thumbnail clip-thumbnail--bb">
+        <span class="clip-thumbnail__icon">BB</span>
+        <span class="clip-thumbnail__duration">0:52</span>
+      </div>
+      <div class="clip-content">
+        <div class="clip-content__header">
+          <span class="clip-content__athlete">Sophia Martinez</span>
+          <div class="clip-content__badges">
+            <span class="apparatus-badge apparatus-badge--bb">BB</span>
+            <span class="clip-rotation-badge">R2</span>
+            <span class="mode-badge mode-badge--queued" style="font-size: 9px; padding: 1px 5px;">PLAYED</span>
+          </div>
+        </div>
+        <div class="clip-content__meta">
+          <span class="clip-content__team">Yale</span>
+          <span>·</span>
+          <span class="clip-content__score">9.650</span>
+        </div>
+      </div>
+      <div class="clip-actions">
+        <button class="clip-action-btn clip-action-btn--queue" aria-label="Add to queue">+ Queue</button>
+      </div>
+    </div>
+
+    <!-- Clip Card: Played -->
+    <div class="clip-card clip-card--played" role="button" tabindex="0" aria-label="Played clip: Emily Chen, Floor, 9.800">
+      <div class="clip-thumbnail clip-thumbnail--fx">
+        <span class="clip-thumbnail__icon">FX</span>
+        <span class="clip-thumbnail__duration">1:12</span>
+      </div>
+      <div class="clip-content">
+        <div class="clip-content__header">
+          <span class="clip-content__athlete">Emily Chen</span>
+          <div class="clip-content__badges">
+            <span class="apparatus-badge apparatus-badge--fx">FX</span>
+            <span class="clip-rotation-badge">R1</span>
+            <span class="mode-badge mode-badge--queued" style="font-size: 9px; padding: 1px 5px;">PLAYED</span>
+          </div>
+        </div>
+        <div class="clip-content__meta">
+          <span class="clip-content__team">Bridgeport</span>
+          <span>·</span>
+          <span class="clip-content__score">9.800</span>
+        </div>
+      </div>
+      <div class="clip-actions">
+        <button class="clip-action-btn clip-action-btn--queue" aria-label="Add to queue">+ Queue</button>
+      </div>
+    </div>
+
+    <!-- Clip Card: Played -->
+    <div class="clip-card clip-card--played" role="button" tabindex="0" aria-label="Played clip: Amanda Torres, Vault, 9.600">
+      <div class="clip-thumbnail clip-thumbnail--vt">
+        <span class="clip-thumbnail__icon">VT</span>
+        <span class="clip-thumbnail__duration">0:16</span>
+      </div>
+      <div class="clip-content">
+        <div class="clip-content__header">
+          <span class="clip-content__athlete">Amanda Torres</span>
+          <div class="clip-content__badges">
+            <span class="apparatus-badge apparatus-badge--vt">VT</span>
+            <span class="clip-rotation-badge">R1</span>
+            <span class="mode-badge mode-badge--queued" style="font-size: 9px; padding: 1px 5px;">PLAYED</span>
+          </div>
+        </div>
+        <div class="clip-content__meta">
+          <span class="clip-content__team">SCSU</span>
+          <span>·</span>
+          <span class="clip-content__score">9.600</span>
+        </div>
+      </div>
+      <div class="clip-actions">
+        <button class="clip-action-btn clip-action-btn--queue" aria-label="Add to queue">+ Queue</button>
+      </div>
+    </div>
+
+    <!-- Clip Card: Shown Live (auto-skipped) -->
+    <div class="clip-card clip-card--skipped" role="button" tabindex="0" aria-label="Shown live: Libby Allen, Beam, 9.500">
+      <div class="clip-thumbnail clip-thumbnail--bb">
+        <span class="clip-thumbnail__icon">BB</span>
+        <span class="clip-thumbnail__duration">0:48</span>
+      </div>
+      <div class="clip-content">
+        <div class="clip-content__header">
+          <span class="clip-content__athlete">Libby Allen</span>
+          <div class="clip-content__badges">
+            <span class="apparatus-badge apparatus-badge--bb">BB</span>
+            <span class="clip-rotation-badge">R2</span>
+            <span class="mode-badge mode-badge--break" style="font-size: 9px; padding: 1px 5px;">SHOWN LIVE</span>
+          </div>
+        </div>
+        <div class="clip-content__meta">
+          <span class="clip-content__team">SCSU</span>
+          <span>·</span>
+          <span class="clip-content__score">9.500</span>
+        </div>
+      </div>
+      <div class="clip-actions">
+        <button class="clip-action-btn clip-action-btn--queue" aria-label="Add to queue">+ Queue</button>
+      </div>
+    </div>
+
+    <!-- Clip Card: Failed -->
+    <div class="clip-card clip-card--failed" role="button" tabindex="0" aria-label="Failed clip: Rachel Kim, Bars, 9.300">
+      <div class="clip-thumbnail clip-thumbnail--ub">
+        <span class="clip-thumbnail__icon">UB</span>
+        <span class="clip-thumbnail__duration">0:45</span>
+      </div>
+      <div class="clip-content">
+        <div class="clip-content__header">
+          <span class="clip-content__athlete">Rachel Kim</span>
+          <div class="clip-content__badges">
+            <span class="apparatus-badge apparatus-badge--ub">UB</span>
+            <span class="clip-rotation-badge">R2</span>
+            <span class="mode-badge mode-badge--override" style="font-size: 9px; padding: 1px 5px; background: rgba(239, 68, 68, 0.2); color: #f87171;">FAILED</span>
+          </div>
+        </div>
+        <div class="clip-content__meta">
+          <span class="clip-content__team">Yale</span>
+          <span>·</span>
+          <span class="clip-content__score">9.300</span>
+          <span style="color: #f87171; margin-left: 4px;">· Failed to load</span>
+        </div>
+      </div>
+      <div class="clip-actions">
+        <button class="clip-action-btn clip-action-btn--retry" aria-label="Retry loading clip">Retry</button>
+        <button class="clip-action-btn clip-action-btn--skip" aria-label="Skip clip">Skip</button>
+      </div>
+    </div>
+
+    <!-- Clip Card: Queued (recent fixture data) -->
+    <div class="clip-card" role="button" tabindex="0" aria-label="Select clip: Madison Lee, Floor, 9.750">
+      <div class="clip-thumbnail clip-thumbnail--fx">
+        <span class="clip-thumbnail__icon">FX</span>
+        <span class="clip-thumbnail__duration">1:08</span>
+      </div>
+      <div class="clip-content">
+        <div class="clip-content__header">
+          <span class="clip-content__athlete">Madison Lee</span>
+          <div class="clip-content__badges">
+            <span class="apparatus-badge apparatus-badge--fx">FX</span>
+            <span class="clip-rotation-badge">R2</span>
+          </div>
+        </div>
+        <div class="clip-content__meta">
+          <span class="clip-content__team">Yale</span>
+          <span>·</span>
+          <span class="clip-content__score">9.750</span>
+        </div>
+      </div>
+      <div class="clip-actions">
+        <button class="clip-action-btn clip-action-btn--skip" aria-label="Skip clip">Skip</button>
+        <button class="clip-action-btn clip-action-btn--preview" aria-label="Preview unavailable" title="Preview available with live clips">Preview</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Demo Tab Switcher -->
+  <div class="demo-queue-switcher">
+    <span class="demo-label">Demo:</span>
+    <button class="demo-state-btn demo-state-btn--active" data-queue-demo="clips">Show Clips</button>
+    <button class="demo-state-btn" data-queue-demo="empty">Empty State</button>
+    <button class="demo-state-btn" data-queue-demo="error">API Error</button>
+    <button class="demo-state-btn" data-queue-demo="bulk">Bulk Actions</button>
+  </div>
+</div>
+
+<script>
+(function() {
+  // Tab switching
+  const tabs = document.querySelectorAll('.clip-queue-tab');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => {
+        t.classList.remove('clip-queue-tab--active');
+        t.setAttribute('aria-selected', 'false');
+      });
+      tab.classList.add('clip-queue-tab--active');
+      tab.setAttribute('aria-selected', 'true');
+    });
+  });
+
+  // Filter toggle
+  const filterBtns = document.querySelectorAll('.clip-filter-btn');
+  filterBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      // Toggle active state for apparatus and team filters (multi-select)
+      // For rotation, it's single-select
+      if (btn.dataset.filterRotation) {
+        document.querySelectorAll('[data-filter-rotation]').forEach(b => {
+          b.classList.remove('clip-filter-btn--active');
+        });
+        btn.classList.add('clip-filter-btn--active');
+      } else {
+        btn.classList.toggle('clip-filter-btn--active');
+      }
+
+      // Show/hide bulk actions based on filter state
+      const anyFilterActive = document.querySelectorAll('.clip-filter-btn--active[data-filter-apparatus], .clip-filter-btn--active[data-filter-team]').length > 0;
+      const bulkActions = document.getElementById('bulkActions');
+      if (anyFilterActive) {
+        bulkActions.classList.add('clip-bulk-actions--visible');
+      } else {
+        bulkActions.classList.remove('clip-bulk-actions--visible');
+      }
+    });
+  });
+
+  // Refresh button animation
+  const refreshBtn = document.getElementById('refreshBtn');
+  refreshBtn.addEventListener('click', () => {
+    refreshBtn.classList.add('clip-queue-refresh-btn--spinning');
+    setTimeout(() => {
+      refreshBtn.classList.remove('clip-queue-refresh-btn--spinning');
+    }, 1000);
+  });
+
+  // Error banner dismiss
+  const errorDismiss = document.querySelector('.clip-queue-error__dismiss');
+  if (errorDismiss) {
+    errorDismiss.addEventListener('click', () => {
+      document.getElementById('clipQueueError').classList.remove('clip-queue-error--visible');
+    });
+  }
+
+  // Demo state management
+  const clipQueueList = document.getElementById('clipQueueList');
+  const upNextSection = document.querySelector('.clip-up-next');
+  const originalListContent = clipQueueList.innerHTML;
+
+  const emptyStateHTML = `
+    <div class="clip-queue-empty">
+      <svg class="clip-queue-empty__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <rect x="2" y="2" width="20" height="20" rx="2"/>
+        <path d="M8 12h8M12 8v8"/>
+      </svg>
+      <div class="clip-queue-empty__title">No clips available yet</div>
+      <div class="clip-queue-empty__subtitle">Waiting for routines...</div>
+    </div>
+  `;
+
+  const demoQueueBtns = document.querySelectorAll('[data-queue-demo]');
+  demoQueueBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      demoQueueBtns.forEach(b => b.classList.remove('demo-state-btn--active'));
+      btn.classList.add('demo-state-btn--active');
+
+      const demo = btn.dataset.queueDemo;
+
+      // Reset states
+      document.getElementById('clipQueueError').classList.remove('clip-queue-error--visible');
+      document.getElementById('bulkActions').classList.remove('clip-bulk-actions--visible');
+      upNextSection.style.display = '';
+      clipQueueList.innerHTML = originalListContent;
+
+      switch(demo) {
+        case 'empty':
+          clipQueueList.innerHTML = emptyStateHTML;
+          upNextSection.style.display = 'none';
+          break;
+        case 'error':
+          document.getElementById('clipQueueError').classList.add('clip-queue-error--visible');
+          break;
+        case 'bulk':
+          document.getElementById('bulkActions').classList.add('clip-bulk-actions--visible');
+          break;
+        case 'clips':
+        default:
+          // Already reset to original
+          break;
+      }
+    });
+  });
+
+  // Clip action buttons
+  document.querySelectorAll('.clip-action-btn--skip').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const card = btn.closest('.clip-card');
+      card.classList.add('clip-card--skipped');
+      card.classList.remove('clip-card--up-next');
+      btn.textContent = 'Skipped';
+      btn.disabled = true;
+      btn.style.opacity = '0.5';
+    });
+  });
+
+  document.querySelectorAll('.clip-action-btn--queue').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const card = btn.closest('.clip-card');
+      card.classList.remove('clip-card--skipped', 'clip-card--played');
+      btn.textContent = 'Queued';
+      btn.disabled = true;
+      btn.style.opacity = '0.5';
+    });
+  });
+
+  document.querySelectorAll('.clip-action-btn--retry').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const card = btn.closest('.clip-card');
+      btn.textContent = 'Retrying...';
+      btn.disabled = true;
+      setTimeout(() => {
+        card.classList.remove('clip-card--failed');
+        btn.textContent = 'Retry';
+        btn.disabled = false;
+      }, 1500);
+    });
+  });
+})();
+</script>
