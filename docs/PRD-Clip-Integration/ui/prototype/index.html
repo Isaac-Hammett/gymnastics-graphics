@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PRD Clip Integration — Interactive Visualizer</title>
+  <style>
+    :root {
+      /* Theme Colors */
+      --bg-primary: #1a1a2e;
+      --bg-secondary: #16213e;
+      --bg-tertiary: #0f3460;
+      --text-primary: #e0e0e0;
+      --text-secondary: #a0a0a0;
+      --text-muted: #666;
+      --border-color: #2a2a4e;
+
+      /* Role Colors */
+      --color-producer: #4a9eff;
+      --color-talent: #4ecdc4;
+      --color-output: #ff8c42;
+      --color-rundown: #b56aff;
+      --color-override: #ff4757;
+      --color-disabled: #666;
+
+      /* Spacing */
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 16px;
+      --space-lg: 24px;
+      --space-xl: 32px;
+
+      /* Typography */
+      --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'SF Mono', 'Fira Code', monospace;
+      --font-size-sm: 12px;
+      --font-size-base: 14px;
+      --font-size-lg: 16px;
+      --font-size-xl: 20px;
+      --font-size-2xl: 24px;
+
+      /* Layout */
+      --sidebar-width: 250px;
+      --panel-width: 300px;
+      --header-height: 48px;
+      --border-radius: 6px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-family);
+      font-size: var(--font-size-base);
+      color: var(--text-primary);
+      background: var(--bg-primary);
+      min-height: 100vh;
+    }
+
+    /* Layout Grid */
+    .app-container {
+      display: grid;
+      grid-template-columns: var(--sidebar-width) 1fr var(--panel-width);
+      grid-template-rows: var(--header-height) 1fr;
+      grid-template-areas:
+        "header header header"
+        "sidebar content panel";
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .app-container.panel-collapsed {
+      grid-template-columns: var(--sidebar-width) 1fr 0;
+    }
+
+    /* Header */
+    .header {
+      grid-area: header;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 var(--space-md);
+    }
+
+    .header-title {
+      font-size: var(--font-size-lg);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+
+    .header-title .logo {
+      width: 24px;
+      height: 24px;
+      background: linear-gradient(135deg, var(--color-producer), var(--color-talent));
+      border-radius: var(--border-radius);
+    }
+
+    /* Coverage Bar */
+    .coverage-bar {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+    }
+
+    .coverage-progress {
+      width: 120px;
+      height: 6px;
+      background: var(--bg-tertiary);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .coverage-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--color-producer), var(--color-talent));
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+    }
+
+    .kbd {
+      font-family: var(--font-mono);
+      font-size: var(--font-size-sm);
+      background: var(--bg-tertiary);
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--border-color);
+    }
+
+    /* Sidebar */
+    .sidebar {
+      grid-area: sidebar;
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border-color);
+      overflow-y: auto;
+      padding: var(--space-md);
+    }
+
+    .nav-group {
+      margin-bottom: var(--space-lg);
+    }
+
+    .nav-group-title {
+      font-size: var(--font-size-sm);
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: var(--space-sm);
+      padding-left: var(--space-sm);
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      padding: var(--space-sm) var(--space-md);
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+      color: var(--text-primary);
+      text-decoration: none;
+    }
+
+    .nav-item:hover {
+      background: var(--bg-tertiary);
+    }
+
+    .nav-item.active {
+      background: var(--bg-tertiary);
+      border-left: 3px solid var(--color-producer);
+      margin-left: -3px;
+    }
+
+    .nav-item .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .nav-item[data-color="producer"] .dot { background: var(--color-producer); }
+    .nav-item[data-color="talent"] .dot { background: var(--color-talent); }
+    .nav-item[data-color="output"] .dot { background: var(--color-output); }
+    .nav-item[data-color="rundown"] .dot { background: var(--color-rundown); }
+    .nav-item[data-color="override"] .dot { background: var(--color-override); }
+    .nav-item[data-color="disabled"] .dot { background: var(--color-disabled); }
+
+    .nav-item .status {
+      margin-left: auto;
+      font-size: var(--font-size-sm);
+      color: var(--text-muted);
+    }
+
+    /* Content Area */
+    .content {
+      grid-area: content;
+      background: var(--bg-primary);
+      overflow-y: auto;
+      padding: var(--space-lg);
+    }
+
+    /* Placeholder State */
+    .placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      text-align: center;
+      color: var(--text-secondary);
+    }
+
+    .placeholder-icon {
+      width: 64px;
+      height: 64px;
+      background: var(--bg-secondary);
+      border-radius: var(--border-radius);
+      margin-bottom: var(--space-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+    }
+
+    .placeholder-title {
+      font-size: var(--font-size-xl);
+      font-weight: 600;
+      margin-bottom: var(--space-sm);
+    }
+
+    .placeholder-loop {
+      font-family: var(--font-mono);
+      font-size: var(--font-size-sm);
+      background: var(--bg-tertiary);
+      padding: var(--space-xs) var(--space-sm);
+      border-radius: var(--border-radius);
+      margin-top: var(--space-sm);
+    }
+
+    /* Right Panel (Feedback Notes) */
+    .panel {
+      grid-area: panel;
+      background: var(--bg-secondary);
+      border-left: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .panel-collapsed .panel {
+      display: none;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-md);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .panel-title {
+      font-size: var(--font-size-base);
+      font-weight: 600;
+    }
+
+    .panel-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--space-md);
+    }
+
+    .panel-section {
+      margin-bottom: var(--space-md);
+    }
+
+    .panel-section-title {
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+      margin-bottom: var(--space-xs);
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+    }
+
+    .panel-section textarea {
+      width: 100%;
+      min-height: 60px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      color: var(--text-primary);
+      font-family: var(--font-family);
+      font-size: var(--font-size-sm);
+      padding: var(--space-sm);
+      resize: vertical;
+    }
+
+    .panel-section textarea:focus {
+      outline: none;
+      border-color: var(--color-producer);
+    }
+
+    .panel-footer {
+      padding: var(--space-md);
+      border-top: 1px solid var(--border-color);
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-xs);
+      padding: var(--space-sm) var(--space-md);
+      border: none;
+      border-radius: var(--border-radius);
+      font-family: var(--font-family);
+      font-size: var(--font-size-sm);
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s, opacity 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--color-producer);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      opacity: 0.9;
+    }
+
+    .btn-secondary {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+    }
+
+    .btn-secondary:hover {
+      background: var(--border-color);
+    }
+
+    .btn-icon {
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-radius: var(--border-radius);
+    }
+
+    .btn-icon:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+
+    /* Toggle Button */
+    .panel-toggle {
+      position: fixed;
+      right: var(--space-md);
+      top: calc(var(--header-height) + var(--space-md));
+      z-index: 100;
+    }
+
+    .panel-collapsed .panel-toggle {
+      right: var(--space-md);
+    }
+
+    /* Quick Search Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 15vh;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+
+    .modal-overlay.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      width: 400px;
+      max-width: 90vw;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+      transform: translateY(-20px);
+      transition: transform 0.2s;
+    }
+
+    .modal-overlay.visible .modal {
+      transform: translateY(0);
+    }
+
+    .modal-header {
+      padding: var(--space-md);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+
+    .modal-search {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
+      font-family: var(--font-family);
+      font-size: var(--font-size-lg);
+      outline: none;
+    }
+
+    .modal-search::placeholder {
+      color: var(--text-muted);
+    }
+
+    .modal-results {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .modal-result {
+      padding: var(--space-sm) var(--space-md);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+
+    .modal-result:hover,
+    .modal-result.selected {
+      background: var(--bg-tertiary);
+    }
+
+    .modal-result .section-num {
+      font-family: var(--font-mono);
+      font-size: var(--font-size-sm);
+      color: var(--color-producer);
+      min-width: 40px;
+    }
+
+    /* Section Badges */
+    .section-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-size: var(--font-size-sm);
+      background: var(--bg-tertiary);
+      color: var(--color-producer);
+      padding: 2px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .section-badge:hover {
+      background: var(--color-producer);
+      color: white;
+    }
+
+    /* Shared Content Styles */
+    .card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: var(--space-md);
+      margin-bottom: var(--space-md);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-md);
+    }
+
+    .card-title {
+      font-size: var(--font-size-lg);
+      font-weight: 600;
+    }
+
+    /* Role Badges */
+    .role-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-xs);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: var(--font-size-sm);
+      font-weight: 500;
+    }
+
+    .role-badge.producer {
+      background: rgba(74, 158, 255, 0.2);
+      color: var(--color-producer);
+    }
+
+    .role-badge.talent {
+      background: rgba(78, 205, 196, 0.2);
+      color: var(--color-talent);
+    }
+
+    .role-badge.output {
+      background: rgba(255, 140, 66, 0.2);
+      color: var(--color-output);
+    }
+
+    .role-badge.rundown {
+      background: rgba(181, 106, 255, 0.2);
+      color: var(--color-rundown);
+    }
+
+    /* State Indicators */
+    .state-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-xs);
+      font-family: var(--font-mono);
+      font-size: var(--font-size-sm);
+      padding: var(--space-xs) var(--space-sm);
+      border-radius: var(--border-radius);
+      background: var(--bg-tertiary);
+    }
+
+    .state-indicator::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .state-indicator.idle { color: var(--color-disabled); }
+    .state-indicator.loading { color: var(--color-producer); }
+    .state-indicator.playing { color: var(--color-talent); }
+    .state-indicator.error { color: var(--color-override); }
+
+    /* Scrollbar Styles */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg-primary);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container" id="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-title">
+        <div class="logo"></div>
+        PRD Clip Integration Visualizer
+      </div>
+
+      <div class="coverage-bar">
+        <span>PRD Coverage:</span>
+        <div class="coverage-progress">
+          <div class="coverage-fill" id="coverageFill"></div>
+        </div>
+        <span id="coverageText">0 / 12 sections</span>
+      </div>
+
+      <div class="header-actions">
+        <span class="kbd">⌘G</span>
+        <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">Quick Jump</span>
+        <button class="btn-icon panel-toggle" id="panelToggle" title="Toggle Feedback Panel">
+          ☰
+        </button>
+      </div>
+    </header>
+
+    <!-- Sidebar -->
+    <nav class="sidebar">
+      <div class="nav-group">
+        <div class="nav-group-title">Screens</div>
+        <a class="nav-item" data-section="producer" data-color="producer">
+          <span class="dot"></span>
+          ProducerView
+          <span class="status">§4</span>
+        </a>
+        <a class="nav-item" data-section="talent" data-color="talent">
+          <span class="dot"></span>
+          TalentView
+          <span class="status">§4</span>
+        </a>
+        <a class="nav-item" data-section="rundown" data-color="rundown">
+          <span class="dot"></span>
+          RundownEditor
+          <span class="status">§4</span>
+        </a>
+        <a class="nav-item" data-section="output" data-color="output">
+          <span class="dot"></span>
+          output.html
+          <span class="status">§4</span>
+        </a>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-group-title">States</div>
+        <a class="nav-item" data-section="state-machine" data-color="producer">
+          <span class="dot"></span>
+          State Machine
+          <span class="status">§3C</span>
+        </a>
+        <a class="nav-item" data-section="per-screen-states" data-color="talent">
+          <span class="dot"></span>
+          Per-Screen States
+          <span class="status">§4</span>
+        </a>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-group-title">Workflows</div>
+        <a class="nav-item" data-section="workflows" data-color="producer" data-scroll="producer-workflow">
+          <span class="dot"></span>
+          Producer Workflow
+          <span class="status">§2</span>
+        </a>
+        <a class="nav-item" data-section="workflows" data-color="talent" data-scroll="commentator-workflow">
+          <span class="dot"></span>
+          Commentator Workflow
+          <span class="status">§2</span>
+        </a>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-group-title">Architecture</div>
+        <a class="nav-item" data-section="data-flow" data-color="producer">
+          <span class="dot"></span>
+          Data Flow
+          <span class="status">§5–7</span>
+        </a>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="content" id="content">
+      <div class="placeholder">
+        <div class="placeholder-icon">📋</div>
+        <div class="placeholder-title">Select a Section</div>
+        <p>Choose a section from the sidebar to view the interactive visualization.</p>
+      </div>
+    </main>
+
+    <!-- Feedback Panel -->
+    <aside class="panel" id="panel">
+      <div class="panel-header">
+        <span class="panel-title">Feedback Notes</span>
+        <button class="btn-icon" id="panelClose" title="Close Panel">✕</button>
+      </div>
+      <div class="panel-content" id="panelContent">
+        <!-- PRD Sections for notes -->
+      </div>
+      <div class="panel-footer">
+        <button class="btn btn-primary" id="exportNotes" style="width: 100%;">
+          Export Notes as Markdown
+        </button>
+      </div>
+    </aside>
+
+    <!-- Quick Search Modal -->
+    <div class="modal-overlay" id="searchModal">
+      <div class="modal">
+        <div class="modal-header">
+          <span style="color: var(--text-muted);">§</span>
+          <input type="text" class="modal-search" id="searchInput" placeholder="Jump to section..." autocomplete="off">
+        </div>
+        <div class="modal-results" id="searchResults"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // PRD Sections data
+    const PRD_SECTIONS = [
+      { num: '1', title: 'Overview' },
+      { num: '2', title: 'Users & Their Phases' },
+      { num: '3', title: 'Key Design Decisions' },
+      { num: '3B', title: 'Professional Tool Reference' },
+      { num: '3C', title: 'State Machine Definitions' },
+      { num: '4', title: 'Screen-by-Screen Design' },
+      { num: '5', title: 'Data Requirements Per Screen' },
+      { num: '6', title: 'Implementation Approach' },
+      { num: '7', title: 'Key Files' },
+      { num: '8', title: 'Design Tokens / Visual Style' },
+      { num: '8B', title: 'Keyboard Shortcuts' },
+      { num: '8C', title: 'Accessibility' },
+      { num: '9', title: 'Out of Scope' },
+      { num: '10', title: 'Acceptance Criteria' },
+      { num: '11', title: 'Testing Strategy' },
+      { num: '12', title: 'Future Considerations' }
+    ];
+
+    // Section to loop mapping (for placeholder messages)
+    const SECTION_LOOPS = {
+      'producer': 'screens/producer-view',
+      'talent': 'screens/talent-view',
+      'rundown': 'screens/rundown-editor',
+      'output': 'screens/output-html',
+      'state-machine': 'states/state-machine',
+      'per-screen-states': 'states/per-screen',
+      'workflows': 'workflows/user-journeys',
+      'data-flow': 'architecture/data-flow'
+    };
+
+    // State
+    let currentSection = null;
+    let notes = {};
+
+    // Load notes from localStorage
+    function loadNotes() {
+      try {
+        const saved = localStorage.getItem('prd-visualizer-notes');
+        if (saved) {
+          notes = JSON.parse(saved);
+        }
+      } catch (e) {
+        console.error('Failed to load notes:', e);
+      }
+    }
+
+    // Save notes to localStorage
+    function saveNotes() {
+      try {
+        localStorage.setItem('prd-visualizer-notes', JSON.stringify(notes));
+      } catch (e) {
+        console.error('Failed to save notes:', e);
+      }
+    }
+
+    // Initialize feedback panel
+    function initFeedbackPanel() {
+      const panelContent = document.getElementById('panelContent');
+      panelContent.innerHTML = PRD_SECTIONS.map(s => `
+        <div class="panel-section">
+          <div class="panel-section-title">
+            <span class="section-badge" data-section="${s.num}">§${s.num}</span>
+            ${s.title}
+          </div>
+          <textarea
+            id="note-${s.num}"
+            placeholder="Notes for §${s.num}..."
+            data-section="${s.num}"
+          >${notes[s.num] || ''}</textarea>
+        </div>
+      `).join('');
+
+      // Add change listeners
+      panelContent.querySelectorAll('textarea').forEach(ta => {
+        ta.addEventListener('input', (e) => {
+          const section = e.target.dataset.section;
+          notes[section] = e.target.value;
+          saveNotes();
+        });
+      });
+    }
+
+    // Export notes as markdown
+    function exportNotes() {
+      const lines = ['# PRD Clip Integration — Feedback Notes', '', `_Exported: ${new Date().toISOString()}_`, ''];
+
+      PRD_SECTIONS.forEach(s => {
+        const note = notes[s.num];
+        if (note && note.trim()) {
+          lines.push(`## §${s.num} ${s.title}`, '', note.trim(), '');
+        }
+      });
+
+      const markdown = lines.join('\n');
+      navigator.clipboard.writeText(markdown).then(() => {
+        alert('Notes copied to clipboard!');
+      }).catch(err => {
+        console.error('Failed to copy:', err);
+        alert('Failed to copy to clipboard. Check console.');
+      });
+    }
+
+    // Load section content
+    async function loadSection(sectionName, scrollTarget) {
+      const content = document.getElementById('content');
+
+      // Update nav
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.toggle('active', item.dataset.section === sectionName);
+      });
+
+      currentSection = sectionName;
+
+      try {
+        const response = await fetch(`sections/${sectionName}.html`);
+        if (response.ok) {
+          const html = await response.text();
+          content.innerHTML = html;
+
+          // Scroll to target if specified
+          if (scrollTarget) {
+            const target = document.getElementById(scrollTarget);
+            if (target) {
+              target.scrollIntoView({ behavior: 'smooth' });
+            }
+          }
+
+          updateCoverage();
+        } else {
+          // Show placeholder
+          const loopName = SECTION_LOOPS[sectionName] || 'unknown';
+          content.innerHTML = `
+            <div class="placeholder">
+              <div class="placeholder-icon">🔨</div>
+              <div class="placeholder-title">Building...</div>
+              <p>This section is being built by the <strong>${loopName}</strong> loop.</p>
+              <div class="placeholder-loop">loop: ${loopName}</div>
+            </div>
+          `;
+        }
+      } catch (e) {
+        console.error('Failed to load section:', e);
+        const loopName = SECTION_LOOPS[sectionName] || 'unknown';
+        content.innerHTML = `
+          <div class="placeholder">
+            <div class="placeholder-icon">🔨</div>
+            <div class="placeholder-title">Building...</div>
+            <p>This section is being built by the <strong>${loopName}</strong> loop.</p>
+            <div class="placeholder-loop">loop: ${loopName}</div>
+          </div>
+        `;
+      }
+    }
+
+    // Update coverage indicator
+    function updateCoverage() {
+      // Count loaded sections by checking nav items
+      const navItems = document.querySelectorAll('.nav-item');
+      let loaded = 0;
+      let total = navItems.length;
+
+      // For now, we'll track this based on sections that have been built
+      // This will be updated as sections are completed
+      const coverageText = document.getElementById('coverageText');
+      const coverageFill = document.getElementById('coverageFill');
+
+      // Placeholder: 0 sections until they're built
+      coverageText.textContent = `${loaded} / ${total} sections`;
+      coverageFill.style.width = `${(loaded / total) * 100}%`;
+    }
+
+    // Quick search modal
+    function showSearchModal() {
+      const modal = document.getElementById('searchModal');
+      const input = document.getElementById('searchInput');
+      modal.classList.add('visible');
+      input.value = '';
+      input.focus();
+      renderSearchResults('');
+    }
+
+    function hideSearchModal() {
+      document.getElementById('searchModal').classList.remove('visible');
+    }
+
+    function renderSearchResults(query) {
+      const results = document.getElementById('searchResults');
+      const filtered = PRD_SECTIONS.filter(s =>
+        s.num.toLowerCase().includes(query.toLowerCase()) ||
+        s.title.toLowerCase().includes(query.toLowerCase())
+      );
+
+      results.innerHTML = filtered.map((s, i) => `
+        <div class="modal-result${i === 0 ? ' selected' : ''}" data-section="${s.num}">
+          <span class="section-num">§${s.num}</span>
+          <span>${s.title}</span>
+        </div>
+      `).join('');
+
+      results.querySelectorAll('.modal-result').forEach(result => {
+        result.addEventListener('click', () => {
+          const section = result.dataset.section;
+          // Find corresponding nav item and click it
+          const navItem = document.querySelector(`.nav-item[data-section]`);
+          if (navItem) {
+            // For now, scroll to section in feedback panel
+            const textarea = document.getElementById(`note-${section}`);
+            if (textarea) {
+              textarea.scrollIntoView({ behavior: 'smooth' });
+              textarea.focus();
+            }
+          }
+          hideSearchModal();
+        });
+      });
+    }
+
+    // Toggle panel
+    function togglePanel() {
+      document.getElementById('app').classList.toggle('panel-collapsed');
+    }
+
+    // Event listeners
+    document.addEventListener('DOMContentLoaded', () => {
+      loadNotes();
+      initFeedbackPanel();
+      updateCoverage();
+
+      // Nav clicks
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+          e.preventDefault();
+          const section = item.dataset.section;
+          const scrollTarget = item.dataset.scroll;
+          loadSection(section, scrollTarget);
+        });
+      });
+
+      // Panel toggle
+      document.getElementById('panelToggle').addEventListener('click', togglePanel);
+      document.getElementById('panelClose').addEventListener('click', togglePanel);
+
+      // Export notes
+      document.getElementById('exportNotes').addEventListener('click', exportNotes);
+
+      // Keyboard shortcuts
+      document.addEventListener('keydown', (e) => {
+        // Cmd/Ctrl + G for quick search
+        if ((e.metaKey || e.ctrlKey) && e.key === 'g') {
+          e.preventDefault();
+          showSearchModal();
+        }
+
+        // Escape to close modal
+        if (e.key === 'Escape') {
+          hideSearchModal();
+        }
+      });
+
+      // Search input
+      document.getElementById('searchInput').addEventListener('input', (e) => {
+        renderSearchResults(e.target.value);
+      });
+
+      // Click outside modal to close
+      document.getElementById('searchModal').addEventListener('click', (e) => {
+        if (e.target.id === 'searchModal') {
+          hideSearchModal();
+        }
+      });
+    });
+  </script>
+</body>
+</html>
