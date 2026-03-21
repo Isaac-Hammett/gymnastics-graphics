@@ -10,6 +10,8 @@
       <button class="state-toggle-btn" data-state="fallback" style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); padding: 6px 12px; border-radius: var(--border-radius); cursor: pointer; font-size: var(--font-size-sm);">Fallback Mode</button>
       <button class="state-toggle-btn" data-state="paused" style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); padding: 6px 12px; border-radius: var(--border-radius); cursor: pointer; font-size: var(--font-size-sm);">Paused</button>
       <button class="state-toggle-btn" data-state="stalled" style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); padding: 6px 12px; border-radius: var(--border-radius); cursor: pointer; font-size: var(--font-size-sm);">Stalled</button>
+      <button class="state-toggle-btn" data-state="moment-replay" style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); padding: 6px 12px; border-radius: var(--border-radius); cursor: pointer; font-size: var(--font-size-sm);">Moment Replay</button>
+      <button class="state-toggle-btn" data-state="break" style="background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); padding: 6px 12px; border-radius: var(--border-radius); cursor: pointer; font-size: var(--font-size-sm);">Break</button>
     </div>
     <div style="margin-top: var(--space-sm); display: flex; gap: var(--space-md); font-size: var(--font-size-sm);">
       <span style="display: flex; align-items: center; gap: var(--space-xs);"><span style="width: 8px; height: 8px; background: #4ade80; border-radius: 2px;"></span> <span style="color: var(--text-secondary);">Added in this state</span></span>
@@ -49,11 +51,15 @@
             <span class="state-paused" style="display: none;"><span style="color: #fbbf24;">⏸</span> PAUSED — Awaiting Resume</span>
             <!-- STALLED state -->
             <span class="state-stalled" style="display: none;"><span style="color: #ef4444;">⚠</span> STALLED — Clip Load Failed</span>
+            <!-- MOMENT_REPLAY state -->
+            <span class="state-moment-replay" style="display: none;"><span style="color: #f472b6;">↻</span> MOMENT REPLAY — T. Singletary</span>
+            <!-- BREAK state -->
+            <span class="state-break" style="display: none;"><span style="color: #f97316;">◆</span> BREAK — Sponsor Logo</span>
           </div>
           <div style="display: flex; align-items: center; gap: var(--space-sm);">
             <span class="section-badge" data-section="4.3">§4.3</span>
             <!-- Coordinator health indicator -->
-            <span class="state-coordinator state-playing state-live state-fallback" style="display: flex; align-items: center; gap: var(--space-xs); color: #4ade80; font-size: var(--font-size-sm);">
+            <span class="state-coordinator state-playing state-live state-fallback state-moment-replay state-break" style="display: flex; align-items: center; gap: var(--space-xs); color: #4ade80; font-size: var(--font-size-sm);">
               <span style="width: 8px; height: 8px; border-radius: 50%; background: #4ade80;"></span>
               Coordinator
             </span>
@@ -107,12 +113,24 @@
               <div style="color: var(--text-primary);">G. Reed · Bars</div>
               <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">Load timeout</div>
             </div>
+            <!-- MOMENT_REPLAY state -->
+            <div class="state-moment-replay" style="display: none;">
+              <div style="color: #f472b6; font-weight: 600;">MOMENT REPLAY</div>
+              <div style="color: var(--text-primary);">T. Singletary</div>
+              <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">Vault · 0.5x</div>
+            </div>
+            <!-- BREAK state -->
+            <div class="state-break" style="display: none;">
+              <div style="color: #f97316; font-weight: 600;">BREAK</div>
+              <div style="color: var(--text-primary);">Sponsor Logo</div>
+              <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">Rotation break</div>
+            </div>
           </div>
           <!-- NEXT -->
           <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-md);">
             <div style="color: var(--text-secondary); font-size: var(--font-size-sm); margin-bottom: var(--space-xs);">NEXT</div>
-            <!-- Normal next (CLIP, LIVE, OVERRIDE states) -->
-            <div class="state-playing state-live state-override">
+            <!-- Normal next (CLIP, LIVE, OVERRIDE, MOMENT_REPLAY, BREAK states) -->
+            <div class="state-playing state-live state-override state-moment-replay state-break">
               <div style="color: var(--text-primary); font-weight: 600;">Clip: H. Fitzgerald</div>
               <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">Vault · 9.475</div>
               <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">SCSU</div>
@@ -142,8 +160,8 @@
           <!-- QUEUE -->
           <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-md);">
             <div style="color: var(--text-secondary); font-size: var(--font-size-sm); margin-bottom: var(--space-xs);">QUEUE</div>
-            <!-- Normal queue (CLIP, LIVE, OVERRIDE states) -->
-            <div class="state-playing state-live state-override state-paused state-stalled">
+            <!-- Normal queue (CLIP, LIVE, OVERRIDE, PAUSED, STALLED, MOMENT_REPLAY, BREAK states) -->
+            <div class="state-playing state-live state-override state-paused state-stalled state-moment-replay state-break">
               <div style="color: var(--text-primary); font-weight: 600;">62 clips</div>
               <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">~18:30 left</div>
               <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">0 played</div>
@@ -215,8 +233,8 @@
               </div>
               <button class="btn" style="margin-top: var(--space-xs); font-size: var(--font-size-sm); padding: 4px 8px; background: #fbbf24; color: #000;">Override</button>
             </div>
-            <!-- FALLBACK, PAUSED, STALLED - idle -->
-            <div class="state-fallback state-paused state-stalled camera-3-idle" style="display: none; flex-direction: column; align-items: center;">
+            <!-- FALLBACK, PAUSED, STALLED, MOMENT_REPLAY, BREAK - idle -->
+            <div class="state-fallback state-paused state-stalled state-moment-replay state-break camera-3-idle" style="display: none; flex-direction: column; align-items: center;">
               <div style="display: flex; align-items: center; justify-content: center; gap: var(--space-xs); margin: var(--space-xs) 0;">
                 <span style="width: 8px; height: 8px; border-radius: 50%; background: #666;"></span>
                 <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">Idle</span>
@@ -244,8 +262,8 @@
           <span class="section-badge" data-section="4.6">§4.6</span>
         </div>
         <div style="padding: var(--space-md);">
-          <!-- Default controls (CLIP, LIVE, FALLBACK states) -->
-          <div class="state-playing state-live state-fallback override-default">
+          <!-- Default controls (CLIP, LIVE, FALLBACK, MOMENT_REPLAY, BREAK states) -->
+          <div class="state-playing state-live state-fallback state-moment-replay state-break override-default">
             <div style="display: flex; flex-wrap: wrap; gap: var(--space-sm); margin-bottom: var(--space-md);">
               <button class="btn btn-secondary" style="display: flex; align-items: center; gap: var(--space-xs);">
                 <span>⏸</span> Pause <span class="kbd">Space</span>
@@ -502,6 +520,44 @@
               <span style="color: var(--text-primary);">Clip played: T. Singletary · VT · 9.725</span>
             </div>
           </div>
+
+          <!-- MOMENT_REPLAY state log -->
+          <div class="state-moment-replay event-log-moment-replay" style="display: none;">
+            <div style="display: flex; gap: var(--space-sm); padding: var(--space-xs) 0; border-bottom: 1px solid var(--border-color);">
+              <span style="color: var(--text-secondary); min-width: 60px;">19:46:00</span>
+              <span style="color: #f472b6;">↻</span>
+              <span style="color: var(--text-primary);">Moment replay: T. Singletary · VT · 0.5x</span>
+            </div>
+            <div style="display: flex; gap: var(--space-sm); padding: var(--space-xs) 0; border-bottom: 1px solid var(--border-color);">
+              <span style="color: var(--text-secondary); min-width: 60px;">19:45:55</span>
+              <span style="color: #f472b6;">🚩</span>
+              <span style="color: var(--text-primary);">Moment flagged: 0:04–0:12 (Play Now)</span>
+            </div>
+            <div style="display: flex; gap: var(--space-sm); padding: var(--space-xs) 0; border-bottom: 1px solid var(--border-color);">
+              <span style="color: var(--text-secondary); min-width: 60px;">19:45:30</span>
+              <span style="color: #4ade80;">●</span>
+              <span style="color: var(--text-primary);">Clip played: T. Singletary · VT · 9.725</span>
+            </div>
+          </div>
+
+          <!-- BREAK state log -->
+          <div class="state-break event-log-break" style="display: none;">
+            <div style="display: flex; gap: var(--space-sm); padding: var(--space-xs) 0; border-bottom: 1px solid var(--border-color);">
+              <span style="color: var(--text-secondary); min-width: 60px;">19:50:15</span>
+              <span style="color: #f97316;">◆</span>
+              <span style="color: var(--text-primary);">Break item: Sponsor Logo (2 of 5)</span>
+            </div>
+            <div style="display: flex; gap: var(--space-sm); padding: var(--space-xs) 0; border-bottom: 1px solid var(--border-color);">
+              <span style="color: var(--text-secondary); min-width: 60px;">19:50:00</span>
+              <span style="color: #f97316;">◆</span>
+              <span style="color: var(--text-primary);">Rotation break started — 5 items</span>
+            </div>
+            <div style="display: flex; gap: var(--space-sm); padding: var(--space-xs) 0; border-bottom: 1px solid var(--border-color);">
+              <span style="color: var(--text-secondary); min-width: 60px;">19:49:45</span>
+              <span style="color: #4ade80;">●</span>
+              <span style="color: var(--text-primary);">Rotation 1 complete — 24 clips played</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -526,7 +582,7 @@
           <button style="background: transparent; border: none; color: var(--color-producer); padding: var(--space-sm) var(--space-md); border-bottom: 2px solid var(--color-producer); cursor: pointer;">All</button>
           <button style="background: transparent; border: none; color: var(--text-secondary); padding: var(--space-sm) var(--space-md); border-bottom: 2px solid transparent; cursor: pointer;">Queued (60)</button>
           <button style="background: transparent; border: none; color: var(--text-secondary); padding: var(--space-sm) var(--space-md); border-bottom: 2px solid transparent; cursor: pointer;">Played (2)</button>
-          <button style="background: transparent; border: none; color: var(--text-secondary); padding: var(--space-sm) var(--space-md); border-bottom: 2px solid transparent; cursor: pointer;">Live (0)</button>
+          <button style="background: transparent; border: none; color: var(--text-secondary); padding: var(--space-sm) var(--space-md); border-bottom: 2px solid transparent; cursor: pointer;">Shown Live (0)</button>
         </div>
 
         <!-- Filters -->
@@ -672,14 +728,74 @@
               </div>
             </div>
           </div>
+
+          <!-- MOMENT_REPLAY state - playing moment replay -->
+          <div class="state-moment-replay now-playing-moment-replay" style="display: none;">
+            <div style="color: #f472b6; font-size: var(--font-size-sm); font-weight: 600; margin-bottom: var(--space-sm);">↻ MOMENT REPLAY</div>
+            <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-sm); border: 2px solid #f472b6;">
+              <div style="display: flex; gap: var(--space-sm); margin-bottom: var(--space-sm);">
+                <div style="width: 64px; height: 36px; background: linear-gradient(135deg, #8b5cf6, #6366f1); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: var(--font-size-sm);">VT</div>
+                <div style="flex: 1;">
+                  <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div>
+                      <div style="color: var(--text-primary); font-weight: 600;">Tamyra Singletary</div>
+                      <div style="color: #f472b6; font-size: var(--font-size-sm);">Moment replay · 0.5x speed</div>
+                      <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">Bridgeport</div>
+                    </div>
+                    <span style="background: #f472b6; padding: 2px 6px; border-radius: 4px; font-size: 10px; color: white;">REPLAY</span>
+                  </div>
+                </div>
+              </div>
+              <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-sm);">
+                <span style="color: var(--text-secondary); font-size: var(--font-size-sm); min-width: 32px;">0:04</span>
+                <div style="flex: 1; height: 6px; background: var(--bg-secondary); border-radius: 3px; overflow: hidden;">
+                  <div style="width: 50%; height: 100%; background: #f472b6;"></div>
+                </div>
+                <span style="color: var(--text-secondary); font-size: var(--font-size-sm); min-width: 32px;">-0:04</span>
+              </div>
+              <div style="display: flex; gap: var(--space-xs);">
+                <button class="btn btn-secondary" style="padding: 4px 8px; font-size: var(--font-size-sm);">⏭ Skip</button>
+                <span style="color: var(--text-secondary); font-size: var(--font-size-sm); margin-left: auto; display: flex; align-items: center; gap: var(--space-xs);">🔇 Muted</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- BREAK state - rotation break sequence -->
+          <div class="state-break now-playing-break" style="display: none;">
+            <div style="color: #f97316; font-size: var(--font-size-sm); font-weight: 600; margin-bottom: var(--space-sm);">◆ BREAK SEQUENCE</div>
+            <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-sm); border: 2px solid #f97316;">
+              <div style="display: flex; gap: var(--space-sm); margin-bottom: var(--space-sm);">
+                <div style="width: 64px; height: 36px; background: linear-gradient(135deg, #f97316, #ea580c); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 10px;">SPON</div>
+                <div style="flex: 1;">
+                  <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div>
+                      <div style="color: var(--text-primary); font-weight: 600;">Sponsor Logo</div>
+                      <div style="color: #f97316; font-size: var(--font-size-sm);">Rotation break · item 2 of 5</div>
+                    </div>
+                    <span style="background: #f97316; padding: 2px 6px; border-radius: 4px; font-size: 10px; color: white;">BREAK</span>
+                  </div>
+                </div>
+              </div>
+              <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-sm);">
+                <span style="color: var(--text-secondary); font-size: var(--font-size-sm); min-width: 32px;">0:05</span>
+                <div style="flex: 1; height: 6px; background: var(--bg-secondary); border-radius: 3px; overflow: hidden;">
+                  <div style="width: 50%; height: 100%; background: #f97316;"></div>
+                </div>
+                <span style="color: var(--text-secondary); font-size: var(--font-size-sm); min-width: 32px;">-0:05</span>
+              </div>
+              <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">
+                Next: Team Standings (15s) → Quad View (20s) → Resume Rotation 2
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- UP NEXT -->
         <div style="padding: var(--space-md); border-bottom: 1px solid var(--border-color);">
           <div style="color: var(--text-secondary); font-size: var(--font-size-sm); font-weight: 600; margin-bottom: var(--space-sm);">UP NEXT</div>
 
-          <!-- Shows in CLIP, LIVE, OVERRIDE states -->
-          <div class="state-playing state-live state-override up-next-normal">
+          <!-- Shows in CLIP, LIVE, OVERRIDE, MOMENT_REPLAY, BREAK states -->
+          <div class="state-playing state-live state-override state-moment-replay state-break up-next-normal">
             <!-- Next clip 1 -->
             <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-sm); margin-bottom: var(--space-xs); border-left: 3px solid var(--color-producer);">
               <div style="display: flex; gap: var(--space-sm);">
@@ -873,6 +989,29 @@
         <div><strong>Play Now:</strong> replay immediately after clip, before next</div>
         <div><strong>Save Only:</strong> save to highlights pool for later use</div>
       </div>
+
+      <!-- Flagged Moments List (when multiple moments flagged on same clip) -->
+      <div style="margin-top: var(--space-lg); padding-top: var(--space-md); border-top: 1px solid var(--border-color);">
+        <div style="color: var(--text-secondary); font-size: var(--font-size-sm); font-weight: 600; margin-bottom: var(--space-sm);">FLAGGED MOMENTS (this clip)</div>
+        <div style="display: flex; flex-direction: column; gap: var(--space-xs);">
+          <!-- Moment 1 -->
+          <div style="display: flex; align-items: center; gap: var(--space-sm); background: var(--bg-tertiary); padding: var(--space-sm); border-radius: var(--border-radius);">
+            <span style="color: var(--text-secondary); font-size: var(--font-size-sm); min-width: 24px;">1.</span>
+            <span style="color: var(--text-primary); font-size: var(--font-size-sm);">0:04–0:12</span>
+            <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">0.5x</span>
+            <span style="color: var(--color-producer); font-size: var(--font-size-sm); margin-left: auto;">▶ Play Now</span>
+            <button style="background: transparent; border: none; color: var(--text-secondary); cursor: pointer; font-size: var(--font-size-sm);">✕</button>
+          </div>
+          <!-- Moment 2 -->
+          <div style="display: flex; align-items: center; gap: var(--space-sm); background: var(--bg-tertiary); padding: var(--space-sm); border-radius: var(--border-radius);">
+            <span style="color: var(--text-secondary); font-size: var(--font-size-sm); min-width: 24px;">2.</span>
+            <span style="color: var(--text-primary); font-size: var(--font-size-sm);">0:14–0:22</span>
+            <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">0.25x</span>
+            <span style="color: #4ade80; font-size: var(--font-size-sm); margin-left: auto;">💾 Saved</span>
+            <button style="background: transparent; border: none; color: var(--text-secondary); cursor: pointer; font-size: var(--font-size-sm);">✕</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -889,7 +1028,9 @@
         override: '#fbbf24',
         fallback: '#a78bfa',
         paused: '#fbbf24',
-        stalled: '#ef4444'
+        stalled: '#ef4444',
+        'moment-replay': '#f472b6',
+        'break': '#f97316'
       };
 
       // State to override card border
@@ -899,7 +1040,9 @@
         override: '#fbbf24',
         fallback: '#4ade80',
         paused: '#fbbf24',
-        stalled: '#ef4444'
+        stalled: '#ef4444',
+        'moment-replay': '#4ade80',
+        'break': '#4ade80'
       };
 
       // Camera 3 border states
@@ -909,7 +1052,9 @@
         override: '2px solid #fbbf24',
         fallback: '1px solid var(--border-color)',
         paused: '1px solid var(--border-color)',
-        stalled: '1px solid var(--border-color)'
+        stalled: '1px solid var(--border-color)',
+        'moment-replay': '1px solid var(--border-color)',
+        'break': '1px solid var(--border-color)'
       };
 
       function setState(state) {
@@ -929,7 +1074,7 @@
         });
 
         // Hide all state-specific elements
-        const stateClasses = ['playing', 'live', 'override', 'fallback', 'paused', 'stalled'];
+        const stateClasses = ['playing', 'live', 'override', 'fallback', 'paused', 'stalled', 'moment-replay', 'break'];
         stateClasses.forEach(s => {
           section.querySelectorAll('.state-' + s).forEach(el => {
             el.style.display = 'none';
