@@ -797,3 +797,592 @@
   });
 })();
 </script>
+
+<!-- ============================================================ -->
+<!-- CLIP STATUS LIFECYCLE DIAGRAM                                 -->
+<!-- ============================================================ -->
+
+<style>
+  /* === Clip Lifecycle Section === */
+  .clip-lifecycle-section {
+    padding: 24px;
+    background: var(--bg-primary, #0a0a0b);
+  }
+
+  .lifecycle-svg {
+    width: 100%;
+    height: 420px;
+    display: block;
+  }
+
+  .lifecycle-svg .status-node {
+    cursor: pointer;
+    transition: filter 150ms ease;
+  }
+
+  .lifecycle-svg .status-node:hover {
+    filter: brightness(1.15);
+  }
+
+  .lifecycle-svg .status-node:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+
+  .lifecycle-svg .status-label {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    fill: currentColor;
+    pointer-events: none;
+  }
+
+  .lifecycle-svg .status-sublabel {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 8px;
+    font-weight: 400;
+    fill: var(--text-secondary, #a1a1aa);
+    pointer-events: none;
+  }
+
+  .lifecycle-svg .lifecycle-arrow {
+    fill: none;
+    stroke: var(--border-color, #3f3f46);
+    stroke-width: 1.5;
+    marker-end: url(#lifecycle-arrowhead);
+    cursor: pointer;
+    transition: stroke 150ms, stroke-width 150ms;
+  }
+
+  .lifecycle-svg .lifecycle-arrow:hover {
+    stroke: #60a5fa;
+    stroke-width: 2;
+  }
+
+  .lifecycle-svg .action-label {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 8px;
+    font-weight: 500;
+    fill: #60a5fa;
+    pointer-events: none;
+  }
+
+  .lifecycle-svg .condition-label {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 7px;
+    fill: var(--text-muted, #71717a);
+    pointer-events: none;
+  }
+
+  /* Status color groups */
+  .status-initial { fill: rgba(59, 130, 246, 0.2); stroke: #3b82f6; }
+  .status-ready { fill: rgba(6, 182, 212, 0.2); stroke: #06b6d4; }
+  .status-active { fill: rgba(34, 197, 94, 0.2); stroke: #22c55e; }
+  .status-terminal-success { fill: rgba(113, 113, 122, 0.15); stroke: #52525b; }
+  .status-terminal-warn { fill: rgba(245, 158, 11, 0.2); stroke: #f59e0b; }
+  .status-terminal-error { fill: rgba(239, 68, 68, 0.2); stroke: #ef4444; }
+
+  /* Status legend */
+  .lifecycle-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color, #3f3f46);
+  }
+
+  .lifecycle-legend-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .lifecycle-legend-title {
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted, #71717a);
+  }
+
+  .lifecycle-legend-items {
+    display: flex;
+    gap: 12px;
+  }
+
+  .lifecycle-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    color: var(--text-secondary, #a1a1aa);
+  }
+
+  .lifecycle-legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    border: 1.5px solid;
+  }
+
+  /* Action table */
+  .action-table {
+    margin-top: 16px;
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .action-table th,
+  .action-table td {
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color, #3f3f46);
+  }
+
+  .action-table th {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted, #71717a);
+    background: var(--bg-tertiary, #27272a);
+  }
+
+  .action-table td {
+    font-size: 12px;
+    color: var(--text-primary, #e4e4e7);
+  }
+
+  .action-table .action-name {
+    font-weight: 500;
+    color: #60a5fa;
+  }
+
+  .action-table .status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+  }
+
+  .action-table .status-badge--pending { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+  .action-table .status-badge--queued { background: rgba(6, 182, 212, 0.2); color: #22d3ee; }
+  .action-table .status-badge--playing { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+  .action-table .status-badge--played { background: rgba(113, 113, 122, 0.15); color: #a1a1aa; }
+  .action-table .status-badge--shown-live { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+  .action-table .status-badge--skipped { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
+  .action-table .status-badge--failed { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+  .action-table .status-badge--stalled { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+</style>
+
+<section class="clip-lifecycle-section" id="clip-lifecycle">
+  <div class="diagram-container">
+    <div class="diagram-title">Clip Status Lifecycle</div>
+    <p style="font-size: 11px; color: var(--text-secondary, #a1a1aa); margin-bottom: 16px;">
+      Each clip progresses through these statuses. Click a status node to see details. Hover over arrows to see transition actions.
+    </p>
+
+    <svg class="lifecycle-svg" viewBox="0 0 800 380" aria-label="Clip status lifecycle diagram showing 8 statuses and their transitions">
+      <defs>
+        <marker id="lifecycle-arrowhead" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#3f3f46"/>
+        </marker>
+        <marker id="lifecycle-arrowhead-blue" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#60a5fa"/>
+        </marker>
+      </defs>
+
+      <!-- Background grid -->
+      <rect width="100%" height="100%" fill="url(#grid)" opacity="0.3"/>
+
+      <!-- ===================== -->
+      <!-- TRANSITIONS (ARROWS)  -->
+      <!-- ===================== -->
+
+      <!-- pending → queued (encoding complete) -->
+      <path class="lifecycle-arrow" d="M 130 100 L 210 100"
+            data-from="pending" data-to="queued"
+            data-action="Auto" data-condition="Encoding complete"/>
+      <text x="170" y="92" class="condition-label" text-anchor="middle">encoding done</text>
+
+      <!-- pending → failed (encoding error) -->
+      <path class="lifecycle-arrow" d="M 80 130 L 80 200 Q 80 220 100 230 L 680 230 Q 710 230 710 250 L 710 280"
+            data-from="pending" data-to="failed"
+            data-action="Auto" data-condition="Encoding error"/>
+      <text x="380" y="222" class="condition-label" text-anchor="middle">encoding error</text>
+
+      <!-- queued → playing (dequeue) -->
+      <path class="lifecycle-arrow" d="M 310 100 L 390 100"
+            data-from="queued" data-to="playing"
+            data-action="Auto" data-condition="Clip dequeued by playout engine"/>
+      <text x="350" y="92" class="condition-label" text-anchor="middle">dequeue</text>
+
+      <!-- queued → skipped (manual skip before play) -->
+      <path class="lifecycle-arrow" d="M 260 130 Q 260 180 320 200 L 430 200 Q 460 200 460 230 L 460 280"
+            data-from="queued" data-to="skipped"
+            data-action="Skip" data-condition="Producer skips before playing"/>
+      <text x="350" y="192" class="action-label" text-anchor="middle">Skip</text>
+
+      <!-- queued → shown-live (live detection match) -->
+      <path class="lifecycle-arrow" d="M 260 130 Q 260 160 280 175 L 520 175 Q 560 175 580 200 L 580 280"
+            data-from="queued" data-to="shown-live"
+            data-action="Auto" data-condition="±15s tolerance match: routine already broadcast live"/>
+      <text x="420" y="167" class="condition-label" text-anchor="middle">shown live (±15s match)</text>
+
+      <!-- playing → played (success) -->
+      <path class="lifecycle-arrow" d="M 490 100 L 570 100 Q 590 100 590 120 L 590 160 Q 590 180 570 180 L 340 180 Q 320 180 320 200 L 320 280"
+            data-from="playing" data-to="played"
+            data-action="Auto" data-condition="Playback completed"/>
+      <text x="520" y="92" class="condition-label" text-anchor="middle">complete</text>
+
+      <!-- playing → skipped (manual skip during play) -->
+      <path class="lifecycle-arrow" d="M 440 130 Q 440 200 450 250 L 455 280"
+            data-from="playing" data-to="skipped"
+            data-action="Skip" data-condition="Producer skips during playback"/>
+      <text x="428" y="200" class="action-label" text-anchor="middle">Skip</text>
+
+      <!-- playing → failed (load/playback error) -->
+      <path class="lifecycle-arrow" d="M 490 100 Q 530 100 560 115 L 640 160 Q 680 180 700 220 L 710 280"
+            data-from="playing" data-to="failed"
+            data-action="Auto" data-condition="Video load or playback error"/>
+      <text x="620" y="155" class="condition-label" text-anchor="middle">error</text>
+
+      <!-- playing → stalled (stuck buffer) -->
+      <path class="lifecycle-arrow" d="M 490 115 Q 550 130 620 200 Q 640 225 640 250 L 640 280"
+            data-from="playing" data-to="stalled"
+            data-action="Auto" data-condition="Buffer stuck > 3s"/>
+      <text x="560" y="178" class="condition-label" text-anchor="middle">buffer stuck</text>
+
+      <!-- played → queued (re-queue) -->
+      <path class="lifecycle-arrow" d="M 305 310 Q 260 310 260 280 Q 260 250 260 200 Q 260 150 260 130"
+            data-from="played" data-to="queued"
+            data-action="Add to Queue" data-condition="Producer re-queues played clip"/>
+      <text x="242" y="220" class="action-label" text-anchor="middle" transform="rotate(-90 242 220)">Add to Queue</text>
+
+      <!-- shown-live → queued (un-skip) -->
+      <path class="lifecycle-arrow" d="M 565 310 Q 500 340 400 340 Q 300 340 240 280 Q 220 260 230 200 Q 240 150 250 130"
+            data-from="shown-live" data-to="queued"
+            data-action="Add to Queue" data-condition="Producer un-skips shown-live clip"/>
+      <text x="400" y="355" class="action-label" text-anchor="middle">Add to Queue</text>
+
+      <!-- skipped → queued (re-queue) -->
+      <path class="lifecycle-arrow" d="M 450 340 Q 380 370 300 370 Q 220 370 200 300 Q 185 230 220 160 Q 240 130 250 120"
+            data-from="skipped" data-to="queued"
+            data-action="Add to Queue" data-condition="Producer re-queues skipped clip"/>
+
+      <!-- failed → queued (retry) -->
+      <path class="lifecycle-arrow" d="M 695 310 Q 650 340 550 360 Q 400 380 280 340 Q 200 310 200 240 Q 200 180 230 140 Q 250 120 250 115"
+            data-from="failed" data-to="queued"
+            data-action="Retry" data-condition="Producer retries failed clip"/>
+      <text x="440" y="378" class="action-label" text-anchor="middle">Retry</text>
+
+      <!-- stalled → queued (retry) -->
+      <path class="lifecycle-arrow" d="M 625 310 Q 580 330 480 345 Q 350 360 260 310 Q 200 270 210 200 Q 220 150 245 125"
+            data-from="stalled" data-to="queued"
+            data-action="Retry" data-condition="Producer retries stalled clip"/>
+
+      <!-- stalled → failed (give up) -->
+      <path class="lifecycle-arrow" d="M 655 310 L 695 310"
+            data-from="stalled" data-to="failed"
+            data-action="Auto" data-condition="Stall timeout exceeded"/>
+      <text x="675" y="302" class="condition-label" text-anchor="middle">timeout</text>
+
+      <!-- =================== -->
+      <!-- STATUS NODES        -->
+      <!-- =================== -->
+
+      <!-- pending -->
+      <g class="status-node" tabindex="0" role="button" aria-label="pending status: Clip exists but not ready"
+         data-status="pending" data-meaning="Clip exists but not ready (e.g., still encoding)" data-transitions-to="queued, failed">
+        <rect x="30" y="75" width="100" height="50" rx="6" class="status-initial" stroke-width="2"/>
+        <text x="80" y="98" text-anchor="middle" class="status-label" fill="#60a5fa">pending</text>
+        <text x="80" y="112" text-anchor="middle" class="status-sublabel">encoding...</text>
+      </g>
+
+      <!-- queued -->
+      <g class="status-node" tabindex="0" role="button" aria-label="queued status: Ready to play, in the queue"
+         data-status="queued" data-meaning="Ready to play, in the queue" data-transitions-to="playing, skipped, shown-live">
+        <rect x="210" y="75" width="100" height="50" rx="6" class="status-ready" stroke-width="2"/>
+        <text x="260" y="98" text-anchor="middle" class="status-label" fill="#22d3ee">queued</text>
+        <text x="260" y="112" text-anchor="middle" class="status-sublabel">ready</text>
+      </g>
+
+      <!-- playing -->
+      <g class="status-node" tabindex="0" role="button" aria-label="playing status: Currently playing"
+         data-status="playing" data-meaning="Currently playing" data-transitions-to="played, skipped, failed, stalled">
+        <rect x="390" y="75" width="100" height="50" rx="6" class="status-active" stroke-width="2"/>
+        <text x="440" y="98" text-anchor="middle" class="status-label" fill="#4ade80">playing</text>
+        <text x="440" y="112" text-anchor="middle" class="status-sublabel">on air</text>
+        <!-- Animated pulse indicator -->
+        <circle cx="480" cy="85" r="4" fill="#4ade80">
+          <animate attributeName="opacity" values="1;0.4;1" dur="1.5s" repeatCount="indefinite"/>
+        </circle>
+      </g>
+
+      <!-- played (terminal success) -->
+      <g class="status-node" tabindex="0" role="button" aria-label="played status: Finished successfully"
+         data-status="played" data-meaning="Finished successfully" data-transitions-to="queued (via Add to Queue)">
+        <rect x="270" y="285" width="100" height="50" rx="6" class="status-terminal-success" stroke-width="2"/>
+        <text x="320" y="308" text-anchor="middle" class="status-label" fill="#a1a1aa">played</text>
+        <text x="320" y="322" text-anchor="middle" class="status-sublabel">complete</text>
+      </g>
+
+      <!-- shown-live (terminal warn) -->
+      <g class="status-node" tabindex="0" role="button" aria-label="shown-live status: Was shown live, auto-skipped"
+         data-status="shown-live" data-meaning="Was shown live, auto-skipped" data-transitions-to="queued (via Add to Queue)">
+        <rect x="530" y="285" width="100" height="50" rx="6" class="status-terminal-warn" stroke-width="2"/>
+        <text x="580" y="308" text-anchor="middle" class="status-label" fill="#fbbf24">shown-live</text>
+        <text x="580" y="322" text-anchor="middle" class="status-sublabel">auto-skipped</text>
+      </g>
+
+      <!-- skipped (terminal) -->
+      <g class="status-node" tabindex="0" role="button" aria-label="skipped status: Manually skipped by producer"
+         data-status="skipped" data-meaning="Manually skipped by producer" data-transitions-to="queued (via Add to Queue)">
+        <rect x="400" y="285" width="100" height="50" rx="6" class="status-terminal-success" stroke-width="2"/>
+        <text x="450" y="308" text-anchor="middle" class="status-label" fill="#c084fc">skipped</text>
+        <text x="450" y="322" text-anchor="middle" class="status-sublabel">manual</text>
+      </g>
+
+      <!-- failed (terminal error) -->
+      <g class="status-node" tabindex="0" role="button" aria-label="failed status: Error loading clip"
+         data-status="failed" data-meaning="Error loading clip" data-transitions-to="queued (via Retry)">
+        <rect x="660" y="285" width="100" height="50" rx="6" class="status-terminal-error" stroke-width="2"/>
+        <text x="710" y="308" text-anchor="middle" class="status-label" fill="#f87171">failed</text>
+        <text x="710" y="322" text-anchor="middle" class="status-sublabel">error</text>
+      </g>
+
+      <!-- stalled (terminal error) -->
+      <g class="status-node" tabindex="0" role="button" aria-label="stalled status: Started but got stuck"
+         data-status="stalled" data-meaning="Started but got stuck" data-transitions-to="queued (via Retry), failed">
+        <rect x="590" y="285" width="70" height="50" rx="6" class="status-terminal-error" stroke-width="1.5"/>
+        <text x="625" y="308" text-anchor="middle" class="status-label" style="font-size: 10px;" fill="#f87171">stalled</text>
+        <text x="625" y="320" text-anchor="middle" class="status-sublabel">buffer</text>
+      </g>
+
+      <!-- Initial state indicator -->
+      <g>
+        <circle cx="10" cy="100" r="5" fill="#3b82f6"/>
+        <path d="M 15 100 L 28 100" stroke="#3b82f6" stroke-width="2" marker-end="url(#lifecycle-arrowhead)"/>
+        <text x="10" y="85" text-anchor="middle" font-size="8" fill="#60a5fa">NEW</text>
+      </g>
+
+      <!-- Flow labels -->
+      <text x="80" y="55" font-size="9" font-weight="600" fill="#71717a" text-anchor="middle">INITIAL</text>
+      <text x="260" y="55" font-size="9" font-weight="600" fill="#71717a" text-anchor="middle">READY</text>
+      <text x="440" y="55" font-size="9" font-weight="600" fill="#71717a" text-anchor="middle">ACTIVE</text>
+      <text x="500" y="265" font-size="9" font-weight="600" fill="#71717a" text-anchor="middle">TERMINAL STATES</text>
+    </svg>
+
+    <!-- Legend -->
+    <div class="lifecycle-legend">
+      <div class="lifecycle-legend-group">
+        <div class="lifecycle-legend-title">Status Categories</div>
+        <div class="lifecycle-legend-items">
+          <div class="lifecycle-legend-item">
+            <div class="lifecycle-legend-dot" style="background: rgba(59, 130, 246, 0.2); border-color: #3b82f6;"></div>
+            <span>Initial</span>
+          </div>
+          <div class="lifecycle-legend-item">
+            <div class="lifecycle-legend-dot" style="background: rgba(6, 182, 212, 0.2); border-color: #06b6d4;"></div>
+            <span>Ready</span>
+          </div>
+          <div class="lifecycle-legend-item">
+            <div class="lifecycle-legend-dot" style="background: rgba(34, 197, 94, 0.2); border-color: #22c55e;"></div>
+            <span>Active</span>
+          </div>
+          <div class="lifecycle-legend-item">
+            <div class="lifecycle-legend-dot" style="background: rgba(113, 113, 122, 0.15); border-color: #52525b;"></div>
+            <span>Terminal (OK)</span>
+          </div>
+          <div class="lifecycle-legend-item">
+            <div class="lifecycle-legend-dot" style="background: rgba(245, 158, 11, 0.2); border-color: #f59e0b;"></div>
+            <span>Terminal (Auto-skip)</span>
+          </div>
+          <div class="lifecycle-legend-item">
+            <div class="lifecycle-legend-dot" style="background: rgba(239, 68, 68, 0.2); border-color: #ef4444;"></div>
+            <span>Terminal (Error)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions Table -->
+    <div style="margin-top: 24px;">
+      <div class="diagram-title" style="margin-bottom: 12px;">Producer Actions</div>
+      <table class="action-table">
+        <thead>
+          <tr>
+            <th>Action</th>
+            <th>From Status</th>
+            <th>To Status</th>
+            <th>Trigger</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="action-name">Skip</span></td>
+            <td><span class="status-badge status-badge--queued">queued</span> <span class="status-badge status-badge--playing">playing</span></td>
+            <td><span class="status-badge status-badge--skipped">skipped</span></td>
+            <td>Producer clicks Skip or presses <kbd>S</kbd></td>
+          </tr>
+          <tr>
+            <td><span class="action-name">Add to Queue</span></td>
+            <td><span class="status-badge status-badge--played">played</span> <span class="status-badge status-badge--skipped">skipped</span> <span class="status-badge status-badge--shown-live">shown-live</span></td>
+            <td><span class="status-badge status-badge--queued">queued</span></td>
+            <td>Producer clicks "Add to Queue" on clip card</td>
+          </tr>
+          <tr>
+            <td><span class="action-name">Retry</span></td>
+            <td><span class="status-badge status-badge--failed">failed</span> <span class="status-badge status-badge--stalled">stalled</span></td>
+            <td><span class="status-badge status-badge--queued">queued</span></td>
+            <td>Producer clicks "Retry" on error clip</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- Lifecycle Status Detail Panel -->
+<div class="detail-panel" id="lifecycleDetailPanel" role="dialog" aria-modal="true" aria-labelledby="lifecycleDetailTitle">
+  <div class="detail-panel__header">
+    <div class="detail-panel__title">
+      <span id="lifecycleDetailTitle">Status</span>
+      <span class="detail-panel__badge" id="lifecycleDetailBadge">STATUS</span>
+    </div>
+    <button class="detail-panel__close" id="lifecycleDetailClose" aria-label="Close">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+  <div class="detail-panel__body">
+    <div class="detail-row">
+      <div class="detail-label">Meaning</div>
+      <div class="detail-value" id="lifecycleDetailMeaning"></div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Valid Transitions To</div>
+      <div class="detail-value" id="lifecycleDetailTransitions"></div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Firebase Path</div>
+      <div class="detail-value"><code>clipStatus/{draftId}/status</code></div>
+    </div>
+  </div>
+</div>
+
+<!-- Lifecycle Transition Tooltip -->
+<div class="transition-tooltip" id="lifecycleTooltip">
+  <div class="transition-tooltip__title" id="lifecycleTooltipTitle">pending → queued</div>
+  <div class="transition-tooltip__condition" id="lifecycleTooltipAction" style="color: #60a5fa; font-weight: 500;"></div>
+  <div class="transition-tooltip__condition" id="lifecycleTooltipCondition"></div>
+</div>
+
+<script>
+(function() {
+  // Status badge colors
+  const statusBadgeColors = {
+    'pending': { bg: 'rgba(59, 130, 246, 0.2)', text: '#60a5fa' },
+    'queued': { bg: 'rgba(6, 182, 212, 0.2)', text: '#22d3ee' },
+    'playing': { bg: 'rgba(34, 197, 94, 0.2)', text: '#4ade80' },
+    'played': { bg: 'rgba(113, 113, 122, 0.15)', text: '#a1a1aa' },
+    'shown-live': { bg: 'rgba(245, 158, 11, 0.2)', text: '#fbbf24' },
+    'skipped': { bg: 'rgba(168, 85, 247, 0.2)', text: '#c084fc' },
+    'failed': { bg: 'rgba(239, 68, 68, 0.2)', text: '#f87171' },
+    'stalled': { bg: 'rgba(239, 68, 68, 0.15)', text: '#f87171' }
+  };
+
+  // Elements
+  const lifecycleDetailPanel = document.getElementById('lifecycleDetailPanel');
+  const lifecycleDetailClose = document.getElementById('lifecycleDetailClose');
+  const lifecycleDetailTitle = document.getElementById('lifecycleDetailTitle');
+  const lifecycleDetailBadge = document.getElementById('lifecycleDetailBadge');
+  const lifecycleDetailMeaning = document.getElementById('lifecycleDetailMeaning');
+  const lifecycleDetailTransitions = document.getElementById('lifecycleDetailTransitions');
+  const lifecycleTooltip = document.getElementById('lifecycleTooltip');
+  const lifecycleTooltipTitle = document.getElementById('lifecycleTooltipTitle');
+  const lifecycleTooltipAction = document.getElementById('lifecycleTooltipAction');
+  const lifecycleTooltipCondition = document.getElementById('lifecycleTooltipCondition');
+
+  // Status node click handlers (in lifecycle SVG)
+  document.querySelectorAll('.lifecycle-svg .status-node').forEach(node => {
+    node.addEventListener('click', (e) => {
+      const status = node.dataset.status;
+      const meaning = node.dataset.meaning;
+      const transitions = node.dataset.transitionsTo;
+
+      lifecycleDetailTitle.textContent = status;
+      lifecycleDetailBadge.textContent = status;
+      const colors = statusBadgeColors[status];
+      lifecycleDetailBadge.style.background = colors.bg;
+      lifecycleDetailBadge.style.color = colors.text;
+      lifecycleDetailMeaning.textContent = meaning;
+      lifecycleDetailTransitions.textContent = transitions;
+
+      lifecycleDetailPanel.classList.add('is-visible');
+      document.getElementById('detailBackdrop').classList.add('is-visible');
+    });
+
+    node.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        node.click();
+      }
+    });
+  });
+
+  // Close lifecycle detail panel
+  lifecycleDetailClose.addEventListener('click', () => {
+    lifecycleDetailPanel.classList.remove('is-visible');
+    document.getElementById('detailBackdrop').classList.remove('is-visible');
+  });
+
+  // Lifecycle transition arrow hover
+  document.querySelectorAll('.lifecycle-svg .lifecycle-arrow').forEach(arrow => {
+    arrow.addEventListener('mouseenter', (e) => {
+      const from = arrow.dataset.from;
+      const to = arrow.dataset.to;
+      const action = arrow.dataset.action;
+      const condition = arrow.dataset.condition;
+
+      lifecycleTooltipTitle.textContent = from + ' → ' + to;
+      lifecycleTooltipAction.textContent = action === 'Auto' ? 'Automatic' : action;
+      lifecycleTooltipCondition.textContent = condition;
+
+      const rect = arrow.getBoundingClientRect();
+      lifecycleTooltip.style.left = (rect.left + rect.width / 2) + 'px';
+      lifecycleTooltip.style.top = (rect.top - 10) + 'px';
+      lifecycleTooltip.style.transform = 'translate(-50%, -100%)';
+      lifecycleTooltip.classList.add('is-visible');
+
+      // Highlight arrow
+      arrow.style.stroke = '#60a5fa';
+      arrow.style.strokeWidth = '2';
+    });
+
+    arrow.addEventListener('mouseleave', () => {
+      lifecycleTooltip.classList.remove('is-visible');
+      arrow.style.stroke = '';
+      arrow.style.strokeWidth = '';
+    });
+  });
+
+  // Close both detail panels with backdrop click
+  document.getElementById('detailBackdrop').addEventListener('click', () => {
+    lifecycleDetailPanel.classList.remove('is-visible');
+    document.getElementById('detailBackdrop').classList.remove('is-visible');
+  });
+
+  // ESC key closes lifecycle panel too
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && lifecycleDetailPanel.classList.contains('is-visible')) {
+      lifecycleDetailPanel.classList.remove('is-visible');
+      document.getElementById('detailBackdrop').classList.remove('is-visible');
+    }
+  });
+})();
+</script>
