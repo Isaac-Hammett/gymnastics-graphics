@@ -606,6 +606,531 @@
   font-size: 13px;
   font-style: italic;
 }
+
+/* ===================================================================
+   RESPONSIVE LAYOUT — Mobile-first breakpoints
+   320px (iPhone SE), 480px (mobile landscape), 768px+ (tablet/desktop)
+   =================================================================== */
+
+/* === Collapsible Talking Points (mobile) === */
+.talking-points__toggle {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 150ms;
+}
+
+.talking-points__toggle:hover {
+  background: var(--bg-tertiary);
+}
+
+.talking-points__toggle-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.talking-points__toggle-title {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.talking-points__toggle-count {
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--bg-tertiary);
+  padding: 2px 6px;
+  border-radius: 9999px;
+}
+
+.talking-points__toggle-icon {
+  font-size: 14px;
+  color: var(--text-muted);
+  transition: transform 200ms;
+}
+
+.talking-points__toggle-icon--expanded {
+  transform: rotate(180deg);
+}
+
+.talking-points__content {
+  overflow: hidden;
+  transition: max-height 300ms ease-out, opacity 200ms;
+}
+
+.talking-points__content--collapsed {
+  max-height: 0;
+  opacity: 0;
+}
+
+/* === Mobile (320px–479px): Compact layout, collapsed talking points === */
+@media (max-width: 479px) {
+  .talent-view {
+    padding: 12px;
+    padding-bottom: 120px; /* Space for demo controls + flag button */
+  }
+
+  .talent-header {
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+  }
+
+  .talent-title {
+    font-size: 13px;
+  }
+
+  /* NOW SHOWING card — vertical stack on mobile */
+  .now-showing-card {
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+
+  .now-showing-label {
+    font-size: 10px;
+    margin-bottom: 12px;
+  }
+
+  .now-showing-content {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .athlete-photo {
+    width: 60px;
+    height: 75px;
+    align-self: center;
+  }
+
+  .athlete-photo-placeholder {
+    font-size: 26px;
+  }
+
+  .athlete-info {
+    text-align: center;
+  }
+
+  .athlete-name {
+    font-size: 20px;
+    margin-bottom: 6px;
+    /* Truncate long names on mobile */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  .athlete-apparatus {
+    justify-content: center;
+    font-size: 13px;
+    margin-bottom: 3px;
+  }
+
+  .athlete-team {
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+
+  .athlete-score {
+    font-size: 24px;
+  }
+
+  .athlete-score--pending {
+    font-size: 16px;
+  }
+
+  .score-visibility-hint {
+    font-size: 10px;
+  }
+
+  /* Mode messages — smaller on mobile */
+  .mode-message {
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+
+  .mode-message__icon {
+    font-size: 24px;
+    margin-bottom: 6px;
+  }
+
+  .mode-message__title {
+    font-size: 14px;
+  }
+
+  .mode-message__subtitle {
+    font-size: 12px;
+  }
+
+  /* Talking Points — collapsible on mobile */
+  .talking-points {
+    padding: 0;
+    margin-bottom: 12px;
+    border: none;
+    background: transparent;
+  }
+
+  .talking-points__toggle {
+    display: flex;
+  }
+
+  .talking-points__header {
+    display: none; /* Hidden on mobile, toggle button replaces it */
+  }
+
+  .talking-points__content {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    padding: 0 14px;
+  }
+
+  .talking-points__content--collapsed {
+    padding: 0;
+    border: none;
+  }
+
+  .talking-points__list {
+    padding: 12px 0;
+  }
+
+  .talking-points__item {
+    font-size: 13px;
+    padding: 6px 0 6px 14px;
+  }
+
+  .talking-points__item::before {
+    top: 11px;
+    width: 5px;
+    height: 5px;
+  }
+
+  /* UP NEXT — more compact */
+  .up-next {
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+
+  .up-next__header {
+    font-size: 11px;
+    margin-bottom: 10px;
+  }
+
+  .up-next__list {
+    gap: 6px;
+  }
+
+  .up-next__item {
+    padding: 8px 10px;
+    gap: 10px;
+  }
+
+  .up-next__position {
+    font-size: 10px;
+    min-width: 16px;
+  }
+
+  .up-next__name {
+    font-size: 12px;
+  }
+
+  .up-next__meta {
+    font-size: 10px;
+    gap: 4px;
+  }
+
+  .up-next__score {
+    font-size: 12px;
+  }
+
+  /* Flag Moment — large tappable button, full width, fixed position */
+  .flag-moment-container {
+    position: fixed;
+    bottom: 72px; /* Above demo controls */
+    left: 12px;
+    right: 12px;
+    margin-bottom: 0;
+    z-index: 50;
+  }
+
+  .flag-moment-btn {
+    padding: 18px 24px;
+    font-size: 17px;
+    border-radius: 10px;
+    /* Touch-friendly minimum tap target */
+    min-height: 56px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  .flag-moment-btn__icon {
+    font-size: 22px;
+  }
+
+  .flag-moment-btn__shortcut {
+    font-size: 10px;
+    padding: 2px 5px;
+  }
+
+  /* Demo controls — compact on mobile */
+  .demo-controls {
+    padding: 10px;
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+  }
+
+  .demo-controls__label {
+    font-size: 9px;
+    margin-bottom: 6px;
+  }
+
+  .demo-controls__buttons {
+    gap: 6px;
+  }
+
+  .demo-btn {
+    padding: 5px 8px;
+    font-size: 10px;
+  }
+
+  /* Badge sizes on mobile */
+  .clip-badge {
+    font-size: 0.5625rem; /* 9px */
+    padding: 2px 6px;
+  }
+
+  .clip-badge-apparatus {
+    font-size: 0.5625rem;
+    padding: 2px 5px;
+  }
+}
+
+/* === Small Mobile (320px–374px): Extra compact === */
+@media (max-width: 374px) {
+  .talent-view {
+    padding: 10px;
+    padding-bottom: 115px;
+  }
+
+  .athlete-name {
+    font-size: 18px;
+  }
+
+  .athlete-score {
+    font-size: 22px;
+  }
+
+  .flag-moment-btn {
+    padding: 16px 20px;
+    font-size: 15px;
+  }
+
+  .up-next__item {
+    padding: 7px 8px;
+  }
+
+  /* Hide position numbers on very small screens */
+  .up-next__position {
+    display: none;
+  }
+}
+
+/* === Tablet (480px–767px): Full content, comfortable spacing === */
+@media (min-width: 480px) and (max-width: 767px) {
+  .talent-view {
+    padding: 16px;
+    padding-bottom: 100px;
+  }
+
+  .now-showing-card {
+    padding: 18px;
+  }
+
+  .now-showing-content {
+    gap: 16px;
+  }
+
+  .athlete-photo {
+    width: 70px;
+    height: 88px;
+  }
+
+  .athlete-name {
+    font-size: 22px;
+  }
+
+  .athlete-score {
+    font-size: 26px;
+  }
+
+  /* Talking points expanded but slightly smaller */
+  .talking-points {
+    padding: 14px;
+  }
+
+  .talking-points__toggle {
+    display: none;
+  }
+
+  .talking-points__content {
+    max-height: none !important;
+    opacity: 1 !important;
+    overflow: visible;
+  }
+
+  .talking-points__item {
+    font-size: 13px;
+    padding: 7px 0 7px 16px;
+  }
+
+  /* UP NEXT */
+  .up-next {
+    padding: 14px;
+  }
+
+  /* Flag button — still full width but inline */
+  .flag-moment-container {
+    margin-bottom: 16px;
+  }
+
+  .flag-moment-btn {
+    padding: 14px 20px;
+    font-size: 15px;
+    min-height: 52px;
+  }
+
+  /* Demo controls */
+  .demo-controls {
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+  }
+}
+
+/* === Desktop (768px+): Full layout with generous spacing === */
+@media (min-width: 768px) {
+  .talent-view {
+    padding: 20px;
+    padding-bottom: 100px;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+
+  /* Hide mobile toggle, show full header */
+  .talking-points__toggle {
+    display: none;
+  }
+
+  .talking-points__content {
+    max-height: none !important;
+    opacity: 1 !important;
+    overflow: visible;
+    background: transparent;
+    border: none;
+    padding: 0;
+  }
+
+  /* Full-size elements */
+  .now-showing-card {
+    padding: 20px;
+  }
+
+  .athlete-photo {
+    width: 80px;
+    height: 100px;
+  }
+
+  .athlete-name {
+    font-size: 24px;
+  }
+
+  .athlete-score {
+    font-size: 28px;
+  }
+
+  .talking-points {
+    padding: 16px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+  }
+
+  .talking-points__header {
+    display: flex;
+  }
+
+  .flag-moment-btn {
+    max-width: 400px;
+    margin: 0 auto;
+  }
+
+  /* Demo controls centered */
+  .demo-controls {
+    max-width: 600px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+}
+
+/* === Large Desktop (1024px+): Wider container === */
+@media (min-width: 1024px) {
+  .talent-view {
+    max-width: 720px;
+  }
+}
+
+/* === Touch-friendly tap targets === */
+@media (pointer: coarse) {
+  /* Ensure all interactive elements are at least 44px tap targets */
+  .demo-btn {
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .talking-points__toggle {
+    min-height: 48px;
+  }
+
+  .flag-moment-btn {
+    min-height: 56px;
+  }
+}
+
+/* === Reduced motion preference === */
+@media (prefers-reduced-motion: reduce) {
+  .talking-points__content {
+    transition: none;
+  }
+
+  .talking-points__toggle-icon {
+    transition: none;
+  }
+
+  .flag-moment-btn:hover:not(:disabled) {
+    transform: none;
+  }
+
+  .flag-moment-btn:active:not(:disabled) {
+    transform: none;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+  }
+}
 </style>
 
 <section class="talent-view" id="talentView">
@@ -670,6 +1195,22 @@
 
   <!-- Talking Points Section -->
   <section class="talking-points" id="talkingPoints" role="region" aria-labelledby="talkingPointsTitle">
+    <!-- Mobile toggle button (visible on mobile only) -->
+    <button
+      type="button"
+      class="talking-points__toggle"
+      id="talkingPointsToggle"
+      aria-expanded="false"
+      aria-controls="talkingPointsContent"
+    >
+      <span class="talking-points__toggle-left">
+        <span class="talking-points__toggle-title">Talking Points</span>
+        <span class="talking-points__toggle-count" id="talkingPointsCount">4 points</span>
+      </span>
+      <span class="talking-points__toggle-icon" id="talkingPointsIcon" aria-hidden="true">&#9660;</span>
+    </button>
+
+    <!-- Desktop header (hidden on mobile) -->
     <div class="talking-points__header">
       <h3 class="talking-points__title" id="talkingPointsTitle">Talking Points</h3>
       <span class="talking-points__source">
@@ -677,7 +1218,10 @@
         AI + RTN Stats
       </span>
     </div>
-    <ul class="talking-points__list" id="talkingPointsList">
+
+    <!-- Collapsible content wrapper -->
+    <div class="talking-points__content talking-points__content--collapsed" id="talkingPointsContent">
+      <ul class="talking-points__list" id="talkingPointsList">
       <li class="talking-points__item talking-points__item--highlight">
         Season high on bars is <span class="talking-points__stat">9.925</span> (vs. Stanford, Feb 15)
       </li>
@@ -690,7 +1234,8 @@
       <li class="talking-points__item">
         Junior from Woodlands, TX — club background at World Olympic Gymnastics Academy
       </li>
-    </ul>
+      </ul>
+    </div>
   </section>
 
   <!-- UP NEXT Section -->
@@ -825,6 +1370,10 @@
     fallbackMessage: document.getElementById('fallbackMessage'),
     talkingPoints: document.getElementById('talkingPoints'),
     talkingPointsList: document.getElementById('talkingPointsList'),
+    talkingPointsToggle: document.getElementById('talkingPointsToggle'),
+    talkingPointsContent: document.getElementById('talkingPointsContent'),
+    talkingPointsIcon: document.getElementById('talkingPointsIcon'),
+    talkingPointsCount: document.getElementById('talkingPointsCount'),
     upNext: document.getElementById('upNext'),
     upNextList: document.getElementById('upNextList'),
     flagMomentBtn: document.getElementById('flagMomentBtn'),
@@ -834,12 +1383,43 @@
   function renderTalkingPoints(points) {
     if (!points || points.length === 0) {
       elements.talkingPointsList.innerHTML = '<li class="talking-points__item" style="font-style: italic; color: var(--text-muted);">No talking points available</li>';
+      updateTalkingPointsCount(0);
       return;
     }
 
     elements.talkingPointsList.innerHTML = points.map(point =>
       `<li class="talking-points__item${point.highlight ? ' talking-points__item--highlight' : ''}">${point.text}</li>`
     ).join('');
+
+    updateTalkingPointsCount(points.length);
+  }
+
+  function updateTalkingPointsCount(count) {
+    if (elements.talkingPointsCount) {
+      elements.talkingPointsCount.textContent = count === 1 ? '1 point' : `${count} points`;
+    }
+  }
+
+  function toggleTalkingPoints() {
+    const content = elements.talkingPointsContent;
+    const toggle = elements.talkingPointsToggle;
+    const icon = elements.talkingPointsIcon;
+
+    const isCollapsed = content.classList.contains('talking-points__content--collapsed');
+
+    if (isCollapsed) {
+      // Expand
+      content.classList.remove('talking-points__content--collapsed');
+      content.style.maxHeight = content.scrollHeight + 'px';
+      toggle.setAttribute('aria-expanded', 'true');
+      icon.classList.add('talking-points__toggle-icon--expanded');
+    } else {
+      // Collapse
+      content.classList.add('talking-points__content--collapsed');
+      content.style.maxHeight = '0';
+      toggle.setAttribute('aria-expanded', 'false');
+      icon.classList.remove('talking-points__toggle-icon--expanded');
+    }
   }
 
   function renderUpNext(items, mode) {
@@ -1020,6 +1600,11 @@
 
   // Flag moment button handler
   elements.flagMomentBtn.addEventListener('click', handleFlagMoment);
+
+  // Talking points toggle handler (mobile)
+  if (elements.talkingPointsToggle) {
+    elements.talkingPointsToggle.addEventListener('click', toggleTalkingPoints);
+  }
 
   // Keyboard shortcut for flagging (F key)
   document.addEventListener('keydown', function(e) {
