@@ -1,928 +1,975 @@
-<div class="section-content section-output">
+<!--
+  Output Overlay Prototype — Clip Integration UI
+  Viewer-facing overlay that renders in OBS browser sources
 
-  <!-- Section Header -->
-  <div class="card" style="border-left: 3px solid var(--color-output);">
-    <div class="card-header">
-      <div class="card-title" style="color: var(--color-output);">Screen 4: output.html — Viewer Overlay</div>
-      <span class="role-badge output">Output</span>
-    </div>
-    <p style="color: var(--text-secondary); margin: var(--space-sm) 0 0 0;">
-      OBS browser source for clip playback, score reveals, and live overlays.
-      Uses dual video elements for seamless A/B preloading and crossfade transitions.
-    </p>
+  URL Parameters:
+    ?mode=live   — Live camera overlay (LIVE badge, score graphics, fallback overlays, animated backgrounds)
+    ?mode=clip   — Clip playback (video + overlay, score reveal, REPLAY badge)
+    ?mode=preview — Same as clip but no Firebase writes (producer testing)
+-->
+
+<style>
+/* === CSS Variables (from style-guide.md) === */
+:root {
+  --bg-primary: #0a0a0b;
+  --bg-secondary: #18181b;
+  --bg-tertiary: #27272a;
+  --text-primary: #e4e4e7;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
+  --border-color: #3f3f46;
+
+  /* Apparatus Colors */
+  --clip-apparatus-vt: #ef4444;
+  --clip-apparatus-ub: #a855f7;
+  --clip-apparatus-bb: #3b82f6;
+  --clip-apparatus-fx: #22c55e;
+  --clip-apparatus-ph: #f97316;
+  --clip-apparatus-sr: #14b8a6;
+  --clip-apparatus-pb: #6366f1;
+  --clip-apparatus-hb: #f59e0b;
+
+  /* Mode Colors */
+  --clip-mode-live-bg: rgba(239, 68, 68, 0.2);
+  --clip-mode-live-text: #f87171;
+  --clip-mode-live-border: #ef4444;
+
+  --clip-mode-clip-bg: rgba(34, 197, 94, 0.2);
+  --clip-mode-clip-text: #4ade80;
+  --clip-mode-clip-border: #22c55e;
+
+  --clip-mode-replay-bg: rgba(6, 182, 212, 0.2);
+  --clip-mode-replay-text: #22d3ee;
+  --clip-mode-replay-border: #06b6d4;
+}
+
+/* === Prototype Container === */
+.prototype-container {
+  background: var(--bg-primary);
+  padding: 24px;
+  font-family: system-ui, -apple-system, sans-serif;
+  color: var(--text-primary);
+  min-height: 100vh;
+}
+
+.prototype-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+
+.prototype-subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+}
+
+.prototype-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 24px;
+}
+
+.prototype-section {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.prototype-section-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.prototype-section-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.prototype-section-tag {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+/* === Output Overlay Frame (simulates OBS browser source) === */
+.output-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  overflow: hidden;
+}
+
+/* === DOM Layer Stack (z-index architecture) === */
+.layer-clipBackground {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.layer-output {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.layer-clipVideo {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+
+.layer-clipVideoNext {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+}
+
+/* Video states */
+.clip-video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+}
+
+.clip-video.clip-active {
+  z-index: 2;
+  opacity: 1;
+  display: block;
+}
+
+.clip-video.clip-preload {
+  z-index: -1;
+  opacity: 0;
+  display: none;
+}
+
+.clip-video.clip-crossfade-out {
+  z-index: 2;
+  opacity: 0;
+  display: block;
+  transition: opacity 500ms ease-out;
+}
+
+.clip-video.clip-crossfade-in {
+  z-index: 2;
+  opacity: 1;
+  display: block;
+  transition: opacity 500ms ease-in;
+}
+
+/* === Video Placeholder (for prototype) === */
+.video-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+}
+
+.video-placeholder-content {
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.video-placeholder-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+  opacity: 0.6;
+}
+
+.video-placeholder-text {
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* === Clip Info Bar (top-left) === */
+.clip-info-bar {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  z-index: 10;
+}
+
+.clip-info-logo {
+  width: 56px;
+  height: 56px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.clip-info-logo img {
+  max-width: 48px;
+  max-height: 48px;
+  object-fit: contain;
+}
+
+.clip-info-logo-placeholder {
+  width: 48px;
+  height: 48px;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+}
+
+.clip-info-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 16px;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  border-radius: 8px;
+  border-left: 3px solid var(--apparatus-color, var(--clip-apparatus-vt));
+}
+
+.clip-info-athlete {
+  font-size: 18px;
+  font-weight: 600;
+  color: white;
+  line-height: 1.2;
+}
+
+.clip-info-apparatus {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--apparatus-color, var(--clip-apparatus-vt));
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.clip-info-team {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* === Mode Badge (top-right) === */
+.mode-badge {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  z-index: 10;
+}
+
+.mode-badge-live {
+  background: var(--clip-mode-live-bg);
+  color: var(--clip-mode-live-text);
+  border: 1px solid var(--clip-mode-live-border);
+}
+
+.mode-badge-live::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  background: var(--clip-mode-live-text);
+  border-radius: 50%;
+  animation: pulse-live 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-live {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.mode-badge-clip {
+  background: var(--clip-mode-clip-bg);
+  color: var(--clip-mode-clip-text);
+  border: 1px solid var(--clip-mode-clip-border);
+}
+
+.mode-badge-replay {
+  background: var(--clip-mode-replay-bg);
+  color: var(--clip-mode-replay-text);
+  border: 1px solid var(--clip-mode-replay-border);
+}
+
+/* === Progress Bar (bottom) === */
+.clip-progress-container {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16px 24px 20px;
+  background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
+  z-index: 10;
+}
+
+.clip-progress-bar {
+  position: relative;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.clip-progress-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: var(--clip-mode-clip-border);
+  border-radius: 2px;
+  transition: width 100ms linear;
+}
+
+.clip-progress-times {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 11px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.clip-progress-elapsed {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.clip-progress-remaining {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* === Preload State Indicator === */
+.preload-indicator {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.6);
+  z-index: 10;
+}
+
+.preload-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.preload-dot--none {
+  background: var(--text-muted);
+}
+
+.preload-dot--loading {
+  background: #fbbf24;
+  animation: pulse-preload 1s ease-in-out infinite;
+}
+
+@keyframes pulse-preload {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.preload-dot--ready {
+  background: var(--clip-mode-clip-border);
+}
+
+.preload-dot--failed {
+  background: #ef4444;
+}
+
+/* === DOM Architecture Diagram === */
+.dom-diagram {
+  padding: 16px;
+  background: var(--bg-tertiary);
+  font-family: 'SF Mono', 'Consolas', monospace;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  border-top: 1px solid var(--border-color);
+}
+
+.dom-diagram-title {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.dom-layer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0;
+}
+
+.dom-layer-z {
+  width: 32px;
+  font-weight: 600;
+  color: var(--clip-mode-clip-text);
+}
+
+.dom-layer-element {
+  color: #f97316;
+}
+
+.dom-layer-class {
+  color: #a855f7;
+}
+
+.dom-layer-desc {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* === Interactive Mode Toggle (prototype only) === */
+.mode-toggle-container {
+  padding: 12px 16px;
+  background: var(--bg-tertiary);
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  gap: 8px;
+}
+
+.mode-toggle-btn {
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 150ms;
+}
+
+.mode-toggle-btn:hover {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.mode-toggle-btn.active {
+  background: var(--clip-mode-clip-bg);
+  color: var(--clip-mode-clip-text);
+  border-color: var(--clip-mode-clip-border);
+}
+
+/* === Apparatus-specific styling === */
+[data-apparatus="VT"] { --apparatus-color: var(--clip-apparatus-vt); }
+[data-apparatus="UB"] { --apparatus-color: var(--clip-apparatus-ub); }
+[data-apparatus="BB"] { --apparatus-color: var(--clip-apparatus-bb); }
+[data-apparatus="FX"] { --apparatus-color: var(--clip-apparatus-fx); }
+[data-apparatus="PH"] { --apparatus-color: var(--clip-apparatus-ph); }
+[data-apparatus="SR"] { --apparatus-color: var(--clip-apparatus-sr); }
+[data-apparatus="PB"] { --apparatus-color: var(--clip-apparatus-pb); }
+[data-apparatus="HB"] { --apparatus-color: var(--clip-apparatus-hb); }
+
+/* === Live Camera Overlay === */
+.live-camera-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  padding: 24px;
+}
+
+.live-camera-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  border-radius: 8px;
+}
+
+.live-camera-apparatus {
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+  text-transform: uppercase;
+}
+</style>
+
+<!-- PROTOTYPE VISUALIZATION -->
+<div class="prototype-container">
+  <div class="prototype-title">Screen 4: output.html — Viewer Overlay</div>
+  <div class="prototype-subtitle">
+    Dual video element architecture with mode-based rendering.
+    URL params: <code>?mode=live</code>, <code>?mode=clip</code>, <code>?mode=preview</code>
   </div>
 
-  <!-- State Toggle Controls -->
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title">Interactive State Preview</div>
-      <span class="section-badge" data-section="3C">§3C</span>
-    </div>
-    <div class="state-toggle" style="margin-top: var(--space-md);">
-      <button class="btn btn-secondary state-toggle-btn active" data-state="idle" onclick="showOutputState('idle')">Idle</button>
-      <button class="btn btn-secondary state-toggle-btn" data-state="playing" onclick="showOutputState('playing')">Playing Clip</button>
-      <button class="btn btn-secondary state-toggle-btn" data-state="crossfading" onclick="showOutputState('crossfading')">Crossfading A→B</button>
-      <button class="btn btn-secondary state-toggle-btn" data-state="live" onclick="showOutputState('live')">Live Camera</button>
-      <button class="btn btn-secondary state-toggle-btn" data-state="replay" onclick="showOutputState('replay')">Moment Replay</button>
-      <button class="btn btn-secondary state-toggle-btn" data-state="break" onclick="showOutputState('break')">Break Content</button>
-      <button class="btn btn-secondary state-toggle-btn" data-state="stalled" onclick="showOutputState('stalled')">Stalled</button>
-    </div>
-  </div>
-
-  <!-- State Visualization Container -->
-  <div class="card" id="output-state-container">
-    <div class="card-header">
-      <div class="card-title">Viewer Output Preview</div>
-      <span class="state-indicator idle" id="output-state-indicator">idle</span>
-    </div>
-
-    <!-- Video frame container -->
-    <div style="margin-top: var(--space-md); background: #000; border-radius: var(--border-radius); aspect-ratio: 16/9; position: relative; overflow: hidden;" id="output-preview-frame">
-
-      <!-- ===== IDLE STATE ===== -->
-      <div class="output-state state-idle" style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: transparent;">
-        <div style="text-align: center; color: var(--text-muted);">
-          <div style="font-size: var(--font-size-xl); margin-bottom: var(--space-sm);">TRANSPARENT</div>
-          <div style="font-size: var(--font-size-sm);">OBS falls through to camera layer</div>
-          <div style="font-size: var(--font-size-sm); margin-top: var(--space-md); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
-            <code>currentGraphic: null</code>
-          </div>
-        </div>
+  <div class="prototype-grid">
+    <!-- CLIP MODE (mode=clip) -->
+    <div class="prototype-section" id="clip-mode-section">
+      <div class="prototype-section-header">
+        <span class="prototype-section-title">mode=clip — Clip Playback</span>
+        <span class="prototype-section-tag">Video + Overlay</span>
       </div>
 
-      <!-- ===== PLAYING CLIP STATE ===== -->
-      <div class="output-state state-playing" style="position: absolute; inset: 0; display: none;">
-        <!-- Video content simulation -->
-        <div style="position: absolute; inset: 0; background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%); display: flex; align-items: center; justify-content: center;">
-          <div style="color: var(--text-muted); font-size: var(--font-size-xl);">VIDEO A (ACTIVE)</div>
-        </div>
-
-        <!-- Athlete info overlay -->
-        <div style="position: absolute; top: var(--space-lg); left: var(--space-lg); background: var(--meet-header-bg, rgba(0,0,0,0.85)); border-radius: var(--border-radius); padding: var(--space-md) var(--space-lg); display: flex; align-items: center; gap: var(--space-md); backdrop-filter: blur(8px);">
-          <div style="width: 48px; height: 48px; background: var(--bg-tertiary); border-radius: var(--border-radius); display: flex; align-items: center; justify-content: center; font-size: var(--font-size-sm); color: var(--text-muted);">LOGO</div>
-          <div>
-            <div style="color: var(--meet-header-text, #ffffff); font-size: var(--font-size-lg); font-weight: 600;">Tamyra Singletary</div>
-            <div style="color: var(--text-secondary); font-size: var(--font-size-base);">Vault</div>
-            <div style="color: var(--text-muted); font-size: var(--font-size-sm);">University of Bridgeport</div>
-          </div>
-        </div>
-
-        <!-- Score badge -->
-        <div style="position: absolute; top: var(--space-lg); right: var(--space-lg); background: var(--meet-badge-bg, #3b82f6); border-radius: var(--border-radius); padding: var(--space-md) var(--space-lg);">
-          <div style="color: var(--meet-badge-text, #ffffff); font-size: var(--font-size-2xl); font-weight: 700; font-family: var(--font-mono);">9.725</div>
-        </div>
-
-        <!-- Progress bar -->
-        <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 4px; background: rgba(255,255,255,0.2);">
-          <div style="width: 72%; height: 100%; background: var(--color-output); transition: width 0.3s linear;"></div>
-        </div>
-
-        <!-- Video element indicator -->
-        <div style="position: absolute; bottom: var(--space-lg); left: var(--space-lg); background: rgba(0,0,0,0.7); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm); font-size: var(--font-size-sm);">
-          <span style="color: var(--color-output);">●</span> <code style="color: var(--text-secondary);">clipVideo</code> <span style="color: var(--text-muted);">.clip-active</span>
-        </div>
-      </div>
-
-      <!-- ===== CROSSFADING A→B STATE ===== -->
-      <div class="output-state state-crossfading" style="position: absolute; inset: 0; display: none;">
-        <!-- Video B (incoming, behind) -->
-        <div style="position: absolute; inset: 0; background: linear-gradient(135deg, #2d3436 0%, #636e72 100%); display: flex; align-items: center; justify-content: center;">
-          <div style="color: var(--text-muted); font-size: var(--font-size-xl);">VIDEO B (INCOMING)</div>
-        </div>
-
-        <!-- Video A (outgoing, fading out) -->
-        <div style="position: absolute; inset: 0; background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%); display: flex; align-items: center; justify-content: center; opacity: 0.4;">
-          <div style="color: var(--text-muted); font-size: var(--font-size-xl);">VIDEO A (OUTGOING)</div>
-        </div>
-
-        <!-- Crossfade overlay indicator -->
-        <div style="position: absolute; inset: 0; border: 3px solid var(--color-output); pointer-events: none;"></div>
-
-        <!-- Athlete info (new athlete) -->
-        <div style="position: absolute; top: var(--space-lg); left: var(--space-lg); background: var(--meet-header-bg, rgba(0,0,0,0.85)); border-radius: var(--border-radius); padding: var(--space-md) var(--space-lg); display: flex; align-items: center; gap: var(--space-md); backdrop-filter: blur(8px);">
-          <div style="width: 48px; height: 48px; background: var(--bg-tertiary); border-radius: var(--border-radius); display: flex; align-items: center; justify-content: center; font-size: var(--font-size-sm); color: var(--text-muted);">LOGO</div>
-          <div>
-            <div style="color: var(--meet-header-text, #ffffff); font-size: var(--font-size-lg); font-weight: 600;">Haley Fitzgerald</div>
-            <div style="color: var(--text-secondary); font-size: var(--font-size-base);">Vault</div>
-            <div style="color: var(--text-muted); font-size: var(--font-size-sm);">Southern Connecticut State</div>
-          </div>
-        </div>
-
-        <!-- Crossfade indicator badge -->
-        <div style="position: absolute; top: var(--space-lg); right: var(--space-lg); background: var(--color-output); border-radius: var(--border-radius); padding: var(--space-sm) var(--space-md);">
-          <div style="color: #ffffff; font-size: var(--font-size-base); font-weight: 700;">CROSSFADE</div>
-        </div>
-
-        <!-- Audio crossfade visualization -->
-        <div style="position: absolute; bottom: var(--space-lg); left: var(--space-lg); right: var(--space-lg); display: flex; gap: var(--space-md);">
-          <div style="flex: 1; background: rgba(0,0,0,0.8); border-radius: var(--border-radius); padding: var(--space-sm);">
-            <div style="font-size: var(--font-size-sm); color: var(--text-muted); margin-bottom: var(--space-xs);">Audio A (fading out)</div>
-            <div style="height: 12px; background: var(--bg-tertiary); border-radius: 2px; overflow: hidden;">
-              <div style="width: 30%; height: 100%; background: linear-gradient(90deg, var(--color-output), rgba(255,140,66,0.3)); border-radius: 2px;"></div>
-            </div>
-          </div>
-          <div style="flex: 1; background: rgba(0,0,0,0.8); border-radius: var(--border-radius); padding: var(--space-sm);">
-            <div style="font-size: var(--font-size-sm); color: var(--text-muted); margin-bottom: var(--space-xs);">Audio B (fading in)</div>
-            <div style="height: 12px; background: var(--bg-tertiary); border-radius: 2px; overflow: hidden;">
-              <div style="width: 70%; height: 100%; background: linear-gradient(90deg, rgba(78,205,196,0.3), var(--color-talent)); border-radius: 2px;"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ===== LIVE CAMERA STATE ===== -->
-      <div class="output-state state-live" style="position: absolute; inset: 0; display: none;">
-        <!-- Camera feed simulation -->
-        <div style="position: absolute; inset: 0; background: linear-gradient(135deg, #2d3436 0%, #636e72 100%); display: flex; align-items: center; justify-content: center;">
-          <div style="color: var(--text-muted); font-size: var(--font-size-xl);">LIVE CAMERA FEED (from OBS)</div>
-        </div>
-
-        <!-- LIVE badge -->
-        <div style="position: absolute; top: var(--space-lg); left: var(--space-lg); background: #e74c3c; border-radius: var(--border-radius); padding: var(--space-sm) var(--space-md); display: flex; align-items: center; gap: var(--space-sm);">
-          <div style="width: 8px; height: 8px; background: #fff; border-radius: 50%; animation: pulse 1.5s infinite;"></div>
-          <div style="color: #ffffff; font-size: var(--font-size-base); font-weight: 700;">LIVE</div>
-        </div>
-
-        <!-- Apparatus label -->
-        <div style="position: absolute; top: calc(var(--space-lg) + 40px); left: var(--space-lg); background: rgba(0,0,0,0.7); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm);">
-          <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">Balance Beam</div>
-        </div>
-
-        <!-- mode=live indicator -->
-        <div style="position: absolute; bottom: var(--space-lg); right: var(--space-lg); background: rgba(0,0,0,0.7); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm); font-size: var(--font-size-sm); color: var(--text-muted);">
-          <code>mode=live</code> • No video elements
-        </div>
-      </div>
-
-      <!-- ===== MOMENT REPLAY STATE ===== -->
-      <div class="output-state state-replay" style="position: absolute; inset: 0; display: none;">
-        <!-- Video content simulation -->
-        <div style="position: absolute; inset: 0; background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%); display: flex; align-items: center; justify-content: center;">
-          <div style="color: var(--text-muted); font-size: var(--font-size-xl);">SLOW-MO VIDEO (0.5x)</div>
-        </div>
-
-        <!-- Athlete info overlay -->
-        <div style="position: absolute; top: var(--space-lg); left: var(--space-lg); background: var(--meet-header-bg, rgba(0,0,0,0.85)); border-radius: var(--border-radius); padding: var(--space-md) var(--space-lg); display: flex; align-items: center; gap: var(--space-md); backdrop-filter: blur(8px);">
-          <div style="width: 48px; height: 48px; background: var(--bg-tertiary); border-radius: var(--border-radius); display: flex; align-items: center; justify-content: center; font-size: var(--font-size-sm); color: var(--text-muted);">LOGO</div>
-          <div>
-            <div style="color: var(--meet-header-text, #ffffff); font-size: var(--font-size-lg); font-weight: 600;">Haley Fitzgerald</div>
-            <div style="color: var(--text-secondary); font-size: var(--font-size-base);">Vault • Yurchenko Layout</div>
-            <div style="color: var(--text-muted); font-size: var(--font-size-sm);">Southern Connecticut State</div>
-          </div>
-        </div>
-
-        <!-- REPLAY badge -->
-        <div style="position: absolute; top: var(--space-lg); right: var(--space-lg); background: rgba(255,71,87,0.9); border-radius: var(--border-radius); padding: var(--space-sm) var(--space-md);">
-          <div style="color: #ffffff; font-size: var(--font-size-base); font-weight: 700; letter-spacing: 1px;">REPLAY</div>
-        </div>
-
-        <!-- Muted indicator (default for replays) -->
-        <div style="position: absolute; bottom: var(--space-lg); right: var(--space-lg); background: rgba(0,0,0,0.7); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm); font-size: var(--font-size-sm); color: var(--text-muted);">
-          🔇 Muted (default for replays)
-        </div>
-
-        <!-- No score badge - note -->
-        <div style="position: absolute; bottom: var(--space-lg); left: var(--space-lg); background: rgba(0,0,0,0.7); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm); font-size: var(--font-size-sm); color: var(--text-secondary);">
-          No score badge (viewer saw it during full routine)
-        </div>
-      </div>
-
-      <!-- ===== BREAK CONTENT STATE ===== -->
-      <div class="output-state state-break" style="position: absolute; inset: 0; display: none;">
-        <!-- Animated gradient background -->
-        <div style="position: absolute; inset: 0; background: linear-gradient(135deg, var(--bg-primary, #1a1a2e), var(--bg-secondary, #16213e), var(--bg-primary, #1a1a2e)); background-size: 200% 200%; animation: gradientShift 8s ease infinite;"></div>
-
-        <!-- Content overlay -->
-        <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;">
-          <div style="background: rgba(0,0,0,0.6); border-radius: var(--border-radius); padding: var(--space-xl); text-align: center; backdrop-filter: blur(4px);">
-            <div style="color: var(--text-primary); font-size: var(--font-size-xl); font-weight: 600;">EVENT SUMMARY</div>
-            <div style="color: var(--text-secondary); font-size: var(--font-size-base); margin-top: var(--space-sm);">Floor Exercise Results</div>
-            <div style="margin-top: var(--space-md); padding: var(--space-md); background: rgba(0,0,0,0.4); border-radius: var(--border-radius); text-align: left;">
-              <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">
-                1. Tamyra Singletary — 9.875<br>
-                2. Haley Fitzgerald — 9.825<br>
-                3. Jenna Liu — 9.800
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Break content indicator -->
-        <div style="position: absolute; top: var(--space-lg); right: var(--space-lg); background: var(--color-rundown); border-radius: var(--border-radius); padding: var(--space-sm) var(--space-md);">
-          <div style="color: #ffffff; font-size: var(--font-size-sm); font-weight: 600;">BREAK</div>
-        </div>
-
-        <!-- mode=live + background indicator -->
-        <div style="position: absolute; bottom: var(--space-lg); right: var(--space-lg); background: rgba(0,0,0,0.7); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm); font-size: var(--font-size-sm); color: var(--text-muted);">
-          <code>mode=live</code> • <code>background: true</code>
-        </div>
-      </div>
-
-      <!-- ===== STALLED STATE ===== -->
-      <div class="output-state state-stalled" style="position: absolute; inset: 0; display: none;">
-        <!-- Frozen video content -->
-        <div style="position: absolute; inset: 0; background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%); display: flex; align-items: center; justify-content: center; filter: grayscale(30%);">
-          <div style="color: var(--text-muted); font-size: var(--font-size-xl);">VIDEO FROZEN</div>
-        </div>
-
-        <!-- Athlete info overlay (faded) -->
-        <div style="position: absolute; top: var(--space-lg); left: var(--space-lg); background: var(--meet-header-bg, rgba(0,0,0,0.85)); border-radius: var(--border-radius); padding: var(--space-md) var(--space-lg); display: flex; align-items: center; gap: var(--space-md); backdrop-filter: blur(8px); opacity: 0.6;">
-          <div style="width: 48px; height: 48px; background: var(--bg-tertiary); border-radius: var(--border-radius); display: flex; align-items: center; justify-content: center; font-size: var(--font-size-sm); color: var(--text-muted);">LOGO</div>
-          <div>
-            <div style="color: var(--meet-header-text, #ffffff); font-size: var(--font-size-lg); font-weight: 600;">Tamyra Singletary</div>
-            <div style="color: var(--text-secondary); font-size: var(--font-size-base);">Vault</div>
-          </div>
-        </div>
-
-        <!-- Stall warning overlay -->
-        <div style="position: absolute; inset: 0; background: rgba(255,71,87,0.15); display: flex; align-items: center; justify-content: center;">
-          <div style="background: rgba(0,0,0,0.9); border: 2px solid var(--color-override); border-radius: var(--border-radius); padding: var(--space-lg); text-align: center;">
-            <div style="color: var(--color-override); font-size: var(--font-size-lg); font-weight: 700; margin-bottom: var(--space-sm);">⚠️ STALL DETECTED</div>
-            <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">Buffering for 8+ seconds</div>
-            <div style="color: var(--text-muted); font-size: var(--font-size-sm); margin-top: var(--space-sm);">Auto-skip in 5s if not recovered</div>
-          </div>
-        </div>
-
-        <!-- Progress bar (frozen) -->
-        <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 4px; background: rgba(255,255,255,0.2);">
-          <div style="width: 35%; height: 100%; background: var(--color-override);"></div>
-        </div>
-
-        <!-- Stall status indicator -->
-        <div style="position: absolute; bottom: var(--space-lg); left: var(--space-lg); background: rgba(255,71,87,0.9); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm); font-size: var(--font-size-sm);">
-          <span style="color: #ffffff;">Status: </span><code style="color: #ffffff;">stalled</code>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- State Description Card -->
-  <div class="card" id="output-state-description">
-    <div class="card-header">
-      <div class="card-title">State Details</div>
-      <span class="section-badge" data-section="3C">§3C</span>
-    </div>
-    <div id="state-details" style="margin-top: var(--space-md);">
-      <div class="state-detail state-detail-idle">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md);">
-          <div>
-            <div style="font-size: var(--font-size-sm); color: var(--text-muted); margin-bottom: var(--space-xs);">Entry Condition</div>
-            <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">No active playout mode OR <code>currentGraphic: null</code></div>
-          </div>
-          <div>
-            <div style="font-size: var(--font-size-sm); color: var(--text-muted); margin-bottom: var(--space-xs);">Exit Condition</div>
-            <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">Any graphic written to Firebase</div>
-          </div>
-        </div>
-        <div style="margin-top: var(--space-md); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
-          <div style="font-size: var(--font-size-sm); color: var(--text-muted);">Video Elements: <span style="color: var(--text-secondary);">Hidden, src cleared</span></div>
-          <div style="font-size: var(--font-size-sm); color: var(--text-muted);">Audio: <span style="color: var(--text-secondary);">None from output.html</span></div>
-        </div>
-      </div>
-      <div class="state-detail state-detail-playing" style="display: none;">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md);">
-          <div>
-            <div style="font-size: var(--font-size-sm); color: var(--text-muted); margin-bottom: var(--space-xs);">Entry Condition</div>
-            <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">Queued clip available and dequeued</div>
-          </div>
-          <div>
-            <div style="font-size: var(--font-size-sm); color: var(--text-muted); margin-bottom: var(--space-xs);">Exit Condition</div>
-            <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">Clip ends, skip, or force camera</div>
-          </div>
-        </div>
-        <div style="margin-top: var(--space-md); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
-          <div style="font-size: var(--font-size-sm); color: var(--text-muted);">Video Elements: <span style="color: var(--text-secondary);">clipVideo = .clip-active (z-index: 2), clipVideoNext = .clip-preload (preloading next)</span></div>
-          <div style="font-size: var(--font-size-sm); color: var(--text-muted);">Audio: <span style="color: var(--text-secondary);">Clip audio plays (muted: false)</span></div>
-          <div style="font-size: var(--font-size-sm); color: var(--text-muted);">Score Reveal: <span style="color: var(--text-secondary);"><code>Math.max(duration - 5, duration * 0.6)</code></span></div>
-        </div>
-      </div>
-      <div class="state-detail state-detail-crossfading" style="display: none;">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md);">
-          <div>
-            <div style="font-size: var(--font-size-sm); color: var(--text-muted); margin-bottom: var(--space-xs);">Entry Condition</div>
-            <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">Current clip ended, preloaded clip ready</div>
-          </div>
-          <div>
-            <div style="font-size: var(--font-size-sm); color: var(--text-muted); margin-bottom: var(--space-xs);">Duration</div>
-            <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">100–2000ms (configurable via <code>crossfadeDuration</code>)</div>
-          </div>
-        </div>
-        <div style="margin-top: var(--space-md); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
-          <div style="font-size: var(--font-size-sm); color: var(--text-muted);">Video Elements: <span style="color: var(--text-secondary);">Both at z-index: 2, opacity animating</span></div>
-          <div style="font-size: var(--font-size-sm); color: var(--text-muted);">Audio: <span style="color: var(--text-secondary);">Outgoing fades to 0, incoming fades from 0 (never both full volume)</span></div>
-          <div style="font-size: var(--font-size-sm); color: var(--text-muted);">After Crossfade: <span style="color: var(--text-secondary);">Classes swap, outgoing src cleared (<code>src = ''; load()</code>)</span></div>
-        </div>
-      </div>
-      <div class="state-detail state-detail-live" style="display: none;">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md);">
-          <div>
-            <div style="font-size: var(--font-size-sm); color: var(--text-muted); margin-bottom: var(--space-xs);">Entry Condition</div>
-            <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">Live routine detected, no clip playing</div>
-          </div>
-          <div>
-            <div style="font-size: var(--font-size-sm); color: var(--text-muted); margin-bottom: var(--space-xs);">Exit Condition</div>
-            <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">Routine ends → priority stack re-evaluation</div>
-          </div>
-        </div>
-        <div style="margin-top: var(--space-md); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
-          <div style="font-size: var(--font-size-sm); color: var(--text-muted);">Video Elements: <span style="color: var(--text-secondary);">Hidden (display: none), no src loaded</span></div>
-          <div style="font-size: var(--font-size-sm); color: var(--text-muted);">Audio: <span style="color: var(--text-secondary);">None from output.html — audio from OBS camera source</span></div>
-          <div style="font-size: var(--font-size-sm); color: var(--text-muted);">Graphic: <span style="color: var(--text-secondary);"><code>{ graphic: 'live-camera', data: { apparatus: 'BB' } }</code></span></div>
-        </div>
-      </div>
-      <div class="state-detail state-detail-replay" style="display: none;">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md);">
-          <div>
-            <div style="font-size: var(--font-size-sm); color: var(--text-muted); margin-bottom: var(--space-xs);">Entry Condition</div>
-            <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">"Play Now" moment flagged by producer</div>
-          </div>
-          <div>
-            <div style="font-size: var(--font-size-sm); color: var(--text-muted); margin-bottom: var(--space-xs);">Exit Condition</div>
-            <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">Replay ends (reaches seekEnd) or skip</div>
-          </div>
-        </div>
-        <div style="margin-top: var(--space-md); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
-          <div style="font-size: var(--font-size-sm); color: var(--text-muted);">Audio: <span style="color: var(--text-secondary);">Muted by default — commentators narrate replays</span></div>
-          <div style="font-size: var(--font-size-sm); color: var(--text-muted);">Score Badge: <span style="color: var(--text-secondary);">NOT shown (viewer already saw it during full routine)</span></div>
-          <div style="font-size: var(--font-size-sm); color: var(--text-muted);">Preloading: <span style="color: var(--text-secondary);">Same A/B preload behavior as regular clips</span></div>
-        </div>
-      </div>
-      <div class="state-detail state-detail-break" style="display: none;">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md);">
-          <div>
-            <div style="font-size: var(--font-size-sm); color: var(--text-muted); margin-bottom: var(--space-xs);">Entry Condition</div>
-            <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">Content-sequence segment active with <code>background: true</code></div>
-          </div>
-          <div>
-            <div style="font-size: var(--font-size-sm); color: var(--text-muted); margin-bottom: var(--space-xs);">Exit Condition</div>
-            <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">Advance condition met or manual advance</div>
-          </div>
-        </div>
-        <div style="margin-top: var(--space-md); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
-          <div style="font-size: var(--font-size-sm); color: var(--text-muted);">Background: <span style="color: var(--text-secondary);">Animated gradient using --meet-header-bg / --meet-content-bg</span></div>
-          <div style="font-size: var(--font-size-sm); color: var(--text-muted);">Transitions: <span style="color: var(--text-secondary);">Fade-in 300ms ease-in, fade-out 300ms ease-out</span></div>
-          <div style="font-size: var(--font-size-sm); color: var(--text-muted);">Purpose: <span style="color: var(--text-secondary);">Covers camera so producer can adjust during breaks</span></div>
-        </div>
-      </div>
-      <div class="state-detail state-detail-stalled" style="display: none;">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md);">
-          <div>
-            <div style="font-size: var(--font-size-sm); color: var(--text-muted); margin-bottom: var(--space-xs);">Entry Condition</div>
-            <div style="font-size: var(--font-size-sm); color: var(--text-secondary);"><code>waiting</code> event + 8s timeout (no <code>playing</code> event)</div>
-          </div>
-          <div>
-            <div style="font-size: var(--font-size-sm); color: var(--text-muted); margin-bottom: var(--space-xs);">Recovery Actions</div>
-            <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">Wait 5s more, then auto-skip (13s total)</div>
-          </div>
-        </div>
-        <div style="margin-top: var(--space-md); padding: var(--space-sm); background: rgba(255,71,87,0.1); border-radius: var(--border-radius); border: 1px solid var(--color-override);">
-          <div style="font-size: var(--font-size-sm); color: var(--color-override); font-weight: 600; margin-bottom: var(--space-xs);">Stall Timeline</div>
-          <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">0s: <code>waiting</code> event fires</div>
-          <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">8s: Write <code>{ status: 'stalled' }</code> to Firebase</div>
-          <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">13s: Skip to next clip + write <code>{ status: 'error', errorCode: 'STALL_TIMEOUT' }</code></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Mode Parameter Section -->
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title">Mode Parameter Architecture</div>
-      <span class="section-badge" data-section="4">§4</span>
-    </div>
-    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-md); margin-top: var(--space-md);">
-      <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-md); border: 1px solid var(--color-output);">
-        <div style="font-weight: 600; color: var(--color-output); margin-bottom: var(--space-sm);">?mode=clip</div>
-        <ul style="margin: 0; padding-left: var(--space-md); color: var(--text-secondary); font-size: var(--font-size-sm);">
-          <li>Video playback + overlay</li>
-          <li>Score reveal timing</li>
-          <li>REPLAY badge</li>
-          <li>Dual &lt;video&gt; elements</li>
-          <li>Writes clipStatus to Firebase</li>
-        </ul>
-      </div>
-      <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-md); border: 1px solid var(--text-muted);">
-        <div style="font-weight: 600; color: var(--text-primary); margin-bottom: var(--space-sm);">?mode=live</div>
-        <ul style="margin: 0; padding-left: var(--space-md); color: var(--text-secondary); font-size: var(--font-size-sm);">
-          <li>LIVE badge overlay</li>
-          <li>Score graphics</li>
-          <li>Animated backgrounds</li>
-          <li>Fallback overlays</li>
-          <li>No video elements</li>
-        </ul>
-      </div>
-      <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-md); border: 1px dashed var(--text-muted);">
-        <div style="font-weight: 600; color: var(--text-secondary); margin-bottom: var(--space-sm);">?mode=preview</div>
-        <ul style="margin: 0; padding-left: var(--space-md); color: var(--text-secondary); font-size: var(--font-size-sm);">
-          <li>Same as mode=clip</li>
-          <li>No Firebase writes</li>
-          <li>Producer testing only</li>
-        </ul>
-      </div>
-    </div>
-  </div>
-
-  <!-- Dual Video Architecture Diagram -->
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title">Dual Video Element Architecture</div>
-      <span class="section-badge" data-section="4">§4</span>
-    </div>
-
-    <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-lg); margin-top: var(--space-md);">
-
-      <!-- DOM Structure -->
-      <div style="font-size: var(--font-size-sm); color: var(--text-muted); margin-bottom: var(--space-sm); font-family: var(--font-mono);">DOM Structure (z-index order)</div>
-
-      <div style="display: flex; flex-direction: column; gap: var(--space-sm);">
-        <!-- Video B (Preload) -->
-        <div style="background: linear-gradient(90deg, rgba(255,140,66,0.1), rgba(255,140,66,0.05)); border: 2px dashed var(--color-output); border-radius: var(--border-radius); padding: var(--space-md); position: relative;">
-          <div style="display: flex; align-items: center; justify-content: space-between;">
-            <div>
-              <code style="color: var(--color-output); font-family: var(--font-mono);">&lt;video id="clipVideoNext"&gt;</code>
-              <span class="state-indicator loading" style="margin-left: var(--space-sm);">preloading</span>
-            </div>
-            <div style="font-size: var(--font-size-sm); color: var(--text-muted);">z-index: -1 (idle) → 2 (crossfade)</div>
-          </div>
-          <div style="margin-top: var(--space-sm); font-size: var(--font-size-sm); color: var(--text-secondary);">
-            <span style="color: var(--text-muted);">src:</span> nextClipUrl (preloading in background)
-          </div>
-          <div style="position: absolute; right: var(--space-md); top: 50%; transform: translateY(-50%); background: var(--bg-tertiary); padding: var(--space-xs) var(--space-sm); border-radius: var(--border-radius); font-size: var(--font-size-sm);">
-            <span style="color: var(--text-muted);">class:</span> <code style="color: var(--color-output);">.clip-preload</code>
-          </div>
-        </div>
-
-        <!-- Video A (Active) -->
-        <div style="background: linear-gradient(90deg, rgba(255,140,66,0.3), rgba(255,140,66,0.15)); border: 2px solid var(--color-output); border-radius: var(--border-radius); padding: var(--space-md); position: relative;">
-          <div style="display: flex; align-items: center; justify-content: space-between;">
-            <div>
-              <code style="color: var(--color-output); font-family: var(--font-mono);">&lt;video id="clipVideo"&gt;</code>
-              <span class="state-indicator playing" style="margin-left: var(--space-sm);">active</span>
-            </div>
-            <div style="font-size: var(--font-size-sm); color: var(--text-muted);">z-index: 2</div>
-          </div>
-          <div style="margin-top: var(--space-sm); font-size: var(--font-size-sm); color: var(--text-secondary);">
-            <span style="color: var(--text-muted);">src:</span> https://...clips/...output.mp4
-          </div>
-          <div style="position: absolute; right: var(--space-md); top: 50%; transform: translateY(-50%); background: var(--bg-tertiary); padding: var(--space-xs) var(--space-sm); border-radius: var(--border-radius); font-size: var(--font-size-sm);">
-            <span style="color: var(--text-muted);">class:</span> <code style="color: var(--color-output);">.clip-active</code>
-          </div>
-        </div>
-
-        <!-- Output div -->
-        <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-md);">
-          <div style="display: flex; align-items: center; justify-content: space-between;">
-            <div>
-              <code style="color: var(--text-primary); font-family: var(--font-mono);">&lt;div id="output"&gt;</code>
-              <span style="color: var(--text-secondary); margin-left: var(--space-sm); font-size: var(--font-size-sm);">graphics from renderers</span>
-            </div>
-            <div style="font-size: var(--font-size-sm); color: var(--text-muted);">z-index: 1</div>
-          </div>
-        </div>
-
-        <!-- Background div -->
-        <div style="background: linear-gradient(90deg, var(--bg-tertiary), var(--bg-secondary)); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-md);">
-          <div style="display: flex; align-items: center; justify-content: space-between;">
-            <div>
-              <code style="color: var(--text-primary); font-family: var(--font-mono);">&lt;div id="clipBackground"&gt;</code>
-              <span style="color: var(--text-secondary); margin-left: var(--space-sm); font-size: var(--font-size-sm);">animated BG (mode=live)</span>
-            </div>
-            <div style="font-size: var(--font-size-sm); color: var(--text-muted);">z-index: 0</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- A/B Preload Pattern Visualization -->
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title">A/B Preload Pattern — Clip-to-Clip Transition</div>
-      <span class="section-badge" data-section="4">§4</span>
-    </div>
-
-    <div style="margin-top: var(--space-md);">
-      <!-- Timeline visualization -->
-      <div style="display: flex; gap: var(--space-xs); margin-bottom: var(--space-md);">
-        <div style="flex: 3; text-align: center; font-size: var(--font-size-sm); color: var(--text-muted);">Clip A Playing</div>
-        <div style="flex: 1; text-align: center; font-size: var(--font-size-sm); color: var(--color-output);">Crossfade</div>
-        <div style="flex: 3; text-align: center; font-size: var(--font-size-sm); color: var(--text-muted);">Clip B Playing</div>
-      </div>
-
-      <!-- Video A timeline -->
-      <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-sm);">
-        <div style="width: 80px; font-size: var(--font-size-sm); color: var(--text-secondary);">Video A</div>
-        <div style="flex: 1; display: flex; height: 32px;">
-          <div style="flex: 3; background: linear-gradient(90deg, var(--color-output), rgba(255,140,66,0.7)); border-radius: var(--border-radius) 0 0 var(--border-radius); display: flex; align-items: center; justify-content: center;">
-            <span style="font-size: var(--font-size-sm); color: white; font-weight: 600;">ACTIVE</span>
-          </div>
-          <div style="flex: 1; background: linear-gradient(90deg, rgba(255,140,66,0.7), rgba(255,140,66,0.1)); display: flex; align-items: center; justify-content: center;">
-            <span style="font-size: var(--font-size-sm); color: var(--text-secondary);">fade out</span>
-          </div>
-          <div style="flex: 3; background: var(--bg-tertiary); border-radius: 0 var(--border-radius) var(--border-radius) 0; display: flex; align-items: center; justify-content: center;">
-            <span style="font-size: var(--font-size-sm); color: var(--text-muted);">preloading next...</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Video B timeline -->
-      <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-md);">
-        <div style="width: 80px; font-size: var(--font-size-sm); color: var(--text-secondary);">Video B</div>
-        <div style="flex: 1; display: flex; height: 32px;">
-          <div style="flex: 3; background: var(--bg-tertiary); border-radius: var(--border-radius) 0 0 var(--border-radius); display: flex; align-items: center; justify-content: center;">
-            <span style="font-size: var(--font-size-sm); color: var(--text-muted);">preloading...</span>
-          </div>
-          <div style="flex: 1; background: linear-gradient(90deg, rgba(255,140,66,0.1), rgba(255,140,66,0.7)); display: flex; align-items: center; justify-content: center;">
-            <span style="font-size: var(--font-size-sm); color: var(--text-secondary);">fade in</span>
-          </div>
-          <div style="flex: 3; background: linear-gradient(90deg, rgba(255,140,66,0.7), var(--color-output)); border-radius: 0 var(--border-radius) var(--border-radius) 0; display: flex; align-items: center; justify-content: center;">
-            <span style="font-size: var(--font-size-sm); color: white; font-weight: 600;">ACTIVE</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Class swap note -->
-      <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-md); font-size: var(--font-size-sm);">
-        <div style="color: var(--color-output); font-weight: 600; margin-bottom: var(--space-xs);">CSS Class Swap (not DOM reorder)</div>
-        <div style="color: var(--text-secondary);">
-          On transition: <code>.clip-active</code> ↔ <code>.clip-preload</code> classes swap between elements.
-          Outgoing element's src is cleared (<code>src = ''; load()</code>) to release media resources.
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Audio Crossfade Visualization -->
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title">Audio Crossfade During Clip-to-Clip Transition</div>
-      <span class="section-badge" data-section="4.12">§4.12</span>
-    </div>
-
-    <div style="margin-top: var(--space-md); padding: var(--space-md); background: var(--bg-primary); border-radius: var(--border-radius); border: 1px solid var(--border-color);">
-
-      <!-- Volume level visualization -->
-      <div style="display: flex; gap: var(--space-lg);">
-        <!-- Clip A audio -->
-        <div style="flex: 1;">
-          <div style="font-size: var(--font-size-sm); color: var(--text-secondary); margin-bottom: var(--space-sm);">Clip A Audio</div>
-          <div style="height: 60px; display: flex; align-items: flex-end; gap: 2px;">
-            <div style="flex: 1; height: 100%; background: var(--color-output); border-radius: 2px 2px 0 0;"></div>
-            <div style="flex: 1; height: 100%; background: var(--color-output); border-radius: 2px 2px 0 0;"></div>
-            <div style="flex: 1; height: 100%; background: var(--color-output); border-radius: 2px 2px 0 0;"></div>
-            <div style="flex: 1; height: 85%; background: rgba(255,140,66,0.8); border-radius: 2px 2px 0 0;"></div>
-            <div style="flex: 1; height: 70%; background: rgba(255,140,66,0.6); border-radius: 2px 2px 0 0;"></div>
-            <div style="flex: 1; height: 50%; background: rgba(255,140,66,0.4); border-radius: 2px 2px 0 0;"></div>
-            <div style="flex: 1; height: 30%; background: rgba(255,140,66,0.3); border-radius: 2px 2px 0 0;"></div>
-            <div style="flex: 1; height: 15%; background: rgba(255,140,66,0.2); border-radius: 2px 2px 0 0;"></div>
-            <div style="flex: 1; height: 5%; background: rgba(255,140,66,0.1); border-radius: 2px 2px 0 0;"></div>
-          </div>
-          <div style="font-size: var(--font-size-sm); color: var(--text-muted); margin-top: var(--space-xs); text-align: right;">volume → 0</div>
-        </div>
-
-        <!-- Crossfade indicator -->
-        <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 0 var(--space-md);">
-          <div style="font-size: var(--font-size-sm); color: var(--color-output); font-weight: 600;">CROSSFADE</div>
-          <div style="font-size: var(--font-size-sm); color: var(--text-muted);">100-2000ms</div>
-        </div>
-
-        <!-- Clip B audio -->
-        <div style="flex: 1;">
-          <div style="font-size: var(--font-size-sm); color: var(--text-secondary); margin-bottom: var(--space-sm);">Clip B Audio</div>
-          <div style="height: 60px; display: flex; align-items: flex-end; gap: 2px;">
-            <div style="flex: 1; height: 5%; background: rgba(78,205,196,0.1); border-radius: 2px 2px 0 0;"></div>
-            <div style="flex: 1; height: 15%; background: rgba(78,205,196,0.2); border-radius: 2px 2px 0 0;"></div>
-            <div style="flex: 1; height: 30%; background: rgba(78,205,196,0.3); border-radius: 2px 2px 0 0;"></div>
-            <div style="flex: 1; height: 50%; background: rgba(78,205,196,0.4); border-radius: 2px 2px 0 0;"></div>
-            <div style="flex: 1; height: 70%; background: rgba(78,205,196,0.6); border-radius: 2px 2px 0 0;"></div>
-            <div style="flex: 1; height: 85%; background: rgba(78,205,196,0.8); border-radius: 2px 2px 0 0;"></div>
-            <div style="flex: 1; height: 100%; background: var(--color-talent); border-radius: 2px 2px 0 0;"></div>
-            <div style="flex: 1; height: 100%; background: var(--color-talent); border-radius: 2px 2px 0 0;"></div>
-            <div style="flex: 1; height: 100%; background: var(--color-talent); border-radius: 2px 2px 0 0;"></div>
-          </div>
-          <div style="font-size: var(--font-size-sm); color: var(--text-muted); margin-top: var(--space-xs);">0 → volume</div>
-        </div>
-      </div>
-
-      <div style="margin-top: var(--space-md); padding: var(--space-sm); background: var(--bg-secondary); border-radius: var(--border-radius); font-size: var(--font-size-sm); color: var(--text-secondary);">
-        Both clips play during crossfade, but <strong>never at full volume simultaneously</strong>. Outgoing fades to 0, incoming fades from 0.
-      </div>
-    </div>
-  </div>
-
-  <!-- Clip Playback Overlay Mockup -->
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title">Clip Playback Overlay</div>
-      <span class="section-badge" data-section="4.9">§4.9</span>
-    </div>
-
-    <!-- Video frame mockup -->
-    <div style="margin-top: var(--space-md); background: #000; border-radius: var(--border-radius); aspect-ratio: 16/9; position: relative; overflow: hidden;">
-
-      <!-- Simulated video content -->
-      <div style="position: absolute; inset: 0; background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%); display: flex; align-items: center; justify-content: center;">
-        <div style="color: var(--text-muted); font-size: var(--font-size-xl);">VIDEO CONTENT</div>
-      </div>
-
-      <!-- Athlete info overlay (top-left) -->
-      <div style="position: absolute; top: var(--space-lg); left: var(--space-lg); background: var(--meet-header-bg, rgba(0,0,0,0.85)); border-radius: var(--border-radius); padding: var(--space-md) var(--space-lg); display: flex; align-items: center; gap: var(--space-md); backdrop-filter: blur(8px);">
-        <!-- Team logo placeholder -->
-        <div style="width: 48px; height: 48px; background: var(--bg-tertiary); border-radius: var(--border-radius); display: flex; align-items: center; justify-content: center; font-size: var(--font-size-sm); color: var(--text-muted);">LOGO</div>
-        <div>
-          <div style="color: var(--meet-header-text, #ffffff); font-size: var(--font-size-lg); font-weight: 600;">Tamyra Singletary</div>
-          <div style="color: var(--text-secondary); font-size: var(--font-size-base);">Vault</div>
-          <div style="color: var(--text-muted); font-size: var(--font-size-sm);">University of Bridgeport</div>
-        </div>
-      </div>
-
-      <!-- Score badge (appears during score reveal) -->
-      <div style="position: absolute; top: var(--space-lg); right: var(--space-lg); background: var(--meet-badge-bg, #3b82f6); border-radius: var(--border-radius); padding: var(--space-md) var(--space-lg);">
-        <div style="color: var(--meet-badge-text, #ffffff); font-size: var(--font-size-2xl); font-weight: 700; font-family: var(--font-mono);">9.725</div>
-      </div>
-
-      <!-- Progress bar at bottom -->
-      <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 4px; background: rgba(255,255,255,0.2);">
-        <div style="width: 65%; height: 100%; background: var(--color-output);"></div>
-      </div>
-    </div>
-
-    <!-- Score reveal timing -->
-    <div style="margin-top: var(--space-md); padding: var(--space-md); background: var(--bg-tertiary); border-radius: var(--border-radius);">
-      <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">
-        <strong>Score reveal timing:</strong> <code>Math.max(actualDuration - 5, actualDuration * 0.6)</code>
-      </div>
-      <div style="font-size: var(--font-size-sm); color: var(--text-muted); margin-top: var(--space-xs);">
-        For 18.3s vault clip → score appears at 13.3s (5s before end)
-      </div>
-    </div>
-  </div>
-
-  <!-- Moment Replay Overlay Mockup -->
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title">Moment Replay Overlay</div>
-      <span class="section-badge" data-section="4.9">§4.9</span>
-    </div>
-
-    <!-- Video frame mockup -->
-    <div style="margin-top: var(--space-md); background: #000; border-radius: var(--border-radius); aspect-ratio: 16/9; position: relative; overflow: hidden;">
-
-      <!-- Simulated video content -->
-      <div style="position: absolute; inset: 0; background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%); display: flex; align-items: center; justify-content: center;">
-        <div style="color: var(--text-muted); font-size: var(--font-size-xl);">SLOW-MO VIDEO</div>
-      </div>
-
-      <!-- Athlete info overlay (top-left) -->
-      <div style="position: absolute; top: var(--space-lg); left: var(--space-lg); background: var(--meet-header-bg, rgba(0,0,0,0.85)); border-radius: var(--border-radius); padding: var(--space-md) var(--space-lg); display: flex; align-items: center; gap: var(--space-md); backdrop-filter: blur(8px);">
-        <div style="width: 48px; height: 48px; background: var(--bg-tertiary); border-radius: var(--border-radius); display: flex; align-items: center; justify-content: center; font-size: var(--font-size-sm); color: var(--text-muted);">LOGO</div>
-        <div>
-          <div style="color: var(--meet-header-text, #ffffff); font-size: var(--font-size-lg); font-weight: 600;">Haley Fitzgerald</div>
-          <div style="color: var(--text-secondary); font-size: var(--font-size-base);">Vault</div>
-          <div style="color: var(--text-muted); font-size: var(--font-size-sm);">Southern Connecticut State</div>
-        </div>
-      </div>
-
-      <!-- REPLAY badge (top-right) -->
-      <div style="position: absolute; top: var(--space-lg); right: var(--space-lg); background: rgba(255,71,87,0.9); border-radius: var(--border-radius); padding: var(--space-sm) var(--space-md);">
-        <div style="color: #ffffff; font-size: var(--font-size-base); font-weight: 700; letter-spacing: 1px;">REPLAY</div>
-      </div>
-
-      <!-- Muted indicator -->
-      <div style="position: absolute; bottom: var(--space-lg); right: var(--space-lg); background: rgba(0,0,0,0.7); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm); font-size: var(--font-size-sm); color: var(--text-muted);">
-        🔇 Muted (default)
-      </div>
-    </div>
-
-    <div style="margin-top: var(--space-md); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius); font-size: var(--font-size-sm); color: var(--text-secondary);">
-      Moment replays are <strong>muted by default</strong> — commentators narrate replays. No score badge shown (viewer already saw it during full routine).
-    </div>
-  </div>
-
-  <!-- Live Camera Overlay Mockup -->
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title">Live Camera Overlay (mode=live)</div>
-      <span class="section-badge" data-section="4.10">§4.10</span>
-    </div>
-
-    <!-- Video frame mockup -->
-    <div style="margin-top: var(--space-md); background: #000; border-radius: var(--border-radius); aspect-ratio: 16/9; position: relative; overflow: hidden;">
-
-      <!-- Simulated camera feed -->
-      <div style="position: absolute; inset: 0; background: linear-gradient(135deg, #2d3436 0%, #636e72 100%); display: flex; align-items: center; justify-content: center;">
-        <div style="color: var(--text-muted); font-size: var(--font-size-xl);">LIVE CAMERA FEED (from OBS)</div>
-      </div>
-
-      <!-- LIVE badge (top-left) -->
-      <div style="position: absolute; top: var(--space-lg); left: var(--space-lg); background: #e74c3c; border-radius: var(--border-radius); padding: var(--space-sm) var(--space-md); display: flex; align-items: center; gap: var(--space-sm);">
-        <div style="width: 8px; height: 8px; background: #fff; border-radius: 50%; animation: pulse 1.5s infinite;"></div>
-        <div style="color: #ffffff; font-size: var(--font-size-base); font-weight: 700;">LIVE</div>
-      </div>
-
-      <!-- Apparatus label -->
-      <div style="position: absolute; top: calc(var(--space-lg) + 40px); left: var(--space-lg); background: rgba(0,0,0,0.7); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm);">
-        <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">Balance Beam</div>
-      </div>
-    </div>
-
-    <div style="margin-top: var(--space-md); font-size: var(--font-size-sm); color: var(--text-secondary);">
-      Firebase data: <code>{ graphic: 'live-camera', data: { apparatus: 'BB' } }</code>
-    </div>
-  </div>
-
-  <!-- Animated Background (Break Content) -->
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title">Animated Background (Break Content)</div>
-      <span class="section-badge" data-section="4.11">§4.11</span>
-    </div>
-
-    <!-- Video frame mockup -->
-    <div style="margin-top: var(--space-md); background: #000; border-radius: var(--border-radius); aspect-ratio: 16/9; position: relative; overflow: hidden;">
-
-      <!-- Animated gradient background -->
-      <div style="position: absolute; inset: 0; background: linear-gradient(135deg, var(--bg-primary, #1a1a2e), var(--bg-secondary, #16213e), var(--bg-primary, #1a1a2e)); background-size: 200% 200%; animation: gradientShift 8s ease infinite;"></div>
-
-      <!-- Content overlay -->
-      <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;">
-        <div style="background: rgba(0,0,0,0.6); border-radius: var(--border-radius); padding: var(--space-xl); text-align: center; backdrop-filter: blur(4px);">
-          <div style="color: var(--text-primary); font-size: var(--font-size-xl); font-weight: 600;">GRAPHIC CONTENT</div>
-          <div style="color: var(--text-secondary); font-size: var(--font-size-base); margin-top: var(--space-sm);">(event summary, sponsor, etc.)</div>
-        </div>
-      </div>
-    </div>
-
-    <div style="margin-top: var(--space-md); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius); font-size: var(--font-size-sm); color: var(--text-secondary);">
-      Triggered by <code>background: true</code> in currentGraphic data. Covers camera feed during breaks.
-      Fade-in/out: 300ms ease.
-    </div>
-  </div>
-
-  <!-- Stall Detection -->
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title">Stall Detection &amp; Recovery</div>
-      <span class="section-badge" data-section="4">§4</span>
-    </div>
-
-    <div style="margin-top: var(--space-md); display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md);">
-      <!-- Timeline -->
-      <div style="background: var(--bg-primary); border-radius: var(--border-radius); padding: var(--space-md); border: 1px solid var(--border-color);">
-        <div style="font-size: var(--font-size-sm); color: var(--text-muted); margin-bottom: var(--space-sm);">Stall Timeline</div>
-        <div style="display: flex; flex-direction: column; gap: var(--space-sm);">
-          <div style="display: flex; align-items: center; gap: var(--space-sm);">
-            <div style="width: 60px; font-size: var(--font-size-sm); color: var(--text-muted);">0s</div>
-            <div style="flex: 1; padding: var(--space-xs); background: var(--bg-tertiary); border-radius: var(--border-radius); font-size: var(--font-size-sm);">
-              <code>waiting</code> event fires
-            </div>
-          </div>
-          <div style="display: flex; align-items: center; gap: var(--space-sm);">
-            <div style="width: 60px; font-size: var(--font-size-sm); color: var(--color-override);">8s</div>
-            <div style="flex: 1; padding: var(--space-xs); background: rgba(255,71,87,0.2); border-radius: var(--border-radius); font-size: var(--font-size-sm); color: var(--color-override);">
-              Write <code>{ status: 'stalled' }</code> to Firebase
-            </div>
-          </div>
-          <div style="display: flex; align-items: center; gap: var(--space-sm);">
-            <div style="width: 60px; font-size: var(--font-size-sm); color: var(--color-override);">13s</div>
-            <div style="flex: 1; padding: var(--space-xs); background: rgba(255,71,87,0.3); border-radius: var(--border-radius); font-size: var(--font-size-sm); color: var(--color-override);">
-              Skip to next clip + write <code>{ status: 'error', errorCode: 'STALL_TIMEOUT' }</code>
+      <div class="output-frame" data-apparatus="VT" data-mode="clip">
+        <!-- Layer 0: clipBackground (not used in clip mode) -->
+        <div class="layer-clipBackground"></div>
+
+        <!-- Layer 1: output (graphics renderer) -->
+        <div class="layer-output"></div>
+
+        <!-- Layer 2: clipVideo (active) -->
+        <div class="layer-clipVideo">
+          <div class="video-placeholder clip-video clip-active">
+            <div class="video-placeholder-content">
+              <div class="video-placeholder-icon">▶</div>
+              <div class="video-placeholder-text">Video Playing</div>
             </div>
           </div>
         </div>
+
+        <!-- Layer -1: clipVideoNext (preloading) -->
+        <div class="layer-clipVideoNext">
+          <div class="video-placeholder clip-video clip-preload"></div>
+        </div>
+
+        <!-- Overlay: Info Bar -->
+        <div class="clip-info-bar">
+          <div class="clip-info-logo">
+            <div class="clip-info-logo-placeholder"></div>
+          </div>
+          <div class="clip-info-details">
+            <div class="clip-info-athlete">Tamyra Singletary</div>
+            <div class="clip-info-apparatus">Vault</div>
+            <div class="clip-info-team">University of Bridgeport</div>
+          </div>
+        </div>
+
+        <!-- Overlay: Mode Badge -->
+        <div class="mode-badge mode-badge-clip">CLIP</div>
+
+        <!-- Overlay: Progress Bar -->
+        <div class="clip-progress-container">
+          <div class="clip-progress-bar">
+            <div class="clip-progress-fill" style="width: 65%"></div>
+          </div>
+          <div class="clip-progress-times">
+            <span class="clip-progress-elapsed">0:12</span>
+            <span class="clip-progress-remaining">-0:06</span>
+          </div>
+        </div>
+
+        <!-- Overlay: Preload Indicator -->
+        <div class="preload-indicator">
+          <span class="preload-dot preload-dot--ready"></span>
+          <span>Next ready</span>
+        </div>
       </div>
 
-      <!-- Recovery states -->
-      <div style="background: var(--bg-primary); border-radius: var(--border-radius); padding: var(--space-md); border: 1px solid var(--border-color);">
-        <div style="font-size: var(--font-size-sm); color: var(--text-muted); margin-bottom: var(--space-sm);">Recovery</div>
-        <div style="display: flex; flex-direction: column; gap: var(--space-sm);">
-          <div style="padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
-            <div style="font-size: var(--font-size-sm); color: var(--text-primary);">If <code>playing</code> fires before 8s:</div>
-            <div style="font-size: var(--font-size-sm); color: var(--text-muted);">Timer resets, no stall logged</div>
+      <!-- DOM Architecture Reference -->
+      <div class="dom-diagram">
+        <div class="dom-diagram-title">DOM Layer Stack</div>
+        <div class="dom-layer">
+          <span class="dom-layer-z">z: 2</span>
+          <span class="dom-layer-element">&lt;video&gt;</span>
+          <span class="dom-layer-class">.clip-active</span>
+          <span class="dom-layer-desc">— playing</span>
+        </div>
+        <div class="dom-layer">
+          <span class="dom-layer-z">z: 1</span>
+          <span class="dom-layer-element">&lt;div&gt;</span>
+          <span class="dom-layer-class">#output</span>
+          <span class="dom-layer-desc">— graphics renderer</span>
+        </div>
+        <div class="dom-layer">
+          <span class="dom-layer-z">z: 0</span>
+          <span class="dom-layer-element">&lt;div&gt;</span>
+          <span class="dom-layer-class">#clipBackground</span>
+          <span class="dom-layer-desc">— animated BG</span>
+        </div>
+        <div class="dom-layer">
+          <span class="dom-layer-z">z: -1</span>
+          <span class="dom-layer-element">&lt;video&gt;</span>
+          <span class="dom-layer-class">.clip-preload</span>
+          <span class="dom-layer-desc">— preloading next</span>
+        </div>
+      </div>
+
+      <!-- Mode Toggle (prototype interactivity) -->
+      <div class="mode-toggle-container">
+        <button class="mode-toggle-btn active" onclick="setClipMode(this, 'clip')">CLIP</button>
+        <button class="mode-toggle-btn" onclick="setClipMode(this, 'replay')">REPLAY</button>
+      </div>
+    </div>
+
+    <!-- LIVE MODE (mode=live) -->
+    <div class="prototype-section" id="live-mode-section">
+      <div class="prototype-section-header">
+        <span class="prototype-section-title">mode=live — Live Camera</span>
+        <span class="prototype-section-tag">OBS Pass-through</span>
+      </div>
+
+      <div class="output-frame" data-apparatus="UB" data-mode="live">
+        <!-- Layer 0: clipBackground (animated BG visible during breaks) -->
+        <div class="layer-clipBackground"></div>
+
+        <!-- Layer 1: output (graphics renderer) -->
+        <div class="layer-output">
+          <div class="live-camera-overlay">
+            <div class="live-camera-label">
+              <div class="mode-badge mode-badge-live">LIVE</div>
+              <div class="live-camera-apparatus" style="color: var(--clip-apparatus-ub)">Uneven Bars</div>
+            </div>
           </div>
-          <div style="padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
-            <div style="font-size: var(--font-size-sm); color: var(--text-primary);">If resumes between 8-13s:</div>
-            <div style="font-size: var(--font-size-sm); color: var(--text-muted);">Stall logged but playback continues</div>
+        </div>
+
+        <!-- Video layers hidden in live mode -->
+        <div class="layer-clipVideo" style="display: none;"></div>
+        <div class="layer-clipVideoNext" style="display: none;"></div>
+
+        <!-- Simulated live camera feed -->
+        <div class="video-placeholder" style="position: absolute; inset: 0; z-index: -1;">
+          <div class="video-placeholder-content">
+            <div class="video-placeholder-icon">📹</div>
+            <div class="video-placeholder-text">Live Camera Feed</div>
           </div>
-          <div style="padding: var(--space-sm); background: rgba(255,71,87,0.1); border-radius: var(--border-radius); border: 1px solid var(--color-override);">
-            <div style="font-size: var(--font-size-sm); color: var(--color-override);">If still stalled at 13s:</div>
-            <div style="font-size: var(--font-size-sm); color: var(--text-muted);">Skip clip, log error, advance queue</div>
+        </div>
+      </div>
+
+      <div class="dom-diagram">
+        <div class="dom-diagram-title">DOM Layer Stack (Live Mode)</div>
+        <div class="dom-layer">
+          <span class="dom-layer-z">z: 1</span>
+          <span class="dom-layer-element">&lt;div&gt;</span>
+          <span class="dom-layer-class">#output</span>
+          <span class="dom-layer-desc">— LIVE badge + apparatus</span>
+        </div>
+        <div class="dom-layer">
+          <span class="dom-layer-z">z: 0</span>
+          <span class="dom-layer-element">&lt;div&gt;</span>
+          <span class="dom-layer-class">#clipBackground</span>
+          <span class="dom-layer-desc">— animated BG (breaks)</span>
+        </div>
+        <div class="dom-layer">
+          <span class="dom-layer-z">—</span>
+          <span class="dom-layer-element">&lt;video&gt;</span>
+          <span class="dom-layer-class">(hidden)</span>
+          <span class="dom-layer-desc">— unloaded in live mode</span>
+        </div>
+      </div>
+
+      <div class="mode-toggle-container">
+        <button class="mode-toggle-btn active" onclick="setLiveMode(this, 'live')">LIVE</button>
+        <button class="mode-toggle-btn" onclick="setLiveMode(this, 'break')">BREAK</button>
+      </div>
+    </div>
+
+    <!-- REPLAY MODE (mode=clip with moment-replay graphic) -->
+    <div class="prototype-section">
+      <div class="prototype-section-header">
+        <span class="prototype-section-title">mode=clip — Moment Replay</span>
+        <span class="prototype-section-tag">Slow-motion + REPLAY badge</span>
+      </div>
+
+      <div class="output-frame" data-apparatus="BB" data-mode="replay">
+        <div class="layer-clipBackground"></div>
+        <div class="layer-output"></div>
+
+        <div class="layer-clipVideo">
+          <div class="video-placeholder clip-video clip-active">
+            <div class="video-placeholder-content">
+              <div class="video-placeholder-icon">⏪</div>
+              <div class="video-placeholder-text">Replay @ 0.5x</div>
+            </div>
           </div>
+        </div>
+
+        <!-- Info Bar (Replay) -->
+        <div class="clip-info-bar">
+          <div class="clip-info-logo">
+            <div class="clip-info-logo-placeholder"></div>
+          </div>
+          <div class="clip-info-details" style="border-left-color: var(--clip-apparatus-bb)">
+            <div class="clip-info-athlete">Haley Fitzgerald</div>
+            <div class="clip-info-apparatus" style="color: var(--clip-apparatus-bb)">Balance Beam</div>
+            <div class="clip-info-team">Southern Connecticut State</div>
+          </div>
+        </div>
+
+        <!-- Mode Badge (Replay) -->
+        <div class="mode-badge mode-badge-replay">REPLAY</div>
+
+        <!-- Progress Bar -->
+        <div class="clip-progress-container">
+          <div class="clip-progress-bar">
+            <div class="clip-progress-fill" style="width: 35%; background: var(--clip-mode-replay-border)"></div>
+          </div>
+          <div class="clip-progress-times">
+            <span class="clip-progress-elapsed">0:04</span>
+            <span class="clip-progress-remaining">-0:08</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="dom-diagram">
+        <div class="dom-diagram-title">Replay-Specific Behavior</div>
+        <div class="dom-layer">
+          <span class="dom-layer-desc">• Muted by default (commentator narrates)</span>
+        </div>
+        <div class="dom-layer">
+          <span class="dom-layer-desc">• playbackRate: 0.25x, 0.5x, 1x</span>
+        </div>
+        <div class="dom-layer">
+          <span class="dom-layer-desc">• REPLAY badge (cyan) instead of CLIP</span>
+        </div>
+        <div class="dom-layer">
+          <span class="dom-layer-desc">• Cut transition (no crossfade)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRELOAD STATES -->
+    <div class="prototype-section">
+      <div class="prototype-section-header">
+        <span class="prototype-section-title">Preload State Indicators</span>
+        <span class="prototype-section-tag">Next clip status</span>
+      </div>
+
+      <div style="padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <div class="preload-indicator" style="position: static;">
+            <span class="preload-dot preload-dot--none"></span>
+            <span>No next clip</span>
+          </div>
+          <span style="font-size: 11px; color: var(--text-muted);">nextClipUrl is null</span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <div class="preload-indicator" style="position: static;">
+            <span class="preload-dot preload-dot--loading"></span>
+            <span>Preloading...</span>
+          </div>
+          <span style="font-size: 11px; color: var(--text-muted);">clipVideoNext loading</span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <div class="preload-indicator" style="position: static;">
+            <span class="preload-dot preload-dot--ready"></span>
+            <span>Next ready</span>
+          </div>
+          <span style="font-size: 11px; color: var(--text-muted);">canplaythrough fired</span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <div class="preload-indicator" style="position: static;">
+            <span class="preload-dot preload-dot--failed"></span>
+            <span>Preload failed</span>
+          </div>
+          <span style="font-size: 11px; color: var(--text-muted);">Network error or timeout</span>
+        </div>
+      </div>
+
+      <div class="dom-diagram">
+        <div class="dom-diagram-title">Video Element Swap Mechanism</div>
+        <div class="dom-layer">
+          <span class="dom-layer-desc">1. clipVideoNext preloads next URL</span>
+        </div>
+        <div class="dom-layer">
+          <span class="dom-layer-desc">2. On clip end: CSS classes swap</span>
+        </div>
+        <div class="dom-layer">
+          <span class="dom-layer-desc">3. clipVideoNext → .clip-active (instant)</span>
+        </div>
+        <div class="dom-layer">
+          <span class="dom-layer-desc">4. clipVideo → .clip-preload, src cleared</span>
+        </div>
+        <div class="dom-layer">
+          <span class="dom-layer-desc">5. Old active becomes preloader</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODE BADGES REFERENCE -->
+    <div class="prototype-section">
+      <div class="prototype-section-header">
+        <span class="prototype-section-title">Mode Badges</span>
+        <span class="prototype-section-tag">Visual Indicators</span>
+      </div>
+
+      <div style="padding: 16px; display: flex; flex-wrap: wrap; gap: 12px;">
+        <div class="mode-badge mode-badge-live">LIVE</div>
+        <div class="mode-badge mode-badge-clip">CLIP</div>
+        <div class="mode-badge mode-badge-replay">REPLAY</div>
+      </div>
+
+      <div class="dom-diagram">
+        <div class="dom-diagram-title">Badge Semantics</div>
+        <div class="dom-layer">
+          <span class="dom-layer-element" style="color: var(--clip-mode-live-text)">LIVE</span>
+          <span class="dom-layer-desc">— Live camera feed (red, pulsing dot)</span>
+        </div>
+        <div class="dom-layer">
+          <span class="dom-layer-element" style="color: var(--clip-mode-clip-text)">CLIP</span>
+          <span class="dom-layer-desc">— Pre-recorded routine (green)</span>
+        </div>
+        <div class="dom-layer">
+          <span class="dom-layer-element" style="color: var(--clip-mode-replay-text)">REPLAY</span>
+          <span class="dom-layer-desc">— Moment replay, often slow-mo (cyan)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- DUAL VIDEO ARCHITECTURE -->
+    <div class="prototype-section">
+      <div class="prototype-section-header">
+        <span class="prototype-section-title">Dual Video Preloading Architecture</span>
+        <span class="prototype-section-tag">PRD §4 Decision #14</span>
+      </div>
+
+      <div class="dom-diagram" style="border-top: none;">
+        <div class="dom-diagram-title">Video Element Roles</div>
+        <pre style="margin: 0; color: var(--text-secondary); white-space: pre-wrap; font-size: 11px;">
+&lt;video id="clipVideo" class="clip-active"&gt;
+  <!-- Currently playing clip -->
+  <!-- z-index: 2, opacity: 1 -->
+&lt;/video&gt;
+
+&lt;video id="clipVideoNext" class="clip-preload"&gt;
+  <!-- Preloading next clip (nextClipUrl) -->
+  <!-- z-index: -1, display: none (idle) -->
+  <!-- z-index: 2, opacity: 0→1 (crossfade-in) -->
+&lt;/video&gt;</pre>
+      </div>
+
+      <div class="dom-diagram" style="border-top: 1px solid var(--border-color);">
+        <div class="dom-diagram-title">Crossfade Transition</div>
+        <div class="dom-layer">
+          <span class="dom-layer-desc">Duration: configurable (default 500ms)</span>
+        </div>
+        <div class="dom-layer">
+          <span class="dom-layer-desc">Outgoing: opacity 1→0, audio fade to 0</span>
+        </div>
+        <div class="dom-layer">
+          <span class="dom-layer-desc">Incoming: opacity 0→1, audio fade from 0</span>
+        </div>
+        <div class="dom-layer">
+          <span class="dom-layer-desc">Both at z-index: 2 during crossfade</span>
+        </div>
+      </div>
+
+      <div class="dom-diagram" style="border-top: 1px solid var(--border-color);">
+        <div class="dom-diagram-title">Optimistic Auto-Advance</div>
+        <div class="dom-layer">
+          <span class="dom-layer-desc">On 'ended' event: immediately swap to preloaded clip</span>
+        </div>
+        <div class="dom-layer">
+          <span class="dom-layer-desc">No Firebase round-trip wait (saves 100-500ms)</span>
+        </div>
+        <div class="dom-layer">
+          <span class="dom-layer-desc">Coordinator write is confirmation</span>
+        </div>
+        <div class="dom-layer">
+          <span class="dom-layer-desc">Correction: fade out optimistic + load correct clip</span>
         </div>
       </div>
     </div>
   </div>
-
-  <!-- Heartbeat Monitoring -->
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title">Heartbeat Monitoring</div>
-      <span class="section-badge" data-section="4">§4</span>
-    </div>
-
-    <div style="margin-top: var(--space-md); display: flex; gap: var(--space-md);">
-      <div style="flex: 1; padding: var(--space-md); background: rgba(78,205,196,0.1); border: 1px solid var(--color-talent); border-radius: var(--border-radius);">
-        <div style="font-size: var(--font-size-sm); color: var(--color-talent); font-weight: 600; margin-bottom: var(--space-xs);">Heartbeat OK</div>
-        <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">
-          <code>production/engineHeartbeat</code> updated within 30s
-        </div>
-        <div style="font-size: var(--font-size-sm); color: var(--text-muted); margin-top: var(--space-xs);">
-          → Auto-advance enabled, normal operation
-        </div>
-      </div>
-      <div style="flex: 1; padding: var(--space-md); background: rgba(255,71,87,0.1); border: 1px solid var(--color-override); border-radius: var(--border-radius);">
-        <div style="font-size: var(--font-size-sm); color: var(--color-override); font-weight: 600; margin-bottom: var(--space-xs);">Heartbeat Lost (30s+)</div>
-        <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">
-          Coordinator may be down
-        </div>
-        <div style="font-size: var(--font-size-sm); color: var(--text-muted); margin-top: var(--space-xs);">
-          → Finish current clip, suspend auto-advance, show transparent (OBS falls through to live camera)
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- CSS for animations and state toggles -->
-  <style>
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
-    @keyframes gradientShift {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
-
-    /* State toggle buttons */
-    .state-toggle {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--space-sm);
-    }
-    .state-toggle-btn {
-      font-size: var(--font-size-sm);
-      padding: var(--space-xs) var(--space-sm);
-      transition: all 0.15s ease;
-    }
-    .state-toggle-btn.active {
-      background: var(--color-output);
-      border-color: var(--color-output);
-      color: #ffffff;
-    }
-    .state-toggle-btn:hover:not(.active) {
-      border-color: var(--color-output);
-      color: var(--color-output);
-    }
-
-    /* State indicator colors */
-    #output-state-indicator.idle { background: var(--text-muted); }
-    #output-state-indicator.playing { background: var(--color-output); }
-    #output-state-indicator.crossfading { background: var(--color-output); animation: pulse 0.5s infinite; }
-    #output-state-indicator.live { background: #e74c3c; }
-    #output-state-indicator.replay { background: #ff4757; }
-    #output-state-indicator.break { background: var(--color-rundown); }
-    #output-state-indicator.stalled { background: var(--color-override); animation: pulse 0.8s infinite; }
-  </style>
-
-  <!-- JavaScript for state toggle -->
-  <script>
-    function showOutputState(state) {
-      // Update toggle buttons
-      document.querySelectorAll('.state-toggle-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.state === state);
-      });
-
-      // Update state indicator
-      const indicator = document.getElementById('output-state-indicator');
-      indicator.className = 'state-indicator ' + state;
-      indicator.textContent = state;
-
-      // Show/hide state visualizations
-      document.querySelectorAll('.output-state').forEach(el => {
-        el.style.display = 'none';
-      });
-      const activeState = document.querySelector('.state-' + state);
-      if (activeState) {
-        activeState.style.display = 'flex';
-      }
-
-      // Show/hide state details
-      document.querySelectorAll('.state-detail').forEach(el => {
-        el.style.display = 'none';
-      });
-      const activeDetail = document.querySelector('.state-detail-' + state);
-      if (activeDetail) {
-        activeDetail.style.display = 'block';
-      }
-    }
-
-    // Initialize with idle state
-    if (typeof showOutputState === 'function') {
-      showOutputState('idle');
-    }
-  </script>
-
 </div>
+
+<script>
+// Prototype interactivity — toggle between modes
+function setClipMode(btn, mode) {
+  const container = btn.closest('.prototype-section');
+  const frame = container.querySelector('.output-frame');
+  const buttons = container.querySelectorAll('.mode-toggle-btn');
+  const modeBadge = frame.querySelector('.mode-badge');
+
+  buttons.forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  if (mode === 'clip') {
+    modeBadge.className = 'mode-badge mode-badge-clip';
+    modeBadge.textContent = 'CLIP';
+    frame.querySelector('.clip-progress-fill').style.background = 'var(--clip-mode-clip-border)';
+  } else if (mode === 'replay') {
+    modeBadge.className = 'mode-badge mode-badge-replay';
+    modeBadge.textContent = 'REPLAY';
+    frame.querySelector('.clip-progress-fill').style.background = 'var(--clip-mode-replay-border)';
+  }
+}
+
+function setLiveMode(btn, mode) {
+  const container = btn.closest('.prototype-section');
+  const frame = container.querySelector('.output-frame');
+  const buttons = container.querySelectorAll('.mode-toggle-btn');
+  const output = frame.querySelector('.layer-output');
+
+  buttons.forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  if (mode === 'live') {
+    output.innerHTML = `
+      <div class="live-camera-overlay">
+        <div class="live-camera-label">
+          <div class="mode-badge mode-badge-live">LIVE</div>
+          <div class="live-camera-apparatus" style="color: var(--clip-apparatus-ub)">Uneven Bars</div>
+        </div>
+      </div>
+    `;
+  } else if (mode === 'break') {
+    output.innerHTML = `
+      <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;">
+        <div style="text-align: center; color: var(--text-muted);">
+          <div style="font-size: 14px; font-weight: 500; margin-bottom: 8px;">BREAK</div>
+          <div style="font-size: 11px;">Animated background active</div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+// Simulate progress bar animation
+let progressInterval;
+function startProgressAnimation() {
+  const progressFills = document.querySelectorAll('.clip-progress-fill');
+  let progress = 65;
+
+  progressInterval = setInterval(() => {
+    progress += 0.5;
+    if (progress > 100) progress = 0;
+
+    progressFills.forEach(fill => {
+      fill.style.width = progress + '%';
+    });
+  }, 100);
+}
+
+// Start animation on load
+document.addEventListener('DOMContentLoaded', () => {
+  // Optionally start progress animation
+  // startProgressAnimation();
+});
+</script>
