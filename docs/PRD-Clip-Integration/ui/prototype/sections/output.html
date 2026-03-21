@@ -1,0 +1,486 @@
+<div class="section-content section-output">
+
+  <!-- Section Header -->
+  <div class="card" style="border-left: 3px solid var(--color-output);">
+    <div class="card-header">
+      <div class="card-title" style="color: var(--color-output);">Screen 4: output.html — Viewer Overlay</div>
+      <span class="role-badge output">Output</span>
+    </div>
+    <p style="color: var(--text-secondary); margin: var(--space-sm) 0 0 0;">
+      OBS browser source for clip playback, score reveals, and live overlays.
+      Uses dual video elements for seamless A/B preloading and crossfade transitions.
+    </p>
+  </div>
+
+  <!-- Mode Parameter Section -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Mode Parameter Architecture</div>
+      <span class="section-badge" data-section="4">§4</span>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-md); margin-top: var(--space-md);">
+      <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-md); border: 1px solid var(--color-output);">
+        <div style="font-weight: 600; color: var(--color-output); margin-bottom: var(--space-sm);">?mode=clip</div>
+        <ul style="margin: 0; padding-left: var(--space-md); color: var(--text-secondary); font-size: var(--font-size-sm);">
+          <li>Video playback + overlay</li>
+          <li>Score reveal timing</li>
+          <li>REPLAY badge</li>
+          <li>Dual &lt;video&gt; elements</li>
+          <li>Writes clipStatus to Firebase</li>
+        </ul>
+      </div>
+      <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-md); border: 1px solid var(--text-muted);">
+        <div style="font-weight: 600; color: var(--text-primary); margin-bottom: var(--space-sm);">?mode=live</div>
+        <ul style="margin: 0; padding-left: var(--space-md); color: var(--text-secondary); font-size: var(--font-size-sm);">
+          <li>LIVE badge overlay</li>
+          <li>Score graphics</li>
+          <li>Animated backgrounds</li>
+          <li>Fallback overlays</li>
+          <li>No video elements</li>
+        </ul>
+      </div>
+      <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-md); border: 1px dashed var(--text-muted);">
+        <div style="font-weight: 600; color: var(--text-secondary); margin-bottom: var(--space-sm);">?mode=preview</div>
+        <ul style="margin: 0; padding-left: var(--space-md); color: var(--text-secondary); font-size: var(--font-size-sm);">
+          <li>Same as mode=clip</li>
+          <li>No Firebase writes</li>
+          <li>Producer testing only</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dual Video Architecture Diagram -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Dual Video Element Architecture</div>
+      <span class="section-badge" data-section="4">§4</span>
+    </div>
+
+    <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-lg); margin-top: var(--space-md);">
+
+      <!-- DOM Structure -->
+      <div style="font-size: var(--font-size-sm); color: var(--text-muted); margin-bottom: var(--space-sm); font-family: var(--font-mono);">DOM Structure (z-index order)</div>
+
+      <div style="display: flex; flex-direction: column; gap: var(--space-sm);">
+        <!-- Video B (Preload) -->
+        <div style="background: linear-gradient(90deg, rgba(255,140,66,0.1), rgba(255,140,66,0.05)); border: 2px dashed var(--color-output); border-radius: var(--border-radius); padding: var(--space-md); position: relative;">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div>
+              <code style="color: var(--color-output); font-family: var(--font-mono);">&lt;video id="clipVideoNext"&gt;</code>
+              <span class="state-indicator loading" style="margin-left: var(--space-sm);">preloading</span>
+            </div>
+            <div style="font-size: var(--font-size-sm); color: var(--text-muted);">z-index: -1 (idle) → 2 (crossfade)</div>
+          </div>
+          <div style="margin-top: var(--space-sm); font-size: var(--font-size-sm); color: var(--text-secondary);">
+            <span style="color: var(--text-muted);">src:</span> nextClipUrl (preloading in background)
+          </div>
+          <div style="position: absolute; right: var(--space-md); top: 50%; transform: translateY(-50%); background: var(--bg-tertiary); padding: var(--space-xs) var(--space-sm); border-radius: var(--border-radius); font-size: var(--font-size-sm);">
+            <span style="color: var(--text-muted);">class:</span> <code style="color: var(--color-output);">.clip-preload</code>
+          </div>
+        </div>
+
+        <!-- Video A (Active) -->
+        <div style="background: linear-gradient(90deg, rgba(255,140,66,0.3), rgba(255,140,66,0.15)); border: 2px solid var(--color-output); border-radius: var(--border-radius); padding: var(--space-md); position: relative;">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div>
+              <code style="color: var(--color-output); font-family: var(--font-mono);">&lt;video id="clipVideo"&gt;</code>
+              <span class="state-indicator playing" style="margin-left: var(--space-sm);">active</span>
+            </div>
+            <div style="font-size: var(--font-size-sm); color: var(--text-muted);">z-index: 2</div>
+          </div>
+          <div style="margin-top: var(--space-sm); font-size: var(--font-size-sm); color: var(--text-secondary);">
+            <span style="color: var(--text-muted);">src:</span> https://...clips/...output.mp4
+          </div>
+          <div style="position: absolute; right: var(--space-md); top: 50%; transform: translateY(-50%); background: var(--bg-tertiary); padding: var(--space-xs) var(--space-sm); border-radius: var(--border-radius); font-size: var(--font-size-sm);">
+            <span style="color: var(--text-muted);">class:</span> <code style="color: var(--color-output);">.clip-active</code>
+          </div>
+        </div>
+
+        <!-- Output div -->
+        <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-md);">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div>
+              <code style="color: var(--text-primary); font-family: var(--font-mono);">&lt;div id="output"&gt;</code>
+              <span style="color: var(--text-secondary); margin-left: var(--space-sm); font-size: var(--font-size-sm);">graphics from renderers</span>
+            </div>
+            <div style="font-size: var(--font-size-sm); color: var(--text-muted);">z-index: 1</div>
+          </div>
+        </div>
+
+        <!-- Background div -->
+        <div style="background: linear-gradient(90deg, var(--bg-tertiary), var(--bg-secondary)); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-md);">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div>
+              <code style="color: var(--text-primary); font-family: var(--font-mono);">&lt;div id="clipBackground"&gt;</code>
+              <span style="color: var(--text-secondary); margin-left: var(--space-sm); font-size: var(--font-size-sm);">animated BG (mode=live)</span>
+            </div>
+            <div style="font-size: var(--font-size-sm); color: var(--text-muted);">z-index: 0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- A/B Preload Pattern Visualization -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">A/B Preload Pattern — Clip-to-Clip Transition</div>
+      <span class="section-badge" data-section="4">§4</span>
+    </div>
+
+    <div style="margin-top: var(--space-md);">
+      <!-- Timeline visualization -->
+      <div style="display: flex; gap: var(--space-xs); margin-bottom: var(--space-md);">
+        <div style="flex: 3; text-align: center; font-size: var(--font-size-sm); color: var(--text-muted);">Clip A Playing</div>
+        <div style="flex: 1; text-align: center; font-size: var(--font-size-sm); color: var(--color-output);">Crossfade</div>
+        <div style="flex: 3; text-align: center; font-size: var(--font-size-sm); color: var(--text-muted);">Clip B Playing</div>
+      </div>
+
+      <!-- Video A timeline -->
+      <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-sm);">
+        <div style="width: 80px; font-size: var(--font-size-sm); color: var(--text-secondary);">Video A</div>
+        <div style="flex: 1; display: flex; height: 32px;">
+          <div style="flex: 3; background: linear-gradient(90deg, var(--color-output), rgba(255,140,66,0.7)); border-radius: var(--border-radius) 0 0 var(--border-radius); display: flex; align-items: center; justify-content: center;">
+            <span style="font-size: var(--font-size-sm); color: white; font-weight: 600;">ACTIVE</span>
+          </div>
+          <div style="flex: 1; background: linear-gradient(90deg, rgba(255,140,66,0.7), rgba(255,140,66,0.1)); display: flex; align-items: center; justify-content: center;">
+            <span style="font-size: var(--font-size-sm); color: var(--text-secondary);">fade out</span>
+          </div>
+          <div style="flex: 3; background: var(--bg-tertiary); border-radius: 0 var(--border-radius) var(--border-radius) 0; display: flex; align-items: center; justify-content: center;">
+            <span style="font-size: var(--font-size-sm); color: var(--text-muted);">preloading next...</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Video B timeline -->
+      <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-md);">
+        <div style="width: 80px; font-size: var(--font-size-sm); color: var(--text-secondary);">Video B</div>
+        <div style="flex: 1; display: flex; height: 32px;">
+          <div style="flex: 3; background: var(--bg-tertiary); border-radius: var(--border-radius) 0 0 var(--border-radius); display: flex; align-items: center; justify-content: center;">
+            <span style="font-size: var(--font-size-sm); color: var(--text-muted);">preloading...</span>
+          </div>
+          <div style="flex: 1; background: linear-gradient(90deg, rgba(255,140,66,0.1), rgba(255,140,66,0.7)); display: flex; align-items: center; justify-content: center;">
+            <span style="font-size: var(--font-size-sm); color: var(--text-secondary);">fade in</span>
+          </div>
+          <div style="flex: 3; background: linear-gradient(90deg, rgba(255,140,66,0.7), var(--color-output)); border-radius: 0 var(--border-radius) var(--border-radius) 0; display: flex; align-items: center; justify-content: center;">
+            <span style="font-size: var(--font-size-sm); color: white; font-weight: 600;">ACTIVE</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Class swap note -->
+      <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-md); font-size: var(--font-size-sm);">
+        <div style="color: var(--color-output); font-weight: 600; margin-bottom: var(--space-xs);">CSS Class Swap (not DOM reorder)</div>
+        <div style="color: var(--text-secondary);">
+          On transition: <code>.clip-active</code> ↔ <code>.clip-preload</code> classes swap between elements.
+          Outgoing element's src is cleared (<code>src = ''; load()</code>) to release media resources.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Audio Crossfade Visualization -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Audio Crossfade During Clip-to-Clip Transition</div>
+      <span class="section-badge" data-section="4.12">§4.12</span>
+    </div>
+
+    <div style="margin-top: var(--space-md); padding: var(--space-md); background: var(--bg-primary); border-radius: var(--border-radius); border: 1px solid var(--border-color);">
+
+      <!-- Volume level visualization -->
+      <div style="display: flex; gap: var(--space-lg);">
+        <!-- Clip A audio -->
+        <div style="flex: 1;">
+          <div style="font-size: var(--font-size-sm); color: var(--text-secondary); margin-bottom: var(--space-sm);">Clip A Audio</div>
+          <div style="height: 60px; display: flex; align-items: flex-end; gap: 2px;">
+            <div style="flex: 1; height: 100%; background: var(--color-output); border-radius: 2px 2px 0 0;"></div>
+            <div style="flex: 1; height: 100%; background: var(--color-output); border-radius: 2px 2px 0 0;"></div>
+            <div style="flex: 1; height: 100%; background: var(--color-output); border-radius: 2px 2px 0 0;"></div>
+            <div style="flex: 1; height: 85%; background: rgba(255,140,66,0.8); border-radius: 2px 2px 0 0;"></div>
+            <div style="flex: 1; height: 70%; background: rgba(255,140,66,0.6); border-radius: 2px 2px 0 0;"></div>
+            <div style="flex: 1; height: 50%; background: rgba(255,140,66,0.4); border-radius: 2px 2px 0 0;"></div>
+            <div style="flex: 1; height: 30%; background: rgba(255,140,66,0.3); border-radius: 2px 2px 0 0;"></div>
+            <div style="flex: 1; height: 15%; background: rgba(255,140,66,0.2); border-radius: 2px 2px 0 0;"></div>
+            <div style="flex: 1; height: 5%; background: rgba(255,140,66,0.1); border-radius: 2px 2px 0 0;"></div>
+          </div>
+          <div style="font-size: var(--font-size-sm); color: var(--text-muted); margin-top: var(--space-xs); text-align: right;">volume → 0</div>
+        </div>
+
+        <!-- Crossfade indicator -->
+        <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 0 var(--space-md);">
+          <div style="font-size: var(--font-size-sm); color: var(--color-output); font-weight: 600;">CROSSFADE</div>
+          <div style="font-size: var(--font-size-sm); color: var(--text-muted);">100-2000ms</div>
+        </div>
+
+        <!-- Clip B audio -->
+        <div style="flex: 1;">
+          <div style="font-size: var(--font-size-sm); color: var(--text-secondary); margin-bottom: var(--space-sm);">Clip B Audio</div>
+          <div style="height: 60px; display: flex; align-items: flex-end; gap: 2px;">
+            <div style="flex: 1; height: 5%; background: rgba(78,205,196,0.1); border-radius: 2px 2px 0 0;"></div>
+            <div style="flex: 1; height: 15%; background: rgba(78,205,196,0.2); border-radius: 2px 2px 0 0;"></div>
+            <div style="flex: 1; height: 30%; background: rgba(78,205,196,0.3); border-radius: 2px 2px 0 0;"></div>
+            <div style="flex: 1; height: 50%; background: rgba(78,205,196,0.4); border-radius: 2px 2px 0 0;"></div>
+            <div style="flex: 1; height: 70%; background: rgba(78,205,196,0.6); border-radius: 2px 2px 0 0;"></div>
+            <div style="flex: 1; height: 85%; background: rgba(78,205,196,0.8); border-radius: 2px 2px 0 0;"></div>
+            <div style="flex: 1; height: 100%; background: var(--color-talent); border-radius: 2px 2px 0 0;"></div>
+            <div style="flex: 1; height: 100%; background: var(--color-talent); border-radius: 2px 2px 0 0;"></div>
+            <div style="flex: 1; height: 100%; background: var(--color-talent); border-radius: 2px 2px 0 0;"></div>
+          </div>
+          <div style="font-size: var(--font-size-sm); color: var(--text-muted); margin-top: var(--space-xs);">0 → volume</div>
+        </div>
+      </div>
+
+      <div style="margin-top: var(--space-md); padding: var(--space-sm); background: var(--bg-secondary); border-radius: var(--border-radius); font-size: var(--font-size-sm); color: var(--text-secondary);">
+        Both clips play during crossfade, but <strong>never at full volume simultaneously</strong>. Outgoing fades to 0, incoming fades from 0.
+      </div>
+    </div>
+  </div>
+
+  <!-- Clip Playback Overlay Mockup -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Clip Playback Overlay</div>
+      <span class="section-badge" data-section="4.9">§4.9</span>
+    </div>
+
+    <!-- Video frame mockup -->
+    <div style="margin-top: var(--space-md); background: #000; border-radius: var(--border-radius); aspect-ratio: 16/9; position: relative; overflow: hidden;">
+
+      <!-- Simulated video content -->
+      <div style="position: absolute; inset: 0; background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%); display: flex; align-items: center; justify-content: center;">
+        <div style="color: var(--text-muted); font-size: var(--font-size-xl);">VIDEO CONTENT</div>
+      </div>
+
+      <!-- Athlete info overlay (top-left) -->
+      <div style="position: absolute; top: var(--space-lg); left: var(--space-lg); background: var(--meet-header-bg, rgba(0,0,0,0.85)); border-radius: var(--border-radius); padding: var(--space-md) var(--space-lg); display: flex; align-items: center; gap: var(--space-md); backdrop-filter: blur(8px);">
+        <!-- Team logo placeholder -->
+        <div style="width: 48px; height: 48px; background: var(--bg-tertiary); border-radius: var(--border-radius); display: flex; align-items: center; justify-content: center; font-size: var(--font-size-sm); color: var(--text-muted);">LOGO</div>
+        <div>
+          <div style="color: var(--meet-header-text, #ffffff); font-size: var(--font-size-lg); font-weight: 600;">Tamyra Singletary</div>
+          <div style="color: var(--text-secondary); font-size: var(--font-size-base);">Vault</div>
+          <div style="color: var(--text-muted); font-size: var(--font-size-sm);">University of Bridgeport</div>
+        </div>
+      </div>
+
+      <!-- Score badge (appears during score reveal) -->
+      <div style="position: absolute; top: var(--space-lg); right: var(--space-lg); background: var(--meet-badge-bg, #3b82f6); border-radius: var(--border-radius); padding: var(--space-md) var(--space-lg);">
+        <div style="color: var(--meet-badge-text, #ffffff); font-size: var(--font-size-2xl); font-weight: 700; font-family: var(--font-mono);">9.725</div>
+      </div>
+
+      <!-- Progress bar at bottom -->
+      <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 4px; background: rgba(255,255,255,0.2);">
+        <div style="width: 65%; height: 100%; background: var(--color-output);"></div>
+      </div>
+    </div>
+
+    <!-- Score reveal timing -->
+    <div style="margin-top: var(--space-md); padding: var(--space-md); background: var(--bg-tertiary); border-radius: var(--border-radius);">
+      <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">
+        <strong>Score reveal timing:</strong> <code>Math.max(actualDuration - 5, actualDuration * 0.6)</code>
+      </div>
+      <div style="font-size: var(--font-size-sm); color: var(--text-muted); margin-top: var(--space-xs);">
+        For 18.3s vault clip → score appears at 13.3s (5s before end)
+      </div>
+    </div>
+  </div>
+
+  <!-- Moment Replay Overlay Mockup -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Moment Replay Overlay</div>
+      <span class="section-badge" data-section="4.9">§4.9</span>
+    </div>
+
+    <!-- Video frame mockup -->
+    <div style="margin-top: var(--space-md); background: #000; border-radius: var(--border-radius); aspect-ratio: 16/9; position: relative; overflow: hidden;">
+
+      <!-- Simulated video content -->
+      <div style="position: absolute; inset: 0; background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%); display: flex; align-items: center; justify-content: center;">
+        <div style="color: var(--text-muted); font-size: var(--font-size-xl);">SLOW-MO VIDEO</div>
+      </div>
+
+      <!-- Athlete info overlay (top-left) -->
+      <div style="position: absolute; top: var(--space-lg); left: var(--space-lg); background: var(--meet-header-bg, rgba(0,0,0,0.85)); border-radius: var(--border-radius); padding: var(--space-md) var(--space-lg); display: flex; align-items: center; gap: var(--space-md); backdrop-filter: blur(8px);">
+        <div style="width: 48px; height: 48px; background: var(--bg-tertiary); border-radius: var(--border-radius); display: flex; align-items: center; justify-content: center; font-size: var(--font-size-sm); color: var(--text-muted);">LOGO</div>
+        <div>
+          <div style="color: var(--meet-header-text, #ffffff); font-size: var(--font-size-lg); font-weight: 600;">Haley Fitzgerald</div>
+          <div style="color: var(--text-secondary); font-size: var(--font-size-base);">Vault</div>
+          <div style="color: var(--text-muted); font-size: var(--font-size-sm);">Southern Connecticut State</div>
+        </div>
+      </div>
+
+      <!-- REPLAY badge (top-right) -->
+      <div style="position: absolute; top: var(--space-lg); right: var(--space-lg); background: rgba(255,71,87,0.9); border-radius: var(--border-radius); padding: var(--space-sm) var(--space-md);">
+        <div style="color: #ffffff; font-size: var(--font-size-base); font-weight: 700; letter-spacing: 1px;">REPLAY</div>
+      </div>
+
+      <!-- Muted indicator -->
+      <div style="position: absolute; bottom: var(--space-lg); right: var(--space-lg); background: rgba(0,0,0,0.7); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm); font-size: var(--font-size-sm); color: var(--text-muted);">
+        🔇 Muted (default)
+      </div>
+    </div>
+
+    <div style="margin-top: var(--space-md); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius); font-size: var(--font-size-sm); color: var(--text-secondary);">
+      Moment replays are <strong>muted by default</strong> — commentators narrate replays. No score badge shown (viewer already saw it during full routine).
+    </div>
+  </div>
+
+  <!-- Live Camera Overlay Mockup -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Live Camera Overlay (mode=live)</div>
+      <span class="section-badge" data-section="4.10">§4.10</span>
+    </div>
+
+    <!-- Video frame mockup -->
+    <div style="margin-top: var(--space-md); background: #000; border-radius: var(--border-radius); aspect-ratio: 16/9; position: relative; overflow: hidden;">
+
+      <!-- Simulated camera feed -->
+      <div style="position: absolute; inset: 0; background: linear-gradient(135deg, #2d3436 0%, #636e72 100%); display: flex; align-items: center; justify-content: center;">
+        <div style="color: var(--text-muted); font-size: var(--font-size-xl);">LIVE CAMERA FEED (from OBS)</div>
+      </div>
+
+      <!-- LIVE badge (top-left) -->
+      <div style="position: absolute; top: var(--space-lg); left: var(--space-lg); background: #e74c3c; border-radius: var(--border-radius); padding: var(--space-sm) var(--space-md); display: flex; align-items: center; gap: var(--space-sm);">
+        <div style="width: 8px; height: 8px; background: #fff; border-radius: 50%; animation: pulse 1.5s infinite;"></div>
+        <div style="color: #ffffff; font-size: var(--font-size-base); font-weight: 700;">LIVE</div>
+      </div>
+
+      <!-- Apparatus label -->
+      <div style="position: absolute; top: calc(var(--space-lg) + 40px); left: var(--space-lg); background: rgba(0,0,0,0.7); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm);">
+        <div style="color: var(--text-secondary); font-size: var(--font-size-sm);">Balance Beam</div>
+      </div>
+    </div>
+
+    <div style="margin-top: var(--space-md); font-size: var(--font-size-sm); color: var(--text-secondary);">
+      Firebase data: <code>{ graphic: 'live-camera', data: { apparatus: 'BB' } }</code>
+    </div>
+  </div>
+
+  <!-- Animated Background (Break Content) -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Animated Background (Break Content)</div>
+      <span class="section-badge" data-section="4.11">§4.11</span>
+    </div>
+
+    <!-- Video frame mockup -->
+    <div style="margin-top: var(--space-md); background: #000; border-radius: var(--border-radius); aspect-ratio: 16/9; position: relative; overflow: hidden;">
+
+      <!-- Animated gradient background -->
+      <div style="position: absolute; inset: 0; background: linear-gradient(135deg, var(--bg-primary, #1a1a2e), var(--bg-secondary, #16213e), var(--bg-primary, #1a1a2e)); background-size: 200% 200%; animation: gradientShift 8s ease infinite;"></div>
+
+      <!-- Content overlay -->
+      <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;">
+        <div style="background: rgba(0,0,0,0.6); border-radius: var(--border-radius); padding: var(--space-xl); text-align: center; backdrop-filter: blur(4px);">
+          <div style="color: var(--text-primary); font-size: var(--font-size-xl); font-weight: 600;">GRAPHIC CONTENT</div>
+          <div style="color: var(--text-secondary); font-size: var(--font-size-base); margin-top: var(--space-sm);">(event summary, sponsor, etc.)</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: var(--space-md); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius); font-size: var(--font-size-sm); color: var(--text-secondary);">
+      Triggered by <code>background: true</code> in currentGraphic data. Covers camera feed during breaks.
+      Fade-in/out: 300ms ease.
+    </div>
+  </div>
+
+  <!-- Stall Detection -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Stall Detection &amp; Recovery</div>
+      <span class="section-badge" data-section="4">§4</span>
+    </div>
+
+    <div style="margin-top: var(--space-md); display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md);">
+      <!-- Timeline -->
+      <div style="background: var(--bg-primary); border-radius: var(--border-radius); padding: var(--space-md); border: 1px solid var(--border-color);">
+        <div style="font-size: var(--font-size-sm); color: var(--text-muted); margin-bottom: var(--space-sm);">Stall Timeline</div>
+        <div style="display: flex; flex-direction: column; gap: var(--space-sm);">
+          <div style="display: flex; align-items: center; gap: var(--space-sm);">
+            <div style="width: 60px; font-size: var(--font-size-sm); color: var(--text-muted);">0s</div>
+            <div style="flex: 1; padding: var(--space-xs); background: var(--bg-tertiary); border-radius: var(--border-radius); font-size: var(--font-size-sm);">
+              <code>waiting</code> event fires
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: var(--space-sm);">
+            <div style="width: 60px; font-size: var(--font-size-sm); color: var(--color-override);">8s</div>
+            <div style="flex: 1; padding: var(--space-xs); background: rgba(255,71,87,0.2); border-radius: var(--border-radius); font-size: var(--font-size-sm); color: var(--color-override);">
+              Write <code>{ status: 'stalled' }</code> to Firebase
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: var(--space-sm);">
+            <div style="width: 60px; font-size: var(--font-size-sm); color: var(--color-override);">13s</div>
+            <div style="flex: 1; padding: var(--space-xs); background: rgba(255,71,87,0.3); border-radius: var(--border-radius); font-size: var(--font-size-sm); color: var(--color-override);">
+              Skip to next clip + write <code>{ status: 'error', errorCode: 'STALL_TIMEOUT' }</code>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recovery states -->
+      <div style="background: var(--bg-primary); border-radius: var(--border-radius); padding: var(--space-md); border: 1px solid var(--border-color);">
+        <div style="font-size: var(--font-size-sm); color: var(--text-muted); margin-bottom: var(--space-sm);">Recovery</div>
+        <div style="display: flex; flex-direction: column; gap: var(--space-sm);">
+          <div style="padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
+            <div style="font-size: var(--font-size-sm); color: var(--text-primary);">If <code>playing</code> fires before 8s:</div>
+            <div style="font-size: var(--font-size-sm); color: var(--text-muted);">Timer resets, no stall logged</div>
+          </div>
+          <div style="padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
+            <div style="font-size: var(--font-size-sm); color: var(--text-primary);">If resumes between 8-13s:</div>
+            <div style="font-size: var(--font-size-sm); color: var(--text-muted);">Stall logged but playback continues</div>
+          </div>
+          <div style="padding: var(--space-sm); background: rgba(255,71,87,0.1); border-radius: var(--border-radius); border: 1px solid var(--color-override);">
+            <div style="font-size: var(--font-size-sm); color: var(--color-override);">If still stalled at 13s:</div>
+            <div style="font-size: var(--font-size-sm); color: var(--text-muted);">Skip clip, log error, advance queue</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Heartbeat Monitoring -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Heartbeat Monitoring</div>
+      <span class="section-badge" data-section="4">§4</span>
+    </div>
+
+    <div style="margin-top: var(--space-md); display: flex; gap: var(--space-md);">
+      <div style="flex: 1; padding: var(--space-md); background: rgba(78,205,196,0.1); border: 1px solid var(--color-talent); border-radius: var(--border-radius);">
+        <div style="font-size: var(--font-size-sm); color: var(--color-talent); font-weight: 600; margin-bottom: var(--space-xs);">Heartbeat OK</div>
+        <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">
+          <code>production/engineHeartbeat</code> updated within 30s
+        </div>
+        <div style="font-size: var(--font-size-sm); color: var(--text-muted); margin-top: var(--space-xs);">
+          → Auto-advance enabled, normal operation
+        </div>
+      </div>
+      <div style="flex: 1; padding: var(--space-md); background: rgba(255,71,87,0.1); border: 1px solid var(--color-override); border-radius: var(--border-radius);">
+        <div style="font-size: var(--font-size-sm); color: var(--color-override); font-weight: 600; margin-bottom: var(--space-xs);">Heartbeat Lost (30s+)</div>
+        <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">
+          Coordinator may be down
+        </div>
+        <div style="font-size: var(--font-size-sm); color: var(--text-muted); margin-top: var(--space-xs);">
+          → Finish current clip, suspend auto-advance, show transparent (OBS falls through to live camera)
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CSS for animations -->
+  <style>
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+  </style>
+
+</div>
