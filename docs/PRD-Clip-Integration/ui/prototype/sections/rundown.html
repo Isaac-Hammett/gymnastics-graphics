@@ -10,6 +10,67 @@
     </p>
   </div>
 
+  <!-- State Toggle Bar -->
+  <div class="state-toggle" style="display: flex; gap: var(--space-sm); margin-top: var(--space-md); margin-bottom: var(--space-md); padding: var(--space-sm); background: var(--bg-secondary); border-radius: var(--border-radius); border: 1px solid var(--border-color);">
+    <span style="color: var(--text-secondary); font-size: var(--font-size-sm); padding: var(--space-sm); display: flex; align-items: center;">Show:</span>
+    <button class="btn btn-primary state-toggle-btn active" data-state="premeet" onclick="setRundownState('premeet')" style="font-size: var(--font-size-sm);">
+      Pre-Meet Setup
+    </button>
+    <button class="btn btn-secondary state-toggle-btn" data-state="live" onclick="setRundownState('live')" style="font-size: var(--font-size-sm);">
+      Live Monitoring
+    </button>
+    <button class="btn btn-secondary state-toggle-btn" data-state="editing" onclick="setRundownState('editing')" style="font-size: var(--font-size-sm);">
+      Editing Sequence
+    </button>
+  </div>
+
+  <!-- State Toggle Script -->
+  <script>
+    function setRundownState(state) {
+      // Update button styles
+      document.querySelectorAll('.state-toggle-btn').forEach(btn => {
+        btn.classList.remove('active', 'btn-primary');
+        btn.classList.add('btn-secondary');
+      });
+      const activeBtn = document.querySelector('[data-state="' + state + '"]');
+      if (activeBtn) {
+        activeBtn.classList.remove('btn-secondary');
+        activeBtn.classList.add('active', 'btn-primary');
+      }
+      // Show/hide state-specific elements
+      document.querySelectorAll('.state-premeet, .state-live, .state-editing').forEach(el => {
+        el.style.display = 'none';
+      });
+      document.querySelectorAll('.state-' + state).forEach(el => {
+        el.style.display = '';
+      });
+      // Toggle readonly/disabled states
+      const isLive = state === 'live';
+      document.querySelectorAll('.rundown-input').forEach(input => {
+        input.disabled = isLive;
+        input.style.opacity = isLive ? '0.6' : '1';
+        input.style.cursor = isLive ? 'not-allowed' : '';
+      });
+      document.querySelectorAll('.rundown-select').forEach(select => {
+        select.disabled = isLive;
+        select.style.opacity = isLive ? '0.6' : '1';
+        select.style.cursor = isLive ? 'not-allowed' : '';
+      });
+      // Highlight drag handles in editing mode
+      const isEditing = state === 'editing';
+      document.querySelectorAll('.drag-handle').forEach(handle => {
+        handle.style.color = isEditing ? 'var(--color-rundown)' : 'var(--text-muted)';
+        handle.style.transform = isEditing ? 'scale(1.2)' : '';
+      });
+      document.querySelectorAll('.sequence-item').forEach(item => {
+        item.style.border = isEditing ? '2px dashed var(--color-rundown)' : '';
+        item.style.cursor = isEditing ? 'grab' : '';
+      });
+    }
+    // Initialize to premeet state
+    setTimeout(() => setRundownState('premeet'), 0);
+  </script>
+
   <!-- Two-column layout: Playout Segment | Content Sequence Segment -->
   <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); margin-top: var(--space-lg);">
 
@@ -24,11 +85,11 @@
       <div style="padding: var(--space-md); border-bottom: 1px solid var(--border-color);">
         <div style="display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-sm);">
           <label style="color: var(--text-secondary); min-width: 80px;">Segment:</label>
-          <input type="text" value="Rotation 1" readonly style="flex: 1; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-sm) var(--space-md); color: var(--text-primary);">
+          <input type="text" value="Rotation 1" class="rundown-input" style="flex: 1; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-sm) var(--space-md); color: var(--text-primary);">
         </div>
         <div style="display: flex; align-items: center; gap: var(--space-md);">
           <label style="color: var(--text-secondary); min-width: 80px;">Type:</label>
-          <select style="flex: 1; background: var(--bg-tertiary); border: 1px solid var(--color-rundown); border-radius: var(--border-radius); padding: var(--space-sm) var(--space-md); color: cyan;">
+          <select class="rundown-select" style="flex: 1; background: var(--bg-tertiary); border: 1px solid var(--color-rundown); border-radius: var(--border-radius); padding: var(--space-sm) var(--space-md); color: cyan;">
             <option selected>Playout</option>
             <option>Content Sequence</option>
             <option>Standard</option>
@@ -45,7 +106,7 @@
         <!-- Clip Order -->
         <div style="display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-sm);">
           <label style="color: var(--text-secondary); min-width: 140px;">Clip Order:</label>
-          <select style="flex: 1; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-sm) var(--space-md); color: var(--text-primary);">
+          <select class="rundown-select" style="flex: 1; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-sm) var(--space-md); color: var(--text-primary);">
             <option selected>Chronological</option>
             <option>By Score (Highest First)</option>
             <option>By Team (Alternating)</option>
@@ -56,7 +117,7 @@
         <!-- Apparatus Priority -->
         <div style="display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-sm);">
           <label style="color: var(--text-secondary); min-width: 140px;">Apparatus Priority:</label>
-          <select style="flex: 1; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-sm) var(--space-md); color: var(--text-primary);">
+          <select class="rundown-select" style="flex: 1; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-sm) var(--space-md); color: var(--text-primary);">
             <option selected>No Priority</option>
             <option>BB (Balance Beam)</option>
             <option>UB (Uneven Bars)</option>
@@ -68,7 +129,7 @@
         <!-- Clip Transition -->
         <div style="display: flex; align-items: center; gap: var(--space-md);">
           <label style="color: var(--text-secondary); min-width: 140px;">Clip Transition:</label>
-          <select style="flex: 1; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-sm) var(--space-md); color: var(--text-primary);">
+          <select class="rundown-select" style="flex: 1; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-sm) var(--space-md); color: var(--text-primary);">
             <option selected>Cut</option>
             <option>Crossfade</option>
             <option disabled style="color: var(--text-muted);">Stinger (Coming soon)</option>
@@ -89,78 +150,101 @@
         <div style="display: flex; flex-direction: column; gap: var(--space-sm);">
 
           <!-- Item 1 -->
-          <div style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
+          <div class="sequence-item" style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
             <span style="color: var(--text-muted); width: 20px;">1.</span>
-            <select style="flex: 2; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm); color: var(--text-primary); font-size: var(--font-size-sm);">
+            <select class="rundown-select" style="flex: 2; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm); color: var(--text-primary); font-size: var(--font-size-sm);">
               <option selected>Quad View</option>
               <option>Standings</option>
               <option>Sponsor</option>
               <option>Event Summary</option>
               <option>Calendar</option>
             </select>
-            <input type="number" value="20" style="width: 50px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs); color: var(--text-primary); text-align: center; font-size: var(--font-size-sm);">
+            <input type="number" value="20" class="rundown-input" style="width: 50px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs); color: var(--text-primary); text-align: center; font-size: var(--font-size-sm);">
             <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">sec</span>
             <label style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: var(--font-size-sm);">
-              <input type="checkbox"> BG
+              <input type="checkbox" class="rundown-input"> BG
             </label>
-            <button class="btn-icon" title="Remove" style="color: var(--color-override);">✕</button>
-            <button class="btn-icon" title="Drag to reorder" style="color: var(--text-muted); cursor: grab;">↕</button>
+            <button class="btn-icon state-premeet state-editing" title="Remove" style="color: var(--color-override);">✕</button>
+            <button class="btn-icon drag-handle" title="Drag to reorder" style="color: var(--text-muted); cursor: grab;">↕</button>
           </div>
 
           <!-- Item 2 -->
-          <div style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
+          <div class="sequence-item" style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
             <span style="color: var(--text-muted); width: 20px;">2.</span>
-            <select style="flex: 2; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm); color: var(--text-primary); font-size: var(--font-size-sm);">
+            <select class="rundown-select" style="flex: 2; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm); color: var(--text-primary); font-size: var(--font-size-sm);">
               <option>Quad View</option>
               <option selected>Standings</option>
               <option>Sponsor</option>
               <option>Event Summary</option>
               <option>Calendar</option>
             </select>
-            <input type="number" value="15" style="width: 50px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs); color: var(--text-primary); text-align: center; font-size: var(--font-size-sm);">
+            <input type="number" value="15" class="rundown-input" style="width: 50px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs); color: var(--text-primary); text-align: center; font-size: var(--font-size-sm);">
             <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">sec</span>
             <label style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: var(--font-size-sm);">
-              <input type="checkbox" checked> BG
+              <input type="checkbox" checked class="rundown-input"> BG
             </label>
-            <button class="btn-icon" title="Remove" style="color: var(--color-override);">✕</button>
-            <button class="btn-icon" title="Drag to reorder" style="color: var(--text-muted); cursor: grab;">↕</button>
+            <button class="btn-icon state-premeet state-editing" title="Remove" style="color: var(--color-override);">✕</button>
+            <button class="btn-icon drag-handle" title="Drag to reorder" style="color: var(--text-muted); cursor: grab;">↕</button>
           </div>
 
           <!-- Item 3 -->
-          <div style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
+          <div class="sequence-item" style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
             <span style="color: var(--text-muted); width: 20px;">3.</span>
-            <select style="flex: 2; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm); color: var(--text-primary); font-size: var(--font-size-sm);">
+            <select class="rundown-select" style="flex: 2; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm); color: var(--text-primary); font-size: var(--font-size-sm);">
               <option>Quad View</option>
               <option>Standings</option>
               <option selected>Sponsor</option>
               <option>Event Summary</option>
               <option>Calendar</option>
             </select>
-            <input type="number" value="10" style="width: 50px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs); color: var(--text-primary); text-align: center; font-size: var(--font-size-sm);">
+            <input type="number" value="10" class="rundown-input" style="width: 50px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs); color: var(--text-primary); text-align: center; font-size: var(--font-size-sm);">
             <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">sec</span>
             <label style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: var(--font-size-sm);">
-              <input type="checkbox" checked> BG
+              <input type="checkbox" checked class="rundown-input"> BG
             </label>
-            <button class="btn-icon" title="Remove" style="color: var(--color-override);">✕</button>
-            <button class="btn-icon" title="Drag to reorder" style="color: var(--text-muted); cursor: grab;">↕</button>
+            <button class="btn-icon state-premeet state-editing" title="Remove" style="color: var(--color-override);">✕</button>
+            <button class="btn-icon drag-handle" title="Drag to reorder" style="color: var(--text-muted); cursor: grab;">↕</button>
           </div>
 
         </div>
 
-        <!-- Add Button -->
-        <button class="btn btn-secondary" style="margin-top: var(--space-md); width: 100%; border-style: dashed;">
+        <!-- Add Button (hidden in Live mode) -->
+        <button class="btn btn-secondary state-premeet state-editing" style="margin-top: var(--space-md); width: 100%; border-style: dashed;">
           + Add Gap Fill Item
         </button>
 
         <!-- Loop Toggle -->
         <label style="display: flex; align-items: center; gap: var(--space-sm); margin-top: var(--space-md); color: var(--text-primary);">
-          <input type="checkbox" checked> Loop sequence
+          <input type="checkbox" checked class="rundown-input"> Loop sequence
           <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">(when last item finishes, restart from first)</span>
         </label>
       </div>
 
+      <!-- Live Monitoring Status Panel (only shown in Live mode) -->
+      <div class="state-live" style="display: none; padding: var(--space-md); border-bottom: 1px solid var(--border-color); background: rgba(181, 106, 255, 0.05);">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-sm);">
+          <span style="font-weight: 600; color: var(--text-primary);">Live Status</span>
+          <span class="state-indicator playing">playing</span>
+        </div>
+        <div style="display: flex; gap: var(--space-lg); font-size: var(--font-size-sm);">
+          <div>
+            <span style="color: var(--text-secondary);">Current:</span>
+            <span style="color: var(--text-primary); margin-left: var(--space-xs);">Standings</span>
+          </div>
+          <div>
+            <span style="color: var(--text-secondary);">Elapsed:</span>
+            <span style="color: var(--color-rundown); margin-left: var(--space-xs); font-family: var(--font-mono);">0:12</span>
+            <span style="color: var(--text-muted);">/ 15s</span>
+          </div>
+          <div>
+            <span style="color: var(--text-secondary);">Cycle:</span>
+            <span style="color: var(--text-primary); margin-left: var(--space-xs);">2 of 3</span>
+          </div>
+        </div>
+      </div>
+
       <!-- Validation Note -->
-      <div style="padding: var(--space-sm) var(--space-md); background: rgba(181, 106, 255, 0.1); border-top: 1px solid var(--border-color); font-size: var(--font-size-sm); color: var(--text-secondary);">
+      <div class="state-premeet state-editing" style="padding: var(--space-sm) var(--space-md); background: rgba(181, 106, 255, 0.1); border-top: 1px solid var(--border-color); font-size: var(--font-size-sm); color: var(--text-secondary);">
         Requires at least one gap fill item to save
       </div>
     </div>
@@ -176,11 +260,11 @@
       <div style="padding: var(--space-md); border-bottom: 1px solid var(--border-color);">
         <div style="display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-sm);">
           <label style="color: var(--text-secondary); min-width: 80px;">Segment:</label>
-          <input type="text" value="Rotation 1 Break" readonly style="flex: 1; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-sm) var(--space-md); color: var(--text-primary);">
+          <input type="text" value="Rotation 1 Break" class="rundown-input" style="flex: 1; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-sm) var(--space-md); color: var(--text-primary);">
         </div>
         <div style="display: flex; align-items: center; gap: var(--space-md);">
           <label style="color: var(--text-secondary); min-width: 80px;">Type:</label>
-          <select style="flex: 1; background: var(--bg-tertiary); border: 1px solid #f0b429; border-radius: var(--border-radius); padding: var(--space-sm) var(--space-md); color: #f0b429;">
+          <select class="rundown-select" style="flex: 1; background: var(--bg-tertiary); border: 1px solid #f0b429; border-radius: var(--border-radius); padding: var(--space-sm) var(--space-md); color: #f0b429;">
             <option>Playout</option>
             <option selected>Content Sequence</option>
             <option>Standard</option>
@@ -198,9 +282,9 @@
         <div style="display: flex; flex-direction: column; gap: var(--space-sm);">
 
           <!-- Item 1: Event Summary -->
-          <div style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
+          <div class="sequence-item" style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
             <span style="color: var(--text-muted); width: 20px;">1.</span>
-            <select style="flex: 2; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm); color: var(--text-primary); font-size: var(--font-size-sm);">
+            <select class="rundown-select" style="flex: 2; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm); color: var(--text-primary); font-size: var(--font-size-sm);">
               <option selected>Event Summary</option>
               <option>Sponsor</option>
               <option>Highlight Reel</option>
@@ -208,22 +292,22 @@
               <option>Quad View</option>
               <option>Standings</option>
             </select>
-            <input type="number" value="30" style="width: 50px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs); color: var(--text-primary); text-align: center; font-size: var(--font-size-sm);">
+            <input type="number" value="30" class="rundown-input" style="width: 50px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs); color: var(--text-primary); text-align: center; font-size: var(--font-size-sm);">
             <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">sec</span>
             <label style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: var(--font-size-sm);" title="Background">
-              <input type="checkbox" checked> BG
+              <input type="checkbox" checked class="rundown-input"> BG
             </label>
             <label style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: var(--font-size-sm);" title="Skip if no data">
-              <input type="checkbox" checked> Skip∅
+              <input type="checkbox" checked class="rundown-input"> Skip∅
             </label>
-            <button class="btn-icon" title="Remove" style="color: var(--color-override);">✕</button>
-            <button class="btn-icon" title="Drag to reorder" style="color: var(--text-muted); cursor: grab;">↕</button>
+            <button class="btn-icon state-premeet state-editing" title="Remove" style="color: var(--color-override);">✕</button>
+            <button class="btn-icon drag-handle" title="Drag to reorder" style="color: var(--text-muted); cursor: grab;">↕</button>
           </div>
 
           <!-- Item 2: Sponsor -->
-          <div style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
+          <div class="sequence-item" style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
             <span style="color: var(--text-muted); width: 20px;">2.</span>
-            <select style="flex: 2; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm); color: var(--text-primary); font-size: var(--font-size-sm);">
+            <select class="rundown-select" style="flex: 2; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm); color: var(--text-primary); font-size: var(--font-size-sm);">
               <option>Event Summary</option>
               <option selected>Sponsor</option>
               <option>Highlight Reel</option>
@@ -231,22 +315,22 @@
               <option>Quad View</option>
               <option>Standings</option>
             </select>
-            <input type="number" value="10" style="width: 50px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs); color: var(--text-primary); text-align: center; font-size: var(--font-size-sm);">
+            <input type="number" value="10" class="rundown-input" style="width: 50px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs); color: var(--text-primary); text-align: center; font-size: var(--font-size-sm);">
             <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">sec</span>
             <label style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: var(--font-size-sm);" title="Background">
-              <input type="checkbox" checked> BG
+              <input type="checkbox" checked class="rundown-input"> BG
             </label>
             <label style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: var(--font-size-sm);" title="Skip if no data">
-              <input type="checkbox"> Skip∅
+              <input type="checkbox" class="rundown-input"> Skip∅
             </label>
-            <button class="btn-icon" title="Remove" style="color: var(--color-override);">✕</button>
-            <button class="btn-icon" title="Drag to reorder" style="color: var(--text-muted); cursor: grab;">↕</button>
+            <button class="btn-icon state-premeet state-editing" title="Remove" style="color: var(--color-override);">✕</button>
+            <button class="btn-icon drag-handle" title="Drag to reorder" style="color: var(--text-muted); cursor: grab;">↕</button>
           </div>
 
           <!-- Item 3: Highlight Reel -->
-          <div style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
+          <div class="sequence-item" style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
             <span style="color: var(--text-muted); width: 20px;">3.</span>
-            <select style="flex: 2; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm); color: var(--text-primary); font-size: var(--font-size-sm);">
+            <select class="rundown-select" style="flex: 2; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm); color: var(--text-primary); font-size: var(--font-size-sm);">
               <option>Event Summary</option>
               <option>Sponsor</option>
               <option selected>Highlight Reel</option>
@@ -257,19 +341,19 @@
             <span style="width: 50px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs); color: var(--text-muted); text-align: center; font-size: var(--font-size-sm);">auto</span>
             <span style="color: var(--text-secondary); font-size: var(--font-size-sm); visibility: hidden;">sec</span>
             <label style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: var(--font-size-sm);" title="Background">
-              <input type="checkbox" checked> BG
+              <input type="checkbox" checked class="rundown-input"> BG
             </label>
             <label style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: var(--font-size-sm);" title="Skip if no data">
-              <input type="checkbox" checked> Skip∅
+              <input type="checkbox" checked class="rundown-input"> Skip∅
             </label>
-            <button class="btn-icon" title="Remove" style="color: var(--color-override);">✕</button>
-            <button class="btn-icon" title="Drag to reorder" style="color: var(--text-muted); cursor: grab;">↕</button>
+            <button class="btn-icon state-premeet state-editing" title="Remove" style="color: var(--color-override);">✕</button>
+            <button class="btn-icon drag-handle" title="Drag to reorder" style="color: var(--text-muted); cursor: grab;">↕</button>
           </div>
 
           <!-- Item 4: Calendar -->
-          <div style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
+          <div class="sequence-item" style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
             <span style="color: var(--text-muted); width: 20px;">4.</span>
-            <select style="flex: 2; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm); color: var(--text-primary); font-size: var(--font-size-sm);">
+            <select class="rundown-select" style="flex: 2; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm); color: var(--text-primary); font-size: var(--font-size-sm);">
               <option>Event Summary</option>
               <option>Sponsor</option>
               <option>Highlight Reel</option>
@@ -277,22 +361,22 @@
               <option>Quad View</option>
               <option>Standings</option>
             </select>
-            <input type="number" value="15" style="width: 50px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs); color: var(--text-primary); text-align: center; font-size: var(--font-size-sm);">
+            <input type="number" value="15" class="rundown-input" style="width: 50px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs); color: var(--text-primary); text-align: center; font-size: var(--font-size-sm);">
             <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">sec</span>
             <label style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: var(--font-size-sm);" title="Background">
-              <input type="checkbox" checked> BG
+              <input type="checkbox" checked class="rundown-input"> BG
             </label>
             <label style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: var(--font-size-sm);" title="Skip if no data">
-              <input type="checkbox"> Skip∅
+              <input type="checkbox" class="rundown-input"> Skip∅
             </label>
-            <button class="btn-icon" title="Remove" style="color: var(--color-override);">✕</button>
-            <button class="btn-icon" title="Drag to reorder" style="color: var(--text-muted); cursor: grab;">↕</button>
+            <button class="btn-icon state-premeet state-editing" title="Remove" style="color: var(--color-override);">✕</button>
+            <button class="btn-icon drag-handle" title="Drag to reorder" style="color: var(--text-muted); cursor: grab;">↕</button>
           </div>
 
           <!-- Item 5: Quad View (hold) -->
-          <div style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
+          <div class="sequence-item" style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
             <span style="color: var(--text-muted); width: 20px;">5.</span>
-            <select style="flex: 2; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm); color: var(--text-primary); font-size: var(--font-size-sm);">
+            <select class="rundown-select" style="flex: 2; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm); color: var(--text-primary); font-size: var(--font-size-sm);">
               <option>Event Summary</option>
               <option>Sponsor</option>
               <option>Highlight Reel</option>
@@ -300,7 +384,7 @@
               <option selected>Quad View</option>
               <option>Standings</option>
             </select>
-            <select style="width: 60px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs); color: var(--color-rundown); text-align: center; font-size: var(--font-size-sm);">
+            <select class="rundown-select" style="width: 60px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs); color: var(--color-rundown); text-align: center; font-size: var(--font-size-sm);">
               <option>5</option>
               <option>10</option>
               <option>15</option>
@@ -309,19 +393,19 @@
             </select>
             <span style="color: var(--text-secondary); font-size: var(--font-size-sm); visibility: hidden;">sec</span>
             <label style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: var(--font-size-sm);" title="Background">
-              <input type="checkbox"> BG
+              <input type="checkbox" class="rundown-input"> BG
             </label>
             <label style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: var(--font-size-sm);" title="Skip if no data">
-              <input type="checkbox"> Skip∅
+              <input type="checkbox" class="rundown-input"> Skip∅
             </label>
-            <button class="btn-icon" title="Remove" style="color: var(--color-override);">✕</button>
-            <button class="btn-icon" title="Drag to reorder" style="color: var(--text-muted); cursor: grab;">↕</button>
+            <button class="btn-icon state-premeet state-editing" title="Remove" style="color: var(--color-override);">✕</button>
+            <button class="btn-icon drag-handle" title="Drag to reorder" style="color: var(--text-muted); cursor: grab;">↕</button>
           </div>
 
         </div>
 
-        <!-- Add Button -->
-        <button class="btn btn-secondary" style="margin-top: var(--space-md); width: 100%; border-style: dashed;">
+        <!-- Add Button (hidden in Live mode) -->
+        <button class="btn btn-secondary state-premeet state-editing" style="margin-top: var(--space-md); width: 100%; border-style: dashed;">
           + Add Content Item
         </button>
       </div>
@@ -334,28 +418,51 @@
 
         <div style="display: flex; flex-direction: column; gap: var(--space-sm);">
           <label style="display: flex; align-items: flex-start; gap: var(--space-sm); color: var(--text-primary); cursor: pointer;">
-            <input type="radio" name="advance-condition" checked style="margin-top: 3px;">
+            <input type="radio" name="advance-condition" checked class="rundown-input" style="margin-top: 3px;">
             <span>
               Next rotation scores detected
               <span style="color: var(--text-secondary); font-size: var(--font-size-sm); display: block;">(Virtius API)</span>
             </span>
           </label>
           <label style="display: flex; align-items: flex-start; gap: var(--space-sm); color: var(--text-primary); cursor: pointer;">
-            <input type="radio" name="advance-condition" style="margin-top: 3px;">
+            <input type="radio" name="advance-condition" class="rundown-input" style="margin-top: 3px;">
             <span>
               All content items complete
               <span style="color: var(--text-secondary); font-size: var(--font-size-sm); display: block;">(hold items wait for advance)</span>
             </span>
           </label>
           <label style="display: flex; align-items: flex-start; gap: var(--space-sm); color: var(--text-primary); cursor: pointer;">
-            <input type="radio" name="advance-condition" style="margin-top: 3px;">
+            <input type="radio" name="advance-condition" class="rundown-input" style="margin-top: 3px;">
             <span>Manual advance only</span>
           </label>
         </div>
       </div>
 
-      <!-- Validation Note -->
-      <div style="padding: var(--space-sm) var(--space-md); background: rgba(240, 180, 41, 0.1); border-top: 1px solid var(--border-color); font-size: var(--font-size-sm); color: var(--text-secondary);">
+      <!-- Live Monitoring Status Panel (only shown in Live mode) -->
+      <div class="state-live" style="display: none; padding: var(--space-md); border-bottom: 1px solid var(--border-color); background: rgba(240, 180, 41, 0.05);">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-sm);">
+          <span style="font-weight: 600; color: var(--text-primary);">Live Status</span>
+          <span class="state-indicator playing" style="background: #f0b429; color: #000;">playing</span>
+        </div>
+        <div style="display: flex; gap: var(--space-lg); font-size: var(--font-size-sm);">
+          <div>
+            <span style="color: var(--text-secondary);">Current:</span>
+            <span style="color: var(--text-primary); margin-left: var(--space-xs);">Sponsor (2/5)</span>
+          </div>
+          <div>
+            <span style="color: var(--text-secondary);">Elapsed:</span>
+            <span style="color: #f0b429; margin-left: var(--space-xs); font-family: var(--font-mono);">0:07</span>
+            <span style="color: var(--text-muted);">/ 10s</span>
+          </div>
+          <div>
+            <span style="color: var(--text-secondary);">Advance:</span>
+            <span style="color: var(--text-primary); margin-left: var(--space-xs);">Waiting for scores</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Validation Note (hidden in Live mode) -->
+      <div class="state-premeet state-editing" style="padding: var(--space-sm) var(--space-md); background: rgba(240, 180, 41, 0.1); border-top: 1px solid var(--border-color); font-size: var(--font-size-sm); color: var(--text-secondary);">
         Requires at least one content item to save
       </div>
     </div>

@@ -29,7 +29,7 @@
 **Also read:**
 - `docs/PRD-Clip-Integration/ui/prototype/sections/style-guide.md` (for CSS conventions)
 
-### Task 2: Add state variations, toggles, and polish — NOT STARTED
+### Task 2: Add state variations, toggles, and polish — COMPLETE
 
 **File:** `docs/PRD-Clip-Integration/ui/prototype/sections/rundown.html`
 
