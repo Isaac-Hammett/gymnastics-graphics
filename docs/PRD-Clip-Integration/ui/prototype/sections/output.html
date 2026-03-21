@@ -516,6 +516,203 @@
   color: white;
   text-transform: uppercase;
 }
+
+/* === Score Reveal Badge === */
+.score-badge {
+  position: absolute;
+  bottom: 80px;
+  left: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 20px;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(12px);
+  border-radius: 12px;
+  border-left: 4px solid var(--apparatus-color, var(--clip-apparatus-vt));
+  z-index: 15;
+  animation: scoreReveal 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  transform-origin: left center;
+}
+
+@keyframes scoreReveal {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) translateX(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateX(0);
+  }
+}
+
+.score-badge-label {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.score-badge-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: white;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.score-badge--zero .score-badge-value {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.score-badge--hidden {
+  display: none;
+}
+
+/* === Moment Replay Controls === */
+.replay-controls {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 16px;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  border-radius: 8px;
+  z-index: 10;
+}
+
+.replay-speed-controls {
+  display: flex;
+  gap: 4px;
+}
+
+.replay-speed-btn {
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all 150ms;
+}
+
+.replay-speed-btn:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.replay-speed-btn.active {
+  background: var(--clip-mode-replay-bg);
+  color: var(--clip-mode-replay-text);
+  border-color: var(--clip-mode-replay-border);
+}
+
+.replay-muted-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.replay-muted-icon {
+  font-size: 14px;
+}
+
+/* === Score Reveal Timing Visualization === */
+.timing-diagram {
+  padding: 16px;
+  background: var(--bg-tertiary);
+  border-top: 1px solid var(--border-color);
+}
+
+.timing-bar {
+  position: relative;
+  height: 24px;
+  background: var(--bg-secondary);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.timing-segment {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.timing-segment--routine {
+  left: 0;
+  background: var(--clip-mode-clip-bg);
+  border-right: 2px solid var(--clip-mode-clip-border);
+}
+
+.timing-segment--score {
+  background: rgba(245, 158, 11, 0.3);
+  color: #fbbf24;
+}
+
+.timing-marker {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: 2px;
+  background: #fbbf24;
+}
+
+.timing-marker::after {
+  content: attr(data-label);
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  font-weight: 500;
+  color: #fbbf24;
+  white-space: nowrap;
+}
+
+.timing-examples {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  font-size: 10px;
+}
+
+.timing-example {
+  padding: 8px;
+  background: var(--bg-secondary);
+  border-radius: 4px;
+}
+
+.timing-example-label {
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.timing-example-value {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.timing-example-formula {
+  color: #fbbf24;
+  font-size: 9px;
+  font-family: 'SF Mono', 'Consolas', monospace;
+  margin-top: 2px;
+}
 </style>
 
 <!-- PROTOTYPE VISUALIZATION -->
@@ -687,14 +884,174 @@
       </div>
     </div>
 
-    <!-- REPLAY MODE (mode=clip with moment-replay graphic) -->
+    <!-- SCORE REVEAL ANIMATION -->
     <div class="prototype-section">
       <div class="prototype-section-header">
-        <span class="prototype-section-title">mode=clip — Moment Replay</span>
-        <span class="prototype-section-tag">Slow-motion + REPLAY badge</span>
+        <span class="prototype-section-title">Score Reveal Animation</span>
+        <span class="prototype-section-tag">60% formula timing</span>
       </div>
 
-      <div class="output-frame" data-apparatus="BB" data-mode="replay">
+      <div class="output-frame" data-apparatus="VT" data-mode="clip" id="score-reveal-demo">
+        <div class="layer-clipBackground"></div>
+        <div class="layer-output"></div>
+
+        <div class="layer-clipVideo">
+          <div class="video-placeholder clip-video clip-active">
+            <div class="video-placeholder-content">
+              <div class="video-placeholder-icon">▶</div>
+              <div class="video-placeholder-text">Routine Playing</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Info Bar -->
+        <div class="clip-info-bar">
+          <div class="clip-info-logo">
+            <div class="clip-info-logo-placeholder"></div>
+          </div>
+          <div class="clip-info-details">
+            <div class="clip-info-athlete">Tamyra Singletary</div>
+            <div class="clip-info-apparatus">Vault</div>
+            <div class="clip-info-team">University of Bridgeport</div>
+          </div>
+        </div>
+
+        <!-- Mode Badge -->
+        <div class="mode-badge mode-badge-clip">CLIP</div>
+
+        <!-- Score Badge (appears at reveal time) -->
+        <div class="score-badge" id="demo-score-badge">
+          <div class="score-badge-label">Score</div>
+          <div class="score-badge-value">9.725</div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="clip-progress-container">
+          <div class="clip-progress-bar">
+            <div class="clip-progress-fill" id="demo-progress-fill" style="width: 72%"></div>
+          </div>
+          <div class="clip-progress-times">
+            <span class="clip-progress-elapsed" id="demo-elapsed">0:13</span>
+            <span class="clip-progress-remaining" id="demo-remaining">-0:05</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Score Reveal Timing Diagram -->
+      <div class="timing-diagram">
+        <div class="dom-diagram-title">Score Reveal Formula: Math.max(duration - 5, duration * 0.6)</div>
+
+        <div class="timing-bar">
+          <div class="timing-segment timing-segment--routine" style="width: 60%; color: var(--clip-mode-clip-text)">
+            Routine plays (no score)
+          </div>
+          <div class="timing-segment timing-segment--score" style="left: 60%; width: 40%">
+            Score visible
+          </div>
+          <div class="timing-marker" style="left: 60%;" data-label="60%"></div>
+        </div>
+
+        <div class="timing-examples">
+          <div class="timing-example">
+            <div class="timing-example-label">8s vault</div>
+            <div class="timing-example-value">Score @ 4.8s</div>
+            <div class="timing-example-formula">max(3, 4.8) = 4.8s</div>
+          </div>
+          <div class="timing-example">
+            <div class="timing-example-label">14s vault</div>
+            <div class="timing-example-value">Score @ 9s</div>
+            <div class="timing-example-formula">max(9, 8.4) = 9s</div>
+          </div>
+          <div class="timing-example">
+            <div class="timing-example-label">25s bars</div>
+            <div class="timing-example-value">Score @ 20s</div>
+            <div class="timing-example-formula">max(20, 15) = 20s</div>
+          </div>
+          <div class="timing-example">
+            <div class="timing-example-label">39s floor</div>
+            <div class="timing-example-value">Score @ 34s</div>
+            <div class="timing-example-formula">max(34, 23.4) = 34s</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Score States Toggle -->
+      <div class="mode-toggle-container">
+        <button class="mode-toggle-btn active" onclick="setScoreState('visible')">Score: 9.725</button>
+        <button class="mode-toggle-btn" onclick="setScoreState('zero')">Score: 0.000</button>
+        <button class="mode-toggle-btn" onclick="setScoreState('hidden')">Score: null</button>
+      </div>
+    </div>
+
+    <!-- SCORE BADGE STATES -->
+    <div class="prototype-section">
+      <div class="prototype-section-header">
+        <span class="prototype-section-title">Score Badge Display Rules</span>
+        <span class="prototype-section-tag">null vs 0 vs value</span>
+      </div>
+
+      <div style="padding: 16px; display: flex; flex-direction: column; gap: 16px;">
+        <!-- Score = value -->
+        <div style="display: flex; align-items: flex-start; gap: 16px;">
+          <div class="score-badge" style="position: static; animation: none;">
+            <div class="score-badge-label">Score</div>
+            <div class="score-badge-value">9.725</div>
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 13px; font-weight: 500; color: var(--text-primary); margin-bottom: 4px;">score = 9.725</div>
+            <div style="font-size: 11px; color: var(--text-secondary);">Normal score display. Animated reveal at calculated timing point.</div>
+          </div>
+        </div>
+
+        <!-- Score = 0 -->
+        <div style="display: flex; align-items: flex-start; gap: 16px;">
+          <div class="score-badge score-badge--zero" style="position: static; animation: none;">
+            <div class="score-badge-label">Score</div>
+            <div class="score-badge-value">0.000</div>
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 13px; font-weight: 500; color: var(--text-primary); margin-bottom: 4px;">score = 0</div>
+            <div style="font-size: 11px; color: var(--text-secondary);">Displays "0.000" — gymnast scratched or fell. Zero is a real score, NOT "missing".</div>
+          </div>
+        </div>
+
+        <!-- Score = null -->
+        <div style="display: flex; align-items: flex-start; gap: 16px;">
+          <div style="width: 100px; height: 64px; background: var(--bg-tertiary); border-radius: 8px; display: flex; align-items: center; justify-content: center; border: 2px dashed var(--border-color);">
+            <span style="font-size: 11px; color: var(--text-muted);">Hidden</span>
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 13px; font-weight: 500; color: var(--text-primary); margin-bottom: 4px;">score = null / undefined</div>
+            <div style="font-size: 11px; color: var(--text-secondary);">No score badge appears at all. Shows only athlete name, team, and apparatus for entire clip duration. Score wasn't posted when clip was exported.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dom-diagram">
+        <div class="dom-diagram-title">Implementation Logic</div>
+        <pre style="margin: 0; color: var(--text-secondary); white-space: pre-wrap; font-size: 11px; font-family: 'SF Mono', 'Consolas', monospace;">
+if (score === null || score === undefined) {
+  // No badge — score not available
+  scoreBadge.classList.add('score-badge--hidden');
+} else if (score === 0) {
+  // Show "0.000" — real score (scratch/fall)
+  scoreBadge.classList.add('score-badge--zero');
+  scoreValue.textContent = '0.000';
+} else {
+  // Show formatted score
+  scoreValue.textContent = score.toFixed(3);
+}</pre>
+      </div>
+    </div>
+
+    <!-- MOMENT REPLAY RENDERER -->
+    <div class="prototype-section">
+      <div class="prototype-section-header">
+        <span class="prototype-section-title">Moment Replay Renderer</span>
+        <span class="prototype-section-tag">Slow-mo highlight playback</span>
+      </div>
+
+      <div class="output-frame" data-apparatus="UB" data-mode="replay">
         <div class="layer-clipBackground"></div>
         <div class="layer-output"></div>
 
@@ -707,47 +1064,113 @@
           </div>
         </div>
 
-        <!-- Info Bar (Replay) -->
+        <!-- Info Bar (Replay uses same layout, no score badge) -->
         <div class="clip-info-bar">
           <div class="clip-info-logo">
             <div class="clip-info-logo-placeholder"></div>
           </div>
-          <div class="clip-info-details" style="border-left-color: var(--clip-apparatus-bb)">
+          <div class="clip-info-details" style="border-left-color: var(--clip-apparatus-ub)">
             <div class="clip-info-athlete">Haley Fitzgerald</div>
-            <div class="clip-info-apparatus" style="color: var(--clip-apparatus-bb)">Balance Beam</div>
+            <div class="clip-info-apparatus" style="color: var(--clip-apparatus-ub)">Uneven Bars</div>
             <div class="clip-info-team">Southern Connecticut State</div>
           </div>
         </div>
 
-        <!-- Mode Badge (Replay) -->
+        <!-- Mode Badge (REPLAY in cyan) -->
         <div class="mode-badge mode-badge-replay">REPLAY</div>
 
-        <!-- Progress Bar -->
+        <!-- Replay Controls (speed + mute indicator) -->
+        <div class="replay-controls">
+          <div class="replay-speed-controls">
+            <button class="replay-speed-btn" onclick="setReplaySpeed(this, 0.25)">0.25×</button>
+            <button class="replay-speed-btn active" onclick="setReplaySpeed(this, 0.5)">0.5×</button>
+            <button class="replay-speed-btn" onclick="setReplaySpeed(this, 1)">1×</button>
+          </div>
+          <div class="replay-muted-indicator">
+            <span class="replay-muted-icon">🔇</span>
+            <span>Muted</span>
+          </div>
+        </div>
+
+        <!-- Progress Bar (cyan accent) -->
         <div class="clip-progress-container">
           <div class="clip-progress-bar">
-            <div class="clip-progress-fill" style="width: 35%; background: var(--clip-mode-replay-border)"></div>
+            <div class="clip-progress-fill" style="width: 45%; background: var(--clip-mode-replay-border)"></div>
           </div>
           <div class="clip-progress-times">
-            <span class="clip-progress-elapsed">0:04</span>
-            <span class="clip-progress-remaining">-0:08</span>
+            <span class="clip-progress-elapsed">0:02.4</span>
+            <span class="clip-progress-remaining">-0:02.9</span>
           </div>
+        </div>
+
+        <!-- Preload indicator -->
+        <div class="preload-indicator">
+          <span class="preload-dot preload-dot--ready"></span>
+          <span>Next ready</span>
         </div>
       </div>
 
       <div class="dom-diagram">
-        <div class="dom-diagram-title">Replay-Specific Behavior</div>
+        <div class="dom-diagram-title">Moment Replay Behavior</div>
         <div class="dom-layer">
-          <span class="dom-layer-desc">• Muted by default (commentator narrates)</span>
+          <span class="dom-layer-element" style="color: var(--clip-mode-replay-text)">REPLAY badge</span>
+          <span class="dom-layer-desc">— Cyan pill, appears instead of CLIP badge</span>
         </div>
         <div class="dom-layer">
-          <span class="dom-layer-desc">• playbackRate: 0.25x, 0.5x, 1x</span>
+          <span class="dom-layer-element">No score badge</span>
+          <span class="dom-layer-desc">— Viewer already saw score during full routine</span>
         </div>
         <div class="dom-layer">
-          <span class="dom-layer-desc">• REPLAY badge (cyan) instead of CLIP</span>
+          <span class="dom-layer-element">Muted audio</span>
+          <span class="dom-layer-desc">— Commentator narrates over replay</span>
         </div>
         <div class="dom-layer">
-          <span class="dom-layer-desc">• Cut transition (no crossfade)</span>
+          <span class="dom-layer-element">playbackRate</span>
+          <span class="dom-layer-desc">— 0.25×, 0.5× (default), or 1× speed</span>
         </div>
+        <div class="dom-layer">
+          <span class="dom-layer-element">seekStart / seekEnd</span>
+          <span class="dom-layer-desc">— Plays specific segment of clip (in_point / out_point)</span>
+        </div>
+        <div class="dom-layer">
+          <span class="dom-layer-element">Cut transition</span>
+          <span class="dom-layer-desc">— No crossfade (immediate swap)</span>
+        </div>
+      </div>
+
+      <div class="mode-toggle-container">
+        <button class="mode-toggle-btn" onclick="setReplaySpeed(this, 0.25)">0.25×</button>
+        <button class="mode-toggle-btn active" onclick="setReplaySpeed(this, 0.5)">0.5×</button>
+        <button class="mode-toggle-btn" onclick="setReplaySpeed(this, 1)">1×</button>
+      </div>
+    </div>
+
+    <!-- MOMENT REPLAY DATA SHAPE -->
+    <div class="prototype-section">
+      <div class="prototype-section-header">
+        <span class="prototype-section-title">Moment Replay Firebase Data</span>
+        <span class="prototype-section-tag">currentGraphic shape</span>
+      </div>
+
+      <div class="dom-diagram" style="border-top: none;">
+        <pre style="margin: 0; color: var(--text-secondary); white-space: pre-wrap; font-size: 11px; font-family: 'SF Mono', 'Consolas', monospace;">
+{
+  "graphic": "moment-replay",
+  "data": {
+    "clipUrl": "https://r2.../clip.mp4",
+    "seekStart": 12.5,        // in_point (seconds)
+    "seekEnd": 18.2,          // out_point (seconds)
+    "playbackRate": 0.5,      // 0.25, 0.5, or 1
+    "athleteName": "Haley Fitzgerald",
+    "teamName": "Southern Connecticut State",
+    "apparatus": "UB",
+    "teamLogo": "https://media.virti.us/.../logo.png",
+    "nextClipUrl": "https://r2.../next.mp4"  // preload
+  }
+}
+
+// Note: No "score" field — replays don't show scores
+// Note: seekStart/seekEnd define the highlight segment</pre>
       </div>
     </div>
 
@@ -972,4 +1395,57 @@ document.addEventListener('DOMContentLoaded', () => {
   // Optionally start progress animation
   // startProgressAnimation();
 });
+
+// Score state toggle (prototype only)
+function setScoreState(state) {
+  const scoreBadge = document.getElementById('demo-score-badge');
+  const buttons = scoreBadge.closest('.prototype-section').querySelectorAll('.mode-toggle-btn');
+
+  buttons.forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+
+  scoreBadge.classList.remove('score-badge--zero', 'score-badge--hidden');
+  const scoreValue = scoreBadge.querySelector('.score-badge-value');
+
+  if (state === 'visible') {
+    scoreValue.textContent = '9.725';
+    scoreBadge.style.display = 'flex';
+  } else if (state === 'zero') {
+    scoreBadge.classList.add('score-badge--zero');
+    scoreValue.textContent = '0.000';
+    scoreBadge.style.display = 'flex';
+  } else if (state === 'hidden') {
+    scoreBadge.style.display = 'none';
+  }
+}
+
+// Replay speed toggle (prototype only)
+function setReplaySpeed(btn, speed) {
+  const container = btn.closest('.prototype-section, .replay-controls');
+  const buttons = container.querySelectorAll('.replay-speed-btn, .mode-toggle-btn');
+  const frame = btn.closest('.output-frame') || document.querySelector('[data-mode="replay"]');
+  const placeholder = frame?.querySelector('.video-placeholder-text');
+
+  buttons.forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  if (placeholder) {
+    placeholder.textContent = `Replay @ ${speed}×`;
+  }
+}
+
+// Score reveal timing calculator (for reference)
+function calculateScoreRevealTime(duration) {
+  // PRD §4 formula: Math.max(duration - 5, duration * 0.6)
+  // Clips < 3s show score immediately
+  if (duration < 3) return 0;
+  return Math.max(duration - 5, duration * 0.6);
+}
+
+// Example calculations logged for demo
+console.log('Score Reveal Timing Examples:');
+console.log('8s vault:', calculateScoreRevealTime(8), 's');
+console.log('14s vault:', calculateScoreRevealTime(14), 's');
+console.log('25s bars:', calculateScoreRevealTime(25), 's');
+console.log('39s floor:', calculateScoreRevealTime(39), 's');
 </script>
