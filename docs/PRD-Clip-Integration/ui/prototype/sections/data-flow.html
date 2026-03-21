@@ -1,327 +1,799 @@
-<div class="section-content section-flows">
-  <h2>Data Flow Diagram</h2>
-  <p style="color: var(--text-secondary); margin-bottom: var(--space-lg);">
-    System components and their data relationships. Arrows show data direction (reads/writes) with Firebase paths labeled.
-  </p>
+<!--
+  Clip Integration UI — Data Flow & State Machine Diagrams
+  This fragment is embedded in the prototype shell.
+-->
 
-  <!-- Legend -->
-  <div class="card" style="margin-bottom: var(--space-xl);">
-    <div class="card-header">
-      <div class="card-title">Legend</div>
-    </div>
-    <div style="display: flex; gap: var(--space-xl); flex-wrap: wrap; padding: var(--space-md);">
-      <div style="display: flex; align-items: center; gap: var(--space-sm);">
-        <div style="width: 40px; height: 4px; background: var(--color-producer); border-radius: 2px;"></div>
-        <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">Clip data / content commands</span>
-      </div>
-      <div style="display: flex; align-items: center; gap: var(--space-sm);">
-        <div style="width: 40px; height: 4px; background: var(--color-talent); border-radius: 2px;"></div>
-        <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">Status signals / heartbeat</span>
-      </div>
-      <div style="display: flex; align-items: center; gap: var(--space-sm);">
-        <div style="width: 40px; height: 4px; background: var(--color-override); border-radius: 2px;"></div>
-        <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">Override commands</span>
-      </div>
-      <div style="display: flex; align-items: center; gap: var(--space-sm);">
-        <div style="width: 40px; height: 4px; background: #f1c40f; border-radius: 2px;"></div>
-        <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">Configuration data</span>
-      </div>
-    </div>
-  </div>
+<style>
+  /* === Data Flow Section Styles === */
+  .data-flow-section {
+    padding: 24px;
+    background: var(--bg-primary, #0a0a0b);
+    min-height: 100vh;
+  }
 
-  <!-- Data Flow Diagram Container -->
-  <div class="card" style="padding: var(--space-xl); overflow-x: auto;">
-    <div style="min-width: 900px; position: relative; height: 700px;">
+  .data-flow-section h2 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary, #e4e4e7);
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
 
-      <!-- Row 1: Producer & Talent Views -->
-      <div style="display: flex; justify-content: space-between; position: absolute; top: 0; left: 0; right: 0;">
+  .data-flow-section h2::before {
+    content: '';
+    display: block;
+    width: 4px;
+    height: 24px;
+    background: #3b82f6;
+    border-radius: 2px;
+  }
 
-        <!-- ProducerView Component -->
-        <div class="component-box" style="background: var(--bg-tertiary); border: 2px solid var(--color-producer); border-radius: var(--border-radius); padding: var(--space-md); width: 280px;">
-          <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-sm);">
-            <span class="role-badge producer">Producer</span>
-            <strong style="color: var(--text-primary);">ProducerView</strong>
+  .diagram-container {
+    background: var(--bg-secondary, #18181b);
+    border: 1px solid var(--border-color, #3f3f46);
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+
+  .diagram-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary, #e4e4e7);
+    margin-bottom: 16px;
+  }
+
+  /* === State Machine SVG === */
+  .state-machine-svg {
+    width: 100%;
+    height: 500px;
+    display: block;
+  }
+
+  .state-machine-svg .state-node {
+    cursor: pointer;
+    transition: filter 150ms ease;
+  }
+
+  .state-machine-svg .state-node:hover {
+    filter: brightness(1.15);
+  }
+
+  .state-machine-svg .state-node:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+
+  .state-machine-svg .state-label {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    fill: currentColor;
+    pointer-events: none;
+  }
+
+  .state-machine-svg .state-sublabel {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 9px;
+    font-weight: 400;
+    fill: var(--text-secondary, #a1a1aa);
+    pointer-events: none;
+  }
+
+  .state-machine-svg .transition-arrow {
+    fill: none;
+    stroke: var(--border-color, #3f3f46);
+    stroke-width: 1.5;
+    marker-end: url(#arrowhead);
+  }
+
+  .state-machine-svg .transition-arrow:hover {
+    stroke: #60a5fa;
+    stroke-width: 2;
+  }
+
+  .state-machine-svg .transition-label {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 8px;
+    fill: var(--text-muted, #71717a);
+    pointer-events: none;
+  }
+
+  /* === Priority Stack === */
+  .priority-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 320px;
+  }
+
+  .priority-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--bg-tertiary, #27272a);
+    border: 1px solid var(--border-color, #3f3f46);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 150ms ease;
+  }
+
+  .priority-item:hover {
+    background: #27272a;
+    border-color: #71717a;
+  }
+
+  .priority-item:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+
+  .priority-number {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+    font-size: 14px;
+    font-weight: 700;
+    border-radius: 6px;
+    flex-shrink: 0;
+  }
+
+  .priority-item--1 .priority-number {
+    background: rgba(34, 197, 94, 0.2);
+    color: #4ade80;
+  }
+
+  .priority-item--2 .priority-number {
+    background: rgba(6, 182, 212, 0.2);
+    color: #22d3ee;
+  }
+
+  .priority-item--3 .priority-number {
+    background: rgba(113, 113, 122, 0.2);
+    color: #a1a1aa;
+  }
+
+  .priority-content {
+    flex: 1;
+  }
+
+  .priority-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary, #e4e4e7);
+    margin-bottom: 2px;
+  }
+
+  .priority-desc {
+    font-size: 11px;
+    color: var(--text-secondary, #a1a1aa);
+  }
+
+  .priority-arrow {
+    width: 24px;
+    text-align: center;
+    color: var(--text-muted, #71717a);
+    font-size: 18px;
+  }
+
+  /* === Detail Panel === */
+  .detail-panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 400px;
+    max-width: 90vw;
+    background: var(--bg-secondary, #18181b);
+    border: 1px solid var(--border-color, #3f3f46);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    z-index: 100;
+    display: none;
+  }
+
+  .detail-panel.is-visible {
+    display: block;
+  }
+
+  .detail-panel__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px;
+    border-bottom: 1px solid var(--border-color, #3f3f46);
+  }
+
+  .detail-panel__title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary, #e4e4e7);
+  }
+
+  .detail-panel__badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .detail-panel__close {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary, #a1a1aa);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 150ms;
+  }
+
+  .detail-panel__close:hover {
+    background: var(--bg-tertiary, #27272a);
+    color: var(--text-primary, #e4e4e7);
+  }
+
+  .detail-panel__body {
+    padding: 16px;
+  }
+
+  .detail-row {
+    margin-bottom: 16px;
+  }
+
+  .detail-row:last-child {
+    margin-bottom: 0;
+  }
+
+  .detail-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted, #71717a);
+    margin-bottom: 6px;
+  }
+
+  .detail-value {
+    font-size: 12px;
+    color: var(--text-primary, #e4e4e7);
+    line-height: 1.5;
+  }
+
+  .detail-value code {
+    background: var(--bg-tertiary, #27272a);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'SF Mono', Monaco, monospace;
+    font-size: 11px;
+  }
+
+  /* === Backdrop === */
+  .detail-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 99;
+    display: none;
+  }
+
+  .detail-backdrop.is-visible {
+    display: block;
+  }
+
+  /* === Tooltip === */
+  .transition-tooltip {
+    position: fixed;
+    padding: 8px 12px;
+    background: var(--bg-secondary, #18181b);
+    border: 1px solid var(--border-color, #3f3f46);
+    border-radius: 6px;
+    font-size: 11px;
+    color: var(--text-primary, #e4e4e7);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    z-index: 110;
+    pointer-events: none;
+    display: none;
+    max-width: 250px;
+  }
+
+  .transition-tooltip.is-visible {
+    display: block;
+  }
+
+  .transition-tooltip__title {
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: #60a5fa;
+  }
+
+  .transition-tooltip__condition {
+    color: var(--text-secondary, #a1a1aa);
+  }
+
+  /* === Grid Layout === */
+  .diagram-grid {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 24px;
+    align-items: start;
+  }
+
+  @media (max-width: 900px) {
+    .diagram-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* === Legend === */
+  .state-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color, #3f3f46);
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--text-secondary, #a1a1aa);
+  }
+
+  .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+  }
+</style>
+
+<section class="data-flow-section" id="data-flow">
+  <h2>State Machine & Data Flow</h2>
+
+  <!-- Playout State Machine -->
+  <div class="diagram-container">
+    <div class="diagram-title">Playout State Machine</div>
+
+    <div class="diagram-grid">
+      <div class="state-machine-wrapper">
+        <svg class="state-machine-svg" viewBox="0 0 700 460" aria-label="Playout state machine diagram showing 7 modes and their transitions">
+          <defs>
+            <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="#3f3f46"/>
+            </marker>
+            <marker id="arrowhead-hover" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="#60a5fa"/>
+            </marker>
+          </defs>
+
+          <!-- Background grid (subtle) -->
+          <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+            <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#27272a" stroke-width="0.5"/>
+          </pattern>
+          <rect width="100%" height="100%" fill="url(#grid)" opacity="0.3"/>
+
+          <!-- Transitions (arrows) - drawn first so nodes appear on top -->
+
+          <!-- CLIP → LIVE (clip ends, live detected) -->
+          <path class="transition-arrow" d="M 195 120 Q 240 80 285 120"
+                data-from="CLIP" data-to="LIVE"
+                data-condition="Clip ends AND live routine detected"/>
+
+          <!-- CLIP → FALLBACK (clip ends, no live, no queue) -->
+          <path class="transition-arrow" d="M 135 165 Q 135 230 135 285"
+                data-from="CLIP" data-to="FALLBACK"
+                data-condition="Clip ends AND no live routine AND queue empty"/>
+
+          <!-- CLIP → MOMENT_REPLAY (current clip ends, replay queued) -->
+          <path class="transition-arrow" d="M 195 150 Q 280 190 350 230"
+                data-from="CLIP" data-to="MOMENT_REPLAY"
+                data-condition="Clip ends AND moment replay flagged"/>
+
+          <!-- LIVE → CLIP (routine ends, clips queued) -->
+          <path class="transition-arrow" d="M 285 150 Q 240 180 195 150"
+                data-from="LIVE" data-to="CLIP"
+                data-condition="Routine ends AND clips in queue"/>
+
+          <!-- LIVE → FALLBACK (routine ends, no clips) -->
+          <path class="transition-arrow" d="M 350 165 Q 300 240 200 310"
+                data-from="LIVE" data-to="FALLBACK"
+                data-condition="Routine ends AND no clips queued"/>
+
+          <!-- LIVE → MOMENT_REPLAY (routine ends, replay flagged) -->
+          <path class="transition-arrow" d="M 380 165 Q 395 200 395 225"
+                data-from="LIVE" data-to="MOMENT_REPLAY"
+                data-condition="Routine ends AND moment replay flagged"/>
+
+          <!-- FALLBACK → LIVE (live routine detected) -->
+          <path class="transition-arrow" d="M 200 285 Q 300 240 350 165"
+                data-from="FALLBACK" data-to="LIVE"
+                data-condition="Live routine detected on camera"/>
+
+          <!-- FALLBACK → CLIP (new clip arrives) -->
+          <path class="transition-arrow" d="M 135 285 Q 135 230 135 165"
+                data-from="FALLBACK" data-to="CLIP"
+                data-condition="New clip arrives in queue"/>
+
+          <!-- FALLBACK → MOMENT_REPLAY (immediate transition) -->
+          <path class="transition-arrow" d="M 200 330 Q 280 330 350 290"
+                data-from="FALLBACK" data-to="MOMENT_REPLAY"
+                data-condition="Moment replay flagged (immediate)"/>
+
+          <!-- MOMENT_REPLAY → CLIP (replay ends, clips queued) -->
+          <path class="transition-arrow" d="M 350 260 Q 280 220 195 150"
+                data-from="MOMENT_REPLAY" data-to="CLIP"
+                data-condition="Replay ends AND clips queued"/>
+
+          <!-- MOMENT_REPLAY → LIVE (replay ends, live detected) -->
+          <path class="transition-arrow" d="M 395 225 Q 395 190 380 165"
+                data-from="MOMENT_REPLAY" data-to="LIVE"
+                data-condition="Replay ends AND live routine"/>
+
+          <!-- MOMENT_REPLAY → FALLBACK (replay ends, nothing) -->
+          <path class="transition-arrow" d="M 350 290 Q 280 320 200 330"
+                data-from="MOMENT_REPLAY" data-to="FALLBACK"
+                data-condition="Replay ends AND no clips AND no live"/>
+
+          <!-- BREAK → Priority re-eval (segment ends) -->
+          <path class="transition-arrow" d="M 520 330 Q 400 380 280 380 Q 200 380 135 345"
+                data-from="BREAK" data-to="FALLBACK"
+                data-condition="Content segment ends → re-evaluate priority stack"/>
+
+          <!-- OVERRIDE (can enter from any state) -->
+          <path class="transition-arrow" d="M 520 120 L 430 120" stroke-dasharray="4,2"
+                data-from="ANY" data-to="OVERRIDE"
+                data-condition="Force Camera action by producer"/>
+
+          <!-- OVERRIDE → Priority re-eval -->
+          <path class="transition-arrow" d="M 485 165 Q 400 200 280 200 Q 200 200 135 165"
+                data-from="OVERRIDE" data-to="CLIP"
+                data-condition="Release Override → re-evaluate priority stack"/>
+
+          <!-- PAUSED (can enter from any state) -->
+          <path class="transition-arrow" d="M 620 200 L 620 165" stroke-dasharray="4,2"
+                data-from="ANY" data-to="PAUSED"
+                data-condition="Pause action by producer"/>
+
+          <!-- PAUSED → Previous state -->
+          <path class="transition-arrow" d="M 590 135 Q 560 100 520 100 Q 480 100 430 120" stroke-dasharray="4,2"
+                data-from="PAUSED" data-to="PREVIOUS"
+                data-condition="Resume → return to previous state"/>
+
+          <!-- State Nodes -->
+
+          <!-- CLIP -->
+          <g class="state-node" tabindex="0" role="button" aria-label="CLIP state: Playing a queued clip"
+             data-state="CLIP" data-entry="Queued clip available and dequeued" data-exit="Clip ends, skip, or force camera">
+            <rect x="70" y="105" width="125" height="60" rx="8"
+                  fill="rgba(34, 197, 94, 0.2)" stroke="#22c55e" stroke-width="2"/>
+            <text x="132" y="132" text-anchor="middle" class="state-label" fill="#4ade80">CLIP</text>
+            <text x="132" y="150" text-anchor="middle" class="state-sublabel">Playing clip</text>
+          </g>
+
+          <!-- LIVE -->
+          <g class="state-node" tabindex="0" role="button" aria-label="LIVE state: Showing live camera"
+             data-state="LIVE" data-entry="Live routine detected, no clip playing" data-exit="Routine ends → priority stack re-evaluation">
+            <rect x="285" y="105" width="125" height="60" rx="8"
+                  fill="rgba(34, 197, 94, 0.2)" stroke="#22c55e" stroke-width="2"/>
+            <text x="347" y="132" text-anchor="middle" class="state-label" fill="#4ade80">LIVE</text>
+            <text x="347" y="150" text-anchor="middle" class="state-sublabel">Showing camera</text>
+          </g>
+
+          <!-- FALLBACK -->
+          <g class="state-node" tabindex="0" role="button" aria-label="FALLBACK state: Cycling gap fill sequence"
+             data-state="FALLBACK" data-entry="No live routine AND no queued clips" data-exit="Live routine detected OR new clip arrives">
+            <rect x="70" y="285" width="130" height="60" rx="8"
+                  fill="rgba(113, 113, 122, 0.15)" stroke="#52525b" stroke-width="2"/>
+            <text x="135" y="312" text-anchor="middle" class="state-label" fill="#a1a1aa">FALLBACK</text>
+            <text x="135" y="330" text-anchor="middle" class="state-sublabel">Gap fill sequence</text>
+          </g>
+
+          <!-- MOMENT_REPLAY -->
+          <g class="state-node" tabindex="0" role="button" aria-label="MOMENT_REPLAY state: Playing moment replay"
+             data-state="MOMENT_REPLAY" data-entry="Play Now moment flagged by producer" data-exit="Replay ends or skip">
+            <rect x="350" y="225" width="130" height="60" rx="8"
+                  fill="rgba(6, 182, 212, 0.2)" stroke="#06b6d4" stroke-width="2"/>
+            <text x="415" y="252" text-anchor="middle" class="state-label" fill="#22d3ee">REPLAY</text>
+            <text x="415" y="270" text-anchor="middle" class="state-sublabel">Moment replay</text>
+          </g>
+
+          <!-- BREAK -->
+          <g class="state-node" tabindex="0" role="button" aria-label="BREAK state: Playing break content sequence"
+             data-state="BREAK" data-entry="Content-sequence segment active" data-exit="Advance condition met or manual advance">
+            <rect x="520" y="285" width="110" height="60" rx="8"
+                  fill="rgba(113, 113, 122, 0.2)" stroke="#71717a" stroke-width="2"/>
+            <text x="575" y="312" text-anchor="middle" class="state-label" fill="#a1a1aa">BREAK</text>
+            <text x="575" y="330" text-anchor="middle" class="state-sublabel">Content sequence</text>
+          </g>
+
+          <!-- OVERRIDE -->
+          <g class="state-node" tabindex="0" role="button" aria-label="OVERRIDE state: Producer forced camera/graphic"
+             data-state="OVERRIDE" data-entry="Producer Force Camera action" data-exit="Release Override action">
+            <rect x="430" y="90" width="120" height="60" rx="8"
+                  fill="rgba(245, 158, 11, 0.2)" stroke="#f59e0b" stroke-width="2"/>
+            <text x="490" y="117" text-anchor="middle" class="state-label" fill="#fbbf24">OVERRIDE</text>
+            <text x="490" y="135" text-anchor="middle" class="state-sublabel">Forced camera</text>
+          </g>
+
+          <!-- PAUSED -->
+          <g class="state-node" tabindex="0" role="button" aria-label="PAUSED state: Playout frozen"
+             data-state="PAUSED" data-entry="Producer Pause action" data-exit="Producer Resume action">
+            <rect x="565" y="105" width="100" height="60" rx="8"
+                  fill="rgba(234, 179, 8, 0.2)" stroke="#eab308" stroke-width="2"/>
+            <text x="615" y="132" text-anchor="middle" class="state-label" fill="#facc15">PAUSED</text>
+            <text x="615" y="150" text-anchor="middle" class="state-sublabel">Frozen</text>
+          </g>
+
+          <!-- Initial State Indicator -->
+          <g>
+            <circle cx="40" cy="135" r="6" fill="#3b82f6"/>
+            <path d="M 46 135 L 68 135" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrowhead)"/>
+            <text x="40" y="115" text-anchor="middle" font-size="9" fill="#60a5fa">START</text>
+          </g>
+
+          <!-- Labels for special transitions -->
+          <text x="560" y="88" class="transition-label" fill="#71717a">(from any)</text>
+          <text x="640" y="188" class="transition-label" fill="#71717a">(from any)</text>
+        </svg>
+
+        <!-- Legend -->
+        <div class="state-legend">
+          <div class="legend-item">
+            <div class="legend-dot" style="background: rgba(34, 197, 94, 0.3); border: 1px solid #22c55e;"></div>
+            <span>Active Playout</span>
           </div>
-          <ul style="color: var(--text-secondary); font-size: var(--font-size-sm); margin: 0; padding-left: var(--space-md); list-style: disc;">
-            <li>Manages clip queue & playout state</li>
-            <li>Issues override commands</li>
-            <li>Monitors coordinator health</li>
-          </ul>
+          <div class="legend-item">
+            <div class="legend-dot" style="background: rgba(6, 182, 212, 0.3); border: 1px solid #06b6d4;"></div>
+            <span>Replay</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background: rgba(113, 113, 122, 0.2); border: 1px solid #52525b;"></div>
+            <span>Fallback/Break</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background: rgba(245, 158, 11, 0.3); border: 1px solid #f59e0b;"></div>
+            <span>Producer Override</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background: rgba(234, 179, 8, 0.3); border: 1px solid #eab308;"></div>
+            <span>Paused</span>
+          </div>
         </div>
-
-        <!-- TalentView Component -->
-        <div class="component-box" style="background: var(--bg-tertiary); border: 2px solid var(--color-talent); border-radius: var(--border-radius); padding: var(--space-md); width: 280px;">
-          <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-sm);">
-            <span class="role-badge talent">Talent</span>
-            <strong style="color: var(--text-primary);">TalentView</strong>
-          </div>
-          <ul style="color: var(--text-secondary); font-size: var(--font-size-sm); margin: 0; padding-left: var(--space-md); list-style: disc;">
-            <li>Displays current/next content info</li>
-            <li>Shows talking points & context</li>
-            <li>Flag Moment button (fires event)</li>
-          </ul>
-        </div>
       </div>
 
-      <!-- Arrow: ProducerView -> Firebase (writes playoutState) -->
-      <svg style="position: absolute; top: 100px; left: 140px; width: 200px; height: 120px; overflow: visible;">
-        <defs>
-          <marker id="arrow-producer" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
-            <path d="M0,0 L0,6 L9,3 z" fill="var(--color-producer)" />
-          </marker>
-          <marker id="arrow-override" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
-            <path d="M0,0 L0,6 L9,3 z" fill="var(--color-override)" />
-          </marker>
-        </defs>
-        <path d="M0,0 Q50,80 200,100" stroke="var(--color-override)" stroke-width="2" fill="none" marker-end="url(#arrow-override)" />
-        <text x="50" y="70" fill="var(--text-secondary)" font-size="10" font-family="var(--font-mono)">overrides</text>
-      </svg>
-
-      <!-- Arrow: TalentView -> Firebase (reads currentGraphic) -->
-      <svg style="position: absolute; top: 100px; right: 140px; width: 200px; height: 120px; overflow: visible;">
-        <defs>
-          <marker id="arrow-talent-read" markerWidth="10" markerHeight="10" refX="0" refY="3" orient="auto" markerUnits="strokeWidth">
-            <path d="M9,0 L9,6 L0,3 z" fill="var(--color-producer)" />
-          </marker>
-        </defs>
-        <path d="M200,0 Q150,80 0,100" stroke="var(--color-producer)" stroke-width="2" fill="none" stroke-dasharray="5,3" marker-end="url(#arrow-talent-read)" />
-        <text x="100" y="70" fill="var(--text-secondary)" font-size="10" font-family="var(--font-mono)">currentGraphic</text>
-      </svg>
-
-      <!-- Row 2: Firebase RTDB -->
-      <div style="position: absolute; top: 200px; left: 50%; transform: translateX(-50%);">
-        <div class="component-box" style="background: #2d1f0a; border: 2px solid #f1c40f; border-radius: var(--border-radius); padding: var(--space-md); width: 380px;">
-          <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-sm);">
-            <span style="background: #f1c40f; color: #000; padding: 2px 8px; border-radius: 4px; font-size: var(--font-size-sm); font-weight: 600;">DB</span>
-            <strong style="color: var(--text-primary);">Firebase RTDB</strong>
+      <!-- Priority Stack -->
+      <div>
+        <div class="diagram-title" style="margin-bottom: 12px;">Priority Stack</div>
+        <p style="font-size: 11px; color: var(--text-secondary, #a1a1aa); margin-bottom: 16px;">
+          When no override is active, the playout engine evaluates this hierarchy top-to-bottom.
+        </p>
+        <div class="priority-stack">
+          <div class="priority-item priority-item--1" tabindex="0" role="button"
+               data-priority="1" data-desc="If a camera detects a routine in progress, switch to that camera. Clips are never interrupted except by Force Camera.">
+            <div class="priority-number">1</div>
+            <div class="priority-content">
+              <div class="priority-title">Live Routine</div>
+              <div class="priority-desc">Camera detecting routine → switch to LIVE</div>
+            </div>
           </div>
-          <div style="color: var(--text-secondary); font-size: var(--font-size-sm); font-family: var(--font-mono);">
-            <div style="margin-bottom: 4px;">competitions/{compId}/</div>
-            <div style="padding-left: var(--space-md);">
-              <div>├─ production/playoutState</div>
-              <div>├─ production/engineHeartbeat</div>
-              <div>├─ production/clipStatus/{draftId}</div>
-              <div>└─ currentGraphic</div>
+          <div class="priority-arrow">↓</div>
+          <div class="priority-item priority-item--2" tabindex="0" role="button"
+               data-priority="2" data-desc="If clips are in the queue with status 'queued', play the next one. Queue order follows configured sorting rules.">
+            <div class="priority-number">2</div>
+            <div class="priority-content">
+              <div class="priority-title">Queued Clips</div>
+              <div class="priority-desc">Clips available → switch to CLIP</div>
+            </div>
+          </div>
+          <div class="priority-arrow">↓</div>
+          <div class="priority-item priority-item--3" tabindex="0" role="button"
+               data-priority="3" data-desc="When no live routine and no clips, cycle through the configured fallback sequence (sponsor logos, venue shots, leaderboard, etc).">
+            <div class="priority-number">3</div>
+            <div class="priority-content">
+              <div class="priority-title">Fallback / Gap Fill</div>
+              <div class="priority-desc">Nothing else → cycle fallback sequence</div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Row 3: Coordinator Server -->
-      <div style="position: absolute; top: 380px; left: 50%; transform: translateX(-50%);">
-        <div class="component-box" style="background: var(--bg-tertiary); border: 2px solid var(--color-rundown); border-radius: var(--border-radius); padding: var(--space-md); width: 320px;">
-          <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-sm);">
-            <span class="role-badge rundown">Backend</span>
-            <strong style="color: var(--text-primary);">Coordinator Server</strong>
+        <div style="margin-top: 20px; padding: 12px; background: var(--bg-tertiary, #27272a); border-radius: 6px;">
+          <div style="font-size: 11px; font-weight: 600; color: #60a5fa; margin-bottom: 6px;">Release Override</div>
+          <div style="font-size: 11px; color: var(--text-secondary, #a1a1aa);">
+            When producer releases override, engine re-evaluates starting at Priority 1.
           </div>
-          <ul style="color: var(--text-secondary); font-size: var(--font-size-sm); margin: 0; padding-left: var(--space-md); list-style: disc;">
-            <li>State machine engine (playout logic)</li>
-            <li>Writes currentGraphic to Firebase</li>
-            <li>Heartbeat every 10s</li>
-          </ul>
         </div>
       </div>
-
-      <!-- Arrow: Firebase <-> Coordinator (bidirectional) -->
-      <svg style="position: absolute; top: 290px; left: 50%; transform: translateX(-50%); width: 60px; height: 90px; overflow: visible;">
-        <defs>
-          <marker id="arrow-down-blue" markerWidth="10" markerHeight="10" refX="5" refY="9" orient="auto" markerUnits="strokeWidth">
-            <path d="M0,0 L10,0 L5,9 z" fill="var(--color-producer)" />
-          </marker>
-          <marker id="arrow-up-green" markerWidth="10" markerHeight="10" refX="5" refY="0" orient="auto" markerUnits="strokeWidth">
-            <path d="M0,9 L10,9 L5,0 z" fill="var(--color-talent)" />
-          </marker>
-        </defs>
-        <!-- Down arrow (writes) -->
-        <line x1="20" y1="0" x2="20" y2="80" stroke="var(--color-producer)" stroke-width="2" marker-end="url(#arrow-down-blue)" />
-        <!-- Up arrow (reads/heartbeat) -->
-        <line x1="40" y1="80" x2="40" y2="0" stroke="var(--color-talent)" stroke-width="2" marker-end="url(#arrow-up-green)" />
-        <text x="50" y="45" fill="var(--text-secondary)" font-size="9" font-family="var(--font-mono)">R/W</text>
-      </svg>
-
-      <!-- Row 4: Output instances & OBS -->
-      <div style="display: flex; justify-content: space-between; position: absolute; bottom: 0; left: 0; right: 0;">
-
-        <!-- output.html (clip) -->
-        <div class="component-box" style="background: var(--bg-tertiary); border: 2px solid var(--color-output); border-radius: var(--border-radius); padding: var(--space-md); width: 220px;">
-          <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-sm);">
-            <span class="role-badge output">Output</span>
-            <strong style="color: var(--text-primary);">output.html (clip)</strong>
-          </div>
-          <ul style="color: var(--text-secondary); font-size: var(--font-size-sm); margin: 0; padding-left: var(--space-md); list-style: disc;">
-            <li>Plays clip videos</li>
-            <li>Writes clipStatus on end/stall</li>
-            <li>Monitors heartbeat</li>
-          </ul>
-        </div>
-
-        <!-- OBS -->
-        <div class="component-box" style="background: var(--bg-tertiary); border: 2px solid #888; border-radius: var(--border-radius); padding: var(--space-md); width: 180px;">
-          <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-sm);">
-            <span style="background: #888; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: var(--font-size-sm); font-weight: 600;">EXT</span>
-            <strong style="color: var(--text-primary);">OBS</strong>
-          </div>
-          <ul style="color: var(--text-secondary); font-size: var(--font-size-sm); margin: 0; padding-left: var(--space-md); list-style: disc;">
-            <li>Scene switching</li>
-            <li>Browser sources</li>
-            <li>Stream output</li>
-          </ul>
-        </div>
-
-        <!-- output.html (live) -->
-        <div class="component-box" style="background: var(--bg-tertiary); border: 2px solid var(--color-output); border-radius: var(--border-radius); padding: var(--space-md); width: 220px;">
-          <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-sm);">
-            <span class="role-badge output">Output</span>
-            <strong style="color: var(--text-primary);">output.html (live)</strong>
-          </div>
-          <ul style="color: var(--text-secondary); font-size: var(--font-size-sm); margin: 0; padding-left: var(--space-md); list-style: disc;">
-            <li>Live camera overlays</li>
-            <li>Break backgrounds</li>
-            <li>No video playback</li>
-          </ul>
-        </div>
-      </div>
-
-      <!-- Arrow: Coordinator -> output.html (clip) via Firebase -->
-      <svg style="position: absolute; top: 440px; left: 100px; width: 150px; height: 150px; overflow: visible;">
-        <path d="M150,0 Q80,50 50,150" stroke="var(--color-producer)" stroke-width="2" fill="none" marker-end="url(#arrow-producer)" />
-        <text x="60" y="90" fill="var(--text-secondary)" font-size="9" font-family="var(--font-mono)" transform="rotate(-50, 60, 90)">currentGraphic</text>
-      </svg>
-
-      <!-- Arrow: output.html (clip) -> Firebase (clipStatus write-back) -->
-      <svg style="position: absolute; top: 500px; left: 250px; width: 180px; height: 80px; overflow: visible;">
-        <defs>
-          <marker id="arrow-up-talent" markerWidth="10" markerHeight="10" refX="3" refY="0" orient="auto" markerUnits="strokeWidth">
-            <path d="M0,9 L6,9 L3,0 z" fill="var(--color-talent)" />
-          </marker>
-        </defs>
-        <path d="M0,80 Q90,40 180,0" stroke="var(--color-talent)" stroke-width="2" fill="none" marker-end="url(#arrow-up-talent)" />
-        <text x="70" y="40" fill="var(--text-secondary)" font-size="9" font-family="var(--font-mono)">clipStatus/{draftId}</text>
-      </svg>
-
-      <!-- Arrow: Coordinator -> output.html (live) via Firebase -->
-      <svg style="position: absolute; top: 440px; right: 100px; width: 150px; height: 150px; overflow: visible;">
-        <path d="M0,0 Q70,50 100,150" stroke="var(--color-producer)" stroke-width="2" fill="none" marker-end="url(#arrow-producer)" />
-        <text x="30" y="90" fill="var(--text-secondary)" font-size="9" font-family="var(--font-mono)" transform="rotate(50, 30, 90)">currentGraphic</text>
-      </svg>
-
-      <!-- Arrow: Coordinator -> OBS (scene commands) -->
-      <svg style="position: absolute; top: 460px; left: 50%; transform: translateX(-50%); width: 40px; height: 130px; overflow: visible;">
-        <line x1="20" y1="0" x2="20" y2="120" stroke="var(--color-override)" stroke-width="2" marker-end="url(#arrow-override)" />
-        <text x="25" y="60" fill="var(--text-secondary)" font-size="9" font-family="var(--font-mono)">OBS-WS</text>
-      </svg>
-
-      <!-- Clip Engine (external, top left) -->
-      <div style="position: absolute; top: 380px; left: 20px;">
-        <div class="component-box" style="background: var(--bg-secondary); border: 2px dashed #888; border-radius: var(--border-radius); padding: var(--space-sm); width: 140px;">
-          <div style="display: flex; align-items: center; gap: var(--space-xs); margin-bottom: var(--space-xs);">
-            <span style="background: #888; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 600;">API</span>
-            <strong style="color: var(--text-primary); font-size: var(--font-size-sm);">Clip Engine</strong>
-          </div>
-          <div style="color: var(--text-secondary); font-size: 10px;">Provides clip URLs & metadata</div>
-        </div>
-      </div>
-
-      <!-- Arrow: Clip Engine -> Coordinator -->
-      <svg style="position: absolute; top: 400px; left: 160px; width: 100px; height: 40px; overflow: visible;">
-        <line x1="0" y1="20" x2="90" y2="20" stroke="var(--color-producer)" stroke-width="2" marker-end="url(#arrow-producer)" />
-        <text x="30" y="12" fill="var(--text-secondary)" font-size="9" font-family="var(--font-mono)">clips</text>
-      </svg>
-
     </div>
   </div>
+</section>
 
-  <!-- Data Path Reference Table -->
-  <div class="card" style="margin-top: var(--space-xl);">
-    <div class="card-header">
-      <div class="card-title">Firebase Path Reference</div>
-      <span class="section-badge" data-section="5">§5</span>
+<!-- Detail Panel (shared for state nodes and priority items) -->
+<div class="detail-backdrop" id="detailBackdrop"></div>
+<div class="detail-panel" id="detailPanel" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+  <div class="detail-panel__header">
+    <div class="detail-panel__title">
+      <span id="detailTitle">State</span>
+      <span class="detail-panel__badge" id="detailBadge">MODE</span>
     </div>
-    <div style="padding: var(--space-md);">
-      <table style="width: 100%; border-collapse: collapse; font-size: var(--font-size-sm);">
-        <thead>
-          <tr style="border-bottom: 1px solid var(--border-color);">
-            <th style="text-align: left; padding: var(--space-sm); color: var(--text-secondary);">Path</th>
-            <th style="text-align: left; padding: var(--space-sm); color: var(--text-secondary);">Written By</th>
-            <th style="text-align: left; padding: var(--space-sm); color: var(--text-secondary);">Read By</th>
-            <th style="text-align: left; padding: var(--space-sm); color: var(--text-secondary);">Data Type</th>
-          </tr>
-        </thead>
-        <tbody style="color: var(--text-primary);">
-          <tr style="border-bottom: 1px solid var(--border-color);">
-            <td style="padding: var(--space-sm); font-family: var(--font-mono);">production/playoutState</td>
-            <td style="padding: var(--space-sm);">Coordinator</td>
-            <td style="padding: var(--space-sm);">ProducerView</td>
-            <td style="padding: var(--space-sm);"><span style="color: var(--color-producer);">●</span> Content</td>
-          </tr>
-          <tr style="border-bottom: 1px solid var(--border-color);">
-            <td style="padding: var(--space-sm); font-family: var(--font-mono);">production/engineHeartbeat</td>
-            <td style="padding: var(--space-sm);">Coordinator</td>
-            <td style="padding: var(--space-sm);">ProducerView, output.html</td>
-            <td style="padding: var(--space-sm);"><span style="color: var(--color-talent);">●</span> Status</td>
-          </tr>
-          <tr style="border-bottom: 1px solid var(--border-color);">
-            <td style="padding: var(--space-sm); font-family: var(--font-mono);">production/clipStatus/{draftId}</td>
-            <td style="padding: var(--space-sm);">output.html (clip)</td>
-            <td style="padding: var(--space-sm);">Coordinator</td>
-            <td style="padding: var(--space-sm);"><span style="color: var(--color-talent);">●</span> Status</td>
-          </tr>
-          <tr style="border-bottom: 1px solid var(--border-color);">
-            <td style="padding: var(--space-sm); font-family: var(--font-mono);">currentGraphic</td>
-            <td style="padding: var(--space-sm);">Coordinator</td>
-            <td style="padding: var(--space-sm);">TalentView, output.html (both)</td>
-            <td style="padding: var(--space-sm);"><span style="color: var(--color-producer);">●</span> Content</td>
-          </tr>
-          <tr>
-            <td style="padding: var(--space-sm); font-family: var(--font-mono);">overrides/*</td>
-            <td style="padding: var(--space-sm);">ProducerView</td>
-            <td style="padding: var(--space-sm);">Coordinator</td>
-            <td style="padding: var(--space-sm);"><span style="color: var(--color-override);">●</span> Override</td>
-          </tr>
-        </tbody>
-      </table>
+    <button class="detail-panel__close" id="detailClose" aria-label="Close">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+  <div class="detail-panel__body">
+    <div class="detail-row">
+      <div class="detail-label">Description</div>
+      <div class="detail-value" id="detailDesc"></div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Entry Condition</div>
+      <div class="detail-value" id="detailEntry"></div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Exit Condition</div>
+      <div class="detail-value" id="detailExit"></div>
     </div>
   </div>
-
-  <!-- currentGraphic Data Shapes -->
-  <div class="card" style="margin-top: var(--space-lg);">
-    <div class="card-header">
-      <div class="card-title">currentGraphic Data Shapes</div>
-    </div>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-md); padding: var(--space-md);">
-
-      <!-- clip-playback -->
-      <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-md);">
-        <div style="color: var(--color-producer); font-weight: 600; margin-bottom: var(--space-sm);">graphic: 'clip-playback'</div>
-        <pre style="color: var(--text-secondary); font-size: 11px; font-family: var(--font-mono); margin: 0; white-space: pre-wrap;">draftId, clipUrl, nextClipUrl
-athleteName, teamName, teamLogo
-apparatus, score, duration</pre>
-      </div>
-
-      <!-- moment-replay -->
-      <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-md);">
-        <div style="color: var(--color-rundown); font-weight: 600; margin-bottom: var(--space-sm);">graphic: 'moment-replay'</div>
-        <pre style="color: var(--text-secondary); font-size: 11px; font-family: var(--font-mono); margin: 0; white-space: pre-wrap;">draftId, clipUrl, nextClipUrl
-athleteName, teamName, teamLogo
-apparatus, seekStart, seekEnd
-playbackRate, muted</pre>
-      </div>
-
-      <!-- live-camera -->
-      <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-md);">
-        <div style="color: var(--color-output); font-weight: 600; margin-bottom: var(--space-sm);">graphic: 'live-camera'</div>
-        <pre style="color: var(--text-secondary); font-size: 11px; font-family: var(--font-mono); margin: 0; white-space: pre-wrap;">apparatus</pre>
-      </div>
-
-      <!-- break content -->
-      <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-md);">
-        <div style="color: #f1c40f; font-weight: 600; margin-bottom: var(--space-sm);">graphic: '*' + background</div>
-        <pre style="color: var(--text-secondary); font-size: 11px; font-family: var(--font-mono); margin: 0; white-space: pre-wrap;">Any graphic type with:
-background: true
-(triggers animated bg)</pre>
-      </div>
-
-    </div>
-  </div>
-
 </div>
+
+<!-- Transition Tooltip -->
+<div class="transition-tooltip" id="transitionTooltip">
+  <div class="transition-tooltip__title" id="tooltipTitle">CLIP → LIVE</div>
+  <div class="transition-tooltip__condition" id="tooltipCondition">Condition text</div>
+</div>
+
+<script>
+(function() {
+  // State descriptions for detail panel
+  const stateDescriptions = {
+    'CLIP': 'Playing a queued clip. The video player shows a pre-recorded routine clip with playback controls.',
+    'LIVE': 'Showing live camera feed. A routine is currently in progress on one of the apparatus cameras.',
+    'FALLBACK': 'Cycling through gap fill sequence. No live routine and no clips queued. Typically shows sponsor logos, venue shots, or leaderboard.',
+    'MOMENT_REPLAY': 'Playing a moment replay flagged by producer. Used for significant moments like great scores, falls, or celebrations.',
+    'BREAK': 'Playing break content sequence. A content-sequence segment is active (commercial, interview, etc).',
+    'OVERRIDE': 'Producer has forced a specific camera or graphic. Manual control takes precedence over automation.',
+    'PAUSED': 'Playout is frozen. Producer has paused all automation. Current output holds.'
+  };
+
+  const stateBadgeColors = {
+    'CLIP': { bg: 'rgba(34, 197, 94, 0.2)', text: '#4ade80' },
+    'LIVE': { bg: 'rgba(34, 197, 94, 0.2)', text: '#4ade80' },
+    'FALLBACK': { bg: 'rgba(113, 113, 122, 0.15)', text: '#a1a1aa' },
+    'MOMENT_REPLAY': { bg: 'rgba(6, 182, 212, 0.2)', text: '#22d3ee' },
+    'BREAK': { bg: 'rgba(113, 113, 122, 0.2)', text: '#a1a1aa' },
+    'OVERRIDE': { bg: 'rgba(245, 158, 11, 0.2)', text: '#fbbf24' },
+    'PAUSED': { bg: 'rgba(234, 179, 8, 0.2)', text: '#facc15' }
+  };
+
+  // Elements
+  const detailPanel = document.getElementById('detailPanel');
+  const detailBackdrop = document.getElementById('detailBackdrop');
+  const detailClose = document.getElementById('detailClose');
+  const detailTitle = document.getElementById('detailTitle');
+  const detailBadge = document.getElementById('detailBadge');
+  const detailDesc = document.getElementById('detailDesc');
+  const detailEntry = document.getElementById('detailEntry');
+  const detailExit = document.getElementById('detailExit');
+  const transitionTooltip = document.getElementById('transitionTooltip');
+  const tooltipTitle = document.getElementById('tooltipTitle');
+  const tooltipCondition = document.getElementById('tooltipCondition');
+
+  // State node click handlers
+  document.querySelectorAll('.state-node').forEach(node => {
+    node.addEventListener('click', (e) => {
+      const state = node.dataset.state;
+      const entry = node.dataset.entry;
+      const exit = node.dataset.exit;
+
+      detailTitle.textContent = state;
+      detailBadge.textContent = state === 'MOMENT_REPLAY' ? 'REPLAY' : state;
+      const colors = stateBadgeColors[state];
+      detailBadge.style.background = colors.bg;
+      detailBadge.style.color = colors.text;
+      detailDesc.textContent = stateDescriptions[state];
+      detailEntry.textContent = entry;
+      detailExit.textContent = exit;
+
+      detailPanel.classList.add('is-visible');
+      detailBackdrop.classList.add('is-visible');
+    });
+
+    node.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        node.click();
+      }
+    });
+  });
+
+  // Priority item click handlers
+  document.querySelectorAll('.priority-item').forEach(item => {
+    item.addEventListener('click', (e) => {
+      const priority = item.dataset.priority;
+      const desc = item.dataset.desc;
+      const title = item.querySelector('.priority-title').textContent;
+
+      detailTitle.textContent = 'Priority ' + priority;
+      detailBadge.textContent = 'P' + priority;
+      detailBadge.style.background = 'rgba(59, 130, 246, 0.2)';
+      detailBadge.style.color = '#60a5fa';
+      detailDesc.textContent = desc;
+      detailEntry.textContent = 'Higher priorities (1 > 2 > 3) always take precedence';
+      detailExit.textContent = 'Condition no longer met → evaluate next priority';
+
+      detailPanel.classList.add('is-visible');
+      detailBackdrop.classList.add('is-visible');
+    });
+
+    item.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        item.click();
+      }
+    });
+  });
+
+  // Close detail panel
+  function closeDetail() {
+    detailPanel.classList.remove('is-visible');
+    detailBackdrop.classList.remove('is-visible');
+  }
+
+  detailClose.addEventListener('click', closeDetail);
+  detailBackdrop.addEventListener('click', closeDetail);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && detailPanel.classList.contains('is-visible')) {
+      closeDetail();
+    }
+  });
+
+  // Transition arrow hover
+  document.querySelectorAll('.transition-arrow').forEach(arrow => {
+    arrow.addEventListener('mouseenter', (e) => {
+      const from = arrow.dataset.from;
+      const to = arrow.dataset.to;
+      const condition = arrow.dataset.condition;
+
+      tooltipTitle.textContent = from + ' → ' + to;
+      tooltipCondition.textContent = condition;
+
+      const rect = arrow.getBoundingClientRect();
+      transitionTooltip.style.left = (rect.left + rect.width / 2) + 'px';
+      transitionTooltip.style.top = (rect.top - 10) + 'px';
+      transitionTooltip.style.transform = 'translate(-50%, -100%)';
+      transitionTooltip.classList.add('is-visible');
+
+      // Highlight arrow
+      arrow.style.stroke = '#60a5fa';
+      arrow.style.strokeWidth = '2';
+    });
+
+    arrow.addEventListener('mouseleave', () => {
+      transitionTooltip.classList.remove('is-visible');
+      arrow.style.stroke = '';
+      arrow.style.strokeWidth = '';
+    });
+  });
+})();
+</script>
