@@ -32,7 +32,7 @@
 - `docs/PRD-Clip-Integration/fixtures/sample-response.json` (for realistic mock content)
 - `docs/PRD-Clip-Integration/ui/prototype/sections/style-guide.md` (for CSS conventions)
 
-### Task 2: Add state variations and interactive toggles — NOT STARTED
+### Task 2: Add state variations and interactive toggles — COMPLETE
 
 **File:** `docs/PRD-Clip-Integration/ui/prototype/sections/output.html`
 
