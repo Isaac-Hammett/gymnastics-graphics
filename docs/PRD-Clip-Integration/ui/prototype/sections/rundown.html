@@ -1,0 +1,477 @@
+<div class="section-content section-rundown">
+
+  <!-- Section Header -->
+  <div class="section-header" style="border-left: 4px solid var(--color-rundown);">
+    <h1>Screen 1: Rundown Editor</h1>
+    <span class="role-badge rundown">Rundown</span>
+    <span class="section-badge" data-section="4">§4</span>
+    <p style="color: var(--text-secondary); margin-top: var(--space-sm);">
+      Playout Rules Configuration — Configure rotation breaks, content sequences, and gap fill behavior
+    </p>
+  </div>
+
+  <!-- Two-column layout: Playout Segment | Content Sequence Segment -->
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); margin-top: var(--space-lg);">
+
+    <!-- ===== PLAYOUT SEGMENT (§4.1) ===== -->
+    <div class="card" style="border-top: 3px solid var(--color-rundown);">
+      <div class="card-header">
+        <div class="card-title">Rotation Segment (Playout Type)</div>
+        <span class="section-badge" data-section="4.1">§4.1</span>
+      </div>
+
+      <!-- Segment Header -->
+      <div style="padding: var(--space-md); border-bottom: 1px solid var(--border-color);">
+        <div style="display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-sm);">
+          <label style="color: var(--text-secondary); min-width: 80px;">Segment:</label>
+          <input type="text" value="Rotation 1" readonly style="flex: 1; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-sm) var(--space-md); color: var(--text-primary);">
+        </div>
+        <div style="display: flex; align-items: center; gap: var(--space-md);">
+          <label style="color: var(--text-secondary); min-width: 80px;">Type:</label>
+          <select style="flex: 1; background: var(--bg-tertiary); border: 1px solid var(--color-rundown); border-radius: var(--border-radius); padding: var(--space-sm) var(--space-md); color: cyan;">
+            <option selected>Playout</option>
+            <option>Content Sequence</option>
+            <option>Standard</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Playout Rules Panel -->
+      <div style="padding: var(--space-md); border-bottom: 1px solid var(--border-color);">
+        <div style="font-weight: 600; color: var(--text-primary); margin-bottom: var(--space-md);">
+          Playout Rules <span class="role-badge rundown" style="font-size: 10px; padding: 2px 6px;">PlayoutRulesEditor.jsx</span>
+        </div>
+
+        <!-- Clip Order -->
+        <div style="display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-sm);">
+          <label style="color: var(--text-secondary); min-width: 140px;">Clip Order:</label>
+          <select style="flex: 1; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-sm) var(--space-md); color: var(--text-primary);">
+            <option selected>Chronological</option>
+            <option>By Score (Highest First)</option>
+            <option>By Team (Alternating)</option>
+            <option>By Apparatus</option>
+          </select>
+        </div>
+
+        <!-- Apparatus Priority -->
+        <div style="display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-sm);">
+          <label style="color: var(--text-secondary); min-width: 140px;">Apparatus Priority:</label>
+          <select style="flex: 1; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-sm) var(--space-md); color: var(--text-primary);">
+            <option selected>No Priority</option>
+            <option>BB (Balance Beam)</option>
+            <option>UB (Uneven Bars)</option>
+            <option>VT (Vault)</option>
+            <option>FX (Floor Exercise)</option>
+          </select>
+        </div>
+
+        <!-- Clip Transition -->
+        <div style="display: flex; align-items: center; gap: var(--space-md);">
+          <label style="color: var(--text-secondary); min-width: 140px;">Clip Transition:</label>
+          <select style="flex: 1; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-sm) var(--space-md); color: var(--text-primary);">
+            <option selected>Cut</option>
+            <option>Crossfade</option>
+            <option disabled style="color: var(--text-muted);">Stinger (Coming soon)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Gap Fill Sequence -->
+      <div style="padding: var(--space-md);">
+        <div style="font-weight: 600; color: var(--text-primary); margin-bottom: var(--space-md);">
+          Gap Fill Sequence
+          <span style="color: var(--text-secondary); font-weight: normal; font-size: var(--font-size-sm);">
+            (plays when no clips available)
+          </span>
+        </div>
+
+        <!-- Gap Fill Items -->
+        <div style="display: flex; flex-direction: column; gap: var(--space-sm);">
+
+          <!-- Item 1 -->
+          <div style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
+            <span style="color: var(--text-muted); width: 20px;">1.</span>
+            <select style="flex: 2; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm); color: var(--text-primary); font-size: var(--font-size-sm);">
+              <option selected>Quad View</option>
+              <option>Standings</option>
+              <option>Sponsor</option>
+              <option>Event Summary</option>
+              <option>Calendar</option>
+            </select>
+            <input type="number" value="20" style="width: 50px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs); color: var(--text-primary); text-align: center; font-size: var(--font-size-sm);">
+            <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">sec</span>
+            <label style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: var(--font-size-sm);">
+              <input type="checkbox"> BG
+            </label>
+            <button class="btn-icon" title="Remove" style="color: var(--color-override);">✕</button>
+            <button class="btn-icon" title="Drag to reorder" style="color: var(--text-muted); cursor: grab;">↕</button>
+          </div>
+
+          <!-- Item 2 -->
+          <div style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
+            <span style="color: var(--text-muted); width: 20px;">2.</span>
+            <select style="flex: 2; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm); color: var(--text-primary); font-size: var(--font-size-sm);">
+              <option>Quad View</option>
+              <option selected>Standings</option>
+              <option>Sponsor</option>
+              <option>Event Summary</option>
+              <option>Calendar</option>
+            </select>
+            <input type="number" value="15" style="width: 50px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs); color: var(--text-primary); text-align: center; font-size: var(--font-size-sm);">
+            <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">sec</span>
+            <label style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: var(--font-size-sm);">
+              <input type="checkbox" checked> BG
+            </label>
+            <button class="btn-icon" title="Remove" style="color: var(--color-override);">✕</button>
+            <button class="btn-icon" title="Drag to reorder" style="color: var(--text-muted); cursor: grab;">↕</button>
+          </div>
+
+          <!-- Item 3 -->
+          <div style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
+            <span style="color: var(--text-muted); width: 20px;">3.</span>
+            <select style="flex: 2; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm); color: var(--text-primary); font-size: var(--font-size-sm);">
+              <option>Quad View</option>
+              <option>Standings</option>
+              <option selected>Sponsor</option>
+              <option>Event Summary</option>
+              <option>Calendar</option>
+            </select>
+            <input type="number" value="10" style="width: 50px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs); color: var(--text-primary); text-align: center; font-size: var(--font-size-sm);">
+            <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">sec</span>
+            <label style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: var(--font-size-sm);">
+              <input type="checkbox" checked> BG
+            </label>
+            <button class="btn-icon" title="Remove" style="color: var(--color-override);">✕</button>
+            <button class="btn-icon" title="Drag to reorder" style="color: var(--text-muted); cursor: grab;">↕</button>
+          </div>
+
+        </div>
+
+        <!-- Add Button -->
+        <button class="btn btn-secondary" style="margin-top: var(--space-md); width: 100%; border-style: dashed;">
+          + Add Gap Fill Item
+        </button>
+
+        <!-- Loop Toggle -->
+        <label style="display: flex; align-items: center; gap: var(--space-sm); margin-top: var(--space-md); color: var(--text-primary);">
+          <input type="checkbox" checked> Loop sequence
+          <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">(when last item finishes, restart from first)</span>
+        </label>
+      </div>
+
+      <!-- Validation Note -->
+      <div style="padding: var(--space-sm) var(--space-md); background: rgba(181, 106, 255, 0.1); border-top: 1px solid var(--border-color); font-size: var(--font-size-sm); color: var(--text-secondary);">
+        Requires at least one gap fill item to save
+      </div>
+    </div>
+
+    <!-- ===== CONTENT SEQUENCE SEGMENT (§4.2) ===== -->
+    <div class="card" style="border-top: 3px solid #f0b429;">
+      <div class="card-header">
+        <div class="card-title">Rotation Break Segment (Content Sequence Type)</div>
+        <span class="section-badge" data-section="4.2">§4.2</span>
+      </div>
+
+      <!-- Segment Header -->
+      <div style="padding: var(--space-md); border-bottom: 1px solid var(--border-color);">
+        <div style="display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-sm);">
+          <label style="color: var(--text-secondary); min-width: 80px;">Segment:</label>
+          <input type="text" value="Rotation 1 Break" readonly style="flex: 1; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-sm) var(--space-md); color: var(--text-primary);">
+        </div>
+        <div style="display: flex; align-items: center; gap: var(--space-md);">
+          <label style="color: var(--text-secondary); min-width: 80px;">Type:</label>
+          <select style="flex: 1; background: var(--bg-tertiary); border: 1px solid #f0b429; border-radius: var(--border-radius); padding: var(--space-sm) var(--space-md); color: #f0b429;">
+            <option>Playout</option>
+            <option selected>Content Sequence</option>
+            <option>Standard</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Content Sequence Editor -->
+      <div style="padding: var(--space-md); border-bottom: 1px solid var(--border-color);">
+        <div style="font-weight: 600; color: var(--text-primary); margin-bottom: var(--space-md);">
+          Content <span class="role-badge rundown" style="font-size: 10px; padding: 2px 6px; background: #f0b429;">ContentSequenceEditor.jsx</span>
+        </div>
+
+        <!-- Content Items -->
+        <div style="display: flex; flex-direction: column; gap: var(--space-sm);">
+
+          <!-- Item 1: Event Summary -->
+          <div style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
+            <span style="color: var(--text-muted); width: 20px;">1.</span>
+            <select style="flex: 2; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm); color: var(--text-primary); font-size: var(--font-size-sm);">
+              <option selected>Event Summary</option>
+              <option>Sponsor</option>
+              <option>Highlight Reel</option>
+              <option>Calendar</option>
+              <option>Quad View</option>
+              <option>Standings</option>
+            </select>
+            <input type="number" value="30" style="width: 50px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs); color: var(--text-primary); text-align: center; font-size: var(--font-size-sm);">
+            <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">sec</span>
+            <label style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: var(--font-size-sm);" title="Background">
+              <input type="checkbox" checked> BG
+            </label>
+            <label style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: var(--font-size-sm);" title="Skip if no data">
+              <input type="checkbox" checked> Skip∅
+            </label>
+            <button class="btn-icon" title="Remove" style="color: var(--color-override);">✕</button>
+            <button class="btn-icon" title="Drag to reorder" style="color: var(--text-muted); cursor: grab;">↕</button>
+          </div>
+
+          <!-- Item 2: Sponsor -->
+          <div style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
+            <span style="color: var(--text-muted); width: 20px;">2.</span>
+            <select style="flex: 2; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm); color: var(--text-primary); font-size: var(--font-size-sm);">
+              <option>Event Summary</option>
+              <option selected>Sponsor</option>
+              <option>Highlight Reel</option>
+              <option>Calendar</option>
+              <option>Quad View</option>
+              <option>Standings</option>
+            </select>
+            <input type="number" value="10" style="width: 50px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs); color: var(--text-primary); text-align: center; font-size: var(--font-size-sm);">
+            <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">sec</span>
+            <label style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: var(--font-size-sm);" title="Background">
+              <input type="checkbox" checked> BG
+            </label>
+            <label style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: var(--font-size-sm);" title="Skip if no data">
+              <input type="checkbox"> Skip∅
+            </label>
+            <button class="btn-icon" title="Remove" style="color: var(--color-override);">✕</button>
+            <button class="btn-icon" title="Drag to reorder" style="color: var(--text-muted); cursor: grab;">↕</button>
+          </div>
+
+          <!-- Item 3: Highlight Reel -->
+          <div style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
+            <span style="color: var(--text-muted); width: 20px;">3.</span>
+            <select style="flex: 2; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm); color: var(--text-primary); font-size: var(--font-size-sm);">
+              <option>Event Summary</option>
+              <option>Sponsor</option>
+              <option selected>Highlight Reel</option>
+              <option>Calendar</option>
+              <option>Quad View</option>
+              <option>Standings</option>
+            </select>
+            <span style="width: 50px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs); color: var(--text-muted); text-align: center; font-size: var(--font-size-sm);">auto</span>
+            <span style="color: var(--text-secondary); font-size: var(--font-size-sm); visibility: hidden;">sec</span>
+            <label style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: var(--font-size-sm);" title="Background">
+              <input type="checkbox" checked> BG
+            </label>
+            <label style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: var(--font-size-sm);" title="Skip if no data">
+              <input type="checkbox" checked> Skip∅
+            </label>
+            <button class="btn-icon" title="Remove" style="color: var(--color-override);">✕</button>
+            <button class="btn-icon" title="Drag to reorder" style="color: var(--text-muted); cursor: grab;">↕</button>
+          </div>
+
+          <!-- Item 4: Calendar -->
+          <div style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
+            <span style="color: var(--text-muted); width: 20px;">4.</span>
+            <select style="flex: 2; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm); color: var(--text-primary); font-size: var(--font-size-sm);">
+              <option>Event Summary</option>
+              <option>Sponsor</option>
+              <option>Highlight Reel</option>
+              <option selected>Calendar</option>
+              <option>Quad View</option>
+              <option>Standings</option>
+            </select>
+            <input type="number" value="15" style="width: 50px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs); color: var(--text-primary); text-align: center; font-size: var(--font-size-sm);">
+            <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">sec</span>
+            <label style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: var(--font-size-sm);" title="Background">
+              <input type="checkbox" checked> BG
+            </label>
+            <label style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: var(--font-size-sm);" title="Skip if no data">
+              <input type="checkbox"> Skip∅
+            </label>
+            <button class="btn-icon" title="Remove" style="color: var(--color-override);">✕</button>
+            <button class="btn-icon" title="Drag to reorder" style="color: var(--text-muted); cursor: grab;">↕</button>
+          </div>
+
+          <!-- Item 5: Quad View (hold) -->
+          <div style="display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm); background: var(--bg-tertiary); border-radius: var(--border-radius);">
+            <span style="color: var(--text-muted); width: 20px;">5.</span>
+            <select style="flex: 2; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs) var(--space-sm); color: var(--text-primary); font-size: var(--font-size-sm);">
+              <option>Event Summary</option>
+              <option>Sponsor</option>
+              <option>Highlight Reel</option>
+              <option>Calendar</option>
+              <option selected>Quad View</option>
+              <option>Standings</option>
+            </select>
+            <select style="width: 60px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--space-xs); color: var(--color-rundown); text-align: center; font-size: var(--font-size-sm);">
+              <option>5</option>
+              <option>10</option>
+              <option>15</option>
+              <option>30</option>
+              <option selected>hold</option>
+            </select>
+            <span style="color: var(--text-secondary); font-size: var(--font-size-sm); visibility: hidden;">sec</span>
+            <label style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: var(--font-size-sm);" title="Background">
+              <input type="checkbox"> BG
+            </label>
+            <label style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary); font-size: var(--font-size-sm);" title="Skip if no data">
+              <input type="checkbox"> Skip∅
+            </label>
+            <button class="btn-icon" title="Remove" style="color: var(--color-override);">✕</button>
+            <button class="btn-icon" title="Drag to reorder" style="color: var(--text-muted); cursor: grab;">↕</button>
+          </div>
+
+        </div>
+
+        <!-- Add Button -->
+        <button class="btn btn-secondary" style="margin-top: var(--space-md); width: 100%; border-style: dashed;">
+          + Add Content Item
+        </button>
+      </div>
+
+      <!-- Advance Condition -->
+      <div style="padding: var(--space-md);">
+        <div style="font-weight: 600; color: var(--text-primary); margin-bottom: var(--space-md);">
+          Auto-advance to next segment when:
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: var(--space-sm);">
+          <label style="display: flex; align-items: flex-start; gap: var(--space-sm); color: var(--text-primary); cursor: pointer;">
+            <input type="radio" name="advance-condition" checked style="margin-top: 3px;">
+            <span>
+              Next rotation scores detected
+              <span style="color: var(--text-secondary); font-size: var(--font-size-sm); display: block;">(Virtius API)</span>
+            </span>
+          </label>
+          <label style="display: flex; align-items: flex-start; gap: var(--space-sm); color: var(--text-primary); cursor: pointer;">
+            <input type="radio" name="advance-condition" style="margin-top: 3px;">
+            <span>
+              All content items complete
+              <span style="color: var(--text-secondary); font-size: var(--font-size-sm); display: block;">(hold items wait for advance)</span>
+            </span>
+          </label>
+          <label style="display: flex; align-items: flex-start; gap: var(--space-sm); color: var(--text-primary); cursor: pointer;">
+            <input type="radio" name="advance-condition" style="margin-top: 3px;">
+            <span>Manual advance only</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Validation Note -->
+      <div style="padding: var(--space-sm) var(--space-md); background: rgba(240, 180, 41, 0.1); border-top: 1px solid var(--border-color); font-size: var(--font-size-sm); color: var(--text-secondary);">
+        Requires at least one content item to save
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===== GRAPHIC TYPES REFERENCE TABLE ===== -->
+  <div class="card" style="margin-top: var(--space-lg); border-top: 3px solid var(--color-rundown);">
+    <div class="card-header">
+      <div class="card-title">Content Sequence Graphic Types</div>
+      <span class="section-badge" data-section="4.2">§4.2</span>
+    </div>
+    <div style="padding: var(--space-md); overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse; font-size: var(--font-size-sm);">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--border-color);">
+            <th style="text-align: left; padding: var(--space-sm); color: var(--text-secondary);">graphicType</th>
+            <th style="text-align: left; padding: var(--space-sm); color: var(--text-secondary);">output.html renderer</th>
+            <th style="text-align: left; padding: var(--space-sm); color: var(--text-secondary);">Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom: 1px solid var(--border-color);">
+            <td style="padding: var(--space-sm); color: var(--text-primary);"><code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 3px;">event-summary</code></td>
+            <td style="padding: var(--space-sm); color: var(--text-primary);"><code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 3px;">event-summary</code></td>
+            <td style="padding: var(--space-sm); color: var(--text-secondary);">Existing renderer</td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--border-color);">
+            <td style="padding: var(--space-sm); color: var(--text-primary);"><code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 3px;">standings</code></td>
+            <td style="padding: var(--space-sm); color: var(--text-primary);"><code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 3px;">virtius-leaderboard</code></td>
+            <td style="padding: var(--space-sm); color: var(--text-secondary);">Renderer name differs</td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--border-color);">
+            <td style="padding: var(--space-sm); color: var(--text-primary);"><code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 3px;">sponsor</code></td>
+            <td style="padding: var(--space-sm); color: var(--text-primary);"><code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 3px;">sponsors-cycle</code></td>
+            <td style="padding: var(--space-sm); color: var(--text-secondary);">Existing sponsor cycling</td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--border-color);">
+            <td style="padding: var(--space-sm); color: var(--text-primary);"><code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 3px;">calendar</code></td>
+            <td style="padding: var(--space-sm); color: var(--text-primary);"><code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 3px;">event-calendar</code></td>
+            <td style="padding: var(--space-sm); color: var(--text-secondary);">Existing renderer</td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--border-color);">
+            <td style="padding: var(--space-sm); color: var(--text-primary);"><code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 3px;">quad-view</code></td>
+            <td style="padding: var(--space-sm); color: var(--text-primary);"><code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 3px;">clear</code> + OBS command</td>
+            <td style="padding: var(--space-sm); color: var(--text-secondary);">Triggers OBS multi-view switch</td>
+          </tr>
+          <tr>
+            <td style="padding: var(--space-sm); color: var(--text-primary);"><code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 3px;">highlight-reel</code></td>
+            <td style="padding: var(--space-sm); color: var(--text-primary);"><span style="color: var(--text-muted);">N/A (Stage A: placeholder)</span></td>
+            <td style="padding: var(--space-sm); color: var(--text-secondary);">Stage A: static title card. Stage B: auto-plays.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== DATA SHAPE REFERENCE ===== -->
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); margin-top: var(--space-lg);">
+
+    <!-- Playout Data Shape -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Playout Segment Data Shape</div>
+        <span class="section-badge" data-section="4.1">§4.1</span>
+      </div>
+      <div style="padding: var(--space-md);">
+        <pre style="background: var(--bg-tertiary); padding: var(--space-md); border-radius: var(--border-radius); overflow-x: auto; font-family: var(--font-mono); font-size: var(--font-size-sm); color: var(--text-primary); margin: 0;"><code>{
+  type: 'playout',
+  name: 'Rotation 1',
+  playoutRules: {
+    clipOrder: 'chronological',
+    apparatusPriority: null,
+    transitionType: 'cut',
+    crossfadeDuration: 500,
+    gapFillSequence: [
+      { graphicType: 'quad-view',
+        duration: 20, background: false },
+      { graphicType: 'standings',
+        duration: 15, background: true },
+      { graphicType: 'sponsor',
+        duration: 10, background: true }
+    ],
+    gapFillLoop: true
+  }
+}</code></pre>
+      </div>
+    </div>
+
+    <!-- Content Sequence Data Shape -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Content Sequence Segment Data Shape</div>
+        <span class="section-badge" data-section="4.2">§4.2</span>
+      </div>
+      <div style="padding: var(--space-md);">
+        <pre style="background: var(--bg-tertiary); padding: var(--space-md); border-radius: var(--border-radius); overflow-x: auto; font-family: var(--font-mono); font-size: var(--font-size-sm); color: var(--text-primary); margin: 0;"><code>{
+  type: 'content-sequence',
+  name: 'Rotation 1 Break',
+  contentSequence: [
+    { graphicType: 'event-summary',
+      duration: 30, background: true,
+      skipIfNoData: true,
+      params: { rotation: 'current' } },
+    { graphicType: 'sponsor',
+      duration: 10, background: true,
+      skipIfNoData: false },
+    { graphicType: 'quad-view',
+      duration: null, background: false,
+      skipIfNoData: false }
+  ],
+  advanceCondition: 'next-rotation-detected'
+}</code></pre>
+      </div>
+    </div>
+
+  </div>
+
+</div>
