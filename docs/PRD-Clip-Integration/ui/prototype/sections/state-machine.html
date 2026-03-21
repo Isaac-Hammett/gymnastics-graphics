@@ -1,0 +1,856 @@
+<div class="section-content section-flows">
+  <h2>State Machine Diagram</h2>
+  <p class="section-desc">
+    The playout engine operates in mutually exclusive states. This diagram shows how the system transitions between states based on events.
+    <span class="section-badge" data-section="3C">§3C</span>
+  </p>
+
+  <!-- Legend -->
+  <div class="state-legend">
+    <div class="legend-title">Legend</div>
+    <div class="legend-items">
+      <div class="legend-item">
+        <span class="legend-color" style="background: var(--color-talent);"></span>
+        <span>Normal States</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-color" style="background: #45b854;"></span>
+        <span>Media Playback</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-color" style="background: var(--color-output);"></span>
+        <span>Override States</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-color" style="background: var(--color-override);"></span>
+        <span>Error States</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main State Diagram -->
+  <div class="state-diagram">
+
+    <!-- Top Row: PAUSED and OVERRIDE -->
+    <div class="state-row state-row-override">
+      <div class="state-box override" id="state-paused" title="Click to view ProducerView">
+        <div class="state-name">PAUSED</div>
+        <div class="state-desc">Playout frozen by producer</div>
+        <div class="state-transitions">
+          <span class="transition-in">← Producer Pause</span>
+          <span class="transition-out">Producer Resume →</span>
+        </div>
+      </div>
+
+      <div class="state-box override" id="state-override" title="Click to view ProducerView">
+        <div class="state-name">OVERRIDE</div>
+        <div class="state-desc">Producer forced camera/graphic</div>
+        <div class="state-transitions">
+          <span class="transition-in">← Force Camera</span>
+          <span class="transition-out">Release Override →</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Arrow from Override states down -->
+    <div class="arrow-row">
+      <div class="arrow-vertical">
+        <div class="arrow-line"></div>
+        <div class="arrow-head">▼</div>
+      </div>
+      <div class="arrow-label">From any state</div>
+      <div class="arrow-vertical">
+        <div class="arrow-line"></div>
+        <div class="arrow-head">▼</div>
+      </div>
+    </div>
+
+    <!-- Main Row: Core States -->
+    <div class="state-row state-row-main">
+      <div class="state-box normal" id="state-fallback" title="Click to view OutputView">
+        <div class="state-name">FALLBACK</div>
+        <div class="state-desc">Cycling gap fill sequence</div>
+        <div class="state-conditions">
+          <span class="condition">No live routine</span>
+          <span class="condition">No queued clips</span>
+        </div>
+      </div>
+
+      <div class="state-connector">
+        <div class="connector-arrow-right">
+          <span class="arrow-label-inline">clip arrives</span>
+          →
+        </div>
+        <div class="connector-arrow-left">
+          ←
+          <span class="arrow-label-inline">queue empty</span>
+        </div>
+      </div>
+
+      <div class="state-box media" id="state-clip" title="Click to view OutputView">
+        <div class="state-name">CLIP</div>
+        <div class="state-desc">Playing a clip</div>
+        <div class="state-conditions">
+          <span class="condition">Clip dequeued</span>
+        </div>
+      </div>
+
+      <div class="state-connector">
+        <div class="connector-arrow-right">
+          <span class="arrow-label-inline">clip ends</span>
+          →
+        </div>
+        <div class="connector-arrow-left">
+          ←
+          <span class="arrow-label-inline">routine ends</span>
+        </div>
+      </div>
+
+      <div class="state-box normal" id="state-live" title="Click to view OutputView">
+        <div class="state-name">LIVE</div>
+        <div class="state-desc">Showing live camera</div>
+        <div class="state-conditions">
+          <span class="condition">Routine detected</span>
+          <span class="condition">No clip playing</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Arrows to secondary states -->
+    <div class="arrow-row-secondary">
+      <div class="secondary-arrow-group">
+        <div class="arrow-diagonal-down-left">
+          <span class="arrow-label-inline">moment flag</span>
+        </div>
+      </div>
+      <div class="secondary-arrow-group">
+        <div class="arrow-diagonal-down-right">
+          <span class="arrow-label-inline">segment active</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Secondary Row: MOMENT_REPLAY and BREAK -->
+    <div class="state-row state-row-secondary">
+      <div class="state-box media" id="state-moment" title="Click to view ProducerView">
+        <div class="state-name">MOMENT_REPLAY</div>
+        <div class="state-desc">Playing moment replay</div>
+        <div class="state-conditions">
+          <span class="condition">"Play Now" flagged</span>
+        </div>
+        <div class="state-transitions">
+          <span class="transition-out">replay ends / skip →</span>
+        </div>
+      </div>
+
+      <div class="state-spacer"></div>
+
+      <div class="state-box media" id="state-break" title="Click to view RundownView">
+        <div class="state-name">BREAK</div>
+        <div class="state-desc">Playing break content</div>
+        <div class="state-conditions">
+          <span class="condition">Content-sequence active</span>
+        </div>
+        <div class="state-transitions">
+          <span class="transition-out">advance / manual →</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error States Row -->
+    <div class="state-row state-row-error">
+      <div class="state-box error" id="state-stalled" title="Click to view ProducerView">
+        <div class="state-name">STALLED</div>
+        <div class="state-desc">Clip stuck during playback</div>
+        <div class="state-transitions">
+          <span class="transition-in">← stallDetected</span>
+          <span class="transition-out">Retry / Failed →</span>
+        </div>
+      </div>
+
+      <div class="state-box error" id="state-failed" title="Click to view ProducerView">
+        <div class="state-name">FAILED</div>
+        <div class="state-desc">Clip load error</div>
+        <div class="state-transitions">
+          <span class="transition-in">← loadError</span>
+          <span class="transition-out">Retry →</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Clip Status Lifecycle -->
+  <h3>Clip Status Lifecycle</h3>
+  <div class="lifecycle-diagram">
+    <div class="lifecycle-row">
+      <div class="lifecycle-box pending">
+        <span class="lifecycle-status">pending</span>
+        <span class="lifecycle-desc">Not ready (encoding)</span>
+      </div>
+      <div class="lifecycle-arrow">→</div>
+      <div class="lifecycle-box queued">
+        <span class="lifecycle-status">queued</span>
+        <span class="lifecycle-desc">Ready to play</span>
+      </div>
+      <div class="lifecycle-arrow">→</div>
+      <div class="lifecycle-box playing">
+        <span class="lifecycle-status">playing</span>
+        <span class="lifecycle-desc">Currently playing</span>
+      </div>
+      <div class="lifecycle-arrow">→</div>
+      <div class="lifecycle-box played">
+        <span class="lifecycle-status">played</span>
+        <span class="lifecycle-desc">Finished successfully</span>
+      </div>
+    </div>
+
+    <div class="lifecycle-branches">
+      <div class="lifecycle-branch">
+        <div class="branch-line"></div>
+        <div class="lifecycle-box shown-live">
+          <span class="lifecycle-status">shown-live</span>
+          <span class="lifecycle-desc">Auto-skipped</span>
+        </div>
+      </div>
+      <div class="lifecycle-branch">
+        <div class="branch-line"></div>
+        <div class="lifecycle-box skipped">
+          <span class="lifecycle-status">skipped</span>
+          <span class="lifecycle-desc">Manual skip</span>
+        </div>
+      </div>
+      <div class="lifecycle-branch">
+        <div class="branch-line"></div>
+        <div class="lifecycle-box stalled">
+          <span class="lifecycle-status">stalled</span>
+          <span class="lifecycle-desc">Got stuck</span>
+        </div>
+      </div>
+      <div class="lifecycle-branch">
+        <div class="branch-line"></div>
+        <div class="lifecycle-box failed">
+          <span class="lifecycle-status">failed</span>
+          <span class="lifecycle-desc">Load error</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="lifecycle-note">
+      All terminal states (played, shown-live, skipped, failed) can transition back to <strong>queued</strong> via "Add to Queue" or "Retry"
+    </div>
+  </div>
+
+  <!-- Camera States -->
+  <h3>Camera States</h3>
+  <div class="camera-states">
+    <div class="camera-state">
+      <span class="camera-dot idle"></span>
+      <span class="camera-label">idle</span>
+      <span class="camera-desc">No activity</span>
+    </div>
+    <div class="camera-state">
+      <span class="camera-dot recording"></span>
+      <span class="camera-label">recording</span>
+      <span class="camera-desc">Routine in progress</span>
+    </div>
+    <div class="camera-state">
+      <span class="camera-dot live"></span>
+      <span class="camera-label">live</span>
+      <span class="camera-desc">Shown on stream</span>
+    </div>
+    <div class="camera-state">
+      <span class="camera-dot recording-live"></span>
+      <span class="camera-label">recording-live</span>
+      <span class="camera-desc">Recording AND live</span>
+    </div>
+  </div>
+
+  <!-- Preload States -->
+  <h3>Preload States</h3>
+  <div class="preload-states">
+    <div class="preload-flow">
+      <div class="preload-box none">none</div>
+      <div class="preload-arrow">→</div>
+      <div class="preload-box preloading">preloading</div>
+      <div class="preload-arrow">→</div>
+      <div class="preload-box ready">preload-ready</div>
+    </div>
+    <div class="preload-error">
+      <div class="preload-arrow-down">↓</div>
+      <div class="preload-box failed">preload-failed</div>
+      <span class="preload-note">Falls back to on-demand load (30s timeout)</span>
+    </div>
+  </div>
+
+  <!-- Priority Stack -->
+  <h3>Priority Stack</h3>
+  <p class="priority-desc">The playout engine's decision hierarchy when re-evaluating after state changes:</p>
+  <div class="priority-stack">
+    <div class="priority-level p1">
+      <span class="priority-num">P1</span>
+      <span class="priority-name">Live Routine</span>
+      <span class="priority-desc">Camera detects routine → switch to camera</span>
+      <span class="priority-note">(clips are never interrupted except by Force Camera)</span>
+    </div>
+    <div class="priority-level p2">
+      <span class="priority-num">P2</span>
+      <span class="priority-name">Queued Clips</span>
+      <span class="priority-desc">Clips in queue → play next clip</span>
+    </div>
+    <div class="priority-level p3">
+      <span class="priority-num">P3</span>
+      <span class="priority-name">Fallback/Gap Fill</span>
+      <span class="priority-desc">Cycle through configured fallback sequence</span>
+    </div>
+  </div>
+</div>
+
+<style>
+/* State Machine Styles - Scoped to this section */
+.section-flows {
+  padding: var(--space-lg);
+}
+
+.section-flows h2 {
+  margin-bottom: var(--space-sm);
+  color: var(--text-primary);
+}
+
+.section-flows h3 {
+  margin-top: var(--space-xl);
+  margin-bottom: var(--space-md);
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: var(--space-sm);
+}
+
+.section-desc {
+  color: var(--text-secondary);
+  margin-bottom: var(--space-lg);
+}
+
+/* Legend */
+.state-legend {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: var(--space-md);
+  margin-bottom: var(--space-lg);
+  display: inline-block;
+}
+
+.legend-title {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--space-sm);
+}
+
+.legend-items {
+  display: flex;
+  gap: var(--space-lg);
+  flex-wrap: wrap;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+}
+
+/* State Diagram Container */
+.state-diagram {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: var(--space-xl);
+  overflow-x: auto;
+}
+
+/* State Rows */
+.state-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+  flex-wrap: wrap;
+}
+
+.state-row-override {
+  margin-bottom: var(--space-sm);
+}
+
+.state-row-main {
+  margin-bottom: var(--space-md);
+}
+
+.state-row-secondary {
+  margin-top: var(--space-md);
+}
+
+.state-row-error {
+  margin-top: var(--space-xl);
+  padding-top: var(--space-lg);
+  border-top: 1px dashed var(--border-color);
+}
+
+/* State Box */
+.state-box {
+  min-width: 160px;
+  padding: var(--space-md);
+  border-radius: var(--border-radius);
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.state-box:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.state-box.normal {
+  background: rgba(78, 205, 196, 0.15);
+  border: 2px solid var(--color-talent);
+}
+
+.state-box.media {
+  background: rgba(69, 184, 84, 0.15);
+  border: 2px solid #45b854;
+}
+
+.state-box.override {
+  background: rgba(255, 140, 66, 0.15);
+  border: 2px solid var(--color-output);
+}
+
+.state-box.error {
+  background: rgba(255, 71, 87, 0.15);
+  border: 2px solid var(--color-override);
+}
+
+.state-name {
+  font-weight: 700;
+  font-size: var(--font-size-lg);
+  color: var(--text-primary);
+  margin-bottom: var(--space-xs);
+}
+
+.state-desc {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-sm);
+}
+
+.state-conditions {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.condition {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.state-transitions {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: var(--space-sm);
+  font-size: var(--font-size-sm);
+}
+
+.transition-in {
+  color: #45b854;
+}
+
+.transition-out {
+  color: var(--color-output);
+}
+
+/* Connectors */
+.state-connector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.connector-arrow-right,
+.connector-arrow-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  white-space: nowrap;
+}
+
+.arrow-label-inline {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Arrow Row */
+.arrow-row {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: var(--space-xl);
+  margin: var(--space-sm) 0;
+}
+
+.arrow-vertical {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.arrow-line {
+  width: 2px;
+  height: 20px;
+  background: var(--text-muted);
+}
+
+.arrow-head {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.arrow-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--bg-tertiary);
+  border-radius: 3px;
+}
+
+/* Secondary Arrow Row */
+.arrow-row-secondary {
+  display: flex;
+  justify-content: space-around;
+  padding: 0 15%;
+}
+
+.secondary-arrow-group {
+  text-align: center;
+}
+
+.arrow-diagonal-down-left,
+.arrow-diagonal-down-right {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.arrow-diagonal-down-left::before {
+  content: "↙";
+  margin-right: var(--space-xs);
+}
+
+.arrow-diagonal-down-right::after {
+  content: "↘";
+  margin-left: var(--space-xs);
+}
+
+.state-spacer {
+  width: 200px;
+}
+
+/* Lifecycle Diagram */
+.lifecycle-diagram {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: var(--space-lg);
+}
+
+.lifecycle-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-lg);
+}
+
+.lifecycle-box {
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--border-radius);
+  text-align: center;
+  min-width: 100px;
+}
+
+.lifecycle-box.pending {
+  background: rgba(102, 102, 102, 0.3);
+  border: 1px solid var(--color-disabled);
+}
+
+.lifecycle-box.queued {
+  background: rgba(74, 158, 255, 0.2);
+  border: 1px solid var(--color-producer);
+}
+
+.lifecycle-box.playing {
+  background: rgba(69, 184, 84, 0.2);
+  border: 1px solid #45b854;
+}
+
+.lifecycle-box.played {
+  background: rgba(78, 205, 196, 0.2);
+  border: 1px solid var(--color-talent);
+}
+
+.lifecycle-box.shown-live {
+  background: rgba(181, 106, 255, 0.2);
+  border: 1px solid var(--color-rundown);
+}
+
+.lifecycle-box.skipped {
+  background: rgba(255, 140, 66, 0.2);
+  border: 1px solid var(--color-output);
+}
+
+.lifecycle-box.stalled,
+.lifecycle-box.failed {
+  background: rgba(255, 71, 87, 0.2);
+  border: 1px solid var(--color-override);
+}
+
+.lifecycle-status {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.lifecycle-desc {
+  display: block;
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.lifecycle-arrow {
+  color: var(--text-muted);
+  font-size: var(--font-size-lg);
+}
+
+.lifecycle-branches {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-lg);
+  flex-wrap: wrap;
+}
+
+.lifecycle-branch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.branch-line {
+  width: 2px;
+  height: 20px;
+  background: var(--text-muted);
+  margin-bottom: var(--space-xs);
+}
+
+.lifecycle-note {
+  margin-top: var(--space-lg);
+  padding: var(--space-md);
+  background: var(--bg-tertiary);
+  border-radius: var(--border-radius);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+/* Camera States */
+.camera-states {
+  display: flex;
+  gap: var(--space-xl);
+  flex-wrap: wrap;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: var(--space-lg);
+}
+
+.camera-state {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.camera-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+}
+
+.camera-dot.idle {
+  background: var(--color-disabled);
+}
+
+.camera-dot.recording {
+  background: #45b854;
+}
+
+.camera-dot.live {
+  background: var(--color-override);
+}
+
+.camera-dot.recording-live {
+  background: var(--color-override);
+  box-shadow: 0 0 0 3px rgba(69, 184, 84, 0.5);
+}
+
+.camera-label {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+}
+
+.camera-desc {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+
+/* Preload States */
+.preload-states {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: var(--space-lg);
+}
+
+.preload-flow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+}
+
+.preload-box {
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--border-radius);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+}
+
+.preload-box.none {
+  background: rgba(102, 102, 102, 0.3);
+  border: 1px solid var(--color-disabled);
+  color: var(--text-secondary);
+}
+
+.preload-box.preloading {
+  background: rgba(74, 158, 255, 0.2);
+  border: 1px solid var(--color-producer);
+  color: var(--color-producer);
+}
+
+.preload-box.ready {
+  background: rgba(69, 184, 84, 0.2);
+  border: 1px solid #45b854;
+  color: #45b854;
+}
+
+.preload-box.failed {
+  background: rgba(255, 71, 87, 0.2);
+  border: 1px solid var(--color-override);
+  color: var(--color-override);
+}
+
+.preload-arrow {
+  color: var(--text-muted);
+}
+
+.preload-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+}
+
+.preload-arrow-down {
+  color: var(--text-muted);
+}
+
+.preload-note {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+
+/* Priority Stack */
+.priority-desc {
+  color: var(--text-secondary);
+  margin-bottom: var(--space-md);
+}
+
+.priority-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.priority-level {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  border-radius: var(--border-radius);
+  flex-wrap: wrap;
+}
+
+.priority-level.p1 {
+  background: linear-gradient(90deg, rgba(255, 71, 87, 0.2) 0%, var(--bg-secondary) 100%);
+  border-left: 4px solid var(--color-override);
+}
+
+.priority-level.p2 {
+  background: linear-gradient(90deg, rgba(74, 158, 255, 0.2) 0%, var(--bg-secondary) 100%);
+  border-left: 4px solid var(--color-producer);
+}
+
+.priority-level.p3 {
+  background: linear-gradient(90deg, rgba(102, 102, 102, 0.2) 0%, var(--bg-secondary) 100%);
+  border-left: 4px solid var(--color-disabled);
+}
+
+.priority-num {
+  font-weight: 700;
+  font-size: var(--font-size-lg);
+  color: var(--text-primary);
+  min-width: 30px;
+}
+
+.priority-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  min-width: 120px;
+}
+
+.priority-level .priority-desc {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  margin: 0;
+}
+
+.priority-note {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  font-style: italic;
+}
+</style>
