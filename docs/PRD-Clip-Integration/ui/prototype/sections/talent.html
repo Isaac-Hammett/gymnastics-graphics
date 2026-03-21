@@ -1,469 +1,505 @@
-<div class="section-content section-talent">
+<!-- TalentView — Commentator Clip Info Screen -->
+<!-- Task 1.1: Current content display with mode-specific layouts -->
 
-  <!-- Section Header -->
-  <div class="card" style="margin-bottom: var(--space-lg);">
-    <div class="card-header">
-      <div class="card-title" style="font-size: var(--font-size-xl);">
-        Screen 3: TalentView — Commentator Clip Info
-        <span class="section-badge" data-section="4.8">§4.8</span>
-      </div>
-      <span class="role-badge talent">Talent</span>
-    </div>
-    <p style="color: var(--text-secondary); margin: var(--space-md) 0 0 0;">
-      Panel visible to commentators during playout. Shows current content, talking points, and upcoming clips.
-    </p>
-  </div>
+<style>
+/* === CSS Variables (from style guide) === */
+:root {
+  --bg-primary: #0a0a0b;
+  --bg-secondary: #18181b;
+  --bg-tertiary: #27272a;
+  --text-primary: #e4e4e7;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
+  --border-color: #3f3f46;
 
-  <!-- State Toggle Controls -->
-  <div class="state-toggle" style="margin-bottom: var(--space-lg);">
-    <span style="color: var(--text-secondary); margin-right: var(--space-sm);">Show:</span>
-    <button class="state-toggle-btn active" data-state="clip" onclick="showTalentState('clip')">
-      Clip Playing
-      <span class="section-badge" data-section="3C">§3C</span>
-    </button>
-    <button class="state-toggle-btn" data-state="live" onclick="showTalentState('live')">
-      Live Camera
-      <span class="section-badge" data-section="3C">§3C</span>
-    </button>
-    <button class="state-toggle-btn" data-state="moment" onclick="showTalentState('moment')">
-      Moment Replay
-      <span class="section-badge" data-section="3C">§3C</span>
-    </button>
-    <button class="state-toggle-btn" data-state="break" onclick="showTalentState('break')">
-      Break Content
-      <span class="section-badge" data-section="3C">§3C</span>
-    </button>
-    <button class="state-toggle-btn" data-state="fallback" onclick="showTalentState('fallback')">
-      Fallback
-      <span class="section-badge" data-section="3C">§3C</span>
-    </button>
-  </div>
+  /* Apparatus Colors */
+  --clip-apparatus-vt: #ef4444;
+  --clip-apparatus-ub: #a855f7;
+  --clip-apparatus-bb: #3b82f6;
+  --clip-apparatus-fx: #22c55e;
+  --clip-apparatus-ph: #f97316;
+  --clip-apparatus-sr: #14b8a6;
+  --clip-apparatus-pb: #6366f1;
+  --clip-apparatus-hb: #f59e0b;
 
-  <!-- Main TalentView Panel -->
-  <div class="card" style="border-left: 3px solid var(--color-talent); max-width: 600px;" id="talent-panel">
+  /* Mode Colors */
+  --clip-mode-live-bg: rgba(34, 197, 94, 0.2);
+  --clip-mode-live-text: #4ade80;
+  --clip-mode-live-border: #22c55e;
 
-    <!-- ===== CLIP PLAYING STATE ===== -->
-    <div class="state-clip" data-talent-state="clip">
-      <!-- NOW SHOWING Header -->
-      <div style="background: var(--bg-tertiary); padding: var(--space-md); text-align: center; border-radius: var(--border-radius) var(--border-radius) 0 0;">
-        <div style="font-size: var(--font-size-sm); color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px;">
-          Now Showing
-          <span class="section-badge" data-section="4.8">§4.8</span>
-        </div>
-      </div>
+  --clip-mode-clip-bg: rgba(34, 197, 94, 0.2);
+  --clip-mode-clip-text: #4ade80;
+  --clip-mode-clip-border: #22c55e;
 
-      <!-- Current Content Display -->
-      <div style="padding: var(--space-lg); text-align: center; border-bottom: 1px solid var(--border-color);">
-        <!-- Athlete Name -->
-        <div style="font-size: var(--font-size-2xl); font-weight: 600; color: var(--text-primary); margin-bottom: var(--space-xs);">
-          Tamyra Singletary
-        </div>
-        <!-- Apparatus -->
-        <div style="font-size: var(--font-size-lg); color: var(--color-talent); margin-bottom: var(--space-xs);">
-          Vault
-        </div>
-        <!-- Team -->
-        <div style="font-size: var(--font-size-base); color: var(--text-secondary); margin-bottom: var(--space-md);">
-          University of Bridgeport
-        </div>
-        <!-- Score -->
-        <div style="font-size: var(--font-size-xl); font-weight: 600; color: var(--text-primary); padding: var(--space-sm) var(--space-md); background: var(--bg-tertiary); border-radius: var(--border-radius); display: inline-block;">
-          Score: 9.725
-        </div>
-        <div style="font-size: var(--font-size-sm); color: var(--text-muted); margin-top: var(--space-xs); font-style: italic;">
-          (visible to viewers at ~60% of clip)
-        </div>
-      </div>
+  --clip-mode-replay-bg: rgba(6, 182, 212, 0.2);
+  --clip-mode-replay-text: #22d3ee;
+  --clip-mode-replay-border: #06b6d4;
 
-      <!-- Talking Points Section -->
-      <div style="padding: var(--space-md); border-bottom: 1px solid var(--border-color);">
-        <div style="font-size: var(--font-size-sm); color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: var(--space-sm); display: flex; align-items: center; gap: var(--space-sm);">
-          Talking Points
-          <span class="section-badge" data-section="4.8">§4.8</span>
-        </div>
-        <ul style="margin: 0; padding-left: var(--space-lg); color: var(--text-primary);">
-          <li style="margin-bottom: var(--space-xs);">Season high on vault — previous best was 9.650</li>
-          <li style="margin-bottom: var(--space-xs);">Freshman starter, improving every rotation</li>
-          <li style="margin-bottom: var(--space-xs);">Clean Yurchenko full with solid landing</li>
-        </ul>
-      </div>
+  --clip-mode-fallback-bg: rgba(113, 113, 122, 0.15);
+  --clip-mode-fallback-text: #a1a1aa;
+  --clip-mode-fallback-border: #52525b;
+}
 
-      <!-- Up Next Section -->
-      <div style="padding: var(--space-md); border-bottom: 1px solid var(--border-color);">
-        <div style="font-size: var(--font-size-sm); color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: var(--space-sm); display: flex; align-items: center; gap: var(--space-sm);">
-          Up Next
-          <span class="section-badge" data-section="4.8">§4.8</span>
-        </div>
-        <!-- Next Clip -->
-        <div style="background: var(--bg-tertiary); padding: var(--space-sm) var(--space-md); border-radius: var(--border-radius); margin-bottom: var(--space-sm);">
-          <span style="color: var(--text-primary); font-weight: 500;">Haley Fitzgerald</span>
-          <span style="color: var(--text-secondary);"> · Vault · SCSU · </span>
-          <span style="color: var(--color-talent);">9.475</span>
-        </div>
-        <!-- Following Clip -->
-        <div style="padding: var(--space-sm) var(--space-md); color: var(--text-muted); font-size: var(--font-size-sm);">
-          then: Georgia Reed · Bars · Bridgeport · 9.525
-        </div>
-      </div>
+/* === TalentView Layout === */
+.talent-view {
+  background: var(--bg-primary);
+  min-height: 100vh;
+  padding: 16px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: var(--text-primary);
+}
 
-      <!-- Flag Moment Button -->
-      <div style="padding: var(--space-md); display: flex; justify-content: center;">
-        <button class="btn" style="background: var(--color-talent); color: #000; font-weight: 600; padding: var(--space-sm) var(--space-lg); display: flex; align-items: center; gap: var(--space-sm);">
-          <span style="font-size: var(--font-size-lg);">🚩</span>
-          Flag Moment
-          <span class="section-badge" data-section="4.8" style="margin-left: var(--space-sm);">§4.8</span>
-        </button>
-      </div>
-      <div style="padding: 0 var(--space-md) var(--space-md); text-align: center; font-size: var(--font-size-sm); color: var(--text-muted);">
-        One-click flag sends timestamp to producer for moment replay consideration
-      </div>
-    </div>
+.talent-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
+}
 
-    <!-- ===== LIVE CAMERA STATE ===== -->
-    <div class="state-live" data-talent-state="live" style="display: none;">
-      <!-- LIVE Header -->
-      <div style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); padding: var(--space-md); text-align: center; border-radius: var(--border-radius) var(--border-radius) 0 0;">
-        <div style="font-size: var(--font-size-lg); color: #fff; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; display: flex; align-items: center; justify-content: center; gap: var(--space-sm);">
-          <span style="width: 12px; height: 12px; background: #fff; border-radius: 50%; animation: pulse 1.5s infinite;"></span>
-          LIVE
-          <span class="section-badge" data-section="3C" style="background: rgba(255,255,255,0.2); color: #fff;">§3C</span>
-        </div>
-      </div>
+.talent-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
 
-      <!-- Live Content Display -->
-      <div style="padding: var(--space-lg); text-align: center; border-bottom: 1px solid var(--border-color);">
-        <!-- Camera/Apparatus Info -->
-        <div style="font-size: var(--font-size-2xl); font-weight: 600; color: var(--text-primary); margin-bottom: var(--space-sm);">
-          Balance Beam
-          <span class="section-badge" data-section="4.8">§4.8</span>
-        </div>
-        <!-- Team Currently Competing -->
-        <div style="font-size: var(--font-size-base); color: var(--text-secondary); margin-bottom: var(--space-md);">
-          Yale University competing
-        </div>
-        <!-- Camera State Indicator -->
-        <div style="display: inline-flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm) var(--space-md); background: var(--bg-tertiary); border-radius: var(--border-radius);">
-          <span class="state-indicator" style="background: #dc3545;">recording-live</span>
-          <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">Camera 2</span>
-        </div>
-      </div>
+/* === Mode Badge === */
+.clip-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
 
-      <!-- No Talking Points in Live Mode -->
-      <div style="padding: var(--space-md); border-bottom: 1px solid var(--border-color); background: var(--bg-secondary);">
-        <div style="font-size: var(--font-size-sm); color: var(--text-muted); text-align: center; font-style: italic;">
-          Talking points available during clip playback
-        </div>
-      </div>
+.clip-badge-clip {
+  background: var(--clip-mode-clip-bg);
+  color: var(--clip-mode-clip-text);
+}
 
-      <!-- Up Next Section -->
-      <div style="padding: var(--space-md); border-bottom: 1px solid var(--border-color);">
-        <div style="font-size: var(--font-size-sm); color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: var(--space-sm);">
-          Up Next
-        </div>
-        <div style="background: var(--bg-tertiary); padding: var(--space-sm) var(--space-md); border-radius: var(--border-radius);">
-          <span style="color: var(--text-primary); font-weight: 500;">Tamyra Singletary</span>
-          <span style="color: var(--text-secondary);"> · Vault · Bridgeport · </span>
-          <span style="color: var(--color-talent);">9.725</span>
-        </div>
-      </div>
+.clip-badge-live {
+  background: var(--clip-mode-live-bg);
+  color: var(--clip-mode-live-text);
+}
 
-      <!-- Flag Moment Button (Disabled) -->
-      <div style="padding: var(--space-md); display: flex; justify-content: center;">
-        <button class="btn" style="background: var(--color-disabled); color: #999; font-weight: 600; padding: var(--space-sm) var(--space-lg); display: flex; align-items: center; gap: var(--space-sm); cursor: not-allowed;" disabled title="Available during clip playback">
-          <span style="font-size: var(--font-size-lg);">🚩</span>
-          Flag Moment
-        </button>
-      </div>
-      <div style="padding: 0 var(--space-md) var(--space-md); text-align: center; font-size: var(--font-size-sm); color: var(--text-muted);">
-        Available during clip playback
-      </div>
-    </div>
+.clip-badge-replay {
+  background: var(--clip-mode-replay-bg);
+  color: var(--clip-mode-replay-text);
+}
 
-    <!-- ===== MOMENT REPLAY STATE ===== -->
-    <div class="state-moment" data-talent-state="moment" style="display: none;">
-      <!-- REPLAY Header -->
-      <div style="background: linear-gradient(135deg, var(--color-rundown) 0%, #9b4dca 100%); padding: var(--space-md); text-align: center; border-radius: var(--border-radius) var(--border-radius) 0 0;">
-        <div style="font-size: var(--font-size-lg); color: #fff; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; display: flex; align-items: center; justify-content: center; gap: var(--space-sm);">
-          <span style="font-size: var(--font-size-xl);">⟲</span>
-          MOMENT REPLAY
-          <span class="section-badge" data-section="3C" style="background: rgba(255,255,255,0.2); color: #fff;">§3C</span>
-        </div>
-      </div>
+.clip-badge-fallback {
+  background: var(--clip-mode-fallback-bg);
+  color: var(--clip-mode-fallback-text);
+}
 
-      <!-- Replay Content Display -->
-      <div style="padding: var(--space-lg); text-align: center; border-bottom: 1px solid var(--border-color);">
-        <!-- Athlete Name -->
-        <div style="font-size: var(--font-size-2xl); font-weight: 600; color: var(--text-primary); margin-bottom: var(--space-xs);">
-          Tamyra Singletary
-        </div>
-        <!-- Apparatus -->
-        <div style="font-size: var(--font-size-lg); color: var(--color-rundown); margin-bottom: var(--space-xs);">
-          Vault — Slow Motion Replay
-        </div>
-        <!-- Replay Context -->
-        <div style="font-size: var(--font-size-base); color: var(--text-secondary); margin-bottom: var(--space-md);">
-          Flagged moment at 0:12 — Yurchenko entry
-        </div>
-        <!-- Playback Speed -->
-        <div style="display: inline-flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm) var(--space-md); background: var(--bg-tertiary); border-radius: var(--border-radius);">
-          <span style="color: var(--text-secondary);">Speed:</span>
-          <span style="color: var(--color-rundown); font-weight: 600;">0.5x</span>
-        </div>
-      </div>
+/* Apparatus badge */
+.clip-badge-apparatus {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 6px;
+  font-size: 0.625rem;
+  font-weight: 700;
+}
 
-      <!-- Moment Context -->
-      <div style="padding: var(--space-md); border-bottom: 1px solid var(--border-color);">
-        <div style="font-size: var(--font-size-sm); color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: var(--space-sm);">
-          Moment Context
-        </div>
-        <div style="background: var(--bg-tertiary); padding: var(--space-sm) var(--space-md); border-radius: var(--border-radius); color: var(--text-primary);">
-          Producer flagged this as a highlight moment — excellent Yurchenko full technique
-        </div>
-      </div>
+.clip-badge-ub { color: var(--clip-apparatus-ub); }
+.clip-badge-vt { color: var(--clip-apparatus-vt); }
+.clip-badge-bb { color: var(--clip-apparatus-bb); }
+.clip-badge-fx { color: var(--clip-apparatus-fx); }
 
-      <!-- Up Next Section -->
-      <div style="padding: var(--space-md); border-bottom: 1px solid var(--border-color);">
-        <div style="font-size: var(--font-size-sm); color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: var(--space-sm);">
-          After Replay
-        </div>
-        <div style="background: var(--bg-tertiary); padding: var(--space-sm) var(--space-md); border-radius: var(--border-radius);">
-          <span style="color: var(--text-primary); font-weight: 500;">Haley Fitzgerald</span>
-          <span style="color: var(--text-secondary);"> · Vault · SCSU · </span>
-          <span style="color: var(--color-talent);">9.475</span>
-        </div>
-      </div>
+/* === NOW SHOWING Card === */
+.now-showing-card {
+  background: var(--bg-secondary);
+  border: 2px solid var(--clip-mode-clip-border);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
 
-      <!-- Flag Moment Button (Disabled during replay) -->
-      <div style="padding: var(--space-md); display: flex; justify-content: center;">
-        <button class="btn" style="background: var(--color-disabled); color: #999; font-weight: 600; padding: var(--space-sm) var(--space-lg); display: flex; align-items: center; gap: var(--space-sm); cursor: not-allowed;" disabled title="Cannot flag during moment replay">
-          <span style="font-size: var(--font-size-lg);">🚩</span>
-          Flag Moment
-        </button>
-      </div>
-      <div style="padding: 0 var(--space-md) var(--space-md); text-align: center; font-size: var(--font-size-sm); color: var(--text-muted);">
-        Flagging not available during moment replays
-      </div>
-    </div>
+.now-showing-card--live {
+  border-color: var(--clip-mode-live-border);
+}
 
-    <!-- ===== BREAK CONTENT STATE ===== -->
-    <div class="state-break" data-talent-state="break" style="display: none;">
-      <!-- BREAK Header -->
-      <div style="background: linear-gradient(135deg, #6c757d 0%, #495057 100%); padding: var(--space-md); text-align: center; border-radius: var(--border-radius) var(--border-radius) 0 0;">
-        <div style="font-size: var(--font-size-lg); color: #fff; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; display: flex; align-items: center; justify-content: center; gap: var(--space-sm);">
-          <span style="font-size: var(--font-size-xl);">☰</span>
-          BREAK
-          <span class="section-badge" data-section="3C" style="background: rgba(255,255,255,0.2); color: #fff;">§3C</span>
-        </div>
-      </div>
+.now-showing-card--replay {
+  border-color: var(--clip-mode-replay-border);
+}
 
-      <!-- Break Content Display -->
-      <div style="padding: var(--space-lg); text-align: center; border-bottom: 1px solid var(--border-color);">
-        <!-- Break Type -->
-        <div style="font-size: var(--font-size-2xl); font-weight: 600; color: var(--text-primary); margin-bottom: var(--space-sm);">
-          Rotation Summary
-          <span class="section-badge" data-section="4.8">§4.8</span>
-        </div>
-        <!-- Current Content -->
-        <div style="font-size: var(--font-size-base); color: var(--text-secondary); margin-bottom: var(--space-md);">
-          Showing rotation 2 team scores
-        </div>
-      </div>
+.now-showing-card--fallback {
+  border-color: var(--clip-mode-fallback-border);
+}
 
-      <!-- Rotation Summary -->
-      <div style="padding: var(--space-md); border-bottom: 1px solid var(--border-color);">
-        <div style="font-size: var(--font-size-sm); color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: var(--space-sm);">
-          Rotation 2 Scores
-        </div>
-        <div style="display: grid; gap: var(--space-sm);">
-          <div style="display: flex; justify-content: space-between; padding: var(--space-sm) var(--space-md); background: var(--bg-tertiary); border-radius: var(--border-radius);">
-            <span style="color: var(--text-primary);">Bridgeport</span>
-            <span style="color: var(--color-talent); font-weight: 600;">48.725</span>
-          </div>
-          <div style="display: flex; justify-content: space-between; padding: var(--space-sm) var(--space-md); background: var(--bg-tertiary); border-radius: var(--border-radius);">
-            <span style="color: var(--text-primary);">Yale</span>
-            <span style="color: var(--color-talent); font-weight: 600;">48.450</span>
-          </div>
-          <div style="display: flex; justify-content: space-between; padding: var(--space-sm) var(--space-md); background: var(--bg-tertiary); border-radius: var(--border-radius);">
-            <span style="color: var(--text-primary);">SCSU</span>
-            <span style="color: var(--color-talent); font-weight: 600;">47.925</span>
-          </div>
-        </div>
-      </div>
+.now-showing-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
-      <!-- Upcoming Rotation Lineup -->
-      <div style="padding: var(--space-md); border-bottom: 1px solid var(--border-color);">
-        <div style="font-size: var(--font-size-sm); color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: var(--space-sm);">
-          Upcoming — Rotation 3
-        </div>
-        <div style="color: var(--text-primary); font-size: var(--font-size-sm);">
-          <div style="margin-bottom: var(--space-xs);">Bridgeport → Uneven Bars</div>
-          <div style="margin-bottom: var(--space-xs);">Yale → Vault</div>
-          <div>SCSU → Balance Beam</div>
-        </div>
-      </div>
+.now-showing-content {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
 
-      <!-- Next Clip Info -->
-      <div style="padding: var(--space-md);">
-        <div style="font-size: var(--font-size-sm); color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: var(--space-sm);">
-          Next Clip
-        </div>
-        <div style="background: var(--bg-tertiary); padding: var(--space-sm) var(--space-md); border-radius: var(--border-radius);">
-          <span style="color: var(--text-primary); font-weight: 500;">Tamyra Singletary</span>
-          <span style="color: var(--text-secondary);"> · Vault · Bridgeport · </span>
-          <span style="color: var(--color-talent);">9.725</span>
-        </div>
-      </div>
-    </div>
+/* Athlete photo placeholder */
+.athlete-photo {
+  width: 80px;
+  height: 100px;
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
 
-    <!-- ===== FALLBACK STATE ===== -->
-    <div class="state-fallback" data-talent-state="fallback" style="display: none;">
-      <!-- FALLBACK Header -->
-      <div style="background: linear-gradient(135deg, #17a2b8 0%, #138496 100%); padding: var(--space-md); text-align: center; border-radius: var(--border-radius) var(--border-radius) 0 0;">
-        <div style="font-size: var(--font-size-lg); color: #fff; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; display: flex; align-items: center; justify-content: center; gap: var(--space-sm);">
-          <span style="font-size: var(--font-size-xl);">⟳</span>
-          GAP FILL
-          <span class="section-badge" data-section="3C" style="background: rgba(255,255,255,0.2); color: #fff;">§3C</span>
-        </div>
-      </div>
+.athlete-photo-placeholder {
+  font-size: 32px;
+  color: var(--text-muted);
+}
 
-      <!-- Fallback Content Display -->
-      <div style="padding: var(--space-lg); text-align: center; border-bottom: 1px solid var(--border-color);">
-        <!-- Current Content -->
-        <div style="font-size: var(--font-size-xl); font-weight: 600; color: var(--text-primary); margin-bottom: var(--space-sm);">
-          Cycling Gap Fill Sequence
-          <span class="section-badge" data-section="4.8">§4.8</span>
-        </div>
-        <!-- Status -->
-        <div style="font-size: var(--font-size-base); color: var(--text-secondary); margin-bottom: var(--space-md);">
-          No live routines · No queued clips
-        </div>
-        <!-- Current Item -->
-        <div style="display: inline-flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm) var(--space-md); background: var(--bg-tertiary); border-radius: var(--border-radius);">
-          <span style="color: var(--text-secondary);">Showing:</span>
-          <span style="color: var(--text-primary); font-weight: 500;">Team Logos</span>
-        </div>
-      </div>
+.athlete-info {
+  flex: 1;
+  min-width: 0;
+}
 
-      <!-- Waiting Status -->
-      <div style="padding: var(--space-md); border-bottom: 1px solid var(--border-color);">
-        <div style="font-size: var(--font-size-sm); color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: var(--space-sm);">
-          Status
-        </div>
-        <div style="background: var(--bg-tertiary); padding: var(--space-md); border-radius: var(--border-radius); text-align: center;">
-          <div style="color: var(--text-muted); font-style: italic; margin-bottom: var(--space-sm);">
-            Waiting for clips...
-          </div>
-          <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">
-            System will transition when a routine is detected or a clip arrives
-          </div>
-        </div>
-      </div>
+.athlete-name {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 8px 0;
+  line-height: 1.2;
+}
 
-      <!-- Fallback Sequence Info -->
-      <div style="padding: var(--space-md);">
-        <div style="font-size: var(--font-size-sm); color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: var(--space-sm);">
-          Gap Fill Sequence
-        </div>
-        <div style="font-size: var(--font-size-sm); color: var(--text-muted);">
-          <div style="margin-bottom: var(--space-xs);">1. Team Logos (current)</div>
-          <div style="margin-bottom: var(--space-xs);">2. Competition Standings</div>
-          <div>3. Sponsor Graphics</div>
-        </div>
-      </div>
+.athlete-apparatus {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0 0 4px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.athlete-team {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0 0 16px 0;
+}
+
+/* Score display - always visible to commentator */
+.athlete-score {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.athlete-score--has-value {
+  color: var(--text-primary);
+}
+
+.athlete-score--pending {
+  color: var(--text-muted);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 18px;
+}
+
+.score-visibility-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  font-style: italic;
+}
+
+/* === Mode-specific display messages === */
+.mode-message {
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+  padding: 16px;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.mode-message__icon {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+
+.mode-message__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
+}
+
+.mode-message__subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* Fallback state (no clip playing) */
+.fallback-display {
+  border-color: var(--clip-mode-fallback-border);
+}
+
+.fallback-display .now-showing-content {
+  opacity: 0.5;
+}
+
+/* Live mode indicator */
+.live-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.live-indicator__dot {
+  width: 8px;
+  height: 8px;
+  background: var(--clip-mode-live-text);
+  border-radius: 50%;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* === Demo Mode Switcher === */
+.demo-controls {
+  position: fixed;
+  bottom: 16px;
+  left: 16px;
+  right: 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 12px;
+  z-index: 100;
+}
+
+.demo-controls__label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.demo-controls__buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.demo-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 150ms;
+}
+
+.demo-btn:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.demo-btn--active {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+</style>
+
+<section class="talent-view" id="talentView">
+  <!-- Header with mode badge -->
+  <header class="talent-header">
+    <h1 class="talent-title">Talent View</h1>
+    <span class="clip-badge clip-badge-clip" id="modeBadge" aria-label="Current mode: Clip">CLIP</span>
+  </header>
+
+  <!-- NOW SHOWING Card (CLIP mode - default) -->
+  <article class="now-showing-card" id="nowShowingCard" role="region" aria-labelledby="nowShowingLabel">
+    <div class="now-showing-label" id="nowShowingLabel">
+      <span>Now Showing</span>
     </div>
 
-  </div>
-
-  <!-- Additional Info Cards -->
-  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--space-md); margin-top: var(--space-lg);">
-
-    <!-- Score Visibility Note -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">Score Visibility</div>
-        <span class="section-badge" data-section="4.8">§4.8</span>
+    <div class="now-showing-content">
+      <!-- Athlete photo area -->
+      <div class="athlete-photo" aria-hidden="true">
+        <span class="athlete-photo-placeholder">H</span>
       </div>
-      <div style="padding: var(--space-md); font-size: var(--font-size-sm); color: var(--text-secondary);">
-        <p style="margin: 0 0 var(--space-sm) 0;">
-          <strong style="color: var(--text-primary);">Commentator:</strong> Always sees the score immediately (needed for commentary prep)
+
+      <!-- Athlete info -->
+      <div class="athlete-info">
+        <h2 class="athlete-name" id="athleteName">Hailey Kriz</h2>
+        <p class="athlete-apparatus">
+          <span class="clip-badge clip-badge-apparatus clip-badge-ub">UB</span>
+          <span id="apparatusName">Uneven Bars</span>
         </p>
-        <p style="margin: 0;">
-          <strong style="color: var(--text-primary);">Viewers:</strong> See score at ~60% of clip duration (<code style="font-family: var(--font-mono); background: var(--bg-tertiary); padding: 2px 4px; border-radius: 3px;">Math.max(duration - 5, duration * 0.6)</code>)
-        </p>
+        <p class="athlete-team" id="teamName">Yale University</p>
+
+        <!-- Score - always visible to commentator -->
+        <p class="athlete-score athlete-score--has-value" id="athleteScore">9.875</p>
+        <p class="score-visibility-hint" id="scoreHint">Shown to viewers at ~60% of clip</p>
       </div>
     </div>
+  </article>
 
-    <!-- Flag Moment Details -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">Flag Moment Behavior</div>
-        <span class="section-badge" data-section="4.8">§4.8</span>
-      </div>
-      <div style="padding: var(--space-md); font-size: var(--font-size-sm); color: var(--text-secondary);">
-        <ul style="margin: 0; padding-left: var(--space-md);">
-          <li style="margin-bottom: var(--space-xs);">Simple one-click button (no dialog for talent)</li>
-          <li style="margin-bottom: var(--space-xs);">Producer receives notification in event log</li>
-          <li style="margin-bottom: var(--space-xs);">Producer controls speed/window via MomentReplayDialog</li>
-          <li>Disabled when not in CLIP mode</li>
-        </ul>
-      </div>
+  <!-- LIVE mode display (hidden by default) -->
+  <div class="mode-message" id="liveMessage" style="display: none;">
+    <div class="mode-message__icon">
+      <span class="live-indicator">
+        <span class="live-indicator__dot"></span>
+      </span>
     </div>
-
-    <!-- State Reference -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">Playout Mode States</div>
-        <span class="section-badge" data-section="3C">§3C</span>
-      </div>
-      <div style="padding: var(--space-md); font-size: var(--font-size-sm); color: var(--text-secondary);">
-        <div style="margin-bottom: var(--space-xs);"><span class="state-indicator playing">CLIP</span> Playing queued clip</div>
-        <div style="margin-bottom: var(--space-xs);"><span class="state-indicator" style="background: #dc3545;">LIVE</span> Showing live camera</div>
-        <div style="margin-bottom: var(--space-xs);"><span class="state-indicator" style="background: var(--color-rundown);">MOMENT_REPLAY</span> Playing moment replay</div>
-        <div style="margin-bottom: var(--space-xs);"><span class="state-indicator" style="background: #6c757d;">BREAK</span> Break content sequence</div>
-        <div><span class="state-indicator" style="background: #17a2b8;">FALLBACK</span> Gap fill sequence</div>
-      </div>
-    </div>
-
-    <!-- Responsive Breakpoints -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">Responsive Design</div>
-        <span class="section-badge" data-section="4.8">§4.8</span>
-      </div>
-      <div style="padding: var(--space-md); font-size: var(--font-size-sm); color: var(--text-secondary);">
-        <p style="margin: 0 0 var(--space-sm) 0;"><strong style="color: var(--text-primary);">&lt; 480px (mobile):</strong> Talking points collapsed, large Flag button</p>
-        <p style="margin: 0 0 var(--space-sm) 0;"><strong style="color: var(--text-primary);">480-768px (tablet):</strong> All content visible</p>
-        <p style="margin: 0;"><strong style="color: var(--text-primary);">768px+ (desktop):</strong> Full layout</p>
-      </div>
-    </div>
-
+    <h3 class="mode-message__title">Live Camera Feed</h3>
+    <p class="mode-message__subtitle">Camera 2 — Uneven Bars</p>
   </div>
 
-  <!-- Toggle Script -->
-  <script>
-    function showTalentState(state) {
-      // Hide all state content
-      document.querySelectorAll('[data-talent-state]').forEach(el => {
-        el.style.display = 'none';
-      });
-      // Show selected state
-      const target = document.querySelector(`[data-talent-state="${state}"]`);
-      if (target) {
-        target.style.display = 'block';
+  <!-- REPLAY mode display (hidden by default) -->
+  <div class="mode-message" id="replayMessage" style="display: none;">
+    <div class="mode-message__icon">&#9658;</div>
+    <h3 class="mode-message__title">Moment Replay</h3>
+    <p class="mode-message__subtitle">Hailey Kriz — Pak salto release at 0.5x</p>
+  </div>
+
+  <!-- FALLBACK mode display (hidden by default) -->
+  <div class="mode-message" id="fallbackMessage" style="display: none;">
+    <div class="mode-message__icon">&#9679;</div>
+    <h3 class="mode-message__title">Standby</h3>
+    <p class="mode-message__subtitle">Waiting for next clip...</p>
+  </div>
+
+  <!-- Demo mode switcher -->
+  <div class="demo-controls">
+    <div class="demo-controls__label">Demo Mode</div>
+    <div class="demo-controls__buttons">
+      <button class="demo-btn demo-btn--active" data-mode="clip">CLIP</button>
+      <button class="demo-btn" data-mode="live">LIVE</button>
+      <button class="demo-btn" data-mode="replay">REPLAY</button>
+      <button class="demo-btn" data-mode="fallback">FALLBACK</button>
+      <button class="demo-btn" data-mode="pending">Score Pending</button>
+    </div>
+  </div>
+</section>
+
+<script>
+(function() {
+  const state = {
+    mode: 'clip',
+    scorePending: false,
+    data: {
+      clip: {
+        athleteName: 'Hailey Kriz',
+        apparatus: 'UB',
+        apparatusName: 'Uneven Bars',
+        team: 'Yale University',
+        score: 9.875
+      },
+      live: {
+        camera: 2,
+        apparatus: 'Uneven Bars'
+      },
+      replay: {
+        athleteName: 'Hailey Kriz',
+        moment: 'Pak salto release',
+        speed: '0.5x'
       }
-      // Update toggle buttons
-      document.querySelectorAll('.state-toggle-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.state === state);
-      });
     }
-  </script>
+  };
 
-  <!-- Pulse animation for LIVE indicator -->
-  <style>
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
+  const elements = {
+    modeBadge: document.getElementById('modeBadge'),
+    nowShowingCard: document.getElementById('nowShowingCard'),
+    athleteName: document.getElementById('athleteName'),
+    athleteScore: document.getElementById('athleteScore'),
+    scoreHint: document.getElementById('scoreHint'),
+    liveMessage: document.getElementById('liveMessage'),
+    replayMessage: document.getElementById('replayMessage'),
+    fallbackMessage: document.getElementById('fallbackMessage')
+  };
+
+  function updateMode(mode, scorePending = false) {
+    state.mode = mode;
+    state.scorePending = scorePending;
+
+    // Update badge
+    const badgeClasses = {
+      clip: 'clip-badge-clip',
+      live: 'clip-badge-live',
+      replay: 'clip-badge-replay',
+      fallback: 'clip-badge-fallback'
+    };
+
+    elements.modeBadge.className = 'clip-badge ' + (badgeClasses[mode] || 'clip-badge-clip');
+    elements.modeBadge.textContent = mode.toUpperCase();
+    elements.modeBadge.setAttribute('aria-label', 'Current mode: ' + mode);
+
+    // Update card border
+    const cardClasses = {
+      clip: '',
+      live: 'now-showing-card--live',
+      replay: 'now-showing-card--replay',
+      fallback: 'now-showing-card--fallback fallback-display'
+    };
+
+    elements.nowShowingCard.className = 'now-showing-card ' + (cardClasses[mode] || '');
+
+    // Show/hide mode-specific messages
+    elements.liveMessage.style.display = mode === 'live' ? 'block' : 'none';
+    elements.replayMessage.style.display = mode === 'replay' ? 'block' : 'none';
+    elements.fallbackMessage.style.display = mode === 'fallback' ? 'block' : 'none';
+    elements.nowShowingCard.style.display = (mode === 'live' || mode === 'fallback') ? 'none' : 'block';
+
+    // Update score display
+    if (scorePending) {
+      elements.athleteScore.className = 'athlete-score athlete-score--pending';
+      elements.athleteScore.textContent = 'Score: pending';
+      elements.scoreHint.textContent = 'Score will appear when posted';
+    } else {
+      elements.athleteScore.className = 'athlete-score athlete-score--has-value';
+      elements.athleteScore.textContent = state.data.clip.score.toFixed(3);
+      elements.scoreHint.textContent = 'Shown to viewers at ~60% of clip';
     }
-  </style>
 
-</div>
+    // Update demo button states
+    document.querySelectorAll('.demo-btn').forEach(btn => {
+      btn.classList.toggle('demo-btn--active',
+        btn.dataset.mode === mode || (btn.dataset.mode === 'pending' && scorePending));
+    });
+  }
+
+  // Demo button handlers
+  document.querySelectorAll('.demo-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const mode = this.dataset.mode;
+      if (mode === 'pending') {
+        updateMode('clip', true);
+      } else {
+        updateMode(mode, false);
+      }
+    });
+  });
+
+  // Initialize
+  updateMode('clip');
+})();
+</script>
