@@ -1386,3 +1386,1035 @@
   });
 })();
 </script>
+
+<!-- ============================================================ -->
+<!-- DATA FLOW DIAGRAM                                             -->
+<!-- ============================================================ -->
+
+<style>
+  /* === Data Flow Diagram Section === */
+  .data-flow-diagram-section {
+    padding: 24px;
+    background: var(--bg-primary, #0a0a0b);
+  }
+
+  .data-flow-svg {
+    width: 100%;
+    height: 600px;
+    display: block;
+  }
+
+  /* Component boxes */
+  .data-flow-svg .component-box {
+    cursor: pointer;
+    transition: filter 150ms ease;
+  }
+
+  .data-flow-svg .component-box:hover {
+    filter: brightness(1.1);
+  }
+
+  .data-flow-svg .component-box:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+
+  .data-flow-svg .component-label {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    pointer-events: none;
+  }
+
+  .data-flow-svg .component-sublabel {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 8px;
+    font-weight: 400;
+    fill: var(--text-secondary, #a1a1aa);
+    pointer-events: none;
+  }
+
+  /* Data flow arrows */
+  .data-flow-svg .flow-arrow {
+    fill: none;
+    stroke-width: 1.5;
+    marker-end: url(#flow-arrowhead);
+    cursor: pointer;
+    transition: stroke 150ms, stroke-width 150ms;
+  }
+
+  .data-flow-svg .flow-arrow:hover {
+    stroke-width: 2.5;
+  }
+
+  .data-flow-svg .flow-arrow--read {
+    stroke: #3b82f6;
+    stroke-dasharray: 4,2;
+  }
+
+  .data-flow-svg .flow-arrow--write {
+    stroke: #22c55e;
+  }
+
+  .data-flow-svg .flow-arrow--realtime {
+    stroke: #06b6d4;
+    stroke-dasharray: none;
+  }
+
+  .data-flow-svg .flow-arrow--heartbeat {
+    stroke: #f59e0b;
+    stroke-dasharray: 2,4;
+  }
+
+  /* Path labels */
+  .data-flow-svg .path-label {
+    font-family: 'SF Mono', Monaco, monospace;
+    font-size: 7px;
+    fill: var(--text-muted, #71717a);
+    pointer-events: none;
+  }
+
+  .data-flow-svg .path-label-bg {
+    fill: var(--bg-secondary, #18181b);
+    rx: 2;
+  }
+
+  /* Firebase group styling */
+  .firebase-group-rect {
+    fill: rgba(245, 158, 11, 0.05);
+    stroke: rgba(245, 158, 11, 0.3);
+    stroke-width: 1;
+    stroke-dasharray: 4,2;
+  }
+
+  .firebase-group-label {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    fill: #f59e0b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* Component type colors */
+  .component-producer { fill: rgba(59, 130, 246, 0.2); stroke: #3b82f6; }
+  .component-talent { fill: rgba(168, 85, 247, 0.2); stroke: #a855f7; }
+  .component-output { fill: rgba(34, 197, 94, 0.2); stroke: #22c55e; }
+  .component-coordinator { fill: rgba(6, 182, 212, 0.2); stroke: #06b6d4; }
+  .component-firebase { fill: rgba(245, 158, 11, 0.2); stroke: #f59e0b; }
+  .component-clipengine { fill: rgba(239, 68, 68, 0.2); stroke: #ef4444; }
+
+  /* Data shape panel */
+  .data-shape-panel {
+    background: var(--bg-tertiary, #27272a);
+    border: 1px solid var(--border-color, #3f3f46);
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 24px;
+  }
+
+  .data-shape-panel h3 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary, #e4e4e7);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .data-shape-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--border-color, #3f3f46);
+    padding-bottom: 8px;
+  }
+
+  .data-shape-tab {
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-secondary, #a1a1aa);
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 150ms;
+  }
+
+  .data-shape-tab:hover {
+    background: var(--bg-secondary, #18181b);
+    color: var(--text-primary, #e4e4e7);
+  }
+
+  .data-shape-tab.active {
+    background: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+  }
+
+  .data-shape-code {
+    background: var(--bg-secondary, #18181b);
+    border: 1px solid var(--border-color, #3f3f46);
+    border-radius: 6px;
+    padding: 12px;
+    font-family: 'SF Mono', Monaco, monospace;
+    font-size: 11px;
+    color: var(--text-primary, #e4e4e7);
+    overflow-x: auto;
+    white-space: pre;
+    line-height: 1.5;
+    display: none;
+  }
+
+  .data-shape-code.active {
+    display: block;
+  }
+
+  .data-shape-code .key {
+    color: #60a5fa;
+  }
+
+  .data-shape-code .string {
+    color: #4ade80;
+  }
+
+  .data-shape-code .number {
+    color: #fbbf24;
+  }
+
+  .data-shape-code .comment {
+    color: #71717a;
+    font-style: italic;
+  }
+
+  .data-shape-code .null {
+    color: #f87171;
+  }
+
+  /* Flow legend */
+  .flow-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color, #3f3f46);
+  }
+
+  .flow-legend-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .flow-legend-title {
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted, #71717a);
+  }
+
+  .flow-legend-items {
+    display: flex;
+    gap: 12px;
+  }
+
+  .flow-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    color: var(--text-secondary, #a1a1aa);
+  }
+
+  .flow-legend-line {
+    width: 24px;
+    height: 2px;
+  }
+
+  .flow-legend-line--read {
+    background: repeating-linear-gradient(90deg, #3b82f6 0, #3b82f6 4px, transparent 4px, transparent 6px);
+  }
+
+  .flow-legend-line--write {
+    background: #22c55e;
+  }
+
+  .flow-legend-line--realtime {
+    background: #06b6d4;
+  }
+
+  .flow-legend-line--heartbeat {
+    background: repeating-linear-gradient(90deg, #f59e0b 0, #f59e0b 2px, transparent 2px, transparent 6px);
+  }
+
+  /* Component legend dots */
+  .flow-legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    border: 1.5px solid;
+  }
+</style>
+
+<section class="data-flow-diagram-section" id="data-flow-diagram">
+  <div class="diagram-container">
+    <div class="diagram-title">Data Flow Architecture</div>
+    <p style="font-size: 11px; color: var(--text-secondary, #a1a1aa); margin-bottom: 16px;">
+      Shows how data flows between screens via Firebase. Hover over arrows to see Firebase paths. Click components for details.
+    </p>
+
+    <svg class="data-flow-svg" viewBox="0 0 900 560" aria-label="Data flow diagram showing Firebase paths and component relationships">
+      <defs>
+        <marker id="flow-arrowhead" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#3f3f46"/>
+        </marker>
+        <marker id="flow-arrowhead-blue" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#3b82f6"/>
+        </marker>
+        <marker id="flow-arrowhead-green" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#22c55e"/>
+        </marker>
+        <marker id="flow-arrowhead-cyan" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#06b6d4"/>
+        </marker>
+        <marker id="flow-arrowhead-amber" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#f59e0b"/>
+        </marker>
+      </defs>
+
+      <!-- Background grid -->
+      <rect width="100%" height="100%" fill="url(#grid)" opacity="0.3"/>
+
+      <!-- ===================== -->
+      <!-- FIREBASE GROUP BOX    -->
+      <!-- ===================== -->
+      <rect x="310" y="170" width="280" height="280" class="firebase-group-rect" rx="8"/>
+      <text x="450" y="190" class="firebase-group-label" text-anchor="middle">Firebase Realtime Database</text>
+      <text x="450" y="202" style="font-size: 8px; fill: #a1a1aa; font-family: 'SF Mono', Monaco, monospace;" text-anchor="middle">competitions/{compId}/</text>
+
+      <!-- ===================== -->
+      <!-- FIREBASE NODES        -->
+      <!-- ===================== -->
+
+      <!-- playoutState -->
+      <g class="component-box" tabindex="0" role="button"
+         data-component="playoutState"
+         data-type="firebase"
+         data-desc="Current playout mode, queue, overrides, and camera states"
+         data-path="production/playoutState">
+        <rect x="330" y="220" width="120" height="50" rx="6" class="component-firebase" stroke-width="2"/>
+        <text x="390" y="243" text-anchor="middle" class="component-label" fill="#fbbf24">playoutState</text>
+        <text x="390" y="257" text-anchor="middle" class="component-sublabel">mode, queue, cameras</text>
+      </g>
+
+      <!-- currentGraphic -->
+      <g class="component-box" tabindex="0" role="button"
+         data-component="currentGraphic"
+         data-type="firebase"
+         data-desc="Currently displayed graphic (clip, replay, live camera, break content)"
+         data-path="production/currentGraphic">
+        <rect x="330" y="290" width="120" height="50" rx="6" class="component-firebase" stroke-width="2"/>
+        <text x="390" y="313" text-anchor="middle" class="component-label" fill="#fbbf24">currentGraphic</text>
+        <text x="390" y="327" text-anchor="middle" class="component-sublabel">graphic, data{}</text>
+      </g>
+
+      <!-- clipStatus -->
+      <g class="component-box" tabindex="0" role="button"
+         data-component="clipStatus"
+         data-type="firebase"
+         data-desc="Write-back from output.html signaling clip ended, stalled, or errored"
+         data-path="production/clipStatus/{draftId}">
+        <rect x="450" y="220" width="120" height="50" rx="6" class="component-firebase" stroke-width="2"/>
+        <text x="510" y="243" text-anchor="middle" class="component-label" fill="#fbbf24">clipStatus</text>
+        <text x="510" y="257" text-anchor="middle" class="component-sublabel">/{draftId} write-back</text>
+      </g>
+
+      <!-- engineHeartbeat -->
+      <g class="component-box" tabindex="0" role="button"
+         data-component="engineHeartbeat"
+         data-type="firebase"
+         data-desc="Coordinator heartbeat timestamp. If stale > 30s, output.html stops auto-advancing."
+         data-path="production/engineHeartbeat">
+        <rect x="450" y="290" width="120" height="50" rx="6" class="component-firebase" stroke-width="2"/>
+        <text x="510" y="313" text-anchor="middle" class="component-label" fill="#fbbf24">engineHeartbeat</text>
+        <text x="510" y="327" text-anchor="middle" class="component-sublabel">timestamp, mode</text>
+      </g>
+
+      <!-- rundown (playout rules) -->
+      <g class="component-box" tabindex="0" role="button"
+         data-component="rundown"
+         data-type="firebase"
+         data-desc="Playout rules from rundown: clip ordering, fallback sequence, graphic params"
+         data-path="rundown/{segmentId}">
+        <rect x="330" y="360" width="120" height="50" rx="6" class="component-firebase" stroke-width="2"/>
+        <text x="390" y="383" text-anchor="middle" class="component-label" fill="#fbbf24">rundown</text>
+        <text x="390" y="397" text-anchor="middle" class="component-sublabel">playout rules</text>
+      </g>
+
+      <!-- config (VM, camera mapping) -->
+      <g class="component-box" tabindex="0" role="button"
+         data-component="config"
+         data-type="firebase"
+         data-desc="Competition config: VM address, camera-to-apparatus mapping, teams"
+         data-path="config">
+        <rect x="450" y="360" width="120" height="50" rx="6" class="component-firebase" stroke-width="2"/>
+        <text x="510" y="383" text-anchor="middle" class="component-label" fill="#fbbf24">config</text>
+        <text x="510" y="397" text-anchor="middle" class="component-sublabel">VM, cameras</text>
+      </g>
+
+      <!-- ===================== -->
+      <!-- SCREEN COMPONENTS     -->
+      <!-- ===================== -->
+
+      <!-- ProducerView -->
+      <g class="component-box" tabindex="0" role="button"
+         data-component="ProducerView"
+         data-type="screen"
+         data-desc="Producer control panel: clip queue, override controls, event log, camera status"
+         data-reads="playoutState, clipStatus, engineHeartbeat, rundown, config"
+         data-writes="playoutState (forceCamera, skipClip, pausePlayout, etc)">
+        <rect x="40" y="210" width="140" height="70" rx="8" class="component-producer" stroke-width="2"/>
+        <text x="110" y="237" text-anchor="middle" class="component-label" fill="#60a5fa">ProducerView</text>
+        <text x="110" y="253" text-anchor="middle" class="component-sublabel">override controls</text>
+        <text x="110" y="265" text-anchor="middle" class="component-sublabel">clip queue, event log</text>
+      </g>
+
+      <!-- TalentView -->
+      <g class="component-box" tabindex="0" role="button"
+         data-component="TalentView"
+         data-type="screen"
+         data-desc="Talent monitor: current content, next 2-3 items, talking points, flag moment button"
+         data-reads="playoutState, currentGraphic, rundown"
+         data-writes="(flag moment button writes to playoutState)">
+        <rect x="40" y="320" width="140" height="70" rx="8" class="component-talent" stroke-width="2"/>
+        <text x="110" y="347" text-anchor="middle" class="component-label" fill="#c084fc">TalentView</text>
+        <text x="110" y="363" text-anchor="middle" class="component-sublabel">current content</text>
+        <text x="110" y="375" text-anchor="middle" class="component-sublabel">talking points</text>
+      </g>
+
+      <!-- Rundown Editor -->
+      <g class="component-box" tabindex="0" role="button"
+         data-component="RundownEditor"
+         data-type="screen"
+         data-desc="Rundown editor: playout rules, clip ordering, fallback sequence, graphic params"
+         data-reads="rundown, config"
+         data-writes="rundown">
+        <rect x="40" y="430" width="140" height="50" rx="8" class="component-producer" stroke-width="2"/>
+        <text x="110" y="453" text-anchor="middle" class="component-label" fill="#60a5fa">RundownEditor</text>
+        <text x="110" y="467" text-anchor="middle" class="component-sublabel">playout rules</text>
+      </g>
+
+      <!-- output.html (clip mode) -->
+      <g class="component-box" tabindex="0" role="button"
+         data-component="output.html (clip)"
+         data-type="output"
+         data-desc="Renders clip playback with athlete info, score badge, progress bar"
+         data-reads="currentGraphic, engineHeartbeat"
+         data-writes="clipStatus/{draftId} (ended, stalled, error)">
+        <rect x="720" y="210" width="140" height="70" rx="8" class="component-output" stroke-width="2"/>
+        <text x="790" y="237" text-anchor="middle" class="component-label" fill="#4ade80">output.html</text>
+        <text x="790" y="253" text-anchor="middle" class="component-sublabel">mode=clip</text>
+        <text x="790" y="265" text-anchor="middle" class="component-sublabel">clip playback</text>
+      </g>
+
+      <!-- output.html (live mode) -->
+      <g class="component-box" tabindex="0" role="button"
+         data-component="output.html (live)"
+         data-type="output"
+         data-desc="Renders live camera overlay (apparatus badge, LIVE indicator) and break backgrounds"
+         data-reads="currentGraphic"
+         data-writes="none">
+        <rect x="720" y="320" width="140" height="70" rx="8" class="component-output" stroke-width="2"/>
+        <text x="790" y="347" text-anchor="middle" class="component-label" fill="#4ade80">output.html</text>
+        <text x="790" y="363" text-anchor="middle" class="component-sublabel">mode=live</text>
+        <text x="790" y="375" text-anchor="middle" class="component-sublabel">camera overlay</text>
+      </g>
+
+      <!-- Coordinator -->
+      <g class="component-box" tabindex="0" role="button"
+         data-component="Coordinator"
+         data-type="coordinator"
+         data-desc="Playout engine: evaluates priority stack, advances clips, manages mode transitions"
+         data-reads="playoutState, clipStatus, rundown, config, Clip Engine API"
+         data-writes="playoutState, currentGraphic, engineHeartbeat">
+        <rect x="380" y="60" width="140" height="70" rx="8" class="component-coordinator" stroke-width="2"/>
+        <text x="450" y="87" text-anchor="middle" class="component-label" fill="#22d3ee">Coordinator</text>
+        <text x="450" y="103" text-anchor="middle" class="component-sublabel">playout engine</text>
+        <text x="450" y="115" text-anchor="middle" class="component-sublabel">priority stack eval</text>
+      </g>
+
+      <!-- Clip Engine API -->
+      <g class="component-box" tabindex="0" role="button"
+         data-component="Clip Engine API"
+         data-type="external"
+         data-desc="External API providing clip metadata: draftId, clipUrl, athlete, team, apparatus, score, duration"
+         data-reads="none"
+         data-writes="clip data to Coordinator">
+        <rect x="620" y="60" width="120" height="50" rx="8" class="component-clipengine" stroke-width="2"/>
+        <text x="680" y="83" text-anchor="middle" class="component-label" fill="#f87171">Clip Engine</text>
+        <text x="680" y="97" text-anchor="middle" class="component-sublabel">external API</text>
+      </g>
+
+      <!-- ===================== -->
+      <!-- DATA FLOW ARROWS      -->
+      <!-- ===================== -->
+
+      <!-- ProducerView → playoutState (write: override actions) -->
+      <path class="flow-arrow flow-arrow--write" d="M 180 235 L 328 235"
+            data-flow="ProducerView → playoutState"
+            data-type="write"
+            data-desc="forceCamera, releaseOverride, skipClip, pausePlayout, resumePlayout, flagMoment"
+            marker-end="url(#flow-arrowhead-green)"/>
+
+      <!-- playoutState → ProducerView (read: queue, mode, cameras) -->
+      <path class="flow-arrow flow-arrow--read" d="M 328 255 L 180 255"
+            data-flow="playoutState → ProducerView"
+            data-type="realtime"
+            data-desc="current mode, queue contents, camera states, playback progress, preload status"
+            marker-end="url(#flow-arrowhead-blue)"/>
+
+      <!-- TalentView → currentGraphic (read) -->
+      <path class="flow-arrow flow-arrow--read" d="M 180 345 L 260 345 Q 280 345 280 325 L 280 315 Q 280 300 300 300 L 328 300"
+            data-flow="currentGraphic → TalentView"
+            data-type="realtime"
+            data-desc="current content (athlete, team, apparatus, score), next items for preview"
+            marker-end="url(#flow-arrowhead-blue)"/>
+
+      <!-- TalentView → playoutState (read: queue for 'next' items) -->
+      <path class="flow-arrow flow-arrow--read" d="M 180 355 L 240 355 Q 260 355 260 340 L 260 250 Q 260 230 280 230 L 328 230"
+            data-flow="playoutState → TalentView"
+            data-type="realtime"
+            data-desc="next 2-3 items in queue, per-mode display info"
+            marker-end="url(#flow-arrowhead-blue)"/>
+
+      <!-- RundownEditor ↔ rundown -->
+      <path class="flow-arrow flow-arrow--write" d="M 180 445 L 260 445 Q 280 445 280 420 L 280 385 Q 280 370 300 370 L 328 370"
+            data-flow="RundownEditor → rundown"
+            data-type="write"
+            data-desc="playout rules: clip order, fallback sequence, graphic params, transition settings"
+            marker-end="url(#flow-arrowhead-green)"/>
+      <path class="flow-arrow flow-arrow--read" d="M 328 390 L 300 390 Q 280 390 280 410 L 280 455 Q 280 470 260 470 L 180 470"
+            data-flow="rundown → RundownEditor"
+            data-type="realtime"
+            data-desc="current playout rules for editing"
+            marker-end="url(#flow-arrowhead-blue)"/>
+
+      <!-- Coordinator → playoutState (write) -->
+      <path class="flow-arrow flow-arrow--write" d="M 420 130 L 380 190 L 380 218"
+            data-flow="Coordinator → playoutState"
+            data-type="write"
+            data-desc="mode transitions, queue updates, camera state changes"
+            marker-end="url(#flow-arrowhead-green)"/>
+
+      <!-- Coordinator → currentGraphic (write) -->
+      <path class="flow-arrow flow-arrow--write" d="M 440 130 L 400 218 L 400 288"
+            data-flow="Coordinator → currentGraphic"
+            data-type="write"
+            data-desc="clip-playback, moment-replay, live-camera, break content with data{}"
+            marker-end="url(#flow-arrowhead-green)"/>
+
+      <!-- Coordinator → engineHeartbeat (write) -->
+      <path class="flow-arrow flow-arrow--heartbeat" d="M 480 130 L 520 218 L 520 288"
+            data-flow="Coordinator → engineHeartbeat"
+            data-type="heartbeat"
+            data-desc="timestamp updated every 5s while coordinator is healthy"
+            marker-end="url(#flow-arrowhead-amber)"/>
+
+      <!-- clipStatus → Coordinator (read: write-back) -->
+      <path class="flow-arrow flow-arrow--realtime" d="M 520 218 L 490 130"
+            data-flow="clipStatus → Coordinator"
+            data-type="realtime"
+            data-desc="status: ended/stalled/error, draftId, optimisticNextDraftId — coordinator reads then deletes"
+            marker-end="url(#flow-arrowhead-cyan)"/>
+
+      <!-- rundown → Coordinator (read: playout rules) -->
+      <path class="flow-arrow flow-arrow--read" d="M 390 358 L 390 170 L 430 130"
+            data-flow="rundown → Coordinator"
+            data-type="realtime"
+            data-desc="playout rules: clip order options, fallback sequence, graphic params"
+            marker-end="url(#flow-arrowhead-blue)"/>
+
+      <!-- config → Coordinator (read) -->
+      <path class="flow-arrow flow-arrow--read" d="M 510 358 L 510 170 L 470 130"
+            data-flow="config → Coordinator"
+            data-type="realtime"
+            data-desc="VM address, camera-to-apparatus mapping, team configs"
+            marker-end="url(#flow-arrowhead-blue)"/>
+
+      <!-- Clip Engine → Coordinator -->
+      <path class="flow-arrow flow-arrow--realtime" d="M 620 85 L 520 85"
+            data-flow="Clip Engine → Coordinator"
+            data-type="api"
+            data-desc="draftId, clipUrl, athleteName, teamName, teamLogo, apparatus, score, rotation, duration"
+            marker-end="url(#flow-arrowhead-cyan)"/>
+
+      <!-- currentGraphic → output.html (clip) -->
+      <path class="flow-arrow flow-arrow--realtime" d="M 572 310 L 620 310 Q 640 310 640 290 L 640 250 Q 640 230 660 230 L 718 230"
+            data-flow="currentGraphic → output.html (clip)"
+            data-type="realtime"
+            data-desc="graphic: clip-playback or moment-replay with full data{} shape"
+            marker-end="url(#flow-arrowhead-cyan)"/>
+
+      <!-- engineHeartbeat → output.html (clip) -->
+      <path class="flow-arrow flow-arrow--heartbeat" d="M 572 305 L 600 305 Q 620 305 620 285 L 620 265 Q 620 245 640 245 L 718 245"
+            data-flow="engineHeartbeat → output.html (clip)"
+            data-type="heartbeat"
+            data-desc="if stale > 30s, output.html stops auto-advancing clips"
+            marker-end="url(#flow-arrowhead-amber)"/>
+
+      <!-- output.html (clip) → clipStatus (write-back) -->
+      <path class="flow-arrow flow-arrow--write" d="M 718 270 L 640 270 Q 620 270 620 250 Q 620 230 600 230 L 572 230"
+            data-flow="output.html → clipStatus"
+            data-type="write"
+            data-desc="{ status: 'ended'/'stalled'/'error', draftId, errorCode?, optimisticNextDraftId?, timestamp }"
+            marker-end="url(#flow-arrowhead-green)"/>
+
+      <!-- currentGraphic → output.html (live) -->
+      <path class="flow-arrow flow-arrow--realtime" d="M 572 320 L 620 320 Q 640 320 640 340 L 640 350 Q 640 360 660 360 L 718 360"
+            data-flow="currentGraphic → output.html (live)"
+            data-type="realtime"
+            data-desc="graphic: live-camera (apparatus badge) or break content with background flag"
+            marker-end="url(#flow-arrowhead-cyan)"/>
+
+      <!-- ===================== -->
+      <!-- LABELS ON PATHS       -->
+      <!-- ===================== -->
+
+      <!-- Path label backgrounds and text -->
+      <g class="path-labels">
+        <rect x="200" y="222" width="80" height="12" class="path-label-bg"/>
+        <text x="240" y="231" class="path-label" text-anchor="middle">override actions</text>
+
+        <rect x="200" y="258" width="60" height="12" class="path-label-bg"/>
+        <text x="230" y="267" class="path-label" text-anchor="middle">subscribe</text>
+
+        <rect x="550" y="72" width="55" height="12" class="path-label-bg"/>
+        <text x="577" y="81" class="path-label" text-anchor="middle">clip data</text>
+
+        <rect x="360" y="150" width="50" height="12" class="path-label-bg"/>
+        <text x="385" y="159" class="path-label" text-anchor="middle">rules</text>
+
+        <rect x="495" y="150" width="50" height="12" class="path-label-bg"/>
+        <text x="520" y="159" class="path-label" text-anchor="middle">config</text>
+
+        <rect x="635" y="200" width="70" height="12" class="path-label-bg"/>
+        <text x="670" y="209" class="path-label" text-anchor="middle">currentGraphic</text>
+
+        <rect x="635" y="278" width="60" height="12" class="path-label-bg"/>
+        <text x="665" y="287" class="path-label" text-anchor="middle">write-back</text>
+
+        <rect x="380" y="168" width="40" height="12" class="path-label-bg"/>
+        <text x="400" y="177" class="path-label" text-anchor="middle">writes</text>
+
+        <rect x="530" y="168" width="45" height="12" class="path-label-bg"/>
+        <text x="552" y="177" class="path-label" text-anchor="middle">heartbeat</text>
+      </g>
+
+      <!-- Section labels -->
+      <text x="110" y="195" font-size="9" font-weight="600" fill="#71717a" text-anchor="middle">UI SCREENS</text>
+      <text x="790" y="195" font-size="9" font-weight="600" fill="#71717a" text-anchor="middle">OBS BROWSER SOURCES</text>
+      <text x="450" y="45" font-size="9" font-weight="600" fill="#71717a" text-anchor="middle">BACKEND</text>
+      <text x="680" y="45" font-size="9" font-weight="600" fill="#71717a" text-anchor="middle">EXTERNAL</text>
+    </svg>
+
+    <!-- Legend -->
+    <div class="flow-legend">
+      <div class="flow-legend-group">
+        <div class="flow-legend-title">Data Flow Types</div>
+        <div class="flow-legend-items">
+          <div class="flow-legend-item">
+            <div class="flow-legend-line flow-legend-line--write"></div>
+            <span>Write</span>
+          </div>
+          <div class="flow-legend-item">
+            <div class="flow-legend-line flow-legend-line--read"></div>
+            <span>Read (subscribe)</span>
+          </div>
+          <div class="flow-legend-item">
+            <div class="flow-legend-line flow-legend-line--realtime"></div>
+            <span>Realtime push</span>
+          </div>
+          <div class="flow-legend-item">
+            <div class="flow-legend-line flow-legend-line--heartbeat"></div>
+            <span>Heartbeat</span>
+          </div>
+        </div>
+      </div>
+      <div class="flow-legend-group">
+        <div class="flow-legend-title">Components</div>
+        <div class="flow-legend-items">
+          <div class="flow-legend-item">
+            <div class="flow-legend-dot" style="background: rgba(59, 130, 246, 0.2); border-color: #3b82f6;"></div>
+            <span>Producer UI</span>
+          </div>
+          <div class="flow-legend-item">
+            <div class="flow-legend-dot" style="background: rgba(168, 85, 247, 0.2); border-color: #a855f7;"></div>
+            <span>Talent UI</span>
+          </div>
+          <div class="flow-legend-item">
+            <div class="flow-legend-dot" style="background: rgba(34, 197, 94, 0.2); border-color: #22c55e;"></div>
+            <span>Output (OBS)</span>
+          </div>
+          <div class="flow-legend-item">
+            <div class="flow-legend-dot" style="background: rgba(6, 182, 212, 0.2); border-color: #06b6d4;"></div>
+            <span>Coordinator</span>
+          </div>
+          <div class="flow-legend-item">
+            <div class="flow-legend-dot" style="background: rgba(245, 158, 11, 0.2); border-color: #f59e0b;"></div>
+            <span>Firebase</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- currentGraphic Data Shapes -->
+  <div class="data-shape-panel">
+    <h3>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M4 4h8v8H4V4z" stroke="#f59e0b" stroke-width="1.5"/>
+        <path d="M6 2v2M10 2v2M6 12v2M10 12v2M2 6h2M2 10h2M12 6h2M12 10h2" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      Firebase <code style="font-size: 10px; background: #27272a; padding: 2px 6px; border-radius: 4px;">currentGraphic</code> Data Shapes
+    </h3>
+
+    <div class="data-shape-tabs">
+      <button class="data-shape-tab active" data-tab="clip-playback">clip-playback</button>
+      <button class="data-shape-tab" data-tab="moment-replay">moment-replay</button>
+      <button class="data-shape-tab" data-tab="live-camera">live-camera</button>
+      <button class="data-shape-tab" data-tab="break-content">break content</button>
+      <button class="data-shape-tab" data-tab="clip-status">clipStatus write-back</button>
+    </div>
+
+    <div class="data-shape-code active" id="tab-clip-playback">{
+  <span class="key">"graphic"</span>: <span class="string">"clip-playback"</span>,
+  <span class="key">"data"</span>: {
+    <span class="key">"draftId"</span>: <span class="string">"f7894797-08d9-453f-b1c2-e62ac0ec34f0"</span>,  <span class="comment">// correlates with clip queue</span>
+    <span class="key">"clipUrl"</span>: <span class="string">"https://...r2.cloudflarestorage.com/.../output.mp4?..."</span>,
+    <span class="key">"athleteName"</span>: <span class="string">"Hailey Kriz"</span>,
+    <span class="key">"teamName"</span>: <span class="string">"Yale University"</span>,
+    <span class="key">"teamLogo"</span>: <span class="string">"https://media.virti.us/..."</span>,
+    <span class="key">"apparatus"</span>: <span class="string">"UB"</span>,
+    <span class="key">"score"</span>: <span class="number">9.875</span>,       <span class="comment">// null = no badge (pending). 0 = show "0.000" (scratch).</span>
+    <span class="key">"duration"</span>: <span class="number">39.2</span>,
+    <span class="key">"nextClipUrl"</span>: <span class="string">"https://...next-clip.mp4?..."</span>  <span class="comment">// preload (null if last)</span>
+  }
+}</div>
+
+    <div class="data-shape-code" id="tab-moment-replay">{
+  <span class="key">"graphic"</span>: <span class="string">"moment-replay"</span>,
+  <span class="key">"data"</span>: {
+    <span class="key">"draftId"</span>: <span class="string">"f7894797-08d9-453f-b1c2-e62ac0ec34f0"</span>,
+    <span class="key">"clipUrl"</span>: <span class="string">"https://..."</span>,
+    <span class="key">"athleteName"</span>: <span class="string">"Hailey Kriz"</span>,
+    <span class="key">"teamName"</span>: <span class="string">"Yale University"</span>,
+    <span class="key">"teamLogo"</span>: <span class="string">"https://media.virti.us/..."</span>,
+    <span class="key">"apparatus"</span>: <span class="string">"UB"</span>,                 <span class="comment">// shows + REPLAY badge</span>
+    <span class="key">"seekStart"</span>: <span class="number">21</span>,
+    <span class="key">"seekEnd"</span>: <span class="number">29</span>,
+    <span class="key">"playbackRate"</span>: <span class="number">0.5</span>,
+    <span class="key">"muted"</span>: <span class="number">true</span>,                   <span class="comment">// default true (commentators narrate)</span>
+    <span class="key">"nextClipUrl"</span>: <span class="string">"https://...next-clip.mp4?..."</span>  <span class="comment">// preload for optimistic advance</span>
+  }
+  <span class="comment">// Note: No 'score' field (replays don't show score badge)</span>
+  <span class="comment">// Note: No 'duration' field (derived from seek range and playbackRate)</span>
+}</div>
+
+    <div class="data-shape-code" id="tab-live-camera">{
+  <span class="key">"graphic"</span>: <span class="string">"live-camera"</span>,
+  <span class="key">"data"</span>: {
+    <span class="key">"apparatus"</span>: <span class="string">"BB"</span>  <span class="comment">// renders LIVE indicator + apparatus badge</span>
+  }
+}
+
+<span class="comment">// Rendered by output.html?mode=live instance only</span>
+<span class="comment">// Video elements hidden in mode=clip instance</span></div>
+
+    <div class="data-shape-code" id="tab-break-content">{
+  <span class="key">"graphic"</span>: <span class="string">"event-summary"</span>,  <span class="comment">// any existing graphic type</span>
+  <span class="key">"data"</span>: { ... },
+  <span class="key">"background"</span>: <span class="number">true</span>  <span class="comment">// triggers animated background behind graphic</span>
+}
+
+<span class="comment">// Used during break segments</span>
+<span class="comment">// 'background: true' renders animated background loop</span></div>
+
+    <div class="data-shape-code" id="tab-clip-status"><span class="comment">// Written by output.html to signal clip completion</span>
+<span class="comment">// Path: competitions/{compId}/production/clipStatus/{draftId}</span>
+
+{
+  <span class="key">"status"</span>: <span class="string">"ended"</span>,  <span class="comment">// or "stalled" or "error"</span>
+  <span class="key">"draftId"</span>: <span class="string">"f7894797-08d9-453f-b1c2-e62ac0ec34f0"</span>,
+  <span class="key">"errorCode"</span>: <span class="null">null</span>,  <span class="comment">// or "LOAD_FAILED", "PLAYBACK_ERROR"</span>
+  <span class="key">"optimisticNextDraftId"</span>: <span class="string">"a1b2c3d4-..."</span>,  <span class="comment">// output.html's next guess</span>
+  <span class="key">"timestamp"</span>: <span class="number">1711036800000</span>
+}
+
+<span class="comment">// Coordinator reads this and deletes after processing</span>
+<span class="comment">// Retry with exponential backoff on write failure</span></div>
+  </div>
+
+  <!-- Firebase Path Reference -->
+  <div class="data-shape-panel" style="margin-top: 16px;">
+    <h3>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M3 3h10v10H3V3z" stroke="#f59e0b" stroke-width="1.5"/>
+        <path d="M3 7h10M7 3v10" stroke="#f59e0b" stroke-width="1"/>
+      </svg>
+      Firebase Path Reference
+    </h3>
+
+    <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+      <thead>
+        <tr style="border-bottom: 1px solid var(--border-color, #3f3f46);">
+          <th style="padding: 8px; text-align: left; color: var(--text-muted, #71717a); font-weight: 600; text-transform: uppercase; font-size: 9px;">Path</th>
+          <th style="padding: 8px; text-align: left; color: var(--text-muted, #71717a); font-weight: 600; text-transform: uppercase; font-size: 9px;">Purpose</th>
+          <th style="padding: 8px; text-align: left; color: var(--text-muted, #71717a); font-weight: 600; text-transform: uppercase; font-size: 9px;">Writers</th>
+          <th style="padding: 8px; text-align: left; color: var(--text-muted, #71717a); font-weight: 600; text-transform: uppercase; font-size: 9px;">Readers</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom: 1px solid var(--border-color, #3f3f46);">
+          <td style="padding: 8px;"><code style="color: #fbbf24; background: #27272a; padding: 2px 4px; border-radius: 3px;">production/playoutState</code></td>
+          <td style="padding: 8px; color: var(--text-secondary, #a1a1aa);">Current mode, queue, overrides, camera states</td>
+          <td style="padding: 8px; color: #22d3ee;">Coordinator, ProducerView</td>
+          <td style="padding: 8px; color: #60a5fa;">ProducerView, TalentView</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border-color, #3f3f46);">
+          <td style="padding: 8px;"><code style="color: #fbbf24; background: #27272a; padding: 2px 4px; border-radius: 3px;">production/currentGraphic</code></td>
+          <td style="padding: 8px; color: var(--text-secondary, #a1a1aa);">Currently displayed graphic + data</td>
+          <td style="padding: 8px; color: #22d3ee;">Coordinator</td>
+          <td style="padding: 8px; color: #4ade80;">output.html (clip + live)</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border-color, #3f3f46);">
+          <td style="padding: 8px;"><code style="color: #fbbf24; background: #27272a; padding: 2px 4px; border-radius: 3px;">production/clipStatus/{draftId}</code></td>
+          <td style="padding: 8px; color: var(--text-secondary, #a1a1aa);">Ephemeral write-back from output.html</td>
+          <td style="padding: 8px; color: #4ade80;">output.html (clip)</td>
+          <td style="padding: 8px; color: #22d3ee;">Coordinator (reads + deletes)</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border-color, #3f3f46);">
+          <td style="padding: 8px;"><code style="color: #fbbf24; background: #27272a; padding: 2px 4px; border-radius: 3px;">production/engineHeartbeat</code></td>
+          <td style="padding: 8px; color: var(--text-secondary, #a1a1aa);">Coordinator health timestamp (every 5s)</td>
+          <td style="padding: 8px; color: #22d3ee;">Coordinator</td>
+          <td style="padding: 8px; color: #4ade80;">output.html (clip), ProducerView</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border-color, #3f3f46);">
+          <td style="padding: 8px;"><code style="color: #fbbf24; background: #27272a; padding: 2px 4px; border-radius: 3px;">rundown/{segmentId}</code></td>
+          <td style="padding: 8px; color: var(--text-secondary, #a1a1aa);">Playout rules: clip order, fallback sequence</td>
+          <td style="padding: 8px; color: #60a5fa;">RundownEditor</td>
+          <td style="padding: 8px; color: #22d3ee;">Coordinator, ProducerView</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px;"><code style="color: #fbbf24; background: #27272a; padding: 2px 4px; border-radius: 3px;">config</code></td>
+          <td style="padding: 8px; color: var(--text-secondary, #a1a1aa);">VM address, camera mapping, teams</td>
+          <td style="padding: 8px; color: #71717a;">Admin</td>
+          <td style="padding: 8px; color: #22d3ee;">Coordinator, RundownEditor</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="margin-top: 16px; padding: 12px; background: var(--bg-secondary, #18181b); border-radius: 6px; border-left: 3px solid #f59e0b;">
+      <div style="font-size: 11px; font-weight: 600; color: #fbbf24; margin-bottom: 4px;">Firebase Path Scoping</div>
+      <div style="font-size: 11px; color: var(--text-secondary, #a1a1aa);">
+        All paths include <code style="background: #27272a; padding: 1px 4px; border-radius: 3px;">compId</code>: <code style="background: #27272a; padding: 1px 4px; border-radius: 3px;">competitions/{compId}/...</code><br/>
+        Each ProducerView instance operates on its own competition. Multiple competitions in different tabs work independently.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Component Detail Panel for Data Flow -->
+<div class="detail-panel" id="flowDetailPanel" role="dialog" aria-modal="true" aria-labelledby="flowDetailTitle">
+  <div class="detail-panel__header">
+    <div class="detail-panel__title">
+      <span id="flowDetailTitle">Component</span>
+      <span class="detail-panel__badge" id="flowDetailBadge">TYPE</span>
+    </div>
+    <button class="detail-panel__close" id="flowDetailClose" aria-label="Close">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+  <div class="detail-panel__body">
+    <div class="detail-row">
+      <div class="detail-label">Description</div>
+      <div class="detail-value" id="flowDetailDesc"></div>
+    </div>
+    <div class="detail-row" id="flowDetailPathRow">
+      <div class="detail-label">Firebase Path</div>
+      <div class="detail-value"><code id="flowDetailPath"></code></div>
+    </div>
+    <div class="detail-row" id="flowDetailReadsRow">
+      <div class="detail-label">Reads From</div>
+      <div class="detail-value" id="flowDetailReads"></div>
+    </div>
+    <div class="detail-row" id="flowDetailWritesRow">
+      <div class="detail-label">Writes To</div>
+      <div class="detail-value" id="flowDetailWrites"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Flow Arrow Tooltip -->
+<div class="transition-tooltip" id="flowTooltip">
+  <div class="transition-tooltip__title" id="flowTooltipTitle">Source → Target</div>
+  <div class="transition-tooltip__condition" id="flowTooltipType" style="color: #22c55e; font-weight: 500;"></div>
+  <div class="transition-tooltip__condition" id="flowTooltipDesc"></div>
+</div>
+
+<script>
+(function() {
+  // Badge colors for component types
+  const typeBadgeColors = {
+    'firebase': { bg: 'rgba(245, 158, 11, 0.2)', text: '#fbbf24' },
+    'screen': { bg: 'rgba(59, 130, 246, 0.2)', text: '#60a5fa' },
+    'output': { bg: 'rgba(34, 197, 94, 0.2)', text: '#4ade80' },
+    'coordinator': { bg: 'rgba(6, 182, 212, 0.2)', text: '#22d3ee' },
+    'external': { bg: 'rgba(239, 68, 68, 0.2)', text: '#f87171' }
+  };
+
+  const typeLabels = {
+    'firebase': 'FIREBASE',
+    'screen': 'UI SCREEN',
+    'output': 'OBS OUTPUT',
+    'coordinator': 'BACKEND',
+    'external': 'EXTERNAL API'
+  };
+
+  // Elements
+  const flowDetailPanel = document.getElementById('flowDetailPanel');
+  const flowDetailClose = document.getElementById('flowDetailClose');
+  const flowDetailTitle = document.getElementById('flowDetailTitle');
+  const flowDetailBadge = document.getElementById('flowDetailBadge');
+  const flowDetailDesc = document.getElementById('flowDetailDesc');
+  const flowDetailPath = document.getElementById('flowDetailPath');
+  const flowDetailPathRow = document.getElementById('flowDetailPathRow');
+  const flowDetailReads = document.getElementById('flowDetailReads');
+  const flowDetailReadsRow = document.getElementById('flowDetailReadsRow');
+  const flowDetailWrites = document.getElementById('flowDetailWrites');
+  const flowDetailWritesRow = document.getElementById('flowDetailWritesRow');
+  const flowTooltip = document.getElementById('flowTooltip');
+  const flowTooltipTitle = document.getElementById('flowTooltipTitle');
+  const flowTooltipType = document.getElementById('flowTooltipType');
+  const flowTooltipDesc = document.getElementById('flowTooltipDesc');
+
+  // Component box click handlers
+  document.querySelectorAll('.data-flow-svg .component-box').forEach(box => {
+    box.addEventListener('click', () => {
+      const component = box.dataset.component;
+      const type = box.dataset.type;
+      const desc = box.dataset.desc;
+      const path = box.dataset.path;
+      const reads = box.dataset.reads;
+      const writes = box.dataset.writes;
+
+      flowDetailTitle.textContent = component;
+      flowDetailBadge.textContent = typeLabels[type] || type.toUpperCase();
+      const colors = typeBadgeColors[type] || typeBadgeColors['screen'];
+      flowDetailBadge.style.background = colors.bg;
+      flowDetailBadge.style.color = colors.text;
+      flowDetailDesc.textContent = desc;
+
+      // Show/hide path row
+      if (path) {
+        flowDetailPath.textContent = path;
+        flowDetailPathRow.style.display = 'block';
+      } else {
+        flowDetailPathRow.style.display = 'none';
+      }
+
+      // Show/hide reads row
+      if (reads) {
+        flowDetailReads.textContent = reads;
+        flowDetailReadsRow.style.display = 'block';
+      } else {
+        flowDetailReadsRow.style.display = 'none';
+      }
+
+      // Show/hide writes row
+      if (writes) {
+        flowDetailWrites.textContent = writes;
+        flowDetailWritesRow.style.display = 'block';
+      } else {
+        flowDetailWritesRow.style.display = 'none';
+      }
+
+      flowDetailPanel.classList.add('is-visible');
+      document.getElementById('detailBackdrop').classList.add('is-visible');
+    });
+
+    box.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        box.click();
+      }
+    });
+  });
+
+  // Close flow detail panel
+  flowDetailClose.addEventListener('click', () => {
+    flowDetailPanel.classList.remove('is-visible');
+    document.getElementById('detailBackdrop').classList.remove('is-visible');
+  });
+
+  // Flow arrow hover handlers
+  document.querySelectorAll('.data-flow-svg .flow-arrow').forEach(arrow => {
+    arrow.addEventListener('mouseenter', (e) => {
+      const flow = arrow.dataset.flow;
+      const type = arrow.dataset.type;
+      const desc = arrow.dataset.desc;
+
+      flowTooltipTitle.textContent = flow;
+      flowTooltipType.textContent = type === 'write' ? 'Write' :
+                                    type === 'realtime' ? 'Realtime Subscribe' :
+                                    type === 'heartbeat' ? 'Heartbeat' :
+                                    type === 'api' ? 'API Call' : 'Read';
+      flowTooltipType.style.color = type === 'write' ? '#22c55e' :
+                                    type === 'realtime' ? '#06b6d4' :
+                                    type === 'heartbeat' ? '#f59e0b' : '#3b82f6';
+      flowTooltipDesc.textContent = desc;
+
+      const rect = arrow.getBoundingClientRect();
+      flowTooltip.style.left = (rect.left + rect.width / 2) + 'px';
+      flowTooltip.style.top = (rect.top - 10) + 'px';
+      flowTooltip.style.transform = 'translate(-50%, -100%)';
+      flowTooltip.classList.add('is-visible');
+    });
+
+    arrow.addEventListener('mouseleave', () => {
+      flowTooltip.classList.remove('is-visible');
+    });
+  });
+
+  // Data shape tabs
+  document.querySelectorAll('.data-shape-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      // Deactivate all tabs
+      document.querySelectorAll('.data-shape-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.data-shape-code').forEach(c => c.classList.remove('active'));
+
+      // Activate clicked tab
+      tab.classList.add('active');
+      const tabId = 'tab-' + tab.dataset.tab;
+      document.getElementById(tabId).classList.add('active');
+    });
+  });
+
+  // ESC key closes flow panel too
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && flowDetailPanel.classList.contains('is-visible')) {
+      flowDetailPanel.classList.remove('is-visible');
+      document.getElementById('detailBackdrop').classList.remove('is-visible');
+    }
+  });
+
+  // Backdrop click closes flow panel
+  document.getElementById('detailBackdrop').addEventListener('click', () => {
+    flowDetailPanel.classList.remove('is-visible');
+  });
+})();
+</script>
