@@ -453,6 +453,241 @@
   .tooltip-wrapper:hover .tooltip-text {
     visibility: visible;
   }
+
+  /* Content Sequence Segment */
+  .segment-card--content-sequence {
+    border-left: 3px solid var(--clip-segment-content-text);
+  }
+
+  .segment-type-badge--content-sequence {
+    background: var(--clip-segment-content-bg);
+    color: var(--clip-segment-content-text);
+  }
+
+  /* Content Sequence List */
+  .content-sequence-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .content-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    transition: border-color 150ms;
+  }
+
+  .content-item:hover {
+    border-color: var(--text-muted);
+  }
+
+  .content-item--dragging {
+    opacity: 0.5;
+    border-color: #f59e0b;
+  }
+
+  .content-item-order {
+    width: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-align: center;
+  }
+
+  .content-item-select {
+    width: 130px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 6px 28px 6px 10px;
+    font-size: 12px;
+    color: var(--text-primary);
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+  }
+
+  .content-item-select:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 1px;
+  }
+
+  .content-item-duration-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .content-item-duration {
+    width: 50px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 6px 8px;
+    font-size: 12px;
+    color: var(--text-primary);
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .content-item-duration:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 1px;
+  }
+
+  .content-item-duration:disabled {
+    background: var(--bg-primary);
+    color: var(--text-muted);
+    cursor: not-allowed;
+  }
+
+  .content-item-duration-select {
+    width: 70px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 6px 22px 6px 8px;
+    font-size: 12px;
+    color: var(--text-primary);
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 6px center;
+  }
+
+  .content-item-duration-select:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 1px;
+  }
+
+  .content-item-unit {
+    font-size: 11px;
+    color: var(--text-muted);
+    width: 24px;
+  }
+
+  .content-toggles {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  /* Advance Condition Section */
+  .advance-condition-section {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .advance-condition-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+  }
+
+  .advance-condition-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .advance-condition-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+  }
+
+  .advance-condition-option input[type="radio"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    margin-top: 1px;
+    border: 2px solid var(--border-color);
+    border-radius: 50%;
+    background: var(--bg-tertiary);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: border-color 150ms, background 150ms;
+  }
+
+  .advance-condition-option input[type="radio"]:checked {
+    border-color: var(--clip-segment-content-text);
+    background: var(--clip-segment-content-text);
+    box-shadow: inset 0 0 0 3px var(--bg-tertiary);
+  }
+
+  .advance-condition-option input[type="radio"]:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+
+  .advance-condition-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .advance-condition-text span {
+    font-size: 12px;
+    color: var(--text-primary);
+  }
+
+  .advance-condition-text small {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  /* Hold duration badge */
+  .hold-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--clip-segment-content-text);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  /* Add content item button (amber theme) */
+  .add-content-item-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: transparent;
+    border: 1px dashed var(--border-color);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 150ms, border-color 150ms, color 150ms;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .add-content-item-btn:hover {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: var(--clip-segment-content-text);
+    color: var(--clip-segment-content-text);
+  }
+
+  .add-content-item-btn:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
 </style>
 
 <div class="rundown-editor">
@@ -628,6 +863,249 @@
       <label class="loop-toggle-label" for="loop-sequence">Loop sequence</label>
     </div>
   </div>
+
+  <!-- Content Sequence Segment Example -->
+  <div class="segment-card segment-card--content-sequence">
+    <div class="segment-header">
+      <span class="segment-name">Rotation 1 Break</span>
+      <span class="segment-type-badge segment-type-badge--content-sequence">Content Sequence</span>
+    </div>
+
+    <div class="section-title">Content</div>
+
+    <div class="content-sequence-list" id="content-sequence-list" role="list" aria-label="Content sequence items">
+      <!-- Item 1: Event Summary -->
+      <div class="content-item" role="listitem" draggable="true" data-index="0">
+        <div class="drag-handle" aria-label="Drag to reorder" tabindex="0">
+          <span class="drag-handle-line"></span>
+          <span class="drag-handle-line"></span>
+          <span class="drag-handle-line"></span>
+        </div>
+        <span class="content-item-order">1.</span>
+        <select class="content-item-select" aria-label="Graphic type for item 1">
+          <option value="event-summary" selected>Event Summary</option>
+          <option value="standings">Standings</option>
+          <option value="sponsor">Sponsor</option>
+          <option value="calendar">Calendar</option>
+          <option value="quad-view">Quad View</option>
+          <option value="highlight-reel">Highlight Reel</option>
+        </select>
+        <div class="content-item-duration-group">
+          <input type="number" class="content-item-duration" value="30" min="5" max="300" aria-label="Duration in seconds for item 1">
+          <span class="content-item-unit">sec</span>
+        </div>
+        <div class="content-toggles">
+          <div class="toggle-container">
+            <input type="checkbox" class="toggle-checkbox" id="content-bg-1" checked aria-label="Show background for item 1">
+            <label class="toggle-label" for="content-bg-1">BG</label>
+          </div>
+          <div class="toggle-container">
+            <input type="checkbox" class="toggle-checkbox" id="content-skip-1" checked aria-label="Skip if no data for item 1">
+            <label class="toggle-label" for="content-skip-1">Skip∅</label>
+          </div>
+        </div>
+        <button class="remove-btn" aria-label="Remove item 1" title="Remove item">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Item 2: Sponsor -->
+      <div class="content-item" role="listitem" draggable="true" data-index="1">
+        <div class="drag-handle" aria-label="Drag to reorder" tabindex="0">
+          <span class="drag-handle-line"></span>
+          <span class="drag-handle-line"></span>
+          <span class="drag-handle-line"></span>
+        </div>
+        <span class="content-item-order">2.</span>
+        <select class="content-item-select" aria-label="Graphic type for item 2">
+          <option value="event-summary">Event Summary</option>
+          <option value="standings">Standings</option>
+          <option value="sponsor" selected>Sponsor</option>
+          <option value="calendar">Calendar</option>
+          <option value="quad-view">Quad View</option>
+          <option value="highlight-reel">Highlight Reel</option>
+        </select>
+        <div class="content-item-duration-group">
+          <input type="number" class="content-item-duration" value="10" min="5" max="300" aria-label="Duration in seconds for item 2">
+          <span class="content-item-unit">sec</span>
+        </div>
+        <div class="content-toggles">
+          <div class="toggle-container">
+            <input type="checkbox" class="toggle-checkbox" id="content-bg-2" checked aria-label="Show background for item 2">
+            <label class="toggle-label" for="content-bg-2">BG</label>
+          </div>
+          <div class="toggle-container">
+            <input type="checkbox" class="toggle-checkbox" id="content-skip-2" aria-label="Skip if no data for item 2">
+            <label class="toggle-label" for="content-skip-2">Skip∅</label>
+          </div>
+        </div>
+        <button class="remove-btn" aria-label="Remove item 2" title="Remove item">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Item 3: Highlight Reel (auto duration) -->
+      <div class="content-item" role="listitem" draggable="true" data-index="2">
+        <div class="drag-handle" aria-label="Drag to reorder" tabindex="0">
+          <span class="drag-handle-line"></span>
+          <span class="drag-handle-line"></span>
+          <span class="drag-handle-line"></span>
+        </div>
+        <span class="content-item-order">3.</span>
+        <select class="content-item-select content-item-select--highlight" aria-label="Graphic type for item 3">
+          <option value="event-summary">Event Summary</option>
+          <option value="standings">Standings</option>
+          <option value="sponsor">Sponsor</option>
+          <option value="calendar">Calendar</option>
+          <option value="quad-view">Quad View</option>
+          <option value="highlight-reel" selected>Highlight Reel</option>
+        </select>
+        <div class="content-item-duration-group">
+          <select class="content-item-duration-select" aria-label="Duration type for item 3">
+            <option value="auto" selected>auto</option>
+            <option value="fixed">fixed</option>
+          </select>
+        </div>
+        <div class="content-toggles">
+          <div class="toggle-container">
+            <input type="checkbox" class="toggle-checkbox" id="content-bg-3" checked aria-label="Show background for item 3">
+            <label class="toggle-label" for="content-bg-3">BG</label>
+          </div>
+          <div class="toggle-container">
+            <input type="checkbox" class="toggle-checkbox" id="content-skip-3" checked aria-label="Skip if no data for item 3">
+            <label class="toggle-label" for="content-skip-3">Skip∅</label>
+          </div>
+        </div>
+        <button class="remove-btn" aria-label="Remove item 3" title="Remove item">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Item 4: Calendar -->
+      <div class="content-item" role="listitem" draggable="true" data-index="3">
+        <div class="drag-handle" aria-label="Drag to reorder" tabindex="0">
+          <span class="drag-handle-line"></span>
+          <span class="drag-handle-line"></span>
+          <span class="drag-handle-line"></span>
+        </div>
+        <span class="content-item-order">4.</span>
+        <select class="content-item-select" aria-label="Graphic type for item 4">
+          <option value="event-summary">Event Summary</option>
+          <option value="standings">Standings</option>
+          <option value="sponsor">Sponsor</option>
+          <option value="calendar" selected>Calendar</option>
+          <option value="quad-view">Quad View</option>
+          <option value="highlight-reel">Highlight Reel</option>
+        </select>
+        <div class="content-item-duration-group">
+          <input type="number" class="content-item-duration" value="15" min="5" max="300" aria-label="Duration in seconds for item 4">
+          <span class="content-item-unit">sec</span>
+        </div>
+        <div class="content-toggles">
+          <div class="toggle-container">
+            <input type="checkbox" class="toggle-checkbox" id="content-bg-4" checked aria-label="Show background for item 4">
+            <label class="toggle-label" for="content-bg-4">BG</label>
+          </div>
+          <div class="toggle-container">
+            <input type="checkbox" class="toggle-checkbox" id="content-skip-4" aria-label="Skip if no data for item 4">
+            <label class="toggle-label" for="content-skip-4">Skip∅</label>
+          </div>
+        </div>
+        <button class="remove-btn" aria-label="Remove item 4" title="Remove item">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Item 5: Quad View (hold) -->
+      <div class="content-item" role="listitem" draggable="true" data-index="4">
+        <div class="drag-handle" aria-label="Drag to reorder" tabindex="0">
+          <span class="drag-handle-line"></span>
+          <span class="drag-handle-line"></span>
+          <span class="drag-handle-line"></span>
+        </div>
+        <span class="content-item-order">5.</span>
+        <select class="content-item-select" aria-label="Graphic type for item 5">
+          <option value="event-summary">Event Summary</option>
+          <option value="standings">Standings</option>
+          <option value="sponsor">Sponsor</option>
+          <option value="calendar">Calendar</option>
+          <option value="quad-view" selected>Quad View</option>
+          <option value="highlight-reel">Highlight Reel</option>
+        </select>
+        <div class="content-item-duration-group">
+          <select class="content-item-duration-select" aria-label="Duration type for item 5">
+            <option value="fixed">fixed</option>
+            <option value="hold" selected>hold</option>
+          </select>
+        </div>
+        <div class="content-toggles">
+          <div class="toggle-container">
+            <input type="checkbox" class="toggle-checkbox" id="content-bg-5" aria-label="Show background for item 5">
+            <label class="toggle-label" for="content-bg-5">BG</label>
+          </div>
+          <div class="toggle-container">
+            <input type="checkbox" class="toggle-checkbox" id="content-skip-5" aria-label="Skip if no data for item 5">
+            <label class="toggle-label" for="content-skip-5">Skip∅</label>
+          </div>
+        </div>
+        <button class="remove-btn" aria-label="Remove item 5" title="Remove item">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Add Content Item Button -->
+    <button class="add-content-item-btn" id="add-content-item-btn" aria-label="Add content item">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      Add Content Item
+    </button>
+
+    <!-- Advance Condition -->
+    <div class="advance-condition-section">
+      <div class="advance-condition-label">Auto-advance to next segment when:</div>
+      <div class="advance-condition-options">
+        <label class="advance-condition-option">
+          <input type="radio" name="advance-condition" value="next-rotation-detected" checked>
+          <div class="advance-condition-text">
+            <span>Next rotation scores detected (Virtius API)</span>
+            <small>Advances when new rotation data appears in the scoring feed</small>
+          </div>
+        </label>
+        <label class="advance-condition-option">
+          <input type="radio" name="advance-condition" value="all-complete">
+          <div class="advance-condition-text">
+            <span>All content items complete</span>
+            <small>Hold items wait for advance condition or manual advance</small>
+          </div>
+        </label>
+        <label class="advance-condition-option">
+          <input type="radio" name="advance-condition" value="manual">
+          <div class="advance-condition-text">
+            <span>Manual advance only</span>
+            <small>Producer must click Next or press keyboard shortcut</small>
+          </div>
+        </label>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -750,6 +1228,225 @@
 
     function getDragAfterElement(container, y) {
       const draggableElements = [...container.querySelectorAll('.gap-fill-item:not(.gap-fill-item--dragging)')];
+
+      return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) {
+          return { offset: offset, element: child };
+        } else {
+          return closest;
+        }
+      }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    // Content Sequence List Management
+    const contentSequenceList = document.getElementById('content-sequence-list');
+    const addContentBtn = document.getElementById('add-content-item-btn');
+    let contentItemCount = 5;
+
+    function updateContentOrderNumbers() {
+      const items = contentSequenceList.querySelectorAll('.content-item');
+      items.forEach((item, index) => {
+        item.querySelector('.content-item-order').textContent = (index + 1) + '.';
+        item.dataset.index = index;
+      });
+    }
+
+    function createContentItem(index) {
+      const div = document.createElement('div');
+      div.className = 'content-item';
+      div.setAttribute('role', 'listitem');
+      div.setAttribute('draggable', 'true');
+      div.dataset.index = index;
+
+      // New items default to sponsor, 10 sec, background on, skip-if-no-data off
+      div.innerHTML = `
+        <div class="drag-handle" aria-label="Drag to reorder" tabindex="0">
+          <span class="drag-handle-line"></span>
+          <span class="drag-handle-line"></span>
+          <span class="drag-handle-line"></span>
+        </div>
+        <span class="content-item-order">${index + 1}.</span>
+        <select class="content-item-select" aria-label="Graphic type for item ${index + 1}">
+          <option value="event-summary">Event Summary</option>
+          <option value="standings">Standings</option>
+          <option value="sponsor" selected>Sponsor</option>
+          <option value="calendar">Calendar</option>
+          <option value="quad-view">Quad View</option>
+          <option value="highlight-reel">Highlight Reel</option>
+        </select>
+        <div class="content-item-duration-group">
+          <input type="number" class="content-item-duration" value="10" min="5" max="300" aria-label="Duration in seconds for item ${index + 1}">
+          <span class="content-item-unit">sec</span>
+        </div>
+        <div class="content-toggles">
+          <div class="toggle-container">
+            <input type="checkbox" class="toggle-checkbox" id="content-bg-${index + 1}" checked aria-label="Show background for item ${index + 1}">
+            <label class="toggle-label" for="content-bg-${index + 1}">BG</label>
+          </div>
+          <div class="toggle-container">
+            <input type="checkbox" class="toggle-checkbox" id="content-skip-${index + 1}" aria-label="Skip if no data for item ${index + 1}">
+            <label class="toggle-label" for="content-skip-${index + 1}">Skip∅</label>
+          </div>
+        </div>
+        <button class="remove-btn" aria-label="Remove item ${index + 1}" title="Remove item">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      `;
+
+      return div;
+    }
+
+    addContentBtn.addEventListener('click', function() {
+      contentItemCount++;
+      const newItem = createContentItem(contentItemCount - 1);
+      contentSequenceList.appendChild(newItem);
+      updateContentOrderNumbers();
+    });
+
+    // Remove content item handler
+    contentSequenceList.addEventListener('click', function(e) {
+      const removeBtn = e.target.closest('.remove-btn');
+      if (removeBtn) {
+        const item = removeBtn.closest('.content-item');
+        item.remove();
+        contentItemCount--;
+        updateContentOrderNumbers();
+      }
+    });
+
+    // Handle graphic type change to toggle duration options
+    contentSequenceList.addEventListener('change', function(e) {
+      if (e.target.classList.contains('content-item-select')) {
+        const item = e.target.closest('.content-item');
+        const durationGroup = item.querySelector('.content-item-duration-group');
+        const graphicType = e.target.value;
+        const itemIndex = parseInt(item.dataset.index) + 1;
+
+        // Highlight reel allows auto duration
+        if (graphicType === 'highlight-reel') {
+          durationGroup.innerHTML = `
+            <select class="content-item-duration-select" aria-label="Duration type for item ${itemIndex}">
+              <option value="auto" selected>auto</option>
+              <option value="fixed">fixed</option>
+            </select>
+          `;
+        }
+        // Quad view defaults to hold option
+        else if (graphicType === 'quad-view') {
+          durationGroup.innerHTML = `
+            <select class="content-item-duration-select" aria-label="Duration type for item ${itemIndex}">
+              <option value="fixed">fixed</option>
+              <option value="hold" selected>hold</option>
+            </select>
+          `;
+        }
+        // Other types get standard numeric duration
+        else {
+          const currentDurationSelect = durationGroup.querySelector('.content-item-duration-select');
+          if (currentDurationSelect) {
+            durationGroup.innerHTML = `
+              <input type="number" class="content-item-duration" value="15" min="5" max="300" aria-label="Duration in seconds for item ${itemIndex}">
+              <span class="content-item-unit">sec</span>
+            `;
+          }
+        }
+
+        // Auto-set skip-if-no-data based on graphic type
+        const skipToggle = item.querySelector('[id^="content-skip-"]');
+        if (skipToggle) {
+          // Data-driven items should have skip enabled by default
+          if (graphicType === 'event-summary' || graphicType === 'highlight-reel') {
+            skipToggle.checked = true;
+          }
+          // Static items should have skip disabled by default
+          else if (graphicType === 'sponsor' || graphicType === 'calendar' || graphicType === 'quad-view') {
+            skipToggle.checked = false;
+          }
+        }
+
+        // Auto-set background based on graphic type
+        const bgToggle = item.querySelector('[id^="content-bg-"]');
+        if (bgToggle) {
+          // Quad view typically doesn't need background (shows camera feed)
+          if (graphicType === 'quad-view') {
+            bgToggle.checked = false;
+          } else {
+            bgToggle.checked = true;
+          }
+        }
+      }
+
+      // Handle duration select change (fixed/hold/auto)
+      if (e.target.classList.contains('content-item-duration-select')) {
+        const item = e.target.closest('.content-item');
+        const durationGroup = item.querySelector('.content-item-duration-group');
+        const durationType = e.target.value;
+        const graphicSelect = item.querySelector('.content-item-select');
+        const graphicType = graphicSelect.value;
+        const itemIndex = parseInt(item.dataset.index) + 1;
+
+        if (durationType === 'fixed') {
+          durationGroup.innerHTML = `
+            <input type="number" class="content-item-duration" value="15" min="5" max="300" aria-label="Duration in seconds for item ${itemIndex}">
+            <span class="content-item-unit">sec</span>
+          `;
+        } else if (durationType === 'hold') {
+          durationGroup.innerHTML = `
+            <select class="content-item-duration-select" aria-label="Duration type for item ${itemIndex}">
+              <option value="fixed">fixed</option>
+              <option value="hold" selected>hold</option>
+            </select>
+          `;
+        } else if (durationType === 'auto') {
+          durationGroup.innerHTML = `
+            <select class="content-item-duration-select" aria-label="Duration type for item ${itemIndex}">
+              <option value="auto" selected>auto</option>
+              <option value="fixed">fixed</option>
+            </select>
+          `;
+        }
+      }
+    });
+
+    // Content sequence drag and drop
+    let draggedContentItem = null;
+
+    contentSequenceList.addEventListener('dragstart', function(e) {
+      const item = e.target.closest('.content-item');
+      if (item) {
+        draggedContentItem = item;
+        item.classList.add('content-item--dragging');
+        e.dataTransfer.effectAllowed = 'move';
+      }
+    });
+
+    contentSequenceList.addEventListener('dragend', function(e) {
+      if (draggedContentItem) {
+        draggedContentItem.classList.remove('content-item--dragging');
+        draggedContentItem = null;
+        updateContentOrderNumbers();
+      }
+    });
+
+    contentSequenceList.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      const afterElement = getContentDragAfterElement(contentSequenceList, e.clientY);
+      if (draggedContentItem) {
+        if (afterElement == null) {
+          contentSequenceList.appendChild(draggedContentItem);
+        } else {
+          contentSequenceList.insertBefore(draggedContentItem, afterElement);
+        }
+      }
+    });
+
+    function getContentDragAfterElement(container, y) {
+      const draggableElements = [...container.querySelectorAll('.content-item:not(.content-item--dragging)')];
 
       return draggableElements.reduce((closest, child) => {
         const box = child.getBoundingClientRect();
