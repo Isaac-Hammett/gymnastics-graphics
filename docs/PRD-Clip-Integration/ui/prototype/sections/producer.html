@@ -2321,3 +2321,1208 @@
   });
 })();
 </script>
+
+<!-- Task 1.4: Override Controls Bar + Event Log Panel -->
+<style>
+  /* === Override Controls Bar === */
+  .override-controls {
+    background: var(--bg-secondary, #18181b);
+    border: 1px solid var(--border-color, #3f3f46);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-top: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .override-controls--active {
+    border-color: var(--clip-mode-override-border, #f59e0b);
+    background: rgba(245, 158, 11, 0.05);
+  }
+
+  .override-controls--paused {
+    border-color: var(--clip-mode-paused-border, #eab308);
+    background: rgba(234, 179, 8, 0.05);
+  }
+
+  .override-controls__left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .override-controls__right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Override Control Button */
+  .override-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 14px;
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 150ms;
+    border: 1px solid var(--border-color, #3f3f46);
+  }
+
+  .override-btn:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+
+  /* Default/outline style */
+  .override-btn--outline {
+    background: transparent;
+    color: var(--text-secondary, #a1a1aa);
+  }
+
+  .override-btn--outline:hover {
+    background: var(--bg-tertiary, #27272a);
+    color: var(--text-primary, #e4e4e7);
+    border-color: var(--text-muted, #71717a);
+  }
+
+  /* Primary/blue style */
+  .override-btn--primary {
+    background: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+  }
+
+  .override-btn--primary:hover {
+    background: #2563eb;
+    border-color: #2563eb;
+  }
+
+  /* Warning/amber style (pause, override active) */
+  .override-btn--warning {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+    border-color: rgba(245, 158, 11, 0.4);
+  }
+
+  .override-btn--warning:hover {
+    background: rgba(245, 158, 11, 0.3);
+    border-color: rgba(245, 158, 11, 0.6);
+  }
+
+  .override-btn--warning-active {
+    background: var(--clip-mode-paused-bg, rgba(234, 179, 8, 0.2));
+    color: var(--clip-mode-paused-text, #facc15);
+    border-color: var(--clip-mode-paused-border, #eab308);
+  }
+
+  /* Danger/red style */
+  .override-btn--danger {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+    border-color: rgba(239, 68, 68, 0.4);
+  }
+
+  .override-btn--danger:hover {
+    background: rgba(239, 68, 68, 0.3);
+    border-color: rgba(239, 68, 68, 0.6);
+  }
+
+  /* Success/green style (release) */
+  .override-btn--success {
+    background: rgba(34, 197, 94, 0.2);
+    color: #4ade80;
+    border-color: rgba(34, 197, 94, 0.4);
+  }
+
+  .override-btn--success:hover {
+    background: rgba(34, 197, 94, 0.3);
+    border-color: rgba(34, 197, 94, 0.6);
+  }
+
+  /* Keyboard shortcut hint */
+  .override-btn__shortcut {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 16px;
+    padding: 0 4px;
+    font-size: 10px;
+    font-weight: 700;
+    background: rgba(0, 0, 0, 0.3);
+    color: inherit;
+    border-radius: 3px;
+    opacity: 0.8;
+  }
+
+  .override-btn--outline .override-btn__shortcut {
+    background: var(--bg-tertiary, #27272a);
+    color: var(--text-muted, #71717a);
+  }
+
+  .override-btn svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+
+  /* Force Camera Dropdown */
+  .force-camera-dropdown {
+    position: relative;
+  }
+
+  .force-camera-dropdown__trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-secondary, #a1a1aa);
+    border: 1px solid var(--border-color, #3f3f46);
+    cursor: pointer;
+    transition: all 150ms;
+  }
+
+  .force-camera-dropdown__trigger:hover {
+    background: var(--bg-tertiary, #27272a);
+    color: var(--text-primary, #e4e4e7);
+    border-color: var(--text-muted, #71717a);
+  }
+
+  .force-camera-dropdown__trigger:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+
+  .force-camera-dropdown__trigger svg {
+    width: 14px;
+    height: 14px;
+    transition: transform 150ms;
+  }
+
+  .force-camera-dropdown--open .force-camera-dropdown__trigger svg:last-child {
+    transform: rotate(180deg);
+  }
+
+  .force-camera-dropdown__menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    z-index: 100;
+    min-width: 180px;
+    padding: 4px;
+    background: var(--bg-secondary, #18181b);
+    border: 1px solid var(--border-color, #3f3f46);
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px);
+    transition: all 150ms;
+  }
+
+  .force-camera-dropdown--open .force-camera-dropdown__menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+
+  .force-camera-dropdown__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 8px 10px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary, #a1a1aa);
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 150ms;
+    text-align: left;
+  }
+
+  .force-camera-dropdown__item:hover {
+    background: var(--bg-tertiary, #27272a);
+    color: var(--text-primary, #e4e4e7);
+  }
+
+  .force-camera-dropdown__item--active {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+  }
+
+  .force-camera-dropdown__item--active:hover {
+    background: rgba(239, 68, 68, 0.2);
+  }
+
+  .force-camera-dropdown__item-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .force-camera-dropdown__item-state {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .force-camera-dropdown__item-state--idle {
+    background: var(--text-muted, #71717a);
+  }
+
+  .force-camera-dropdown__item-state--recording {
+    background: var(--clip-status-success, #22c55e);
+  }
+
+  .force-camera-dropdown__item-state--live {
+    background: var(--clip-status-error, #ef4444);
+  }
+
+  .force-camera-dropdown__item-shortcut {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-muted, #71717a);
+    background: var(--bg-tertiary, #27272a);
+    padding: 2px 6px;
+    border-radius: 3px;
+  }
+
+  /* Divider */
+  .override-controls__divider {
+    width: 1px;
+    height: 24px;
+    background: var(--border-color, #3f3f46);
+  }
+
+  /* === Event Log Panel === */
+  .event-log-panel {
+    background: var(--bg-secondary, #18181b);
+    border: 1px solid var(--border-color, #3f3f46);
+    border-radius: 8px;
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    max-height: 280px;
+  }
+
+  .event-log-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border-color, #3f3f46);
+    flex-shrink: 0;
+  }
+
+  .event-log-header__title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary, #e4e4e7);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .event-log-filters {
+    display: flex;
+    gap: 4px;
+  }
+
+  .event-log-filter-btn {
+    padding: 4px 8px;
+    font-size: 10px;
+    font-weight: 500;
+    border-radius: 4px;
+    background: var(--bg-tertiary, #27272a);
+    color: var(--text-muted, #71717a);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 150ms;
+  }
+
+  .event-log-filter-btn:hover {
+    color: var(--text-secondary, #a1a1aa);
+  }
+
+  .event-log-filter-btn--active {
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+    border-color: rgba(59, 130, 246, 0.3);
+  }
+
+  /* Event Log List */
+  .event-log-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0;
+  }
+
+  .event-log-list::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .event-log-list::-webkit-scrollbar-track {
+    background: var(--bg-tertiary, #27272a);
+  }
+
+  .event-log-list::-webkit-scrollbar-thumb {
+    background: var(--text-muted, #71717a);
+    border-radius: 3px;
+  }
+
+  /* Event Log Entry */
+  .event-log-entry {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 6px 16px;
+    transition: background 150ms;
+  }
+
+  .event-log-entry:hover {
+    background: var(--bg-tertiary, #27272a);
+  }
+
+  .event-log-entry__time {
+    font-size: 11px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted, #71717a);
+    flex-shrink: 0;
+    width: 58px;
+  }
+
+  .event-log-entry__icon {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .event-log-entry__icon--success {
+    color: var(--clip-status-success, #22c55e);
+  }
+
+  .event-log-entry__icon--warning {
+    color: var(--clip-status-warning, #f59e0b);
+  }
+
+  .event-log-entry__icon--error {
+    color: var(--clip-status-error, #ef4444);
+  }
+
+  .event-log-entry__icon--info {
+    color: var(--clip-status-info, #3b82f6);
+  }
+
+  .event-log-entry__content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .event-log-entry__message {
+    font-size: 12px;
+    color: var(--text-secondary, #a1a1aa);
+    line-height: 1.4;
+  }
+
+  .event-log-entry__message strong {
+    color: var(--text-primary, #e4e4e7);
+    font-weight: 500;
+  }
+
+  .event-log-entry__message--success {
+    color: var(--clip-status-success, #22c55e);
+  }
+
+  .event-log-entry__message--warning {
+    color: var(--clip-status-warning, #f59e0b);
+  }
+
+  .event-log-entry__message--error {
+    color: var(--clip-status-error, #ef4444);
+  }
+
+  .event-log-entry__action {
+    flex-shrink: 0;
+  }
+
+  .event-log-retry-btn {
+    padding: 3px 8px;
+    font-size: 10px;
+    font-weight: 500;
+    border-radius: 4px;
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 150ms;
+  }
+
+  .event-log-retry-btn:hover {
+    background: rgba(59, 130, 246, 0.25);
+    border-color: rgba(59, 130, 246, 0.3);
+  }
+
+  /* Keyboard Shortcuts Panel */
+  .shortcuts-panel {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    width: 420px;
+    max-height: 80vh;
+    background: var(--bg-secondary, #18181b);
+    border: 1px solid var(--border-color, #3f3f46);
+    border-radius: 12px;
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+  }
+
+  .shortcuts-panel--visible {
+    display: block;
+  }
+
+  .shortcuts-panel__overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 999;
+  }
+
+  .shortcuts-panel__overlay--visible {
+    display: block;
+  }
+
+  .shortcuts-panel__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-color, #3f3f46);
+  }
+
+  .shortcuts-panel__title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary, #e4e4e7);
+  }
+
+  .shortcuts-panel__close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-muted, #71717a);
+    border: none;
+    cursor: pointer;
+    transition: all 150ms;
+  }
+
+  .shortcuts-panel__close:hover {
+    background: var(--bg-tertiary, #27272a);
+    color: var(--text-primary, #e4e4e7);
+  }
+
+  .shortcuts-panel__close svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .shortcuts-panel__body {
+    padding: 16px 20px;
+    overflow-y: auto;
+    max-height: calc(80vh - 60px);
+  }
+
+  .shortcuts-section {
+    margin-bottom: 20px;
+  }
+
+  .shortcuts-section:last-child {
+    margin-bottom: 0;
+  }
+
+  .shortcuts-section__title {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted, #71717a);
+    margin-bottom: 10px;
+  }
+
+  .shortcut-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(63, 63, 70, 0.5);
+  }
+
+  .shortcut-row:last-child {
+    border-bottom: none;
+  }
+
+  .shortcut-row__action {
+    font-size: 13px;
+    color: var(--text-secondary, #a1a1aa);
+  }
+
+  .shortcut-row__keys {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .shortcut-key {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 8px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: inherit;
+    background: var(--bg-tertiary, #27272a);
+    color: var(--text-primary, #e4e4e7);
+    border: 1px solid var(--border-color, #3f3f46);
+    border-radius: 4px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Demo Override Switcher */
+  .demo-override-switcher {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 12px;
+    padding: 12px 16px;
+    background: var(--bg-secondary, #18181b);
+    border: 1px solid var(--border-color, #3f3f46);
+    border-radius: 8px;
+  }
+</style>
+
+<!-- Override Controls Bar -->
+<div class="override-controls" id="overrideControls">
+  <div class="override-controls__left">
+    <!-- Pause/Resume Button -->
+    <button class="override-btn override-btn--warning" id="pauseBtn" aria-label="Pause playout (Space)">
+      <svg viewBox="0 0 24 24" fill="currentColor">
+        <rect x="6" y="4" width="4" height="16" rx="1"/>
+        <rect x="14" y="4" width="4" height="16" rx="1"/>
+      </svg>
+      Pause
+      <span class="override-btn__shortcut">Space</span>
+    </button>
+
+    <!-- Skip Button -->
+    <button class="override-btn override-btn--outline" id="skipBtn" aria-label="Skip current clip (S)">
+      <svg viewBox="0 0 24 24" fill="currentColor">
+        <path d="M5 5v14l11-7L5 5z"/>
+        <rect x="17" y="5" width="2" height="14"/>
+      </svg>
+      Skip
+      <span class="override-btn__shortcut">S</span>
+    </button>
+
+    <!-- Force Camera Dropdown -->
+    <div class="force-camera-dropdown" id="forceCameraDropdown">
+      <button class="force-camera-dropdown__trigger" aria-label="Force camera" aria-haspopup="true" aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+          <circle cx="12" cy="13" r="4"/>
+        </svg>
+        Force Camera
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+      <div class="force-camera-dropdown__menu" role="menu">
+        <button class="force-camera-dropdown__item" role="menuitem" data-camera="1">
+          <span class="force-camera-dropdown__item-left">
+            <span class="force-camera-dropdown__item-state force-camera-dropdown__item-state--idle"></span>
+            <span class="apparatus-badge apparatus-badge--vt" style="font-size: 10px;">VT</span>
+            Camera 1
+          </span>
+          <span class="force-camera-dropdown__item-shortcut">1</span>
+        </button>
+        <button class="force-camera-dropdown__item" role="menuitem" data-camera="2">
+          <span class="force-camera-dropdown__item-left">
+            <span class="force-camera-dropdown__item-state force-camera-dropdown__item-state--recording"></span>
+            <span class="apparatus-badge apparatus-badge--ub" style="font-size: 10px;">UB</span>
+            Camera 2
+          </span>
+          <span class="force-camera-dropdown__item-shortcut">2</span>
+        </button>
+        <button class="force-camera-dropdown__item force-camera-dropdown__item--active" role="menuitem" data-camera="3">
+          <span class="force-camera-dropdown__item-left">
+            <span class="force-camera-dropdown__item-state force-camera-dropdown__item-state--live"></span>
+            <span class="apparatus-badge apparatus-badge--bb" style="font-size: 10px;">BB</span>
+            Camera 3 (Live)
+          </span>
+          <span class="force-camera-dropdown__item-shortcut">3</span>
+        </button>
+        <button class="force-camera-dropdown__item" role="menuitem" data-camera="4">
+          <span class="force-camera-dropdown__item-left">
+            <span class="force-camera-dropdown__item-state force-camera-dropdown__item-state--idle"></span>
+            <span class="apparatus-badge apparatus-badge--fx" style="font-size: 10px;">FX</span>
+            Camera 4
+          </span>
+          <span class="force-camera-dropdown__item-shortcut">4</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Flag Moment Button -->
+    <button class="override-btn override-btn--outline" id="flagMomentBtn" aria-label="Flag moment for replay (F)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+        <line x1="4" y1="22" x2="4" y2="15"/>
+      </svg>
+      Flag
+      <span class="override-btn__shortcut">F</span>
+    </button>
+
+    <span class="override-controls__divider"></span>
+
+    <!-- Stop Playout Button -->
+    <button class="override-btn override-btn--danger" id="stopPlayoutBtn" aria-label="Stop playout completely">
+      <svg viewBox="0 0 24 24" fill="currentColor">
+        <rect x="6" y="6" width="12" height="12" rx="1"/>
+      </svg>
+      Stop
+    </button>
+  </div>
+
+  <div class="override-controls__right">
+    <!-- Release Override (hidden when not in override) -->
+    <button class="override-btn override-btn--success" id="releaseOverrideBtn" aria-label="Release override (Escape)" style="display: none;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="9 10 4 15 9 20"/>
+        <path d="M20 4v7a4 4 0 0 1-4 4H4"/>
+      </svg>
+      Release
+      <span class="override-btn__shortcut">Esc</span>
+    </button>
+
+    <!-- Shortcuts Button -->
+    <button class="override-btn override-btn--outline" id="showShortcutsBtn" aria-label="Show keyboard shortcuts (?)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+        <line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+      <span class="override-btn__shortcut">?</span>
+    </button>
+  </div>
+</div>
+
+<!-- Event Log Panel -->
+<div class="event-log-panel" id="eventLogPanel">
+  <div class="event-log-header">
+    <span class="event-log-header__title">Event Log</span>
+    <div class="event-log-filters">
+      <button class="event-log-filter-btn" data-filter-time="5">5m</button>
+      <button class="event-log-filter-btn event-log-filter-btn--active" data-filter-time="15">15m</button>
+      <button class="event-log-filter-btn" data-filter-time="30">30m</button>
+      <button class="event-log-filter-btn" data-filter-time="all">All</button>
+    </div>
+  </div>
+  <div class="event-log-list" id="eventLogList">
+    <!-- Success: Clip played -->
+    <div class="event-log-entry">
+      <span class="event-log-entry__time">19:47:32</span>
+      <svg class="event-log-entry__icon event-log-entry__icon--success" viewBox="0 0 24 24" fill="currentColor">
+        <circle cx="12" cy="12" r="10"/>
+      </svg>
+      <div class="event-log-entry__content">
+        <span class="event-log-entry__message">Clip played: <strong>H. Kriz</strong> · UB · 9.875</span>
+      </div>
+    </div>
+
+    <!-- Success: Clip played -->
+    <div class="event-log-entry">
+      <span class="event-log-entry__time">19:46:58</span>
+      <svg class="event-log-entry__icon event-log-entry__icon--success" viewBox="0 0 24 24" fill="currentColor">
+        <circle cx="12" cy="12" r="10"/>
+      </svg>
+      <div class="event-log-entry__content">
+        <span class="event-log-entry__message">Clip played: <strong>S. Martinez</strong> · BB · 9.650</span>
+      </div>
+    </div>
+
+    <!-- Warning: Clip skipped -->
+    <div class="event-log-entry">
+      <span class="event-log-entry__time">19:46:15</span>
+      <svg class="event-log-entry__icon event-log-entry__icon--warning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/>
+        <line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+      <div class="event-log-entry__content">
+        <span class="event-log-entry__message event-log-entry__message--warning">Clip skipped (stalled): <strong>G. Reed</strong> · UB</span>
+      </div>
+      <div class="event-log-entry__action">
+        <button class="event-log-retry-btn" data-retry="stalled">Retry</button>
+      </div>
+    </div>
+
+    <!-- Success: Clip played -->
+    <div class="event-log-entry">
+      <span class="event-log-entry__time">19:45:30</span>
+      <svg class="event-log-entry__icon event-log-entry__icon--success" viewBox="0 0 24 24" fill="currentColor">
+        <circle cx="12" cy="12" r="10"/>
+      </svg>
+      <div class="event-log-entry__content">
+        <span class="event-log-entry__message">Clip played: <strong>E. Kearns</strong> · UB · 9.625</span>
+      </div>
+    </div>
+
+    <!-- Error: API unreachable -->
+    <div class="event-log-entry">
+      <span class="event-log-entry__time">19:44:45</span>
+      <svg class="event-log-entry__icon event-log-entry__icon--error" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="15" y1="9" x2="9" y2="15"/>
+        <line x1="9" y1="9" x2="15" y2="15"/>
+      </svg>
+      <div class="event-log-entry__content">
+        <span class="event-log-entry__message event-log-entry__message--error">API unreachable — using cached clips</span>
+      </div>
+    </div>
+
+    <!-- Info: Auto-advanced rotation -->
+    <div class="event-log-entry">
+      <span class="event-log-entry__time">19:43:00</span>
+      <svg class="event-log-entry__icon event-log-entry__icon--info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="16" x2="12" y2="12"/>
+        <line x1="12" y1="8" x2="12.01" y2="8"/>
+      </svg>
+      <div class="event-log-entry__content">
+        <span class="event-log-entry__message">Auto-advanced to <strong>Rotation 2</strong></span>
+      </div>
+    </div>
+
+    <!-- Warning: Override taken -->
+    <div class="event-log-entry">
+      <span class="event-log-entry__time">19:42:30</span>
+      <svg class="event-log-entry__icon event-log-entry__icon--warning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/>
+        <line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+      <div class="event-log-entry__content">
+        <span class="event-log-entry__message event-log-entry__message--warning">Override: Force Camera 3 (BB)</span>
+      </div>
+    </div>
+
+    <!-- Success: Override released -->
+    <div class="event-log-entry">
+      <span class="event-log-entry__time">19:42:15</span>
+      <svg class="event-log-entry__icon event-log-entry__icon--success" viewBox="0 0 24 24" fill="currentColor">
+        <circle cx="12" cy="12" r="10"/>
+      </svg>
+      <div class="event-log-entry__content">
+        <span class="event-log-entry__message">Override released — autonomous mode</span>
+      </div>
+    </div>
+
+    <!-- Info: Playout started -->
+    <div class="event-log-entry">
+      <span class="event-log-entry__time">19:41:55</span>
+      <svg class="event-log-entry__icon event-log-entry__icon--info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="16" x2="12" y2="12"/>
+        <line x1="12" y1="8" x2="12.01" y2="8"/>
+      </svg>
+      <div class="event-log-entry__content">
+        <span class="event-log-entry__message">Playout started</span>
+      </div>
+    </div>
+
+    <!-- Error: Clip failed -->
+    <div class="event-log-entry">
+      <span class="event-log-entry__time">19:40:22</span>
+      <svg class="event-log-entry__icon event-log-entry__icon--error" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="15" y1="9" x2="9" y2="15"/>
+        <line x1="9" y1="9" x2="15" y2="15"/>
+      </svg>
+      <div class="event-log-entry__content">
+        <span class="event-log-entry__message event-log-entry__message--error">Clip failed: <strong>R. Kim</strong> · UB — decode error</span>
+      </div>
+      <div class="event-log-entry__action">
+        <button class="event-log-retry-btn" data-retry="failed">Retry</button>
+      </div>
+    </div>
+
+    <!-- Success: Moment replay queued -->
+    <div class="event-log-entry">
+      <span class="event-log-entry__time">19:39:45</span>
+      <svg class="event-log-entry__icon event-log-entry__icon--success" viewBox="0 0 24 24" fill="currentColor">
+        <circle cx="12" cy="12" r="10"/>
+      </svg>
+      <div class="event-log-entry__content">
+        <span class="event-log-entry__message">Moment replay queued: <strong>A. Torres</strong> · VT · 0.5x</span>
+      </div>
+    </div>
+
+    <!-- Info: Preload completed -->
+    <div class="event-log-entry">
+      <span class="event-log-entry__time">19:38:30</span>
+      <svg class="event-log-entry__icon event-log-entry__icon--info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="16" x2="12" y2="12"/>
+        <line x1="12" y1="8" x2="12.01" y2="8"/>
+      </svg>
+      <div class="event-log-entry__content">
+        <span class="event-log-entry__message">Preload complete: 4 clips ready</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Keyboard Shortcuts Panel (Modal) -->
+<div class="shortcuts-panel__overlay" id="shortcutsOverlay"></div>
+<div class="shortcuts-panel" id="shortcutsPanel" role="dialog" aria-labelledby="shortcuts-title" aria-modal="true">
+  <div class="shortcuts-panel__header">
+    <span class="shortcuts-panel__title" id="shortcuts-title">Keyboard Shortcuts</span>
+    <button class="shortcuts-panel__close" id="closeShortcutsBtn" aria-label="Close shortcuts panel">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"/>
+        <line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+  <div class="shortcuts-panel__body">
+    <div class="shortcuts-section">
+      <div class="shortcuts-section__title">Playback Controls</div>
+      <div class="shortcut-row">
+        <span class="shortcut-row__action">Pause / Resume Playout</span>
+        <div class="shortcut-row__keys">
+          <span class="shortcut-key">Space</span>
+        </div>
+      </div>
+      <div class="shortcut-row">
+        <span class="shortcut-row__action">Skip Current Clip</span>
+        <div class="shortcut-row__keys">
+          <span class="shortcut-key">S</span>
+        </div>
+      </div>
+      <div class="shortcut-row">
+        <span class="shortcut-row__action">Flag Moment for Replay</span>
+        <div class="shortcut-row__keys">
+          <span class="shortcut-key">F</span>
+        </div>
+      </div>
+      <div class="shortcut-row">
+        <span class="shortcut-row__action">Release Override</span>
+        <div class="shortcut-row__keys">
+          <span class="shortcut-key">Esc</span>
+        </div>
+      </div>
+    </div>
+    <div class="shortcuts-section">
+      <div class="shortcuts-section__title">Force Camera (Override)</div>
+      <div class="shortcut-row">
+        <span class="shortcut-row__action">Camera 1 — Vault (VT)</span>
+        <div class="shortcut-row__keys">
+          <span class="shortcut-key">1</span>
+        </div>
+      </div>
+      <div class="shortcut-row">
+        <span class="shortcut-row__action">Camera 2 — Bars (UB)</span>
+        <div class="shortcut-row__keys">
+          <span class="shortcut-key">2</span>
+        </div>
+      </div>
+      <div class="shortcut-row">
+        <span class="shortcut-row__action">Camera 3 — Beam (BB)</span>
+        <div class="shortcut-row__keys">
+          <span class="shortcut-key">3</span>
+        </div>
+      </div>
+      <div class="shortcut-row">
+        <span class="shortcut-row__action">Camera 4 — Floor (FX)</span>
+        <div class="shortcut-row__keys">
+          <span class="shortcut-key">4</span>
+        </div>
+      </div>
+    </div>
+    <div class="shortcuts-section">
+      <div class="shortcuts-section__title">Navigation</div>
+      <div class="shortcut-row">
+        <span class="shortcut-row__action">Show Shortcuts</span>
+        <div class="shortcut-row__keys">
+          <span class="shortcut-key">?</span>
+        </div>
+      </div>
+      <div class="shortcut-row">
+        <span class="shortcut-row__action">Close Dialog</span>
+        <div class="shortcut-row__keys">
+          <span class="shortcut-key">Esc</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Demo Override Switcher -->
+<div class="demo-override-switcher">
+  <span class="demo-label">Demo Override:</span>
+  <button class="demo-state-btn demo-state-btn--active" data-override-demo="autonomous">Autonomous</button>
+  <button class="demo-state-btn" data-override-demo="override">Override Active</button>
+  <button class="demo-state-btn" data-override-demo="paused">Paused</button>
+</div>
+
+<script>
+(function() {
+  // Override Controls State Management
+  const overrideControls = document.getElementById('overrideControls');
+  const pauseBtn = document.getElementById('pauseBtn');
+  const releaseOverrideBtn = document.getElementById('releaseOverrideBtn');
+  const showShortcutsBtn = document.getElementById('showShortcutsBtn');
+  const shortcutsPanel = document.getElementById('shortcutsPanel');
+  const shortcutsOverlay = document.getElementById('shortcutsOverlay');
+  const closeShortcutsBtn = document.getElementById('closeShortcutsBtn');
+  const forceCameraDropdown = document.getElementById('forceCameraDropdown');
+
+  let isPaused = false;
+  let isOverride = false;
+
+  // Toggle Pause
+  function togglePause() {
+    isPaused = !isPaused;
+    if (isPaused) {
+      pauseBtn.classList.remove('override-btn--warning');
+      pauseBtn.classList.add('override-btn--warning-active');
+      pauseBtn.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M8 5v14l11-7L8 5z"/>
+        </svg>
+        Resume
+        <span class="override-btn__shortcut">Space</span>
+      `;
+      overrideControls.classList.add('override-controls--paused');
+    } else {
+      pauseBtn.classList.remove('override-btn--warning-active');
+      pauseBtn.classList.add('override-btn--warning');
+      pauseBtn.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <rect x="6" y="4" width="4" height="16" rx="1"/>
+          <rect x="14" y="4" width="4" height="16" rx="1"/>
+        </svg>
+        Pause
+        <span class="override-btn__shortcut">Space</span>
+      `;
+      overrideControls.classList.remove('override-controls--paused');
+    }
+  }
+
+  pauseBtn.addEventListener('click', togglePause);
+
+  // Set Override State
+  function setOverrideState(active) {
+    isOverride = active;
+    if (active) {
+      overrideControls.classList.add('override-controls--active');
+      releaseOverrideBtn.style.display = 'inline-flex';
+    } else {
+      overrideControls.classList.remove('override-controls--active');
+      releaseOverrideBtn.style.display = 'none';
+    }
+  }
+
+  releaseOverrideBtn.addEventListener('click', () => setOverrideState(false));
+
+  // Force Camera Dropdown
+  const dropdownTrigger = forceCameraDropdown.querySelector('.force-camera-dropdown__trigger');
+  const dropdownItems = forceCameraDropdown.querySelectorAll('.force-camera-dropdown__item');
+
+  dropdownTrigger.addEventListener('click', () => {
+    const isOpen = forceCameraDropdown.classList.toggle('force-camera-dropdown--open');
+    dropdownTrigger.setAttribute('aria-expanded', isOpen);
+  });
+
+  // Close dropdown on outside click
+  document.addEventListener('click', (e) => {
+    if (!forceCameraDropdown.contains(e.target)) {
+      forceCameraDropdown.classList.remove('force-camera-dropdown--open');
+      dropdownTrigger.setAttribute('aria-expanded', 'false');
+    }
+  });
+
+  dropdownItems.forEach(item => {
+    item.addEventListener('click', () => {
+      // Remove active from all
+      dropdownItems.forEach(i => i.classList.remove('force-camera-dropdown__item--active'));
+      // Add active to clicked
+      item.classList.add('force-camera-dropdown__item--active');
+      // Enter override state
+      setOverrideState(true);
+      // Close dropdown
+      forceCameraDropdown.classList.remove('force-camera-dropdown--open');
+      dropdownTrigger.setAttribute('aria-expanded', 'false');
+    });
+  });
+
+  // Shortcuts Panel
+  function showShortcuts() {
+    shortcutsPanel.classList.add('shortcuts-panel--visible');
+    shortcutsOverlay.classList.add('shortcuts-panel__overlay--visible');
+    closeShortcutsBtn.focus();
+  }
+
+  function hideShortcuts() {
+    shortcutsPanel.classList.remove('shortcuts-panel--visible');
+    shortcutsOverlay.classList.remove('shortcuts-panel__overlay--visible');
+    showShortcutsBtn.focus();
+  }
+
+  showShortcutsBtn.addEventListener('click', showShortcuts);
+  closeShortcutsBtn.addEventListener('click', hideShortcuts);
+  shortcutsOverlay.addEventListener('click', hideShortcuts);
+
+  // Event Log Filter Buttons
+  const eventLogFilters = document.querySelectorAll('.event-log-filter-btn');
+  eventLogFilters.forEach(btn => {
+    btn.addEventListener('click', () => {
+      eventLogFilters.forEach(b => b.classList.remove('event-log-filter-btn--active'));
+      btn.classList.add('event-log-filter-btn--active');
+    });
+  });
+
+  // Event Log Retry Buttons
+  const eventLogRetryBtns = document.querySelectorAll('.event-log-retry-btn');
+  eventLogRetryBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      btn.textContent = 'Retrying...';
+      btn.disabled = true;
+      setTimeout(() => {
+        btn.textContent = 'Retry';
+        btn.disabled = false;
+      }, 1500);
+    });
+  });
+
+  // Global Keyboard Shortcuts
+  document.addEventListener('keydown', (e) => {
+    // Skip when in form elements
+    if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) return;
+
+    // Check if shortcuts panel is open
+    const shortcutsOpen = shortcutsPanel.classList.contains('shortcuts-panel--visible');
+
+    // Only Escape works when modal is open
+    if (shortcutsOpen && e.key !== 'Escape') return;
+
+    switch (e.key) {
+      case ' ':
+        e.preventDefault();
+        togglePause();
+        break;
+      case 's':
+      case 'S':
+        e.preventDefault();
+        document.getElementById('skipBtn').click();
+        break;
+      case 'f':
+      case 'F':
+        e.preventDefault();
+        document.getElementById('flagMomentBtn').click();
+        break;
+      case 'Escape':
+        e.preventDefault();
+        if (shortcutsOpen) {
+          hideShortcuts();
+        } else if (isOverride) {
+          setOverrideState(false);
+        }
+        break;
+      case '?':
+        e.preventDefault();
+        showShortcuts();
+        break;
+      case '1':
+      case '2':
+      case '3':
+      case '4':
+        e.preventDefault();
+        const cameraNum = parseInt(e.key);
+        const cameraItem = forceCameraDropdown.querySelector(`[data-camera="${cameraNum}"]`);
+        if (cameraItem) {
+          dropdownItems.forEach(i => i.classList.remove('force-camera-dropdown__item--active'));
+          cameraItem.classList.add('force-camera-dropdown__item--active');
+          setOverrideState(true);
+        }
+        break;
+    }
+  });
+
+  // Demo Override State Switcher
+  const overrideDemoBtns = document.querySelectorAll('[data-override-demo]');
+  overrideDemoBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      overrideDemoBtns.forEach(b => b.classList.remove('demo-state-btn--active'));
+      btn.classList.add('demo-state-btn--active');
+
+      const demo = btn.dataset.overrideDemo;
+
+      // Reset states
+      overrideControls.classList.remove('override-controls--active', 'override-controls--paused');
+      isPaused = false;
+      isOverride = false;
+      releaseOverrideBtn.style.display = 'none';
+      pauseBtn.classList.remove('override-btn--warning-active');
+      pauseBtn.classList.add('override-btn--warning');
+      pauseBtn.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <rect x="6" y="4" width="4" height="16" rx="1"/>
+          <rect x="14" y="4" width="4" height="16" rx="1"/>
+        </svg>
+        Pause
+        <span class="override-btn__shortcut">Space</span>
+      `;
+
+      switch(demo) {
+        case 'override':
+          setOverrideState(true);
+          break;
+        case 'paused':
+          togglePause();
+          break;
+        case 'autonomous':
+        default:
+          // Already reset
+          break;
+      }
+    });
+  });
+})();
+</script>
