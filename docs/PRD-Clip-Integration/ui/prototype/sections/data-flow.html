@@ -1,0 +1,327 @@
+<div class="section-content section-flows">
+  <h2>Data Flow Diagram</h2>
+  <p style="color: var(--text-secondary); margin-bottom: var(--space-lg);">
+    System components and their data relationships. Arrows show data direction (reads/writes) with Firebase paths labeled.
+  </p>
+
+  <!-- Legend -->
+  <div class="card" style="margin-bottom: var(--space-xl);">
+    <div class="card-header">
+      <div class="card-title">Legend</div>
+    </div>
+    <div style="display: flex; gap: var(--space-xl); flex-wrap: wrap; padding: var(--space-md);">
+      <div style="display: flex; align-items: center; gap: var(--space-sm);">
+        <div style="width: 40px; height: 4px; background: var(--color-producer); border-radius: 2px;"></div>
+        <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">Clip data / content commands</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: var(--space-sm);">
+        <div style="width: 40px; height: 4px; background: var(--color-talent); border-radius: 2px;"></div>
+        <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">Status signals / heartbeat</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: var(--space-sm);">
+        <div style="width: 40px; height: 4px; background: var(--color-override); border-radius: 2px;"></div>
+        <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">Override commands</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: var(--space-sm);">
+        <div style="width: 40px; height: 4px; background: #f1c40f; border-radius: 2px;"></div>
+        <span style="color: var(--text-secondary); font-size: var(--font-size-sm);">Configuration data</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Data Flow Diagram Container -->
+  <div class="card" style="padding: var(--space-xl); overflow-x: auto;">
+    <div style="min-width: 900px; position: relative; height: 700px;">
+
+      <!-- Row 1: Producer & Talent Views -->
+      <div style="display: flex; justify-content: space-between; position: absolute; top: 0; left: 0; right: 0;">
+
+        <!-- ProducerView Component -->
+        <div class="component-box" style="background: var(--bg-tertiary); border: 2px solid var(--color-producer); border-radius: var(--border-radius); padding: var(--space-md); width: 280px;">
+          <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-sm);">
+            <span class="role-badge producer">Producer</span>
+            <strong style="color: var(--text-primary);">ProducerView</strong>
+          </div>
+          <ul style="color: var(--text-secondary); font-size: var(--font-size-sm); margin: 0; padding-left: var(--space-md); list-style: disc;">
+            <li>Manages clip queue & playout state</li>
+            <li>Issues override commands</li>
+            <li>Monitors coordinator health</li>
+          </ul>
+        </div>
+
+        <!-- TalentView Component -->
+        <div class="component-box" style="background: var(--bg-tertiary); border: 2px solid var(--color-talent); border-radius: var(--border-radius); padding: var(--space-md); width: 280px;">
+          <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-sm);">
+            <span class="role-badge talent">Talent</span>
+            <strong style="color: var(--text-primary);">TalentView</strong>
+          </div>
+          <ul style="color: var(--text-secondary); font-size: var(--font-size-sm); margin: 0; padding-left: var(--space-md); list-style: disc;">
+            <li>Displays current/next content info</li>
+            <li>Shows talking points & context</li>
+            <li>Flag Moment button (fires event)</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Arrow: ProducerView -> Firebase (writes playoutState) -->
+      <svg style="position: absolute; top: 100px; left: 140px; width: 200px; height: 120px; overflow: visible;">
+        <defs>
+          <marker id="arrow-producer" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+            <path d="M0,0 L0,6 L9,3 z" fill="var(--color-producer)" />
+          </marker>
+          <marker id="arrow-override" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+            <path d="M0,0 L0,6 L9,3 z" fill="var(--color-override)" />
+          </marker>
+        </defs>
+        <path d="M0,0 Q50,80 200,100" stroke="var(--color-override)" stroke-width="2" fill="none" marker-end="url(#arrow-override)" />
+        <text x="50" y="70" fill="var(--text-secondary)" font-size="10" font-family="var(--font-mono)">overrides</text>
+      </svg>
+
+      <!-- Arrow: TalentView -> Firebase (reads currentGraphic) -->
+      <svg style="position: absolute; top: 100px; right: 140px; width: 200px; height: 120px; overflow: visible;">
+        <defs>
+          <marker id="arrow-talent-read" markerWidth="10" markerHeight="10" refX="0" refY="3" orient="auto" markerUnits="strokeWidth">
+            <path d="M9,0 L9,6 L0,3 z" fill="var(--color-producer)" />
+          </marker>
+        </defs>
+        <path d="M200,0 Q150,80 0,100" stroke="var(--color-producer)" stroke-width="2" fill="none" stroke-dasharray="5,3" marker-end="url(#arrow-talent-read)" />
+        <text x="100" y="70" fill="var(--text-secondary)" font-size="10" font-family="var(--font-mono)">currentGraphic</text>
+      </svg>
+
+      <!-- Row 2: Firebase RTDB -->
+      <div style="position: absolute; top: 200px; left: 50%; transform: translateX(-50%);">
+        <div class="component-box" style="background: #2d1f0a; border: 2px solid #f1c40f; border-radius: var(--border-radius); padding: var(--space-md); width: 380px;">
+          <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-sm);">
+            <span style="background: #f1c40f; color: #000; padding: 2px 8px; border-radius: 4px; font-size: var(--font-size-sm); font-weight: 600;">DB</span>
+            <strong style="color: var(--text-primary);">Firebase RTDB</strong>
+          </div>
+          <div style="color: var(--text-secondary); font-size: var(--font-size-sm); font-family: var(--font-mono);">
+            <div style="margin-bottom: 4px;">competitions/{compId}/</div>
+            <div style="padding-left: var(--space-md);">
+              <div>├─ production/playoutState</div>
+              <div>├─ production/engineHeartbeat</div>
+              <div>├─ production/clipStatus/{draftId}</div>
+              <div>└─ currentGraphic</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 3: Coordinator Server -->
+      <div style="position: absolute; top: 380px; left: 50%; transform: translateX(-50%);">
+        <div class="component-box" style="background: var(--bg-tertiary); border: 2px solid var(--color-rundown); border-radius: var(--border-radius); padding: var(--space-md); width: 320px;">
+          <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-sm);">
+            <span class="role-badge rundown">Backend</span>
+            <strong style="color: var(--text-primary);">Coordinator Server</strong>
+          </div>
+          <ul style="color: var(--text-secondary); font-size: var(--font-size-sm); margin: 0; padding-left: var(--space-md); list-style: disc;">
+            <li>State machine engine (playout logic)</li>
+            <li>Writes currentGraphic to Firebase</li>
+            <li>Heartbeat every 10s</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Arrow: Firebase <-> Coordinator (bidirectional) -->
+      <svg style="position: absolute; top: 290px; left: 50%; transform: translateX(-50%); width: 60px; height: 90px; overflow: visible;">
+        <defs>
+          <marker id="arrow-down-blue" markerWidth="10" markerHeight="10" refX="5" refY="9" orient="auto" markerUnits="strokeWidth">
+            <path d="M0,0 L10,0 L5,9 z" fill="var(--color-producer)" />
+          </marker>
+          <marker id="arrow-up-green" markerWidth="10" markerHeight="10" refX="5" refY="0" orient="auto" markerUnits="strokeWidth">
+            <path d="M0,9 L10,9 L5,0 z" fill="var(--color-talent)" />
+          </marker>
+        </defs>
+        <!-- Down arrow (writes) -->
+        <line x1="20" y1="0" x2="20" y2="80" stroke="var(--color-producer)" stroke-width="2" marker-end="url(#arrow-down-blue)" />
+        <!-- Up arrow (reads/heartbeat) -->
+        <line x1="40" y1="80" x2="40" y2="0" stroke="var(--color-talent)" stroke-width="2" marker-end="url(#arrow-up-green)" />
+        <text x="50" y="45" fill="var(--text-secondary)" font-size="9" font-family="var(--font-mono)">R/W</text>
+      </svg>
+
+      <!-- Row 4: Output instances & OBS -->
+      <div style="display: flex; justify-content: space-between; position: absolute; bottom: 0; left: 0; right: 0;">
+
+        <!-- output.html (clip) -->
+        <div class="component-box" style="background: var(--bg-tertiary); border: 2px solid var(--color-output); border-radius: var(--border-radius); padding: var(--space-md); width: 220px;">
+          <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-sm);">
+            <span class="role-badge output">Output</span>
+            <strong style="color: var(--text-primary);">output.html (clip)</strong>
+          </div>
+          <ul style="color: var(--text-secondary); font-size: var(--font-size-sm); margin: 0; padding-left: var(--space-md); list-style: disc;">
+            <li>Plays clip videos</li>
+            <li>Writes clipStatus on end/stall</li>
+            <li>Monitors heartbeat</li>
+          </ul>
+        </div>
+
+        <!-- OBS -->
+        <div class="component-box" style="background: var(--bg-tertiary); border: 2px solid #888; border-radius: var(--border-radius); padding: var(--space-md); width: 180px;">
+          <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-sm);">
+            <span style="background: #888; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: var(--font-size-sm); font-weight: 600;">EXT</span>
+            <strong style="color: var(--text-primary);">OBS</strong>
+          </div>
+          <ul style="color: var(--text-secondary); font-size: var(--font-size-sm); margin: 0; padding-left: var(--space-md); list-style: disc;">
+            <li>Scene switching</li>
+            <li>Browser sources</li>
+            <li>Stream output</li>
+          </ul>
+        </div>
+
+        <!-- output.html (live) -->
+        <div class="component-box" style="background: var(--bg-tertiary); border: 2px solid var(--color-output); border-radius: var(--border-radius); padding: var(--space-md); width: 220px;">
+          <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-sm);">
+            <span class="role-badge output">Output</span>
+            <strong style="color: var(--text-primary);">output.html (live)</strong>
+          </div>
+          <ul style="color: var(--text-secondary); font-size: var(--font-size-sm); margin: 0; padding-left: var(--space-md); list-style: disc;">
+            <li>Live camera overlays</li>
+            <li>Break backgrounds</li>
+            <li>No video playback</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Arrow: Coordinator -> output.html (clip) via Firebase -->
+      <svg style="position: absolute; top: 440px; left: 100px; width: 150px; height: 150px; overflow: visible;">
+        <path d="M150,0 Q80,50 50,150" stroke="var(--color-producer)" stroke-width="2" fill="none" marker-end="url(#arrow-producer)" />
+        <text x="60" y="90" fill="var(--text-secondary)" font-size="9" font-family="var(--font-mono)" transform="rotate(-50, 60, 90)">currentGraphic</text>
+      </svg>
+
+      <!-- Arrow: output.html (clip) -> Firebase (clipStatus write-back) -->
+      <svg style="position: absolute; top: 500px; left: 250px; width: 180px; height: 80px; overflow: visible;">
+        <defs>
+          <marker id="arrow-up-talent" markerWidth="10" markerHeight="10" refX="3" refY="0" orient="auto" markerUnits="strokeWidth">
+            <path d="M0,9 L6,9 L3,0 z" fill="var(--color-talent)" />
+          </marker>
+        </defs>
+        <path d="M0,80 Q90,40 180,0" stroke="var(--color-talent)" stroke-width="2" fill="none" marker-end="url(#arrow-up-talent)" />
+        <text x="70" y="40" fill="var(--text-secondary)" font-size="9" font-family="var(--font-mono)">clipStatus/{draftId}</text>
+      </svg>
+
+      <!-- Arrow: Coordinator -> output.html (live) via Firebase -->
+      <svg style="position: absolute; top: 440px; right: 100px; width: 150px; height: 150px; overflow: visible;">
+        <path d="M0,0 Q70,50 100,150" stroke="var(--color-producer)" stroke-width="2" fill="none" marker-end="url(#arrow-producer)" />
+        <text x="30" y="90" fill="var(--text-secondary)" font-size="9" font-family="var(--font-mono)" transform="rotate(50, 30, 90)">currentGraphic</text>
+      </svg>
+
+      <!-- Arrow: Coordinator -> OBS (scene commands) -->
+      <svg style="position: absolute; top: 460px; left: 50%; transform: translateX(-50%); width: 40px; height: 130px; overflow: visible;">
+        <line x1="20" y1="0" x2="20" y2="120" stroke="var(--color-override)" stroke-width="2" marker-end="url(#arrow-override)" />
+        <text x="25" y="60" fill="var(--text-secondary)" font-size="9" font-family="var(--font-mono)">OBS-WS</text>
+      </svg>
+
+      <!-- Clip Engine (external, top left) -->
+      <div style="position: absolute; top: 380px; left: 20px;">
+        <div class="component-box" style="background: var(--bg-secondary); border: 2px dashed #888; border-radius: var(--border-radius); padding: var(--space-sm); width: 140px;">
+          <div style="display: flex; align-items: center; gap: var(--space-xs); margin-bottom: var(--space-xs);">
+            <span style="background: #888; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 600;">API</span>
+            <strong style="color: var(--text-primary); font-size: var(--font-size-sm);">Clip Engine</strong>
+          </div>
+          <div style="color: var(--text-secondary); font-size: 10px;">Provides clip URLs & metadata</div>
+        </div>
+      </div>
+
+      <!-- Arrow: Clip Engine -> Coordinator -->
+      <svg style="position: absolute; top: 400px; left: 160px; width: 100px; height: 40px; overflow: visible;">
+        <line x1="0" y1="20" x2="90" y2="20" stroke="var(--color-producer)" stroke-width="2" marker-end="url(#arrow-producer)" />
+        <text x="30" y="12" fill="var(--text-secondary)" font-size="9" font-family="var(--font-mono)">clips</text>
+      </svg>
+
+    </div>
+  </div>
+
+  <!-- Data Path Reference Table -->
+  <div class="card" style="margin-top: var(--space-xl);">
+    <div class="card-header">
+      <div class="card-title">Firebase Path Reference</div>
+      <span class="section-badge" data-section="5">§5</span>
+    </div>
+    <div style="padding: var(--space-md);">
+      <table style="width: 100%; border-collapse: collapse; font-size: var(--font-size-sm);">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--border-color);">
+            <th style="text-align: left; padding: var(--space-sm); color: var(--text-secondary);">Path</th>
+            <th style="text-align: left; padding: var(--space-sm); color: var(--text-secondary);">Written By</th>
+            <th style="text-align: left; padding: var(--space-sm); color: var(--text-secondary);">Read By</th>
+            <th style="text-align: left; padding: var(--space-sm); color: var(--text-secondary);">Data Type</th>
+          </tr>
+        </thead>
+        <tbody style="color: var(--text-primary);">
+          <tr style="border-bottom: 1px solid var(--border-color);">
+            <td style="padding: var(--space-sm); font-family: var(--font-mono);">production/playoutState</td>
+            <td style="padding: var(--space-sm);">Coordinator</td>
+            <td style="padding: var(--space-sm);">ProducerView</td>
+            <td style="padding: var(--space-sm);"><span style="color: var(--color-producer);">●</span> Content</td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--border-color);">
+            <td style="padding: var(--space-sm); font-family: var(--font-mono);">production/engineHeartbeat</td>
+            <td style="padding: var(--space-sm);">Coordinator</td>
+            <td style="padding: var(--space-sm);">ProducerView, output.html</td>
+            <td style="padding: var(--space-sm);"><span style="color: var(--color-talent);">●</span> Status</td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--border-color);">
+            <td style="padding: var(--space-sm); font-family: var(--font-mono);">production/clipStatus/{draftId}</td>
+            <td style="padding: var(--space-sm);">output.html (clip)</td>
+            <td style="padding: var(--space-sm);">Coordinator</td>
+            <td style="padding: var(--space-sm);"><span style="color: var(--color-talent);">●</span> Status</td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--border-color);">
+            <td style="padding: var(--space-sm); font-family: var(--font-mono);">currentGraphic</td>
+            <td style="padding: var(--space-sm);">Coordinator</td>
+            <td style="padding: var(--space-sm);">TalentView, output.html (both)</td>
+            <td style="padding: var(--space-sm);"><span style="color: var(--color-producer);">●</span> Content</td>
+          </tr>
+          <tr>
+            <td style="padding: var(--space-sm); font-family: var(--font-mono);">overrides/*</td>
+            <td style="padding: var(--space-sm);">ProducerView</td>
+            <td style="padding: var(--space-sm);">Coordinator</td>
+            <td style="padding: var(--space-sm);"><span style="color: var(--color-override);">●</span> Override</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- currentGraphic Data Shapes -->
+  <div class="card" style="margin-top: var(--space-lg);">
+    <div class="card-header">
+      <div class="card-title">currentGraphic Data Shapes</div>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-md); padding: var(--space-md);">
+
+      <!-- clip-playback -->
+      <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-md);">
+        <div style="color: var(--color-producer); font-weight: 600; margin-bottom: var(--space-sm);">graphic: 'clip-playback'</div>
+        <pre style="color: var(--text-secondary); font-size: 11px; font-family: var(--font-mono); margin: 0; white-space: pre-wrap;">draftId, clipUrl, nextClipUrl
+athleteName, teamName, teamLogo
+apparatus, score, duration</pre>
+      </div>
+
+      <!-- moment-replay -->
+      <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-md);">
+        <div style="color: var(--color-rundown); font-weight: 600; margin-bottom: var(--space-sm);">graphic: 'moment-replay'</div>
+        <pre style="color: var(--text-secondary); font-size: 11px; font-family: var(--font-mono); margin: 0; white-space: pre-wrap;">draftId, clipUrl, nextClipUrl
+athleteName, teamName, teamLogo
+apparatus, seekStart, seekEnd
+playbackRate, muted</pre>
+      </div>
+
+      <!-- live-camera -->
+      <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-md);">
+        <div style="color: var(--color-output); font-weight: 600; margin-bottom: var(--space-sm);">graphic: 'live-camera'</div>
+        <pre style="color: var(--text-secondary); font-size: 11px; font-family: var(--font-mono); margin: 0; white-space: pre-wrap;">apparatus</pre>
+      </div>
+
+      <!-- break content -->
+      <div style="background: var(--bg-tertiary); border-radius: var(--border-radius); padding: var(--space-md);">
+        <div style="color: #f1c40f; font-weight: 600; margin-bottom: var(--space-sm);">graphic: '*' + background</div>
+        <pre style="color: var(--text-secondary); font-size: 11px; font-family: var(--font-mono); margin: 0; white-space: pre-wrap;">Any graphic type with:
+background: true
+(triggers animated bg)</pre>
+      </div>
+
+    </div>
+  </div>
+
+</div>
