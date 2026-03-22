@@ -1,0 +1,152 @@
+{
+  "loop": "producer",
+  "verifiedAt": "2026-03-22T20:45:00.000Z",
+  "verificationMethod": "code-review",
+  "verificationReason": "UI testing blocked by Firebase authentication requirement",
+  "summary": {
+    "totalTasks": 8,
+    "passed": 8,
+    "failed": 0,
+    "warnings": 0,
+    "notes": 3
+  },
+  "issues": [],
+  "notes": [
+    {
+      "id": "N1",
+      "component": "ProducerView",
+      "severity": "note",
+      "description": "Auth required for browser testing - verification done via code review only",
+      "recommendation": "Add test user credentials or auth bypass for testing environments"
+    },
+    {
+      "id": "N2",
+      "component": "ClipQueuePanel",
+      "severity": "note",
+      "description": "Rotation filter auto-updates to currentRotation when playout advances",
+      "recommendation": "Behavior is correct per PRD - rotation filter follows show progress"
+    },
+    {
+      "id": "N3",
+      "component": "MomentReplayDialog",
+      "severity": "note",
+      "description": "Dialog persists if clip ends while open (per PRD spec)",
+      "recommendation": "This is intentional to allow completing moment flag after clip ends"
+    }
+  ],
+  "filesVerified": [
+    {
+      "path": "show-controller/src/components/playout/PlayoutStatusBar.jsx",
+      "lines": 324,
+      "status": "pass",
+      "features": [
+        "NOW/NEXT/QUEUE cards",
+        "Mode badge with icons",
+        "Coordinator health indicator",
+        "Preload indicator",
+        "Border color changes for override state"
+      ]
+    },
+    {
+      "path": "show-controller/src/components/playout/CameraStatusPanel.jsx",
+      "lines": 239,
+      "status": "pass",
+      "features": [
+        "Responsive camera grid",
+        "State dots (idle/recording/live/recording-live)",
+        "Force Camera buttons",
+        "Apparatus labels with EVS colors",
+        "Recording timers"
+      ]
+    },
+    {
+      "path": "show-controller/src/components/playout/ClipQueuePanel.jsx",
+      "lines": 854,
+      "status": "pass",
+      "features": [
+        "Tabs with counts",
+        "Apparatus/Team/Rotation filters",
+        "UP NEXT section",
+        "NOW PLAYING with progress bar",
+        "Bulk actions",
+        "Empty/error states"
+      ]
+    },
+    {
+      "path": "show-controller/src/components/playout/PlayoutControls.jsx",
+      "lines": 203,
+      "status": "pass",
+      "features": [
+        "Pause/Resume with keyboard hint",
+        "Skip with keyboard hint",
+        "Force Camera dropdown",
+        "Stop Playout",
+        "Release Override (conditional)",
+        "Shortcuts button"
+      ]
+    },
+    {
+      "path": "show-controller/src/components/playout/MomentReplayDialog.jsx",
+      "lines": 461,
+      "status": "pass",
+      "features": [
+        "Modal with backdrop close",
+        "Replay window spinbox",
+        "Mini timeline visualization",
+        "Speed presets",
+        "Audio mute toggle",
+        "Play Now / Save Only",
+        "Flagged moments list"
+      ]
+    },
+    {
+      "path": "show-controller/src/components/playout/PlayoutEventLog.jsx",
+      "lines": 279,
+      "status": "pass",
+      "features": [
+        "Time filter buttons",
+        "Event icons and colors",
+        "Retry button on hover",
+        "Auto-scroll behavior",
+        "Event count footer"
+      ]
+    },
+    {
+      "path": "show-controller/src/components/playout/KeyboardShortcutsPanel.jsx",
+      "lines": 322,
+      "status": "pass",
+      "features": [
+        "Shortcut list grouped by type",
+        "Key remapping UI",
+        "Conflict detection",
+        "Reset to defaults"
+      ]
+    },
+    {
+      "path": "show-controller/src/hooks/useKeyboardShortcuts.js",
+      "lines": 305,
+      "status": "pass",
+      "features": [
+        "Document-level keydown listener",
+        "Focus scope (ignores inputs)",
+        "Modal exception",
+        "localStorage persistence",
+        "Camera count filtering"
+      ]
+    },
+    {
+      "path": "show-controller/src/views/ProducerView.jsx",
+      "lines": 1613,
+      "status": "pass",
+      "features": [
+        "All playout imports",
+        "usePlayoutState/usePlayoutActions hooks",
+        "useKeyboardShortcuts integration",
+        "Swap-panel layout",
+        "Right column swap (ClipQueue vs CameraRuntime)",
+        "Modal dialogs rendered",
+        "Dev mode toggle"
+      ]
+    }
+  ]
+}
