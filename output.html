@@ -6190,6 +6190,141 @@
       position: relative;
       z-index: 1;
     }
+
+    /* ============================================================
+       CLIP PLAYBACK OVERLAY
+       Athlete info panel + score reveal badge
+       ============================================================ */
+
+    /* Overlay container - on top of video */
+    #clipOverlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 3;
+      pointer-events: none;
+      display: none;
+    }
+
+    #clipOverlay.visible {
+      display: block;
+    }
+
+    /* Athlete info panel - top left */
+    .clip-athlete-panel {
+      position: absolute;
+      top: 60px;
+      left: 60px;
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      background: var(--meet-header-bg, #1a1a2e);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      animation: clipOverlaySlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes clipOverlaySlideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    /* Team logo section */
+    .clip-logo-section {
+      width: 100px;
+      min-height: 100px;
+      background: rgba(255, 255, 255, 0.92);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 15px;
+    }
+
+    .clip-logo-section img {
+      width: 70px;
+      height: 70px;
+      object-fit: contain;
+      background: transparent;
+    }
+
+    /* Athlete info text */
+    .clip-athlete-info {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 18px 28px;
+      min-width: 260px;
+    }
+
+    .clip-athlete-name {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--meet-header-text, #ffffff);
+      line-height: 1.2;
+      margin-bottom: 4px;
+    }
+
+    .clip-apparatus {
+      font-size: 18px;
+      font-weight: 500;
+      color: var(--meet-header-text, rgba(255, 255, 255, 0.8));
+      line-height: 1.3;
+    }
+
+    .clip-team-name {
+      font-size: 16px;
+      font-weight: 400;
+      color: var(--meet-header-text, rgba(255, 255, 255, 0.6));
+      line-height: 1.3;
+      margin-top: 2px;
+    }
+
+    /* Score badge - appears during score reveal */
+    .clip-score-badge {
+      position: absolute;
+      top: 60px;
+      right: 60px;
+      background: var(--meet-badge-bg, #16a34a);
+      color: var(--meet-badge-text, #ffffff);
+      padding: 20px 32px;
+      border-radius: 12px;
+      font-size: 48px;
+      font-weight: 800;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      opacity: 0;
+      transform: scale(0.8);
+      transition: opacity 0.3s ease-out, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .clip-score-badge.visible {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    /* REPLAY badge - for moment replays only */
+    .clip-replay-badge {
+      position: absolute;
+      top: 60px;
+      right: 60px;
+      background: var(--meet-badge-bg, #dc2626);
+      color: var(--meet-badge-text, #ffffff);
+      padding: 14px 28px;
+      border-radius: 8px;
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      animation: clipOverlaySlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
   </style>
 </head>
 <body>
@@ -6202,6 +6337,22 @@
   <!-- Dual video elements for clip playback (mode=clip only) -->
   <video id="clipVideo" class="clip-preload" playsinline></video>
   <video id="clipVideoNext" class="clip-preload" playsinline></video>
+
+  <!-- Clip playback overlay (mode=clip only) -->
+  <div id="clipOverlay">
+    <div class="clip-athlete-panel">
+      <div class="clip-logo-section">
+        <img id="clipTeamLogo" src="" alt="Team Logo">
+      </div>
+      <div class="clip-athlete-info">
+        <div id="clipAthleteName" class="clip-athlete-name"></div>
+        <div id="clipApparatus" class="clip-apparatus"></div>
+        <div id="clipTeamName" class="clip-team-name"></div>
+      </div>
+    </div>
+    <div id="clipScoreBadge" class="clip-score-badge"></div>
+    <div id="clipReplayBadge" class="clip-replay-badge" style="display: none;">REPLAY</div>
+  </div>
 
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -6231,6 +6382,15 @@
     const clipVideoNext = document.getElementById('clipVideoNext');
     const clipBackground = document.getElementById('clipBackground');
 
+    // Get overlay elements
+    const clipOverlay = document.getElementById('clipOverlay');
+    const clipTeamLogoEl = document.getElementById('clipTeamLogo');
+    const clipAthleteNameEl = document.getElementById('clipAthleteName');
+    const clipApparatusEl = document.getElementById('clipApparatus');
+    const clipTeamNameEl = document.getElementById('clipTeamName');
+    const clipScoreBadgeEl = document.getElementById('clipScoreBadge');
+    const clipReplayBadgeEl = document.getElementById('clipReplayBadge');
+
     // Track which video is currently active (for swap mechanism)
     let activeVideoElement = clipVideo;
     let preloadVideoElement = clipVideoNext;
@@ -6239,6 +6399,11 @@
     let currentClipDraftId = null;
     let preloadedClipUrl = null;
     let crossfadeInProgress = false;
+
+    // Track score reveal state
+    let scoreRevealTime = null;  // Time (in seconds) when score should appear
+    let scoreRevealed = false;   // Has score been revealed for current clip
+    let currentClipScore = null; // Current clip's score (null = no badge, 0 = show "0.000", >0 = show score)
 
     /**
      * Swap video element roles (active <-> preload)
@@ -12242,17 +12407,221 @@
     // ============================================================
 
     /**
+     * Get apparatus display name from code
+     * Maps apparatus codes (UB, BB, FX, etc.) to display names
+     * @param {string} code - Apparatus code
+     * @returns {string} Display name
+     */
+    function getApparatusDisplayName(code) {
+      if (!code) return '';
+
+      // Map short codes to API codes for lookup
+      const shortToApi = {
+        'FX': 'FLOOR',
+        'PH': 'HORSE',
+        'SR': 'RINGS',
+        'VT': 'VAULT',
+        'PB': 'PBARS',
+        'HB': 'BAR',
+        'UB': 'BARS',
+        'BB': 'BEAM'
+      };
+
+      // Try direct lookup first (for API codes like FLOOR, BARS)
+      if (EVENT_DISPLAY_NAMES[code.toUpperCase()]) {
+        return EVENT_DISPLAY_NAMES[code.toUpperCase()];
+      }
+
+      // Try converting short code to API code
+      const apiCode = shortToApi[code.toUpperCase()];
+      if (apiCode && EVENT_DISPLAY_NAMES[apiCode]) {
+        return EVENT_DISPLAY_NAMES[apiCode];
+      }
+
+      // Fallback to the original code
+      return code;
+    }
+
+    /**
+     * Format score for display
+     * @param {number|null} score - The score value
+     * @returns {string} Formatted score string
+     */
+    function formatClipScore(score) {
+      if (score === null || score === undefined) {
+        return '';
+      }
+      // Score of 0 is a real score (scratch/fall) - display as "0.000"
+      return score.toFixed(3);
+    }
+
+    /**
+     * Calculate score reveal time based on video duration
+     * Formula: Math.max(duration - 5, duration * 0.6)
+     * Short clips (< 3s): Show score immediately
+     * @param {number} duration - Video duration in seconds
+     * @returns {number} Time in seconds when score should appear
+     */
+    function calculateScoreRevealTime(duration) {
+      if (duration < 3) {
+        return 0; // Show score immediately for very short clips
+      }
+      return Math.max(duration - 5, duration * 0.6);
+    }
+
+    /**
+     * Update the clip overlay with athlete information
+     * @param {Object} data - Clip data containing athleteName, teamName, teamLogo, apparatus
+     */
+    function updateClipOverlay(data) {
+      const { athleteName, teamName, teamLogo, apparatus } = data;
+
+      // Update athlete info
+      clipAthleteNameEl.textContent = athleteName || '';
+      clipApparatusEl.textContent = getApparatusDisplayName(apparatus);
+      clipTeamNameEl.textContent = teamName || '';
+
+      // Update team logo
+      if (teamLogo) {
+        clipTeamLogoEl.src = teamLogo;
+        clipTeamLogoEl.style.display = 'block';
+      } else {
+        clipTeamLogoEl.style.display = 'none';
+      }
+
+      // Reset score badge (will be shown by timeupdate handler)
+      clipScoreBadgeEl.classList.remove('visible');
+      clipScoreBadgeEl.textContent = '';
+
+      // Hide replay badge (only shown for moment-replay)
+      clipReplayBadgeEl.style.display = 'none';
+
+      // Show the overlay
+      clipOverlay.classList.add('visible');
+    }
+
+    /**
+     * Handle video timeupdate event for score reveal
+     * Shows the score badge when video reaches the reveal time
+     */
+    function handleClipTimeUpdate() {
+      if (scoreRevealed || scoreRevealTime === null || currentClipScore === null) {
+        return;
+      }
+
+      if (activeVideoElement.currentTime >= scoreRevealTime) {
+        // Reveal the score
+        scoreRevealed = true;
+        clipScoreBadgeEl.textContent = formatClipScore(currentClipScore);
+        clipScoreBadgeEl.classList.add('visible');
+        console.log(`[clip] Score revealed: ${currentClipScore} at ${activeVideoElement.currentTime.toFixed(1)}s`);
+      }
+    }
+
+    /**
+     * Handle video loadedmetadata event to set up score reveal timing
+     * Uses actual video duration, not API duration
+     */
+    function handleClipMetadataLoaded() {
+      const actualDuration = activeVideoElement.duration;
+
+      if (isNaN(actualDuration) || actualDuration <= 0) {
+        console.error('[clip] Invalid video duration:', actualDuration);
+        // Will be handled by error handling in Task 7
+        return;
+      }
+
+      // Calculate when to show the score
+      if (currentClipScore !== null) {
+        scoreRevealTime = calculateScoreRevealTime(actualDuration);
+        console.log(`[clip] Score reveal time set: ${scoreRevealTime.toFixed(1)}s (duration: ${actualDuration.toFixed(1)}s)`);
+
+        // For very short clips, show score immediately
+        if (scoreRevealTime === 0) {
+          scoreRevealed = true;
+          clipScoreBadgeEl.textContent = formatClipScore(currentClipScore);
+          clipScoreBadgeEl.classList.add('visible');
+        }
+      }
+    }
+
+    /**
      * Handle clip playback for clip-playback and moment-replay graphics
-     * Video elements and actual playback will be implemented in Tasks 2-4
      * @param {string} graphic - The graphic type ('clip-playback' or 'moment-replay')
      * @param {Object} data - The graphic data from Firebase
      */
     function handleClipPlayback(graphic, data) {
       console.log(`[clip-mode] handleClipPlayback called: ${graphic}`, data);
-      // TODO: Implement in Tasks 2-4
-      // - Task 2: Dual video element setup and swap mechanism
-      // - Task 3: clip-playback renderer with overlay and score reveal
-      // - Task 4: moment-replay renderer with REPLAY badge and seek
+
+      const { draftId, clipUrl, score, nextClipUrl } = data;
+
+      // Validate required fields
+      if (!clipUrl) {
+        console.error('[clip] No clipUrl provided');
+        return;
+      }
+
+      // Check if this is a new clip or same clip (e.g., nextClipUrl update)
+      const isSameClip = currentClipDraftId === draftId;
+
+      if (isSameClip && graphic === 'clip-playback') {
+        // Same clip, might be a nextClipUrl update - just update preload
+        if (nextClipUrl && nextClipUrl !== preloadedClipUrl) {
+          preloadClip(nextClipUrl);
+        }
+        return;
+      }
+
+      // New clip - handle based on graphic type
+      if (graphic === 'clip-playback') {
+        // Reset state for new clip
+        currentClipDraftId = draftId;
+        scoreRevealed = false;
+        scoreRevealTime = null;
+        currentClipScore = (score !== undefined) ? score : null;
+
+        // Update overlay with athlete info
+        updateClipOverlay(data);
+
+        // Remove old event listeners
+        activeVideoElement.removeEventListener('timeupdate', handleClipTimeUpdate);
+        activeVideoElement.removeEventListener('loadedmetadata', handleClipMetadataLoaded);
+
+        // Start clip playback
+        startClip(clipUrl, { muted: false })
+          .then(() => {
+            console.log(`[clip] Clip started: ${draftId}`);
+
+            // Add event listeners for score reveal
+            activeVideoElement.addEventListener('timeupdate', handleClipTimeUpdate);
+            activeVideoElement.addEventListener('loadedmetadata', handleClipMetadataLoaded);
+
+            // If metadata already loaded, handle it now
+            if (activeVideoElement.readyState >= 1) {
+              handleClipMetadataLoaded();
+            }
+          })
+          .catch(err => {
+            console.error('[clip] Failed to start clip:', err);
+            // Error handling will be implemented in Task 7
+          });
+
+        // Preload next clip if available
+        if (nextClipUrl) {
+          preloadClip(nextClipUrl);
+        }
+
+      } else if (graphic === 'moment-replay') {
+        // Moment replay - will be fully implemented in Task 4
+        console.log('[clip] Moment replay graphic - full implementation pending (Task 4)');
+        // For now, just update overlay and show replay badge
+        updateClipOverlay(data);
+        clipReplayBadgeEl.style.display = 'block';
+        currentClipDraftId = draftId;
+        currentClipScore = null; // No score for replays
+        scoreRevealTime = null;
+        scoreRevealed = true; // Prevent score reveal
+      }
     }
 
     /**
@@ -12261,10 +12630,23 @@
      */
     function stopClipPlayback() {
       console.log(`[clip-mode] stopClipPlayback called`);
-      // TODO: Implement in Task 2
-      // - Hide video elements
-      // - Stop playback and clear src
-      // - Reset clip state
+
+      // Remove event listeners
+      activeVideoElement.removeEventListener('timeupdate', handleClipTimeUpdate);
+      activeVideoElement.removeEventListener('loadedmetadata', handleClipMetadataLoaded);
+
+      // Hide all video elements
+      hideAllVideos();
+
+      // Hide overlay
+      clipOverlay.classList.remove('visible');
+
+      // Reset score state
+      scoreRevealed = false;
+      scoreRevealTime = null;
+      currentClipScore = null;
+      clipScoreBadgeEl.classList.remove('visible');
+      clipScoreBadgeEl.textContent = '';
     }
     // Note: Keyboard shortcuts (like 'b' for bold mode) work in OBS via Interact mode,
     // but not in regular browsers due to cross-origin iframe restrictions.
