@@ -12612,15 +12612,102 @@
         }
 
       } else if (graphic === 'moment-replay') {
-        // Moment replay - will be fully implemented in Task 4
-        console.log('[clip] Moment replay graphic - full implementation pending (Task 4)');
-        // For now, just update overlay and show replay badge
-        updateClipOverlay(data);
-        clipReplayBadgeEl.style.display = 'block';
+        // Moment replay - seek to specific range, play at specified rate, muted by default
+        const { seekStart = 0, seekEnd, playbackRate = 1, muted = true } = data;
+
+        // Validate seek range
+        if (seekEnd !== undefined && seekEnd <= seekStart) {
+          console.error(`[clip] Invalid seek range: seekStart=${seekStart}, seekEnd=${seekEnd}`);
+          return;
+        }
+
+        // Reset state for new replay
         currentClipDraftId = draftId;
         currentClipScore = null; // No score for replays
         scoreRevealTime = null;
-        scoreRevealed = true; // Prevent score reveal
+        scoreRevealed = true; // Prevent score reveal logic from running
+
+        // Update overlay with athlete info
+        updateClipOverlay(data);
+
+        // Show replay badge
+        clipReplayBadgeEl.style.display = 'block';
+
+        // Track replay seek end for timeupdate handler
+        let replaySeekEnd = seekEnd;
+
+        // Handler to stop at seekEnd
+        const handleReplayTimeUpdate = () => {
+          if (replaySeekEnd !== undefined && activeVideoElement.currentTime >= replaySeekEnd) {
+            console.log(`[clip] Moment replay reached seekEnd: ${replaySeekEnd}s`);
+            activeVideoElement.removeEventListener('timeupdate', handleReplayTimeUpdate);
+            activeVideoElement.removeEventListener('ended', handleReplayEnded);
+            // Pause the video at the end point
+            activeVideoElement.pause();
+            // Handle replay ended (same as ended event)
+            onReplayEnded();
+          }
+        };
+
+        // Handler for video ended event (in case seekEnd not set or video ends naturally)
+        const handleReplayEnded = () => {
+          console.log(`[clip] Moment replay video ended`);
+          activeVideoElement.removeEventListener('timeupdate', handleReplayTimeUpdate);
+          activeVideoElement.removeEventListener('ended', handleReplayEnded);
+          onReplayEnded();
+        };
+
+        // Common replay ended logic
+        const onReplayEnded = () => {
+          // If preloaded next clip is available, optimistically advance
+          if (preloadedClipUrl) {
+            console.log('[clip] Moment replay ended, advancing to preloaded clip');
+            // This will be fully implemented in Task 8 (optimistic advance)
+            // For now, just log and wait for coordinator
+          }
+          // Note: Firebase write-back will be implemented in Task 7
+        };
+
+        // Remove old event listeners
+        activeVideoElement.removeEventListener('timeupdate', handleClipTimeUpdate);
+        activeVideoElement.removeEventListener('loadedmetadata', handleClipMetadataLoaded);
+
+        // Start replay playback with seek and rate
+        startClip(clipUrl, {
+          muted: muted,
+          currentTime: seekStart,
+          playbackRate: playbackRate
+        })
+          .then(() => {
+            console.log(`[clip] Moment replay started: ${draftId} (seek: ${seekStart}-${seekEnd || 'end'}, rate: ${playbackRate}x, muted: ${muted})`);
+
+            // Add event listeners for seekEnd detection
+            activeVideoElement.addEventListener('timeupdate', handleReplayTimeUpdate);
+            activeVideoElement.addEventListener('ended', handleReplayEnded);
+
+            // Update replaySeekEnd if we get more precise duration from metadata
+            activeVideoElement.addEventListener('loadedmetadata', () => {
+              const actualDuration = activeVideoElement.duration;
+              // If no seekEnd specified, use video duration
+              if (replaySeekEnd === undefined) {
+                replaySeekEnd = actualDuration;
+              }
+              // If seekEnd exceeds duration, cap it
+              if (replaySeekEnd > actualDuration) {
+                console.warn(`[clip] seekEnd (${seekEnd}) exceeds duration (${actualDuration}), capping`);
+                replaySeekEnd = actualDuration;
+              }
+            }, { once: true });
+          })
+          .catch(err => {
+            console.error('[clip] Failed to start moment replay:', err);
+            // Error handling will be implemented in Task 7
+          });
+
+        // Preload next clip if available
+        if (nextClipUrl) {
+          preloadClip(nextClipUrl);
+        }
       }
     }
 
@@ -12647,6 +12734,9 @@
       currentClipScore = null;
       clipScoreBadgeEl.classList.remove('visible');
       clipScoreBadgeEl.textContent = '';
+
+      // Hide replay badge
+      clipReplayBadgeEl.style.display = 'none';
     }
     // Note: Keyboard shortcuts (like 'b' for bold mode) work in OBS via Interact mode,
     // but not in regular browsers due to cross-origin iframe restrictions.
