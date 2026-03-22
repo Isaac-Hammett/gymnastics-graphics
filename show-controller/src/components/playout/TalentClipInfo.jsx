@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/solid';
+import { ChevronDownIcon, ChevronUpIcon, FlagIcon } from '@heroicons/react/24/solid';
 
 /**
  * TalentClipInfo - Commentator's clip info display
@@ -47,7 +47,8 @@ export default function TalentClipInfo({
   currentClip,
   nextClip,
   clipQueue,
-  cameraStates
+  cameraStates,
+  onFlagMoment
 }) {
   // State for collapsing talking points on mobile
   const [talkingPointsExpanded, setTalkingPointsExpanded] = useState(true);
@@ -337,6 +338,10 @@ export default function TalentClipInfo({
     }
   };
 
+  // Flag Moment button - available only during CLIP mode
+  const isClipMode = currentMode === 'CLIP';
+  const canFlagMoment = isClipMode && currentClip && onFlagMoment;
+
   return (
     <div className="bg-zinc-900 rounded-xl border-2 border-cyan-500/30 overflow-hidden">
       {/* Header */}
@@ -368,6 +373,33 @@ export default function TalentClipInfo({
       {/* Content */}
       <div className="p-4">
         {renderContent()}
+
+        {/* Flag Moment Button - simple one-click signal to coordinator */}
+        <div className="mt-4 pt-4 border-t border-zinc-700">
+          <button
+            onClick={canFlagMoment ? onFlagMoment : undefined}
+            disabled={!canFlagMoment}
+            title={!isClipMode ? 'Available during clip playback' : 'Flag this moment for replay'}
+            className={`
+              w-full flex items-center justify-center gap-2
+              min-h-[44px] py-3 px-4 rounded-lg
+              text-base font-semibold
+              transition-all active:scale-98
+              ${canFlagMoment
+                ? 'bg-purple-600 hover:bg-purple-500 text-white cursor-pointer'
+                : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
+              }
+            `}
+          >
+            <FlagIcon className="w-5 h-5" />
+            <span>Flag Moment</span>
+          </button>
+          {!isClipMode && (
+            <p className="text-xs text-zinc-500 text-center mt-2">
+              Available during clip playback
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useShow } from '../context/ShowContext';
 import { useCompetition } from '../context/CompetitionContext';
 import { useTimesheet } from '../hooks/useTimesheet';
 import { useAIContext } from '../hooks/useAIContext';
 import usePlayoutState from '../hooks/usePlayoutState';
+import usePlayoutActions from '../hooks/usePlayoutActions';
 import { db, ref, onValue } from '../lib/firebase';
 import CurrentSegment from '../components/CurrentSegment';
 import NextSegment from '../components/NextSegment';
@@ -55,6 +56,7 @@ export default function TalentView() {
   } = useAIContext();
 
   // Playout state for clip integration
+  const playoutState = usePlayoutState();
   const {
     isPlayoutActive,
     currentMode,
@@ -62,7 +64,10 @@ export default function TalentView() {
     nextClip,
     clipQueue,
     cameraStates
-  } = usePlayoutState();
+  } = playoutState;
+
+  // Playout actions - needed for flag moment
+  const { flagMoment } = usePlayoutActions(playoutState);
 
   // State for AI panel expansion
   const [aiPanelExpanded, setAIPanelExpanded] = useState(true);
@@ -131,6 +136,35 @@ export default function TalentView() {
   useEffect(() => {
     identify('talent', 'Talent');
   }, [identify]);
+
+  /**
+   * Handle Flag Moment from talent view
+   * This is a simple one-click signal - the commentator does NOT see
+   * speed controls or replay window options. The coordinator resolves
+   * the actual timestamp (accounting for stream delay).
+   *
+   * PRD Reference: Section 4.8 - Flag Moment button
+   */
+  const handleFlagMoment = useCallback(() => {
+    if (!currentClip) return;
+
+    // For Stage A mock: estimate the current elapsed time in the clip
+    // In Stage B, the coordinator will resolve this using its own clock
+    const estimatedElapsed = currentClip.elapsed ?? 0;
+
+    // Flag with a ~4 second window around the flagged moment
+    // (coordinator can adjust in the full MomentReplayDialog)
+    const seekStart = Math.max(0, estimatedElapsed - 2);
+    const seekEnd = Math.min(currentClip.duration || 40, estimatedElapsed + 2);
+
+    flagMoment({
+      draftId: currentClip.draft_id,
+      seekStart,
+      seekEnd,
+      speed: 1.0,
+      playNow: false  // Talent flags are "Save Only" - producer decides to play
+    });
+  }, [currentClip, flagMoment]);
 
   return (
     <div className="min-h-screen bg-zinc-950">
@@ -216,6 +250,7 @@ export default function TalentView() {
             nextClip={nextClip}
             clipQueue={clipQueue}
             cameraStates={cameraStates}
+            onFlagMoment={handleFlagMoment}
           />
         )}
 
