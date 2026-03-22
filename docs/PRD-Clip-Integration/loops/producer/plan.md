@@ -1,7 +1,7 @@
 # Producer — Tasks
 
 1. Create PlayoutStatusBar.jsx — current mode, NOW/NEXT/QUEUE cards, coordinator health indicator, preload indicator, estimated queue time — COMPLETE
-2. Create CameraStatusPanel.jsx — camera grid with state dots, Force Camera buttons, apparatus labels, recording timers — NOT STARTED
+2. Create CameraStatusPanel.jsx — camera grid with state dots, Force Camera buttons, apparatus labels, recording timers — COMPLETE
 3. Create ClipQueuePanel.jsx — tabs (All/Queued/Played/Shown Live), filters (apparatus/team/rotation), clip cards, UP NEXT section, bulk actions, empty/error states — NOT STARTED
 4. Create PlayoutControls.jsx — override control bar with Pause, Skip, Force Camera dropdown, Stop, Release Override — NOT STARTED
 5. Create MomentReplayDialog.jsx — flag moment modal with timeline, speed presets, replay window adjustment, Play Now / Save Only, flagged moments list — NOT STARTED
