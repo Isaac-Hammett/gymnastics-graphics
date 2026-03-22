@@ -6325,6 +6325,75 @@
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
       animation: clipOverlaySlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     }
+
+    /* ============================================================
+       LIVE CAMERA RENDERER (mode=live only)
+       Renders LIVE badge with optional apparatus label
+       ============================================================ */
+    .live-camera-badge {
+      position: absolute;
+      top: 60px;
+      left: 60px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+      animation: liveBadgeSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .live-camera-indicator {
+      background: #dc2626;
+      color: #ffffff;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .live-camera-dot {
+      width: 12px;
+      height: 12px;
+      background: #ffffff;
+      border-radius: 50%;
+      animation: livePulse 1.5s ease-in-out infinite;
+    }
+
+    .live-camera-apparatus {
+      background: var(--meet-header-bg, rgba(0, 0, 0, 0.75));
+      color: var(--meet-header-text, #ffffff);
+      padding: 8px 20px;
+      border-radius: 6px;
+      font-size: 20px;
+      font-weight: 600;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    }
+
+    @keyframes liveBadgeSlideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes livePulse {
+      0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+      50% {
+        opacity: 0.5;
+        transform: scale(0.8);
+      }
+    }
   </style>
 </head>
 <body>
@@ -12325,6 +12394,54 @@
               style="width: 100%; height: 100%; border: none; background: transparent;"
               allowtransparency="true"
             ></iframe>
+          </div>
+        `;
+      },
+
+      // ============================================================
+      // LIVE CAMERA RENDERER (PRD Clip Integration)
+      // Renders LIVE badge with optional apparatus label in mode=live
+      // Firebase data: { graphic: 'live-camera', data: { apparatus: 'BB' } }
+      // ============================================================
+      'live-camera': (data) => {
+        const apparatusCode = data.apparatus || '';
+        let apparatusDisplay = '';
+
+        if (apparatusCode) {
+          // Map apparatus codes to display names
+          const apparatusMap = {
+            'FX': 'Floor',
+            'PH': 'Pommel Horse',
+            'SR': 'Rings',
+            'VT': 'Vault',
+            'PB': 'Parallel Bars',
+            'HB': 'High Bar',
+            'UB': 'Uneven Bars',
+            'BB': 'Beam',
+            'FLOOR': 'Floor',
+            'HORSE': 'Pommel Horse',
+            'RINGS': 'Rings',
+            'VAULT': 'Vault',
+            'PBARS': 'Parallel Bars',
+            'BAR': 'High Bar',
+            'BARS': 'Uneven Bars',
+            'BEAM': 'Beam'
+          };
+          apparatusDisplay = apparatusMap[apparatusCode.toUpperCase()] || '';
+
+          // Log warning if apparatus is unknown
+          if (!apparatusDisplay && apparatusCode) {
+            console.warn(`[live-camera] Unknown apparatus code: ${apparatusCode}, showing LIVE badge without apparatus`);
+          }
+        }
+
+        return `
+          <div class="live-camera-badge">
+            <div class="live-camera-indicator">
+              <div class="live-camera-dot"></div>
+              <span>LIVE</span>
+            </div>
+            ${apparatusDisplay ? `<div class="live-camera-apparatus">${apparatusDisplay}</div>` : ''}
           </div>
         `;
       }
