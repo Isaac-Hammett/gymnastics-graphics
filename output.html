@@ -6490,7 +6490,11 @@
     // Track current clip state
     let currentClipDraftId = null;
     let preloadedClipUrl = null;
+    let preloadedClipDraftId = null;     // Draft ID of the preloaded clip (for optimistic advance)
+    let preloadedClipData = null;        // Full data for preloaded clip (for overlay updates)
     let crossfadeInProgress = false;
+    let optimisticAdvanceActive = false; // True when we auto-advanced without coordinator confirmation
+    let preloadTimeoutId = null;         // Timer for 30s preload timeout
 
     // Track score reveal state
     let scoreRevealTime = null;  // Time (in seconds) when score should appear
@@ -6507,8 +6511,63 @@
     let loadTimeoutId = null;            // Timer ID for 10s initial load timeout
     const STALL_TIMEOUT_MS = 8000;       // 8 seconds before writing stalled status
     const LOAD_TIMEOUT_MS = 10000;       // 10 seconds for initial canplaythrough
+    const PRELOAD_TIMEOUT_MS = 30000;    // 30 seconds for preload timeout
+    const HEARTBEAT_STALE_MS = 30000;    // 30 seconds before heartbeat is stale
     const MAX_RETRY_COUNT = 3;           // Maximum retries for Firebase writes
     const RETRY_DELAYS = [1000, 2000, 4000]; // Exponential backoff delays
+
+    // Heartbeat monitoring state
+    let lastHeartbeatTimestamp = null;   // Last received heartbeat timestamp
+    let heartbeatStale = false;          // True if heartbeat > 30s old
+    let heartbeatListenerActive = false; // Whether heartbeat listener is set up
+    let heartbeatCheckInterval = null;   // Interval ID for periodic heartbeat checks
+
+    /**
+     * Start monitoring coordinator heartbeat
+     * Heartbeat is at production/engineHeartbeat
+     */
+    function startHeartbeatMonitoring() {
+      if (heartbeatListenerActive || !competitionId) return;
+
+      console.log('[heartbeat] Starting heartbeat monitoring');
+      heartbeatListenerActive = true;
+
+      // Listen to engineHeartbeat path
+      db.ref(`competitions/${competitionId}/production/engineHeartbeat`).on('value', (snapshot) => {
+        const heartbeat = snapshot.val();
+        if (heartbeat && heartbeat.timestamp) {
+          lastHeartbeatTimestamp = heartbeat.timestamp;
+          const wasStale = heartbeatStale;
+          heartbeatStale = false;
+
+          if (wasStale) {
+            console.log('[heartbeat] Heartbeat recovered - auto-advance re-enabled');
+          }
+        }
+      });
+
+      // Periodically check if heartbeat is stale
+      heartbeatCheckInterval = setInterval(() => {
+        if (lastHeartbeatTimestamp) {
+          const age = Date.now() - lastHeartbeatTimestamp;
+          if (age > HEARTBEAT_STALE_MS && !heartbeatStale) {
+            heartbeatStale = true;
+            console.warn('[heartbeat] Coordinator heartbeat lost (>30s) - auto-advance suspended');
+          }
+        }
+      }, 5000); // Check every 5 seconds
+    }
+
+    /**
+     * Stop heartbeat monitoring
+     */
+    function stopHeartbeatMonitoring() {
+      if (heartbeatCheckInterval) {
+        clearInterval(heartbeatCheckInterval);
+        heartbeatCheckInterval = null;
+      }
+      heartbeatListenerActive = false;
+    }
 
     /**
      * Write clip status to Firebase at clipStatus/{draftId}
@@ -6647,7 +6706,7 @@
 
     /**
      * Handle video 'ended' event for clip-playback
-     * Writes 'ended' status to Firebase
+     * Writes 'ended' status to Firebase and performs optimistic advance if available
      */
     function handleClipEnded() {
       console.log('[clip-status] Clip ended');
@@ -6655,15 +6714,166 @@
       // Clear any stall timeout
       clearClipTimeouts();
 
+      // Check if heartbeat is stale - don't auto-advance if coordinator is down
+      if (heartbeatStale) {
+        console.log('[clip-status] Heartbeat stale - not auto-advancing');
+        if (currentClipDraftId) {
+          writeClipStatus(currentClipDraftId, 'ended', {});
+        }
+        // Hide video elements and wait for coordinator
+        hideAllVideos();
+        return;
+      }
+
+      // Check if we have a preloaded clip ready for optimistic advance
+      const canOptimisticAdvance = preloadedClipUrl &&
+                                    preloadedClipDraftId &&
+                                    preloadVideoElement.readyState >= 2; // HAVE_CURRENT_DATA
+
       if (currentClipDraftId) {
         // Include optimisticNextDraftId if we have a preloaded clip
-        // This tells the coordinator which clip we're about to auto-advance to
         const extraData = {};
-        // Note: optimisticNextDraftId will be set in Task 8 when preloading is implemented
-        // For now, we just write the ended status
-
+        if (canOptimisticAdvance) {
+          extraData.optimisticNextDraftId = preloadedClipDraftId;
+        }
         writeClipStatus(currentClipDraftId, 'ended', extraData);
       }
+
+      // Perform optimistic advance if preloaded clip is ready
+      if (canOptimisticAdvance) {
+        console.log(`[clip] Optimistic advance to preloaded clip: ${preloadedClipDraftId}`);
+        performOptimisticAdvance();
+      } else if (preloadedClipUrl) {
+        // Preload started but not ready - wait for coordinator
+        console.log('[clip] Preloaded clip not ready yet, waiting for coordinator');
+      }
+    }
+
+    /**
+     * Perform optimistic advance to the preloaded clip
+     * Called when current clip ends and preloaded clip is ready
+     */
+    function performOptimisticAdvance() {
+      if (!preloadedClipUrl || !preloadedClipDraftId) {
+        console.error('[clip] Cannot optimistic advance: no preloaded clip');
+        return;
+      }
+
+      optimisticAdvanceActive = true;
+      const advancingToDraftId = preloadedClipDraftId;
+      const advancingToData = preloadedClipData;
+
+      // Swap video elements so preloaded becomes active
+      swapVideoElements();
+
+      // Update state
+      currentClipDraftId = advancingToDraftId;
+      preloadedClipUrl = null;
+      preloadedClipDraftId = null;
+      preloadedClipData = null;
+
+      // Clear preload timeout
+      if (preloadTimeoutId) {
+        clearTimeout(preloadTimeoutId);
+        preloadTimeoutId = null;
+      }
+
+      // Reset score state for new clip
+      scoreRevealed = false;
+      scoreRevealTime = null;
+      currentClipScore = advancingToData?.score ?? null;
+
+      // Update overlay with new athlete info
+      if (advancingToData) {
+        updateClipOverlay(advancingToData);
+      }
+
+      // Remove old event listeners from new active element
+      activeVideoElement.removeEventListener('timeupdate', handleClipTimeUpdate);
+      activeVideoElement.removeEventListener('loadedmetadata', handleClipMetadataLoaded);
+
+      // Set up status listeners for new clip
+      setupClipStatusListeners(activeVideoElement);
+
+      // Set the new video active and play
+      setVideoActive(activeVideoElement);
+      activeVideoElement.play()
+        .then(() => {
+          console.log(`[clip] Optimistic advance playing: ${advancingToDraftId}`);
+
+          // Add event listeners for score reveal
+          activeVideoElement.addEventListener('timeupdate', handleClipTimeUpdate);
+          activeVideoElement.addEventListener('loadedmetadata', handleClipMetadataLoaded);
+
+          // If metadata already loaded, handle it now
+          if (activeVideoElement.readyState >= 1) {
+            handleClipMetadataLoaded();
+          }
+
+          // Preload next clip if we have the data
+          if (advancingToData?.nextClipUrl) {
+            preloadClipWithData(advancingToData.nextClipUrl, advancingToData.nextClipDraftId, advancingToData.nextClipData);
+          }
+        })
+        .catch(err => {
+          console.error('[clip] Optimistic advance failed to play:', err);
+          optimisticAdvanceActive = false;
+          writeClipStatus(advancingToDraftId, 'error', { errorMessage: err.message });
+        });
+    }
+
+    /**
+     * Handle coordinator correction - we optimistically advanced to wrong clip
+     * Fade out current (wrong) clip and load the correct one
+     * @param {string} graphic - The graphic type from coordinator
+     * @param {Object} data - The clip data from coordinator
+     */
+    function handleCoordinatorCorrection(graphic, data) {
+      console.log(`[clip] Handling coordinator correction to: ${data.draftId}`);
+      optimisticAdvanceActive = false;
+
+      // Get the current (wrong) video element
+      const wrongVideoEl = activeVideoElement;
+
+      // Fade out audio over 300ms
+      const fadeOutAudio = () => {
+        return new Promise((resolve) => {
+          const startVolume = wrongVideoEl.volume;
+          const fadeSteps = 10;
+          const stepDuration = 300 / fadeSteps;
+          let currentStep = 0;
+
+          const fadeInterval = setInterval(() => {
+            currentStep++;
+            wrongVideoEl.volume = startVolume * (1 - currentStep / fadeSteps);
+
+            if (currentStep >= fadeSteps) {
+              clearInterval(fadeInterval);
+              wrongVideoEl.volume = 0;
+              resolve();
+            }
+          }, stepDuration);
+        });
+      };
+
+      // Start audio fade
+      fadeOutAudio().then(() => {
+        // Stop the wrong video
+        wrongVideoEl.pause();
+        wrongVideoEl.removeAttribute('src');
+        wrongVideoEl.load();
+
+        // Clear state and load correct clip
+        currentClipDraftId = null;
+        preloadedClipUrl = null;
+        preloadedClipDraftId = null;
+        preloadedClipData = null;
+
+        // Load the correct clip through normal handleClipPlayback
+        // Set a flag to prevent recursion detection
+        optimisticAdvanceActive = false;
+        handleClipPlayback(graphic, data);
+      });
     }
 
     /**
@@ -6822,6 +7032,8 @@
       setVideoPreload(clipVideo, true);
       setVideoPreload(clipVideoNext, true);
       preloadedClipUrl = null;
+      preloadedClipDraftId = null;
+      preloadedClipData = null;
       currentClipDraftId = null;
       console.log('[clip] All videos hidden and cleared');
     }
@@ -6846,16 +7058,80 @@
     /**
      * Preload a clip URL into the preload video element
      * @param {string} url - The clip URL to preload
+     * @param {string} draftId - Optional draft ID of the clip being preloaded
+     * @param {Object} clipData - Optional full clip data for overlay updates
      */
-    function preloadClip(url) {
-      if (!url || url === preloadedClipUrl) {
-        return; // Already preloaded or no URL
+    function preloadClip(url, draftId = null, clipData = null) {
+      if (!url) {
+        return; // No URL provided
       }
 
-      console.log(`[clip] Preloading next clip: ${url}`);
+      // If same URL is already preloaded, just update metadata
+      if (url === preloadedClipUrl) {
+        if (draftId) preloadedClipDraftId = draftId;
+        if (clipData) preloadedClipData = clipData;
+        return;
+      }
+
+      // Abort any existing preload
+      abortPreload();
+
+      console.log(`[clip] Preloading next clip: ${url}${draftId ? ` (draftId: ${draftId})` : ''}`);
+
       preloadVideoElement.src = url;
       preloadVideoElement.load();
       preloadedClipUrl = url;
+      preloadedClipDraftId = draftId;
+      preloadedClipData = clipData;
+
+      // Start 30s preload timeout
+      preloadTimeoutId = setTimeout(() => {
+        console.warn(`[clip] Preload timeout reached (30s) for: ${url}`);
+        // Don't abort - just log. The clip may still load eventually.
+        // If ended event fires and readyState < 2, we won't optimistic advance.
+        preloadTimeoutId = null;
+      }, PRELOAD_TIMEOUT_MS);
+
+      // Clear timeout when preload completes
+      const onCanPlay = () => {
+        if (preloadTimeoutId) {
+          clearTimeout(preloadTimeoutId);
+          preloadTimeoutId = null;
+        }
+        preloadVideoElement.removeEventListener('canplay', onCanPlay);
+        console.log(`[clip] Preload complete: ${url}`);
+      };
+      preloadVideoElement.addEventListener('canplay', onCanPlay, { once: true });
+    }
+
+    /**
+     * Preload a clip with full data (used during optimistic advance for next clip)
+     * @param {string} url - The clip URL
+     * @param {string} draftId - The draft ID
+     * @param {Object} clipData - Full clip data
+     */
+    function preloadClipWithData(url, draftId, clipData) {
+      preloadClip(url, draftId, clipData);
+    }
+
+    /**
+     * Abort current preload and clear state
+     */
+    function abortPreload() {
+      if (preloadTimeoutId) {
+        clearTimeout(preloadTimeoutId);
+        preloadTimeoutId = null;
+      }
+
+      if (preloadedClipUrl) {
+        console.log(`[clip] Aborting preload: ${preloadedClipUrl}`);
+        preloadVideoElement.pause();
+        preloadVideoElement.removeAttribute('src');
+        preloadVideoElement.load(); // Reset the element
+        preloadedClipUrl = null;
+        preloadedClipDraftId = null;
+        preloadedClipData = null;
+      }
     }
 
     /**
@@ -12745,6 +13021,11 @@
     // Only listen to Firebase if NOT in URL preview mode
     // When graphic= is in URL, we want to show that specific graphic, not whatever Firebase has
     if (!isUrlPreviewMode) {
+      // Start heartbeat monitoring for clip mode (needed for optimistic advance)
+      if (isClipMode) {
+        startHeartbeatMonitoring();
+      }
+
       db.ref(`competitions/${competitionId}/currentGraphic`).on('value', (snapshot) => {
         const state = snapshot.val();
 
@@ -12959,7 +13240,7 @@
     function handleClipPlayback(graphic, data) {
       console.log(`[clip-mode] handleClipPlayback called: ${graphic}`, data);
 
-      const { draftId, clipUrl, score, nextClipUrl } = data;
+      const { draftId, clipUrl, score, nextClipUrl, nextClipDraftId, nextClipData } = data;
 
       // Validate required fields
       if (!clipUrl) {
@@ -12973,10 +13254,25 @@
       if (isSameClip && graphic === 'clip-playback') {
         // Same clip, might be a nextClipUrl update - just update preload
         if (nextClipUrl && nextClipUrl !== preloadedClipUrl) {
-          preloadClip(nextClipUrl);
+          preloadClip(nextClipUrl, nextClipDraftId, nextClipData);
+        }
+        // Clear optimistic advance flag since coordinator confirmed the clip
+        if (optimisticAdvanceActive) {
+          console.log('[clip] Coordinator confirmed optimistic advance');
+          optimisticAdvanceActive = false;
         }
         return;
       }
+
+      // Check if we optimistically advanced to the wrong clip (coordinator correction)
+      if (optimisticAdvanceActive && currentClipDraftId !== draftId) {
+        console.log(`[clip] Coordinator correction: expected ${currentClipDraftId}, got ${draftId}`);
+        handleCoordinatorCorrection(graphic, data);
+        return;
+      }
+
+      // Clear optimistic flag - either we didn't optimistically advance, or coordinator confirmed
+      optimisticAdvanceActive = false;
 
       // New clip - handle based on graphic type
       if (graphic === 'clip-playback') {
@@ -13021,7 +13317,10 @@
 
         // Preload next clip if available
         if (nextClipUrl) {
-          preloadClip(nextClipUrl);
+          preloadClip(nextClipUrl, nextClipDraftId, nextClipData);
+        } else {
+          // No next clip - clear preload state
+          abortPreload();
         }
 
       } else if (graphic === 'moment-replay') {
@@ -13075,16 +13374,37 @@
           // Clear any stall/load timeouts
           clearClipTimeouts();
 
-          // Write ended status to Firebase (Task 7)
+          // Check if heartbeat is stale - don't auto-advance if coordinator is down
+          if (heartbeatStale) {
+            console.log('[clip-status] Heartbeat stale - not auto-advancing after replay');
+            if (currentClipDraftId) {
+              writeClipStatus(currentClipDraftId, 'ended', {});
+            }
+            // Hide video elements and wait for coordinator
+            hideAllVideos();
+            return;
+          }
+
+          // Check if we have a preloaded clip ready for optimistic advance
+          const canOptimisticAdvance = preloadedClipUrl &&
+                                        preloadedClipDraftId &&
+                                        preloadVideoElement.readyState >= 2;
+
+          // Write ended status to Firebase
           if (currentClipDraftId) {
-            writeClipStatus(currentClipDraftId, 'ended');
+            const extraData = {};
+            if (canOptimisticAdvance) {
+              extraData.optimisticNextDraftId = preloadedClipDraftId;
+            }
+            writeClipStatus(currentClipDraftId, 'ended', extraData);
           }
 
           // If preloaded next clip is available, optimistically advance
-          if (preloadedClipUrl) {
+          if (canOptimisticAdvance) {
             console.log('[clip] Moment replay ended, advancing to preloaded clip');
-            // This will be fully implemented in Task 8 (optimistic advance)
-            // For now, just log and wait for coordinator
+            performOptimisticAdvance();
+          } else if (preloadedClipUrl) {
+            console.log('[clip] Preloaded clip not ready yet, waiting for coordinator');
           }
         };
 
@@ -13135,7 +13455,10 @@
 
         // Preload next clip if available
         if (nextClipUrl) {
-          preloadClip(nextClipUrl);
+          preloadClip(nextClipUrl, nextClipDraftId, nextClipData);
+        } else {
+          // No next clip - clear preload state
+          abortPreload();
         }
       }
     }
@@ -13154,6 +13477,13 @@
       // Remove status listeners and clear timeouts (Task 7)
       removeClipStatusListeners(activeVideoElement);
       removeClipStatusListeners(preloadVideoElement);
+
+      // Abort any pending preload and clear preload state
+      abortPreload();
+
+      // Clear optimistic advance state
+      optimisticAdvanceActive = false;
+      currentClipDraftId = null;
 
       // Hide all video elements
       hideAllVideos();
