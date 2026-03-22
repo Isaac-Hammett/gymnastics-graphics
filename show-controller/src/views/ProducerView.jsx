@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 import { useShow } from '../context/ShowContext';
@@ -18,6 +18,20 @@ import OverrideLog from '../components/OverrideLog';
 import AlertPanel from '../components/AlertPanel';
 import ScoreBugPanel from '../components/ScoreBugPanel';
 import { useAlerts } from '../hooks/useAlerts';
+
+// Playout components (PRD Clip Integration)
+import PlayoutStatusBar from '../components/playout/PlayoutStatusBar';
+import CameraStatusPanel from '../components/playout/CameraStatusPanel';
+import ClipQueuePanel from '../components/playout/ClipQueuePanel';
+import PlayoutControls from '../components/playout/PlayoutControls';
+import MomentReplayDialog from '../components/playout/MomentReplayDialog';
+import PlayoutEventLog from '../components/playout/PlayoutEventLog';
+import KeyboardShortcutsPanel from '../components/playout/KeyboardShortcutsPanel';
+
+// Playout hooks
+import usePlayoutState from '../hooks/usePlayoutState';
+import usePlayoutActions from '../hooks/usePlayoutActions';
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import {
   PlayIcon,
   BackwardIcon,
@@ -169,6 +183,179 @@ export default function ProducerView() {
   const [loadRundownToast, setLoadRundownToast] = useState(null); // { type: 'success' | 'error', message: string }
   const [showReloadConfirmation, setShowReloadConfirmation] = useState(false); // Confirmation dialog state
   const [activeAudioCue, setActiveAudioCue] = useState(null); // { songName, segmentId, sourceName, timestamp }
+
+  // Playout state and actions (PRD Clip Integration)
+  const playoutState = usePlayoutState();
+  const playoutActions = usePlayoutActions(playoutState);
+
+  const {
+    isPlayoutActive,
+    setIsPlayoutActive,
+    currentMode,
+    clips,
+    currentClip,
+    nextClip,
+    clipQueue,
+    cameraStates: playoutCameraStates,
+    overrideState,
+    preloadState,
+    coordinatorHeartbeat,
+    momentReplay,
+    eventLog,
+    CLIP_STATUS,
+    PLAYOUT_MODE
+  } = playoutState;
+
+  const {
+    skipClip,
+    forceCamera,
+    releaseOverride,
+    pausePlayout,
+    resumePlayout,
+    stopPlayout,
+    flagMoment,
+    addToQueue,
+    retryClip,
+    retryAllFailed,
+    fetchClips
+  } = playoutActions;
+
+  // Playout-specific UI state
+  const [showMomentReplayDialog, setShowMomentReplayDialog] = useState(false);
+  const [showKeyboardShortcutsPanel, setShowKeyboardShortcutsPanel] = useState(false);
+  const [momentReplayFlagTime, setMomentReplayFlagTime] = useState(0);
+  const [momentReplayMuted, setMomentReplayMuted] = useState(true);
+  const [flaggedMoments, setFlaggedMoments] = useState([]);
+  const [runOfShowCollapsed, setRunOfShowCollapsed] = useState(true); // Collapsed by default during playout
+
+  // Determine if playout panels should be shown (during playout active state)
+  const showPlayoutPanels = isPlayoutActive && showIsActive;
+
+  // Derive current rotation from timesheet state (for clip filtering default)
+  const currentRotation = timesheetState?.currentRotation || 1;
+
+  // Build current content info for status bar
+  const currentContent = useMemo(() => {
+    if (currentMode === PLAYOUT_MODE.CLIP && currentClip) {
+      return {
+        type: 'clip',
+        athleteName: currentClip.athlete_name,
+        apparatus: currentClip.apparatus,
+        teamName: currentClip.team_name
+      };
+    }
+    if (currentMode === PLAYOUT_MODE.LIVE && overrideState?.cameraNumber) {
+      const cam = playoutCameraStates.find(c => c.cameraNumber === overrideState.cameraNumber);
+      return {
+        type: 'live',
+        cameraNumber: overrideState.cameraNumber,
+        apparatus: cam?.apparatus
+      };
+    }
+    if (currentMode === PLAYOUT_MODE.MOMENT_REPLAY && momentReplay) {
+      return {
+        type: 'moment_replay',
+        athleteName: momentReplay.athleteName,
+        speed: momentReplay.speed
+      };
+    }
+    return { type: currentMode?.toLowerCase() || 'fallback' };
+  }, [currentMode, currentClip, overrideState, playoutCameraStates, momentReplay, PLAYOUT_MODE]);
+
+  // Build next content info for status bar
+  const nextContent = useMemo(() => {
+    if (nextClip) {
+      return {
+        type: 'clip',
+        athleteName: nextClip.athlete_name,
+        apparatus: nextClip.apparatus,
+        teamName: nextClip.team_name,
+        score: nextClip.score,
+        preloadState: preloadState?.state
+      };
+    }
+    return null;
+  }, [nextClip, preloadState]);
+
+  // Build queue stats for status bar
+  const queueStats = useMemo(() => {
+    const queued = clipQueue?.queued || [];
+    const played = clipQueue?.played || [];
+    const totalDuration = queued.reduce((sum, c) => sum + (c.duration || 0), 0);
+    return {
+      queuedCount: queued.length,
+      playedCount: played.length,
+      estimatedTimeRemaining: totalDuration
+    };
+  }, [clipQueue]);
+
+  // Build camera apparatus map for keyboard shortcuts panel
+  const cameraApparatusMap = useMemo(() => {
+    const map = {};
+    playoutCameraStates.forEach(cam => {
+      map[cam.cameraNumber] = cam.apparatus;
+    });
+    return map;
+  }, [playoutCameraStates]);
+
+  // Keyboard shortcuts handlers
+  const handleKeyboardSkip = useCallback(() => {
+    if (currentClip) {
+      skipClip(currentClip.draft_id);
+    }
+  }, [currentClip, skipClip]);
+
+  const handleKeyboardPause = useCallback(() => {
+    if (currentMode === PLAYOUT_MODE.PAUSED) {
+      resumePlayout();
+    } else {
+      pausePlayout();
+    }
+  }, [currentMode, pausePlayout, resumePlayout, PLAYOUT_MODE]);
+
+  const handleKeyboardFlagMoment = useCallback(() => {
+    if (currentClip) {
+      // Open the moment replay dialog with current playback time
+      setMomentReplayFlagTime(currentClip.elapsed || 0);
+      setShowMomentReplayDialog(true);
+    }
+  }, [currentClip]);
+
+  const handleShowShortcuts = useCallback(() => {
+    setShowKeyboardShortcutsPanel(true);
+  }, []);
+
+  // Initialize keyboard shortcuts
+  const keyboardShortcuts = useKeyboardShortcuts({
+    enabled: showPlayoutPanels,
+    isDialogOpen: showMomentReplayDialog || showKeyboardShortcutsPanel,
+    cameraCount: playoutCameraStates.length,
+    handlers: {
+      onForceCamera: forceCamera,
+      onSkip: handleKeyboardSkip,
+      onPause: handleKeyboardPause,
+      onReleaseOverride: releaseOverride,
+      onFlagMoment: handleKeyboardFlagMoment,
+      onShowShortcuts: handleShowShortcuts
+    }
+  });
+
+  // Handle moment replay dialog actions
+  const handleMomentPlayNow = useCallback((moment) => {
+    flagMoment({ ...moment, playNow: true });
+    setFlaggedMoments(prev => [...prev, { ...moment, id: Date.now(), action: 'play_now' }]);
+    setShowMomentReplayDialog(false);
+  }, [flagMoment]);
+
+  const handleMomentSaveOnly = useCallback((moment) => {
+    flagMoment({ ...moment, playNow: false });
+    setFlaggedMoments(prev => [...prev, { ...moment, id: Date.now(), action: 'saved' }]);
+    setShowMomentReplayDialog(false);
+  }, [flagMoment]);
+
+  const handleRemoveMoment = useCallback((momentId) => {
+    setFlaggedMoments(prev => prev.filter(m => m.id !== momentId));
+  }, []);
 
   // Server URL for REST API calls - use socketUrl from competition context
   // This ensures HTTPS routing through the coordinator in production
@@ -738,239 +925,301 @@ export default function ProducerView() {
                 <CurrentSegment />
                 <NextSegment />
 
-                {/* Show Controls */}
-                <div className="bg-zinc-800 rounded-xl p-4">
-                  <div className="text-sm text-zinc-400 uppercase tracking-wide mb-3">Show Control</div>
+                {/* PLAYOUT ACTIVE: Swap panels when playout is active */}
+                {showPlayoutPanels ? (
+                  <div className="space-y-4 transition-opacity duration-200">
+                    {/* Playout Status Bar - NOW/NEXT/QUEUE cards */}
+                    <PlayoutStatusBar
+                      mode={currentMode}
+                      currentContent={currentContent}
+                      nextContent={nextContent}
+                      queueStats={queueStats}
+                      coordinatorHeartbeat={coordinatorHeartbeat?.lastSeen}
+                      currentRotation={currentRotation}
+                      isOverride={overrideState?.active}
+                    />
 
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => timesheetPrevious('producer')}
-                      disabled={isFirstSegment}
-                      className={`flex items-center gap-2 px-4 py-3 rounded-lg transition-colors ${
-                        isFirstSegment
-                          ? 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
-                          : 'bg-zinc-700 hover:bg-zinc-600 text-white'
-                      }`}
-                      title={isFirstSegment ? 'Already at first segment' : 'Go to previous segment'}
-                    >
-                      <BackwardIcon className="w-5 h-5" />
-                      Previous
-                    </button>
+                    {/* Camera Status Panel - replaces Quick Camera Switch */}
+                    <CameraStatusPanel
+                      cameraStates={playoutCameraStates}
+                      forceCamera={forceCamera}
+                      overrideState={overrideState}
+                    />
 
-                    <button
-                      onClick={() => timesheetAdvance('producer')}
-                      disabled={isHoldSegment && !canAdvanceHold}
-                      className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 font-bold rounded-lg transition-colors ${
-                        isHoldSegment && !canAdvanceHold
-                          ? 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
-                          : 'bg-blue-600 hover:bg-blue-500 text-white'
-                      }`}
-                      title={isHoldSegment && !canAdvanceHold ? 'Wait for hold minimum duration' : 'Advance to next segment'}
-                    >
-                      <ForwardIcon className="w-5 h-5" />
-                      NEXT
-                    </button>
+                    {/* Playout Controls - persistent override control bar */}
+                    <PlayoutControls
+                      isPaused={currentMode === PLAYOUT_MODE.PAUSED}
+                      isOverride={overrideState?.active}
+                      cameraStates={playoutCameraStates}
+                      onPause={handleKeyboardPause}
+                      onSkip={handleKeyboardSkip}
+                      onForceCamera={forceCamera}
+                      onStopPlayout={stopPlayout}
+                      onReleaseOverride={releaseOverride}
+                      onShowShortcuts={handleShowShortcuts}
+                    />
 
-                    <button
-                      onClick={showIsPaused ? timesheetResume : timesheetPause}
-                      className={`flex items-center gap-2 px-4 py-3 rounded-lg transition-colors ${
-                        showIsPaused
-                          ? 'bg-green-600 hover:bg-green-500 text-white'
-                          : 'bg-yellow-600 hover:bg-yellow-500 text-white'
-                      }`}
-                    >
-                      {showIsPaused ? (
-                        <>
-                          <PlayIcon className="w-5 h-5" />
-                          Resume
-                        </>
-                      ) : (
-                        <>
-                          <PauseIcon className="w-5 h-5" />
-                          Pause
-                        </>
-                      )}
-                    </button>
+                    {/* Playout Event Log - scrollable log panel */}
+                    <PlayoutEventLog
+                      eventLog={eventLog}
+                      actions={{ retryClip }}
+                    />
                   </div>
+                ) : (
+                  <>
+                    {/* PLAYOUT INACTIVE: Show normal manual controls */}
+                    {/* Show Controls */}
+                    <div className="bg-zinc-800 rounded-xl p-4">
+                      <div className="text-sm text-zinc-400 uppercase tracking-wide mb-3">Show Control</div>
 
-                  <div className="flex gap-2 mt-3">
-                    <button
-                      onClick={() => lockTalent(!talentLocked)}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                        talentLocked
-                          ? 'bg-red-600 hover:bg-red-500 text-white'
-                          : 'bg-zinc-700 hover:bg-zinc-600 text-zinc-300'
-                      }`}
-                    >
-                      {talentLocked ? (
-                        <>
-                          <LockClosedIcon className="w-4 h-4" />
-                          Unlock Talent
-                        </>
-                      ) : (
-                        <>
-                          <LockOpenIcon className="w-4 h-4" />
-                          Lock Talent
-                        </>
-                      )}
-                    </button>
-
-                    <button
-                      onClick={timesheetStop}
-                      className="flex items-center gap-2 px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded-lg transition-colors"
-                    >
-                      <ArrowPathIcon className="w-4 h-4" />
-                      Reset Show
-                    </button>
-
-                    <button
-                      onClick={timesheetStop}
-                      className="flex items-center gap-2 px-4 py-2 bg-red-600/80 hover:bg-red-600 text-white rounded-lg transition-colors"
-                      title="Stop the show"
-                    >
-                      <StopIcon className="w-4 h-4" />
-                      Stop
-                    </button>
-                  </div>
-                </div>
-
-                {/* Audio Cue Control Panel (Phase F: Task 66) */}
-                {(activeAudioCue || currentSegment?.audioCue?.songName) && (
-                  <div className="bg-zinc-800 rounded-xl p-4">
-                    <div className="flex items-center gap-2 text-sm text-zinc-400 uppercase tracking-wide mb-3">
-                      <MusicalNoteIcon className="w-4 h-4" />
-                      Audio Cue
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      {/* Audio info */}
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className={`w-2 h-2 rounded-full ${activeAudioCue?.rehearsalMode ? 'bg-purple-500' : 'bg-green-500'} animate-pulse`} />
-                          <span className="text-white font-medium">
-                            {activeAudioCue?.songName || currentSegment?.audioCue?.songName}
-                          </span>
-                        </div>
-                        {activeAudioCue?.rehearsalMode && (
-                          <div className="text-xs text-purple-400 mt-1">Rehearsal mode - audio skipped</div>
-                        )}
-                        {!activeAudioCue?.rehearsalMode && activeAudioCue?.sourceName && (
-                          <div className="text-xs text-zinc-500 mt-1">
-                            Source: {activeAudioCue.sourceName}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Mute toggle - only show if not in rehearsal mode */}
-                      {!activeAudioCue?.rehearsalMode && activeAudioCue?.sourceName && (
+                      <div className="flex flex-wrap gap-2">
                         <button
-                          onClick={toggleAudioCueMute}
-                          className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                            getAudioSourceMuted(activeAudioCue.sourceName)
-                              ? 'bg-red-600 hover:bg-red-500 text-white'
-                              : 'bg-zinc-700 hover:bg-zinc-600 text-zinc-300'
+                          onClick={() => timesheetPrevious('producer')}
+                          disabled={isFirstSegment}
+                          className={`flex items-center gap-2 px-4 py-3 rounded-lg transition-colors ${
+                            isFirstSegment
+                              ? 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
+                              : 'bg-zinc-700 hover:bg-zinc-600 text-white'
                           }`}
-                          title={getAudioSourceMuted(activeAudioCue.sourceName) ? 'Unmute audio' : 'Mute audio'}
+                          title={isFirstSegment ? 'Already at first segment' : 'Go to previous segment'}
                         >
-                          {getAudioSourceMuted(activeAudioCue.sourceName) ? (
+                          <BackwardIcon className="w-5 h-5" />
+                          Previous
+                        </button>
+
+                        <button
+                          onClick={() => timesheetAdvance('producer')}
+                          disabled={isHoldSegment && !canAdvanceHold}
+                          className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 font-bold rounded-lg transition-colors ${
+                            isHoldSegment && !canAdvanceHold
+                              ? 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
+                              : 'bg-blue-600 hover:bg-blue-500 text-white'
+                          }`}
+                          title={isHoldSegment && !canAdvanceHold ? 'Wait for hold minimum duration' : 'Advance to next segment'}
+                        >
+                          <ForwardIcon className="w-5 h-5" />
+                          NEXT
+                        </button>
+
+                        <button
+                          onClick={showIsPaused ? timesheetResume : timesheetPause}
+                          className={`flex items-center gap-2 px-4 py-3 rounded-lg transition-colors ${
+                            showIsPaused
+                              ? 'bg-green-600 hover:bg-green-500 text-white'
+                              : 'bg-yellow-600 hover:bg-yellow-500 text-white'
+                          }`}
+                        >
+                          {showIsPaused ? (
                             <>
-                              <SpeakerXMarkIcon className="w-4 h-4" />
-                              Muted
+                              <PlayIcon className="w-5 h-5" />
+                              Resume
                             </>
                           ) : (
                             <>
-                              <SpeakerWaveIcon className="w-4 h-4" />
-                              Playing
+                              <PauseIcon className="w-5 h-5" />
+                              Pause
                             </>
                           )}
                         </button>
-                      )}
+                      </div>
+
+                      <div className="flex gap-2 mt-3">
+                        <button
+                          onClick={() => lockTalent(!talentLocked)}
+                          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                            talentLocked
+                              ? 'bg-red-600 hover:bg-red-500 text-white'
+                              : 'bg-zinc-700 hover:bg-zinc-600 text-zinc-300'
+                          }`}
+                        >
+                          {talentLocked ? (
+                            <>
+                              <LockClosedIcon className="w-4 h-4" />
+                              Unlock Talent
+                            </>
+                          ) : (
+                            <>
+                              <LockOpenIcon className="w-4 h-4" />
+                              Lock Talent
+                            </>
+                          )}
+                        </button>
+
+                        <button
+                          onClick={timesheetStop}
+                          className="flex items-center gap-2 px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded-lg transition-colors"
+                        >
+                          <ArrowPathIcon className="w-4 h-4" />
+                          Reset Show
+                        </button>
+
+                        <button
+                          onClick={timesheetStop}
+                          className="flex items-center gap-2 px-4 py-2 bg-red-600/80 hover:bg-red-600 text-white rounded-lg transition-colors"
+                          title="Stop the show"
+                        >
+                          <StopIcon className="w-4 h-4" />
+                          Stop
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                )}
 
-                {/* Quick Camera Buttons - wired to runtime state */}
-                {cameraHealth.length > 0 && (
-                  <div className="bg-zinc-800 rounded-xl p-4">
-                    <div className="flex items-center gap-2 text-sm text-zinc-400 uppercase tracking-wide mb-3">
-                      <VideoCameraIcon className="w-4 h-4" />
-                      Quick Camera Switch
-                    </div>
+                    {/* Audio Cue Control Panel (Phase F: Task 66) */}
+                    {(activeAudioCue || currentSegment?.audioCue?.songName) && (
+                      <div className="bg-zinc-800 rounded-xl p-4">
+                        <div className="flex items-center gap-2 text-sm text-zinc-400 uppercase tracking-wide mb-3">
+                          <MusicalNoteIcon className="w-4 h-4" />
+                          Audio Cue
+                        </div>
 
-                    <div className="grid grid-cols-4 gap-2">
-                      {cameraHealth.map((cam) => {
-                        const runtime = cameraRuntimeState.find(r => r.id === cam.cameraId);
-                        const isOnline = cam.status !== 'offline' && cam.status !== 'unknown';
-                        const hasMismatch = runtime?.hasMismatch;
-                        const apparatus = runtime?.currentApparatus || [];
+                        <div className="flex items-center gap-3">
+                          {/* Audio info */}
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className={`w-2 h-2 rounded-full ${activeAudioCue?.rehearsalMode ? 'bg-purple-500' : 'bg-green-500'} animate-pulse`} />
+                              <span className="text-white font-medium">
+                                {activeAudioCue?.songName || currentSegment?.audioCue?.songName}
+                              </span>
+                            </div>
+                            {activeAudioCue?.rehearsalMode && (
+                              <div className="text-xs text-purple-400 mt-1">Rehearsal mode - audio skipped</div>
+                            )}
+                            {!activeAudioCue?.rehearsalMode && activeAudioCue?.sourceName && (
+                              <div className="text-xs text-zinc-500 mt-1">
+                                Source: {activeAudioCue.sourceName}
+                              </div>
+                            )}
+                          </div>
 
-                        return (
+                          {/* Mute toggle - only show if not in rehearsal mode */}
+                          {!activeAudioCue?.rehearsalMode && activeAudioCue?.sourceName && (
+                            <button
+                              onClick={toggleAudioCueMute}
+                              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                                getAudioSourceMuted(activeAudioCue.sourceName)
+                                  ? 'bg-red-600 hover:bg-red-500 text-white'
+                                  : 'bg-zinc-700 hover:bg-zinc-600 text-zinc-300'
+                              }`}
+                              title={getAudioSourceMuted(activeAudioCue.sourceName) ? 'Unmute audio' : 'Mute audio'}
+                            >
+                              {getAudioSourceMuted(activeAudioCue.sourceName) ? (
+                                <>
+                                  <SpeakerXMarkIcon className="w-4 h-4" />
+                                  Muted
+                                </>
+                              ) : (
+                                <>
+                                  <SpeakerWaveIcon className="w-4 h-4" />
+                                  Playing
+                                </>
+                              )}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Quick Camera Buttons - wired to runtime state */}
+                    {cameraHealth.length > 0 && (
+                      <div className="bg-zinc-800 rounded-xl p-4">
+                        <div className="flex items-center gap-2 text-sm text-zinc-400 uppercase tracking-wide mb-3">
+                          <VideoCameraIcon className="w-4 h-4" />
+                          Quick Camera Switch
+                        </div>
+
+                        <div className="grid grid-cols-4 gap-2">
+                          {cameraHealth.map((cam) => {
+                            const runtime = cameraRuntimeState.find(r => r.id === cam.cameraId);
+                            const isOnline = cam.status !== 'offline' && cam.status !== 'unknown';
+                            const hasMismatch = runtime?.hasMismatch;
+                            const apparatus = runtime?.currentApparatus || [];
+
+                            return (
+                              <button
+                                key={cam.cameraId}
+                                onClick={() => switchToCamera(cam.cameraId)}
+                                disabled={!isOnline}
+                                className={`relative px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                  !isOnline
+                                    ? 'bg-zinc-800 text-zinc-600 cursor-not-allowed opacity-60'
+                                    : hasMismatch
+                                    ? 'bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30 border border-yellow-500/50'
+                                    : 'bg-zinc-700 hover:bg-zinc-600 text-zinc-300'
+                                }`}
+                                title={`${cam.cameraName}: ${cam.status}${apparatus.length > 0 ? ` (${apparatus.join(', ')})` : ''}${hasMismatch ? ' - MISMATCH' : ''}`}
+                              >
+                                {/* Health indicator dot */}
+                                <span className={`absolute top-1 right-1 w-2 h-2 rounded-full ${HEALTH_COLORS[cam.status]}`} />
+                                <div className="truncate">{cam.cameraName || cam.cameraId}</div>
+                                {apparatus.length > 0 && (
+                                  <div className="text-xs opacity-70 truncate">{apparatus.join(', ')}</div>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Scene Override */}
+                    <div className="bg-zinc-800 rounded-xl p-4">
+                      <div className="text-sm text-zinc-400 uppercase tracking-wide mb-3">Scene Override</div>
+
+                      <div className="grid grid-cols-4 gap-2">
+                        {sceneOverrides.map((scene) => (
                           <button
-                            key={cam.cameraId}
-                            onClick={() => switchToCamera(cam.cameraId)}
-                            disabled={!isOnline}
-                            className={`relative px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                              !isOnline
-                                ? 'bg-zinc-800 text-zinc-600 cursor-not-allowed opacity-60'
-                                : hasMismatch
-                                ? 'bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30 border border-yellow-500/50'
+                            key={scene}
+                            onClick={() => overrideScene(scene)}
+                            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                              obsCurrentScene === scene
+                                ? 'bg-blue-600 text-white'
                                 : 'bg-zinc-700 hover:bg-zinc-600 text-zinc-300'
                             }`}
-                            title={`${cam.cameraName}: ${cam.status}${apparatus.length > 0 ? ` (${apparatus.join(', ')})` : ''}${hasMismatch ? ' - MISMATCH' : ''}`}
                           >
-                            {/* Health indicator dot */}
-                            <span className={`absolute top-1 right-1 w-2 h-2 rounded-full ${HEALTH_COLORS[cam.status]}`} />
-                            <div className="truncate">{cam.cameraName || cam.cameraId}</div>
-                            {apparatus.length > 0 && (
-                              <div className="text-xs opacity-70 truncate">{apparatus.join(', ')}</div>
-                            )}
+                            {scene}
                           </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* Scene Override */}
-                <div className="bg-zinc-800 rounded-xl p-4">
-                  <div className="text-sm text-zinc-400 uppercase tracking-wide mb-3">Scene Override</div>
-
-                  <div className="grid grid-cols-4 gap-2">
-                    {sceneOverrides.map((scene) => (
-                      <button
-                        key={scene}
-                        onClick={() => overrideScene(scene)}
-                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                          obsCurrentScene === scene
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-zinc-700 hover:bg-zinc-600 text-zinc-300'
-                        }`}
-                      >
-                        {scene}
-                      </button>
-                    ))}
-                  </div>
-
-                  {scenes.length > 0 && (
-                    <div className="mt-3">
-                      <select
-                        value={obsCurrentScene || ''}
-                        onChange={(e) => overrideScene(e.target.value)}
-                        className="w-full px-3 py-2 bg-zinc-700 border border-zinc-600 rounded-lg text-white text-sm"
-                      >
-                        <option value="">Select scene...</option>
-                        {scenes.map((scene) => (
-                          <option key={scene} value={scene}>{scene}</option>
                         ))}
-                      </select>
+                      </div>
+
+                      {scenes.length > 0 && (
+                        <div className="mt-3">
+                          <select
+                            value={obsCurrentScene || ''}
+                            onChange={(e) => overrideScene(e.target.value)}
+                            className="w-full px-3 py-2 bg-zinc-700 border border-zinc-600 rounded-lg text-white text-sm"
+                          >
+                            <option value="">Select scene...</option>
+                            {scenes.map((scene) => (
+                              <option key={scene} value={scene}>{scene}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
+                  </>
+                )}
               </>
             )}
 
-            {/* Run of Show - Clickable for jump */}
-            <RunOfShow clickable onSegmentClick={jumpTo} />
+            {/* Run of Show - Clickable for jump, collapsible during playout */}
+            {showPlayoutPanels ? (
+              <div className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden">
+                <button
+                  onClick={() => setRunOfShowCollapsed(!runOfShowCollapsed)}
+                  className="w-full px-4 py-3 flex items-center justify-between hover:bg-zinc-800 transition-colors"
+                >
+                  <span className="text-sm text-zinc-400 uppercase tracking-wide">Run of Show</span>
+                  <ChevronDownIcon className={`w-4 h-4 text-zinc-400 transition-transform ${runOfShowCollapsed ? '' : 'rotate-180'}`} />
+                </button>
+                {!runOfShowCollapsed && (
+                  <div className="border-t border-zinc-800">
+                    <RunOfShow clickable onSegmentClick={jumpTo} />
+                  </div>
+                )}
+              </div>
+            ) : (
+              <RunOfShow clickable onSegmentClick={jumpTo} />
+            )}
           </div>
 
           {/* Right Column - Status */}
@@ -1141,8 +1390,32 @@ export default function ProducerView() {
               </div>
             )}
 
-            {/* Camera Runtime Panel */}
-            <CameraRuntimePanel collapsed={false} />
+            {/* Camera Runtime Panel / Clip Queue Panel - swapped during playout */}
+            {showPlayoutPanels ? (
+              <ClipQueuePanel
+                clips={clips}
+                clipQueue={clipQueue}
+                currentClip={currentClip}
+                nextClip={nextClip}
+                preloadState={preloadState}
+                currentMode={currentMode}
+                actions={{
+                  skipClip,
+                  addToQueue,
+                  retryClip,
+                  retryAllFailed,
+                  fetchClips,
+                  flagMoment: handleKeyboardFlagMoment,
+                  pausePlayout,
+                  resumePlayout
+                }}
+                onFlagMoment={handleKeyboardFlagMoment}
+                currentRotation={currentRotation}
+                CLIP_STATUS={CLIP_STATUS}
+              />
+            ) : (
+              <CameraRuntimePanel collapsed={false} />
+            )}
 
             {/* Web Graphics Control */}
             <GraphicsControl competitionId={compId} />
@@ -1213,6 +1486,56 @@ export default function ProducerView() {
           </div>
         </div>
       </main>
+
+      {/* Playout Modals */}
+      {/* Moment Replay Dialog */}
+      <MomentReplayDialog
+        isOpen={showMomentReplayDialog}
+        onClose={() => setShowMomentReplayDialog(false)}
+        clip={currentClip ? {
+          athlete_name: currentClip.athlete_name,
+          apparatus: currentClip.apparatus,
+          duration: currentClip.duration,
+          draft_id: currentClip.draft_id
+        } : null}
+        flagTime={momentReplayFlagTime}
+        flaggedMoments={flaggedMoments.filter(m => m.draftId === currentClip?.draft_id)}
+        onPlayNow={handleMomentPlayNow}
+        onSaveOnly={handleMomentSaveOnly}
+        onRemoveMoment={handleRemoveMoment}
+        audioMuted={momentReplayMuted}
+        onAudioMutedChange={setMomentReplayMuted}
+      />
+
+      {/* Keyboard Shortcuts Panel */}
+      <KeyboardShortcutsPanel
+        isOpen={showKeyboardShortcutsPanel}
+        onClose={() => setShowKeyboardShortcutsPanel(false)}
+        shortcuts={keyboardShortcuts.shortcuts}
+        availableShortcuts={keyboardShortcuts.availableShortcuts}
+        cameraApparatusMap={cameraApparatusMap}
+        onUpdateShortcut={keyboardShortcuts.updateShortcut}
+        onResetShortcuts={keyboardShortcuts.resetShortcuts}
+        isKeyInUse={keyboardShortcuts.isKeyInUse}
+      />
+
+      {/* Dev Mode: Playout Toggle (only visible during development) */}
+      {import.meta.env.DEV && showIsActive && (
+        <div className="fixed bottom-4 left-4 z-50">
+          <button
+            onClick={() => setIsPlayoutActive(!isPlayoutActive)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium shadow-lg transition-colors ${
+              isPlayoutActive
+                ? 'bg-cyan-600 hover:bg-cyan-500 text-white'
+                : 'bg-zinc-700 hover:bg-zinc-600 text-zinc-300'
+            }`}
+            title="Toggle between playout and manual control layouts (dev only)"
+          >
+            <BeakerIcon className="w-4 h-4" />
+            {isPlayoutActive ? 'Playout: ON' : 'Playout: OFF'}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
