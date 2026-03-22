@@ -6119,10 +6119,89 @@
     .frame-watermark .v {
       color: #60a5fa;
     }
+
+    /* ============================================================
+       CLIP INTEGRATION - Video Elements & Background
+       Dual video elements for seamless clip transitions with preloading
+       ============================================================ */
+
+    /* Animated background for breaks (mode=live only) */
+    #clipBackground {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      display: none;
+      opacity: 0;
+      transition: opacity 300ms ease-in-out;
+    }
+
+    #clipBackground.visible {
+      display: block;
+      opacity: 1;
+    }
+
+    /* Video elements for clip playback (mode=clip only) */
+    #clipVideo,
+    #clipVideoNext {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: transparent;
+    }
+
+    /* Active clip - visible, playing */
+    .clip-active {
+      z-index: 2;
+      opacity: 1;
+      display: block;
+      transition: opacity 300ms ease-in-out;
+    }
+
+    /* Preloading clip - hidden, loading next */
+    .clip-preload {
+      z-index: -1;
+      opacity: 0;
+      display: none;
+    }
+
+    /* During crossfade - both visible, opacity animating */
+    .clip-crossfade-out {
+      z-index: 2;
+      display: block;
+      opacity: 0;
+      transition: opacity 300ms ease-in-out;
+    }
+
+    .clip-crossfade-in {
+      z-index: 2;
+      display: block;
+      opacity: 1;
+      transition: opacity 300ms ease-in-out;
+    }
+
+    /* Ensure output div stays above background but below video in clip mode */
+    #output {
+      position: relative;
+      z-index: 1;
+    }
   </style>
 </head>
 <body>
+  <!-- Animated background for breaks (mode=live only) -->
+  <div id="clipBackground"></div>
+
+  <!-- Main output div for graphics renderers -->
   <div id="output"></div>
+
+  <!-- Dual video elements for clip playback (mode=clip only) -->
+  <video id="clipVideo" class="clip-preload" playsinline></video>
+  <video id="clipVideoNext" class="clip-preload" playsinline></video>
 
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -6141,6 +6220,186 @@
     const shouldWriteToFirebase = outputMode === 'clip'; // preview mode skips Firebase writes
 
     console.log(`[output] Mode: ${outputMode}, isClipMode: ${isClipMode}, shouldWriteToFirebase: ${shouldWriteToFirebase}`);
+
+    // ============================================================
+    // CLIP INTEGRATION - Video Element Management
+    // Dual video elements for seamless clip transitions with preloading
+    // ============================================================
+
+    // Get video elements
+    const clipVideo = document.getElementById('clipVideo');
+    const clipVideoNext = document.getElementById('clipVideoNext');
+    const clipBackground = document.getElementById('clipBackground');
+
+    // Track which video is currently active (for swap mechanism)
+    let activeVideoElement = clipVideo;
+    let preloadVideoElement = clipVideoNext;
+
+    // Track current clip state
+    let currentClipDraftId = null;
+    let preloadedClipUrl = null;
+    let crossfadeInProgress = false;
+
+    /**
+     * Swap video element roles (active <-> preload)
+     * The two video elements swap CSS classes, not DOM position.
+     * This enables seamless transitions with preloading.
+     */
+    function swapVideoElements() {
+      const temp = activeVideoElement;
+      activeVideoElement = preloadVideoElement;
+      preloadVideoElement = temp;
+      console.log(`[clip] Swapped video elements. Active: ${activeVideoElement.id}, Preload: ${preloadVideoElement.id}`);
+    }
+
+    /**
+     * Set a video element to active state (visible, playing)
+     * @param {HTMLVideoElement} videoEl - The video element to activate
+     */
+    function setVideoActive(videoEl) {
+      videoEl.classList.remove('clip-preload', 'clip-crossfade-out', 'clip-crossfade-in');
+      videoEl.classList.add('clip-active');
+    }
+
+    /**
+     * Set a video element to preload state (hidden, ready to load next)
+     * @param {HTMLVideoElement} videoEl - The video element to set to preload
+     * @param {boolean} clearSrc - Whether to clear the src to free memory
+     */
+    function setVideoPreload(videoEl, clearSrc = true) {
+      videoEl.classList.remove('clip-active', 'clip-crossfade-out', 'clip-crossfade-in');
+      videoEl.classList.add('clip-preload');
+      if (clearSrc) {
+        videoEl.pause();
+        videoEl.src = '';
+        videoEl.load(); // Release media resources
+      }
+    }
+
+    /**
+     * Perform a crossfade transition between two video elements
+     * @param {HTMLVideoElement} outgoingEl - The video element fading out
+     * @param {HTMLVideoElement} incomingEl - The video element fading in
+     * @param {number} duration - Crossfade duration in milliseconds
+     * @returns {Promise} Resolves when crossfade completes
+     */
+    function crossfadeVideos(outgoingEl, incomingEl, duration = 300) {
+      return new Promise((resolve) => {
+        if (crossfadeInProgress) {
+          console.warn('[clip] Crossfade already in progress, skipping');
+          resolve();
+          return;
+        }
+
+        crossfadeInProgress = true;
+
+        // Set up crossfade classes
+        outgoingEl.classList.remove('clip-active', 'clip-preload');
+        outgoingEl.classList.add('clip-crossfade-out');
+
+        incomingEl.classList.remove('clip-preload', 'clip-active');
+        incomingEl.classList.add('clip-crossfade-in');
+
+        // Start incoming video playback
+        incomingEl.play().catch(err => {
+          console.error('[clip] Error playing incoming video:', err);
+        });
+
+        // Wait for transition to complete
+        setTimeout(() => {
+          // Clean up outgoing element
+          setVideoPreload(outgoingEl, true);
+
+          // Set incoming to active state
+          setVideoActive(incomingEl);
+
+          crossfadeInProgress = false;
+          resolve();
+        }, duration);
+      });
+    }
+
+    /**
+     * Hide all video elements (when switching to non-clip graphic in clip mode)
+     */
+    function hideAllVideos() {
+      clipVideo.pause();
+      clipVideoNext.pause();
+      setVideoPreload(clipVideo, true);
+      setVideoPreload(clipVideoNext, true);
+      preloadedClipUrl = null;
+      currentClipDraftId = null;
+      console.log('[clip] All videos hidden and cleared');
+    }
+
+    /**
+     * Preload a clip URL into the preload video element
+     * @param {string} url - The clip URL to preload
+     */
+    function preloadClip(url) {
+      if (!url || url === preloadedClipUrl) {
+        return; // Already preloaded or no URL
+      }
+
+      console.log(`[clip] Preloading next clip: ${url}`);
+      preloadVideoElement.src = url;
+      preloadVideoElement.load();
+      preloadedClipUrl = url;
+    }
+
+    /**
+     * Start playing a clip in the active video element
+     * @param {string} url - The clip URL to play
+     * @param {Object} options - Playback options (muted, currentTime, playbackRate)
+     * @returns {Promise} Resolves when video starts playing
+     */
+    function startClip(url, options = {}) {
+      return new Promise((resolve, reject) => {
+        const { muted = false, currentTime = 0, playbackRate = 1 } = options;
+
+        // Check if this clip is already preloaded in the preload element
+        if (preloadedClipUrl === url && preloadVideoElement.readyState >= 2) {
+          console.log('[clip] Using preloaded clip');
+          // Swap elements so preloaded becomes active
+          swapVideoElements();
+          activeVideoElement.muted = muted;
+          activeVideoElement.currentTime = currentTime;
+          activeVideoElement.playbackRate = playbackRate;
+          setVideoActive(activeVideoElement);
+          activeVideoElement.play()
+            .then(resolve)
+            .catch(reject);
+          preloadedClipUrl = null;
+          return;
+        }
+
+        // Load fresh into active element
+        console.log(`[clip] Loading clip fresh: ${url}`);
+        activeVideoElement.src = url;
+        activeVideoElement.muted = muted;
+        activeVideoElement.playbackRate = playbackRate;
+
+        const onCanPlay = () => {
+          activeVideoElement.removeEventListener('canplay', onCanPlay);
+          activeVideoElement.removeEventListener('error', onError);
+          activeVideoElement.currentTime = currentTime;
+          setVideoActive(activeVideoElement);
+          activeVideoElement.play()
+            .then(resolve)
+            .catch(reject);
+        };
+
+        const onError = (e) => {
+          activeVideoElement.removeEventListener('canplay', onCanPlay);
+          activeVideoElement.removeEventListener('error', onError);
+          reject(new Error(`Failed to load clip: ${e.message || 'Unknown error'}`));
+        };
+
+        activeVideoElement.addEventListener('canplay', onCanPlay);
+        activeVideoElement.addEventListener('error', onError);
+        activeVideoElement.load();
+      });
+    }
 
     // Only show error if no competition ID AND no URL graphic parameter
     // URL preview mode (with graphic= param) can work without comp ID for some graphics
