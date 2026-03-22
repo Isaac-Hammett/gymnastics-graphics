@@ -6125,7 +6125,9 @@
        Dual video elements for seamless clip transitions with preloading
        ============================================================ */
 
-    /* Animated background for breaks (mode=live only) */
+    /* Animated background for breaks (mode=live only)
+       Uses theme variables with fallback gradient
+       8-second animation cycle with shifting background-position */
     #clipBackground {
       position: fixed;
       top: 0;
@@ -6136,11 +6138,32 @@
       display: none;
       opacity: 0;
       transition: opacity 300ms ease-in-out;
+      /* Animated gradient using theme variables with fallbacks */
+      background: linear-gradient(
+        135deg,
+        var(--meet-header-bg, #1a1a2e) 0%,
+        var(--meet-content-bg, #16213e) 50%,
+        var(--meet-header-bg, #1a1a2e) 100%
+      );
+      background-size: 400% 400%;
+      animation: clipBackgroundShift 8s ease-in-out infinite;
     }
 
     #clipBackground.visible {
       display: block;
       opacity: 1;
+    }
+
+    @keyframes clipBackgroundShift {
+      0% {
+        background-position: 0% 50%;
+      }
+      50% {
+        background-position: 100% 50%;
+      }
+      100% {
+        background-position: 0% 50%;
+      }
     }
 
     /* Video elements for clip playback (mode=clip only) */
@@ -6564,6 +6587,23 @@
       preloadedClipUrl = null;
       currentClipDraftId = null;
       console.log('[clip] All videos hidden and cleared');
+    }
+
+    /**
+     * Show the animated background (for break content in live mode)
+     * Uses theme variables for gradient with fallback colors
+     */
+    function showAnimatedBackground() {
+      clipBackground.classList.add('visible');
+      console.log('[live] Animated background shown');
+    }
+
+    /**
+     * Hide the animated background
+     */
+    function hideAnimatedBackground() {
+      clipBackground.classList.remove('visible');
+      console.log('[live] Animated background hidden');
     }
 
     /**
@@ -12477,6 +12517,8 @@
           if (isClipMode) {
             stopClipPlayback();
           }
+          // Hide animated background when state is cleared (live mode)
+          hideAnimatedBackground();
           return;
         }
 
@@ -12505,12 +12547,22 @@
           if (isClipTypeGraphic) {
             // Clip-type graphic in live mode: clear output (video plays on clip OBS source)
             output.innerHTML = '';
+            hideAnimatedBackground();
             console.log(`[live-mode] Clip-type graphic received: ${graphic}, cleared output`);
           } else if (graphic === 'clear' || !renderers[graphic]) {
             output.innerHTML = '';
+            hideAnimatedBackground();
           } else {
             // Render regular graphic using existing renderers
             output.innerHTML = renderers[graphic](data);
+
+            // Toggle animated background based on data.background flag
+            // Used for break content to cover camera feed while cameras adjust
+            if (data && data.background === true) {
+              showAnimatedBackground();
+            } else {
+              hideAnimatedBackground();
+            }
           }
         }
       });
