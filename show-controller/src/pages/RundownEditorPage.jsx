@@ -51,6 +51,8 @@ import { analyzeCompetitionContext, analyzeSegmentOrder, analyzeCompetitionForma
 import { useCompetition } from '../context/CompetitionContext';
 import { useOBS } from '../context/OBSContext';
 import { useShow } from '../context/ShowContext';
+import PlayoutRulesEditor, { isPlayoutRulesValid } from '../components/playout/PlayoutRulesEditor';
+import ContentSequenceEditor, { isContentSequenceValid } from '../components/playout/ContentSequenceEditor';
 
 // Hardcoded competition context per PRD (Phase 0B)
 const DUMMY_COMPETITION = {
@@ -193,6 +195,8 @@ const SEGMENT_TYPES = [
   { value: 'break', label: 'Break' },
   { value: 'hold', label: 'Hold' },
   { value: 'graphic', label: 'Graphic' },
+  { value: 'playout', label: 'Playout' },
+  { value: 'content-sequence', label: 'Content Sequence' },
 ];
 
 // Type badge colors
@@ -203,6 +207,8 @@ const TYPE_COLORS = {
   break: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
   hold: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
   graphic: 'bg-pink-500/20 text-pink-400 border-pink-500/30',
+  playout: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
+  'content-sequence': 'bg-amber-500/20 text-amber-400 border-amber-500/30',
 };
 
 // Row background colors by segment type (Phase 10: Task 77)
@@ -214,6 +220,8 @@ const DEFAULT_TYPE_ROW_COLORS = {
   break: { color: 'yellow', border: 'border-l-yellow-500', bg: 'bg-yellow-500/5' },
   hold: { color: 'orange', border: 'border-l-orange-500', bg: 'bg-orange-500/5' },
   graphic: { color: 'pink', border: 'border-l-pink-500', bg: 'bg-pink-500/5' },
+  playout: { color: 'cyan', border: 'border-l-cyan-500', bg: 'bg-cyan-500/5' },
+  'content-sequence': { color: 'amber', border: 'border-l-amber-500', bg: 'bg-amber-500/5' },
 };
 
 // Available color options for customization (Phase 10: Task 78)
@@ -7572,6 +7580,31 @@ function SegmentDetailPanel({ segment, onSave, onDelete, onCancel, groupedScenes
           </div>
         </div>
 
+        {/* Playout Rules Editor — shown when segment type is 'playout' */}
+        {formData.type === 'playout' && (
+          <PlayoutRulesEditor
+            playoutRules={formData.playoutRules}
+            onChange={(newRules) => setFormData({ ...formData, playoutRules: newRules })}
+            disabled={isLocked}
+          />
+        )}
+
+        {/* Content Sequence Editor — shown when segment type is 'content-sequence' */}
+        {formData.type === 'content-sequence' && (
+          <ContentSequenceEditor
+            contentConfig={{
+              contentSequence: formData.contentSequence,
+              advanceCondition: formData.advanceCondition,
+            }}
+            onChange={(newConfig) => setFormData({
+              ...formData,
+              contentSequence: newConfig.contentSequence,
+              advanceCondition: newConfig.advanceCondition,
+            })}
+            disabled={isLocked}
+          />
+        )}
+
         <div className="flex gap-3 pt-4">
           <button
             type="button"
@@ -7582,7 +7615,18 @@ function SegmentDetailPanel({ segment, onSave, onDelete, onCancel, groupedScenes
           </button>
           <button
             type="submit"
-            className="flex-1 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-500 transition-colors"
+            disabled={
+              (formData.type === 'playout' && !isPlayoutRulesValid(formData.playoutRules)) ||
+              (formData.type === 'content-sequence' && !isContentSequenceValid({ contentSequence: formData.contentSequence }))
+            }
+            className="flex-1 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title={
+              formData.type === 'playout' && !isPlayoutRulesValid(formData.playoutRules)
+                ? 'Add at least one gap fill item'
+                : formData.type === 'content-sequence' && !isContentSequenceValid({ contentSequence: formData.contentSequence })
+                  ? 'Add at least one content item'
+                  : undefined
+            }
           >
             Save Changes
           </button>
