@@ -4,12 +4,14 @@ import { useShow } from '../context/ShowContext';
 import { useCompetition } from '../context/CompetitionContext';
 import { useTimesheet } from '../hooks/useTimesheet';
 import { useAIContext } from '../hooks/useAIContext';
+import usePlayoutState from '../hooks/usePlayoutState';
 import { db, ref, onValue } from '../lib/firebase';
 import CurrentSegment from '../components/CurrentSegment';
 import NextSegment from '../components/NextSegment';
 import RunOfShow from '../components/RunOfShow';
 import QuickActions from '../components/QuickActions';
 import ConnectionStatus from '../components/ConnectionStatus';
+import TalentClipInfo from '../components/playout/TalentClipInfo';
 import { PlayIcon, PauseIcon, BackwardIcon, LockClosedIcon, ClockIcon, DocumentTextIcon, VideoCameraIcon, SparklesIcon, ChevronDownIcon, ChevronUpIcon, StarIcon, TrophyIcon, ArrowPathIcon, ExclamationTriangleIcon } from '@heroicons/react/24/solid';
 
 // Fallback talent roster used when Firebase has no data
@@ -51,6 +53,16 @@ export default function TalentView() {
     refresh: refreshAI,
     error: aiError
   } = useAIContext();
+
+  // Playout state for clip integration
+  const {
+    isPlayoutActive,
+    currentMode,
+    currentClip,
+    nextClip,
+    clipQueue,
+    cameraStates
+  } = usePlayoutState();
 
   // State for AI panel expansion
   const [aiPanelExpanded, setAIPanelExpanded] = useState(true);
@@ -196,6 +208,17 @@ export default function TalentView() {
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto p-4 space-y-4">
+        {/* Playout Clip Info Panel - visible when playout is active and show is playing */}
+        {isPlaying && isPlayoutActive && (
+          <TalentClipInfo
+            currentMode={currentMode}
+            currentClip={currentClip}
+            nextClip={nextClip}
+            clipQueue={clipQueue}
+            cameraStates={cameraStates}
+          />
+        )}
+
         {!isPlaying ? (
           /* Start Show */
           <div className="bg-zinc-800 rounded-xl p-8 text-center">
