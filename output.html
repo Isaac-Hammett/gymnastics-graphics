@@ -6132,6 +6132,16 @@
     const competitionId = urlParams.get('comp');
     const hasGraphicParam = urlParams.has('graphic'); // Check if graphic param exists for preview mode
 
+    // Mode parameter for clip integration (PRD Clip Integration)
+    // 'live' (default): Renders existing graphics, LIVE badge, animated backgrounds. Clears on clip-type graphics.
+    // 'clip': Renders video playback + overlay. Stops/hides video on non-clip graphics.
+    // 'preview': Same as 'clip' but does NOT write to Firebase (for producer testing).
+    const outputMode = urlParams.get('mode') || 'live';
+    const isClipMode = outputMode === 'clip' || outputMode === 'preview';
+    const shouldWriteToFirebase = outputMode === 'clip'; // preview mode skips Firebase writes
+
+    console.log(`[output] Mode: ${outputMode}, isClipMode: ${isClipMode}, shouldWriteToFirebase: ${shouldWriteToFirebase}`);
+
     // Only show error if no competition ID AND no URL graphic parameter
     // URL preview mode (with graphic= param) can work without comp ID for some graphics
     if (!competitionId && !hasGraphicParam) {
@@ -11922,21 +11932,80 @@
 
         if (!state) {
           output.innerHTML = '';
+          // In clip mode, also stop/hide video elements when state is cleared
+          if (isClipMode) {
+            stopClipPlayback();
+          }
           return;
         }
 
         const { graphic, data } = state;
 
-        if (graphic === 'clear' || !renderers[graphic]) {
-          output.innerHTML = '';
-          return;
-        }
+        // Clip-type graphics: clip-playback, moment-replay
+        const isClipTypeGraphic = graphic === 'clip-playback' || graphic === 'moment-replay';
 
-        output.innerHTML = renderers[graphic](data);
+        // Mode-specific rendering logic
+        if (isClipMode) {
+          // CLIP MODE (or PREVIEW MODE): Render video playback for clip-type graphics
+          if (isClipTypeGraphic) {
+            // Clear any existing graphic output (video elements render separately)
+            output.innerHTML = '';
+            // Start clip playback (will be implemented in Task 3/4)
+            handleClipPlayback(graphic, data);
+          } else {
+            // Non-clip graphic in clip mode: stop/hide video, show nothing
+            // This ensures no stale video remains when OBS switches scenes
+            stopClipPlayback();
+            output.innerHTML = '';
+            console.log(`[clip-mode] Non-clip graphic received: ${graphic}, cleared output`);
+          }
+        } else {
+          // LIVE MODE: Render regular graphics, clear on clip-type graphics
+          if (isClipTypeGraphic) {
+            // Clip-type graphic in live mode: clear output (video plays on clip OBS source)
+            output.innerHTML = '';
+            console.log(`[live-mode] Clip-type graphic received: ${graphic}, cleared output`);
+          } else if (graphic === 'clear' || !renderers[graphic]) {
+            output.innerHTML = '';
+          } else {
+            // Render regular graphic using existing renderers
+            output.innerHTML = renderers[graphic](data);
+          }
+        }
       });
-      console.log(`Output panel ready - listening for graphics on competition: ${competitionId}`);
+      console.log(`Output panel ready (mode=${outputMode}) - listening for graphics on competition: ${competitionId}`);
     } else {
       console.log(`Output panel in preview mode - Firebase listener disabled`);
+    }
+
+    // ============================================================
+    // CLIP PLAYBACK FUNCTIONS (PRD Clip Integration)
+    // ============================================================
+
+    /**
+     * Handle clip playback for clip-playback and moment-replay graphics
+     * Video elements and actual playback will be implemented in Tasks 2-4
+     * @param {string} graphic - The graphic type ('clip-playback' or 'moment-replay')
+     * @param {Object} data - The graphic data from Firebase
+     */
+    function handleClipPlayback(graphic, data) {
+      console.log(`[clip-mode] handleClipPlayback called: ${graphic}`, data);
+      // TODO: Implement in Tasks 2-4
+      // - Task 2: Dual video element setup and swap mechanism
+      // - Task 3: clip-playback renderer with overlay and score reveal
+      // - Task 4: moment-replay renderer with REPLAY badge and seek
+    }
+
+    /**
+     * Stop and hide all clip playback elements
+     * Called when switching away from clip-type graphics
+     */
+    function stopClipPlayback() {
+      console.log(`[clip-mode] stopClipPlayback called`);
+      // TODO: Implement in Task 2
+      // - Hide video elements
+      // - Stop playback and clear src
+      // - Reset clip state
     }
     // Note: Keyboard shortcuts (like 'b' for bold mode) work in OBS via Interact mode,
     // but not in regular browsers due to cross-origin iframe restrictions.
