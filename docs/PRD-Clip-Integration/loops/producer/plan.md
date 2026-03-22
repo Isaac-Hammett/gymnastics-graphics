@@ -7,4 +7,4 @@
 5. Create MomentReplayDialog.jsx — flag moment modal with timeline, speed presets, replay window adjustment, Play Now / Save Only, flagged moments list — COMPLETE
 6. Create PlayoutEventLog.jsx — scrollable event log with time filters, color-coded entries, Retry action on failed clips — COMPLETE
 7. Create useKeyboardShortcuts.js hook and KeyboardShortcutsPanel.jsx — shortcut listener with focus scope, modal exception, remapping UI, localStorage persistence — COMPLETE
-8. Wire playout components into ProducerView.jsx — swap-panel layout when playout active, cross-fade transition, right-column Clip Queue replacing Camera Runtime only — NOT STARTED
+8. Wire playout components into ProducerView.jsx — swap-panel layout when playout active, cross-fade transition, right-column Clip Queue replacing Camera Runtime only — COMPLETE
