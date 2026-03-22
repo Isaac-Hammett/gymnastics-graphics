@@ -6,5 +6,5 @@
 4. Add moment-replay renderer with REPLAY badge, seek range, playback rate, muted default — COMPLETE
 5. Add live-camera renderer with LIVE badge and apparatus label — COMPLETE
 6. Add animated background div for break content with theme variable gradient — COMPLETE
-7. Add Firebase write-back for clip status (ended/stalled/error) at clipStatus/{draftId} with retry logic — NOT STARTED
+7. Add Firebase write-back for clip status (ended/stalled/error) at clipStatus/{draftId} with retry logic — COMPLETE
 8. Add preloading (nextClipUrl) and optimistic auto-advance with correction handling — NOT STARTED
