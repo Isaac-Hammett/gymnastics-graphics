@@ -1,0 +1,71 @@
+{
+  "loop": "talent",
+  "verifiedAt": "2026-03-22T20:45:00Z",
+  "status": "PASS",
+  "issues": [],
+  "notes": [
+    {
+      "type": "info",
+      "message": "OBS connection error observed but expected - OBS not running for test competition",
+      "file": null,
+      "line": null,
+      "severity": "low"
+    }
+  ],
+  "testsRun": [
+    {
+      "name": "TalentClipInfo renders NOW SHOWING section",
+      "status": "pass"
+    },
+    {
+      "name": "TalentClipInfo shows athlete name, apparatus, team, score",
+      "status": "pass"
+    },
+    {
+      "name": "TalentClipInfo shows talking points",
+      "status": "pass"
+    },
+    {
+      "name": "TalentClipInfo shows UP NEXT with 3 items",
+      "status": "pass"
+    },
+    {
+      "name": "Flag Moment button visible in CLIP mode",
+      "status": "pass"
+    },
+    {
+      "name": "Flag Moment button clickable",
+      "status": "pass"
+    },
+    {
+      "name": "Responsive: Desktop layout (1200px)",
+      "status": "pass"
+    },
+    {
+      "name": "Responsive: Tablet layout (600px)",
+      "status": "pass"
+    },
+    {
+      "name": "Responsive: Mobile layout (375px)",
+      "status": "pass"
+    },
+    {
+      "name": "Mobile: Talking points collapse toggle",
+      "status": "pass"
+    },
+    {
+      "name": "Mobile: Flag Moment button large enough for touch",
+      "status": "pass"
+    },
+    {
+      "name": "No critical console errors",
+      "status": "pass"
+    }
+  ],
+  "screenshots": [
+    "screenshots/verify-talent-desktop.png",
+    "screenshots/verify-talent-tablet.png",
+    "screenshots/verify-talent-mobile.png",
+    "screenshots/verify-talent-mobile-collapsed.png"
+  ]
+}
