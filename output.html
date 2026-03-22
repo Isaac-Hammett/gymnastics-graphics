@@ -6497,6 +6497,243 @@
     let scoreRevealed = false;   // Has score been revealed for current clip
     let currentClipScore = null; // Current clip's score (null = no badge, 0 = show "0.000", >0 = show score)
 
+    // ============================================================
+    // CLIP INTEGRATION - Firebase Write-Back (Task 7)
+    // Write clip status (ended/stalled/error) to Firebase for coordinator
+    // ============================================================
+
+    // Stall detection state
+    let stallTimeoutId = null;           // Timer ID for 8s stall timeout
+    let loadTimeoutId = null;            // Timer ID for 10s initial load timeout
+    const STALL_TIMEOUT_MS = 8000;       // 8 seconds before writing stalled status
+    const LOAD_TIMEOUT_MS = 10000;       // 10 seconds for initial canplaythrough
+    const MAX_RETRY_COUNT = 3;           // Maximum retries for Firebase writes
+    const RETRY_DELAYS = [1000, 2000, 4000]; // Exponential backoff delays
+
+    /**
+     * Write clip status to Firebase at clipStatus/{draftId}
+     * @param {string} draftId - The clip's draft ID
+     * @param {string} status - Status: 'ended', 'stalled', 'error'
+     * @param {Object} extraData - Additional data (e.g., optimisticNextDraftId, errorMessage)
+     * @param {number} retryCount - Current retry attempt (for exponential backoff)
+     * @returns {Promise<void>}
+     */
+    async function writeClipStatus(draftId, status, extraData = {}, retryCount = 0) {
+      // Skip writes in preview mode
+      if (!shouldWriteToFirebase) {
+        console.log(`[clip-status] Preview mode - skipping write: ${status} for ${draftId}`);
+        return;
+      }
+
+      if (!competitionId || !draftId) {
+        console.error('[clip-status] Cannot write status: missing competitionId or draftId');
+        return;
+      }
+
+      const statusPath = `competitions/${competitionId}/production/clipStatus/${draftId}`;
+      const statusData = {
+        status,
+        draftId,
+        timestamp: Date.now(),
+        ...extraData
+      };
+
+      console.log(`[clip-status] Writing: ${status} for ${draftId}`, statusData);
+
+      try {
+        await db.ref(statusPath).set(statusData);
+        console.log(`[clip-status] Successfully wrote: ${status} for ${draftId}`);
+      } catch (error) {
+        console.error(`[clip-status] Write failed (attempt ${retryCount + 1}):`, error);
+
+        // Retry with exponential backoff
+        if (retryCount < MAX_RETRY_COUNT) {
+          const delay = RETRY_DELAYS[retryCount] || RETRY_DELAYS[RETRY_DELAYS.length - 1];
+          console.log(`[clip-status] Retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return writeClipStatus(draftId, status, extraData, retryCount + 1);
+        } else {
+          console.error(`[clip-status] Max retries exceeded for ${draftId}`);
+        }
+      }
+    }
+
+    /**
+     * Clear all stall/load timeouts
+     */
+    function clearClipTimeouts() {
+      if (stallTimeoutId) {
+        clearTimeout(stallTimeoutId);
+        stallTimeoutId = null;
+      }
+      if (loadTimeoutId) {
+        clearTimeout(loadTimeoutId);
+        loadTimeoutId = null;
+      }
+    }
+
+    /**
+     * Handle video 'waiting' event - start stall detection timer
+     * Called when video playback stalls due to buffering
+     */
+    function handleVideoWaiting() {
+      console.log('[clip-status] Video waiting (buffering)...');
+
+      // Clear existing stall timeout if any
+      if (stallTimeoutId) {
+        clearTimeout(stallTimeoutId);
+      }
+
+      // Start 8s stall timeout
+      stallTimeoutId = setTimeout(() => {
+        console.log('[clip-status] Stall timeout reached (8s)');
+        if (currentClipDraftId) {
+          writeClipStatus(currentClipDraftId, 'stalled');
+        }
+        stallTimeoutId = null;
+      }, STALL_TIMEOUT_MS);
+    }
+
+    /**
+     * Handle video 'playing' event - cancel stall detection timer
+     * Called when video resumes playback after buffering
+     */
+    function handleVideoPlaying() {
+      console.log('[clip-status] Video playing (resumed)');
+
+      // Cancel stall timeout if it was started
+      if (stallTimeoutId) {
+        clearTimeout(stallTimeoutId);
+        stallTimeoutId = null;
+        console.log('[clip-status] Stall timeout cancelled');
+      }
+    }
+
+    /**
+     * Handle video 'error' event - write error status
+     * @param {Event} event - The error event
+     */
+    function handleVideoError(event) {
+      const video = event.target;
+      const mediaError = video.error;
+      let errorMessage = 'Unknown error';
+
+      if (mediaError) {
+        switch (mediaError.code) {
+          case MediaError.MEDIA_ERR_ABORTED:
+            errorMessage = 'Playback aborted';
+            break;
+          case MediaError.MEDIA_ERR_NETWORK:
+            errorMessage = 'Network error';
+            break;
+          case MediaError.MEDIA_ERR_DECODE:
+            errorMessage = 'Decode error';
+            break;
+          case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
+            errorMessage = 'Format not supported';
+            break;
+        }
+      }
+
+      console.error(`[clip-status] Video error: ${errorMessage}`, mediaError);
+
+      // Clear timeouts since we're reporting an error
+      clearClipTimeouts();
+
+      if (currentClipDraftId) {
+        writeClipStatus(currentClipDraftId, 'error', { errorMessage });
+      }
+    }
+
+    /**
+     * Handle video 'ended' event for clip-playback
+     * Writes 'ended' status to Firebase
+     */
+    function handleClipEnded() {
+      console.log('[clip-status] Clip ended');
+
+      // Clear any stall timeout
+      clearClipTimeouts();
+
+      if (currentClipDraftId) {
+        // Include optimisticNextDraftId if we have a preloaded clip
+        // This tells the coordinator which clip we're about to auto-advance to
+        const extraData = {};
+        // Note: optimisticNextDraftId will be set in Task 8 when preloading is implemented
+        // For now, we just write the ended status
+
+        writeClipStatus(currentClipDraftId, 'ended', extraData);
+      }
+    }
+
+    /**
+     * Set up stall detection and error handling on a video element
+     * @param {HTMLVideoElement} videoEl - The video element to monitor
+     */
+    function setupClipStatusListeners(videoEl) {
+      // Remove any existing listeners first to avoid duplicates
+      videoEl.removeEventListener('waiting', handleVideoWaiting);
+      videoEl.removeEventListener('playing', handleVideoPlaying);
+      videoEl.removeEventListener('error', handleVideoError);
+      videoEl.removeEventListener('ended', handleClipEnded);
+
+      // Add fresh listeners
+      videoEl.addEventListener('waiting', handleVideoWaiting);
+      videoEl.addEventListener('playing', handleVideoPlaying);
+      videoEl.addEventListener('error', handleVideoError);
+      videoEl.addEventListener('ended', handleClipEnded);
+
+      console.log(`[clip-status] Status listeners attached to ${videoEl.id}`);
+    }
+
+    /**
+     * Remove stall detection and error handling from a video element
+     * @param {HTMLVideoElement} videoEl - The video element to clean up
+     */
+    function removeClipStatusListeners(videoEl) {
+      videoEl.removeEventListener('waiting', handleVideoWaiting);
+      videoEl.removeEventListener('playing', handleVideoPlaying);
+      videoEl.removeEventListener('error', handleVideoError);
+      videoEl.removeEventListener('ended', handleClipEnded);
+      clearClipTimeouts();
+      console.log(`[clip-status] Status listeners removed from ${videoEl.id}`);
+    }
+
+    /**
+     * Start initial load timeout for a clip
+     * If canplaythrough doesn't fire within 10s, write error status
+     * @param {HTMLVideoElement} videoEl - The video element loading
+     * @param {string} draftId - The clip's draft ID
+     */
+    function startLoadTimeout(videoEl, draftId) {
+      // Clear existing load timeout
+      if (loadTimeoutId) {
+        clearTimeout(loadTimeoutId);
+      }
+
+      // Handler for successful load
+      const onCanPlayThrough = () => {
+        console.log('[clip-status] Video can play through - load successful');
+        clearTimeout(loadTimeoutId);
+        loadTimeoutId = null;
+        videoEl.removeEventListener('canplaythrough', onCanPlayThrough);
+      };
+
+      videoEl.addEventListener('canplaythrough', onCanPlayThrough, { once: true });
+
+      // Start 10s load timeout
+      loadTimeoutId = setTimeout(() => {
+        console.error('[clip-status] Load timeout reached (10s)');
+        videoEl.removeEventListener('canplaythrough', onCanPlayThrough);
+
+        // Check if video is still trying to load
+        if (videoEl.readyState < 3) { // HAVE_FUTURE_DATA
+          writeClipStatus(draftId, 'error', { errorMessage: 'Load timeout (10s)' });
+        }
+        loadTimeoutId = null;
+      }, LOAD_TIMEOUT_MS);
+    }
+
     /**
      * Swap video element roles (active <-> preload)
      * The two video elements swap CSS classes, not DOM position.
@@ -12756,6 +12993,12 @@
         activeVideoElement.removeEventListener('timeupdate', handleClipTimeUpdate);
         activeVideoElement.removeEventListener('loadedmetadata', handleClipMetadataLoaded);
 
+        // Set up status listeners for ended/stalled/error detection (Task 7)
+        setupClipStatusListeners(activeVideoElement);
+
+        // Start initial load timeout (10s)
+        startLoadTimeout(activeVideoElement, draftId);
+
         // Start clip playback
         startClip(clipUrl, { muted: false })
           .then(() => {
@@ -12772,7 +13015,8 @@
           })
           .catch(err => {
             console.error('[clip] Failed to start clip:', err);
-            // Error handling will be implemented in Task 7
+            // Write error status to Firebase
+            writeClipStatus(draftId, 'error', { errorMessage: err.message || 'Failed to start clip' });
           });
 
         // Preload next clip if available
@@ -12828,18 +13072,31 @@
 
         // Common replay ended logic
         const onReplayEnded = () => {
+          // Clear any stall/load timeouts
+          clearClipTimeouts();
+
+          // Write ended status to Firebase (Task 7)
+          if (currentClipDraftId) {
+            writeClipStatus(currentClipDraftId, 'ended');
+          }
+
           // If preloaded next clip is available, optimistically advance
           if (preloadedClipUrl) {
             console.log('[clip] Moment replay ended, advancing to preloaded clip');
             // This will be fully implemented in Task 8 (optimistic advance)
             // For now, just log and wait for coordinator
           }
-          // Note: Firebase write-back will be implemented in Task 7
         };
 
         // Remove old event listeners
         activeVideoElement.removeEventListener('timeupdate', handleClipTimeUpdate);
         activeVideoElement.removeEventListener('loadedmetadata', handleClipMetadataLoaded);
+
+        // Set up stall detection listeners (for mid-playback buffering)
+        setupClipStatusListeners(activeVideoElement);
+
+        // Start initial load timeout (10s)
+        startLoadTimeout(activeVideoElement, draftId);
 
         // Start replay playback with seek and rate
         startClip(clipUrl, {
@@ -12850,6 +13107,8 @@
           .then(() => {
             console.log(`[clip] Moment replay started: ${draftId} (seek: ${seekStart}-${seekEnd || 'end'}, rate: ${playbackRate}x, muted: ${muted})`);
 
+            // Note: For moment replays, we use the custom handlers for seekEnd detection
+            // but still rely on setupClipStatusListeners for stall detection
             // Add event listeners for seekEnd detection
             activeVideoElement.addEventListener('timeupdate', handleReplayTimeUpdate);
             activeVideoElement.addEventListener('ended', handleReplayEnded);
@@ -12870,7 +13129,8 @@
           })
           .catch(err => {
             console.error('[clip] Failed to start moment replay:', err);
-            // Error handling will be implemented in Task 7
+            // Write error status to Firebase
+            writeClipStatus(draftId, 'error', { errorMessage: err.message || 'Failed to start moment replay' });
           });
 
         // Preload next clip if available
@@ -12890,6 +13150,10 @@
       // Remove event listeners
       activeVideoElement.removeEventListener('timeupdate', handleClipTimeUpdate);
       activeVideoElement.removeEventListener('loadedmetadata', handleClipMetadataLoaded);
+
+      // Remove status listeners and clear timeouts (Task 7)
+      removeClipStatusListeners(activeVideoElement);
+      removeClipStatusListeners(preloadVideoElement);
 
       // Hide all video elements
       hideAllVideos();
