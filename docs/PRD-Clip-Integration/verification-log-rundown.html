@@ -3,270 +3,204 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Verification Log - Rundown Loop</title>
+  <title>Verification Log - Rundown Editor Playout Config</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 900px; margin: 0 auto; padding: 2rem; background: #1a1a2e; color: #eee; }
-    h1 { color: #00d9ff; border-bottom: 2px solid #00d9ff; padding-bottom: 0.5rem; }
-    h2 { color: #ffc107; margin-top: 2rem; }
-    .status { padding: 0.5rem 1rem; border-radius: 4px; display: inline-block; font-weight: bold; }
-    .pass { background: #28a745; color: white; }
-    .fail { background: #dc3545; color: white; }
-    .warn { background: #ffc107; color: black; }
-    .code { background: #2d2d44; padding: 1rem; border-radius: 4px; overflow-x: auto; font-family: monospace; font-size: 0.9rem; margin: 1rem 0; }
-    table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
-    th, td { border: 1px solid #444; padding: 0.75rem; text-align: left; }
-    th { background: #2d2d44; }
-    .check { color: #28a745; }
-    .cross { color: #dc3545; }
-    .note { background: #2d2d44; border-left: 4px solid #ffc107; padding: 1rem; margin: 1rem 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; max-width: 900px; margin: 40px auto; padding: 20px; background: #1a1a2e; color: #eee; }
+    h1 { color: #06d6a0; border-bottom: 2px solid #06d6a0; padding-bottom: 10px; }
+    h2 { color: #ffd166; margin-top: 30px; }
+    .pass { color: #06d6a0; font-weight: bold; }
+    .fail { color: #ef476f; font-weight: bold; }
+    .info { color: #118ab2; }
+    table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+    th, td { border: 1px solid #444; padding: 12px; text-align: left; }
+    th { background: #2d2d44; color: #ffd166; }
+    tr:nth-child(even) { background: #252538; }
+    .screenshot { max-width: 100%; border: 1px solid #444; margin: 10px 0; border-radius: 4px; }
+    .screenshot-caption { color: #888; font-size: 0.9em; margin-bottom: 20px; }
+    code { background: #2d2d44; padding: 2px 6px; border-radius: 3px; font-family: monospace; }
+    .summary { background: #2d2d44; padding: 20px; border-radius: 8px; margin: 20px 0; }
+    .timestamp { color: #888; font-size: 0.9em; }
   </style>
 </head>
 <body>
-  <h1>Rundown Loop - Verification Report</h1>
+  <h1>Verification Log: Rundown Editor Playout Config</h1>
 
-  <p><strong>Date:</strong> 2026-03-22</p>
-  <p><strong>Verification Method:</strong> Source code review (browser testing blocked by authentication)</p>
-  <p><strong>Status:</strong> <span class="status pass">PASS</span></p>
+  <div class="summary">
+    <p><strong>Loop:</strong> verify-rundown</p>
+    <p><strong>Date:</strong> <span class="timestamp">2026-03-23</span></p>
+    <p><strong>Status:</strong> <span class="pass">PASS</span></p>
+    <p><strong>Test URL:</strong> <code>https://commentarygraphic.com/wcgnic-2026-prelim1/rundown</code></p>
+  </div>
+
+  <h2>Verification Tasks</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Task</th>
+        <th>Expected</th>
+        <th>Actual</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Playout type in dropdown</td>
+        <td>"Playout" appears in segment type dropdown</td>
+        <td>Playout option present in Type dropdown with cyan/teal styling</td>
+        <td class="pass">PASS</td>
+      </tr>
+      <tr>
+        <td>Content Sequence type in dropdown</td>
+        <td>"Content Sequence" appears in segment type dropdown</td>
+        <td>Content Sequence option present in Type dropdown with amber/gold styling</td>
+        <td class="pass">PASS</td>
+      </tr>
+      <tr>
+        <td>Filter dropdown includes new types</td>
+        <td>Playout and Content Sequence in filter dropdown</td>
+        <td>Both types appear in "Filter by segment type" dropdown</td>
+        <td class="pass">PASS</td>
+      </tr>
+      <tr>
+        <td>PlayoutRulesEditor - Clip Order</td>
+        <td>Dropdown with Chronological, By Score, By Team, By Apparatus</td>
+        <td>All 4 options present, Chronological selected by default</td>
+        <td class="pass">PASS</td>
+      </tr>
+      <tr>
+        <td>PlayoutRulesEditor - Apparatus Priority</td>
+        <td>Dropdown with apparatus options</td>
+        <td>No Priority default, all apparatus options (FX, PH, SR, VT, PB, HB, UB, BB) present</td>
+        <td class="pass">PASS</td>
+      </tr>
+      <tr>
+        <td>PlayoutRulesEditor - Clip Transition</td>
+        <td>Cut, Crossfade, Stinger (disabled)</td>
+        <td>Cut and Crossfade available, Stinger shows "(Coming soon)" and is disabled</td>
+        <td class="pass">PASS</td>
+      </tr>
+      <tr>
+        <td>PlayoutRulesEditor - Gap Fill Sequence</td>
+        <td>Add/remove gap fill items with reorder controls</td>
+        <td>Add Gap Fill Item button works, items have move up/down/remove buttons</td>
+        <td class="pass">PASS</td>
+      </tr>
+      <tr>
+        <td>Gap Fill Item defaults</td>
+        <td>Standings type, 15s duration, BG on</td>
+        <td>Standings selected, 15 sec, BG checkbox checked</td>
+        <td class="pass">PASS</td>
+      </tr>
+      <tr>
+        <td>PlayoutRulesEditor - Loop toggle</td>
+        <td>Loop sequence checkbox</td>
+        <td>"Loop sequence (otherwise hold on last item)" checkbox present and checked by default</td>
+        <td class="pass">PASS</td>
+      </tr>
+      <tr>
+        <td>ContentSequenceEditor - Content Items</td>
+        <td>Add/remove content items with controls</td>
+        <td>Add Content Item button works, items have graphic type, duration, controls</td>
+        <td class="pass">PASS</td>
+      </tr>
+      <tr>
+        <td>Content Item defaults</td>
+        <td>Sponsor type, 10s duration, BG on, skip off</td>
+        <td>Sponsor selected, 10 sec, BG checked, Skip∅ unchecked</td>
+        <td class="pass">PASS</td>
+      </tr>
+      <tr>
+        <td>ContentSequenceEditor - Advance Condition</td>
+        <td>Radio options for advance trigger</td>
+        <td>3 options: "Next rotation scores detected (Virtius API)", "All content items complete", "Manual advance only" - all with tooltips</td>
+        <td class="pass">PASS</td>
+      </tr>
+      <tr>
+        <td>Type-specific fields (Sponsor ID)</td>
+        <td>Sponsor type shows Sponsor ID field</td>
+        <td>Sponsor ID field appears with "(auto)" placeholder when Sponsor graphic type selected</td>
+        <td class="pass">PASS</td>
+      </tr>
+      <tr>
+        <td>Type switching preserves Playout data</td>
+        <td>Playout config preserved when switching away and back</td>
+        <td>Gap fill item (Standings, 15s, BG) preserved after switching to Content Sequence and back</td>
+        <td class="pass">PASS</td>
+      </tr>
+      <tr>
+        <td>Type switching preserves Content Sequence data</td>
+        <td>Content Sequence config preserved when switching away and back</td>
+        <td>Content item (Sponsor, 10s, BG) preserved after switching to Playout and back</td>
+        <td class="pass">PASS</td>
+      </tr>
+      <tr>
+        <td>Validation - gap fill required</td>
+        <td>Cannot save Playout without gap fill item</td>
+        <td>Red message "Add at least one gap fill item to save this segment." shown, Save disabled</td>
+        <td class="pass">PASS</td>
+      </tr>
+      <tr>
+        <td>Validation - content item required</td>
+        <td>Cannot save Content Sequence without content item</td>
+        <td>Red message "Add at least one content item to save this segment." shown, Save disabled</td>
+        <td class="pass">PASS</td>
+      </tr>
+      <tr>
+        <td>Console errors (feature-related)</td>
+        <td>No errors related to Playout/Content Sequence features</td>
+        <td>Only OBS connection errors (expected - no OBS connected), no feature-related errors</td>
+        <td class="pass">PASS</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Screenshots</h2>
+
+  <h3>Rundown Editor Page</h3>
+  <img src="screenshots/verify-rundown-editor.png" alt="Rundown Editor" class="screenshot">
+  <p class="screenshot-caption">Rundown Editor page with segments list</p>
+
+  <h3>Segment Type Dropdown</h3>
+  <img src="screenshots/verify-rundown-types.png" alt="Segment Types" class="screenshot">
+  <p class="screenshot-caption">Type dropdown showing Playout and Content Sequence options</p>
+
+  <h3>Playout Rules Editor</h3>
+  <img src="screenshots/verify-rundown-playout-full.png" alt="Playout Rules Editor" class="screenshot">
+  <p class="screenshot-caption">Playout type selected showing PlayoutRulesEditor with Clip Order, Apparatus Priority, Transition, and Gap Fill Sequence</p>
+
+  <h3>Playout with Gap Fill Item</h3>
+  <img src="screenshots/verify-rundown-playout-gapfill.png" alt="Playout Gap Fill" class="screenshot">
+  <p class="screenshot-caption">Gap fill item added showing Standings type, 15s duration, BG checkbox</p>
+
+  <h3>Content Sequence Editor</h3>
+  <img src="screenshots/verify-rundown-content-seq.png" alt="Content Sequence Editor" class="screenshot">
+  <p class="screenshot-caption">Content Sequence type selected showing ContentSequenceEditor with Content Items and Advance Condition</p>
+
+  <h3>Content Sequence with Content Item</h3>
+  <img src="screenshots/verify-rundown-content-item.png" alt="Content Item" class="screenshot">
+  <p class="screenshot-caption">Content item added showing Sponsor type, 10s duration, BG/Skip toggles, and Sponsor ID field</p>
+
+  <h2>Notes</h2>
+  <ul>
+    <li>Playout Rules header uses cyan/teal color scheme</li>
+    <li>Content Sequence header uses amber/gold color scheme</li>
+    <li>Stinger transition is correctly disabled with "Coming soon" label</li>
+    <li>All gap fill graphic types available: Event Summary, Standings, Sponsor, Calendar, Quad View, Highlight Reel</li>
+    <li>All content item graphic types available: Event Summary, Standings, Sponsor, Calendar, Quad View, Highlight Reel</li>
+    <li>Duration field has switch to hold/auto button in Content Sequence</li>
+    <li>Advance condition radio buttons have helpful tooltip explanations</li>
+    <li>Virtius API integration noted in advance condition option</li>
+  </ul>
 
   <h2>Summary</h2>
-  <p>All three tasks from the rundown loop plan have been verified as COMPLETE through source code review:</p>
-  <ol>
-    <li>PlayoutRulesEditor.jsx - fully implemented</li>
-    <li>ContentSequenceEditor.jsx - fully implemented</li>
-    <li>RundownEditorPage.jsx integration - fully wired</li>
-  </ol>
+  <p class="pass">All 18 verification tasks PASSED. The Rundown Editor playout configuration features are working correctly in production.</p>
 
-  <div class="note">
-    <strong>Note:</strong> Browser-based verification was not possible because the Rundown Editor page requires Firebase authentication, and no test credentials were available. Verification was performed via comprehensive source code review.
-  </div>
-
-  <h2>Task 1: PlayoutRulesEditor.jsx</h2>
-  <p><strong>File:</strong> <code>show-controller/src/components/playout/PlayoutRulesEditor.jsx</code></p>
-
-  <table>
-    <tr><th>Requirement</th><th>Status</th><th>Notes</th></tr>
-    <tr>
-      <td>Clip order dropdown (chronological, by-score, by-team, by-apparatus)</td>
-      <td class="check">&#10004;</td>
-      <td>Lines 31-36, 145-158</td>
-    </tr>
-    <tr>
-      <td>Apparatus priority dropdown</td>
-      <td class="check">&#10004;</td>
-      <td>Lines 39-49, 161-175</td>
-    </tr>
-    <tr>
-      <td>Transition type selector (cut, crossfade, stinger disabled)</td>
-      <td class="check">&#10004;</td>
-      <td>Lines 52-56, 178-198. Stinger has <code>disabled: true</code> and shows "(Coming soon)"</td>
-    </tr>
-    <tr>
-      <td>Crossfade duration slider (100-2000ms)</td>
-      <td class="check">&#10004;</td>
-      <td>Lines 201-222. Only shown when crossfade selected</td>
-    </tr>
-    <tr>
-      <td>Gap fill sequence list with add/remove/reorder</td>
-      <td class="check">&#10004;</td>
-      <td>Lines 224-280, GapFillItem component at 295-388</td>
-    </tr>
-    <tr>
-      <td>Background toggle per gap fill item</td>
-      <td class="check">&#10004;</td>
-      <td>Lines 366-375</td>
-    </tr>
-    <tr>
-      <td>Loop toggle for gap fill sequence</td>
-      <td class="check">&#10004;</td>
-      <td>Lines 265-279</td>
-    </tr>
-    <tr>
-      <td>Default gap fill item (standings, 15s, BG on)</td>
-      <td class="check">&#10004;</td>
-      <td>Lines 69-73</td>
-    </tr>
-    <tr>
-      <td>Validation helper export</td>
-      <td class="check">&#10004;</td>
-      <td>Lines 392-394: <code>isPlayoutRulesValid()</code></td>
-    </tr>
-  </table>
-
-  <h2>Task 2: ContentSequenceEditor.jsx</h2>
-  <p><strong>File:</strong> <code>show-controller/src/components/playout/ContentSequenceEditor.jsx</code></p>
-
-  <table>
-    <tr><th>Requirement</th><th>Status</th><th>Notes</th></tr>
-    <tr>
-      <td>Content items list with add/remove/reorder</td>
-      <td class="check">&#10004;</td>
-      <td>Lines 134-172, ContentItem component at 223-428</td>
-    </tr>
-    <tr>
-      <td>Graphic type dropdown</td>
-      <td class="check">&#10004;</td>
-      <td>Lines 26-33, 309-320</td>
-    </tr>
-    <tr>
-      <td>Duration field (number/hold/auto)</td>
-      <td class="check">&#10004;</td>
-      <td>Lines 249-276, 323-376. Supports number, null (hold), and 'auto'</td>
-    </tr>
-    <tr>
-      <td>Background toggle</td>
-      <td class="check">&#10004;</td>
-      <td>Lines 378-391</td>
-    </tr>
-    <tr>
-      <td>Skip-if-no-data toggle</td>
-      <td class="check">&#10004;</td>
-      <td>Lines 393-406</td>
-    </tr>
-    <tr>
-      <td>Graphic params per type</td>
-      <td class="check">&#10004;</td>
-      <td>GraphicParams component at 434-535. Handles event-summary, sponsor, calendar, highlight-reel, quad-view</td>
-    </tr>
-    <tr>
-      <td>Advance condition selector</td>
-      <td class="check">&#10004;</td>
-      <td>Lines 35-52, 175-207. Three options: next-rotation-detected, all-complete, manual</td>
-    </tr>
-    <tr>
-      <td>Default content item (sponsor, 10s, BG on, skip off)</td>
-      <td class="check">&#10004;</td>
-      <td>Lines 54-60</td>
-    </tr>
-    <tr>
-      <td>Validation helper export</td>
-      <td class="check">&#10004;</td>
-      <td>Lines 538-540: <code>isContentSequenceValid()</code></td>
-    </tr>
-  </table>
-
-  <h2>Task 3: RundownEditorPage.jsx Integration</h2>
-  <p><strong>File:</strong> <code>show-controller/src/pages/RundownEditorPage.jsx</code></p>
-
-  <table>
-    <tr><th>Requirement</th><th>Status</th><th>Notes</th></tr>
-    <tr>
-      <td>Import PlayoutRulesEditor</td>
-      <td class="check">&#10004;</td>
-      <td>Line 54</td>
-    </tr>
-    <tr>
-      <td>Import ContentSequenceEditor</td>
-      <td class="check">&#10004;</td>
-      <td>Line 55</td>
-    </tr>
-    <tr>
-      <td>"Playout" in SEGMENT_TYPES array</td>
-      <td class="check">&#10004;</td>
-      <td>Line 198</td>
-    </tr>
-    <tr>
-      <td>"Content Sequence" in SEGMENT_TYPES array</td>
-      <td class="check">&#10004;</td>
-      <td>Line 199</td>
-    </tr>
-    <tr>
-      <td>Playout type has cyan/teal color</td>
-      <td class="check">&#10004;</td>
-      <td>Lines 210, 223: <code>bg-cyan-500/20 text-cyan-400 border-cyan-500/30</code></td>
-    </tr>
-    <tr>
-      <td>Content Sequence type has amber/gold color</td>
-      <td class="check">&#10004;</td>
-      <td>Lines 211, 224: <code>bg-amber-500/20 text-amber-400 border-amber-500/30</code></td>
-    </tr>
-    <tr>
-      <td>PlayoutRulesEditor shown when type is 'playout'</td>
-      <td class="check">&#10004;</td>
-      <td>Lines 7583-7590</td>
-    </tr>
-    <tr>
-      <td>ContentSequenceEditor shown when type is 'content-sequence'</td>
-      <td class="check">&#10004;</td>
-      <td>Lines 7592-7606</td>
-    </tr>
-    <tr>
-      <td>Save button disabled when validation fails</td>
-      <td class="check">&#10004;</td>
-      <td>Lines 7618-7620</td>
-    </tr>
-    <tr>
-      <td>Tooltip shows validation message</td>
-      <td class="check">&#10004;</td>
-      <td>Lines 7623-7629</td>
-    </tr>
-  </table>
-
-  <h2>Color Theme Verification</h2>
-  <table>
-    <tr><th>Type</th><th>Badge Color</th><th>Row Border</th></tr>
-    <tr>
-      <td>Playout</td>
-      <td>Cyan (<code>text-cyan-400</code>)</td>
-      <td><code>border-l-cyan-500</code></td>
-    </tr>
-    <tr>
-      <td>Content Sequence</td>
-      <td>Amber (<code>text-amber-400</code>)</td>
-      <td><code>border-l-amber-500</code></td>
-    </tr>
-  </table>
-
-  <h2>Default Values Verification</h2>
-  <div class="code">
-// PlayoutRulesEditor defaults (lines 76-83)
-DEFAULT_PLAYOUT_RULES = {
-  clipOrder: 'chronological',
-  apparatusPriority: null,
-  transitionType: 'cut',
-  crossfadeDuration: 500,
-  gapFillSequence: [],
-  gapFillLoop: true,
-}
-
-// Gap fill item defaults (lines 69-73)
-DEFAULT_GAP_FILL_ITEM = {
-  graphicType: 'standings',
-  duration: 15,
-  background: true,
-}
-
-// ContentSequenceEditor defaults (lines 63-67)
-DEFAULT_CONTENT_SEQUENCE = {
-  contentSequence: [],
-  advanceCondition: 'next-rotation-detected',
-}
-
-// Content item defaults (lines 54-60)
-DEFAULT_CONTENT_ITEM = {
-  graphicType: 'sponsor',
-  duration: 10,
-  background: true,
-  skipIfNoData: false,
-  params: {},
-}
-  </div>
-
-  <h2>Known Limitations</h2>
+  <p><strong>Files verified:</strong></p>
   <ul>
-    <li>Browser testing not performed due to authentication requirement</li>
-    <li>Screenshots not captured (would require authenticated session)</li>
-    <li>Interaction testing not performed (type switching, data preservation)</li>
+    <li><code>show-controller/src/components/playout/PlayoutRulesEditor.jsx</code></li>
+    <li><code>show-controller/src/components/playout/ContentSequenceEditor.jsx</code></li>
+    <li><code>show-controller/src/pages/RundownEditorPage.jsx</code></li>
   </ul>
-
-  <h2>Recommendations</h2>
-  <ul>
-    <li>Add test credentials for future verification passes</li>
-    <li>Consider adding a component testing setup (Storybook or Vitest component tests)</li>
-  </ul>
-
-  <h2>Conclusion</h2>
-  <p>All implementation requirements have been verified through source code review. The code structure, component wiring, and default values all match the PRD specifications. No critical issues found.</p>
-
-  <p><strong>Final Status:</strong> <span class="status pass">PASS</span></p>
 </body>
 </html>
