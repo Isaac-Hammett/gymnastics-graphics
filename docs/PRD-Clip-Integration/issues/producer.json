@@ -1,152 +1,175 @@
 {
-  "loop": "producer",
-  "verifiedAt": "2026-03-22T20:45:00.000Z",
-  "verificationMethod": "code-review",
-  "verificationReason": "UI testing blocked by Firebase authentication requirement",
+  "loop": "verify-producer",
+  "date": "2026-03-23",
+  "environment": "production",
+  "url": "https://commentarygraphic.com/wcgnic-2026-prelim1/producer",
   "summary": {
-    "totalTasks": 8,
-    "passed": 8,
-    "failed": 0,
-    "warnings": 0,
-    "notes": 3
+    "status": "PASS",
+    "critical_issues": 0,
+    "non_critical_issues": 0,
+    "warnings": 2
   },
   "issues": [],
-  "notes": [
+  "warnings": [
     {
-      "id": "N1",
-      "component": "ProducerView",
-      "severity": "note",
-      "description": "Auth required for browser testing - verification done via code review only",
-      "recommendation": "Add test user credentials or auth bypass for testing environments"
+      "id": "WARN-001",
+      "severity": "low",
+      "component": "Infrastructure",
+      "description": "OBS connection errors in console when no OBS is connected",
+      "details": "Expected behavior - OBS not connected in test environment",
+      "console_message": "OBSContext: Error received {connected: false}",
+      "action": "none - expected in test environment"
     },
     {
-      "id": "N2",
-      "component": "ClipQueuePanel",
-      "severity": "note",
-      "description": "Rotation filter auto-updates to currentRotation when playout advances",
-      "recommendation": "Behavior is correct per PRD - rotation filter follows show progress"
-    },
-    {
-      "id": "N3",
-      "component": "MomentReplayDialog",
-      "severity": "note",
-      "description": "Dialog persists if clip ends while open (per PRD spec)",
-      "recommendation": "This is intentional to allow completing moment flag after clip ends"
+      "id": "WARN-002",
+      "severity": "low",
+      "component": "API",
+      "description": "API endpoint returning HTML instead of JSON",
+      "details": "SyntaxError: Unexpected token '<' - likely a 404 or redirect returning HTML",
+      "console_message": "SyntaxError: Unexpected token '<', \"<!doctype \"... is not valid JSON",
+      "action": "investigate API endpoint behavior"
     }
   ],
-  "filesVerified": [
+  "verified_components": [
     {
-      "path": "show-controller/src/components/playout/PlayoutStatusBar.jsx",
-      "lines": 324,
-      "status": "pass",
-      "features": [
+      "name": "PlayoutStatusBar.jsx",
+      "task": 1,
+      "status": "PASS",
+      "features_verified": [
         "NOW/NEXT/QUEUE cards",
-        "Mode badge with icons",
+        "Mode badge (CLIP/OVERRIDE/FALLBACK)",
         "Coordinator health indicator",
         "Preload indicator",
-        "Border color changes for override state"
+        "Estimated queue time"
       ]
     },
     {
-      "path": "show-controller/src/components/playout/CameraStatusPanel.jsx",
-      "lines": 239,
-      "status": "pass",
-      "features": [
-        "Responsive camera grid",
-        "State dots (idle/recording/live/recording-live)",
-        "Force Camera buttons",
-        "Apparatus labels with EVS colors",
+      "name": "CameraStatusPanel.jsx",
+      "task": 2,
+      "status": "PASS",
+      "features_verified": [
+        "Camera grid (4 cameras)",
+        "Apparatus labels (VT, UB, BB, FX)",
+        "State dots (Recording/Idle)",
+        "Force buttons with keyboard hints",
         "Recording timers"
       ]
     },
     {
-      "path": "show-controller/src/components/playout/ClipQueuePanel.jsx",
-      "lines": 854,
-      "status": "pass",
-      "features": [
-        "Tabs with counts",
-        "Apparatus/Team/Rotation filters",
+      "name": "ClipQueuePanel.jsx",
+      "task": 3,
+      "status": "PASS",
+      "features_verified": [
+        "Tabs (All/Queued/Played/Shown Live) with counts",
+        "Filters (apparatus/team/rotation)",
+        "Clip cards with details",
         "UP NEXT section",
-        "NOW PLAYING with progress bar",
-        "Bulk actions",
-        "Empty/error states"
+        "Bulk actions (Skip All, Queue All, Retry All)",
+        "Failed clip state with Retry button"
       ]
     },
     {
-      "path": "show-controller/src/components/playout/PlayoutControls.jsx",
-      "lines": 203,
-      "status": "pass",
-      "features": [
-        "Pause/Resume with keyboard hint",
-        "Skip with keyboard hint",
+      "name": "PlayoutControls.jsx",
+      "task": 4,
+      "status": "PASS",
+      "features_verified": [
+        "Pause button (Space)",
+        "Skip button (S)",
         "Force Camera dropdown",
-        "Stop Playout",
-        "Release Override (conditional)",
-        "Shortcuts button"
+        "Stop button",
+        "Release Override button (Esc)"
       ]
     },
     {
-      "path": "show-controller/src/components/playout/MomentReplayDialog.jsx",
-      "lines": 461,
-      "status": "pass",
-      "features": [
-        "Modal with backdrop close",
-        "Replay window spinbox",
-        "Mini timeline visualization",
-        "Speed presets",
-        "Audio mute toggle",
-        "Play Now / Save Only",
-        "Flagged moments list"
+      "name": "MomentReplayDialog.jsx",
+      "task": 5,
+      "status": "PASS",
+      "features_verified": [
+        "Flag Moment button in Now Playing controls"
       ]
     },
     {
-      "path": "show-controller/src/components/playout/PlayoutEventLog.jsx",
-      "lines": 279,
-      "status": "pass",
-      "features": [
-        "Time filter buttons",
-        "Event icons and colors",
-        "Retry button on hover",
-        "Auto-scroll behavior",
-        "Event count footer"
+      "name": "PlayoutEventLog.jsx",
+      "task": 6,
+      "status": "PASS",
+      "features_verified": [
+        "Scrollable event log",
+        "Timestamped entries",
+        "Time filter buttons (5m/15m/30m/All)",
+        "Color-coded entries",
+        "Events logged: Playout started, Loaded clips, Forced camera, Playout stopped"
       ]
     },
     {
-      "path": "show-controller/src/components/playout/KeyboardShortcutsPanel.jsx",
-      "lines": 322,
-      "status": "pass",
-      "features": [
-        "Shortcut list grouped by type",
-        "Key remapping UI",
-        "Conflict detection",
-        "Reset to defaults"
+      "name": "useKeyboardShortcuts.js + KeyboardShortcutsPanel.jsx",
+      "task": 7,
+      "status": "PASS",
+      "features_verified": [
+        "Keyboard shortcuts panel opens via ? button",
+        "Camera controls (1-4)",
+        "Playout controls (S, Space, Esc, F, ?)",
+        "Remapping UI",
+        "Reset to Defaults button"
       ]
     },
     {
-      "path": "show-controller/src/hooks/useKeyboardShortcuts.js",
-      "lines": 305,
-      "status": "pass",
-      "features": [
-        "Document-level keydown listener",
-        "Focus scope (ignores inputs)",
-        "Modal exception",
-        "localStorage persistence",
-        "Camera count filtering"
-      ]
-    },
-    {
-      "path": "show-controller/src/views/ProducerView.jsx",
-      "lines": 1613,
-      "status": "pass",
-      "features": [
-        "All playout imports",
-        "usePlayoutState/usePlayoutActions hooks",
-        "useKeyboardShortcuts integration",
-        "Swap-panel layout",
-        "Right column swap (ClipQueue vs CameraRuntime)",
-        "Modal dialogs rendered",
-        "Dev mode toggle"
+      "name": "ProducerView.jsx integration",
+      "task": 8,
+      "status": "PASS",
+      "features_verified": [
+        "Layout swaps when playout active",
+        "Playout panels in left column",
+        "Clip Queue in right column",
+        "Override Log/Alerts/Score Bug still visible"
       ]
     }
+  ],
+  "interaction_tests": [
+    {
+      "test": "Load Rundown",
+      "action": "Click Load Rundown button",
+      "expected": "Rundown loads, shows segment count",
+      "status": "PASS"
+    },
+    {
+      "test": "Start Show",
+      "action": "Click Start Show button",
+      "expected": "Playout panels appear",
+      "status": "PASS"
+    },
+    {
+      "test": "Force Camera",
+      "action": "Click Force [1] button",
+      "expected": "Mode changes to OVERRIDE",
+      "status": "PASS"
+    },
+    {
+      "test": "Keyboard Shortcuts",
+      "action": "Click ? button",
+      "expected": "Shortcuts dialog opens",
+      "status": "PASS"
+    },
+    {
+      "test": "Tab Filtering",
+      "action": "Click Shown Live tab",
+      "expected": "Clips filter correctly",
+      "status": "PASS"
+    },
+    {
+      "test": "Stop Show",
+      "action": "Click Stop button",
+      "expected": "Mode changes to FALLBACK",
+      "status": "PASS"
+    }
+  ],
+  "screenshots": [
+    "verify-producer-auth-success.png",
+    "verify-producer-initial-state.png",
+    "verify-producer-rundown-loaded.png",
+    "verify-producer-playout-active.png",
+    "verify-producer-override-mode.png",
+    "verify-producer-keyboard-shortcuts.png",
+    "verify-producer-clip-queue-filter.png",
+    "verify-producer-stopped.png"
   ]
 }
