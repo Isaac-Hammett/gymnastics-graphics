@@ -1,16 +1,17 @@
-import { useState, useMemo } from 'react';
-import fixtureData from '../../../docs/PRD-Clip-Integration/fixtures/sample-response.json';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useShow } from '../context/ShowContext';
 
 /**
- * usePlayoutState - Mock playout state for Stage A development
+ * usePlayoutState - Socket-based playout state from coordinator
  *
- * This hook will be REPLACED with socket-based state in Stage B.
- * It provides the same interface that Stage B will implement.
+ * Connects to the coordinator via Socket.io and receives playout state
+ * broadcasts. State is managed server-side by playoutEngine.js.
  *
- * State shapes follow PRD Section 5: Firebase currentGraphic data shapes
+ * State shapes follow PRD Section 5: Firebase currentGraphic data shapes.
+ * This hook was refactored in Stage B from mock data to real socket state.
  */
 
-// Clip status enum matching PRD lifecycle
+// Clip status enum matching PRD lifecycle (exported for use by components)
 const CLIP_STATUS = {
   PENDING: 'pending',      // Clip exists but not ready (e.g., still encoding)
   QUEUED: 'queued',        // Ready to play, in the queue
@@ -49,221 +50,205 @@ const PLAYOUT_MODE = {
   PAUSED: 'PAUSED'
 };
 
-// Mock team logos from known Virtius media URLs
-const TEAM_LOGOS = {
-  'University of Bridgeport': 'https://media.virti.us/upload/images/team/bridgeport-logo.png',
-  'Yale University': 'https://media.virti.us/upload/images/team/yale-logo.png',
-  'Southern Connecticut State University': 'https://media.virti.us/upload/images/team/scsu-logo.png'
-};
-
-// Initialize clips from fixture with status and shown_live enrichment
-function initializeClipsFromFixture(rawClips) {
-  // Indices of clips to mark as shown_live (for testing Shown Live tab)
-  const shownLiveIndices = [2, 7, 15];
-
-  return rawClips.map((clip, index) => {
-    // Determine initial status
-    let status = CLIP_STATUS.QUEUED;
-    let shownLive = false;
-
-    // Mark first clip as playing
-    if (index === 0) {
-      status = CLIP_STATUS.PLAYING;
-    }
-    // Mark some clips as shown_live (as if they were broadcast before clip was ready)
-    else if (shownLiveIndices.includes(index)) {
-      status = CLIP_STATUS.SHOWN_LIVE;
-      shownLive = true;
-    }
-    // Mark one clip as failed for testing retry flow
-    else if (index === 5) {
-      status = CLIP_STATUS.FAILED;
-    }
-    // Mark one as pending (still encoding)
-    else if (index === 22) {
-      status = CLIP_STATUS.PENDING;
-    }
-
-    return {
-      ...clip,
-      // Add team logo based on team name
-      teamLogo: TEAM_LOGOS[clip.team_name] || null,
-      // Add clip status
-      status,
-      // Add shown_live flag (enriched by coordinator in Stage B)
-      shown_live: shownLive,
-      // Elapsed time for playing clip
-      elapsed: status === CLIP_STATUS.PLAYING ? 0 : null,
-      // Score reveal triggered flag
-      scoreRevealed: false
-    };
-  });
-}
-
-// Initialize camera states (4 cameras)
-function initializeCameraStates() {
-  const now = Date.now();
-
-  return [
-    {
-      cameraNumber: 1,
-      apparatus: 'VT',
-      state: CAMERA_STATE.RECORDING,
-      startedAt: now - 15000,  // Started 15 seconds ago
-      athleteName: 'Recording routine...'
-    },
-    {
-      cameraNumber: 2,
-      apparatus: 'UB',
-      state: CAMERA_STATE.IDLE,
-      startedAt: null,
-      athleteName: null
-    },
-    {
-      cameraNumber: 3,
-      apparatus: 'BB',
-      state: CAMERA_STATE.RECORDING,
-      startedAt: now - 45000,  // Started 45 seconds ago
-      athleteName: 'Recording routine...'
-    },
-    {
-      cameraNumber: 4,
-      apparatus: 'FX',
-      state: CAMERA_STATE.IDLE,
-      startedAt: null,
-      athleteName: null
-    }
-  ];
-}
-
-export default function usePlayoutState() {
-  // Core playout state
-  const [isPlayoutActive, setIsPlayoutActive] = useState(true);
-  const [currentMode, setCurrentMode] = useState(PLAYOUT_MODE.CLIP);
-
-  // Clip queue state - initialized from fixture
-  const [clips, setClips] = useState(() => initializeClipsFromFixture(fixtureData.clips));
-
-  // Camera states
-  const [cameraStates, setCameraStates] = useState(() => initializeCameraStates());
-
-  // Override state (when producer forces a specific camera/mode)
-  const [overrideState, setOverrideState] = useState({
+// Initial state when no server connection or engine not active
+const INITIAL_STATE = {
+  isPlayoutActive: false,
+  engineState: 'stopped',
+  currentMode: PLAYOUT_MODE.FALLBACK,
+  clips: [],
+  currentClip: null,
+  nextClip: null,
+  clipQueue: {
+    all: [],
+    queued: [],
+    playing: [],
+    played: [],
+    shownLive: [],
+    skipped: [],
+    failed: [],
+    stalled: [],
+    pending: []
+  },
+  cameraStates: [
+    { cameraNumber: 1, apparatus: 'VT', state: CAMERA_STATE.IDLE, startedAt: null, athleteName: null },
+    { cameraNumber: 2, apparatus: 'UB', state: CAMERA_STATE.IDLE, startedAt: null, athleteName: null },
+    { cameraNumber: 3, apparatus: 'BB', state: CAMERA_STATE.IDLE, startedAt: null, athleteName: null },
+    { cameraNumber: 4, apparatus: 'FX', state: CAMERA_STATE.IDLE, startedAt: null, athleteName: null }
+  ],
+  overrideState: {
     active: false,
-    type: null,           // 'camera' | 'pause' | null
-    cameraNumber: null,   // Which camera is forced (1-4)
-    startedAt: null       // When override started
-  });
-
-  // Preload state for next clip
-  const [preloadState, setPreloadState] = useState({
+    type: null,
+    cameraNumber: null,
+    startedAt: null
+  },
+  preloadState: {
     state: PRELOAD_STATE.NONE,
     clipId: null,
-    progress: 0           // 0-100 for progress bar
-  });
+    progress: 0
+  },
+  coordinatorHeartbeat: {
+    lastSeen: null,
+    connected: false
+  },
+  momentReplay: null,
+  momentReplayQueue: [],
+  eventLog: [],
+  lastApiError: null
+};
 
-  // Coordinator heartbeat (for connection health indicator)
-  const [coordinatorHeartbeat, setCoordinatorHeartbeat] = useState({
-    lastSeen: Date.now(),
-    connected: true,
-    latency: 45           // ms
-  });
+export default function usePlayoutState() {
+  const { socket } = useShow();
 
-  // Moment replay state (for when a replay is queued/playing)
-  const [momentReplay, setMomentReplay] = useState(null);
+  // Core state from server
+  const [serverState, setServerState] = useState(INITIAL_STATE);
 
-  // Event log for debugging and display
-  const [eventLog, setEventLog] = useState([
-    {
-      id: 1,
-      timestamp: Date.now() - 60000,
-      type: 'system',
-      message: 'Playout started'
-    },
-    {
-      id: 2,
-      timestamp: Date.now() - 30000,
-      type: 'clip',
-      message: 'Loaded 23 clips from Clip Engine'
-    }
-  ]);
+  // Local override for setIsPlayoutActive (allows UI to toggle before server confirms)
+  const [localPlayoutOverride, setLocalPlayoutOverride] = useState(null);
 
-  // Derived state: current playing clip
-  const currentClip = useMemo(() => {
-    return clips.find(c => c.status === CLIP_STATUS.PLAYING) || null;
-  }, [clips]);
+  // Handle playout:stateUpdate events from coordinator
+  useEffect(() => {
+    if (!socket) return;
 
-  // Derived state: next clip in queue (for preloading)
-  const nextClip = useMemo(() => {
-    if (!currentClip) return null;
-    const currentIndex = clips.findIndex(c => c.draft_id === currentClip.draft_id);
-    // Find next queued clip after current
-    for (let i = currentIndex + 1; i < clips.length; i++) {
-      if (clips[i].status === CLIP_STATUS.QUEUED) {
-        return clips[i];
-      }
-    }
-    return null;
-  }, [clips, currentClip]);
+    const handleStateUpdate = (state) => {
+      console.log('[usePlayoutState] Received playout:stateUpdate', {
+        compId: state.compId,
+        isPlayoutActive: state.isPlayoutActive,
+        engineState: state.engineState,
+        currentMode: state.currentMode,
+        clipsCount: state.clips?.length || 0
+      });
 
-  // Derived state: clip queue organized by status
-  const clipQueue = useMemo(() => {
-    return {
-      all: clips,
-      queued: clips.filter(c => c.status === CLIP_STATUS.QUEUED),
-      playing: clips.filter(c => c.status === CLIP_STATUS.PLAYING),
-      played: clips.filter(c => c.status === CLIP_STATUS.PLAYED),
-      shownLive: clips.filter(c => c.status === CLIP_STATUS.SHOWN_LIVE || c.shown_live),
-      skipped: clips.filter(c => c.status === CLIP_STATUS.SKIPPED),
-      failed: clips.filter(c => c.status === CLIP_STATUS.FAILED),
-      stalled: clips.filter(c => c.status === CLIP_STATUS.STALLED),
-      pending: clips.filter(c => c.status === CLIP_STATUS.PENDING)
+      // Transform server state to match our interface
+      setServerState({
+        isPlayoutActive: state.isPlayoutActive ?? false,
+        engineState: state.engineState ?? 'stopped',
+        currentMode: state.currentMode ?? PLAYOUT_MODE.FALLBACK,
+        clips: state.clips ?? [],
+        currentClip: state.currentClip ?? null,
+        nextClip: state.nextClip ?? null,
+        clipQueue: state.clipQueue ?? INITIAL_STATE.clipQueue,
+        cameraStates: state.cameraStates ?? INITIAL_STATE.cameraStates,
+        overrideState: state.overrideState ?? INITIAL_STATE.overrideState,
+        preloadState: state.preloadState ?? INITIAL_STATE.preloadState,
+        coordinatorHeartbeat: state.coordinatorHeartbeat ?? { lastSeen: Date.now(), connected: true },
+        momentReplay: state.momentReplay ?? null,
+        momentReplayQueue: state.momentReplayQueue ?? [],
+        eventLog: state.eventLog ?? [],
+        lastApiError: state.lastApiError ?? null
+      });
+
+      // Clear local override when server confirms state
+      setLocalPlayoutOverride(null);
     };
-  }, [clips]);
 
-  // Derived: nextClipUrl for currentGraphic data shape
+    const handleModeChange = (data) => {
+      console.log('[usePlayoutState] Received playout:modeChange', data);
+      setServerState(prev => ({
+        ...prev,
+        currentMode: data.mode ?? prev.currentMode
+      }));
+    };
+
+    const handleQueueUpdate = (data) => {
+      console.log('[usePlayoutState] Received playout:clipQueueUpdate', {
+        clipsCount: data.clips?.length || 0
+      });
+      setServerState(prev => ({
+        ...prev,
+        clips: data.clips ?? prev.clips,
+        clipQueue: data.clipQueue ?? prev.clipQueue,
+        currentClip: data.currentClip ?? prev.currentClip,
+        nextClip: data.nextClip ?? prev.nextClip
+      }));
+    };
+
+    const handleError = (error) => {
+      console.error('[usePlayoutState] Received playout:error', error);
+      setServerState(prev => ({
+        ...prev,
+        lastApiError: error.message ?? 'Unknown error'
+      }));
+    };
+
+    // Register event listeners
+    socket.on('playout:stateUpdate', handleStateUpdate);
+    socket.on('playout:modeChange', handleModeChange);
+    socket.on('playout:clipQueueUpdate', handleQueueUpdate);
+    socket.on('playout:error', handleError);
+
+    // Request initial state when socket connects
+    socket.emit('playout:getState');
+
+    return () => {
+      socket.off('playout:stateUpdate', handleStateUpdate);
+      socket.off('playout:modeChange', handleModeChange);
+      socket.off('playout:clipQueueUpdate', handleQueueUpdate);
+      socket.off('playout:error', handleError);
+    };
+  }, [socket]);
+
+  // Effective isPlayoutActive (local override takes precedence for UI responsiveness)
+  const isPlayoutActive = localPlayoutOverride !== null
+    ? localPlayoutOverride
+    : serverState.isPlayoutActive;
+
+  // setIsPlayoutActive - sets local override and will emit socket event via usePlayoutActions
+  const setIsPlayoutActive = useCallback((value) => {
+    setLocalPlayoutOverride(value);
+  }, []);
+
+  // Derived state: next clip URL for preloading
   const nextClipUrl = useMemo(() => {
-    return nextClip?.clip_url || null;
-  }, [nextClip]);
+    return serverState.nextClip?.clip_url || null;
+  }, [serverState.nextClip]);
+
+  // These setters are provided for compatibility but are no-ops in socket mode
+  // (state is controlled by server; actions should use usePlayoutActions)
+  const noopSetter = useCallback(() => {
+    console.warn('[usePlayoutState] State setters are no-ops in socket mode. Use usePlayoutActions instead.');
+  }, []);
 
   return {
     // Core state
     isPlayoutActive,
     setIsPlayoutActive,
-    currentMode,
-    setCurrentMode,
+    currentMode: serverState.currentMode,
+    setCurrentMode: noopSetter, // No-op: use socket actions
 
     // Clips
-    clips,
-    setClips,
-    currentClip,
-    nextClip,
+    clips: serverState.clips,
+    setClips: noopSetter, // No-op: use socket actions
+    currentClip: serverState.currentClip,
+    nextClip: serverState.nextClip,
     nextClipUrl,
-    clipQueue,
+    clipQueue: serverState.clipQueue,
 
     // Cameras
-    cameraStates,
-    setCameraStates,
+    cameraStates: serverState.cameraStates,
+    setCameraStates: noopSetter, // No-op: server-managed
 
     // Override
-    overrideState,
-    setOverrideState,
+    overrideState: serverState.overrideState,
+    setOverrideState: noopSetter, // No-op: use socket actions
 
     // Preload
-    preloadState,
-    setPreloadState,
+    preloadState: serverState.preloadState,
+    setPreloadState: noopSetter, // No-op: server-managed
 
     // Coordinator health
-    coordinatorHeartbeat,
-    setCoordinatorHeartbeat,
+    coordinatorHeartbeat: serverState.coordinatorHeartbeat,
+    setCoordinatorHeartbeat: noopSetter, // No-op: server-managed
 
     // Moment replay
-    momentReplay,
-    setMomentReplay,
+    momentReplay: serverState.momentReplay,
+    setMomentReplay: noopSetter, // No-op: use socket actions
 
     // Event log
-    eventLog,
-    setEventLog,
+    eventLog: serverState.eventLog,
+    setEventLog: noopSetter, // No-op: server-managed
+
+    // API error state
+    lastApiError: serverState.lastApiError,
 
     // Constants for external use
     CLIP_STATUS,
