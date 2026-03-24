@@ -113,7 +113,7 @@ No duplicate rendering code. All graphics go through `output.html` → overlay p
 
 ---
 
-### Task 5: Theme Integration + Data Embedding — NOT STARTED
+### Task 5: Theme Integration + Data Embedding — COMPLETE
 
 **Goal:** Bake meet theme CSS and team data into the export.
 
