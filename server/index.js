@@ -7930,6 +7930,17 @@ io.on('connection', async (socket) => {
     console.log(`[Playout] Rotation break completed for competition: ${clientCompId}`);
   });
 
+  // Skip current content item in rotation break sequence
+  socket.on('playout:skipContentItem', () => {
+    const engine = getPlayoutEngine(clientCompId);
+    if (!engine) {
+      socket.emit('playout:error', { message: `No playout engine for competition: ${clientCompId}` });
+      return;
+    }
+    engine.skipContentItem();
+    console.log(`[Playout] Content item skipped for competition: ${clientCompId}`);
+  });
+
   // Disconnect handling
   socket.on('disconnect', () => {
     console.log(`Client disconnected: ${socket.id}`);

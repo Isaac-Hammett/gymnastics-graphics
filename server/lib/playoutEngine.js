@@ -79,6 +79,8 @@ const CLIP_POLL_INTERVAL_MS = 15000;     // 15 seconds
 const CLIP_STATUS_CLEANUP_DELAY_MS = 500; // Delay before cleaning up clipStatus
 const VIRTIUS_POLL_INTERVAL_MS = 45000;  // 45 seconds for rotation detection
 const ROTATION_DEBOUNCE_POLLS = 2;       // 2 polls (~90s) before advancing to next rotation
+const DEFAULT_CONTENT_ITEM_DURATION_MS = 15000; // 15 seconds default for content items
+const CONTENT_SEQUENCE_FALLBACK_TIMEOUT_MS = 120000; // 2 min fallback if no sequence configured
 
 // Virtius API
 const VIRTIUS_API_BASE = 'https://api.virti.us';
@@ -178,6 +180,12 @@ export class PlayoutEngine extends EventEmitter {
     this._rotationChangeDebounceCount = 0; // Counts consecutive polls with new rotation
     this._rotationBreakPending = false;    // Flag when we've triggered break mode
 
+    // Content sequence state (for rotation breaks)
+    this._contentSequence = null;          // Current content sequence config
+    this._contentSequenceIndex = -1;       // Current item index in sequence
+    this._contentSequenceTimer = null;     // Timer for auto-advancing content items
+    this._contentSequenceStartedAt = null; // When the current item started
+
     console.log(`[PlayoutEngine] Created for competition ${this.compId}`);
   }
 
@@ -245,6 +253,17 @@ export class PlayoutEngine extends EventEmitter {
 
   get currentRotation() {
     return this._currentRotation;
+  }
+
+  get contentSequenceState() {
+    if (!this._contentSequence) return null;
+    return {
+      sequence: this._contentSequence,
+      currentIndex: this._contentSequenceIndex,
+      currentItem: this._contentSequence[this._contentSequenceIndex] || null,
+      totalItems: this._contentSequence.length,
+      startedAt: this._contentSequenceStartedAt
+    };
   }
 
   // ==========================================================================
@@ -581,6 +600,7 @@ export class PlayoutEngine extends EventEmitter {
       lastApiError: this._lastApiError,
       currentRotation: this._currentRotation,
       rotationBreakPending: this._rotationBreakPending,
+      contentSequenceState: this.contentSequenceState,
       coordinatorHeartbeat: {
         lastSeen: Date.now(),
         connected: true
@@ -1244,7 +1264,7 @@ export class PlayoutEngine extends EventEmitter {
    * Trigger rotation break (BREAK mode between rotations)
    * @private
    */
-  _triggerRotationBreak(newRotation) {
+  async _triggerRotationBreak(newRotation) {
     const previousRotation = this._currentRotation;
     this._currentRotation = newRotation;
     this._detectedRotation = null;
@@ -1258,18 +1278,12 @@ export class PlayoutEngine extends EventEmitter {
     const previousMode = this._mode;
     this._mode = PLAYOUT_MODE.BREAK;
 
-    // Write break graphic to Firebase (Task 10 will add content sequence here)
-    this._writeCurrentGraphic({
-      graphic: 'rotation-break',
-      data: {
-        completedRotation: previousRotation,
-        nextRotation: newRotation,
-        timestamp: Date.now()
-      }
-    });
-
     this.emit('modeChanged', { previousMode, newMode: PLAYOUT_MODE.BREAK });
     this.emit('rotationAdvanced', { previousRotation, newRotation });
+
+    // Load and start content sequence for this rotation break
+    await this._loadAndStartContentSequence(previousRotation, newRotation);
+
     this._broadcastState();
   }
 
@@ -1280,6 +1294,9 @@ export class PlayoutEngine extends EventEmitter {
   completeRotationBreak() {
     if (!this._rotationBreakPending) return;
 
+    // Stop any running content sequence timer
+    this._stopContentSequence();
+
     this._rotationBreakPending = false;
     this._logEvent('rotation', `Rotation break complete - resuming playout`);
     console.log(`[PlayoutEngine] Rotation break complete`);
@@ -1287,6 +1304,250 @@ export class PlayoutEngine extends EventEmitter {
     // Re-evaluate priority stack to resume normal playout
     this._evaluatePriorityStack();
     this._broadcastState();
+  }
+
+  // ==========================================================================
+  // Private Methods - Content Sequence
+  // ==========================================================================
+
+  /**
+   * Load content sequence from rundown segment config and start playing
+   * @private
+   */
+  async _loadAndStartContentSequence(completedRotation, nextRotation) {
+    // Try to load content sequence from rundown segment
+    const contentSequence = await this._loadContentSequenceConfig(completedRotation);
+
+    if (contentSequence && contentSequence.length > 0) {
+      this._contentSequence = contentSequence;
+      this._contentSequenceIndex = -1;
+      console.log(`[PlayoutEngine] Loaded content sequence with ${contentSequence.length} items for rotation ${completedRotation} break`);
+      this._logEvent('content', `Starting content sequence (${contentSequence.length} items)`);
+
+      // Start playing first item
+      this._advanceContentSequence();
+    } else {
+      // No content sequence configured - use default break graphic with fallback timeout
+      console.log(`[PlayoutEngine] No content sequence configured - using default break graphic`);
+      this._logEvent('content', `No content sequence - showing default break graphic`);
+
+      // Write default break graphic
+      this._writeCurrentGraphic({
+        graphic: 'rotation-break',
+        data: {
+          completedRotation,
+          nextRotation,
+          timestamp: Date.now()
+        },
+        background: true
+      });
+
+      // Set fallback timeout to auto-complete the break
+      this._contentSequenceTimer = setTimeout(() => {
+        console.log(`[PlayoutEngine] Fallback timeout reached - completing rotation break`);
+        this.completeRotationBreak();
+      }, CONTENT_SEQUENCE_FALLBACK_TIMEOUT_MS);
+    }
+  }
+
+  /**
+   * Load content sequence config from rundown segment
+   * Looks for segment with type='content-sequence' that matches the completed rotation
+   * @private
+   */
+  async _loadContentSequenceConfig(completedRotation) {
+    if (!this.firebase) return null;
+
+    try {
+      // Load rundown segments
+      const ref = this.firebase.ref(`competitions/${this.compId}/rundown/segments`);
+      const snapshot = await ref.once('value');
+      const segments = snapshot.val();
+
+      if (!segments || !Array.isArray(segments)) {
+        console.log(`[PlayoutEngine] No rundown segments found`);
+        return null;
+      }
+
+      // Find content-sequence segment for this rotation break
+      // Look for segment with type='content-sequence' and notes containing rotation number
+      // OR segment with contentSequence field matching the rotation
+      for (const segment of segments) {
+        if (!segment) continue;
+
+        // Check for explicit content-sequence type
+        if (segment.type === 'content-sequence') {
+          // Check if this is for our rotation
+          const forRotation = segment.forRotation || this._parseRotationFromSegment(segment);
+          if (forRotation === completedRotation && segment.contentSequence) {
+            console.log(`[PlayoutEngine] Found content-sequence segment: ${segment.name}`);
+            return this._normalizeContentSequence(segment.contentSequence, completedRotation);
+          }
+        }
+
+        // Check for contentSequence field on any segment (legacy/flexible config)
+        if (segment.contentSequence && Array.isArray(segment.contentSequence)) {
+          const forRotation = segment.forRotation || this._parseRotationFromSegment(segment);
+          if (forRotation === completedRotation) {
+            console.log(`[PlayoutEngine] Found contentSequence on segment: ${segment.name}`);
+            return this._normalizeContentSequence(segment.contentSequence, completedRotation);
+          }
+        }
+      }
+
+      // Try to find a generic rotation break content sequence
+      // This is configured at the rundown level for all rotation breaks
+      const rundownRef = this.firebase.ref(`competitions/${this.compId}/rundown/defaultContentSequence`);
+      const defaultSnapshot = await rundownRef.once('value');
+      const defaultSequence = defaultSnapshot.val();
+
+      if (defaultSequence && Array.isArray(defaultSequence)) {
+        console.log(`[PlayoutEngine] Using default content sequence`);
+        return this._normalizeContentSequence(defaultSequence, completedRotation);
+      }
+
+      return null;
+    } catch (error) {
+      console.error(`[PlayoutEngine] Error loading content sequence config:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Parse rotation number from segment name or notes
+   * @private
+   */
+  _parseRotationFromSegment(segment) {
+    const text = `${segment.name || ''} ${segment.notes || ''}`.toLowerCase();
+    const match = text.match(/rotation\s*(\d+)/i);
+    if (match) {
+      return parseInt(match[1], 10);
+    }
+    return null;
+  }
+
+  /**
+   * Normalize content sequence items to standard format
+   * @private
+   */
+  _normalizeContentSequence(items, completedRotation) {
+    return items.map(item => {
+      // Handle both simple string format and full object format
+      if (typeof item === 'string') {
+        return {
+          graphicType: item,
+          duration: DEFAULT_CONTENT_ITEM_DURATION_MS,
+          background: true,
+          skipIfNoData: false,
+          params: {}
+        };
+      }
+
+      // Normalize duration to milliseconds
+      let durationMs = item.duration;
+      if (typeof durationMs === 'number' && durationMs < 1000) {
+        // Assume it's in seconds if < 1000
+        durationMs = durationMs * 1000;
+      }
+      durationMs = durationMs || DEFAULT_CONTENT_ITEM_DURATION_MS;
+
+      // Apply default params based on graphic type
+      const params = { ...(item.params || {}) };
+      if (item.graphicType === 'event-summary' && !params.rotation) {
+        params.rotation = completedRotation;
+      }
+
+      return {
+        graphicType: item.graphicType || item.graphic || 'fallback',
+        duration: durationMs,
+        background: item.background !== false,
+        skipIfNoData: item.skipIfNoData || false,
+        params
+      };
+    });
+  }
+
+  /**
+   * Advance to next item in content sequence
+   * @private
+   */
+  _advanceContentSequence() {
+    // Stop any existing timer
+    if (this._contentSequenceTimer) {
+      clearTimeout(this._contentSequenceTimer);
+      this._contentSequenceTimer = null;
+    }
+
+    // Advance index
+    this._contentSequenceIndex++;
+
+    // Check if sequence is complete
+    if (!this._contentSequence || this._contentSequenceIndex >= this._contentSequence.length) {
+      console.log(`[PlayoutEngine] Content sequence complete`);
+      this._logEvent('content', `Content sequence complete`);
+      this.completeRotationBreak();
+      return;
+    }
+
+    const item = this._contentSequence[this._contentSequenceIndex];
+    this._contentSequenceStartedAt = Date.now();
+
+    console.log(`[PlayoutEngine] Playing content item ${this._contentSequenceIndex + 1}/${this._contentSequence.length}: ${item.graphicType} (${item.duration}ms)`);
+    this._logEvent('content', `Showing: ${item.graphicType} (${Math.round(item.duration / 1000)}s)`);
+
+    // Write currentGraphic for this item
+    this._writeCurrentGraphic({
+      graphic: item.graphicType,
+      data: {
+        ...item.params,
+        contentSequence: true,
+        sequenceIndex: this._contentSequenceIndex,
+        sequenceTotal: this._contentSequence.length
+      },
+      background: item.background
+    });
+
+    // Check for 'hold' items (no duration, wait for manual advance or trigger)
+    if (item.duration === 'hold' || item.duration === 0 || item.holdUntilTrigger) {
+      console.log(`[PlayoutEngine] Content item is 'hold' - waiting for trigger`);
+      // Don't set timer - wait for external trigger (like next rotation detected)
+      return;
+    }
+
+    // Set timer to advance to next item
+    this._contentSequenceTimer = setTimeout(() => {
+      this._advanceContentSequence();
+    }, item.duration);
+
+    this._broadcastState();
+  }
+
+  /**
+   * Stop content sequence (clear timer and reset state)
+   * @private
+   */
+  _stopContentSequence() {
+    if (this._contentSequenceTimer) {
+      clearTimeout(this._contentSequenceTimer);
+      this._contentSequenceTimer = null;
+    }
+    this._contentSequence = null;
+    this._contentSequenceIndex = -1;
+    this._contentSequenceStartedAt = null;
+  }
+
+  /**
+   * Skip current content item and advance to next
+   * @public
+   */
+  skipContentItem() {
+    if (!this._contentSequence || this._mode !== PLAYOUT_MODE.BREAK) {
+      console.warn(`[PlayoutEngine] Cannot skip content item - not in break mode`);
+      return;
+    }
+
+    this._logEvent('control', `Skipped content item: ${this._contentSequence[this._contentSequenceIndex]?.graphicType}`);
+    this._advanceContentSequence();
   }
 
   // ==========================================================================
