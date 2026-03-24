@@ -625,6 +625,7 @@ export default function RundownEditorPage() {
     const saved = localStorage.getItem(`rundown-type-colors-${compId}`);
     return saved ? JSON.parse(saved) : null;
   }); // Custom type colors (Phase 10: Task 78)
+  const [isExportingPreview, setIsExportingPreview] = useState(false); // Loading state for export preview (Phase L: Task 6)
 
   // Undo/Redo state (Phase 11: Task 84)
   // Stores snapshots of {segments, groups} state for undo/redo operations
@@ -3163,6 +3164,10 @@ export default function RundownEditorPage() {
 
   // Export rundown as visual preview HTML page (Phase L: Task 1)
   async function handleExportPreview() {
+    // Phase L: Task 6 — Loading state
+    setIsExportingPreview(true);
+
+    try {
     // Build base URL for output.html iframes
     const baseUrl = window.location.origin;
 
@@ -3340,8 +3345,12 @@ export default function RundownEditorPage() {
           </div>`;
       }
 
+      // Task 6: Extract apparatus and rotation for filter data attributes
+      const apparatus = seg.graphic?.params?.apparatus || '';
+      const rotation = seg.graphic?.params?.rotation || '';
+
       return `
-        <div class="segment-card" data-type="${segType}" data-name="${(seg.name || '').replace(/"/g, '&quot;').toLowerCase()}" data-graphic="${graphicId}" data-talent="${talentStr.toLowerCase()}" data-notes="${(seg.notes || '').replace(/"/g, '&quot;').toLowerCase()}" data-scene="${(seg.scene || '').replace(/"/g, '&quot;').toLowerCase()}" data-index="${index}">
+        <div class="segment-card" data-type="${segType}" data-name="${(seg.name || '').replace(/"/g, '&quot;').toLowerCase()}" data-graphic="${graphicId}" data-talent="${talentStr.toLowerCase()}" data-notes="${(seg.notes || '').replace(/"/g, '&quot;').toLowerCase()}" data-scene="${(seg.scene || '').replace(/"/g, '&quot;').toLowerCase()}" data-apparatus="${apparatus}" data-rotation="${rotation}" data-index="${index}">
           ${previewContent}
           <div class="card-info">
             <div class="card-header">
@@ -3375,6 +3384,12 @@ export default function RundownEditorPage() {
     // Get all unique graphic types for filter dropdown
     const graphicTypes = [...new Set(segments.map(s => s.graphic?.graphicId).filter(Boolean))].sort();
     const graphicOptionsHtml = graphicTypes.map(g => `<option value="${g}">${g}</option>`).join('');
+
+    // Task 6: Get all unique apparatus and rotation values for filter dropdowns
+    const apparatusValues = [...new Set(segments.map(s => s.graphic?.params?.apparatus).filter(Boolean))].sort();
+    const apparatusOptionsHtml = apparatusValues.map(a => `<option value="${a}">${a}</option>`).join('');
+    const rotationValues = [...new Set(segments.map(s => s.graphic?.params?.rotation).filter(Boolean))].sort((a, b) => Number(a) - Number(b));
+    const rotationOptionsHtml = rotationValues.map(r => `<option value="${r}">Rotation ${r}</option>`).join('');
 
     // Task 5: Build theme CSS variables block if theme is active
     let themeCssVars = '';
@@ -3513,6 +3528,25 @@ export default function RundownEditorPage() {
       .filters { flex-direction: column; align-items: stretch; }
       .search-input { width: 100%; }
     }
+
+    /* Print-friendly styles */
+    @media print {
+      body { background: white; color: black; }
+      .header { position: static; background: white; border-bottom: 2px solid #ccc; padding: 10px 0; }
+      .header h1 { font-size: 16pt; color: black; }
+      .header-meta { color: #333; }
+      .filters, .playback-toolbar, .modal-overlay { display: none !important; }
+      .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 10px 0; }
+      .segment-card { background: white; border: 1px solid #ccc; break-inside: avoid; page-break-inside: avoid; }
+      .segment-card:hover { transform: none; box-shadow: none; }
+      .card-preview { display: none; }
+      .card-preview-meta { display: flex; background: #f5f5f5 !important; min-height: 60px; padding: 8px; }
+      .card-info { padding: 8px; }
+      .card-name { font-size: 11pt; color: black; }
+      .card-meta, .card-graphic, .card-scene, .card-talent, .card-notes { font-size: 9pt; color: #333; }
+      .card-type-badge { font-size: 8pt; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+      .summary-badges { display: none; }
+    }
   </style>
 </head>
 <body>
@@ -3544,6 +3578,14 @@ export default function RundownEditorPage() {
       <option value="all">All Graphics</option>
       ${graphicOptionsHtml}
     </select>
+    ${apparatusOptionsHtml ? `<select class="filter-select" id="apparatusFilter" onchange="filterSegments()">
+      <option value="all">All Apparatus</option>
+      ${apparatusOptionsHtml}
+    </select>` : ''}
+    ${rotationOptionsHtml ? `<select class="filter-select" id="rotationFilter" onchange="filterSegments()">
+      <option value="all">All Rotations</option>
+      ${rotationOptionsHtml}
+    </select>` : ''}
     <span class="result-count" id="resultCount"></span>
   </div>
 
@@ -3551,7 +3593,11 @@ export default function RundownEditorPage() {
     ${segmentCardsHtml}
   </div>
 
-  ${segments.length === 0 ? '<div class="empty-state">No segments in this rundown.</div>' : ''}
+  ${segments.length === 0 ? `<div class="empty-state">
+    <div style="font-size: 48px; margin-bottom: 16px;">📋</div>
+    <div style="font-size: 18px; color: #71717a; margin-bottom: 8px;">No segments in this rundown</div>
+    <div style="font-size: 14px; color: #52525b;">Add segments in the Rundown Editor to see them here</div>
+  </div>` : ''}
 
   <!-- Full-size preview modal -->
   <div class="modal-overlay" id="previewModal">
@@ -3625,6 +3671,10 @@ export default function RundownEditorPage() {
     function filterSegments() {
       const query = document.getElementById('searchInput').value.toLowerCase();
       const graphicFilter = document.getElementById('graphicFilter').value;
+      const apparatusFilterEl = document.getElementById('apparatusFilter');
+      const rotationFilterEl = document.getElementById('rotationFilter');
+      const apparatusFilter = apparatusFilterEl ? apparatusFilterEl.value : 'all';
+      const rotationFilter = rotationFilterEl ? rotationFilterEl.value : 'all';
       const cards = document.querySelectorAll('.segment-card');
       let visible = 0;
 
@@ -3635,13 +3685,17 @@ export default function RundownEditorPage() {
         const talent = card.dataset.talent;
         const notes = card.dataset.notes;
         const scene = card.dataset.scene;
-        const searchable = name + ' ' + graphic + ' ' + talent + ' ' + notes + ' ' + scene;
+        const apparatus = card.dataset.apparatus;
+        const rotation = card.dataset.rotation;
+        const searchable = name + ' ' + graphic + ' ' + talent + ' ' + notes + ' ' + scene + ' ' + apparatus;
 
         const matchesType = activeTypeFilter === 'all' || type === activeTypeFilter;
         const matchesGraphic = graphicFilter === 'all' || graphic === graphicFilter;
+        const matchesApparatus = apparatusFilter === 'all' || apparatus === apparatusFilter;
+        const matchesRotation = rotationFilter === 'all' || rotation === rotationFilter;
         const matchesSearch = !query || searchable.includes(query);
 
-        if (matchesType && matchesGraphic && matchesSearch) {
+        if (matchesType && matchesGraphic && matchesApparatus && matchesRotation && matchesSearch) {
           card.classList.remove('hidden');
           visible++;
         } else {
@@ -3965,6 +4019,12 @@ export default function RundownEditorPage() {
     }
 
     URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('[handleExportPreview] Error:', error);
+      showToast('Error generating preview');
+    } finally {
+      setIsExportingPreview(false);
+    }
   }
 
   // Save custom type colors to localStorage (Phase 10: Task 78)
@@ -5721,11 +5781,23 @@ export default function RundownEditorPage() {
             </button>
             <button
               onClick={handleExportPreview}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition-colors"
+              disabled={isExportingPreview}
+              className={`flex items-center gap-2 px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors ${
+                isExportingPreview
+                  ? 'bg-indigo-800 cursor-wait'
+                  : 'bg-indigo-600 hover:bg-indigo-500'
+              }`}
               title="Open visual preview of all segments"
             >
-              <PhotoIcon className="w-4 h-4" />
-              Export Preview
+              {isExportingPreview ? (
+                <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+              ) : (
+                <PhotoIcon className="w-4 h-4" />
+              )}
+              {isExportingPreview ? 'Generating...' : 'Export Preview'}
             </button>
           </div>
         </div>
