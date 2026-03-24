@@ -77,6 +77,11 @@ const ENGINE_STATE = {
 const HEARTBEAT_INTERVAL_MS = 5000;      // 5 seconds
 const CLIP_POLL_INTERVAL_MS = 15000;     // 15 seconds
 const CLIP_STATUS_CLEANUP_DELAY_MS = 500; // Delay before cleaning up clipStatus
+const VIRTIUS_POLL_INTERVAL_MS = 45000;  // 45 seconds for rotation detection
+const ROTATION_DEBOUNCE_POLLS = 2;       // 2 polls (~90s) before advancing to next rotation
+
+// Virtius API
+const VIRTIUS_API_BASE = 'https://api.virti.us';
 
 // ============================================================================
 // PlayoutEngine Class
@@ -92,6 +97,7 @@ const CLIP_STATUS_CLEANUP_DELAY_MS = 500; // Delay before cleaning up clipStatus
  * - 'modeChanged': Playout mode changed (CLIP/LIVE/FALLBACK/etc)
  * - 'clipAdvanced': Moved to next clip
  * - 'queueUpdated': Clip queue changed (new clips, status changes)
+ * - 'rotationAdvanced': Rotation changed (triggers break content sequence)
  * - 'error': Error occurred
  * - 'heartbeat': Heartbeat written
  */
@@ -160,9 +166,17 @@ export class PlayoutEngine extends EventEmitter {
     this._heartbeatTimer = null;
     this._clipPollTimer = null;
     this._clipStatusListener = null;
+    this._virtiusPollTimer = null;
 
     // Track last API error for health indicator
     this._lastApiError = null;
+
+    // Rotation tracking (for auto-advance)
+    this._virtiusSessionId = null;
+    this._currentRotation = null;
+    this._detectedRotation = null;         // Rotation from latest Virtius poll
+    this._rotationChangeDebounceCount = 0; // Counts consecutive polls with new rotation
+    this._rotationBreakPending = false;    // Flag when we've triggered break mode
 
     console.log(`[PlayoutEngine] Created for competition ${this.compId}`);
   }
@@ -229,6 +243,10 @@ export class PlayoutEngine extends EventEmitter {
     return this._lastApiError;
   }
 
+  get currentRotation() {
+    return this._currentRotation;
+  }
+
   // ==========================================================================
   // Public Methods
   // ==========================================================================
@@ -259,6 +277,18 @@ export class PlayoutEngine extends EventEmitter {
         this._logEvent('warning', 'Started in degraded mode - no session key');
       }
 
+      // Get Virtius session ID for rotation detection
+      if (this.firebase) {
+        const virtiusRef = this.firebase.ref(`competitions/${this.compId}/config/virtiusSessionId`);
+        const virtiusSnapshot = await virtiusRef.once('value');
+        this._virtiusSessionId = virtiusSnapshot.val();
+        if (this._virtiusSessionId) {
+          console.log(`[PlayoutEngine] Loaded Virtius session ID: ${this._virtiusSessionId}`);
+        } else {
+          console.log(`[PlayoutEngine] No Virtius session ID - rotation auto-advance disabled`);
+        }
+      }
+
       // Restore persisted queue if available
       await this._restoreQueue();
 
@@ -273,6 +303,7 @@ export class PlayoutEngine extends EventEmitter {
       // Start timers
       this._startHeartbeat();
       this._startClipPolling();
+      this._startVirtiusPolling();
 
       // Update state
       this._state = ENGINE_STATE.RUNNING;
@@ -306,6 +337,7 @@ export class PlayoutEngine extends EventEmitter {
     // Stop timers
     this._stopHeartbeat();
     this._stopClipPolling();
+    this._stopVirtiusPolling();
     this._removeClipStatusListener();
 
     // Mark current clip as skipped if playing
@@ -547,6 +579,8 @@ export class PlayoutEngine extends EventEmitter {
       momentReplayQueue: this._momentReplayQueue,
       eventLog: this._eventLog,
       lastApiError: this._lastApiError,
+      currentRotation: this._currentRotation,
+      rotationBreakPending: this._rotationBreakPending,
       coordinatorHeartbeat: {
         lastSeen: Date.now(),
         connected: true
@@ -1060,6 +1094,199 @@ export class PlayoutEngine extends EventEmitter {
       clearInterval(this._clipPollTimer);
       this._clipPollTimer = null;
     }
+  }
+
+  // ==========================================================================
+  // Private Methods - Virtius Polling (Rotation Detection)
+  // ==========================================================================
+
+  /**
+   * Start Virtius polling for rotation detection
+   * @private
+   */
+  _startVirtiusPolling() {
+    if (!this._virtiusSessionId) {
+      console.log(`[PlayoutEngine] Skipping Virtius polling - no session ID`);
+      return;
+    }
+
+    this._stopVirtiusPolling();
+
+    // Initial poll
+    this._pollVirtiusRotation();
+
+    this._virtiusPollTimer = setInterval(async () => {
+      await this._pollVirtiusRotation();
+    }, VIRTIUS_POLL_INTERVAL_MS);
+
+    console.log(`[PlayoutEngine] Started Virtius polling every ${VIRTIUS_POLL_INTERVAL_MS}ms`);
+  }
+
+  /**
+   * Stop Virtius polling timer
+   * @private
+   */
+  _stopVirtiusPolling() {
+    if (this._virtiusPollTimer) {
+      clearInterval(this._virtiusPollTimer);
+      this._virtiusPollTimer = null;
+    }
+  }
+
+  /**
+   * Poll Virtius API for rotation detection
+   * @private
+   */
+  async _pollVirtiusRotation() {
+    if (!this._virtiusSessionId) return;
+
+    try {
+      const url = `${VIRTIUS_API_BASE}/session/${this._virtiusSessionId}/json`;
+      const response = await fetch(url, {
+        headers: { Accept: 'application/json' }
+      });
+
+      if (!response.ok) {
+        console.warn(`[PlayoutEngine] Virtius API error: ${response.status}`);
+        return;
+      }
+
+      const data = await response.json();
+      const rotation = this._inferCurrentRotation(data);
+
+      if (rotation !== null) {
+        this._handleRotationDetection(rotation);
+      }
+    } catch (error) {
+      console.error(`[PlayoutEngine] Error polling Virtius:`, error.message);
+    }
+  }
+
+  /**
+   * Infer current rotation from Virtius API data
+   * Based on pattern from aiContextService._inferCurrentRotation
+   * @private
+   */
+  _inferCurrentRotation(data) {
+    const meet = data?.meet || {};
+    const eventResults = meet.event_results || [];
+
+    if (eventResults.length === 0) return null;
+
+    // Count events with at least one score
+    let eventsWithScores = 0;
+    for (const event of eventResults) {
+      const hasScores = (event.gymnasts || []).some(g => g.score > 0);
+      if (hasScores) eventsWithScores++;
+    }
+
+    // If no events have scores yet, we're in rotation 1
+    if (eventsWithScores === 0) return 1;
+
+    // For gymnastics, eventsWithScores roughly corresponds to rotations completed
+    // Return eventsWithScores + 1 as the current rotation (if not at end)
+    const teams = meet.teams || [];
+    const numTeams = teams.length;
+
+    // For women's: 4 apparatus, 4 rotations
+    // For men's: 6 apparatus, 6 rotations
+    // Estimate based on apparatus count in eventResults
+    const maxRotations = eventResults.length; // Number of apparatus types
+
+    if (eventsWithScores >= maxRotations) {
+      // All rotations complete
+      return maxRotations;
+    }
+
+    return eventsWithScores + 1;
+  }
+
+  /**
+   * Handle rotation detection with debouncing
+   * Requires 2 consecutive polls detecting same new rotation before advancing
+   * @private
+   */
+  _handleRotationDetection(detectedRotation) {
+    // Initialize current rotation if not set
+    if (this._currentRotation === null) {
+      this._currentRotation = detectedRotation;
+      this._logEvent('system', `Initial rotation detected: ${detectedRotation}`);
+      console.log(`[PlayoutEngine] Initial rotation: ${detectedRotation}`);
+      return;
+    }
+
+    // Check if rotation changed
+    if (detectedRotation > this._currentRotation) {
+      // Rotation advance detected
+      if (this._detectedRotation === detectedRotation) {
+        // Same as last detection - increment debounce counter
+        this._rotationChangeDebounceCount++;
+        console.log(`[PlayoutEngine] Rotation ${detectedRotation} detected (poll ${this._rotationChangeDebounceCount}/${ROTATION_DEBOUNCE_POLLS})`);
+
+        if (this._rotationChangeDebounceCount >= ROTATION_DEBOUNCE_POLLS) {
+          // Debounce threshold met - trigger rotation advance
+          this._triggerRotationBreak(detectedRotation);
+        }
+      } else {
+        // New rotation detected - start debounce
+        this._detectedRotation = detectedRotation;
+        this._rotationChangeDebounceCount = 1;
+        console.log(`[PlayoutEngine] New rotation ${detectedRotation} detected (poll 1/${ROTATION_DEBOUNCE_POLLS})`);
+      }
+    } else {
+      // No rotation change - reset debounce
+      this._detectedRotation = null;
+      this._rotationChangeDebounceCount = 0;
+    }
+  }
+
+  /**
+   * Trigger rotation break (BREAK mode between rotations)
+   * @private
+   */
+  _triggerRotationBreak(newRotation) {
+    const previousRotation = this._currentRotation;
+    this._currentRotation = newRotation;
+    this._detectedRotation = null;
+    this._rotationChangeDebounceCount = 0;
+    this._rotationBreakPending = true;
+
+    console.log(`[PlayoutEngine] Rotation advance: ${previousRotation} -> ${newRotation}`);
+    this._logEvent('rotation', `Rotation ${previousRotation} complete - advancing to rotation ${newRotation}`);
+
+    // Enter BREAK mode
+    const previousMode = this._mode;
+    this._mode = PLAYOUT_MODE.BREAK;
+
+    // Write break graphic to Firebase (Task 10 will add content sequence here)
+    this._writeCurrentGraphic({
+      graphic: 'rotation-break',
+      data: {
+        completedRotation: previousRotation,
+        nextRotation: newRotation,
+        timestamp: Date.now()
+      }
+    });
+
+    this.emit('modeChanged', { previousMode, newMode: PLAYOUT_MODE.BREAK });
+    this.emit('rotationAdvanced', { previousRotation, newRotation });
+    this._broadcastState();
+  }
+
+  /**
+   * Mark rotation break as complete (called by content sequence or timeout)
+   * @public
+   */
+  completeRotationBreak() {
+    if (!this._rotationBreakPending) return;
+
+    this._rotationBreakPending = false;
+    this._logEvent('rotation', `Rotation break complete - resuming playout`);
+    console.log(`[PlayoutEngine] Rotation break complete`);
+
+    // Re-evaluate priority stack to resume normal playout
+    this._evaluatePriorityStack();
+    this._broadcastState();
   }
 
   // ==========================================================================

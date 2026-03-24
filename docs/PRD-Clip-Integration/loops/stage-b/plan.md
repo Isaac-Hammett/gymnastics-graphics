@@ -16,7 +16,7 @@
 ## Phase 3: Rundown + Rotation Integration (Sequential — depends on Phase 2)
 
 8. Persist playout rules to Firebase — RundownEditor saves `playout` and `content-sequence` segment config to `competitions/{compId}/rundown/segments/{segId}`, playoutEngine reads rules on activation — COMPLETE
-9. Rotation auto-advance — playoutEngine detects rotation completion via existing Virtius API polling, triggers break content sequence between rotations, debounce: 2 polls (~90s) before advancing — NOT STARTED
+9. Rotation auto-advance — playoutEngine detects rotation completion via existing Virtius API polling, triggers break content sequence between rotations, debounce: 2 polls (~90s) before advancing — COMPLETE
 10. Rotation break content sequences — playoutEngine reads content sequence config from rundown segment, cycles through configured items (logos, standings, sponsor graphics) with durations, writes `currentGraphic` for each item, advances to next rotation's clips when sequence completes — NOT STARTED
 
 ## Phase 4: Moment Replay + Polish (Sequential — depends on Phase 2)
