@@ -129,7 +129,7 @@ No duplicate rendering code. All graphics go through `output.html` → overlay p
 
 ---
 
-### Task 6: Polish & Edge Cases — IN PROGRESS
+### Task 6: Polish & Edge Cases — COMPLETE
 
 **Goal:** Handle all edge cases and polish the UX.
 
