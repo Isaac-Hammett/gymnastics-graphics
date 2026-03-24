@@ -3859,6 +3859,7 @@ app.get('/api/virtius/:sessionId', async (req, res) => {
 // Clip Engine API proxy - fetches clips for a competition's session key
 app.get('/api/competitions/:compId/clips', async (req, res) => {
   const { compId } = req.params;
+  const db = productionConfigService.getDb();
   try {
     // Get session key from competition config
     const configSnapshot = await db.ref(`competitions/${compId}/config`).once('value');
