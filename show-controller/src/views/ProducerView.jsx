@@ -31,6 +31,7 @@ import KeyboardShortcutsPanel from '../components/playout/KeyboardShortcutsPanel
 // Playout hooks
 import usePlayoutState from '../hooks/usePlayoutState';
 import usePlayoutActions from '../hooks/usePlayoutActions';
+// Note: usePlayoutSimulation removed in Stage B - simulation is now server-side
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import {
   PlayIcon,
@@ -185,6 +186,7 @@ export default function ProducerView() {
   const [activeAudioCue, setActiveAudioCue] = useState(null); // { songName, segmentId, sourceName, timestamp }
 
   // Playout state and actions (PRD Clip Integration)
+  // Stage B: State now comes from coordinator via socket, not local simulation
   const playoutState = usePlayoutState();
   const playoutActions = usePlayoutActions(playoutState);
 
@@ -343,15 +345,15 @@ export default function ProducerView() {
   // Handle moment replay dialog actions
   const handleMomentPlayNow = useCallback((moment) => {
     flagMoment({ ...moment, playNow: true });
-    setFlaggedMoments(prev => [...prev, { ...moment, id: Date.now(), action: 'play_now' }]);
+    setFlaggedMoments(prev => [...prev, { ...moment, clipId: moment.clipId || currentClip?.draft_id, id: Date.now(), action: 'play_now' }]);
     setShowMomentReplayDialog(false);
-  }, [flagMoment]);
+  }, [flagMoment, currentClip?.draft_id]);
 
   const handleMomentSaveOnly = useCallback((moment) => {
     flagMoment({ ...moment, playNow: false });
-    setFlaggedMoments(prev => [...prev, { ...moment, id: Date.now(), action: 'saved' }]);
+    setFlaggedMoments(prev => [...prev, { ...moment, clipId: moment.clipId || currentClip?.draft_id, id: Date.now(), action: 'saved' }]);
     setShowMomentReplayDialog(false);
-  }, [flagMoment]);
+  }, [flagMoment, currentClip?.draft_id]);
 
   const handleRemoveMoment = useCallback((momentId) => {
     setFlaggedMoments(prev => prev.filter(m => m.id !== momentId));
@@ -1499,7 +1501,7 @@ export default function ProducerView() {
           draft_id: currentClip.draft_id
         } : null}
         flagTime={momentReplayFlagTime}
-        flaggedMoments={flaggedMoments.filter(m => m.draftId === currentClip?.draft_id)}
+        flaggedMoments={flaggedMoments.filter(m => m.clipId === currentClip?.draft_id)}
         onPlayNow={handleMomentPlayNow}
         onSaveOnly={handleMomentSaveOnly}
         onRemoveMoment={handleRemoveMoment}
