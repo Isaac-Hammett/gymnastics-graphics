@@ -10,7 +10,7 @@
 ## Phase 2: Producer + Talent Wiring (Sequential — depends on Phase 1)
 
 5. Replace `usePlayoutState.js` mock with socket-based state — Connect to coordinator via existing Socket.io, receive playout state broadcasts (mode, clips, cameras, override, preload, heartbeat, eventLog), remove mock data imports and `usePlayoutSimulation` dependency — COMPLETE
-6. Replace `usePlayoutActions.js` mock with socket emitters — Each action emits a socket event instead of mutating local state: `socket.emit('playout:skipClip', draftId)`, `socket.emit('playout:forceCamera', cameraNumber)`, etc. Same interface, different transport — NOT STARTED
+6. Replace `usePlayoutActions.js` mock with socket emitters — Each action emits a socket event instead of mutating local state: `socket.emit('playout:skipClip', draftId)`, `socket.emit('playout:forceCamera', cameraNumber)`, etc. Same interface, different transport — COMPLETE
 7. Wire TalentView to real playout state — TalentView receives same socket broadcasts as ProducerView (shared `usePlayoutState`), `flagMoment` emits socket event to coordinator — NOT STARTED
 
 ## Phase 3: Rundown + Rotation Integration (Sequential — depends on Phase 2)

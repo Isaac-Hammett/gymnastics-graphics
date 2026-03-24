@@ -66,8 +66,8 @@ export default function TalentView() {
     cameraStates
   } = playoutState;
 
-  // Playout actions - needed for flag moment
-  const { flagMoment } = usePlayoutActions(playoutState);
+  // Playout actions - needed for flag moment (Stage B: socket-based)
+  const { flagMoment } = usePlayoutActions();
 
   // State for AI panel expansion
   const [aiPanelExpanded, setAIPanelExpanded] = useState(true);
