@@ -3162,7 +3162,7 @@ export default function RundownEditorPage() {
   }
 
   // Export rundown as visual preview HTML page (Phase L: Task 1)
-  function handleExportPreview() {
+  async function handleExportPreview() {
     // Build base URL for output.html iframes
     const baseUrl = window.location.origin;
 
@@ -3182,6 +3182,20 @@ export default function RundownEditorPage() {
       });
       compParams.eventName = competition.name;
       compParams.compType = competition.type;
+    }
+
+    // Task 5: Fetch meet theme from Firebase at export time
+    let themeData = null;
+    const meetThemeId = competitionConfig?.meetTheme;
+    if (meetThemeId) {
+      try {
+        const themeSnapshot = await get(ref(db, `themes/${meetThemeId}`));
+        if (themeSnapshot.exists()) {
+          themeData = themeSnapshot.val();
+        }
+      } catch (error) {
+        console.error('[handleExportPreview] Error fetching theme:', error);
+      }
     }
 
     // Helper: build output.html iframe URL for a graphic segment
@@ -3207,6 +3221,11 @@ export default function RundownEditorPage() {
         });
       }
 
+      // Task 5: Pass meetTheme parameter to output.html iframes
+      if (meetThemeId) {
+        params.set('meetTheme', meetThemeId);
+      }
+
       return `${baseUrl}/output.html?${params.toString()}`;
     }
 
@@ -3221,6 +3240,12 @@ export default function RundownEditorPage() {
         .join(', ');
     }
 
+    // Task 5: Build wall-clock times for each segment if timezone config is active
+    // This embeds wall-clock times directly in the exported HTML
+    const exportWallClockTimes = calculateWallClockTimes(segments, segmentStartTimes, timezoneConfig);
+    const primaryTimezone = timezoneConfig?.primaryTimezone || null;
+    const use24HourFormat = timezoneConfig?.use24HourFormat || false;
+
     // Build segment cards HTML
     const segmentCardsHtml = segments.map((seg, index) => {
       const startTime = segmentStartTimes[seg.id] || 0;
@@ -3229,6 +3254,13 @@ export default function RundownEditorPage() {
       const talentStr = getTalentNames(seg.talent);
       const graphicId = seg.graphic?.graphicId || '';
       const segType = seg.type || 'live';
+
+      // Task 5: Get wall-clock time for this segment if available
+      let wallClockStr = '';
+      if (primaryTimezone && exportWallClockTimes[seg.id]) {
+        const wallClockTime = exportWallClockTimes[seg.id];
+        wallClockStr = formatTimeInTimezone(wallClockTime, primaryTimezone, use24HourFormat);
+      }
 
       // Type badge colors (inline CSS, not Tailwind)
       const typeColors = {
@@ -3320,6 +3352,7 @@ export default function RundownEditorPage() {
             <div class="card-meta">
               <span>⏱ ${startTimeStr}</span>
               <span>⏳ ${durationStr}</span>
+              ${wallClockStr ? `<span class="wall-clock">🕐 ${wallClockStr}</span>` : ''}
             </div>
             ${graphicId ? `<div class="card-graphic">🎨 ${graphicId}</div>` : ''}
             ${seg.scene ? `<div class="card-scene">🎥 ${seg.scene}</div>` : ''}
@@ -3343,6 +3376,43 @@ export default function RundownEditorPage() {
     const graphicTypes = [...new Set(segments.map(s => s.graphic?.graphicId).filter(Boolean))].sort();
     const graphicOptionsHtml = graphicTypes.map(g => `<option value="${g}">${g}</option>`).join('');
 
+    // Task 5: Build theme CSS variables block if theme is active
+    let themeCssVars = '';
+    let themeMetaHtml = '';
+    if (themeData && themeData.colors) {
+      const colors = themeData.colors;
+      // Map theme color fields to CSS custom properties (same as theme-loader.js)
+      const cssVars = [];
+      // v3.0 field names
+      if (colors.headerBar) cssVars.push(`--meet-header-bg: ${colors.headerBar};`);
+      if (colors.contentArea) cssVars.push(`--meet-content-bg: ${colors.contentArea};`);
+      if (colors.bodyBackground) cssVars.push(`--meet-overlay-bg: ${colors.bodyBackground};`);
+      if (colors.borderDivider) cssVars.push(`--meet-border-color: ${colors.borderDivider};`);
+      if (colors.badge) cssVars.push(`--meet-badge-bg: ${colors.badge};`);
+      if (colors.badgeText) cssVars.push(`--meet-badge-text: ${colors.badgeText};`);
+      if (colors.textOnHeader) cssVars.push(`--meet-header-text: ${colors.textOnHeader};`);
+      if (colors.textOnContent) cssVars.push(`--meet-overlay-text: ${colors.textOnContent};`);
+      // v2.0 backward compat
+      if (colors.headerBg && !colors.headerBar) cssVars.push(`--meet-header-bg: ${colors.headerBg};`);
+      if (colors.accentPrimary && !colors.contentArea) cssVars.push(`--meet-content-bg: ${colors.accentPrimary};`);
+      if (colors.overlayBg && !colors.bodyBackground) cssVars.push(`--meet-overlay-bg: ${colors.overlayBg};`);
+      if (colors.overlayText && !colors.textOnContent) cssVars.push(`--meet-overlay-text: ${colors.overlayText};`);
+      if (colors.borderColor && !colors.borderDivider) cssVars.push(`--meet-border-color: ${colors.borderColor};`);
+      if (colors.badgeBg && !colors.badge) cssVars.push(`--meet-badge-bg: ${colors.badgeBg};`);
+      if (colors.headerText && !colors.textOnHeader) cssVars.push(`--meet-header-text: ${colors.headerText};`);
+
+      if (cssVars.length > 0) {
+        themeCssVars = `
+    /* Meet Theme: ${themeData.name || meetThemeId} - embedded at export */
+    :root {
+      ${cssVars.join('\n      ')}
+    }`;
+      }
+
+      // Theme badge in header
+      themeMetaHtml = `<span class="theme-badge" title="Meet Theme: ${themeData.name || meetThemeId}" style="background: ${colors.headerBar || colors.headerBg || '#3b82f6'}; color: ${colors.textOnHeader || colors.headerText || '#ffffff'}; padding: 2px 8px; border-radius: 4px; font-size: 11px;">🎨 ${themeData.name || meetThemeId}</span>`;
+    }
+
     // Generate the full HTML page
     const htmlContent = `<!DOCTYPE html>
 <html lang="en">
@@ -3350,7 +3420,7 @@ export default function RundownEditorPage() {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Rundown Preview — ${competition.name}</title>
-  <style>
+  <style>${themeCssVars}
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif; background: #09090b; color: #e4e4e7; min-height: 100vh; }
 
@@ -3386,7 +3456,8 @@ export default function RundownEditorPage() {
     .card-number { font-size: 12px; color: #52525b; font-weight: 600; }
     .card-type-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 600; text-transform: uppercase; }
     .card-name { font-size: 14px; font-weight: 600; color: #fafafa; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .card-meta { display: flex; gap: 12px; font-size: 11px; color: #71717a; margin-bottom: 4px; }
+    .card-meta { display: flex; gap: 12px; font-size: 11px; color: #71717a; margin-bottom: 4px; flex-wrap: wrap; }
+    .card-meta .wall-clock { color: #14b8a6; font-weight: 500; }
     .card-graphic, .card-scene, .card-talent, .card-notes { font-size: 11px; color: #52525b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
     .card-notes { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
@@ -3452,6 +3523,8 @@ export default function RundownEditorPage() {
         <span>${segments.length} segments</span>
         <span>Total: ${formatDuration(totalRuntime)}</span>
         <span>Exported: ${new Date().toLocaleString()}</span>
+        ${primaryTimezone ? `<span class="tz-badge" style="background: #0f766e; color: #5eead4; padding: 2px 8px; border-radius: 4px; font-size: 11px;">🕐 ${getTimezoneAbbreviation(primaryTimezone)}</span>` : ''}
+        ${themeMetaHtml}
       </div>
     </div>
     <div class="summary-badges">${typeCountsHtml}</div>
