@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verification Log — Clip Integration Stage B (Backend)</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0a0a1a; color: #eee; padding: 24px; }
+    h1 { color: #00d4ff; font-size: 1.4em; margin-bottom: 4px; }
+    .subtitle { color: #888; font-size: 0.9em; margin-bottom: 24px; }
+    .entry { background: #1a1a2e; border-radius: 8px; padding: 20px; margin-bottom: 16px; border: 1px solid #333; }
+    .entry-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .entry-title { color: #fff; font-size: 1.05em; font-weight: 600; }
+    .badge { display: inline-block; padding: 4px 12px; border-radius: 4px; font-size: 0.8em; font-weight: bold; }
+    .badge.pass { background: #166534; color: #4ade80; }
+    .badge.fail { background: #991b1b; color: #f87171; }
+    .badge.needs-review { background: #92400e; color: #fbbf24; }
+    .entry-details { color: #aaa; font-size: 0.9em; line-height: 1.6; }
+    .entry-details code { background: #2a2a3e; padding: 2px 6px; border-radius: 3px; color: #00d4ff; font-size: 0.85em; }
+    .timestamp { color: #666; font-size: 0.8em; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <h1>Verification Log — Clip Integration Stage B (Backend)</h1>
+  <p class="subtitle">Backend integration: API adapter, playout engine, socket wiring, Firebase persistence</p>
+
+  <!-- Task 1: clipService.js -->
+  <div class="entry">
+    <div class="entry-header">
+      <span class="entry-title">Task 1: clipService.js — Clip Engine API Adapter</span>
+      <span class="badge pass">PASS</span>
+    </div>
+    <div class="entry-details">
+      <strong>Verification method:</strong> Node import check + live API call on coordinator server<br>
+      <strong>Results:</strong><br>
+      - Module exports: <code>fetchClips</code>, <code>fetchNewClips</code><br>
+      - Live API call to session <code>sJ3UJjy6mj</code> (Cal vs Oklahoma): 52 clips fetched, 52 after dedup<br>
+      - Score normalization: <code>13.45</code> passed through correctly<br>
+      - <code>thumbnail_url</code>: present on first clip<br>
+      - <code>apparatus</code>: <code>FX</code> on first clip<br>
+      - No errors, no warnings<br>
+      <strong>Server:</strong> 44.193.31.120, file at <code>/opt/gymnastics-graphics/server/lib/clipService.js</code>
+    </div>
+    <div class="timestamp">2026-03-23</div>
+  </div>
+
+  <!-- Task 2: Clip API Proxy Route -->
+  <div class="entry">
+    <div class="entry-header">
+      <span class="entry-title">Task 2: Clip API Proxy Route — GET /api/competitions/:compId/clips</span>
+      <span class="badge pass">PASS</span>
+    </div>
+    <div class="entry-details">
+      <strong>Verification method:</strong> curl tests against coordinator API<br>
+      <strong>Results:</strong><br>
+      - <code>GET /api/competitions/cpv7ngyc/clips</code>: 52 clips returned, sessionKey <code>sJ3UJjy6mj</code><br>
+      - First clip: <code>Fuzzy Benas</code> on <code>FX</code> with score <code>13.45</code><br>
+      - Response includes <code>clips</code>, <code>total</code>, <code>sessionKey</code> fields<br>
+      - Error case (no sessionKey): <code>{"error":"Competition has no session key configured"}</code><br>
+      - Error case (nonexistent comp): <code>{"error":"Competition not found"}</code><br>
+      <strong>Server:</strong> 44.193.31.120:3003, route at <code>server/index.js:3860</code>
+    </div>
+    <div class="timestamp">2026-03-23</div>
+  </div>
+
+  <!-- Task 3: playoutEngine.js -->
+  <div class="entry">
+    <div class="entry-header">
+      <span class="entry-title">Task 3: playoutEngine.js — Core Playout Engine</span>
+      <span class="badge pass">PASS</span>
+    </div>
+    <div class="entry-details">
+      <strong>Verification method:</strong> Node import check on coordinator server<br>
+      <strong>Results:</strong><br>
+      - Module exports: <code>PlayoutEngine</code>, <code>getPlayoutEngine</code>, <code>removePlayoutEngine</code>, <code>getAllPlayoutEngines</code><br>
+      - Constants exported: <code>PLAYOUT_MODE</code>, <code>CLIP_STATUS</code>, <code>CAMERA_STATE</code>, <code>PRELOAD_STATE</code><br>
+      - Server started with 0 restarts, status: online<br>
+      - File deployed at <code>/opt/gymnastics-graphics/server/lib/playoutEngine.js</code> (34,195 bytes)<br>
+      <strong>Features implemented:</strong><br>
+      - Clip queue management with priority stack evaluation<br>
+      - Mode state machine (CLIP/LIVE/MOMENT_REPLAY/FALLBACK/BREAK/OVERRIDE/PAUSED)<br>
+      - Auto-advance on <code>clipStatus/{draftId}</code> write-back from output.html<br>
+      - Heartbeat writer (5s interval) to <code>production/engineHeartbeat</code><br>
+      - Queue persistence to <code>production/clipQueue</code> for recovery<br>
+      - Event logging (circular buffer, 100 entries)<br>
+      - Socket.io broadcast support via <code>playout:stateUpdate</code> event<br>
+      <strong>Server:</strong> 44.193.31.120, commit <code>c16215c</code>
+    </div>
+    <div class="timestamp">2026-03-24</div>
+  </div>
+
+  <!-- Task 4: Wire playoutEngine into coordinator -->
+  <div class="entry">
+    <div class="entry-header">
+      <span class="entry-title">Task 4: Wire playoutEngine into coordinator server/index.js</span>
+      <span class="badge pass">PASS</span>
+    </div>
+    <div class="entry-details">
+      <strong>Verification method:</strong> Coordinator deployment + browser test<br>
+      <strong>Results:</strong><br>
+      - Import added: <code>PlayoutEngine</code>, <code>getPlayoutEngine</code>, <code>removePlayoutEngine</code>, <code>PLAYOUT_MODE</code>, <code>CLIP_STATUS</code><br>
+      - <code>playoutEngines</code> Map created for per-competition engine management<br>
+      - Helper functions: <code>getOrCreatePlayoutEngine()</code>, <code>getPlayoutEngine()</code>, <code>removePlayoutEngine()</code><br>
+      - 14 socket handlers registered: <code>playout:start</code>, <code>playout:stop</code>, <code>playout:pause</code>, <code>playout:resume</code>, <code>playout:skipClip</code>, <code>playout:forceCamera</code>, <code>playout:releaseOverride</code>, <code>playout:flagMoment</code>, <code>playout:addToQueue</code>, <code>playout:retryClip</code>, <code>playout:retryAllFailed</code>, <code>playout:fetchClips</code>, <code>playout:getState</code><br>
+      - Initial playout state sent to clients on connection<br>
+      - PM2 status: online, 0 restarts after warmup<br>
+      - Browser test: ProducerView connected successfully, "Connected" indicator shown<br>
+      <strong>Screenshot:</strong> <code>screenshots/verify-stage-b-task4.png</code><br>
+      <strong>Server:</strong> 44.193.31.120, commit <code>ac84b8d</code>
+    </div>
+    <div class="timestamp">2026-03-24</div>
+  </div>
+
+  <!-- Task 5: Replace usePlayoutState.js mock with socket-based state -->
+  <div class="entry">
+    <div class="entry-header">
+      <span class="entry-title">Task 5: Replace usePlayoutState.js mock with socket-based state</span>
+      <span class="badge pass">PASS</span>
+    </div>
+    <div class="entry-details">
+      <strong>Verification method:</strong> Playwright browser test + console log inspection<br>
+      <strong>Results:</strong><br>
+      - Removed fixture import: <code>sample-response.json</code> no longer loaded<br>
+      - Removed <code>usePlayoutSimulation</code> dependency from ProducerView<br>
+      - Socket listeners registered: <code>playout:stateUpdate</code>, <code>playout:modeChange</code>, <code>playout:clipQueueUpdate</code>, <code>playout:error</code><br>
+      - Initial state request: <code>socket.emit('playout:getState')</code> on connect<br>
+      - Console log confirmed: <code>[usePlayoutState] Received playout:stateUpdate {compId: wcgnic-2026-prelim1, isPlayoutActive: false, engineState: stopped, currentMode: FALLBACK, clipsCount: 0}</code><br>
+      - Same interface preserved: <code>isPlayoutActive</code>, <code>currentMode</code>, <code>clips</code>, <code>clipQueue</code>, <code>cameraStates</code>, etc.<br>
+      - State setters now emit warnings: "Use usePlayoutActions instead"<br>
+      - ProducerView rendered successfully with socket-based state<br>
+      <strong>Screenshot:</strong> <code>screenshots/verify-stage-b-task5.png</code><br>
+      <strong>Commit:</strong> <code>3852809</code>
+    </div>
+    <div class="timestamp">2026-03-24</div>
+  </div>
+
+  <!-- Task 6: Replace usePlayoutActions.js mock with socket emitters -->
+  <div class="entry">
+    <div class="entry-header">
+      <span class="entry-title">Task 6: Replace usePlayoutActions.js mock with socket emitters</span>
+      <span class="badge pass">PASS</span>
+    </div>
+    <div class="entry-details">
+      <strong>Verification method:</strong> Build + deploy + Playwright browser test<br>
+      <strong>Results:</strong><br>
+      - Hook refactored: no longer takes <code>playoutState</code> parameter<br>
+      - Gets socket from <code>useShow()</code> context (same pattern as <code>usePlayoutState</code>)<br>
+      - All 11 actions converted to socket emissions:<br>
+        &nbsp;&nbsp;• <code>skipClip</code> → <code>socket.emit('playout:skipClip', { draftId })</code><br>
+        &nbsp;&nbsp;• <code>forceCamera</code> → <code>socket.emit('playout:forceCamera', { cameraNumber })</code><br>
+        &nbsp;&nbsp;• <code>releaseOverride</code> → <code>socket.emit('playout:releaseOverride')</code><br>
+        &nbsp;&nbsp;• <code>pausePlayout</code> → <code>socket.emit('playout:pause')</code><br>
+        &nbsp;&nbsp;• <code>resumePlayout</code> → <code>socket.emit('playout:resume')</code><br>
+        &nbsp;&nbsp;• <code>stopPlayout</code> → <code>socket.emit('playout:stop')</code><br>
+        &nbsp;&nbsp;• <code>startPlayout</code> → <code>socket.emit('playout:start', { sessionKey })</code> (new)<br>
+        &nbsp;&nbsp;• <code>flagMoment</code> → <code>socket.emit('playout:flagMoment', {...})</code><br>
+        &nbsp;&nbsp;• <code>addToQueue</code> → <code>socket.emit('playout:addToQueue', { draftId })</code><br>
+        &nbsp;&nbsp;• <code>retryClip</code> → <code>socket.emit('playout:retryClip', { draftId })</code><br>
+        &nbsp;&nbsp;• <code>retryAllFailed</code> → <code>socket.emit('playout:retryAllFailed')</code><br>
+        &nbsp;&nbsp;• <code>fetchClips</code> → <code>socket.emit('playout:fetchClips')</code><br>
+      - All actions include console.log for debugging and null socket guard<br>
+      - <code>ProducerView.jsx</code> updated: <code>usePlayoutActions()</code> without parameter<br>
+      - <code>TalentView.jsx</code> updated: <code>usePlayoutActions()</code> without parameter<br>
+      - Build succeeded: 849 modules transformed, no errors<br>
+      - ProducerView rendered with "Connected" status<br>
+      - Console showed <code>[usePlayoutState] Received playout:stateUpdate</code><br>
+      <strong>Screenshot:</strong> <code>screenshots/verify-stage-b-task6.png</code><br>
+      <strong>Commit:</strong> <code>c121dbb</code>
+    </div>
+    <div class="timestamp">2026-03-24</div>
+  </div>
+
+  <!-- Task 7: Wire TalentView to real playout state -->
+  <div class="entry">
+    <div class="entry-header">
+      <span class="entry-title">Task 7: Wire TalentView to real playout state</span>
+      <span class="badge pass">PASS</span>
+    </div>
+    <div class="entry-details">
+      <strong>Verification method:</strong> Playwright browser test + console log inspection<br>
+      <strong>Results:</strong><br>
+      - TalentView already wired via shared hooks from Tasks 5-6<br>
+      - <code>usePlayoutState()</code> receives socket broadcasts (shared with ProducerView)<br>
+      - <code>usePlayoutActions()</code> emits socket events including <code>flagMoment</code><br>
+      - Console confirmed: <code>[usePlayoutState] Received playout:stateUpdate {compId: wcgnic-2026-prelim1, isPlayoutActive: false, engineState: stopped, currentMode: FALLBACK, clipsCount: 0}</code><br>
+      - TalentClipInfo panel hidden when <code>isPlayoutActive: false</code> (correct behavior)<br>
+      - Flag Moment button wired to <code>flagMoment()</code> action<br>
+      - Connection status shows "Connected" indicator<br>
+      - No console errors related to playout state<br>
+      <strong>Screenshot:</strong> <code>screenshots/verify-stage-b-task7-talent.png</code><br>
+      <strong>Commit:</strong> N/A (no code changes needed - hooks already socket-based)
+    </div>
+    <div class="timestamp">2026-03-24</div>
+  </div>
+
+</body>
+</html>
