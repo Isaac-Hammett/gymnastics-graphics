@@ -204,6 +204,7 @@ export default function ProducerView() {
     coordinatorHeartbeat,
     momentReplay,
     eventLog,
+    lastApiError,
     CLIP_STATUS,
     PLAYOUT_MODE
   } = playoutState;
@@ -836,6 +837,26 @@ export default function ProducerView() {
             <BeakerIcon className="w-5 h-5 text-purple-400" />
             <span className="text-purple-300 font-bold tracking-wider">REHEARSAL MODE</span>
             <span className="text-purple-400/70 text-sm">— OBS scene changes and graphics are disabled</span>
+          </div>
+        </div>
+      )}
+
+      {/* Clip Engine API Error Banner - shown during playout when API errors occur */}
+      {showPlayoutPanels && lastApiError && (
+        <div className="bg-orange-500/20 border-b border-orange-500/40 px-4 py-2">
+          <div className="max-w-6xl mx-auto flex items-center gap-3">
+            <ExclamationTriangleIcon className="w-5 h-5 text-orange-400 flex-shrink-0" />
+            <div className="flex-1">
+              <span className="text-orange-400 font-medium">Clip Engine API Error: </span>
+              <span className="text-orange-300/80">{lastApiError}</span>
+            </div>
+            <button
+              onClick={fetchClips}
+              className="flex items-center gap-1.5 px-2.5 py-1 text-xs bg-orange-500/30 hover:bg-orange-500/50 text-orange-300 rounded transition-colors"
+            >
+              <ArrowPathIcon className="w-3.5 h-3.5" />
+              Retry
+            </button>
           </div>
         </div>
       )}
