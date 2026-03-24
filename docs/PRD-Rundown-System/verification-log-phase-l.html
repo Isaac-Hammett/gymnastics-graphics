@@ -444,6 +444,22 @@
     ],
     "commitHash": "72ba56a",
     "notes": "Implementation verified on production. Code correctly handles competitions without theme/timezone config - no badges shown, no wall-clock times. When configured, theme CSS variables are embedded and meetTheme param is passed to iframe URLs. Talent names already resolved in previous tasks."
+  },
+  {
+    "taskId": "Task 6",
+    "taskName": "Polish & Edge Cases",
+    "description": "Added loading state on Export Preview button with spinner animation, apparatus and rotation filter dropdowns in exported HTML, enhanced empty state with icon and descriptive message, print-friendly CSS media query for print mode, and error handling with try-catch-finally for export function.",
+    "result": "NEEDS REVIEW",
+    "timestamp": "2026-03-24T04:58:00.000Z",
+    "screenshot": "screenshots/verify-phase-l-task-6-wide.png",
+    "expectedInScreenshot": "Preview page showing: header with title, segment count (7 segments), total runtime (4:00), export timestamp; filter bar with type buttons (All, Graphic, Live, Clip, Break, Hold, Playout, Content Seq) and Graphics dropdown; segment cards grid with previews; playback toolbar at bottom with controls and time display.",
+    "consoleErrors": "none",
+    "filesModified": [
+      "show-controller/src/pages/RundownEditorPage.jsx",
+      "docs/PRD-Rundown-System/PLAN-Phase-L-Preview-Tool.md"
+    ],
+    "commitHash": "25df444",
+    "notes": "Verified on production. Export Preview button now shows loading spinner during generation. Filter bar displays correctly with type filter buttons and graphics dropdown. Segment cards render in grid layout. Playback toolbar shows at bottom with restart/play/stop buttons, speed controls (0.5x/1x/2x highlighted), progress bar, and segment info. Test competition has no apparatus/rotation values so those dropdowns correctly don't appear."
   }
 ]
   </script>
