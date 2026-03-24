@@ -3,7 +3,7 @@
 ## Phase 1: Foundation (Sequential — must complete before Phase 2)
 
 1. Create `server/lib/clipService.js` — Clip Engine API adapter with polling, normalization, deduplication by `draft_id` and `athlete_id`+`apparatus`+`rotation`, `thumbnail_url` passthrough, score normalization (missing→null, 0→0), graceful field defaults — COMPLETE
-2. Add clip API proxy route to `server/index.js` — `GET /api/competitions/:compId/clips` that calls clipService with the competition's `sessionKey` from Firebase config — NOT STARTED
+2. Add clip API proxy route to `server/index.js` — `GET /api/competitions/:compId/clips` that calls clipService with the competition's `sessionKey` from Firebase config — COMPLETE
 3. Create `server/lib/playoutEngine.js` — Core engine: clip queue management, priority stack evaluation (live routine > queued clips > fallback), mode state machine (CLIP/LIVE/MOMENT_REPLAY/FALLBACK/BREAK/OVERRIDE/PAUSED), clip auto-advance on `clipStatus/{draftId}` write-back from output.html, heartbeat writer (5s interval), queue persistence to `production/clipQueue`, event logging — NOT STARTED
 4. Wire playoutEngine into coordinator `server/index.js` — Playout activates when active rundown segment has `type: 'playout'`, reads `sessionKey` from competition config, registers socket events for producer/talent actions, broadcasts state updates via Socket.io — NOT STARTED
 
