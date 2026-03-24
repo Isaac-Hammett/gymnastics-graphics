@@ -186,9 +186,9 @@ export default function ProducerView() {
   const [activeAudioCue, setActiveAudioCue] = useState(null); // { songName, segmentId, sourceName, timestamp }
 
   // Playout state and actions (PRD Clip Integration)
-  // Stage B: State now comes from coordinator via socket, not local simulation
+  // Stage B: State comes from coordinator via socket, actions emit socket events
   const playoutState = usePlayoutState();
-  const playoutActions = usePlayoutActions(playoutState);
+  const playoutActions = usePlayoutActions();
 
   const {
     isPlayoutActive,
