@@ -2032,6 +2032,11 @@ export default function RundownEditorPage() {
       ...(segment.equipment && { equipment: segment.equipment }),
       ...(segment.sponsor && { sponsor: segment.sponsor }),
       ...(segment.audioCue && { audioCue: segment.audioCue }),
+      // Playout rules for 'playout' type segments (Stage B: Task 8)
+      ...(segment.playoutRules && { playoutRules: segment.playoutRules }),
+      // Content sequence for 'content-sequence' type segments (Stage B: Task 8)
+      ...(segment.contentSequence && { contentSequence: segment.contentSequence }),
+      ...(segment.advanceCondition && { advanceCondition: segment.advanceCondition }),
     };
   }
 
