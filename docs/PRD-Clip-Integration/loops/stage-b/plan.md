@@ -22,5 +22,5 @@
 ## Phase 4: Moment Replay + Polish (Sequential — depends on Phase 2)
 
 11. Wire moment replay to engine — Producer `flagMoment` with `playNow: true` inserts moment into priority stack after current clip, coordinator writes `moment-replay` type to `currentGraphic` with seekStart/seekEnd/speed, output.html handles video seek and playback rate — COMPLETE
-12. Clip polling refresh loop — playoutEngine polls clipService every 15s for new clips, deduplicates against existing queue, adds new clips in configured sort order, broadcasts queue update to connected clients — NOT STARTED
+12. Clip polling refresh loop — playoutEngine polls clipService every 15s for new clips, deduplicates against existing queue, adds new clips in configured sort order, broadcasts queue update to connected clients — COMPLETE
 13. Producer health indicators — Wire coordinator heartbeat to ProducerView status bar (green/amber/red based on heartbeat age), show "Engine Offline" when stale >30s, show API error banner when clipService returns errors — NOT STARTED

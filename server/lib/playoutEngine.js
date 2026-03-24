@@ -653,7 +653,15 @@ export class PlayoutEngine extends EventEmitter {
         await this._persistQueue();
 
         this._logEvent('clip', `Loaded ${result.newClips.length} new clips (${this._clips.length} total)`);
-        this.emit('queueUpdated', { newClips: result.newClips, total: this._clips.length });
+        this.emit('queueUpdated', {
+          newClips: result.newClips,
+          total: this._clips.length,
+          // Include full state for frontend compatibility
+          clips: this._clips,
+          clipQueue: this.clipQueue,
+          currentClip: this._currentClip,
+          nextClip: this._getNextQueuedClip()
+        });
 
         // If we were in fallback mode and now have clips, evaluate priority stack
         if (this._mode === PLAYOUT_MODE.FALLBACK) {
