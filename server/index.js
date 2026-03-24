@@ -759,6 +759,11 @@ function getOrCreatePlayoutEngine(compId, options = {}) {
     io.to(`competition:${compId}`).emit('playout:modeChange', data);
   });
 
+  engine.on('rotationAdvanced', (data) => {
+    io.to(`competition:${compId}`).emit('playout:rotationAdvanced', data);
+    console.log(`[Playout:${compId}] Rotation advanced: ${data.previousRotation} -> ${data.newRotation}`);
+  });
+
   engine.on('error', (error) => {
     console.error(`[Playout:${compId}] Error:`, error.message);
     io.to(`competition:${compId}`).emit('playout:error', { message: error.message });
@@ -7912,6 +7917,17 @@ io.on('connection', async (socket) => {
       return;
     }
     socket.emit('playout:stateUpdate', engine.getState());
+  });
+
+  // Complete rotation break (called after content sequence finishes)
+  socket.on('playout:completeRotationBreak', () => {
+    const engine = getPlayoutEngine(clientCompId);
+    if (!engine) {
+      socket.emit('playout:error', { message: `No playout engine for competition: ${clientCompId}` });
+      return;
+    }
+    engine.completeRotationBreak();
+    console.log(`[Playout] Rotation break completed for competition: ${clientCompId}`);
   });
 
   // Disconnect handling
