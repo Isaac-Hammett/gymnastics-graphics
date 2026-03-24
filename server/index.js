@@ -37,6 +37,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { sendEmail, inviteEmail, briefingEmail, reminderEmail } from './lib/gmailService.js';
 import { createCompetitionEvent, createPreProdMeeting } from './lib/googleCalendarService.js';
 import { discoverAlumni } from './lib/talentDiscoveryService.js';
+import { fetchClips } from './lib/clipService.js';
 
 dotenv.config();
 
@@ -3852,6 +3853,49 @@ app.get('/api/virtius/:sessionId', async (req, res) => {
   } catch (error) {
     console.error('Virtius API error:', error.message);
     res.status(500).json({ error: 'Failed to fetch Virtius session' });
+  }
+});
+
+// Clip Engine API proxy - fetches clips for a competition's session key
+app.get('/api/competitions/:compId/clips', async (req, res) => {
+  const { compId } = req.params;
+  try {
+    // Get session key from competition config
+    const configSnapshot = await db.ref(`competitions/${compId}/config`).once('value');
+    const config = configSnapshot.val();
+
+    if (!config) {
+      return res.status(404).json({ error: 'Competition not found' });
+    }
+
+    const sessionKey = config.sessionKey;
+    if (!sessionKey) {
+      return res.status(400).json({ error: 'Competition has no session key configured' });
+    }
+
+    // Fetch clips using clipService
+    const result = await fetchClips(sessionKey);
+
+    if (result.error) {
+      console.warn(`[clips] Error fetching clips for ${compId}: ${result.error}`);
+      // Return partial result with error info (clips array may be empty)
+      return res.json({
+        clips: result.clips,
+        total: result.total,
+        sessionKey: result.sessionKey,
+        error: result.error
+      });
+    }
+
+    res.json({
+      clips: result.clips,
+      total: result.total,
+      sessionKey: result.sessionKey
+    });
+
+  } catch (error) {
+    console.error(`[clips] Unexpected error for ${compId}:`, error.message);
+    res.status(500).json({ error: 'Failed to fetch clips' });
   }
 });
 
