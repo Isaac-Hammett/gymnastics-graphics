@@ -38,6 +38,7 @@ import { sendEmail, inviteEmail, briefingEmail, reminderEmail } from './lib/gmai
 import { createCompetitionEvent, createPreProdMeeting } from './lib/googleCalendarService.js';
 import { discoverAlumni } from './lib/talentDiscoveryService.js';
 import { fetchClips } from './lib/clipService.js';
+import { PlayoutEngine, getPlayoutEngine as getPlayoutEngineFromModule, removePlayoutEngine as removePlayoutEngineFromModule, PLAYOUT_MODE, CLIP_STATUS } from './lib/playoutEngine.js';
 
 dotenv.config();
 
@@ -128,6 +129,9 @@ let obsSceneGenerator = null;
 const timesheetEngines = new Map();
 // Legacy single-engine reference (for backward compatibility during transition)
 let timesheetEngine = null;
+
+// Playout Engines (per-competition Map for clip-based playout management)
+const playoutEngines = new Map();
 
 // Firebase rundown listeners (per-competition, for live sync - Phase I)
 // Stores { unsubscribe: Function, lastSegments: Array } per compId
@@ -713,6 +717,80 @@ function removeEngine(compId) {
 
   // Task 56: Clean up AI Context Service
   removeContextService(compId);
+
+  // Clean up Playout Engine
+  removePlayoutEngine(compId);
+}
+
+// ============================================
+// Playout Engine Helpers (PRD Clip Integration)
+// ============================================
+
+/**
+ * Get or create a PlayoutEngine for a competition
+ * @param {string} compId - Competition ID
+ * @param {Object} options - Options (firebase, io, obsConnectionManager)
+ * @returns {PlayoutEngine}
+ */
+function getOrCreatePlayoutEngine(compId, options = {}) {
+  if (!compId) {
+    throw new Error('compId is required to get or create a PlayoutEngine');
+  }
+
+  if (playoutEngines.has(compId)) {
+    return playoutEngines.get(compId);
+  }
+
+  console.log(`[Playout] Creating new engine for competition: ${compId}`);
+
+  const engine = new PlayoutEngine({
+    compId,
+    firebase: options.firebase || productionConfigService.getDb(),
+    io: options.io || io,
+    obsConnectionManager: options.obsConnectionManager || getOBSConnectionManager()
+  });
+
+  // Set up event forwarding to Socket.io
+  engine.on('queueUpdated', (data) => {
+    io.to(`competition:${compId}`).emit('playout:clipQueueUpdate', data);
+  });
+
+  engine.on('modeChanged', (data) => {
+    io.to(`competition:${compId}`).emit('playout:modeChange', data);
+  });
+
+  engine.on('error', (error) => {
+    console.error(`[Playout:${compId}] Error:`, error.message);
+    io.to(`competition:${compId}`).emit('playout:error', { message: error.message });
+  });
+
+  playoutEngines.set(compId, engine);
+  console.log(`[Playout] Engine created for competition: ${compId} (total engines: ${playoutEngines.size})`);
+
+  return engine;
+}
+
+/**
+ * Get an existing PlayoutEngine for a competition (does not create)
+ * @param {string} compId - Competition ID
+ * @returns {PlayoutEngine|null}
+ */
+function getPlayoutEngine(compId) {
+  return playoutEngines.get(compId) || null;
+}
+
+/**
+ * Remove a PlayoutEngine for a competition
+ * @param {string} compId - Competition ID
+ */
+function removePlayoutEngine(compId) {
+  const engine = playoutEngines.get(compId);
+  if (engine) {
+    engine.stop();
+    engine.removeAllListeners();
+    playoutEngines.delete(compId);
+    console.log(`[Playout] Engine removed for competition: ${compId} (remaining engines: ${playoutEngines.size})`);
+  }
 }
 
 /**
@@ -4270,6 +4348,34 @@ io.on('connection', async (socket) => {
     });
   }
 
+  // Send initial playout state if available (PRD Clip Integration)
+  if (clientCompId) {
+    const compPlayoutEngine = getPlayoutEngine(clientCompId);
+    if (compPlayoutEngine) {
+      socket.emit('playout:stateUpdate', compPlayoutEngine.getState());
+    } else {
+      // No engine yet - send inactive state
+      socket.emit('playout:stateUpdate', {
+        compId: clientCompId,
+        isPlayoutActive: false,
+        engineState: 'stopped',
+        currentMode: 'FALLBACK',
+        clips: [],
+        clipQueue: { all: [], queued: [], playing: [], played: [], shownLive: [], skipped: [], failed: [], stalled: [], pending: [] },
+        currentClip: null,
+        nextClip: null,
+        cameraStates: [],
+        overrideState: { active: false, type: null, cameraNumber: null, startedAt: null },
+        preloadState: { state: 'none', clipId: null, progress: 0 },
+        momentReplay: null,
+        momentReplayQueue: [],
+        eventLog: [],
+        lastApiError: null,
+        coordinatorHeartbeat: { lastSeen: Date.now(), connected: true }
+      });
+    }
+  }
+
   // Send initial OBS state if available
   // First, try to get OBS state from the competition's VM connection
   if (clientCompId && clientCompId !== 'local') {
@@ -7623,6 +7729,189 @@ io.on('connection', async (socket) => {
       console.error(`[Socket] getVMPoolStatus failed:`, error.message);
       socket.emit('vmError', { error: error.message });
     }
+  });
+
+  // =====================================================
+  // Playout Engine Socket Events (PRD Clip Integration)
+  // =====================================================
+
+  // Start playout for a competition
+  socket.on('playout:start', async ({ sessionKey } = {}) => {
+    if (!clientCompId) {
+      socket.emit('playout:error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    try {
+      const engine = getOrCreatePlayoutEngine(clientCompId);
+      await engine.start(sessionKey);
+      socket.emit('playout:startResult', { success: true, compId: clientCompId });
+      console.log(`[Playout] Started engine for competition: ${clientCompId}`);
+    } catch (error) {
+      console.error(`[Playout] Failed to start engine for ${clientCompId}:`, error.message);
+      socket.emit('playout:error', { message: error.message });
+    }
+  });
+
+  // Stop playout for a competition
+  socket.on('playout:stop', async () => {
+    if (!clientCompId) {
+      socket.emit('playout:error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const engine = getPlayoutEngine(clientCompId);
+    if (!engine) {
+      socket.emit('playout:error', { message: `No playout engine for competition: ${clientCompId}` });
+      return;
+    }
+
+    try {
+      await engine.stop();
+      socket.emit('playout:stopResult', { success: true, compId: clientCompId });
+      console.log(`[Playout] Stopped engine for competition: ${clientCompId}`);
+    } catch (error) {
+      console.error(`[Playout] Failed to stop engine for ${clientCompId}:`, error.message);
+      socket.emit('playout:error', { message: error.message });
+    }
+  });
+
+  // Pause playout
+  socket.on('playout:pause', () => {
+    const engine = getPlayoutEngine(clientCompId);
+    if (!engine) {
+      socket.emit('playout:error', { message: `No playout engine for competition: ${clientCompId}` });
+      return;
+    }
+    engine.pause();
+    console.log(`[Playout] Paused for competition: ${clientCompId}`);
+  });
+
+  // Resume playout
+  socket.on('playout:resume', () => {
+    const engine = getPlayoutEngine(clientCompId);
+    if (!engine) {
+      socket.emit('playout:error', { message: `No playout engine for competition: ${clientCompId}` });
+      return;
+    }
+    engine.resume();
+    console.log(`[Playout] Resumed for competition: ${clientCompId}`);
+  });
+
+  // Skip current clip
+  socket.on('playout:skipClip', ({ draftId }) => {
+    const engine = getPlayoutEngine(clientCompId);
+    if (!engine) {
+      socket.emit('playout:error', { message: `No playout engine for competition: ${clientCompId}` });
+      return;
+    }
+    engine.skipClip(draftId);
+    console.log(`[Playout] Skipped clip ${draftId} for competition: ${clientCompId}`);
+  });
+
+  // Force camera override
+  socket.on('playout:forceCamera', ({ cameraNumber }) => {
+    const engine = getPlayoutEngine(clientCompId);
+    if (!engine) {
+      socket.emit('playout:error', { message: `No playout engine for competition: ${clientCompId}` });
+      return;
+    }
+    engine.forceCamera(cameraNumber);
+    console.log(`[Playout] Forced camera ${cameraNumber} for competition: ${clientCompId}`);
+  });
+
+  // Release override
+  socket.on('playout:releaseOverride', () => {
+    const engine = getPlayoutEngine(clientCompId);
+    if (!engine) {
+      socket.emit('playout:error', { message: `No playout engine for competition: ${clientCompId}` });
+      return;
+    }
+    engine.releaseOverride();
+    console.log(`[Playout] Released override for competition: ${clientCompId}`);
+  });
+
+  // Flag moment for replay
+  socket.on('playout:flagMoment', ({ draftId, seekStart, seekEnd, speed, playNow }) => {
+    const engine = getPlayoutEngine(clientCompId);
+    if (!engine) {
+      socket.emit('playout:error', { message: `No playout engine for competition: ${clientCompId}` });
+      return;
+    }
+    engine.flagMoment({ draftId, seekStart, seekEnd, speed, playNow });
+    console.log(`[Playout] Flagged moment for competition: ${clientCompId} - playNow: ${playNow}`);
+  });
+
+  // Add clip to queue (re-queue skipped/shown-live clip)
+  socket.on('playout:addToQueue', ({ draftId }) => {
+    const engine = getPlayoutEngine(clientCompId);
+    if (!engine) {
+      socket.emit('playout:error', { message: `No playout engine for competition: ${clientCompId}` });
+      return;
+    }
+    engine.addToQueue(draftId);
+    console.log(`[Playout] Added clip ${draftId} to queue for competition: ${clientCompId}`);
+  });
+
+  // Retry a failed clip
+  socket.on('playout:retryClip', ({ draftId }) => {
+    const engine = getPlayoutEngine(clientCompId);
+    if (!engine) {
+      socket.emit('playout:error', { message: `No playout engine for competition: ${clientCompId}` });
+      return;
+    }
+    engine.retryClip(draftId);
+    console.log(`[Playout] Retrying clip ${draftId} for competition: ${clientCompId}`);
+  });
+
+  // Retry all failed clips
+  socket.on('playout:retryAllFailed', () => {
+    const engine = getPlayoutEngine(clientCompId);
+    if (!engine) {
+      socket.emit('playout:error', { message: `No playout engine for competition: ${clientCompId}` });
+      return;
+    }
+    engine.retryAllFailed();
+    console.log(`[Playout] Retrying all failed clips for competition: ${clientCompId}`);
+  });
+
+  // Manually trigger clip fetch
+  socket.on('playout:fetchClips', async () => {
+    const engine = getPlayoutEngine(clientCompId);
+    if (!engine) {
+      socket.emit('playout:error', { message: `No playout engine for competition: ${clientCompId}` });
+      return;
+    }
+    await engine.fetchClips();
+    console.log(`[Playout] Manual clip fetch for competition: ${clientCompId}`);
+  });
+
+  // Get current playout state
+  socket.on('playout:getState', () => {
+    const engine = getPlayoutEngine(clientCompId);
+    if (!engine) {
+      // No engine - send inactive state
+      socket.emit('playout:stateUpdate', {
+        compId: clientCompId,
+        isPlayoutActive: false,
+        engineState: 'stopped',
+        currentMode: 'FALLBACK',
+        clips: [],
+        clipQueue: { all: [], queued: [], playing: [], played: [], shownLive: [], skipped: [], failed: [], stalled: [], pending: [] },
+        currentClip: null,
+        nextClip: null,
+        cameraStates: [],
+        overrideState: { active: false, type: null, cameraNumber: null, startedAt: null },
+        preloadState: { state: 'none', clipId: null, progress: 0 },
+        momentReplay: null,
+        momentReplayQueue: [],
+        eventLog: [],
+        lastApiError: null,
+        coordinatorHeartbeat: { lastSeen: Date.now(), connected: true }
+      });
+      return;
+    }
+    socket.emit('playout:stateUpdate', engine.getState());
   });
 
   // Disconnect handling
