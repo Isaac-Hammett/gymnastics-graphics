@@ -428,6 +428,22 @@
     ],
     "commitHash": "f7dc700",
     "notes": "Playback tested on production - play button changes to pause when active, time advances correctly, progress bar updates. Second screenshot (verify-phase-l-task-4-playing.png) shows playback at 0:21/4:00."
+  },
+  {
+    "taskId": "Task 5",
+    "taskName": "Theme Integration + Data Embedding",
+    "description": "Fetch meet theme from Firebase at export time and embed CSS variables in exported HTML. Pass meetTheme parameter to output.html iframes. Display wall-clock times on cards when timezone config is set. Show theme and timezone badges in header.",
+    "result": "NEEDS REVIEW",
+    "timestamp": "2026-03-24T04:50:00.000Z",
+    "screenshot": "screenshots/verify-phase-l-task-5.png",
+    "expectedInScreenshot": "Preview page showing segment cards with header containing title, segment count (7 segments), total runtime (4:00), and export timestamp. When theme/timezone are configured, badges appear in header and wall-clock times show on cards. Test competition has no theme/timezone configured, so these correctly don't display.",
+    "consoleErrors": "none",
+    "filesModified": [
+      "show-controller/src/pages/RundownEditorPage.jsx",
+      "docs/PRD-Rundown-System/PLAN-Phase-L-Preview-Tool.md"
+    ],
+    "commitHash": "72ba56a",
+    "notes": "Implementation verified on production. Code correctly handles competitions without theme/timezone config - no badges shown, no wall-clock times. When configured, theme CSS variables are embedded and meetTheme param is passed to iframe URLs. Talent names already resolved in previous tasks."
   }
 ]
   </script>
