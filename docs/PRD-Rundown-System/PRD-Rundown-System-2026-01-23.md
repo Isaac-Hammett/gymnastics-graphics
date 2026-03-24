@@ -238,6 +238,77 @@ Producers can create rundowns but cannot execute them. There's no bridge between
 
 ---
 
+### Story 10: Producer Reviews Rundown in Visual Preview Tool
+
+**As a** Producer who has built a rundown
+**I want to** browse, search, and inspect every graphic and clip in the show
+**So that** I can verify everything looks correct before going live, and share the visual plan with talent and stakeholders
+
+**Core Concept:**
+This is a **review tool first, slideshow second**. The primary experience is a searchable, filterable visual catalog of every segment in the rundown. Each segment renders its actual production output — using the same `output.html` and overlay rendering code used in OBS — so what you see in the preview is exactly what goes to air.
+
+**Flow:**
+1. Navigate to `/{compId}/rundown` (Rundown Editor)
+2. Click "Export Preview" button in toolbar
+3. System generates a self-contained HTML page with all segment data, graphic configs, clip metadata, team logos, and theme CSS baked in
+4. Page opens in new tab (or downloads as shareable HTML file)
+
+**Preview Page Layout:**
+
+*Search & Filter Bar (top):*
+- Text search across segment names, graphic types, team names, talent names, apparatus, athlete names, scripts
+- Filter by segment type: graphic, clip, live camera, break/content sequence, moment replay, hold/manual
+- Filter by graphic type: logos, roster, event-bar, event-summary, sponsors, etc.
+- Filter by rotation, talent assignment, apparatus
+
+*Segment List (main area):*
+- Each segment rendered as a card showing:
+  - Live-rendered thumbnail of the graphic/clip output (the actual graphic at smaller scale, not a screenshot)
+  - Segment name, type, and duration
+  - OBS scene label
+  - Talent assignments and script notes
+- Click any card to expand to **full-size 16:9 preview** with animated background behind it — exactly as it would appear on stream
+
+*Segment Type Cards:*
+
+| Segment Type | What the card shows |
+|---|---|
+| **Graphic** (logos, roster, event-bar, event-summary, sponsors, etc.) | Rendered graphic using existing `output.html` / overlay code with meet theme applied |
+| **Clip** (athlete routine replay) | Clip metadata — athlete name, team, apparatus, camera angle, clip duration |
+| **Live camera** | Camera number, apparatus, score bug state |
+| **Break / content sequence** | Rotation break content — sponsor cycle, rotation slate, warm-up graphic, etc. |
+| **Moment replay** | Flagged moment details — apparatus, timestamp, speed, seek point |
+| **Hold / manual** | Segment info with "awaiting producer advance" indicator |
+
+*Playback Mode (secondary):*
+- Play / Pause / Restart buttons
+- Scrub bar to jump to any point in the show
+- Speed controls (0.5x, 1x, 2x) for faster review
+- Auto-advances through the full segment list sequentially
+- Current segment highlighted in the list as playback progresses
+
+**Rendering Architecture — CRITICAL:**
+- All graphics render through the **same `output.html` and overlay HTML files** used in production
+- The preview page feeds `currentGraphic` data to `output.html` via iframe, identical to how Firebase drives it in production
+- No new rendering code — one rendering path for both production and preview
+- Meet theme CSS variables baked into the export so graphics match production appearance
+
+**Data Handling:**
+- All segment data, graphic configurations, clip metadata, team logos, headshots, and theme settings embedded at export time
+- No server or Firebase connection required at playback time — fully offline/shareable
+- Applies the competition's active meet theme
+
+**Use Cases:**
+- Producer reviews the full show plan visually — verify every graphic looks correct
+- QA pass: filter to "all sponsor graphics" and verify branding, or "all rosters" and check headshots
+- Share with talent so they see the graphic flow alongside their scripts
+- Send to clients/stakeholders for rundown approval
+- Post-show archive of what was planned
+
+**Status:** ✅ Complete (verification pending human review)
+
+---
+
 ## 4. Phase Overview
 
 | Phase | Name | Priority | Goal |
@@ -253,6 +324,7 @@ Producers can create rundowns but cannot execute them. There's no bridge between
 | **F** | Audio Cue Integration | P3 | Trigger audio from segments |
 | **G** | Production Tracking | P3 | Equipment and sponsor reports |
 | **K** | Timezone Display | P2 | Wall-clock times in multiple timezones |
+| **L** | Rundown Preview & Review Tool | P2 | Searchable visual catalog of all production output — graphics, clips, cameras, breaks — using existing rendering code |
 
 ---
 
@@ -295,6 +367,23 @@ Producers can create rundowns but cannot execute them. There's no bridge between
 - [x] Talent assignment field added to segment data model
 - [x] Talent schedule view available in Rundown Editor
 - [x] "You're on camera" indicator shows in Talent View when talent is assigned to current segment
+
+### Phase L Complete When:
+- [x] "Export Preview" button available in Rundown Editor toolbar
+- [x] Exported HTML is fully self-contained (works offline, no Firebase dependency)
+- [x] Segment list displays all segments as cards with live-rendered graphic thumbnails
+- [x] Text search filters segments by name, graphic type, team, talent, apparatus, athlete
+- [x] Filter controls for segment type (graphic, clip, live, break, replay, hold)
+- [x] Click any card to expand full-size 16:9 preview with animated background
+- [x] Graphics render via existing `output.html` / overlay code (no duplicate rendering)
+- [x] All segment types supported: graphics, clips, live camera, breaks, moment replays, holds
+- [x] Clip segments show athlete, team, apparatus, camera angle, duration metadata
+- [x] Play/Pause/Restart playback mode auto-advances through segments sequentially
+- [x] Click-to-jump on any segment in the list
+- [x] Speed controls (0.5x, 1x, 2x) work in playback mode
+- [x] Competition's active meet theme applied (CSS variables baked in)
+- [x] Team logos, headshots, and graphic data embedded at export time
+- [x] Exported file is shareable (can be opened by anyone with a browser)
 
 ### Phase K Complete When:
 - [x] Timezone configuration stored per-rundown in Firebase
