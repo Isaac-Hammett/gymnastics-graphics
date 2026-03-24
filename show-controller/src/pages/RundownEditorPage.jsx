@@ -3161,6 +3161,739 @@ export default function RundownEditorPage() {
     showToast('JSON exported');
   }
 
+  // Export rundown as visual preview HTML page (Phase L: Task 1)
+  function handleExportPreview() {
+    // Build base URL for output.html iframes
+    const baseUrl = window.location.origin;
+
+    // Build competition params that output.html needs for rendering
+    const compParams = {};
+    if (competitionConfig) {
+      for (const [key, value] of Object.entries(competitionConfig)) {
+        if (value && typeof value === 'string') {
+          compParams[key] = value;
+        }
+      }
+    } else {
+      // Fallback: build from competition object
+      Object.entries(competition.teams).forEach(([slot, team]) => {
+        compParams[`team${slot}Name`] = team.name || '';
+        compParams[`team${slot}Logo`] = team.logo || '';
+      });
+      compParams.eventName = competition.name;
+      compParams.compType = competition.type;
+    }
+
+    // Helper: build output.html iframe URL for a graphic segment
+    function buildGraphicUrl(segment) {
+      const graphicId = segment.graphic?.graphicId;
+      if (!graphicId) return null;
+
+      const params = new URLSearchParams();
+      params.set('comp', compId || 'preview');
+      params.set('graphic', graphicId);
+
+      // Add competition-level params
+      Object.entries(compParams).forEach(([k, v]) => {
+        if (v) params.set(k, v);
+      });
+
+      // Add segment-specific graphic params
+      if (segment.graphic?.params) {
+        Object.entries(segment.graphic.params).forEach(([k, v]) => {
+          if (v !== undefined && v !== null && v !== '') {
+            params.set(k, String(v));
+          }
+        });
+      }
+
+      return `${baseUrl}/output.html?${params.toString()}`;
+    }
+
+    // Helper: resolve talent names
+    function getTalentNames(talentIds) {
+      if (!talentIds || talentIds.length === 0) return '';
+      return talentIds
+        .map(id => {
+          const t = talentRoster.find(tr => tr.id === id);
+          return t ? t.name : id;
+        })
+        .join(', ');
+    }
+
+    // Build segment cards HTML
+    const segmentCardsHtml = segments.map((seg, index) => {
+      const startTime = segmentStartTimes[seg.id] || 0;
+      const startTimeStr = formatDuration(startTime);
+      const durationStr = seg.duration ? formatDuration(seg.duration) : 'Manual';
+      const talentStr = getTalentNames(seg.talent);
+      const graphicId = seg.graphic?.graphicId || '';
+      const segType = seg.type || 'live';
+
+      // Type badge colors (inline CSS, not Tailwind)
+      const typeColors = {
+        video: { bg: 'rgba(168,85,247,0.2)', text: '#c084fc', border: 'rgba(168,85,247,0.3)' },
+        live: { bg: 'rgba(34,197,94,0.2)', text: '#4ade80', border: 'rgba(34,197,94,0.3)' },
+        static: { bg: 'rgba(59,130,246,0.2)', text: '#60a5fa', border: 'rgba(59,130,246,0.3)' },
+        break: { bg: 'rgba(234,179,8,0.2)', text: '#facc15', border: 'rgba(234,179,8,0.3)' },
+        hold: { bg: 'rgba(249,115,22,0.2)', text: '#fb923c', border: 'rgba(249,115,22,0.3)' },
+        graphic: { bg: 'rgba(236,72,153,0.2)', text: '#f472b6', border: 'rgba(236,72,153,0.3)' },
+        playout: { bg: 'rgba(6,182,212,0.2)', text: '#22d3ee', border: 'rgba(6,182,212,0.3)' },
+        'content-sequence': { bg: 'rgba(245,158,11,0.2)', text: '#fbbf24', border: 'rgba(245,158,11,0.3)' },
+      };
+      const tc = typeColors[segType] || typeColors.live;
+
+      // Build the preview content based on segment type
+      let previewContent = '';
+      const iframeUrl = buildGraphicUrl(seg);
+
+      if (graphicId && iframeUrl) {
+        // Graphic segment — render via output.html iframe
+        previewContent = `
+          <div class="card-preview" style="position:relative;width:100%;padding-top:56.25%;background:#18181b;border-radius:8px;overflow:hidden;">
+            <iframe src="${iframeUrl}" style="position:absolute;top:0;left:0;width:1920px;height:1080px;border:none;transform-origin:top left;transform:scale(0.1875);pointer-events:none;" loading="lazy" sandbox="allow-scripts allow-same-origin"></iframe>
+          </div>`;
+      } else if (segType === 'live') {
+        previewContent = `
+          <div class="card-preview card-preview-meta" style="background:#052e16;">
+            <div style="font-size:32px;">📹</div>
+            <div style="font-size:14px;font-weight:600;color:#4ade80;">LIVE CAMERA</div>
+            ${seg.scene ? `<div style="font-size:12px;color:#86efac;">${seg.scene}</div>` : ''}
+          </div>`;
+      } else if (segType === 'video') {
+        const clipInfo = seg.graphic?.params || {};
+        previewContent = `
+          <div class="card-preview card-preview-meta" style="background:#2e1065;">
+            <div style="font-size:32px;">🎬</div>
+            <div style="font-size:14px;font-weight:600;color:#c084fc;">CLIP</div>
+            ${clipInfo.athleteName ? `<div style="font-size:12px;color:#d8b4fe;">${clipInfo.athleteName}</div>` : ''}
+            ${clipInfo.teamName ? `<div style="font-size:12px;color:#d8b4fe;">${clipInfo.teamName} · ${clipInfo.apparatus || ''}</div>` : ''}
+          </div>`;
+      } else if (segType === 'break') {
+        previewContent = `
+          <div class="card-preview card-preview-meta" style="background:#422006;">
+            <div style="font-size:32px;">⏸</div>
+            <div style="font-size:14px;font-weight:600;color:#facc15;">BREAK</div>
+            ${seg.duration ? `<div style="font-size:12px;color:#fde68a;">${durationStr}</div>` : ''}
+          </div>`;
+      } else if (segType === 'hold') {
+        previewContent = `
+          <div class="card-preview card-preview-meta" style="background:#431407;">
+            <div style="font-size:32px;">✋</div>
+            <div style="font-size:14px;font-weight:600;color:#fb923c;">HOLD</div>
+            <div style="font-size:11px;color:#fdba74;">Awaiting producer advance</div>
+          </div>`;
+      } else if (segType === 'playout') {
+        const ruleCount = seg.playoutRules?.rules?.length || 0;
+        previewContent = `
+          <div class="card-preview card-preview-meta" style="background:#083344;">
+            <div style="font-size:32px;">🔄</div>
+            <div style="font-size:14px;font-weight:600;color:#22d3ee;">PLAYOUT</div>
+            <div style="font-size:11px;color:#67e8f9;">${ruleCount} rule${ruleCount !== 1 ? 's' : ''}</div>
+          </div>`;
+      } else if (segType === 'content-sequence') {
+        const stepCount = seg.contentSequence?.steps?.length || 0;
+        previewContent = `
+          <div class="card-preview card-preview-meta" style="background:#451a03;">
+            <div style="font-size:32px;">📋</div>
+            <div style="font-size:14px;font-weight:600;color:#fbbf24;">CONTENT SEQUENCE</div>
+            <div style="font-size:11px;color:#fde68a;">${stepCount} step${stepCount !== 1 ? 's' : ''}</div>
+          </div>`;
+      } else {
+        // Generic fallback
+        previewContent = `
+          <div class="card-preview card-preview-meta" style="background:#1e1e2e;">
+            <div style="font-size:32px;">📄</div>
+            <div style="font-size:14px;font-weight:600;color:#a1a1aa;">${segType.toUpperCase()}</div>
+          </div>`;
+      }
+
+      return `
+        <div class="segment-card" data-type="${segType}" data-name="${(seg.name || '').replace(/"/g, '&quot;').toLowerCase()}" data-graphic="${graphicId}" data-talent="${talentStr.toLowerCase()}" data-notes="${(seg.notes || '').replace(/"/g, '&quot;').toLowerCase()}" data-scene="${(seg.scene || '').replace(/"/g, '&quot;').toLowerCase()}" data-index="${index}">
+          ${previewContent}
+          <div class="card-info">
+            <div class="card-header">
+              <span class="card-number">#${index + 1}</span>
+              <span class="card-type-badge" style="background:${tc.bg};color:${tc.text};border:1px solid ${tc.border};">${segType}</span>
+            </div>
+            <div class="card-name">${seg.name || 'Untitled'}</div>
+            <div class="card-meta">
+              <span>⏱ ${startTimeStr}</span>
+              <span>⏳ ${durationStr}</span>
+            </div>
+            ${graphicId ? `<div class="card-graphic">🎨 ${graphicId}</div>` : ''}
+            ${seg.scene ? `<div class="card-scene">🎥 ${seg.scene}</div>` : ''}
+            ${talentStr ? `<div class="card-talent">🎙 ${talentStr}</div>` : ''}
+            ${seg.notes ? `<div class="card-notes">📝 ${seg.notes}</div>` : ''}
+          </div>
+        </div>`;
+    }).join('\n');
+
+    // Count segment types for summary
+    const typeCounts = {};
+    segments.forEach(seg => {
+      const t = seg.type || 'live';
+      typeCounts[t] = (typeCounts[t] || 0) + 1;
+    });
+    const typeCountsHtml = Object.entries(typeCounts)
+      .map(([type, count]) => `<span class="summary-badge">${type}: ${count}</span>`)
+      .join(' ');
+
+    // Get all unique graphic types for filter dropdown
+    const graphicTypes = [...new Set(segments.map(s => s.graphic?.graphicId).filter(Boolean))].sort();
+    const graphicOptionsHtml = graphicTypes.map(g => `<option value="${g}">${g}</option>`).join('');
+
+    // Generate the full HTML page
+    const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rundown Preview — ${competition.name}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif; background: #09090b; color: #e4e4e7; min-height: 100vh; }
+
+    .header { background: #18181b; border-bottom: 1px solid #27272a; padding: 20px 24px; position: sticky; top: 0; z-index: 100; }
+    .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .header h1 { font-size: 20px; font-weight: 700; color: #fafafa; }
+    .header-meta { font-size: 13px; color: #71717a; }
+    .header-meta span { margin-right: 16px; }
+    .summary-badges { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+    .summary-badge { font-size: 11px; padding: 2px 8px; border-radius: 4px; background: #27272a; color: #a1a1aa; }
+
+    .filters { background: #18181b; border-bottom: 1px solid #27272a; padding: 12px 24px; position: sticky; top: 90px; z-index: 99; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .search-input { background: #27272a; border: 1px solid #3f3f46; color: #e4e4e7; padding: 8px 12px; border-radius: 8px; font-size: 14px; width: 300px; outline: none; }
+    .search-input:focus { border-color: #3b82f6; }
+    .search-input::placeholder { color: #52525b; }
+    .filter-btn { background: #27272a; border: 1px solid #3f3f46; color: #a1a1aa; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; transition: all 0.15s; }
+    .filter-btn:hover { background: #3f3f46; color: #e4e4e7; }
+    .filter-btn.active { background: #3b82f6; border-color: #3b82f6; color: white; }
+    .filter-select { background: #27272a; border: 1px solid #3f3f46; color: #a1a1aa; padding: 6px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+    .result-count { font-size: 12px; color: #52525b; margin-left: auto; }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px; padding: 24px; }
+    .segment-card { background: #18181b; border: 1px solid #27272a; border-radius: 12px; overflow: hidden; transition: all 0.2s; cursor: pointer; }
+    .segment-card:hover { border-color: #3f3f46; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+    .segment-card.hidden { display: none; }
+
+    .card-preview { width: 100%; padding-top: 56.25%; position: relative; overflow: hidden; background: #18181b; border-radius: 8px 8px 0 0; }
+    .card-preview iframe { position: absolute; top: 0; left: 0; }
+    .card-preview-meta { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding-top: 0; min-height: 200px; border-radius: 8px 8px 0 0; }
+
+    .card-info { padding: 12px 14px 14px; }
+    .card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .card-number { font-size: 12px; color: #52525b; font-weight: 600; }
+    .card-type-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 600; text-transform: uppercase; }
+    .card-name { font-size: 14px; font-weight: 600; color: #fafafa; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .card-meta { display: flex; gap: 12px; font-size: 11px; color: #71717a; margin-bottom: 4px; }
+    .card-graphic, .card-scene, .card-talent, .card-notes { font-size: 11px; color: #52525b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+    .card-notes { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+    /* Modal for full-size preview */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 200; align-items: center; justify-content: center; }
+    .modal-overlay.open { display: flex; }
+    .modal-content { width: 90vw; max-width: 1600px; background: #18181b; border-radius: 12px; border: 1px solid #27272a; overflow: hidden; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid #27272a; }
+    .modal-header h2 { font-size: 16px; font-weight: 600; }
+    .modal-close { background: none; border: none; color: #71717a; font-size: 24px; cursor: pointer; padding: 4px 8px; }
+    .modal-close:hover { color: #e4e4e7; }
+    .modal-body { padding: 20px; }
+    .modal-preview-container { width: 100%; position: relative; padding-top: 56.25%; background: #09090b; border-radius: 8px; overflow: hidden; }
+    .modal-preview-container iframe { position: absolute; top: 0; left: 0; width: 1920px; height: 1080px; border: none; transform-origin: top left; }
+    .modal-meta { display: flex; gap: 24px; padding: 16px 0 0; flex-wrap: wrap; }
+    .modal-meta-item { font-size: 13px; color: #a1a1aa; }
+    .modal-meta-item strong { color: #e4e4e7; }
+    .modal-nav { display: flex; justify-content: space-between; padding: 12px 20px; border-top: 1px solid #27272a; }
+    .modal-nav button { background: #27272a; border: 1px solid #3f3f46; color: #e4e4e7; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+    .modal-nav button:hover { background: #3f3f46; }
+    .modal-nav button:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    .empty-state { text-align: center; padding: 80px 20px; color: #52525b; font-size: 16px; }
+
+    /* Playback toolbar */
+    .playback-toolbar { position: fixed; bottom: 0; left: 0; right: 0; background: #18181b; border-top: 1px solid #27272a; padding: 12px 24px; z-index: 150; display: flex; align-items: center; gap: 16px; }
+    .playback-controls { display: flex; align-items: center; gap: 8px; }
+    .playback-btn { background: #27272a; border: 1px solid #3f3f46; color: #e4e4e7; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: all 0.15s; }
+    .playback-btn:hover { background: #3f3f46; }
+    .playback-btn.active { background: #3b82f6; border-color: #3b82f6; }
+    .playback-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    .speed-controls { display: flex; align-items: center; gap: 4px; }
+    .speed-btn { background: #27272a; border: 1px solid #3f3f46; color: #a1a1aa; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; transition: all 0.15s; }
+    .speed-btn:hover { color: #e4e4e7; }
+    .speed-btn.active { background: #3b82f6; border-color: #3b82f6; color: white; }
+    .progress-container { flex: 1; display: flex; align-items: center; gap: 12px; }
+    .progress-bar { flex: 1; height: 6px; background: #27272a; border-radius: 3px; cursor: pointer; position: relative; }
+    .progress-fill { height: 100%; background: #3b82f6; border-radius: 3px; transition: width 0.1s linear; }
+    .progress-handle { position: absolute; top: 50%; transform: translate(-50%, -50%); width: 14px; height: 14px; background: #3b82f6; border-radius: 50%; cursor: grab; }
+    .progress-handle:active { cursor: grabbing; }
+    .time-display { font-size: 12px; color: #a1a1aa; font-family: monospace; min-width: 100px; }
+    .segment-info { font-size: 12px; color: #71717a; max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .segment-info strong { color: #e4e4e7; }
+
+    .segment-card.playing { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.3); }
+    .segment-card.playing .card-number { color: #3b82f6; }
+
+    /* Add padding at bottom for fixed playback bar */
+    .grid { padding-bottom: 100px; }
+
+    @media (max-width: 768px) {
+      .grid { grid-template-columns: 1fr; padding: 12px; gap: 12px; }
+      .filters { flex-direction: column; align-items: stretch; }
+      .search-input { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-top">
+      <h1>📋 ${competition.name} — Rundown Preview</h1>
+      <div class="header-meta">
+        <span>${segments.length} segments</span>
+        <span>Total: ${formatDuration(totalRuntime)}</span>
+        <span>Exported: ${new Date().toLocaleString()}</span>
+      </div>
+    </div>
+    <div class="summary-badges">${typeCountsHtml}</div>
+  </div>
+
+  <div class="filters">
+    <input type="text" class="search-input" id="searchInput" placeholder="Search segments, graphics, talent, notes..." oninput="filterSegments()">
+    <button class="filter-btn active" data-type="all" onclick="setTypeFilter(this, 'all')">All</button>
+    <button class="filter-btn" data-type="static" onclick="setTypeFilter(this, 'static')">Graphic</button>
+    <button class="filter-btn" data-type="live" onclick="setTypeFilter(this, 'live')">Live</button>
+    <button class="filter-btn" data-type="video" onclick="setTypeFilter(this, 'video')">Clip</button>
+    <button class="filter-btn" data-type="break" onclick="setTypeFilter(this, 'break')">Break</button>
+    <button class="filter-btn" data-type="hold" onclick="setTypeFilter(this, 'hold')">Hold</button>
+    <button class="filter-btn" data-type="playout" onclick="setTypeFilter(this, 'playout')">Playout</button>
+    <button class="filter-btn" data-type="content-sequence" onclick="setTypeFilter(this, 'content-sequence')">Content Seq</button>
+    <select class="filter-select" id="graphicFilter" onchange="filterSegments()">
+      <option value="all">All Graphics</option>
+      ${graphicOptionsHtml}
+    </select>
+    <span class="result-count" id="resultCount"></span>
+  </div>
+
+  <div class="grid" id="segmentGrid">
+    ${segmentCardsHtml}
+  </div>
+
+  ${segments.length === 0 ? '<div class="empty-state">No segments in this rundown.</div>' : ''}
+
+  <!-- Full-size preview modal -->
+  <div class="modal-overlay" id="previewModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalTitle">Segment Preview</h2>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-preview-container" id="modalPreviewContainer"></div>
+        <div class="modal-meta" id="modalMeta"></div>
+      </div>
+      <div class="modal-nav">
+        <button id="prevBtn" onclick="navigateModal(-1)">← Previous</button>
+        <button id="nextBtn" onclick="navigateModal(1)">Next →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Playback toolbar -->
+  <div class="playback-toolbar" id="playbackToolbar">
+    <div class="playback-controls">
+      <button class="playback-btn" id="restartBtn" title="Restart" onclick="restartPlayback()">⟲</button>
+      <button class="playback-btn" id="playPauseBtn" title="Play/Pause" onclick="togglePlayback()">▶</button>
+      <button class="playback-btn" id="stopBtn" title="Stop" onclick="stopPlayback()">◼</button>
+    </div>
+    <div class="speed-controls">
+      <button class="speed-btn" data-speed="0.5" onclick="setSpeed(0.5)">0.5x</button>
+      <button class="speed-btn active" data-speed="1" onclick="setSpeed(1)">1x</button>
+      <button class="speed-btn" data-speed="2" onclick="setSpeed(2)">2x</button>
+    </div>
+    <div class="progress-container">
+      <span class="time-display" id="timeDisplay">0:00 / 0:00</span>
+      <div class="progress-bar" id="progressBar" onclick="seekToPosition(event)">
+        <div class="progress-fill" id="progressFill" style="width: 0%;"></div>
+        <div class="progress-handle" id="progressHandle" style="left: 0%;"></div>
+      </div>
+    </div>
+    <div class="segment-info" id="segmentInfo">
+      <strong>#1</strong> Ready to play
+    </div>
+  </div>
+
+  <script>
+    // Segment data embedded at export time
+    const segments = ${JSON.stringify(segments.map((seg, i) => ({
+      index: i,
+      name: seg.name || 'Untitled',
+      type: seg.type || 'live',
+      duration: seg.duration,
+      scene: seg.scene || '',
+      graphicId: seg.graphic?.graphicId || '',
+      graphicParams: seg.graphic?.params || {},
+      notes: seg.notes || '',
+      script: seg.script || '',
+      talent: getTalentNames(seg.talent),
+      startTime: formatDuration(segmentStartTimes[seg.id] || 0),
+      iframeUrl: buildGraphicUrl(seg),
+    })))};
+
+    let activeTypeFilter = 'all';
+    let currentModalIndex = -1;
+
+    function setTypeFilter(btn, type) {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeTypeFilter = type;
+      filterSegments();
+    }
+
+    function filterSegments() {
+      const query = document.getElementById('searchInput').value.toLowerCase();
+      const graphicFilter = document.getElementById('graphicFilter').value;
+      const cards = document.querySelectorAll('.segment-card');
+      let visible = 0;
+
+      cards.forEach(card => {
+        const type = card.dataset.type;
+        const name = card.dataset.name;
+        const graphic = card.dataset.graphic;
+        const talent = card.dataset.talent;
+        const notes = card.dataset.notes;
+        const scene = card.dataset.scene;
+        const searchable = name + ' ' + graphic + ' ' + talent + ' ' + notes + ' ' + scene;
+
+        const matchesType = activeTypeFilter === 'all' || type === activeTypeFilter;
+        const matchesGraphic = graphicFilter === 'all' || graphic === graphicFilter;
+        const matchesSearch = !query || searchable.includes(query);
+
+        if (matchesType && matchesGraphic && matchesSearch) {
+          card.classList.remove('hidden');
+          visible++;
+        } else {
+          card.classList.add('hidden');
+        }
+      });
+
+      document.getElementById('resultCount').textContent = visible + ' of ' + cards.length + ' segments';
+    }
+
+    // Modal functions
+    function openModal(index) {
+      currentModalIndex = index;
+      const seg = segments[index];
+      if (!seg) return;
+
+      document.getElementById('modalTitle').textContent = '#' + (index + 1) + ' — ' + seg.name;
+
+      const container = document.getElementById('modalPreviewContainer');
+      if (seg.iframeUrl) {
+        const scale = container.offsetWidth / 1920;
+        container.innerHTML = '<iframe src="' + seg.iframeUrl + '" style="position:absolute;top:0;left:0;width:1920px;height:1080px;border:none;transform-origin:top left;transform:scale(' + scale + ');pointer-events:none;" sandbox="allow-scripts allow-same-origin"></iframe>';
+      } else {
+        container.innerHTML = '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#52525b;font-size:18px;">' + seg.type.toUpperCase() + ' — ' + seg.name + '</div>';
+      }
+
+      let metaHtml = '';
+      metaHtml += '<div class="modal-meta-item"><strong>Type:</strong> ' + seg.type + '</div>';
+      metaHtml += '<div class="modal-meta-item"><strong>Start:</strong> ' + seg.startTime + '</div>';
+      metaHtml += '<div class="modal-meta-item"><strong>Duration:</strong> ' + (seg.duration ? seg.duration + 's' : 'Manual') + '</div>';
+      if (seg.scene) metaHtml += '<div class="modal-meta-item"><strong>Scene:</strong> ' + seg.scene + '</div>';
+      if (seg.graphicId) metaHtml += '<div class="modal-meta-item"><strong>Graphic:</strong> ' + seg.graphicId + '</div>';
+      if (seg.talent) metaHtml += '<div class="modal-meta-item"><strong>Talent:</strong> ' + seg.talent + '</div>';
+      if (seg.notes) metaHtml += '<div class="modal-meta-item"><strong>Notes:</strong> ' + seg.notes + '</div>';
+      if (seg.script) metaHtml += '<div class="modal-meta-item" style="flex-basis:100%;"><strong>Script:</strong> ' + seg.script + '</div>';
+      document.getElementById('modalMeta').innerHTML = metaHtml;
+
+      document.getElementById('prevBtn').disabled = index === 0;
+      document.getElementById('nextBtn').disabled = index === segments.length - 1;
+
+      document.getElementById('previewModal').classList.add('open');
+    }
+
+    function closeModal() {
+      document.getElementById('previewModal').classList.remove('open');
+      document.getElementById('modalPreviewContainer').innerHTML = '';
+      currentModalIndex = -1;
+    }
+
+    function navigateModal(direction) {
+      const newIndex = currentModalIndex + direction;
+      if (newIndex >= 0 && newIndex < segments.length) {
+        openModal(newIndex);
+      }
+    }
+
+    // Keyboard navigation
+    document.addEventListener('keydown', function(e) {
+      if (currentModalIndex >= 0) {
+        if (e.key === 'Escape') closeModal();
+        if (e.key === 'ArrowLeft') navigateModal(-1);
+        if (e.key === 'ArrowRight') navigateModal(1);
+      }
+    });
+
+    // Initial count
+    filterSegments();
+
+    // ====== PLAYBACK MODE ======
+    let isPlaying = false;
+    let currentPlaybackIndex = 0;
+    let playbackSpeed = 1;
+    let segmentElapsedTime = 0;
+    let playbackInterval = null;
+    let totalRuntime = ${totalRuntime};
+
+    // Calculate cumulative start times for each segment
+    const segmentStartTimes = [];
+    let cumulativeTime = 0;
+    segments.forEach((seg, i) => {
+      segmentStartTimes[i] = cumulativeTime;
+      cumulativeTime += (seg.duration || 5); // 5s default for manual/hold segments
+    });
+
+    function formatTime(seconds) {
+      const mins = Math.floor(seconds / 60);
+      const secs = Math.floor(seconds % 60);
+      return mins + ':' + String(secs).padStart(2, '0');
+    }
+
+    function updatePlaybackUI() {
+      const seg = segments[currentPlaybackIndex];
+      const segDuration = seg ? (seg.duration || 5) : 5;
+      const globalTime = segmentStartTimes[currentPlaybackIndex] + segmentElapsedTime;
+      const progress = totalRuntime > 0 ? (globalTime / totalRuntime) * 100 : 0;
+
+      document.getElementById('progressFill').style.width = progress + '%';
+      document.getElementById('progressHandle').style.left = progress + '%';
+      document.getElementById('timeDisplay').textContent = formatTime(globalTime) + ' / ' + formatTime(totalRuntime);
+
+      if (seg) {
+        document.getElementById('segmentInfo').innerHTML = '<strong>#' + (currentPlaybackIndex + 1) + '</strong> ' + seg.name + ' (' + formatTime(segmentElapsedTime) + ' / ' + formatTime(segDuration) + ')';
+      }
+
+      // Update playing highlight
+      document.querySelectorAll('.segment-card').forEach((card, i) => {
+        if (i === currentPlaybackIndex && isPlaying) {
+          card.classList.add('playing');
+        } else {
+          card.classList.remove('playing');
+        }
+      });
+
+      // Update play/pause button
+      document.getElementById('playPauseBtn').textContent = isPlaying ? '⏸' : '▶';
+      document.getElementById('playPauseBtn').classList.toggle('active', isPlaying);
+    }
+
+    function tick() {
+      if (!isPlaying) return;
+
+      segmentElapsedTime += 0.1 * playbackSpeed;
+      const seg = segments[currentPlaybackIndex];
+      const segDuration = seg ? (seg.duration || 5) : 5;
+
+      if (segmentElapsedTime >= segDuration) {
+        // Move to next segment
+        if (currentPlaybackIndex < segments.length - 1) {
+          currentPlaybackIndex++;
+          segmentElapsedTime = 0;
+          scrollToSegment(currentPlaybackIndex);
+        } else {
+          // Reached end
+          stopPlayback();
+          return;
+        }
+      }
+
+      updatePlaybackUI();
+    }
+
+    function togglePlayback() {
+      if (isPlaying) {
+        pausePlayback();
+      } else {
+        startPlayback();
+      }
+    }
+
+    function startPlayback() {
+      isPlaying = true;
+      if (!playbackInterval) {
+        playbackInterval = setInterval(tick, 100);
+      }
+      updatePlaybackUI();
+    }
+
+    function pausePlayback() {
+      isPlaying = false;
+      updatePlaybackUI();
+    }
+
+    function stopPlayback() {
+      isPlaying = false;
+      if (playbackInterval) {
+        clearInterval(playbackInterval);
+        playbackInterval = null;
+      }
+      currentPlaybackIndex = 0;
+      segmentElapsedTime = 0;
+      updatePlaybackUI();
+    }
+
+    function restartPlayback() {
+      stopPlayback();
+      startPlayback();
+    }
+
+    function setSpeed(speed) {
+      playbackSpeed = speed;
+      document.querySelectorAll('.speed-btn').forEach(btn => {
+        btn.classList.toggle('active', parseFloat(btn.dataset.speed) === speed);
+      });
+    }
+
+    function seekToPosition(event) {
+      const bar = document.getElementById('progressBar');
+      const rect = bar.getBoundingClientRect();
+      const percent = (event.clientX - rect.left) / rect.width;
+      const targetTime = percent * totalRuntime;
+
+      // Find which segment this falls into
+      let accumulated = 0;
+      for (let i = 0; i < segments.length; i++) {
+        const segDuration = segments[i].duration || 5;
+        if (accumulated + segDuration > targetTime) {
+          currentPlaybackIndex = i;
+          segmentElapsedTime = targetTime - accumulated;
+          break;
+        }
+        accumulated += segDuration;
+      }
+
+      scrollToSegment(currentPlaybackIndex);
+      updatePlaybackUI();
+    }
+
+    function scrollToSegment(index) {
+      const cards = document.querySelectorAll('.segment-card');
+      if (cards[index]) {
+        cards[index].scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+
+    function jumpToSegment(index) {
+      currentPlaybackIndex = index;
+      segmentElapsedTime = 0;
+      scrollToSegment(index);
+      updatePlaybackUI();
+    }
+
+    // Click handler for segment cards
+    // During playback or with Shift+click: jump to segment
+    // Normal click: open modal preview
+    document.querySelectorAll('.segment-card').forEach(card => {
+      card.addEventListener('click', function(e) {
+        const index = parseInt(this.dataset.index);
+        if (e.shiftKey || isPlaying) {
+          jumpToSegment(index);
+        } else {
+          openModal(index);
+        }
+      });
+    });
+
+    // Keyboard shortcuts for playback
+    document.addEventListener('keydown', function(e) {
+      // Ignore if modal is open or typing in input
+      if (currentModalIndex >= 0 || e.target.tagName === 'INPUT') return;
+
+      if (e.key === ' ' || e.code === 'Space') {
+        e.preventDefault();
+        togglePlayback();
+      } else if (e.key === 'r' || e.key === 'R') {
+        restartPlayback();
+      } else if (e.key === 'Escape') {
+        stopPlayback();
+      } else if (e.key === 'ArrowLeft' && !isPlaying) {
+        if (currentPlaybackIndex > 0) {
+          jumpToSegment(currentPlaybackIndex - 1);
+        }
+      } else if (e.key === 'ArrowRight' && !isPlaying) {
+        if (currentPlaybackIndex < segments.length - 1) {
+          jumpToSegment(currentPlaybackIndex + 1);
+        }
+      }
+    });
+
+    // Drag to scrub progress bar
+    let isDragging = false;
+    const handle = document.getElementById('progressHandle');
+    const bar = document.getElementById('progressBar');
+
+    handle.addEventListener('mousedown', function(e) {
+      isDragging = true;
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', function(e) {
+      if (!isDragging) return;
+      const rect = bar.getBoundingClientRect();
+      let percent = (e.clientX - rect.left) / rect.width;
+      percent = Math.max(0, Math.min(1, percent));
+      const targetTime = percent * totalRuntime;
+
+      // Find which segment this falls into
+      let accumulated = 0;
+      for (let i = 0; i < segments.length; i++) {
+        const segDuration = segments[i].duration || 5;
+        if (accumulated + segDuration > targetTime) {
+          currentPlaybackIndex = i;
+          segmentElapsedTime = targetTime - accumulated;
+          break;
+        }
+        accumulated += segDuration;
+      }
+
+      updatePlaybackUI();
+    });
+
+    document.addEventListener('mouseup', function() {
+      if (isDragging) {
+        isDragging = false;
+        scrollToSegment(currentPlaybackIndex);
+      }
+    });
+
+    // Initialize UI
+    updatePlaybackUI();
+  </script>
+</body>
+</html>`;
+
+    // Open in new tab via Blob URL
+    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const newTab = window.open(url, '_blank');
+
+    if (!newTab) {
+      // Fallback: download the file
+      const link = document.createElement('a');
+      link.href = url;
+      const sanitizedName = competition.name.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+      link.download = `preview-${sanitizedName}-${new Date().toISOString().split('T')[0]}.html`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('Preview downloaded (popup blocked)');
+    } else {
+      showToast('Preview opened in new tab');
+    }
+
+    URL.revokeObjectURL(url);
+  }
+
   // Save custom type colors to localStorage (Phase 10: Task 78)
   function handleSaveCustomColors(colors) {
     setCustomTypeColors(colors);
@@ -4912,6 +5645,14 @@ export default function RundownEditorPage() {
             >
               <ArrowDownTrayIcon className="w-4 h-4" />
               Export JSON
+            </button>
+            <button
+              onClick={handleExportPreview}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition-colors"
+              title="Open visual preview of all segments"
+            >
+              <PhotoIcon className="w-4 h-4" />
+              Export Preview
             </button>
           </div>
         </div>
