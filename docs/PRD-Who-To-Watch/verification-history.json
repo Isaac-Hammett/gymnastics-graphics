@@ -18,6 +18,16 @@
                 "docs/PRD-Who-To-Watch/screenshots/pass1-registry-task1-selected.png"
               ],
               "notes": "Both 'Michigan — Who to Watch Title Card' (button 15) and 'Ohio State — Who to Watch Title Card' (button 16) appear in the Pre-Meet section of the URL Generator. Selecting the title card loads the who-to-watch-title.html overlay in the preview iframe with correct URL generation."
+            },
+            {
+              "pass": 2,
+              "timestamp": "2026-03-25T21:24:00Z",
+              "result": "PASS",
+              "evidence": [
+                "docs/PRD-Who-To-Watch/screenshots/pass2-registry-task1.png",
+                "docs/PRD-Who-To-Watch/screenshots/pass2-registry-task1-selected.png"
+              ],
+              "notes": "Re-verified: 'Michigan — Who to Watch Title Card' (button 15) appears in Pre-Meet section. Selecting it shows 'WHO TO WATCH' preview and generates correct URL to /overlays/who-to-watch-title.html."
             }
           ],
           "finalStatus": "PASS"
@@ -38,6 +48,16 @@
                 "docs/PRD-Who-To-Watch/screenshots/pass1-registry-task2b-params.png"
               ],
               "notes": "Task 2a: Title card URL (/overlays/who-to-watch-title.html) generates correctly with all params. Task 2b: Lower-third URL (/overlays/who-to-watch.html) generates correctly with params."
+            },
+            {
+              "pass": 2,
+              "timestamp": "2026-03-25T21:24:00Z",
+              "result": "PASS",
+              "evidence": [
+                "docs/PRD-Who-To-Watch/screenshots/pass2-registry-task2a.png",
+                "docs/PRD-Who-To-Watch/screenshots/pass2-registry-task2b.png"
+              ],
+              "notes": "Re-verified: Task 2a - Title card URL generates to /overlays/who-to-watch-title.html with logo param. Task 2b - Lower-third URL generates to /overlays/who-to-watch.html with logo param. Both preview correctly in iframe."
             }
           ],
           "finalStatus": "PASS"
@@ -51,6 +71,15 @@
             "Failed to load resource: net::ERR_NAME_NOT_RESOLVED @ https://via.placeholder.com/200/BB0000/FFFFFF?text=T2"
           ],
           "analysis": "Pre-existing errors from placeholder logo URLs in demo configuration. Not related to Who to Watch registry/URL builder changes."
+        },
+        "pass2": {
+          "count": 5,
+          "errors": [
+            "Firebase permission_denied on vmPool - Expected, test user lacks admin permissions",
+            "Failed to load resource: net::ERR_NAME_NOT_RESOLVED @ https://via.placeholder.com/200/00274C/FFCB05?text=T1 (x3)",
+            "Failed to load resource: net::ERR_NAME_NOT_RESOLVED @ https://via.placeholder.com/200/BB0000/FFFFFF?text=T2"
+          ],
+          "analysis": "All errors are pre-existing and unrelated to registry/URL builder changes. Placeholder logo URLs not resolving. Firebase permission error expected for non-admin test user."
         }
       },
       "summary": {
@@ -76,6 +105,15 @@
                 "docs/PRD-Who-To-Watch/screenshots/pass1-editor-task1.png"
               ],
               "notes": "Sliders update in real-time, iframe preview debounces correctly after 300ms of inactivity. No lag or jank observed during slider interaction."
+            },
+            {
+              "pass": 2,
+              "timestamp": "2026-03-25T23:30:00Z",
+              "result": "PASS",
+              "evidence": [
+                "docs/PRD-Who-To-Watch/screenshots/pass2-editor-task1-task5.png"
+              ],
+              "notes": "Re-verified: Card Adjustments sliders (Headline 28px, Name 64px, Body 30px, Text offset Y 0px, Scale 100%, Offset X/Y 0px) update in real-time. Iframe preview debounces correctly with content visible."
             }
           ],
           "finalStatus": "PASS"
@@ -168,5 +206,5 @@
       }
     }
   },
-  "lastUpdated": "2026-03-25T22:45:00Z"
+  "lastUpdated": "2026-03-25T21:24:00Z"
 }
