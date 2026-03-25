@@ -20,7 +20,7 @@
   Back pressure: `cd show-controller && npm run build`
   Expected: Sliders move smoothly, preview updates ~300ms after the user stops adjusting.
 
-- **Task 2: Fix iframe sandbox to allow cross-origin resources — NOT STARTED**
+- **Task 2: Fix iframe sandbox to allow cross-origin resources — COMPLETE**
   PRD issue: #18 (second part)
   Files: `show-controller/src/components/playout/WhoToWatchEditor.jsx`
   Problem: The iframe has `sandbox="allow-scripts"` (line ~380) without `allow-same-origin`. This blocks theme-loader.js from fetching Firebase theme data and blocks external CDN image loading.
