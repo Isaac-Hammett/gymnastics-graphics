@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PRD Who-To-Watch Registry Verification - Pass 1</title>
+  <title>PRD Who-To-Watch Registry Verification - Pass 2</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -99,12 +99,14 @@
     }
     ul { padding-left: 24px; }
     li { margin: 8px 0; }
+    .pass-history { background: #1a2a1a; padding: 12px; border-radius: 6px; margin: 12px 0; border: 1px solid #2e7d32; }
+    .pass-history h4 { margin: 0 0 8px 0; color: #4caf50; }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>PRD Who-To-Watch: Registry Verification</h1>
-    <p class="subtitle">Pass 1 &bull; 2026-03-25 &bull; Loop: <code>registry</code></p>
+    <p class="subtitle">Pass 2 &bull; 2026-03-25 &bull; Loop: <code>registry</code></p>
 
     <div class="summary-box">
       <h2 style="margin:0; border:0; color:#fff;">ALL TASKS PASSED</h2>
@@ -132,14 +134,19 @@
       <p><strong>Result:</strong> Both "Michigan — Who to Watch Title Card" (button 15) and "Ohio State — Who to Watch Title Card" (button 16) appear in the Pre-Meet section. The graphics are properly registered with per-team expansion working correctly.</p>
     </div>
 
-    <h3>Evidence Screenshots</h3>
+    <div class="pass-history">
+      <h4>Pass 2 Evidence (2026-03-25)</h4>
+      <p>Re-verified: Title cards appear in Pre-Meet section. Selecting shows "WHO TO WATCH" preview and generates correct URL.</p>
+    </div>
+
+    <h3>Evidence Screenshots (Pass 2)</h3>
     <div class="screenshot-grid">
       <div class="screenshot-card">
-        <img src="screenshots/pass1-registry-task1.png" alt="URL Generator showing Who to Watch Title Card buttons">
+        <img src="screenshots/pass2-registry-task1.png" alt="URL Generator showing Who to Watch Title Card buttons">
         <div class="caption">URL Generator showing both "Who to Watch" lower-third (13, 14) and "Title Card" (15, 16) graphics in Pre-Meet section</div>
       </div>
       <div class="screenshot-card">
-        <img src="screenshots/pass1-registry-task1-selected.png" alt="Title Card selected with preview">
+        <img src="screenshots/pass2-registry-task1-selected.png" alt="Title Card selected with preview">
         <div class="caption">Michigan Title Card selected - preview iframe shows WHO TO WATCH badge, URL correctly points to /overlays/who-to-watch-title.html</div>
       </div>
     </div>
@@ -151,50 +158,48 @@
       <p><strong>Expected:</strong> URL Generator produces correct overlay URLs for both who-to-watch variants.</p>
     </div>
 
+    <div class="pass-history">
+      <h4>Pass 2 Evidence (2026-03-25)</h4>
+      <p>Re-verified: Task 2a - Title card URL generates to /overlays/who-to-watch-title.html with logo param. Task 2b - Lower-third URL generates to /overlays/who-to-watch.html with logo param. Both preview correctly in iframe.</p>
+    </div>
+
     <h3>Task 2a: Title Card URL Builder</h3>
-    <p>Tested URL: <code>/overlays/who-to-watch-title.html?athleteName=Jordan%20Chiles&teamName=UCLA&headline=SENIOR&body=17%20Career%2010.000s</code></p>
+    <p>Generated URL: <code>/overlays/who-to-watch-title.html?logo=https%3A%2F%2F...</code></p>
     <div class="screenshot-grid">
       <div class="screenshot-card">
-        <img src="screenshots/pass1-registry-task2a.png" alt="Title card basic render">
-        <div class="caption">Title card overlay loads via URL Generator (minimal params)</div>
-      </div>
-      <div class="screenshot-card">
-        <img src="screenshots/pass1-registry-task2a-params.png" alt="Title card with full parameters">
-        <div class="caption">Full parameter test: WHO TO WATCH badge, UCLA team, SENIOR headline, JORDAN CHILES name, body text all render correctly</div>
+        <img src="screenshots/pass2-registry-task2a.png" alt="Title card URL generation">
+        <div class="caption">Title card overlay URL generation with logo parameter and T1 panel visible</div>
       </div>
     </div>
 
     <h3>Task 2b: Lower-Third URL Builder</h3>
-    <p>Tested URL: <code>/overlays/who-to-watch.html?athleteName=Jordan%20Chiles&subtitle=Sr%20•%20Spring,%20TX&statLabel=Season%20High&statValue=9.950</code></p>
+    <p>Generated URL: <code>/overlays/who-to-watch.html?logo=https%3A%2F%2F...</code></p>
     <div class="screenshot-grid">
       <div class="screenshot-card">
-        <img src="screenshots/pass1-registry-task2b.png" alt="Lower-third in URL Generator">
-        <div class="caption">Lower-third "Who to Watch" selected in URL Generator with preview showing WHO TO WATCH header</div>
-      </div>
-      <div class="screenshot-card">
-        <img src="screenshots/pass1-registry-task2b-params.png" alt="Lower-third with full parameters">
-        <div class="caption">Full parameter test: WHO TO WATCH header, JC initials (fallback), JORDAN CHILES name, subtitle, stat line all render correctly</div>
+        <img src="screenshots/pass2-registry-task2b.png" alt="Lower-third in URL Generator">
+        <div class="caption">Lower-third "Who to Watch" selected - preview shows WHO TO WATCH header with placeholder athlete image</div>
       </div>
     </div>
 
     <h2>Console Errors</h2>
     <div class="console-section">
-      <p class="console-info">2 errors found (pre-existing, not related to registry changes)</p>
-      <p class="console-error">× Failed to load resource: net::ERR_NAME_NOT_RESOLVED @ https://via.placeholder.com/200/00274C/FFCB05?text=T1</p>
+      <p class="console-info">5 errors found (all pre-existing, not related to registry changes)</p>
+      <p class="console-error">× Firebase permission_denied on vmPool - Expected, test user lacks admin permissions</p>
+      <p class="console-error">× Failed to load resource: net::ERR_NAME_NOT_RESOLVED @ https://via.placeholder.com/200/00274C/FFCB05?text=T1 (x3)</p>
       <p class="console-error">× Failed to load resource: net::ERR_NAME_NOT_RESOLVED @ https://via.placeholder.com/200/BB0000/FFFFFF?text=T2</p>
-      <p style="color:#888; margin-top:12px;">Analysis: These errors are from placeholder logo URLs in the demo configuration data. The via.placeholder.com service is unreachable, but this is unrelated to the Who to Watch feature changes.</p>
+      <p style="color:#888; margin-top:12px;">Analysis: All errors are pre-existing and unrelated to the Who to Watch feature changes. The Firebase error is expected for the non-admin test user. The placeholder.com service is unreachable, but this is from demo configuration data.</p>
     </div>
 
     <h2>Verification Summary</h2>
     <ul>
       <li><strong>Task 1 (Registry Entry):</strong> <span class="badge badge-pass">PASS</span> — who-to-watch-title registered correctly, appears in Pre-Meet category with per-team expansion</li>
-      <li><strong>Task 2a (Title Card URL):</strong> <span class="badge badge-pass">PASS</span> — URL builder generates correct /overlays/who-to-watch-title.html URLs with all params</li>
-      <li><strong>Task 2b (Lower-Third URL):</strong> <span class="badge badge-pass">PASS</span> — URL builder generates correct /overlays/who-to-watch.html URLs with all params</li>
-      <li><strong>Console Errors:</strong> <span class="badge badge-warning">WARNING</span> — 2 pre-existing errors (placeholder images), not introduced by these changes</li>
+      <li><strong>Task 2a (Title Card URL):</strong> <span class="badge badge-pass">PASS</span> — URL builder generates correct /overlays/who-to-watch-title.html URLs</li>
+      <li><strong>Task 2b (Lower-Third URL):</strong> <span class="badge badge-pass">PASS</span> — URL builder generates correct /overlays/who-to-watch.html URLs</li>
+      <li><strong>Console Errors:</strong> <span class="badge badge-warning">WARNING</span> — 5 pre-existing errors (placeholder images, Firebase permissions), not introduced by these changes</li>
     </ul>
 
     <p style="color:#888; margin-top:32px; text-align:center;">
-      Generated by verify-registry loop &bull; Pass 1 &bull; 2026-03-25
+      Generated by verify-registry loop &bull; Pass 2 &bull; 2026-03-25
     </p>
   </div>
 </body>
