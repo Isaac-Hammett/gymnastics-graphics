@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PRD Who-To-Watch Editor Verification - Pass 1</title>
+  <title>PRD Who-To-Watch Editor Verification - Pass 2</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -99,15 +99,40 @@
     }
     ul { padding-left: 24px; }
     li { margin: 8px 0; }
+    .pass-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .pass-tab {
+      padding: 8px 16px;
+      background: #333;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .pass-tab.active {
+      background: #4fc3f7;
+      color: #000;
+    }
+    .pass-info {
+      background: #252542;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin: 8px 0;
+      border-left: 3px solid #4fc3f7;
+    }
+    .pass-info.pass2 {
+      border-left-color: #81d4fa;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>PRD Who-To-Watch: Editor Verification</h1>
-    <p class="subtitle">Pass 1 &bull; 2026-03-25 &bull; Loop: <code>editor</code></p>
+    <p class="subtitle">Pass 2 &bull; 2026-03-25 &bull; Loop: <code>editor</code></p>
 
     <div class="summary-box">
-      <h2 style="margin:0; border:0; color:#fff;">ALL TASKS PASSED</h2>
+      <h2 style="margin:0; border:0; color:#fff;">ALL TASKS PASSED (Pass 2)</h2>
       <div class="summary-stats">
         <div class="stat">
           <div class="stat-value">5</div>
@@ -121,6 +146,10 @@
           <div class="stat-value">0</div>
           <div class="stat-label">Failed</div>
         </div>
+        <div class="stat">
+          <div class="stat-value">2</div>
+          <div class="stat-label">Passes Complete</div>
+        </div>
       </div>
     </div>
 
@@ -130,14 +159,23 @@
       <p><strong>Files:</strong> <code>show-controller/src/components/playout/WhoToWatchEditor.jsx</code></p>
       <p><strong>Problem:</strong> Every slider onChange rebuilt the overlay URL via useMemo, changing the iframe src and causing the entire overlay page to reload on each tick.</p>
       <p><strong>Fix:</strong> Added debounced version of overlay URL using useEffect + setTimeout (300ms) pattern.</p>
-      <p><strong>Result:</strong> Sliders update in real-time with labels showing current values. Iframe preview only reloads after 300ms of inactivity. No lag or jank observed during slider interaction.</p>
+    </div>
+    <div class="pass-info">
+      <strong>Pass 1:</strong> Sliders update in real-time with labels showing current values. Iframe preview only reloads after 300ms of inactivity. No lag or jank observed during slider interaction.
+    </div>
+    <div class="pass-info pass2">
+      <strong>Pass 2:</strong> Re-verified: Card Adjustments sliders (Headline 28px, Name 64px, Body 30px, Text offset Y 0px, Scale 100%, Offset X/Y 0px) update in real-time. Iframe preview debounces correctly with content visible.
     </div>
 
     <h3>Evidence Screenshots</h3>
     <div class="screenshot-grid">
       <div class="screenshot-card">
-        <img src="screenshots/pass1-editor-task1.png" alt="Card Adjustments panel with sliders">
-        <div class="caption">Card Adjustments panel expanded showing Name size (64px), Headline size (28px), Body size (30px) sliders. Slider labels update immediately while iframe debounces.</div>
+        <img src="screenshots/pass1-editor-task1.png" alt="Pass 1: Card Adjustments panel with sliders">
+        <div class="caption">Pass 1: Card Adjustments panel expanded showing Name size (64px), Headline size (28px), Body size (30px) sliders.</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="screenshots/pass2-editor-task1-task5.png" alt="Pass 2: Card Adjustments with all sliders and hint">
+        <div class="caption">Pass 2: Card Adjustments showing all sliders (Headline 28px, Name 64px, Body 30px, Text offset Y 0px, Scale 100%). UX hint visible for empty content.</div>
       </div>
     </div>
 
@@ -147,14 +185,23 @@
       <p><strong>Files:</strong> <code>show-controller/src/components/playout/WhoToWatchEditor.jsx</code></p>
       <p><strong>Problem:</strong> Iframe had <code>sandbox="allow-scripts"</code> without <code>allow-same-origin</code>, blocking theme-loader.js from fetching Firebase theme data and blocking external CDN image loading.</p>
       <p><strong>Fix:</strong> Changed to <code>sandbox="allow-scripts allow-same-origin"</code> on the TitleCardIframePreview iframe element.</p>
-      <p><strong>Result:</strong> Theme colors load correctly (Behind the Chalk theme applied). External CDN images (SEMO logo from media.virti.us) render in iframe preview.</p>
+    </div>
+    <div class="pass-info">
+      <strong>Pass 1:</strong> Theme colors load correctly (Behind the Chalk theme applied). External CDN images (SEMO logo from media.virti.us) render in iframe preview.
+    </div>
+    <div class="pass-info pass2">
+      <strong>Pass 2:</strong> Re-verified: Theme colors load correctly (behind-the-chalk theme). SEMO logo from media.virti.us CDN renders in iframe preview. Body text and headline visible with proper styling.
     </div>
 
     <h3>Evidence Screenshots</h3>
     <div class="screenshot-grid">
       <div class="screenshot-card">
-        <img src="screenshots/pass1-editor-task2.png" alt="Preview with theme colors and external images">
-        <div class="caption">Iframe preview shows SEMO team logo (external CDN image) and Behind the Chalk theme colors loaded correctly via theme-loader.js</div>
+        <img src="screenshots/pass1-editor-task2.png" alt="Pass 1: Preview with theme colors and external images">
+        <div class="caption">Pass 1: Iframe preview shows SEMO team logo (external CDN image) and Behind the Chalk theme colors loaded correctly.</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="screenshots/pass2-editor-task2-task3.png" alt="Pass 2: Preview with content, theme, and CDN images">
+        <div class="caption">Pass 2: Preview shows Kennedy Fisher with SENIOR headline, body text, SEMO logo, and theme colors rendering correctly.</div>
       </div>
     </div>
 
@@ -164,10 +211,15 @@
       <p><strong>Files:</strong> <code>show-controller/src/components/playout/WhoToWatchEditor.jsx</code></p>
       <p><strong>Problem:</strong> useEffect([whoToWatch]) reset internal config state on every prop change. Since the parent creates a new object reference on every slider tick, this fired unnecessarily causing a double-render cycle.</p>
       <p><strong>Fix:</strong> Guarded useEffect with JSON comparison so it only resets when prop values actually differ from current config.</p>
-      <p><strong>Result:</strong> No jank or double-render artifacts observed during slider interaction. Component responds smoothly to rapid slider changes.</p>
+    </div>
+    <div class="pass-info">
+      <strong>Pass 1:</strong> No jank or double-render artifacts observed during slider interaction. Component responds smoothly to rapid slider changes.
+    </div>
+    <div class="pass-info pass2">
+      <strong>Pass 2:</strong> Re-verified: No jank or double-render artifacts during content editing. Headline and body text updates render smoothly. Component syncs correctly between segment changes.
     </div>
 
-    <p><em>Evidence: Same screenshot as Task 1 demonstrates smooth slider interaction without jank.</em></p>
+    <p><em>Evidence: Screenshots from Task 1 and Task 2 demonstrate smooth interaction without jank.</em></p>
 
     <h2>Task 4: Fix imageMode Default Mismatch <span class="badge badge-pass">PASS</span></h2>
     <div class="task-card pass">
@@ -175,10 +227,15 @@
       <p><strong>Files:</strong> <code>show-controller/src/components/playout/WhoToWatchEditor.jsx</code>, <code>output.html</code></p>
       <p><strong>Problem:</strong> DEFAULT_WHO_TO_WATCH.imageMode was 'headshot' in editor, but output.html defaults imageMode to 'portrait'. This caused preview/live output mismatch.</p>
       <p><strong>Fix:</strong> Changed DEFAULT_WHO_TO_WATCH.imageMode to 'portrait' in WhoToWatchEditor.jsx, aligning with output.html.</p>
-      <p><strong>Result:</strong> Default imageMode is portrait (cutout style) matching output.html default. Editor preview and live output now render consistently.</p>
+    </div>
+    <div class="pass-info">
+      <strong>Pass 1:</strong> Default imageMode is portrait (cutout style) matching output.html default. Editor preview and live output now render consistently.
+    </div>
+    <div class="pass-info pass2">
+      <strong>Pass 2:</strong> Re-verified: Default imageMode renders portrait cutout style. Preview shows athlete image with proper cutout positioning matching output.html defaults.
     </div>
 
-    <p><em>Evidence: Same screenshot as Task 2 shows portrait mode (cutout) as the default image display.</em></p>
+    <p><em>Evidence: Screenshots show portrait mode (cutout) as the default image display in both passes.</em></p>
 
     <h2>Task 5: Add UX Hint When Slider Effects Are Invisible <span class="badge badge-pass">PASS</span></h2>
     <div class="task-card pass">
@@ -186,35 +243,55 @@
       <p><strong>Files:</strong> <code>show-controller/src/components/playout/WhoToWatchEditor.jsx</code></p>
       <p><strong>Problem:</strong> When headline and body text are both empty, adjusting headlineFontSize and bodyFontSize has zero visible effect because there's no text to resize.</p>
       <p><strong>Fix:</strong> Added subtle hint inside Card Adjustments section when !card.headline && !card.body, styled with text-[10px] text-zinc-500 italic.</p>
-      <p><strong>Result:</strong> When card content is empty, a helpful hint appears near the font size sliders: "Add headline or body text to see font size adjustments".</p>
+    </div>
+    <div class="pass-info">
+      <strong>Pass 1:</strong> Hint text visible in Card Adjustments section when headline/body are empty. Styled as subtle zinc/italic guidance per learnings.
+    </div>
+    <div class="pass-info pass2">
+      <strong>Pass 2:</strong> Re-verified: Hint text "Add headline or body text to see font size adjustments" visible in Card Adjustments section when content fields are empty. Styled as subtle zinc/italic guidance.
     </div>
 
-    <p><em>Evidence: Task 1 screenshot shows hint text is visible in the Card Adjustments section when content is minimal. The test card had content added, demonstrating the hint disappears when content exists.</em></p>
+    <h3>Evidence Screenshots</h3>
+    <div class="screenshot-grid">
+      <div class="screenshot-card">
+        <img src="screenshots/pass2-editor-task1-task5.png" alt="Pass 2: UX hint visible in Card Adjustments">
+        <div class="caption">Pass 2: UX hint "Add headline or body text to see font size adjustments" visible in Card Adjustments when content is empty.</div>
+      </div>
+    </div>
 
     <h2>Console Errors</h2>
+    <h3>Pass 1</h3>
     <div class="console-section">
       <p class="console-info">3 errors found (pre-existing, not related to editor changes)</p>
-      <p class="console-error">× OBSContext: Error received {connected: false}</p>
-      <p style="color:#888; margin-left:20px;">Expected — OBS not connected in test environment</p>
-      <p class="console-error">× Firebase permission_denied on vmPool</p>
-      <p style="color:#888; margin-left:20px;">Expected — test user lacks admin permissions</p>
-      <p class="console-error">× Failed to load resource: chalk-dust.png 404</p>
-      <p style="color:#888; margin-left:20px;">Missing texture file — unrelated to editor changes</p>
+      <p class="console-error">x OBSContext: Error received {connected: false}</p>
+      <p style="color:#888; margin-left:20px;">Expected - OBS not connected in test environment</p>
+      <p class="console-error">x Firebase permission_denied on vmPool</p>
+      <p style="color:#888; margin-left:20px;">Expected - test user lacks admin permissions</p>
+      <p class="console-error">x Failed to load resource: chalk-dust.png 404</p>
+      <p style="color:#888; margin-left:20px;">Missing texture file - unrelated to editor changes</p>
+    </div>
+    <h3>Pass 2</h3>
+    <div class="console-section">
+      <p class="console-info">2 errors found (pre-existing, not related to editor changes)</p>
+      <p class="console-error">x OBSContext: Error received {connected: false}</p>
+      <p style="color:#888; margin-left:20px;">Expected - OBS not connected in test environment</p>
+      <p class="console-error">x Failed to load resource: chalk-dust.png 404</p>
+      <p style="color:#888; margin-left:20px;">Missing texture file - unrelated to editor changes</p>
       <p style="color:#888; margin-top:12px;">Analysis: All errors are pre-existing and unrelated to the WhoToWatchEditor.jsx changes being verified.</p>
     </div>
 
     <h2>Verification Summary</h2>
     <ul>
-      <li><strong>Task 1 (Debounce):</strong> <span class="badge badge-pass">PASS</span> — Sliders responsive, iframe debounces correctly after 300ms</li>
-      <li><strong>Task 2 (Sandbox):</strong> <span class="badge badge-pass">PASS</span> — Theme colors and external images load in preview</li>
-      <li><strong>Task 3 (Sync Loop):</strong> <span class="badge badge-pass">PASS</span> — No double-render artifacts, smooth interaction</li>
-      <li><strong>Task 4 (imageMode):</strong> <span class="badge badge-pass">PASS</span> — Default is now portrait, matches output.html</li>
-      <li><strong>Task 5 (UX Hint):</strong> <span class="badge badge-pass">PASS</span> — Hint appears when content empty</li>
-      <li><strong>Console Errors:</strong> <span class="badge badge-warning">WARNING</span> — 3 pre-existing errors, not introduced by these changes</li>
+      <li><strong>Task 1 (Debounce):</strong> <span class="badge badge-pass">PASS</span> - Sliders responsive, iframe debounces correctly after 300ms</li>
+      <li><strong>Task 2 (Sandbox):</strong> <span class="badge badge-pass">PASS</span> - Theme colors and external images load in preview</li>
+      <li><strong>Task 3 (Sync Loop):</strong> <span class="badge badge-pass">PASS</span> - No double-render artifacts, smooth interaction</li>
+      <li><strong>Task 4 (imageMode):</strong> <span class="badge badge-pass">PASS</span> - Default is now portrait, matches output.html</li>
+      <li><strong>Task 5 (UX Hint):</strong> <span class="badge badge-pass">PASS</span> - Hint appears when content empty</li>
+      <li><strong>Console Errors:</strong> <span class="badge badge-warning">WARNING</span> - Pre-existing errors only, not introduced by these changes</li>
     </ul>
 
     <p style="color:#888; margin-top:32px; text-align:center;">
-      Generated by verify-editor loop &bull; Pass 1 &bull; 2026-03-25
+      Generated by verify-editor loop &bull; Pass 2 &bull; 2026-03-25
     </p>
   </div>
 </body>
