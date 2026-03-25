@@ -32,7 +32,7 @@
   Back pressure: `cd show-controller && npm run build`
   Expected: `who-to-watch-title` appears in the URL Generator graphics picker under "pre-meet" category.
 
-- **Task 2: Add URL builder support for who-to-watch and who-to-watch-title — NOT STARTED**
+- **Task 2: Add URL builder support for who-to-watch and who-to-watch-title — COMPLETE**
   PRD issue: #20
   Files: `show-controller/src/lib/urlBuilder.js`
   Problem: `generateGraphicURL()` has no case for either `who-to-watch` or `who-to-watch-title`. The URL Generator returns empty URLs.
@@ -63,6 +63,9 @@ _No bugs discovered yet._
 
 - LEARNING: The `buildGraphicUrlFromRegistry()` fallback in `urlBuilder.js` (line ~747-751) auto-generates URLs for any overlay graphic that has a proper registry entry. As long as the `who-to-watch-title` entry has `renderer: 'overlay'` and params defined, the URL builder will work without needing a dedicated case in `generateGraphicURL()`.
 - LEARNING: `perTeam: true` graphics get expanded by `getGraphicsForCompetition()` to `team1-who-to-watch-title`, `team2-who-to-watch-title`, etc. The `teamSlot` param is required for this expansion.
+- LEARNING: The fallback DOES NOT work for per-team expanded graphics because `getGraphicById('team1-who-to-watch')` returns `null` — the registry has the base ID `'who-to-watch'` not the expanded ID. Explicit regex handlers are required in `generateGraphicURL()` for per-team graphics (see `team{N}-stats`, `team{N}-coaches`, `team{N}-roster` patterns).
+- LEARNING: `who-to-watch.html` params: `athleteName`, `logo`/`logoUrl`, `subtitle`/`teamName`, `statLabel`, `statValue`, `headshot`, `meetTheme`.
+- LEARNING: `who-to-watch-title.html` params: `athleteName`, `teamName`, `logo`/`logoUrl`, `headline`, `body`, `imageUrl`/`headshot`, `imageMode`, `badge`, `nameFontSize`, `bodyFontSize`, `headlineFontSize`, `textOffsetY`, `imageScale`, `imageOffsetX`, `imageOffsetY`, `meetTheme`.
 
 ---
 

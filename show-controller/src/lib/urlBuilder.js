@@ -513,6 +513,48 @@ export function generateGraphicURL(graphicId, formData, teamCount, baseUrl, opti
     });
   }
 
+  // Handle Who to Watch lower-third graphics (team1-who-to-watch, team2-who-to-watch, etc.)
+  const whoToWatchMatch = graphicId.match(/^team(\d+)-who-to-watch$/);
+  if (whoToWatchMatch) {
+    const num = parseInt(whoToWatchMatch[1]);
+    const params = new URLSearchParams();
+    if (formData.athleteName) params.set('athleteName', formData.athleteName);
+    const logo = formData.logo || getTeamLogo(num);
+    if (logo) params.set('logo', logo);
+    if (formData.subtitle || formData.teamName) params.set('subtitle', formData.subtitle || formData.teamName || '');
+    if (formData.statLabel) params.set('statLabel', formData.statLabel);
+    if (formData.statValue) params.set('statValue', formData.statValue);
+    if (formData.headshot) params.set('headshot', formData.headshot);
+    if (meetTheme) params.set('meetTheme', meetTheme);
+    return `${base}/overlays/who-to-watch.html?${params.toString()}`;
+  }
+
+  // Handle Who to Watch Title Card graphics (team1-who-to-watch-title, team2-who-to-watch-title, etc.)
+  const whoToWatchTitleMatch = graphicId.match(/^team(\d+)-who-to-watch-title$/);
+  if (whoToWatchTitleMatch) {
+    const num = parseInt(whoToWatchTitleMatch[1]);
+    const params = new URLSearchParams();
+    if (formData.athleteName) params.set('athleteName', formData.athleteName);
+    if (formData.teamName) params.set('teamName', formData.teamName);
+    const logo = formData.logo || getTeamLogo(num);
+    if (logo) params.set('logo', logo);
+    if (formData.headline) params.set('headline', formData.headline);
+    if (formData.body) params.set('body', formData.body);
+    if (formData.imageUrl) params.set('imageUrl', formData.imageUrl);
+    if (formData.imageMode) params.set('imageMode', formData.imageMode);
+    if (formData.badge !== undefined && formData.badge !== 'WHO TO WATCH') params.set('badge', formData.badge);
+    // Adjustment params — only include if non-default
+    if (formData.nameFontSize && formData.nameFontSize !== 64) params.set('nameFontSize', formData.nameFontSize);
+    if (formData.bodyFontSize && formData.bodyFontSize !== 30) params.set('bodyFontSize', formData.bodyFontSize);
+    if (formData.headlineFontSize && formData.headlineFontSize !== 28) params.set('headlineFontSize', formData.headlineFontSize);
+    if (formData.textOffsetY && formData.textOffsetY !== 0) params.set('textOffsetY', formData.textOffsetY);
+    if (formData.imageScale && formData.imageScale !== 100) params.set('imageScale', formData.imageScale);
+    if (formData.imageOffsetX && formData.imageOffsetX !== 0) params.set('imageOffsetX', formData.imageOffsetX);
+    if (formData.imageOffsetY && formData.imageOffsetY !== 0) params.set('imageOffsetY', formData.imageOffsetY);
+    if (meetTheme) params.set('meetTheme', meetTheme);
+    return `${base}/overlays/who-to-watch-title.html?${params.toString()}`;
+  }
+
   // Handle frame overlay graphics
   const frameMatch = graphicId.match(/^frame-(quad|tri-center|tri-wide-top|tri-wide|team-header|single|dual)$/);
   if (frameMatch) {
