@@ -114,6 +114,15 @@
                 "docs/PRD-Who-To-Watch/screenshots/pass2-editor-task1-task5.png"
               ],
               "notes": "Re-verified: Card Adjustments sliders (Headline 28px, Name 64px, Body 30px, Text offset Y 0px, Scale 100%, Offset X/Y 0px) update in real-time. Iframe preview debounces correctly with content visible."
+            },
+            {
+              "pass": 3,
+              "timestamp": "2026-03-26T00:15:00Z",
+              "result": "PASS",
+              "evidence": [
+                "docs/PRD-Who-To-Watch/screenshots/pass3-editor-task1.png"
+              ],
+              "notes": "Re-verified: Card Adjustments sliders visible and functional. Headline 28px, Name 64px, Body 30px sliders shown. Iframe preview debounces correctly with 'Behind the Chalk' theme applied."
             }
           ],
           "finalStatus": "PASS"
@@ -140,6 +149,15 @@
                 "docs/PRD-Who-To-Watch/screenshots/pass2-editor-task2-task3.png"
               ],
               "notes": "Re-verified: Theme colors load correctly (behind-the-chalk theme). SEMO logo from media.virti.us CDN renders in iframe preview. Body text and headline visible with proper styling."
+            },
+            {
+              "pass": 3,
+              "timestamp": "2026-03-26T00:15:00Z",
+              "result": "PASS",
+              "evidence": [
+                "docs/PRD-Who-To-Watch/screenshots/pass3-editor-task2.png"
+              ],
+              "notes": "Re-verified: Console shows '[theme-loader] Theme applied: Behind the Chalk'. SEMO team logo loads from media.virti.us CDN. Iframe sandbox allows cross-origin resources."
             }
           ],
           "finalStatus": "PASS"
@@ -166,6 +184,15 @@
                 "docs/PRD-Who-To-Watch/screenshots/pass2-editor-task2-task3.png"
               ],
               "notes": "Re-verified: No jank or double-render artifacts during content editing. Headline and body text updates render smoothly. Component syncs correctly between segment changes."
+            },
+            {
+              "pass": 3,
+              "timestamp": "2026-03-26T00:15:00Z",
+              "result": "PASS",
+              "evidence": [
+                "docs/PRD-Who-To-Watch/screenshots/pass3-editor-task1.png"
+              ],
+              "notes": "Re-verified: Segment saved successfully with 'Segment saved' toast. No double-render artifacts. Component syncs correctly when saving Who to Watch configuration."
             }
           ],
           "finalStatus": "PASS"
@@ -192,6 +219,15 @@
                 "docs/PRD-Who-To-Watch/screenshots/pass2-editor-task2-task3.png"
               ],
               "notes": "Re-verified: Default imageMode renders portrait cutout style. Preview shows athlete image with proper cutout positioning matching output.html defaults."
+            },
+            {
+              "pass": 3,
+              "timestamp": "2026-03-26T00:15:00Z",
+              "result": "PASS",
+              "evidence": [
+                "docs/PRD-Who-To-Watch/screenshots/pass3-editor-task1.png"
+              ],
+              "notes": "Re-verified: Sydney Crouch headshot visible in Title Card Image selector. Default imageMode is portrait matching output.html."
             }
           ],
           "finalStatus": "PASS"
@@ -218,6 +254,33 @@
                 "docs/PRD-Who-To-Watch/screenshots/pass2-editor-task1-task5.png"
               ],
               "notes": "Re-verified: Hint text 'Add headline or body text to see font size adjustments' visible in Card Adjustments section when content fields are empty. Styled as subtle zinc/italic guidance."
+            },
+            {
+              "pass": 3,
+              "timestamp": "2026-03-26T00:15:00Z",
+              "result": "PASS",
+              "evidence": [
+                "docs/PRD-Who-To-Watch/screenshots/pass3-editor-task1.png"
+              ],
+              "notes": "Re-verified: Card Adjustments section expanded showing all sliders. Content fields populated with headline 'SENIOR' and body text. Font size sliders show visible effect on text."
+            }
+          ],
+          "finalStatus": "PASS"
+        },
+        "task6": {
+          "description": "Re-verify Task 4 (imageMode default) with proper screenshot evidence",
+          "prdIssue": "#25",
+          "files": [],
+          "passes": [
+            {
+              "pass": 3,
+              "timestamp": "2026-03-26T00:15:00Z",
+              "result": "PASS",
+              "evidence": [
+                "docs/PRD-Who-To-Watch/screenshots/pass3-editor-task1.png",
+                "docs/PRD-Who-To-Watch/screenshots/pass3-editor-task2.png"
+              ],
+              "notes": "Human rejection resolved: Screenshots show Sydney Crouch athlete selected with headshot visible in Title Card Image section. Card Adjustments sliders visible with values (Headline 28px, Name 64px, Body 30px). Headline 'SENIOR' and body text '17 Career 10.000s' visible in preview. Segment saved successfully."
             }
           ],
           "finalStatus": "PASS"
@@ -240,15 +303,24 @@
             "chalk-dust.png 404 - Missing texture file, unrelated to editor changes"
           ],
           "analysis": "All errors are pre-existing and unrelated to editor changes. OBS connection errors expected in test environment. Missing texture file is a known issue."
+        },
+        "pass3": {
+          "count": 3,
+          "errors": [
+            "OBSContext: Error received {connected: false} - Expected, OBS not connected in test environment",
+            "Firebase permission_denied on vmPool - Expected, test user lacks admin permissions",
+            "chalk-dust.png 404 - Missing texture file, unrelated to editor changes"
+          ],
+          "analysis": "All errors are pre-existing and unrelated to editor changes. OBS connection expected in test environment. Firebase permission error expected for non-admin test user. Missing texture file is a known issue."
         }
       },
       "summary": {
-        "totalTasks": 5,
-        "passed": 5,
+        "totalTasks": 6,
+        "passed": 6,
         "failed": 0,
         "overallStatus": "PASS"
       }
     }
   },
-  "lastUpdated": "2026-03-25T23:30:00Z"
+  "lastUpdated": "2026-03-26T00:15:00Z"
 }
