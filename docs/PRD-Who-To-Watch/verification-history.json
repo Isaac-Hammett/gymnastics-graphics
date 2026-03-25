@@ -131,6 +131,15 @@
                 "docs/PRD-Who-To-Watch/screenshots/pass1-editor-task2.png"
               ],
               "notes": "Theme colors load correctly (Behind the Chalk theme applied). External CDN images (SEMO logo from media.virti.us) render in iframe preview."
+            },
+            {
+              "pass": 2,
+              "timestamp": "2026-03-25T23:30:00Z",
+              "result": "PASS",
+              "evidence": [
+                "docs/PRD-Who-To-Watch/screenshots/pass2-editor-task2-task3.png"
+              ],
+              "notes": "Re-verified: Theme colors load correctly (behind-the-chalk theme). SEMO logo from media.virti.us CDN renders in iframe preview. Body text and headline visible with proper styling."
             }
           ],
           "finalStatus": "PASS"
@@ -148,6 +157,15 @@
                 "docs/PRD-Who-To-Watch/screenshots/pass1-editor-task1.png"
               ],
               "notes": "No jank or double-render artifacts observed during slider interaction. Component responds smoothly to rapid slider changes."
+            },
+            {
+              "pass": 2,
+              "timestamp": "2026-03-25T23:30:00Z",
+              "result": "PASS",
+              "evidence": [
+                "docs/PRD-Who-To-Watch/screenshots/pass2-editor-task2-task3.png"
+              ],
+              "notes": "Re-verified: No jank or double-render artifacts during content editing. Headline and body text updates render smoothly. Component syncs correctly between segment changes."
             }
           ],
           "finalStatus": "PASS"
@@ -165,6 +183,15 @@
                 "docs/PRD-Who-To-Watch/screenshots/pass1-editor-task2.png"
               ],
               "notes": "Default imageMode is portrait (cutout style) matching output.html default. Editor preview and live output now render consistently."
+            },
+            {
+              "pass": 2,
+              "timestamp": "2026-03-25T23:30:00Z",
+              "result": "PASS",
+              "evidence": [
+                "docs/PRD-Who-To-Watch/screenshots/pass2-editor-task2-task3.png"
+              ],
+              "notes": "Re-verified: Default imageMode renders portrait cutout style. Preview shows athlete image with proper cutout positioning matching output.html defaults."
             }
           ],
           "finalStatus": "PASS"
@@ -182,6 +209,15 @@
                 "docs/PRD-Who-To-Watch/screenshots/pass1-editor-task1.png"
               ],
               "notes": "Hint text visible in Card Adjustments section when headline/body are empty. Styled as subtle zinc/italic guidance per learnings."
+            },
+            {
+              "pass": 2,
+              "timestamp": "2026-03-25T23:30:00Z",
+              "result": "PASS",
+              "evidence": [
+                "docs/PRD-Who-To-Watch/screenshots/pass2-editor-task1-task5.png"
+              ],
+              "notes": "Re-verified: Hint text 'Add headline or body text to see font size adjustments' visible in Card Adjustments section when content fields are empty. Styled as subtle zinc/italic guidance."
             }
           ],
           "finalStatus": "PASS"
@@ -196,6 +232,14 @@
             "chalk-dust.png 404 - Missing texture file, unrelated to editor changes"
           ],
           "analysis": "All errors are pre-existing and unrelated to editor changes. OBS connection errors expected in test environment. Firebase permission errors expected for non-admin user."
+        },
+        "pass2": {
+          "count": 2,
+          "errors": [
+            "OBSContext: Error received {connected: false} - Expected, OBS not connected in test environment",
+            "chalk-dust.png 404 - Missing texture file, unrelated to editor changes"
+          ],
+          "analysis": "All errors are pre-existing and unrelated to editor changes. OBS connection errors expected in test environment. Missing texture file is a known issue."
         }
       },
       "summary": {
@@ -206,5 +250,5 @@
       }
     }
   },
-  "lastUpdated": "2026-03-25T21:24:00Z"
+  "lastUpdated": "2026-03-25T23:30:00Z"
 }
