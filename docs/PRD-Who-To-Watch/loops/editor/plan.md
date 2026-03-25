@@ -36,7 +36,7 @@
   Back pressure: `cd show-controller && npm run build`
   Expected: No unnecessary re-renders on slider changes. Component still syncs correctly when the parent provides new initial data (e.g., switching between segments).
 
-- **Task 4: Fix imageMode default mismatch — NOT STARTED**
+- **Task 4: Fix imageMode default mismatch — COMPLETE**
   PRD issue: #22
   Files: `show-controller/src/components/playout/WhoToWatchEditor.jsx`, `output.html`
   Problem: `DEFAULT_WHO_TO_WATCH.imageMode` is `'headshot'` in WhoToWatchEditor.jsx (line ~64), but output.html defaults `imageMode` to `'portrait'` (line ~12692). If imageMode is not explicitly saved, the editor preview renders a headshot circle while the live broadcast output renders a portrait cutout.
@@ -73,6 +73,7 @@ _No bugs discovered yet._
 - LEARNING: CommandPalette.jsx:138-144 has the canonical debounce pattern for this project: `useEffect` + `setTimeout(300)` + cleanup `clearTimeout`. Follow that pattern.
 - LEARNING: TitleCardIframePreview builds `overlayUrl` via `useMemo` — keeping that and adding a debounced version via `useState` + `useEffect` is the right approach.
 - LEARNING: When guarding a useEffect that syncs prop-to-state, use JSON.stringify comparison and add `eslint-disable-line react-hooks/exhaustive-deps` with a comment explaining why. The pattern is: compare merged defaults + prop against current state, only update if different.
+- LEARNING: `imageMode` defaults must match between editor and output.html. Editor uses `DEFAULT_WHO_TO_WATCH.imageMode` and `getDefaultImageMode()` no-arg return. output.html uses fallback `data.imageMode || 'portrait'` on line ~12692. Both now default to `'portrait'` — headshots are circles and don't fill the title card image column well.
 
 ---
 
