@@ -44,7 +44,7 @@
   Back pressure: `cd show-controller && npm run build`
   Expected: Both editor preview and live output render the same image mode when no explicit imageMode is set.
 
-- **Task 5: Add UX hint when slider effects are invisible — NOT STARTED**
+- **Task 5: Add UX hint when slider effects are invisible — COMPLETE**
   PRD issue: #23
   Files: `show-controller/src/components/playout/WhoToWatchEditor.jsx`
   Problem: When headline and body text are both empty, adjusting `headlineFontSize` and `bodyFontSize` has zero visible effect because there's no text to resize. Producers see sliders but no visual feedback.
@@ -74,6 +74,7 @@ _No bugs discovered yet._
 - LEARNING: TitleCardIframePreview builds `overlayUrl` via `useMemo` — keeping that and adding a debounced version via `useState` + `useEffect` is the right approach.
 - LEARNING: When guarding a useEffect that syncs prop-to-state, use JSON.stringify comparison and add `eslint-disable-line react-hooks/exhaustive-deps` with a comment explaining why. The pattern is: compare merged defaults + prop against current state, only update if different.
 - LEARNING: `imageMode` defaults must match between editor and output.html. Editor uses `DEFAULT_WHO_TO_WATCH.imageMode` and `getDefaultImageMode()` no-arg return. output.html uses fallback `data.imageMode || 'portrait'` on line ~12692. Both now default to `'portrait'` — headshots are circles and don't fill the title card image column well.
+- LEARNING: Hints inside Card Adjustments should use `text-[10px] text-zinc-500 italic` — differentiate from validation hints outside the details block which use `text-amber-400/80`. The amber style draws attention; zinc/italic is subtle guidance.
 
 ---
 
