@@ -28,7 +28,7 @@
   Back pressure: `cd show-controller && npm run build`
   Expected: Preview iframe can load theme colors and external images correctly.
 
-- **Task 3: Remove useEffect sync loop causing double-renders — NOT STARTED**
+- **Task 3: Remove useEffect sync loop causing double-renders — COMPLETE**
   PRD issue: #21
   Files: `show-controller/src/components/playout/WhoToWatchEditor.jsx`
   Problem: `useEffect([whoToWatch])` (line ~409-414) resets internal `config` state on every prop change. Since the parent creates a new object reference on every slider tick, this fires unnecessarily, causing a double-render cycle.
@@ -72,6 +72,7 @@ _No bugs discovered yet._
 
 - LEARNING: CommandPalette.jsx:138-144 has the canonical debounce pattern for this project: `useEffect` + `setTimeout(300)` + cleanup `clearTimeout`. Follow that pattern.
 - LEARNING: TitleCardIframePreview builds `overlayUrl` via `useMemo` — keeping that and adding a debounced version via `useState` + `useEffect` is the right approach.
+- LEARNING: When guarding a useEffect that syncs prop-to-state, use JSON.stringify comparison and add `eslint-disable-line react-hooks/exhaustive-deps` with a comment explaining why. The pattern is: compare merged defaults + prop against current state, only update if different.
 
 ---
 
