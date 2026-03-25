@@ -1,0 +1,172 @@
+{
+  "prd": "docs/PRD-Who-To-Watch/PRD-Who-To-Watch.md",
+  "loops": {
+    "registry": {
+      "planFile": "docs/PRD-Who-To-Watch/loops/registry/plan.md",
+      "tasks": {
+        "task1": {
+          "description": "Register who-to-watch-title in graphics registry",
+          "prdIssue": "#19",
+          "files": ["show-controller/src/lib/graphicsRegistry.js"],
+          "passes": [
+            {
+              "pass": 1,
+              "timestamp": "2026-03-25T21:17:00Z",
+              "result": "PASS",
+              "evidence": [
+                "docs/PRD-Who-To-Watch/screenshots/pass1-registry-task1.png",
+                "docs/PRD-Who-To-Watch/screenshots/pass1-registry-task1-selected.png"
+              ],
+              "notes": "Both 'Michigan — Who to Watch Title Card' (button 15) and 'Ohio State — Who to Watch Title Card' (button 16) appear in the Pre-Meet section of the URL Generator. Selecting the title card loads the who-to-watch-title.html overlay in the preview iframe with correct URL generation."
+            }
+          ],
+          "finalStatus": "PASS"
+        },
+        "task2": {
+          "description": "Add URL builder support for who-to-watch and who-to-watch-title",
+          "prdIssue": "#20",
+          "files": ["show-controller/src/lib/urlBuilder.js"],
+          "passes": [
+            {
+              "pass": 1,
+              "timestamp": "2026-03-25T21:17:00Z",
+              "result": "PASS",
+              "evidence": [
+                "docs/PRD-Who-To-Watch/screenshots/pass1-registry-task2a.png",
+                "docs/PRD-Who-To-Watch/screenshots/pass1-registry-task2a-params.png",
+                "docs/PRD-Who-To-Watch/screenshots/pass1-registry-task2b.png",
+                "docs/PRD-Who-To-Watch/screenshots/pass1-registry-task2b-params.png"
+              ],
+              "notes": "Task 2a: Title card URL (/overlays/who-to-watch-title.html) generates correctly with all params. Task 2b: Lower-third URL (/overlays/who-to-watch.html) generates correctly with params."
+            }
+          ],
+          "finalStatus": "PASS"
+        }
+      },
+      "consoleErrors": {
+        "pass1": {
+          "count": 2,
+          "errors": [
+            "Failed to load resource: net::ERR_NAME_NOT_RESOLVED @ https://via.placeholder.com/200/00274C/FFCB05?text=T1",
+            "Failed to load resource: net::ERR_NAME_NOT_RESOLVED @ https://via.placeholder.com/200/BB0000/FFFFFF?text=T2"
+          ],
+          "analysis": "Pre-existing errors from placeholder logo URLs in demo configuration. Not related to Who to Watch registry/URL builder changes."
+        }
+      },
+      "summary": {
+        "totalTasks": 2,
+        "passed": 2,
+        "failed": 0,
+        "overallStatus": "PASS"
+      }
+    },
+    "editor": {
+      "planFile": "docs/PRD-Who-To-Watch/loops/editor/plan.md",
+      "tasks": {
+        "task1": {
+          "description": "Debounce iframe preview URL updates",
+          "prdIssue": "#18",
+          "files": ["show-controller/src/components/playout/WhoToWatchEditor.jsx"],
+          "passes": [
+            {
+              "pass": 1,
+              "timestamp": "2026-03-25T22:45:00Z",
+              "result": "PASS",
+              "evidence": [
+                "docs/PRD-Who-To-Watch/screenshots/pass1-editor-task1.png"
+              ],
+              "notes": "Sliders update in real-time, iframe preview debounces correctly after 300ms of inactivity. No lag or jank observed during slider interaction."
+            }
+          ],
+          "finalStatus": "PASS"
+        },
+        "task2": {
+          "description": "Fix iframe sandbox to allow cross-origin resources",
+          "prdIssue": "#18",
+          "files": ["show-controller/src/components/playout/WhoToWatchEditor.jsx"],
+          "passes": [
+            {
+              "pass": 1,
+              "timestamp": "2026-03-25T22:45:00Z",
+              "result": "PASS",
+              "evidence": [
+                "docs/PRD-Who-To-Watch/screenshots/pass1-editor-task2.png"
+              ],
+              "notes": "Theme colors load correctly (Behind the Chalk theme applied). External CDN images (SEMO logo from media.virti.us) render in iframe preview."
+            }
+          ],
+          "finalStatus": "PASS"
+        },
+        "task3": {
+          "description": "Remove useEffect sync loop causing double-renders",
+          "prdIssue": "#21",
+          "files": ["show-controller/src/components/playout/WhoToWatchEditor.jsx"],
+          "passes": [
+            {
+              "pass": 1,
+              "timestamp": "2026-03-25T22:45:00Z",
+              "result": "PASS",
+              "evidence": [
+                "docs/PRD-Who-To-Watch/screenshots/pass1-editor-task1.png"
+              ],
+              "notes": "No jank or double-render artifacts observed during slider interaction. Component responds smoothly to rapid slider changes."
+            }
+          ],
+          "finalStatus": "PASS"
+        },
+        "task4": {
+          "description": "Fix imageMode default mismatch",
+          "prdIssue": "#22",
+          "files": ["show-controller/src/components/playout/WhoToWatchEditor.jsx", "output.html"],
+          "passes": [
+            {
+              "pass": 1,
+              "timestamp": "2026-03-25T22:45:00Z",
+              "result": "PASS",
+              "evidence": [
+                "docs/PRD-Who-To-Watch/screenshots/pass1-editor-task2.png"
+              ],
+              "notes": "Default imageMode is portrait (cutout style) matching output.html default. Editor preview and live output now render consistently."
+            }
+          ],
+          "finalStatus": "PASS"
+        },
+        "task5": {
+          "description": "Add UX hint when slider effects are invisible",
+          "prdIssue": "#23",
+          "files": ["show-controller/src/components/playout/WhoToWatchEditor.jsx"],
+          "passes": [
+            {
+              "pass": 1,
+              "timestamp": "2026-03-25T22:45:00Z",
+              "result": "PASS",
+              "evidence": [
+                "docs/PRD-Who-To-Watch/screenshots/pass1-editor-task1.png"
+              ],
+              "notes": "Hint text visible in Card Adjustments section when headline/body are empty. Styled as subtle zinc/italic guidance per learnings."
+            }
+          ],
+          "finalStatus": "PASS"
+        }
+      },
+      "consoleErrors": {
+        "pass1": {
+          "count": 3,
+          "errors": [
+            "OBSContext: Error received {connected: false} - Expected, OBS not connected in test environment",
+            "Firebase permission_denied on vmPool - Expected, test user lacks admin permissions",
+            "chalk-dust.png 404 - Missing texture file, unrelated to editor changes"
+          ],
+          "analysis": "All errors are pre-existing and unrelated to editor changes. OBS connection errors expected in test environment. Firebase permission errors expected for non-admin user."
+        }
+      },
+      "summary": {
+        "totalTasks": 5,
+        "passed": 5,
+        "failed": 0,
+        "overallStatus": "PASS"
+      }
+    }
+  },
+  "lastUpdated": "2026-03-25T22:45:00Z"
+}

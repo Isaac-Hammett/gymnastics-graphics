@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PRD Who-To-Watch Registry Verification - Pass 1</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      margin: 0;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    .container { max-width: 1400px; margin: 0 auto; }
+    h1 { color: #4fc3f7; margin-bottom: 8px; }
+    h2 { color: #81d4fa; border-bottom: 1px solid #333; padding-bottom: 8px; margin-top: 32px; }
+    h3 { color: #b3e5fc; margin-top: 24px; }
+    .subtitle { color: #888; margin-bottom: 24px; }
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-weight: bold;
+      font-size: 14px;
+      margin-left: 8px;
+    }
+    .badge-pass { background: #2e7d32; color: #fff; }
+    .badge-fail { background: #c62828; color: #fff; }
+    .badge-warning { background: #f57c00; color: #fff; }
+    .task-card {
+      background: #252542;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 16px 0;
+      border-left: 4px solid #4fc3f7;
+    }
+    .task-card.pass { border-left-color: #4caf50; }
+    .task-card.fail { border-left-color: #f44336; }
+    .screenshot-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 16px;
+      margin: 16px 0;
+    }
+    .screenshot-card {
+      background: #1e1e3a;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .screenshot-card img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .screenshot-card .caption {
+      padding: 12px;
+      font-size: 13px;
+      color: #aaa;
+    }
+    .console-section {
+      background: #1e1e1e;
+      border-radius: 8px;
+      padding: 16px;
+      margin: 16px 0;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 13px;
+    }
+    .console-error { color: #ff6b6b; }
+    .console-warning { color: #ffd93d; }
+    .console-info { color: #6bcb77; }
+    .summary-box {
+      background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%);
+      border-radius: 8px;
+      padding: 24px;
+      margin: 24px 0;
+      text-align: center;
+    }
+    .summary-box.fail {
+      background: linear-gradient(135deg, #c62828 0%, #b71c1c 100%);
+    }
+    .summary-stats {
+      display: flex;
+      justify-content: center;
+      gap: 48px;
+      margin-top: 16px;
+    }
+    .stat { text-align: center; }
+    .stat-value { font-size: 32px; font-weight: bold; }
+    .stat-label { font-size: 14px; color: rgba(255,255,255,0.8); }
+    code {
+      background: #333;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 13px;
+    }
+    ul { padding-left: 24px; }
+    li { margin: 8px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>PRD Who-To-Watch: Registry Verification</h1>
+    <p class="subtitle">Pass 1 &bull; 2026-03-25 &bull; Loop: <code>registry</code></p>
+
+    <div class="summary-box">
+      <h2 style="margin:0; border:0; color:#fff;">ALL TASKS PASSED</h2>
+      <div class="summary-stats">
+        <div class="stat">
+          <div class="stat-value">2</div>
+          <div class="stat-label">Tasks Verified</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">2</div>
+          <div class="stat-label">Passed</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">0</div>
+          <div class="stat-label">Failed</div>
+        </div>
+      </div>
+    </div>
+
+    <h2>Task 1: Graphics Registry Entry <span class="badge badge-pass">PASS</span></h2>
+    <div class="task-card pass">
+      <p><strong>PRD Issue:</strong> #19</p>
+      <p><strong>Files:</strong> <code>show-controller/src/lib/graphicsRegistry.js</code></p>
+      <p><strong>Expected:</strong> "Who to Watch — Title Card" appears in the URL Generator graphics picker under "pre-meet" category.</p>
+      <p><strong>Result:</strong> Both "Michigan — Who to Watch Title Card" (button 15) and "Ohio State — Who to Watch Title Card" (button 16) appear in the Pre-Meet section. The graphics are properly registered with per-team expansion working correctly.</p>
+    </div>
+
+    <h3>Evidence Screenshots</h3>
+    <div class="screenshot-grid">
+      <div class="screenshot-card">
+        <img src="screenshots/pass1-registry-task1.png" alt="URL Generator showing Who to Watch Title Card buttons">
+        <div class="caption">URL Generator showing both "Who to Watch" lower-third (13, 14) and "Title Card" (15, 16) graphics in Pre-Meet section</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="screenshots/pass1-registry-task1-selected.png" alt="Title Card selected with preview">
+        <div class="caption">Michigan Title Card selected - preview iframe shows WHO TO WATCH badge, URL correctly points to /overlays/who-to-watch-title.html</div>
+      </div>
+    </div>
+
+    <h2>Task 2: URL Builder Support <span class="badge badge-pass">PASS</span></h2>
+    <div class="task-card pass">
+      <p><strong>PRD Issue:</strong> #20</p>
+      <p><strong>Files:</strong> <code>show-controller/src/lib/urlBuilder.js</code></p>
+      <p><strong>Expected:</strong> URL Generator produces correct overlay URLs for both who-to-watch variants.</p>
+    </div>
+
+    <h3>Task 2a: Title Card URL Builder</h3>
+    <p>Tested URL: <code>/overlays/who-to-watch-title.html?athleteName=Jordan%20Chiles&teamName=UCLA&headline=SENIOR&body=17%20Career%2010.000s</code></p>
+    <div class="screenshot-grid">
+      <div class="screenshot-card">
+        <img src="screenshots/pass1-registry-task2a.png" alt="Title card basic render">
+        <div class="caption">Title card overlay loads via URL Generator (minimal params)</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="screenshots/pass1-registry-task2a-params.png" alt="Title card with full parameters">
+        <div class="caption">Full parameter test: WHO TO WATCH badge, UCLA team, SENIOR headline, JORDAN CHILES name, body text all render correctly</div>
+      </div>
+    </div>
+
+    <h3>Task 2b: Lower-Third URL Builder</h3>
+    <p>Tested URL: <code>/overlays/who-to-watch.html?athleteName=Jordan%20Chiles&subtitle=Sr%20•%20Spring,%20TX&statLabel=Season%20High&statValue=9.950</code></p>
+    <div class="screenshot-grid">
+      <div class="screenshot-card">
+        <img src="screenshots/pass1-registry-task2b.png" alt="Lower-third in URL Generator">
+        <div class="caption">Lower-third "Who to Watch" selected in URL Generator with preview showing WHO TO WATCH header</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="screenshots/pass1-registry-task2b-params.png" alt="Lower-third with full parameters">
+        <div class="caption">Full parameter test: WHO TO WATCH header, JC initials (fallback), JORDAN CHILES name, subtitle, stat line all render correctly</div>
+      </div>
+    </div>
+
+    <h2>Console Errors</h2>
+    <div class="console-section">
+      <p class="console-info">2 errors found (pre-existing, not related to registry changes)</p>
+      <p class="console-error">× Failed to load resource: net::ERR_NAME_NOT_RESOLVED @ https://via.placeholder.com/200/00274C/FFCB05?text=T1</p>
+      <p class="console-error">× Failed to load resource: net::ERR_NAME_NOT_RESOLVED @ https://via.placeholder.com/200/BB0000/FFFFFF?text=T2</p>
+      <p style="color:#888; margin-top:12px;">Analysis: These errors are from placeholder logo URLs in the demo configuration data. The via.placeholder.com service is unreachable, but this is unrelated to the Who to Watch feature changes.</p>
+    </div>
+
+    <h2>Verification Summary</h2>
+    <ul>
+      <li><strong>Task 1 (Registry Entry):</strong> <span class="badge badge-pass">PASS</span> — who-to-watch-title registered correctly, appears in Pre-Meet category with per-team expansion</li>
+      <li><strong>Task 2a (Title Card URL):</strong> <span class="badge badge-pass">PASS</span> — URL builder generates correct /overlays/who-to-watch-title.html URLs with all params</li>
+      <li><strong>Task 2b (Lower-Third URL):</strong> <span class="badge badge-pass">PASS</span> — URL builder generates correct /overlays/who-to-watch.html URLs with all params</li>
+      <li><strong>Console Errors:</strong> <span class="badge badge-warning">WARNING</span> — 2 pre-existing errors (placeholder images), not introduced by these changes</li>
+    </ul>
+
+    <p style="color:#888; margin-top:32px; text-align:center;">
+      Generated by verify-registry loop &bull; Pass 1 &bull; 2026-03-25
+    </p>
+  </div>
+</body>
+</html>
