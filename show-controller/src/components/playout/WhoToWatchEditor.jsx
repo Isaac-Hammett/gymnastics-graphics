@@ -414,13 +414,18 @@ export default function WhoToWatchEditor({
     ...whoToWatch,
   }));
 
-  // Sync internal state when prop changes
+  // Sync internal state when prop changes (e.g., switching segments)
+  // Guard with JSON comparison to avoid double-render when same values come back
   useEffect(() => {
-    setConfig({
-      ...DEFAULT_WHO_TO_WATCH,
-      ...whoToWatch,
-    });
-  }, [whoToWatch]);
+    const merged = { ...DEFAULT_WHO_TO_WATCH, ...whoToWatch };
+    // Only update if the prop values actually differ from current config
+    if (JSON.stringify(merged) !== JSON.stringify(config)) {
+      setConfig(merged);
+    }
+  }, [whoToWatch]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Note: config intentionally omitted from deps — we only want to sync when the parent
+  // provides genuinely new data (e.g., selecting a different segment), not on every
+  // internal update cycle
 
   // Notify parent of changes
   const updateField = (field, value) => {
