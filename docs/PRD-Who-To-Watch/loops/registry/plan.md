@@ -43,6 +43,22 @@
   Back pressure: `cd show-controller && npm run build`
   Expected: URL Generator produces correct overlay URLs for both who-to-watch variants. URLs open and render correctly when pasted into a browser.
 
+- **Task 3: Add editable text controls to URL Generator for who-to-watch-title — NEEDS FIX**
+  PRD issue: #24 (new)
+  Human rejection: "there are no controls to this. I cant change or modify text."
+  Files: `show-controller/src/lib/graphicsRegistry.js`
+  Problem: The `who-to-watch-title` registry entry exists but the URL Generator page does not show editable input fields for the text params (athleteName, teamName, headline, body). The user cannot modify the title card content — they just see a static preview with no controls.
+  Investigation needed:
+  - Check how other graphics (e.g., `team-stats`, `athlete-spotlight`) expose editable params in the URL Generator
+  - The registry `params` array should have `editable: true` or similar flag
+  - The URL Generator page (`URLGeneratorPage.jsx`) should render input controls for editable params
+  Fix approach:
+  - Ensure `who-to-watch-title` registry params have the correct structure for editable controls
+  - Compare with working graphics that DO show editable controls in URL Generator
+  - May need to add `editable: true`, `placeholder`, and proper `type` to each param
+  Back pressure: `cd show-controller && npm run build`
+  Expected: URL Generator shows text input fields for athleteName, teamName, headline, body. User can type custom values and see the preview update.
+
 ---
 
 ## Discovered Bugs
@@ -80,4 +96,7 @@ _No bugs discovered yet._
      - What changed: {files modified, approach taken}
 -->
 
-_No fixes applied yet._
+### Pending Fix: Add editable text controls (Pass 3)
+- Source: `rejected/registry.json`
+- Reason: Human rejection — "there are no controls to this. I cant change or modify text."
+- Status: Task 3 added to plan, awaiting implementation

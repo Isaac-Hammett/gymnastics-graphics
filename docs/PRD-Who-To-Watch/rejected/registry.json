@@ -1,0 +1,16 @@
+{
+  "loop": "registry",
+  "rejectedTask": "registry-2",
+  "timestamp": "2026-03-25T21:44:47.666Z",
+  "humanReason": "there are no controls to this. I cant change or modify text.",
+  "classification": "patch-fix",
+  "analysis": "The who-to-watch-title graphic was registered and URL builder support was added, but the URL Generator page does not render editable input fields for the text params. The user can see the graphic in the picker but cannot modify athleteName, teamName, headline, or body text. This is likely a registry param configuration issue — the params may be missing editable flags or proper type/placeholder definitions that the URL Generator page uses to render input controls.",
+  "fixTask": "Task 3: Add editable text controls to URL Generator for who-to-watch-title",
+  "prdIssue": 24,
+  "filesAffected": ["show-controller/src/lib/graphicsRegistry.js"],
+  "investigationNeeded": [
+    "Check how other graphics expose editable params in URL Generator",
+    "Look for editable: true or similar flags on working params",
+    "Compare who-to-watch-title params structure with team-stats or athlete-spotlight"
+  ]
+}
