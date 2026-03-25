@@ -386,7 +386,7 @@ function TitleCardIframePreview({ card, athleteName, teamName, logoUrl, imageUrl
             src={debouncedOverlayUrl}
             title="Title card preview"
             style={{ width: '1920px', height: '1080px', border: 'none' }}
-            sandbox="allow-scripts"
+            sandbox="allow-scripts allow-same-origin"
           />
         </div>
       </div>
