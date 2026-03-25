@@ -61,13 +61,13 @@ const DEFAULT_WHO_TO_WATCH = {
   clipUrl: '',
   headshot: '',
   imageUrl: '',
-  imageMode: 'headshot',
+  imageMode: 'portrait',
   titleCards: [],
 };
 
 // Determine the best image mode based on image source type
 function getDefaultImageMode(imageType) {
-  if (!imageType) return 'headshot';
+  if (!imageType) return 'portrait';
   if (imageType === 'headshot') return 'headshot';
   if (imageType === 'portrait' || imageType === 'full-body') return 'portrait';
   if (imageType === 'action' || imageType === 'custom') return 'full';
