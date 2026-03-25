@@ -52,6 +52,25 @@
   Back pressure: `cd show-controller && npm run build`
   Expected: When card content is empty, a helpful hint appears near the font size sliders.
 
+- **Task 6: Re-verify Task 4 (imageMode default) with proper screenshot evidence — NEEDS FIX**
+  PRD issue: #25 (new)
+  Human rejection: "Preview does not show athlete image with proper cutout positioning. I cant see the head shot in the title card at all, should be on the right. you dont have title card image selected so we cant even verify and you dont show differnces of sizes with the sliders. there is no proof the sliders acutally work"
+  Files: Verification screenshots only — no code changes expected unless bugs are found
+  Problem: The verification for Task 4 did not adequately demonstrate:
+  1. Athlete image visible on the right side of the title card
+  2. Proper cutout positioning (portrait mode anchored to bottom)
+  3. A title card image was actually selected
+  4. Slider adjustments produce visible changes (before/after screenshots at different values)
+  Fix approach:
+  1. Select an athlete WITH a headshot or gallery image
+  2. Ensure `imageUrl` is populated in the title card config
+  3. Take screenshot showing the title card preview with athlete image on the right
+  4. Take screenshot with slider at min value (e.g., imageScale=50%)
+  5. Take screenshot with slider at max value (e.g., imageScale=150%)
+  6. Include all screenshots in verification to prove sliders work
+  Back pressure: None — this is a verification task
+  Expected: Screenshots clearly show athlete image on right, cutout positioning, and slider effects with before/after comparison.
+
 ---
 
 ## Discovered Bugs
@@ -89,4 +108,7 @@ _No bugs discovered yet._
      - What changed: {files modified, approach taken}
 -->
 
-_No fixes applied yet._
+### Pending Fix: Re-verify with proper screenshot evidence (Pass 3)
+- Source: `rejected/editor.json`
+- Reason: Human rejection — "Preview does not show athlete image with proper cutout positioning. I cant see the head shot in the title card at all, should be on the right. you dont have title card image selected so we cant even verify and you dont show differnces of sizes with the sliders. there is no proof the sliders acutally work"
+- Status: Task 6 added to plan, awaiting re-verification
