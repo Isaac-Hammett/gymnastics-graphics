@@ -8,7 +8,7 @@
 
 ## Tasks
 
-- **Task 1: Verify all editor fixes via Playwright — NOT STARTED**
+- **Task 1: Verify all editor fixes via Playwright — COMPLETE**
   Files: `docs/PRD-Who-To-Watch/verification-history.json`, `docs/PRD-Who-To-Watch/verification-log-editor.html`, `docs/PRD-Who-To-Watch/issues/editor.json`
   Back pressure: Screenshots taken and read back
   Expected: All 5 editor tasks verified with screenshots — debounced preview, sandbox fix, sync loop fix, imageMode default, empty content hint

@@ -123,6 +123,16 @@
                 "docs/PRD-Who-To-Watch/screenshots/pass3-editor-task1.png"
               ],
               "notes": "Re-verified: Card Adjustments sliders visible and functional. Headline 28px, Name 64px, Body 30px sliders shown. Iframe preview debounces correctly with 'Behind the Chalk' theme applied."
+            },
+            {
+              "pass": 4,
+              "timestamp": "2026-03-26T01:00:00Z",
+              "result": "PASS",
+              "evidence": [
+                "docs/PRD-Who-To-Watch/screenshots/pass4-editor-task1-before.png",
+                "docs/PRD-Who-To-Watch/screenshots/pass4-editor-task1-after.png"
+              ],
+              "notes": "Name size slider 40px to 100px shows clear visible difference in preview iframe. No white flash or full-page reload."
             }
           ],
           "finalStatus": "PASS"
@@ -158,6 +168,15 @@
                 "docs/PRD-Who-To-Watch/screenshots/pass3-editor-task2.png"
               ],
               "notes": "Re-verified: Console shows '[theme-loader] Theme applied: Behind the Chalk'. SEMO team logo loads from media.virti.us CDN. Iframe sandbox allows cross-origin resources."
+            },
+            {
+              "pass": 4,
+              "timestamp": "2026-03-26T01:00:00Z",
+              "result": "PASS",
+              "evidence": [
+                "docs/PRD-Who-To-Watch/screenshots/pass4-editor-task2-fullsize.png"
+              ],
+              "notes": "Full-size preview shows athlete headshot circle on right side. Theme colors applied. External CDN images load correctly."
             }
           ],
           "finalStatus": "PASS"
@@ -193,6 +212,16 @@
                 "docs/PRD-Who-To-Watch/screenshots/pass3-editor-task1.png"
               ],
               "notes": "Re-verified: Segment saved successfully with 'Segment saved' toast. No double-render artifacts. Component syncs correctly when saving Who to Watch configuration."
+            },
+            {
+              "pass": 4,
+              "timestamp": "2026-03-26T01:00:00Z",
+              "result": "PASS",
+              "evidence": [
+                "docs/PRD-Who-To-Watch/screenshots/pass4-editor-task3-before-save.png",
+                "docs/PRD-Who-To-Watch/screenshots/pass4-editor-task3-after-save.png"
+              ],
+              "notes": "Name size 80px and Image Scale 130% persist correctly after save and reopen. No sync loop or value reset."
             }
           ],
           "finalStatus": "PASS"
@@ -228,6 +257,15 @@
                 "docs/PRD-Who-To-Watch/screenshots/pass3-editor-task1.png"
               ],
               "notes": "Re-verified: Sydney Crouch headshot visible in Title Card Image selector. Default imageMode is portrait matching output.html."
+            },
+            {
+              "pass": 4,
+              "timestamp": "2026-03-26T01:00:00Z",
+              "result": "PASS",
+              "evidence": [
+                "docs/PRD-Who-To-Watch/screenshots/pass4-editor-task4.png"
+              ],
+              "notes": "DEFAULT_WHO_TO_WATCH.imageMode is 'portrait'. Clicking Headshot button auto-sets to 'headshot' via getDefaultImageMode() by design."
             }
           ],
           "finalStatus": "PASS"
@@ -263,6 +301,15 @@
                 "docs/PRD-Who-To-Watch/screenshots/pass3-editor-task1.png"
               ],
               "notes": "Re-verified: Card Adjustments section expanded showing all sliders. Content fields populated with headline 'SENIOR' and body text. Font size sliders show visible effect on text."
+            },
+            {
+              "pass": 4,
+              "timestamp": "2026-03-26T01:00:00Z",
+              "result": "PASS",
+              "evidence": [
+                "docs/PRD-Who-To-Watch/screenshots/pass4-editor-task5.png"
+              ],
+              "notes": "Hint 'Add headline or body text to see font size adjustments' appears in Card Adjustments when headline/body empty."
             }
           ],
           "finalStatus": "PASS"
@@ -281,6 +328,19 @@
                 "docs/PRD-Who-To-Watch/screenshots/pass3-editor-task2.png"
               ],
               "notes": "Human rejection resolved: Screenshots show Sydney Crouch athlete selected with headshot visible in Title Card Image section. Card Adjustments sliders visible with values (Headline 28px, Name 64px, Body 30px). Headline 'SENIOR' and body text '17 Career 10.000s' visible in preview. Segment saved successfully."
+            },
+            {
+              "pass": 4,
+              "timestamp": "2026-03-26T01:00:00Z",
+              "result": "PASS",
+              "evidence": [
+                "docs/PRD-Who-To-Watch/screenshots/pass4-editor-task6-image-selected.png",
+                "docs/PRD-Who-To-Watch/screenshots/pass4-editor-task6-name-small.png",
+                "docs/PRD-Who-To-Watch/screenshots/pass4-editor-task6-name-large.png",
+                "docs/PRD-Who-To-Watch/screenshots/pass4-editor-task6-scale-small.png",
+                "docs/PRD-Who-To-Watch/screenshots/pass4-editor-task6-scale-large.png"
+              ],
+              "notes": "All 4 human complaints addressed: athlete image visible on right, headshot selected with pink border, name size 40px to 100px clear difference, image scale slider values change in URL."
             }
           ],
           "finalStatus": "PASS"
@@ -312,6 +372,14 @@
             "chalk-dust.png 404 - Missing texture file, unrelated to editor changes"
           ],
           "analysis": "All errors are pre-existing and unrelated to editor changes. OBS connection expected in test environment. Firebase permission error expected for non-admin test user. Missing texture file is a known issue."
+        },
+        "pass4": {
+          "count": 2,
+          "errors": [
+            "OBSContext: Error received {connected: false} - Expected, OBS not connected in test environment",
+            "chalk-dust.png 404 - Missing texture file, unrelated to editor changes"
+          ],
+          "analysis": "All errors are pre-existing and unrelated to editor changes. No new errors from editor changes."
         }
       },
       "summary": {
@@ -322,5 +390,5 @@
       }
     }
   },
-  "lastUpdated": "2026-03-26T00:15:00Z"
+  "lastUpdated": "2026-03-26T01:00:00Z"
 }

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PRD Who-To-Watch Editor Verification - Pass 3</title>
+  <title>PRD Who-To-Watch Editor Verification - Pass 4</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -99,21 +99,6 @@
     }
     ul { padding-left: 24px; }
     li { margin: 8px 0; }
-    .pass-tabs {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 16px;
-    }
-    .pass-tab {
-      padding: 8px 16px;
-      background: #333;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    .pass-tab.active {
-      background: #4fc3f7;
-      color: #000;
-    }
     .pass-info {
       background: #252542;
       border-radius: 8px;
@@ -121,21 +106,18 @@
       margin: 8px 0;
       border-left: 3px solid #4fc3f7;
     }
-    .pass-info.pass2 {
-      border-left-color: #81d4fa;
-    }
-    .pass-info.pass3 {
-      border-left-color: #00ff88;
-    }
+    .pass-info.pass2 { border-left-color: #81d4fa; }
+    .pass-info.pass3 { border-left-color: #00ff88; }
+    .pass-info.pass4 { border-left-color: #ffd700; }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>PRD Who-To-Watch: Editor Verification</h1>
-    <p class="subtitle">Pass 3 &bull; 2026-03-26 &bull; Loop: <code>editor</code></p>
+    <p class="subtitle">Pass 4 &bull; 2026-03-26 &bull; Loop: <code>editor</code></p>
 
     <div class="summary-box">
-      <h2 style="margin:0; border:0; color:#fff;">ALL TASKS PASSED (Pass 3)</h2>
+      <h2 style="margin:0; border:0; color:#fff;">ALL TASKS PASSED (Pass 4)</h2>
       <div class="summary-stats">
         <div class="stat">
           <div class="stat-value">6</div>
@@ -150,7 +132,7 @@
           <div class="stat-label">Failed</div>
         </div>
         <div class="stat">
-          <div class="stat-value">3</div>
+          <div class="stat-value">4</div>
           <div class="stat-label">Passes Complete</div>
         </div>
       </div>
@@ -172,20 +154,19 @@
     <div class="pass-info pass3">
       <strong>Pass 3:</strong> Re-verified: Card Adjustments sliders visible and functional. Headline 28px, Name 64px, Body 30px sliders shown. Iframe preview debounces correctly with 'Behind the Chalk' theme applied.
     </div>
+    <div class="pass-info pass4">
+      <strong>Pass 4:</strong> Name size slider 40px to 100px shows clear visible difference in preview iframe. No white flash or full-page reload.
+    </div>
 
-    <h3>Evidence Screenshots</h3>
+    <h3>Evidence Screenshots (Pass 4)</h3>
     <div class="screenshot-grid">
       <div class="screenshot-card">
-        <img src="screenshots/pass1-editor-task1.png" alt="Pass 1: Card Adjustments panel with sliders">
-        <div class="caption">Pass 1: Card Adjustments panel expanded showing Name size (64px), Headline size (28px), Body size (30px) sliders.</div>
+        <img src="screenshots/pass4-editor-task1-before.png" alt="Pass 4: Name size 40px">
+        <div class="caption">Pass 4: Name size at 40px — iframe close-up showing smaller text.</div>
       </div>
       <div class="screenshot-card">
-        <img src="screenshots/pass2-editor-task1-task5.png" alt="Pass 2: Card Adjustments with all sliders and hint">
-        <div class="caption">Pass 2: Card Adjustments showing all sliders (Headline 28px, Name 64px, Body 30px, Text offset Y 0px, Scale 100%). UX hint visible for empty content.</div>
-      </div>
-      <div class="screenshot-card">
-        <img src="screenshots/pass3-editor-task1.png" alt="Pass 3: Card Adjustments with content and sliders">
-        <div class="caption">Pass 3: Card Adjustments showing sliders with SEMO athlete Sydney Crouch selected, headline "SENIOR" and body text visible.</div>
+        <img src="screenshots/pass4-editor-task1-after.png" alt="Pass 4: Name size 100px">
+        <div class="caption">Pass 4: Name size at 100px — iframe close-up showing larger text. Clear visible difference confirms debounced preview works.</div>
       </div>
     </div>
 
@@ -205,20 +186,15 @@
     <div class="pass-info pass3">
       <strong>Pass 3:</strong> Re-verified: Console shows '[theme-loader] Theme applied: Behind the Chalk'. SEMO team logo loads from media.virti.us CDN. Iframe sandbox allows cross-origin resources.
     </div>
+    <div class="pass-info pass4">
+      <strong>Pass 4:</strong> Full-size preview shows athlete headshot circle on right side. Theme colors applied. External CDN images load correctly.
+    </div>
 
-    <h3>Evidence Screenshots</h3>
+    <h3>Evidence Screenshots (Pass 4)</h3>
     <div class="screenshot-grid">
       <div class="screenshot-card">
-        <img src="screenshots/pass1-editor-task2.png" alt="Pass 1: Preview with theme colors and external images">
-        <div class="caption">Pass 1: Iframe preview shows SEMO team logo (external CDN image) and Behind the Chalk theme colors loaded correctly.</div>
-      </div>
-      <div class="screenshot-card">
-        <img src="screenshots/pass2-editor-task2-task3.png" alt="Pass 2: Preview with content, theme, and CDN images">
-        <div class="caption">Pass 2: Preview shows Kennedy Fisher with SENIOR headline, body text, SEMO logo, and theme colors rendering correctly.</div>
-      </div>
-      <div class="screenshot-card">
-        <img src="screenshots/pass3-editor-task2.png" alt="Pass 3: Console showing theme loader success">
-        <div class="caption">Pass 3: Console confirms '[theme-loader] Theme applied: Behind the Chalk' and segment saved successfully.</div>
+        <img src="screenshots/pass4-editor-task2-fullsize.png" alt="Pass 4: Full-size preview with athlete">
+        <div class="caption">Pass 4: Full-size preview showing athlete headshot on right side with theme colors and external CDN images loading correctly.</div>
       </div>
     </div>
 
@@ -238,8 +214,21 @@
     <div class="pass-info pass3">
       <strong>Pass 3:</strong> Re-verified: Segment saved successfully with 'Segment saved' toast. No double-render artifacts. Component syncs correctly when saving Who to Watch configuration.
     </div>
+    <div class="pass-info pass4">
+      <strong>Pass 4:</strong> Name size 80px and Image Scale 130% persist correctly after save and reopen. No sync loop or value reset.
+    </div>
 
-    <p><em>Evidence: Screenshots from Task 1 and Task 2 demonstrate smooth interaction without jank.</em></p>
+    <h3>Evidence Screenshots (Pass 4)</h3>
+    <div class="screenshot-grid">
+      <div class="screenshot-card">
+        <img src="screenshots/pass4-editor-task3-before-save.png" alt="Pass 4: Sliders before save">
+        <div class="caption">Pass 4: Sliders showing Name size 80px and Image Scale 130% before save.</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="screenshots/pass4-editor-task3-after-save.png" alt="Pass 4: Sliders after reopen">
+        <div class="caption">Pass 4: Same values (80px / 130%) persist after save and reopen — confirms no useEffect sync reset.</div>
+      </div>
+    </div>
 
     <h2>Task 4: Fix imageMode Default Mismatch <span class="badge badge-pass">PASS</span></h2>
     <div class="task-card pass">
@@ -257,8 +246,17 @@
     <div class="pass-info pass3">
       <strong>Pass 3:</strong> Re-verified: Sydney Crouch headshot visible in Title Card Image selector. Default imageMode is portrait matching output.html.
     </div>
+    <div class="pass-info pass4">
+      <strong>Pass 4:</strong> DEFAULT_WHO_TO_WATCH.imageMode is 'portrait'. Clicking Headshot button auto-sets to 'headshot' via getDefaultImageMode() by design.
+    </div>
 
-    <p><em>Evidence: Screenshots show portrait mode (cutout) as the default image display in all three passes.</em></p>
+    <h3>Evidence Screenshots (Pass 4)</h3>
+    <div class="screenshot-grid">
+      <div class="screenshot-card">
+        <img src="screenshots/pass4-editor-task4.png" alt="Pass 4: Display as dropdown">
+        <div class="caption">Pass 4: Display as dropdown showing headshot selected, confirming imageMode toggle works correctly.</div>
+      </div>
+    </div>
 
     <h2>Task 5: Add UX Hint When Slider Effects Are Invisible <span class="badge badge-pass">PASS</span></h2>
     <div class="task-card pass">
@@ -276,86 +274,87 @@
     <div class="pass-info pass3">
       <strong>Pass 3:</strong> Re-verified: Card Adjustments section expanded showing all sliders. Content fields populated with headline 'SENIOR' and body text. Font size sliders show visible effect on text.
     </div>
+    <div class="pass-info pass4">
+      <strong>Pass 4:</strong> Hint "Add headline or body text to see font size adjustments" appears in Card Adjustments when headline/body empty.
+    </div>
 
-    <h3>Evidence Screenshots</h3>
+    <h3>Evidence Screenshots (Pass 4)</h3>
     <div class="screenshot-grid">
       <div class="screenshot-card">
-        <img src="screenshots/pass2-editor-task1-task5.png" alt="Pass 2: UX hint visible in Card Adjustments">
-        <div class="caption">Pass 2: UX hint "Add headline or body text to see font size adjustments" visible in Card Adjustments when content is empty.</div>
-      </div>
-      <div class="screenshot-card">
-        <img src="screenshots/pass3-editor-task1.png" alt="Pass 3: Content populated with visible slider effects">
-        <div class="caption">Pass 3: Content populated (SENIOR headline, body text), sliders show visible font size effects.</div>
+        <img src="screenshots/pass4-editor-task5.png" alt="Pass 4: Empty content hint">
+        <div class="caption">Pass 4: Empty card hint visible in Card Adjustments section when headline and body are empty.</div>
       </div>
     </div>
 
-    <h2>Task 6: Re-verify Task 4 with Proper Screenshot Evidence <span class="badge badge-pass">PASS</span></h2>
+    <h2>Task 6: Re-verify Human Rejection <span class="badge badge-pass">PASS</span></h2>
     <div class="task-card pass">
       <p><strong>PRD Issue:</strong> #25 (Human Rejection Resolution)</p>
       <p><strong>Files:</strong> Verification-only task, no code changes</p>
       <p><strong>Problem:</strong> Previous verification did not adequately demonstrate: athlete image visible on right side, proper cutout positioning, title card image selected, slider adjustments producing visible changes.</p>
-      <p><strong>Resolution:</strong> Pass 3 provides comprehensive evidence with athlete selected, content populated, sliders visible, and segment saved.</p>
+      <p><strong>Resolution:</strong> Pass 4 provides comprehensive evidence addressing all 4 human complaints with dedicated comparison screenshots.</p>
     </div>
     <div class="pass-info pass3">
       <strong>Pass 3:</strong> Human rejection resolved: Screenshots show Sydney Crouch athlete selected with headshot visible in Title Card Image section. Card Adjustments sliders visible with values (Headline 28px, Name 64px, Body 30px). Headline 'SENIOR' and body text '17 Career 10.000s' visible in preview. Segment saved successfully.
     </div>
+    <div class="pass-info pass4">
+      <strong>Pass 4:</strong> All 4 complaints addressed: athlete image visible on right, headshot selected with pink border, name size 40px to 100px clear difference, image scale slider values change in URL.
+    </div>
 
-    <h3>Evidence Screenshots</h3>
+    <h3>Evidence Screenshots (Pass 4)</h3>
     <div class="screenshot-grid">
       <div class="screenshot-card">
-        <img src="screenshots/pass3-editor-task1.png" alt="Pass 3: Full editor with athlete, content, sliders">
-        <div class="caption">Pass 3: Editor with Sydney Crouch selected, headline "SENIOR", body text "17 Career 10.000s", all sliders visible (Headline 28px, Name 64px, Body 30px).</div>
+        <img src="screenshots/pass4-editor-task6-image-selected.png" alt="Pass 4: Image picker with headshot selected">
+        <div class="caption">Pass 4: Image picker showing headshot selected with pink border highlight.</div>
       </div>
       <div class="screenshot-card">
-        <img src="screenshots/pass3-editor-task2.png" alt="Pass 3: Console confirming theme and save">
-        <div class="caption">Pass 3: Console shows theme-loader success and "Segment saved" confirmation.</div>
+        <img src="screenshots/pass4-editor-task6-name-small.png" alt="Pass 4: Full-size preview at nameFontSize=40">
+        <div class="caption">Pass 4: Full-size preview at nameFontSize=40 — smaller athlete name text.</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="screenshots/pass4-editor-task6-name-large.png" alt="Pass 4: Full-size preview at nameFontSize=100">
+        <div class="caption">Pass 4: Full-size preview at nameFontSize=100 — larger athlete name text. Clear visible difference.</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="screenshots/pass4-editor-task6-scale-small.png" alt="Pass 4: Full-size preview at imageScale=50">
+        <div class="caption">Pass 4: Full-size preview at imageScale=50 — smaller athlete image.</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="screenshots/pass4-editor-task6-scale-large.png" alt="Pass 4: Full-size preview at imageScale=150">
+        <div class="caption">Pass 4: Full-size preview at imageScale=150 — larger athlete image. Slider values reflected in URL.</div>
       </div>
     </div>
 
     <h2>Console Errors</h2>
-    <h3>Pass 1</h3>
+    <h3>Pass 4</h3>
     <div class="console-section">
-      <p class="console-info">3 errors found (pre-existing, not related to editor changes)</p>
+      <p class="console-info">2 errors found (all pre-existing, no new errors from editor changes)</p>
       <p class="console-error">x OBSContext: Error received {connected: false}</p>
       <p style="color:#888; margin-left:20px;">Expected - OBS not connected in test environment</p>
-      <p class="console-error">x Firebase permission_denied on vmPool</p>
-      <p style="color:#888; margin-left:20px;">Expected - test user lacks admin permissions</p>
       <p class="console-error">x Failed to load resource: chalk-dust.png 404</p>
       <p style="color:#888; margin-left:20px;">Missing texture file - unrelated to editor changes</p>
+      <p style="color:#888; margin-top:12px;">Analysis: All errors are pre-existing and unrelated to the WhoToWatchEditor.jsx changes being verified. No new errors introduced.</p>
     </div>
-    <h3>Pass 2</h3>
+    <h3>Previous Passes</h3>
     <div class="console-section">
-      <p class="console-info">2 errors found (pre-existing, not related to editor changes)</p>
-      <p class="console-error">x OBSContext: Error received {connected: false}</p>
-      <p style="color:#888; margin-left:20px;">Expected - OBS not connected in test environment</p>
-      <p class="console-error">x Failed to load resource: chalk-dust.png 404</p>
-      <p style="color:#888; margin-left:20px;">Missing texture file - unrelated to editor changes</p>
-    </div>
-    <h3>Pass 3</h3>
-    <div class="console-section">
-      <p class="console-info">3 errors found (pre-existing, not related to editor changes)</p>
-      <p class="console-error">x OBSContext: Error received {connected: false}</p>
-      <p style="color:#888; margin-left:20px;">Expected - OBS not connected in test environment</p>
-      <p class="console-error">x Firebase permission_denied on vmPool</p>
-      <p style="color:#888; margin-left:20px;">Expected - test user lacks admin permissions</p>
-      <p class="console-error">x Failed to load resource: chalk-dust.png 404</p>
-      <p style="color:#888; margin-left:20px;">Missing texture file - unrelated to editor changes</p>
-      <p style="color:#888; margin-top:12px;">Analysis: All errors are pre-existing and unrelated to the WhoToWatchEditor.jsx changes being verified.</p>
+      <p class="console-info">Pass 1: 3 errors (OBS connection, Firebase vmPool permission, chalk-dust.png 404)</p>
+      <p class="console-info">Pass 2: 2 errors (OBS connection, chalk-dust.png 404)</p>
+      <p class="console-info">Pass 3: 3 errors (OBS connection, Firebase vmPool permission, chalk-dust.png 404)</p>
+      <p style="color:#888; margin-top:8px;">All pre-existing errors consistent across all passes. No regression.</p>
     </div>
 
     <h2>Verification Summary</h2>
     <ul>
-      <li><strong>Task 1 (Debounce):</strong> <span class="badge badge-pass">PASS</span> - Sliders responsive, iframe debounces correctly after 300ms</li>
-      <li><strong>Task 2 (Sandbox):</strong> <span class="badge badge-pass">PASS</span> - Theme colors and external images load in preview</li>
-      <li><strong>Task 3 (Sync Loop):</strong> <span class="badge badge-pass">PASS</span> - No double-render artifacts, smooth interaction</li>
-      <li><strong>Task 4 (imageMode):</strong> <span class="badge badge-pass">PASS</span> - Default is now portrait, matches output.html</li>
-      <li><strong>Task 5 (UX Hint):</strong> <span class="badge badge-pass">PASS</span> - Hint appears when content empty</li>
-      <li><strong>Task 6 (Re-verify):</strong> <span class="badge badge-pass">PASS</span> - Human rejection resolved with proper evidence</li>
-      <li><strong>Console Errors:</strong> <span class="badge badge-warning">WARNING</span> - Pre-existing errors only, not introduced by these changes</li>
+      <li><strong>Task 1 (Debounce):</strong> <span class="badge badge-pass">PASS</span> - Name size 40px to 100px shows clear difference, no white flash or reload</li>
+      <li><strong>Task 2 (Sandbox):</strong> <span class="badge badge-pass">PASS</span> - Full-size preview shows athlete headshot, theme colors, CDN images</li>
+      <li><strong>Task 3 (Sync Loop):</strong> <span class="badge badge-pass">PASS</span> - Values persist after save/reopen, no sync reset</li>
+      <li><strong>Task 4 (imageMode):</strong> <span class="badge badge-pass">PASS</span> - Default is portrait, headshot auto-sets via getDefaultImageMode()</li>
+      <li><strong>Task 5 (UX Hint):</strong> <span class="badge badge-pass">PASS</span> - Hint appears when headline/body empty</li>
+      <li><strong>Task 6 (Re-verify):</strong> <span class="badge badge-pass">PASS</span> - All 4 human complaints addressed with comparison screenshots</li>
+      <li><strong>Console Errors:</strong> <span class="badge badge-warning">WARNING</span> - Pre-existing errors only (OBS connection, chalk-dust.png 404), no new errors</li>
     </ul>
 
     <p style="color:#888; margin-top:32px; text-align:center;">
-      Generated by verify-editor loop &bull; Pass 3 &bull; 2026-03-26
+      Generated by verify-editor loop &bull; Pass 4 &bull; 2026-03-26
     </p>
   </div>
 </body>
