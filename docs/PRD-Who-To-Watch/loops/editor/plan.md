@@ -12,7 +12,7 @@
 
 ## Tasks
 
-- **Task 1: Debounce iframe preview URL updates — IN PROGRESS**
+- **Task 1: Debounce iframe preview URL updates — COMPLETE**
   PRD issue: #18
   Files: `show-controller/src/components/playout/WhoToWatchEditor.jsx`
   Problem: Every slider `onChange` rebuilds the overlay URL via `useMemo`, changing the iframe `src` and causing the entire overlay page to reload on each tick. The reload is slow enough that the preview appears unresponsive.
