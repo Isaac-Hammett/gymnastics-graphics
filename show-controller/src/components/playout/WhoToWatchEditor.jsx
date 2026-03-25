@@ -805,6 +805,10 @@ export default function WhoToWatchEditor({
                       <span className="text-[10px] text-zinc-400 w-8 text-right">{card.textOffsetY || 0}px</span>
                       <button type="button" onClick={() => updateTitleCard(index, 'textOffsetY', 0)} className="text-[10px] text-zinc-600 hover:text-zinc-400">&times;</button>
                     </div>
+                    {/* Hint when text content is empty */}
+                    {!card.headline && !card.body && (
+                      <p className="text-[10px] text-zinc-500 italic mt-1">Add headline or body text to see font size adjustments</p>
+                    )}
                     {/* Image Controls */}
                     <div className="text-[10px] text-zinc-500 uppercase tracking-wide font-medium mt-2">Image</div>
                     {/* Image scale */}
