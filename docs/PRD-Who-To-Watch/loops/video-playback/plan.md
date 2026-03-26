@@ -22,7 +22,7 @@
 
 ---
 
-### Task 2: Render WTW lower-third iframe on graphics source during clip step — NOT STARTED
+### Task 2: Render WTW lower-third iframe on graphics source during clip step — COMPLETE
 **Files:** `output.html`
 **Why second:** Depends on Task 1's `overlayStyle` field being in the Firebase data.
 
@@ -100,3 +100,4 @@
 ## Learnings
 - LEARNING: Task 1 confirmed `meetTheme` is a shorthand property in the data object (ES6 shorthand for `meetTheme: meetTheme`). The variable is in scope from line 759. No new Firebase reads needed.
 - LEARNING: Title card steps use `...baseData` which already includes `meetTheme` but NOT `overlayStyle`. This is correct — only clip steps need `overlayStyle` to differentiate from regular playout clips.
+- LEARNING: The iframe URL is built using `URLSearchParams` with conditional param setting. The mapping is: `teamLogo` → `logo`, `subtitle || teamName` → `subtitle`. All other params pass through directly.
