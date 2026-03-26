@@ -270,7 +270,7 @@ Extend existing sections where applicable (warm-up/replay section exists at line
 
 ---
 
-### Task 1.4 — Reconcile Class Name Differences — NOT STARTED
+### Task 1.4 — Reconcile Class Name Differences — COMPLETE
 
 **Goal:** Add overlay class names to output.html inline-rendered HTML as ADDITIONAL classes.
 
@@ -295,10 +295,22 @@ For each of these 10 class name differences, find the HTML element in the releva
 Do NOT remove existing class names — add the overlay names alongside.
 
 **Verify:**
-- [ ] Each of the 10 elements now has both class names
-- [ ] Grep confirms no old class names were removed
-- [ ] Playwright screenshot: `output.html?graphic=event-bar&meetTheme=pink-meet` shows correct theme styling
-- [ ] Playwright screenshot: `output.html?graphic=warm-up&meetTheme=pink-meet` shows correct theme styling
+- [x] Each of the 10 elements now has both class names
+- [x] Grep confirms no old class names were removed
+- [x] Playwright screenshot: `output.html?graphic=event-bar&meetTheme=pink-meet` shows correct theme styling
+- [x] Playwright screenshot: `output.html?graphic=warm-up&meetTheme=pink-meet` shows correct theme styling
+
+**Status:** COMPLETE — All 10 class reconciliations implemented:
+- `event-bar-logo` + `logo-section`
+- `event-bar-name` + `teams-text`
+- `event-bar-location` + `location-text`
+- `warm-up-logo-section` + `logo-section`
+- `warm-up-status-row` + `status-row`
+- `warm-up-status-text` + `status-text`
+- `replay-logo-section` + `logo-section`
+- `replay-status-row` + `status-row`
+- `replay-status-text` + `status-text`
+- `coaches-title` + `hosts-title` (8 occurrences)
 
 **Deploy:** Upload `output.html` per CLAUDE.md deploy step 2.
 
