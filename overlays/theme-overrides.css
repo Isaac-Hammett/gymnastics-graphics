@@ -498,26 +498,153 @@
   position: relative;
 }
 
+/* Default texture ::before - uses global --meet-texture with per-graphic fallback */
 [data-meet-theme] .panel::before,
 [data-meet-theme] .header-bar::before,
 [data-meet-theme] .frame-header::before,
-[data-meet-theme] .rotation-slate::before,
-[data-meet-theme] .roster-container::before,
-[data-meet-theme] .stream-container::before,
-[data-meet-theme] .event-bar-venue::before,
-[data-meet-theme] .details-row::before,
-[data-meet-theme] .sponsors-container::before,
-[data-meet-theme] .coaches-content::before,
-[data-meet-theme] .spotlight-container::before,
-[data-meet-theme] .event-summary-header::before,
-[data-meet-theme] .leaderboard-header::before,
-[data-meet-theme] .warm-up-container::before,
-[data-meet-theme] .replay-container::before {
+[data-meet-theme] .roster-container::before {
   content: '';
   position: absolute;
   inset: 0;
   background: var(--meet-texture, none) center / 1024px repeat;
   opacity: var(--meet-texture-opacity, 0.08);
+  mix-blend-mode: normal;
+  pointer-events: none;
+  border-radius: inherit;
+  z-index: 1;
+}
+
+/* Per-graphic texture overrides - 3-layer cascade:
+   Layer 3: --{graphicId}-body-texture (per-graphic override)
+   Layer 2: --meet-texture (global theme)
+   Layer 1: none (fallback) */
+
+/* Event Bar textures */
+[data-meet-theme] .event-bar-venue::before,
+[data-meet-theme] .details-row::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--event-bar-body-texture, var(--meet-texture, none)) center / 1024px repeat;
+  opacity: var(--event-bar-body-texture-opacity, var(--meet-texture-opacity, 0.08));
+  mix-blend-mode: var(--event-bar-body-texture-blend, normal);
+  pointer-events: none;
+  border-radius: inherit;
+  z-index: 1;
+}
+
+/* Rotation Slate textures */
+[data-meet-theme] .rotation-slate::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--rotation-slate-body-texture, var(--meet-texture, none)) center / 1024px repeat;
+  opacity: var(--rotation-slate-body-texture-opacity, var(--meet-texture-opacity, 0.08));
+  mix-blend-mode: var(--rotation-slate-body-texture-blend, normal);
+  pointer-events: none;
+  border-radius: inherit;
+  z-index: 1;
+}
+
+/* Stream graphics textures */
+[data-meet-theme] .stream-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--stream-starting-body-texture, var(--stream-thanks-body-texture, var(--meet-texture, none))) center / 1024px repeat;
+  opacity: var(--stream-starting-body-texture-opacity, var(--stream-thanks-body-texture-opacity, var(--meet-texture-opacity, 0.08)));
+  mix-blend-mode: var(--stream-starting-body-texture-blend, var(--stream-thanks-body-texture-blend, normal));
+  pointer-events: none;
+  border-radius: inherit;
+  z-index: 1;
+}
+
+/* Sponsors textures */
+[data-meet-theme] .sponsors-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--sponsors-thanks-body-texture, var(--sponsors-cycle-body-texture, var(--sponsors-bug-body-texture, var(--meet-texture, none)))) center / 1024px repeat;
+  opacity: var(--sponsors-thanks-body-texture-opacity, var(--sponsors-cycle-body-texture-opacity, var(--sponsors-bug-body-texture-opacity, var(--meet-texture-opacity, 0.08))));
+  mix-blend-mode: var(--sponsors-thanks-body-texture-blend, var(--sponsors-cycle-body-texture-blend, var(--sponsors-bug-body-texture-blend, normal)));
+  pointer-events: none;
+  border-radius: inherit;
+  z-index: 1;
+}
+
+/* Coaches textures */
+[data-meet-theme] .coaches-content::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--team1-coaches-body-texture, var(--team2-coaches-body-texture, var(--meet-texture, none))) center / 1024px repeat;
+  opacity: var(--team1-coaches-body-texture-opacity, var(--team2-coaches-body-texture-opacity, var(--meet-texture-opacity, 0.08)));
+  mix-blend-mode: var(--team1-coaches-body-texture-blend, var(--team2-coaches-body-texture-blend, normal));
+  pointer-events: none;
+  border-radius: inherit;
+  z-index: 1;
+}
+
+/* Spotlight textures */
+[data-meet-theme] .spotlight-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--athlete-spotlight-body-texture, var(--meet-texture, none)) center / 1024px repeat;
+  opacity: var(--athlete-spotlight-body-texture-opacity, var(--meet-texture-opacity, 0.08));
+  mix-blend-mode: var(--athlete-spotlight-body-texture-blend, normal);
+  pointer-events: none;
+  border-radius: inherit;
+  z-index: 1;
+}
+
+/* Event Summary textures */
+[data-meet-theme] .event-summary-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--event-summary-body-texture, var(--meet-texture, none)) center / 1024px repeat;
+  opacity: var(--event-summary-body-texture-opacity, var(--meet-texture-opacity, 0.08));
+  mix-blend-mode: var(--event-summary-body-texture-blend, normal);
+  pointer-events: none;
+  border-radius: inherit;
+  z-index: 1;
+}
+
+/* Leaderboard textures */
+[data-meet-theme] .leaderboard-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--virtuis-leaderboard-body-texture, var(--meet-texture, none)) center / 1024px repeat;
+  opacity: var(--virtuis-leaderboard-body-texture-opacity, var(--meet-texture-opacity, 0.08));
+  mix-blend-mode: var(--virtuis-leaderboard-body-texture-blend, normal);
+  pointer-events: none;
+  border-radius: inherit;
+  z-index: 1;
+}
+
+/* Warm-up textures */
+[data-meet-theme] .warm-up-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--warm-up-body-texture, var(--meet-texture, none)) center / 1024px repeat;
+  opacity: var(--warm-up-body-texture-opacity, var(--meet-texture-opacity, 0.08));
+  mix-blend-mode: var(--warm-up-body-texture-blend, normal);
+  pointer-events: none;
+  border-radius: inherit;
+  z-index: 1;
+}
+
+/* Replay textures */
+[data-meet-theme] .replay-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--replay-body-texture, var(--meet-texture, none)) center / 1024px repeat;
+  opacity: var(--replay-body-texture-opacity, var(--meet-texture-opacity, 0.08));
+  mix-blend-mode: var(--replay-body-texture-blend, normal);
   pointer-events: none;
   border-radius: inherit;
   z-index: 1;
