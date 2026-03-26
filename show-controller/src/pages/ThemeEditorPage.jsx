@@ -437,24 +437,13 @@ export default function ThemeEditorPage() {
     return () => unsubscribe();
   }, []);
 
-  // Subscribe to competitions from Firebase (filter to recent/active)
+  // Subscribe to all competitions from Firebase
   useEffect(() => {
     const competitionsRef = ref(db, 'competitions');
 
     const unsubscribe = onValue(competitionsRef, (snapshot) => {
       const allCompetitions = snapshot.val() || {};
-      // Filter to recent competitions (last 60 days) or active ones
-      const cutoff = Date.now() - 60 * 24 * 60 * 60 * 1000;
-      const filtered = {};
-      for (const [id, comp] of Object.entries(allCompetitions)) {
-        const config = comp.config || {};
-        const createdAt = config.createdAt ? new Date(config.createdAt).getTime() : 0;
-        const isActive = config.status === 'active';
-        if (isActive || createdAt > cutoff) {
-          filtered[id] = comp;
-        }
-      }
-      setCompetitions(filtered);
+      setCompetitions(allCompetitions);
     });
 
     return () => unsubscribe();
@@ -821,15 +810,68 @@ export default function ThemeEditorPage() {
     // Standard graphics — use output.html
     params.set('graphic', selectedGraphicType);
 
-    // Add graphic-specific params for preview
-    if (selectedGraphicType === 'event-summary') {
-      params.set('summaryMode', 'rotation');
-      params.set('summaryRotation', '1');
-      params.set('summaryNumTeams', '2');
-      if (!selectedCompetition) {
+    // Add placeholder data when no competition is selected so preview renders
+    if (!selectedCompetition) {
+      params.set('previewMode', 'placeholder');
+      // Event bar
+      if (selectedGraphicType === 'event-bar') {
+        params.set('venue', 'Sample Arena');
+        params.set('eventName', 'Home Team vs Away Team');
+        params.set('location', 'City, State');
+        params.set('team1Name', 'Home Team');
+        params.set('team1Logo', 'https://media.virti.us/upload/images/team/CbWKimoC_0RpBy-M-lcSy');
+      }
+      // Event summary
+      if (selectedGraphicType === 'event-summary') {
+        params.set('summaryMode', 'rotation');
+        params.set('summaryRotation', '1');
+        params.set('summaryNumTeams', '2');
         params.set('team1Name', 'Home Team');
         params.set('team2Name', 'Away Team');
       }
+      // Hosts / coaches
+      if (selectedGraphicType === 'hosts') {
+        params.set('venue', 'Sample Arena');
+        params.set('eventName', 'Home Team vs Away Team');
+        params.set('team1Name', 'Home Team');
+      }
+      // Warm-up / replay
+      if (selectedGraphicType === 'warm-up' || selectedGraphicType === 'replay') {
+        params.set('team1Name', 'Home Team');
+        params.set('team2Name', 'Away Team');
+        params.set('team1Logo', 'https://media.virti.us/upload/images/team/CbWKimoC_0RpBy-M-lcSy');
+        params.set('team2Logo', 'https://media.virti.us/upload/images/team/CbWKimoC_0RpBy-M-lcSy');
+      }
+      // Stream graphics
+      if (selectedGraphicType === 'stream-starting' || selectedGraphicType === 'stream-thanks') {
+        params.set('venue', 'Sample Arena');
+        params.set('eventName', 'Home Team vs Away Team');
+        params.set('team1Name', 'Home Team');
+        params.set('team1Logo', 'https://media.virti.us/upload/images/team/CbWKimoC_0RpBy-M-lcSy');
+      }
+      // Stats / coaches cards
+      if (selectedGraphicType.match(/^team\d-stats$/) || selectedGraphicType.match(/^team\d-coaches$/)) {
+        params.set('team1Name', 'Home Team');
+        params.set('team2Name', 'Away Team');
+        params.set('team1Logo', 'https://media.virti.us/upload/images/team/CbWKimoC_0RpBy-M-lcSy');
+        params.set('team2Logo', 'https://media.virti.us/upload/images/team/CbWKimoC_0RpBy-M-lcSy');
+      }
+      // Event frame / leaderboard
+      if (selectedGraphicType === 'event-frame' || selectedGraphicType === 'virtuis-leaderboard') {
+        params.set('team1Name', 'Home Team');
+        params.set('team2Name', 'Away Team');
+      }
+      // Live camera
+      if (selectedGraphicType === 'live-camera') {
+        params.set('cameraLabel', 'Camera 1');
+      }
+    }
+
+    // Legacy: event-summary specific params (when competition IS selected)
+    if (selectedGraphicType === 'event-summary' && selectedCompetition) {
+      params.set('summaryMode', 'rotation');
+      params.set('summaryRotation', '1');
+      params.set('summaryNumTeams', '2');
     }
 
     // Add theme param — meetTheme takes precedence over comp's theme
@@ -1458,7 +1500,334 @@ export default function ThemeEditorPage() {
                             {/* Expanded panel */}
                             {isExpanded && (
                               <div className="px-3 pb-3 border-t border-zinc-700/50">
-                                <div className="pt-3 space-y-3">
+                                {graphicId === 'event-bar' ? (
+                                  /* ========== RICH EVENT BAR CONTROLS ========== */
+                                  <div className="pt-3 space-y-4">
+                                    {/* POSITION */}
+                                    <div>
+                                      <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Position</div>
+                                      <div className="grid grid-cols-2 gap-2">
+                                        <OverrideStepper
+                                          label="Bottom"
+                                          value={overrides.barBottom ?? 120}
+                                          onChange={(v) => updateOverrideField(graphicId, 'barBottom', v)}
+                                          min={0}
+                                          max={1080}
+                                          step={10}
+                                          suffix="px"
+                                        />
+                                        <OverrideStepper
+                                          label="Left"
+                                          value={overrides.barLeft ?? 100}
+                                          onChange={(v) => updateOverrideField(graphicId, 'barLeft', v)}
+                                          min={0}
+                                          max={1920}
+                                          step={10}
+                                          suffix="px"
+                                        />
+                                      </div>
+                                    </div>
+
+                                    {/* LOGO */}
+                                    <div className="pt-2 border-t border-zinc-700/30">
+                                      <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Logo</div>
+                                      <div className="space-y-2">
+                                        <div className="grid grid-cols-2 gap-2">
+                                          <OverrideStepper
+                                            label="Logo size"
+                                            value={overrides.logoImgSize ?? 70}
+                                            onChange={(v) => updateOverrideField(graphicId, 'logoImgSize', v)}
+                                            min={16}
+                                            max={200}
+                                            step={4}
+                                            suffix="px"
+                                          />
+                                          <OverrideStepper
+                                            label="Box width"
+                                            value={overrides.logoContainerWidth ?? 100}
+                                            onChange={(v) => updateOverrideField(graphicId, 'logoContainerWidth', v)}
+                                            min={40}
+                                            max={300}
+                                            step={4}
+                                            suffix="px"
+                                          />
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          <label className="flex items-center gap-1.5 cursor-pointer">
+                                            <input
+                                              type="checkbox"
+                                              checked={overrides.showLogo !== false}
+                                              onChange={(e) => updateOverrideField(graphicId, 'showLogo', e.target.checked)}
+                                              className="w-3.5 h-3.5 rounded border-zinc-600 bg-zinc-700 text-purple-500 focus:ring-purple-500 focus:ring-offset-0"
+                                            />
+                                            <span className="text-[11px] text-zinc-300">Show logo</span>
+                                          </label>
+                                        </div>
+                                        {/* Logo URL override */}
+                                        <div className="flex items-center gap-2">
+                                          <input
+                                            type="text"
+                                            value={overrides.logo || ''}
+                                            onChange={(e) => updateOverrideField(graphicId, 'logo', e.target.value)}
+                                            placeholder="Logo URL override (https://...)"
+                                            className="flex-1 px-2 py-1.5 bg-zinc-700 border border-zinc-600 rounded text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-purple-500"
+                                          />
+                                          {overrides.logo && (
+                                            <img
+                                              src={overrides.logo}
+                                              alt="Logo preview"
+                                              className="w-8 h-8 object-contain bg-white rounded flex-shrink-0"
+                                              onError={(e) => e.target.style.display = 'none'}
+                                            />
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {/* VENUE (Header Bar) */}
+                                    <div className="pt-2 border-t border-zinc-700/30">
+                                      <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Venue (Header Bar)</div>
+                                      <div className="space-y-2">
+                                        <div className="grid grid-cols-2 gap-2">
+                                          <OverrideStepper
+                                            label="Font size"
+                                            value={overrides.venueFontSize ?? 36}
+                                            onChange={(v) => updateOverrideField(graphicId, 'venueFontSize', v)}
+                                            min={12}
+                                            max={72}
+                                            step={2}
+                                            suffix="px"
+                                          />
+                                          <OverrideStepper
+                                            label="Min width"
+                                            value={overrides.barMinWidth ?? 600}
+                                            onChange={(v) => updateOverrideField(graphicId, 'barMinWidth', v)}
+                                            min={200}
+                                            max={1600}
+                                            step={20}
+                                            suffix="px"
+                                          />
+                                        </div>
+                                        {/* Venue colors */}
+                                        <div className="flex items-center gap-3">
+                                          <div className="flex items-center gap-1.5">
+                                            <input
+                                              type="color"
+                                              value={overrides.headerBar || editingTheme.colors.headerBar || '#BFBFBF'}
+                                              onChange={(e) => updateOverrideField(graphicId, 'headerBar', e.target.value)}
+                                              className="w-6 h-6 rounded cursor-pointer bg-transparent border-0"
+                                            />
+                                            <span className="text-[10px] text-zinc-400">Background</span>
+                                          </div>
+                                          <div className="flex items-center gap-1.5">
+                                            <input
+                                              type="color"
+                                              value={overrides.textOnHeader || editingTheme.colors.textOnHeader || '#000000'}
+                                              onChange={(e) => updateOverrideField(graphicId, 'textOnHeader', e.target.value)}
+                                              className="w-6 h-6 rounded cursor-pointer bg-transparent border-0"
+                                            />
+                                            <span className="text-[10px] text-zinc-400">Text</span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {/* TEXT (Details Section) */}
+                                    <div className="pt-2 border-t border-zinc-700/30">
+                                      <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Text (Details Section)</div>
+                                      <div className="space-y-2">
+                                        <div className="grid grid-cols-2 gap-2">
+                                          <OverrideStepper
+                                            label="Name size"
+                                            value={overrides.nameFontSize ?? 28}
+                                            onChange={(v) => updateOverrideField(graphicId, 'nameFontSize', v)}
+                                            min={12}
+                                            max={60}
+                                            step={2}
+                                            suffix="px"
+                                          />
+                                          <OverrideStepper
+                                            label="Location"
+                                            value={overrides.locationFontSize ?? 24}
+                                            onChange={(v) => updateOverrideField(graphicId, 'locationFontSize', v)}
+                                            min={12}
+                                            max={48}
+                                            step={2}
+                                            suffix="px"
+                                          />
+                                        </div>
+                                        {/* Details colors */}
+                                        <div className="flex items-center gap-3">
+                                          <div className="flex items-center gap-1.5">
+                                            <input
+                                              type="color"
+                                              value={overrides.contentArea || editingTheme.colors.contentArea || '#000000'}
+                                              onChange={(e) => updateOverrideField(graphicId, 'contentArea', e.target.value)}
+                                              className="w-6 h-6 rounded cursor-pointer bg-transparent border-0"
+                                            />
+                                            <span className="text-[10px] text-zinc-400">Background</span>
+                                          </div>
+                                          <div className="flex items-center gap-1.5">
+                                            <input
+                                              type="color"
+                                              value={overrides.textOnContent || editingTheme.colors.textOnContent || '#FFFFFF'}
+                                              onChange={(e) => updateOverrideField(graphicId, 'textOnContent', e.target.value)}
+                                              className="w-6 h-6 rounded cursor-pointer bg-transparent border-0"
+                                            />
+                                            <span className="text-[10px] text-zinc-400">Text</span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {/* IMAGES / TEXTURES */}
+                                    <div className="pt-2 border-t border-zinc-700/30">
+                                      <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Images / Textures</div>
+                                      <div className="space-y-2">
+                                        {/* Header Background Image */}
+                                        <div className="flex items-center gap-2 mb-1">
+                                          <label className="flex items-center gap-1.5 cursor-pointer">
+                                            <input
+                                              type="checkbox"
+                                              checked={overrides.headerBgImage !== undefined}
+                                              onChange={(e) => {
+                                                if (e.target.checked) {
+                                                  updateOverrideField(graphicId, 'headerBgImage', '');
+                                                } else {
+                                                  clearOverrideField(graphicId, 'headerBgImage');
+                                                  clearOverrideField(graphicId, 'headerBgImageFit');
+                                                  clearOverrideField(graphicId, 'headerBgImagePosition');
+                                                  clearOverrideField(graphicId, 'headerBgImageOpacity');
+                                                }
+                                              }}
+                                              className="w-3.5 h-3.5 rounded border-zinc-600 bg-zinc-700 text-purple-500 focus:ring-purple-500 focus:ring-offset-0"
+                                            />
+                                            <span className={`text-[11px] ${overrides.headerBgImage !== undefined ? 'text-zinc-300' : 'text-zinc-500'}`}>
+                                              Header Background Image
+                                            </span>
+                                          </label>
+                                        </div>
+                                        {overrides.headerBgImage !== undefined && (
+                                          <div className="space-y-2 ml-5">
+                                            <input
+                                              type="text"
+                                              value={overrides.headerBgImage || ''}
+                                              onChange={(e) => updateOverrideField(graphicId, 'headerBgImage', e.target.value)}
+                                              placeholder="https://..."
+                                              className="w-full px-2 py-1.5 bg-zinc-700 border border-zinc-600 rounded text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-purple-500"
+                                            />
+                                            <div className="grid grid-cols-3 gap-2">
+                                              <div className="flex flex-col gap-0.5">
+                                                <span className="text-[10px] text-zinc-500">Fit</span>
+                                                <select
+                                                  value={overrides.headerBgImageFit || 'cover'}
+                                                  onChange={(e) => updateOverrideField(graphicId, 'headerBgImageFit', e.target.value)}
+                                                  className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500"
+                                                >
+                                                  {IMAGE_FIT_OPTIONS.map(o => (
+                                                    <option key={o.value} value={o.value}>{o.label}</option>
+                                                  ))}
+                                                </select>
+                                              </div>
+                                              <div className="flex flex-col gap-0.5">
+                                                <span className="text-[10px] text-zinc-500">Position</span>
+                                                <select
+                                                  value={overrides.headerBgImagePosition || 'center'}
+                                                  onChange={(e) => updateOverrideField(graphicId, 'headerBgImagePosition', e.target.value)}
+                                                  className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500"
+                                                >
+                                                  {IMAGE_POSITION_OPTIONS.map(o => (
+                                                    <option key={o.value} value={o.value}>{o.label}</option>
+                                                  ))}
+                                                </select>
+                                              </div>
+                                              <OverrideStepper
+                                                label="Opacity"
+                                                value={Math.round((overrides.headerBgImageOpacity ?? 1) * 100)}
+                                                onChange={(v) => updateOverrideField(graphicId, 'headerBgImageOpacity', v / 100)}
+                                                min={0}
+                                                max={100}
+                                                step={5}
+                                                suffix="%"
+                                              />
+                                            </div>
+                                          </div>
+                                        )}
+
+                                        {/* Body Texture */}
+                                        <div className="flex items-center gap-2 mb-1">
+                                          <label className="flex items-center gap-1.5 cursor-pointer">
+                                            <input
+                                              type="checkbox"
+                                              checked={overrides.bodyTexture !== undefined}
+                                              onChange={(e) => {
+                                                if (e.target.checked) {
+                                                  updateOverrideField(graphicId, 'bodyTexture', '');
+                                                } else {
+                                                  clearOverrideField(graphicId, 'bodyTexture');
+                                                  clearOverrideField(graphicId, 'bodyTextureOpacity');
+                                                  clearOverrideField(graphicId, 'bodyTextureBlend');
+                                                }
+                                              }}
+                                              className="w-3.5 h-3.5 rounded border-zinc-600 bg-zinc-700 text-purple-500 focus:ring-purple-500 focus:ring-offset-0"
+                                            />
+                                            <span className={`text-[11px] ${overrides.bodyTexture !== undefined ? 'text-zinc-300' : 'text-zinc-500'}`}>
+                                              Body Texture Overlay
+                                            </span>
+                                          </label>
+                                        </div>
+                                        {overrides.bodyTexture !== undefined && (
+                                          <div className="space-y-2 ml-5">
+                                            <input
+                                              type="text"
+                                              value={overrides.bodyTexture || ''}
+                                              onChange={(e) => updateOverrideField(graphicId, 'bodyTexture', e.target.value)}
+                                              placeholder="https://..."
+                                              className="w-full px-2 py-1.5 bg-zinc-700 border border-zinc-600 rounded text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-purple-500"
+                                            />
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <div className="flex flex-col gap-0.5">
+                                                <span className="text-[10px] text-zinc-500">Blend Mode</span>
+                                                <select
+                                                  value={overrides.bodyTextureBlend || 'overlay'}
+                                                  onChange={(e) => updateOverrideField(graphicId, 'bodyTextureBlend', e.target.value)}
+                                                  className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500"
+                                                >
+                                                  {BLEND_MODE_OPTIONS.map(o => (
+                                                    <option key={o.value} value={o.value}>{o.label}</option>
+                                                  ))}
+                                                </select>
+                                              </div>
+                                              <OverrideStepper
+                                                label="Opacity"
+                                                value={Math.round((overrides.bodyTextureOpacity ?? 0.08) * 100)}
+                                                onChange={(v) => updateOverrideField(graphicId, 'bodyTextureOpacity', v / 100)}
+                                                min={0}
+                                                max={100}
+                                                step={2}
+                                                suffix="%"
+                                              />
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {/* Reset button */}
+                                    {overrideCount > 0 && (
+                                      <div className="pt-2 flex justify-end">
+                                        <button
+                                          onClick={() => resetGraphicOverrides(graphicId)}
+                                          className="text-[10px] text-zinc-400 hover:text-zinc-300 transition-colors"
+                                        >
+                                          Reset to theme defaults
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  /* ========== GENERIC CONTROLS (all other graphics) ========== */
+                                  <div className="pt-3 space-y-3">
                                   {/* Color override fields */}
                                   <div className="grid grid-cols-2 gap-2">
                                     {OVERRIDE_COLOR_FIELDS.map(({ key, label }) => {
@@ -1473,10 +1842,8 @@ export default function ThemeEditorPage() {
                                               checked={hasOverride}
                                               onChange={(e) => {
                                                 if (e.target.checked) {
-                                                  // Enable override with current theme color as starting value
                                                   updateOverrideField(graphicId, key, editingTheme.colors[key] || '#888888');
                                                 } else {
-                                                  // Disable override
                                                   clearOverrideField(graphicId, key);
                                                 }
                                               }}
@@ -1586,14 +1953,6 @@ export default function ThemeEditorPage() {
                                             placeholder="https://..."
                                             className="flex-1 px-2 py-1.5 bg-zinc-700 border border-zinc-600 rounded text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-purple-500"
                                           />
-                                          {overrides.headerBgImage && (
-                                            <img
-                                              src={overrides.headerBgImage}
-                                              alt="Header bg preview"
-                                              className="w-12 h-8 object-cover bg-zinc-600 rounded flex-shrink-0"
-                                              onError={(e) => e.target.style.display = 'none'}
-                                            />
-                                          )}
                                         </div>
                                         <div className="grid grid-cols-3 gap-2">
                                           <div className="flex flex-col gap-0.5">
@@ -1668,14 +2027,6 @@ export default function ThemeEditorPage() {
                                             placeholder="https://..."
                                             className="flex-1 px-2 py-1.5 bg-zinc-700 border border-zinc-600 rounded text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-purple-500"
                                           />
-                                          {overrides.bodyBgImage && (
-                                            <img
-                                              src={overrides.bodyBgImage}
-                                              alt="Body bg preview"
-                                              className="w-12 h-8 object-cover bg-zinc-600 rounded flex-shrink-0"
-                                              onError={(e) => e.target.style.display = 'none'}
-                                            />
-                                          )}
                                         </div>
                                         <div className="grid grid-cols-3 gap-2">
                                           <div className="flex flex-col gap-0.5">
@@ -1749,14 +2100,6 @@ export default function ThemeEditorPage() {
                                             placeholder="https://..."
                                             className="flex-1 px-2 py-1.5 bg-zinc-700 border border-zinc-600 rounded text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-purple-500"
                                           />
-                                          {overrides.bodyTexture && (
-                                            <img
-                                              src={overrides.bodyTexture}
-                                              alt="Texture preview"
-                                              className="w-12 h-8 object-cover bg-zinc-600 rounded flex-shrink-0"
-                                              onError={(e) => e.target.style.display = 'none'}
-                                            />
-                                          )}
                                         </div>
                                         <div className="grid grid-cols-2 gap-2">
                                           <div className="flex flex-col gap-0.5">
@@ -1797,6 +2140,7 @@ export default function ThemeEditorPage() {
                                     </div>
                                   )}
                                 </div>
+                                )}
                               </div>
                             )}
                           </div>
@@ -1806,6 +2150,24 @@ export default function ThemeEditorPage() {
                   </div>
                 ))}
               </div>
+
+              {/* Save Overrides Button — visible without scrolling to top */}
+              {selectedThemeId && (
+                <div className="mt-4 flex items-center gap-3">
+                  <button
+                    onClick={saveTheme}
+                    disabled={saving}
+                    className="flex-1 px-4 py-2.5 bg-green-600 hover:bg-green-500 disabled:bg-zinc-700 rounded-lg font-semibold text-sm transition-colors"
+                  >
+                    {saving ? 'Saving...' : 'Save Overrides'}
+                  </button>
+                  {saveMessage && (
+                    <span className={`text-xs ${saveMessage.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>
+                      {saveMessage.text}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Delete Button */}

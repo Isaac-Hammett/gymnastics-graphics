@@ -500,6 +500,45 @@ window.themeReady = new Promise(resolve => { _resolveThemeReady = resolve; });
       }
     }
 
+    // Layout overrides — per-graphic sizing, positioning, visibility
+    // These set CSS variables directly on :root (e.g., --event-bar-venue-font-size: 42px)
+    // The CSS in output.html reads these via var(--event-bar-venue-font-size, 36px)
+    const layoutOverrideMapping = {
+      // Position
+      barBottom: { suffix: 'bar-bottom', unit: 'px' },
+      barLeft: { suffix: 'bar-left', unit: 'px' },
+      // Logo
+      logoImgSize: { suffix: 'logo-img-size', unit: 'px' },
+      logoContainerWidth: { suffix: 'logo-container-width', unit: 'px' },
+      showLogo: { suffix: 'show-logo', unit: null },  // 'flex' or 'none'
+      // Venue header
+      venueFontSize: { suffix: 'venue-font-size', unit: 'px' },
+      barMinWidth: { suffix: 'bar-min-width', unit: 'px' },
+      // Text
+      nameFontSize: { suffix: 'name-font-size', unit: 'px' },
+      locationFontSize: { suffix: 'location-font-size', unit: 'px' },
+    };
+
+    for (const [propKey, config] of Object.entries(layoutOverrideMapping)) {
+      if (overrides[propKey] !== undefined && overrides[propKey] !== null && overrides[propKey] !== '') {
+        const varName = `--${graphicId}-${config.suffix}`;
+        let value = overrides[propKey];
+
+        // Handle boolean show/hide — convert to display value
+        if (propKey === 'showLogo') {
+          value = value === false || value === 'false' ? 'none' : 'flex';
+        } else if (config.unit && typeof value === 'number') {
+          value = `${value}${config.unit}`;
+        } else if (config.unit && !String(value).endsWith(config.unit)) {
+          value = `${value}${config.unit}`;
+        }
+
+        root.style.setProperty(varName, value);
+        overrideStatus.applied.push({ name: varName, value: value });
+        console.log(`[theme-loader] Layout override applied: ${varName} = ${value}`);
+      }
+    }
+
     return overrideStatus;
   }
 
