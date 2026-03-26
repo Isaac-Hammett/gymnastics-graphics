@@ -552,37 +552,80 @@ window.themeReady = new Promise(resolve => { _resolveThemeReady = resolve; });
       ? pathname.split('/').pop().replace('.html', '')
       : params.get('graphic') || '(live mode)';
 
-    // The 8 CSS variables to check
+    // The 8 CSS variables to check — now with override suffix mapping
     const cssVars = [
-      { name: '--meet-header-bg', themeKey: ['headerBar', 'headerBg'], fallback: '#BFBFBF' },
-      { name: '--meet-content-bg', themeKey: ['contentArea', 'accentPrimary'], fallback: '#E5E5E5' },
-      { name: '--meet-header-text', themeKey: ['textOnHeader', 'headerText'], fallback: '#000000' },
-      { name: '--meet-overlay-bg', themeKey: ['bodyBackground', 'overlayBg'], fallback: '#FFFFFF' },
-      { name: '--meet-overlay-text', themeKey: ['textOnContent', 'overlayText'], fallback: '#000000' },
-      { name: '--meet-border-color', themeKey: ['borderDivider', 'borderColor'], fallback: '#D1D5DB' },
-      { name: '--meet-badge-bg', themeKey: ['badge', 'badgeBg'], fallback: '#16A34A' },
-      { name: '--meet-badge-text', themeKey: ['badgeText'], fallback: '#FFFFFF' }
+      { name: '--meet-header-bg', themeKey: ['headerBar', 'headerBg'], overrideSuffix: 'header-bg', fallback: '#BFBFBF' },
+      { name: '--meet-content-bg', themeKey: ['contentArea', 'accentPrimary'], overrideSuffix: 'content-bg', fallback: '#E5E5E5' },
+      { name: '--meet-header-text', themeKey: ['textOnHeader', 'headerText'], overrideSuffix: 'header-text', fallback: '#000000' },
+      { name: '--meet-overlay-bg', themeKey: ['bodyBackground', 'overlayBg'], overrideSuffix: 'overlay-bg', fallback: '#FFFFFF' },
+      { name: '--meet-overlay-text', themeKey: ['textOnContent', 'overlayText'], overrideSuffix: 'overlay-text', fallback: '#000000' },
+      { name: '--meet-border-color', themeKey: ['borderDivider', 'borderColor'], overrideSuffix: 'border-color', fallback: '#D1D5DB' },
+      { name: '--meet-badge-bg', themeKey: ['badge', 'badgeBg'], overrideSuffix: 'badge-bg', fallback: '#16A34A' },
+      { name: '--meet-badge-text', themeKey: ['badgeText'], overrideSuffix: 'badge-text', fallback: '#FFFFFF' }
     ];
 
-    // Get expected and actual values for each variable
+    // Determine the detected graphic ID for override lookup
+    const detectedGraphicId = graphicId !== '(live mode)' ? graphicId : null;
+
+    // Get expected and actual values for each variable, including source layer detection
     const varChecks = cssVars.map(v => {
       const computed = getComputedStyle(root).getPropertyValue(v.name).trim();
-      let expected = null;
+
+      // Check for per-graphic override (Layer 3)
+      let overrideValue = null;
+      let overrideVarName = null;
+      if (detectedGraphicId) {
+        overrideVarName = `--${detectedGraphicId}-${v.overrideSuffix}`;
+        overrideValue = getComputedStyle(root).getPropertyValue(overrideVarName).trim();
+      }
+
+      // Check theme value (Layer 2)
+      let themeValue = null;
       if (ds.theme && ds.theme.colors) {
         for (const key of v.themeKey) {
           if (ds.theme.colors[key]) {
-            expected = ds.theme.colors[key];
+            themeValue = ds.theme.colors[key];
             break;
           }
         }
       }
+
+      // Determine which layer is providing the value
+      // Note: The global --meet-* variable is always set to the theme value.
+      // The override is in a separate --{graphicId}-* variable.
+      // The CSS cascade `var(--{graphicId}-*, var(--meet-*, fallback))` handles priority.
+      let sourceLayer = 1; // Fallback
+      let sourceLabel = 'Layer 1 (fallback)';
+      let expected = v.fallback;
+      let effectiveValue = v.fallback; // What the element will actually use
+
+      if (overrideValue && overrideValue !== '') {
+        sourceLayer = 3;
+        sourceLabel = `Layer 3 (override: ${detectedGraphicId})`;
+        effectiveValue = overrideValue;
+        // The global var still shows theme value, but CSS cascade uses override
+        expected = themeValue || v.fallback; // The global var value
+      } else if (themeValue) {
+        sourceLayer = 2;
+        sourceLabel = 'Layer 2 (theme)';
+        expected = themeValue;
+        effectiveValue = themeValue;
+      }
+
       const isSet = computed !== '';
+      // For Layer 3, the global var will match theme, not override - that's correct
       const matches = expected ? computed.toLowerCase() === expected.toLowerCase() : true;
+
       return {
         name: v.name,
-        expected: expected || '(not in theme)',
+        expected: expected,
         actual: computed || '(not set)',
-        pass: ds.theme ? (isSet && matches) : !isSet
+        effectiveValue: effectiveValue,
+        sourceLayer: sourceLayer,
+        sourceLabel: sourceLabel,
+        overrideVarName: overrideVarName,
+        overrideValue: overrideValue,
+        pass: isSet && matches
       };
     });
 
@@ -699,6 +742,24 @@ window.themeReady = new Promise(resolve => { _resolveThemeReady = resolve; });
         }
         #theme-debug-panel .status-dot.pass { background: #22c55e; }
         #theme-debug-panel .status-dot.fail { background: #ef4444; }
+        /* Layer source colors */
+        #theme-debug-panel .layer-1 { color: #9ca3af; } /* Gray for fallback */
+        #theme-debug-panel .layer-2 { color: #60a5fa; } /* Blue for theme */
+        #theme-debug-panel .layer-3 { color: #c084fc; } /* Purple for override */
+        #theme-debug-panel .override-row {
+          display: flex;
+          justify-content: space-between;
+          padding: 2px 0;
+          gap: 8px;
+        }
+        #theme-debug-panel .override-name {
+          color: #c084fc;
+          font-size: 10px;
+        }
+        #theme-debug-panel .override-value {
+          color: #fff;
+          font-size: 10px;
+        }
       </style>
       <div class="debug-badge" onclick="this.parentElement.classList.toggle('expanded')">
         <span class="badge-indicator ${ds.loadStatus === 'success' ? 'success' : ds.loadStatus === 'timeout' ? 'timeout' : ds.themeId === null ? 'none' : 'fail'}"></span>
@@ -743,10 +804,32 @@ window.themeReady = new Promise(resolve => { _resolveThemeReady = resolve; });
           ${varChecks.map(v => `
             <div class="var-row">
               <span class="var-name"><span class="status-dot ${v.pass ? 'pass' : 'fail'}"></span>${v.name}</span>
-              <span class="var-expected">${v.expected}</span>
-              <span class="var-actual">${v.actual}</span>
+              <span class="var-expected">${v.actual}</span>
+              <span class="var-actual layer-${v.sourceLayer}" title="${v.sourceLabel}">${v.effectiveValue}</span>
             </div>
+            <div style="font-size:9px;padding-left:14px;margin-top:-2px;" class="layer-${v.sourceLayer}">${v.sourceLabel}${v.sourceLayer === 3 ? ` → ${v.overrideVarName}` : ''}</div>
           `).join('')}
+        </div>
+
+        <div class="debug-section">
+          <div class="debug-section-title">Per-Graphic Overrides</div>
+          <div class="debug-row">
+            <span class="debug-label">Graphic ID</span>
+            <span class="debug-value" style="color:${detectedGraphicId ? '#c084fc' : '#6b7280'}">${detectedGraphicId || '(live mode - N/A)'}</span>
+          </div>
+          <div class="debug-row">
+            <span class="debug-label">Has Overrides</span>
+            <span class="debug-value ${ds.overrideStatus?.hasOverrides ? 'pass' : ''}">${ds.overrideStatus?.hasOverrides ? 'yes' : 'no'}</span>
+          </div>
+          ${ds.overrideStatus?.applied?.length > 0 ? `
+            <div style="margin-top:6px;font-size:9px;color:#9ca3af;text-transform:uppercase;">Applied (${ds.overrideStatus.applied.length})</div>
+            ${ds.overrideStatus.applied.map(o => `
+              <div class="override-row">
+                <span class="override-name">${o.name}</span>
+                <span class="override-value">${o.value}</span>
+              </div>
+            `).join('')}
+          ` : ''}
         </div>
 
         <div class="debug-section">
