@@ -72,7 +72,7 @@
 
 ---
 
-### Task 4: Hide graphic dropdown for dedicated-editor segment types — NOT STARTED
+### Task 4: Hide graphic dropdown for dedicated-editor segment types — COMPLETE
 **Files:** `show-controller/src/pages/RundownEditorPage.jsx`
 **Why last:** Pure UI cleanup, no dependency on other tasks. Independent of the video playback fix.
 
@@ -102,3 +102,4 @@
 - LEARNING: Title card steps use `...baseData` which already includes `meetTheme` but NOT `overlayStyle`. This is correct — only clip steps need `overlayStyle` to differentiate from regular playout clips.
 - LEARNING: The iframe URL is built using `URLSearchParams` with conditional param setting. The mapping is: `teamLogo` → `logo`, `subtitle || teamName` → `subtitle`. All other params pass through directly.
 - LEARNING: Task 3 modifies THREE locations in output.html: (1) line ~13478 for clip-playback, (2) line ~13539 for moment-replay, (3) line ~6880 for optimistic advance. All three need the same conditional: `if (data.overlayStyle === 'who-to-watch') { clipOverlay.classList.remove('visible'); } else { updateClipOverlay(data); }`
+- LEARNING: Task 4 wraps the graphic picker block (lines 8113-8165) in a conditional. The type-specific editors (PlayoutRulesEditor, ContentSequenceEditor, WhoToWatchEditor) are at lines 8516-8555, well outside the wrapped block, so they render normally.
