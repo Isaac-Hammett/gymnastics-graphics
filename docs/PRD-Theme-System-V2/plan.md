@@ -836,7 +836,7 @@ Screenshots: `local-task-3.4-final.png` (Layer 3 override), `local-task-3.4-laye
 
 ---
 
-### Task 3.DOC — Update Documentation After Phase 3 — NOT STARTED
+### Task 3.DOC — Update Documentation After Phase 3 — COMPLETE
 
 **Goal:** Update CLAUDE.md and PRD to reflect per-graphic overrides shipped in Phase 3.
 
@@ -858,9 +858,16 @@ Screenshots: `local-task-3.4-final.png` (Layer 3 override), `local-task-3.4-laye
    - Phase 4: mark as IN PROGRESS (next)
 
 **Verify:**
-- [ ] CLAUDE.md documents per-graphic override cascade
-- [ ] CLAUDE.md documents override Firebase path and property list
-- [ ] PRD phase statuses updated
+- [x] CLAUDE.md documents per-graphic override cascade
+- [x] CLAUDE.md documents override Firebase path and property list
+- [x] PRD phase statuses updated
+
+**Status:** COMPLETE — All documentation updates made:
+- CLAUDE.md: Added "Per-Graphic Overrides" section with 3-layer cascade explanation, Firebase path, 18 supported properties table, graphic ID detection table
+- CLAUDE.md: Updated "Debug Panel" section to list Layer 1/2/3 source color-coding and per-graphic overrides display
+- PRD: Updated status to "IN PROGRESS (Phase 1 COMPLETE except Task 1.9 deferred, Phase 3 COMPLETE, Phase 4 next)"
+- PRD: Marked Phase 3 as COMPLETE
+- PRD: Marked Phase 4 as IN PROGRESS (next)
 
 **Deploy:** None — documentation only.
 

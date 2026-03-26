@@ -2,7 +2,7 @@
 
 **Version:** 2.1
 **Date:** 2026-03-25
-**Status:** IN PROGRESS (Phase 1 COMPLETE except Task 1.9 deferred, Phase 3 next)
+**Status:** IN PROGRESS (Phase 1 COMPLETE except Task 1.9 deferred, Phase 3 COMPLETE, Phase 4 next)
 **Supersedes:** PRD-Meet-Themes (v3.0, 2026-03-06) — Phases 1-12 remain COMPLETE; this PRD builds on that foundation
 **Depends On:** PRD-Meet-Themes (foundation)
 
@@ -318,7 +318,7 @@ theme-loader.js must expose a `window.themeReady` promise so output.html can gat
 
 ---
 
-### Phase 3: Per-Graphic Theme Overrides — IN PROGRESS (next)
+### Phase 3: Per-Graphic Theme Overrides — COMPLETE
 
 **Goal:** Override any theme property for a specific graphic type. Support images and textures.
 
@@ -350,7 +350,7 @@ Graphic ID detection:
 
 ---
 
-### Phase 4: Theme Editor — Per-Graphic Controls + Competition Preview
+### Phase 4: Theme Editor — Per-Graphic Controls + Competition Preview — IN PROGRESS (next)
 
 **Goal:** UI for managing per-graphic overrides with live preview against real competition data.
 

@@ -189,9 +189,14 @@ The debug panel shows:
 - Theme ID and load status (success/timeout/failed)
 - Source: URL parameter vs competition config
 - All 8 CSS variables: expected vs actual values (green = match, red = mismatch)
+- **Source layer** for each CSS variable (color-coded):
+  - Layer 1 (fallback): Gray — using hardcoded default
+  - Layer 2 (theme): Blue — using theme default color
+  - Layer 3 (override): Purple — using per-graphic override
 - Logo data attributes
 - Rendering path (iframe vs inline)
 - Graphic ID
+- Per-graphic overrides: lists active overrides for the current graphic
 
 ### Class Name Reconciliation
 
@@ -267,6 +272,66 @@ The **ThemeErrorLog** component in ProducerView shows:
 --meet-badge-bg     : Badges/labels background
 --meet-badge-text   : Badges/labels text
 ```
+
+### Per-Graphic Overrides
+
+Override any theme color for a specific graphic type. Overrides use a 3-layer CSS variable cascade:
+
+```
+Layer 3 (highest): Per-graphic override  → --{graphicId}-header-bg
+Layer 2:           Theme default         → --meet-header-bg
+Layer 1 (lowest):  Hardcoded fallback    → #BFBFBF
+```
+
+**CSS resolution:**
+```css
+var(--event-bar-header-bg,    /* Layer 3: per-graphic override */
+  var(--meet-header-bg,       /* Layer 2: theme default */
+    #BFBFBF                   /* Layer 1: fallback */
+  )
+)
+```
+
+**Firebase path:** `themes/{themeId}/overrides/{graphicId}/`
+
+**Supported override properties:**
+
+| Firebase Key | CSS Variable | Description |
+|-------------|--------------|-------------|
+| `headerBar` | `--{graphicId}-header-bg` | Header bar background |
+| `contentArea` | `--{graphicId}-content-bg` | Content area background |
+| `bodyBackground` | `--{graphicId}-overlay-bg` | Full-screen background |
+| `borderDivider` | `--{graphicId}-border-color` | Borders and dividers |
+| `badge` | `--{graphicId}-badge-bg` | Badge background |
+| `badgeText` | `--{graphicId}-badge-text` | Badge text |
+| `textOnHeader` | `--{graphicId}-header-text` | Header text |
+| `textOnContent` | `--{graphicId}-overlay-text` | Content text |
+| `headerBgImage` | `--{graphicId}-header-bg-image` | Header background image URL |
+| `headerBgImageFit` | `--{graphicId}-header-bg-image-fit` | Image fit: cover/contain |
+| `headerBgImagePosition` | `--{graphicId}-header-bg-image-position` | Image position |
+| `headerBgImageOpacity` | `--{graphicId}-header-bg-image-opacity` | Image opacity (0-1) |
+| `bodyBgImage` | `--{graphicId}-body-bg-image` | Body background image URL |
+| `bodyTexture` | `--{graphicId}-body-texture` | Texture overlay URL |
+| `bodyTextureOpacity` | `--{graphicId}-body-texture-opacity` | Texture opacity |
+| `bodyTextureBlend` | `--{graphicId}-body-texture-blend` | Blend mode: overlay/multiply/normal |
+| `logo` | `--{graphicId}-logo-url` | Logo URL override |
+| `logoSize` | `--{graphicId}-logo-size` | Logo size in px |
+
+**Graphic ID detection:**
+
+| Context | Detection Method |
+|---------|-----------------|
+| Overlay file | Extract from `window.location.pathname` (e.g., `/overlays/sponsors-thanks.html` → `sponsors-thanks`) |
+| output.html preview | Read `?graphic=` URL param (e.g., `?graphic=event-bar` → `event-bar`) |
+| output.html clip mode | Check `?mode=clip` or `?mode=clip-preview` → `clip-overlay` |
+| output.html live mode | Cannot detect at load time — handled in `currentGraphic` listener |
+
+**No additional Firebase reads:** Overrides are fetched as part of the existing theme subtree read — `themes/{themeId}` includes the `overrides` object.
+
+**Debug panel (with override info):** Add `?debug=theme` to any graphics URL. The debug panel now shows the source layer for each CSS variable:
+- **Layer 1 (fallback)**: Gray — using hardcoded default value
+- **Layer 2 (theme)**: Blue — using theme default color
+- **Layer 3 (override)**: Purple — using per-graphic override
 
 ### Theme Sponsors - IMPORTANT
 
