@@ -12398,14 +12398,14 @@
 
       'event-bar': (data) => `
         <div class="graphic-container graphic-event-bar">
-          <div class="event-bar-logo">
+          <div class="event-bar-logo logo-section">
             <img src="${getEventLevelLogo(data.team1Name, data.team1Logo)}" alt="Team">
           </div>
           <div class="event-bar-content">
             <div class="event-bar-venue">${data.venue}</div>
             <div class="event-bar-details">
-              <div class="event-bar-name">${data.eventName}</div>
-              <div class="event-bar-location">${data.location}</div>
+              <div class="event-bar-name teams-text">${data.eventName}</div>
+              <div class="event-bar-location location-text">${data.location}</div>
             </div>
           </div>
         </div>
@@ -12444,7 +12444,7 @@
       'team1-coaches': (data) => `
         <div class="graphic-container graphic-coaches">
           <div class="coaches-header">
-            <div class="coaches-title">COACHES</div>
+            <div class="coaches-title hosts-title">COACHES</div>
             <img class="coaches-logo" src="${getTeamLogoUrl(data.team1Name, data.team1Logo)}" alt="Team">
           </div>
           <div class="coaches-content">
@@ -12475,7 +12475,7 @@
       'team2-coaches': (data) => `
         <div class="graphic-container graphic-coaches">
           <div class="coaches-header">
-            <div class="coaches-title">COACHES</div>
+            <div class="coaches-title hosts-title">COACHES</div>
             <img class="coaches-logo" src="${getTeamLogoUrl(data.team2Name, data.team2Logo)}" alt="Team">
           </div>
           <div class="coaches-content">
@@ -12506,7 +12506,7 @@
       'team3-coaches': (data) => `
         <div class="graphic-container graphic-coaches">
           <div class="coaches-header">
-            <div class="coaches-title">COACHES</div>
+            <div class="coaches-title hosts-title">COACHES</div>
             <img class="coaches-logo" src="${getTeamLogoUrl(data.team3Name, data.team3Logo)}" alt="Team">
           </div>
           <div class="coaches-content">
@@ -12537,7 +12537,7 @@
       'team4-coaches': (data) => `
         <div class="graphic-container graphic-coaches">
           <div class="coaches-header">
-            <div class="coaches-title">COACHES</div>
+            <div class="coaches-title hosts-title">COACHES</div>
             <img class="coaches-logo" src="${getTeamLogoUrl(data.team4Name, data.team4Logo)}" alt="Team">
           </div>
           <div class="coaches-content">
@@ -12568,7 +12568,7 @@
       'team5-coaches': (data) => `
         <div class="graphic-container graphic-coaches">
           <div class="coaches-header">
-            <div class="coaches-title">COACHES</div>
+            <div class="coaches-title hosts-title">COACHES</div>
             <img class="coaches-logo" src="${getTeamLogoUrl(data.team5Name, data.team5Logo)}" alt="Team">
           </div>
           <div class="coaches-content">
@@ -12599,7 +12599,7 @@
       'team6-coaches': (data) => `
         <div class="graphic-container graphic-coaches">
           <div class="coaches-header">
-            <div class="coaches-title">COACHES</div>
+            <div class="coaches-title hosts-title">COACHES</div>
             <img class="coaches-logo" src="${getTeamLogoUrl(data.team6Name, data.team6Logo)}" alt="Team">
           </div>
           <div class="coaches-content">
@@ -12630,7 +12630,7 @@
       'team7-coaches': (data) => `
         <div class="graphic-container graphic-coaches">
           <div class="coaches-header">
-            <div class="coaches-title">COACHES</div>
+            <div class="coaches-title hosts-title">COACHES</div>
             <img class="coaches-logo" src="${getTeamLogoUrl(data.team7Name, data.team7Logo)}" alt="Team">
           </div>
           <div class="coaches-content">
@@ -12648,7 +12648,7 @@
         return `
         <div class="graphic-container graphic-coaches">
           <div class="coaches-header">
-            <div class="coaches-title">COACHES</div>
+            <div class="coaches-title hosts-title">COACHES</div>
             <img class="coaches-logo" src="${getTeamLogoUrl(name, logo)}" alt="Team">
           </div>
           <div class="coaches-content">
@@ -12892,15 +12892,15 @@
           : 'WARM UP');
         return `
           <div class="graphic-container graphic-warm-up">
-            <div class="warm-up-logo-section">
+            <div class="warm-up-logo-section logo-section">
               <img src="${getEventLevelLogo(data.team1Name, data.team1Logo)}" alt="Team">
             </div>
             <div class="warm-up-content-section">
               <div class="warm-up-teams-row">
                 <div class="warm-up-teams-text">${teamsText}</div>
               </div>
-              <div class="warm-up-status-row">
-                <div class="warm-up-status-text">WARM UP</div>
+              <div class="warm-up-status-row status-row">
+                <div class="warm-up-status-text status-text">WARM UP</div>
               </div>
             </div>
           </div>
@@ -12909,15 +12909,15 @@
 
       'replay': (data) => `
         <div class="graphic-container graphic-replay">
-          <div class="replay-logo-section">
+          <div class="replay-logo-section logo-section">
             <img src="${getEventLevelLogo(data.team1Name, data.team1Logo)}" alt="Team">
           </div>
           <div class="replay-content-section">
             <div class="replay-title-row">
               <div class="replay-title-text">INSTANT REPLAY</div>
             </div>
-            <div class="replay-status-row">
-              <div class="replay-status-text">REPLAY</div>
+            <div class="replay-status-row status-row">
+              <div class="replay-status-text status-text">REPLAY</div>
             </div>
           </div>
         </div>
