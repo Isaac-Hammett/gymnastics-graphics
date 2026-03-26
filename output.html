@@ -6508,11 +6508,13 @@
     // 'live' (default): Renders existing graphics, LIVE badge, animated backgrounds. Clears on clip-type graphics.
     // 'clip': Renders video playback + overlay. Stops/hides video on non-clip graphics.
     // 'preview': Same as 'clip' but does NOT write to Firebase (for producer testing).
+    // 'clip-preview': Shows clip overlay with sample data for Theme Editor preview. No video, no Firebase.
     const outputMode = urlParams.get('mode') || 'live';
     const isClipMode = outputMode === 'clip' || outputMode === 'preview';
+    const isClipPreviewMode = outputMode === 'clip-preview';
     const shouldWriteToFirebase = outputMode === 'clip'; // preview mode skips Firebase writes
 
-    console.log(`[output] Mode: ${outputMode}, isClipMode: ${isClipMode}, shouldWriteToFirebase: ${shouldWriteToFirebase}`);
+    console.log(`[output] Mode: ${outputMode}, isClipMode: ${isClipMode}, isClipPreviewMode: ${isClipPreviewMode}, shouldWriteToFirebase: ${shouldWriteToFirebase}`);
 
     // ============================================================
     // CLIP INTEGRATION - Video Element Management
@@ -7295,9 +7297,10 @@
       });
     }
 
-    // Only show error if no competition ID AND no URL graphic parameter
+    // Only show error if no competition ID AND no URL graphic parameter AND not in clip-preview mode
     // URL preview mode (with graphic= param) can work without comp ID for some graphics
-    if (!competitionId && !hasGraphicParam) {
+    // Clip-preview mode shows sample data and doesn't need comp ID
+    if (!competitionId && !hasGraphicParam && !isClipPreviewMode) {
       console.error('No competition ID specified in URL');
       document.body.innerHTML = '<div style="color: red; font-size: 48px; text-align: center; padding: 100px;">ERROR: No competition ID specified. Please access via dashboard.</div>';
     }
@@ -13191,9 +13194,55 @@
       });
     }
 
-    // Only listen to Firebase if NOT in URL preview mode
+    // ============================================================
+    // CLIP PREVIEW MODE (PRD Theme System V2 - Task 4.6a)
+    // Shows clip overlay with sample data for Theme Editor preview.
+    // No video playback, no Firebase listeners.
+    // ============================================================
+    if (isClipPreviewMode) {
+      themeReadyPromise.then(() => {
+        // Apply dark background to simulate video behind the overlay
+        document.body.style.background = '#1a1a2e';
+
+        // Sample data for clip overlay preview
+        const sampleData = {
+          athleteName: 'Sample Athlete',
+          teamName: 'Sample University',
+          apparatus: 'Floor Exercise',
+          teamLogo: 'https://media.virti.us/upload/images/team/generic-team-logo.png',
+          score: '9.950'
+        };
+
+        // Override with URL params if provided (for real competition data)
+        if (urlParams.has('athleteName')) sampleData.athleteName = urlParams.get('athleteName');
+        if (urlParams.has('teamName')) sampleData.teamName = urlParams.get('teamName');
+        if (urlParams.has('apparatus')) sampleData.apparatus = urlParams.get('apparatus');
+        if (urlParams.has('teamLogo')) sampleData.teamLogo = urlParams.get('teamLogo');
+        if (urlParams.has('score')) sampleData.score = urlParams.get('score');
+
+        // Populate the overlay elements with sample data
+        if (clipTeamLogoEl) clipTeamLogoEl.src = sampleData.teamLogo;
+        if (clipAthleteNameEl) clipAthleteNameEl.textContent = sampleData.athleteName;
+        if (clipApparatusEl) clipApparatusEl.textContent = sampleData.apparatus;
+        if (clipTeamNameEl) clipTeamNameEl.textContent = sampleData.teamName;
+
+        // Show score badge with sample score
+        if (clipScoreBadgeEl) {
+          clipScoreBadgeEl.textContent = sampleData.score;
+          clipScoreBadgeEl.classList.add('visible');
+        }
+
+        // Make the overlay visible (it's hidden by default)
+        if (clipOverlay) clipOverlay.classList.add('visible');
+
+        console.log(`[clip-preview] Rendered clip overlay with sample data`);
+      });
+    }
+
+    // Only listen to Firebase if NOT in URL preview mode or clip-preview mode
     // When graphic= is in URL, we want to show that specific graphic, not whatever Firebase has
-    if (!isUrlPreviewMode) {
+    // When mode=clip-preview, we show the clip overlay with sample data (no Firebase)
+    if (!isUrlPreviewMode && !isClipPreviewMode) {
       // Start heartbeat monitoring for clip mode (needed for optimistic advance)
       if (isClipMode) {
         startHeartbeatMonitoring();
