@@ -12766,7 +12766,10 @@
         const statValue = encodeURIComponent(data.statValue || '');
         const headshot = encodeURIComponent(data.headshot || '');
         const meetTheme = data.meetTheme ? `&meetTheme=${encodeURIComponent(data.meetTheme)}` : '';
-        const overlayUrl = `/overlays/who-to-watch.html?athleteName=${athleteName}&logo=${logo}&subtitle=${subtitle}&statLabel=${statLabel}&statValue=${statValue}&headshot=${headshot}${meetTheme}`;
+        // Lower-third adjustment params (Task 8)
+        const lowerThirdAdjustKeys = ['badgeText','badgeFontSize','nameFontSize','subtitleFontSize','statFontSize','headshotSize','showHeadshot','logoSize','cardBottom','cardLeft','cardMinWidth','cardMaxWidth','bgColor','accentColor'];
+        const adjustParams = lowerThirdAdjustKeys.filter(k => data[k] != null).map(k => `&${k}=${encodeURIComponent(data[k])}`).join('');
+        const overlayUrl = `/overlays/who-to-watch.html?athleteName=${athleteName}&logo=${logo}&subtitle=${subtitle}&statLabel=${statLabel}&statValue=${statValue}&headshot=${headshot}${meetTheme}${adjustParams}`;
         return `<iframe src="${overlayUrl}" style="width: 1920px; height: 1080px; border: none; overflow: hidden;"></iframe>`;
       },
 
@@ -13239,6 +13242,9 @@
               if (data.statValue) iframeParams.set('statValue', data.statValue);
               if (data.headshot) iframeParams.set('headshot', data.headshot);
               if (data.meetTheme) iframeParams.set('meetTheme', data.meetTheme);
+              // Lower-third adjustment params (Task 8)
+              const lowerThirdAdjustKeys = ['badgeText','badgeFontSize','nameFontSize','subtitleFontSize','statFontSize','headshotSize','showHeadshot','logoSize','cardBottom','cardLeft','cardMinWidth','cardMaxWidth','bgColor','accentColor'];
+              lowerThirdAdjustKeys.forEach(k => { if (data[k] != null) iframeParams.set(k, data[k]); });
 
               output.innerHTML = `<iframe src="/overlays/who-to-watch.html?${iframeParams.toString()}" style="width:1920px;height:1080px;border:none;" sandbox="allow-scripts allow-same-origin"></iframe>`;
               hideAnimatedBackground();

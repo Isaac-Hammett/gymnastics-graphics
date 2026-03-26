@@ -206,7 +206,7 @@ Apply params by reading from URLSearchParams and setting inline styles on the DO
 
 ---
 
-### Task 8: Pass lower-third adjustments through sequencer to live output — NOT STARTED
+### Task 8: Pass lower-third adjustments through sequencer to live output — COMPLETE
 **Files:** `server/index.js`, `output.html`
 **Why last:** Depends on Tasks 5-7. Connects the editor adjustments to the live show.
 
@@ -245,3 +245,4 @@ Apply params by reading from URLSearchParams and setting inline styles on the DO
 - LEARNING: Task 5 follows the title card pattern for adjustment params. Key change: `.wtw-stat` now uses `--meet-content-bg` with fallback to `--meet-header-bg` so `accentColor` can control stat text independently from the header bar background.
 - LEARNING: Task 6 adds `LowerThirdIframePreview` component (line ~366) following `TitleCardIframePreview` pattern. Key differences: (1) dark background div behind iframe since overlay is transparent, (2) accepts `adjustments` prop object for future Task 7, (3) maps subtitle/teamName fallback in URL params. The iframe uses `/overlays/who-to-watch.html` with query params.
 - LEARNING: Task 7 adds lower-third adjustment controls to WhoToWatchEditor. Adjustments are stored in `config.lowerThirdAdjustments` (not per-card like title cards). The collapsible panel uses a `<details>` element. All controls update the state via `updateField('lowerThirdAdjustments', {...existing, newField: value})` pattern. The `LowerThirdIframePreview` receives adjustments and passes them as URL params to the iframe.
+- LEARNING: Task 8 spreads `whoToWatch.lowerThirdAdjustments` into the clip step data in server/index.js (~line 837). In output.html, both URL builder locations (live mode handler ~line 13243 and renderer dictionary ~line 12774) define `lowerThirdAdjustKeys` array and iterate to add adjustment params. The pattern follows title card's `adjustKeys` approach.

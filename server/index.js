@@ -834,6 +834,8 @@ function getOrCreateEngine(compId, obsConnectionManager, firebase, socketIo) {
             headshot: whoToWatch.headshot || '',
             overlayStyle: 'who-to-watch',
             meetTheme,
+            // Lower-third adjustments (Task 8)
+            ...(whoToWatch.lowerThirdAdjustments || {}),
           }
         },
         draftId: clipDraftId,
