@@ -528,6 +528,10 @@ window.themeReady = new Promise(resolve => { _resolveThemeReady = resolve; });
       // Logo
       logoImgSize: { suffix: 'logo-img-size', unit: 'px' },
       logoContainerWidth: { suffix: 'logo-container-width', unit: 'px' },
+      logoContainerHeight: { suffix: 'logo-container-height', unit: 'px' },
+      logoBg: { suffix: 'logo-bg', unit: null },  // color value, no unit
+      logoPadding: { suffix: 'logo-padding', unit: 'px' },
+      logoRadius: { suffix: 'logo-radius', unit: 'px' },
       showLogo: { suffix: 'show-logo', unit: null },  // 'flex' or 'none'
       // Venue header
       venueFontSize: { suffix: 'venue-font-size', unit: 'px' },

@@ -1726,6 +1726,57 @@ export default function ThemeEditorPage() {
                                             suffix="px"
                                           />
                                         </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                          <OverrideStepper
+                                            label="Box height"
+                                            value={overrides.logoContainerHeight ?? 0}
+                                            onChange={(v) => updateOverrideField(graphicId, 'logoContainerHeight', v === 0 ? undefined : v)}
+                                            min={0}
+                                            max={300}
+                                            step={4}
+                                            suffix="px"
+                                          />
+                                          <OverrideStepper
+                                            label="Padding"
+                                            value={overrides.logoPadding ?? 15}
+                                            onChange={(v) => updateOverrideField(graphicId, 'logoPadding', v)}
+                                            min={0}
+                                            max={60}
+                                            step={2}
+                                            suffix="px"
+                                          />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                          <OverrideStepper
+                                            label="Radius"
+                                            value={overrides.logoRadius ?? 0}
+                                            onChange={(v) => updateOverrideField(graphicId, 'logoRadius', v)}
+                                            min={0}
+                                            max={100}
+                                            step={2}
+                                            suffix="px"
+                                          />
+                                        </div>
+                                        {/* Logo box background color */}
+                                        <div className="flex items-center gap-3">
+                                          <div className="flex items-center gap-1.5">
+                                            <input
+                                              type="color"
+                                              value={overrides.logoBg || '#ffffff'}
+                                              onChange={(e) => updateOverrideField(graphicId, 'logoBg', e.target.value)}
+                                              className="w-6 h-6 rounded cursor-pointer bg-transparent border-0"
+                                            />
+                                            <span className="text-[10px] text-zinc-400">Box background</span>
+                                          </div>
+                                          {overrides.logoBg && (
+                                            <button
+                                              onClick={() => clearOverrideField(graphicId, 'logoBg')}
+                                              className="text-[10px] text-zinc-500 hover:text-zinc-300"
+                                            >
+                                              reset
+                                            </button>
+                                          )}
+                                        </div>
                                         <div className="flex items-center gap-2">
                                           <label className="flex items-center gap-1.5 cursor-pointer">
                                             <input
