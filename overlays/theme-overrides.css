@@ -179,6 +179,68 @@
 }
 
 /* ============================================================
+   LEADERBOARD
+   Header/footer = --meet-header-bg, Table body = --meet-overlay-bg
+   ============================================================ */
+
+[data-meet-theme] .leaderboard-header {
+  background: var(--meet-header-bg, #18181b);
+}
+[data-meet-theme] .leaderboard-title {
+  color: var(--meet-header-text, #fff);
+}
+[data-meet-theme] .leaderboard-footer {
+  background: var(--meet-header-bg, #18181b);
+}
+
+/* Leaderboard frame header override (needs higher specificity) */
+[data-meet-theme] .graphic-virtius-leaderboard .frame-header {
+  background: var(--meet-header-bg, #d4d4d8);
+  color: var(--meet-header-text, #000);
+}
+[data-meet-theme] .graphic-virtius-leaderboard .frame-title {
+  color: var(--meet-header-text, #000);
+}
+
+/* Leaderboard table */
+[data-meet-theme] .leaderboard-table thead {
+  background: var(--meet-header-bg, #27272a);
+}
+[data-meet-theme] .leaderboard-table th {
+  color: var(--meet-header-text, #a1a1aa);
+  border-bottom-color: var(--meet-border-color, #3f3f46);
+}
+[data-meet-theme] .leaderboard-table tbody tr {
+  border-bottom-color: var(--meet-border-color, #3f3f46);
+}
+[data-meet-theme] .leaderboard-table tbody tr:nth-child(odd) {
+  background: var(--meet-overlay-bg, #18181b);
+}
+[data-meet-theme] .leaderboard-table tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--meet-overlay-bg, #0f0f10) 85%, black);
+}
+[data-meet-theme] .leaderboard-table td {
+  color: var(--meet-overlay-text, #fff);
+}
+[data-meet-theme] .leaderboard-table td.col-rank {
+  color: var(--meet-header-bg, #a1a1aa);
+}
+[data-meet-theme] .leaderboard-table td.col-diff,
+[data-meet-theme] .leaderboard-table td.col-exec {
+  color: var(--meet-header-bg, #a1a1aa);
+}
+[data-meet-theme] .leaderboard-table td.col-team {
+  color: var(--meet-header-bg, #d4d4d8);
+}
+[data-meet-theme] .leaderboard-team-logo {
+  background: var(--meet-header-bg, #27272a);
+}
+[data-meet-theme] .apparatus-badge {
+  border-color: var(--meet-border-color, #52525b);
+  color: var(--meet-header-bg, #a1a1aa);
+}
+
+/* ============================================================
    TEAM ROSTER
    ============================================================ */
 

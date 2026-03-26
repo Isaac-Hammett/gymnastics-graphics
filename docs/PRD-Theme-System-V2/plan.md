@@ -211,7 +211,7 @@ Add a new `/* === EVENT SUMMARY === */` section in theme-overrides.css.
 
 ---
 
-### Task 1.3b — Port Leaderboard CSS Rules to theme-overrides.css — NOT STARTED
+### Task 1.3b — Port Leaderboard CSS Rules to theme-overrides.css — COMPLETE
 
 **Goal:** Port leaderboard theme rules (~25) from output.html to theme-overrides.css.
 
@@ -227,10 +227,12 @@ Port these selectors from output.html (lines 1137–1193):
 Add a new `/* === LEADERBOARD === */` section in theme-overrides.css.
 
 **Verify:**
-- [ ] All leaderboard `[data-meet-theme]` rules from output.html have equivalents in theme-overrides.css
-- [ ] Deeply nested selectors preserved faithfully (e.g., `[data-meet-theme] .leaderboard-table thead th`)
+- [x] All leaderboard `[data-meet-theme]` rules from output.html have equivalents in theme-overrides.css
+- [x] Deeply nested selectors preserved faithfully (e.g., `[data-meet-theme] .leaderboard-table thead th`)
 
 **Deploy:** Upload `overlays/` directory.
+
+**Status:** COMPLETE — Added LEADERBOARD section (lines 181-241) with 17 rules covering all leaderboard theme selectors. Note: texture `::before` rules for leaderboard are handled in Task 1.3c.
 
 ---
 
