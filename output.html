@@ -1280,6 +1280,53 @@
       color: var(--meet-overlay-text, #fff);
     }
 
+    /* ------------------------------------------
+       TEXTURE OVERLAY
+       Tiles a texture image (e.g., chalk dust) over surfaces.
+       Only renders when --meet-texture is set by applyMeetTheme().
+       ------------------------------------------ */
+
+    [data-meet-theme] .header-bar,
+    [data-meet-theme] .frame-header,
+    [data-meet-theme] .rotation-slate,
+    [data-meet-theme] .roster-container,
+    [data-meet-theme] .stream-container,
+    [data-meet-theme] .event-bar-venue,
+    [data-meet-theme] .details-row,
+    [data-meet-theme] .sponsors-container,
+    [data-meet-theme] .coaches-content,
+    [data-meet-theme] .spotlight-container,
+    [data-meet-theme] .event-summary-header,
+    [data-meet-theme] .leaderboard-header,
+    [data-meet-theme] .warm-up-container,
+    [data-meet-theme] .replay-container {
+      position: relative;
+    }
+
+    [data-meet-theme] .header-bar::before,
+    [data-meet-theme] .frame-header::before,
+    [data-meet-theme] .rotation-slate::before,
+    [data-meet-theme] .roster-container::before,
+    [data-meet-theme] .stream-container::before,
+    [data-meet-theme] .event-bar-venue::before,
+    [data-meet-theme] .details-row::before,
+    [data-meet-theme] .sponsors-container::before,
+    [data-meet-theme] .coaches-content::before,
+    [data-meet-theme] .spotlight-container::before,
+    [data-meet-theme] .event-summary-header::before,
+    [data-meet-theme] .leaderboard-header::before,
+    [data-meet-theme] .warm-up-container::before,
+    [data-meet-theme] .replay-container::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--meet-texture, none) center / 1024px repeat;
+      opacity: var(--meet-texture-opacity, 0.08);
+      pointer-events: none;
+      border-radius: inherit;
+      z-index: 1;
+    }
+
     /* ==========================================
        END MEET THEME OVERRIDES
        ========================================== */
@@ -6429,6 +6476,8 @@
   <!-- Dual video elements for clip playback (mode=clip only) -->
   <video id="clipVideo" class="clip-preload" playsinline></video>
   <video id="clipVideoNext" class="clip-preload" playsinline></video>
+  <!-- Iframe fallback for video formats not supported by <video> element -->
+  <iframe id="clipIframeFallback" class="clip-preload" style="width:1920px;height:1080px;border:none;background:black;" allow="autoplay"></iframe>
 
   <!-- Clip playback overlay (mode=clip only) -->
   <div id="clipOverlay">
@@ -6472,7 +6521,9 @@
     // Get video elements
     const clipVideo = document.getElementById('clipVideo');
     const clipVideoNext = document.getElementById('clipVideoNext');
+    const clipIframeFallback = document.getElementById('clipIframeFallback');
     const clipBackground = document.getElementById('clipBackground');
+    let usingIframeFallback = false;
 
     // Get overlay elements
     const clipOverlay = document.getElementById('clipOverlay');
@@ -6486,6 +6537,17 @@
     // Track which video is currently active (for swap mechanism)
     let activeVideoElement = clipVideo;
     let preloadVideoElement = clipVideoNext;
+
+    // Listen for messages from iframe clip-player (fallback mode)
+    window.addEventListener('message', (event) => {
+      if (event.data?.type === 'clipEnded' && usingIframeFallback && currentClipDraftId) {
+        console.log('[clip] Iframe clip-player reported clip ended');
+        writeClipStatus(currentClipDraftId, 'ended', {});
+      } else if (event.data?.type === 'clipError' && usingIframeFallback && currentClipDraftId) {
+        console.log('[clip] Iframe clip-player reported error:', event.data.message);
+        writeClipStatus(currentClipDraftId, 'error', { errorMessage: event.data.message || 'Iframe playback error' });
+      }
+    });
 
     // Track current clip state
     let currentClipDraftId = null;
@@ -6515,6 +6577,28 @@
     const HEARTBEAT_STALE_MS = 30000;    // 30 seconds before heartbeat is stale
     const MAX_RETRY_COUNT = 3;           // Maximum retries for Firebase writes
     const RETRY_DELAYS = [1000, 2000, 4000]; // Exponential backoff delays
+
+    /**
+     * Rewrite R2 presigned URLs to route through the coordinator proxy.
+     * This avoids CORS/auth issues where expired or unsigned URLs cause
+     * Chrome to misreport "Format not supported" errors.
+     * @param {string} url - The original clip URL
+     * @returns {string} - The proxy URL (if R2) or original URL
+     */
+    function proxyClipUrl(url) {
+      if (!url) return url;
+      // Don't double-proxy
+      if (url.includes('api.commentarygraphic.com/api/clip-proxy')) {
+        return url;
+      }
+      // Only proxy R2 URLs
+      if (url.includes('r2.cloudflarestorage.com')) {
+        const proxyUrl = `https://api.commentarygraphic.com/api/clip-proxy?url=${encodeURIComponent(url)}`;
+        console.log(`[clip] Using proxy: ${proxyUrl.substring(0, 80)}...`);
+        return proxyUrl;
+      }
+      return url;  // Non-R2 URLs pass through unchanged
+    }
 
     // Heartbeat monitoring state
     let lastHeartbeatTimestamp = null;   // Last received heartbeat timestamp
@@ -7179,7 +7263,17 @@
         const onError = (e) => {
           activeVideoElement.removeEventListener('canplay', onCanPlay);
           activeVideoElement.removeEventListener('error', onError);
-          reject(new Error(`Failed to load clip: ${e.message || 'Unknown error'}`));
+          // Fallback: if <video> element can't play the format, use iframe player overlay
+          console.log('[clip] <video> element failed, falling back to iframe clip-player overlay');
+          usingIframeFallback = true;
+          // Hide the video element, show the iframe with clip-player overlay
+          activeVideoElement.classList.remove('clip-active');
+          activeVideoElement.classList.add('clip-preload');
+          const playerUrl = `/overlays/clip-player.html?url=${encodeURIComponent(url)}&muted=${muted}`;
+          clipIframeFallback.src = playerUrl;
+          clipIframeFallback.classList.remove('clip-preload');
+          clipIframeFallback.classList.add('clip-active');
+          resolve(); // Playback delegated to iframe
         };
 
         activeVideoElement.addEventListener('canplay', onCanPlay);
@@ -7272,6 +7366,15 @@
         }
       }
 
+      // Apply texture overlay if configured
+      if (theme.textures) {
+        if (theme.textures.overlay) {
+          root.style.setProperty('--meet-texture', `url(${theme.textures.overlay})`);
+          root.style.setProperty('--meet-texture-opacity', theme.textures.opacity || '0.08');
+          console.log('[meet-theme] Texture applied:', theme.textures.overlay);
+        }
+      }
+
       // Set data-meet-theme attribute on body for CSS selector targeting
       document.body.setAttribute('data-meet-theme', theme.id || meetThemeId);
 
@@ -7279,9 +7382,10 @@
     }
 
     // Load meet theme - from URL param or from competition config
+    // Returns a promise so callers can wait for theme to be applied before rendering
     function loadMeetTheme(themeId) {
       console.log('[meet-theme] Loading theme:', themeId);
-      db.ref(`themes/${themeId}`).once('value')
+      return db.ref(`themes/${themeId}`).once('value')
         .then(snapshot => {
           const theme = snapshot.val();
           if (theme) {
@@ -7295,15 +7399,17 @@
         });
     }
 
+    // Store theme promise so URL preview mode can wait for it
+    let themeReadyPromise = Promise.resolve();
     if (meetThemeId) {
-      loadMeetTheme(meetThemeId);
+      themeReadyPromise = loadMeetTheme(meetThemeId);
     } else if (competitionId) {
       // Check competition config for a meetTheme
-      db.ref(`competitions/${competitionId}/config/meetTheme`).once('value')
+      themeReadyPromise = db.ref(`competitions/${competitionId}/config/meetTheme`).once('value')
         .then(snapshot => {
           const configThemeId = snapshot.val();
           if (configThemeId) {
-            loadMeetTheme(configThemeId);
+            return loadMeetTheme(configThemeId);
           }
         })
         .catch(error => {
@@ -7573,11 +7679,23 @@
      * Dual logos: returns Logo1 VS Logo2 layout
      * 3+ logos: returns row of logos
      */
+    function getTeamCountFromCompType(compType) {
+      if (!compType) return 7;
+      const ct = compType.toLowerCase();
+      if (ct.includes('dual')) return 2;
+      if (ct.includes('tri')) return 3;
+      if (ct.includes('quad')) return 4;
+      if (ct.includes('-5') || ct.includes('5-team')) return 5;
+      if (ct.includes('-6') || ct.includes('6-team')) return 6;
+      if (ct.includes('-7') || ct.includes('7-team')) return 7;
+      return 7;
+    }
+
     function buildStreamLogosHtml(data) {
-      // Collect team logos only for teams that have a name (non-empty)
-      // Placeholder teams (team3-7 in dual meets) have logos but no name
+      // Collect team logos only for teams within the competition's team count
+      const maxTeams = getTeamCountFromCompType(data.compType);
       const logos = [];
-      for (let i = 1; i <= 7; i++) {
+      for (let i = 1; i <= maxTeams; i++) {
         const teamName = data[`team${i}Name`];
         if (!teamName) continue;
         const teamLogo = data[`team${i}Logo`];
@@ -12240,9 +12358,10 @@
       },
 
       logos: (data) => {
-        // Collect all team logos that exist (filter out empty/placeholder)
+        // Collect team logos within the competition's team count (filter out empty/placeholder)
+        const maxTeams = getTeamCountFromCompType(data.compType);
         const logos = [];
-        for (let i = 1; i <= 7; i++) {
+        for (let i = 1; i <= maxTeams; i++) {
           const logo = data[`team${i}Logo`];
           if (logo && logo.trim() && !logo.includes('placeholder')) {
             logos.push(logo);
@@ -12609,6 +12728,36 @@
         return `<iframe src="${overlayUrl}" style="width: 1920px; height: 1080px; border: none; overflow: hidden;"></iframe>`;
       },
 
+      // Who to Watch — full-screen title card (sequenced by server)
+      'who-to-watch-title': (data) => {
+        const athleteName = encodeURIComponent(data.athleteName || '');
+        const teamName = encodeURIComponent(data.teamName || '');
+        const headline = encodeURIComponent(data.headline || '');
+        const body = encodeURIComponent(data.body || '');
+        const logo = encodeURIComponent(data.logoUrl || data.logo || '');
+        const imageUrl = encodeURIComponent(data.imageUrl || '');
+        const imageMode = data.imageMode || 'portrait';
+        const badge = data.badge !== undefined ? `&badge=${encodeURIComponent(data.badge)}` : '';
+        const meetTheme = data.meetTheme ? `&meetTheme=${encodeURIComponent(data.meetTheme)}` : '';
+        const adjustKeys = ['nameFontSize','bodyFontSize','headlineFontSize','textOffsetY','imageScale','imageOffsetX','imageOffsetY'];
+        const adjustParams = adjustKeys.filter(k => data[k] != null).map(k => `&${k}=${encodeURIComponent(data[k])}`).join('');
+        const overlayUrl = `/overlays/who-to-watch-title.html?athleteName=${athleteName}&teamName=${teamName}&headline=${headline}&body=${body}&logo=${logo}&imageUrl=${imageUrl}&imageMode=${imageMode}${badge}${meetTheme}${adjustParams}`;
+        return `<iframe src="${overlayUrl}" style="width: 1920px; height: 1080px; border: none; overflow: hidden;"></iframe>`;
+      },
+
+      // Who to Watch — lower-third overlay (during clip playback)
+      'who-to-watch-lower-third': (data) => {
+        const athleteName = encodeURIComponent(data.athleteName || '');
+        const logo = encodeURIComponent(data.logoUrl || data.logo || '');
+        const subtitle = encodeURIComponent(data.subtitle || '');
+        const statLabel = encodeURIComponent(data.statLabel || '');
+        const statValue = encodeURIComponent(data.statValue || '');
+        const headshot = encodeURIComponent(data.headshot || '');
+        const meetTheme = data.meetTheme ? `&meetTheme=${encodeURIComponent(data.meetTheme)}` : '';
+        const overlayUrl = `/overlays/who-to-watch.html?athleteName=${athleteName}&logo=${logo}&subtitle=${subtitle}&statLabel=${statLabel}&statValue=${statValue}&headshot=${headshot}${meetTheme}`;
+        return `<iframe src="${overlayUrl}" style="width: 1920px; height: 1080px; border: none; overflow: hidden;"></iframe>`;
+      },
+
       // Event Calendar - upcoming events list
       'event-calendar': (data) => {
         const logo = encodeURIComponent(getTeamLogoUrl(data.team1Name, data.team1Logo) || '');
@@ -12692,9 +12841,10 @@
       `,
 
       'frame-team-header': (data) => {
-        // Collect all team logos that exist
+        // Collect team logos within the competition's team count
+        const maxTeams = getTeamCountFromCompType(data.compType);
         const logos = [];
-        for (let i = 1; i <= 7; i++) {
+        for (let i = 1; i <= maxTeams; i++) {
           const logo = data[`team${i}Logo`];
           if (logo && logo.trim() && !logo.includes('placeholder')) {
             logos.push(logo);
@@ -13006,16 +13156,19 @@
 
     // If a graphic is specified in URL, render it and stay in preview mode
     // This is used by the URL Generator to preview graphics without Firebase interference
+    // Wait for theme to load first so logos and colors are applied before rendering
     if (urlGraphic && renderers[urlGraphic]) {
-      // Build data object from URL parameters for preview
-      const urlData = {};
-      for (const [key, value] of urlParams.entries()) {
-        if (key !== 'comp' && key !== 'graphic') {
-          urlData[key] = value;
+      themeReadyPromise.then(() => {
+        // Build data object from URL parameters for preview
+        const urlData = {};
+        for (const [key, value] of urlParams.entries()) {
+          if (key !== 'comp' && key !== 'graphic') {
+            urlData[key] = value;
+          }
         }
-      }
-      output.innerHTML = renderers[urlGraphic](urlData);
-      console.log(`Rendered URL-based graphic: ${urlGraphic} (preview mode - Firebase disabled)`);
+        output.innerHTML = renderers[urlGraphic](urlData);
+        console.log(`Rendered URL-based graphic: ${urlGraphic} (preview mode)`);
+      });
     }
 
     // Only listen to Firebase if NOT in URL preview mode
@@ -13161,11 +13314,11 @@
      * @param {Object} data - Clip data containing athleteName, teamName, teamLogo, apparatus
      */
     function updateClipOverlay(data) {
-      const { athleteName, teamName, teamLogo, apparatus } = data;
+      const { athleteName, teamName, teamLogo, apparatus, subtitle } = data;
 
       // Update athlete info
       clipAthleteNameEl.textContent = athleteName || '';
-      clipApparatusEl.textContent = getApparatusDisplayName(apparatus);
+      clipApparatusEl.textContent = apparatus ? getApparatusDisplayName(apparatus) : (subtitle || '');
       clipTeamNameEl.textContent = teamName || '';
 
       // Update team logo
@@ -13240,7 +13393,11 @@
     function handleClipPlayback(graphic, data) {
       console.log(`[clip-mode] handleClipPlayback called: ${graphic}`, data);
 
-      const { draftId, clipUrl, score, nextClipUrl, nextClipDraftId, nextClipData } = data;
+      const { draftId, clipUrl: rawClipUrl, score, nextClipUrl: rawNextClipUrl, nextClipDraftId, nextClipData } = data;
+
+      // Route R2 URLs through coordinator proxy to avoid auth/CORS issues
+      const clipUrl = proxyClipUrl(rawClipUrl);
+      const nextClipUrl = proxyClipUrl(rawNextClipUrl);
 
       // Validate required fields
       if (!clipUrl) {
@@ -13487,6 +13644,14 @@
 
       // Hide all video elements
       hideAllVideos();
+
+      // Hide iframe fallback
+      if (usingIframeFallback) {
+        clipIframeFallback.src = '';
+        clipIframeFallback.classList.remove('clip-active');
+        clipIframeFallback.classList.add('clip-preload');
+        usingIframeFallback = false;
+      }
 
       // Hide overlay
       clipOverlay.classList.remove('visible');
