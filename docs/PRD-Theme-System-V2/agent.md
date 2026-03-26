@@ -267,9 +267,14 @@ https://commentarygraphic.com/output.html?graphic=event-bar&meetTheme={themeId}&
 
 13. **Debug panel (Task 1.7):** Activated via `?debug=theme` URL param. Shows collapsible badge in bottom-right corner with theme status, rendering path (inline vs iframe), graphic ID, all 8 CSS variables with expected/actual comparison, logo attributes, and error messages. The panel is injected via `createDebugPanel()` after theme resolution, or `createEarlyDebugPanel()` for the early-return case when no theme is requested.
 
+14. **Per-graphic override implementation (Task 3.1):** theme-loader.js has two new functions:
+    - `detectGraphicId()` — extracts graphic ID from pathname (overlays) or `?graphic=`/`?mode=` params (output.html)
+    - `applyOverrides(theme, graphicId)` — sets `--{graphicId}-*` CSS variables from `theme.overrides[graphicId]`
+    Both output.html inline CSS and theme-overrides.css must use the 3-layer cascade for overrides to be visible.
+
 ---
 
-## Phase 3: Per-Graphic Override Architecture
+## Phase 3: Per-Graphic Override Architecture (IMPLEMENTED)
 
 ### CSS Variable Cascade (3 layers)
 

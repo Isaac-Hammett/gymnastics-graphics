@@ -383,6 +383,85 @@ window.themeReady = new Promise(resolve => { _resolveThemeReady = resolve; });
   }
 
   /**
+   * Detect graphic ID from current context
+   * @returns {string|null} Graphic ID or null if in live mode
+   */
+  function detectGraphicId() {
+    const pathname = window.location.pathname;
+
+    // Overlay files: extract from pathname
+    if (pathname.includes('/overlays/')) {
+      return pathname.split('/').pop().replace('.html', '');
+    }
+
+    // output.html with ?mode=clip or ?mode=clip-preview
+    const mode = params.get('mode');
+    if (mode === 'clip' || mode === 'clip-preview') {
+      return 'clip-overlay';
+    }
+
+    // output.html with ?graphic= param (preview mode)
+    const graphicParam = params.get('graphic');
+    if (graphicParam) {
+      return graphicParam;
+    }
+
+    // output.html live mode - cannot detect at load time
+    // Overrides will be applied in the currentGraphic listener
+    return null;
+  }
+
+  /**
+   * Apply per-graphic override CSS variables
+   * @param {Object} theme - Theme data (including overrides)
+   * @param {string} graphicId - Graphic ID to apply overrides for
+   * @returns {Object} Override status for debug panel
+   */
+  function applyOverrides(theme, graphicId) {
+    const overrideStatus = {
+      graphicId: graphicId,
+      hasOverrides: false,
+      applied: []
+    };
+
+    if (!theme || !theme.overrides || !graphicId) {
+      return overrideStatus;
+    }
+
+    const overrides = theme.overrides[graphicId];
+    if (!overrides) {
+      return overrideStatus;
+    }
+
+    overrideStatus.hasOverrides = true;
+    const root = document.documentElement;
+
+    // Map override properties to CSS variable names
+    // Pattern: --{graphicId}-{property}
+    const overrideMapping = {
+      headerBar: 'header-bg',
+      contentArea: 'content-bg',
+      bodyBackground: 'overlay-bg',
+      borderDivider: 'border-color',
+      badge: 'badge-bg',
+      badgeText: 'badge-text',
+      textOnHeader: 'header-text',
+      textOnContent: 'overlay-text'
+    };
+
+    for (const [propKey, cssSuffix] of Object.entries(overrideMapping)) {
+      if (overrides[propKey]) {
+        const varName = `--${graphicId}-${cssSuffix}`;
+        root.style.setProperty(varName, overrides[propKey]);
+        overrideStatus.applied.push({ name: varName, value: overrides[propKey] });
+        console.log(`[theme-loader] Override applied: ${varName} = ${overrides[propKey]}`);
+      }
+    }
+
+    return overrideStatus;
+  }
+
+  /**
    * Inject theme-overrides.css stylesheet
    */
   function injectOverrideStyles() {
@@ -408,7 +487,8 @@ window.themeReady = new Promise(resolve => { _resolveThemeReady = resolve; });
     startTime: Date.now(),
     endTime: null,
     theme: null,
-    error: null
+    error: null,
+    overrideStatus: null
   };
 
   /**
@@ -719,6 +799,11 @@ window.themeReady = new Promise(resolve => { _resolveThemeReady = resolve; });
 
         // Apply theme CSS variables
         applyTheme(theme, themeId);
+
+        // Apply per-graphic overrides if we can detect the graphic ID
+        const graphicId = detectGraphicId();
+        const overrideStatus = applyOverrides(theme, graphicId);
+        debugState.overrideStatus = overrideStatus;
 
         debugState.loadStatus = 'success';
         debugState.theme = theme;
