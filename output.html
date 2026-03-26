@@ -103,17 +103,24 @@
     }
     .event-bar-venue {
       background: #BFBFBF;
-      padding: 10px 40px;
+      padding: var(--event-bar-venue-padding-v, 10px) var(--event-bar-venue-padding-h, 40px);
       min-width: var(--event-bar-bar-min-width, 600px);
+      height: var(--event-bar-venue-height, auto);
       font-size: var(--event-bar-venue-font-size, 36px);
       font-weight: 900;
       color: #000;
       text-transform: uppercase;
       letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
     }
     .event-bar-details {
       background: #000;
-      padding: 10px 40px;
+      padding: var(--event-bar-details-padding-v, 10px) var(--event-bar-details-padding-h, 40px);
+      height: var(--event-bar-details-height, auto);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
     .event-bar-name {
       font-size: var(--event-bar-name-font-size, 28px);
@@ -5888,23 +5895,25 @@
     /* Warm Up Graphic */
     .graphic-warm-up {
       position: absolute;
-      bottom: 120px;
-      left: 100px;
+      bottom: var(--warm-up-bar-bottom, 120px);
+      left: var(--warm-up-bar-left, 100px);
       display: flex;
       flex-direction: row;
       animation: slideIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .warm-up-logo-section {
-      width: 100px;
-      background: #BFBFBF;
-      display: flex;
+      width: var(--warm-up-logo-container-width, 100px);
+      height: var(--warm-up-logo-container-height, auto);
+      background: var(--warm-up-logo-bg, #BFBFBF);
+      display: var(--warm-up-show-logo, flex);
       align-items: center;
       justify-content: center;
-      padding: 15px;
+      padding: var(--warm-up-logo-padding, 15px);
+      border-radius: var(--warm-up-logo-radius, 0px);
     }
     .warm-up-logo-section img {
-      width: 70px;
-      height: 70px;
+      width: var(--warm-up-logo-img-size, 70px);
+      height: var(--warm-up-logo-img-size, 70px);
       object-fit: contain;
     }
     .warm-up-content-section {
@@ -5913,11 +5922,14 @@
     }
     .warm-up-teams-row {
       background: #BFBFBF;
-      padding: 10px 40px;
-      min-width: 450px;
+      padding: var(--warm-up-venue-padding-v, 10px) var(--warm-up-venue-padding-h, 40px);
+      min-width: var(--warm-up-bar-min-width, 450px);
+      height: var(--warm-up-venue-height, auto);
+      display: flex;
+      align-items: center;
     }
     .warm-up-teams-text {
-      font-size: 30px;
+      font-size: var(--warm-up-venue-font-size, 30px);
       font-weight: 900;
       color: #000;
       text-transform: uppercase;
@@ -5925,10 +5937,14 @@
     }
     .warm-up-status-row {
       background: #000;
-      padding: 10px 40px;
+      padding: var(--warm-up-details-padding-v, 10px) var(--warm-up-details-padding-h, 40px);
+      height: var(--warm-up-details-height, auto);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
     .warm-up-status-text {
-      font-size: 28px;
+      font-size: var(--warm-up-name-font-size, 28px);
       font-weight: 800;
       color: #fff;
       text-transform: uppercase;
@@ -5938,23 +5954,25 @@
     /* Replay Graphic */
     .graphic-replay {
       position: absolute;
-      bottom: 120px;
-      left: 100px;
+      bottom: var(--replay-bar-bottom, 120px);
+      left: var(--replay-bar-left, 100px);
       display: flex;
       flex-direction: row;
       animation: slideIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .replay-logo-section {
-      width: 100px;
-      background: #BFBFBF;
-      display: flex;
+      width: var(--replay-logo-container-width, 100px);
+      height: var(--replay-logo-container-height, auto);
+      background: var(--replay-logo-bg, #BFBFBF);
+      display: var(--replay-show-logo, flex);
       align-items: center;
       justify-content: center;
-      padding: 15px;
+      padding: var(--replay-logo-padding, 15px);
+      border-radius: var(--replay-logo-radius, 0px);
     }
     .replay-logo-section img {
-      width: 70px;
-      height: 70px;
+      width: var(--replay-logo-img-size, 70px);
+      height: var(--replay-logo-img-size, 70px);
       object-fit: contain;
     }
     .replay-content-section {
@@ -5963,11 +5981,14 @@
     }
     .replay-title-row {
       background: #BFBFBF;
-      padding: 10px 40px;
-      min-width: 450px;
+      padding: var(--replay-venue-padding-v, 10px) var(--replay-venue-padding-h, 40px);
+      min-width: var(--replay-bar-min-width, 450px);
+      height: var(--replay-venue-height, auto);
+      display: flex;
+      align-items: center;
     }
     .replay-title-text {
-      font-size: 30px;
+      font-size: var(--replay-venue-font-size, 30px);
       font-weight: 900;
       color: #000;
       text-transform: uppercase;
@@ -5975,10 +5996,14 @@
     }
     .replay-status-row {
       background: #000;
-      padding: 10px 40px;
+      padding: var(--replay-details-padding-v, 10px) var(--replay-details-padding-h, 40px);
+      height: var(--replay-details-height, auto);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
     .replay-status-text {
-      font-size: 28px;
+      font-size: var(--replay-name-font-size, 28px);
       font-weight: 800;
       color: #fff;
       text-transform: uppercase;
@@ -6551,6 +6576,23 @@
       } else if (event.data?.type === 'clipError' && usingIframeFallback && currentClipDraftId) {
         console.log('[clip] Iframe clip-player reported error:', event.data.message);
         writeClipStatus(currentClipDraftId, 'error', { errorMessage: event.data.message || 'Iframe playback error' });
+      } else if (event.data?.type === 'measureHeights') {
+        // Theme Editor requests pixel-perfect element heights via postMessage
+        const selectors = event.data.selectors;
+        const measurements = {};
+        for (const [key, selector] of Object.entries(selectors || {})) {
+          const el = document.querySelector(selector);
+          if (el) {
+            measurements[key] = Math.round(el.getBoundingClientRect().height);
+          }
+        }
+        if (event.source) {
+          event.source.postMessage({
+            type: 'heightMeasurements',
+            graphic: event.data.graphic,
+            measurements: measurements,
+          }, '*');
+        }
       }
     });
 
@@ -13253,6 +13295,9 @@
       // Counter for "last one wins" behavior during rapid graphic changes while theme loads
       let renderCounter = 0;
 
+      // Track last rendered graphic for per-graphic override cleanup (Phase 8A)
+      let lastLiveGraphicId = null;
+
       db.ref(`competitions/${competitionId}/currentGraphic`).on('value', (snapshot) => {
         const state = snapshot.val();
 
@@ -13265,6 +13310,11 @@
           }
           // Hide animated background when state is cleared (live mode)
           hideAnimatedBackground();
+          // Clear per-graphic overrides (Phase 8A)
+          if (lastLiveGraphicId && window.themeClearOverrides) {
+            window.themeClearOverrides(lastLiveGraphicId);
+            lastLiveGraphicId = null;
+          }
           return;
         }
 
@@ -13291,6 +13341,14 @@
             if (isClipTypeGraphic) {
               // Clear any existing graphic output (video elements render separately)
               output.innerHTML = '';
+              // Apply per-graphic overrides for clip-overlay (Phase 8A)
+              if (window.themeApplyOverrides && window.__themeData) {
+                if (lastLiveGraphicId && lastLiveGraphicId !== 'clip-overlay') {
+                  window.themeClearOverrides(lastLiveGraphicId);
+                }
+                window.themeApplyOverrides(window.__themeData, 'clip-overlay');
+                lastLiveGraphicId = 'clip-overlay';
+              }
               // Start clip playback (will be implemented in Task 3/4)
               handleClipPlayback(graphic, data);
             } else {
@@ -13298,6 +13356,11 @@
               // This ensures no stale video remains when OBS switches scenes
               stopClipPlayback();
               output.innerHTML = '';
+              // Clear clip-overlay overrides (Phase 8A)
+              if (lastLiveGraphicId && window.themeClearOverrides) {
+                window.themeClearOverrides(lastLiveGraphicId);
+                lastLiveGraphicId = null;
+              }
               console.log(`[clip-mode] Non-clip graphic received: ${graphic}, cleared output`);
             }
           } else {
@@ -13330,7 +13393,22 @@
             } else if (graphic === 'clear' || !renderers[graphic]) {
               output.innerHTML = '';
               hideAnimatedBackground();
+              // Clear per-graphic overrides on clear (Phase 8A)
+              if (lastLiveGraphicId && window.themeClearOverrides) {
+                window.themeClearOverrides(lastLiveGraphicId);
+                lastLiveGraphicId = null;
+              }
             } else {
+              // Apply per-graphic overrides before rendering (Phase 8A)
+              if (window.themeApplyOverrides && window.__themeData) {
+                // Clear previous graphic's overrides if different
+                if (lastLiveGraphicId && lastLiveGraphicId !== graphic && window.themeClearOverrides) {
+                  window.themeClearOverrides(lastLiveGraphicId);
+                }
+                window.themeApplyOverrides(window.__themeData, graphic);
+                lastLiveGraphicId = graphic;
+              }
+
               // Render regular graphic using existing renderers
               output.innerHTML = renderers[graphic](data);
 
