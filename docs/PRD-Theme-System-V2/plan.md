@@ -410,7 +410,7 @@ Do NOT remove existing class names — add the overlay names alongside.
 
 ---
 
-### Task 1.7b — Producer Theme Error Log Panel — NOT STARTED
+### Task 1.7b — Producer Theme Error Log Panel — COMPLETE
 
 **Goal:** Show controller displays a persistent error badge + scrollable error log for theme failures.
 
@@ -439,12 +439,19 @@ Do NOT remove existing class names — add the overlay names alongside.
    - Only render if errors exist
 
 **Verify:**
-- [ ] Build passes: `cd show-controller && npm run build`
+- [x] Build passes: `cd show-controller && npm run build`
 - [ ] Trigger a theme error (load output.html with bad theme ID + valid compId)
 - [ ] Producer view shows red "Theme: 1 error" badge
 - [ ] Click badge → error log panel opens with error details
 - [ ] Copy button copies formatted error text to clipboard
 - [ ] Dismiss All clears errors from Firebase and hides badge
+
+**Status:** COMPLETE — Build passes. Components created:
+- `useThemeErrors.js`: Hook subscribing to `production/themeErrors/` with clear functions
+- `ThemeErrorLog.jsx`: Collapsible panel + `ThemeErrorBadge` inline badge
+- ProducerView: Badge in header, panel in right column after AlertPanel
+
+Live verification requires deployment and triggering a theme error in production (will be verified in Task 1.8a/b/c).
 
 **Deploy:** Build React SPA + deploy per CLAUDE.md step 1. Also deploy `output.html` + `overlays/` per step 2. Verify at `https://commentarygraphic.com`.
 
@@ -1102,3 +1109,4 @@ Phase 4 (depends on Phase 3):
 - LEARNING: Local theme tests show "Theme not found" warnings because test themes like `pink-meet` don't exist in Firebase. The integration works correctly — verify by checking `window.themeReady` resolves and theme-loader.js logs appear in console. (found during Task 1.2)
 - LEARNING: Task 1.5 was already complete — the MEET THEME OVERRIDES section in output.html already used CSS variables with fallbacks from the original implementation. Always grep to verify current state before implementing. (found during Task 1.5)
 - LEARNING: The debug panel requires handling the early-return case (no meetTheme and no comp) separately since the main createDebugPanel() function isn't defined yet at that point. Used a standalone createEarlyDebugPanel() function for this path. (found during Task 1.7)
+- LEARNING: Firebase subscription hooks use `remove()` from firebase/database for deleting data. Import it in the hook file alongside other firebase functions. The pattern from useProductionAlerts.js and AlertPanel.jsx provided a clean structure for error log components. (found during Task 1.7b)

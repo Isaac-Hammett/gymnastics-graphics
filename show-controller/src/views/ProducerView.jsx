@@ -17,7 +17,9 @@ import CameraRuntimePanel from '../components/CameraRuntimePanel';
 import OverrideLog from '../components/OverrideLog';
 import AlertPanel from '../components/AlertPanel';
 import ScoreBugPanel from '../components/ScoreBugPanel';
+import ThemeErrorLog, { ThemeErrorBadge } from '../components/ThemeErrorLog';
 import { useAlerts } from '../hooks/useAlerts';
+import { useThemeErrors } from '../hooks/useThemeErrors';
 
 // Playout components (PRD Clip Integration)
 import PlayoutStatusBar from '../components/playout/PlayoutStatusBar';
@@ -156,6 +158,14 @@ export default function ProducerView() {
     refresh: refreshAI,
     error: aiError
   } = useAIContext();
+
+  // Theme errors state
+  const {
+    errors: themeErrors,
+    errorCount: themeErrorCount,
+    clearError: clearThemeError,
+    clearAllErrors: clearAllThemeErrors
+  } = useThemeErrors(compId);
 
   // RTN Stats - check staleness for auto-refresh before show start
   const { isStale: rtnStatsStale, refresh: refreshRtnStats, progress: rtnProgress } = useRtnStats(compId, competitionConfig);
@@ -644,6 +654,10 @@ export default function ProducerView() {
                   <span>{isReloadingRundown ? 'Reloading...' : 'Reload'}</span>
                 </button>
               </div>
+            )}
+            {/* Theme error badge */}
+            {themeErrorCount > 0 && (
+              <ThemeErrorBadge errorCount={themeErrorCount} />
             )}
             {/* Alert count badge */}
             {(criticalCount > 0 || warningCount > 0) && (
@@ -1255,6 +1269,14 @@ export default function ProducerView() {
               alerts={alerts}
               onAcknowledge={acknowledgeAlert}
               onAcknowledgeAll={acknowledgeAll}
+              collapsed={true}
+            />
+
+            {/* Theme Error Log Panel - theme loading errors */}
+            <ThemeErrorLog
+              errors={themeErrors}
+              onClear={clearThemeError}
+              onClearAll={clearAllThemeErrors}
               collapsed={true}
             />
 
