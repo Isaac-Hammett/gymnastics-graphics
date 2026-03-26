@@ -1102,6 +1102,81 @@ export default function WhoToWatchEditor({
           adjustments={config.lowerThirdAdjustments || {}}
         />
 
+        {/* Lower-Third Adjustments — fine-tuning controls */}
+        <details className="text-xs">
+          <summary className="text-zinc-600 cursor-pointer hover:text-zinc-400">Lower-Third Adjustments</summary>
+          <div className="mt-2 space-y-2 bg-zinc-800/50 rounded p-2">
+            {/* Theme Controls */}
+            <div className="text-[10px] text-zinc-500 uppercase tracking-wide font-medium">Theme</div>
+            <div className="flex items-center gap-2">
+              <label className="text-[10px] text-zinc-500 w-20 shrink-0">Theme</label>
+              <select
+                value={themeOverride || meetTheme || ''}
+                onChange={(e) => setThemeOverride(e.target.value)}
+                className="flex-1 bg-zinc-900 border border-zinc-600 rounded text-white text-[10px] px-1 py-0.5 focus:outline-none focus:border-rose-500"
+              >
+                <option value="">None (default)</option>
+                {Object.entries(availableThemes).map(([id, theme]) => (
+                  <option key={id} value={id}>{theme.name || id}</option>
+                ))}
+              </select>
+              {(themeOverride || meetTheme) && (
+                <button type="button" onClick={() => setThemeOverride('')} className="text-[10px] text-zinc-600 hover:text-zinc-400">&times;</button>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-[10px] text-zinc-500 w-20 shrink-0">Background</label>
+              <input type="color" value={(config.lowerThirdAdjustments || {}).bgColor || '#1a2332'} onChange={(e) => updateField('lowerThirdAdjustments', { ...(config.lowerThirdAdjustments || {}), bgColor: e.target.value })} className="w-6 h-5 bg-transparent border-0 cursor-pointer" />
+              <input type="text" value={(config.lowerThirdAdjustments || {}).bgColor || ''} onChange={(e) => updateField('lowerThirdAdjustments', { ...(config.lowerThirdAdjustments || {}), bgColor: e.target.value })} placeholder="#hex" className="flex-1 bg-zinc-900 border border-zinc-600 rounded text-white text-[10px] px-1 py-0.5 focus:outline-none focus:border-rose-500" />
+              <button type="button" onClick={() => updateField('lowerThirdAdjustments', { ...(config.lowerThirdAdjustments || {}), bgColor: '' })} className="text-[10px] text-zinc-600 hover:text-zinc-400">&times;</button>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-[10px] text-zinc-500 w-20 shrink-0">Accent</label>
+              <input type="color" value={(config.lowerThirdAdjustments || {}).accentColor || '#3b82f6'} onChange={(e) => updateField('lowerThirdAdjustments', { ...(config.lowerThirdAdjustments || {}), accentColor: e.target.value })} className="w-6 h-5 bg-transparent border-0 cursor-pointer" />
+              <input type="text" value={(config.lowerThirdAdjustments || {}).accentColor || ''} onChange={(e) => updateField('lowerThirdAdjustments', { ...(config.lowerThirdAdjustments || {}), accentColor: e.target.value })} placeholder="#hex" className="flex-1 bg-zinc-900 border border-zinc-600 rounded text-white text-[10px] px-1 py-0.5 focus:outline-none focus:border-rose-500" />
+              <button type="button" onClick={() => updateField('lowerThirdAdjustments', { ...(config.lowerThirdAdjustments || {}), accentColor: '' })} className="text-[10px] text-zinc-600 hover:text-zinc-400">&times;</button>
+            </div>
+
+            {/* Badge Controls */}
+            <div className="text-[10px] text-zinc-500 uppercase tracking-wide font-medium mt-2">Badge</div>
+            <div className="flex items-center gap-2">
+              <label className="text-[10px] text-zinc-500 w-20 shrink-0">Badge text</label>
+              <input type="text" value={(config.lowerThirdAdjustments || {}).badgeText !== undefined ? (config.lowerThirdAdjustments || {}).badgeText : 'Who to Watch'} onChange={(e) => updateField('lowerThirdAdjustments', { ...(config.lowerThirdAdjustments || {}), badgeText: e.target.value })} placeholder="Who to Watch" className="flex-1 bg-zinc-900 border border-zinc-600 rounded text-white text-[10px] px-1 py-0.5 focus:outline-none focus:border-rose-500" />
+              <button type="button" onClick={() => { const adj = { ...(config.lowerThirdAdjustments || {}) }; delete adj.badgeText; updateField('lowerThirdAdjustments', adj); }} className="text-[10px] text-zinc-600 hover:text-zinc-400">&times;</button>
+            </div>
+            {(config.lowerThirdAdjustments || {}).badgeText === '' && (
+              <p className="text-[10px] text-zinc-500 italic">Badge hidden (empty text)</p>
+            )}
+            <ValueStepper label="Badge size" value={(config.lowerThirdAdjustments || {}).badgeFontSize} defaultValue={36} min={8} onChange={(v) => updateField('lowerThirdAdjustments', { ...(config.lowerThirdAdjustments || {}), badgeFontSize: v })} onReset={() => { const adj = { ...(config.lowerThirdAdjustments || {}) }; delete adj.badgeFontSize; updateField('lowerThirdAdjustments', adj); }} />
+
+            {/* Text Controls */}
+            <div className="text-[10px] text-zinc-500 uppercase tracking-wide font-medium mt-2">Text</div>
+            <ValueStepper label="Name size" value={(config.lowerThirdAdjustments || {}).nameFontSize} defaultValue={32} min={8} onChange={(v) => updateField('lowerThirdAdjustments', { ...(config.lowerThirdAdjustments || {}), nameFontSize: v })} onReset={() => { const adj = { ...(config.lowerThirdAdjustments || {}) }; delete adj.nameFontSize; updateField('lowerThirdAdjustments', adj); }} />
+            <ValueStepper label="Subtitle size" value={(config.lowerThirdAdjustments || {}).subtitleFontSize} defaultValue={18} min={8} onChange={(v) => updateField('lowerThirdAdjustments', { ...(config.lowerThirdAdjustments || {}), subtitleFontSize: v })} onReset={() => { const adj = { ...(config.lowerThirdAdjustments || {}) }; delete adj.subtitleFontSize; updateField('lowerThirdAdjustments', adj); }} />
+            <ValueStepper label="Stat size" value={(config.lowerThirdAdjustments || {}).statFontSize} defaultValue={18} min={8} onChange={(v) => updateField('lowerThirdAdjustments', { ...(config.lowerThirdAdjustments || {}), statFontSize: v })} onReset={() => { const adj = { ...(config.lowerThirdAdjustments || {}) }; delete adj.statFontSize; updateField('lowerThirdAdjustments', adj); }} />
+
+            {/* Headshot Controls */}
+            <div className="text-[10px] text-zinc-500 uppercase tracking-wide font-medium mt-2">Headshot</div>
+            <ValueStepper label="Size" value={(config.lowerThirdAdjustments || {}).headshotSize} defaultValue={110} min={20} step={5} onChange={(v) => updateField('lowerThirdAdjustments', { ...(config.lowerThirdAdjustments || {}), headshotSize: v })} onReset={() => { const adj = { ...(config.lowerThirdAdjustments || {}) }; delete adj.headshotSize; updateField('lowerThirdAdjustments', adj); }} />
+            <div className="flex items-center gap-2">
+              <label className="text-[10px] text-zinc-500 w-20 shrink-0">Show</label>
+              <input type="checkbox" checked={(config.lowerThirdAdjustments || {}).showHeadshot !== false} onChange={(e) => updateField('lowerThirdAdjustments', { ...(config.lowerThirdAdjustments || {}), showHeadshot: e.target.checked })} className="accent-rose-500 cursor-pointer" />
+              <span className="text-[10px] text-zinc-400">{(config.lowerThirdAdjustments || {}).showHeadshot !== false ? 'Visible' : 'Hidden'}</span>
+            </div>
+
+            {/* Logo Controls */}
+            <div className="text-[10px] text-zinc-500 uppercase tracking-wide font-medium mt-2">Logo</div>
+            <ValueStepper label="Size" value={(config.lowerThirdAdjustments || {}).logoSize} defaultValue={50} min={10} step={5} onChange={(v) => updateField('lowerThirdAdjustments', { ...(config.lowerThirdAdjustments || {}), logoSize: v })} onReset={() => { const adj = { ...(config.lowerThirdAdjustments || {}) }; delete adj.logoSize; updateField('lowerThirdAdjustments', adj); }} />
+
+            {/* Position Controls */}
+            <div className="text-[10px] text-zinc-500 uppercase tracking-wide font-medium mt-2">Position</div>
+            <ValueStepper label="Bottom" value={(config.lowerThirdAdjustments || {}).cardBottom} defaultValue={120} min={0} step={10} onChange={(v) => updateField('lowerThirdAdjustments', { ...(config.lowerThirdAdjustments || {}), cardBottom: v })} onReset={() => { const adj = { ...(config.lowerThirdAdjustments || {}) }; delete adj.cardBottom; updateField('lowerThirdAdjustments', adj); }} />
+            <ValueStepper label="Left" value={(config.lowerThirdAdjustments || {}).cardLeft} defaultValue={100} min={0} step={10} onChange={(v) => updateField('lowerThirdAdjustments', { ...(config.lowerThirdAdjustments || {}), cardLeft: v })} onReset={() => { const adj = { ...(config.lowerThirdAdjustments || {}) }; delete adj.cardLeft; updateField('lowerThirdAdjustments', adj); }} />
+            <ValueStepper label="Min width" value={(config.lowerThirdAdjustments || {}).cardMinWidth} defaultValue={600} min={200} step={50} onChange={(v) => updateField('lowerThirdAdjustments', { ...(config.lowerThirdAdjustments || {}), cardMinWidth: v })} onReset={() => { const adj = { ...(config.lowerThirdAdjustments || {}) }; delete adj.cardMinWidth; updateField('lowerThirdAdjustments', adj); }} />
+            <ValueStepper label="Max width" value={(config.lowerThirdAdjustments || {}).cardMaxWidth} defaultValue={900} min={300} step={50} onChange={(v) => updateField('lowerThirdAdjustments', { ...(config.lowerThirdAdjustments || {}), cardMaxWidth: v })} onReset={() => { const adj = { ...(config.lowerThirdAdjustments || {}) }; delete adj.cardMaxWidth; updateField('lowerThirdAdjustments', adj); }} />
+          </div>
+        </details>
+
         {!isValid && (
           <p className="text-xs text-rose-400 mt-1">Select a team and athlete to continue</p>
         )}
