@@ -265,6 +265,8 @@ https://commentarygraphic.com/output.html?graphic=event-bar&meetTheme={themeId}&
 
 12. **Coordinator deploy requires Firebase credentials:** Always restart with `GOOGLE_APPLICATION_CREDENTIALS=/opt/gymnastics-graphics/firebase-service-account.json`.
 
+13. **Debug panel (Task 1.7):** Activated via `?debug=theme` URL param. Shows collapsible badge in bottom-right corner with theme status, rendering path (inline vs iframe), graphic ID, all 8 CSS variables with expected/actual comparison, logo attributes, and error messages. The panel is injected via `createDebugPanel()` after theme resolution, or `createEarlyDebugPanel()` for the early-return case when no theme is requested.
+
 ---
 
 ## Phase 3: Per-Graphic Override Architecture
