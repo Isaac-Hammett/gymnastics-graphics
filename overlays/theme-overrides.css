@@ -22,20 +22,30 @@
    HEADER BARS
    Used in: team-roster, event-frame, hosts, coaches, team-stats
    Per-graphic image overrides: --{graphicId}-header-bg-image
+   Note: team-stats uses team1-stats, team2-stats, etc. graphic IDs
    ============================================================ */
 
 [data-meet-theme] .header-bar,
 [data-meet-theme] .frame-header,
-[data-meet-theme] .hosts-header,
-[data-meet-theme] .stats-header {
+[data-meet-theme] .hosts-header {
   background-color: var(--meet-header-bg, #d4d4d8);
   color: var(--meet-header-text, #000);
 }
 
+/* Team stats header - 3-layer cascade for per-graphic overrides */
+/* Note: The actual graphic IDs are team1-stats through team7-stats */
+[data-meet-theme] .stats-header {
+  background-color: var(--team1-stats-header-bg, var(--team2-stats-header-bg, var(--team3-stats-header-bg, var(--team4-stats-header-bg, var(--team5-stats-header-bg, var(--team6-stats-header-bg, var(--team7-stats-header-bg, var(--meet-header-bg, #d4d4d8))))))));
+  color: var(--team1-stats-header-text, var(--team2-stats-header-text, var(--team3-stats-header-text, var(--team4-stats-header-text, var(--team5-stats-header-text, var(--team6-stats-header-text, var(--team7-stats-header-text, var(--meet-header-text, #000))))))));
+}
+
 [data-meet-theme] .header-title,
-[data-meet-theme] .hosts-title,
-[data-meet-theme] .stats-team-name {
+[data-meet-theme] .hosts-title {
   color: var(--meet-header-text, #000);
+}
+
+[data-meet-theme] .stats-team-name {
+  color: var(--team1-stats-header-text, var(--team2-stats-header-text, var(--team3-stats-header-text, var(--team4-stats-header-text, var(--team5-stats-header-text, var(--team6-stats-header-text, var(--team7-stats-header-text, var(--meet-header-text, #000))))))));
 }
 
 /* ============================================================
@@ -52,19 +62,20 @@
   color: var(--event-bar-header-text, var(--meet-header-text, #000));
 }
 
+/* Event bar details - 3-layer cascade for per-graphic overrides */
 [data-meet-theme] .details-row {
-  background: var(--meet-content-bg, #000);
+  background: var(--event-bar-content-bg, var(--meet-content-bg, #000));
 }
 
 [data-meet-theme] .event-bar-details {
-  background: var(--meet-content-bg, #000);
+  background: var(--event-bar-content-bg, var(--meet-content-bg, #000));
 }
 
 [data-meet-theme] .event-bar-name,
 [data-meet-theme] .event-bar-location,
 [data-meet-theme] .teams-text,
 [data-meet-theme] .location-text {
-  color: var(--meet-overlay-text, #fff);
+  color: var(--event-bar-overlay-text, var(--meet-overlay-text, #fff));
 }
 
 /* ============================================================
@@ -302,6 +313,7 @@
 /* ============================================================
    WARM-UP / REPLAY
    Header = --meet-header-bg, Status row = --meet-content-bg
+   3-layer cascade: per-graphic → theme → fallback
    ============================================================ */
 
 [data-meet-theme] .warmup-header,
@@ -318,7 +330,7 @@
   color: var(--meet-overlay-text, #fff);
 }
 
-/* Warm-up detailed structure */
+/* Warm-up detailed structure - 3-layer cascade */
 [data-meet-theme] .warm-up-logo-section {
   background: rgba(255, 255, 255, 0.92);
 }
@@ -326,19 +338,20 @@
   background: transparent;
 }
 [data-meet-theme] .warm-up-teams-row {
-  background: var(--meet-header-bg, #BFBFBF);
+  background: var(--warm-up-header-bg, var(--meet-header-bg, #BFBFBF));
+  color: var(--warm-up-header-text, var(--meet-header-text, #000));
 }
 [data-meet-theme] .warm-up-teams-text {
-  color: var(--meet-header-text, #000);
+  color: var(--warm-up-header-text, var(--meet-header-text, #000));
 }
 [data-meet-theme] .warm-up-status-row {
-  background: var(--meet-content-bg, #000);
+  background: var(--warm-up-content-bg, var(--meet-content-bg, #000));
 }
 [data-meet-theme] .warm-up-status-text {
-  color: var(--meet-overlay-text, #fff);
+  color: var(--warm-up-overlay-text, var(--meet-overlay-text, #fff));
 }
 
-/* Replay detailed structure */
+/* Replay detailed structure - 3-layer cascade */
 [data-meet-theme] .replay-logo-section {
   background: rgba(255, 255, 255, 0.92);
 }
@@ -346,16 +359,17 @@
   background: transparent;
 }
 [data-meet-theme] .replay-title-row {
-  background: var(--meet-header-bg, #BFBFBF);
+  background: var(--replay-header-bg, var(--meet-header-bg, #BFBFBF));
+  color: var(--replay-header-text, var(--meet-header-text, #000));
 }
 [data-meet-theme] .replay-title-text {
-  color: var(--meet-header-text, #000);
+  color: var(--replay-header-text, var(--meet-header-text, #000));
 }
 [data-meet-theme] .replay-status-row {
-  background: var(--meet-content-bg, #000);
+  background: var(--replay-content-bg, var(--meet-content-bg, #000));
 }
 [data-meet-theme] .replay-status-text {
-  color: var(--meet-overlay-text, #fff);
+  color: var(--replay-overlay-text, var(--meet-overlay-text, #fff));
 }
 
 /* ============================================================
