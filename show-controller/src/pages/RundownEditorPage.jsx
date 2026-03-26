@@ -51,8 +51,10 @@ import { analyzeCompetitionContext, analyzeSegmentOrder, analyzeCompetitionForma
 import { useCompetition } from '../context/CompetitionContext';
 import { useOBS } from '../context/OBSContext';
 import { useShow } from '../context/ShowContext';
+import { useTeamsDatabase } from '../hooks/useTeamsDatabase';
 import PlayoutRulesEditor, { isPlayoutRulesValid } from '../components/playout/PlayoutRulesEditor';
 import ContentSequenceEditor, { isContentSequenceValid } from '../components/playout/ContentSequenceEditor';
+import WhoToWatchEditor, { isWhoToWatchValid } from '../components/playout/WhoToWatchEditor';
 
 // Hardcoded competition context per PRD (Phase 0B)
 const DUMMY_COMPETITION = {
@@ -197,6 +199,7 @@ const SEGMENT_TYPES = [
   { value: 'graphic', label: 'Graphic' },
   { value: 'playout', label: 'Playout' },
   { value: 'content-sequence', label: 'Content Sequence' },
+  { value: 'who-to-watch', label: 'Who to Watch' },
 ];
 
 // Type badge colors
@@ -209,6 +212,7 @@ const TYPE_COLORS = {
   graphic: 'bg-pink-500/20 text-pink-400 border-pink-500/30',
   playout: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
   'content-sequence': 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+  'who-to-watch': 'bg-rose-500/20 text-rose-400 border-rose-500/30',
 };
 
 // Row background colors by segment type (Phase 10: Task 77)
@@ -222,6 +226,7 @@ const DEFAULT_TYPE_ROW_COLORS = {
   graphic: { color: 'pink', border: 'border-l-pink-500', bg: 'bg-pink-500/5' },
   playout: { color: 'cyan', border: 'border-l-cyan-500', bg: 'bg-cyan-500/5' },
   'content-sequence': { color: 'amber', border: 'border-l-amber-500', bg: 'bg-amber-500/5' },
+  'who-to-watch': { color: 'rose', border: 'border-l-rose-500', bg: 'bg-rose-500/5' },
 };
 
 // Available color options for customization (Phase 10: Task 78)
@@ -494,6 +499,7 @@ export default function RundownEditorPage() {
   // Get live data from contexts (Task 16: Replace hardcoded picker data)
   const { competitionConfig } = useCompetition();
   const { obsState } = useOBS();
+  const { getTeamRosterWithHeadshots, getHeadshot, resolveSchoolKey, getAthleteMedia, saveAthleteMedia } = useTeamsDatabase();
 
   // Derive real competition object from Firebase config, falling back to DUMMY_COMPETITION while loading
   const competition = useMemo(() => {
@@ -2038,6 +2044,8 @@ export default function RundownEditorPage() {
       // Content sequence for 'content-sequence' type segments (Stage B: Task 8)
       ...(segment.contentSequence && { contentSequence: segment.contentSequence }),
       ...(segment.advanceCondition && { advanceCondition: segment.advanceCondition }),
+      // Who to Watch data for 'who-to-watch' type segments
+      ...(segment.whoToWatch && { whoToWatch: segment.whoToWatch }),
     };
   }
 
@@ -3231,6 +3239,21 @@ export default function RundownEditorPage() {
         params.set('meetTheme', meetThemeId);
       }
 
+      // Pass theme sponsors for sponsor graphics
+      if (graphicId.startsWith('sponsors-') && themeData?.sponsors?.length > 0) {
+        const capped = themeData.sponsors.slice(0, 8).map(s => ({
+          name: s.name, url: s.url,
+          ...(s.scale && s.scale !== 100 ? { scale: s.scale } : {}),
+          ...(s.offsetX ? { offsetX: s.offsetX } : {}),
+          ...(s.offsetY ? { offsetY: s.offsetY } : {}),
+          ...(s.cropX != null ? { cropX: s.cropX } : {}),
+          ...(s.cropY != null ? { cropY: s.cropY } : {}),
+          ...(s.cropW != null ? { cropW: s.cropW } : {}),
+          ...(s.cropH != null ? { cropH: s.cropH } : {}),
+        }));
+        params.set('sponsors', JSON.stringify(capped));
+      }
+
       return `${baseUrl}/output.html?${params.toString()}`;
     }
 
@@ -3277,6 +3300,7 @@ export default function RundownEditorPage() {
         graphic: { bg: 'rgba(236,72,153,0.2)', text: '#f472b6', border: 'rgba(236,72,153,0.3)' },
         playout: { bg: 'rgba(6,182,212,0.2)', text: '#22d3ee', border: 'rgba(6,182,212,0.3)' },
         'content-sequence': { bg: 'rgba(245,158,11,0.2)', text: '#fbbf24', border: 'rgba(245,158,11,0.3)' },
+        'who-to-watch': { bg: 'rgba(244,63,94,0.2)', text: '#fb7185', border: 'rgba(244,63,94,0.3)' },
       };
       const tc = typeColors[segType] || typeColors.live;
 
@@ -3287,8 +3311,8 @@ export default function RundownEditorPage() {
       if (graphicId && iframeUrl) {
         // Graphic segment — render via output.html iframe
         previewContent = `
-          <div class="card-preview" style="position:relative;width:100%;padding-top:56.25%;background:#18181b;border-radius:8px;overflow:hidden;">
-            <iframe src="${iframeUrl}" style="position:absolute;top:0;left:0;width:1920px;height:1080px;border:none;transform-origin:top left;transform:scale(0.1875);pointer-events:none;" loading="lazy" sandbox="allow-scripts allow-same-origin"></iframe>
+          <div class="card-preview" style="position:relative;width:100%;padding-top:56.25%;background:var(--meet-overlay-bg, #18181b);border-radius:8px;overflow:hidden;">
+            <iframe src="${iframeUrl}" style="position:absolute;top:0;left:0;width:1920px;height:1080px;border:none;transform-origin:top left;transform:scale(0.1875);pointer-events:none;" loading="lazy"></iframe>
           </div>`;
       } else if (segType === 'live') {
         previewContent = `
@@ -3335,6 +3359,15 @@ export default function RundownEditorPage() {
             <div style="font-size:32px;">📋</div>
             <div style="font-size:14px;font-weight:600;color:#fbbf24;">CONTENT SEQUENCE</div>
             <div style="font-size:11px;color:#fde68a;">${stepCount} step${stepCount !== 1 ? 's' : ''}</div>
+          </div>`;
+      } else if (segType === 'who-to-watch') {
+        const athleteName = seg.whoToWatch?.athleteName || 'Unnamed';
+        const teamName = seg.whoToWatch?.teamName || '';
+        previewContent = `
+          <div class="card-preview card-preview-meta" style="background:#4c0519;">
+            <div style="font-size:32px;">⭐</div>
+            <div style="font-size:14px;font-weight:600;color:#fb7185;">WHO TO WATCH</div>
+            <div style="font-size:11px;color:#fda4af;">${athleteName}${teamName ? ' — ' + teamName : ''}</div>
           </div>`;
       } else {
         // Generic fallback
@@ -3437,88 +3470,88 @@ export default function RundownEditorPage() {
   <title>Rundown Preview — ${competition.name}</title>
   <style>${themeCssVars}
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif; background: #09090b; color: #e4e4e7; min-height: 100vh; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif; background: var(--meet-overlay-bg, #09090b); color: var(--meet-overlay-text, #e4e4e7); min-height: 100vh; }
 
-    .header { background: #18181b; border-bottom: 1px solid #27272a; padding: 20px 24px; position: sticky; top: 0; z-index: 100; }
+    .header { background: var(--meet-header-bg, #18181b); border-bottom: 1px solid var(--meet-border-color, #27272a); padding: 20px 24px; position: sticky; top: 0; z-index: 100; }
     .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-    .header h1 { font-size: 20px; font-weight: 700; color: #fafafa; }
-    .header-meta { font-size: 13px; color: #71717a; }
+    .header h1 { font-size: 20px; font-weight: 700; color: var(--meet-header-text, #fafafa); }
+    .header-meta { font-size: 13px; color: var(--meet-header-text, #71717a); opacity: 0.7; }
     .header-meta span { margin-right: 16px; }
     .summary-badges { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
-    .summary-badge { font-size: 11px; padding: 2px 8px; border-radius: 4px; background: #27272a; color: #a1a1aa; }
+    .summary-badge { font-size: 11px; padding: 2px 8px; border-radius: 4px; background: var(--meet-badge-bg, #27272a); color: var(--meet-badge-text, #a1a1aa); }
 
-    .filters { background: #18181b; border-bottom: 1px solid #27272a; padding: 12px 24px; position: sticky; top: 90px; z-index: 99; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-    .search-input { background: #27272a; border: 1px solid #3f3f46; color: #e4e4e7; padding: 8px 12px; border-radius: 8px; font-size: 14px; width: 300px; outline: none; }
-    .search-input:focus { border-color: #3b82f6; }
-    .search-input::placeholder { color: #52525b; }
-    .filter-btn { background: #27272a; border: 1px solid #3f3f46; color: #a1a1aa; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; transition: all 0.15s; }
-    .filter-btn:hover { background: #3f3f46; color: #e4e4e7; }
-    .filter-btn.active { background: #3b82f6; border-color: #3b82f6; color: white; }
-    .filter-select { background: #27272a; border: 1px solid #3f3f46; color: #a1a1aa; padding: 6px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; }
-    .result-count { font-size: 12px; color: #52525b; margin-left: auto; }
+    .filters { background: var(--meet-header-bg, #18181b); border-bottom: 1px solid var(--meet-border-color, #27272a); padding: 12px 24px; position: sticky; top: 90px; z-index: 99; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .search-input { background: var(--meet-content-bg, #27272a); border: 1px solid var(--meet-border-color, #3f3f46); color: var(--meet-overlay-text, #e4e4e7); padding: 8px 12px; border-radius: 8px; font-size: 14px; width: 300px; outline: none; }
+    .search-input:focus { border-color: var(--meet-header-bg, #3b82f6); }
+    .search-input::placeholder { color: var(--meet-overlay-text, #52525b); opacity: 0.5; }
+    .filter-btn { background: var(--meet-content-bg, #27272a); border: 1px solid var(--meet-border-color, #3f3f46); color: var(--meet-overlay-text, #a1a1aa); padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; transition: all 0.15s; }
+    .filter-btn:hover { background: var(--meet-border-color, #3f3f46); color: var(--meet-overlay-text, #e4e4e7); }
+    .filter-btn.active { background: var(--meet-header-bg, #3b82f6); border-color: var(--meet-header-bg, #3b82f6); color: var(--meet-header-text, white); }
+    .filter-select { background: var(--meet-content-bg, #27272a); border: 1px solid var(--meet-border-color, #3f3f46); color: var(--meet-overlay-text, #a1a1aa); padding: 6px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+    .result-count { font-size: 12px; color: var(--meet-overlay-text, #52525b); opacity: 0.5; margin-left: auto; }
 
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px; padding: 24px; }
-    .segment-card { background: #18181b; border: 1px solid #27272a; border-radius: 12px; overflow: hidden; transition: all 0.2s; cursor: pointer; }
-    .segment-card:hover { border-color: #3f3f46; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+    .segment-card { background: var(--meet-content-bg, #18181b); border: 1px solid var(--meet-border-color, #27272a); border-radius: 12px; overflow: hidden; transition: all 0.2s; cursor: pointer; }
+    .segment-card:hover { border-color: var(--meet-header-bg, #3f3f46); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
     .segment-card.hidden { display: none; }
 
-    .card-preview { width: 100%; padding-top: 56.25%; position: relative; overflow: hidden; background: #18181b; border-radius: 8px 8px 0 0; }
+    .card-preview { width: 100%; padding-top: 56.25%; position: relative; overflow: hidden; background: var(--meet-overlay-bg, #18181b); border-radius: 8px 8px 0 0; }
     .card-preview iframe { position: absolute; top: 0; left: 0; }
     .card-preview-meta { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding-top: 0; min-height: 200px; border-radius: 8px 8px 0 0; }
 
     .card-info { padding: 12px 14px 14px; }
     .card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-    .card-number { font-size: 12px; color: #52525b; font-weight: 600; }
+    .card-number { font-size: 12px; color: var(--meet-overlay-text, #52525b); opacity: 0.5; font-weight: 600; }
     .card-type-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 600; text-transform: uppercase; }
-    .card-name { font-size: 14px; font-weight: 600; color: #fafafa; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .card-meta { display: flex; gap: 12px; font-size: 11px; color: #71717a; margin-bottom: 4px; flex-wrap: wrap; }
-    .card-meta .wall-clock { color: #14b8a6; font-weight: 500; }
-    .card-graphic, .card-scene, .card-talent, .card-notes { font-size: 11px; color: #52525b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+    .card-name { font-size: 14px; font-weight: 600; color: var(--meet-overlay-text, #fafafa); margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .card-meta { display: flex; gap: 12px; font-size: 11px; color: var(--meet-overlay-text, #71717a); opacity: 0.6; margin-bottom: 4px; flex-wrap: wrap; }
+    .card-meta .wall-clock { color: #14b8a6; font-weight: 500; opacity: 1; }
+    .card-graphic, .card-scene, .card-talent, .card-notes { font-size: 11px; color: var(--meet-overlay-text, #52525b); opacity: 0.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
     .card-notes { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
     /* Modal for full-size preview */
     .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 200; align-items: center; justify-content: center; }
     .modal-overlay.open { display: flex; }
-    .modal-content { width: 90vw; max-width: 1600px; background: #18181b; border-radius: 12px; border: 1px solid #27272a; overflow: hidden; }
-    .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid #27272a; }
-    .modal-header h2 { font-size: 16px; font-weight: 600; }
-    .modal-close { background: none; border: none; color: #71717a; font-size: 24px; cursor: pointer; padding: 4px 8px; }
-    .modal-close:hover { color: #e4e4e7; }
+    .modal-content { width: 90vw; max-width: 1600px; background: var(--meet-content-bg, #18181b); border-radius: 12px; border: 1px solid var(--meet-border-color, #27272a); overflow: hidden; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--meet-border-color, #27272a); }
+    .modal-header h2 { font-size: 16px; font-weight: 600; color: var(--meet-overlay-text, #fafafa); }
+    .modal-close { background: none; border: none; color: var(--meet-overlay-text, #71717a); font-size: 24px; cursor: pointer; padding: 4px 8px; opacity: 0.6; }
+    .modal-close:hover { opacity: 1; }
     .modal-body { padding: 20px; }
-    .modal-preview-container { width: 100%; position: relative; padding-top: 56.25%; background: #09090b; border-radius: 8px; overflow: hidden; }
+    .modal-preview-container { width: 100%; position: relative; padding-top: 56.25%; background: var(--meet-overlay-bg, #09090b); border-radius: 8px; overflow: hidden; }
     .modal-preview-container iframe { position: absolute; top: 0; left: 0; width: 1920px; height: 1080px; border: none; transform-origin: top left; }
     .modal-meta { display: flex; gap: 24px; padding: 16px 0 0; flex-wrap: wrap; }
-    .modal-meta-item { font-size: 13px; color: #a1a1aa; }
-    .modal-meta-item strong { color: #e4e4e7; }
-    .modal-nav { display: flex; justify-content: space-between; padding: 12px 20px; border-top: 1px solid #27272a; }
-    .modal-nav button { background: #27272a; border: 1px solid #3f3f46; color: #e4e4e7; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; }
-    .modal-nav button:hover { background: #3f3f46; }
+    .modal-meta-item { font-size: 13px; color: var(--meet-overlay-text, #a1a1aa); opacity: 0.7; }
+    .modal-meta-item strong { color: var(--meet-overlay-text, #e4e4e7); opacity: 1; }
+    .modal-nav { display: flex; justify-content: space-between; padding: 12px 20px; border-top: 1px solid var(--meet-border-color, #27272a); }
+    .modal-nav button { background: var(--meet-content-bg, #27272a); border: 1px solid var(--meet-border-color, #3f3f46); color: var(--meet-overlay-text, #e4e4e7); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+    .modal-nav button:hover { background: var(--meet-border-color, #3f3f46); }
     .modal-nav button:disabled { opacity: 0.3; cursor: not-allowed; }
 
-    .empty-state { text-align: center; padding: 80px 20px; color: #52525b; font-size: 16px; }
+    .empty-state { text-align: center; padding: 80px 20px; color: var(--meet-overlay-text, #52525b); opacity: 0.5; font-size: 16px; }
 
     /* Playback toolbar */
-    .playback-toolbar { position: fixed; bottom: 0; left: 0; right: 0; background: #18181b; border-top: 1px solid #27272a; padding: 12px 24px; z-index: 150; display: flex; align-items: center; gap: 16px; }
+    .playback-toolbar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--meet-header-bg, #18181b); border-top: 1px solid var(--meet-border-color, #27272a); padding: 12px 24px; z-index: 150; display: flex; align-items: center; gap: 16px; }
     .playback-controls { display: flex; align-items: center; gap: 8px; }
-    .playback-btn { background: #27272a; border: 1px solid #3f3f46; color: #e4e4e7; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: all 0.15s; }
-    .playback-btn:hover { background: #3f3f46; }
-    .playback-btn.active { background: #3b82f6; border-color: #3b82f6; }
+    .playback-btn { background: var(--meet-content-bg, #27272a); border: 1px solid var(--meet-border-color, #3f3f46); color: var(--meet-header-text, #e4e4e7); width: 36px; height: 36px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: all 0.15s; }
+    .playback-btn:hover { background: var(--meet-border-color, #3f3f46); }
+    .playback-btn.active { background: var(--meet-header-bg, #3b82f6); border-color: var(--meet-header-bg, #3b82f6); }
     .playback-btn:disabled { opacity: 0.3; cursor: not-allowed; }
     .speed-controls { display: flex; align-items: center; gap: 4px; }
-    .speed-btn { background: #27272a; border: 1px solid #3f3f46; color: #a1a1aa; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; transition: all 0.15s; }
-    .speed-btn:hover { color: #e4e4e7; }
-    .speed-btn.active { background: #3b82f6; border-color: #3b82f6; color: white; }
+    .speed-btn { background: var(--meet-content-bg, #27272a); border: 1px solid var(--meet-border-color, #3f3f46); color: var(--meet-overlay-text, #a1a1aa); padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; transition: all 0.15s; }
+    .speed-btn:hover { color: var(--meet-overlay-text, #e4e4e7); }
+    .speed-btn.active { background: var(--meet-header-bg, #3b82f6); border-color: var(--meet-header-bg, #3b82f6); color: var(--meet-header-text, white); }
     .progress-container { flex: 1; display: flex; align-items: center; gap: 12px; }
-    .progress-bar { flex: 1; height: 6px; background: #27272a; border-radius: 3px; cursor: pointer; position: relative; }
-    .progress-fill { height: 100%; background: #3b82f6; border-radius: 3px; transition: width 0.1s linear; }
-    .progress-handle { position: absolute; top: 50%; transform: translate(-50%, -50%); width: 14px; height: 14px; background: #3b82f6; border-radius: 50%; cursor: grab; }
+    .progress-bar { flex: 1; height: 6px; background: var(--meet-content-bg, #27272a); border-radius: 3px; cursor: pointer; position: relative; }
+    .progress-fill { height: 100%; background: var(--meet-header-bg, #3b82f6); border-radius: 3px; transition: width 0.1s linear; }
+    .progress-handle { position: absolute; top: 50%; transform: translate(-50%, -50%); width: 14px; height: 14px; background: var(--meet-header-bg, #3b82f6); border-radius: 50%; cursor: grab; }
     .progress-handle:active { cursor: grabbing; }
-    .time-display { font-size: 12px; color: #a1a1aa; font-family: monospace; min-width: 100px; }
-    .segment-info { font-size: 12px; color: #71717a; max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .segment-info strong { color: #e4e4e7; }
+    .time-display { font-size: 12px; color: var(--meet-overlay-text, #a1a1aa); font-family: monospace; min-width: 100px; }
+    .segment-info { font-size: 12px; color: var(--meet-overlay-text, #71717a); opacity: 0.6; max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .segment-info strong { color: var(--meet-overlay-text, #e4e4e7); opacity: 1; }
 
-    .segment-card.playing { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.3); }
-    .segment-card.playing .card-number { color: #3b82f6; }
+    .segment-card.playing { border-color: var(--meet-header-bg, #3b82f6); box-shadow: 0 0 0 2px rgba(59,130,246,0.3); }
+    .segment-card.playing .card-number { color: var(--meet-header-bg, #3b82f6); opacity: 1; }
 
     /* Add padding at bottom for fixed playback bar */
     .grid { padding-bottom: 100px; }
@@ -3574,6 +3607,7 @@ export default function RundownEditorPage() {
     <button class="filter-btn" data-type="hold" onclick="setTypeFilter(this, 'hold')">Hold</button>
     <button class="filter-btn" data-type="playout" onclick="setTypeFilter(this, 'playout')">Playout</button>
     <button class="filter-btn" data-type="content-sequence" onclick="setTypeFilter(this, 'content-sequence')">Content Seq</button>
+    <button class="filter-btn" data-type="who-to-watch" onclick="setTypeFilter(this, 'who-to-watch')">Who to Watch</button>
     <select class="filter-select" id="graphicFilter" onchange="filterSegments()">
       <option value="all">All Graphics</option>
       ${graphicOptionsHtml}
@@ -3714,14 +3748,6 @@ export default function RundownEditorPage() {
 
       document.getElementById('modalTitle').textContent = '#' + (index + 1) + ' — ' + seg.name;
 
-      const container = document.getElementById('modalPreviewContainer');
-      if (seg.iframeUrl) {
-        const scale = container.offsetWidth / 1920;
-        container.innerHTML = '<iframe src="' + seg.iframeUrl + '" style="position:absolute;top:0;left:0;width:1920px;height:1080px;border:none;transform-origin:top left;transform:scale(' + scale + ');pointer-events:none;" sandbox="allow-scripts allow-same-origin"></iframe>';
-      } else {
-        container.innerHTML = '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#52525b;font-size:18px;">' + seg.type.toUpperCase() + ' — ' + seg.name + '</div>';
-      }
-
       let metaHtml = '';
       metaHtml += '<div class="modal-meta-item"><strong>Type:</strong> ' + seg.type + '</div>';
       metaHtml += '<div class="modal-meta-item"><strong>Start:</strong> ' + seg.startTime + '</div>';
@@ -3736,7 +3762,17 @@ export default function RundownEditorPage() {
       document.getElementById('prevBtn').disabled = index === 0;
       document.getElementById('nextBtn').disabled = index === segments.length - 1;
 
+      // Show modal FIRST so container has layout dimensions
       document.getElementById('previewModal').classList.add('open');
+
+      // Now calculate scale after the modal is visible
+      const container = document.getElementById('modalPreviewContainer');
+      if (seg.iframeUrl) {
+        const scale = container.offsetWidth / 1920;
+        container.innerHTML = '<iframe src="' + seg.iframeUrl + '" style="position:absolute;top:0;left:0;width:1920px;height:1080px;border:none;transform-origin:top left;transform:scale(' + scale + ');pointer-events:none;"></iframe>';
+      } else {
+        container.innerHTML = '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--meet-overlay-text, #52525b);font-size:18px;">' + seg.type.toUpperCase() + ' — ' + seg.name + '</div>';
+      }
     }
 
     function closeModal() {
@@ -6580,6 +6616,10 @@ export default function RundownEditorPage() {
                 )}
                 talentRoster={talentRoster}
                 equipmentList={equipmentList}
+                competitionTeams={competition.teams}
+                competitionGender={competitionConfig?.gender || (liveCompType?.startsWith('womens') ? 'womens' : 'mens')}
+                teamsDbFunctions={{ getTeamRosterWithHeadshots, getHeadshot, resolveSchoolKey, getAthleteMedia, saveAthleteMedia }}
+                meetTheme={competitionConfig?.meetTheme || ''}
               />
             ) : (
               <div className="text-center py-20 text-zinc-500">
@@ -7885,7 +7925,7 @@ function CreateGroupModal({ onCreate, onCancel, selectedCount }) {
 }
 
 // Placeholder SegmentDetail panel component
-function SegmentDetailPanel({ segment, onSave, onDelete, onCancel, groupedScenes, groupedGraphics, compType, teamNames, historicalAverageSec, aiPrediction, equipmentConflictsForSegment = [], talentRoster = [], equipmentList = [] }) {
+function SegmentDetailPanel({ segment, onSave, onDelete, onCancel, groupedScenes, groupedGraphics, compType, teamNames, historicalAverageSec, aiPrediction, equipmentConflictsForSegment = [], talentRoster = [], equipmentList = [], competitionTeams = {}, competitionGender = 'womens', teamsDbFunctions = {}, meetTheme = '' }) {
   const [formData, setFormData] = useState(segment);
 
   // Reset form when segment changes
@@ -8070,57 +8110,59 @@ function SegmentDetailPanel({ segment, onSave, onDelete, onCancel, groupedScenes
           </select>
         </div>
 
-        {/* Graphic Picker - grouped by category */}
-        <div className="border border-zinc-700 rounded-lg p-3 bg-zinc-800/50">
-          <label className="block text-xs text-zinc-400 mb-2 uppercase tracking-wide">Graphic</label>
+        {/* Graphic Picker - grouped by category (hidden for segment types with dedicated editors) */}
+        {!['playout', 'who-to-watch', 'content-sequence'].includes(formData.type) && (
+          <div className="border border-zinc-700 rounded-lg p-3 bg-zinc-800/50">
+            <label className="block text-xs text-zinc-400 mb-2 uppercase tracking-wide">Graphic</label>
 
-          {/* Smart Recommendation */}
-          {showRecommendation && (
-            <div className="mb-3 p-2 bg-amber-500/10 border border-amber-500/30 rounded-lg flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <LightBulbIcon className="w-4 h-4 text-amber-400" />
-                <span className="text-sm text-amber-300">
-                  Suggested: <span className="font-medium">{recommendation.label}</span>
-                </span>
+            {/* Smart Recommendation */}
+            {showRecommendation && (
+              <div className="mb-3 p-2 bg-amber-500/10 border border-amber-500/30 rounded-lg flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <LightBulbIcon className="w-4 h-4 text-amber-400" />
+                  <span className="text-sm text-amber-300">
+                    Suggested: <span className="font-medium">{recommendation.label}</span>
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleGraphicChange(recommendation.id)}
+                  className="px-2 py-1 text-xs font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded hover:bg-amber-500/30 transition-colors"
+                >
+                  Use
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => handleGraphicChange(recommendation.id)}
-                className="px-2 py-1 text-xs font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded hover:bg-amber-500/30 transition-colors"
-              >
-                Use
-              </button>
-            </div>
-          )}
+            )}
 
-          <select
-            value={formData.graphic?.graphicId || ''}
-            onChange={(e) => handleGraphicChange(e.target.value)}
-            className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
-          >
-            <option value="">(None)</option>
-            {Object.entries(groupedGraphics).map(([category, graphics]) => (
-              <optgroup key={category} label={GRAPHICS_CATEGORY_LABELS[category] || category}>
-                {graphics.map(graphic => (
-                  <option key={graphic.id} value={graphic.id}>
-                    {graphic.label}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
-          {/* Parameter Inputs - shown when graphic is selected */}
-          {formData.graphic?.graphicId && (
-            <GraphicParamInputs
-              graphicId={formData.graphic.graphicId}
-              params={formData.graphic.params || {}}
-              onChange={(newParams) => setFormData({
-                ...formData,
-                graphic: { ...formData.graphic, params: newParams }
-              })}
-            />
-          )}
-        </div>
+            <select
+              value={formData.graphic?.graphicId || ''}
+              onChange={(e) => handleGraphicChange(e.target.value)}
+              className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+            >
+              <option value="">(None)</option>
+              {Object.entries(groupedGraphics).map(([category, graphics]) => (
+                <optgroup key={category} label={GRAPHICS_CATEGORY_LABELS[category] || category}>
+                  {graphics.map(graphic => (
+                    <option key={graphic.id} value={graphic.id}>
+                      {graphic.label}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+            {/* Parameter Inputs - shown when graphic is selected */}
+            {formData.graphic?.graphicId && (
+              <GraphicParamInputs
+                graphicId={formData.graphic.graphicId}
+                params={formData.graphic.params || {}}
+                onChange={(newParams) => setFormData({
+                  ...formData,
+                  graphic: { ...formData.graphic, params: newParams }
+                })}
+              />
+            )}
+          </div>
+        )}
 
         {/* Timing Mode Selector (Phase 6: Task 55) */}
         <div>
@@ -8496,6 +8538,22 @@ function SegmentDetailPanel({ segment, onSave, onDelete, onCancel, groupedScenes
           />
         )}
 
+        {/* Who to Watch Editor — shown when segment type is 'who-to-watch' */}
+        {formData.type === 'who-to-watch' && (
+          <WhoToWatchEditor
+            whoToWatch={formData.whoToWatch}
+            onChange={(newWhoToWatch) => setFormData({
+              ...formData,
+              whoToWatch: newWhoToWatch,
+            })}
+            disabled={isLocked}
+            competitionTeams={competitionTeams}
+            competitionGender={competitionGender}
+            teamsDbFunctions={teamsDbFunctions}
+            meetTheme={meetTheme}
+          />
+        )}
+
         <div className="flex gap-3 pt-4">
           <button
             type="button"
@@ -8508,7 +8566,8 @@ function SegmentDetailPanel({ segment, onSave, onDelete, onCancel, groupedScenes
             type="submit"
             disabled={
               (formData.type === 'playout' && !isPlayoutRulesValid(formData.playoutRules)) ||
-              (formData.type === 'content-sequence' && !isContentSequenceValid({ contentSequence: formData.contentSequence }))
+              (formData.type === 'content-sequence' && !isContentSequenceValid({ contentSequence: formData.contentSequence })) ||
+              (formData.type === 'who-to-watch' && !isWhoToWatchValid(formData.whoToWatch))
             }
             className="flex-1 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             title={
@@ -8516,7 +8575,9 @@ function SegmentDetailPanel({ segment, onSave, onDelete, onCancel, groupedScenes
                 ? 'Add at least one gap fill item'
                 : formData.type === 'content-sequence' && !isContentSequenceValid({ contentSequence: formData.contentSequence })
                   ? 'Add at least one content item'
-                  : undefined
+                  : formData.type === 'who-to-watch' && !isWhoToWatchValid(formData.whoToWatch)
+                    ? 'Athlete name is required'
+                    : undefined
             }
           >
             Save Changes
