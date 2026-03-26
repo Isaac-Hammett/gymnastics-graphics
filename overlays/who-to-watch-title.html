@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1920, height=1080">
+  <title>Who to Watch — Title Card</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: #1a2332;
+    }
+
+    /* ── Full-screen team-color background wash ── */
+    .bg-fill {
+      position: absolute;
+      inset: 0;
+      background: var(--meet-header-bg, #1a2332);
+      opacity: 0.85;
+    }
+
+    /* Subtle diagonal gradient overlay for depth */
+    .bg-gradient {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(135deg, rgba(0,0,0,0.2) 0%, transparent 40%, rgba(0,0,0,0.3) 100%),
+        linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.05) 50%, transparent 70%),
+        radial-gradient(ellipse at 30% 40%, rgba(255,255,255,0.06) 0%, transparent 50%);
+    }
+
+    /* Texture overlay (applied by theme-loader via --meet-texture) */
+    .bg-texture {
+      position: absolute;
+      inset: 0;
+      background-image: var(--meet-texture, none);
+      background-size: cover;
+      opacity: var(--meet-texture-opacity, 0.1);
+      pointer-events: none;
+    }
+
+    /* ── Team logo watermark (large, behind everything) ── */
+    .logo-watermark {
+      position: absolute;
+      right: 250px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 600px;
+      height: 600px;
+      object-fit: contain;
+      opacity: 0.08;
+      pointer-events: none;
+      filter: brightness(2);
+    }
+
+    /* ── Main layout: two-column flex row filling 1920×1080 ── */
+    .card {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      width: 1920px;
+      height: 1080px;
+    }
+
+    /* Left column: ~55% (1370px) for text, vertically centered */
+    .text-side {
+      position: relative;
+      flex: 0 0 1370px;
+      width: 1370px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 60px 60px 60px 80px;
+      min-width: 0;
+      overflow: hidden;
+      z-index: 2;
+    }
+
+    /* Dark gradient on text side for contrast against any team color */
+    .text-side::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 70%;
+      height: 100%;
+      background: linear-gradient(90deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.15) 60%, transparent 100%);
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    /* Right column: ~45% (550px) for athlete image, NEVER collapses */
+    .image-side {
+      flex: 0 0 550px;
+      width: 550px;
+      min-width: 550px;
+      position: relative;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 3;
+      overflow: hidden;
+    }
+
+    /* Headshot/full mode: center image vertically */
+    .image-side.centered {
+      align-items: center;
+    }
+
+    /* ── Badge (small "WHO TO WATCH" label) ── */
+    .badge {
+      display: inline-flex;
+      align-self: flex-start;
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--meet-badge-text, rgba(255,255,255,0.9));
+      background: var(--meet-badge-bg, rgba(0,0,0,0.25));
+      text-transform: uppercase;
+      letter-spacing: 5px;
+      padding: 6px 20px;
+      border-radius: 2px;
+      margin-bottom: 24px;
+      animation: fadeSlideDown 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+    }
+
+    @keyframes fadeSlideDown {
+      from { opacity: 0; transform: translateY(-16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Headline in accent bar ── */
+    .headline-bar {
+      display: inline-block;
+      align-self: flex-start;
+      background: var(--meet-content-bg, #3b82f6);
+      padding: 12px 24px;
+      margin-bottom: 16px;
+      animation: fadeSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+    }
+
+    .headline {
+      font-size: 34px;
+      font-weight: 900;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: 4px;
+    }
+
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Athlete name (dominant element) ── */
+    .athlete-name {
+      font-size: 110px;
+      font-weight: 900;
+      color: var(--meet-overlay-text, #fff);
+      text-transform: uppercase;
+      letter-spacing: -4px;
+      line-height: 1.0;
+      margin-bottom: 20px;
+      text-shadow: 2px 2px 8px rgba(0,0,0,0.5);
+      animation: fadeSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
+      overflow-wrap: break-word;
+      word-break: break-word;
+    }
+
+    /* ── Team row (logo + name) ── */
+    .team-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 20px;
+      animation: fadeSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.25s both;
+    }
+
+    .logo-container {
+      background: rgba(255,255,255,0.92);
+      border-radius: 8px;
+      padding: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo {
+      width: 48px;
+      height: 48px;
+      object-fit: contain;
+    }
+
+    .team-name {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--meet-overlay-text, #fff);
+      text-transform: uppercase;
+      letter-spacing: 4px;
+      opacity: 0.7;
+    }
+
+    /* ── Stat callout (inline number + label, same scale as body) ── */
+    .stat-callout {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 12px;
+      animation: fadeSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both;
+    }
+
+    .stat-number {
+      font-size: 120px;
+      font-weight: 900;
+      color: var(--meet-overlay-text, #fff);
+      line-height: 1;
+      letter-spacing: -2px;
+      text-shadow: 2px 2px 8px rgba(0,0,0,0.5);
+    }
+
+    .stat-label {
+      font-size: 42px;
+      font-weight: 800;
+      color: var(--meet-overlay-text, #fff);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      opacity: 0.9;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    /* ── Body text ── */
+    .body-text {
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--meet-overlay-text, #fff);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      line-height: 1.4;
+      opacity: 0.9;
+      white-space: pre-line;
+      text-shadow:
+        0 1px 0 rgba(0,0,0,0.3),
+        0 2px 8px rgba(0,0,0,0.25);
+      animation: fadeSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.45s both;
+    }
+
+    /* ── Accent underline ── */
+    .accent-line {
+      width: 80px;
+      height: 4px;
+      background: var(--meet-content-bg, rgba(255,255,255,0.3));
+      margin-bottom: 20px;
+      animation: fadeSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.38s both;
+    }
+
+    /* ── Athlete image ── */
+
+    /* Portrait mode (default for full-body cutout): anchored to bottom, 90vh max */
+    .image-portrait {
+      max-height: 90vh;
+      max-width: 100%;
+      object-fit: contain;
+      object-position: bottom center;
+      filter: drop-shadow(-8px 4px 30px rgba(0,0,0,0.4));
+      animation: imageSlideIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+    }
+
+    /* Headshot mode: 400px circular crop, vertically centered */
+    .image-headshot {
+      width: 400px;
+      height: 400px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 6px solid #fff;
+      box-shadow:
+        0 0 0 3px rgba(255,255,255,0.1),
+        0 0 80px var(--meet-header-bg, rgba(45,90,142,0.5)),
+        0 8px 60px rgba(0,0,0,0.4);
+      animation: imageSlideIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+    }
+
+    /* Full mode: large rectangular with rounded corners, centered */
+    .image-full {
+      max-height: 80%;
+      max-width: 90%;
+      object-fit: cover;
+      border-radius: 16px;
+      border: 4px solid rgba(255,255,255,0.2);
+      box-shadow: 0 8px 60px rgba(0,0,0,0.4);
+      animation: imageSlideIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+    }
+
+    @keyframes imageSlideIn {
+      from { opacity: 0; transform: translateX(50px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    /* ── No-image layout: text side expands, but right column STILL exists ── */
+    .card.no-image .text-side {
+      flex: 0 0 1370px;
+      padding-right: 100px;
+    }
+
+    .card.no-image .image-side {
+      /* Right column maintains space even when empty */
+      display: flex;
+      background: transparent;
+    }
+
+    .card.no-image .athlete-name {
+      font-size: 110px;
+    }
+
+    /* ── Sparse content: name-only card (no headline, no body) ── */
+    .card.sparse-content .athlete-name {
+      font-size: 110px;
+      margin-bottom: 32px;
+    }
+
+    .card.sparse-content .body-text {
+      font-size: 32px;
+    }
+
+    /* ── Stats-only card (no athlete name, big stat number) ── */
+    .card.stats-card .text-side {
+      justify-content: center;
+    }
+
+    /* ── Bottom accent stripe ── */
+    .bottom-stripe {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 6px;
+      background: var(--meet-content-bg, #3b82f6);
+      z-index: 10;
+      animation: stripeSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0s both;
+    }
+
+    @keyframes stripeSlideIn {
+      from { transform: scaleX(0); transform-origin: left; }
+      to { transform: scaleX(1); transform-origin: left; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-fill"></div>
+  <div class="bg-gradient"></div>
+  <div class="bg-texture"></div>
+  <img class="logo-watermark" id="logoWatermark" src="" alt="" style="display:none;">
+  <div class="bottom-stripe"></div>
+
+  <div class="card" id="card">
+    <div class="text-side" id="textSide">
+      <div class="badge" id="badge">Who to Watch</div>
+      <div class="team-row" id="teamRow" style="display:none;">
+        <div class="logo-container" id="logoBg" style="display:none;">
+          <img id="logo" class="logo" src="" alt="">
+        </div>
+        <div class="team-name" id="teamName"></div>
+      </div>
+      <div class="headline-bar" id="headlineBar" style="display:none;">
+        <div class="headline" id="headline"></div>
+      </div>
+      <div class="athlete-name" id="athleteName"></div>
+      <div class="stat-callout" id="statCallout" style="display:none;">
+        <div class="stat-number" id="statNumber"></div>
+        <div class="stat-label" id="statLabel"></div>
+      </div>
+      <div class="accent-line" id="accentLine" style="display:none;"></div>
+      <div class="body-text" id="bodyText"></div>
+    </div>
+    <!-- Right column: ALWAYS present, maintains 550px width even when empty -->
+    <div class="image-side" id="imageSide">
+      <img id="athleteImage" src="" alt="" style="display:none;">
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+
+    // ── Athlete name ──
+    const name = params.get('athleteName') || '';
+    const athleteNameEl = document.getElementById('athleteName');
+    if (name) {
+      athleteNameEl.textContent = name.toUpperCase();
+    } else {
+      athleteNameEl.style.display = 'none';
+    }
+
+    // ── Team name ──
+    const teamName = params.get('teamName') || '';
+    const teamRow = document.getElementById('teamRow');
+    const teamNameEl = document.getElementById('teamName');
+    if (teamName) {
+      teamNameEl.textContent = teamName.toUpperCase();
+      teamRow.style.display = 'flex';
+    }
+
+    // ── Logo (inline + watermark) ──
+    const logoUrl = params.get('logo') || params.get('logoUrl') || '';
+    const logoEl = document.getElementById('logo');
+    const logoBg = document.getElementById('logoBg');
+    const logoWatermark = document.getElementById('logoWatermark');
+    if (logoUrl) {
+      logoEl.src = logoUrl;
+      logoBg.style.display = 'flex';
+      if (!teamName) teamRow.style.display = 'flex';
+      logoEl.onerror = () => { logoBg.style.display = 'none'; if (!teamName) teamRow.style.display = 'none'; };
+
+      // Large watermark behind content
+      logoWatermark.src = logoUrl;
+      logoWatermark.style.display = 'block';
+      logoWatermark.onerror = () => { logoWatermark.style.display = 'none'; };
+    }
+
+    // ── Headline (in accent bar) ──
+    const headline = params.get('headline') || '';
+    const headlineBar = document.getElementById('headlineBar');
+    const headlineEl = document.getElementById('headline');
+    if (headline) {
+      headlineEl.textContent = headline.toUpperCase();
+      headlineBar.style.display = 'inline-flex';
+    }
+
+    // ── Body text ──
+    // Check if body starts with a big number (stat callout pattern like "17 Career 10.000s")
+    const body = params.get('body') || '';
+    const bodyEl = document.getElementById('bodyText');
+    const statCallout = document.getElementById('statCallout');
+    const statNumber = document.getElementById('statNumber');
+    const statLabel = document.getElementById('statLabel');
+    const accentLine = document.getElementById('accentLine');
+
+    if (body) {
+      // Try to detect stat callout pattern: first line is "NUMBER REST_OF_TEXT"
+      const lines = body.split('\n');
+      const firstLine = lines[0].trim();
+      const statMatch = firstLine.match(/^(\d+)\s+(.+)$/);
+
+      if (statMatch && lines.length >= 2) {
+        // Stat callout mode: big number + label on first line, rest as body
+        statNumber.textContent = statMatch[1];
+        statLabel.textContent = statMatch[2].toUpperCase();
+        statCallout.style.display = 'flex';
+
+        const remainingBody = lines.slice(1).join('\n').trim();
+        if (remainingBody) {
+          accentLine.style.display = 'block';
+          bodyEl.textContent = remainingBody.toUpperCase();
+        } else {
+          bodyEl.style.display = 'none';
+        }
+      } else {
+        // Regular body text mode
+        accentLine.style.display = 'block';
+        bodyEl.textContent = body.toUpperCase();
+      }
+    } else {
+      bodyEl.style.display = 'none';
+    }
+
+    // ── Image — supports imageUrl (preferred) or headshot (fallback) ──
+    // imageMode: 'portrait' (tall cutout, default), 'headshot' (circle), 'full' (rectangular)
+    // IMPORTANT: image-side ALWAYS maintains its 550px width; only the img element shows/hides
+    const imageUrl = params.get('imageUrl') || params.get('headshot') || '';
+    const imageMode = params.get('imageMode') || (params.get('imageUrl') ? 'portrait' : 'headshot');
+    const imageSide = document.getElementById('imageSide');
+    const athleteImage = document.getElementById('athleteImage');
+    const card = document.getElementById('card');
+
+    if (imageUrl) {
+      athleteImage.src = imageUrl;
+      athleteImage.className = `image-${imageMode}`;
+      athleteImage.style.display = 'block';
+
+      // Center headshot and full images vertically; portrait anchors to bottom
+      if (imageMode === 'headshot' || imageMode === 'full') {
+        imageSide.classList.add('centered');
+      }
+
+      athleteImage.onerror = () => {
+        // Hide the image but keep the image-side container for layout
+        athleteImage.style.display = 'none';
+        card.classList.add('no-image');
+      };
+    } else {
+      card.classList.add('no-image');
+    }
+
+    // ── Sparse content adaptations ──
+    const hasHeadline = !!headline;
+    const hasBody = !!body;
+    const hasStatCallout = statCallout.style.display === 'flex';
+
+    if (!hasHeadline && !hasBody && !hasStatCallout) {
+      // Name-only card: enlarge name, center vertically
+      card.classList.add('sparse-content');
+    } else if (!hasHeadline && hasBody && !hasStatCallout) {
+      // Body but no headline: slightly larger body text
+      card.classList.add('sparse-content');
+    }
+
+    // Always show accent line between name and body/stat when there's content below the name
+    if ((hasBody || hasStatCallout) && !hasHeadline) {
+      accentLine.style.display = 'block';
+    }
+
+    // Always show team row when team info is available (don't hide it based on headline/stat)
+    // Team row visibility is already set above based on teamName/logo presence
+
+    // ── Card adjustment overrides ──
+    const nameFontSize = parseInt(params.get('nameFontSize'));
+    const bodyFontSize = parseInt(params.get('bodyFontSize'));
+    const headlineFontSize = parseInt(params.get('headlineFontSize'));
+    const textOffsetY = parseInt(params.get('textOffsetY'));
+    const imgScale = parseInt(params.get('imageScale'));
+    const imgOffsetX = parseInt(params.get('imageOffsetX'));
+    const imgOffsetY = parseInt(params.get('imageOffsetY'));
+
+    if (nameFontSize) athleteNameEl.style.fontSize = nameFontSize + 'px';
+    if (bodyFontSize) {
+      bodyEl.style.fontSize = bodyFontSize + 'px';
+      if (statLabel) document.getElementById('statLabel').style.fontSize = bodyFontSize + 'px';
+    }
+    if (headlineFontSize) headlineEl.style.fontSize = headlineFontSize + 'px';
+    if (textOffsetY) document.getElementById('textSide').style.transform = 'translateY(' + textOffsetY + 'px)';
+
+    if (athleteImage.src && (imgScale || imgOffsetX || imgOffsetY)) {
+      const s = (imgScale || 100) / 100;
+      const ox = imgOffsetX || 0;
+      const oy = imgOffsetY || 0;
+      const applyTransform = () => {
+        // Clear animation fill-mode so it no longer overrides inline transform
+        athleteImage.style.animation = 'none';
+        athleteImage.style.opacity = '1';
+        athleteImage.style.transform = 'scale(' + s + ') translate(' + ox + 'px, ' + oy + 'px)';
+      };
+      // Apply after animation completes
+      athleteImage.addEventListener('animationend', applyTransform, { once: true });
+      // Fallback if animation already ended or doesn't fire
+      setTimeout(applyTransform, 1200);
+    }
+
+    // ── Hide badge if explicitly set to empty ──
+    const badgeText = params.get('badge');
+    const badgeEl = document.getElementById('badge');
+    if (badgeText === '') {
+      badgeEl.style.display = 'none';
+    } else if (badgeText) {
+      badgeEl.textContent = badgeText.toUpperCase();
+    }
+  </script>
+  <script src="theme-loader.js"></script>
+</body>
+</html>

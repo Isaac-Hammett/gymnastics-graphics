@@ -383,6 +383,7 @@ function TitleCardIframePreview({ card, athleteName, teamName, logoUrl, imageUrl
           pointerEvents: 'none',
         }}>
           <iframe
+            key={debouncedOverlayUrl}
             src={debouncedOverlayUrl}
             title="Title card preview"
             style={{ width: '1920px', height: '1080px', border: 'none' }}
