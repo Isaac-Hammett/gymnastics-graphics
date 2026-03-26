@@ -334,6 +334,9 @@ export default function ThemeEditorPage() {
   // Per-graphic override state
   const [expandedOverrideGraphics, setExpandedOverrideGraphics] = useState({});
 
+  // Preview reload state - increment to force iframe refresh after save
+  const [previewVersion, setPreviewVersion] = useState(0);
+
   // Preview URL for sponsor cycle when adjusting sponsors
   const sponsorPreviewUrl = useMemo(() => {
     const sponsors = editingTheme.sponsors || [];
@@ -594,6 +597,11 @@ export default function ThemeEditorPage() {
       setSelectedThemeId(themeId);
       setIsDirty(false);
       setSaveMessage({ type: 'success', text: `Theme "${editingTheme.name}" saved!` });
+
+      // Reload preview iframe after 500ms to allow Firebase to propagate
+      setTimeout(() => {
+        setPreviewVersion(v => v + 1);
+      }, 500);
     } catch (err) {
       setSaveMessage({ type: 'error', text: `Failed to save: ${err.message}` });
     }
@@ -1482,7 +1490,7 @@ export default function ThemeEditorPage() {
                     style={{ height: Math.round(1080 * 0.22) + 'px' }}
                   >
                     <iframe
-                      key={`${selectedThemeId}-${selectedGraphicType}-${selectedCompetition}`}
+                      key={`${selectedThemeId}-${selectedGraphicType}-${selectedCompetition}-${previewVersion}`}
                       src={getPreviewUrl()}
                       className="w-[1920px] h-[1080px] origin-top-left"
                       style={{ border: 'none', transform: 'scale(0.22)' }}
@@ -1490,7 +1498,7 @@ export default function ThemeEditorPage() {
                     />
                   </div>
                   <p className="text-[10px] text-zinc-600 mt-1">
-                    Preview shows saved theme. Save changes to update.
+                    Preview reloads automatically after saving.
                   </p>
                 </div>
               )}
