@@ -429,6 +429,111 @@ window.themeReady = new Promise(resolve => { _resolveThemeReady = resolve; });
     return null;
   }
 
+  // ============================================================================
+  // Override Mapping Objects (module-scope for export access)
+  // ============================================================================
+
+  // Map override properties to CSS variable suffixes (8 color suffixes)
+  // Pattern: --{graphicId}-{suffix}
+  const overrideMapping = {
+    headerBar: 'header-bg',
+    contentArea: 'content-bg',
+    bodyBackground: 'overlay-bg',
+    borderDivider: 'border-color',
+    badge: 'badge-bg',
+    badgeText: 'badge-text',
+    textOnHeader: 'header-text',
+    textOnContent: 'overlay-text'
+  };
+
+  // Image/texture overrides — set as url() wrapped CSS variables (13 image suffixes)
+  // These allow per-graphic background images and textures
+  const imageOverrideMapping = {
+    // Header background image
+    headerBgImage: 'header-bg-image',
+    headerBgImageFit: 'header-bg-image-fit',
+    headerBgImagePosition: 'header-bg-image-position',
+    headerBgImageOpacity: 'header-bg-image-opacity',
+    // Body background image
+    bodyBgImage: 'body-bg-image',
+    bodyBgImageFit: 'body-bg-image-fit',
+    bodyBgImagePosition: 'body-bg-image-position',
+    bodyBgImageOpacity: 'body-bg-image-opacity',
+    // Body texture
+    bodyTexture: 'body-texture',
+    bodyTextureOpacity: 'body-texture-opacity',
+    bodyTextureBlend: 'body-texture-blend',
+    // Logo override
+    logo: 'logo-url',
+    logoSize: 'logo-size'
+  };
+
+  // Layout overrides — per-graphic sizing, positioning, visibility (19 layout suffixes)
+  // These set CSS variables directly on :root (e.g., --event-bar-venue-font-size: 42px)
+  // The CSS in output.html reads these via var(--event-bar-venue-font-size, 36px)
+  const layoutOverrideMapping = {
+    // Position
+    barBottom: { suffix: 'bar-bottom', unit: 'px' },
+    barLeft: { suffix: 'bar-left', unit: 'px' },
+    // Logo
+    logoImgSize: { suffix: 'logo-img-size', unit: 'px' },
+    logoContainerWidth: { suffix: 'logo-container-width', unit: 'px' },
+    logoContainerHeight: { suffix: 'logo-container-height', unit: 'px' },
+    logoBg: { suffix: 'logo-bg', unit: null },  // color value, no unit
+    logoPadding: { suffix: 'logo-padding', unit: 'px' },
+    logoRadius: { suffix: 'logo-radius', unit: 'px' },
+    showLogo: { suffix: 'show-logo', unit: null },  // 'flex' or 'none'
+    // Venue header
+    venueFontSize: { suffix: 'venue-font-size', unit: 'px' },
+    venueHeight: { suffix: 'venue-height', unit: 'px' },
+    venuePaddingV: { suffix: 'venue-padding-v', unit: 'px' },
+    venuePaddingH: { suffix: 'venue-padding-h', unit: 'px' },
+    barMinWidth: { suffix: 'bar-min-width', unit: 'px' },
+    // Text / Details
+    nameFontSize: { suffix: 'name-font-size', unit: 'px' },
+    locationFontSize: { suffix: 'location-font-size', unit: 'px' },
+    detailsHeight: { suffix: 'details-height', unit: 'px' },
+    detailsPaddingV: { suffix: 'details-padding-v', unit: 'px' },
+    detailsPaddingH: { suffix: 'details-padding-h', unit: 'px' },
+  };
+
+  /**
+   * Get all CSS variable suffixes from mapping objects
+   * Used by clearOverrides() to know which variables to remove
+   * @returns {string[]} Array of all suffixes
+   */
+  function getAllOverrideSuffixes() {
+    const suffixes = [];
+    // Color overrides (8)
+    suffixes.push(...Object.values(overrideMapping));
+    // Image overrides (13)
+    suffixes.push(...Object.values(imageOverrideMapping));
+    // Layout overrides (19)
+    for (const config of Object.values(layoutOverrideMapping)) {
+      suffixes.push(config.suffix);
+    }
+    return suffixes;
+  }
+
+  /**
+   * Clear all per-graphic override CSS variables for a given graphic ID
+   * Call this before switching graphics to prevent stale overrides
+   * @param {string} graphicId - Graphic ID to clear overrides for
+   */
+  function clearOverrides(graphicId) {
+    if (!graphicId) return;
+
+    const root = document.documentElement;
+    const suffixes = getAllOverrideSuffixes();
+
+    for (const suffix of suffixes) {
+      const varName = `--${graphicId}-${suffix}`;
+      root.style.removeProperty(varName);
+    }
+
+    console.log(`[theme-loader] Cleared ${suffixes.length} override variables for ${graphicId}`);
+  }
+
   /**
    * Apply per-graphic override CSS variables
    * @param {Object} theme - Theme data (including overrides)
@@ -454,19 +559,7 @@ window.themeReady = new Promise(resolve => { _resolveThemeReady = resolve; });
     overrideStatus.hasOverrides = true;
     const root = document.documentElement;
 
-    // Map override properties to CSS variable names
-    // Pattern: --{graphicId}-{property}
-    const overrideMapping = {
-      headerBar: 'header-bg',
-      contentArea: 'content-bg',
-      bodyBackground: 'overlay-bg',
-      borderDivider: 'border-color',
-      badge: 'badge-bg',
-      badgeText: 'badge-text',
-      textOnHeader: 'header-text',
-      textOnContent: 'overlay-text'
-    };
-
+    // Apply color overrides
     for (const [propKey, cssSuffix] of Object.entries(overrideMapping)) {
       if (overrides[propKey]) {
         const varName = `--${graphicId}-${cssSuffix}`;
@@ -476,28 +569,7 @@ window.themeReady = new Promise(resolve => { _resolveThemeReady = resolve; });
       }
     }
 
-    // Image/texture overrides — set as url() wrapped CSS variables
-    // These allow per-graphic background images and textures
-    const imageOverrideMapping = {
-      // Header background image
-      headerBgImage: 'header-bg-image',
-      headerBgImageFit: 'header-bg-image-fit',
-      headerBgImagePosition: 'header-bg-image-position',
-      headerBgImageOpacity: 'header-bg-image-opacity',
-      // Body background image
-      bodyBgImage: 'body-bg-image',
-      bodyBgImageFit: 'body-bg-image-fit',
-      bodyBgImagePosition: 'body-bg-image-position',
-      bodyBgImageOpacity: 'body-bg-image-opacity',
-      // Body texture
-      bodyTexture: 'body-texture',
-      bodyTextureOpacity: 'body-texture-opacity',
-      bodyTextureBlend: 'body-texture-blend',
-      // Logo override
-      logo: 'logo-url',
-      logoSize: 'logo-size'
-    };
-
+    // Apply image/texture overrides
     for (const [propKey, cssSuffix] of Object.entries(imageOverrideMapping)) {
       if (overrides[propKey] !== undefined && overrides[propKey] !== null && overrides[propKey] !== '') {
         const varName = `--${graphicId}-${cssSuffix}`;
@@ -518,29 +590,7 @@ window.themeReady = new Promise(resolve => { _resolveThemeReady = resolve; });
       }
     }
 
-    // Layout overrides — per-graphic sizing, positioning, visibility
-    // These set CSS variables directly on :root (e.g., --event-bar-venue-font-size: 42px)
-    // The CSS in output.html reads these via var(--event-bar-venue-font-size, 36px)
-    const layoutOverrideMapping = {
-      // Position
-      barBottom: { suffix: 'bar-bottom', unit: 'px' },
-      barLeft: { suffix: 'bar-left', unit: 'px' },
-      // Logo
-      logoImgSize: { suffix: 'logo-img-size', unit: 'px' },
-      logoContainerWidth: { suffix: 'logo-container-width', unit: 'px' },
-      logoContainerHeight: { suffix: 'logo-container-height', unit: 'px' },
-      logoBg: { suffix: 'logo-bg', unit: null },  // color value, no unit
-      logoPadding: { suffix: 'logo-padding', unit: 'px' },
-      logoRadius: { suffix: 'logo-radius', unit: 'px' },
-      showLogo: { suffix: 'show-logo', unit: null },  // 'flex' or 'none'
-      // Venue header
-      venueFontSize: { suffix: 'venue-font-size', unit: 'px' },
-      barMinWidth: { suffix: 'bar-min-width', unit: 'px' },
-      // Text
-      nameFontSize: { suffix: 'name-font-size', unit: 'px' },
-      locationFontSize: { suffix: 'location-font-size', unit: 'px' },
-    };
-
+    // Apply layout overrides
     for (const [propKey, config] of Object.entries(layoutOverrideMapping)) {
       if (overrides[propKey] !== undefined && overrides[propKey] !== null && overrides[propKey] !== '') {
         const varName = `--${graphicId}-${config.suffix}`;
@@ -563,6 +613,10 @@ window.themeReady = new Promise(resolve => { _resolveThemeReady = resolve; });
 
     return overrideStatus;
   }
+
+  // Export override functions for live-mode use in output.html
+  window.themeApplyOverrides = applyOverrides;
+  window.themeClearOverrides = clearOverrides;
 
   /**
    * Inject theme-overrides.css stylesheet
