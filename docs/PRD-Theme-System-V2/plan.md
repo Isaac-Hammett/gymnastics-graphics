@@ -966,7 +966,7 @@ Live verification requires deployment and authentication. Will be verified in Ta
 
 ---
 
-### Task 4.3 — Live Iframe Preview Per Graphic — NOT STARTED
+### Task 4.3 — Live Iframe Preview Per Graphic — COMPLETE
 
 **Goal:** Preview iframe reloads when override values change (debounced), showing the effect of overrides in real time.
 
@@ -982,9 +982,17 @@ Live verification requires deployment and authentication. Will be verified in Ta
 4. Add a debounced iframe reload: after save completes, wait 500ms then reload the iframe (gives Firebase time to propagate)
 
 **Verify:**
-- [ ] Edit an override → save → preview reloads showing the override
-- [ ] Expanding a graphic's override panel switches the preview to that graphic
-- [ ] No excessive iframe reloads (debounce prevents rapid fire)
+- [x] Edit an override → save → preview reloads showing the override — `previewVersion` state incremented after 500ms, added to iframe key
+- [x] Expanding a graphic's override panel switches the preview to that graphic — already implemented in Task 4.2 via `toggleOverridePanel`
+- [x] No excessive iframe reloads (debounce prevents rapid fire) — 500ms setTimeout ensures single reload per save
+
+**Status:** COMPLETE — Build passes. Implementation:
+- Added `previewVersion` state variable (initialized to 0)
+- After successful `saveTheme()`, increment `previewVersion` after 500ms delay
+- Iframe key includes `previewVersion` to force reload when it changes
+- Updated preview text to "Preview reloads automatically after saving"
+
+Live verification requires deployment and authentication. Will be verified in Task 4.DOC.
 
 **Deploy:** Build React SPA + deploy.
 
@@ -1237,3 +1245,4 @@ Phase 4 (depends on Phase 3):
 - LEARNING: The debug panel's Layer 3 display shows the per-graphic override variable (e.g., `--event-bar-header-bg`) but the global `--meet-header-bg` still holds the theme value. The CSS cascade `var(--{graphicId}-*, var(--meet-*, fallback))` handles priority at render time. The debug panel reads `overrideStatus` from `debugState` which is populated by `applyOverrides()` in the init flow. (found during Task 3.4)
 - LEARNING: Theme Editor page requires authentication — local screenshot verification requires login. Build verification is sufficient for code correctness. Full UI verification happens after deployment to production. The GRAPHIC_GROUPS constant uses 7 categories to match the plan's grouping requirements. WTW overlays need special URL handling (use overlay files directly, not output.html). (found during Task 4.1)
 - LEARNING: Per-graphic override panels use checkbox toggles instead of radio buttons for each color field — cleaner UX that shows enabled/disabled state clearly. The `overrides` field must be added to both `loadTheme` (for existing themes) and `newTheme` (for new themes). Helper functions (`updateOverrideField`, `clearOverrideField`, `resetGraphicOverrides`) manage the nested state cleanly. When a graphic panel is expanded, auto-switching `selectedGraphicType` gives immediate preview feedback. Team cards use specific IDs (`team1-stats`, `team1-coaches`, `team2-stats`, `team2-coaches`) not generic `team-stats`/`team-coaches`. (found during Task 4.2)
+- LEARNING: To force an iframe reload after saving data to Firebase, use a version counter state variable included in the iframe's `key` prop. Incrementing the version after a 500ms delay (to allow Firebase propagation) forces React to recreate the iframe element. The existing `toggleOverridePanel` already switches `selectedGraphicType` when expanding a panel (from Task 4.2), so no additional work needed for that requirement. (found during Task 4.3)
