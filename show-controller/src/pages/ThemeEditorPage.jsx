@@ -1079,6 +1079,180 @@ export default function ThemeEditorPage() {
               </div>
             </div>
 
+            {/* Background Images */}
+            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+              <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide mb-2">Background Images</h2>
+              <p className="text-xs text-zinc-500 mb-4">
+                Apply to all graphics. Per-graphic overrides (below) take precedence.
+              </p>
+
+              <div className="space-y-4">
+                {/* Header Background Image */}
+                <div>
+                  <label className="block text-sm text-zinc-400 mb-1">Header Background Image</label>
+                  <div className="flex gap-3 mb-2">
+                    <input
+                      type="text"
+                      value={editingTheme.images?.headerBgImage || ''}
+                      onChange={(e) => updateField('images.headerBgImage', e.target.value)}
+                      placeholder="https://..."
+                      className="flex-1 px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500"
+                    />
+                    {editingTheme.images?.headerBgImage && (
+                      <img
+                        src={editingTheme.images.headerBgImage}
+                        alt="Header bg preview"
+                        className="w-16 h-10 object-cover bg-zinc-800 rounded"
+                        onError={(e) => e.target.style.display = 'none'}
+                      />
+                    )}
+                  </div>
+                  {editingTheme.images?.headerBgImage && (
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <label className="block text-xs text-zinc-500 mb-1">Fit</label>
+                        <select
+                          value={editingTheme.images?.headerBgImageFit || 'cover'}
+                          onChange={(e) => updateField('images.headerBgImageFit', e.target.value)}
+                          className="w-full px-2 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-sm text-zinc-300 focus:outline-none focus:border-blue-500"
+                        >
+                          <option value="cover">Cover</option>
+                          <option value="contain">Contain</option>
+                          <option value="auto">Auto</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-zinc-500 mb-1">Position</label>
+                        <select
+                          value={editingTheme.images?.headerBgImagePosition || 'center'}
+                          onChange={(e) => updateField('images.headerBgImagePosition', e.target.value)}
+                          className="w-full px-2 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-sm text-zinc-300 focus:outline-none focus:border-blue-500"
+                        >
+                          <option value="center">Center</option>
+                          <option value="top">Top</option>
+                          <option value="bottom">Bottom</option>
+                          <option value="left">Left</option>
+                          <option value="right">Right</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-zinc-500 mb-1">Opacity</label>
+                        <input
+                          type="number"
+                          value={Math.round((editingTheme.images?.headerBgImageOpacity ?? 1) * 100)}
+                          onChange={(e) => updateField('images.headerBgImageOpacity', Number(e.target.value) / 100)}
+                          min={0}
+                          max={100}
+                          className="w-full px-2 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-sm text-zinc-300 focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Body Background Image */}
+                <div>
+                  <label className="block text-sm text-zinc-400 mb-1">Body Background Image</label>
+                  <div className="flex gap-3 mb-2">
+                    <input
+                      type="text"
+                      value={editingTheme.images?.bodyBgImage || ''}
+                      onChange={(e) => updateField('images.bodyBgImage', e.target.value)}
+                      placeholder="https://..."
+                      className="flex-1 px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500"
+                    />
+                    {editingTheme.images?.bodyBgImage && (
+                      <img
+                        src={editingTheme.images.bodyBgImage}
+                        alt="Body bg preview"
+                        className="w-16 h-10 object-cover bg-zinc-800 rounded"
+                        onError={(e) => e.target.style.display = 'none'}
+                      />
+                    )}
+                  </div>
+                  {editingTheme.images?.bodyBgImage && (
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <label className="block text-xs text-zinc-500 mb-1">Fit</label>
+                        <select
+                          value={editingTheme.images?.bodyBgImageFit || 'cover'}
+                          onChange={(e) => updateField('images.bodyBgImageFit', e.target.value)}
+                          className="w-full px-2 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-sm text-zinc-300 focus:outline-none focus:border-blue-500"
+                        >
+                          <option value="cover">Cover</option>
+                          <option value="contain">Contain</option>
+                          <option value="auto">Auto</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-zinc-500 mb-1">Position</label>
+                        <select
+                          value={editingTheme.images?.bodyBgImagePosition || 'center'}
+                          onChange={(e) => updateField('images.bodyBgImagePosition', e.target.value)}
+                          className="w-full px-2 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-sm text-zinc-300 focus:outline-none focus:border-blue-500"
+                        >
+                          <option value="center">Center</option>
+                          <option value="top">Top</option>
+                          <option value="bottom">Bottom</option>
+                          <option value="left">Left</option>
+                          <option value="right">Right</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-zinc-500 mb-1">Opacity</label>
+                        <input
+                          type="number"
+                          value={Math.round((editingTheme.images?.bodyBgImageOpacity ?? 1) * 100)}
+                          onChange={(e) => updateField('images.bodyBgImageOpacity', Number(e.target.value) / 100)}
+                          min={0}
+                          max={100}
+                          className="w-full px-2 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-sm text-zinc-300 focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Texture Overlay */}
+                <div>
+                  <label className="block text-sm text-zinc-400 mb-1">Texture Overlay</label>
+                  <div className="flex gap-3 mb-2">
+                    <input
+                      type="text"
+                      value={editingTheme.textures?.overlay || ''}
+                      onChange={(e) => updateField('textures.overlay', e.target.value)}
+                      placeholder="https://..."
+                      className="flex-1 px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500"
+                    />
+                    {editingTheme.textures?.overlay && (
+                      <img
+                        src={editingTheme.textures.overlay}
+                        alt="Texture preview"
+                        className="w-16 h-10 object-cover bg-zinc-800 rounded"
+                        onError={(e) => e.target.style.display = 'none'}
+                      />
+                    )}
+                  </div>
+                  {editingTheme.textures?.overlay && (
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-xs text-zinc-500 mb-1">Opacity</label>
+                        <input
+                          type="number"
+                          value={Math.round((editingTheme.textures?.opacity ?? 0.08) * 100)}
+                          onChange={(e) => updateField('textures.opacity', Number(e.target.value) / 100)}
+                          min={0}
+                          max={100}
+                          step={2}
+                          className="w-full px-2 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-sm text-zinc-300 focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
             {/* Logos */}
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
               <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide mb-4">Logos</h2>
