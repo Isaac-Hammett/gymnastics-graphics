@@ -11,7 +11,7 @@
  *
  * Firebase paths used:
  *   competitions/{compId}/config/sessionKey — Clip Engine session key
- *   competitions/{compId}/production/currentGraphic — What output.html renders
+ *   competitions/{compId}/currentGraphic — What output.html renders
  *   competitions/{compId}/production/playoutState — Engine state (mode, overrides)
  *   competitions/{compId}/production/clipQueue — Persisted queue (recovery)
  *   competitions/{compId}/production/clipStatus/{draftId} — Write-back from output.html
@@ -73,6 +73,14 @@ const ENGINE_STATE = {
   PAUSED: 'paused'
 };
 
+// OBS scene names (matching PRD Section 3 - Multi-Scene Model)
+// These can be overridden via competition config at config/obsScenes
+const DEFAULT_OBS_SCENES = {
+  liveCamera: 'Live Camera Scene',
+  clipPlayback: 'Clip Playback Scene',
+  marchIn: 'March In Scene'
+};
+
 // Timing constants (from PRD)
 const HEARTBEAT_INTERVAL_MS = 5000;      // 5 seconds
 const CLIP_POLL_INTERVAL_MS = 15000;     // 15 seconds
@@ -124,6 +132,8 @@ export class PlayoutEngine extends EventEmitter {
     this._state = ENGINE_STATE.STOPPED;
     this._mode = PLAYOUT_MODE.FALLBACK;
     this._sessionKey = null;
+    this._clipApiUrl = null; // Per-competition Clip Engine API URL
+    this._meetTheme = null; // Meet theme ID for graphics
 
     // Clip queue (ordered array)
     this._clips = [];
@@ -169,6 +179,9 @@ export class PlayoutEngine extends EventEmitter {
     this._clipPollTimer = null;
     this._clipStatusListener = null;
     this._virtiusPollTimer = null;
+
+    // OBS scene names (can be overridden from competition config)
+    this._obsScenes = { ...DEFAULT_OBS_SCENES };
 
     // Track last API error for health indicator
     this._lastApiError = null;
@@ -273,8 +286,9 @@ export class PlayoutEngine extends EventEmitter {
   /**
    * Start the playout engine for this competition
    * @param {string} sessionKey - Clip Engine session key (optional, will be fetched from Firebase if not provided)
+   * @param {string} clipApiUrl - Per-competition Clip Engine API URL (optional, falls back to env/default)
    */
-  async start(sessionKey = null) {
+  async start(sessionKey = null, clipApiUrl = null) {
     if (this._state !== ENGINE_STATE.STOPPED) {
       console.log(`[PlayoutEngine] Already running for ${this.compId}`);
       return;
@@ -283,6 +297,12 @@ export class PlayoutEngine extends EventEmitter {
     console.log(`[PlayoutEngine] Starting for ${this.compId}`);
 
     try {
+      // Store per-competition API URL
+      this._clipApiUrl = clipApiUrl || null;
+      if (this._clipApiUrl) {
+        console.log(`[PlayoutEngine] Using per-competition clip API URL: ${this._clipApiUrl}`);
+      }
+
       // Get session key from parameter or Firebase config
       this._sessionKey = sessionKey;
       if (!this._sessionKey && this.firebase) {
@@ -308,6 +328,27 @@ export class PlayoutEngine extends EventEmitter {
         }
       }
 
+      // Load custom OBS scene names from competition config (optional)
+      if (this.firebase) {
+        const scenesRef = this.firebase.ref(`competitions/${this.compId}/config/obsScenes`);
+        const scenesSnapshot = await scenesRef.once('value');
+        const customScenes = scenesSnapshot.val();
+        if (customScenes) {
+          this._obsScenes = { ...DEFAULT_OBS_SCENES, ...customScenes };
+          console.log(`[PlayoutEngine] Custom OBS scenes:`, this._obsScenes);
+        }
+      }
+
+      // Load meet theme from competition config
+      if (this.firebase) {
+        const themeRef = this.firebase.ref(`competitions/${this.compId}/config/meetTheme`);
+        const themeSnapshot = await themeRef.once('value');
+        this._meetTheme = themeSnapshot.val() || '';
+        if (this._meetTheme) {
+          console.log(`[PlayoutEngine] Loaded meet theme: ${this._meetTheme}`);
+        }
+      }
+
       // Restore persisted queue if available
       await this._restoreQueue();
 
@@ -318,6 +359,11 @@ export class PlayoutEngine extends EventEmitter {
 
       // Set up clip status listener for write-backs from output.html
       this._setupClipStatusListener();
+
+      // Persist clipApiUrl to competition config so REST proxy can use it
+      if (this._clipApiUrl && this.firebase) {
+        await this.firebase.ref(`competitions/${this.compId}/config/clipApiUrl`).set(this._clipApiUrl);
+      }
 
       // Start timers
       this._startHeartbeat();
@@ -441,11 +487,14 @@ export class PlayoutEngine extends EventEmitter {
     const previousMode = this._mode;
     this._mode = PLAYOUT_MODE.OVERRIDE;
 
+    // Switch OBS to Live Camera Scene for forced camera view
+    this._switchToLiveScene();
+
     // Write live-camera graphic to Firebase
     const camera = this._cameraStates.find(c => c.cameraNumber === cameraNumber);
     this._writeCurrentGraphic({
       graphic: 'live-camera',
-      data: { apparatus: camera?.apparatus || 'VT' }
+      data: { apparatus: camera?.apparatus || 'VT', meetTheme: this._meetTheme }
     });
 
     this.emit('modeChanged', { previousMode, newMode: PLAYOUT_MODE.OVERRIDE });
@@ -620,7 +669,7 @@ export class PlayoutEngine extends EventEmitter {
     if (!this._sessionKey) return;
 
     try {
-      const result = await fetchNewClips(this._sessionKey, this._clipDraftIds);
+      const result = await fetchNewClips(this._sessionKey, this._clipDraftIds, this._clipApiUrl);
 
       if (result.error) {
         this._lastApiError = result.error;
@@ -725,6 +774,9 @@ export class PlayoutEngine extends EventEmitter {
       const previousMode = this._mode;
       this._mode = PLAYOUT_MODE.CLIP;
 
+      // Switch OBS to Clip Playback Scene
+      this._switchToClipScene();
+
       // Write clip-playback graphic to Firebase
       this._writeCurrentGraphic({
         graphic: 'clip-playback',
@@ -738,7 +790,8 @@ export class PlayoutEngine extends EventEmitter {
           score: nextClip.score,
           duration: nextClip.duration,
           thumbnailUrl: nextClip.thumbnail_url,
-          nextClipUrl: this._getNextQueuedClip()?.clip_url || null
+          nextClipUrl: this._getNextQueuedClip()?.clip_url || null,
+          meetTheme: this._meetTheme
         }
       });
 
@@ -752,10 +805,13 @@ export class PlayoutEngine extends EventEmitter {
       const previousMode = this._mode;
       this._mode = PLAYOUT_MODE.FALLBACK;
 
+      // Switch OBS back to Live Camera Scene for fallback content
+      this._switchToLiveScene();
+
       // Write fallback graphic to Firebase
       this._writeCurrentGraphic({
         graphic: 'fallback',
-        data: {}
+        data: { meetTheme: this._meetTheme }
       });
 
       this.emit('modeChanged', { previousMode, newMode: PLAYOUT_MODE.FALLBACK });
@@ -777,6 +833,9 @@ export class PlayoutEngine extends EventEmitter {
     const previousMode = this._mode;
     this._mode = PLAYOUT_MODE.MOMENT_REPLAY;
 
+    // Switch OBS to Clip Playback Scene for moment replay
+    this._switchToClipScene();
+
     // Write moment-replay graphic to Firebase
     this._writeCurrentGraphic({
       graphic: 'moment-replay',
@@ -790,7 +849,8 @@ export class PlayoutEngine extends EventEmitter {
         seekEnd: moment.seekEnd,
         playbackRate: moment.speed,
         muted: true,
-        nextClipUrl: this._getNextQueuedClip()?.clip_url || null
+        nextClipUrl: this._getNextQueuedClip()?.clip_url || null,
+        meetTheme: this._meetTheme
       }
     });
 
@@ -820,9 +880,14 @@ export class PlayoutEngine extends EventEmitter {
       const previousMode = this._mode;
       this._mode = PLAYOUT_MODE.LIVE;
 
+      // Switch OBS to Live Camera Scene for live routine
+      if (previousMode !== PLAYOUT_MODE.LIVE) {
+        this._switchToLiveScene();
+      }
+
       this._writeCurrentGraphic({
         graphic: 'live-camera',
-        data: { apparatus: liveCamera.apparatus }
+        data: { apparatus: liveCamera.apparatus, meetTheme: this._meetTheme }
       });
 
       if (previousMode !== PLAYOUT_MODE.LIVE) {
@@ -855,15 +920,66 @@ export class PlayoutEngine extends EventEmitter {
       const previousMode = this._mode;
       this._mode = PLAYOUT_MODE.FALLBACK;
 
+      // Switch OBS to Live Camera Scene for fallback content overlays
+      this._switchToLiveScene();
+
       this._writeCurrentGraphic({
         graphic: 'fallback',
-        data: {}
+        data: { meetTheme: this._meetTheme }
       });
 
       this.emit('modeChanged', { previousMode, newMode: PLAYOUT_MODE.FALLBACK });
       this._logEvent('system', 'Entering fallback mode');
       this._broadcastState();
     }
+  }
+
+  // ==========================================================================
+  // Private Methods - Firebase
+  // ==========================================================================
+
+  // ==========================================================================
+  // Private Methods - OBS Scene Switching
+  // ==========================================================================
+
+  /**
+   * Switch OBS scene via obsConnectionManager
+   * @param {string} sceneName - OBS scene name to switch to
+   * @private
+   */
+  async _switchOBSScene(sceneName) {
+    if (!this.obsConnectionManager || !sceneName) return;
+
+    try {
+      const obs = this.obsConnectionManager.getConnection(this.compId);
+      if (!obs) {
+        console.log(`[PlayoutEngine] No OBS connection for ${this.compId} - skipping scene switch to "${sceneName}"`);
+        return;
+      }
+
+      await obs.call('SetCurrentProgramScene', { sceneName });
+      console.log(`[PlayoutEngine] Switched OBS to "${sceneName}" for ${this.compId}`);
+      this._logEvent('obs', `Scene: ${sceneName}`);
+    } catch (error) {
+      console.error(`[PlayoutEngine] Failed to switch OBS scene to "${sceneName}":`, error.message);
+      this._logEvent('error', `OBS scene switch failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Switch to Clip Playback Scene (for clip/moment replay modes)
+   * @private
+   */
+  _switchToClipScene() {
+    this._switchOBSScene(this._obsScenes.clipPlayback);
+  }
+
+  /**
+   * Switch to Live Camera Scene (for live/fallback/break/override modes)
+   * @private
+   */
+  _switchToLiveScene() {
+    this._switchOBSScene(this._obsScenes.liveCamera);
   }
 
   // ==========================================================================
@@ -878,7 +994,7 @@ export class PlayoutEngine extends EventEmitter {
     if (!this.firebase) return;
 
     try {
-      const ref = this.firebase.ref(`competitions/${this.compId}/production/currentGraphic`);
+      const ref = this.firebase.ref(`competitions/${this.compId}/currentGraphic`);
       await ref.set({
         ...graphic,
         timestamp: Date.now()
@@ -1286,6 +1402,9 @@ export class PlayoutEngine extends EventEmitter {
     const previousMode = this._mode;
     this._mode = PLAYOUT_MODE.BREAK;
 
+    // Switch OBS to Live Camera Scene for break content overlays
+    this._switchToLiveScene();
+
     this.emit('modeChanged', { previousMode, newMode: PLAYOUT_MODE.BREAK });
     this.emit('rotationAdvanced', { previousRotation, newRotation });
 
@@ -1345,7 +1464,8 @@ export class PlayoutEngine extends EventEmitter {
         data: {
           completedRotation,
           nextRotation,
-          timestamp: Date.now()
+          timestamp: Date.now(),
+          meetTheme: this._meetTheme
         },
         background: true
       });
@@ -1510,7 +1630,8 @@ export class PlayoutEngine extends EventEmitter {
         ...item.params,
         contentSequence: true,
         sequenceIndex: this._contentSequenceIndex,
-        sequenceTotal: this._contentSequence.length
+        sequenceTotal: this._contentSequence.length,
+        meetTheme: this._meetTheme
       },
       background: item.background
     });
