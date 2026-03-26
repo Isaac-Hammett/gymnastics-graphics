@@ -484,9 +484,9 @@ Screenshots in `docs/PRD-Who-To-Watch/screenshots/` show the following issues wh
 
 33. ~~**Lower-third preview in editor is a React mockup, not the real overlay**~~ — **FIXED 2026-03-26.** Replaced React mockup with `LowerThirdIframePreview` component following `TitleCardIframePreview` pattern. Renders scaled 1920x1080 iframe to `/overlays/who-to-watch.html` with 300ms debounce, dark background behind transparent overlay. Editor preview now matches production exactly. Commit: `3dd943f`.
 
-34. **No adjustment controls for the WTW lower-third overlay** — ~~The title card overlay (`who-to-watch-title.html`) has 19+ adjustment params with stepper controls in the editor (font sizes, offsets, colors, watermark, badge, etc.). The lower-third overlay (`who-to-watch.html`) has ZERO adjustment params — everything is hardcoded CSS. Producers cannot tune font sizes, headshot size, card positioning, or colors.~~ — **PARTIALLY FIXED 2026-03-26.** (a) Added 15+ query params to `who-to-watch.html` (Task 5). (b) Added "Lower-Third Adjustments" collapsible panel in WhoToWatchEditor with stepper controls for badge, text, headshot, logo, position, and theme controls (Task 7). Adjustments stored in `config.lowerThirdAdjustments`. Editor preview updates in real-time. **Remaining:** Task 8 — pass adjustments through sequencer to live output.
+34. ~~**No adjustment controls for the WTW lower-third overlay**~~ — **FIXED 2026-03-26.** (a) Added 15+ query params to `who-to-watch.html` (Task 5). (b) Added "Lower-Third Adjustments" collapsible panel in WhoToWatchEditor with stepper controls for badge, text, headshot, logo, position, and theme controls (Task 7). Adjustments stored in `config.lowerThirdAdjustments`. Editor preview updates in real-time. (c) Task 8: Server spreads `lowerThirdAdjustments` to clip step data (`server/index.js:837`); both output.html URL builders pass adjustment params to iframe.
 
-35. **Lower-third overlay has no theme override controls** — ~~The title card editor has a theme dropdown + bgColor/accentColor color pickers that override theme-loader colors. The lower-third has no equivalent — it only receives `meetTheme` from the sequencer with no per-segment override.~~ — **PARTIALLY FIXED 2026-03-26.** (a) Added `bgColor`/`accentColor` query param support to `who-to-watch.html` with `setTimeout(600ms)` override pattern (Task 5). (b) Added theme dropdown + bgColor/accentColor color pickers to "Lower-Third Adjustments" panel in WhoToWatchEditor (Task 7). Editor preview updates in real-time. **Remaining:** Task 8 — pass theme overrides through sequencer to live output.
+35. ~~**Lower-third overlay has no theme override controls**~~ — **FIXED 2026-03-26.** (a) Added `bgColor`/`accentColor` query param support to `who-to-watch.html` with `setTimeout(600ms)` override pattern (Task 5). (b) Added theme dropdown + bgColor/accentColor color pickers to "Lower-Third Adjustments" panel in WhoToWatchEditor (Task 7). Editor preview updates in real-time. (c) Task 8: Server spreads `lowerThirdAdjustments` (including `bgColor`/`accentColor`) to clip step; both output.html URL builders pass them to iframe.
 
 36. **Theme system documentation: where WTW graphics render** — The WTW segment renders graphics in TWO places during the sequence: (a) title cards render on the **graphics source** (`output.html` live mode) as full-screen iframes to `who-to-watch-title.html`, (b) the lower-third renders on the **graphics source** as an iframe to `who-to-watch.html` overlaying the video playing on the **clip source** (`output.html?mode=clip`). Both overlays load `theme-loader.js` which reads `meetTheme` from their iframe URL params and fetches theme CSS variables from Firebase. Theme overrides (`bgColor`, `accentColor`) are applied via `setTimeout(600ms)` after theme-loader completes. The sequencer passes `meetTheme` and override colors through Firebase `currentGraphic` → both OBS sources read them. **This means theme changes to the WTW lower-third require updating `overlays/who-to-watch.html` only — the graphics source iframe loads it dynamically.**
 
@@ -496,9 +496,9 @@ Screenshots in `docs/PRD-Who-To-Watch/screenshots/` show the following issues wh
 
 ## Implementation Plan: WTW Video Playback + Lower Third
 
-**Status:** IN PROGRESS (Issues #30, #32, #33 fixed 2026-03-26; Issues #34-35 remain)
+**Status:** COMPLETE (Issues #30, #32, #33, #34, #35 fixed 2026-03-26)
 **Date:** 2026-03-26
-**Priority:** Issues #34-35 remain — adjustment controls, theme overrides
+**Priority:** All tasks complete
 
 ### Problem Statement
 
