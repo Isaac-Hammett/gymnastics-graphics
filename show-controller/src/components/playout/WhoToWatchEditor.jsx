@@ -393,6 +393,7 @@ function TitleCardIframePreview({ card, athleteName, teamName, logoUrl, imageUrl
     if (card.badgeFontSize) params.set('badgeFontSize', card.badgeFontSize);
     // Team name row controls
     if (card.teamNameFontSize) params.set('teamNameFontSize', card.teamNameFontSize);
+    if (card.logoSize && card.logoSize !== 48) params.set('logoSize', card.logoSize);
     if (card.showTeamRow === false) params.set('showTeamRow', 'false');
     // Watermark controls
     if (card.watermarkOpacity !== undefined && card.watermarkOpacity !== 8) params.set('watermarkOpacity', card.watermarkOpacity);
@@ -886,6 +887,7 @@ export default function WhoToWatchEditor({
                     {/* Team Controls (Issue 27) */}
                     <div className="text-[10px] text-zinc-500 uppercase tracking-wide font-medium mt-2">Team</div>
                     <ValueStepper label="Name size" value={card.teamNameFontSize} defaultValue={20} min={8} onChange={(v) => updateTitleCard(index, 'teamNameFontSize', v)} onReset={() => updateTitleCard(index, 'teamNameFontSize', 20)} />
+                    <ValueStepper label="Logo size" value={card.logoSize} defaultValue={48} min={8} step={4} onChange={(v) => updateTitleCard(index, 'logoSize', v)} onReset={() => updateTitleCard(index, 'logoSize', 48)} />
                     <div className="flex items-center gap-2">
                       <label className="text-[10px] text-zinc-500 w-20 shrink-0">Show team</label>
                       <input type="checkbox" checked={card.showTeamRow !== false} onChange={(e) => updateTitleCard(index, 'showTeamRow', e.target.checked)} className="accent-rose-500 cursor-pointer" />
