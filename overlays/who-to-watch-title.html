@@ -562,6 +562,11 @@
     // ── Team name row controls ──
     const teamNameFontSize = parseInt(params.get('teamNameFontSize'));
     if (teamNameFontSize) teamNameEl.style.fontSize = teamNameFontSize + 'px';
+    const logoSize = parseInt(params.get('logoSize'));
+    if (logoSize) {
+      logoEl.style.width = logoSize + 'px';
+      logoEl.style.height = logoSize + 'px';
+    }
     const showTeamRow = params.get('showTeamRow');
     if (showTeamRow === 'false') teamRow.style.display = 'none';
 
