@@ -52,7 +52,7 @@
 
 ---
 
-### Task 3: Suppress built-in clip overlay for WTW clips on clip source — NOT STARTED
+### Task 3: Suppress built-in clip overlay for WTW clips on clip source — COMPLETE
 **Files:** `output.html`
 **Why third:** Depends on Task 1's `overlayStyle` field. Prevents the playout-style overlay from conflicting with the WTW lower-third.
 
@@ -101,3 +101,4 @@
 - LEARNING: Task 1 confirmed `meetTheme` is a shorthand property in the data object (ES6 shorthand for `meetTheme: meetTheme`). The variable is in scope from line 759. No new Firebase reads needed.
 - LEARNING: Title card steps use `...baseData` which already includes `meetTheme` but NOT `overlayStyle`. This is correct — only clip steps need `overlayStyle` to differentiate from regular playout clips.
 - LEARNING: The iframe URL is built using `URLSearchParams` with conditional param setting. The mapping is: `teamLogo` → `logo`, `subtitle || teamName` → `subtitle`. All other params pass through directly.
+- LEARNING: Task 3 modifies THREE locations in output.html: (1) line ~13478 for clip-playback, (2) line ~13539 for moment-replay, (3) line ~6880 for optimistic advance. All three need the same conditional: `if (data.overlayStyle === 'who-to-watch') { clipOverlay.classList.remove('visible'); } else { updateClipOverlay(data); }`
