@@ -185,7 +185,7 @@ pm2 save
 
 ---
 
-### Task 1.3a — Port Event Summary CSS Rules to theme-overrides.css — NOT STARTED
+### Task 1.3a — Port Event Summary CSS Rules to theme-overrides.css — COMPLETE
 
 **Goal:** Port event summary theme rules (~22) from output.html to theme-overrides.css.
 
@@ -201,11 +201,13 @@ Port these selectors from output.html (lines 1084–1134):
 Add a new `/* === EVENT SUMMARY === */` section in theme-overrides.css.
 
 **Verify:**
-- [ ] All event summary `[data-meet-theme]` rules from output.html have equivalents in theme-overrides.css
-- [ ] Existing rotation-badge rule not duplicated
-- [ ] CSS variables used match the same `--meet-*` variables
+- [x] All event summary `[data-meet-theme]` rules from output.html have equivalents in theme-overrides.css
+- [x] Existing rotation-badge rule not duplicated — added general `.rotation-badge` rule alongside the existing `.rotation-slate .rotation-badge` rule (more specific scoping coexists)
+- [x] CSS variables used match the same `--meet-*` variables
 
 **Deploy:** Upload `overlays/` directory. Verify an overlay that uses event-summary classes still renders correctly.
+
+**Status:** COMPLETE — Added EVENT SUMMARY section (lines 123-179) with 15 rules covering all event summary theme selectors.
 
 ---
 
