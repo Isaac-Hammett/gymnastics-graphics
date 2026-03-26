@@ -99,7 +99,7 @@ This logging helps answer the open question: are production URLs always presigne
 
 ---
 
-### Task 5: Deploy and verify with live clip URL — NOT STARTED
+### Task 5: Deploy and verify with live clip URL — COMPLETE
 
 **Files:** none (deploy only)
 
@@ -126,6 +126,7 @@ Deploy coordinator server changes and output.html to production:
 - LEARNING: Task 2 added `proxyClipUrl()` helper at line 6588 in output.html. The function is called in `handleClipPlayback()` at lines 13399-13400 to transform both `clipUrl` and `nextClipUrl`. All downstream code (startClip, preloadClip, iframe fallback) automatically receives the proxied URL.
 - LEARNING: Task 3 added inline `proxyClipUrl()` function to `overlays/clip-player.html` (lines 15-30). Same logic as output.html but inlined since it's a separate file. Uses `[clip-player]` prefix for console logs to distinguish from output.html's `[clip]` logs.
 - LEARNING: Task 4 added diagnostic logging in `handleClipPlayback()` at lines 13410-13418 (URL type + proxy status) and enhanced `handleVideoError()` at lines 6781-6789 (MediaError code, message, network state, truncated URL). The error handler also now includes `networkState` in the Firebase write-back.
+- LEARNING: Task 5 deployed all changes to production. Server deployed via tarball to coordinator (44.193.31.120), PM2 restarted with `GOOGLE_APPLICATION_CREDENTIALS`. Web files deployed to commentarygraphic.com (3.87.107.201) with `sudo` required for /var/www paths. Proxy endpoint verified working with curl: 200 OK for valid R2 URLs, 206 for Range requests, 400 for missing/invalid URLs.
 
 ## Bugs
 
