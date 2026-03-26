@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; }
+  body { background: black; overflow: hidden; width: 1920px; height: 1080px; }
+  video { width: 100%; height: 100%; object-fit: contain; }
+</style>
+</head>
+<body>
+<video id="player" autoplay playsinline></video>
+<script>
+  // Route R2 clip URLs through coordinator proxy for reliable playback
+  function proxyClipUrl(url) {
+    if (!url) return url;
+    // Don't double-proxy
+    if (url.includes('api.commentarygraphic.com/api/clip-proxy')) {
+      console.log('[clip-player] URL already proxied');
+      return url;
+    }
+    // Only proxy R2 URLs
+    if (url.includes('r2.cloudflarestorage.com')) {
+      const proxyUrl = `https://api.commentarygraphic.com/api/clip-proxy?url=${encodeURIComponent(url)}`;
+      console.log(`[clip-player] Using proxy: ${proxyUrl.substring(0, 80)}...`);
+      return proxyUrl;
+    }
+    console.log('[clip-player] Using direct URL (non-R2)');
+    return url;  // Non-R2 URLs pass through unchanged
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const rawUrl = params.get('url');
+  const url = proxyClipUrl(rawUrl);
+  const muted = params.get('muted') === 'true';
+  const video = document.getElementById('player');
+
+  if (url) {
+    video.muted = muted;
+    video.src = url;
+    video.play().catch(err => {
+      // If autoplay blocked, try muted
+      video.muted = true;
+      video.play().catch(e => console.error('Playback failed:', e));
+    });
+
+    // Notify parent when video ends
+    video.addEventListener('ended', () => {
+      try { window.parent.postMessage({ type: 'clipEnded' }, '*'); } catch(e) {}
+    });
+    video.addEventListener('error', (e) => {
+      console.error('Video error:', video.error?.message || 'Unknown');
+      try { window.parent.postMessage({ type: 'clipError', message: video.error?.message }, '*'); } catch(e) {}
+    });
+  }
+</script>
+</body>
+</html>
