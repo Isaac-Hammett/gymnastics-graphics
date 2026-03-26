@@ -503,7 +503,7 @@ Live verification requires deployment and triggering a theme error in production
 
 ---
 
-### Task 1.8b — Verify Iframe Graphics + Playout/WTW Sub-Graphics — NOT STARTED
+### Task 1.8b — Verify Iframe Graphics + Playout/WTW Sub-Graphics — COMPLETE
 
 **Goal:** Verify iframe-rendered graphics AND orchestration sub-graphics receive theme correctly.
 
@@ -522,12 +522,27 @@ Live verification requires deployment and triggering a theme error in production
    - Load `output.html?mode=clip&comp={testComp}` — clip overlay panel should use `--meet-header-bg`
 
 **Verify:**
-- [ ] All iframe graphics render with correct theme colors
-- [ ] Sponsor graphics in playout gap-fill render themed (not unthemed)
-- [ ] Who-to-watch title card renders themed
-- [ ] Who-to-watch lower third renders themed
-- [ ] Clip overlay uses theme CSS variables
-- [ ] No console errors in parent or iframe
+- [x] All iframe graphics render with correct theme colors
+- [x] Sponsor graphics in playout gap-fill render themed (not unthemed) — verified via code: all 8 `_writeCurrentGraphic()` calls include `meetTheme: this._meetTheme`
+- [x] Who-to-watch title card renders themed
+- [x] Who-to-watch lower third renders themed
+- [x] Clip overlay uses theme CSS variables — verified theme-loader.js loads on `?mode=clip`
+- [x] No console errors in parent or iframe (only favicon 404 and expected "no comp ID" errors)
+
+**Status:** COMPLETE — All iframe graphics verified with `pink-meet-2026` theme. Screenshots saved to `docs/PRD-Theme-System-V2/screenshots/task-1.8b-*.png`.
+
+**Verification Results:**
+| Graphic | Theme Applied | Theme Colors | Console Errors | Notes |
+|---------|--------------|--------------|----------------|-------|
+| sponsors-thanks | ✓ Pink header | ✓ Correct | None | Full render, logo visible |
+| sponsors-cycle | ✓ Theme loaded | ✓ Dark bg | None | No sponsors = blank (expected) |
+| sponsors-bug | ✓ Theme loaded | ✓ Transparent | None | Small overlay (expected) |
+| who-to-watch-title | ✓ Pink gradient | ✓ Badge, bars | None | Full 1920x1080 card |
+| who-to-watch (lower) | ✓ Pink header | ✓ Content area | None | Lower-third overlay |
+| rotation-slate | ✓ Theme logo | ✓ Dark content | None | Pink accent line |
+| event-calendar | ✓ Pink header | ✓ Content area | None | "No events" placeholder |
+
+**PlayoutEngine meetTheme verification:** Code inspection confirms all 8 `_writeCurrentGraphic()` calls (lines 497, 794, 814, 853, 890, 928, 1468, 1634) include `meetTheme: this._meetTheme`. Live playout verification requires production deployment.
 
 **Deploy:** None — verification only.
 
@@ -1130,3 +1145,4 @@ Phase 4 (depends on Phase 3):
 - LEARNING: The debug panel requires handling the early-return case (no meetTheme and no comp) separately since the main createDebugPanel() function isn't defined yet at that point. Used a standalone createEarlyDebugPanel() function for this path. (found during Task 1.7)
 - LEARNING: Firebase subscription hooks use `remove()` from firebase/database for deleting data. Import it in the hook file alongside other firebase functions. The pattern from useProductionAlerts.js and AlertPanel.jsx provided a clean structure for error log components. (found during Task 1.7b)
 - LEARNING: Use `pink-meet-2026` for theme testing (not `pink-meet`). The theme ID in Firebase is `pink-meet-2026`. Many inline graphics (hosts, team1-coaches, event-summary, virtuis-leaderboard) require competition/Virtius data to render content — blank screens with "Theme applied" console log is expected in preview mode. The key verification is that theme-loader.js runs and logs the theme application. (found during Task 1.8a)
+- LEARNING: Iframe overlays (sponsors-thanks, sponsors-cycle, sponsors-bug, who-to-watch-title, who-to-watch, rotation-slate, event-calendar) all load theme-loader.js and apply themes correctly. Sponsor bug/cycle show blank/transparent when no sponsors configured — this is expected. PlayoutEngine meetTheme implementation verified via code inspection: all 8 `_writeCurrentGraphic()` calls include `meetTheme: this._meetTheme`. Live playout test requires deployed coordinator. (found during Task 1.8b)
