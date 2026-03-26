@@ -143,29 +143,30 @@ theme-loader.js only supports `?meetTheme=`. output.html ALSO supports `?comp=` 
 
 ## PlayoutEngine (server/lib/playoutEngine.js)
 
-### Config reads in start() method (lines 290-379)
+### Config reads in start() method (lines 290-389)
 | Line | Config Path | Variable |
 |------|------------|----------|
 | 308 | `config/sessionKey` | `this._sessionKey` |
 | 320 | `config/virtiusSessionId` | `this._virtiusSessionId` |
 | 332 | `config/obsScenes` | `this._obsScenes` |
-| 354 | `config/clipApiUrl` | `this._clipApiUrl` |
+| 344 | `config/meetTheme` | `this._meetTheme` |
+| 364 | `config/clipApiUrl` | `this._clipApiUrl` |
 
-**meetTheme is NOT read — Task 1.1b adds it after line 338.**
+**meetTheme read added at line 344 (Task 1.1b COMPLETE).**
 
-### All _writeCurrentGraphic() calls
+### All _writeCurrentGraphic() calls (all now include meetTheme: this._meetTheme)
 | Line | Graphic Type |
 |------|-------------|
-| 484-487 | `live-camera` (forceCamera) |
-| 770-784 | `clip-playback` |
-| 800-803 | `fallback` |
-| 828-842 | `moment-replay` |
-| 875-878 | `live-camera` (priority stack) |
-| 913-916 | `fallback` (priority stack) |
-| 1449-1457 | `rotation-break` |
-| 1613-1622 | content sequence (dynamic) |
+| 494-498 | `live-camera` (forceCamera) |
+| 780-795 | `clip-playback` |
+| 811-815 | `fallback` |
+| 838-854 | `moment-replay` |
+| 887-891 | `live-camera` (priority stack) |
+| 925-929 | `fallback` (priority stack) |
+| 1462-1471 | `rotation-break` |
+| 1628-1637 | content sequence (dynamic) |
 
-### _writeCurrentGraphic() method (lines 980-992)
+### _writeCurrentGraphic() method (lines 992-1005)
 Spreads entire graphic object into Firebase at `currentGraphic` path + adds timestamp.
 
 ---

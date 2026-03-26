@@ -115,7 +115,7 @@
 
 ---
 
-### Task 1.1b — Add meetTheme to PlayoutEngine Writes — NOT STARTED
+### Task 1.1b — Add meetTheme to PlayoutEngine Writes — COMPLETE
 
 **Goal:** PlayoutEngine reads meetTheme from competition config at startup and includes it in all `_writeCurrentGraphic()` calls.
 
@@ -1064,3 +1064,9 @@ Phase 4 (depends on Phase 3):
 | `overlays/who-to-watch.html` | 1.9 |
 | `CLAUDE.md` | 1.DOC, 3.DOC, 4.DOC, 1.9 |
 | `docs/PRD-Theme-System-V2/PRD-Theme-System-V2-2026-03-25.md` | 1.DOC, 3.DOC, 4.DOC |
+
+---
+
+## Learnings
+
+- LEARNING: Task 1.1b verification (Firebase check for `data.meetTheme` field) requires live playout session — cannot verify locally. Deploy to coordinator and test during Task 1.8b verification. (found during Task 1.1b)
