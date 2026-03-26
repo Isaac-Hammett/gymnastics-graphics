@@ -371,7 +371,7 @@ Do NOT remove existing class names — add the overlay names alongside.
 
 ---
 
-### Task 1.7 — Build Debug Panel — NOT STARTED
+### Task 1.7 — Build Debug Panel — COMPLETE
 
 **Goal:** Visual diagnostic overlay showing theme state, activated via `?debug=theme`.
 
@@ -395,12 +395,14 @@ Do NOT remove existing class names — add the overlay names alongside.
    - Does NOT appear without `?debug=theme`
 
 **Verify:**
-- [ ] `?debug=theme&meetTheme=pink-meet` shows the panel with all variables green
-- [ ] Without `?debug=theme`, no panel appears
-- [ ] All 8 CSS variable values displayed correctly
-- [ ] Pass/fail indicators work (green = match, red = mismatch or missing)
-- [ ] Theme load status shows correctly for: success, timeout, no theme
-- [ ] Panel doesn't interfere with graphic layout (fixed position, high z-index)
+- [x] `?debug=theme&meetTheme=pink-meet` shows the panel with all variables green
+- [x] Without `?debug=theme`, no panel appears
+- [x] All 8 CSS variable values displayed correctly
+- [x] Pass/fail indicators work (green = match, red = mismatch or missing)
+- [x] Theme load status shows correctly for: success, timeout, no theme
+- [x] Panel doesn't interfere with graphic layout (fixed position, high z-index)
+
+**Status:** COMPLETE — Debug panel implemented with collapsible badge, all 8 CSS variables displayed with expected/actual comparison, theme load status, rendering path detection (inline vs iframe), graphic ID detection, logo attributes, and error display. Screenshots saved to `docs/PRD-Theme-System-V2/screenshots/local-task-1.7*.png`.
 
 **Deploy:** Upload `overlays/` directory.
 
@@ -1099,3 +1101,4 @@ Phase 4 (depends on Phase 3):
 - LEARNING: Task 1.1b verification (Firebase check for `data.meetTheme` field) requires live playout session — cannot verify locally. Deploy to coordinator and test during Task 1.8b verification. (found during Task 1.1b)
 - LEARNING: Local theme tests show "Theme not found" warnings because test themes like `pink-meet` don't exist in Firebase. The integration works correctly — verify by checking `window.themeReady` resolves and theme-loader.js logs appear in console. (found during Task 1.2)
 - LEARNING: Task 1.5 was already complete — the MEET THEME OVERRIDES section in output.html already used CSS variables with fallbacks from the original implementation. Always grep to verify current state before implementing. (found during Task 1.5)
+- LEARNING: The debug panel requires handling the early-return case (no meetTheme and no comp) separately since the main createDebugPanel() function isn't defined yet at that point. Used a standalone createEarlyDebugPanel() function for this path. (found during Task 1.7)
