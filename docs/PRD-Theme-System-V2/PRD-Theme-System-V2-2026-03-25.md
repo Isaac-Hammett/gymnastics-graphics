@@ -2,7 +2,7 @@
 
 **Version:** 3.0
 **Date:** 2026-03-26
-**Status:** IN PROGRESS (Phase 0-4 COMPLETE, Phase 5 tasks 5.1-5.5 COMPLETE, 5.6 pending production deploy)
+**Status:** IN PROGRESS (Phase 0-4 COMPLETE, Phase 5 COMPLETE)
 **Supersedes:** PRD-Meet-Themes (v3.0, 2026-03-06) — Phases 1-12 remain COMPLETE; this PRD builds on that foundation
 **Depends On:** PRD-Meet-Themes (foundation)
 
@@ -453,9 +453,9 @@ Both are already iframe renderers with `?meetTheme=` support, so they work as st
 
 ---
 
-### Phase 5: Bug Fixes + Rich Per-Graphic Layout Controls — IN PROGRESS (5.1-5.5 COMPLETE)
+### Phase 5: Bug Fixes + Rich Per-Graphic Layout Controls — COMPLETE
 
-**Goal:** Fix the broken competition dropdown and preview errors. Then build granular layout controls for the Event Bar graphic as a prototype for all graphics. Add save button + preview reload to the overrides section.
+**Goal:** Fix the broken competition dropdown and preview errors. Build granular layout controls for the Event Bar graphic as a prototype for all graphics. Add save button + preview reload to the overrides section. Add theme-level background image controls. Full control over logo container (color, size, padding, radius).
 
 **Tasks:**
 
@@ -504,13 +504,17 @@ Both are already iframe renderers with `?meetTheme=` support, so they work as st
 | `barLeft` | `--event-bar-bar-left` | 100px |
 | `logoImgSize` | `--event-bar-logo-img-size` | 70px |
 | `logoContainerWidth` | `--event-bar-logo-container-width` | 100px |
-| `showLogo` | `--event-bar-show-logo` | block |
+| `logoContainerHeight` | `--event-bar-logo-container-height` | auto |
+| `logoBg` | `--event-bar-logo-bg` | rgba(255,255,255,0.92) |
+| `logoPadding` | `--event-bar-logo-padding` | 15px |
+| `logoRadius` | `--event-bar-logo-radius` | 0px |
+| `showLogo` | `--event-bar-show-logo` | flex |
 | `venueFontSize` | `--event-bar-venue-font-size` | 36px |
 | `barMinWidth` | `--event-bar-bar-min-width` | 600px |
 | `nameFontSize` | `--event-bar-name-font-size` | 28px |
 | `locationFontSize` | `--event-bar-location-font-size` | 24px |
 
-**Show/hide logo:** `showLogo: false` sets `--event-bar-show-logo: none` which is used as `display: var(--event-bar-show-logo, block)` on `.event-bar-logo`.
+**Show/hide logo:** `showLogo: false` sets `--event-bar-show-logo: none` which is used as `display: var(--event-bar-show-logo, flex)` on `.event-bar-logo`.
 
 5.5. **Build rich Event Bar control panel in Theme Editor** — Replace the current flat color-checkbox grid for event-bar with a structured control panel modeled on the WTW title card's Card Adjustments pattern. Uses the existing `ValueStepper` component for all numeric controls.
 
@@ -526,7 +530,11 @@ Both are already iframe renderers with `?meetTheme=` support, so they work as st
 | Control | Default | Min | Unit | Description |
 |---------|---------|-----|------|-------------|
 | Logo size | 70 | 16 | px | Logo image width/height |
-| Container width | 100 | 40 | px | Colored box around logo |
+| Box width | 100 | 40 | px | Logo container width |
+| Box height | auto | 0 | px | Logo container height (0 = auto) |
+| Padding | 15 | 0 | px | Space between logo and container edge |
+| Radius | 0 | 0 | px | Border radius on logo container |
+| Box background | white | — | color | Logo container background color (with reset) |
 | Show logo | true | — | toggle | Show/hide entire logo section |
 | Logo URL | (theme) | — | URL | Override logo image (existing) |
 
@@ -568,19 +576,54 @@ Each control uses `ValueStepper` with:
 - Reset all → verify defaults restored
 - Deploy to production → verify on commentarygraphic.com
 
+5.7. **Add theme-level background image controls** — The main Theme Editor form (COLORS section) only had flat color pickers with no way to set background images at the theme level. Per-graphic overrides supported images, but theme-level did not. Fix:
+- Add "BACKGROUND IMAGES" section between COLORS and LOGOS in the editor form
+- Three fields: Header Background Image, Body Background Image, Texture Overlay
+- Each shows fit/position/opacity controls when a URL is entered
+- Extend theme-loader.js to set `--meet-header-bg-image` and `--meet-body-bg-image` CSS variables from `themes/{id}/images/`
+- Update theme-overrides.css cascade: per-graphic image vars fall back to theme-level vars (`--meet-header-bg-image`) instead of `none`
+- Cascade: per-graphic image → theme-level image → none
+
+**Firebase path:** `themes/{themeId}/images/`
+```
+themes/{themeId}/images/
+  headerBgImage: "https://..."
+  headerBgImageFit: "cover"
+  headerBgImagePosition: "center"
+  headerBgImageOpacity: 1.0
+  bodyBgImage: "https://..."
+  bodyBgImageFit: "cover"
+  bodyBgImagePosition: "center"
+  bodyBgImageOpacity: 1.0
+```
+
+5.8. **Full logo container controls** — The Event Bar's white logo square was not controllable. Added CSS variables and UI controls for:
+- `--event-bar-logo-bg`: background color (default: `rgba(255,255,255,0.92)` when themed, `#BFBFBF` unthemed)
+- `--event-bar-logo-container-height`: explicit height (default: `auto`)
+- `--event-bar-logo-padding`: internal spacing (default: `15px`)
+- `--event-bar-logo-radius`: border radius (default: `0px`)
+- Color picker with reset button for the box background
+- ValueStepper controls for height, padding, and radius
+
 **Acceptance Criteria:**
-- [ ] Competition dropdown shows all competitions (not filtered to 60 days)
-- [ ] Graphics preview renders with placeholder data when no competition selected (no error messages)
-- [ ] "Save Overrides" button visible in per-graphic overrides section
-- [ ] Preview iframe reloads after save
-- [ ] Event Bar layout CSS variables work (position, sizes, visibility)
-- [ ] Event Bar control panel has organized sections: POSITION, LOGO, VENUE, TEXT, IMAGES/TEXTURES
-- [ ] ValueStepper controls for all numeric properties
-- [ ] Show/hide logo toggle works
-- [ ] Color controls integrated inline with layout sections
-- [ ] Reset to defaults works per-section and globally
-- [ ] Changes persist after page reload (stored in Firebase overrides)
-- [ ] Live broadcast unaffected (CSS variables fall back to defaults when no overrides set)
+- [x] Competition dropdown shows all competitions (not filtered to 60 days)
+- [x] Graphics preview renders with placeholder data when no competition selected (no error messages)
+- [x] "Save Overrides" button visible in per-graphic overrides section
+- [x] Preview iframe reloads after save
+- [x] Event Bar layout CSS variables work (position, sizes, visibility)
+- [x] Event Bar control panel has organized sections: POSITION, LOGO, VENUE, TEXT, IMAGES/TEXTURES
+- [x] ValueStepper controls for all numeric properties
+- [x] Show/hide logo toggle works
+- [x] Color controls integrated inline with layout sections
+- [x] Reset to defaults works per-section and globally
+- [x] Changes persist after page reload (stored in Firebase overrides)
+- [x] Live broadcast unaffected (CSS variables fall back to defaults when no overrides set)
+- [x] Theme-level Background Images section in main editor (header, body, texture)
+- [x] Theme-level image CSS variables cascade to all graphics
+- [x] Per-graphic image overrides take precedence over theme-level images
+- [x] Logo container background color controllable with color picker + reset
+- [x] Logo container height, padding, and border radius controllable via ValueStepper
+- [x] Deployed to production and verified on commentarygraphic.com
 
 **Documentation Updates:**
 - [ ] CLAUDE.md: Update Theme Editor section with per-graphic layout controls
@@ -687,11 +730,20 @@ These can be revisited as separate PRDs if profiling data or user feedback justi
 | Phase 3: Per-Graphic Overrides | COMPLETE | 3-layer CSS cascade, 18 override properties, image/texture support, debug panel layer display |
 | Phase 4: Theme Editor | COMPLETE | Competition preview, graphic selector, per-graphic override panels, clip-preview mode, import/reset UX |
 
-### Current Work (v3.0)
+### Delivered (v3.0)
 
 | Phase | Status | Key Deliverables |
 |-------|--------|-----------------|
-| Phase 5: Bug Fixes + Layout Controls | NOT STARTED | Fix competition dropdown, fix preview errors, save button + reload, Event Bar layout CSS variables, rich control panel |
+| Phase 5: Bug Fixes + Layout Controls | COMPLETE | Fix competition dropdown, fix preview errors, save button + reload, Event Bar layout CSS variables (13 properties), rich control panel (POSITION/LOGO/VENUE/TEXT/IMAGES), theme-level background image controls, full logo container controls (color/height/padding/radius) |
+
+### Key Files Modified (Phase 5)
+
+| File | Changes |
+|------|---------|
+| `show-controller/src/pages/ThemeEditorPage.jsx` | Removed 60-day filter, added placeholder data for all graphics, Save Overrides button, rich Event Bar control panel, Background Images section, logo box controls |
+| `output.html` | Event Bar CSS now uses CSS variables for position, logo (width/height/bg/padding/radius), venue font/width, text sizes |
+| `overlays/theme-loader.js` | Layout override mapping (13 keys), theme-level image CSS variables (`--meet-header-bg-image`, `--meet-body-bg-image`) |
+| `overlays/theme-overrides.css` | Per-graphic image fallback cascade updated to use theme-level vars, logo bg uses CSS variable |
 
 ### Key Files Modified
 
