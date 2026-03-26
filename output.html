@@ -66,8 +66,8 @@
     /* Event Info Bar */
     .graphic-event-bar {
       position: absolute;
-      bottom: 120px;
-      left: 100px;
+      bottom: var(--event-bar-bar-bottom, 120px);
+      left: var(--event-bar-bar-left, 100px);
       display: flex;
       flex-direction: row;
       animation: slideIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
@@ -83,16 +83,16 @@
       }
     }
     .event-bar-logo {
-      width: 100px;
+      width: var(--event-bar-logo-container-width, 100px);
       background: #BFBFBF;
-      display: flex;
+      display: var(--event-bar-show-logo, flex);
       align-items: center;
       justify-content: center;
       padding: 15px;
     }
     .event-bar-logo img {
-      width: 70px;
-      height: 70px;
+      width: var(--event-bar-logo-img-size, 70px);
+      height: var(--event-bar-logo-img-size, 70px);
       object-fit: contain;
     }
     .event-bar-content {
@@ -102,8 +102,8 @@
     .event-bar-venue {
       background: #BFBFBF;
       padding: 10px 40px;
-      min-width: 600px;
-      font-size: 36px;
+      min-width: var(--event-bar-bar-min-width, 600px);
+      font-size: var(--event-bar-venue-font-size, 36px);
       font-weight: 900;
       color: #000;
       text-transform: uppercase;
@@ -114,7 +114,7 @@
       padding: 10px 40px;
     }
     .event-bar-name {
-      font-size: 28px;
+      font-size: var(--event-bar-name-font-size, 28px);
       font-weight: 800;
       color: #fff;
       text-transform: uppercase;
@@ -122,7 +122,7 @@
       line-height: 1.2;
     }
     .event-bar-location {
-      font-size: 24px;
+      font-size: var(--event-bar-location-font-size, 24px);
       font-weight: 700;
       color: #fff;
       text-transform: uppercase;

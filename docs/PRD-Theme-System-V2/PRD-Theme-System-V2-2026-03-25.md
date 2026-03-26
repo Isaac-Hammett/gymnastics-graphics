@@ -1,8 +1,8 @@
 # PRD: Theme System V2 — Unified Theme Engine
 
-**Version:** 2.1
-**Date:** 2026-03-25
-**Status:** COMPLETE (Phase 1 COMPLETE except Task 1.9 deferred, Phase 3 COMPLETE, Phase 4 COMPLETE)
+**Version:** 3.0
+**Date:** 2026-03-26
+**Status:** IN PROGRESS (Phase 0-4 COMPLETE, Phase 5 tasks 5.1-5.5 COMPLETE, 5.6 pending production deploy)
 **Supersedes:** PRD-Meet-Themes (v3.0, 2026-03-06) — Phases 1-12 remain COMPLETE; this PRD builds on that foundation
 **Depends On:** PRD-Meet-Themes (foundation)
 
@@ -55,6 +55,22 @@ The theme is all-or-nothing — 8 colors applied identically to every graphic. T
 - Change the sponsor graphic header color without changing every header
 - Upload a custom background image for specific graphic elements
 
+### 1.4 Theme Editor Competition Dropdown is Empty (BUG)
+
+The Theme Editor's competition dropdown shows no competitions. The Firebase query (ThemeEditorPage.jsx) filters to competitions created in the last 60 days OR with `status: 'active'`. If no competitions match this filter, the dropdown is empty — making the "preview with real competition data" feature unusable.
+
+### 1.5 Graphics Preview Shows Errors
+
+When previewing inline-rendered graphics (e.g., Event Summary) with "Use placeholder data" selected, the preview shows error messages like "No Virtius Session ID configured for this competition" instead of a rendered graphic. The preview path needs proper placeholder/sample data so it renders without requiring a real competition backend.
+
+### 1.6 Per-Graphic Controls Are Too Shallow
+
+Phase 4 delivered per-graphic **color and image overrides**, but producers need **layout controls** — font sizes, element sizes, positioning, padding, show/hide toggles. The current override panel is a flat grid of 8 color checkboxes plus image URL fields. Compare this to the WhoToWatch title card editor, which has ~20 granular controls organized into semantic sections (THEME, BADGE, TEAM, TEXT, IMAGE, WATERMARK) using ValueStepper inputs with live preview. The per-graphic override panel needs the same depth of control.
+
+Additionally:
+- **No save button** in the per-graphic overrides section. The only "Save Theme" button is at the top of the page — producers editing overrides at the bottom of the page have no way to save without scrolling up.
+- **No preview reload after save.** After saving overrides, the preview iframe does not reload to reflect the changes, so the producer can't verify what they just saved.
+
 ---
 
 ## 2. Goals
@@ -64,6 +80,7 @@ The theme is all-or-nothing — 8 colors applied identically to every graphic. T
 | **Unified theme path** | ONE code path for theme application across all graphics (overlays AND output.html inline) |
 | **Debug panel** | Visual diagnostic tool showing theme state, CSS variable values, and failure points |
 | **Per-graphic overrides** | Override any theme property (colors, images, textures, logos) for specific graphic types |
+| **Per-graphic layout controls** | Granular control over font sizes, element sizes, positioning, and visibility per graphic — matching the depth of the WTW title card editor |
 | **Image/texture support** | Apply PNGs, JPGs, or textures to any graphic surface (headers, backgrounds, borders) |
 | **Competition preview** | Theme Editor can preview themes against real competition data |
 | **Documentation sync** | CLAUDE.md updated at each phase boundary |
@@ -77,7 +94,7 @@ The theme is all-or-nothing — 8 colors applied identically to every graphic. T
 |----------|--------|
 | Refactor output.html into modules | output.html works as-is; splitting the 13K-line monolith is a separate effort with high risk and low user-facing value |
 | Extract CSS/JS into separate files | Performance optimization deferred — not justified without profiling data showing a real bottleneck |
-| Redesign individual graphic layouts | This PRD fixes theming infrastructure, not graphic design |
+| Redesign graphic visual style | This PRD controls layout parameters (sizes, positions), not the graphic's overall visual design language |
 | Change the rundown/timesheet engine | Rundown writes `currentGraphic` to Firebase; that contract stays identical |
 | Migrate away from Firebase | Firebase is the real-time backbone; no change |
 | Replace the Theme Editor UI | We extend it (add per-graphic overrides + competition preview), not replace it |
@@ -147,7 +164,7 @@ themes/{themeId}/
   sponsors/       [ { name, url, scale?, offset?, crop? } ]
 ```
 
-**New** (added):
+**New** (added in Phase 3):
 ```
 themes/{themeId}/
   overrides/
@@ -167,6 +184,32 @@ themes/{themeId}/
       logo: "https://..."              Logo override for this graphic only
       logoSize: 120                     px
 ```
+
+**New** (added in Phase 5 — layout overrides for event-bar):
+```
+themes/{themeId}/
+  overrides/
+    event-bar/
+      # Colors (existing from Phase 3)
+      headerBar: "#FF0000"
+      contentArea: "#FFFFFF"
+      ...
+      # Layout — Position (new)
+      barBottom: 120                    px — vertical position from bottom
+      barLeft: 100                      px — horizontal position from left
+      # Layout — Logo (new)
+      logoImgSize: 70                   px — logo image width/height
+      logoContainerWidth: 100           px — colored box around logo
+      showLogo: true                    boolean — show/hide logo section
+      # Layout — Venue header (new)
+      venueFontSize: 36                 px
+      barMinWidth: 600                  px — minimum width of venue bar
+      # Layout — Text (new)
+      nameFontSize: 28                  px — event name font size
+      locationFontSize: 24              px — location font size
+```
+
+**Pattern:** Each graphic type defines its own set of layout override keys. Event-bar is the first; other graphics follow the same pattern in future phases. All layout values are optional — when absent, the CSS uses hardcoded defaults via `var(--event-bar-venue-font-size, 36px)`.
 
 **Firebase read strategy:** theme-loader.js fetches the ENTIRE `themes/{themeId}` subtree in a single read (already does this today). The `overrides` data comes along with it — no additional Firebase read required per graphic.
 
@@ -410,6 +453,146 @@ Both are already iframe renderers with `?meetTheme=` support, so they work as st
 
 ---
 
+### Phase 5: Bug Fixes + Rich Per-Graphic Layout Controls — IN PROGRESS (5.1-5.5 COMPLETE)
+
+**Goal:** Fix the broken competition dropdown and preview errors. Then build granular layout controls for the Event Bar graphic as a prototype for all graphics. Add save button + preview reload to the overrides section.
+
+**Tasks:**
+
+5.1. **Fix competition dropdown** — The ThemeEditorPage Firebase query filters competitions to the last 60 days OR `status: 'active'`. This is too restrictive — most competitions have no `status` field and may be older than 60 days. Fix: show ALL competitions, sorted by event date descending (most recent first), with an optional search/filter input for long lists.
+
+5.2. **Fix graphics preview placeholder data** — When "Use placeholder data" is selected and no competition is chosen, inline-rendered graphics (event-summary, event-bar, etc.) fail because they try to fetch Virtuis data. Fix: the preview URL must pass sample data params that let the renderer display a complete graphic without any backend calls. For Event Bar: pass `venue`, `eventName`, `location`, `team1Logo` as sample values.
+
+5.3. **Add save button + preview reload to overrides section** — Add a "Save Overrides" button at the bottom of the per-graphic overrides panel (visible without scrolling back to the top). On save:
+- Write overrides to `themes/{themeId}/overrides/{graphicId}/` in Firebase
+- After 500ms (Firebase propagation), force-reload the preview iframe
+- Show brief "Saved" confirmation feedback
+- The top-level "Save Theme" button continues to save everything (colors + overrides together)
+
+5.4. **Add CSS variable support for Event Bar layout properties** — Extend the CSS variable system so Event Bar layout properties can be controlled via overrides:
+
+**CSS changes** (in output.html base styles and/or theme-overrides.css):
+```css
+.graphic-event-bar {
+  bottom: var(--event-bar-bar-bottom, 120px);
+  left: var(--event-bar-bar-left, 100px);
+}
+.event-bar-logo {
+  width: var(--event-bar-logo-container-width, 100px);
+}
+.event-bar-logo img {
+  width: var(--event-bar-logo-img-size, 70px);
+  height: var(--event-bar-logo-img-size, 70px);
+}
+.event-bar-venue {
+  font-size: var(--event-bar-venue-font-size, 36px);
+  min-width: var(--event-bar-bar-min-width, 600px);
+}
+.event-bar-name {
+  font-size: var(--event-bar-name-font-size, 28px);
+}
+.event-bar-location {
+  font-size: var(--event-bar-location-font-size, 24px);
+}
+```
+
+**theme-loader.js changes:** Extend `applyOverrides()` to map the new layout override keys to CSS variables. The mapping follows the same pattern as color overrides — read from `theme.overrides[graphicId]`, set as CSS variables on `document.documentElement`.
+
+| Firebase Key | CSS Variable | Default |
+|---|---|---|
+| `barBottom` | `--event-bar-bar-bottom` | 120px |
+| `barLeft` | `--event-bar-bar-left` | 100px |
+| `logoImgSize` | `--event-bar-logo-img-size` | 70px |
+| `logoContainerWidth` | `--event-bar-logo-container-width` | 100px |
+| `showLogo` | `--event-bar-show-logo` | block |
+| `venueFontSize` | `--event-bar-venue-font-size` | 36px |
+| `barMinWidth` | `--event-bar-bar-min-width` | 600px |
+| `nameFontSize` | `--event-bar-name-font-size` | 28px |
+| `locationFontSize` | `--event-bar-location-font-size` | 24px |
+
+**Show/hide logo:** `showLogo: false` sets `--event-bar-show-logo: none` which is used as `display: var(--event-bar-show-logo, block)` on `.event-bar-logo`.
+
+5.5. **Build rich Event Bar control panel in Theme Editor** — Replace the current flat color-checkbox grid for event-bar with a structured control panel modeled on the WTW title card's Card Adjustments pattern. Uses the existing `ValueStepper` component for all numeric controls.
+
+**Control sections:**
+
+**POSITION**
+| Control | Default | Min | Unit | Description |
+|---------|---------|-----|------|-------------|
+| Bottom | 120 | 0 | px | Distance from bottom of screen |
+| Left | 100 | 0 | px | Distance from left of screen |
+
+**LOGO**
+| Control | Default | Min | Unit | Description |
+|---------|---------|-----|------|-------------|
+| Logo size | 70 | 16 | px | Logo image width/height |
+| Container width | 100 | 40 | px | Colored box around logo |
+| Show logo | true | — | toggle | Show/hide entire logo section |
+| Logo URL | (theme) | — | URL | Override logo image (existing) |
+
+**VENUE (Header Bar)**
+| Control | Default | Min | Unit | Description |
+|---------|---------|-----|------|-------------|
+| Font size | 36 | 12 | px | Venue name text size |
+| Bar min-width | 600 | 200 | px | Minimum width of the header bar |
+| Background | (theme) | — | color | Header bar background color (existing) |
+| Text color | (theme) | — | color | Header bar text color (existing) |
+
+**TEXT (Details Section)**
+| Control | Default | Min | Unit | Description |
+|---------|---------|-----|------|-------------|
+| Event name size | 28 | 12 | px | Event name font size |
+| Location size | 24 | 12 | px | Location line font size |
+| Background | (theme) | — | color | Details section background (existing `contentArea`) |
+| Text color | (theme) | — | color | Details text color (existing `textOnContent`) |
+
+**IMAGES / TEXTURES** (existing controls, reorganized into this section)
+| Control | Description |
+|---------|-------------|
+| Header background image | URL + fit + position + opacity (existing) |
+| Body texture overlay | URL + blend mode + opacity (existing) |
+
+Each control uses `ValueStepper` with:
+- `-` and `+` buttons for quick adjustment
+- Direct text input for precise values
+- `x` reset button to revert to default
+- Debounced preview reload (300ms) on any change
+
+**Save flow:** Each change is held in local state. "Save Overrides" button writes all values to Firebase. Preview reloads after save. Color controls are integrated inline with the layout sections (not in a separate grid).
+
+5.6. **Verify Event Bar controls end-to-end** — Playwright verification:
+- Change venue font size → save → preview shows updated size
+- Change bar position → save → preview shows bar in new position
+- Hide logo → save → preview shows bar without logo
+- Change event name font size → save → verify
+- Reset all → verify defaults restored
+- Deploy to production → verify on commentarygraphic.com
+
+**Acceptance Criteria:**
+- [ ] Competition dropdown shows all competitions (not filtered to 60 days)
+- [ ] Graphics preview renders with placeholder data when no competition selected (no error messages)
+- [ ] "Save Overrides" button visible in per-graphic overrides section
+- [ ] Preview iframe reloads after save
+- [ ] Event Bar layout CSS variables work (position, sizes, visibility)
+- [ ] Event Bar control panel has organized sections: POSITION, LOGO, VENUE, TEXT, IMAGES/TEXTURES
+- [ ] ValueStepper controls for all numeric properties
+- [ ] Show/hide logo toggle works
+- [ ] Color controls integrated inline with layout sections
+- [ ] Reset to defaults works per-section and globally
+- [ ] Changes persist after page reload (stored in Firebase overrides)
+- [ ] Live broadcast unaffected (CSS variables fall back to defaults when no overrides set)
+
+**Documentation Updates:**
+- [ ] CLAUDE.md: Update Theme Editor section with per-graphic layout controls
+- [ ] CLAUDE.md: Update Per-Graphic Overrides section with layout override keys
+- [ ] agent.md: Add Event Bar CSS variable mapping and control panel architecture
+
+**Rollback:** `git revert` of Phase 5 commits. Existing color overrides unaffected.
+
+**Future:** Once Event Bar controls are validated, the same pattern extends to other graphics (warm-up, replay, event-summary, sponsors, etc.) — each gets its own set of layout controls specific to its elements.
+
+---
+
 ## 7. Risk Assessment
 
 | Risk | Impact | Mitigation |
@@ -425,6 +608,10 @@ Both are already iframe renderers with `?meetTheme=` support, so they work as st
 | PlayoutEngine missing meetTheme in writes | HIGH | Task 1.1b adds meetTheme to all playout engine writes. Without this, sponsor graphics during playout gap-fill render unthemed. |
 | Clip overlay not previewable in Theme Editor | MEDIUM | Phase 4.6 adds `?mode=clip-preview` to output.html for static preview of clip overlay with theme colors. |
 | Documentation gets out of sync | LOW | Each phase includes mandatory doc updates before next phase starts. |
+| Competition dropdown empty — preview unusable | HIGH | Phase 5.1 removes the overly restrictive 60-day filter. |
+| Graphics preview shows errors instead of graphics | HIGH | Phase 5.2 adds proper placeholder data path for preview mode. |
+| Layout CSS variables conflict with existing styles | MEDIUM | All variables use `var(--name, default)` pattern — falls back to hardcoded value when absent. Zero impact on existing broadcasts. |
+| Per-graphic layout overrides bloat Firebase | LOW | Layout values are small integers (10 fields per graphic). Only stored when non-default. |
 
 ---
 
@@ -452,6 +639,7 @@ Each phase is independently deployable. Rollback = git revert of that phase's co
 4. **Phase 1.9** (inline CSS removal): Deploy after one successful live event.
 5. **Phase 3** (overrides): Deploy theme-loader.js + theme-overrides.css updates together.
 6. **Phase 4** (editor UI): Deploy React SPA build (no server changes). MVP first, then iterate.
+7. **Phase 5** (bug fixes + layout controls): Deploy in order: 5.1-5.2 (bug fixes, React SPA), 5.3 (save button, React SPA), 5.4 (CSS variables, output.html + theme-loader.js + theme-overrides.css), 5.5-5.6 (control panel + verify, React SPA).
 
 ---
 
@@ -462,8 +650,10 @@ Each phase is independently deployable. Rollback = git revert of that phase's co
 | Theme application consistency | ~60% of graphics themed correctly | 100% |
 | Time to diagnose a theme bug | 30-60 minutes (read source code) | 30 seconds (debug panel) |
 | Time to fix a theme color in production | Deploy code change (15-30 min) | Override in theme editor (30 sec) |
-| Per-graphic customization options | 0 (all-or-nothing) | Colors, images, textures, logos per graphic |
+| Per-graphic customization options | 0 (all-or-nothing) | Colors, images, textures, logos, font sizes, positions, visibility per graphic |
 | Theme preview accuracy | Static preview, no real data | Live preview with real competition data |
+| Time to adjust a graphic's layout | Deploy code change (15-30 min) | ValueStepper in Theme Editor (instant preview) |
+| Competition dropdown usability | Empty dropdown (0 competitions) | All competitions visible, sorted by date |
 | Documentation accuracy | Stale (references dual CSS locations) | Current — updated at each phase boundary |
 | Firebase reads per event | Current baseline | No increase from per-graphic overrides |
 
@@ -483,13 +673,11 @@ These can be revisited as separate PRDs if profiling data or user feedback justi
 
 ---
 
-## 11. Completion Summary
+## 11. Status Summary
 
-**Completion Date:** 2026-03-26
+### Phases Delivered (v2.1)
 
-**Total Tasks Executed:** 30 (excluding Task 1.9 which is deferred pending live-event verification)
-
-### Phases Delivered
+**Completion Date:** 2026-03-26 | **Total Tasks Executed:** 30 (excluding Task 1.9 deferred)
 
 | Phase | Status | Key Deliverables |
 |-------|--------|-----------------|
@@ -498,6 +686,12 @@ These can be revisited as separate PRDs if profiling data or user feedback justi
 | Phase 2: Extraction | CUT | Determined too risky for live broadcasts |
 | Phase 3: Per-Graphic Overrides | COMPLETE | 3-layer CSS cascade, 18 override properties, image/texture support, debug panel layer display |
 | Phase 4: Theme Editor | COMPLETE | Competition preview, graphic selector, per-graphic override panels, clip-preview mode, import/reset UX |
+
+### Current Work (v3.0)
+
+| Phase | Status | Key Deliverables |
+|-------|--------|-----------------|
+| Phase 5: Bug Fixes + Layout Controls | NOT STARTED | Fix competition dropdown, fix preview errors, save button + reload, Event Bar layout CSS variables, rich control panel |
 
 ### Key Files Modified
 
