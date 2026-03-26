@@ -43,7 +43,7 @@ Per-graphic overrides work in Theme Editor preview but are **completely broken i
 
 ---
 
-### Task 8.2 — Call Overrides in currentGraphic Listener — NOT STARTED
+### Task 8.2 — Call Overrides in currentGraphic Listener — COMPLETE
 
 **Goal:** Apply per-graphic overrides when graphics switch in live mode, clean up previous graphic's variables.
 
