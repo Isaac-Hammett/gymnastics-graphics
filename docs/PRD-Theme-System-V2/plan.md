@@ -1658,7 +1658,7 @@ Execution order: Phase 8A → 7.FONT → 7A → 7B → 7C → 7D → 7E → 7F �
 
 ## Bugs
 
-- **BUG-8.4.1:** theme-overrides.css missing 3-layer CSS cascade for per-graphic overrides. Only event-bar header has `var(--event-bar-header-bg, var(--meet-header-bg, fallback))` pattern. All other graphics (warm-up, replay, team-stats, etc.) use 2-layer `var(--meet-header-bg, fallback)` which ignores per-graphic CSS variables. JS functions (Tasks 8.1/8.2) work correctly — the CSS variables are set but not consumed. **Fix:** Update theme-overrides.css to use 3-layer cascade for all graphics with per-graphic override support. (found during Task 8.4)
+- **BUG-8.4.1:** ~~theme-overrides.css missing 3-layer CSS cascade for per-graphic overrides.~~ **FIXED (2026-03-26)**: Added 3-layer cascade for warm-up, replay, event-bar details, and team-stats headers. See screenshots: `local-task-bug841-eventbar-themed.png`, `local-task-bug841-warmup-themed.png`, `local-task-bug841-replay-themed.png`.
 
 ---
 
@@ -1667,3 +1667,5 @@ Execution order: Phase 8A → 7.FONT → 7A → 7B → 7C → 7D → 7E → 7F �
 - LEARNING: Per-graphic overrides require BOTH (1) JS setting the CSS variable AND (2) CSS using the 3-layer cascade `var(--{graphicId}-{suffix}, var(--meet-{suffix}, fallback))`. Task 8.4 revealed the CSS side was incomplete.
 - LEARNING: The `clearOverrides()` function works correctly — verified via rapid switching test that all 40 CSS variables are removed when switching graphics.
 - LEARNING: Iframe graphics (sponsors-thanks, rotation-slate) use their own theme-loader.js inside the iframe, so per-graphic overrides work via the existing overlay path — no changes needed for iframes.
+- LEARNING: Theme ID in local verification URLs must match exactly what's in Firebase (e.g., `pink-meet-2026` not `pink-meet`). Use `firebase_list_paths` to check available themes.
+- LEARNING: For team-stats, the graphic IDs are `team1-stats` through `team7-stats`, so the CSS cascade needs to chain all 7 variants (verbose but necessary for shared CSS selectors).
