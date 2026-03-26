@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1920, height=1080">
+  <title>Who to Watch</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: transparent;
+    }
+
+    .wtw-card {
+      position: absolute;
+      bottom: 120px;
+      left: 100px;
+      min-width: 600px;
+      max-width: 900px;
+      animation: slideIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-100px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .wtw-header {
+      background: var(--meet-header-bg, #BFBFBF);
+      padding: 12px 30px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .wtw-label {
+      font-size: 36px;
+      font-weight: 900;
+      color: var(--meet-header-text, #000);
+      text-transform: uppercase;
+      letter-spacing: -0.5px;
+    }
+
+    .wtw-logo {
+      width: 50px;
+      height: 50px;
+      object-fit: contain;
+    }
+
+    .wtw-content {
+      background: #000;
+      padding: 20px 30px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .wtw-headshot {
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: #333;
+      border: 3px solid #fff;
+      flex-shrink: 0;
+    }
+
+    .wtw-headshot.no-image {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      font-weight: 900;
+      color: #666;
+    }
+
+    .wtw-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .wtw-name {
+      font-size: 32px;
+      font-weight: 900;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: -0.5px;
+      line-height: 1.1;
+    }
+
+    .wtw-subtitle {
+      font-size: 18px;
+      font-weight: 400;
+      color: #aaa;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .wtw-stat {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--meet-content-bg, var(--meet-header-bg, #3b82f6));
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wtw-card">
+    <div class="wtw-header">
+      <div class="wtw-label">Who to Watch</div>
+      <img id="logo" class="wtw-logo" src="" alt="Team">
+    </div>
+    <div class="wtw-content">
+      <img id="headshot" class="wtw-headshot" src="" alt="">
+      <div class="wtw-info">
+        <div class="wtw-name" id="athleteName">ATHLETE NAME</div>
+        <div class="wtw-subtitle" id="subtitle">Team • Year • Apparatus</div>
+        <div class="wtw-stat" id="stat"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+
+    // Athlete name
+    const name = params.get('athleteName') || '';
+    document.getElementById('athleteName').textContent = name.toUpperCase();
+
+    // Logo
+    const logoEl = document.getElementById('logo');
+    const logoUrl = params.get('logo') || params.get('logoUrl') || '';
+    if (logoUrl) {
+      logoEl.src = logoUrl;
+      logoEl.onerror = () => { logoEl.style.display = 'none'; };
+    } else {
+      logoEl.style.display = 'none';
+    }
+
+    // Subtitle
+    const subtitle = params.get('subtitle') || params.get('teamName') || '';
+    const subtitleEl = document.getElementById('subtitle');
+    if (subtitle) {
+      subtitleEl.textContent = subtitle.toUpperCase();
+    } else {
+      subtitleEl.style.display = 'none';
+    }
+
+    // Stat line
+    const statLabel = params.get('statLabel') || '';
+    const statValue = params.get('statValue') || '';
+    const statEl = document.getElementById('stat');
+    if (statLabel && statValue) {
+      statEl.textContent = `${statLabel}: ${statValue}`;
+    } else {
+      statEl.style.display = 'none';
+    }
+
+    // Headshot
+    function getInitials(n) {
+      if (!n) return '?';
+      const parts = n.trim().split(' ');
+      if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+      return n[0].toUpperCase();
+    }
+
+    const headshotEl = document.getElementById('headshot');
+    const headshotUrl = params.get('headshot') || '';
+    if (headshotUrl) {
+      headshotEl.src = headshotUrl;
+      headshotEl.onerror = () => {
+        headshotEl.style.display = 'none';
+        const placeholder = document.createElement('div');
+        placeholder.className = 'wtw-headshot no-image';
+        placeholder.textContent = getInitials(name);
+        headshotEl.parentNode.insertBefore(placeholder, headshotEl);
+      };
+    } else {
+      headshotEl.style.display = 'none';
+      const placeholder = document.createElement('div');
+      placeholder.className = 'wtw-headshot no-image';
+      placeholder.textContent = getInitials(name);
+      headshotEl.parentNode.insertBefore(placeholder, headshotEl);
+    }
+
+    // ── Adjustment query params ──
+    const card = document.querySelector('.wtw-card');
+    const header = document.querySelector('.wtw-header');
+    const labelEl = document.querySelector('.wtw-label');
+    const nameEl = document.getElementById('athleteName');
+
+    // Badge controls
+    const badgeText = params.get('badgeText');
+    if (badgeText === '') {
+      labelEl.style.display = 'none';
+    } else if (badgeText) {
+      labelEl.textContent = badgeText.toUpperCase();
+    }
+    const badgeFontSize = parseInt(params.get('badgeFontSize'));
+    if (badgeFontSize) labelEl.style.fontSize = badgeFontSize + 'px';
+
+    // Text sizing
+    const nameFontSize = parseInt(params.get('nameFontSize'));
+    if (nameFontSize) nameEl.style.fontSize = nameFontSize + 'px';
+    const subtitleFontSize = parseInt(params.get('subtitleFontSize'));
+    if (subtitleFontSize) subtitleEl.style.fontSize = subtitleFontSize + 'px';
+    const statFontSize = parseInt(params.get('statFontSize'));
+    if (statFontSize) statEl.style.fontSize = statFontSize + 'px';
+
+    // Headshot size
+    const headshotSize = parseInt(params.get('headshotSize'));
+    if (headshotSize) {
+      headshotEl.style.width = headshotSize + 'px';
+      headshotEl.style.height = headshotSize + 'px';
+      // Also apply to placeholder if created
+      const placeholder = document.querySelector('.wtw-headshot.no-image');
+      if (placeholder) {
+        placeholder.style.width = headshotSize + 'px';
+        placeholder.style.height = headshotSize + 'px';
+      }
+    }
+    const showHeadshot = params.get('showHeadshot');
+    if (showHeadshot === 'false') {
+      headshotEl.style.display = 'none';
+      const placeholder = document.querySelector('.wtw-headshot.no-image');
+      if (placeholder) placeholder.style.display = 'none';
+    }
+
+    // Logo size
+    const logoSizeParam = parseInt(params.get('logoSize'));
+    if (logoSizeParam) {
+      logoEl.style.width = logoSizeParam + 'px';
+      logoEl.style.height = logoSizeParam + 'px';
+    }
+
+    // Card positioning
+    const cardBottom = parseInt(params.get('cardBottom'));
+    if (cardBottom) card.style.bottom = cardBottom + 'px';
+    const cardLeft = parseInt(params.get('cardLeft'));
+    if (cardLeft) card.style.left = cardLeft + 'px';
+    const cardMinWidth = parseInt(params.get('cardMinWidth'));
+    if (cardMinWidth) card.style.minWidth = cardMinWidth + 'px';
+    const cardMaxWidth = parseInt(params.get('cardMaxWidth'));
+    if (cardMaxWidth) card.style.maxWidth = cardMaxWidth + 'px';
+
+    // Theme color overrides (applied after theme-loader)
+    const bgColor = params.get('bgColor');
+    const accentColor = params.get('accentColor');
+    if (bgColor || accentColor) {
+      setTimeout(() => {
+        if (bgColor) {
+          document.documentElement.style.setProperty('--meet-header-bg', bgColor);
+        }
+        if (accentColor) {
+          document.documentElement.style.setProperty('--meet-content-bg', accentColor);
+        }
+      }, 600);
+    }
+  </script>
+  <script src="theme-loader.js"></script>
+</body>
+</html>
