@@ -80,7 +80,7 @@ Update the iframe fallback player to also route through the proxy:
 
 ---
 
-### Task 4: Add URL validation logging — NOT STARTED
+### Task 4: Add URL validation logging — COMPLETE
 
 **Files:** `output.html`
 
@@ -125,6 +125,7 @@ Deploy coordinator server changes and output.html to production:
 - LEARNING: server/index.js uses ESM (`import` syntax). Node's native `https` module works fine for the proxy — no need for `node-fetch`.
 - LEARNING: Task 2 added `proxyClipUrl()` helper at line 6588 in output.html. The function is called in `handleClipPlayback()` at lines 13399-13400 to transform both `clipUrl` and `nextClipUrl`. All downstream code (startClip, preloadClip, iframe fallback) automatically receives the proxied URL.
 - LEARNING: Task 3 added inline `proxyClipUrl()` function to `overlays/clip-player.html` (lines 15-30). Same logic as output.html but inlined since it's a separate file. Uses `[clip-player]` prefix for console logs to distinguish from output.html's `[clip]` logs.
+- LEARNING: Task 4 added diagnostic logging in `handleClipPlayback()` at lines 13410-13418 (URL type + proxy status) and enhanced `handleVideoError()` at lines 6781-6789 (MediaError code, message, network state, truncated URL). The error handler also now includes `networkState` in the Firebase write-back.
 
 ## Bugs
 
