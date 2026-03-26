@@ -6875,9 +6875,13 @@
       scoreRevealTime = null;
       currentClipScore = advancingToData?.score ?? null;
 
-      // Update overlay with new athlete info
+      // Update overlay with new athlete info (suppress for WTW clips - they use their own lower-third)
       if (advancingToData) {
-        updateClipOverlay(advancingToData);
+        if (advancingToData.overlayStyle === 'who-to-watch') {
+          clipOverlay.classList.remove('visible');
+        } else {
+          updateClipOverlay(advancingToData);
+        }
       }
 
       // Remove old event listeners from new active element
@@ -13474,8 +13478,12 @@
         scoreRevealTime = null;
         currentClipScore = (score !== undefined) ? score : null;
 
-        // Update overlay with athlete info
-        updateClipOverlay(data);
+        // Update overlay with athlete info (suppress for WTW clips - they use their own lower-third)
+        if (data.overlayStyle === 'who-to-watch') {
+          clipOverlay.classList.remove('visible');
+        } else {
+          updateClipOverlay(data);
+        }
 
         // Remove old event listeners
         activeVideoElement.removeEventListener('timeupdate', handleClipTimeUpdate);
@@ -13531,11 +13539,17 @@
         scoreRevealTime = null;
         scoreRevealed = true; // Prevent score reveal logic from running
 
-        // Update overlay with athlete info
-        updateClipOverlay(data);
+        // Update overlay with athlete info (suppress for WTW clips - they use their own lower-third)
+        if (data.overlayStyle === 'who-to-watch') {
+          clipOverlay.classList.remove('visible');
+        } else {
+          updateClipOverlay(data);
+        }
 
-        // Show replay badge
-        clipReplayBadgeEl.style.display = 'block';
+        // Show replay badge (only for non-WTW clips)
+        if (data.overlayStyle !== 'who-to-watch') {
+          clipReplayBadgeEl.style.display = 'block';
+        }
 
         // Track replay seek end for timeupdate handler
         let replaySeekEnd = seekEnd;
