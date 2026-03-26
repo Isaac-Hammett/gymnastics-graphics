@@ -13224,10 +13224,27 @@
         } else {
           // LIVE MODE: Render regular graphics, clear on clip-type graphics
           if (isClipTypeGraphic) {
-            // Clip-type graphic in live mode: clear output (video plays on clip OBS source)
-            output.innerHTML = '';
-            hideAnimatedBackground();
-            console.log(`[live-mode] Clip-type graphic received: ${graphic}, cleared output`);
+            // Check if this is a Who to Watch clip (needs lower-third overlay)
+            if (data && data.overlayStyle === 'who-to-watch') {
+              // Render WTW lower-third iframe (transparent except for the bar)
+              const iframeParams = new URLSearchParams();
+              if (data.athleteName) iframeParams.set('athleteName', data.athleteName);
+              if (data.teamLogo) iframeParams.set('logo', data.teamLogo);
+              if (data.subtitle || data.teamName) iframeParams.set('subtitle', data.subtitle || data.teamName);
+              if (data.statLabel) iframeParams.set('statLabel', data.statLabel);
+              if (data.statValue) iframeParams.set('statValue', data.statValue);
+              if (data.headshot) iframeParams.set('headshot', data.headshot);
+              if (data.meetTheme) iframeParams.set('meetTheme', data.meetTheme);
+
+              output.innerHTML = `<iframe src="/overlays/who-to-watch.html?${iframeParams.toString()}" style="width:1920px;height:1080px;border:none;" sandbox="allow-scripts allow-same-origin"></iframe>`;
+              hideAnimatedBackground();
+              console.log(`[live-mode] WTW clip-playback: rendering lower-third overlay`);
+            } else {
+              // Regular clip-type graphic: clear output (video plays on clip OBS source)
+              output.innerHTML = '';
+              hideAnimatedBackground();
+              console.log(`[live-mode] Clip-type graphic received: ${graphic}, cleared output`);
+            }
           } else if (graphic === 'clear' || !renderers[graphic]) {
             output.innerHTML = '';
             hideAnimatedBackground();
