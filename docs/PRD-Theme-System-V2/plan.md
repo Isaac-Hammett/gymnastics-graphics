@@ -1084,7 +1084,7 @@ Live verification requires deployment and authentication. Will be verified in Ta
 
 ---
 
-### Task 4.6a — Clip Overlay Preview Mode in output.html — NOT STARTED
+### Task 4.6a — Clip Overlay Preview Mode in output.html — COMPLETE
 
 **Goal:** Add `?mode=clip-preview` to output.html that renders the clip overlay with sample data against a dark background.
 
@@ -1104,11 +1104,19 @@ Live verification requires deployment and authentication. Will be verified in Ta
 3. The overlay remains visible (no auto-hide animation)
 
 **Verify:**
-- [ ] `output.html?mode=clip-preview` shows clip overlay with sample data on dark background
-- [ ] `output.html?mode=clip-preview&meetTheme={id}` shows themed clip overlay
-- [ ] Athlete panel background uses `--meet-header-bg`
-- [ ] Score badge uses `--meet-badge-bg` and `--meet-badge-text`
-- [ ] No Firebase errors (doesn't try to connect to clip API)
+- [x] `output.html?mode=clip-preview` shows clip overlay with sample data on dark background
+- [x] `output.html?mode=clip-preview&meetTheme={id}` shows themed clip overlay
+- [x] Athlete panel background uses `--meet-header-bg`
+- [x] Score badge uses `--meet-badge-bg` and `--meet-badge-text`
+- [x] No Firebase errors (doesn't try to connect to clip API)
+
+**Status:** COMPLETE — Implementation verified locally:
+- Added `isClipPreviewMode` detection for `mode=clip-preview` URL param
+- Added clip-preview rendering block that populates overlay elements with sample data
+- Supports URL param overrides: `athleteName`, `teamName`, `apparatus`, `teamLogo`, `score`
+- Bypassed "No competition ID" error for clip-preview mode
+- Updated Firebase listener condition to skip for clip-preview mode
+- Screenshots: `local-task-4.6a-clip-preview-working.png` (default), `local-task-4.6a-clip-preview-themed.png` (pink theme)
 
 **Deploy:** Upload `output.html` per CLAUDE.md deploy step 2.
 
@@ -1273,3 +1281,4 @@ Phase 4 (depends on Phase 3):
 - LEARNING: To force an iframe reload after saving data to Firebase, use a version counter state variable included in the iframe's `key` prop. Incrementing the version after a 500ms delay (to allow Firebase propagation) forces React to recreate the iframe element. The existing `toggleOverridePanel` already switches `selectedGraphicType` when expanding a panel (from Task 4.2), so no additional work needed for that requirement. (found during Task 4.3)
 - LEARNING: Image/texture override controls extend the existing per-graphic override panels. The `OverrideStepper` component is a simplified version of `StepperInput` from SponsorAdjustControls. Opacity values are stored as decimals (0-1) in Firebase but displayed as percentages (0-100%) in the UI — conversion happens in `onChange` handlers. The checkbox toggle pattern (enable/disable) is consistent with color overrides. When disabling a group (e.g., headerBgImage), all related fields must be cleared (`headerBgImage`, `headerBgImageFit`, `headerBgImagePosition`, `headerBgImageOpacity`). (found during Task 4.4)
 - LEARNING: Task 4.5 mostly extends what Task 4.2 already implemented — per-graphic badges and reset buttons were already in place. The new work is global "Reset All" with confirm dialog and "Import from another theme" modal. The import dropdown filters to only show themes that have overrides (no point importing from a theme with no overrides). `otherThemesForImport` useMemo computes this list, excluding the current theme. The inline confirm dialog pattern (showing Cancel/Confirm buttons in the header row) is cleaner than a modal for simple destructive actions. (found during Task 4.5)
+- LEARNING: The `clip-preview` mode needs three bypass conditions: (1) skip "No competition ID" error check, (2) skip Firebase `currentGraphic` listener registration, (3) use `themeReadyPromise.then()` to wait for theme before populating overlay. The clip overlay HTML elements (`clipOverlay`, `clipTeamLogoEl`, etc.) are already defined at page load — clip-preview just needs to populate them with sample data and add `.visible` class. URL params can override sample data for real competition previews. (found during Task 4.6a)
