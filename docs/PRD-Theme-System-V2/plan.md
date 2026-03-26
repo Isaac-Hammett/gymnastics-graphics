@@ -1,1306 +1,1635 @@
-# Theme System V2 — Implementation Plan (All Phases)
+# Theme System V2 — Implementation Plan (Phases 7-8)
 
-**Total tasks:** 32 (Task 0.1 complete, Task 1.9 deferred — requires live event first)
-**Phase 0 tasks:** 3 (audit — no code changes)
-**Phase 1 tasks:** 16 (code + verification + doc update)
-**Phase 3 tasks:** 5 (per-graphic overrides + doc update)
-**Phase 4 tasks:** 8 (Theme Editor UI + doc update)
+**Total tasks:** 62
+**Execution order:** Phase 8A (7) -> 7.FONT (4) -> 7A (11) -> 7B (7) -> 7C (6) -> 7D (6) -> 7E (12) -> 7F (8) -> 8B (1)
 
----
-
-## Phase 0: Audit & Graphic ID Registry
-
-### Task 0.1 — Build Graphic ID Registry — COMPLETE
-
-**Goal:** Enumerate all graphic IDs and categorize as iframe or inline.
-
-**Files:** `overlays/graphic-ids.json` (already exists)
-
-**Status:** COMPLETE — `overlays/graphic-ids.json` created with 43 renderers (33 inline, 10 iframe) and 30 overlay files.
+**Phases 0-6:** COMPLETE (deployed). This plan covers only Phases 7-8.
 
 ---
 
-### Task 0.2 — Audit [data-meet-theme] CSS Rules — COMPLETE
+## Phase 8A: Live-Mode Override Fix (CRITICAL — Before Phase 7)
 
-**Goal:** Full enumeration of theme CSS rules across both files. Source-of-truth for Phase 1.3 porting.
-
-**Files:** `docs/PRD-Theme-System-V2/audit-css-rules.md` (new)
-
-**Work:**
-1. Extract all `[data-meet-theme]` selectors from output.html (lines 1070–1331, ~72 selectors)
-2. Extract all `[data-meet-theme]` selectors from theme-overrides.css (342 lines, ~56 selectors)
-3. Categorize each rule as:
-   - **Both** — exists in both files (check for value differences)
-   - **output.html only** — must be ported to theme-overrides.css in Task 1.3
-   - **overlay only** — no action needed (stays in theme-overrides.css)
-4. For "both" rules, flag value differences (e.g., `.event-bar-logo` uses `rgba(255,255,255,0.92)` in output.html but `var(--meet-header-bg)` in theme-overrides.css)
-5. Fix the `.event-bar-logo` mismatch in theme-overrides.css: change line 45 from `var(--meet-header-bg)` to `rgba(255,255,255,0.92)` — output.html's white background is canonical per css-scope.md Decision #1
-
-**Verify:**
-- [ ] Every `[data-meet-theme]` selector in output.html is categorized
-- [ ] Every `[data-meet-theme]` selector in theme-overrides.css is categorized
-- [ ] "output.html only" count is ~68 (per css-scope.md spec)
-- [ ] Value mismatches between "both" rules are documented
-- [ ] `.event-bar-logo` in theme-overrides.css updated to use white background
-
-**Deploy:** Deploy theme-overrides.css fix (`.event-bar-logo` white background) to production:
-- Upload `overlays/` directory per CLAUDE.md deploy step 2
-- Verify: `https://commentarygraphic.com/overlays/theme-overrides.css` returns updated file
+Per-graphic overrides work in Theme Editor preview but are **completely broken in live mode**. Root causes:
+- `applyOverrides()` is trapped inside theme-loader.js IIFE (line 438), not exported
+- `currentGraphic` listener (output.html:13298) renders without applying overrides
+- No cleanup of previous graphic's CSS variables when switching graphics
 
 ---
 
-### Task 0.3 — Audit Pseudo-Element Usage — COMPLETE
+### Task 8.1 — Export applyOverrides() + Create clearOverrides() — COMPLETE
 
-**Goal:** Identify conflicts with texture overlay `::before` pseudo-elements for Phase 3.
-
-**Files:** `docs/PRD-Theme-System-V2/audit-pseudo-elements.md` (new)
-
-**Work:**
-1. Grep all `::before` and `::after` usage in overlay HTML files and output.html
-2. Cross-reference with the 13 texture target classes in theme-overrides.css (lines 308-341)
-3. Document any existing pseudo-elements that would conflict with texture injection
-
-**Verify:**
-- [x] All pseudo-element usage documented
-- [x] Conflicts (if any) have proposed resolution
-
-**Status:** COMPLETE — Audit found 3 non-texture pseudo-element usages (`.text-side::before` in who-to-watch-title.html, `.layout-cinema::before/::after` and `.layout-stripe::before` in rotation-slate.html). None conflict with texture targets — Phase 3 can proceed as planned.
-
-**Deploy:** None — research only.
-
----
-
-## Phase 1: Theme Unification + Debug Panel
-
-### Task 1.1 — Extend theme-loader.js for Competition Config Lookup — COMPLETE
-
-**Goal:** theme-loader.js gains a second initialization path: `?comp=` reads meetTheme from Firebase competition config. Exposes `window.themeReady` promise.
-
-**Files:** `overlays/theme-loader.js`
-
-**Work:**
-1. At IIFE top level (synchronously, before any async), create `window.themeReady`:
-   ```javascript
-   let resolveThemeReady;
-   window.themeReady = new Promise(resolve => { resolveThemeReady = resolve; });
-   ```
-2. After the existing `meetThemeId` URL param check (line 24), add second path:
-   - If `meetThemeId` exists → use it (existing, takes precedence)
-   - If no `meetThemeId` but `comp` param exists → read `competitions/{compId}/config/meetTheme` from Firebase → use that theme ID
-   - If neither → resolve immediately with `{ success: true, themeId: null }`
-3. Remove the early-return when no `meetTheme` param (line 27-29) — now continues if `comp` is present
-4. Add 3-second timeout wrapping the entire init:
-   - On timeout: resolve with `{ success: false, reason: 'timeout' }`, apply fallback, write error to Firebase
-   - On fetch failure: resolve with `{ success: false, reason }`, apply fallback, write error to Firebase
-5. Error reporting: write to `competitions/{compId}/production/themeErrors/{timestamp}` with structured error per fouc-prevention.md spec:
-   - Fields: `type`, `themeId`, `compId`, `source`, `message`, `url`, `timestamp`, `resolved`
-   - Source detection: check `window.location.pathname` for `/overlays/` → `"overlay:{filename}"`, else `"output.html"`
-   - **Never show error text on the graphics output page** (goes to air)
-6. Keep IIFE structure — expose only `window.themeReady`
-
-**Verify:**
-- [ ] `?meetTheme=pink-meet` → loads theme (existing behavior preserved)
-- [ ] `?comp=abc123` (no meetTheme) → reads config → loads theme
-- [ ] `?meetTheme=X&comp=Y` → uses X (meetTheme takes precedence)
-- [ ] No `meetTheme` and no `comp` → resolves immediately with no-op
-- [ ] `window.themeReady` is a Promise that resolves in all cases
-- [ ] 3-second timeout resolves with fallback colors (not hang forever)
-- [ ] Timeout writes error to Firebase `production/themeErrors/`
-- [ ] Existing overlay files (28) still work with `?meetTheme=` param
-- [ ] No error text visible on the graphics page itself
-
-**Deploy:** Upload `overlays/` directory per CLAUDE.md deploy step 2. Verify overlay files still work:
-- Navigate to `https://commentarygraphic.com/overlays/sponsors-thanks.html?meetTheme=pink-meet`
-- Screenshot shows themed sponsor graphic
-
----
-
-### Task 1.1b — Add meetTheme to PlayoutEngine Writes — COMPLETE
-
-**Goal:** PlayoutEngine reads meetTheme from competition config at startup and includes it in all `_writeCurrentGraphic()` calls.
-
-**Files:** `server/lib/playoutEngine.js`
-
-**Work:**
-1. In constructor (near line 135 with other config properties), add: `this._meetTheme = null;`
-2. In `start()` method (after line 338, after obsScenes read), add Firebase read:
-   ```javascript
-   const themeRef = this.firebase.ref(`competitions/${this.compId}/config/meetTheme`);
-   const themeSnapshot = await themeRef.once('value');
-   this._meetTheme = themeSnapshot.val() || '';
-   ```
-3. In ALL 8 `_writeCurrentGraphic()` call sites, add `meetTheme: this._meetTheme` to the `data` object:
-   - Line 484-487 (live-camera in forceCamera)
-   - Line 770-784 (clip-playback)
-   - Line 800-803 (fallback)
-   - Line 828-842 (moment-replay)
-   - Line 875-878 (live-camera in priority stack)
-   - Line 913-916 (fallback in priority stack)
-   - Line 1449-1457 (rotation-break)
-   - Line 1613-1622 (content sequence)
-
-**Verify:**
-- [ ] `grep -c "meetTheme" server/lib/playoutEngine.js` returns 10+ (1 property + 1 read + 8 writes)
-- [ ] Start a test playout session → check Firebase `currentGraphic` → `data.meetTheme` field is present
-- [ ] Sponsor graphics triggered during playout gap-fill receive `meetTheme` URL param in iframe
-
-**Deploy:** Restart coordinator server per CLAUDE.md coordinator section:
-```bash
-# SSH to 44.193.31.120
-cd /opt/gymnastics-graphics/server
-pm2 delete coordinator
-GOOGLE_APPLICATION_CREDENTIALS=/opt/gymnastics-graphics/firebase-service-account.json pm2 start index.js --name coordinator
-pm2 save
-```
-
----
-
-### Task 1.2 — Add theme-loader.js to output.html — COMPLETE
-
-**Goal:** output.html loads theme-loader.js so it shares the same code path as overlays.
-
-**Files:** `output.html`
-
-**Work:**
-1. Add `<script src="/overlays/theme-loader.js"></script>` AFTER the Firebase SDK script tags (after line 6499), BEFORE the inline `<script>` (line 6500)
-2. Update `themeReadyPromise` variable (line 7415) to reference `window.themeReady`:
-   ```javascript
-   let themeReadyPromise = window.themeReady || Promise.resolve();
-   ```
-3. Keep `applyMeetTheme()` and `loadMeetTheme()` functions in place for now (removed in Task 1.9)
-4. The old `themeReadyPromise` initialization logic (lines 7416-7430) becomes dead code — theme-loader.js handles both paths now. Comment it out but don't delete yet.
-
-**Verify:**
-- [ ] output.html loads without console errors
-- [ ] `?meetTheme=pink-meet&graphic=event-bar` renders with theme (preview mode)
-- [ ] `?comp=abc123` renders with theme from competition config (live mode)
-- [ ] `window.themeReady` is available in output.html context
-- [ ] No duplicate theme loading (check console — theme-loader.js logs, not inline functions)
-
-**Deploy:** Upload `output.html` per CLAUDE.md deploy step 2. Verify:
-- `https://commentarygraphic.com/output.html?graphic=event-bar&meetTheme=pink-meet` shows themed graphic
-- `https://commentarygraphic.com/output.html?graphic=logos` shows unthemed (no meetTheme, no comp)
-
-**Depends on:** Task 1.1
-
----
-
-### Task 1.3a — Port Event Summary CSS Rules to theme-overrides.css — COMPLETE
-
-**Goal:** Port event summary theme rules (~22) from output.html to theme-overrides.css.
-
-**Files:** `overlays/theme-overrides.css`
-
-**Work:**
-Port these selectors from output.html (lines 1084–1134):
-- `.event-summary-header`, `.event-summary-title`, `.event-summary-footer`, `.event-summary-content`, `.center-divider`
-- `.event-summary-dual`, `.event-summary-quad`, `.event-summary-quad-v3`
-- `.team-header`, `.team-footer`, `.athlete-row`
-- `.rotation-badge` (already exists at line 118-121 — check for differences, don't duplicate)
-
-Add a new `/* === EVENT SUMMARY === */` section in theme-overrides.css.
-
-**Verify:**
-- [x] All event summary `[data-meet-theme]` rules from output.html have equivalents in theme-overrides.css
-- [x] Existing rotation-badge rule not duplicated — added general `.rotation-badge` rule alongside the existing `.rotation-slate .rotation-badge` rule (more specific scoping coexists)
-- [x] CSS variables used match the same `--meet-*` variables
-
-**Deploy:** Upload `overlays/` directory. Verify an overlay that uses event-summary classes still renders correctly.
-
-**Status:** COMPLETE — Added EVENT SUMMARY section (lines 123-179) with 15 rules covering all event summary theme selectors.
-
----
-
-### Task 1.3b — Port Leaderboard CSS Rules to theme-overrides.css — COMPLETE
-
-**Goal:** Port leaderboard theme rules (~25) from output.html to theme-overrides.css.
-
-**Files:** `overlays/theme-overrides.css`
-
-**Work:**
-Port these selectors from output.html (lines 1137–1193):
-- `.leaderboard-header`, `.leaderboard-title`, `.leaderboard-footer`
-- `.leaderboard-table`, `thead`, `th`, `tbody`, `tr`, `td`
-- `.col-rank`, `.col-diff`, `.col-exec`, `.col-team`
-- `.leaderboard-team-logo`, `.apparatus-badge`
-
-Add a new `/* === LEADERBOARD === */` section in theme-overrides.css.
-
-**Verify:**
-- [x] All leaderboard `[data-meet-theme]` rules from output.html have equivalents in theme-overrides.css
-- [x] Deeply nested selectors preserved faithfully (e.g., `[data-meet-theme] .leaderboard-table thead th`)
-
-**Deploy:** Upload `overlays/` directory.
-
-**Status:** COMPLETE — Added LEADERBOARD section (lines 181-241) with 17 rules covering all leaderboard theme selectors. Note: texture `::before` rules for leaderboard are handled in Task 1.3c.
-
----
-
-### Task 1.3c — Port Warm-up, Replay, Event Bar, Texture, Frame CSS Rules — COMPLETE
-
-**Goal:** Port remaining inline-only rules (~21 total).
-
-**Files:** `overlays/theme-overrides.css`
-
-**Work:**
-Port from output.html:
-- **Event Bar details** (lines 1221–1227, ~3 rules): `.event-bar-details`, `.event-bar-name`, `.event-bar-location`
-- **Warm-up detailed** (lines 1230–1247, ~6 rules): `.warm-up-teams-row`, `.warm-up-teams-text`, `.warm-up-status-row`, `.warm-up-status-text`
-- **Replay detailed** (lines 1264–1281, ~6 rules): `.replay-title-row`, `.replay-title-text`, `.replay-status-row`, `.replay-status-text`
-- **Texture targets** (lines 1301–1302, 1318–1319, ~4 rules): `.warm-up-container::before`, `.replay-container::before`
-- **Event frame** (lines 1076–1081, ~2 rules): `.graphic-event-frame`
-
-Extend existing sections where applicable (warm-up/replay section exists at lines 172-184).
-
-**Verify:**
-- [x] All remaining "output.html only" rules from Task 0.2 audit are now in theme-overrides.css
-- [x] No orphaned rules remain in the "output.html only" category
-
-**Deploy:** Upload `overlays/` directory.
-
-**Depends on:** Task 0.2 (audit provides the definitive list)
-
-**Status:** COMPLETE — Added 27 new rules:
-- Event bar: `.event-bar-details` (1 rule)
-- Event bar text: `.event-bar-name`, `.event-bar-location` (added to existing combined rule)
-- Event frame: `.graphic-event-frame .frame-header`, `.graphic-event-frame .frame-title` (2 rules)
-- Warm-up detailed: `.warm-up-logo-section`, `.warm-up-logo-section img`, `.warm-up-teams-row`, `.warm-up-teams-text`, `.warm-up-status-row`, `.warm-up-status-text` (6 rules)
-- Replay detailed: `.replay-logo-section`, `.replay-logo-section img`, `.replay-title-row`, `.replay-title-text`, `.replay-status-row`, `.replay-status-text` (6 rules)
-- Texture targets: Added `.event-summary-header`, `.leaderboard-header`, `.warm-up-container`, `.replay-container` to both `position: relative` and `::before` selectors (4 elements × 2 = 8 additions)
-
----
-
-### Task 1.4 — Reconcile Class Name Differences — COMPLETE
-
-**Goal:** Add overlay class names to output.html inline-rendered HTML as ADDITIONAL classes.
-
-**Files:** `output.html`
-
-**Work:**
-For each of these 10 class name differences, find the HTML element in the relevant renderer function and add the overlay class alongside the existing class:
-
-| output.html class | Add overlay class | Renderer to modify |
-|---|---|---|
-| `.event-bar-logo` | `.logo-section` | event-bar (~line 12394) |
-| `.warm-up-logo-section` | `.logo-section` | warm-up (~line 12884) |
-| `.replay-logo-section` | `.logo-section` | replay (~line 12905) |
-| `.warm-up-status-text` | `.status-text` | warm-up |
-| `.replay-status-text` | `.status-text` | replay |
-| `.event-bar-name` | `.teams-text` | event-bar |
-| `.event-bar-location` | `.location-text` | event-bar |
-| `.warm-up-status-row` | `.status-row` | warm-up |
-| `.replay-status-row` | `.status-row` | replay |
-| `.coaches-title` | `.hosts-title` | team{N}-coaches renderers |
-
-Do NOT remove existing class names — add the overlay names alongside.
-
-**Verify:**
-- [x] Each of the 10 elements now has both class names
-- [x] Grep confirms no old class names were removed
-- [x] Playwright screenshot: `output.html?graphic=event-bar&meetTheme=pink-meet` shows correct theme styling
-- [x] Playwright screenshot: `output.html?graphic=warm-up&meetTheme=pink-meet` shows correct theme styling
-
-**Status:** COMPLETE — All 10 class reconciliations implemented:
-- `event-bar-logo` + `logo-section`
-- `event-bar-name` + `teams-text`
-- `event-bar-location` + `location-text`
-- `warm-up-logo-section` + `logo-section`
-- `warm-up-status-row` + `status-row`
-- `warm-up-status-text` + `status-text`
-- `replay-logo-section` + `logo-section`
-- `replay-status-row` + `status-row`
-- `replay-status-text` + `status-text`
-- `coaches-title` + `hosts-title` (8 occurrences)
-
-**Deploy:** Upload `output.html` per CLAUDE.md deploy step 2.
-
-**Depends on:** Tasks 1.3a/b/c (ported CSS rules target the overlay class names)
-
----
-
-### Task 1.5 — Convert Inline Theme CSS to Use CSS Variables — COMPLETE
-
-**Goal:** Refactor the "MEET THEME OVERRIDES" inline `<style>` section to read from `--meet-*` CSS variables instead of hardcoded values.
-
-**Files:** `output.html`
-
-**Work:**
-1. In the inline `<style>` section (lines 1070–1331), replace all hardcoded color values with `var(--meet-*)` references
-2. Example: `background: #BFBFBF` → `background: var(--meet-header-bg, #BFBFBF)`
-3. Keep the `[data-meet-theme]` selector — it still gates the rules on theme being active
-4. The inline rules now read the SAME variables that theme-loader.js sets
-
-**Why this ordering matters:** During migration, both inline `<style>` and external `theme-overrides.css` are active. Inline styles have higher specificity. By converting inline rules to use the same CSS variables, specificity doesn't matter — both rules produce the same visual result. **This ordering is load-bearing — do not skip or reorder.**
-
-**Verify:**
-- [x] All hardcoded color values in MEET THEME OVERRIDES section replaced with `var(--meet-*, fallback)`
-- [x] No visual regression — fallback values match the original hardcoded values exactly
-
-**Status:** COMPLETE — Verified that all rules in the MEET THEME OVERRIDES section (lines 1070-1331) already use `var(--meet-*, fallback)` format. No hardcoded color values exist in this section. The work was likely done during original theme system implementation.
-
-**Deploy:** No deploy needed — no changes made.
-
-**Depends on:** Task 1.2 (theme-loader.js sets the CSS variables in output.html)
-
----
-
-### Task 1.6 — Gate Live-Mode Rendering on Theme Readiness — COMPLETE
-
-**Goal:** Prevent FOUC by waiting for theme to load before first render in live mode.
-
-**Files:** `output.html`
-
-**Work:**
-1. Find the `currentGraphic` Firebase listener (~line 13197)
-2. Wrap the render calls in `themeReadyPromise.then(() => { ... })`
-3. Same pattern as preview mode (~line 13175)
-4. Only the first render waits; subsequent renders are instant (promise already resolved)
-5. Gate ALL render paths in the listener: regular graphics, clip mode, WTW overlay mode
-
-**Verify:**
-- [x] First graphic render waits for theme (no FOUC)
-- [x] Subsequent graphic renders are instant (no visible delay)
-- [x] If theme times out (3s), graphics still render with fallback colors
-- [x] Rapid graphic changes don't cause stale renders (last one wins)
-
-**Status:** COMPLETE — Wrapped entire `currentGraphic` listener render logic in `themeReadyPromise.then()`. Added `renderCounter` for "last one wins" behavior during rapid graphic changes. Clear/null state still executes immediately (outside the promise gate) to ensure quick cleanup.
-
-**Deploy:** Upload `output.html`.
-
-**Depends on:** Task 1.2 (themeReadyPromise must reference window.themeReady)
-
----
-
-### Task 1.7 — Build Debug Panel — COMPLETE
-
-**Goal:** Visual diagnostic overlay showing theme state, activated via `?debug=theme`.
-
-**Files:** `overlays/theme-loader.js`, `overlays/theme-overrides.css`
-
-**Work:**
-1. In theme-loader.js, detect `?debug=theme` URL param
-2. After theme application, inject a debug overlay div with:
-   - Current theme ID (or "none")
-   - Theme load status: success / timed out / failed (with timestamp)
-   - Source: `?meetTheme=` param vs `?comp=` config lookup
-   - Each of the 8 CSS variables: name, expected value (from Firebase), actual computed value, pass/fail
-   - Logo data attributes: present/absent, URL value
-   - Rendering path: iframe vs inline (detect from URL)
-   - Graphic ID (from filename or `?graphic=` param)
-3. Style the debug panel:
-   - Fixed position, bottom-right corner
-   - Semi-transparent dark background
-   - Collapsible (click to expand/collapse)
-   - Small badge showing pass/fail count when collapsed
-   - Does NOT appear without `?debug=theme`
-
-**Verify:**
-- [x] `?debug=theme&meetTheme=pink-meet` shows the panel with all variables green
-- [x] Without `?debug=theme`, no panel appears
-- [x] All 8 CSS variable values displayed correctly
-- [x] Pass/fail indicators work (green = match, red = mismatch or missing)
-- [x] Theme load status shows correctly for: success, timeout, no theme
-- [x] Panel doesn't interfere with graphic layout (fixed position, high z-index)
-
-**Status:** COMPLETE — Debug panel implemented with collapsible badge, all 8 CSS variables displayed with expected/actual comparison, theme load status, rendering path detection (inline vs iframe), graphic ID detection, logo attributes, and error display. Screenshots saved to `docs/PRD-Theme-System-V2/screenshots/local-task-1.7*.png`.
-
-**Deploy:** Upload `overlays/` directory.
-
-**Depends on:** Task 1.1 (theme-loader.js must track theme load state for display)
-
----
-
-### Task 1.7b — Producer Theme Error Log Panel — COMPLETE
-
-**Goal:** Show controller displays a persistent error badge + scrollable error log for theme failures.
+**Goal:** Make override functions callable from output.html.
 
 **Files:**
-- `show-controller/src/components/ThemeErrorLog.jsx` (new)
-- `show-controller/src/hooks/useThemeErrors.js` (new)
-- `show-controller/src/views/ProducerView.jsx` (add badge)
+- `overlays/theme-loader.js`
 
 **Work:**
-1. **useThemeErrors hook** (follow useProductionAlerts.js pattern):
-   - Subscribe to `competitions/{compId}/production/themeErrors` in Firebase
-   - Return: `{ errors, errorCount, clearErrors }`
-   - Sort by timestamp descending (newest first)
-
-2. **ThemeErrorLog component** (follow AlertPanel.jsx pattern):
-   - Red warning badge with count (e.g., "Theme: 2 errors") — visible in producer header
-   - Click opens scrollable panel with:
-     - Each error: timestamp, source, type, full message
-     - **Copy button** per error (copies structured text per fouc-prevention.md format)
-     - **Copy All** button
-     - **Dismiss All** button (deletes errors from Firebase)
-   - Badge stays visible as long as errors exist
-
-3. **ProducerView integration:**
-   - Add ThemeErrorLog badge near existing status badges (like StatsStatusBadge)
-   - Only render if errors exist
+1. Move `overrideMapping` (lines 459-468), `imageOverrideMapping` (lines 481-499), and `layoutOverrideMapping` (lines 524-548) from function-local scope to IIFE module scope (above `applyOverrides()`)
+2. Export `applyOverrides()` as `window.themeApplyOverrides(theme, graphicId)` at end of IIFE
+3. Create `clearOverrides(graphicId)` that removes all CSS variables for a given graphic ID:
+   - Build suffix list from all three mapping objects (8 + 13 + 19 = 40 suffixes)
+   - Call `document.documentElement.style.removeProperty('--' + graphicId + '-' + suffix)` for each
+4. Export as `window.themeClearOverrides(graphicId)`
 
 **Verify:**
-- [x] Build passes: `cd show-controller && npm run build`
-- [ ] Trigger a theme error (load output.html with bad theme ID + valid compId)
-- [ ] Producer view shows red "Theme: 1 error" badge
-- [ ] Click badge → error log panel opens with error details
-- [ ] Copy button copies formatted error text to clipboard
-- [ ] Dismiss All clears errors from Firebase and hides badge
+- [ ] `window.themeApplyOverrides` is a function in browser console
+- [ ] `window.themeClearOverrides` is a function in browser console
+- [ ] Calling `themeApplyOverrides(window.__themeData, 'event-bar')` sets `--event-bar-header-bg` CSS variable
+- [ ] Calling `themeClearOverrides('event-bar')` removes all `--event-bar-*` CSS variables
+- [ ] No console errors
+- [ ] Theme Editor preview still works (overlay files use internal `applyOverrides()` path unchanged)
 
-**Status:** COMPLETE — Build passes. Components created:
-- `useThemeErrors.js`: Hook subscribing to `production/themeErrors/` with clear functions
-- `ThemeErrorLog.jsx`: Collapsible panel + `ThemeErrorBadge` inline badge
-- ProducerView: Badge in header, panel in right column after AlertPanel
-
-Live verification requires deployment and triggering a theme error in production (will be verified in Task 1.8a/b/c).
-
-**Deploy:** Build React SPA + deploy per CLAUDE.md step 1. Also deploy `output.html` + `overlays/` per step 2. Verify at `https://commentarygraphic.com`.
-
-**Depends on:** Task 1.1 (Firebase error writes must exist)
+**Deploy:** Deploy `overlays/theme-loader.js` to production per CLAUDE.md Step 2.
 
 ---
 
-### Task 1.8a — Verify All Inline Graphics with Theme — COMPLETE
+### Task 8.2 — Call Overrides in currentGraphic Listener — NOT STARTED
 
-**Goal:** Playwright screenshot verification of key inline-rendered graphics with a test theme.
+**Goal:** Apply per-graphic overrides when graphics switch in live mode, clean up previous graphic's variables.
 
-**Files:** None modified (verification only)
+**Files:**
+- `output.html`
 
 **Work:**
-1. Create or use an existing test theme in Firebase (e.g., `pink-meet`)
-2. For each key inline renderer, take a Playwright screenshot with `?graphic={id}&meetTheme={testTheme}`:
-   - event-bar, hosts, team1-stats, team1-coaches, event-frame, warm-up, replay, event-summary, virtuis-leaderboard, live-camera, stream-starting
-3. Verify: theme colors applied correctly, no FOUC, no console errors
-4. Check logo contrast (white background) on logo containers
+1. Add `let lastLiveGraphicId = null;` variable near top of script section
+2. In `currentGraphic` listener (line ~13372, the live-mode regular graphics branch):
+   - Before rendering: if `lastLiveGraphicId && lastLiveGraphicId !== graphic`, call `window.themeClearOverrides(lastLiveGraphicId)`
+   - After determining graphic ID: call `window.themeApplyOverrides(window.__themeData, graphic)`
+   - Update `lastLiveGraphicId = graphic`
+3. Handle clip mode (line ~13331): when clip-type graphics arrive, apply overrides for `'clip-overlay'`
+4. Handle clear state (line ~13302): when state is null, clear overrides for `lastLiveGraphicId`, reset to null
+5. Guard all calls with `if (window.themeApplyOverrides)` to prevent errors if theme-loader hasn't loaded
 
 **Verify:**
-- [x] All key inline graphics render with correct theme colors
-- [x] No console errors (only favicon 404 which is expected)
-- [x] Logo contrast (white background) works on all logo containers
-- [x] Event summary, leaderboard, warm-up, replay, event-bar, coaches all themed
+- [ ] Load `output.html?comp=wcgnic-2026-prelim1` in browser
+- [ ] Set `currentGraphic` to `event-bar` via Firebase — event-bar overrides apply
+- [ ] Switch to `warm-up` — event-bar overrides cleared, warm-up overrides apply
+- [ ] Switch to `sponsors-thanks` (iframe) — no crash, iframe gets theme via URL param
+- [ ] Clear `currentGraphic` to null — all overrides cleared
+- [ ] No console errors during rapid switching
+- [ ] Clip mode: set `mode=clip`, send clip-playback graphic — `clip-overlay` overrides apply
 
-**Status:** COMPLETE — Verified with `pink-meet-2026` theme (Firebase). Screenshots saved to `docs/PRD-Theme-System-V2/screenshots/task-1.8a-*.png`.
-
-**Verification Results:**
-| Graphic | Theme Applied | Logo Contrast | Console Errors | Notes |
-|---------|--------------|---------------|----------------|-------|
-| event-bar | ✓ Pink header | ✓ White bg | None | Full render |
-| hosts | ✓ Theme loaded | N/A | TypeError (data) | Needs competition data |
-| team1-stats | ✓ Pink header | N/A | None | Full render |
-| team1-coaches | ✓ Theme loaded | N/A | TypeError (data) | Needs competition data |
-| event-frame | ✓ Pink header | ✓ Logo visible | None | Full render |
-| warm-up | ✓ Pink header | ✓ White bg | None | Full render |
-| replay | ✓ Pink header | ✓ White bg | None | Full render |
-| event-summary | ✓ Theme loaded | N/A | None | Needs Virtius session |
-| virtuis-leaderboard | ✓ Theme loaded | N/A | None | Needs Virtius session |
-| live-camera | ✓ Theme loaded | N/A | None | Minimal (LIVE badge only) |
-| stream-starting | ✓ Pink text | N/A | None | Partial (needs team data) |
-
-**Note:** Some graphics show blank or partial content because they require competition/Virtius data that isn't available in preview mode. The key verification is that theme-loader.js loaded and applied the theme correctly (confirmed by console logs "Theme applied: Pink Invitational").
-
-**Deploy:** None — verification only.
-
-**Depends on:** Tasks 1.1–1.6
+**Deploy:** Deploy `output.html` to production per CLAUDE.md Step 2.
 
 ---
 
-### Task 1.8b — Verify Iframe Graphics + Playout/WTW Sub-Graphics — COMPLETE
+### Task 8.4 — Comprehensive Live-Mode Verification — NOT STARTED
 
-**Goal:** Verify iframe-rendered graphics AND orchestration sub-graphics receive theme correctly.
+**Goal:** Verify all 15 inline graphic types render correctly with per-graphic overrides in live mode.
 
-**Files:** None modified (verification only)
+**Files:** None (verification only — screenshots)
 
 **Work:**
-1. For each iframe renderer, screenshot with `?graphic={id}&meetTheme={testTheme}`:
-   - sponsors-thanks, sponsors-cycle, sponsors-bug, who-to-watch-title, who-to-watch-lower-third, event-calendar, rotation-slate
-2. Verify playout sub-graphics (requires Task 1.1b deployed):
-   - Check Firebase `currentGraphic` during playout → `data.meetTheme` field present
-   - Sponsor graphic during playout gap-fill shows theme colors
-3. Verify WTW sub-graphics:
-   - Who-to-watch title card shows theme colors (badge, headline bar, background)
-   - Who-to-watch lower third shows theme colors (header bar, stat accent)
-4. Verify clip overlay uses theme CSS variables:
-   - Load `output.html?mode=clip&comp={testComp}` — clip overlay panel should use `--meet-header-bg`
+1. Set up test theme with distinct per-graphic overrides for event-bar, warm-up, replay, event-summary, virtuis-leaderboard, team1-stats, team1-coaches
+2. Load `output.html?comp={testComp}` in Playwright
+3. For each of these graphics, set `currentGraphic` via Firebase and screenshot:
+   - event-bar, warm-up, replay (lower-thirds with layout overrides)
+   - event-summary, virtuis-leaderboard (full-screen)
+   - team1-stats, team1-coaches (team cards)
+   - logos, now-competing, live-camera (misc inline)
+   - stream-starting, stream-thanks (stream)
+   - clear (null state)
+4. Rapid switching test: cycle through 5 graphics in 1-second intervals, verify no stale CSS variables
+5. Iframe regression: verify sponsors-thanks, rotation-slate still render via iframe (no override interference)
 
 **Verify:**
-- [x] All iframe graphics render with correct theme colors
-- [x] Sponsor graphics in playout gap-fill render themed (not unthemed) — verified via code: all 8 `_writeCurrentGraphic()` calls include `meetTheme: this._meetTheme`
-- [x] Who-to-watch title card renders themed
-- [x] Who-to-watch lower third renders themed
-- [x] Clip overlay uses theme CSS variables — verified theme-loader.js loads on `?mode=clip`
-- [x] No console errors in parent or iframe (only favicon 404 and expected "no comp ID" errors)
-
-**Status:** COMPLETE — All iframe graphics verified with `pink-meet-2026` theme. Screenshots saved to `docs/PRD-Theme-System-V2/screenshots/task-1.8b-*.png`.
-
-**Verification Results:**
-| Graphic | Theme Applied | Theme Colors | Console Errors | Notes |
-|---------|--------------|--------------|----------------|-------|
-| sponsors-thanks | ✓ Pink header | ✓ Correct | None | Full render, logo visible |
-| sponsors-cycle | ✓ Theme loaded | ✓ Dark bg | None | No sponsors = blank (expected) |
-| sponsors-bug | ✓ Theme loaded | ✓ Transparent | None | Small overlay (expected) |
-| who-to-watch-title | ✓ Pink gradient | ✓ Badge, bars | None | Full 1920x1080 card |
-| who-to-watch (lower) | ✓ Pink header | ✓ Content area | None | Lower-third overlay |
-| rotation-slate | ✓ Theme logo | ✓ Dark content | None | Pink accent line |
-| event-calendar | ✓ Pink header | ✓ Content area | None | "No events" placeholder |
-
-**PlayoutEngine meetTheme verification:** Code inspection confirms all 8 `_writeCurrentGraphic()` calls (lines 497, 794, 814, 853, 890, 928, 1468, 1634) include `meetTheme: this._meetTheme`. Live playout verification requires production deployment.
-
-**Deploy:** None — verification only.
-
-**Depends on:** Tasks 1.1–1.7, Task 1.1b
+- [ ] All 15 inline graphics render with correct theme colors
+- [ ] Per-graphic overrides (where configured) visually differ from theme defaults
+- [ ] No stale CSS variables after switching (inspect computed styles)
+- [ ] No console errors
+- [ ] Iframe graphics unaffected
 
 ---
 
-### Task 1.8c — Rundown Integration Test — COMPLETE
+### Task 8.5 — Layout Override Verification — NOT STARTED
 
-**Goal:** Verify the full pipeline: timesheetEngine → currentGraphic → themed render.
+**Goal:** Verify layout overrides (position, sizes, padding, fonts, visibility) work in live mode for lower-thirds.
 
-**Files:** None modified (verification only)
+**Files:** None (verification only — screenshots)
 
 **Work:**
-1. Use a test competition with a theme assigned
-2. Load `output.html?comp={testCompId}` in Playwright
-3. Write a test graphic to `competitions/{testCompId}/currentGraphic` via Firebase
-4. Verify: graphic renders with theme (no FOUC), correct colors
+1. Configure test theme with layout overrides for event-bar:
+   - barBottom: 200px, barLeft: 200px, logoImgSize: 50px, venueFontSize: 48px
+   - showLogo: none (hidden), barMinWidth: 800px
+2. Set `currentGraphic` to event-bar, screenshot and verify:
+   - Bar positioned at bottom: 200px, left: 200px
+   - Logo hidden
+   - Venue font is 48px
+   - Bar min-width is 800px
+3. Switch to warm-up (no layout overrides) — verify defaults restored
+4. Configure warm-up with different overrides, verify they apply independently
 
 **Verify:**
-- [x] Live-mode render gates on theme readiness (no FOUC)
-- [x] Theme loaded from competition config (not URL param)
-- [x] Graphic renders with correct theme colors
-- [x] Debug panel (`?debug=theme`) shows successful theme load from competition config
-
-**Status:** COMPLETE — Verified with `wcgnic-2026-prelim1` competition (has `meetTheme: "behind-the-chalk"` in config).
-
-**Verification Results:**
-| Check | Result | Evidence |
-|-------|--------|----------|
-| Theme from config | ✓ | Debug panel shows "Source: competition config" |
-| Theme ID correct | ✓ | Debug panel shows "Theme ID: behind-the-chalk" |
-| Load status | ✓ success | Debug panel shows "Load Status: success" (481ms) |
-| CSS variables | ✓ 8/8 | All variables match expected values |
-| event-bar render | ✓ themed | Dark header (#2D3436), gray content (#636E72) |
-| warm-up render | ✓ themed | Same theme colors applied |
-| No console errors | ✓ | Only favicon 404 (expected) |
-
-Screenshots saved to `docs/PRD-Theme-System-V2/screenshots/task-1.8c-*.png`.
-
-**Deploy:** None — verification only.
-
-**Depends on:** Tasks 1.1–1.7b
+- [ ] Event-bar layout overrides render correctly
+- [ ] Warm-up reverts to defaults when event-bar overrides cleared
+- [ ] Each graphic's layout overrides are independent
+- [ ] Height/padding overrides work (venueHeight, detailsPaddingV)
 
 ---
 
-### Task 1.DOC — Update Documentation After Phase 1 — COMPLETE
+### Task 8.6 — Image/Texture Override Verification — NOT STARTED
 
-**Goal:** Update CLAUDE.md and PRD to reflect the unified theme system shipped in Phase 1.
+**Goal:** Verify image and texture per-graphic overrides work in live mode.
 
-**Files:** `CLAUDE.md`, `docs/PRD-Theme-System-V2/PRD-Theme-System-V2-2026-03-25.md`
+**Files:** None (verification only — screenshots)
 
 **Work:**
-1. **CLAUDE.md — Replace "Meet Theme System" section:**
-   - Replace the "Dual CSS Locations" table and explanation with "Unified Theme System" — theme-loader.js is now the single code path for all graphics (overlays AND output.html)
-   - Document `?comp=` support in theme-loader.js (new in Phase 1)
-   - Document `window.themeReady` promise API
-   - Add debug panel instructions: `?debug=theme` URL param
-   - Update the "Key class name differences" table — note that overlay class names are now added alongside output.html names (both work)
-   - Keep the "Theme CSS Variables" and "Theme Sponsors" sections (still accurate)
-   - Add note: inline CSS kept as fallback until Task 1.9 (post live-event)
-2. **CLAUDE.md — Add "Theme Error Reporting" section:**
-   - Firebase path: `competitions/{compId}/production/themeErrors/{timestamp}`
-   - Producer sees ThemeErrorLog badge in ProducerView
-   - Error format (for copy-paste into Claude)
-3. **CLAUDE.md — Update "Clip Integration" section:**
-   - Note that PlayoutEngine now includes `meetTheme` in all `_writeCurrentGraphic()` calls (Task 1.1b)
-4. **PRD — Update phase status:**
-   - Phase 0: mark as COMPLETE
-   - Phase 1 (except 1.9): mark as COMPLETE
-   - Phase 3: mark as IN PROGRESS (next)
+1. Configure test theme with image overrides for event-bar:
+   - headerBgImage: a test image URL, headerBgImageFit: cover, headerBgImageOpacity: 0.5
+   - bodyTexture: a texture URL, bodyTextureBlend: overlay, bodyTextureOpacity: 0.3
+   - logo: custom logo URL, logoSize: 40px
+2. Set `currentGraphic` to event-bar, screenshot
+3. Switch to warm-up (no image overrides) — verify no leftover images/textures
+4. Switch back to event-bar — verify images reappear
 
 **Verify:**
-- [x] CLAUDE.md no longer references "two places that must stay in sync" for theme CSS
-- [x] CLAUDE.md documents `?debug=theme` and `window.themeReady`
-- [x] CLAUDE.md documents theme error reporting path
-- [x] PRD phase statuses updated
-
-**Status:** COMPLETE — All documentation updates made:
-- CLAUDE.md: Replaced "Meet Theme System - IMPORTANT (Dual CSS Locations)" with "Unified Theme System"
-- CLAUDE.md: Added "Debug Panel" section with `?debug=theme` instructions
-- CLAUDE.md: Added "Theme Ready Promise API" section documenting `window.themeReady`
-- CLAUDE.md: Added "Theme Error Reporting" section with Firebase path and error format
-- CLAUDE.md: Updated "Class Name Reconciliation" table showing both class names on elements
-- CLAUDE.md: Updated "Clip Integration" section noting PlayoutEngine includes meetTheme in all writes
-- PRD: Updated status to "IN PROGRESS (Phase 1 COMPLETE except Task 1.9 deferred, Phase 3 next)"
-- PRD: Marked Phase 0 as COMPLETE
-- PRD: Marked Phase 1 as COMPLETE (except Task 1.9 deferred)
-- PRD: Marked Phase 3 as IN PROGRESS (next)
-
-**Deploy:** None — documentation only. Committed with the next code task's deploy.
-
-**Depends on:** Task 1.8c
+- [ ] Header background image renders with correct fit and opacity
+- [ ] Body texture renders with correct blend mode
+- [ ] Custom logo renders at specified size
+- [ ] All image CSS variables cleared on graphic switch
+- [ ] No visual artifacts from previous graphic's images
 
 ---
 
-### Task 1.9 — Remove Inline Theme CSS (Post Live-Event Gate) — DEFERRED
+### Task 8.7 — Production Deployment + OBS Verification — NOT STARTED
 
-> **Deferred:** Requires at least one successful live event before running.
+**Goal:** Deploy Phase 8A to production and verify in OBS-like conditions.
 
-**Goal:** Remove the duplicate inline theme code from output.html.
-
-**Files:** `output.html`, `CLAUDE.md`
+**Files:**
+- Deploy: `overlays/theme-loader.js`, `output.html`, `overlays/` directory
 
 **Work:**
-1. Remove the entire "MEET THEME OVERRIDES" inline `<style>` section (lines 1070–1331)
-2. Remove `applyMeetTheme()` function (~line 7327)
-3. Remove `loadMeetTheme()` function (~line 7398)
-4. Remove the commented-out `themeReadyPromise` initialization code
-5. Simplify to just `let themeReadyPromise = window.themeReady || Promise.resolve()`
-6. Replace 600ms setTimeout in `who-to-watch-title.html` and `who-to-watch.html` with `window.themeReady.then()` (now available from Task 1.1)
-7. Update CLAUDE.md: replace "Dual CSS Locations" section with "Unified Theme System"
-8. Update CLAUDE.md: add debug panel instructions (`?debug=theme`)
+1. Build show-controller: `cd show-controller && npm run build`
+2. Deploy React SPA per CLAUDE.md Step 1
+3. Deploy graphics files per CLAUDE.md Step 2 (output.html + overlays/)
+4. Verify main site loads: `https://commentarygraphic.com`
+5. Verify graphics output: `https://commentarygraphic.com/output.html?graphic=event-bar&meetTheme=pink-meet-2026`
+6. Verify Theme Editor preview still works
+7. Verify debug panel: `output.html?graphic=event-bar&meetTheme=pink-meet-2026&debug=theme`
 
 **Verify:**
-- [ ] Re-run all Task 1.8a/b/c verifications
-- [ ] All graphics still render with correct theme colors
-- [ ] No references to `applyMeetTheme` or `loadMeetTheme` remain in output.html
-- [ ] WTW overlays use `themeReady.then()` instead of `setTimeout(600ms)`
-- [ ] CLAUDE.md updated
-
-**Deploy:** Upload `output.html` + `overlays/` + React SPA build.
-
-**Depends on:** Tasks 1.8a/b/c + one successful live event
+- [ ] Main site loads without console errors
+- [ ] Graphics output renders with theme colors
+- [ ] Theme Editor preview works for all graphic categories
+- [ ] Debug panel shows correct override layer info
+- [ ] No 403/404 errors on overlay files
 
 ---
 
-## Phase 3: Per-Graphic Theme Overrides
+### Task 8.DOC — Update CLAUDE.md + PRD Status — NOT STARTED
 
-> **Depends on:** All Phase 1 tasks complete. theme-loader.js must support `?comp=` and set CSS variables.
+**Goal:** Document the live-mode override system and update PRD status.
 
-### Task 3.1 — Extend theme-loader.js for Per-Graphic Override CSS Variables — COMPLETE
-
-**Goal:** After applying global theme colors, detect the current graphic ID and apply any per-graphic override values as graphic-specific CSS variables.
-
-**Files:** `overlays/theme-loader.js`
+**Files:**
+- `CLAUDE.md`
+- `docs/PRD-Theme-System-V2/PRD-Theme-System-V2-2026-03-25.md`
 
 **Work:**
-1. Add graphic ID detection logic (after theme is applied, inside `applyTheme()` or a new `applyOverrides()` function):
-   - **Overlay files:** Extract from `window.location.pathname` — e.g., `/overlays/sponsors-thanks.html` → `sponsors-thanks`
-   - **output.html with `?graphic=`:** Read from URL param — e.g., `?graphic=event-bar` → `event-bar`
-   - **output.html with `?mode=clip` or `?mode=clip-preview`:** Use `clip-overlay` as graphic ID
-   - **output.html with no `?graphic=` and no `?mode=clip`:** Skip per-graphic overrides (live mode — graphic changes at runtime, handled differently)
-2. After detecting graphic ID, check `theme.overrides[graphicId]` (already fetched in the single theme subtree read)
-3. For each override property found, set a graphic-specific CSS variable:
-   - `headerBar` → `--{graphicId}-header-bg` (e.g., `--event-bar-header-bg`)
-   - `contentArea` → `--{graphicId}-content-bg`
-   - `bodyBackground` → `--{graphicId}-overlay-bg`
-   - `borderDivider` → `--{graphicId}-border-color`
-   - `badge` → `--{graphicId}-badge-bg`
-   - `badgeText` → `--{graphicId}-badge-text`
-   - `textOnHeader` → `--{graphicId}-header-text`
-   - `textOnContent` → `--{graphicId}-overlay-text`
-4. Store override status on `window.__themeDebug` for the debug panel (Task 3.4)
-5. For live mode (no `?graphic=` param), theme-loader.js can't know the graphic ID at load time. Override application for live-mode inline graphics must happen in the `currentGraphic` listener in output.html — read the graphic type from the payload, check `window.__themeData.overrides[graphic]`, and set CSS variables before rendering. **This is a small addition to the existing render path.**
+1. Add to CLAUDE.md under Theme System section:
+   - `window.themeApplyOverrides(theme, graphicId)` — applies per-graphic CSS variables
+   - `window.themeClearOverrides(graphicId)` — removes per-graphic CSS variables
+   - Live-mode flow: currentGraphic listener calls clearOverrides(prev) then applyOverrides(current)
+   - `lastLiveGraphicId` tracking variable in output.html
+2. Update PRD: Mark Phase 8A as COMPLETE with completion date
 
 **Verify:**
-- [x] Load `overlays/sponsors-thanks.html?meetTheme={testTheme}` where the theme has `overrides/sponsors-thanks/headerBar: "#FF0000"` → header uses red (#FF0000), not the global theme color
-- [x] Load `output.html?graphic=event-bar&meetTheme={testTheme}` with override → event-bar uses override color
-- [x] Load `output.html?graphic=event-bar&meetTheme={testTheme}` WITHOUT override → event-bar uses global theme color (fallback works)
-- [x] CSS variable cascade: `var(--event-bar-header-bg, var(--meet-header-bg, #BFBFBF))` resolves correctly at each layer
-- [x] `window.__themeData` contains the full theme object for live-mode override lookup
-
-**Status:** COMPLETE — Implementation verified locally with screenshots. Key changes:
-- Added `detectGraphicId()` function to extract graphic ID from URL/pathname
-- Added `applyOverrides(theme, graphicId)` function to set graphic-specific CSS variables
-- Updated both output.html inline CSS and theme-overrides.css to use the 3-layer cascade
-- `window.__themeData` stores full theme for live-mode override lookups
-
-Screenshots: `local-task-3.1-fresh-server.png` (red override), `local-task-3.1-no-override-fallback.png` (pink fallback)
-
-**Deploy:** Upload `overlays/` directory per CLAUDE.md deploy step 2.
+- [ ] CLAUDE.md documents both exported functions
+- [ ] CLAUDE.md documents the live-mode override flow
+- [ ] PRD Phase 8A marked COMPLETE
 
 ---
 
-### Task 3.2 — Image/Texture CSS Variable Injection — COMPLETE
+## Phase 7.FONT — Font Loading (Cross-Cutting, Before 7A Deploys)
 
-**Goal:** When a per-graphic override includes image URLs (`headerBgImage`, `bodyBgImage`, `bodyTexture`), set CSS variables that theme-overrides.css can consume.
+All Phase 7 graphics need consistent font loading. This phase consolidates Google Fonts imports and adds font family metadata for the Theme Editor.
 
-**Files:** `overlays/theme-loader.js`, `overlays/theme-overrides.css`
+---
+
+### Task 7.FONT.1 — Consolidate Font Loading in output.html — NOT STARTED
+
+**Goal:** Extend the Google Fonts import to include all font families needed by Phase 7 graphics.
+
+**Files:**
+- `output.html`
 
 **Work:**
-1. In theme-loader.js (extend `applyOverrides()` from Task 3.1), when override has image properties:
-   - `headerBgImage` → set `--{graphicId}-header-bg-image: url({value})`
-   - `headerBgImageFit` → set `--{graphicId}-header-bg-image-fit` (default: `cover`)
-   - `headerBgImagePosition` → set `--{graphicId}-header-bg-image-position` (default: `center`)
-   - `headerBgImageOpacity` → set `--{graphicId}-header-bg-image-opacity` (default: `1`)
-   - Same pattern for `bodyBgImage*` and `bodyTexture*` properties
-   - `logo` → set `--{graphicId}-logo-url: url({value})`
-   - `logoSize` → set `--{graphicId}-logo-size: {value}px`
-2. In theme-overrides.css, add `background-image` properties alongside existing `background-color` properties that default to `none`:
-   ```css
-   [data-meet-theme] .header-bar {
-     background-color: var(--meet-header-bg, #BFBFBF);
-     background-image: var(--header-bar-header-bg-image, none);
-     background-size: var(--header-bar-header-bg-image-fit, cover);
-     background-position: var(--header-bar-header-bg-image-position, center);
-   }
+1. Replace the single Inter import (line 7) with a consolidated multi-family request:
+   - Inter: wght@400;500;600;700;800;900
+   - Inter Tight: wght@400;500;600;700;800;900 (compact variant for dense layouts)
+   - Roboto Mono: wght@400;500;600;700 (tabular numbers for scores)
+   - JetBrains Mono: wght@400;500;600;700 (alternative monospace)
+   - Poppins: wght@400;500;600;700;800;900 (interview-card font)
+2. Add `<link rel="preconnect" href="https://fonts.googleapis.com">` and `<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>` before the font import
+3. Use `&display=swap` for all families
+
+**Verify:**
+- [ ] All 5 font families load (check Network tab)
+- [ ] No FOUT/FOIT issues (fonts swap in cleanly)
+- [ ] Existing graphics render identically (Inter unchanged)
+- [ ] Page load time increase < 200ms (fonts load in parallel)
+
+**Deploy:** Deploy `output.html` to production.
+
+---
+
+### Task 7.FONT.2 — Update Overlay Files for Consistent Font Weights — NOT STARTED
+
+**Goal:** Ensure overlay files request the same weight range as output.html for their respective fonts.
+
+**Files:**
+- `overlays/interview-card.html` (Poppins — already has full range, verify)
+- `overlays/sponsors-cycle.html` (uses system fonts — add Inter import)
+- `overlays/sponsors-bug.html` (no font import — add Inter import)
+- Frame overlay files (`overlays/frame-*.html`) — add Inter import to replace Arial
+
+**Work:**
+1. For each overlay file listed above, add or update the Google Fonts import to match the consolidated set
+2. For frame overlays: replace `font-family: 'Arial', sans-serif` with `font-family: 'Inter', sans-serif` and add Google Fonts import
+3. Verify interview-card.html already imports Poppins with full weight range
+4. For sponsors-cycle.html: replace system font stack with Inter import
+
+**Verify:**
+- [ ] All overlay files load fonts without errors
+- [ ] Frame overlays render with Inter instead of Arial
+- [ ] interview-card.html still uses Poppins
+- [ ] sponsors-cycle/bug render correctly with Inter
+- [ ] No visual regressions in any overlay
+
+**Deploy:** Deploy `overlays/` directory to production.
+
+---
+
+### Task 7.FONT.3 — Add Font Family Dropdown Metadata to Theme Editor — NOT STARTED
+
+**Goal:** Add font family options and tabular number flags to ThemeEditorPage for use in Phase 7 control panels.
+
+**Files:**
+- `show-controller/src/pages/ThemeEditorPage.jsx`
+
+**Work:**
+1. Add `FONT_FAMILIES` constant near top of file (after line ~121):
+   ```javascript
+   const FONT_FAMILIES = [
+     { value: 'Inter', label: 'Inter', tabular: false },
+     { value: 'Inter Tight', label: 'Inter Tight', tabular: false },
+     { value: 'Roboto Mono', label: 'Roboto Mono', tabular: true },
+     { value: 'JetBrains Mono', label: 'JetBrains Mono', tabular: true },
+     { value: 'Poppins', label: 'Poppins', tabular: false },
+   ];
    ```
-3. Only add `background-image` rules to the primary themed elements (header-bar, frame-header, coaches-content, sponsors-container, spotlight-container) — not every rule
-
-**Verify:**
-- [x] Set `overrides/event-bar/headerBgImage` to a test image URL → event-bar header shows image — CSS variables defined, full test requires Firebase data (Phase 4)
-- [x] Without override, `background-image` resolves to `none` — no visual change — verified via screenshots
-- [x] Image fit/position controls work (cover vs contain vs repeat) — CSS variables defined with defaults
-- [x] Image opacity applied via separate pseudo-element or filter — opacity variable defined (full implementation in Task 3.3)
-
-**Status:** COMPLETE — Implementation verified locally:
-- Extended `applyOverrides()` in theme-loader.js to handle 13 image/texture properties
-- Added PER-GRAPHIC IMAGE OVERRIDES section to theme-overrides.css (lines 525-658)
-- Covers: event-bar, sponsors, rotation-slate, event-summary, leaderboard, coaches, spotlight, stream, warm-up, replay
-- Screenshots: `local-task-3.2-event-bar.png`, `local-task-3.2-sponsors-thanks.png`
-
-**Deploy:** Upload `overlays/` directory.
-
-**Depends on:** Task 3.1
-
----
-
-### Task 3.3 — Texture Overlay Per-Graphic Implementation — COMPLETE
-
-**Goal:** Per-graphic texture overlays via `::before` pseudo-elements, extending the existing texture system.
-
-**Files:** `overlays/theme-overrides.css`
-
-**Work:**
-1. The existing texture `::before` system (theme-overrides.css lines 308-341) applies a global `--meet-texture` to 11 surface elements
-2. Extend the `::before` rules to also check for graphic-specific texture variables:
-   ```css
-   [data-meet-theme] .header-bar::before {
-     background: var(--header-bar-body-texture,
-       var(--meet-texture, none)) center / 1024px repeat;
-     opacity: var(--header-bar-body-texture-opacity,
-       var(--meet-texture-opacity, 0.08));
-     mix-blend-mode: var(--header-bar-body-texture-blend, normal);
-   }
+2. Add `FONT_WEIGHTS` constant:
+   ```javascript
+   const FONT_WEIGHTS = [
+     { value: '400', label: 'Regular' },
+     { value: '500', label: 'Medium' },
+     { value: '600', label: 'Semi-Bold' },
+     { value: '700', label: 'Bold' },
+     { value: '800', label: 'Extra-Bold' },
+     { value: '900', label: 'Black' },
+   ];
    ```
-3. Use Phase 0.3 audit results to handle any `::before`/`::after` conflicts identified
+3. Add `TEXT_TRANSFORMS` constant:
+   ```javascript
+   const TEXT_TRANSFORMS = [
+     { value: 'none', label: 'None' },
+     { value: 'uppercase', label: 'UPPERCASE' },
+     { value: 'capitalize', label: 'Capitalize' },
+   ];
+   ```
 
 **Verify:**
-- [x] Per-graphic texture override renders on targeted element only — CSS variables set up for 10 graphic types
-- [x] Global texture still works on non-overridden elements — verified with behind-the-chalk theme
-- [x] Blend mode (overlay, multiply, normal) works — `mix-blend-mode` property added to all texture rules
-- [x] No `::before` conflicts with existing pseudo-elements (per audit) — audit confirmed no conflicts
-
-**Status:** COMPLETE — Extended texture `::before` rules to use 3-layer cascade for 10 graphic types:
-- event-bar, rotation-slate, stream (starting/thanks), sponsors (thanks/cycle/bug)
-- coaches (team1/team2), spotlight, event-summary, leaderboard, warm-up, replay
-- Generic elements (panel, header-bar, frame-header, roster-container) use global texture only
-
-Screenshots: `local-task-3.3-event-bar.png`, `local-task-3.3-warm-up-texture.png`, `local-task-3.3-sponsors-texture.png`
-
-**Deploy:** Upload `overlays/` directory.
-
-**Depends on:** Task 3.1, Task 0.3 (pseudo-element audit)
+- [ ] Constants defined without syntax errors
+- [ ] `npm run build` succeeds in show-controller
+- [ ] No visual changes to existing Theme Editor (metadata only, no UI yet)
 
 ---
 
-### Task 3.4 — Update Debug Panel for Override Source Display — COMPLETE
+### Task 7.FONT.4 — Deploy Font Changes + Verify Loading — NOT STARTED
 
-**Goal:** Extend the Phase 1 debug panel to show which layer (fallback / theme / override) provides each CSS variable value.
+**Goal:** Deploy all font changes and verify they load correctly across output.html and overlays.
 
-**Files:** `overlays/theme-loader.js`
+**Files:**
+- Deploy: `output.html`, `overlays/` directory, show-controller build
 
 **Work:**
-1. In the debug panel render (added in Task 1.7), extend each CSS variable row:
-   - Show source: "Layer 1 (fallback)" / "Layer 2 (theme)" / "Layer 3 (override: {graphicId})"
-   - Color-code: gray for fallback, blue for theme, purple for override
-2. Add an "Overrides" section to the debug panel:
-   - Show current graphic ID
-   - List all active overrides for this graphic
-   - Flag orphaned overrides (override references a graphic ID not in `graphic-ids.json`)
-3. Read override status from `window.__themeDebug` set in Task 3.1
+1. Build show-controller: `cd show-controller && npm run build`
+2. Deploy React SPA per CLAUDE.md Step 1
+3. Deploy graphics files per CLAUDE.md Step 2
+4. Verify font loading on production:
+   - `https://commentarygraphic.com/output.html?graphic=event-bar&meetTheme=pink-meet-2026` — Inter loads
+   - `https://commentarygraphic.com/overlays/interview-card.html?meetTheme=pink-meet-2026` — Poppins loads
+   - `https://commentarygraphic.com/overlays/sponsors-cycle.html` — Inter loads
+5. Check Network tab for all 5 font families
 
 **Verify:**
-- [x] Debug panel shows "Layer 3 (override)" for overridden properties — shows "Layer 3 (override: event-bar) → --event-bar-header-bg" in purple
-- [x] Debug panel shows "Layer 2 (theme)" for non-overridden themed properties — shows "Layer 2 (theme)" in blue
-- [x] Debug panel shows "Layer 1 (fallback)" for unthemed properties — shows "No theme applied — using fallback colors" for no-theme case
-- [x] Graphic ID displayed correctly for both overlays and output.html — shows graphic ID from URL param
-
-**Status:** COMPLETE — Debug panel now shows:
-- Per-variable source layer with color coding (gray L1, blue L2, purple L3)
-- "Per-Graphic Overrides" section with graphic ID, "Has Overrides" status, and list of applied overrides
-- For no-theme case, shows simplified "No theme applied — using fallback colors" message
-
-Screenshots: `local-task-3.4-final.png` (Layer 3 override), `local-task-3.4-layer2.png` (Layer 2 theme only), `local-task-3.4-no-theme.png` (no theme/fallback)
-
-**Deploy:** Upload `overlays/` directory.
-
-**Depends on:** Task 1.7 (debug panel exists), Task 3.1 (override data available)
+- [ ] All 5 font families load on output.html (Network tab)
+- [ ] Poppins loads on interview-card overlay
+- [ ] Inter loads on previously-Arial frame overlays
+- [ ] No console errors on any page
+- [ ] Theme Editor loads without errors
 
 ---
 
-### Task 3.DOC — Update Documentation After Phase 3 — COMPLETE
+## Phase 7A: Full-Screen Graphics (11 tasks)
 
-**Goal:** Update CLAUDE.md and PRD to reflect per-graphic overrides shipped in Phase 3.
+Graphics: event-summary (28 layouts), virtuis-leaderboard (18 combos), event-frame (5 variants), sponsors-thanks, team-roster.
 
-**Files:** `CLAUDE.md`, `docs/PRD-Theme-System-V2/PRD-Theme-System-V2-2026-03-25.md`
+---
+
+### Task 7A.1 — Convert event-summary CSS to Variables — NOT STARTED
+
+**Goal:** Replace all hardcoded CSS values in event-summary's 28 layout variants with CSS variables.
+
+**Files:**
+- `output.html` (lines ~496-839 base CSS + lines ~1348-5808 layout variants)
+- `overlays/theme-loader.js` (add mappings)
 
 **Work:**
-1. **CLAUDE.md — Add "Per-Graphic Overrides" section** (after the Theme CSS Variables section):
-   - Explain the 3-layer CSS variable cascade: per-graphic override > theme default > hardcoded fallback
-   - Document the CSS variable naming convention: `--{graphicId}-header-bg`, etc.
-   - Document Firebase path: `themes/{themeId}/overrides/{graphicId}/`
-   - List supported override properties: 8 colors + headerBgImage + bodyBgImage + bodyTexture + logo + logoSize
-   - Note: no additional Firebase reads (overrides come from existing theme subtree fetch)
-   - Document graphic ID detection: pathname for overlays, `?graphic=` for output.html, `?mode=clip` for clip overlay
-2. **CLAUDE.md — Update debug panel section:**
-   - Debug panel now shows Layer 1/2/3 source per CSS variable
-   - Shows current graphic ID and active overrides
-3. **PRD — Update phase status:**
-   - Phase 3: mark as COMPLETE
-   - Phase 4: mark as IN PROGRESS (next)
+1. Identify all hardcoded values across 28 layout variants (font sizes, colors, padding, spacing, border-radius)
+2. Create CSS variable pattern: `var(--event-summary-{property}, {default-value})`
+3. Add font control variables: `--event-summary-title-font-family`, `--event-summary-title-font-weight`, `--event-summary-title-text-transform`, `--event-summary-score-font-family` (with tabular-nums flag)
+4. Add new keys to `overrideMapping`, `imageOverrideMapping`, and `layoutOverrideMapping` in theme-loader.js
+5. Preserve `font-variant-numeric: tabular-nums` on all score elements
+6. Preserve `color-mix()` for alternating row backgrounds
 
 **Verify:**
-- [x] CLAUDE.md documents per-graphic override cascade
-- [x] CLAUDE.md documents override Firebase path and property list
-- [x] PRD phase statuses updated
+- [ ] All 28 layouts render identically with no overrides set (defaults match current hardcoded values)
+- [ ] Setting `--event-summary-title-font-size: 56px` changes title across layouts
+- [ ] `tabular-nums` still applies to score columns
+- [ ] `color-mix()` alternating rows still work with theme colors
+- [ ] No console errors
+- [ ] Preview in Theme Editor works
 
-**Status:** COMPLETE — All documentation updates made:
-- CLAUDE.md: Added "Per-Graphic Overrides" section with 3-layer cascade explanation, Firebase path, 18 supported properties table, graphic ID detection table
-- CLAUDE.md: Updated "Debug Panel" section to list Layer 1/2/3 source color-coding and per-graphic overrides display
-- PRD: Updated status to "IN PROGRESS (Phase 1 COMPLETE except Task 1.9 deferred, Phase 3 COMPLETE, Phase 4 next)"
-- PRD: Marked Phase 3 as COMPLETE
-- PRD: Marked Phase 4 as IN PROGRESS (next)
-
-**Deploy:** None — documentation only.
-
-**Depends on:** Task 3.4
+**Deploy:** Deploy `output.html` + `overlays/theme-loader.js` to production.
 
 ---
 
-## Phase 4: Theme Editor — Per-Graphic Controls + Competition Preview
+### Task 7A.2 — Convert virtuis-leaderboard CSS to Variables — NOT STARTED
 
-> **Depends on:** All Phase 3 tasks complete. Per-graphic override data model must exist for the editor to write to.
+**Goal:** Replace ~60 hardcoded CSS values in leaderboard with CSS variables.
 
-### Task 4.1 — Competition Selector in Theme Editor — COMPLETE
-
-**Goal:** Add a competition dropdown to ThemeEditorPage. When selected, preview shows graphics with real competition data.
-
-**Files:** `show-controller/src/pages/ThemeEditorPage.jsx`
+**Files:**
+- `output.html` (lines ~281-467 CSS + lines ~13057-13145 renderer)
+- `overlays/theme-loader.js` (add mappings)
 
 **Work:**
-1. Add state: `selectedCompetition` (null = placeholder data), `competitions` (list from Firebase)
-2. Add a Firebase subscription to `competitions/` — filter to recent/active only (competitions from the last 60 days or with `status === 'active'`)
-3. Add competition dropdown in the right column preview panel (near line 965, "Live Preview" header area)
-4. Update `getPreviewUrl()` (line ~435) to include `&comp={selectedCompId}` when a competition is selected
-5. The URL uses both `&comp=` AND `&meetTheme=` — the `meetTheme` precedence rule ensures the editor's theme is always applied regardless of the competition's configured theme
-6. Add a graphic type selector dropdown (replacing the hardcoded `event-summary`):
-   - Read graphic IDs from `overlays/graphic-ids.json` (fetch from server or hardcode the list)
-   - Group options: "Standard Graphics" (event-bar, event-summary, leaderboard, etc.) and "Playout / Who to Watch" (who-to-watch-title, who-to-watch, clip-overlay)
-   - Default to `event-summary`
-7. Update preview iframe `src` when graphic type changes
+1. Convert all hardcoded values: container positioning, header styling, table cells, medal gradients, stick bonus badge
+2. Font controls: `--virtuis-leaderboard-header-font-size`, `--virtuis-leaderboard-score-font-family` (Roboto Mono option for tabular-nums)
+3. Medal gradient colors: `--virtuis-leaderboard-gold-from`, `--virtuis-leaderboard-gold-to`, silver/bronze variants
+4. Preserve responsive behavior for different event/gender combos
+5. Add mappings to theme-loader.js
 
 **Verify:**
-- [x] Build passes: `cd show-controller && npm run build`
-- [ ] Competition dropdown shows recent competitions — requires deployment
-- [ ] Selecting a competition loads real team names/logos in preview — requires deployment
-- [x] Graphic type dropdown switches between different graphic previews — implemented with 7 groups
-- [x] Theme colors always come from the editor (meetTheme precedence), not the competition's config — URL includes `meetTheme=` which takes precedence
-- [x] No competition selected → preview uses placeholder data (existing behavior)
+- [ ] Leaderboard renders identically with no overrides
+- [ ] Medal gradients respond to override colors
+- [ ] Score font can be switched to Roboto Mono
+- [ ] All 18 event/gender combos render correctly
+- [ ] `tabular-nums` on score cells
 
-**Status:** COMPLETE — Implementation verified via build. Changes:
-- Added `GRAPHIC_GROUPS` constant with 7 categories and 20 graphic types
-- Added state: `competitions`, `selectedCompetition`, `selectedGraphicType`
-- Added Firebase subscription filtering to recent/active competitions (60 days)
-- Updated `getPreviewUrl()` to use `useCallback`, handle WTW overlays specially, include `comp` param
-- Added graphic type dropdown with optgroups in preview panel
-- Added competition dropdown sorted by date descending
-- Added live iframe preview (scaled 0.22x) in preview panel
-
-**Deploy:** Build React SPA + deploy per CLAUDE.md step 1. Verify at `https://commentarygraphic.com`.
+**Deploy:** Deploy `output.html` + `overlays/theme-loader.js` to production.
 
 ---
 
-### Task 4.2 — Per-Graphic Override Panel (MVP — Colors Only) — COMPLETE
+### Task 7A.3 — Convert event-frame CSS to Variables — NOT STARTED
 
-**Goal:** Collapsible panels per graphic ID in the Theme Editor for setting color overrides.
+**Goal:** Replace 42 hardcoded values across 5 event-frame variants with CSS variables.
 
-**Files:** `show-controller/src/pages/ThemeEditorPage.jsx`
+**Files:**
+- `output.html` (lines ~249-278 container + lines ~6096-6195 overlay)
+- `overlays/frame-single.html`, `overlays/frame-dual.html`, `overlays/frame-quad.html`, `overlays/frame-tri-center.html`, `overlays/frame-tri-wide.html`, `overlays/frame-tri-wide-top.html`, `overlays/frame-team-header.html`
+- `overlays/theme-loader.js` (add mappings)
 
 **Work:**
-1. Add a new section after "Event Sponsors" (before Delete button, ~line 931): **"Per-Graphic Overrides"**
-2. List all graphic IDs from the registry, grouped by category:
-   - **Lower-third bars:** event-bar, warm-up, replay
-   - **Full-screen:** event-summary, virtius-leaderboard, event-frame
-   - **Team cards:** team-stats, team-coaches
-   - **Sponsors:** sponsors-thanks, sponsors-cycle, sponsors-bug
-   - **Stream:** stream-starting, stream-thanks
-   - **Overlays:** rotation-slate, team-roster, athlete-spotlight
-   - **Playout / WTW:** who-to-watch-title, who-to-watch, clip-overlay
-3. Each graphic ID is a collapsible panel. When expanded:
-   - 8 color override fields, each with radio toggle: "Use theme default" (default) / "Custom color" + color picker
-   - Logo override: URL input + preview thumbnail
-4. Save overrides to `themes/{themeId}/overrides/{graphicId}/` via the existing `saveTheme()` PUT endpoint
-5. Add `overrides` to the `editingTheme` state object (initialize from Firebase if existing theme has overrides)
+1. Convert positioning, header/content backgrounds, font sizes, watermark styling
+2. Replace Arial with Inter (per 7.FONT.2)
+3. Font controls for header text, team names, watermark
+4. Add mappings to theme-loader.js
 
 **Verify:**
-- [x] Build passes — verified locally
-- [ ] Per-graphic override panel renders for each graphic ID — requires deployment
-- [ ] Setting a custom headerBar color on `event-bar` and saving → Firebase shows `themes/{id}/overrides/event-bar/headerBar` — requires deployment
-- [ ] "Use theme default" radio clears the override (removes the key from Firebase) — requires deployment
-- [ ] Saving and reloading the theme editor → overrides persist — requires deployment
+- [ ] All 5 frame variants render identically with no overrides
+- [ ] Header background responds to theme override
+- [ ] Font family override works
+- [ ] Watermark opacity/color controllable
+- [ ] Frame overlays load theme-loader.js correctly
 
-**Status:** COMPLETE — Build passes. Implementation includes:
-- `OVERRIDE_GRAPHIC_GROUPS` constant with 7 categories and 22 graphic IDs
-- `OVERRIDE_COLOR_FIELDS` constant mapping 8 color fields
-- State: `expandedOverrideGraphics` for tracking panel expansion
-- Helper functions: `updateOverrideField`, `clearOverrideField`, `resetGraphicOverrides`, `countGraphicOverrides`, `toggleOverridePanel`
-- Updated `loadTheme` and `newTheme` to include `overrides` field
-- Collapsible panels per graphic with checkbox-based color pickers (8 colors + logo override)
-- Override count badge on collapsed panels
-- "Reset to theme defaults" button per graphic
-- Auto-switches preview to selected graphic when panel is expanded
-
-Live verification requires deployment and authentication. Will be verified in Task 4.3 or 4.DOC.
-
-**Deploy:** Build React SPA + deploy.
-
-**Depends on:** Task 4.1 (graphic selector must exist so you can preview the graphic you're overriding)
+**Deploy:** Deploy `output.html` + `overlays/` to production.
 
 ---
 
-### Task 4.3 — Live Iframe Preview Per Graphic — COMPLETE
+### Task 7A.4 — Convert sponsors-thanks CSS to Variables — NOT STARTED
 
-**Goal:** Preview iframe reloads when override values change (debounced), showing the effect of overrides in real time.
+**Goal:** Replace ~40 hardcoded CSS values in sponsors-thanks overlay with CSS variables.
 
-**Files:** `show-controller/src/pages/ThemeEditorPage.jsx`
+**Files:**
+- `overlays/sponsors-thanks.html`
+- `overlays/theme-loader.js` (add mappings)
 
 **Work:**
-1. When a per-graphic override is edited, the save-then-preview flow applies:
-   - Producer edits override values
-   - Producer clicks Save
-   - Preview iframe reloads with updated theme data
-2. The preview URL already includes `&meetTheme={id}` — theme-loader.js will fetch the updated theme (including overrides) on reload
-3. Automatically switch the graphic selector to match the graphic being edited (if the override panel for `event-bar` is expanded, show `event-bar` in the preview)
-4. Add a debounced iframe reload: after save completes, wait 500ms then reload the iframe (gives Firebase time to propagate)
+1. Convert container margins (70px), header padding, grid layouts by sponsor count (1-8 variants)
+2. Font controls: header title font, sponsor name font
+3. Grid gap, logo max-height, card border-radius, card background
+4. Add mappings to theme-loader.js
 
 **Verify:**
-- [x] Edit an override → save → preview reloads showing the override — `previewVersion` state incremented after 500ms, added to iframe key
-- [x] Expanding a graphic's override panel switches the preview to that graphic — already implemented in Task 4.2 via `toggleOverridePanel`
-- [x] No excessive iframe reloads (debounce prevents rapid fire) — 500ms setTimeout ensures single reload per save
+- [ ] Sponsors-thanks renders identically with no overrides
+- [ ] Grid layout responds to gap/size overrides
+- [ ] Header font can be changed
+- [ ] All count variants (1-8 sponsors) work
+- [ ] Theme colors apply correctly
 
-**Status:** COMPLETE — Build passes. Implementation:
-- Added `previewVersion` state variable (initialized to 0)
-- After successful `saveTheme()`, increment `previewVersion` after 500ms delay
-- Iframe key includes `previewVersion` to force reload when it changes
-- Updated preview text to "Preview reloads automatically after saving"
-
-Live verification requires deployment and authentication. Will be verified in Task 4.DOC.
-
-**Deploy:** Build React SPA + deploy.
-
-**Depends on:** Task 4.2
+**Deploy:** Deploy `overlays/sponsors-thanks.html` + `overlays/theme-loader.js` to production.
 
 ---
 
-### Task 4.4 — Image/Texture Controls in Override Panels — COMPLETE
+### Task 7A.5 — Convert team-roster CSS to Variables — NOT STARTED
 
-**Goal:** Extend override panels with image URL inputs, fit/position/opacity controls, and logo override.
+**Goal:** Replace 60+ hardcoded values in team-roster overlay with CSS variables.
 
-**Files:** `show-controller/src/pages/ThemeEditorPage.jsx`
+**Files:**
+- `overlays/team-roster.html`
+- `overlays/theme-loader.js` (add mappings)
 
 **Work:**
-1. Add to each graphic's override panel (below the 8 color fields):
-   - **Header Background Image:** URL input + preview thumbnail (50px) + fit dropdown (cover/contain/repeat) + position dropdown (center/top/bottom/left/right) + opacity stepper (0-100%)
-   - **Body Background Image:** Same controls
-   - **Body Texture:** URL input + blend mode dropdown (overlay/multiply/normal) + opacity stepper
-   - **Logo Override:** URL input + logo size stepper (px) + preview thumbnail
-2. All numeric controls use **stepper inputs** (ValueStepper component pattern from WhoToWatchEditor)
-3. Save to `themes/{themeId}/overrides/{graphicId}/headerBgImage`, `headerBgImageFit`, etc.
-4. Preview thumbnail loads the URL in an `<img>` tag with `object-fit: cover` at 50x50px
+1. Convert margins, header, headshot sizes (6 responsive tiers), grid layouts, font sizes
+2. Font controls: header font, athlete name font
+3. Headshot border-radius, grid gap per tier
+4. Add mappings to theme-loader.js
 
 **Verify:**
-- [x] Build passes — verified locally
-- [ ] Image URL input → preview thumbnail shows the image — requires deployment + authentication
-- [ ] Save → reload preview iframe → image appears on the graphic — requires deployment
-- [ ] Fit/position/opacity/blend controls save correctly to Firebase — requires deployment
-- [ ] Invalid URL → no crash, thumbnail shows placeholder — requires deployment
+- [ ] Team roster renders identically with no overrides
+- [ ] All 6 responsive tiers (by athlete count) work
+- [ ] Font family/size overrides apply
+- [ ] Headshot size override works per tier
+- [ ] Theme colors apply to header/background
 
-**Status:** COMPLETE — Build passes. Implementation includes:
-- `OverrideStepper` component for numeric inputs (simplified stepper with +/- buttons)
-- `IMAGE_FIT_OPTIONS`, `IMAGE_POSITION_OPTIONS`, `BLEND_MODE_OPTIONS` constants
-- Logo Override: URL input + `logoSize` stepper (16-200px, step 4)
-- Header Background Image: URL input + preview + fit dropdown + position dropdown + opacity stepper
-- Body Background Image: Same controls as header
-- Body Texture: URL input + preview + blend mode dropdown + opacity stepper
-- Each control group has a checkbox toggle to enable/disable
-- Disabling clears all related fields from Firebase
-
-Live verification requires deployment and authentication. Will be verified in Task 4.DOC.
-
-**Deploy:** Build React SPA + deploy.
-
-**Depends on:** Task 4.2 (override panel structure must exist)
+**Deploy:** Deploy `overlays/team-roster.html` + `overlays/theme-loader.js` to production.
 
 ---
 
-### Task 4.5 — Override Management UX (Badges, Reset, Import) — COMPLETE
+### Task 7A.6 — Fix sponsors-thanks Preview Bug — NOT STARTED
 
-**Goal:** Visual indicators of which graphics have overrides. Reset buttons. Import from another theme.
+**Goal:** Fix Theme Editor preview showing "not configured" for sponsors-thanks.
 
-**Files:** `show-controller/src/pages/ThemeEditorPage.jsx`
+**Files:**
+- `show-controller/src/pages/ThemeEditorPage.jsx`
 
 **Work:**
-1. **Override badges:** Each collapsed graphic panel shows a small colored dot/badge if it has any overrides set. Count of overridden properties shown (e.g., "3 overrides")
-2. **Reset per graphic:** "Reset to theme defaults" button per graphic panel → clears all overrides for that graphic ID (deletes `themes/{themeId}/overrides/{graphicId}`)
-3. **Reset all overrides:** Global "Reset All Overrides" button at the top of the Per-Graphic Overrides section → clears entire `overrides` object. Confirm dialog before executing.
-4. **Import from another theme:**
-   - "Import overrides from..." button → opens a dropdown/modal listing other themes
-   - Select source theme → copies its `overrides` object (or specific graphic's overrides) into the current theme
-   - Merge strategy: imported overrides replace current ones for matching graphic IDs; non-matching are left unchanged
-5. All changes go through the existing `saveTheme()` flow
+1. In `getPreviewUrl()` (or equivalent), detect when selected graphic is `sponsors-thanks`
+2. If theme has `sponsors` array, encode sponsor data as URL param: `&sponsors=` + `encodeURIComponent(JSON.stringify(theme.sponsors))`
+3. In `overlays/sponsors-thanks.html`, check for `sponsors` URL param before Firebase fetch
+4. If URL param exists, parse and use that data instead of Firebase lookup
 
 **Verify:**
-- [x] Build passes — verified locally
-- [x] Override badge shows on panels that have overrides — already implemented in Task 4.2
-- [x] Reset per graphic → overrides cleared, badge disappears, preview updates — already implemented in Task 4.2
-- [x] Reset all → all overrides cleared — implemented with `resetAllOverrides()` and inline confirm dialog
-- [x] Import from another theme → overrides copied, preview updates — implemented with `importOverrides()` and modal
-- [x] Confirm dialog before destructive actions (reset all) — inline confirm with Cancel/Confirm buttons
+- [ ] Theme Editor preview for sponsors-thanks shows sponsor logos (not "not configured")
+- [ ] Live production sponsors-thanks still reads from Firebase (URL param not set)
+- [ ] Preview updates when theme sponsors are edited and saved
 
-**Status:** COMPLETE — Build passes. Implementation includes:
-- Enhanced section header badge showing total override count and graphics count (e.g., "12 overrides in 3 graphics")
-- "Reset All" button with inline confirmation dialog showing count of overrides to be cleared
-- "Import..." button that opens a modal with theme selector dropdown
-- Import dropdown only shows themes that have overrides (excludes current theme)
-- Import shows override count per theme (e.g., "Pink Meet (3 graphics)")
-- Merge strategy: imported overrides replace matching graphic IDs, non-matching remain unchanged
-- All changes go through existing `saveTheme()` flow
-
-Note: Per-graphic badges and reset buttons were already implemented in Task 4.2. Task 4.5 adds the global Reset All and Import functionality.
-
-Live verification requires deployment and authentication. Will be verified in Task 4.DOC.
-
-**Deploy:** Build React SPA + deploy.
-
-**Depends on:** Task 4.2 (override panels must exist)
+**Deploy:** Deploy show-controller build + `overlays/sponsors-thanks.html` to production.
 
 ---
 
-### Task 4.6a — Clip Overlay Preview Mode in output.html — COMPLETE
+### Task 7A.7 — Add Variant Selectors for Full-Screen Graphics — NOT STARTED
 
-**Goal:** Add `?mode=clip-preview` to output.html that renders the clip overlay with sample data against a dark background.
+**Goal:** Add variant selector dropdowns to Theme Editor for event-summary, leaderboard, and event-frame.
 
-**Files:** `output.html`
+**Files:**
+- `show-controller/src/pages/ThemeEditorPage.jsx`
 
 **Work:**
-1. In output.html's mode detection section, add a check for `mode=clip-preview`
-2. When `?mode=clip-preview` is active:
-   - Show the clip overlay elements (`.clip-athlete-panel` + `.clip-score-badge`) with sample data:
-     - Athlete name: "Sample Athlete" (or from competition roster if `?comp=` provided)
-     - Team logo: placeholder or competition team logo
-     - Apparatus: "Floor Exercise"
-     - Score: "9.950"
-   - Dark background (`#1a1a2e`) to simulate video behind the overlay
-   - Responds to theme CSS variables (`--meet-header-bg`, `--meet-header-text`, `--meet-badge-bg`, `--meet-badge-text`)
-   - No video playback, no Firebase listeners for clip data
-3. The overlay remains visible (no auto-hide animation)
+1. Add variant selector state: `selectedVariants` object (keyed by graphic ID)
+2. For event-summary: dropdown with 28 layout names + team count selector (2-7)
+3. For virtuis-leaderboard: event dropdown (FX/PH/SR/VT/PB/HB/UB/BB/AA) + gender dropdown (mens/womens)
+4. For event-frame: type dropdown (quad/tri-center/tri-wide/single/team-header)
+5. Pass variant params to preview URL (e.g., `&layout=broadcast-table&summaryNumTeams=4`)
+6. Show variant selector only when that graphic is selected in the preview
 
 **Verify:**
-- [x] `output.html?mode=clip-preview` shows clip overlay with sample data on dark background
-- [x] `output.html?mode=clip-preview&meetTheme={id}` shows themed clip overlay
-- [x] Athlete panel background uses `--meet-header-bg`
-- [x] Score badge uses `--meet-badge-bg` and `--meet-badge-text`
-- [x] No Firebase errors (doesn't try to connect to clip API)
+- [ ] Event-summary variant selector shows all 28 layouts
+- [ ] Changing layout updates preview iframe
+- [ ] Leaderboard event/gender selector works
+- [ ] Event-frame type selector works
+- [ ] Variant selection persists while editing overrides
 
-**Status:** COMPLETE — Implementation verified locally:
-- Added `isClipPreviewMode` detection for `mode=clip-preview` URL param
-- Added clip-preview rendering block that populates overlay elements with sample data
-- Supports URL param overrides: `athleteName`, `teamName`, `apparatus`, `teamLogo`, `score`
-- Bypassed "No competition ID" error for clip-preview mode
-- Updated Firebase listener condition to skip for clip-preview mode
-- Screenshots: `local-task-4.6a-clip-preview-working.png` (default), `local-task-4.6a-clip-preview-themed.png` (pink theme)
-
-**Deploy:** Upload `output.html` per CLAUDE.md deploy step 2.
+**Deploy:** Deploy show-controller build to production.
 
 ---
 
-### Task 4.6b — Orchestration Sub-Graphic Previews in Theme Editor — COMPLETE
+### Task 7A.8 — Build Rich Control Panels for Full-Screen Graphics — NOT STARTED
 
-**Goal:** The graphic selector includes who-to-watch-title, who-to-watch (lower third), and clip-overlay under a "Playout / Who to Watch" category.
+**Goal:** Add organized override control panels for all Full-Screen graphics in Theme Editor.
 
-**Files:** `show-controller/src/pages/ThemeEditorPage.jsx`
+**Files:**
+- `show-controller/src/pages/ThemeEditorPage.jsx`
 
 **Work:**
-1. In the graphic type dropdown (from Task 4.1), add entries in a grouped "Playout / Who to Watch" section:
-   - **"Who to Watch — Title Card"** → Preview URL: `/overlays/who-to-watch-title.html?meetTheme={id}&athleteName=Sample+Athlete&teamName=Sample+Team&headline=2x+All-American&body=Record+holder+on+floor+exercise&badgeText=WHO+TO+WATCH`
-   - **"Who to Watch — Lower Third"** → Preview URL: `/overlays/who-to-watch.html?meetTheme={id}&athleteName=Sample+Athlete&subtitle=Floor+Exercise&statLabel=Season+High&statValue=9.950`
-   - **"Clip Overlay"** → Preview URL: `output.html?mode=clip-preview&meetTheme={id}`
-2. When a competition is selected, replace sample data with real roster data:
-   - Use first athlete from first team's roster
-   - Use first team's logo
-3. Sponsor graphics (`sponsors-thanks`, `sponsors-cycle`, `sponsors-bug`) are already in the standard list — no special handling
+1. For event-summary panel: sections for HEADER (title font size/family/weight, header height, padding), CONTENT (row height, score font family, alternating row opacity), FOOTER (total row height, font), IMAGES (header bg image, body texture)
+2. For virtuis-leaderboard panel: HEADER, TABLE (cell padding, score font), MEDALS (gold/silver/bronze colors), IMAGES
+3. For event-frame panel: CONTAINER (position, size), HEADER (bg, text, font), WATERMARK (opacity, color, font)
+4. For sponsors-thanks panel: HEADER (font, padding), GRID (gap, card size, border-radius), LOGO (max height)
+5. For team-roster panel: HEADER (font, height), GRID (gap, columns), HEADSHOT (size, border-radius), NAME (font)
+6. Use OverrideStepper for all numeric controls, color pickers for colors, dropdowns for font-family/weight/transform
 
 **Verify:**
-- [x] Build passes — verified
-- [x] "Who to Watch — Title Card" preview shows full-screen card with theme colors — verified locally
-- [x] "Who to Watch — Lower Third" preview shows lower-third overlay with theme colors — verified locally
-- [x] "Clip Overlay" preview shows clip overlay panel with theme colors — verified locally
-- [x] With competition selected, sample data replaced with real athlete/team data — code implemented
-- [x] Per-graphic overrides for these sub-graphics work in preview — `clip-overlay` in OVERRIDE_GRAPHIC_GROUPS
+- [ ] Each Full-Screen graphic has an expandable override panel
+- [ ] Override count badge shows correct count
+- [ ] Changing a value updates Firebase overrides
+- [ ] Preview refreshes after save
+- [ ] Reset button clears all overrides for that graphic
 
-**Status:** COMPLETE — Added `clip-overlay` to GRAPHIC_GROUPS and implemented `getPreviewUrl()` handler that uses `output.html?mode=clip-preview&meetTheme={id}`. Competition data substitution implemented for athleteName, teamName, and teamLogo. Screenshots saved to `docs/PRD-Theme-System-V2/screenshots/local-task-4.6b-*.png`.
-
-**Deploy:** Build React SPA + deploy.
-
-**Depends on:** Task 4.1 (graphic selector), Task 4.6a (clip-preview mode)
+**Deploy:** Deploy show-controller build to production.
 
 ---
 
-### Task 4.DOC — Update Documentation After Phase 4 — COMPLETE
+### Task 7A.9 — Build Full-Screen Template with "Apply to All" — NOT STARTED
 
-**Goal:** Update CLAUDE.md and PRD to reflect the complete Theme System V2 shipped across all phases.
+**Goal:** Add a category template panel for Full-Screen graphics, similar to Lower-Third Template.
 
-**Files:** `CLAUDE.md`, `docs/PRD-Theme-System-V2/PRD-Theme-System-V2-2026-03-25.md`
+**Files:**
+- `show-controller/src/pages/ThemeEditorPage.jsx`
 
 **Work:**
-1. **CLAUDE.md — Update "Theme Editor" / ThemeEditorPage documentation:**
-   - Document competition selector in Theme Editor (recent/active competitions dropdown)
-   - Document graphic type selector (standard + playout/WTW sub-graphics)
-   - Document per-graphic override panel: collapsible per graphic ID, 8 colors + images + textures
-   - Document override management: badges, reset, import from another theme
-   - Document save-then-preview workflow
-   - Document `?mode=clip-preview` in output.html for clip overlay preview
-2. **CLAUDE.md — Update "Who to Watch" section:**
-   - Note that WTW title card and lower third are previewable in Theme Editor graphic selector
-   - Per-card runtime overrides (bgColor, accentColor) take precedence over theme-level per-graphic overrides
-3. **PRD — Update phase status:**
-   - Phase 4: mark as COMPLETE
-   - PRD status: change from PLANNING to COMPLETE
-4. **PRD — Add "Completion Summary" section** at the bottom with:
-   - Completion date
-   - Total tasks executed
-   - Key files modified
+1. Add `FULL_SCREEN_GRAPHICS` constant: `['event-summary', 'virtuis-leaderboard', 'event-frame', 'sponsors-thanks', 'team-roster']`
+2. Add `FULL_SCREEN_DEFAULTS` with shared defaults (header height, padding, content padding, font sizes)
+3. Create `applyFullScreenTemplate()` function (following `applyLowerThirdTemplate()` pattern at lines 471-487)
+4. Add template panel UI with teal border above the Full-Screen group (following Lower-Third Template UI pattern)
+5. Template key filtering: skip keys that don't apply to certain graphics (e.g., medal colors only apply to leaderboard)
+6. Store template values at `themes/{themeId}/fullScreenTemplate/`
 
 **Verify:**
-- [x] CLAUDE.md documents Theme Editor competition preview workflow
-- [x] CLAUDE.md documents per-graphic override panel and controls
-- [x] CLAUDE.md documents `?mode=clip-preview`
-- [x] PRD status is COMPLETE
-- [x] All phase statuses in PRD are COMPLETE (except Phase 2 = CUT, Phase 1.9 = DEFERRED)
+- [ ] Full-Screen Template panel renders with correct controls
+- [ ] "Apply to All Full-Screen" button copies template values to all 5 graphics
+- [ ] Individual overrides are preserved (template only fills empty fields)
+- [ ] Template values stored in Firebase at correct path
 
-**Status:** COMPLETE — All documentation updates made:
-- CLAUDE.md: Added "Theme Editor (ThemeEditorPage)" section with competition preview, graphic selector, per-graphic override panels, override management UX, save+preview workflow, and clip-preview mode documentation
-- CLAUDE.md: Updated "Who to Watch" technical notes to mention Theme Editor preview availability
-- PRD: Updated status to COMPLETE
-- PRD: Marked Phase 4 as COMPLETE
-- PRD: Added "Completion Summary" section with completion date, task count, phases delivered, key files modified, and Task 1.9 deferral notes
-
-**Deploy:** None — documentation only.
-
-**Depends on:** Task 4.6b
+**Deploy:** Deploy show-controller build to production.
 
 ---
 
-## Dependency Graph
+### Task 7A.10 — Add Measurement Selectors for Full-Screen Graphics — NOT STARTED
+
+**Goal:** Add postMessage measurement mappings for pixel-perfect measurements on Full-Screen graphics.
+
+**Files:**
+- `show-controller/src/pages/ThemeEditorPage.jsx`
+
+**Work:**
+1. Extend `MEASUREMENT_SELECTORS` (lines 512-516) with entries for each Full-Screen graphic:
+   - event-summary: `{ header: '.event-summary-header', content: '.event-summary-content', footer: '.event-summary-footer' }`
+   - virtuis-leaderboard: `{ header: '.leaderboard-header', table: '.leaderboard-table' }`
+   - event-frame: `{ header: '.frame-header', container: '.frame-container' }`
+   - sponsors-thanks: `{ header: '.sponsors-header', grid: '.sponsors-grid' }`
+   - team-roster: `{ header: '.roster-header', grid: '.roster-grid' }`
+2. Add measurement response handling for new graphics
+3. Display measured heights in control panels (gray text, like existing lower-third pattern)
+
+**Verify:**
+- [ ] Selecting event-summary in preview triggers measurement request
+- [ ] Measured heights display in control panel
+- [ ] Values update when overrides change size
+
+**Deploy:** Deploy show-controller build to production.
+
+---
+
+### Task 7A.11 — Deploy + Verify Full-Screen Phase with WCGNIC Data — NOT STARTED
+
+**Goal:** Final deployment and verification of all Phase 7A work with real competition data.
+
+**Files:**
+- Deploy: show-controller build, `output.html`, `overlays/` directory
+
+**Work:**
+1. Build and deploy everything per CLAUDE.md
+2. Open Theme Editor with WCGNIC competition selected
+3. Preview each Full-Screen graphic with variant selectors:
+   - event-summary: at least 3 different layouts with real team data
+   - virtuis-leaderboard: mens FX, womens AA
+   - event-frame: quad and single variants
+   - sponsors-thanks: with WCGNIC sponsors
+   - team-roster: with a real team
+4. Apply per-graphic overrides, save, verify preview updates
+5. Test Full-Screen Template "Apply to All"
+6. Verify live mode: set `currentGraphic` to event-summary, verify overrides apply
+
+**Verify:**
+- [ ] All Full-Screen graphics render with WCGNIC data
+- [ ] Per-graphic overrides apply in both preview and live mode
+- [ ] Variant selectors work for event-summary (28), leaderboard (18), event-frame (5)
+- [ ] Full-Screen Template applies to all graphics
+- [ ] sponsors-thanks preview shows WCGNIC sponsors
+- [ ] No console errors
+
+---
+
+## Phase 7B: Team Cards (7 tasks)
+
+Graphics: team1-7-stats, team-stats (dynamic), team1-7-coaches, team-coaches (dynamic).
+
+---
+
+### Task 7B.1 — Convert team-stats CSS to Variables — NOT STARTED
+
+**Goal:** Replace 24 hardcoded CSS values in team-stats with CSS variables.
+
+**Files:**
+- `output.html` (lines ~170-210 CSS + lines ~12416+ renderers)
+- `overlays/theme-loader.js` (add mappings)
+
+**Work:**
+1. Convert positioning (top: 780px, left: 100px), header styling, stat label/value fonts, spacing
+2. Font controls: `--team-stats-name-font-family`, `--team-stats-score-font-family` (Roboto Mono for tabular-nums)
+3. All 7 static renderers (team1-stats through team7-stats) + dynamic renderer share same CSS
+4. Add mappings to theme-loader.js
+
+**Verify:**
+- [ ] All 7 team-stats variants render identically with no overrides
+- [ ] Position override moves the card
+- [ ] Score font can be switched to Roboto Mono with tabular-nums
+- [ ] Theme colors apply to header/content
+
+**Deploy:** Deploy `output.html` + `overlays/theme-loader.js` to production.
+
+---
+
+### Task 7B.2 — Convert team-coaches CSS to Variables — NOT STARTED
+
+**Goal:** Replace 17 hardcoded CSS values in team-coaches with CSS variables.
+
+**Files:**
+- `output.html` (lines ~215-245 CSS + lines ~12491-12687 renderers)
+- `overlays/theme-loader.js` (add mappings)
+
+**Work:**
+1. Convert positioning, header styling, coach name fonts, logo sizing, spacing
+2. Font controls: `--team-coaches-name-font-family`, `--team-coaches-title-font-family`
+3. All 7 static + dynamic renderers share same CSS
+4. Add mappings to theme-loader.js
+
+**Verify:**
+- [ ] All 7 team-coaches variants render identically
+- [ ] Font overrides apply
+- [ ] Position overrides work
+- [ ] Theme colors apply
+
+**Deploy:** Deploy `output.html` + `overlays/theme-loader.js` to production.
+
+---
+
+### Task 7B.3 — Build Data Source Override for team-stats — NOT STARTED
+
+**Goal:** Add dropdown in Theme Editor to choose which stat data to display (AVG/HIGH/NQS).
+
+**Files:**
+- `show-controller/src/pages/ThemeEditorPage.jsx`
+- `output.html` (team-stats renderers)
+
+**Work:**
+1. Add stat display dropdown to team-stats override panel: AVG+HIGH (default), NQS+HIGH, AVG+NQS, NQS only, AVG only
+2. Store selection at `themes/{themeId}/overrides/team-stats/statDisplay`
+3. In output.html team-stats renderers: read `statDisplay` from theme data or currentGraphic data
+4. Modify renderer to show selected stat columns based on `statDisplay` value
+5. Propagate `statDisplay` through `currentGraphic` payload when theme is active
+
+**Verify:**
+- [ ] Dropdown appears in team-stats override panel
+- [ ] Selecting "NQS+HIGH" shows NQS and HIGH columns
+- [ ] Default "AVG+HIGH" matches current behavior
+- [ ] Stat display persists in Firebase
+- [ ] Live mode renders correct stat columns
+
+**Deploy:** Deploy show-controller build + `output.html` to production.
+
+---
+
+### Task 7B.4 — Build Rich Control Panels for Team Cards — NOT STARTED
+
+**Goal:** Add override control panels for team-stats and team-coaches.
+
+**Files:**
+- `show-controller/src/pages/ThemeEditorPage.jsx`
+
+**Work:**
+1. Team-stats panel: POSITION (top, left), HEADER (bg, text color, font), STAT DISPLAY (data source dropdown), STATS (label font, value font with tabular flag, spacing), IMAGES
+2. Team-coaches panel: POSITION (top, left), HEADER (bg, text color, font, logo size), CONTENT (bg, text color, coach name font), IMAGES
+3. Use OverrideStepper for all numeric controls
+4. Font family dropdown for score values (monospace options highlighted)
+
+**Verify:**
+- [ ] Both panels render with correct sections
+- [ ] Override count badges work
+- [ ] Font family dropdown shows tabular-capable fonts marked
+- [ ] Changes save to Firebase and preview updates
+
+**Deploy:** Deploy show-controller build to production.
+
+---
+
+### Task 7B.5 — Build Team Cards Template with "Apply to All" — NOT STARTED
+
+**Goal:** Add category template for Team Cards graphics.
+
+**Files:**
+- `show-controller/src/pages/ThemeEditorPage.jsx`
+
+**Work:**
+1. Add `TEAM_CARD_GRAPHICS` constant: `['team-stats', 'team-coaches']` (note: template applies to the base graphic IDs, which are shared by team1-7 variants)
+2. Create `applyTeamCardsTemplate()` following established pattern
+3. Template fields: position (top, left), header styling, font sizes, colors
+4. Store at `themes/{themeId}/teamCardsTemplate/`
+5. Template UI panel with teal border above Team Cards group
+
+**Verify:**
+- [ ] Template panel renders
+- [ ] "Apply to All Team Cards" copies values to both team-stats and team-coaches
+- [ ] Individual overrides preserved
+- [ ] Template stored in Firebase
+
+**Deploy:** Deploy show-controller build to production.
+
+---
+
+### Task 7B.6 — Add Measurement Selectors for Team Cards — NOT STARTED
+
+**Goal:** Add postMessage measurement mappings for Team Cards.
+
+**Files:**
+- `show-controller/src/pages/ThemeEditorPage.jsx`
+
+**Work:**
+1. Extend `MEASUREMENT_SELECTORS` with team-stats and team-coaches entries
+2. Add measurement response handling
+3. Display measured heights in control panels
+
+**Verify:**
+- [ ] Measurements display for team-stats and team-coaches
+- [ ] Values update when overrides change
+
+**Deploy:** Deploy show-controller build to production.
+
+---
+
+### Task 7B.7 — Deploy + Verify Team Cards with WCGNIC Data — NOT STARTED
+
+**Goal:** Final verification of Phase 7B with real data.
+
+**Files:**
+- Deploy: show-controller build, `output.html`, `overlays/theme-loader.js`
+
+**Work:**
+1. Deploy everything per CLAUDE.md
+2. Theme Editor: preview team1-stats with WCGNIC team data
+3. Test data source override (switch between AVG/HIGH/NQS)
+4. Test per-graphic overrides (font, position, colors)
+5. Test Team Cards Template
+6. Verify live mode with overrides
+
+**Verify:**
+- [ ] Team stats render with real WCGNIC data
+- [ ] Data source dropdown changes stat columns
+- [ ] Tabular font option works for score values
+- [ ] Team Cards Template applies to both graphics
+- [ ] Live mode overrides work
+
+---
+
+## Phase 7C: Sponsors — Cycle + Bug (6 tasks)
+
+Graphics: sponsors-cycle, sponsors-bug.
+
+---
+
+### Task 7C.1 — Convert sponsors-cycle CSS to Variables — NOT STARTED
+
+**Goal:** Replace hardcoded CSS values in sponsors-cycle with CSS variables.
+
+**Files:**
+- `overlays/sponsors-cycle.html`
+- `overlays/theme-loader.js` (add mappings)
+
+**Work:**
+1. Convert canvas sizing, cycle timing (3000ms), fade transition (500ms), guide overlay colors
+2. Font controls (if any text elements exist)
+3. Logo max dimensions, padding, background color
+4. Add mappings to theme-loader.js
+5. Note: timing values controlled via Firebase config + URL Generator per design decision, NOT theme overrides
+
+**Verify:**
+- [ ] Sponsors-cycle renders identically with no overrides
+- [ ] Logo size overrides work
+- [ ] Background color overrides work
+- [ ] Cycle timing NOT exposed as theme override (confirmed)
+
+**Deploy:** Deploy `overlays/sponsors-cycle.html` + `overlays/theme-loader.js` to production.
+
+---
+
+### Task 7C.2 — Convert sponsors-bug CSS to Variables — NOT STARTED
+
+**Goal:** Replace 9+ hardcoded CSS values in sponsors-bug with CSS variables.
+
+**Files:**
+- `overlays/sponsors-bug.html`
+- `overlays/theme-loader.js` (add mappings)
+
+**Work:**
+1. Convert position (bottom: 40px, right: 40px), container size (200x80px), border-radius (12px), padding (10px)
+2. Logo opacity transition timing (0.8s)
+3. Cycle interval (10s) — note: may be Firebase-controlled, verify
+4. Background color, border
+5. Add Inter font import
+6. Add mappings to theme-loader.js
+
+**Verify:**
+- [ ] Sponsors-bug renders identically with no overrides
+- [ ] Position overrides move the bug
+- [ ] Container size overrides work
+- [ ] Border-radius override works
+
+**Deploy:** Deploy `overlays/sponsors-bug.html` + `overlays/theme-loader.js` to production.
+
+---
+
+### Task 7C.3 — Build Rich Control Panels for Sponsor Graphics — NOT STARTED
+
+**Goal:** Add override panels for sponsors-cycle and sponsors-bug.
+
+**Files:**
+- `show-controller/src/pages/ThemeEditorPage.jsx`
+
+**Work:**
+1. Sponsors-cycle panel: CANVAS (max width, max height), LOGO (max size, padding), BACKGROUND (color), GUIDES (show/hide)
+2. Sponsors-bug panel: POSITION (bottom, right), SIZE (width, height), APPEARANCE (border-radius, padding, bg color), TRANSITION (fade timing)
+3. Use OverrideStepper for all numeric controls
+
+**Verify:**
+- [ ] Both panels render with correct sections
+- [ ] Override count badges work
+- [ ] Changes save to Firebase and preview updates
+
+**Deploy:** Deploy show-controller build to production.
+
+---
+
+### Task 7C.4 — Build Sponsors Template — NOT STARTED
+
+**Goal:** Add shared template for Sponsors category.
+
+**Files:**
+- `show-controller/src/pages/ThemeEditorPage.jsx`
+
+**Work:**
+1. Add `SPONSORS_GRAPHICS` constant: `['sponsors-cycle', 'sponsors-bug']`
+2. Note: sponsors-thanks is in Full-Screen category (Phase 7A), not here
+3. Create `applySponsorsTemplate()` with shared fields: background color, border styling
+4. Store at `themes/{themeId}/sponsorsTemplate/`
+5. Template UI panel
+
+**Verify:**
+- [ ] Template panel renders
+- [ ] "Apply to All Sponsors" works
+- [ ] Template stored in Firebase
+
+**Deploy:** Deploy show-controller build to production.
+
+---
+
+### Task 7C.5 — Add Measurement Selectors for Sponsors — NOT STARTED
+
+**Goal:** Add measurement mappings for sponsors-cycle and sponsors-bug.
+
+**Files:**
+- `show-controller/src/pages/ThemeEditorPage.jsx`
+
+**Work:**
+1. Extend `MEASUREMENT_SELECTORS` with sponsors entries
+2. Add measurement display in panels
+
+**Verify:**
+- [ ] Measurements display for both sponsor graphics
+
+**Deploy:** Deploy show-controller build to production.
+
+---
+
+### Task 7C.6 — Deploy + Verify Sponsors with WCGNIC Data — NOT STARTED
+
+**Goal:** Final verification of Phase 7C.
+
+**Files:**
+- Deploy: show-controller build, `overlays/` directory, `overlays/theme-loader.js`
+
+**Work:**
+1. Deploy everything per CLAUDE.md
+2. Preview sponsors-cycle and sponsors-bug in Theme Editor with WCGNIC sponsors
+3. Test overrides for position, size, background
+4. Test Sponsors Template
+5. Verify live mode
+
+**Verify:**
+- [ ] Both sponsor graphics render with WCGNIC sponsors
+- [ ] Per-graphic overrides work in preview and live mode
+- [ ] Sponsors Template applies correctly
+- [ ] No console errors
+
+---
+
+## Phase 7D: Stream Graphics (6 tasks)
+
+Graphics: stream-starting, stream-thanks.
+
+---
+
+### Task 7D.1 — Convert Stream CSS to Variables — NOT STARTED
+
+**Goal:** Replace 44 hardcoded CSS values in stream graphics with CSS variables.
+
+**Files:**
+- `output.html` (lines ~12751-12769 renderers + associated CSS)
+- `overlays/theme-loader.js` (add mappings)
+
+**Work:**
+1. Convert background color/gradient, title font size/weight, event name font, date font
+2. Logo sizing (adapts to team count), spacing between logos
+3. Countdown timer font (stream-starting specific)
+4. Font controls: title, event name, date, countdown
+5. Add mappings to theme-loader.js
+
+**Verify:**
+- [ ] stream-starting renders identically with no overrides
+- [ ] stream-thanks renders identically with no overrides
+- [ ] Title font override works
+- [ ] Background color override works
+- [ ] Logo sizing responds to overrides
+
+**Deploy:** Deploy `output.html` + `overlays/theme-loader.js` to production.
+
+---
+
+### Task 7D.2 — Fix Stream Preview Bug (undefined values) — NOT STARTED
+
+**Goal:** Fix "undefined" rendering in Theme Editor preview for stream graphics.
+
+**Files:**
+- `show-controller/src/pages/ThemeEditorPage.jsx`
+- `output.html` (stream renderers)
+
+**Work:**
+1. In `getPreviewUrl()` or preview data generation, detect stream graphics
+2. Pass required data as URL params: `meetDate`, `compType`, team logos
+3. If competition selected, use its real data; else use placeholder values
+4. In output.html stream renderers: add fallback for missing `meetDate` (show placeholder instead of "undefined")
+
+**Verify:**
+- [ ] stream-starting preview shows proper date (not "undefined")
+- [ ] stream-thanks preview shows proper content
+- [ ] With competition selected, uses real competition data
+- [ ] Without competition, uses placeholders
+
+**Deploy:** Deploy show-controller build + `output.html` to production.
+
+---
+
+### Task 7D.3 — Build Rich Control Panel for Stream Graphics — NOT STARTED
+
+**Goal:** Add override panels for stream-starting and stream-thanks.
+
+**Files:**
+- `show-controller/src/pages/ThemeEditorPage.jsx`
+
+**Work:**
+1. Stream panel sections: BACKGROUND (color, gradient, image), TITLE (font size/family/weight, text-transform), LOGOS (size, spacing, count-adaptive sizing), EVENT NAME (font), DATE (font), BRANDING (logo position)
+2. Use OverrideStepper for all numeric controls
+
+**Verify:**
+- [ ] Both stream graphics have override panels
+- [ ] All sections render correctly
+- [ ] Changes save and preview updates
+
+**Deploy:** Deploy show-controller build to production.
+
+---
+
+### Task 7D.4 — Build Stream Template with "Apply to All" — NOT STARTED
+
+**Goal:** Add shared template for Stream graphics.
+
+**Files:**
+- `show-controller/src/pages/ThemeEditorPage.jsx`
+
+**Work:**
+1. Add `STREAM_GRAPHICS` constant: `['stream-starting', 'stream-thanks']`
+2. Create `applyStreamTemplate()` with shared fields
+3. Store at `themes/{themeId}/streamTemplate/`
+
+**Verify:**
+- [ ] Template panel renders
+- [ ] "Apply to All Stream" works
+
+**Deploy:** Deploy show-controller build to production.
+
+---
+
+### Task 7D.5 — Add Measurement Selectors for Stream Graphics — NOT STARTED
+
+**Goal:** Add measurement mappings for stream graphics.
+
+**Files:**
+- `show-controller/src/pages/ThemeEditorPage.jsx`
+
+**Work:**
+1. Extend `MEASUREMENT_SELECTORS` with stream entries
+2. Add measurement display
+
+**Verify:**
+- [ ] Measurements display for stream graphics
+
+**Deploy:** Deploy show-controller build to production.
+
+---
+
+### Task 7D.6 — Deploy + Verify Stream with WCGNIC Data — NOT STARTED
+
+**Goal:** Final verification of Phase 7D.
+
+**Files:**
+- Deploy: show-controller build, `output.html`
+
+**Work:**
+1. Deploy everything
+2. Preview stream-starting and stream-thanks with WCGNIC data
+3. Verify no "undefined" values
+4. Test overrides
+5. Test Stream Template
+
+**Verify:**
+- [ ] Both stream graphics render correctly with WCGNIC data
+- [ ] No "undefined" text anywhere
+- [ ] Per-graphic overrides work
+- [ ] Stream Template applies correctly
+- [ ] Live mode renders correctly
+
+---
+
+## Phase 7E: Overlays + OBS-Direct (12 tasks)
+
+Graphics: rotation-slate (16 layouts), logos, now-competing, live-camera, interview-card, athlete-spotlight, event-calendar (4 tiers), team-bug (100+ values), hosts, coaches.
+
+---
+
+### Task 7E.1 — Convert rotation-slate CSS to Variables — NOT STARTED
+
+**Goal:** Replace hardcoded CSS in rotation-slate across 12+ layouts.
+
+**Files:**
+- `overlays/rotation-slate.html`
+- `overlays/rotation-slate-auto.html`
+- `overlays/theme-loader.js` (add mappings)
+
+**Work:**
+1. Identify all layout variants and their CSS (12+ layouts for manual, same for auto)
+2. Convert font sizes, colors, spacing, badge styling, team name formatting
+3. Font controls: team name, event label, rotation number, status badge
+4. Preserve responsive behavior per layout variant
+5. Add mappings to theme-loader.js
+
+**Verify:**
+- [ ] All 12 rotation-slate layouts render identically with no overrides
+- [ ] rotation-slate-auto layouts also work
+- [ ] Font overrides apply across all layouts
+- [ ] Badge color overrides work
+- [ ] Theme colors apply to header/background
+
+**Deploy:** Deploy `overlays/rotation-slate.html` + `overlays/rotation-slate-auto.html` + `overlays/theme-loader.js` to production.
+
+---
+
+### Task 7E.2 — Convert logos CSS to Variables — NOT STARTED
+
+**Goal:** Replace 22 hardcoded values in logos graphic with CSS variables.
+
+**Files:**
+- `output.html` (lines ~12424-12444 renderer + associated CSS)
+- `overlays/theme-loader.js` (add mappings)
+
+**Work:**
+1. Convert row/grid layout values: logo sizes per team count (1=360px, 2=280px, 3-4=200px, 5-7=150px), gap, background
+2. Grid switch threshold (5+ teams)
+3. Container positioning, padding
+4. Add mappings to theme-loader.js
+
+**Verify:**
+- [ ] Logos render identically with no overrides
+- [ ] Logo size per team count responds to overrides
+- [ ] Grid gap override works
+- [ ] Background color override works
+
+**Deploy:** Deploy `output.html` + `overlays/theme-loader.js` to production.
+
+---
+
+### Task 7E.3 — Convert now-competing + live-camera CSS to Variables — NOT STARTED
+
+**Goal:** Replace 36 + 23 hardcoded values in now-competing and live-camera.
+
+**Files:**
+- `output.html` (now-competing: lines ~6014-6093, live-camera: lines ~6430-6493)
+- `overlays/theme-loader.js` (add mappings)
+
+**Work:**
+1. now-competing: position (bottom: 120px, left: 100px), font sizes (18-36px), status badge (#22c55e), animation timing, dot size
+2. live-camera: position (top: 60px, left: 60px), badge (#dc2626 red), font (28px), dot size, animation
+3. Font controls for both
+4. Note: live-camera partially themed already (apparatus label uses --meet-header-bg)
+5. Add mappings to theme-loader.js
+
+**Verify:**
+- [ ] now-competing renders identically with no overrides
+- [ ] live-camera renders identically with no overrides
+- [ ] Position overrides work for both
+- [ ] Badge color overrides work
+- [ ] Animation timing overrides work (if exposed)
+
+**Deploy:** Deploy `output.html` + `overlays/theme-loader.js` to production.
+
+---
+
+### Task 7E.4 — Convert interview-card CSS to Variables — NOT STARTED
+
+**Goal:** Replace 32 hardcoded values in interview-card overlay.
+
+**Files:**
+- `overlays/interview-card.html`
+- `overlays/theme-loader.js` (add mappings)
+
+**Work:**
+1. Convert panel dimensions (600x1020px), position (30px from top/left), coach name (56px 900), school name (24px 700), question (28px 500)
+2. Animation timing (7 staggered fade-up animations, panel slide-in 0.7s)
+3. Font controls — note: interview-card uses Poppins, so default font-family should be Poppins
+4. Add mappings to theme-loader.js
+
+**Verify:**
+- [ ] Interview card renders identically with no overrides
+- [ ] Default font is Poppins
+- [ ] Font size overrides work
+- [ ] Panel dimension overrides work
+- [ ] Animation timing preserved
+
+**Deploy:** Deploy `overlays/interview-card.html` + `overlays/theme-loader.js` to production.
+
+---
+
+### Task 7E.5 — Convert athlete-spotlight CSS to Variables — NOT STARTED
+
+**Goal:** Replace 31 hardcoded values in athlete-spotlight overlay.
+
+**Files:**
+- `overlays/athlete-spotlight.html`
+- `overlays/theme-loader.js` (add mappings)
+
+**Work:**
+1. Convert card position (bottom: 120px, left: 100px), font sizes (event 36px, name 24px, details 16px)
+2. Font controls: event font, name font, details font
+3. Image/headshot sizing
+4. Add mappings to theme-loader.js
+
+**Verify:**
+- [ ] Athlete spotlight renders identically with no overrides
+- [ ] Position overrides work
+- [ ] Font overrides work
+- [ ] Theme colors apply
+
+**Deploy:** Deploy `overlays/athlete-spotlight.html` + `overlays/theme-loader.js` to production.
+
+---
+
+### Task 7E.6 — Convert event-calendar CSS to Variables — NOT STARTED
+
+**Goal:** Replace 30+ hardcoded values in event-calendar with CSS variables, respecting 4 responsive tiers.
+
+**Files:**
+- `overlays/event-calendar.html`
+- `overlays/theme-loader.js` (add mappings)
+
+**Work:**
+1. Convert container padding (30px 80px), header (42px title, 80px logo), event item styling
+2. Per-tier font scaling (4 tiers by event count: 1-3, 4-5, 6-7, 8+)
+3. Two-column layout threshold (7+ events)
+4. Animation timing (fadeSlideIn 0.5s, 0.08s stagger)
+5. Accent color (`--meet-accent` at line 82: #a78bfa)
+6. Font controls for title, event name, date, venue
+7. Add mappings to theme-loader.js
+
+**Verify:**
+- [ ] Event calendar renders identically with no overrides
+- [ ] All 4 responsive tiers work
+- [ ] Two-column layout triggers correctly
+- [ ] Font overrides apply per tier
+- [ ] Animation timing preserved
+- [ ] Accent color responds to override
+
+**Deploy:** Deploy `overlays/event-calendar.html` + `overlays/theme-loader.js` to production.
+
+---
+
+### Task 7E.7 — Convert team-bug CSS to Variables (Colors/Typography Only) — NOT STARTED
+
+**Goal:** Replace color and typography values in team-bug. Leave real-time state management (Firebase polling, score animations) untouched.
+
+**Files:**
+- `overlays/team-bug.html`
+- `overlays/theme-loader.js` (add mappings)
+
+**Work:**
+1. Convert color values: dark theme colors (#1a1a1a, #27272a, #000), text colors
+2. Typography: 12 font-size/weight combinations with tier overrides
+3. Apply `tabular-nums` to ALL score elements (`.slot-score`, `.lineup-score`, `.lineup-total`, `.team-total`)
+4. Use proportional `calc()` scaling for tier variants (avoid 100+ individual variables)
+5. Do NOT modify: state colors (green stick, amber correction, cyan pulse), animation logic, Firebase polling, Virtuis API integration
+6. Add mappings to theme-loader.js
+
+**Verify:**
+- [ ] team-bug renders identically with no overrides for all 5 team-count tiers
+- [ ] Background color override works across all tiers
+- [ ] Text color override works
+- [ ] Score font can be switched to Roboto Mono
+- [ ] `tabular-nums` applies to all score elements
+- [ ] State colors (green, amber, cyan) are NOT overridable (preserved)
+- [ ] Real-time score updates still work
+
+**Deploy:** Deploy `overlays/team-bug.html` + `overlays/theme-loader.js` to production.
+
+---
+
+### Task 7E.8 — Convert hosts + coaches Overlay CSS to Variables — NOT STARTED
+
+**Goal:** Replace 14 + 14 hardcoded values in hosts.html and coaches.html overlays.
+
+**Files:**
+- `overlays/hosts.html`
+- `overlays/coaches.html`
+- `overlays/theme-loader.js` (add mappings)
+
+**Work:**
+1. hosts.html: add missing `--meet-content-bg` and `--meet-overlay-text` variables (currently only uses header vars)
+2. Both files: convert position, font sizes, animation timing, logo sizing
+3. Follow lower-third pattern from event-bar/warm-up/replay (Phase 5/6)
+4. Font controls for title, name
+5. Add mappings to theme-loader.js
+
+**Verify:**
+- [ ] Hosts overlay renders with all 4 theme color variables
+- [ ] Coaches overlay renders identically
+- [ ] Position overrides work
+- [ ] Font overrides work
+- [ ] Animation timing preserved
+
+**Deploy:** Deploy `overlays/hosts.html` + `overlays/coaches.html` + `overlays/theme-loader.js` to production.
+
+---
+
+### Task 7E.9 — Build rotation-slate Variant Selector — NOT STARTED
+
+**Goal:** Add variant selector for rotation-slate's 12+ layouts in Theme Editor.
+
+**Files:**
+- `show-controller/src/pages/ThemeEditorPage.jsx`
+
+**Work:**
+1. Add layout dropdown for rotation-slate: list all 12+ layout variants
+2. Differentiate manual vs auto rotation-slate
+3. Pass layout params to preview URL
+4. Show variant selector when rotation-slate is selected
+
+**Verify:**
+- [ ] Variant selector shows all layouts
+- [ ] Changing layout updates preview
+- [ ] Manual and auto variants selectable
+
+**Deploy:** Deploy show-controller build to production.
+
+---
+
+### Task 7E.10 — Build Rich Control Panels for All 12 Overlay Graphics — NOT STARTED
+
+**Goal:** Add override panels for all Phase 7E graphics.
+
+**Files:**
+- `show-controller/src/pages/ThemeEditorPage.jsx`
+
+**Work:**
+1. rotation-slate: LAYOUT, HEADER (font, color), TEAM (name font, badge color), STATUS (badge styling)
+2. logos: LAYOUT (grid/row threshold), SIZE (per team count), SPACING (gap), BACKGROUND
+3. now-competing: POSITION, BADGE (color, font), STATUS (dot, pulse), ANIMATION
+4. live-camera: POSITION, BADGE (color, font), DOT, APPARATUS LABEL
+5. interview-card: PANEL (size, position), TYPOGRAPHY (coach name, school, question fonts), ANIMATION
+6. athlete-spotlight: POSITION, TYPOGRAPHY (event, name, details fonts), IMAGE
+7. event-calendar: HEADER (title, logo), LAYOUT (tiers, columns), ITEMS (font, spacing), ANIMATION
+8. team-bug: COLORS (bg, text, borders), TYPOGRAPHY (score font, label font), NOTE: state colors not overridable
+9. hosts: POSITION, HEADER, CONTENT, FONT, ANIMATION
+10. coaches: POSITION, HEADER, CONTENT, LOGO, FONT, ANIMATION
+
+**Verify:**
+- [ ] All 12 graphics have override panels
+- [ ] Override count badges correct
+- [ ] Changes save to Firebase
+- [ ] Preview updates after save
+
+**Deploy:** Deploy show-controller build to production.
+
+---
+
+### Task 7E.11 — Add Measurement Selectors for Overlay Graphics — NOT STARTED
+
+**Goal:** Add measurement mappings for all Phase 7E graphics.
+
+**Files:**
+- `show-controller/src/pages/ThemeEditorPage.jsx`
+
+**Work:**
+1. Extend `MEASUREMENT_SELECTORS` with entries for each overlay graphic
+2. Add measurement display in panels
+
+**Verify:**
+- [ ] Measurements display for overlay graphics where applicable
+
+**Deploy:** Deploy show-controller build to production.
+
+---
+
+### Task 7E.12 — Deploy + Verify Overlays with WCGNIC Data — NOT STARTED
+
+**Goal:** Final verification of Phase 7E.
+
+**Files:**
+- Deploy: show-controller build, `output.html`, `overlays/` directory
+
+**Work:**
+1. Deploy everything per CLAUDE.md
+2. Preview each overlay graphic with WCGNIC data:
+   - rotation-slate with multiple layouts
+   - logos with 4+ teams
+   - now-competing, live-camera
+   - interview-card with sample data
+   - athlete-spotlight
+   - event-calendar with WCGNIC events
+   - team-bug with real scores
+   - hosts, coaches
+3. Test per-graphic overrides for each
+4. Test rotation-slate variant selector
+5. Verify live mode with overrides
+
+**Verify:**
+- [ ] All 12 overlay graphics render with WCGNIC data
+- [ ] Per-graphic overrides work in preview and live mode
+- [ ] rotation-slate variant selector works
+- [ ] team-bug colors override without breaking score updates
+- [ ] interview-card uses Poppins font
+- [ ] No console errors
+
+---
+
+## Phase 7F: Playout / Who to Watch (8 tasks)
+
+Graphics: who-to-watch-title, who-to-watch-lower-third, clip-overlay.
+
+---
+
+### Task 7F.1 — Add WTW Layout Defaults to Theme Editor — NOT STARTED
+
+**Goal:** Add per-graphic override panel for who-to-watch-title with all layout fields.
+
+**Files:**
+- `show-controller/src/pages/ThemeEditorPage.jsx`
+
+**Work:**
+1. Add who-to-watch-title override panel with all existing URL param controls as theme-level defaults:
+   - BADGE: badgeFontSize (13px)
+   - TEAM: teamNameFontSize (20px), logoSize (48px), showTeamRow (true)
+   - TEXT: nameFontSize (110px), bodyFontSize (32px), headlineFontSize (34px), textOffsetY (0)
+   - IMAGE: imageScale (100%), imageOffsetX/Y (0)
+   - WATERMARK: watermarkOpacity (8%), watermarkScale (100%), watermarkOffsetX/Y (0), showWatermark (true)
+2. Store overrides at `themes/{themeId}/overrides/who-to-watch-title/`
+3. These are THEME-LEVEL defaults, distinct from per-card RUNTIME overrides
+
+**Verify:**
+- [ ] who-to-watch-title override panel shows all fields
+- [ ] Default values match current hardcoded defaults
+- [ ] Saving overrides writes to Firebase
+- [ ] Preview updates with override values
+
+**Deploy:** Deploy show-controller build to production.
+
+---
+
+### Task 7F.2 — Implement Theme/Rundown Override Hierarchy — NOT STARTED
+
+**Goal:** Establish clear cascade: per-card runtime > per-graphic theme override > global theme default > hardcoded fallback.
+
+**Files:**
+- `show-controller/src/components/playout/WhoToWatchEditor.jsx`
+- `show-controller/src/pages/ThemeEditorPage.jsx`
+
+**Work:**
+1. When producer creates a new WTW title card in the rundown editor, auto-import theme-level WTW overrides as starting values
+2. Add "Import from Theme" button in WTW Editor card adjustments panel
+3. "Import from Theme" reads `themes/{themeId}/overrides/who-to-watch-title/` and populates card adjustment fields
+4. Per-card values always take precedence when set (existing behavior)
+5. If a per-card value is cleared/reset, falls back to theme-level override
+
+**Verify:**
+- [ ] New title cards auto-import theme defaults
+- [ ] "Import from Theme" button populates fields from theme overrides
+- [ ] Per-card overrides take precedence over theme defaults
+- [ ] Clearing a per-card value falls back to theme default
+- [ ] Theme Editor changes propagate to new cards (not existing ones)
+
+**Deploy:** Deploy show-controller build to production.
+
+---
+
+### Task 7F.3 — Convert who-to-watch-lower-third CSS to Variables — NOT STARTED
+
+**Goal:** Replace hardcoded CSS in who-to-watch lower-third overlay.
+
+**Files:**
+- `overlays/who-to-watch.html`
+- `overlays/theme-loader.js` (add mappings)
+
+**Work:**
+1. Convert positioning, font sizes, badge styling, headshot sizing, card dimensions
+2. Font controls: name font, subtitle font, stat font
+3. Add mappings to theme-loader.js
+
+**Verify:**
+- [ ] WTW lower-third renders identically with no overrides
+- [ ] Font overrides work
+- [ ] Position overrides work
+- [ ] Card dimension overrides work
+
+**Deploy:** Deploy `overlays/who-to-watch.html` + `overlays/theme-loader.js` to production.
+
+---
+
+### Task 7F.4 — Convert clip-overlay CSS to Variables — NOT STARTED
+
+**Goal:** Replace 62 hardcoded CSS values in clip-overlay (inline in output.html).
+
+**Files:**
+- `output.html` (lines ~6243-6424 CSS, ~6509-6523 HTML)
+- `overlays/theme-loader.js` (add mappings)
+
+**Work:**
+1. Convert panel positioning (60px offsets), font sizes (28px, 18px, 16px, 48px), border-radius, spacing
+2. Score badge: scale animation, badge bg/text
+3. Animation timing (clipOverlaySlideIn 0.4s cubic-bezier)
+4. Font controls: athlete name, team name, apparatus, score
+5. graphic ID for overrides: `clip-overlay` (detected via `?mode=clip` or `?mode=clip-preview`)
+6. Add mappings to theme-loader.js
+
+**Verify:**
+- [ ] Clip overlay renders identically with no overrides
+- [ ] Font size overrides work
+- [ ] Position overrides work
+- [ ] Score badge overrides work
+- [ ] `clip-preview` mode in Theme Editor shows overrides
+
+**Deploy:** Deploy `output.html` + `overlays/theme-loader.js` to production.
+
+---
+
+### Task 7F.5 — Build Variant Selector for WTW Title Card — NOT STARTED
+
+**Goal:** Add image mode selector for who-to-watch-title preview.
+
+**Files:**
+- `show-controller/src/pages/ThemeEditorPage.jsx`
+
+**Work:**
+1. Add image mode dropdown: Full-body cutout (default), Headshot only, No image, Custom image URL
+2. Pass image mode as URL param to preview iframe
+3. Preview should reflect selected mode
+
+**Verify:**
+- [ ] Image mode dropdown appears when who-to-watch-title selected
+- [ ] Changing mode updates preview
+- [ ] All 4 modes render correctly
+
+**Deploy:** Deploy show-controller build to production.
+
+---
+
+### Task 7F.6 — Build Rich Control Panels for All 3 Playout Graphics — NOT STARTED
+
+**Goal:** Add override panels for who-to-watch-title, who-to-watch-lower-third, and clip-overlay.
+
+**Files:**
+- `show-controller/src/pages/ThemeEditorPage.jsx`
+
+**Work:**
+1. who-to-watch-title: BADGE, TEAM, TEXT, IMAGE, WATERMARK (from 7F.1), plus COLORS, FONT CONTROLS
+2. who-to-watch-lower-third: POSITION, CARD (dimensions, border-radius), NAME (font), STAT (font, badge), HEADSHOT (size)
+3. clip-overlay: POSITION (panel, badge offsets), TYPOGRAPHY (name, team, apparatus, score fonts), BADGE (bg, text, animation), ANIMATION
+4. Use OverrideStepper for all numeric controls
+
+**Verify:**
+- [ ] All 3 panels render with correct sections
+- [ ] Override count badges work
+- [ ] Changes save and preview updates
+
+**Deploy:** Deploy show-controller build to production.
+
+---
+
+### Task 7F.7 — Add Measurement Selectors for Playout Graphics — NOT STARTED
+
+**Goal:** Add measurement mappings for Playout/WTW graphics.
+
+**Files:**
+- `show-controller/src/pages/ThemeEditorPage.jsx`
+
+**Work:**
+1. Extend `MEASUREMENT_SELECTORS` with WTW and clip-overlay entries
+2. Add measurement display in panels
+
+**Verify:**
+- [ ] Measurements display for WTW and clip-overlay
+
+**Deploy:** Deploy show-controller build to production.
+
+---
+
+### Task 7F.8 — Deploy + Verify Playout with WCGNIC Data — NOT STARTED
+
+**Goal:** Final verification of Phase 7F.
+
+**Files:**
+- Deploy: show-controller build, `output.html`, `overlays/` directory
+
+**Work:**
+1. Deploy everything per CLAUDE.md
+2. Theme Editor: preview who-to-watch-title with 4 image modes
+3. Test who-to-watch-lower-third with sample athlete data
+4. Test clip-overlay in clip-preview mode
+5. Test theme/rundown override hierarchy:
+   - Set theme-level WTW overrides
+   - Create new title card in rundown → verify auto-import
+   - Override per-card → verify it takes precedence
+   - "Import from Theme" → verify reset
+6. Verify live mode with overrides
+
+**Verify:**
+- [ ] All 3 playout graphics render with WCGNIC data
+- [ ] Image mode variant selector works
+- [ ] Theme/rundown hierarchy works correctly
+- [ ] Clip overlay overrides work in clip mode
+- [ ] Per-card runtime overrides take precedence
+- [ ] No console errors
+
+---
+
+## Phase 8B: Dynamic Suffix List (1 task)
+
+---
+
+### Task 8.3 — Convert Hardcoded Suffix List to Dynamic Derivation — NOT STARTED
+
+**Goal:** Replace the hardcoded 40-suffix list in `clearOverrides()` with dynamic derivation from mapping objects, so new Phase 7 keys are automatically covered.
+
+**Files:**
+- `overlays/theme-loader.js`
+
+**Work:**
+1. In `clearOverrides()`, instead of iterating a hardcoded suffix array, derive suffixes from:
+   - `Object.values(overrideMapping)` → color suffixes
+   - `Object.values(imageOverrideMapping)` → image suffixes
+   - `Object.values(layoutOverrideMapping).map(v => v.suffix)` → layout suffixes
+2. Verify mapping objects are at module scope (moved in Task 8.1)
+3. Combine all suffixes into a single array, deduplicate
+4. This ensures any new mapping added in Phase 7 tasks is automatically included in cleanup
+
+**Verify:**
+- [ ] `clearOverrides()` derives suffixes dynamically
+- [ ] All Phase 7 CSS variable keys are cleaned up on graphic switch
+- [ ] No hardcoded suffix array remains
+- [ ] Live mode rapid switching shows no stale CSS variables
+- [ ] No console errors
+
+**Deploy:** Deploy `overlays/theme-loader.js` to production. Verify with full graphic switching test.
+
+---
+
+## Summary
 
 ```
-Phase 0 (no dependencies between tasks — can run in parallel):
-  0.1 (COMPLETE)  0.2  0.3
-
-Phase 1:
-  1.1 (extend theme-loader.js)
-   ├── 1.1b (PlayoutEngine meetTheme) ← independent of other 1.x tasks
-   ├── 1.2 (add to output.html)
-   │    ├── 1.5 (convert inline CSS to vars)
-   │    └── 1.6 (gate live-mode render)
-   ├── 1.3a (port event summary CSS) ─┐
-   ├── 1.3b (port leaderboard CSS) ───┤ can run in parallel
-   └── 1.3c (port remaining CSS) ─────┘
-        └── 1.4 (reconcile class names)
-
-  1.7 (debug panel)                        ← depends on 1.1 only
-  1.7b (producer error log panel)          ← depends on 1.1 only
-
-  1.8a/b/c (verification)                  ← depends on all above
-  1.DOC (update CLAUDE.md + PRD)           ← depends on 1.8c
-
-  1.9 (remove inline CSS)                  ← DEFERRED (requires live event)
-
-Phase 3 (depends on all Phase 1 tasks):
-  3.1 (per-graphic override CSS vars)
-   ├── 3.2 (image/texture injection)
-   ├── 3.3 (texture overlay per-graphic)   ← also depends on 0.3
-   └── 3.4 (debug panel update)            ← also depends on 1.7
-  3.DOC (update CLAUDE.md + PRD)           ← depends on 3.4
-
-Phase 4 (depends on Phase 3):
-  4.1 (competition selector + graphic dropdown)
-   └── 4.2 (per-graphic override panel MVP)
-        ├── 4.3 (live iframe preview)
-        ├── 4.4 (image/texture controls)
-        └── 4.5 (badges, reset, import)
-  4.6a (clip-preview mode in output.html)  ← independent of React tasks
-  4.6b (orchestration sub-graphic previews) ← depends on 4.1 + 4.6a
-  4.DOC (update CLAUDE.md + PRD → COMPLETE) ← depends on 4.6b
+Total tasks: 62
+Phase 8A tasks: 7 (8.1, 8.2, 8.4, 8.5, 8.6, 8.7, 8.DOC)
+Font tasks: 4 (7.FONT.1-4)
+Phase 7A tasks: 11 (7A.1-11)
+Phase 7B tasks: 7 (7B.1-7)
+Phase 7C tasks: 6 (7C.1-6)
+Phase 7D tasks: 6 (7D.1-6)
+Phase 7E tasks: 12 (7E.1-12)
+Phase 7F tasks: 8 (7F.1-8)
+Phase 8B tasks: 1 (8.3)
+Execution order: Phase 8A → 7.FONT → 7A → 7B → 7C → 7D → 7E → 7F → 8B
 ```
-
-**Execution order for serial loop:**
-0.2 → 0.3 → 1.1 → 1.1b → 1.2 → 1.3a → 1.3b → 1.3c → 1.4 → 1.5 → 1.6 → 1.7 → 1.7b → 1.8a → 1.8b → 1.8c → 1.DOC → 3.1 → 3.2 → 3.3 → 3.4 → 3.DOC → 4.1 → 4.2 → 4.3 → 4.4 → 4.5 → 4.6a → 4.6b → 4.DOC
-
-**Note:** Task 1.9 is deferred and will NOT be picked up by the code loop.
-
----
-
-## Files Touched Summary
-
-| File | Tasks |
-|------|-------|
-| `overlays/graphic-ids.json` | 0.1 (COMPLETE) |
-| `docs/PRD-Theme-System-V2/audit-css-rules.md` (new) | 0.2 |
-| `docs/PRD-Theme-System-V2/audit-pseudo-elements.md` (new) | 0.3 |
-| `overlays/theme-loader.js` | 1.1, 1.7, 3.1, 3.2, 3.4 |
-| `overlays/theme-overrides.css` | 0.2, 1.3a, 1.3b, 1.3c, 3.2, 3.3 |
-| `server/lib/playoutEngine.js` | 1.1b |
-| `output.html` | 1.2, 1.4, 1.5, 1.6, 1.9, 4.6a |
-| `show-controller/src/components/ThemeErrorLog.jsx` (new) | 1.7b |
-| `show-controller/src/hooks/useThemeErrors.js` (new) | 1.7b |
-| `show-controller/src/views/ProducerView.jsx` | 1.7b |
-| `show-controller/src/pages/ThemeEditorPage.jsx` | 4.1, 4.2, 4.3, 4.4, 4.5, 4.6b |
-| `overlays/who-to-watch-title.html` | 1.9 |
-| `overlays/who-to-watch.html` | 1.9 |
-| `CLAUDE.md` | 1.DOC, 3.DOC, 4.DOC, 1.9 |
-| `docs/PRD-Theme-System-V2/PRD-Theme-System-V2-2026-03-25.md` | 1.DOC, 3.DOC, 4.DOC |
-
----
-
-## Learnings
-
-- LEARNING: Task 1.1b verification (Firebase check for `data.meetTheme` field) requires live playout session — cannot verify locally. Deploy to coordinator and test during Task 1.8b verification. (found during Task 1.1b)
-- LEARNING: Local theme tests show "Theme not found" warnings because test themes like `pink-meet` don't exist in Firebase. The integration works correctly — verify by checking `window.themeReady` resolves and theme-loader.js logs appear in console. (found during Task 1.2)
-- LEARNING: Task 1.5 was already complete — the MEET THEME OVERRIDES section in output.html already used CSS variables with fallbacks from the original implementation. Always grep to verify current state before implementing. (found during Task 1.5)
-- LEARNING: The debug panel requires handling the early-return case (no meetTheme and no comp) separately since the main createDebugPanel() function isn't defined yet at that point. Used a standalone createEarlyDebugPanel() function for this path. (found during Task 1.7)
-- LEARNING: Firebase subscription hooks use `remove()` from firebase/database for deleting data. Import it in the hook file alongside other firebase functions. The pattern from useProductionAlerts.js and AlertPanel.jsx provided a clean structure for error log components. (found during Task 1.7b)
-- LEARNING: Use `pink-meet-2026` for theme testing (not `pink-meet`). The theme ID in Firebase is `pink-meet-2026`. Many inline graphics (hosts, team1-coaches, event-summary, virtuis-leaderboard) require competition/Virtius data to render content — blank screens with "Theme applied" console log is expected in preview mode. The key verification is that theme-loader.js runs and logs the theme application. (found during Task 1.8a)
-- LEARNING: Iframe overlays (sponsors-thanks, sponsors-cycle, sponsors-bug, who-to-watch-title, who-to-watch, rotation-slate, event-calendar) all load theme-loader.js and apply themes correctly. Sponsor bug/cycle show blank/transparent when no sponsors configured — this is expected. PlayoutEngine meetTheme implementation verified via code inspection: all 8 `_writeCurrentGraphic()` calls include `meetTheme: this._meetTheme`. Live playout test requires deployed coordinator. (found during Task 1.8b)
-- LEARNING: For local testing with `?comp=` param, use Python's `http.server` — `npx serve` sometimes truncates query params. The `wcgnic-2026-prelim1` competition has `meetTheme: "behind-the-chalk"` configured and is good for integration testing. Debug panel shows "Source: competition config" when theme is loaded via `?comp=` lookup vs "URL parameter" when via `?meetTheme=`. (found during Task 1.8c)
-- LEARNING: Per-graphic overrides require BOTH theme-loader.js to SET the CSS variables AND theme-overrides.css/output.html inline CSS to USE them with the 3-layer cascade `var(--{graphicId}-*, var(--meet-*, fallback))`. Python http.server caches aggressively — use a different port to bypass browser cache when testing CSS changes. The override mapping follows the pattern: `headerBar → --{graphicId}-header-bg`. (found during Task 3.1)
-- LEARNING: Image/texture CSS variable injection extends the override mapping with 13 new properties: `headerBgImage`, `headerBgImageFit`, `headerBgImagePosition`, `headerBgImageOpacity`, `bodyBgImage*` (4), `bodyTexture*` (3), `logo`, `logoSize`. URL values are wrapped in `url()` by JS before setting the CSS variable. The CSS rules use `background-image: var(--{graphicId}-header-bg-image, none)` — defaulting to `none` ensures no visual change without an override. (found during Task 3.2)
-- LEARNING: Per-graphic texture `::before` rules must be split out from the combined global selector — each graphic type needs its own rule to use the 3-layer cascade `var(--{graphicId}-body-texture, var(--meet-texture, none))`. Generic elements (panel, header-bar, frame-header, roster-container) can share a combined rule using global texture only. Added `mix-blend-mode` property to all texture rules for overlay/multiply/normal blend support. (found during Task 3.3)
-- LEARNING: The debug panel's Layer 3 display shows the per-graphic override variable (e.g., `--event-bar-header-bg`) but the global `--meet-header-bg` still holds the theme value. The CSS cascade `var(--{graphicId}-*, var(--meet-*, fallback))` handles priority at render time. The debug panel reads `overrideStatus` from `debugState` which is populated by `applyOverrides()` in the init flow. (found during Task 3.4)
-- LEARNING: Theme Editor page requires authentication — local screenshot verification requires login. Build verification is sufficient for code correctness. Full UI verification happens after deployment to production. The GRAPHIC_GROUPS constant uses 7 categories to match the plan's grouping requirements. WTW overlays need special URL handling (use overlay files directly, not output.html). (found during Task 4.1)
-- LEARNING: Per-graphic override panels use checkbox toggles instead of radio buttons for each color field — cleaner UX that shows enabled/disabled state clearly. The `overrides` field must be added to both `loadTheme` (for existing themes) and `newTheme` (for new themes). Helper functions (`updateOverrideField`, `clearOverrideField`, `resetGraphicOverrides`) manage the nested state cleanly. When a graphic panel is expanded, auto-switching `selectedGraphicType` gives immediate preview feedback. Team cards use specific IDs (`team1-stats`, `team1-coaches`, `team2-stats`, `team2-coaches`) not generic `team-stats`/`team-coaches`. (found during Task 4.2)
-- LEARNING: To force an iframe reload after saving data to Firebase, use a version counter state variable included in the iframe's `key` prop. Incrementing the version after a 500ms delay (to allow Firebase propagation) forces React to recreate the iframe element. The existing `toggleOverridePanel` already switches `selectedGraphicType` when expanding a panel (from Task 4.2), so no additional work needed for that requirement. (found during Task 4.3)
-- LEARNING: Image/texture override controls extend the existing per-graphic override panels. The `OverrideStepper` component is a simplified version of `StepperInput` from SponsorAdjustControls. Opacity values are stored as decimals (0-1) in Firebase but displayed as percentages (0-100%) in the UI — conversion happens in `onChange` handlers. The checkbox toggle pattern (enable/disable) is consistent with color overrides. When disabling a group (e.g., headerBgImage), all related fields must be cleared (`headerBgImage`, `headerBgImageFit`, `headerBgImagePosition`, `headerBgImageOpacity`). (found during Task 4.4)
-- LEARNING: Task 4.5 mostly extends what Task 4.2 already implemented — per-graphic badges and reset buttons were already in place. The new work is global "Reset All" with confirm dialog and "Import from another theme" modal. The import dropdown filters to only show themes that have overrides (no point importing from a theme with no overrides). `otherThemesForImport` useMemo computes this list, excluding the current theme. The inline confirm dialog pattern (showing Cancel/Confirm buttons in the header row) is cleaner than a modal for simple destructive actions. (found during Task 4.5)
-- LEARNING: The `clip-preview` mode needs three bypass conditions: (1) skip "No competition ID" error check, (2) skip Firebase `currentGraphic` listener registration, (3) use `themeReadyPromise.then()` to wait for theme before populating overlay. The clip overlay HTML elements (`clipOverlay`, `clipTeamLogoEl`, etc.) are already defined at page load — clip-preview just needs to populate them with sample data and add `.visible` class. URL params can override sample data for real competition previews. (found during Task 4.6a)
-- LEARNING: Task 4.6b was mostly pre-implemented in Task 4.1 — WTW title/lower-third were already in GRAPHIC_GROUPS with getPreviewUrl() handlers. Only `clip-overlay` was missing. The key addition was the clip-overlay handler that uses `output.html?mode=clip-preview&meetTheme={id}`. Competition data substitution for clip-overlay passes `athleteName`, `teamName`, and `teamLogo` as URL params when a competition is selected. OVERRIDE_GRAPHIC_GROUPS already had `clip-overlay` in the "Playout / Who to Watch" group (from Task 4.2). (found during Task 4.6b)
-- LEARNING: Task 4.DOC (documentation task) is straightforward — add Theme Editor section to CLAUDE.md covering competition preview, graphic selector, per-graphic override panels, clip-preview mode. Update PRD status to COMPLETE and add Completion Summary section with date, task count, phases delivered, and key files. No code changes needed. (found during Task 4.DOC)
-
----
-
-## ALL TASKS COMPLETE
-
-PRD-Theme-System-V2 is now complete (except Task 1.9 which is deferred pending live-event verification).
-
-**Next steps:**
-1. Deploy to production (React SPA + overlays/ + output.html)
-2. Test in live production environment
-3. After successful live event, execute Task 1.9 to remove inline theme CSS
