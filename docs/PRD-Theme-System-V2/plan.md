@@ -155,7 +155,7 @@ pm2 save
 
 ---
 
-### Task 1.2 — Add theme-loader.js to output.html — NOT STARTED
+### Task 1.2 — Add theme-loader.js to output.html — COMPLETE
 
 **Goal:** output.html loads theme-loader.js so it shares the same code path as overlays.
 
@@ -1070,3 +1070,4 @@ Phase 4 (depends on Phase 3):
 ## Learnings
 
 - LEARNING: Task 1.1b verification (Firebase check for `data.meetTheme` field) requires live playout session — cannot verify locally. Deploy to coordinator and test during Task 1.8b verification. (found during Task 1.1b)
+- LEARNING: Local theme tests show "Theme not found" warnings because test themes like `pink-meet` don't exist in Firebase. The integration works correctly — verify by checking `window.themeReady` resolves and theme-loader.js logs appear in console. (found during Task 1.2)

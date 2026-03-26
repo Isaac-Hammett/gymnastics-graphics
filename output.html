@@ -6497,6 +6497,7 @@
 
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="/overlays/theme-loader.js"></script>
   <script>
     // Get competition ID from URL
     const urlParams = new URLSearchParams(window.location.search);
@@ -7412,22 +7413,26 @@
     }
 
     // Store theme promise so URL preview mode can wait for it
-    let themeReadyPromise = Promise.resolve();
-    if (meetThemeId) {
-      themeReadyPromise = loadMeetTheme(meetThemeId);
-    } else if (competitionId) {
-      // Check competition config for a meetTheme
-      themeReadyPromise = db.ref(`competitions/${competitionId}/config/meetTheme`).once('value')
-        .then(snapshot => {
-          const configThemeId = snapshot.val();
-          if (configThemeId) {
-            return loadMeetTheme(configThemeId);
-          }
-        })
-        .catch(error => {
-          console.error('[meet-theme] Error reading competition config:', error);
-        });
-    }
+    // Theme loading is now handled by theme-loader.js (Task 1.2)
+    // window.themeReady handles both ?meetTheme= and ?comp= paths
+    let themeReadyPromise = window.themeReady || Promise.resolve();
+
+    // OLD CODE (commented out - remove in Task 1.9):
+    // if (meetThemeId) {
+    //   themeReadyPromise = loadMeetTheme(meetThemeId);
+    // } else if (competitionId) {
+    //   // Check competition config for a meetTheme
+    //   themeReadyPromise = db.ref(`competitions/${competitionId}/config/meetTheme`).once('value')
+    //     .then(snapshot => {
+    //       const configThemeId = snapshot.val();
+    //       if (configThemeId) {
+    //         return loadMeetTheme(configThemeId);
+    //       }
+    //     })
+    //     .catch(error => {
+    //       console.error('[meet-theme] Error reading competition config:', error);
+    //     });
+    // }
 
     // Firebase headshots cache - loaded once at startup
     let firebaseHeadshots = {};
