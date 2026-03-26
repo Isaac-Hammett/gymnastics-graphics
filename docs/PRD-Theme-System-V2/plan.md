@@ -762,7 +762,7 @@ Screenshots: `local-task-3.1-fresh-server.png` (red override), `local-task-3.1-n
 
 ---
 
-### Task 3.3 — Texture Overlay Per-Graphic Implementation — NOT STARTED
+### Task 3.3 — Texture Overlay Per-Graphic Implementation — COMPLETE
 
 **Goal:** Per-graphic texture overlays via `::before` pseudo-elements, extending the existing texture system.
 
@@ -783,10 +783,17 @@ Screenshots: `local-task-3.1-fresh-server.png` (red override), `local-task-3.1-n
 3. Use Phase 0.3 audit results to handle any `::before`/`::after` conflicts identified
 
 **Verify:**
-- [ ] Per-graphic texture override renders on targeted element only
-- [ ] Global texture still works on non-overridden elements
-- [ ] Blend mode (overlay, multiply, normal) works
-- [ ] No `::before` conflicts with existing pseudo-elements (per audit)
+- [x] Per-graphic texture override renders on targeted element only — CSS variables set up for 10 graphic types
+- [x] Global texture still works on non-overridden elements — verified with behind-the-chalk theme
+- [x] Blend mode (overlay, multiply, normal) works — `mix-blend-mode` property added to all texture rules
+- [x] No `::before` conflicts with existing pseudo-elements (per audit) — audit confirmed no conflicts
+
+**Status:** COMPLETE — Extended texture `::before` rules to use 3-layer cascade for 10 graphic types:
+- event-bar, rotation-slate, stream (starting/thanks), sponsors (thanks/cycle/bug)
+- coaches (team1/team2), spotlight, event-summary, leaderboard, warm-up, replay
+- Generic elements (panel, header-bar, frame-header, roster-container) use global texture only
+
+Screenshots: `local-task-3.3-event-bar.png`, `local-task-3.3-warm-up-texture.png`, `local-task-3.3-sponsors-texture.png`
 
 **Deploy:** Upload `overlays/` directory.
 
@@ -1190,3 +1197,4 @@ Phase 4 (depends on Phase 3):
 - LEARNING: For local testing with `?comp=` param, use Python's `http.server` — `npx serve` sometimes truncates query params. The `wcgnic-2026-prelim1` competition has `meetTheme: "behind-the-chalk"` configured and is good for integration testing. Debug panel shows "Source: competition config" when theme is loaded via `?comp=` lookup vs "URL parameter" when via `?meetTheme=`. (found during Task 1.8c)
 - LEARNING: Per-graphic overrides require BOTH theme-loader.js to SET the CSS variables AND theme-overrides.css/output.html inline CSS to USE them with the 3-layer cascade `var(--{graphicId}-*, var(--meet-*, fallback))`. Python http.server caches aggressively — use a different port to bypass browser cache when testing CSS changes. The override mapping follows the pattern: `headerBar → --{graphicId}-header-bg`. (found during Task 3.1)
 - LEARNING: Image/texture CSS variable injection extends the override mapping with 13 new properties: `headerBgImage`, `headerBgImageFit`, `headerBgImagePosition`, `headerBgImageOpacity`, `bodyBgImage*` (4), `bodyTexture*` (3), `logo`, `logoSize`. URL values are wrapped in `url()` by JS before setting the CSS variable. The CSS rules use `background-image: var(--{graphicId}-header-bg-image, none)` — defaulting to `none` ensures no visual change without an override. (found during Task 3.2)
+- LEARNING: Per-graphic texture `::before` rules must be split out from the combined global selector — each graphic type needs its own rule to use the 3-layer cascade `var(--{graphicId}-body-texture, var(--meet-texture, none))`. Generic elements (panel, header-bar, frame-header, roster-container) can share a combined rule using global texture only. Added `mix-blend-mode` property to all texture rules for overlay/multiply/normal blend support. (found during Task 3.3)
