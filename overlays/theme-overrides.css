@@ -43,7 +43,7 @@
    ============================================================ */
 
 [data-meet-theme] .event-bar-logo {
-  background: var(--meet-header-bg, #BFBFBF);
+  background: rgba(255, 255, 255, 0.92);
 }
 
 [data-meet-theme] .event-bar-venue {
@@ -296,4 +296,46 @@
 [data-meet-theme] .label-badge {
   background: var(--meet-badge-bg);
   color: var(--meet-badge-text);
+}
+
+/* ============================================================
+   TEXTURE OVERLAY
+   Tiles a texture image (e.g., chalk dust) over surfaces.
+   Only renders when --meet-texture is set by theme-loader.js.
+   Themes without a textures field → --meet-texture unset → none.
+   ============================================================ */
+
+[data-meet-theme] .panel,
+[data-meet-theme] .header-bar,
+[data-meet-theme] .frame-header,
+[data-meet-theme] .rotation-slate,
+[data-meet-theme] .roster-container,
+[data-meet-theme] .stream-container,
+[data-meet-theme] .event-bar-venue,
+[data-meet-theme] .details-row,
+[data-meet-theme] .sponsors-container,
+[data-meet-theme] .coaches-content,
+[data-meet-theme] .spotlight-container {
+  position: relative;
+}
+
+[data-meet-theme] .panel::before,
+[data-meet-theme] .header-bar::before,
+[data-meet-theme] .frame-header::before,
+[data-meet-theme] .rotation-slate::before,
+[data-meet-theme] .roster-container::before,
+[data-meet-theme] .stream-container::before,
+[data-meet-theme] .event-bar-venue::before,
+[data-meet-theme] .details-row::before,
+[data-meet-theme] .sponsors-container::before,
+[data-meet-theme] .coaches-content::before,
+[data-meet-theme] .spotlight-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--meet-texture, none) center / 1024px repeat;
+  opacity: var(--meet-texture-opacity, 0.08);
+  pointer-events: none;
+  border-radius: inherit;
+  z-index: 1;
 }
