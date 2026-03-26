@@ -8,6 +8,7 @@ import {
   ChevronUpIcon,
   ChevronDownIcon,
 } from '@heroicons/react/24/outline';
+import { db, ref, onValue } from '../../lib/firebase';
 
 /**
  * WhoToWatchEditor — Configuration panel for who-to-watch type segments
@@ -45,6 +46,15 @@ import {
  *       imageScale: number,        // 50–150, default 100
  *       imageOffsetX: number,      // -200 to +200, default 0
  *       imageOffsetY: number,      // -200 to +200, default 0
+ *       badgeText: string,         // Badge text, default "WHO TO WATCH", empty hides
+ *       badgeFontSize: number,     // 8–20, default 13
+ *       teamNameFontSize: number,  // 12–36, default 20
+ *       showTeamRow: boolean,      // default true
+ *       watermarkOpacity: number,  // 0–20, default 8
+ *       watermarkScale: number,    // 50–150, default 100
+ *       showWatermark: boolean,    // default true
+ *       bgColor: string,           // hex color override for background
+ *       accentColor: string,       // hex color override for accent
  *     }
  *   ],
  * }
@@ -324,7 +334,7 @@ function AthleteImagePicker({ headshot, galleryImages, selectedUrl, imageMode, o
 }
 
 // Live iframe preview for title cards — renders the real overlay HTML at 1920×1080 and scales it down
-function TitleCardIframePreview({ card, athleteName, teamName, logoUrl, imageUrl, imageMode, meetTheme }) {
+function TitleCardIframePreview({ card, athleteName, teamName, logoUrl, imageUrl, imageMode, meetTheme, themeOverride }) {
   const containerRef = useRef(null);
   const [scale, setScale] = useState(0.25);
   const [debouncedOverlayUrl, setDebouncedOverlayUrl] = useState('');
@@ -349,9 +359,23 @@ function TitleCardIframePreview({ card, athleteName, teamName, logoUrl, imageUrl
     if (card.imageScale && card.imageScale !== 100) params.set('imageScale', card.imageScale);
     if (card.imageOffsetX) params.set('imageOffsetX', card.imageOffsetX);
     if (card.imageOffsetY) params.set('imageOffsetY', card.imageOffsetY);
-    if (meetTheme) params.set('meetTheme', meetTheme);
+    // Badge controls
+    if (card.badgeText !== undefined) params.set('badge', card.badgeText);
+    if (card.badgeFontSize) params.set('badgeFontSize', card.badgeFontSize);
+    // Team name row controls
+    if (card.teamNameFontSize) params.set('teamNameFontSize', card.teamNameFontSize);
+    if (card.showTeamRow === false) params.set('showTeamRow', 'false');
+    // Watermark controls
+    if (card.watermarkOpacity !== undefined && card.watermarkOpacity !== 8) params.set('watermarkOpacity', card.watermarkOpacity);
+    if (card.watermarkScale && card.watermarkScale !== 100) params.set('watermarkScale', card.watermarkScale);
+    if (card.showWatermark === false) params.set('showWatermark', 'false');
+    // Theme controls
+    const effectiveTheme = themeOverride || meetTheme;
+    if (effectiveTheme) params.set('meetTheme', effectiveTheme);
+    if (card.bgColor) params.set('bgColor', card.bgColor);
+    if (card.accentColor) params.set('accentColor', card.accentColor);
     return `/overlays/who-to-watch-title.html?${params.toString()}`;
-  }, [card, athleteName, teamName, logoUrl, imageUrl, imageMode, meetTheme]);
+  }, [card, athleteName, teamName, logoUrl, imageUrl, imageMode, meetTheme, themeOverride]);
 
   // Debounce the overlay URL to avoid reloading the iframe on every slider tick
   useEffect(() => {
@@ -409,6 +433,17 @@ export default function WhoToWatchEditor({
   meetTheme = '',
 }) {
   const { getTeamRosterWithHeadshots, getHeadshot, resolveSchoolKey, getAthleteMedia, saveAthleteMedia } = teamsDbFunctions;
+
+  // Fetch available themes for the theme picker (Issue 29)
+  const [availableThemes, setAvailableThemes] = useState({});
+  const [themeOverride, setThemeOverride] = useState('');
+  useEffect(() => {
+    const themesRef = ref(db, 'themes');
+    const unsubscribe = onValue(themesRef, (snapshot) => {
+      setAvailableThemes(snapshot.val() || {});
+    });
+    return () => unsubscribe();
+  }, []);
 
   const [config, setConfig] = useState(() => ({
     ...DEFAULT_WHO_TO_WATCH,
@@ -776,8 +811,67 @@ export default function WhoToWatchEditor({
                 <details className="text-xs">
                   <summary className="text-zinc-600 cursor-pointer hover:text-zinc-400">Card Adjustments</summary>
                   <div className="mt-2 space-y-2 bg-zinc-800/50 rounded p-2">
+                    {/* Theme Controls (Issue 29) */}
+                    <div className="text-[10px] text-zinc-500 uppercase tracking-wide font-medium">Theme</div>
+                    <div className="flex items-center gap-2">
+                      <label className="text-[10px] text-zinc-500 w-20 shrink-0">Theme</label>
+                      <select
+                        value={themeOverride || meetTheme || ''}
+                        onChange={(e) => setThemeOverride(e.target.value)}
+                        className="flex-1 bg-zinc-900 border border-zinc-600 rounded text-white text-[10px] px-1 py-0.5 focus:outline-none focus:border-rose-500"
+                      >
+                        <option value="">None (default)</option>
+                        {Object.entries(availableThemes).map(([id, theme]) => (
+                          <option key={id} value={id}>{theme.name || id}</option>
+                        ))}
+                      </select>
+                      {(themeOverride || meetTheme) && (
+                        <button type="button" onClick={() => setThemeOverride('')} className="text-[10px] text-zinc-600 hover:text-zinc-400">&times;</button>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <label className="text-[10px] text-zinc-500 w-20 shrink-0">Background</label>
+                      <input type="color" value={card.bgColor || '#1a2332'} onChange={(e) => updateTitleCard(index, 'bgColor', e.target.value)} className="w-6 h-5 bg-transparent border-0 cursor-pointer" />
+                      <input type="text" value={card.bgColor || ''} onChange={(e) => updateTitleCard(index, 'bgColor', e.target.value)} placeholder="#hex" className="flex-1 bg-zinc-900 border border-zinc-600 rounded text-white text-[10px] px-1 py-0.5 focus:outline-none focus:border-rose-500" />
+                      <button type="button" onClick={() => updateTitleCard(index, 'bgColor', '')} className="text-[10px] text-zinc-600 hover:text-zinc-400">&times;</button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <label className="text-[10px] text-zinc-500 w-20 shrink-0">Accent</label>
+                      <input type="color" value={card.accentColor || '#3b82f6'} onChange={(e) => updateTitleCard(index, 'accentColor', e.target.value)} className="w-6 h-5 bg-transparent border-0 cursor-pointer" />
+                      <input type="text" value={card.accentColor || ''} onChange={(e) => updateTitleCard(index, 'accentColor', e.target.value)} placeholder="#hex" className="flex-1 bg-zinc-900 border border-zinc-600 rounded text-white text-[10px] px-1 py-0.5 focus:outline-none focus:border-rose-500" />
+                      <button type="button" onClick={() => updateTitleCard(index, 'accentColor', '')} className="text-[10px] text-zinc-600 hover:text-zinc-400">&times;</button>
+                    </div>
+                    {/* Badge Controls (Issue 26) */}
+                    <div className="text-[10px] text-zinc-500 uppercase tracking-wide font-medium mt-2">Badge</div>
+                    <div className="flex items-center gap-2">
+                      <label className="text-[10px] text-zinc-500 w-20 shrink-0">Badge text</label>
+                      <input type="text" value={card.badgeText !== undefined ? card.badgeText : 'WHO TO WATCH'} onChange={(e) => updateTitleCard(index, 'badgeText', e.target.value)} placeholder="WHO TO WATCH" className="flex-1 bg-zinc-900 border border-zinc-600 rounded text-white text-[10px] px-1 py-0.5 focus:outline-none focus:border-rose-500 uppercase" />
+                      <button type="button" onClick={() => updateTitleCard(index, 'badgeText', undefined)} className="text-[10px] text-zinc-600 hover:text-zinc-400">&times;</button>
+                    </div>
+                    {card.badgeText === '' && (
+                      <p className="text-[10px] text-zinc-500 italic">Badge hidden (empty text)</p>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <label className="text-[10px] text-zinc-500 w-20 shrink-0">Badge size</label>
+                      <input type="range" min="8" max="20" value={card.badgeFontSize || 13} onChange={(e) => updateTitleCard(index, 'badgeFontSize', parseInt(e.target.value))} className="flex-1 h-2 accent-rose-500 rounded-full cursor-pointer" />
+                      <span className="text-[10px] text-zinc-400 w-8 text-right">{card.badgeFontSize || 13}px</span>
+                      <button type="button" onClick={() => updateTitleCard(index, 'badgeFontSize', 13)} className="text-[10px] text-zinc-600 hover:text-zinc-400">&times;</button>
+                    </div>
+                    {/* Team Controls (Issue 27) */}
+                    <div className="text-[10px] text-zinc-500 uppercase tracking-wide font-medium mt-2">Team</div>
+                    <div className="flex items-center gap-2">
+                      <label className="text-[10px] text-zinc-500 w-20 shrink-0">Name size</label>
+                      <input type="range" min="12" max="36" value={card.teamNameFontSize || 20} onChange={(e) => updateTitleCard(index, 'teamNameFontSize', parseInt(e.target.value))} className="flex-1 h-2 accent-rose-500 rounded-full cursor-pointer" />
+                      <span className="text-[10px] text-zinc-400 w-8 text-right">{card.teamNameFontSize || 20}px</span>
+                      <button type="button" onClick={() => updateTitleCard(index, 'teamNameFontSize', 20)} className="text-[10px] text-zinc-600 hover:text-zinc-400">&times;</button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <label className="text-[10px] text-zinc-500 w-20 shrink-0">Show team</label>
+                      <input type="checkbox" checked={card.showTeamRow !== false} onChange={(e) => updateTitleCard(index, 'showTeamRow', e.target.checked)} className="accent-rose-500 cursor-pointer" />
+                      <span className="text-[10px] text-zinc-400">{card.showTeamRow !== false ? 'Visible' : 'Hidden'}</span>
+                    </div>
                     {/* Text Controls */}
-                    <div className="text-[10px] text-zinc-500 uppercase tracking-wide font-medium">Text</div>
+                    <div className="text-[10px] text-zinc-500 uppercase tracking-wide font-medium mt-2">Text</div>
                     {/* Headline font size */}
                     <div className="flex items-center gap-2">
                       <label className="text-[10px] text-zinc-500 w-20 shrink-0">Headline size</label>
@@ -833,6 +927,25 @@ export default function WhoToWatchEditor({
                       <span className="text-[10px] text-zinc-400 w-8 text-right">{card.imageOffsetY || 0}px</span>
                       <button type="button" onClick={() => updateTitleCard(index, 'imageOffsetY', 0)} className="text-[10px] text-zinc-600 hover:text-zinc-400">&times;</button>
                     </div>
+                    {/* Watermark Controls (Issue 28) */}
+                    <div className="text-[10px] text-zinc-500 uppercase tracking-wide font-medium mt-2">Watermark</div>
+                    <div className="flex items-center gap-2">
+                      <label className="text-[10px] text-zinc-500 w-20 shrink-0">Opacity</label>
+                      <input type="range" min="0" max="20" value={card.watermarkOpacity !== undefined ? card.watermarkOpacity : 8} onChange={(e) => updateTitleCard(index, 'watermarkOpacity', parseInt(e.target.value))} className="flex-1 h-2 accent-rose-500 rounded-full cursor-pointer" />
+                      <span className="text-[10px] text-zinc-400 w-8 text-right">{card.watermarkOpacity !== undefined ? card.watermarkOpacity : 8}%</span>
+                      <button type="button" onClick={() => updateTitleCard(index, 'watermarkOpacity', 8)} className="text-[10px] text-zinc-600 hover:text-zinc-400">&times;</button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <label className="text-[10px] text-zinc-500 w-20 shrink-0">Scale</label>
+                      <input type="range" min="50" max="150" value={card.watermarkScale || 100} onChange={(e) => updateTitleCard(index, 'watermarkScale', parseInt(e.target.value))} className="flex-1 h-2 accent-rose-500 rounded-full cursor-pointer" />
+                      <span className="text-[10px] text-zinc-400 w-8 text-right">{card.watermarkScale || 100}%</span>
+                      <button type="button" onClick={() => updateTitleCard(index, 'watermarkScale', 100)} className="text-[10px] text-zinc-600 hover:text-zinc-400">&times;</button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <label className="text-[10px] text-zinc-500 w-20 shrink-0">Show</label>
+                      <input type="checkbox" checked={card.showWatermark !== false} onChange={(e) => updateTitleCard(index, 'showWatermark', e.target.checked)} className="accent-rose-500 cursor-pointer" />
+                      <span className="text-[10px] text-zinc-400">{card.showWatermark !== false ? 'Visible' : 'Hidden'}</span>
+                    </div>
                   </div>
                 </details>
                 {/* Validation hints */}
@@ -851,6 +964,7 @@ export default function WhoToWatchEditor({
                   imageUrl={config.imageUrl}
                   imageMode={config.imageMode}
                   meetTheme={meetTheme}
+                  themeOverride={themeOverride}
                 />
               </div>
             ))}
