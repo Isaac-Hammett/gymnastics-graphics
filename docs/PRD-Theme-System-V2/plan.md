@@ -589,7 +589,7 @@ Screenshots saved to `docs/PRD-Theme-System-V2/screenshots/task-1.8c-*.png`.
 
 ---
 
-### Task 1.DOC — Update Documentation After Phase 1 — NOT STARTED
+### Task 1.DOC — Update Documentation After Phase 1 — COMPLETE
 
 **Goal:** Update CLAUDE.md and PRD to reflect the unified theme system shipped in Phase 1.
 
@@ -616,10 +616,22 @@ Screenshots saved to `docs/PRD-Theme-System-V2/screenshots/task-1.8c-*.png`.
    - Phase 3: mark as IN PROGRESS (next)
 
 **Verify:**
-- [ ] CLAUDE.md no longer references "two places that must stay in sync" for theme CSS
-- [ ] CLAUDE.md documents `?debug=theme` and `window.themeReady`
-- [ ] CLAUDE.md documents theme error reporting path
-- [ ] PRD phase statuses updated
+- [x] CLAUDE.md no longer references "two places that must stay in sync" for theme CSS
+- [x] CLAUDE.md documents `?debug=theme` and `window.themeReady`
+- [x] CLAUDE.md documents theme error reporting path
+- [x] PRD phase statuses updated
+
+**Status:** COMPLETE — All documentation updates made:
+- CLAUDE.md: Replaced "Meet Theme System - IMPORTANT (Dual CSS Locations)" with "Unified Theme System"
+- CLAUDE.md: Added "Debug Panel" section with `?debug=theme` instructions
+- CLAUDE.md: Added "Theme Ready Promise API" section documenting `window.themeReady`
+- CLAUDE.md: Added "Theme Error Reporting" section with Firebase path and error format
+- CLAUDE.md: Updated "Class Name Reconciliation" table showing both class names on elements
+- CLAUDE.md: Updated "Clip Integration" section noting PlayoutEngine includes meetTheme in all writes
+- PRD: Updated status to "IN PROGRESS (Phase 1 COMPLETE except Task 1.9 deferred, Phase 3 next)"
+- PRD: Marked Phase 0 as COMPLETE
+- PRD: Marked Phase 1 as COMPLETE (except Task 1.9 deferred)
+- PRD: Marked Phase 3 as IN PROGRESS (next)
 
 **Deploy:** None — documentation only. Committed with the next code task's deploy.
 

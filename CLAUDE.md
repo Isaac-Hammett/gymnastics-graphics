@@ -145,29 +145,116 @@ tar -czf /tmp/claude/overlays.tar.gz overlays/
 
 ---
 
-## Meet Theme System - IMPORTANT (Dual CSS Locations)
+## Unified Theme System
 
-**Theme CSS lives in TWO places that must stay in sync:**
+**All graphics use a single theme code path via `theme-loader.js`.**
 
-| Location | Used By | Scope |
-|----------|---------|-------|
-| `overlays/theme-overrides.css` | All overlay HTML files (`overlays/*.html`) | Loaded dynamically by `theme-loader.js` |
-| `output.html` (inline `<style>`) | Producer view, URL Generator preview | Search for "MEET THEME OVERRIDES" section |
+| File | Purpose |
+|------|---------|
+| `overlays/theme-loader.js` | Loads theme from Firebase, sets CSS variables + data attributes |
+| `overlays/theme-overrides.css` | Theme CSS rules (all graphics reference this) |
+| `output.html` inline `<style>` | Legacy fallback during migration (will be removed in Task 1.9) |
 
-**Why two places?** The overlay HTML files load `theme-overrides.css` via `theme-loader.js`. But `output.html` is a standalone page with its own inline styles — it does NOT load `theme-overrides.css`.
+### How Theme Loading Works
 
-**When making theme CSS changes, you MUST update BOTH locations.** If you only update `theme-overrides.css`, the overlays will look correct but the producer view and URL generator will not reflect the changes.
+theme-loader.js supports two initialization paths:
 
-### Key class name differences
+1. **URL param path:** `?meetTheme={themeId}` — direct theme ID (used by URL Generator, debug previews)
+2. **Competition config path:** `?comp={compId}` — reads `competitions/{compId}/config/meetTheme` from Firebase (used during live broadcasts)
 
-| Overlay class | output.html class | Used in |
-|---------------|-------------------|---------|
-| `.logo-section` | `.event-bar-logo` | Event bar logo container |
-| `.logo-section` | `.warm-up-logo-section` | Warm-up logo container |
-| `.logo-section` | `.replay-logo-section` | Replay logo container |
+**Precedence:** `?meetTheme=` always takes priority over `?comp=` config lookup.
+
+### Theme Ready Promise API
+
+theme-loader.js exposes `window.themeReady` — a Promise that resolves when theme loading completes:
+
+```javascript
+// Wait for theme before rendering
+await window.themeReady;
+// or
+window.themeReady.then(() => { /* render */ });
+```
+
+**Timeout:** If theme fetch takes >3 seconds, the promise resolves with fallback colors and writes an error to Firebase.
+
+### Debug Panel
+
+Add `?debug=theme` to any graphics URL to see a diagnostic overlay:
+
+```
+https://commentarygraphic.com/output.html?graphic=event-bar&meetTheme=pink-meet-2026&debug=theme
+```
+
+The debug panel shows:
+- Theme ID and load status (success/timeout/failed)
+- Source: URL parameter vs competition config
+- All 8 CSS variables: expected vs actual values (green = match, red = mismatch)
+- Logo data attributes
+- Rendering path (iframe vs inline)
+- Graphic ID
+
+### Class Name Reconciliation
+
+Elements now have BOTH overlay and output.html class names for compatibility:
+
+| Element | Has Both Classes |
+|---------|------------------|
+| Event bar logo | `.event-bar-logo` + `.logo-section` |
+| Warm-up logo | `.warm-up-logo-section` + `.logo-section` |
+| Replay logo | `.replay-logo-section` + `.logo-section` |
+| Event bar name | `.event-bar-name` + `.teams-text` |
+| Event bar location | `.event-bar-location` + `.location-text` |
+| Status rows | `.warm-up-status-row` / `.replay-status-row` + `.status-row` |
+| Status text | `.warm-up-status-text` / `.replay-status-text` + `.status-text` |
+| Coaches title | `.coaches-title` + `.hosts-title` |
 
 ### Logo Contrast Fix
 When a theme is active, logo containers get a white background (`rgba(255,255,255,0.92)`) so the logo pops against theme colors. The logo image itself is set to `background: transparent` to avoid box-in-box effect.
+
+**Note:** Inline CSS in output.html is kept as a fallback during migration. After live-event verification, Task 1.9 removes the redundant inline CSS.
+
+---
+
+## Theme Error Reporting
+
+When theme loading fails (timeout, theme not found, Firebase error), errors are written to Firebase for producer visibility.
+
+### Firebase Path
+```
+competitions/{compId}/production/themeErrors/{timestamp}
+```
+
+### Error Format
+```json
+{
+  "type": "timeout" | "not_found" | "fetch_error",
+  "themeId": "pink-meet-2026",
+  "compId": "wcgnic-2026-prelim1",
+  "source": "overlay:sponsors-thanks" | "output.html",
+  "message": "Theme fetch timed out after 3000ms",
+  "url": "https://commentarygraphic.com/overlays/sponsors-thanks.html?...",
+  "timestamp": "2026-03-26T10:30:00.000Z",
+  "resolved": false
+}
+```
+
+### Producer View
+
+The **ThemeErrorLog** component in ProducerView shows:
+- Red badge with error count (e.g., "Theme: 2 errors") in the header
+- Click to expand panel with error details
+- Copy button per error for easy debugging
+- "Dismiss All" clears errors from Firebase
+
+### Key Files
+
+| Component | File |
+|-----------|------|
+| Error log hook | `show-controller/src/hooks/useThemeErrors.js` |
+| Error log UI | `show-controller/src/components/ThemeErrorLog.jsx` |
+| Producer view integration | `show-controller/src/views/ProducerView.jsx` |
+
+---
 
 ### Theme CSS Variables
 ```
@@ -379,10 +466,14 @@ The clip integration system turns multi-camera gymnastics feeds into a single br
    - No need to set URL/key per segment — inherited from competition config
 
 3. **When the show reaches a playout segment**, the timesheet engine emits `playoutStarted` which starts the playout engine automatically. The playout engine:
+   - Reads `meetTheme` from competition config at startup (cached for the session)
    - Fetches clips from the Clip Engine API (polls every 15s)
    - Manages a clip queue with priority stack evaluation
+   - Includes `meetTheme` in all `_writeCurrentGraphic()` calls (clip-playback, moment-replay, fallback, rotation-break, live-camera, content sequence items)
    - Broadcasts state to the Producer View via socket (shows PlayoutStatusBar, ClipQueuePanel, PlayoutControls)
    - Stops automatically when the rundown advances past the playout segment
+
+**Theme propagation:** All graphics triggered by PlayoutEngine receive the competition's theme. Iframe-rendered overlays (sponsor graphics in gap-fill sequences) get `meetTheme` as a URL param via output.html's renderers.
 
 ### Key Files
 
