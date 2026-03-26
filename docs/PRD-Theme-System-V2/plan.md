@@ -1122,7 +1122,7 @@ Live verification requires deployment and authentication. Will be verified in Ta
 
 ---
 
-### Task 4.6b — Orchestration Sub-Graphic Previews in Theme Editor — NOT STARTED
+### Task 4.6b — Orchestration Sub-Graphic Previews in Theme Editor — COMPLETE
 
 **Goal:** The graphic selector includes who-to-watch-title, who-to-watch (lower third), and clip-overlay under a "Playout / Who to Watch" category.
 
@@ -1139,12 +1139,14 @@ Live verification requires deployment and authentication. Will be verified in Ta
 3. Sponsor graphics (`sponsors-thanks`, `sponsors-cycle`, `sponsors-bug`) are already in the standard list — no special handling
 
 **Verify:**
-- [ ] Build passes
-- [ ] "Who to Watch — Title Card" preview shows full-screen card with theme colors
-- [ ] "Who to Watch — Lower Third" preview shows lower-third overlay with theme colors
-- [ ] "Clip Overlay" preview shows clip overlay panel with theme colors
-- [ ] With competition selected, sample data replaced with real athlete/team data
-- [ ] Per-graphic overrides for these sub-graphics work in preview
+- [x] Build passes — verified
+- [x] "Who to Watch — Title Card" preview shows full-screen card with theme colors — verified locally
+- [x] "Who to Watch — Lower Third" preview shows lower-third overlay with theme colors — verified locally
+- [x] "Clip Overlay" preview shows clip overlay panel with theme colors — verified locally
+- [x] With competition selected, sample data replaced with real athlete/team data — code implemented
+- [x] Per-graphic overrides for these sub-graphics work in preview — `clip-overlay` in OVERRIDE_GRAPHIC_GROUPS
+
+**Status:** COMPLETE — Added `clip-overlay` to GRAPHIC_GROUPS and implemented `getPreviewUrl()` handler that uses `output.html?mode=clip-preview&meetTheme={id}`. Competition data substitution implemented for athleteName, teamName, and teamLogo. Screenshots saved to `docs/PRD-Theme-System-V2/screenshots/local-task-4.6b-*.png`.
 
 **Deploy:** Build React SPA + deploy.
 
@@ -1282,3 +1284,4 @@ Phase 4 (depends on Phase 3):
 - LEARNING: Image/texture override controls extend the existing per-graphic override panels. The `OverrideStepper` component is a simplified version of `StepperInput` from SponsorAdjustControls. Opacity values are stored as decimals (0-1) in Firebase but displayed as percentages (0-100%) in the UI — conversion happens in `onChange` handlers. The checkbox toggle pattern (enable/disable) is consistent with color overrides. When disabling a group (e.g., headerBgImage), all related fields must be cleared (`headerBgImage`, `headerBgImageFit`, `headerBgImagePosition`, `headerBgImageOpacity`). (found during Task 4.4)
 - LEARNING: Task 4.5 mostly extends what Task 4.2 already implemented — per-graphic badges and reset buttons were already in place. The new work is global "Reset All" with confirm dialog and "Import from another theme" modal. The import dropdown filters to only show themes that have overrides (no point importing from a theme with no overrides). `otherThemesForImport` useMemo computes this list, excluding the current theme. The inline confirm dialog pattern (showing Cancel/Confirm buttons in the header row) is cleaner than a modal for simple destructive actions. (found during Task 4.5)
 - LEARNING: The `clip-preview` mode needs three bypass conditions: (1) skip "No competition ID" error check, (2) skip Firebase `currentGraphic` listener registration, (3) use `themeReadyPromise.then()` to wait for theme before populating overlay. The clip overlay HTML elements (`clipOverlay`, `clipTeamLogoEl`, etc.) are already defined at page load — clip-preview just needs to populate them with sample data and add `.visible` class. URL params can override sample data for real competition previews. (found during Task 4.6a)
+- LEARNING: Task 4.6b was mostly pre-implemented in Task 4.1 — WTW title/lower-third were already in GRAPHIC_GROUPS with getPreviewUrl() handlers. Only `clip-overlay` was missing. The key addition was the clip-overlay handler that uses `output.html?mode=clip-preview&meetTheme={id}`. Competition data substitution for clip-overlay passes `athleteName`, `teamName`, and `teamLogo` as URL params when a competition is selected. OVERRIDE_GRAPHIC_GROUPS already had `clip-overlay` in the "Playout / Who to Watch" group (from Task 4.2). (found during Task 4.6b)

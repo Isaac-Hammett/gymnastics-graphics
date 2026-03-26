@@ -163,6 +163,7 @@ const GRAPHIC_GROUPS = [
     graphics: [
       { id: 'who-to-watch-title', name: 'Who to Watch — Title Card' },
       { id: 'who-to-watch-lower-third', name: 'Who to Watch — Lower Third' },
+      { id: 'clip-overlay', name: 'Clip Overlay' },
     ],
   },
 ];
@@ -792,6 +793,29 @@ export default function ThemeEditorPage() {
         params.set('athleteName', athlete.fullName || 'Sample Athlete');
       }
       return `${baseUrl}/overlays/who-to-watch.html?${params.toString()}`;
+    }
+
+    if (selectedGraphicType === 'clip-overlay') {
+      // Clip Overlay — use output.html with mode=clip-preview for sample clip overlay
+      params.set('mode', 'clip-preview');
+      if (selectedThemeId) {
+        params.set('meetTheme', selectedThemeId);
+      }
+      // If competition selected, pull real team data for the overlay
+      if (selectedCompetition) {
+        const compData = competitions[selectedCompetition];
+        if (compData?.teamData?.team1?.roster?.[0]) {
+          const athlete = compData.teamData.team1.roster[0];
+          params.set('athleteName', athlete.fullName || 'Sample Athlete');
+        }
+        if (compData?.config?.team1Name) {
+          params.set('teamName', compData.config.team1Name);
+        }
+        if (compData?.teamData?.team1?.logo) {
+          params.set('teamLogo', compData.teamData.team1.logo);
+        }
+      }
+      return `${baseUrl}/output.html?${params.toString()}`;
     }
 
     // Standard graphics — use output.html
