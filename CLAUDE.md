@@ -181,6 +181,22 @@ When a theme is active, logo containers get a white background (`rgba(255,255,25
 --meet-badge-text   : Badges/labels text
 ```
 
+### Theme Sponsors - IMPORTANT
+
+**Sponsors must be added to the theme itself**, not just the team database. Theme-level sponsors are used by sponsor graphics (cycle, bug, thanks) when a theme is applied.
+
+- **Team-level sponsors** (`teamsDatabase/sponsors/{team-key}`) — used for regular season meets
+- **Theme-level sponsors** (`themes/{themeId}/sponsors`) — used when a meet theme is active
+
+If a championship theme has no `sponsors` array, sponsor overlays will be **blank** even if the host team has sponsors configured.
+
+**Format:** `themes/{themeId}/sponsors` is an array of `{ "name": "...", "url": "..." }` objects.
+
+**When creating a new championship/event theme:**
+1. Identify which team or organization is providing sponsors
+2. Copy sponsors into the theme's `sponsors` array
+3. Verify sponsor graphics render with the theme applied
+
 ---
 
 ## Coordinator Server (api.commentarygraphic.com)
@@ -348,6 +364,138 @@ competitions/{compId}/config/vmCredentials: { username, password }
 
 ---
 
+## Clip Integration (Autonomous Playout)
+
+The clip integration system turns multi-camera gymnastics feeds into a single broadcast stream with autonomous clip replay.
+
+### How It Works
+
+1. **Set the Clips API URL** on the competition (Dashboard > Edit Competition > "Clip Engine" section)
+   - Paste the full deliveries URL: `https://{host}/clip-api/meets/{sessionKey}/deliveries`
+   - The server parses out the base URL and session key automatically
+
+2. **Add playout segments** to the rundown (Rundown Editor > segment type = "Playout")
+   - Configure playout rules: clip order, transitions, gap fill sequence
+   - No need to set URL/key per segment — inherited from competition config
+
+3. **When the show reaches a playout segment**, the timesheet engine emits `playoutStarted` which starts the playout engine automatically. The playout engine:
+   - Fetches clips from the Clip Engine API (polls every 15s)
+   - Manages a clip queue with priority stack evaluation
+   - Broadcasts state to the Producer View via socket (shows PlayoutStatusBar, ClipQueuePanel, PlayoutControls)
+   - Stops automatically when the rundown advances past the playout segment
+
+### Key Files
+
+| Component | File |
+|-----------|------|
+| Playout Engine (server) | `server/lib/playoutEngine.js` |
+| Clip Service (API adapter) | `server/lib/clipService.js` |
+| Timesheet integration | `server/lib/timesheetEngine.js` (`PLAYOUT` segment type) |
+| Socket bridge | `server/index.js` (`playoutStarted`/`playoutStopped` events) |
+| Producer playout UI | `show-controller/src/components/playout/` (6 components) |
+| Playout state hook | `show-controller/src/hooks/usePlayoutState.js` |
+| Playout actions hook | `show-controller/src/hooks/usePlayoutActions.js` |
+| Playout rules editor | `show-controller/src/components/playout/PlayoutRulesEditor.jsx` |
+| Competition config (URL) | `show-controller/src/pages/HomePage.jsx` (Clip Engine section) |
+| Video playback | `output.html` (`?mode=clip`) |
+
+### Firebase Paths
+
+| Path | Description |
+|------|-------------|
+| `competitions/{compId}/config/clipApiUrl` | Full deliveries URL for the Clip Engine API |
+| `competitions/{compId}/production/playoutState` | Persisted engine state (mode, overrides, current clip) |
+| `competitions/{compId}/production/clipQueue` | Persisted clip queue (recovery after restart) |
+| `competitions/{compId}/production/clipStatus/{draftId}` | Write-back from output.html (clip_ended, clip_stalled, clip_failed) |
+| `competitions/{compId}/production/engineHeartbeat` | Health monitoring (timestamp + mode every 5s) |
+
+### Playout Modes
+
+`CLIP` → `LIVE` → `MOMENT_REPLAY` → `FALLBACK` → `BREAK` → `OVERRIDE` → `PAUSED`
+
+The engine evaluates a priority stack every tick to decide which mode to be in.
+
+---
+
+## Who to Watch (Title Card Overlay)
+
+The "Who to Watch" feature creates ESPN-style full-screen title cards for athlete spotlights.
+
+### Key Files
+
+| Component | File |
+|-----------|------|
+| Title card overlay | `overlays/who-to-watch-title.html` |
+| Editor component | `show-controller/src/components/playout/WhoToWatchEditor.jsx` |
+
+### Title Card Adjustment Query Params
+
+The overlay reads these optional query params for per-card fine-tuning. All controls use stepper inputs (`- [value] +`) with no upper limits — producers can type any value directly.
+
+**Theme / Background**
+
+| Param | Default | Effect |
+|-------|---------|--------|
+| `meetTheme` | (from competition) | Theme ID — loads colors from Firebase via `theme-loader.js` |
+| `bgColor` | (from theme) | Hex color override for `--meet-header-bg` (applied after theme-loader) |
+| `accentColor` | (from theme) | Hex color override for `--meet-content-bg` (headline bar, accent line, bottom stripe) |
+
+**Badge ("WHO TO WATCH" label)**
+
+| Param | Default | Effect |
+|-------|---------|--------|
+| `badge` | `Who to Watch` | Badge text. Empty string (`badge=`) hides the badge entirely |
+| `badgeFontSize` | 13px | Badge font size |
+
+**Team Row (logo + team name)**
+
+| Param | Default | Effect |
+|-------|---------|--------|
+| `teamNameFontSize` | 20px | Team name font size |
+| `logoSize` | 48px | Inline team logo size (width & height) |
+| `showTeamRow` | `true` | Set to `false` to hide team row entirely |
+
+**Text**
+
+| Param | Default | Effect |
+|-------|---------|--------|
+| `nameFontSize` | 110px | Athlete name font size |
+| `bodyFontSize` | 32px | Body text font size |
+| `headlineFontSize` | 34px | Headline bar font size |
+| `textOffsetY` | 0 | Shift text side up (negative) or down (positive) in px |
+
+**Athlete Image**
+
+| Param | Default | Effect |
+|-------|---------|--------|
+| `imageScale` | 100% | Scale athlete image (no upper limit) |
+| `imageOffsetX` | 0 | Shift image left/right in px |
+| `imageOffsetY` | 0 | Shift image up/down in px |
+
+**Watermark (large team logo behind content)**
+
+| Param | Default | Effect |
+|-------|---------|--------|
+| `watermarkOpacity` | 8% | Watermark opacity (0 = invisible) |
+| `watermarkScale` | 100% | Watermark size multiplier |
+| `watermarkOffsetX` | 0 | Shift watermark left/right in px |
+| `watermarkOffsetY` | 0 | Shift watermark up/down in px |
+| `showWatermark` | `true` | Set to `false` to hide watermark entirely |
+
+### Editor Card Adjustments Panel
+
+All params above are exposed in the editor via a collapsible "Card Adjustments" section inside each title card. Controls are organized into groups: **THEME**, **BADGE**, **TEAM**, **TEXT**, **IMAGE**, **WATERMARK**. Values are stored per-card in the `titleCards` array and passed as URL params to the live iframe preview (debounced at 300ms).
+
+The theme dropdown fetches available themes from Firebase (`themes/`) and lets the producer preview different themes without changing the competition config. Background and accent color pickers override theme colors when set.
+
+### Technical Notes
+
+- **Image overflow**: `.image-side` uses `overflow: visible` so scaled/offset images aren't clipped. The `body` element clips at 1920x1080.
+- **Theme color overrides**: Applied via `setTimeout(600ms)` after `theme-loader.js` runs (theme-loader fires no events/callbacks).
+- **ValueStepper component**: Reusable `- [input] +` stepper used for all numeric controls. Uses local text state for the input so backspace/delete works freely. On blur, empty input reverts to default.
+
+---
+
 ## Competition Formats
 
 ### Alternating Format (Default for Dual Meets - used in "By Rotation" view)
@@ -493,8 +641,82 @@ Value: team key without gender suffix (e.g., "uw-whitewater")
 
 Common aliases: full university name, abbreviations, mascot names
 
+### Step 4: Add Athlete Media (Optional)
+```
+Path: teamsDatabase/media/{normalized-name-with-spaces}
+```
+
+Additional images beyond headshots (portrait photos, action shots, full-body media day images). Used by the "Who to Watch" title card overlay for ESPN-style athlete cutouts.
+
+**Keys use the same normalization as headshots** — `normalizeName()` + `getSafeFirebaseKey()`.
+
+Value is an **array** of image objects:
+```json
+[
+  { "url": "https://...", "type": "portrait", "label": "Media Day 2026", "updatedAt": "..." }
+]
+```
+
+Image types: `portrait`, `action`, `full-body`, `custom`
+
+**How to add:** Media Manager → expand a team → click an athlete → use the "Add Image" form (URL, type, label).
+
+**Hook functions:** `getAthleteMedia(name)`, `saveAthleteMedia(name, url, type, label)`, `deleteAthleteMedia(name, index)` — all in `useTeamsDatabase`.
+
 ### Verification
 After adding, check the Media Manager to confirm:
 - [ ] Team logo appears
 - [ ] Roster is populated (not "No roster defined")
 - [ ] Athlete headshots load correctly
+- [ ] Athlete gallery images appear when athlete row is expanded (rose border)
+
+---
+
+## Composite Teams (Individual Qualifiers at Championships) - IMPORTANT
+
+At championship events (WCGNIC, USAG Regionals, etc.), individual qualifiers from non-qualifying teams are grouped under a **placeholder team** in Virtius (e.g., "WCGNIC"). These athletes compete under the event's banner but their stats live with their original teams.
+
+### How It Works
+
+The RTN stats system supports **composite teams** — placeholder team slots that pull individual athlete data from multiple source teams.
+
+**Firebase config:**
+```
+competitions/{compId}/compositeTeams/
+  team4/                              -- matches the team slot (team4, team5, etc.)
+    athletes/
+      0: { name: "Amy Foret", sourceTeamKey: "centenary-womens" }
+      1: { name: "Amara Nelson", sourceTeamKey: "greenville-womens" }
+      ...
+```
+
+**What happens during stats ingestion:**
+1. `ingestCompetitionStats` checks `compositeTeams/{teamSlot}` before looking up `rtnId`
+2. If composite config exists, calls `assembleCompositeTeamStats()` instead of normal ingestion
+3. Reads `individualHighs`, `individualAverages`, `mvp` from each source team's stats
+4. Filters to only the named athletes (case-insensitive name match)
+5. Writes synthetic stats to `teamsDatabase/stats/{placeholderTeamKey}/` with `meta.status: "composite"`
+6. `syncStatsToConfig` computes approximate Ave/High from individual data (existing fallback path)
+
+### Setting Up a Composite Team
+
+1. Create the placeholder team entry in Firebase (just needs `displayName`, `gender`, `logo`)
+2. Set `team{N}Key` in the competition config to the placeholder key
+3. Write the `compositeTeams/team{N}` config with athlete-to-source-team mappings
+4. Ensure all source teams exist in `teamsDatabase/teams/` with valid `rtnId`
+5. Run stats refresh — composite assembly will auto-detect and pull athlete data
+
+### Key Files
+
+| Component | File |
+|-----------|------|
+| Assembly function | `server/lib/rtnStatsService.js` — `assembleCompositeTeamStats()` |
+| Detection in ingestion | `server/lib/rtnStatsService.js` — `ingestCompetitionStats()` |
+| PRD spec | `docs/PRD-RTN-Stats-Integration/PRD-RTN-Stats-Integration-2026-02-01.md` — Phase 9 |
+
+### Example: WCGNIC 2026 Session 1
+
+- `team4Key`: `wcgnic-womens` (placeholder)
+- `compositeTeams/team4/athletes`: 8 athletes from Centenary, Greenville, Wilberforce
+- Source teams all have complete RTN stats with `rtnId` set
+- Assembly filters to named athletes and writes to `teamsDatabase/stats/wcgnic-womens/`

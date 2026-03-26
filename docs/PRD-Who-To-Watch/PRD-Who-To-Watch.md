@@ -1,6 +1,6 @@
 # PRD: Who to Watch — Highlight Reel Segment
 
-**Status:** NEEDS FIX — overlay rendering + editor/integration bugs (see Known Issues, 25 items)
+**Status:** NEEDS FIX — editor control gaps + remaining integration bugs (see Known Issues, 28 items; 3 fixed 2026-03-25)
 **Date:** 2026-03-24
 **Last Updated:** 2026-03-25 (v5: 2 human rejection issues added from triage)
 
@@ -450,13 +450,13 @@ Screenshots in `docs/PRD-Who-To-Watch/screenshots/` show the following issues wh
 
 ### Editor / Integration Issues (2026-03-25 Audit)
 
-18. **Slider adjustments don't update the preview in real-time** — Every slider `onChange` rebuilds the overlay URL via `useMemo`, which changes the iframe `src` and causes the entire overlay page to reload (re-parse HTML, re-execute JS, re-fetch images). The reload is slow enough that the preview appears unresponsive — it flashes white and re-renders on each tick, making it feel like the sliders do nothing. Additionally, the iframe has `sandbox="allow-scripts"` (`WhoToWatchEditor.jsx:380`) without `allow-same-origin`, which blocks cross-origin resource loading. This means `theme-loader.js` cannot fetch Firebase theme data, and images from external CDNs may fail to load inside the preview. **Fix:** Debounce the iframe URL update (~300ms after last slider change) so the preview only reloads once the user stops dragging, and add `allow-same-origin` to the iframe sandbox attribute.
+18. ~~**Slider adjustments don't update the preview in real-time**~~ — **FIXED 2026-03-25.** Root cause: the browser was not reliably re-navigating the iframe when React updated `src` to the same page with different query params. Fix: added `key={debouncedOverlayUrl}` to the iframe element to force React to remount it when the debounced URL changes. Debounce (300ms) and `allow-same-origin` sandbox were already in place from a prior partial fix. Commit: `7341013`.
 
 19. **`who-to-watch-title` graphic not registered in graphics registry** — `graphicsRegistry.js` only registers `who-to-watch` (pointing to `who-to-watch.html`, the lower-third overlay). There is no registry entry for `who-to-watch-title` (the full-screen title card). This means the URL Generator page cannot generate title card preview URLs, and the title card variant does not appear in the graphics picker. **Fix:** Add a `who-to-watch-title` entry to `graphicsRegistry.js` with `file: 'who-to-watch-title.html'` and params for all title card fields including adjustment params.
 
 20. **No URL builder support for who-to-watch graphics** — The `generateGraphicURL()` function in `urlBuilder.js` has no case for either `who-to-watch` or `who-to-watch-title`. The URL Generator page returns empty URLs for these graphics. **Fix:** Add URL builder cases for both `who-to-watch` (lower-third) and `who-to-watch-title` (title card) that construct the correct overlay URLs with all params.
 
-21. **useEffect sync loop causes double-renders on every slider change** — `WhoToWatchEditor.jsx:409-414` has a `useEffect([whoToWatch])` that resets internal `config` state whenever the `whoToWatch` prop changes. Since the parent's `onChange` handler creates a new object reference for `whoToWatch` on every slider tick, this `useEffect` fires on every change, causing a redundant `setConfig` call and a double-render cycle. While the values are preserved, this creates unnecessary re-renders and contributes to jank during slider interaction. **Fix:** Guard the `useEffect` with a shallow equality check so it only resets when the prop values actually differ from the current config, or remove the sync effect and rely solely on the controlled `onChange` pattern.
+21. ~~**useEffect sync loop causes double-renders on every slider change**~~ — **ALREADY FIXED.** The `useEffect` at `WhoToWatchEditor.jsx:419-425` already guards with `JSON.stringify(merged) !== JSON.stringify(config)` so it only resets when prop values actually differ. The double-render issue described here does not occur in the current code.
 
 22. **imageMode default mismatch between editor and output.html** — `DEFAULT_WHO_TO_WATCH.imageMode` is `'headshot'` (`WhoToWatchEditor.jsx:64`), but `output.html:12692` defaults `imageMode` to `'portrait'`. If `imageMode` is not explicitly saved to Firebase, the editor preview renders a headshot circle while the live broadcast output renders a portrait cutout. **Fix:** Align both defaults to the same value (`'portrait'` is the better default for title cards, since headshot images are circular crops that don't fill the 550px image column well).
 
@@ -466,7 +466,208 @@ Screenshots in `docs/PRD-Who-To-Watch/screenshots/` show the following issues wh
 
 24. **URL Generator has no editable text controls for who-to-watch-title** — Human review found that the who-to-watch-title graphic appears in the URL Generator, but there are no input fields to modify the text content (athleteName, teamName, headline, body). The user sees a static preview with no way to customize it. The registry entry exists but params may be missing the correct flags for editability. **Fix:** Ensure the `who-to-watch-title` registry params have proper structure for URL Generator controls (editable flags, placeholders, input types). Compare with working graphics that show editable inputs.
 
-25. **Verification screenshots don't prove slider functionality** — Human review rejected the editor Task 4 verification because: (1) no athlete image visible in title card preview, (2) image should be on right side but not shown, (3) no title card image was selected, (4) no before/after screenshots demonstrating slider effects at different values. **Fix:** Re-verify with proper evidence — select an athlete with an image, take screenshots showing the title card with athlete image on right, include before/after slider comparisons (e.g., imageScale at 50% vs 150%).
+25. ~~**Verification screenshots don't prove slider functionality**~~ — **FIXED 2026-03-25.** Additionally found and fixed a second bug: CSS animation `fill-mode: both` on the image slide-in animation was overriding the inline `style.transform` set by JavaScript for image scale/offset. Per the CSS cascade, animation values take priority over normal inline styles. Fix: clear `animation: none` on the image element before applying custom transform. Before/after screenshots now confirm: name size 40px vs 100px shows dramatically different text, image scale 50% vs 150% shows dramatically different headshot sizes. Commit: `7341013`.
+
+### Editor Control Gaps (2026-03-25 Human Review)
+
+26. **No slider control for "WHO TO WATCH" badge text** — **FIXED 2026-03-25.** Added badge text input (default "WHO TO WATCH", empty hides badge) and badge font size stepper to Card Adjustments. Overlay already supported `badge` param; added `badgeFontSize` param. Commits: `405c7ce`, `322d30b`, `924afcc`.
+
+27. **No slider control for team name row** — **FIXED 2026-03-25.** Added team name font size stepper (default 20px), team logo size stepper (default 48px, `logoSize` param), and show/hide toggle (`showTeamRow` param). No upper limits on any value. Commits: `405c7ce`, `70b1902`.
+
+28. **No control over logo watermark** — **FIXED 2026-03-25.** Added watermark controls: opacity stepper (default 8%), scale stepper (default 100%), offset X/Y steppers (default 0, step 10px), and show/hide toggle. Params: `watermarkOpacity`, `watermarkScale`, `watermarkOffsetX`, `watermarkOffsetY`, `showWatermark`. Also fixed `.image-side` overflow from `hidden` to `visible` so offset images aren't clipped. Commits: `405c7ce`, `88355cd`, `23699b6`.
+
+29. **No theme/background color controls in editor** — **FIXED 2026-03-25.** Added theme picker dropdown (fetches from Firebase `themes/`), background color override (`bgColor` → `--meet-header-bg`), and accent color override (`accentColor` → `--meet-content-bg`). Color overrides applied via `setTimeout(600ms)` after theme-loader completes. Commit: `405c7ce`.
+
+30. **Video clip does not play during Who to Watch segment in live show** — See [Implementation Plan: WTW Video Playback + Lower Third](#implementation-plan-wtw-video-playback--lower-third) below for the full fix design.
+
+31. **Title card adjustments not passed through sequencer to rendered output** — The WhoToWatch sequencer in `server/index.js` (line ~792) only passed 7 of 19 card adjustment fields (`nameFontSize`, `bodyFontSize`, `headlineFontSize`, `textOffsetY`, `imageScale`, `imageOffsetX`, `imageOffsetY`) to Firebase `currentGraphic`. Missing: `badgeText`, `badgeFontSize`, `teamNameFontSize`, `logoSize`, `showTeamRow`, `watermarkOpacity`, `watermarkScale`, `watermarkOffsetX`, `watermarkOffsetY`, `showWatermark`, `bgColor`, `accentColor`. Additionally, `output.html` had a hardcoded `adjustKeys` array with only the same 7 fields. The editor preview worked correctly (builds iframe URL directly with all params) but live show playback used defaults for all missing fields. **FIXED 2026-03-25.** Both `server/index.js` and `output.html` now pass all 19 card adjustment fields.
+
+---
+
+## Implementation Plan: WTW Video Playback + Lower Third
+
+**Status:** NOT STARTED
+**Date:** 2026-03-26
+**Priority:** Critical — video step is silently skipped during live shows
+
+### Problem Statement
+
+The Who to Watch segment is a multi-part sequence: Title Cards → Video Clip (with lower third overlay) → Clear. Currently, title cards render correctly on the graphics source (`output.html`), but the video clip step is broken:
+
+1. The WTW sequencer writes `clip-playback` to `currentGraphic`
+2. The **graphics source** (live mode) sees `clip-playback` and **clears its output** (goes transparent)
+3. The **clip source** (`output.html?mode=clip`) sees `clip-playback` and **plays the video** with its built-in overlay
+4. But the clip source's built-in overlay (`#clipOverlay`) is a simple top-left athlete panel designed for the Playout engine — it is NOT the WTW lower-third design
+5. Additionally, the lower third needs to show the WTW-specific fields (headshot circle, "WHO TO WATCH" header, subtitle, stat line) which the standard clip overlay does not support
+
+### OBS Source Layout (Important Context)
+
+The producer's OBS scene has **two browser sources stacked** (both always visible, no scene switching needed):
+
+| Layer | URL | Purpose |
+|-------|-----|---------|
+| Top | `output.html?comp={id}&meetTheme={theme}` | Graphics source (title cards, lower thirds, logos, overlays) |
+| Bottom | `output.html?comp={id}&mode=clip&meetTheme={theme}` | Clip source (video playback + built-in overlay) |
+
+Both sources listen to the same Firebase `currentGraphic` path. They filter by mode:
+- **Graphics source** (live mode): Renders regular graphics. When it sees `clip-playback`, it clears itself (goes transparent so the clip source underneath is visible).
+- **Clip source** (clip mode): Only responds to `clip-playback` and `moment-replay`. Ignores all other graphics.
+
+Because both sources are always layered (no OBS scene switching), the graphics source going transparent during `clip-playback` is correct — it lets the video show through from the clip source below. The WTW lower third needs to render on the graphics source ON TOP of the video playing on the clip source.
+
+### How the Playout Engine Solves This (Reference)
+
+The Playout engine's "lower third" during clips is NOT a separate graphic write. It is a **built-in DOM overlay** (`#clipOverlay`) inside `output.html?mode=clip` — athlete name, team logo, apparatus, and score badge, all populated from the `clip-playback` data payload. The overlay is always in the same DOM as the video elements. One Firebase write, one source, video + overlay together.
+
+This works for Playout because the overlay is simple and generic. It does NOT work for WTW because the WTW lower third is a completely different design (`who-to-watch.html`).
+
+### Solution: WTW Overlay Mode in Clip Source + Graphics Source Lower Third
+
+**Approach:** Use BOTH OBS sources working together during the WTW video step:
+- **Clip source** plays the video (it already does this correctly when it receives `clip-playback`)
+- **Graphics source** shows the WTW lower third as a transparent overlay on top
+
+The key insight: the graphics source currently **clears** when it sees `clip-playback`. Instead, when the `clip-playback` data includes `overlayStyle: 'who-to-watch'`, the graphics source should render the WTW lower third (via iframe to `who-to-watch.html`) instead of clearing.
+
+### Sequencer Steps (Updated)
+
+The WTW sequencer in `server/index.js` writes these steps to `currentGraphic`:
+
+**Step 1–3: Title Cards** (5s each, unchanged)
+```javascript
+{
+  graphic: 'who-to-watch-title',
+  data: { athleteName, teamName, logoUrl, imageUrl, imageMode, headline, body, meetTheme, ...adjustments }
+}
+```
+- Graphics source: renders full-screen title card
+- Clip source: ignores (not a clip-type graphic)
+
+**Step 4: Video Clip + Lower Third** (duration-based, waits for clip completion)
+```javascript
+{
+  graphic: 'clip-playback',
+  data: {
+    draftId: 'wtw-{segmentId}-{timestamp}',
+    clipUrl: '...',
+    // Standard clip fields (so clip source plays the video)
+    athleteName, teamName, teamLogo: logoUrl,
+    // WTW-specific fields (so graphics source shows lower third)
+    overlayStyle: 'who-to-watch',
+    headshot, subtitle, statLabel, statValue, meetTheme
+  }
+}
+```
+- Clip source: sees `clip-playback` → plays the video. Hides its built-in `#clipOverlay` because `overlayStyle === 'who-to-watch'` (the WTW lower third on the graphics source replaces it).
+- Graphics source: sees `clip-playback` with `overlayStyle === 'who-to-watch'` → instead of clearing, renders an iframe to `who-to-watch.html` with the WTW params (headshot, athlete name, subtitle, stat line). The iframe has a transparent background, so only the lower-third bar is visible on top of the video.
+
+**Step 5: Clear** (unchanged)
+```javascript
+{ graphic: 'clear', data: {} }
+```
+- Both sources clear.
+
+### Code Changes Required
+
+#### 1. `output.html` — Graphics source (live mode) clip-playback handler
+
+**Current behavior** (line ~13226):
+```javascript
+if (isClipTypeGraphic) {
+  output.innerHTML = '';  // Always clears
+}
+```
+
+**New behavior:**
+```javascript
+if (isClipTypeGraphic) {
+  if (data && data.overlayStyle === 'who-to-watch') {
+    // Render WTW lower third as transparent overlay on top of clip video
+    const params = new URLSearchParams({
+      athleteName: data.athleteName || '',
+      logo: data.teamLogo || '',
+      subtitle: data.subtitle || data.teamName || '',
+      statLabel: data.statLabel || '',
+      statValue: data.statValue || '',
+      headshot: data.headshot || '',
+      meetTheme: data.meetTheme || ''
+    });
+    output.innerHTML = `<iframe src="/overlays/who-to-watch.html?${params}"
+      style="width:1920px;height:1080px;border:none;"
+      sandbox="allow-scripts allow-same-origin"></iframe>`;
+  } else {
+    output.innerHTML = '';  // Standard behavior: clear for playout clips
+  }
+}
+```
+
+#### 2. `output.html` — Clip source (clip mode) overlay suppression
+
+**Current behavior:** Always shows `#clipOverlay` (athlete panel + score badge) on every `clip-playback`.
+
+**New behavior:** When `data.overlayStyle === 'who-to-watch'`, hide `#clipOverlay` (the WTW lower third renders on the graphics source instead):
+```javascript
+if (data.overlayStyle === 'who-to-watch') {
+  clipOverlay.classList.remove('visible');  // Hide built-in overlay
+} else {
+  updateClipOverlay(data);  // Standard playout overlay
+}
+```
+
+#### 3. `server/index.js` — WTW sequencer clip step
+
+Update the clip step in the WTW sequencer to include the new fields:
+```javascript
+{
+  graphic: 'clip-playback',
+  data: {
+    draftId: `wtw-${segmentId}-${Date.now()}`,
+    clipUrl: whoToWatch.clipUrl,
+    athleteName: whoToWatch.athleteName,
+    teamName: whoToWatch.teamName,
+    teamLogo: whoToWatch.logoUrl,
+    // WTW overlay fields
+    overlayStyle: 'who-to-watch',
+    headshot: whoToWatch.headshot,
+    subtitle: whoToWatch.subtitle,
+    statLabel: whoToWatch.statLabel,
+    statValue: whoToWatch.statValue,
+    meetTheme: meetTheme
+  }
+}
+```
+
+#### 4. `show-controller/src/pages/RundownEditorPage.jsx` — UI cleanup (Option B)
+
+When segment type is `who-to-watch`, `playout`, or `content-sequence`, hide the generic graphic dropdown from the edit panel. These types have dedicated editors that manage their own graphics.
+
+The graphic registry entries (`who-to-watch`, `who-to-watch-title`) remain — they are still used by the URL Generator page for building standalone preview URLs.
+
+### Files to Modify
+
+| File | Change |
+|------|--------|
+| `output.html` | Live mode: render WTW lower third iframe when `overlayStyle === 'who-to-watch'` instead of clearing |
+| `output.html` | Clip mode: hide `#clipOverlay` when `overlayStyle === 'who-to-watch'` |
+| `server/index.js` | WTW sequencer: add `overlayStyle`, `headshot`, `subtitle`, `statLabel`, `statValue`, `meetTheme` to clip step data |
+| `show-controller/src/pages/RundownEditorPage.jsx` | Hide graphic dropdown for `who-to-watch`, `playout`, `content-sequence` types |
+
+### Clip Proxy Reference
+
+Clip videos are hosted on Cloudflare R2 as presigned URLs (7-day TTL). Direct `<video>` playback fails because unsigned/expired URLs return 400/403. The fix (deployed 2026-03-25) is a server-side proxy at `/api/clip-proxy?url={encodedPresignedUrl}` on the coordinator (44.193.31.120). In `output.html`, `proxyClipUrl()` (line ~6588) rewrites R2 URLs to proxy URLs before setting `video.src`. The clip source already uses this proxy — no additional proxy work needed for WTW.
+
+### Verification Plan
+
+1. Create a WTW segment with title cards + video clip URL
+2. Run the show, observe the sequence:
+   - Title card 1 renders full-screen on graphics source ✓
+   - Title card auto-advances after 5s ✓
+   - Video plays on clip source (visible through transparent graphics source) ✓
+   - WTW lower third renders on graphics source as transparent overlay on top of video ✓
+   - Built-in `#clipOverlay` is hidden during WTW clips ✓
+   - After clip ends, both sources clear ✓
+3. Verify Playout clips still work normally (no `overlayStyle` field = standard behavior)
+4. Verify graphic dropdown is hidden for WTW/playout/content-sequence types in rundown editor
 
 ---
 
