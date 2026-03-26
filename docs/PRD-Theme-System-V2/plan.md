@@ -1154,7 +1154,7 @@ Live verification requires deployment and authentication. Will be verified in Ta
 
 ---
 
-### Task 4.DOC — Update Documentation After Phase 4 — NOT STARTED
+### Task 4.DOC — Update Documentation After Phase 4 — COMPLETE
 
 **Goal:** Update CLAUDE.md and PRD to reflect the complete Theme System V2 shipped across all phases.
 
@@ -1180,11 +1180,18 @@ Live verification requires deployment and authentication. Will be verified in Ta
    - Key files modified
 
 **Verify:**
-- [ ] CLAUDE.md documents Theme Editor competition preview workflow
-- [ ] CLAUDE.md documents per-graphic override panel and controls
-- [ ] CLAUDE.md documents `?mode=clip-preview`
-- [ ] PRD status is COMPLETE
-- [ ] All phase statuses in PRD are COMPLETE (except Phase 2 = CUT, Phase 1.9 = DEFERRED)
+- [x] CLAUDE.md documents Theme Editor competition preview workflow
+- [x] CLAUDE.md documents per-graphic override panel and controls
+- [x] CLAUDE.md documents `?mode=clip-preview`
+- [x] PRD status is COMPLETE
+- [x] All phase statuses in PRD are COMPLETE (except Phase 2 = CUT, Phase 1.9 = DEFERRED)
+
+**Status:** COMPLETE — All documentation updates made:
+- CLAUDE.md: Added "Theme Editor (ThemeEditorPage)" section with competition preview, graphic selector, per-graphic override panels, override management UX, save+preview workflow, and clip-preview mode documentation
+- CLAUDE.md: Updated "Who to Watch" technical notes to mention Theme Editor preview availability
+- PRD: Updated status to COMPLETE
+- PRD: Marked Phase 4 as COMPLETE
+- PRD: Added "Completion Summary" section with completion date, task count, phases delivered, key files modified, and Task 1.9 deferral notes
 
 **Deploy:** None — documentation only.
 
@@ -1285,3 +1292,15 @@ Phase 4 (depends on Phase 3):
 - LEARNING: Task 4.5 mostly extends what Task 4.2 already implemented — per-graphic badges and reset buttons were already in place. The new work is global "Reset All" with confirm dialog and "Import from another theme" modal. The import dropdown filters to only show themes that have overrides (no point importing from a theme with no overrides). `otherThemesForImport` useMemo computes this list, excluding the current theme. The inline confirm dialog pattern (showing Cancel/Confirm buttons in the header row) is cleaner than a modal for simple destructive actions. (found during Task 4.5)
 - LEARNING: The `clip-preview` mode needs three bypass conditions: (1) skip "No competition ID" error check, (2) skip Firebase `currentGraphic` listener registration, (3) use `themeReadyPromise.then()` to wait for theme before populating overlay. The clip overlay HTML elements (`clipOverlay`, `clipTeamLogoEl`, etc.) are already defined at page load — clip-preview just needs to populate them with sample data and add `.visible` class. URL params can override sample data for real competition previews. (found during Task 4.6a)
 - LEARNING: Task 4.6b was mostly pre-implemented in Task 4.1 — WTW title/lower-third were already in GRAPHIC_GROUPS with getPreviewUrl() handlers. Only `clip-overlay` was missing. The key addition was the clip-overlay handler that uses `output.html?mode=clip-preview&meetTheme={id}`. Competition data substitution for clip-overlay passes `athleteName`, `teamName`, and `teamLogo` as URL params when a competition is selected. OVERRIDE_GRAPHIC_GROUPS already had `clip-overlay` in the "Playout / Who to Watch" group (from Task 4.2). (found during Task 4.6b)
+- LEARNING: Task 4.DOC (documentation task) is straightforward — add Theme Editor section to CLAUDE.md covering competition preview, graphic selector, per-graphic override panels, clip-preview mode. Update PRD status to COMPLETE and add Completion Summary section with date, task count, phases delivered, and key files. No code changes needed. (found during Task 4.DOC)
+
+---
+
+## ALL TASKS COMPLETE
+
+PRD-Theme-System-V2 is now complete (except Task 1.9 which is deferred pending live-event verification).
+
+**Next steps:**
+1. Deploy to production (React SPA + overlays/ + output.html)
+2. Test in live production environment
+3. After successful live event, execute Task 1.9 to remove inline theme CSS

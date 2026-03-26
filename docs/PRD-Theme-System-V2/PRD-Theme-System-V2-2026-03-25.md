@@ -2,7 +2,7 @@
 
 **Version:** 2.1
 **Date:** 2026-03-25
-**Status:** IN PROGRESS (Phase 1 COMPLETE except Task 1.9 deferred, Phase 3 COMPLETE, Phase 4 next)
+**Status:** COMPLETE (Phase 1 COMPLETE except Task 1.9 deferred, Phase 3 COMPLETE, Phase 4 COMPLETE)
 **Supersedes:** PRD-Meet-Themes (v3.0, 2026-03-06) — Phases 1-12 remain COMPLETE; this PRD builds on that foundation
 **Depends On:** PRD-Meet-Themes (foundation)
 
@@ -350,7 +350,7 @@ Graphic ID detection:
 
 ---
 
-### Phase 4: Theme Editor — Per-Graphic Controls + Competition Preview — IN PROGRESS (next)
+### Phase 4: Theme Editor — Per-Graphic Controls + Competition Preview — COMPLETE
 
 **Goal:** UI for managing per-graphic overrides with live preview against real competition data.
 
@@ -480,3 +480,42 @@ Each phase is independently deployable. Rollback = git revert of that phase's co
 | Automated screenshot regression suite | Phase 6 | Manual Playwright verification in Phase 1.8 is sufficient for now. |
 
 These can be revisited as separate PRDs if profiling data or user feedback justifies them.
+
+---
+
+## 11. Completion Summary
+
+**Completion Date:** 2026-03-26
+
+**Total Tasks Executed:** 30 (excluding Task 1.9 which is deferred pending live-event verification)
+
+### Phases Delivered
+
+| Phase | Status | Key Deliverables |
+|-------|--------|-----------------|
+| Phase 0: Audit | COMPLETE | Graphic ID registry, CSS rule audit, pseudo-element audit |
+| Phase 1: Unification | COMPLETE (except 1.9) | Unified theme-loader.js for all graphics, `?comp=` support, debug panel, FOUC prevention, theme error reporting |
+| Phase 2: Extraction | CUT | Determined too risky for live broadcasts |
+| Phase 3: Per-Graphic Overrides | COMPLETE | 3-layer CSS cascade, 18 override properties, image/texture support, debug panel layer display |
+| Phase 4: Theme Editor | COMPLETE | Competition preview, graphic selector, per-graphic override panels, clip-preview mode, import/reset UX |
+
+### Key Files Modified
+
+| File | Changes |
+|------|---------|
+| `overlays/theme-loader.js` | Added `?comp=` support, `window.themeReady` promise, per-graphic override injection, image/texture CSS vars, debug panel |
+| `overlays/theme-overrides.css` | Ported ~68 inline rules, added 3-layer cascade, per-graphic image/texture rules |
+| `output.html` | Added theme-loader.js script, class name reconciliation, live-mode theme gate, clip-preview mode |
+| `server/lib/playoutEngine.js` | Added `meetTheme` to all 8 `_writeCurrentGraphic()` calls |
+| `show-controller/src/pages/ThemeEditorPage.jsx` | Competition selector, graphic dropdown, per-graphic override panels, image/texture controls, import/reset UX |
+| `show-controller/src/components/ThemeErrorLog.jsx` | New component for producer theme error visibility |
+| `show-controller/src/hooks/useThemeErrors.js` | New hook for Firebase theme error subscription |
+| `CLAUDE.md` | Updated Unified Theme System, Per-Graphic Overrides, Debug Panel, Theme Error Reporting, Theme Editor, Who to Watch sections |
+
+### Task 1.9 Deferral
+
+Task 1.9 (Remove Inline Theme CSS) is deferred until after at least one successful live event. The inline CSS remains as a fallback. Once live-event verification confirms stability:
+1. Remove "MEET THEME OVERRIDES" inline `<style>` section from output.html
+2. Remove `applyMeetTheme()` and `loadMeetTheme()` functions
+3. Replace `setTimeout(600ms)` in WTW overlays with `window.themeReady.then()`
+4. Re-run verification tests
