@@ -72,7 +72,7 @@
 
 ## Phase 1: Theme Unification + Debug Panel
 
-### Task 1.1 — Extend theme-loader.js for Competition Config Lookup — NOT STARTED
+### Task 1.1 — Extend theme-loader.js for Competition Config Lookup — COMPLETE
 
 **Goal:** theme-loader.js gains a second initialization path: `?comp=` reads meetTheme from Firebase competition config. Exposes `window.themeReady` promise.
 
