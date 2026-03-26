@@ -44,7 +44,7 @@
    ============================================================ */
 
 [data-meet-theme] .event-bar-logo {
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--event-bar-logo-bg, rgba(255, 255, 255, 0.92));
 }
 
 [data-meet-theme] .event-bar-venue {

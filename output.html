@@ -84,11 +84,13 @@
     }
     .event-bar-logo {
       width: var(--event-bar-logo-container-width, 100px);
-      background: #BFBFBF;
+      height: var(--event-bar-logo-container-height, auto);
+      background: var(--event-bar-logo-bg, #BFBFBF);
       display: var(--event-bar-show-logo, flex);
       align-items: center;
       justify-content: center;
-      padding: 15px;
+      padding: var(--event-bar-logo-padding, 15px);
+      border-radius: var(--event-bar-logo-radius, 0px);
     }
     .event-bar-logo img {
       width: var(--event-bar-logo-img-size, 70px);
