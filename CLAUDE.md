@@ -516,6 +516,97 @@ competitions/{compId}/config/vmCredentials: { username, password }
 
 ---
 
+## Theme Editor (ThemeEditorPage)
+
+The Theme Editor allows producers to create, edit, and preview meet themes with per-graphic overrides.
+
+### Accessing the Theme Editor
+
+Navigate to **Settings → Themes** in the show controller. The page has three columns:
+- **Left**: Theme list (select existing or create new)
+- **Center**: Editor form (colors, logos, sponsors, per-graphic overrides)
+- **Right**: Live preview with competition and graphic selectors
+
+### Competition Preview
+
+Select a competition from the dropdown to preview graphics with real team data (logos, names, roster). The preview URL uses both `?comp=` and `?meetTheme=` params — the `meetTheme` precedence rule ensures the editor's theme colors are always applied, not the competition's configured theme.
+
+When no competition is selected, graphics render with placeholder data.
+
+### Graphic Type Selector
+
+The graphic dropdown includes 7 categories with 20+ graphic types:
+
+| Category | Graphics |
+|----------|----------|
+| Lower-Third Bars | event-bar, warm-up, replay |
+| Full-Screen | event-summary, virtuis-leaderboard, event-frame |
+| Team Cards | team1-stats, team2-stats, team1-coaches, team2-coaches |
+| Sponsors | sponsors-thanks, sponsors-cycle, sponsors-bug |
+| Stream | stream-starting, stream-thanks |
+| Overlays | rotation-slate, team-roster, athlete-spotlight |
+| Playout / Who to Watch | who-to-watch-title, who-to-watch, clip-overlay |
+
+**Special preview modes:**
+- **who-to-watch-title**: Uses `/overlays/who-to-watch-title.html` with sample athlete data
+- **who-to-watch**: Uses `/overlays/who-to-watch.html` with sample data
+- **clip-overlay**: Uses `output.html?mode=clip-preview` (see below)
+
+### Per-Graphic Override Panels
+
+Expand any graphic panel in the "Per-Graphic Overrides" section to set custom colors/images for that specific graphic. Controls include:
+
+**Colors (8 fields):**
+- Header Bar, Content Area, Body Background, Border/Divider
+- Badge Background, Badge Text, Header Text, Content Text
+
+**Images:**
+- Logo Override (URL + size in px)
+- Header Background Image (URL + fit + position + opacity)
+- Body Background Image (URL + fit + position + opacity)
+- Body Texture (URL + blend mode + opacity)
+
+Each field has a checkbox toggle — unchecked uses theme default, checked uses custom value.
+
+### Override Management
+
+- **Per-graphic badge**: Collapsed panels show override count (e.g., "3 overrides")
+- **Reset per graphic**: "Reset to theme defaults" button clears that graphic's overrides
+- **Reset all**: Top-level "Reset All" button with confirmation dialog
+- **Import from another theme**: Copy overrides from any other theme (merge strategy)
+
+### Save + Preview Workflow
+
+1. Edit theme colors or overrides
+2. Click "Save Theme"
+3. Preview iframe reloads automatically after 500ms (allows Firebase propagation)
+4. Verify changes in preview
+
+### Clip Preview Mode (`?mode=clip-preview`)
+
+output.html supports a special preview mode for the clip overlay (athlete panel + score badge):
+
+```
+output.html?mode=clip-preview&meetTheme={themeId}
+```
+
+This renders the clip overlay elements with sample data against a dark background:
+- Athlete name: "Sample Athlete" (or from `&athleteName=`)
+- Team logo: placeholder (or from `&teamLogo=`)
+- Apparatus: "Floor Exercise" (or from `&apparatus=`)
+- Score: "9.950" (or from `&score=`)
+
+The overlay responds to theme CSS variables (`--meet-header-bg`, `--meet-badge-bg`, etc.) just like real clip mode. No video playback, no Firebase listeners — purely for theme preview.
+
+### Key Files
+
+| Component | File |
+|-----------|------|
+| Theme Editor Page | `show-controller/src/pages/ThemeEditorPage.jsx` |
+| Theme API | `server/index.js` (search "admin/themes") |
+
+---
+
 ## Clip Integration (Autonomous Playout)
 
 The clip integration system turns multi-camera gymnastics feeds into a single broadcast stream with autonomous clip replay.
@@ -649,6 +740,7 @@ The theme dropdown fetches available themes from Firebase (`themes/`) and lets t
 - **Image overflow**: `.image-side` uses `overflow: visible` so scaled/offset images aren't clipped. The `body` element clips at 1920x1080.
 - **Theme color overrides**: Applied via `setTimeout(600ms)` after `theme-loader.js` runs (theme-loader fires no events/callbacks).
 - **ValueStepper component**: Reusable `- [input] +` stepper used for all numeric controls. Uses local text state for the input so backspace/delete works freely. On blur, empty input reverts to default.
+- **Theme Editor preview**: Both WTW title card and lower-third are previewable in the Theme Editor graphic selector (under "Playout / Who to Watch" category). Per-card runtime overrides (`bgColor`, `accentColor` URL params) take precedence over theme-level per-graphic overrides.
 
 ---
 
