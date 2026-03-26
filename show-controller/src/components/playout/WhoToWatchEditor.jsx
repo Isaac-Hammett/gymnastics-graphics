@@ -86,16 +86,31 @@ function getDefaultImageMode(imageType) {
 
 const MAX_TITLE_CARDS = 3;
 
-// Stepper input for font sizes — number input with +/- buttons, no upper limit
-function FontSizeStepper({ label, value, defaultValue, min = 1, step = 1, onChange, onReset }) {
+// Stepper input with +/- buttons, no upper limit, supports backspace/typing freely
+function ValueStepper({ label, value, defaultValue, min, step = 1, unit = 'px', onChange, onReset }) {
+  const display = value !== undefined && value !== null ? value : defaultValue;
+  const [localText, setLocalText] = useState(null); // null = use prop value
+  const shown = localText !== null ? localText : String(display);
   return (
     <div className="flex items-center gap-2">
       <label className="text-[10px] text-zinc-500 w-20 shrink-0">{label}</label>
-      <button type="button" onClick={() => onChange(Math.max(min, (value || defaultValue) - step))} className="w-5 h-5 flex items-center justify-center bg-zinc-700 hover:bg-zinc-600 rounded text-zinc-300 text-xs font-bold">-</button>
-      <input type="number" min={min} value={value || defaultValue} onChange={(e) => { const v = parseInt(e.target.value); if (!isNaN(v) && v >= min) onChange(v); }} className="w-12 bg-zinc-900 border border-zinc-600 rounded text-white text-[10px] px-1 py-0.5 text-center focus:outline-none focus:border-rose-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
-      <button type="button" onClick={() => onChange((value || defaultValue) + step)} className="w-5 h-5 flex items-center justify-center bg-zinc-700 hover:bg-zinc-600 rounded text-zinc-300 text-xs font-bold">+</button>
-      <span className="text-[10px] text-zinc-400 w-6">px</span>
-      <button type="button" onClick={onReset} className="text-[10px] text-zinc-600 hover:text-zinc-400">&times;</button>
+      <button type="button" onClick={() => onChange(min !== undefined ? Math.max(min, (display) - step) : (display) - step)} className="w-5 h-5 flex items-center justify-center bg-zinc-700 hover:bg-zinc-600 rounded text-zinc-300 text-xs font-bold">-</button>
+      <input
+        type="text"
+        inputMode="numeric"
+        value={shown}
+        onChange={(e) => {
+          const raw = e.target.value;
+          setLocalText(raw);
+          const v = parseInt(raw);
+          if (!isNaN(v)) onChange(min !== undefined ? Math.max(min, v) : v);
+        }}
+        onBlur={() => { setLocalText(null); if (shown === '' || isNaN(parseInt(shown))) onChange(defaultValue); }}
+        className="w-12 bg-zinc-900 border border-zinc-600 rounded text-white text-[10px] px-1 py-0.5 text-center focus:outline-none focus:border-rose-500"
+      />
+      <button type="button" onClick={() => onChange((display) + step)} className="w-5 h-5 flex items-center justify-center bg-zinc-700 hover:bg-zinc-600 rounded text-zinc-300 text-xs font-bold">+</button>
+      <span className="text-[10px] text-zinc-400 w-6">{unit}</span>
+      <button type="button" onClick={() => { setLocalText(null); onReset(); }} className="text-[10px] text-zinc-600 hover:text-zinc-400">&times;</button>
     </div>
   );
 }
@@ -865,10 +880,10 @@ export default function WhoToWatchEditor({
                     {card.badgeText === '' && (
                       <p className="text-[10px] text-zinc-500 italic">Badge hidden (empty text)</p>
                     )}
-                    <FontSizeStepper label="Badge size" value={card.badgeFontSize} defaultValue={13} min={4} onChange={(v) => updateTitleCard(index, 'badgeFontSize', v)} onReset={() => updateTitleCard(index, 'badgeFontSize', 13)} />
+                    <ValueStepper label="Badge size" value={card.badgeFontSize} defaultValue={13} min={4} onChange={(v) => updateTitleCard(index, 'badgeFontSize', v)} onReset={() => updateTitleCard(index, 'badgeFontSize', 13)} />
                     {/* Team Controls (Issue 27) */}
                     <div className="text-[10px] text-zinc-500 uppercase tracking-wide font-medium mt-2">Team</div>
-                    <FontSizeStepper label="Name size" value={card.teamNameFontSize} defaultValue={20} min={8} onChange={(v) => updateTitleCard(index, 'teamNameFontSize', v)} onReset={() => updateTitleCard(index, 'teamNameFontSize', 20)} />
+                    <ValueStepper label="Name size" value={card.teamNameFontSize} defaultValue={20} min={8} onChange={(v) => updateTitleCard(index, 'teamNameFontSize', v)} onReset={() => updateTitleCard(index, 'teamNameFontSize', 20)} />
                     <div className="flex items-center gap-2">
                       <label className="text-[10px] text-zinc-500 w-20 shrink-0">Show team</label>
                       <input type="checkbox" checked={card.showTeamRow !== false} onChange={(e) => updateTitleCard(index, 'showTeamRow', e.target.checked)} className="accent-rose-500 cursor-pointer" />
@@ -877,18 +892,13 @@ export default function WhoToWatchEditor({
                     {/* Text Controls */}
                     <div className="text-[10px] text-zinc-500 uppercase tracking-wide font-medium mt-2">Text</div>
                     {/* Headline font size */}
-                    <FontSizeStepper label="Headline size" value={card.headlineFontSize} defaultValue={28} min={8} onChange={(v) => updateTitleCard(index, 'headlineFontSize', v)} onReset={() => updateTitleCard(index, 'headlineFontSize', 28)} />
+                    <ValueStepper label="Headline size" value={card.headlineFontSize} defaultValue={28} min={8} onChange={(v) => updateTitleCard(index, 'headlineFontSize', v)} onReset={() => updateTitleCard(index, 'headlineFontSize', 28)} />
                     {/* Name font size */}
-                    <FontSizeStepper label="Name size" value={card.nameFontSize} defaultValue={64} min={16} onChange={(v) => updateTitleCard(index, 'nameFontSize', v)} onReset={() => updateTitleCard(index, 'nameFontSize', 64)} />
+                    <ValueStepper label="Name size" value={card.nameFontSize} defaultValue={64} min={16} onChange={(v) => updateTitleCard(index, 'nameFontSize', v)} onReset={() => updateTitleCard(index, 'nameFontSize', 64)} />
                     {/* Body font size */}
-                    <FontSizeStepper label="Body size" value={card.bodyFontSize} defaultValue={30} min={8} onChange={(v) => updateTitleCard(index, 'bodyFontSize', v)} onReset={() => updateTitleCard(index, 'bodyFontSize', 30)} />
+                    <ValueStepper label="Body size" value={card.bodyFontSize} defaultValue={30} min={8} onChange={(v) => updateTitleCard(index, 'bodyFontSize', v)} onReset={() => updateTitleCard(index, 'bodyFontSize', 30)} />
                     {/* Text vertical offset */}
-                    <div className="flex items-center gap-2">
-                      <label className="text-[10px] text-zinc-500 w-20 shrink-0">Text offset Y</label>
-                      <input type="range" min="-200" max="200" value={card.textOffsetY || 0} onChange={(e) => updateTitleCard(index, 'textOffsetY', parseInt(e.target.value))} className="flex-1 h-2 accent-rose-500 rounded-full cursor-pointer" />
-                      <span className="text-[10px] text-zinc-400 w-8 text-right">{card.textOffsetY || 0}px</span>
-                      <button type="button" onClick={() => updateTitleCard(index, 'textOffsetY', 0)} className="text-[10px] text-zinc-600 hover:text-zinc-400">&times;</button>
-                    </div>
+                    <ValueStepper label="Text offset Y" value={card.textOffsetY} defaultValue={0} step={5} onChange={(v) => updateTitleCard(index, 'textOffsetY', v)} onReset={() => updateTitleCard(index, 'textOffsetY', 0)} />
                     {/* Hint when text content is empty */}
                     {!card.headline && !card.body && (
                       <p className="text-[10px] text-zinc-500 italic mt-1">Add headline or body text to see font size adjustments</p>
@@ -896,40 +906,15 @@ export default function WhoToWatchEditor({
                     {/* Image Controls */}
                     <div className="text-[10px] text-zinc-500 uppercase tracking-wide font-medium mt-2">Image</div>
                     {/* Image scale */}
-                    <div className="flex items-center gap-2">
-                      <label className="text-[10px] text-zinc-500 w-20 shrink-0">Scale</label>
-                      <input type="range" min="50" max="150" value={card.imageScale || 100} onChange={(e) => updateTitleCard(index, 'imageScale', parseInt(e.target.value))} className="flex-1 h-2 accent-rose-500 rounded-full cursor-pointer" />
-                      <span className="text-[10px] text-zinc-400 w-8 text-right">{card.imageScale || 100}%</span>
-                      <button type="button" onClick={() => updateTitleCard(index, 'imageScale', 100)} className="text-[10px] text-zinc-600 hover:text-zinc-400">&times;</button>
-                    </div>
+                    <ValueStepper label="Scale" value={card.imageScale} defaultValue={100} min={1} step={5} unit="%" onChange={(v) => updateTitleCard(index, 'imageScale', v)} onReset={() => updateTitleCard(index, 'imageScale', 100)} />
                     {/* Image horizontal offset */}
-                    <div className="flex items-center gap-2">
-                      <label className="text-[10px] text-zinc-500 w-20 shrink-0">Offset X</label>
-                      <input type="range" min="-200" max="200" value={card.imageOffsetX || 0} onChange={(e) => updateTitleCard(index, 'imageOffsetX', parseInt(e.target.value))} className="flex-1 h-2 accent-rose-500 rounded-full cursor-pointer" />
-                      <span className="text-[10px] text-zinc-400 w-8 text-right">{card.imageOffsetX || 0}px</span>
-                      <button type="button" onClick={() => updateTitleCard(index, 'imageOffsetX', 0)} className="text-[10px] text-zinc-600 hover:text-zinc-400">&times;</button>
-                    </div>
+                    <ValueStepper label="Offset X" value={card.imageOffsetX} defaultValue={0} step={5} onChange={(v) => updateTitleCard(index, 'imageOffsetX', v)} onReset={() => updateTitleCard(index, 'imageOffsetX', 0)} />
                     {/* Image vertical offset */}
-                    <div className="flex items-center gap-2">
-                      <label className="text-[10px] text-zinc-500 w-20 shrink-0">Offset Y</label>
-                      <input type="range" min="-200" max="200" value={card.imageOffsetY || 0} onChange={(e) => updateTitleCard(index, 'imageOffsetY', parseInt(e.target.value))} className="flex-1 h-2 accent-rose-500 rounded-full cursor-pointer" />
-                      <span className="text-[10px] text-zinc-400 w-8 text-right">{card.imageOffsetY || 0}px</span>
-                      <button type="button" onClick={() => updateTitleCard(index, 'imageOffsetY', 0)} className="text-[10px] text-zinc-600 hover:text-zinc-400">&times;</button>
-                    </div>
+                    <ValueStepper label="Offset Y" value={card.imageOffsetY} defaultValue={0} step={5} onChange={(v) => updateTitleCard(index, 'imageOffsetY', v)} onReset={() => updateTitleCard(index, 'imageOffsetY', 0)} />
                     {/* Watermark Controls (Issue 28) */}
                     <div className="text-[10px] text-zinc-500 uppercase tracking-wide font-medium mt-2">Watermark</div>
-                    <div className="flex items-center gap-2">
-                      <label className="text-[10px] text-zinc-500 w-20 shrink-0">Opacity</label>
-                      <input type="range" min="0" max="20" value={card.watermarkOpacity !== undefined ? card.watermarkOpacity : 8} onChange={(e) => updateTitleCard(index, 'watermarkOpacity', parseInt(e.target.value))} className="flex-1 h-2 accent-rose-500 rounded-full cursor-pointer" />
-                      <span className="text-[10px] text-zinc-400 w-8 text-right">{card.watermarkOpacity !== undefined ? card.watermarkOpacity : 8}%</span>
-                      <button type="button" onClick={() => updateTitleCard(index, 'watermarkOpacity', 8)} className="text-[10px] text-zinc-600 hover:text-zinc-400">&times;</button>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <label className="text-[10px] text-zinc-500 w-20 shrink-0">Scale</label>
-                      <input type="range" min="50" max="150" value={card.watermarkScale || 100} onChange={(e) => updateTitleCard(index, 'watermarkScale', parseInt(e.target.value))} className="flex-1 h-2 accent-rose-500 rounded-full cursor-pointer" />
-                      <span className="text-[10px] text-zinc-400 w-8 text-right">{card.watermarkScale || 100}%</span>
-                      <button type="button" onClick={() => updateTitleCard(index, 'watermarkScale', 100)} className="text-[10px] text-zinc-600 hover:text-zinc-400">&times;</button>
-                    </div>
+                    <ValueStepper label="Opacity" value={card.watermarkOpacity} defaultValue={8} min={0} unit="%" onChange={(v) => updateTitleCard(index, 'watermarkOpacity', v)} onReset={() => updateTitleCard(index, 'watermarkOpacity', 8)} />
+                    <ValueStepper label="Scale" value={card.watermarkScale} defaultValue={100} min={1} step={5} unit="%" onChange={(v) => updateTitleCard(index, 'watermarkScale', v)} onReset={() => updateTitleCard(index, 'watermarkScale', 100)} />
                     <div className="flex items-center gap-2">
                       <label className="text-[10px] text-zinc-500 w-20 shrink-0">Show</label>
                       <input type="checkbox" checked={card.showWatermark !== false} onChange={(e) => updateTitleCard(index, 'showWatermark', e.target.checked)} className="accent-rose-500 cursor-pointer" />
