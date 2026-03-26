@@ -580,6 +580,14 @@
       logoWatermark.style.width = (600 * ws) + 'px';
       logoWatermark.style.height = (600 * ws) + 'px';
     }
+    const wmOffsetX = parseInt(params.get('watermarkOffsetX'));
+    const wmOffsetY = parseInt(params.get('watermarkOffsetY'));
+    if (wmOffsetX || wmOffsetY) {
+      const ox = wmOffsetX || 0;
+      const oy = wmOffsetY || 0;
+      logoWatermark.style.right = (250 - ox) + 'px';
+      logoWatermark.style.transform = 'translateY(calc(-50% + ' + oy + 'px))';
+    }
 
     // ── Theme color overrides (applied after theme-loader) ──
     const bgColor = params.get('bgColor');

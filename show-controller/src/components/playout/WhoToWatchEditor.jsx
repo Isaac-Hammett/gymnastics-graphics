@@ -397,6 +397,8 @@ function TitleCardIframePreview({ card, athleteName, teamName, logoUrl, imageUrl
     // Watermark controls
     if (card.watermarkOpacity !== undefined && card.watermarkOpacity !== 8) params.set('watermarkOpacity', card.watermarkOpacity);
     if (card.watermarkScale && card.watermarkScale !== 100) params.set('watermarkScale', card.watermarkScale);
+    if (card.watermarkOffsetX) params.set('watermarkOffsetX', card.watermarkOffsetX);
+    if (card.watermarkOffsetY) params.set('watermarkOffsetY', card.watermarkOffsetY);
     if (card.showWatermark === false) params.set('showWatermark', 'false');
     // Theme controls
     const effectiveTheme = themeOverride || meetTheme;
@@ -915,6 +917,8 @@ export default function WhoToWatchEditor({
                     <div className="text-[10px] text-zinc-500 uppercase tracking-wide font-medium mt-2">Watermark</div>
                     <ValueStepper label="Opacity" value={card.watermarkOpacity} defaultValue={8} min={0} unit="%" onChange={(v) => updateTitleCard(index, 'watermarkOpacity', v)} onReset={() => updateTitleCard(index, 'watermarkOpacity', 8)} />
                     <ValueStepper label="Scale" value={card.watermarkScale} defaultValue={100} min={1} step={5} unit="%" onChange={(v) => updateTitleCard(index, 'watermarkScale', v)} onReset={() => updateTitleCard(index, 'watermarkScale', 100)} />
+                    <ValueStepper label="Offset X" value={card.watermarkOffsetX} defaultValue={0} step={10} onChange={(v) => updateTitleCard(index, 'watermarkOffsetX', v)} onReset={() => updateTitleCard(index, 'watermarkOffsetX', 0)} />
+                    <ValueStepper label="Offset Y" value={card.watermarkOffsetY} defaultValue={0} step={10} onChange={(v) => updateTitleCard(index, 'watermarkOffsetY', v)} onReset={() => updateTitleCard(index, 'watermarkOffsetY', 0)} />
                     <div className="flex items-center gap-2">
                       <label className="text-[10px] text-zinc-500 w-20 shrink-0">Show</label>
                       <input type="checkbox" checked={card.showWatermark !== false} onChange={(e) => updateTitleCard(index, 'showWatermark', e.target.checked)} className="accent-rose-500 cursor-pointer" />
