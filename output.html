@@ -13199,9 +13199,13 @@
         startHeartbeatMonitoring();
       }
 
+      // Counter for "last one wins" behavior during rapid graphic changes while theme loads
+      let renderCounter = 0;
+
       db.ref(`competitions/${competitionId}/currentGraphic`).on('value', (snapshot) => {
         const state = snapshot.val();
 
+        // Clear immediately if state is null (don't wait for theme)
         if (!state) {
           output.innerHTML = '';
           // In clip mode, also stop/hide video elements when state is cleared
@@ -13215,67 +13219,80 @@
 
         const { graphic, data } = state;
 
-        // Clip-type graphics: clip-playback, moment-replay
-        const isClipTypeGraphic = graphic === 'clip-playback' || graphic === 'moment-replay';
+        // Increment render counter for "last one wins" behavior
+        const thisRender = ++renderCounter;
 
-        // Mode-specific rendering logic
-        if (isClipMode) {
-          // CLIP MODE (or PREVIEW MODE): Render video playback for clip-type graphics
-          if (isClipTypeGraphic) {
-            // Clear any existing graphic output (video elements render separately)
-            output.innerHTML = '';
-            // Start clip playback (will be implemented in Task 3/4)
-            handleClipPlayback(graphic, data);
-          } else {
-            // Non-clip graphic in clip mode: stop/hide video, show nothing
-            // This ensures no stale video remains when OBS switches scenes
-            stopClipPlayback();
-            output.innerHTML = '';
-            console.log(`[clip-mode] Non-clip graphic received: ${graphic}, cleared output`);
+        // Gate rendering on theme readiness to prevent FOUC (Task 1.6)
+        // The first render waits; subsequent renders are instant (promise already resolved)
+        themeReadyPromise.then(() => {
+          // Skip if a newer render request came in while waiting
+          if (thisRender !== renderCounter) {
+            console.log(`[theme-gate] Skipped stale render #${thisRender} (current: ${renderCounter})`);
+            return;
           }
-        } else {
-          // LIVE MODE: Render regular graphics, clear on clip-type graphics
-          if (isClipTypeGraphic) {
-            // Check if this is a Who to Watch clip (needs lower-third overlay)
-            if (data && data.overlayStyle === 'who-to-watch') {
-              // Render WTW lower-third iframe (transparent except for the bar)
-              const iframeParams = new URLSearchParams();
-              if (data.athleteName) iframeParams.set('athleteName', data.athleteName);
-              if (data.teamLogo) iframeParams.set('logo', data.teamLogo);
-              if (data.subtitle || data.teamName) iframeParams.set('subtitle', data.subtitle || data.teamName);
-              if (data.statLabel) iframeParams.set('statLabel', data.statLabel);
-              if (data.statValue) iframeParams.set('statValue', data.statValue);
-              if (data.headshot) iframeParams.set('headshot', data.headshot);
-              if (data.meetTheme) iframeParams.set('meetTheme', data.meetTheme);
-              // Lower-third adjustment params (Task 8)
-              const lowerThirdAdjustKeys = ['badgeText','badgeFontSize','nameFontSize','subtitleFontSize','statFontSize','headshotSize','showHeadshot','logoSize','cardBottom','cardLeft','cardMinWidth','cardMaxWidth','bgColor','accentColor'];
-              lowerThirdAdjustKeys.forEach(k => { if (data[k] != null) iframeParams.set(k, data[k]); });
 
-              output.innerHTML = `<iframe src="/overlays/who-to-watch.html?${iframeParams.toString()}" style="width:1920px;height:1080px;border:none;" sandbox="allow-scripts allow-same-origin"></iframe>`;
-              hideAnimatedBackground();
-              console.log(`[live-mode] WTW clip-playback: rendering lower-third overlay`);
+          // Clip-type graphics: clip-playback, moment-replay
+          const isClipTypeGraphic = graphic === 'clip-playback' || graphic === 'moment-replay';
+
+          // Mode-specific rendering logic
+          if (isClipMode) {
+            // CLIP MODE (or PREVIEW MODE): Render video playback for clip-type graphics
+            if (isClipTypeGraphic) {
+              // Clear any existing graphic output (video elements render separately)
+              output.innerHTML = '';
+              // Start clip playback (will be implemented in Task 3/4)
+              handleClipPlayback(graphic, data);
             } else {
-              // Regular clip-type graphic: clear output (video plays on clip OBS source)
+              // Non-clip graphic in clip mode: stop/hide video, show nothing
+              // This ensures no stale video remains when OBS switches scenes
+              stopClipPlayback();
+              output.innerHTML = '';
+              console.log(`[clip-mode] Non-clip graphic received: ${graphic}, cleared output`);
+            }
+          } else {
+            // LIVE MODE: Render regular graphics, clear on clip-type graphics
+            if (isClipTypeGraphic) {
+              // Check if this is a Who to Watch clip (needs lower-third overlay)
+              if (data && data.overlayStyle === 'who-to-watch') {
+                // Render WTW lower-third iframe (transparent except for the bar)
+                const iframeParams = new URLSearchParams();
+                if (data.athleteName) iframeParams.set('athleteName', data.athleteName);
+                if (data.teamLogo) iframeParams.set('logo', data.teamLogo);
+                if (data.subtitle || data.teamName) iframeParams.set('subtitle', data.subtitle || data.teamName);
+                if (data.statLabel) iframeParams.set('statLabel', data.statLabel);
+                if (data.statValue) iframeParams.set('statValue', data.statValue);
+                if (data.headshot) iframeParams.set('headshot', data.headshot);
+                if (data.meetTheme) iframeParams.set('meetTheme', data.meetTheme);
+                // Lower-third adjustment params (Task 8)
+                const lowerThirdAdjustKeys = ['badgeText','badgeFontSize','nameFontSize','subtitleFontSize','statFontSize','headshotSize','showHeadshot','logoSize','cardBottom','cardLeft','cardMinWidth','cardMaxWidth','bgColor','accentColor'];
+                lowerThirdAdjustKeys.forEach(k => { if (data[k] != null) iframeParams.set(k, data[k]); });
+
+                output.innerHTML = `<iframe src="/overlays/who-to-watch.html?${iframeParams.toString()}" style="width:1920px;height:1080px;border:none;" sandbox="allow-scripts allow-same-origin"></iframe>`;
+                hideAnimatedBackground();
+                console.log(`[live-mode] WTW clip-playback: rendering lower-third overlay`);
+              } else {
+                // Regular clip-type graphic: clear output (video plays on clip OBS source)
+                output.innerHTML = '';
+                hideAnimatedBackground();
+                console.log(`[live-mode] Clip-type graphic received: ${graphic}, cleared output`);
+              }
+            } else if (graphic === 'clear' || !renderers[graphic]) {
               output.innerHTML = '';
               hideAnimatedBackground();
-              console.log(`[live-mode] Clip-type graphic received: ${graphic}, cleared output`);
-            }
-          } else if (graphic === 'clear' || !renderers[graphic]) {
-            output.innerHTML = '';
-            hideAnimatedBackground();
-          } else {
-            // Render regular graphic using existing renderers
-            output.innerHTML = renderers[graphic](data);
-
-            // Toggle animated background based on data.background flag
-            // Used for break content to cover camera feed while cameras adjust
-            if (data && data.background === true) {
-              showAnimatedBackground();
             } else {
-              hideAnimatedBackground();
+              // Render regular graphic using existing renderers
+              output.innerHTML = renderers[graphic](data);
+
+              // Toggle animated background based on data.background flag
+              // Used for break content to cover camera feed while cameras adjust
+              if (data && data.background === true) {
+                showAnimatedBackground();
+              } else {
+                hideAnimatedBackground();
+              }
             }
           }
-        }
+        });
       });
       console.log(`Output panel ready (mode=${outputMode}) - listening for graphics on competition: ${competitionId}`);
     } else {
