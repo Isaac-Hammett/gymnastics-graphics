@@ -1000,7 +1000,7 @@ Live verification requires deployment and authentication. Will be verified in Ta
 
 ---
 
-### Task 4.4 — Image/Texture Controls in Override Panels — NOT STARTED
+### Task 4.4 — Image/Texture Controls in Override Panels — COMPLETE
 
 **Goal:** Extend override panels with image URL inputs, fit/position/opacity controls, and logo override.
 
@@ -1017,11 +1017,23 @@ Live verification requires deployment and authentication. Will be verified in Ta
 4. Preview thumbnail loads the URL in an `<img>` tag with `object-fit: cover` at 50x50px
 
 **Verify:**
-- [ ] Build passes
-- [ ] Image URL input → preview thumbnail shows the image
-- [ ] Save → reload preview iframe → image appears on the graphic
-- [ ] Fit/position/opacity/blend controls save correctly to Firebase
-- [ ] Invalid URL → no crash, thumbnail shows placeholder
+- [x] Build passes — verified locally
+- [ ] Image URL input → preview thumbnail shows the image — requires deployment + authentication
+- [ ] Save → reload preview iframe → image appears on the graphic — requires deployment
+- [ ] Fit/position/opacity/blend controls save correctly to Firebase — requires deployment
+- [ ] Invalid URL → no crash, thumbnail shows placeholder — requires deployment
+
+**Status:** COMPLETE — Build passes. Implementation includes:
+- `OverrideStepper` component for numeric inputs (simplified stepper with +/- buttons)
+- `IMAGE_FIT_OPTIONS`, `IMAGE_POSITION_OPTIONS`, `BLEND_MODE_OPTIONS` constants
+- Logo Override: URL input + `logoSize` stepper (16-200px, step 4)
+- Header Background Image: URL input + preview + fit dropdown + position dropdown + opacity stepper
+- Body Background Image: Same controls as header
+- Body Texture: URL input + preview + blend mode dropdown + opacity stepper
+- Each control group has a checkbox toggle to enable/disable
+- Disabling clears all related fields from Firebase
+
+Live verification requires deployment and authentication. Will be verified in Task 4.DOC.
 
 **Deploy:** Build React SPA + deploy.
 
@@ -1246,3 +1258,4 @@ Phase 4 (depends on Phase 3):
 - LEARNING: Theme Editor page requires authentication — local screenshot verification requires login. Build verification is sufficient for code correctness. Full UI verification happens after deployment to production. The GRAPHIC_GROUPS constant uses 7 categories to match the plan's grouping requirements. WTW overlays need special URL handling (use overlay files directly, not output.html). (found during Task 4.1)
 - LEARNING: Per-graphic override panels use checkbox toggles instead of radio buttons for each color field — cleaner UX that shows enabled/disabled state clearly. The `overrides` field must be added to both `loadTheme` (for existing themes) and `newTheme` (for new themes). Helper functions (`updateOverrideField`, `clearOverrideField`, `resetGraphicOverrides`) manage the nested state cleanly. When a graphic panel is expanded, auto-switching `selectedGraphicType` gives immediate preview feedback. Team cards use specific IDs (`team1-stats`, `team1-coaches`, `team2-stats`, `team2-coaches`) not generic `team-stats`/`team-coaches`. (found during Task 4.2)
 - LEARNING: To force an iframe reload after saving data to Firebase, use a version counter state variable included in the iframe's `key` prop. Incrementing the version after a 500ms delay (to allow Firebase propagation) forces React to recreate the iframe element. The existing `toggleOverridePanel` already switches `selectedGraphicType` when expanding a panel (from Task 4.2), so no additional work needed for that requirement. (found during Task 4.3)
+- LEARNING: Image/texture override controls extend the existing per-graphic override panels. The `OverrideStepper` component is a simplified version of `StepperInput` from SponsorAdjustControls. Opacity values are stored as decimals (0-1) in Firebase but displayed as percentages (0-100%) in the UI — conversion happens in `onChange` handlers. The checkbox toggle pattern (enable/disable) is consistent with color overrides. When disabling a group (e.g., headerBgImage), all related fields must be cleared (`headerBgImage`, `headerBgImageFit`, `headerBgImagePosition`, `headerBgImageOpacity`). (found during Task 4.4)

@@ -49,6 +49,65 @@ const OVERRIDE_COLOR_FIELDS = [
   { key: 'textOnContent', label: 'Text on Content' },
 ];
 
+// Image fit options for background images
+const IMAGE_FIT_OPTIONS = [
+  { value: 'cover', label: 'Cover' },
+  { value: 'contain', label: 'Contain' },
+  { value: 'repeat', label: 'Repeat' },
+];
+
+// Image position options
+const IMAGE_POSITION_OPTIONS = [
+  { value: 'center', label: 'Center' },
+  { value: 'top', label: 'Top' },
+  { value: 'bottom', label: 'Bottom' },
+  { value: 'left', label: 'Left' },
+  { value: 'right', label: 'Right' },
+];
+
+// Texture blend mode options
+const BLEND_MODE_OPTIONS = [
+  { value: 'overlay', label: 'Overlay' },
+  { value: 'multiply', label: 'Multiply' },
+  { value: 'normal', label: 'Normal' },
+];
+
+/**
+ * Editable number input with increment/decrement stepper buttons.
+ * Simplified version for per-graphic override controls.
+ */
+function OverrideStepper({ label, value, onChange, min = 0, max = 100, step = 1, suffix = '' }) {
+  const clamp = (v) => Math.max(min, Math.min(max, v));
+
+  return (
+    <div className="flex items-center gap-1">
+      <span className="text-[10px] text-zinc-500 w-16">{label}</span>
+      <button
+        onClick={() => onChange(clamp(value - step))}
+        className="w-5 h-5 flex items-center justify-center bg-zinc-700 hover:bg-zinc-600 rounded-l text-zinc-300 text-xs font-bold transition-colors select-none"
+      >
+        −
+      </button>
+      <input
+        type="number"
+        value={value}
+        onChange={(e) => {
+          const parsed = Number(e.target.value);
+          if (!isNaN(parsed)) onChange(clamp(parsed));
+        }}
+        className="w-12 h-5 text-center text-[10px] font-mono bg-zinc-800 text-zinc-300 border-y border-zinc-600 focus:outline-none focus:border-purple-500"
+      />
+      <button
+        onClick={() => onChange(clamp(value + step))}
+        className="w-5 h-5 flex items-center justify-center bg-zinc-700 hover:bg-zinc-600 rounded-r text-zinc-300 text-xs font-bold transition-colors select-none"
+      >
+        +
+      </button>
+      {suffix && <span className="text-[10px] text-zinc-500">{suffix}</span>}
+    </div>
+  );
+}
+
 // Graphic types for preview selector, grouped by category
 const GRAPHIC_GROUPS = [
   {
@@ -1284,6 +1343,7 @@ export default function ThemeEditorPage() {
                                               updateOverrideField(graphicId, 'logo', '');
                                             } else {
                                               clearOverrideField(graphicId, 'logo');
+                                              clearOverrideField(graphicId, 'logoSize');
                                             }
                                           }}
                                           className="w-3.5 h-3.5 rounded border-zinc-600 bg-zinc-700 text-purple-500 focus:ring-purple-500 focus:ring-offset-0"
@@ -1294,22 +1354,266 @@ export default function ThemeEditorPage() {
                                       </label>
                                     </div>
                                     {overrides.logo !== undefined && (
-                                      <div className="flex items-center gap-2">
-                                        <input
-                                          type="text"
-                                          value={overrides.logo || ''}
-                                          onChange={(e) => updateOverrideField(graphicId, 'logo', e.target.value)}
-                                          placeholder="https://..."
-                                          className="flex-1 px-2 py-1.5 bg-zinc-700 border border-zinc-600 rounded text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-purple-500"
-                                        />
-                                        {overrides.logo && (
-                                          <img
-                                            src={overrides.logo}
-                                            alt="Logo preview"
-                                            className="w-8 h-8 object-contain bg-white rounded flex-shrink-0"
-                                            onError={(e) => e.target.style.display = 'none'}
+                                      <div className="space-y-2">
+                                        <div className="flex items-center gap-2">
+                                          <input
+                                            type="text"
+                                            value={overrides.logo || ''}
+                                            onChange={(e) => updateOverrideField(graphicId, 'logo', e.target.value)}
+                                            placeholder="https://..."
+                                            className="flex-1 px-2 py-1.5 bg-zinc-700 border border-zinc-600 rounded text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-purple-500"
                                           />
-                                        )}
+                                          {overrides.logo && (
+                                            <img
+                                              src={overrides.logo}
+                                              alt="Logo preview"
+                                              className="w-8 h-8 object-contain bg-white rounded flex-shrink-0"
+                                              onError={(e) => e.target.style.display = 'none'}
+                                            />
+                                          )}
+                                        </div>
+                                        <OverrideStepper
+                                          label="Logo Size"
+                                          value={overrides.logoSize || 48}
+                                          onChange={(v) => updateOverrideField(graphicId, 'logoSize', v)}
+                                          min={16}
+                                          max={200}
+                                          step={4}
+                                          suffix="px"
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Header Background Image */}
+                                  <div className="pt-2 border-t border-zinc-700/50">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <label className="flex items-center gap-1.5 cursor-pointer">
+                                        <input
+                                          type="checkbox"
+                                          checked={overrides.headerBgImage !== undefined}
+                                          onChange={(e) => {
+                                            if (e.target.checked) {
+                                              updateOverrideField(graphicId, 'headerBgImage', '');
+                                            } else {
+                                              clearOverrideField(graphicId, 'headerBgImage');
+                                              clearOverrideField(graphicId, 'headerBgImageFit');
+                                              clearOverrideField(graphicId, 'headerBgImagePosition');
+                                              clearOverrideField(graphicId, 'headerBgImageOpacity');
+                                            }
+                                          }}
+                                          className="w-3.5 h-3.5 rounded border-zinc-600 bg-zinc-700 text-purple-500 focus:ring-purple-500 focus:ring-offset-0"
+                                        />
+                                        <span className={`text-[11px] ${overrides.headerBgImage !== undefined ? 'text-zinc-300' : 'text-zinc-500'}`}>
+                                          Header Background Image
+                                        </span>
+                                      </label>
+                                    </div>
+                                    {overrides.headerBgImage !== undefined && (
+                                      <div className="space-y-2">
+                                        <div className="flex items-center gap-2">
+                                          <input
+                                            type="text"
+                                            value={overrides.headerBgImage || ''}
+                                            onChange={(e) => updateOverrideField(graphicId, 'headerBgImage', e.target.value)}
+                                            placeholder="https://..."
+                                            className="flex-1 px-2 py-1.5 bg-zinc-700 border border-zinc-600 rounded text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-purple-500"
+                                          />
+                                          {overrides.headerBgImage && (
+                                            <img
+                                              src={overrides.headerBgImage}
+                                              alt="Header bg preview"
+                                              className="w-12 h-8 object-cover bg-zinc-600 rounded flex-shrink-0"
+                                              onError={(e) => e.target.style.display = 'none'}
+                                            />
+                                          )}
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-2">
+                                          <div className="flex flex-col gap-0.5">
+                                            <span className="text-[10px] text-zinc-500">Fit</span>
+                                            <select
+                                              value={overrides.headerBgImageFit || 'cover'}
+                                              onChange={(e) => updateOverrideField(graphicId, 'headerBgImageFit', e.target.value)}
+                                              className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500"
+                                            >
+                                              {IMAGE_FIT_OPTIONS.map(o => (
+                                                <option key={o.value} value={o.value}>{o.label}</option>
+                                              ))}
+                                            </select>
+                                          </div>
+                                          <div className="flex flex-col gap-0.5">
+                                            <span className="text-[10px] text-zinc-500">Position</span>
+                                            <select
+                                              value={overrides.headerBgImagePosition || 'center'}
+                                              onChange={(e) => updateOverrideField(graphicId, 'headerBgImagePosition', e.target.value)}
+                                              className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500"
+                                            >
+                                              {IMAGE_POSITION_OPTIONS.map(o => (
+                                                <option key={o.value} value={o.value}>{o.label}</option>
+                                              ))}
+                                            </select>
+                                          </div>
+                                          <OverrideStepper
+                                            label="Opacity"
+                                            value={Math.round((overrides.headerBgImageOpacity ?? 1) * 100)}
+                                            onChange={(v) => updateOverrideField(graphicId, 'headerBgImageOpacity', v / 100)}
+                                            min={0}
+                                            max={100}
+                                            step={5}
+                                            suffix="%"
+                                          />
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Body Background Image */}
+                                  <div className="pt-2 border-t border-zinc-700/50">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <label className="flex items-center gap-1.5 cursor-pointer">
+                                        <input
+                                          type="checkbox"
+                                          checked={overrides.bodyBgImage !== undefined}
+                                          onChange={(e) => {
+                                            if (e.target.checked) {
+                                              updateOverrideField(graphicId, 'bodyBgImage', '');
+                                            } else {
+                                              clearOverrideField(graphicId, 'bodyBgImage');
+                                              clearOverrideField(graphicId, 'bodyBgImageFit');
+                                              clearOverrideField(graphicId, 'bodyBgImagePosition');
+                                              clearOverrideField(graphicId, 'bodyBgImageOpacity');
+                                            }
+                                          }}
+                                          className="w-3.5 h-3.5 rounded border-zinc-600 bg-zinc-700 text-purple-500 focus:ring-purple-500 focus:ring-offset-0"
+                                        />
+                                        <span className={`text-[11px] ${overrides.bodyBgImage !== undefined ? 'text-zinc-300' : 'text-zinc-500'}`}>
+                                          Body Background Image
+                                        </span>
+                                      </label>
+                                    </div>
+                                    {overrides.bodyBgImage !== undefined && (
+                                      <div className="space-y-2">
+                                        <div className="flex items-center gap-2">
+                                          <input
+                                            type="text"
+                                            value={overrides.bodyBgImage || ''}
+                                            onChange={(e) => updateOverrideField(graphicId, 'bodyBgImage', e.target.value)}
+                                            placeholder="https://..."
+                                            className="flex-1 px-2 py-1.5 bg-zinc-700 border border-zinc-600 rounded text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-purple-500"
+                                          />
+                                          {overrides.bodyBgImage && (
+                                            <img
+                                              src={overrides.bodyBgImage}
+                                              alt="Body bg preview"
+                                              className="w-12 h-8 object-cover bg-zinc-600 rounded flex-shrink-0"
+                                              onError={(e) => e.target.style.display = 'none'}
+                                            />
+                                          )}
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-2">
+                                          <div className="flex flex-col gap-0.5">
+                                            <span className="text-[10px] text-zinc-500">Fit</span>
+                                            <select
+                                              value={overrides.bodyBgImageFit || 'cover'}
+                                              onChange={(e) => updateOverrideField(graphicId, 'bodyBgImageFit', e.target.value)}
+                                              className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500"
+                                            >
+                                              {IMAGE_FIT_OPTIONS.map(o => (
+                                                <option key={o.value} value={o.value}>{o.label}</option>
+                                              ))}
+                                            </select>
+                                          </div>
+                                          <div className="flex flex-col gap-0.5">
+                                            <span className="text-[10px] text-zinc-500">Position</span>
+                                            <select
+                                              value={overrides.bodyBgImagePosition || 'center'}
+                                              onChange={(e) => updateOverrideField(graphicId, 'bodyBgImagePosition', e.target.value)}
+                                              className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500"
+                                            >
+                                              {IMAGE_POSITION_OPTIONS.map(o => (
+                                                <option key={o.value} value={o.value}>{o.label}</option>
+                                              ))}
+                                            </select>
+                                          </div>
+                                          <OverrideStepper
+                                            label="Opacity"
+                                            value={Math.round((overrides.bodyBgImageOpacity ?? 1) * 100)}
+                                            onChange={(v) => updateOverrideField(graphicId, 'bodyBgImageOpacity', v / 100)}
+                                            min={0}
+                                            max={100}
+                                            step={5}
+                                            suffix="%"
+                                          />
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Body Texture */}
+                                  <div className="pt-2 border-t border-zinc-700/50">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <label className="flex items-center gap-1.5 cursor-pointer">
+                                        <input
+                                          type="checkbox"
+                                          checked={overrides.bodyTexture !== undefined}
+                                          onChange={(e) => {
+                                            if (e.target.checked) {
+                                              updateOverrideField(graphicId, 'bodyTexture', '');
+                                            } else {
+                                              clearOverrideField(graphicId, 'bodyTexture');
+                                              clearOverrideField(graphicId, 'bodyTextureOpacity');
+                                              clearOverrideField(graphicId, 'bodyTextureBlend');
+                                            }
+                                          }}
+                                          className="w-3.5 h-3.5 rounded border-zinc-600 bg-zinc-700 text-purple-500 focus:ring-purple-500 focus:ring-offset-0"
+                                        />
+                                        <span className={`text-[11px] ${overrides.bodyTexture !== undefined ? 'text-zinc-300' : 'text-zinc-500'}`}>
+                                          Body Texture Overlay
+                                        </span>
+                                      </label>
+                                    </div>
+                                    {overrides.bodyTexture !== undefined && (
+                                      <div className="space-y-2">
+                                        <div className="flex items-center gap-2">
+                                          <input
+                                            type="text"
+                                            value={overrides.bodyTexture || ''}
+                                            onChange={(e) => updateOverrideField(graphicId, 'bodyTexture', e.target.value)}
+                                            placeholder="https://..."
+                                            className="flex-1 px-2 py-1.5 bg-zinc-700 border border-zinc-600 rounded text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-purple-500"
+                                          />
+                                          {overrides.bodyTexture && (
+                                            <img
+                                              src={overrides.bodyTexture}
+                                              alt="Texture preview"
+                                              className="w-12 h-8 object-cover bg-zinc-600 rounded flex-shrink-0"
+                                              onError={(e) => e.target.style.display = 'none'}
+                                            />
+                                          )}
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                          <div className="flex flex-col gap-0.5">
+                                            <span className="text-[10px] text-zinc-500">Blend Mode</span>
+                                            <select
+                                              value={overrides.bodyTextureBlend || 'overlay'}
+                                              onChange={(e) => updateOverrideField(graphicId, 'bodyTextureBlend', e.target.value)}
+                                              className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500"
+                                            >
+                                              {BLEND_MODE_OPTIONS.map(o => (
+                                                <option key={o.value} value={o.value}>{o.label}</option>
+                                              ))}
+                                            </select>
+                                          </div>
+                                          <OverrideStepper
+                                            label="Opacity"
+                                            value={Math.round((overrides.bodyTextureOpacity ?? 0.08) * 100)}
+                                            onChange={(v) => updateOverrideField(graphicId, 'bodyTextureOpacity', v / 100)}
+                                            min={0}
+                                            max={100}
+                                            step={2}
+                                            suffix="%"
+                                          />
+                                        </div>
                                       </div>
                                     )}
                                   </div>
