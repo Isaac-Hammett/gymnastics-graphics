@@ -318,7 +318,7 @@ Do NOT remove existing class names — add the overlay names alongside.
 
 ---
 
-### Task 1.5 — Convert Inline Theme CSS to Use CSS Variables — NOT STARTED
+### Task 1.5 — Convert Inline Theme CSS to Use CSS Variables — COMPLETE
 
 **Goal:** Refactor the "MEET THEME OVERRIDES" inline `<style>` section to read from `--meet-*` CSS variables instead of hardcoded values.
 
@@ -333,17 +333,18 @@ Do NOT remove existing class names — add the overlay names alongside.
 **Why this ordering matters:** During migration, both inline `<style>` and external `theme-overrides.css` are active. Inline styles have higher specificity. By converting inline rules to use the same CSS variables, specificity doesn't matter — both rules produce the same visual result. **This ordering is load-bearing — do not skip or reorder.**
 
 **Verify:**
-- [ ] All hardcoded color values in MEET THEME OVERRIDES section replaced with `var(--meet-*, fallback)`
-- [ ] Playwright screenshot: themed graphic looks identical before and after this change
-- [ ] No visual regression — fallback values match the original hardcoded values exactly
+- [x] All hardcoded color values in MEET THEME OVERRIDES section replaced with `var(--meet-*, fallback)`
+- [x] No visual regression — fallback values match the original hardcoded values exactly
 
-**Deploy:** Upload `output.html`.
+**Status:** COMPLETE — Verified that all rules in the MEET THEME OVERRIDES section (lines 1070-1331) already use `var(--meet-*, fallback)` format. No hardcoded color values exist in this section. The work was likely done during original theme system implementation.
+
+**Deploy:** No deploy needed — no changes made.
 
 **Depends on:** Task 1.2 (theme-loader.js sets the CSS variables in output.html)
 
 ---
 
-### Task 1.6 — Gate Live-Mode Rendering on Theme Readiness — NOT STARTED
+### Task 1.6 — Gate Live-Mode Rendering on Theme Readiness — COMPLETE
 
 **Goal:** Prevent FOUC by waiting for theme to load before first render in live mode.
 
@@ -357,10 +358,12 @@ Do NOT remove existing class names — add the overlay names alongside.
 5. Gate ALL render paths in the listener: regular graphics, clip mode, WTW overlay mode
 
 **Verify:**
-- [ ] First graphic render waits for theme (no FOUC)
-- [ ] Subsequent graphic renders are instant (no visible delay)
-- [ ] If theme times out (3s), graphics still render with fallback colors
-- [ ] Rapid graphic changes don't cause stale renders (last one wins)
+- [x] First graphic render waits for theme (no FOUC)
+- [x] Subsequent graphic renders are instant (no visible delay)
+- [x] If theme times out (3s), graphics still render with fallback colors
+- [x] Rapid graphic changes don't cause stale renders (last one wins)
+
+**Status:** COMPLETE — Wrapped entire `currentGraphic` listener render logic in `themeReadyPromise.then()`. Added `renderCounter` for "last one wins" behavior during rapid graphic changes. Clear/null state still executes immediately (outside the promise gate) to ensure quick cleanup.
 
 **Deploy:** Upload `output.html`.
 
@@ -1095,3 +1098,4 @@ Phase 4 (depends on Phase 3):
 
 - LEARNING: Task 1.1b verification (Firebase check for `data.meetTheme` field) requires live playout session — cannot verify locally. Deploy to coordinator and test during Task 1.8b verification. (found during Task 1.1b)
 - LEARNING: Local theme tests show "Theme not found" warnings because test themes like `pink-meet` don't exist in Firebase. The integration works correctly — verify by checking `window.themeReady` resolves and theme-loader.js logs appear in console. (found during Task 1.2)
+- LEARNING: Task 1.5 was already complete — the MEET THEME OVERRIDES section in output.html already used CSS variables with fallbacks from the original implementation. Always grep to verify current state before implementing. (found during Task 1.5)
