@@ -21,13 +21,14 @@
 /* ============================================================
    HEADER BARS
    Used in: team-roster, event-frame, hosts, coaches, team-stats
+   Per-graphic image overrides: --{graphicId}-header-bg-image
    ============================================================ */
 
 [data-meet-theme] .header-bar,
 [data-meet-theme] .frame-header,
 [data-meet-theme] .hosts-header,
 [data-meet-theme] .stats-header {
-  background: var(--meet-header-bg, #d4d4d8);
+  background-color: var(--meet-header-bg, #d4d4d8);
   color: var(--meet-header-text, #000);
 }
 
@@ -520,4 +521,140 @@
   pointer-events: none;
   border-radius: inherit;
   z-index: 1;
+}
+
+/* ============================================================
+   PER-GRAPHIC IMAGE OVERRIDES
+   Applied via CSS variables set by theme-loader.js:
+   --{graphicId}-header-bg-image    : Background image for header
+   --{graphicId}-header-bg-image-fit: cover | contain | auto
+   --{graphicId}-header-bg-image-position: center | top | etc.
+   --{graphicId}-body-bg-image      : Background image for body
+   --{graphicId}-body-texture       : Texture overlay for body
+   --{graphicId}-logo-url           : Override logo image
+   --{graphicId}-logo-size          : Override logo dimensions
+   ============================================================ */
+
+/* Event Bar - header background image support */
+[data-meet-theme] .event-bar-venue {
+  background-image: var(--event-bar-header-bg-image, none);
+  background-size: var(--event-bar-header-bg-image-fit, cover);
+  background-position: var(--event-bar-header-bg-image-position, center);
+  background-repeat: no-repeat;
+}
+
+/* Event Bar - body background image support */
+[data-meet-theme] .event-bar-details,
+[data-meet-theme] .details-row {
+  background-image: var(--event-bar-body-bg-image, none);
+  background-size: var(--event-bar-body-bg-image-fit, cover);
+  background-position: var(--event-bar-body-bg-image-position, center);
+  background-repeat: no-repeat;
+}
+
+/* Sponsors - header/container background image support */
+[data-meet-theme] .sponsors-header {
+  background-image: var(--sponsors-thanks-header-bg-image, var(--sponsors-cycle-header-bg-image, var(--sponsors-bug-header-bg-image, none)));
+  background-size: var(--sponsors-thanks-header-bg-image-fit, var(--sponsors-cycle-header-bg-image-fit, var(--sponsors-bug-header-bg-image-fit, cover)));
+  background-position: var(--sponsors-thanks-header-bg-image-position, var(--sponsors-cycle-header-bg-image-position, var(--sponsors-bug-header-bg-image-position, center)));
+  background-repeat: no-repeat;
+}
+
+[data-meet-theme] .sponsors-container {
+  background-image: var(--sponsors-thanks-body-bg-image, var(--sponsors-cycle-body-bg-image, var(--sponsors-bug-body-bg-image, none)));
+  background-size: var(--sponsors-thanks-body-bg-image-fit, var(--sponsors-cycle-body-bg-image-fit, var(--sponsors-bug-body-bg-image-fit, cover)));
+  background-position: var(--sponsors-thanks-body-bg-image-position, var(--sponsors-cycle-body-bg-image-position, var(--sponsors-bug-body-bg-image-position, center)));
+  background-repeat: no-repeat;
+}
+
+/* Rotation Slate - background image support */
+[data-meet-theme] .rotation-slate {
+  background-image: var(--rotation-slate-body-bg-image, none);
+  background-size: var(--rotation-slate-body-bg-image-fit, cover);
+  background-position: var(--rotation-slate-body-bg-image-position, center);
+  background-repeat: no-repeat;
+}
+
+[data-meet-theme] .rotation-slate .rotation-header {
+  background-image: var(--rotation-slate-header-bg-image, none);
+  background-size: var(--rotation-slate-header-bg-image-fit, cover);
+  background-position: var(--rotation-slate-header-bg-image-position, center);
+  background-repeat: no-repeat;
+}
+
+/* Event Summary - background image support */
+[data-meet-theme] .event-summary-header {
+  background-image: var(--event-summary-header-bg-image, none);
+  background-size: var(--event-summary-header-bg-image-fit, cover);
+  background-position: var(--event-summary-header-bg-image-position, center);
+  background-repeat: no-repeat;
+}
+
+[data-meet-theme] .event-summary-content {
+  background-image: var(--event-summary-body-bg-image, none);
+  background-size: var(--event-summary-body-bg-image-fit, cover);
+  background-position: var(--event-summary-body-bg-image-position, center);
+  background-repeat: no-repeat;
+}
+
+/* Leaderboard - background image support */
+[data-meet-theme] .leaderboard-header {
+  background-image: var(--virtuis-leaderboard-header-bg-image, none);
+  background-size: var(--virtuis-leaderboard-header-bg-image-fit, cover);
+  background-position: var(--virtuis-leaderboard-header-bg-image-position, center);
+  background-repeat: no-repeat;
+}
+
+/* Coaches - background image support */
+[data-meet-theme] .coaches-header {
+  background-image: var(--team1-coaches-header-bg-image, var(--team2-coaches-header-bg-image, none));
+  background-size: var(--team1-coaches-header-bg-image-fit, var(--team2-coaches-header-bg-image-fit, cover));
+  background-position: var(--team1-coaches-header-bg-image-position, var(--team2-coaches-header-bg-image-position, center));
+  background-repeat: no-repeat;
+}
+
+[data-meet-theme] .coaches-content {
+  background-image: var(--team1-coaches-body-bg-image, var(--team2-coaches-body-bg-image, none));
+  background-size: var(--team1-coaches-body-bg-image-fit, var(--team2-coaches-body-bg-image-fit, cover));
+  background-position: var(--team1-coaches-body-bg-image-position, var(--team2-coaches-body-bg-image-position, center));
+  background-repeat: no-repeat;
+}
+
+/* Spotlight - background image support */
+[data-meet-theme] .spotlight-header {
+  background-image: var(--athlete-spotlight-header-bg-image, none);
+  background-size: var(--athlete-spotlight-header-bg-image-fit, cover);
+  background-position: var(--athlete-spotlight-header-bg-image-position, center);
+  background-repeat: no-repeat;
+}
+
+[data-meet-theme] .spotlight-container {
+  background-image: var(--athlete-spotlight-body-bg-image, none);
+  background-size: var(--athlete-spotlight-body-bg-image-fit, cover);
+  background-position: var(--athlete-spotlight-body-bg-image-position, center);
+  background-repeat: no-repeat;
+}
+
+/* Stream graphics - background image support */
+[data-meet-theme] .stream-container {
+  background-image: var(--stream-starting-body-bg-image, var(--stream-thanks-body-bg-image, none));
+  background-size: var(--stream-starting-body-bg-image-fit, var(--stream-thanks-body-bg-image-fit, cover));
+  background-position: var(--stream-starting-body-bg-image-position, var(--stream-thanks-body-bg-image-position, center));
+  background-repeat: no-repeat;
+}
+
+/* Warm-up - background image support */
+[data-meet-theme] .warm-up-teams-row {
+  background-image: var(--warm-up-header-bg-image, none);
+  background-size: var(--warm-up-header-bg-image-fit, cover);
+  background-position: var(--warm-up-header-bg-image-position, center);
+  background-repeat: no-repeat;
+}
+
+/* Replay - background image support */
+[data-meet-theme] .replay-title-row {
+  background-image: var(--replay-header-bg-image, none);
+  background-size: var(--replay-header-bg-image-fit, cover);
+  background-position: var(--replay-header-bg-image-position, center);
+  background-repeat: no-repeat;
 }
