@@ -373,6 +373,24 @@ window.themeReady = new Promise(resolve => { _resolveThemeReady = resolve; });
       console.log('[theme-loader] Texture applied:', theme.textures.overlay, 'opacity:', theme.textures.opacity);
     }
 
+    // Apply theme-level background images (applies to all graphics)
+    if (theme.images) {
+      if (theme.images.headerBgImage) {
+        root.style.setProperty('--meet-header-bg-image', `url(${theme.images.headerBgImage})`);
+        root.style.setProperty('--meet-header-bg-image-fit', theme.images.headerBgImageFit || 'cover');
+        root.style.setProperty('--meet-header-bg-image-position', theme.images.headerBgImagePosition || 'center');
+        root.style.setProperty('--meet-header-bg-image-opacity', theme.images.headerBgImageOpacity ?? '1');
+        console.log('[theme-loader] Header bg image applied:', theme.images.headerBgImage);
+      }
+      if (theme.images.bodyBgImage) {
+        root.style.setProperty('--meet-body-bg-image', `url(${theme.images.bodyBgImage})`);
+        root.style.setProperty('--meet-body-bg-image-fit', theme.images.bodyBgImageFit || 'cover');
+        root.style.setProperty('--meet-body-bg-image-position', theme.images.bodyBgImagePosition || 'center');
+        root.style.setProperty('--meet-body-bg-image-opacity', theme.images.bodyBgImageOpacity ?? '1');
+        console.log('[theme-loader] Body bg image applied:', theme.images.bodyBgImage);
+      }
+    }
+
     // Set data-meet-theme attribute on body for CSS selector targeting
     document.body.setAttribute('data-meet-theme', theme.id || themeId);
 
