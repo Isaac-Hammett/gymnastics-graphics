@@ -236,7 +236,7 @@ Add a new `/* === LEADERBOARD === */` section in theme-overrides.css.
 
 ---
 
-### Task 1.3c — Port Warm-up, Replay, Event Bar, Texture, Frame CSS Rules — NOT STARTED
+### Task 1.3c — Port Warm-up, Replay, Event Bar, Texture, Frame CSS Rules — COMPLETE
 
 **Goal:** Port remaining inline-only rules (~21 total).
 
@@ -253,12 +253,20 @@ Port from output.html:
 Extend existing sections where applicable (warm-up/replay section exists at lines 172-184).
 
 **Verify:**
-- [ ] All remaining "output.html only" rules from Task 0.2 audit are now in theme-overrides.css
-- [ ] No orphaned rules remain in the "output.html only" category
+- [x] All remaining "output.html only" rules from Task 0.2 audit are now in theme-overrides.css
+- [x] No orphaned rules remain in the "output.html only" category
 
 **Deploy:** Upload `overlays/` directory.
 
 **Depends on:** Task 0.2 (audit provides the definitive list)
+
+**Status:** COMPLETE — Added 27 new rules:
+- Event bar: `.event-bar-details` (1 rule)
+- Event bar text: `.event-bar-name`, `.event-bar-location` (added to existing combined rule)
+- Event frame: `.graphic-event-frame .frame-header`, `.graphic-event-frame .frame-title` (2 rules)
+- Warm-up detailed: `.warm-up-logo-section`, `.warm-up-logo-section img`, `.warm-up-teams-row`, `.warm-up-teams-text`, `.warm-up-status-row`, `.warm-up-status-text` (6 rules)
+- Replay detailed: `.replay-logo-section`, `.replay-logo-section img`, `.replay-title-row`, `.replay-title-text`, `.replay-status-row`, `.replay-status-text` (6 rules)
+- Texture targets: Added `.event-summary-header`, `.leaderboard-header`, `.warm-up-container`, `.replay-container` to both `position: relative` and `::before` selectors (4 elements × 2 = 8 additions)
 
 ---
 

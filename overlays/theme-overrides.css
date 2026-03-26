@@ -55,6 +55,12 @@
   background: var(--meet-content-bg, #000);
 }
 
+[data-meet-theme] .event-bar-details {
+  background: var(--meet-content-bg, #000);
+}
+
+[data-meet-theme] .event-bar-name,
+[data-meet-theme] .event-bar-location,
 [data-meet-theme] .teams-text,
 [data-meet-theme] .location-text {
   color: var(--meet-overlay-text, #fff);
@@ -73,6 +79,14 @@
 }
 
 [data-meet-theme] .frame-title {
+  color: var(--meet-header-text, #000);
+}
+
+/* Event frame specificity override */
+[data-meet-theme] .graphic-event-frame .frame-header {
+  background: var(--meet-header-bg, #d4d4d8);
+}
+[data-meet-theme] .graphic-event-frame .frame-title {
   color: var(--meet-header-text, #000);
 }
 
@@ -303,6 +317,46 @@
   color: var(--meet-overlay-text, #fff);
 }
 
+/* Warm-up detailed structure */
+[data-meet-theme] .warm-up-logo-section {
+  background: rgba(255, 255, 255, 0.92);
+}
+[data-meet-theme] .warm-up-logo-section img {
+  background: transparent;
+}
+[data-meet-theme] .warm-up-teams-row {
+  background: var(--meet-header-bg, #BFBFBF);
+}
+[data-meet-theme] .warm-up-teams-text {
+  color: var(--meet-header-text, #000);
+}
+[data-meet-theme] .warm-up-status-row {
+  background: var(--meet-content-bg, #000);
+}
+[data-meet-theme] .warm-up-status-text {
+  color: var(--meet-overlay-text, #fff);
+}
+
+/* Replay detailed structure */
+[data-meet-theme] .replay-logo-section {
+  background: rgba(255, 255, 255, 0.92);
+}
+[data-meet-theme] .replay-logo-section img {
+  background: transparent;
+}
+[data-meet-theme] .replay-title-row {
+  background: var(--meet-header-bg, #BFBFBF);
+}
+[data-meet-theme] .replay-title-text {
+  color: var(--meet-header-text, #000);
+}
+[data-meet-theme] .replay-status-row {
+  background: var(--meet-content-bg, #000);
+}
+[data-meet-theme] .replay-status-text {
+  color: var(--meet-overlay-text, #fff);
+}
+
 /* ============================================================
    FRAME OVERLAYS (quad, tri, dual views)
    ============================================================ */
@@ -435,7 +489,11 @@
 [data-meet-theme] .details-row,
 [data-meet-theme] .sponsors-container,
 [data-meet-theme] .coaches-content,
-[data-meet-theme] .spotlight-container {
+[data-meet-theme] .spotlight-container,
+[data-meet-theme] .event-summary-header,
+[data-meet-theme] .leaderboard-header,
+[data-meet-theme] .warm-up-container,
+[data-meet-theme] .replay-container {
   position: relative;
 }
 
@@ -449,7 +507,11 @@
 [data-meet-theme] .details-row::before,
 [data-meet-theme] .sponsors-container::before,
 [data-meet-theme] .coaches-content::before,
-[data-meet-theme] .spotlight-container::before {
+[data-meet-theme] .spotlight-container::before,
+[data-meet-theme] .event-summary-header::before,
+[data-meet-theme] .leaderboard-header::before,
+[data-meet-theme] .warm-up-container::before,
+[data-meet-theme] .replay-container::before {
   content: '';
   position: absolute;
   inset: 0;
