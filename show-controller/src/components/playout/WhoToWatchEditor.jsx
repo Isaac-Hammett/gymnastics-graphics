@@ -362,6 +362,92 @@ function AthleteImagePicker({ headshot, galleryImages, selectedUrl, imageMode, o
   );
 }
 
+// Live iframe preview for lower-third — renders the real who-to-watch.html overlay at 1920×1080 and scales it down
+function LowerThirdIframePreview({ athleteName, logoUrl, subtitle, teamName, statLabel, statValue, headshot, meetTheme, themeOverride, adjustments = {} }) {
+  const containerRef = useRef(null);
+  const [scale, setScale] = useState(0.25);
+  const [debouncedOverlayUrl, setDebouncedOverlayUrl] = useState('');
+
+  // Build the overlay URL with query params
+  const overlayUrl = useMemo(() => {
+    const params = new URLSearchParams();
+    if (athleteName) params.set('athleteName', athleteName);
+    if (logoUrl) params.set('logo', logoUrl);
+    if (subtitle) params.set('subtitle', subtitle);
+    else if (teamName) params.set('subtitle', teamName);
+    if (statLabel) params.set('statLabel', statLabel);
+    if (statValue) params.set('statValue', statValue);
+    if (headshot) params.set('headshot', headshot);
+    // Theme
+    const effectiveTheme = themeOverride || meetTheme;
+    if (effectiveTheme) params.set('meetTheme', effectiveTheme);
+    // Adjustment params (for future Task 7)
+    if (adjustments.badgeText !== undefined) params.set('badgeText', adjustments.badgeText);
+    if (adjustments.badgeFontSize) params.set('badgeFontSize', adjustments.badgeFontSize);
+    if (adjustments.nameFontSize) params.set('nameFontSize', adjustments.nameFontSize);
+    if (adjustments.subtitleFontSize) params.set('subtitleFontSize', adjustments.subtitleFontSize);
+    if (adjustments.statFontSize) params.set('statFontSize', adjustments.statFontSize);
+    if (adjustments.headshotSize) params.set('headshotSize', adjustments.headshotSize);
+    if (adjustments.showHeadshot === false) params.set('showHeadshot', 'false');
+    if (adjustments.logoSize) params.set('logoSize', adjustments.logoSize);
+    if (adjustments.cardBottom) params.set('cardBottom', adjustments.cardBottom);
+    if (adjustments.cardLeft) params.set('cardLeft', adjustments.cardLeft);
+    if (adjustments.cardMinWidth) params.set('cardMinWidth', adjustments.cardMinWidth);
+    if (adjustments.cardMaxWidth) params.set('cardMaxWidth', adjustments.cardMaxWidth);
+    if (adjustments.bgColor) params.set('bgColor', adjustments.bgColor);
+    if (adjustments.accentColor) params.set('accentColor', adjustments.accentColor);
+    return `/overlays/who-to-watch.html?${params.toString()}`;
+  }, [athleteName, logoUrl, subtitle, teamName, statLabel, statValue, headshot, meetTheme, themeOverride, adjustments]);
+
+  // Debounce the overlay URL to avoid reloading the iframe on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedOverlayUrl(overlayUrl);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [overlayUrl]);
+
+  // Measure container width and compute scale
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const obs = new ResizeObserver(([entry]) => {
+      setScale(entry.contentRect.width / 1920);
+    });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  return (
+    <div>
+      <div ref={containerRef} className="relative rounded overflow-hidden border border-zinc-600" style={{ aspectRatio: '16/9' }}>
+        {/* Dark background to simulate video behind the transparent overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-zinc-800 to-zinc-900" />
+        <div style={{
+          width: '1920px',
+          height: '1080px',
+          transform: `scale(${scale})`,
+          transformOrigin: 'top left',
+          pointerEvents: 'none',
+          position: 'relative',
+        }}>
+          <iframe
+            key={debouncedOverlayUrl}
+            src={debouncedOverlayUrl}
+            title="Lower-third preview"
+            style={{ width: '1920px', height: '1080px', border: 'none' }}
+            sandbox="allow-scripts allow-same-origin"
+          />
+        </div>
+      </div>
+      <a href={debouncedOverlayUrl} target="_blank" rel="noopener noreferrer"
+         className="block text-center text-[10px] text-zinc-500 hover:text-rose-400 mt-1">
+        Open full-size preview ↗
+      </a>
+    </div>
+  );
+}
+
 // Live iframe preview for title cards — renders the real overlay HTML at 1920×1080 and scales it down
 function TitleCardIframePreview({ card, athleteName, teamName, logoUrl, imageUrl, imageMode, meetTheme, themeOverride }) {
   const containerRef = useRef(null);
@@ -1003,59 +1089,18 @@ export default function WhoToWatchEditor({
           </label>
         </div>
 
-        <div className="relative rounded-lg overflow-hidden border border-zinc-600 bg-zinc-900" style={{ aspectRatio: '16/9' }}>
-          {videoThumbnail ? (
-            <img src={videoThumbnail} alt="" className="absolute inset-0 w-full h-full object-cover opacity-60" onError={(e) => { e.target.style.display = 'none'; }} />
-          ) : (
-            <div className="absolute inset-0 bg-gradient-to-b from-zinc-800 to-zinc-900" />
-          )}
-
-          <div className="absolute bottom-0 left-0 right-0" style={{ padding: '0 8%', paddingBottom: '8%' }}>
-            <div className="flex items-center justify-between px-3 py-1.5" style={{ background: 'var(--meet-header-bg, #BFBFBF)' }}>
-              <span className="text-xs font-black uppercase tracking-tight" style={{ color: 'var(--meet-header-text, #000)' }}>
-                Who to Watch
-              </span>
-              {config.logoUrl && (
-                <img src={config.logoUrl} alt="" className="h-5 w-5 object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
-              )}
-            </div>
-
-            <div className="flex items-center gap-2 px-3 py-2 bg-black">
-              {config.headshot ? (
-                <img
-                  src={config.headshot}
-                  alt=""
-                  className="w-8 h-8 rounded-full object-cover border border-white/30 shrink-0"
-                  onError={(e) => { e.target.style.display = 'none'; if (e.target.nextElementSibling) e.target.nextElementSibling.style.display = 'flex'; }}
-                />
-              ) : null}
-              {(!config.headshot || true) && (
-                <div
-                  className="w-8 h-8 rounded-full bg-zinc-700 border border-white/30 shrink-0 items-center justify-center text-xs font-bold text-zinc-400"
-                  style={{ display: config.headshot ? 'none' : 'flex' }}
-                >
-                  {getInitials(config.athleteName)}
-                </div>
-              )}
-
-              <div className="min-w-0 flex-1">
-                <div className="text-xs font-extrabold text-white uppercase truncate">
-                  {config.athleteName || 'Athlete Name'}
-                </div>
-                {(config.subtitle || config.teamName) && (
-                  <div className="text-[10px] text-zinc-400 uppercase truncate">
-                    {config.subtitle || config.teamName}
-                  </div>
-                )}
-                {config.statLabel && config.statValue && (
-                  <div className="text-[10px] font-semibold uppercase truncate" style={{ color: 'var(--meet-header-bg, #3b82f6)' }}>
-                    {config.statLabel}: {config.statValue}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+        <LowerThirdIframePreview
+          athleteName={config.athleteName}
+          logoUrl={config.logoUrl}
+          subtitle={config.subtitle}
+          teamName={config.teamName}
+          statLabel={config.statLabel}
+          statValue={config.statValue}
+          headshot={config.headshot}
+          meetTheme={meetTheme}
+          themeOverride={themeOverride}
+          adjustments={config.lowerThirdAdjustments || {}}
+        />
 
         {!isValid && (
           <p className="text-xs text-rose-400 mt-1">Select a team and athlete to continue</p>

@@ -141,7 +141,7 @@ Apply params by reading from URLSearchParams and setting inline styles on the DO
 
 ---
 
-### Task 6: Replace lower-third React mockup with real iframe preview — NOT STARTED
+### Task 6: Replace lower-third React mockup with real iframe preview — COMPLETE
 **Files:** `show-controller/src/components/playout/WhoToWatchEditor.jsx`
 **Why second:** Depends on Task 5's query params being available in `who-to-watch.html`.
 
@@ -243,3 +243,4 @@ Apply params by reading from URLSearchParams and setting inline styles on the DO
 - LEARNING: Task 3 modifies THREE locations in output.html: (1) line ~13478 for clip-playback, (2) line ~13539 for moment-replay, (3) line ~6880 for optimistic advance. All three need the same conditional: `if (data.overlayStyle === 'who-to-watch') { clipOverlay.classList.remove('visible'); } else { updateClipOverlay(data); }`
 - LEARNING: Task 4 wraps the graphic picker block (lines 8113-8165) in a conditional. The type-specific editors (PlayoutRulesEditor, ContentSequenceEditor, WhoToWatchEditor) are at lines 8516-8555, well outside the wrapped block, so they render normally.
 - LEARNING: Task 5 follows the title card pattern for adjustment params. Key change: `.wtw-stat` now uses `--meet-content-bg` with fallback to `--meet-header-bg` so `accentColor` can control stat text independently from the header bar background.
+- LEARNING: Task 6 adds `LowerThirdIframePreview` component (line ~366) following `TitleCardIframePreview` pattern. Key differences: (1) dark background div behind iframe since overlay is transparent, (2) accepts `adjustments` prop object for future Task 7, (3) maps subtitle/teamName fallback in URL params. The iframe uses `/overlays/who-to-watch.html` with query params.
