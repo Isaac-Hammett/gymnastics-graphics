@@ -5,6 +5,65 @@ import { SERVER_URL } from '../lib/serverUrl';
 import SponsorAdjustControls from '../components/SponsorAdjustControls';
 import { buildSponsorsCycleURL } from '../lib/urlBuilder';
 
+// Graphic types for preview selector, grouped by category
+const GRAPHIC_GROUPS = [
+  {
+    label: 'Lower-Third Bars',
+    graphics: [
+      { id: 'event-bar', name: 'Event Bar' },
+      { id: 'warm-up', name: 'Warm-up' },
+      { id: 'replay', name: 'Replay' },
+    ],
+  },
+  {
+    label: 'Full-Screen',
+    graphics: [
+      { id: 'event-summary', name: 'Event Summary' },
+      { id: 'virtuis-leaderboard', name: 'Leaderboard' },
+      { id: 'event-frame', name: 'Event Frame' },
+    ],
+  },
+  {
+    label: 'Team Cards',
+    graphics: [
+      { id: 'team1-stats', name: 'Team 1 Stats' },
+      { id: 'team1-coaches', name: 'Team 1 Coaches' },
+      { id: 'team2-stats', name: 'Team 2 Stats' },
+      { id: 'team2-coaches', name: 'Team 2 Coaches' },
+    ],
+  },
+  {
+    label: 'Sponsors',
+    graphics: [
+      { id: 'sponsors-thanks', name: 'Sponsors Thanks' },
+      { id: 'sponsors-cycle', name: 'Sponsors Cycle' },
+      { id: 'sponsors-bug', name: 'Sponsors Bug' },
+    ],
+  },
+  {
+    label: 'Stream',
+    graphics: [
+      { id: 'stream-starting', name: 'Stream Starting' },
+      { id: 'stream-thanks', name: 'Stream Thanks' },
+    ],
+  },
+  {
+    label: 'Overlays',
+    graphics: [
+      { id: 'rotation-slate', name: 'Rotation Slate' },
+      { id: 'team-roster', name: 'Team Roster' },
+      { id: 'logos', name: 'Logos' },
+    ],
+  },
+  {
+    label: 'Playout / Who to Watch',
+    graphics: [
+      { id: 'who-to-watch-title', name: 'Who to Watch — Title Card' },
+      { id: 'who-to-watch-lower-third', name: 'Who to Watch — Lower Third' },
+    ],
+  },
+];
+
 /**
  * Theme Editor Page
  *
@@ -223,6 +282,11 @@ export default function ThemeEditorPage() {
   const [showSponsorGuides, setShowSponsorGuides] = useState(false);
   const [sponsorPreviewExpanded, setSponsorPreviewExpanded] = useState(false);
 
+  // Competition preview state
+  const [competitions, setCompetitions] = useState({});
+  const [selectedCompetition, setSelectedCompetition] = useState('');
+  const [selectedGraphicType, setSelectedGraphicType] = useState('event-summary');
+
   // Preview URL for sponsor cycle when adjusting sponsors
   const sponsorPreviewUrl = useMemo(() => {
     const sponsors = editingTheme.sponsors || [];
@@ -255,6 +319,29 @@ export default function ThemeEditorPage() {
     }, (err) => {
       setError(err.message);
       setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Subscribe to competitions from Firebase (filter to recent/active)
+  useEffect(() => {
+    const competitionsRef = ref(db, 'competitions');
+
+    const unsubscribe = onValue(competitionsRef, (snapshot) => {
+      const allCompetitions = snapshot.val() || {};
+      // Filter to recent competitions (last 60 days) or active ones
+      const cutoff = Date.now() - 60 * 24 * 60 * 60 * 1000;
+      const filtered = {};
+      for (const [id, comp] of Object.entries(allCompetitions)) {
+        const config = comp.config || {};
+        const createdAt = config.createdAt ? new Date(config.createdAt).getTime() : 0;
+        const isActive = config.status === 'active';
+        if (isActive || createdAt > cutoff) {
+          filtered[id] = comp;
+        }
+      }
+      setCompetitions(filtered);
     });
 
     return () => unsubscribe();
@@ -432,24 +519,69 @@ export default function ThemeEditorPage() {
   };
 
   // Build preview URL with current theme colors
-  const getPreviewUrl = () => {
+  const getPreviewUrl = useCallback(() => {
     const baseUrl = window.location.origin;
     const params = new URLSearchParams();
-    params.set('graphic', 'event-summary');
-    params.set('summaryMode', 'rotation');
-    params.set('summaryRotation', '1');
-    params.set('summaryNumTeams', '2');
-    params.set('team1Name', 'Home Team');
-    params.set('team2Name', 'Away Team');
 
-    // For preview, we'll use a special preview mode that reads from inline params
-    // since the theme may not be saved yet
+    // Handle special graphic types that need different URLs
+    if (selectedGraphicType === 'who-to-watch-title') {
+      // WTW Title Card — use the overlay file directly with sample data
+      params.set('meetTheme', selectedThemeId || 'preview');
+      params.set('athleteName', 'Sample Athlete');
+      params.set('teamName', 'Sample Team');
+      params.set('headline', '2x All-American');
+      params.set('body', 'Record holder on floor exercise');
+      params.set('badgeText', 'WHO TO WATCH');
+      // If competition selected, we could pull real athlete data here
+      if (selectedCompetition && competitions[selectedCompetition]?.teamData?.team1?.roster?.[0]) {
+        const athlete = competitions[selectedCompetition].teamData.team1.roster[0];
+        params.set('athleteName', athlete.fullName || 'Sample Athlete');
+        params.set('teamName', competitions[selectedCompetition].config?.team1Name || 'Sample Team');
+      }
+      return `${baseUrl}/overlays/who-to-watch-title.html?${params.toString()}`;
+    }
+
+    if (selectedGraphicType === 'who-to-watch-lower-third') {
+      // WTW Lower Third — use the overlay file directly with sample data
+      params.set('meetTheme', selectedThemeId || 'preview');
+      params.set('athleteName', 'Sample Athlete');
+      params.set('subtitle', 'Floor Exercise');
+      params.set('statLabel', 'Season High');
+      params.set('statValue', '9.950');
+      // If competition selected, pull real athlete data
+      if (selectedCompetition && competitions[selectedCompetition]?.teamData?.team1?.roster?.[0]) {
+        const athlete = competitions[selectedCompetition].teamData.team1.roster[0];
+        params.set('athleteName', athlete.fullName || 'Sample Athlete');
+      }
+      return `${baseUrl}/overlays/who-to-watch.html?${params.toString()}`;
+    }
+
+    // Standard graphics — use output.html
+    params.set('graphic', selectedGraphicType);
+
+    // Add graphic-specific params for preview
+    if (selectedGraphicType === 'event-summary') {
+      params.set('summaryMode', 'rotation');
+      params.set('summaryRotation', '1');
+      params.set('summaryNumTeams', '2');
+      if (!selectedCompetition) {
+        params.set('team1Name', 'Home Team');
+        params.set('team2Name', 'Away Team');
+      }
+    }
+
+    // Add theme param — meetTheme takes precedence over comp's theme
     if (selectedThemeId) {
       params.set('meetTheme', selectedThemeId);
     }
 
+    // Add competition param to load real data
+    if (selectedCompetition) {
+      params.set('comp', selectedCompetition);
+    }
+
     return `${baseUrl}/output.html?${params.toString()}`;
-  };
+  }, [selectedThemeId, selectedGraphicType, selectedCompetition, competitions]);
 
   // Calculate contrast ratio for accessibility
   const getContrastRatio = (color1, color2) => {
@@ -964,6 +1096,58 @@ export default function ThemeEditorPage() {
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 sticky top-6">
               <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide mb-4">Live Preview</h2>
 
+              {/* Preview Controls */}
+              <div className="space-y-3 mb-4">
+                {/* Graphic Type Selector */}
+                <div>
+                  <label className="block text-xs text-zinc-500 mb-1">Graphic Type</label>
+                  <select
+                    value={selectedGraphicType}
+                    onChange={(e) => setSelectedGraphicType(e.target.value)}
+                    className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+                  >
+                    {GRAPHIC_GROUPS.map((group) => (
+                      <optgroup key={group.label} label={group.label}>
+                        {group.graphics.map((g) => (
+                          <option key={g.id} value={g.id}>
+                            {g.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Competition Selector */}
+                <div>
+                  <label className="block text-xs text-zinc-500 mb-1">
+                    Competition (optional)
+                    <span className="ml-1 text-zinc-600">— loads real data</span>
+                  </label>
+                  <select
+                    value={selectedCompetition}
+                    onChange={(e) => setSelectedCompetition(e.target.value)}
+                    className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="">Use placeholder data</option>
+                    {Object.entries(competitions)
+                      .sort(([, a], [, b]) => {
+                        // Sort by event date descending, then by name
+                        const dateA = a.config?.eventDate || '';
+                        const dateB = b.config?.eventDate || '';
+                        if (dateB !== dateA) return dateB.localeCompare(dateA);
+                        return (a.config?.eventName || '').localeCompare(b.config?.eventName || '');
+                      })
+                      .map(([id, comp]) => (
+                        <option key={id} value={id}>
+                          {comp.config?.eventName || id}
+                          {comp.config?.eventDate ? ` (${comp.config.eventDate})` : ''}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              </div>
+
               {/* Color Preview Swatches */}
               <div className="mb-4 p-4 rounded-lg" style={{ background: editingTheme.colors.bodyBackground }}>
                 <div
@@ -1009,10 +1193,44 @@ export default function ThemeEditorPage() {
                 </div>
               </div>
 
-              {/* Note about live preview */}
-              <p className="text-xs text-zinc-500 mb-4">
-                Save the theme and add <code className="bg-zinc-800 px-1 rounded">?meetTheme={selectedThemeId || 'theme-id'}</code> to any graphic URL to preview.
-              </p>
+              {/* Live Iframe Preview */}
+              {selectedThemeId && (
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Graphic Preview</h3>
+                    <a
+                      href={getPreviewUrl()}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[10px] text-zinc-400 hover:text-zinc-300 transition-colors"
+                    >
+                      Open Full Size ↗
+                    </a>
+                  </div>
+                  <div
+                    className="relative bg-zinc-800 rounded-lg overflow-hidden border border-zinc-700"
+                    style={{ height: Math.round(1080 * 0.22) + 'px' }}
+                  >
+                    <iframe
+                      key={`${selectedThemeId}-${selectedGraphicType}-${selectedCompetition}`}
+                      src={getPreviewUrl()}
+                      className="w-[1920px] h-[1080px] origin-top-left"
+                      style={{ border: 'none', transform: 'scale(0.22)' }}
+                      title="Theme Preview"
+                    />
+                  </div>
+                  <p className="text-[10px] text-zinc-600 mt-1">
+                    Preview shows saved theme. Save changes to update.
+                  </p>
+                </div>
+              )}
+
+              {/* Note about preview when no theme saved */}
+              {!selectedThemeId && (
+                <p className="text-xs text-zinc-500 mb-4">
+                  Save the theme to see a live preview.
+                </p>
+              )}
 
               {/* Open Preview Link */}
               {selectedThemeId && (
