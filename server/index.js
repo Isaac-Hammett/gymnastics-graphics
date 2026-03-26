@@ -796,6 +796,19 @@ function getOrCreateEngine(compId, obsConnectionManager, firebase, socketIo) {
             ...(card.imageScale && card.imageScale !== 100 && { imageScale: card.imageScale }),
             ...(card.imageOffsetX && { imageOffsetX: card.imageOffsetX }),
             ...(card.imageOffsetY && { imageOffsetY: card.imageOffsetY }),
+            // Badge, team row, watermark, and color overrides
+            ...(card.badgeText !== undefined && { badgeText: card.badgeText }),
+            ...(card.badgeFontSize && { badgeFontSize: card.badgeFontSize }),
+            ...(card.teamNameFontSize && { teamNameFontSize: card.teamNameFontSize }),
+            ...(card.logoSize && { logoSize: card.logoSize }),
+            ...(card.showTeamRow !== undefined && { showTeamRow: card.showTeamRow }),
+            ...(card.watermarkOpacity !== undefined && { watermarkOpacity: card.watermarkOpacity }),
+            ...(card.watermarkScale && { watermarkScale: card.watermarkScale }),
+            ...(card.watermarkOffsetX && { watermarkOffsetX: card.watermarkOffsetX }),
+            ...(card.watermarkOffsetY && { watermarkOffsetY: card.watermarkOffsetY }),
+            ...(card.showWatermark !== undefined && { showWatermark: card.showWatermark }),
+            ...(card.bgColor && { bgColor: card.bgColor }),
+            ...(card.accentColor && { accentColor: card.accentColor }),
           }
         },
         duration: TITLE_CARD_DURATION_MS,
@@ -819,6 +832,8 @@ function getOrCreateEngine(compId, obsConnectionManager, firebase, socketIo) {
             statLabel: whoToWatch.statLabel || '',
             statValue: whoToWatch.statValue || '',
             headshot: whoToWatch.headshot || '',
+            overlayStyle: 'who-to-watch',
+            meetTheme,
           }
         },
         draftId: clipDraftId,
