@@ -674,7 +674,7 @@ Screenshots saved to `docs/PRD-Theme-System-V2/screenshots/task-1.8c-*.png`.
 
 > **Depends on:** All Phase 1 tasks complete. theme-loader.js must support `?comp=` and set CSS variables.
 
-### Task 3.1 — Extend theme-loader.js for Per-Graphic Override CSS Variables — NOT STARTED
+### Task 3.1 — Extend theme-loader.js for Per-Graphic Override CSS Variables — COMPLETE
 
 **Goal:** After applying global theme colors, detect the current graphic ID and apply any per-graphic override values as graphic-specific CSS variables.
 
@@ -700,11 +700,19 @@ Screenshots saved to `docs/PRD-Theme-System-V2/screenshots/task-1.8c-*.png`.
 5. For live mode (no `?graphic=` param), theme-loader.js can't know the graphic ID at load time. Override application for live-mode inline graphics must happen in the `currentGraphic` listener in output.html — read the graphic type from the payload, check `window.__themeData.overrides[graphic]`, and set CSS variables before rendering. **This is a small addition to the existing render path.**
 
 **Verify:**
-- [ ] Load `overlays/sponsors-thanks.html?meetTheme={testTheme}` where the theme has `overrides/sponsors-thanks/headerBar: "#FF0000"` → header uses red (#FF0000), not the global theme color
-- [ ] Load `output.html?graphic=event-bar&meetTheme={testTheme}` with override → event-bar uses override color
-- [ ] Load `output.html?graphic=event-bar&meetTheme={testTheme}` WITHOUT override → event-bar uses global theme color (fallback works)
-- [ ] CSS variable cascade: `var(--event-bar-header-bg, var(--meet-header-bg, #BFBFBF))` resolves correctly at each layer
-- [ ] `window.__themeData` contains the full theme object for live-mode override lookup
+- [x] Load `overlays/sponsors-thanks.html?meetTheme={testTheme}` where the theme has `overrides/sponsors-thanks/headerBar: "#FF0000"` → header uses red (#FF0000), not the global theme color
+- [x] Load `output.html?graphic=event-bar&meetTheme={testTheme}` with override → event-bar uses override color
+- [x] Load `output.html?graphic=event-bar&meetTheme={testTheme}` WITHOUT override → event-bar uses global theme color (fallback works)
+- [x] CSS variable cascade: `var(--event-bar-header-bg, var(--meet-header-bg, #BFBFBF))` resolves correctly at each layer
+- [x] `window.__themeData` contains the full theme object for live-mode override lookup
+
+**Status:** COMPLETE — Implementation verified locally with screenshots. Key changes:
+- Added `detectGraphicId()` function to extract graphic ID from URL/pathname
+- Added `applyOverrides(theme, graphicId)` function to set graphic-specific CSS variables
+- Updated both output.html inline CSS and theme-overrides.css to use the 3-layer cascade
+- `window.__themeData` stores full theme for live-mode override lookups
+
+Screenshots: `local-task-3.1-fresh-server.png` (red override), `local-task-3.1-no-override-fallback.png` (pink fallback)
 
 **Deploy:** Upload `overlays/` directory per CLAUDE.md deploy step 2.
 
@@ -1174,3 +1182,4 @@ Phase 4 (depends on Phase 3):
 - LEARNING: Use `pink-meet-2026` for theme testing (not `pink-meet`). The theme ID in Firebase is `pink-meet-2026`. Many inline graphics (hosts, team1-coaches, event-summary, virtuis-leaderboard) require competition/Virtius data to render content — blank screens with "Theme applied" console log is expected in preview mode. The key verification is that theme-loader.js runs and logs the theme application. (found during Task 1.8a)
 - LEARNING: Iframe overlays (sponsors-thanks, sponsors-cycle, sponsors-bug, who-to-watch-title, who-to-watch, rotation-slate, event-calendar) all load theme-loader.js and apply themes correctly. Sponsor bug/cycle show blank/transparent when no sponsors configured — this is expected. PlayoutEngine meetTheme implementation verified via code inspection: all 8 `_writeCurrentGraphic()` calls include `meetTheme: this._meetTheme`. Live playout test requires deployed coordinator. (found during Task 1.8b)
 - LEARNING: For local testing with `?comp=` param, use Python's `http.server` — `npx serve` sometimes truncates query params. The `wcgnic-2026-prelim1` competition has `meetTheme: "behind-the-chalk"` configured and is good for integration testing. Debug panel shows "Source: competition config" when theme is loaded via `?comp=` lookup vs "URL parameter" when via `?meetTheme=`. (found during Task 1.8c)
+- LEARNING: Per-graphic overrides require BOTH theme-loader.js to SET the CSS variables AND theme-overrides.css/output.html inline CSS to USE them with the 3-layer cascade `var(--{graphicId}-*, var(--meet-*, fallback))`. Python http.server caches aggressively — use a different port to bypass browser cache when testing CSS changes. The override mapping follows the pattern: `headerBar → --{graphicId}-header-bg`. (found during Task 3.1)
