@@ -550,7 +550,7 @@ Live verification requires deployment and triggering a theme error in production
 
 ---
 
-### Task 1.8c — Rundown Integration Test — NOT STARTED
+### Task 1.8c — Rundown Integration Test — COMPLETE
 
 **Goal:** Verify the full pipeline: timesheetEngine → currentGraphic → themed render.
 
@@ -563,10 +563,25 @@ Live verification requires deployment and triggering a theme error in production
 4. Verify: graphic renders with theme (no FOUC), correct colors
 
 **Verify:**
-- [ ] Live-mode render gates on theme readiness (no FOUC)
-- [ ] Theme loaded from competition config (not URL param)
-- [ ] Graphic renders with correct theme colors
-- [ ] Debug panel (`?debug=theme`) shows successful theme load from competition config
+- [x] Live-mode render gates on theme readiness (no FOUC)
+- [x] Theme loaded from competition config (not URL param)
+- [x] Graphic renders with correct theme colors
+- [x] Debug panel (`?debug=theme`) shows successful theme load from competition config
+
+**Status:** COMPLETE — Verified with `wcgnic-2026-prelim1` competition (has `meetTheme: "behind-the-chalk"` in config).
+
+**Verification Results:**
+| Check | Result | Evidence |
+|-------|--------|----------|
+| Theme from config | ✓ | Debug panel shows "Source: competition config" |
+| Theme ID correct | ✓ | Debug panel shows "Theme ID: behind-the-chalk" |
+| Load status | ✓ success | Debug panel shows "Load Status: success" (481ms) |
+| CSS variables | ✓ 8/8 | All variables match expected values |
+| event-bar render | ✓ themed | Dark header (#2D3436), gray content (#636E72) |
+| warm-up render | ✓ themed | Same theme colors applied |
+| No console errors | ✓ | Only favicon 404 (expected) |
+
+Screenshots saved to `docs/PRD-Theme-System-V2/screenshots/task-1.8c-*.png`.
 
 **Deploy:** None — verification only.
 
@@ -1146,3 +1161,4 @@ Phase 4 (depends on Phase 3):
 - LEARNING: Firebase subscription hooks use `remove()` from firebase/database for deleting data. Import it in the hook file alongside other firebase functions. The pattern from useProductionAlerts.js and AlertPanel.jsx provided a clean structure for error log components. (found during Task 1.7b)
 - LEARNING: Use `pink-meet-2026` for theme testing (not `pink-meet`). The theme ID in Firebase is `pink-meet-2026`. Many inline graphics (hosts, team1-coaches, event-summary, virtuis-leaderboard) require competition/Virtius data to render content — blank screens with "Theme applied" console log is expected in preview mode. The key verification is that theme-loader.js runs and logs the theme application. (found during Task 1.8a)
 - LEARNING: Iframe overlays (sponsors-thanks, sponsors-cycle, sponsors-bug, who-to-watch-title, who-to-watch, rotation-slate, event-calendar) all load theme-loader.js and apply themes correctly. Sponsor bug/cycle show blank/transparent when no sponsors configured — this is expected. PlayoutEngine meetTheme implementation verified via code inspection: all 8 `_writeCurrentGraphic()` calls include `meetTheme: this._meetTheme`. Live playout test requires deployed coordinator. (found during Task 1.8b)
+- LEARNING: For local testing with `?comp=` param, use Python's `http.server` — `npx serve` sometimes truncates query params. The `wcgnic-2026-prelim1` competition has `meetTheme: "behind-the-chalk"` configured and is good for integration testing. Debug panel shows "Source: competition config" when theme is loaded via `?comp=` lookup vs "URL parameter" when via `?meetTheme=`. (found during Task 1.8c)
