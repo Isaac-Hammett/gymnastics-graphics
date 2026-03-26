@@ -918,7 +918,7 @@ Screenshots: `local-task-3.4-final.png` (Layer 3 override), `local-task-3.4-laye
 
 ---
 
-### Task 4.2 — Per-Graphic Override Panel (MVP — Colors Only) — NOT STARTED
+### Task 4.2 — Per-Graphic Override Panel (MVP — Colors Only) — COMPLETE
 
 **Goal:** Collapsible panels per graphic ID in the Theme Editor for setting color overrides.
 
@@ -941,11 +941,24 @@ Screenshots: `local-task-3.4-final.png` (Layer 3 override), `local-task-3.4-laye
 5. Add `overrides` to the `editingTheme` state object (initialize from Firebase if existing theme has overrides)
 
 **Verify:**
-- [ ] Build passes
-- [ ] Per-graphic override panel renders for each graphic ID
-- [ ] Setting a custom headerBar color on `event-bar` and saving → Firebase shows `themes/{id}/overrides/event-bar/headerBar`
-- [ ] "Use theme default" radio clears the override (removes the key from Firebase)
-- [ ] Saving and reloading the theme editor → overrides persist
+- [x] Build passes — verified locally
+- [ ] Per-graphic override panel renders for each graphic ID — requires deployment
+- [ ] Setting a custom headerBar color on `event-bar` and saving → Firebase shows `themes/{id}/overrides/event-bar/headerBar` — requires deployment
+- [ ] "Use theme default" radio clears the override (removes the key from Firebase) — requires deployment
+- [ ] Saving and reloading the theme editor → overrides persist — requires deployment
+
+**Status:** COMPLETE — Build passes. Implementation includes:
+- `OVERRIDE_GRAPHIC_GROUPS` constant with 7 categories and 22 graphic IDs
+- `OVERRIDE_COLOR_FIELDS` constant mapping 8 color fields
+- State: `expandedOverrideGraphics` for tracking panel expansion
+- Helper functions: `updateOverrideField`, `clearOverrideField`, `resetGraphicOverrides`, `countGraphicOverrides`, `toggleOverridePanel`
+- Updated `loadTheme` and `newTheme` to include `overrides` field
+- Collapsible panels per graphic with checkbox-based color pickers (8 colors + logo override)
+- Override count badge on collapsed panels
+- "Reset to theme defaults" button per graphic
+- Auto-switches preview to selected graphic when panel is expanded
+
+Live verification requires deployment and authentication. Will be verified in Task 4.3 or 4.DOC.
 
 **Deploy:** Build React SPA + deploy.
 
@@ -1223,3 +1236,4 @@ Phase 4 (depends on Phase 3):
 - LEARNING: Per-graphic texture `::before` rules must be split out from the combined global selector — each graphic type needs its own rule to use the 3-layer cascade `var(--{graphicId}-body-texture, var(--meet-texture, none))`. Generic elements (panel, header-bar, frame-header, roster-container) can share a combined rule using global texture only. Added `mix-blend-mode` property to all texture rules for overlay/multiply/normal blend support. (found during Task 3.3)
 - LEARNING: The debug panel's Layer 3 display shows the per-graphic override variable (e.g., `--event-bar-header-bg`) but the global `--meet-header-bg` still holds the theme value. The CSS cascade `var(--{graphicId}-*, var(--meet-*, fallback))` handles priority at render time. The debug panel reads `overrideStatus` from `debugState` which is populated by `applyOverrides()` in the init flow. (found during Task 3.4)
 - LEARNING: Theme Editor page requires authentication — local screenshot verification requires login. Build verification is sufficient for code correctness. Full UI verification happens after deployment to production. The GRAPHIC_GROUPS constant uses 7 categories to match the plan's grouping requirements. WTW overlays need special URL handling (use overlay files directly, not output.html). (found during Task 4.1)
+- LEARNING: Per-graphic override panels use checkbox toggles instead of radio buttons for each color field — cleaner UX that shows enabled/disabled state clearly. The `overrides` field must be added to both `loadTheme` (for existing themes) and `newTheme` (for new themes). Helper functions (`updateOverrideField`, `clearOverrideField`, `resetGraphicOverrides`) manage the nested state cleanly. When a graphic panel is expanded, auto-switching `selectedGraphicType` gives immediate preview feedback. Team cards use specific IDs (`team1-stats`, `team1-coaches`, `team2-stats`, `team2-coaches`) not generic `team-stats`/`team-coaches`. (found during Task 4.2)

@@ -5,6 +5,50 @@ import { SERVER_URL } from '../lib/serverUrl';
 import SponsorAdjustControls from '../components/SponsorAdjustControls';
 import { buildSponsorsCycleURL } from '../lib/urlBuilder';
 
+// Override-able graphic IDs grouped by category (for per-graphic override panels)
+const OVERRIDE_GRAPHIC_GROUPS = [
+  {
+    label: 'Lower-Third Bars',
+    graphics: ['event-bar', 'warm-up', 'replay'],
+  },
+  {
+    label: 'Full-Screen',
+    graphics: ['event-summary', 'virtuis-leaderboard', 'event-frame'],
+  },
+  {
+    label: 'Team Cards',
+    graphics: ['team1-stats', 'team1-coaches', 'team2-stats', 'team2-coaches'],
+  },
+  {
+    label: 'Sponsors',
+    graphics: ['sponsors-thanks', 'sponsors-cycle', 'sponsors-bug'],
+  },
+  {
+    label: 'Stream',
+    graphics: ['stream-starting', 'stream-thanks'],
+  },
+  {
+    label: 'Overlays',
+    graphics: ['rotation-slate', 'team-roster', 'logos'],
+  },
+  {
+    label: 'Playout / Who to Watch',
+    graphics: ['who-to-watch-title', 'who-to-watch-lower-third', 'clip-overlay'],
+  },
+];
+
+// Color override field keys and labels (same as COLOR_LABELS but for per-graphic overrides)
+const OVERRIDE_COLOR_FIELDS = [
+  { key: 'headerBar', label: 'Header Bar' },
+  { key: 'contentArea', label: 'Content Area' },
+  { key: 'bodyBackground', label: 'Body Background' },
+  { key: 'borderDivider', label: 'Border / Divider' },
+  { key: 'badge', label: 'Badge' },
+  { key: 'badgeText', label: 'Badge Text' },
+  { key: 'textOnHeader', label: 'Text on Header' },
+  { key: 'textOnContent', label: 'Text on Content' },
+];
+
 // Graphic types for preview selector, grouped by category
 const GRAPHIC_GROUPS = [
   {
@@ -287,6 +331,9 @@ export default function ThemeEditorPage() {
   const [selectedCompetition, setSelectedCompetition] = useState('');
   const [selectedGraphicType, setSelectedGraphicType] = useState('event-summary');
 
+  // Per-graphic override state
+  const [expandedOverrideGraphics, setExpandedOverrideGraphics] = useState({});
+
   // Preview URL for sponsor cycle when adjusting sponsors
   const sponsorPreviewUrl = useMemo(() => {
     const sponsors = editingTheme.sponsors || [];
@@ -366,16 +413,19 @@ export default function ThemeEditorPage() {
         logos: { ...DEFAULT_THEME.logos, ...themes[themeId].logos },
         branding: { ...DEFAULT_THEME.branding, ...themes[themeId].branding },
         sponsors: themes[themeId].sponsors || [], // Ensure sponsors array exists
+        overrides: themes[themeId].overrides || {}, // Per-graphic overrides
       });
       setIsDirty(false);
+      setExpandedOverrideGraphics({}); // Collapse all override panels when loading new theme
     }
   }, [themes]);
 
   // Start a new theme
   const newTheme = () => {
     setSelectedThemeId(null);
-    setEditingTheme({ ...DEFAULT_THEME });
+    setEditingTheme({ ...DEFAULT_THEME, overrides: {} });
     setIsDirty(false);
+    setExpandedOverrideGraphics({});
   };
 
   // Apply a preset template
@@ -408,6 +458,67 @@ export default function ThemeEditorPage() {
       return newTheme;
     });
     setIsDirty(true);
+  };
+
+  // Update a per-graphic override field
+  const updateOverrideField = (graphicId, fieldKey, value) => {
+    setEditingTheme(prev => {
+      const newOverrides = { ...(prev.overrides || {}) };
+      if (!newOverrides[graphicId]) {
+        newOverrides[graphicId] = {};
+      }
+      newOverrides[graphicId] = { ...newOverrides[graphicId], [fieldKey]: value };
+      return { ...prev, overrides: newOverrides };
+    });
+    setIsDirty(true);
+  };
+
+  // Clear a per-graphic override field (remove the key entirely)
+  const clearOverrideField = (graphicId, fieldKey) => {
+    setEditingTheme(prev => {
+      const newOverrides = { ...(prev.overrides || {}) };
+      if (newOverrides[graphicId]) {
+        const graphicOverrides = { ...newOverrides[graphicId] };
+        delete graphicOverrides[fieldKey];
+        // If no overrides left for this graphic, remove the graphic entry
+        if (Object.keys(graphicOverrides).length === 0) {
+          delete newOverrides[graphicId];
+        } else {
+          newOverrides[graphicId] = graphicOverrides;
+        }
+      }
+      return { ...prev, overrides: newOverrides };
+    });
+    setIsDirty(true);
+  };
+
+  // Reset all overrides for a specific graphic
+  const resetGraphicOverrides = (graphicId) => {
+    setEditingTheme(prev => {
+      const newOverrides = { ...(prev.overrides || {}) };
+      delete newOverrides[graphicId];
+      return { ...prev, overrides: newOverrides };
+    });
+    setIsDirty(true);
+  };
+
+  // Count overrides for a graphic (for badge display)
+  const countGraphicOverrides = (graphicId) => {
+    const overrides = editingTheme.overrides?.[graphicId];
+    if (!overrides) return 0;
+    return Object.keys(overrides).length;
+  };
+
+  // Toggle expanded state for a graphic's override panel
+  const toggleOverridePanel = (graphicId) => {
+    setExpandedOverrideGraphics(prev => ({
+      ...prev,
+      [graphicId]: !prev[graphicId],
+    }));
+    // When expanding a panel, auto-switch preview to this graphic
+    if (!expandedOverrideGraphics[graphicId]) {
+      setSelectedGraphicType(graphicId);
+    }
   };
 
   // Extract colors from the meet logo and populate color fields
@@ -1057,6 +1168,165 @@ export default function ThemeEditorPage() {
                   )}
                 </>
               )}
+            </div>
+
+            {/* Per-Graphic Overrides */}
+            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">Per-Graphic Overrides</h2>
+                {Object.keys(editingTheme.overrides || {}).length > 0 && (
+                  <span className="px-2 py-0.5 bg-purple-500/20 text-purple-400 text-xs rounded-full">
+                    {Object.keys(editingTheme.overrides || {}).length} graphic(s)
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-zinc-500 mb-4">
+                Override theme colors for specific graphics. Overrides take precedence over the theme defaults above.
+              </p>
+
+              <div className="space-y-3">
+                {OVERRIDE_GRAPHIC_GROUPS.map((group) => (
+                  <div key={group.label}>
+                    <div className="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-2">
+                      {group.label}
+                    </div>
+                    <div className="space-y-1">
+                      {group.graphics.map((graphicId) => {
+                        const overrideCount = countGraphicOverrides(graphicId);
+                        const isExpanded = expandedOverrideGraphics[graphicId];
+                        const overrides = editingTheme.overrides?.[graphicId] || {};
+
+                        return (
+                          <div key={graphicId} className="bg-zinc-800 rounded-lg overflow-hidden">
+                            {/* Collapsible header */}
+                            <button
+                              onClick={() => toggleOverridePanel(graphicId)}
+                              className="w-full flex items-center justify-between px-3 py-2 hover:bg-zinc-700/50 transition-colors"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm text-zinc-300 font-mono">{graphicId}</span>
+                                {overrideCount > 0 && (
+                                  <span className="px-1.5 py-0.5 bg-purple-500/20 text-purple-400 text-[10px] rounded-full">
+                                    {overrideCount} override{overrideCount > 1 ? 's' : ''}
+                                  </span>
+                                )}
+                              </div>
+                              <svg
+                                className={`w-4 h-4 text-zinc-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </button>
+
+                            {/* Expanded panel */}
+                            {isExpanded && (
+                              <div className="px-3 pb-3 border-t border-zinc-700/50">
+                                <div className="pt-3 space-y-3">
+                                  {/* Color override fields */}
+                                  <div className="grid grid-cols-2 gap-2">
+                                    {OVERRIDE_COLOR_FIELDS.map(({ key, label }) => {
+                                      const hasOverride = overrides[key] !== undefined;
+                                      const overrideValue = overrides[key] || editingTheme.colors[key] || '#888888';
+
+                                      return (
+                                        <div key={key} className="flex items-center gap-2">
+                                          <label className="flex items-center gap-1.5 cursor-pointer">
+                                            <input
+                                              type="checkbox"
+                                              checked={hasOverride}
+                                              onChange={(e) => {
+                                                if (e.target.checked) {
+                                                  // Enable override with current theme color as starting value
+                                                  updateOverrideField(graphicId, key, editingTheme.colors[key] || '#888888');
+                                                } else {
+                                                  // Disable override
+                                                  clearOverrideField(graphicId, key);
+                                                }
+                                              }}
+                                              className="w-3.5 h-3.5 rounded border-zinc-600 bg-zinc-700 text-purple-500 focus:ring-purple-500 focus:ring-offset-0"
+                                            />
+                                          </label>
+                                          <input
+                                            type="color"
+                                            value={overrideValue}
+                                            disabled={!hasOverride}
+                                            onChange={(e) => updateOverrideField(graphicId, key, e.target.value)}
+                                            className={`w-6 h-6 rounded cursor-pointer bg-transparent border-0 ${!hasOverride ? 'opacity-40 cursor-not-allowed' : ''}`}
+                                          />
+                                          <span className={`text-[11px] ${hasOverride ? 'text-zinc-300' : 'text-zinc-500'}`}>
+                                            {label}
+                                          </span>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+
+                                  {/* Logo override */}
+                                  <div className="pt-2 border-t border-zinc-700/50">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <label className="flex items-center gap-1.5 cursor-pointer">
+                                        <input
+                                          type="checkbox"
+                                          checked={overrides.logo !== undefined}
+                                          onChange={(e) => {
+                                            if (e.target.checked) {
+                                              updateOverrideField(graphicId, 'logo', '');
+                                            } else {
+                                              clearOverrideField(graphicId, 'logo');
+                                            }
+                                          }}
+                                          className="w-3.5 h-3.5 rounded border-zinc-600 bg-zinc-700 text-purple-500 focus:ring-purple-500 focus:ring-offset-0"
+                                        />
+                                        <span className={`text-[11px] ${overrides.logo !== undefined ? 'text-zinc-300' : 'text-zinc-500'}`}>
+                                          Logo Override
+                                        </span>
+                                      </label>
+                                    </div>
+                                    {overrides.logo !== undefined && (
+                                      <div className="flex items-center gap-2">
+                                        <input
+                                          type="text"
+                                          value={overrides.logo || ''}
+                                          onChange={(e) => updateOverrideField(graphicId, 'logo', e.target.value)}
+                                          placeholder="https://..."
+                                          className="flex-1 px-2 py-1.5 bg-zinc-700 border border-zinc-600 rounded text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-purple-500"
+                                        />
+                                        {overrides.logo && (
+                                          <img
+                                            src={overrides.logo}
+                                            alt="Logo preview"
+                                            className="w-8 h-8 object-contain bg-white rounded flex-shrink-0"
+                                            onError={(e) => e.target.style.display = 'none'}
+                                          />
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Reset button */}
+                                  {overrideCount > 0 && (
+                                    <div className="pt-2 flex justify-end">
+                                      <button
+                                        onClick={() => resetGraphicOverrides(graphicId)}
+                                        className="text-[10px] text-zinc-400 hover:text-zinc-300 transition-colors"
+                                      >
+                                        Reset to theme defaults
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Delete Button */}
