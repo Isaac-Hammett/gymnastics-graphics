@@ -801,7 +801,7 @@ Screenshots: `local-task-3.3-event-bar.png`, `local-task-3.3-warm-up-texture.png
 
 ---
 
-### Task 3.4 — Update Debug Panel for Override Source Display — NOT STARTED
+### Task 3.4 — Update Debug Panel for Override Source Display — COMPLETE
 
 **Goal:** Extend the Phase 1 debug panel to show which layer (fallback / theme / override) provides each CSS variable value.
 
@@ -818,10 +818,17 @@ Screenshots: `local-task-3.3-event-bar.png`, `local-task-3.3-warm-up-texture.png
 3. Read override status from `window.__themeDebug` set in Task 3.1
 
 **Verify:**
-- [ ] Debug panel shows "Layer 3 (override)" for overridden properties
-- [ ] Debug panel shows "Layer 2 (theme)" for non-overridden themed properties
-- [ ] Debug panel shows "Layer 1 (fallback)" for unthemed properties
-- [ ] Graphic ID displayed correctly for both overlays and output.html
+- [x] Debug panel shows "Layer 3 (override)" for overridden properties — shows "Layer 3 (override: event-bar) → --event-bar-header-bg" in purple
+- [x] Debug panel shows "Layer 2 (theme)" for non-overridden themed properties — shows "Layer 2 (theme)" in blue
+- [x] Debug panel shows "Layer 1 (fallback)" for unthemed properties — shows "No theme applied — using fallback colors" for no-theme case
+- [x] Graphic ID displayed correctly for both overlays and output.html — shows graphic ID from URL param
+
+**Status:** COMPLETE — Debug panel now shows:
+- Per-variable source layer with color coding (gray L1, blue L2, purple L3)
+- "Per-Graphic Overrides" section with graphic ID, "Has Overrides" status, and list of applied overrides
+- For no-theme case, shows simplified "No theme applied — using fallback colors" message
+
+Screenshots: `local-task-3.4-final.png` (Layer 3 override), `local-task-3.4-layer2.png` (Layer 2 theme only), `local-task-3.4-no-theme.png` (no theme/fallback)
 
 **Deploy:** Upload `overlays/` directory.
 
@@ -1198,3 +1205,4 @@ Phase 4 (depends on Phase 3):
 - LEARNING: Per-graphic overrides require BOTH theme-loader.js to SET the CSS variables AND theme-overrides.css/output.html inline CSS to USE them with the 3-layer cascade `var(--{graphicId}-*, var(--meet-*, fallback))`. Python http.server caches aggressively — use a different port to bypass browser cache when testing CSS changes. The override mapping follows the pattern: `headerBar → --{graphicId}-header-bg`. (found during Task 3.1)
 - LEARNING: Image/texture CSS variable injection extends the override mapping with 13 new properties: `headerBgImage`, `headerBgImageFit`, `headerBgImagePosition`, `headerBgImageOpacity`, `bodyBgImage*` (4), `bodyTexture*` (3), `logo`, `logoSize`. URL values are wrapped in `url()` by JS before setting the CSS variable. The CSS rules use `background-image: var(--{graphicId}-header-bg-image, none)` — defaulting to `none` ensures no visual change without an override. (found during Task 3.2)
 - LEARNING: Per-graphic texture `::before` rules must be split out from the combined global selector — each graphic type needs its own rule to use the 3-layer cascade `var(--{graphicId}-body-texture, var(--meet-texture, none))`. Generic elements (panel, header-bar, frame-header, roster-container) can share a combined rule using global texture only. Added `mix-blend-mode` property to all texture rules for overlay/multiply/normal blend support. (found during Task 3.3)
+- LEARNING: The debug panel's Layer 3 display shows the per-graphic override variable (e.g., `--event-bar-header-bg`) but the global `--meet-header-bg` still holds the theme value. The CSS cascade `var(--{graphicId}-*, var(--meet-*, fallback))` handles priority at render time. The debug panel reads `overrideStatus` from `debugState` which is populated by `applyOverrides()` in the init flow. (found during Task 3.4)
