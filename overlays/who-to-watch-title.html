@@ -548,13 +548,53 @@
       setTimeout(applyTransform, 1200);
     }
 
-    // ── Hide badge if explicitly set to empty ──
+    // ── Badge controls ──
     const badgeText = params.get('badge');
     const badgeEl = document.getElementById('badge');
     if (badgeText === '') {
       badgeEl.style.display = 'none';
     } else if (badgeText) {
       badgeEl.textContent = badgeText.toUpperCase();
+    }
+    const badgeFontSize = parseInt(params.get('badgeFontSize'));
+    if (badgeFontSize) badgeEl.style.fontSize = badgeFontSize + 'px';
+
+    // ── Team name row controls ──
+    const teamNameFontSize = parseInt(params.get('teamNameFontSize'));
+    if (teamNameFontSize) teamNameEl.style.fontSize = teamNameFontSize + 'px';
+    const showTeamRow = params.get('showTeamRow');
+    if (showTeamRow === 'false') teamRow.style.display = 'none';
+
+    // ── Watermark controls ──
+    const watermarkOpacity = parseInt(params.get('watermarkOpacity'));
+    const watermarkScale = parseInt(params.get('watermarkScale'));
+    const showWatermark = params.get('showWatermark');
+    if (showWatermark === 'false') {
+      logoWatermark.style.display = 'none';
+    }
+    if (!isNaN(watermarkOpacity)) {
+      logoWatermark.style.opacity = watermarkOpacity / 100;
+    }
+    if (watermarkScale && watermarkScale !== 100) {
+      const ws = watermarkScale / 100;
+      logoWatermark.style.width = (600 * ws) + 'px';
+      logoWatermark.style.height = (600 * ws) + 'px';
+    }
+
+    // ── Theme color overrides (applied after theme-loader) ──
+    const bgColor = params.get('bgColor');
+    const accentColor = params.get('accentColor');
+    if (bgColor || accentColor) {
+      // Apply after theme-loader has run (it loads synchronously below, then we override)
+      setTimeout(() => {
+        if (bgColor) {
+          document.documentElement.style.setProperty('--meet-header-bg', bgColor);
+          document.querySelector('.bg-fill').style.background = bgColor;
+        }
+        if (accentColor) {
+          document.documentElement.style.setProperty('--meet-content-bg', accentColor);
+        }
+      }, 600);
     }
   </script>
   <script src="theme-loader.js"></script>
