@@ -49,7 +49,7 @@
 
 ---
 
-### Task 0.3 — Audit Pseudo-Element Usage — NOT STARTED
+### Task 0.3 — Audit Pseudo-Element Usage — COMPLETE
 
 **Goal:** Identify conflicts with texture overlay `::before` pseudo-elements for Phase 3.
 
@@ -61,8 +61,10 @@
 3. Document any existing pseudo-elements that would conflict with texture injection
 
 **Verify:**
-- [ ] All pseudo-element usage documented
-- [ ] Conflicts (if any) have proposed resolution
+- [x] All pseudo-element usage documented
+- [x] Conflicts (if any) have proposed resolution
+
+**Status:** COMPLETE — Audit found 3 non-texture pseudo-element usages (`.text-side::before` in who-to-watch-title.html, `.layout-cinema::before/::after` and `.layout-stripe::before` in rotation-slate.html). None conflict with texture targets — Phase 3 can proceed as planned.
 
 **Deploy:** None — research only.
 
