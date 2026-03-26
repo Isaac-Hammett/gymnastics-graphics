@@ -478,7 +478,17 @@ Screenshots in `docs/PRD-Who-To-Watch/screenshots/` show the following issues wh
 
 29. **No theme/background color controls in editor** — **FIXED 2026-03-25.** Added theme picker dropdown (fetches from Firebase `themes/`), background color override (`bgColor` → `--meet-header-bg`), and accent color override (`accentColor` → `--meet-content-bg`). Color overrides applied via `setTimeout(600ms)` after theme-loader completes. Commit: `405c7ce`.
 
-30. **Video clip does not play during Who to Watch segment in live show** — See [Implementation Plan: WTW Video Playback + Lower Third](#implementation-plan-wtw-video-playback--lower-third) below for the full fix design.
+30. ~~**Video clip does not play during Who to Watch segment in live show**~~ — **FIXED 2026-03-26.** Graphics source renders WTW lower-third iframe when `overlayStyle === 'who-to-watch'` (`output.html:13232`). Clip source suppresses built-in `#clipOverlay` for WTW clips (`output.html:13482,13543,6880`). Sequencer passes `overlayStyle` and `meetTheme` in clip step (`server/index.js:835-836`). Commits: `ce8beb9`, `03505fe`, `aa840f6`, `029a5bc`.
+
+32. ~~**Graphic dropdown is redundant and confusing for WTW/playout/content-sequence types**~~ — **FIXED 2026-03-26.** Graphic dropdown hidden for `who-to-watch`, `playout`, and `content-sequence` types via conditional at `RundownEditorPage.jsx:8114`. Registry entries preserved for URL Generator. Commit: `ce8beb9`.
+
+33. ~~**Lower-third preview in editor is a React mockup, not the real overlay**~~ — **FIXED 2026-03-26.** Replaced React mockup with `LowerThirdIframePreview` component following `TitleCardIframePreview` pattern. Renders scaled 1920x1080 iframe to `/overlays/who-to-watch.html` with 300ms debounce, dark background behind transparent overlay. Editor preview now matches production exactly. Commit: (pending).
+
+34. **No adjustment controls for the WTW lower-third overlay** — The title card overlay (`who-to-watch-title.html`) has 19+ adjustment params with stepper controls in the editor (font sizes, offsets, colors, watermark, badge, etc.). The lower-third overlay (`who-to-watch.html`) has ZERO adjustment params — everything is hardcoded CSS. Producers cannot tune font sizes, headshot size, card positioning, or colors. **Fix:** Add query param support to `who-to-watch.html` for all adjustable properties (matching the title card pattern), add stepper controls in the WhoToWatchEditor, pass adjustments through the sequencer to the live iframe, and store adjustments in the segment's `whoToWatch` object.
+
+35. **Lower-third overlay has no theme override controls** — The title card editor has a theme dropdown + bgColor/accentColor color pickers that override theme-loader colors. The lower-third has no equivalent — it only receives `meetTheme` from the sequencer with no per-segment override. **Fix:** Add theme dropdown and color override pickers to the lower-third adjustments panel, same as the title card. Pass `bgColor`/`accentColor` as query params to `who-to-watch.html`, apply them via `setTimeout(600ms)` after theme-loader (same pattern as `who-to-watch-title.html`).
+
+36. **Theme system documentation: where WTW graphics render** — The WTW segment renders graphics in TWO places during the sequence: (a) title cards render on the **graphics source** (`output.html` live mode) as full-screen iframes to `who-to-watch-title.html`, (b) the lower-third renders on the **graphics source** as an iframe to `who-to-watch.html` overlaying the video playing on the **clip source** (`output.html?mode=clip`). Both overlays load `theme-loader.js` which reads `meetTheme` from their iframe URL params and fetches theme CSS variables from Firebase. Theme overrides (`bgColor`, `accentColor`) are applied via `setTimeout(600ms)` after theme-loader completes. The sequencer passes `meetTheme` and override colors through Firebase `currentGraphic` → both OBS sources read them. **This means theme changes to the WTW lower-third require updating `overlays/who-to-watch.html` only — the graphics source iframe loads it dynamically.**
 
 31. **Title card adjustments not passed through sequencer to rendered output** — The WhoToWatch sequencer in `server/index.js` (line ~792) only passed 7 of 19 card adjustment fields (`nameFontSize`, `bodyFontSize`, `headlineFontSize`, `textOffsetY`, `imageScale`, `imageOffsetX`, `imageOffsetY`) to Firebase `currentGraphic`. Missing: `badgeText`, `badgeFontSize`, `teamNameFontSize`, `logoSize`, `showTeamRow`, `watermarkOpacity`, `watermarkScale`, `watermarkOffsetX`, `watermarkOffsetY`, `showWatermark`, `bgColor`, `accentColor`. Additionally, `output.html` had a hardcoded `adjustKeys` array with only the same 7 fields. The editor preview worked correctly (builds iframe URL directly with all params) but live show playback used defaults for all missing fields. **FIXED 2026-03-25.** Both `server/index.js` and `output.html` now pass all 19 card adjustment fields.
 
@@ -486,9 +496,9 @@ Screenshots in `docs/PRD-Who-To-Watch/screenshots/` show the following issues wh
 
 ## Implementation Plan: WTW Video Playback + Lower Third
 
-**Status:** NOT STARTED
+**Status:** IN PROGRESS (Issues #30, #32, #33 fixed 2026-03-26; Issues #34-35 remain)
 **Date:** 2026-03-26
-**Priority:** Critical — video step is silently skipped during live shows
+**Priority:** Issues #34-35 remain — adjustment controls, theme overrides
 
 ### Problem Statement
 
