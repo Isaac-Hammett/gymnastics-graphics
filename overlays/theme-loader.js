@@ -458,6 +458,48 @@ window.themeReady = new Promise(resolve => { _resolveThemeReady = resolve; });
       }
     }
 
+    // Image/texture overrides — set as url() wrapped CSS variables
+    // These allow per-graphic background images and textures
+    const imageOverrideMapping = {
+      // Header background image
+      headerBgImage: 'header-bg-image',
+      headerBgImageFit: 'header-bg-image-fit',
+      headerBgImagePosition: 'header-bg-image-position',
+      headerBgImageOpacity: 'header-bg-image-opacity',
+      // Body background image
+      bodyBgImage: 'body-bg-image',
+      bodyBgImageFit: 'body-bg-image-fit',
+      bodyBgImagePosition: 'body-bg-image-position',
+      bodyBgImageOpacity: 'body-bg-image-opacity',
+      // Body texture
+      bodyTexture: 'body-texture',
+      bodyTextureOpacity: 'body-texture-opacity',
+      bodyTextureBlend: 'body-texture-blend',
+      // Logo override
+      logo: 'logo-url',
+      logoSize: 'logo-size'
+    };
+
+    for (const [propKey, cssSuffix] of Object.entries(imageOverrideMapping)) {
+      if (overrides[propKey] !== undefined && overrides[propKey] !== null && overrides[propKey] !== '') {
+        const varName = `--${graphicId}-${cssSuffix}`;
+        let value = overrides[propKey];
+
+        // Wrap URL values in url() for CSS consumption
+        if (propKey === 'headerBgImage' || propKey === 'bodyBgImage' || propKey === 'bodyTexture' || propKey === 'logo') {
+          value = `url(${value})`;
+        }
+        // Add 'px' to logoSize if it's a number
+        if (propKey === 'logoSize' && typeof overrides[propKey] === 'number') {
+          value = `${overrides[propKey]}px`;
+        }
+
+        root.style.setProperty(varName, value);
+        overrideStatus.applied.push({ name: varName, value: value });
+        console.log(`[theme-loader] Override applied: ${varName} = ${value}`);
+      }
+    }
+
     return overrideStatus;
   }
 
