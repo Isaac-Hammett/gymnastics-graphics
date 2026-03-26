@@ -1,5 +1,6 @@
 import express from 'express';
 import { createServer } from 'http';
+import https from 'https';
 import { Server } from 'socket.io';
 import OBSWebSocket from 'obs-websocket-js';
 import cors from 'cors';
@@ -31,7 +32,7 @@ import { encryptStreamKey, decryptStreamKey, isEncryptedKey } from './lib/obsStr
 import { mapEditorSegmentsToEngine, validateEngineSegments, diffSegments, detectDuplicateIds, deduplicateSegmentsById } from './lib/segmentMapper.js';
 import aiSuggestionService from './lib/aiSuggestionService.js';
 import { getOrCreateContextService, getContextService, removeContextService } from './lib/aiContextService.js';
-import { ingestCompetitionStats, ingestTeamStats, syncStatsToConfig, snapshotStatsForCompetition, checkStaleness, parseCompetitionType, buildTeamDbKey, fetchLeagueRankings } from './lib/rtnStatsService.js';
+import { ingestCompetitionStats, ingestTeamStats, assembleCompositeTeamStats, syncStatsToConfig, snapshotStatsForCompetition, checkStaleness, parseCompetitionType, buildTeamDbKey, fetchLeagueRankings } from './lib/rtnStatsService.js';
 import { randomUUID } from 'crypto';
 import Anthropic from '@anthropic-ai/sdk';
 import { sendEmail, inviteEmail, briefingEmail, reminderEmail } from './lib/gmailService.js';
@@ -132,6 +133,9 @@ let timesheetEngine = null;
 
 // Playout Engines (per-competition Map for clip-based playout management)
 const playoutEngines = new Map();
+
+// Who to Watch sequencers (per-competition, tracks active auto-sequence timers)
+const whoToWatchSequencers = new Map();
 
 // Firebase rundown listeners (per-competition, for live sync - Phase I)
 // Stores { unsubscribe: Function, lastSegments: Array } per compId
@@ -673,6 +677,268 @@ function getOrCreateEngine(compId, obsConnectionManager, firebase, socketIo) {
     socketIo.to(roomName).emit('timesheetCurrentSegmentDeleted', data);
     // Also broadcast updated state so UI can show the warning
     socketIo.to(roomName).emit('timesheetState', engine.getState());
+  });
+
+  // PRD Clip Integration: Bridge timesheet playout segment events to playout engine
+  engine.on('playoutStarted', async (data) => {
+    // Resolve full clip API URL from competition config
+    let fullClipUrl = data.clipApiUrl || null;
+    if (!fullClipUrl && firebase) {
+      try {
+        const configSnap = await firebase.ref(`competitions/${compId}/config/clipApiUrl`).once('value');
+        fullClipUrl = configSnap.val() || null;
+      } catch (err) {
+        console.warn(`[Playout:${compId}] Failed to read competition config:`, err.message);
+      }
+    }
+    // Parse full URL into baseUrl + sessionKey
+    // Format: {baseUrl}/clip-api/meets/{sessionKey}/deliveries
+    let clipApiUrl = null;
+    let sessionKey = null;
+    if (fullClipUrl) {
+      const match = fullClipUrl.match(/^(.+)\/clip-api\/meets\/([^/]+)\/deliveries\/?$/);
+      if (match) {
+        clipApiUrl = match[1];
+        sessionKey = match[2];
+      } else {
+        // Fallback: treat as base URL if it doesn't match the full pattern
+        clipApiUrl = fullClipUrl.replace(/\/+$/, '');
+        console.warn(`[Playout:${compId}] clipApiUrl doesn't match expected pattern, using as base URL: ${clipApiUrl}`);
+      }
+    }
+    console.log(`[Timesheet:${compId}] Playout segment started — sessionKey: ${sessionKey}, clipApiUrl: ${clipApiUrl}`);
+    socketIo.to(roomName).emit('timesheetPlayoutStarted', data);
+    try {
+      const playoutEngine = getOrCreatePlayoutEngine(compId);
+      await playoutEngine.start(sessionKey, clipApiUrl);
+      console.log(`[Playout:${compId}] Engine started from timesheet playout segment`);
+    } catch (err) {
+      console.error(`[Playout:${compId}] Failed to start from timesheet:`, err.message);
+      socketIo.to(roomName).emit('playout:error', { message: err.message });
+    }
+  });
+
+  engine.on('playoutStopped', async (data) => {
+    console.log(`[Timesheet:${compId}] Playout segment ended — stopping playout engine`);
+    socketIo.to(roomName).emit('timesheetPlayoutStopped', data);
+    const playoutEngine = getPlayoutEngine(compId);
+    if (playoutEngine) {
+      try {
+        await playoutEngine.stop();
+        console.log(`[Playout:${compId}] Engine stopped from timesheet segment transition`);
+      } catch (err) {
+        console.error(`[Playout:${compId}] Failed to stop from timesheet:`, err.message);
+      }
+    }
+  });
+
+  // ── Who to Watch auto-sequence ──────────────────────────────────────────
+  // Sequences: title card 1 → title card 2 → title card 3 → clip playback → advance
+  // Each title card displays for TITLE_CARD_DURATION_MS, then auto-advances.
+  // If a clip URL is provided, plays the clip after title cards and waits for completion.
+  // Producer can manually advance at any time, which cancels the sequence.
+
+  const TITLE_CARD_DURATION_MS = 5000; // 5 seconds per title card
+
+  engine.on('whoToWatchStarted', async (data) => {
+    const { segmentId, whoToWatch } = data;
+    if (!whoToWatch) {
+      console.warn(`[WTW:${compId}] No whoToWatch data on segment ${segmentId}`);
+      return;
+    }
+
+    console.log(`[WTW:${compId}] Starting sequence — ${(whoToWatch.titleCards || []).length} title cards, clip: ${whoToWatch.clipUrl ? 'yes' : 'no'}`);
+
+    // Cancel any existing sequencer for this competition
+    const existing = whoToWatchSequencers.get(compId);
+    if (existing) {
+      existing.cancel();
+    }
+
+    // Read meet theme from competition config (if set)
+    let meetTheme = '';
+    if (firebase) {
+      try {
+        const themeSnap = await firebase.ref(`competitions/${compId}/config/meetTheme`).once('value');
+        meetTheme = themeSnap.val() || '';
+      } catch (err) {
+        console.warn(`[WTW:${compId}] Failed to read meetTheme:`, err.message);
+      }
+    }
+
+    // Build the sequence steps
+    const steps = [];
+    const titleCards = whoToWatch.titleCards || [];
+    const baseData = {
+      athleteName: whoToWatch.athleteName || '',
+      teamName: whoToWatch.teamName || '',
+      logoUrl: whoToWatch.logoUrl || '',
+      imageUrl: whoToWatch.imageUrl || '',
+      imageMode: whoToWatch.imageMode || 'portrait',
+      meetTheme,
+    };
+
+    // Step: each title card
+    for (const card of titleCards) {
+      steps.push({
+        type: 'title-card',
+        graphic: {
+          graphic: 'who-to-watch-title',
+          data: {
+            ...baseData,
+            headline: card.headline || '',
+            body: card.body || '',
+            // Pass through card adjustment params (Bug fix: these were silently dropped)
+            ...(card.nameFontSize && { nameFontSize: card.nameFontSize }),
+            ...(card.bodyFontSize && { bodyFontSize: card.bodyFontSize }),
+            ...(card.headlineFontSize && { headlineFontSize: card.headlineFontSize }),
+            ...(card.textOffsetY && { textOffsetY: card.textOffsetY }),
+            ...(card.imageScale && card.imageScale !== 100 && { imageScale: card.imageScale }),
+            ...(card.imageOffsetX && { imageOffsetX: card.imageOffsetX }),
+            ...(card.imageOffsetY && { imageOffsetY: card.imageOffsetY }),
+          }
+        },
+        duration: TITLE_CARD_DURATION_MS,
+      });
+    }
+
+    // Step: clip playback (if URL provided)
+    if (whoToWatch.clipUrl) {
+      const clipDraftId = `wtw-${segmentId}-${Date.now()}`;
+      steps.push({
+        type: 'clip',
+        graphic: {
+          graphic: 'clip-playback',
+          data: {
+            draftId: clipDraftId,
+            clipUrl: whoToWatch.clipUrl,
+            athleteName: whoToWatch.athleteName || '',
+            teamName: whoToWatch.teamName || '',
+            teamLogo: whoToWatch.logoUrl || '',
+            subtitle: whoToWatch.subtitle || '',
+            statLabel: whoToWatch.statLabel || '',
+            statValue: whoToWatch.statValue || '',
+            headshot: whoToWatch.headshot || '',
+          }
+        },
+        draftId: clipDraftId,
+        duration: null, // waits for clip completion
+      });
+    }
+
+    if (steps.length === 0) {
+      console.log(`[WTW:${compId}] No steps to run, advancing immediately`);
+      engine.advance();
+      return;
+    }
+
+    // Create sequencer state
+    let currentStep = 0;
+    let cancelled = false;
+    let stepTimer = null;
+    let clipStatusListener = null;
+
+    const sequencer = {
+      segmentId,
+      cancel: () => {
+        cancelled = true;
+        if (stepTimer) clearTimeout(stepTimer);
+        if (clipStatusListener && firebase) {
+          firebase.ref(`competitions/${compId}/production/clipStatus`).off('child_changed', clipStatusListener);
+          firebase.ref(`competitions/${compId}/production/clipStatus`).off('child_added', clipStatusListener);
+        }
+        whoToWatchSequencers.delete(compId);
+        console.log(`[WTW:${compId}] Sequence cancelled`);
+      }
+    };
+    whoToWatchSequencers.set(compId, sequencer);
+
+    // Write a graphic to Firebase currentGraphic
+    async function writeGraphic(graphicObj) {
+      if (!firebase || cancelled) return;
+      try {
+        await firebase.ref(`competitions/${compId}/currentGraphic`).set({
+          ...graphicObj,
+          timestamp: Date.now()
+        });
+      } catch (err) {
+        console.error(`[WTW:${compId}] Failed to write currentGraphic:`, err.message);
+      }
+    }
+
+    // Run the next step in the sequence
+    async function runStep() {
+      if (cancelled || currentStep >= steps.length) {
+        // Sequence complete — clear graphic and advance
+        if (!cancelled) {
+          console.log(`[WTW:${compId}] Sequence complete, advancing rundown`);
+          await writeGraphic({ graphic: 'clear', data: {} });
+          whoToWatchSequencers.delete(compId);
+          engine.advance();
+        }
+        return;
+      }
+
+      const step = steps[currentStep];
+      console.log(`[WTW:${compId}] Step ${currentStep + 1}/${steps.length}: ${step.type}`);
+
+      // Write the graphic
+      await writeGraphic(step.graphic);
+
+      if (step.type === 'clip' && step.draftId) {
+        // Wait for clip completion via Firebase clipStatus write-back
+        const handleClipStatus = (snapshot) => {
+          if (cancelled) return;
+          const status = snapshot.val();
+          const key = snapshot.key;
+          if (key === step.draftId && status && (status.status === 'ended' || status.status === 'played')) {
+            console.log(`[WTW:${compId}] Clip completed (${status.status}), advancing`);
+            if (clipStatusListener && firebase) {
+              firebase.ref(`competitions/${compId}/production/clipStatus`).off('child_changed', clipStatusListener);
+              firebase.ref(`competitions/${compId}/production/clipStatus`).off('child_added', clipStatusListener);
+            }
+            currentStep++;
+            runStep();
+          }
+        };
+
+        if (firebase) {
+          clipStatusListener = handleClipStatus;
+          firebase.ref(`competitions/${compId}/production/clipStatus`).on('child_changed', handleClipStatus);
+          firebase.ref(`competitions/${compId}/production/clipStatus`).on('child_added', handleClipStatus);
+        }
+
+        // Safety timeout: if clip doesn't report completion within 120s, advance anyway
+        stepTimer = setTimeout(() => {
+          if (cancelled) return;
+          console.warn(`[WTW:${compId}] Clip timeout after 120s, advancing`);
+          if (clipStatusListener && firebase) {
+            firebase.ref(`competitions/${compId}/production/clipStatus`).off('child_changed', clipStatusListener);
+            firebase.ref(`competitions/${compId}/production/clipStatus`).off('child_added', clipStatusListener);
+          }
+          currentStep++;
+          runStep();
+        }, 120000);
+      } else {
+        // Timed step (title card) — advance after duration
+        stepTimer = setTimeout(() => {
+          if (cancelled) return;
+          currentStep++;
+          runStep();
+        }, step.duration);
+      }
+    }
+
+    // Start the sequence
+    runStep();
+  });
+
+  engine.on('whoToWatchStopped', (data) => {
+    console.log(`[WTW:${compId}] Segment ended — cancelling sequence`);
+    const sequencer = whoToWatchSequencers.get(compId);
+    if (sequencer) {
+      sequencer.cancel();
+    }
   });
 
   timesheetEngines.set(compId, engine);
@@ -3952,13 +4218,22 @@ app.get('/api/competitions/:compId/clips', async (req, res) => {
       return res.status(404).json({ error: 'Competition not found' });
     }
 
-    const sessionKey = config.sessionKey;
+    // Parse clip API URL (full deliveries URL) or fall back to legacy sessionKey
+    let sessionKey = config.sessionKey;
+    let clipBaseUrl = null;
+    if (config.clipApiUrl) {
+      const match = config.clipApiUrl.match(/^(.+)\/clip-api\/meets\/([^/]+)\/deliveries\/?$/);
+      if (match) {
+        clipBaseUrl = match[1];
+        sessionKey = match[2]; // Override sessionKey from URL
+      }
+    }
     if (!sessionKey) {
-      return res.status(400).json({ error: 'Competition has no session key configured' });
+      return res.status(400).json({ error: 'Competition has no session key or clip API URL configured' });
     }
 
     // Fetch clips using clipService
-    const result = await fetchClips(sessionKey);
+    const result = await fetchClips(sessionKey, clipBaseUrl);
 
     if (result.error) {
       console.warn(`[clips] Error fetching clips for ${compId}: ${result.error}`);
@@ -3981,6 +4256,80 @@ app.get('/api/competitions/:compId/clips', async (req, res) => {
     console.error(`[clips] Unexpected error for ${compId}:`, error.message);
     res.status(500).json({ error: 'Failed to fetch clips' });
   }
+});
+
+// Clip video proxy — streams R2 presigned video through coordinator to avoid CORS/auth issues
+app.get('/api/clip-proxy', (req, res) => {
+  const clipUrl = req.query.url;
+  if (!clipUrl) {
+    return res.status(400).json({ error: 'Missing required "url" query parameter' });
+  }
+
+  // Security: only proxy R2 URLs
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(clipUrl);
+  } catch {
+    return res.status(400).json({ error: 'Invalid URL' });
+  }
+
+  if (!parsedUrl.hostname.endsWith('r2.cloudflarestorage.com')) {
+    return res.status(400).json({ error: 'URL must point to r2.cloudflarestorage.com' });
+  }
+
+  // Build request options, forwarding Range header for seeking
+  const options = {
+    hostname: parsedUrl.hostname,
+    path: parsedUrl.pathname + parsedUrl.search,
+    method: 'GET',
+    headers: {}
+  };
+
+  if (req.headers.range) {
+    options.headers['Range'] = req.headers.range;
+  }
+
+  const proxyReq = https.request(options, (proxyRes) => {
+    // R2 returned an error (expired/invalid signature)
+    if (proxyRes.statusCode >= 400) {
+      res.status(502).json({ error: `R2 returned ${proxyRes.statusCode}` });
+      proxyRes.resume(); // drain the response
+      return;
+    }
+
+    // Forward relevant headers
+    const headersToForward = [
+      'content-type', 'content-length', 'content-range',
+      'accept-ranges', 'etag', 'last-modified'
+    ];
+    for (const header of headersToForward) {
+      if (proxyRes.headers[header]) {
+        res.setHeader(header, proxyRes.headers[header]);
+      }
+    }
+
+    // If no content-type from R2, set video/mp4
+    if (!proxyRes.headers['content-type']) {
+      res.setHeader('Content-Type', 'video/mp4');
+    }
+
+    res.status(proxyRes.statusCode); // 200 or 206
+    proxyRes.pipe(res);
+  });
+
+  proxyReq.on('error', (err) => {
+    console.error('[clip-proxy] Request error:', err.message);
+    if (!res.headersSent) {
+      res.status(502).json({ error: 'Failed to fetch from R2' });
+    }
+  });
+
+  // Handle client disconnect (stop streaming)
+  req.on('close', () => {
+    proxyReq.destroy();
+  });
+
+  proxyReq.end();
 });
 
 // Get CSV template
@@ -7245,12 +7594,21 @@ io.on('connection', async (socket) => {
       const year = new Date().getFullYear();
       const teamResults = {};
 
+      // Read composite team config (Phase 9)
+      let compositeTeams = null;
+      try {
+        const compositeSnapshot = await db.ref(`competitions/${targetCompId}/compositeTeams`).once('value');
+        compositeTeams = compositeSnapshot.val();
+      } catch (err) {
+        // Non-fatal
+      }
+
       // Build list of teams to refresh
       const teamsToRefresh = [];
       for (let i = 1; i <= teamCount; i++) {
         const name = config[`team${i}Name`];
         if (!name) continue;
-        const key = buildTeamDbKey(name, gender);
+        const key = config[`team${i}Key`] || buildTeamDbKey(name, gender);
         if (!key) continue;
 
         // If a specific teamKey was requested, only refresh that one
@@ -7260,6 +7618,18 @@ io.on('connection', async (socket) => {
       }
 
       for (const { index, name, key } of teamsToRefresh) {
+        const teamSlot = `team${index}`;
+
+        // Check if this is a composite team (Phase 9)
+        if (compositeTeams && compositeTeams[teamSlot]) {
+          console.log(`[RTN Stats] ${key}: Detected as composite team, assembling from source teams...`);
+          const compositeResult = await assembleCompositeTeamStats(
+            targetCompId, teamSlot, key, compositeTeams[teamSlot], gender, year, io
+          );
+          teamResults[teamSlot] = { teamKey: key, ...compositeResult };
+          continue;
+        }
+
         // Look up RTN ID and league
         let rtnId;
         let league = 'ncaa';
@@ -7285,13 +7655,13 @@ io.on('connection', async (socket) => {
           } catch (metaErr) {
             console.error(`[RTN Stats] Failed to write error meta for ${key}:`, metaErr.message);
           }
-          teamResults[`team${index}`] = { teamKey: key, status: 'error', error: 'Missing RTN ID' };
+          teamResults[teamSlot] = { teamKey: key, status: 'error', error: 'Missing RTN ID' };
           continue;
         }
 
         // Force fetch (no staleness check)
         const result = await ingestTeamStats(key, rtnId, gender, year, io, targetCompId, league);
-        teamResults[`team${index}`] = { teamKey: key, ...result };
+        teamResults[teamSlot] = { teamKey: key, ...result };
       }
 
       // Sync to config
@@ -7741,7 +8111,7 @@ io.on('connection', async (socket) => {
   // =====================================================
 
   // Start playout for a competition
-  socket.on('playout:start', async ({ sessionKey } = {}) => {
+  socket.on('playout:start', async ({ sessionKey, clipApiUrl } = {}) => {
     if (!clientCompId) {
       socket.emit('playout:error', { message: 'No competition ID for client' });
       return;
@@ -7749,7 +8119,7 @@ io.on('connection', async (socket) => {
 
     try {
       const engine = getOrCreatePlayoutEngine(clientCompId);
-      await engine.start(sessionKey);
+      await engine.start(sessionKey, clipApiUrl);
       socket.emit('playout:startResult', { success: true, compId: clientCompId });
       console.log(`[Playout] Started engine for competition: ${clientCompId}`);
     } catch (error) {
