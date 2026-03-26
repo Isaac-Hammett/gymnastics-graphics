@@ -6778,13 +6778,21 @@
         }
       }
 
-      console.error(`[clip-status] Video error: ${errorMessage}`, mediaError);
+      // Enhanced diagnostic logging for video errors
+      const networkStateNames = ['NETWORK_EMPTY', 'NETWORK_IDLE', 'NETWORK_LOADING', 'NETWORK_NO_SOURCE'];
+      const networkState = networkStateNames[video.networkState] || video.networkState;
+      const srcPreview = video.src ? video.src.substring(0, 80) + '...' : '(no src)';
+
+      console.error(`[clip-status] Video error: ${errorMessage}`);
+      console.error(`[clip-status] MediaError code: ${mediaError ? mediaError.code : 'none'}, message: ${mediaError ? mediaError.message : 'none'}`);
+      console.error(`[clip-status] Network state: ${networkState}`);
+      console.error(`[clip-status] Source URL: ${srcPreview}`);
 
       // Clear timeouts since we're reporting an error
       clearClipTimeouts();
 
       if (currentClipDraftId) {
-        writeClipStatus(currentClipDraftId, 'error', { errorMessage });
+        writeClipStatus(currentClipDraftId, 'error', { errorMessage, networkState });
       }
     }
 
@@ -12737,9 +12745,9 @@
         const logo = encodeURIComponent(data.logoUrl || data.logo || '');
         const imageUrl = encodeURIComponent(data.imageUrl || '');
         const imageMode = data.imageMode || 'portrait';
-        const badge = data.badge !== undefined ? `&badge=${encodeURIComponent(data.badge)}` : '';
+        const badge = data.badgeText !== undefined ? `&badge=${encodeURIComponent(data.badgeText)}` : (data.badge !== undefined ? `&badge=${encodeURIComponent(data.badge)}` : '');
         const meetTheme = data.meetTheme ? `&meetTheme=${encodeURIComponent(data.meetTheme)}` : '';
-        const adjustKeys = ['nameFontSize','bodyFontSize','headlineFontSize','textOffsetY','imageScale','imageOffsetX','imageOffsetY'];
+        const adjustKeys = ['nameFontSize','bodyFontSize','headlineFontSize','textOffsetY','imageScale','imageOffsetX','imageOffsetY','badgeFontSize','teamNameFontSize','logoSize','showTeamRow','watermarkOpacity','watermarkScale','watermarkOffsetX','watermarkOffsetY','showWatermark','bgColor','accentColor'];
         const adjustParams = adjustKeys.filter(k => data[k] != null).map(k => `&${k}=${encodeURIComponent(data[k])}`).join('');
         const overlayUrl = `/overlays/who-to-watch-title.html?athleteName=${athleteName}&teamName=${teamName}&headline=${headline}&body=${body}&logo=${logo}&imageUrl=${imageUrl}&imageMode=${imageMode}${badge}${meetTheme}${adjustParams}`;
         return `<iframe src="${overlayUrl}" style="width: 1920px; height: 1080px; border: none; overflow: hidden;"></iframe>`;
@@ -13398,6 +13406,16 @@
       // Route R2 URLs through coordinator proxy to avoid auth/CORS issues
       const clipUrl = proxyClipUrl(rawClipUrl);
       const nextClipUrl = proxyClipUrl(rawNextClipUrl);
+
+      // Diagnostic logging: URL type and proxy status
+      if (rawClipUrl) {
+        const isPresigned = rawClipUrl.includes('X-Amz-Signature');
+        console.log(`[clip] URL type: ${isPresigned ? 'presigned' : 'unsigned'}`);
+        console.log(`[clip] Using proxy: ${clipUrl !== rawClipUrl ? 'yes' : 'no (passthrough)'}`);
+        if (clipUrl !== rawClipUrl) {
+          console.log(`[clip] Proxy URL: ${clipUrl.substring(0, 80)}...`);
+        }
+      }
 
       // Validate required fields
       if (!clipUrl) {
