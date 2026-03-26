@@ -392,6 +392,9 @@ export default function ThemeEditorPage() {
 
   // Per-graphic override state
   const [expandedOverrideGraphics, setExpandedOverrideGraphics] = useState({});
+  const [showResetAllOverridesConfirm, setShowResetAllOverridesConfirm] = useState(false);
+  const [showImportOverridesModal, setShowImportOverridesModal] = useState(false);
+  const [importSourceThemeId, setImportSourceThemeId] = useState('');
 
   // Preview reload state - increment to force iframe refresh after save
   const [previewVersion, setPreviewVersion] = useState(0);
@@ -582,6 +585,63 @@ export default function ThemeEditorPage() {
       setSelectedGraphicType(graphicId);
     }
   };
+
+  // Reset ALL overrides (clears the entire overrides object)
+  const resetAllOverrides = () => {
+    setEditingTheme(prev => ({
+      ...prev,
+      overrides: {},
+    }));
+    setIsDirty(true);
+    setShowResetAllOverridesConfirm(false);
+  };
+
+  // Count total overrides across all graphics
+  const totalOverrideCount = useMemo(() => {
+    const overrides = editingTheme.overrides || {};
+    let count = 0;
+    Object.keys(overrides).forEach(graphicId => {
+      count += Object.keys(overrides[graphicId] || {}).length;
+    });
+    return count;
+  }, [editingTheme.overrides]);
+
+  // Count graphics with overrides
+  const graphicsWithOverridesCount = useMemo(() => {
+    return Object.keys(editingTheme.overrides || {}).filter(
+      graphicId => Object.keys(editingTheme.overrides[graphicId] || {}).length > 0
+    ).length;
+  }, [editingTheme.overrides]);
+
+  // Import overrides from another theme
+  const importOverrides = () => {
+    if (!importSourceThemeId || !themes[importSourceThemeId]) {
+      return;
+    }
+    const sourceOverrides = themes[importSourceThemeId].overrides || {};
+    setEditingTheme(prev => ({
+      ...prev,
+      overrides: {
+        ...prev.overrides,
+        ...sourceOverrides,
+      },
+    }));
+    setIsDirty(true);
+    setShowImportOverridesModal(false);
+    setImportSourceThemeId('');
+  };
+
+  // Get list of other themes (for import dropdown) - exclude current theme
+  const otherThemesForImport = useMemo(() => {
+    return Object.entries(themes)
+      .filter(([id]) => id !== selectedThemeId)
+      .filter(([, theme]) => theme.overrides && Object.keys(theme.overrides).length > 0)
+      .map(([id, theme]) => ({
+        id,
+        name: theme.name,
+        overrideCount: Object.keys(theme.overrides).length,
+      }));
+  }, [themes, selectedThemeId]);
 
   // Extract colors from the meet logo and populate color fields
   const extractColors = async () => {
@@ -1239,17 +1299,100 @@ export default function ThemeEditorPage() {
 
             {/* Per-Graphic Overrides */}
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">Per-Graphic Overrides</h2>
-                {Object.keys(editingTheme.overrides || {}).length > 0 && (
-                  <span className="px-2 py-0.5 bg-purple-500/20 text-purple-400 text-xs rounded-full">
-                    {Object.keys(editingTheme.overrides || {}).length} graphic(s)
-                  </span>
-                )}
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">Per-Graphic Overrides</h2>
+                  {graphicsWithOverridesCount > 0 && (
+                    <span className="px-2 py-0.5 bg-purple-500/20 text-purple-400 text-xs rounded-full">
+                      {totalOverrideCount} override{totalOverrideCount !== 1 ? 's' : ''} in {graphicsWithOverridesCount} graphic{graphicsWithOverridesCount !== 1 ? 's' : ''}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {/* Import from another theme */}
+                  {otherThemesForImport.length > 0 && (
+                    <button
+                      onClick={() => setShowImportOverridesModal(true)}
+                      className="px-2 py-1 text-[10px] text-zinc-400 hover:text-zinc-300 hover:bg-zinc-800 rounded transition-colors"
+                    >
+                      Import...
+                    </button>
+                  )}
+                  {/* Reset all overrides */}
+                  {graphicsWithOverridesCount > 0 && !showResetAllOverridesConfirm && (
+                    <button
+                      onClick={() => setShowResetAllOverridesConfirm(true)}
+                      className="px-2 py-1 text-[10px] text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded transition-colors"
+                    >
+                      Reset All
+                    </button>
+                  )}
+                  {showResetAllOverridesConfirm && (
+                    <div className="flex items-center gap-1.5 bg-red-900/20 rounded px-2 py-1">
+                      <span className="text-[10px] text-red-400">Clear all {totalOverrideCount} overrides?</span>
+                      <button
+                        onClick={() => setShowResetAllOverridesConfirm(false)}
+                        className="px-1.5 py-0.5 text-[10px] text-zinc-400 hover:text-zinc-300 bg-zinc-800 rounded transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={resetAllOverrides}
+                        className="px-1.5 py-0.5 text-[10px] text-white bg-red-600 hover:bg-red-500 rounded transition-colors"
+                      >
+                        Confirm
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
               <p className="text-xs text-zinc-500 mb-4">
                 Override theme colors for specific graphics. Overrides take precedence over the theme defaults above.
               </p>
+
+              {/* Import Overrides Modal */}
+              {showImportOverridesModal && (
+                <div className="mb-4 p-3 bg-zinc-800 border border-zinc-700 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-medium text-zinc-300">Import overrides from another theme</span>
+                    <button
+                      onClick={() => {
+                        setShowImportOverridesModal(false);
+                        setImportSourceThemeId('');
+                      }}
+                      className="text-zinc-500 hover:text-zinc-300"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-zinc-500 mb-2">
+                    Select a theme to import its overrides. Imported overrides will merge with existing ones (matching graphic IDs will be replaced).
+                  </p>
+                  <div className="flex gap-2">
+                    <select
+                      value={importSourceThemeId}
+                      onChange={(e) => setImportSourceThemeId(e.target.value)}
+                      className="flex-1 h-8 px-2 bg-zinc-700 border border-zinc-600 rounded text-xs text-zinc-300 focus:outline-none focus:border-purple-500"
+                    >
+                      <option value="">Select a theme...</option>
+                      {otherThemesForImport.map((theme) => (
+                        <option key={theme.id} value={theme.id}>
+                          {theme.name} ({theme.overrideCount} graphic{theme.overrideCount !== 1 ? 's' : ''})
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={importOverrides}
+                      disabled={!importSourceThemeId}
+                      className="px-3 py-1 text-xs bg-purple-600 hover:bg-purple-500 disabled:bg-zinc-700 disabled:text-zinc-500 rounded transition-colors"
+                    >
+                      Import
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-3">
                 {OVERRIDE_GRAPHIC_GROUPS.map((group) => (

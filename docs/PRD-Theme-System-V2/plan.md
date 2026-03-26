@@ -1041,7 +1041,7 @@ Live verification requires deployment and authentication. Will be verified in Ta
 
 ---
 
-### Task 4.5 — Override Management UX (Badges, Reset, Import) — NOT STARTED
+### Task 4.5 — Override Management UX (Badges, Reset, Import) — COMPLETE
 
 **Goal:** Visual indicators of which graphics have overrides. Reset buttons. Import from another theme.
 
@@ -1058,12 +1058,25 @@ Live verification requires deployment and authentication. Will be verified in Ta
 5. All changes go through the existing `saveTheme()` flow
 
 **Verify:**
-- [ ] Build passes
-- [ ] Override badge shows on panels that have overrides
-- [ ] Reset per graphic → overrides cleared, badge disappears, preview updates
-- [ ] Reset all → all overrides cleared
-- [ ] Import from another theme → overrides copied, preview updates
-- [ ] Confirm dialog before destructive actions (reset all)
+- [x] Build passes — verified locally
+- [x] Override badge shows on panels that have overrides — already implemented in Task 4.2
+- [x] Reset per graphic → overrides cleared, badge disappears, preview updates — already implemented in Task 4.2
+- [x] Reset all → all overrides cleared — implemented with `resetAllOverrides()` and inline confirm dialog
+- [x] Import from another theme → overrides copied, preview updates — implemented with `importOverrides()` and modal
+- [x] Confirm dialog before destructive actions (reset all) — inline confirm with Cancel/Confirm buttons
+
+**Status:** COMPLETE — Build passes. Implementation includes:
+- Enhanced section header badge showing total override count and graphics count (e.g., "12 overrides in 3 graphics")
+- "Reset All" button with inline confirmation dialog showing count of overrides to be cleared
+- "Import..." button that opens a modal with theme selector dropdown
+- Import dropdown only shows themes that have overrides (excludes current theme)
+- Import shows override count per theme (e.g., "Pink Meet (3 graphics)")
+- Merge strategy: imported overrides replace matching graphic IDs, non-matching remain unchanged
+- All changes go through existing `saveTheme()` flow
+
+Note: Per-graphic badges and reset buttons were already implemented in Task 4.2. Task 4.5 adds the global Reset All and Import functionality.
+
+Live verification requires deployment and authentication. Will be verified in Task 4.DOC.
 
 **Deploy:** Build React SPA + deploy.
 
@@ -1259,3 +1272,4 @@ Phase 4 (depends on Phase 3):
 - LEARNING: Per-graphic override panels use checkbox toggles instead of radio buttons for each color field — cleaner UX that shows enabled/disabled state clearly. The `overrides` field must be added to both `loadTheme` (for existing themes) and `newTheme` (for new themes). Helper functions (`updateOverrideField`, `clearOverrideField`, `resetGraphicOverrides`) manage the nested state cleanly. When a graphic panel is expanded, auto-switching `selectedGraphicType` gives immediate preview feedback. Team cards use specific IDs (`team1-stats`, `team1-coaches`, `team2-stats`, `team2-coaches`) not generic `team-stats`/`team-coaches`. (found during Task 4.2)
 - LEARNING: To force an iframe reload after saving data to Firebase, use a version counter state variable included in the iframe's `key` prop. Incrementing the version after a 500ms delay (to allow Firebase propagation) forces React to recreate the iframe element. The existing `toggleOverridePanel` already switches `selectedGraphicType` when expanding a panel (from Task 4.2), so no additional work needed for that requirement. (found during Task 4.3)
 - LEARNING: Image/texture override controls extend the existing per-graphic override panels. The `OverrideStepper` component is a simplified version of `StepperInput` from SponsorAdjustControls. Opacity values are stored as decimals (0-1) in Firebase but displayed as percentages (0-100%) in the UI — conversion happens in `onChange` handlers. The checkbox toggle pattern (enable/disable) is consistent with color overrides. When disabling a group (e.g., headerBgImage), all related fields must be cleared (`headerBgImage`, `headerBgImageFit`, `headerBgImagePosition`, `headerBgImageOpacity`). (found during Task 4.4)
+- LEARNING: Task 4.5 mostly extends what Task 4.2 already implemented — per-graphic badges and reset buttons were already in place. The new work is global "Reset All" with confirm dialog and "Import from another theme" modal. The import dropdown filters to only show themes that have overrides (no point importing from a theme with no overrides). `otherThemesForImport` useMemo computes this list, excluding the current theme. The inline confirm dialog pattern (showing Cancel/Confirm buttons in the header row) is cleaner than a modal for simple destructive actions. (found during Task 4.5)
