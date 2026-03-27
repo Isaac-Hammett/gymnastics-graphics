@@ -198,7 +198,7 @@ Per-graphic overrides work in Theme Editor preview but are **completely broken i
 
 ---
 
-### Task 8.DOC — Update CLAUDE.md + PRD Status — NOT STARTED
+### Task 8.DOC — Update CLAUDE.md + PRD Status — COMPLETE
 
 **Goal:** Document the live-mode override system and update PRD status.
 
@@ -1675,3 +1675,4 @@ Execution order: Phase 8A → 7.FONT → 7A → 7B → 7C → 7D → 7E → 7F �
 - LEARNING: Theme data is cached in `window.__themeData` at page load. Adding new overrides to Firebase mid-session requires a page reload to pick them up. The `themeApplyOverrides()` call reads from this cached copy.
 - LEARNING: Image/texture overrides (headerBgImage, bodyTexture, logo, logoSize + fit/opacity/blend params) all work correctly in live mode. clearOverrides removes all 40 CSS variables cleanly on graphic switch — no image bleeding between graphics. Tested with production URL on wcgnic-2026-prelim1.
 - LEARNING: Phase 8A production deployment (Task 8.7) verified on 2026-03-26. All per-graphic override exports, debug panel, and overlay files work correctly on commentarygraphic.com. The only console error is a missing favicon.ico (harmless).
+- LEARNING: Task 8.DOC — documentation-only task. CLAUDE.md already had the lower-third template and layout override tables from earlier phases. Phase 8A added the live-mode override system section (exported functions, flow, lastLiveGraphicId). PRD status table and blocked items updated.
