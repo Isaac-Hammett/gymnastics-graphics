@@ -1591,7 +1591,7 @@ Graphics: rotation-slate (16 layouts), logos, now-competing, live-camera, interv
 
 ---
 
-### Task 7E.6 — Convert event-calendar CSS to Variables — NOT STARTED
+### Task 7E.6 — Convert event-calendar CSS to Variables — COMPLETE
 
 **Goal:** Replace 30+ hardcoded values in event-calendar with CSS variables, respecting 4 responsive tiers.
 
@@ -1609,14 +1609,16 @@ Graphics: rotation-slate (16 layouts), logos, now-competing, live-camera, interv
 7. Add mappings to theme-loader.js
 
 **Verify:**
-- [ ] Event calendar renders identically with no overrides
-- [ ] All 4 responsive tiers work
-- [ ] Two-column layout triggers correctly
-- [ ] Font overrides apply per tier
-- [ ] Animation timing preserved
-- [ ] Accent color responds to override
+- [x] Event calendar renders identically with no overrides
+- [x] All 4 responsive tiers work
+- [x] Two-column layout triggers correctly
+- [x] Font overrides apply per tier
+- [x] Animation timing preserved
+- [x] Accent color responds to override
 
 **Deploy:** Deploy `overlays/event-calendar.html` + `overlays/theme-loader.js` to production.
+
+**Completed:** 2026-03-27. Added 52 CSS variables for container, header, title, content, event items, dates, names, locations, accent color, animation timing, column gap, no-events message, and all 4 tier-specific overrides (large/medium/compact/dense). Screenshots at `screenshots/local-task-7E6.png` (tier-large) and `screenshots/local-task-7E6-dense.png` (tier-dense two-column).
 
 ---
 
