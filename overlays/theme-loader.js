@@ -495,6 +495,23 @@ window.themeReady = new Promise(resolve => { _resolveThemeReady = resolve; });
     detailsHeight: { suffix: 'details-height', unit: 'px' },
     detailsPaddingV: { suffix: 'details-padding-v', unit: 'px' },
     detailsPaddingH: { suffix: 'details-padding-h', unit: 'px' },
+    // Event-summary specific (Phase 7A.1)
+    titleFontSize: { suffix: 'title-font-size', unit: 'px' },
+    titleFontFamily: { suffix: 'title-font-family', unit: null },
+    titleFontWeight: { suffix: 'title-font-weight', unit: null },
+    titleTextTransform: { suffix: 'title-text-transform', unit: null },
+    scoreFontFamily: { suffix: 'score-font-family', unit: null },
+    scoreFontSize: { suffix: 'score-font-size', unit: 'px' },
+    headerPadding: { suffix: 'header-padding', unit: 'px' },
+    headerHeight: { suffix: 'header-height', unit: 'px' },
+    headerLogoSize: { suffix: 'header-logo-size', unit: 'px' },
+    contentPadding: { suffix: 'content-padding', unit: 'px' },
+    footerHeight: { suffix: 'footer-height', unit: 'px' },
+    footerFontSize: { suffix: 'footer-font-size', unit: 'px' },
+    teamNameFontSize: { suffix: 'team-name-font-size', unit: 'px' },
+    athleteNameFontSize: { suffix: 'athlete-name-font-size', unit: 'px' },
+    rowHeight: { suffix: 'row-height', unit: 'px' },
+    rowPadding: { suffix: 'row-padding', unit: 'px' },
   };
 
   /**
