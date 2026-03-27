@@ -387,3 +387,4 @@ https://commentarygraphic.com/overlays/sponsors-thanks.html?meetTheme={themeId}
 8. **Height display convention:** Show computed effective height when no explicit override set (fontSize * 1.2 + paddingV * 2).
 9. **Deploy every task:** Never batch deploys separately from code tasks (feedback memory).
 10. **Screenshot verification required:** Always take Playwright screenshots to verify, no code-review-only verification (feedback memory).
+11. **Category template pattern:** To add a new template (Full-Screen, Team Cards, etc.), add state (`showXxxTemplatePanel`, `showApplyXxxTemplateConfirm`), create `applyXxxTemplate()` with key filtering for graphic-specific properties, add `updateXxxTemplateField()` and `clearXxxTemplateField()` helpers, add UI panel with teal border inside the OVERRIDE_GRAPHIC_GROUPS `.map()` conditional on `group.label`.
