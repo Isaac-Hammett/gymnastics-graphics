@@ -147,6 +147,69 @@ const TEXT_TRANSFORMS = [
   { value: 'capitalize', label: 'Capitalize' },
 ];
 
+// Variant options for full-screen graphics in preview selector
+// Event-summary layouts (simplified for Theme Editor — 6 main layouts)
+const EVENT_SUMMARY_LAYOUTS = [
+  { value: 'broadcast-table', label: 'Broadcast Table' },
+  { value: 'classic-broadcast', label: 'Classic Broadcast' },
+  { value: 'default-v2', label: 'Default v2' },
+  { value: 'dual-dynamic-v1', label: 'Dual Dynamic v1' },
+  { value: 'dual-dynamic-v2', label: 'Dual Dynamic v2' },
+];
+
+// Team count options for event-summary
+const SUMMARY_TEAM_COUNTS = [
+  { value: '2', label: '2 Teams (Dual)' },
+  { value: '3', label: '3 Teams (Tri)' },
+  { value: '4', label: '4 Teams (Quad)' },
+  { value: '5', label: '5 Teams' },
+  { value: '6', label: '6 Teams' },
+  { value: '7', label: '7 Teams' },
+];
+
+// Summary modes
+const SUMMARY_MODES = [
+  { value: 'rotation', label: 'By Rotation' },
+  { value: 'apparatus', label: 'By Apparatus' },
+];
+
+// Virtius leaderboard event options (men's)
+const LEADERBOARD_EVENTS_MENS = [
+  { value: 'FX', label: 'Floor Exercise' },
+  { value: 'PH', label: 'Pommel Horse' },
+  { value: 'SR', label: 'Still Rings' },
+  { value: 'VT', label: 'Vault' },
+  { value: 'PB', label: 'Parallel Bars' },
+  { value: 'HB', label: 'High Bar' },
+  { value: 'AA', label: 'All-Around' },
+];
+
+// Virtius leaderboard event options (women's)
+const LEADERBOARD_EVENTS_WOMENS = [
+  { value: 'VT', label: 'Vault' },
+  { value: 'UB', label: 'Uneven Bars' },
+  { value: 'BB', label: 'Balance Beam' },
+  { value: 'FX', label: 'Floor Exercise' },
+  { value: 'AA', label: 'All-Around' },
+];
+
+// Gender options for leaderboard
+const LEADERBOARD_GENDERS = [
+  { value: 'mens', label: "Men's" },
+  { value: 'womens', label: "Women's" },
+];
+
+// Event-frame type options
+const EVENT_FRAME_TYPES = [
+  { value: 'frame-quad', label: 'Quad (4 feeds)' },
+  { value: 'frame-tri-center', label: 'Tri Center' },
+  { value: 'frame-tri-wide', label: 'Tri Wide' },
+  { value: 'frame-tri-wide-top', label: 'Tri Wide Top' },
+  { value: 'frame-dual', label: 'Dual (2 feeds)' },
+  { value: 'frame-single', label: 'Single' },
+  { value: 'frame-team-header', label: 'Team Header' },
+];
+
 /**
  * Editable number input with increment/decrement stepper buttons.
  * Simplified version for per-graphic override controls.
@@ -484,6 +547,13 @@ export default function ThemeEditorPage() {
   const [selectedCompetition, setSelectedCompetition] = useState('');
   const [selectedGraphicType, setSelectedGraphicType] = useState('event-summary');
 
+  // Variant selector state for full-screen graphics
+  const [selectedVariants, setSelectedVariants] = useState({
+    'event-summary': { layout: 'broadcast-table', numTeams: '2', mode: 'rotation' },
+    'virtuis-leaderboard': { event: 'FX', gender: 'mens' },
+    'event-frame': { type: 'frame-quad' },
+  });
+
   // Per-graphic override state
   const [expandedOverrideGraphics, setExpandedOverrideGraphics] = useState({});
   const [showResetAllOverridesConfirm, setShowResetAllOverridesConfirm] = useState(false);
@@ -661,6 +731,14 @@ export default function ThemeEditorPage() {
     setEditingTheme({ ...DEFAULT_THEME, overrides: {}, lowerThirdTemplate: {} });
     setIsDirty(false);
     setExpandedOverrideGraphics({});
+  };
+
+  // Update a variant selection for full-screen graphic previews
+  const updateVariant = (graphicId, key, value) => {
+    setSelectedVariants(prev => ({
+      ...prev,
+      [graphicId]: { ...(prev[graphicId] || {}), [key]: value },
+    }));
   };
 
   // Apply a preset template
@@ -1071,11 +1149,31 @@ export default function ThemeEditorPage() {
       }
     }
 
-    // Legacy: event-summary specific params (when competition IS selected)
-    if (selectedGraphicType === 'event-summary' && selectedCompetition) {
-      params.set('summaryMode', 'rotation');
+    // Apply variant selections for full-screen graphics
+    if (selectedGraphicType === 'event-summary') {
+      const variants = selectedVariants['event-summary'] || {};
+      params.set('summaryMode', variants.mode || 'rotation');
       params.set('summaryRotation', '1');
-      params.set('summaryNumTeams', '2');
+      params.set('summaryNumTeams', variants.numTeams || '2');
+      if (variants.layout) {
+        params.set('layout', variants.layout);
+      }
+    }
+
+    if (selectedGraphicType === 'virtuis-leaderboard') {
+      const variants = selectedVariants['virtuis-leaderboard'] || {};
+      params.set('leaderboardEvent', variants.event || 'FX');
+      params.set('leaderboardGender', variants.gender || 'mens');
+    }
+
+    if (selectedGraphicType === 'event-frame') {
+      const variants = selectedVariants['event-frame'] || {};
+      // Event-frame uses overlay files, so we route to the selected frame type
+      const frameType = variants.type || 'frame-quad';
+      params.set('meetTheme', selectedThemeId || 'preview');
+      // Event-frame needs special handling — it's an overlay file, not output.html
+      // Return early with overlay URL
+      return `${baseUrl}/overlays/${frameType}.html?${params.toString()}`;
     }
 
     // Add theme param — meetTheme takes precedence over comp's theme
@@ -1089,7 +1187,7 @@ export default function ThemeEditorPage() {
     }
 
     return `${baseUrl}/output.html?${params.toString()}`;
-  }, [selectedThemeId, selectedGraphicType, selectedCompetition, competitions, editingTheme]);
+  }, [selectedThemeId, selectedGraphicType, selectedCompetition, competitions, editingTheme, selectedVariants]);
 
   // Calculate contrast ratio for accessibility
   const getContrastRatio = (color1, color2) => {
@@ -2873,6 +2971,95 @@ export default function ThemeEditorPage() {
                       ))}
                   </select>
                 </div>
+
+                {/* Variant Selectors for Full-Screen Graphics */}
+                {selectedGraphicType === 'event-summary' && (
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="block text-[10px] text-zinc-500 mb-1">Layout</label>
+                      <select
+                        value={selectedVariants['event-summary']?.layout || 'broadcast-table'}
+                        onChange={(e) => updateVariant('event-summary', 'layout', e.target.value)}
+                        className="w-full px-2 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-white text-xs focus:outline-none focus:border-blue-500"
+                      >
+                        {EVENT_SUMMARY_LAYOUTS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-zinc-500 mb-1">Teams</label>
+                      <select
+                        value={selectedVariants['event-summary']?.numTeams || '2'}
+                        onChange={(e) => updateVariant('event-summary', 'numTeams', e.target.value)}
+                        className="w-full px-2 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-white text-xs focus:outline-none focus:border-blue-500"
+                      >
+                        {SUMMARY_TEAM_COUNTS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-zinc-500 mb-1">Mode</label>
+                      <select
+                        value={selectedVariants['event-summary']?.mode || 'rotation'}
+                        onChange={(e) => updateVariant('event-summary', 'mode', e.target.value)}
+                        className="w-full px-2 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-white text-xs focus:outline-none focus:border-blue-500"
+                      >
+                        {SUMMARY_MODES.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                {selectedGraphicType === 'virtuis-leaderboard' && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[10px] text-zinc-500 mb-1">Event</label>
+                      <select
+                        value={selectedVariants['virtuis-leaderboard']?.event || 'FX'}
+                        onChange={(e) => updateVariant('virtuis-leaderboard', 'event', e.target.value)}
+                        className="w-full px-2 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-white text-xs focus:outline-none focus:border-blue-500"
+                      >
+                        {(selectedVariants['virtuis-leaderboard']?.gender === 'womens'
+                          ? LEADERBOARD_EVENTS_WOMENS
+                          : LEADERBOARD_EVENTS_MENS
+                        ).map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-zinc-500 mb-1">Gender</label>
+                      <select
+                        value={selectedVariants['virtuis-leaderboard']?.gender || 'mens'}
+                        onChange={(e) => updateVariant('virtuis-leaderboard', 'gender', e.target.value)}
+                        className="w-full px-2 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-white text-xs focus:outline-none focus:border-blue-500"
+                      >
+                        {LEADERBOARD_GENDERS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                {selectedGraphicType === 'event-frame' && (
+                  <div>
+                    <label className="block text-[10px] text-zinc-500 mb-1">Frame Type</label>
+                    <select
+                      value={selectedVariants['event-frame']?.type || 'frame-quad'}
+                      onChange={(e) => updateVariant('event-frame', 'type', e.target.value)}
+                      className="w-full px-2 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-white text-xs focus:outline-none focus:border-blue-500"
+                    >
+                      {EVENT_FRAME_TYPES.map((opt) => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
 
               {/* Color Preview Swatches */}
