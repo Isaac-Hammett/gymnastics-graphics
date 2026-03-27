@@ -388,6 +388,33 @@ const EVENT_FRAME_TYPES = [
   { value: 'frame-team-header', label: 'Team Header' },
 ];
 
+// Rotation slate layout options (17 variants)
+const ROTATION_SLATE_LAYOUTS = [
+  { value: 'classic', label: 'Classic' },
+  { value: 'centered', label: 'Centered' },
+  { value: 'minimal', label: 'Minimal' },
+  { value: 'banner', label: 'Banner' },
+  { value: 'jumbo', label: 'Jumbo' },
+  { value: 'hero', label: 'Hero' },
+  { value: 'split', label: 'Split' },
+  { value: 'bold', label: 'Bold (No Logo)' },
+  { value: 'watermark', label: 'Watermark' },
+  { value: 'frame', label: 'Frame' },
+  { value: 'stacked', label: 'Stacked' },
+  { value: 'cinema', label: 'Cinema (Letterbox)' },
+  { value: 'corner', label: 'Corner' },
+  { value: 'wide', label: 'Wide' },
+  { value: 'side', label: 'Side (Logo Right)' },
+  { value: 'stripe', label: 'Stripe' },
+  { value: 'overlap', label: 'Overlap' },
+];
+
+// Rotation slate type options (manual vs auto-update)
+const ROTATION_SLATE_TYPES = [
+  { value: 'manual', label: 'Manual (Static)' },
+  { value: 'auto', label: 'Auto-Update' },
+];
+
 /**
  * Editable number input with increment/decrement stepper buttons.
  * Simplified version for per-graphic override controls.
@@ -488,6 +515,7 @@ const GRAPHIC_GROUPS = [
     label: 'Overlays',
     graphics: [
       { id: 'rotation-slate', name: 'Rotation Slate' },
+      { id: 'rotation-slate-auto', name: 'Rotation Slate (Auto)' },
       { id: 'team-roster', name: 'Team Roster' },
       { id: 'logos', name: 'Logos' },
     ],
@@ -730,6 +758,7 @@ export default function ThemeEditorPage() {
     'event-summary': { layout: 'broadcast-table', numTeams: '2', mode: 'rotation' },
     'virtuis-leaderboard': { event: 'FX', gender: 'mens' },
     'event-frame': { type: 'frame-quad' },
+    'rotation-slate': { layout: 'classic', type: 'manual', rotation: '1' },
   });
 
   // Per-graphic override state
@@ -1555,6 +1584,25 @@ export default function ThemeEditorPage() {
       // Event-frame needs special handling — it's an overlay file, not output.html
       // Return early with overlay URL
       return `${baseUrl}/overlays/${frameType}.html?${params.toString()}`;
+    }
+
+    // Rotation slate uses overlay files (rotation-slate.html or rotation-slate-auto.html)
+    if (selectedGraphicType === 'rotation-slate' || selectedGraphicType === 'rotation-slate-auto') {
+      const variants = selectedVariants['rotation-slate'] || {};
+      const layout = variants.layout || 'classic';
+      const rotation = variants.rotation || '1';
+      const slateType = selectedGraphicType === 'rotation-slate-auto' ? 'auto' : (variants.type || 'manual');
+
+      params.set('layout', layout);
+      params.set('rotation', rotation);
+      params.set('meetName', 'GYMNASTICS');
+      if (selectedThemeId) {
+        params.set('meetTheme', selectedThemeId);
+      }
+
+      // Use the appropriate overlay file based on type
+      const overlayFile = slateType === 'auto' ? 'rotation-slate-auto' : 'rotation-slate';
+      return `${baseUrl}/overlays/${overlayFile}.html?${params.toString()}`;
     }
 
     // Add theme param — meetTheme takes precedence over comp's theme
@@ -5784,6 +5832,50 @@ export default function ThemeEditorPage() {
                         <option key={opt.value} value={opt.value}>{opt.label}</option>
                       ))}
                     </select>
+                  </div>
+                )}
+
+                {/* Rotation Slate variant selectors */}
+                {(selectedGraphicType === 'rotation-slate' || selectedGraphicType === 'rotation-slate-auto') && (
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="block text-[10px] text-zinc-500 mb-1">Layout</label>
+                      <select
+                        value={selectedVariants['rotation-slate']?.layout || 'classic'}
+                        onChange={(e) => updateVariant('rotation-slate', 'layout', e.target.value)}
+                        className="w-full px-2 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-white text-xs focus:outline-none focus:border-blue-500"
+                      >
+                        {ROTATION_SLATE_LAYOUTS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-zinc-500 mb-1">Rotation</label>
+                      <select
+                        value={selectedVariants['rotation-slate']?.rotation || '1'}
+                        onChange={(e) => updateVariant('rotation-slate', 'rotation', e.target.value)}
+                        className="w-full px-2 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-white text-xs focus:outline-none focus:border-blue-500"
+                      >
+                        {[1, 2, 3, 4, 5, 6].map((num) => (
+                          <option key={num} value={String(num)}>Rotation {num}</option>
+                        ))}
+                      </select>
+                    </div>
+                    {selectedGraphicType === 'rotation-slate' && (
+                      <div>
+                        <label className="block text-[10px] text-zinc-500 mb-1">Type</label>
+                        <select
+                          value={selectedVariants['rotation-slate']?.type || 'manual'}
+                          onChange={(e) => updateVariant('rotation-slate', 'type', e.target.value)}
+                          className="w-full px-2 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-white text-xs focus:outline-none focus:border-blue-500"
+                        >
+                          {ROTATION_SLATE_TYPES.map((opt) => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

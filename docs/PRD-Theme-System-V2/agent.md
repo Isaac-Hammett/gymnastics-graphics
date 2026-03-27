@@ -413,3 +413,7 @@ https://commentarygraphic.com/overlays/sponsors-thanks.html?meetTheme={themeId}
 24. **hosts.html vs coaches.html positioning:** hosts.html uses `bottom: 120px` while coaches.html uses `top: 780px`. This is intentional — coaches is top-anchored so its header aligns with team-stats card when switching graphics. Both use `left: 100px`.
 
 25. **coaches overlay reuses team-coaches keys:** The coaches.html overlay shares CSS variable keys with team-coaches (from Phase 7B.2) for title and name font properties. New keys added for overlay-specific properties like position (top/left vs bottom/left) and letter-spacing.
+
+26. **rotation-slate variant selector (Task 7E.9):** Added `ROTATION_SLATE_LAYOUTS` constant with 17 layouts (classic, centered, minimal, banner, jumbo, hero, split, bold, watermark, frame, stacked, cinema, corner, wide, side, stripe, overlap). The selector uses `selectedVariants['rotation-slate']` state with keys: layout, type ('manual'/'auto'), rotation ('1'-'6'). `getPreviewUrl()` routes to overlay files: `/overlays/rotation-slate.html` or `/overlays/rotation-slate-auto.html`. Added `rotation-slate-auto` to GRAPHIC_GROUPS.
+
+27. **rotation-slate-auto compId requirement:** The auto variant requires `?compId=` URL param to read the current rotation from Firebase. Without it, shows "?" for the rotation number. This is expected behavior for preview mode.

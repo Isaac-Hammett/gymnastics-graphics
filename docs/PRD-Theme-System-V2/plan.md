@@ -1700,7 +1700,7 @@ Graphics: rotation-slate (16 layouts), logos, now-competing, live-camera, interv
 
 ---
 
-### Task 7E.9 — Build rotation-slate Variant Selector — NOT STARTED
+### Task 7E.9 — Build rotation-slate Variant Selector — COMPLETE
 
 **Goal:** Add variant selector for rotation-slate's 12+ layouts in Theme Editor.
 
@@ -1714,9 +1714,19 @@ Graphics: rotation-slate (16 layouts), logos, now-competing, live-camera, interv
 4. Show variant selector when rotation-slate is selected
 
 **Verify:**
-- [ ] Variant selector shows all layouts
-- [ ] Changing layout updates preview
-- [ ] Manual and auto variants selectable
+- [x] Variant selector shows all layouts — **PASS** (17 layouts: classic, centered, minimal, banner, jumbo, hero, split, bold, watermark, frame, stacked, cinema, corner, wide, side, stripe, overlap)
+- [x] Changing layout updates preview — **PASS** (tested cinema layout with pink-meet-2026 theme)
+- [x] Manual and auto variants selectable — **PASS** (rotation-slate-auto added to GRAPHIC_GROUPS, getPreviewUrl routes to correct overlay file)
+
+**Implementation Notes (2026-03-27):**
+- Added `ROTATION_SLATE_LAYOUTS` constant with 17 layout options
+- Added `ROTATION_SLATE_TYPES` constant: `['manual', 'auto']`
+- Added `rotation-slate-auto` to GRAPHIC_GROUPS Overlays category
+- Extended `selectedVariants` initial state with `'rotation-slate': { layout: 'classic', type: 'manual', rotation: '1' }`
+- Updated `getPreviewUrl()` to handle both rotation-slate and rotation-slate-auto (routes to overlay files)
+- Added variant selector UI with 3 dropdowns: Layout (17 options), Rotation (1-6), Type (Manual/Auto, only for rotation-slate)
+- rotation-slate-auto requires compId to show current rotation — preview shows "?" without compId (expected)
+- Screenshots: `local-task-7e9-classic.png`, `local-task-7e9-cinema.png`, `local-task-7e9-auto-jumbo.png`
 
 **Deploy:** Deploy show-controller build to production.
 
