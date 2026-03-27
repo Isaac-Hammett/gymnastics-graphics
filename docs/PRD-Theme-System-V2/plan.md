@@ -1663,7 +1663,7 @@ Graphics: rotation-slate (16 layouts), logos, now-competing, live-camera, interv
 
 ---
 
-### Task 7E.8 — Convert hosts + coaches Overlay CSS to Variables — NOT STARTED
+### Task 7E.8 — Convert hosts + coaches Overlay CSS to Variables — COMPLETE
 
 **Goal:** Replace 14 + 14 hardcoded values in hosts.html and coaches.html overlays.
 
@@ -1680,11 +1680,21 @@ Graphics: rotation-slate (16 layouts), logos, now-competing, live-camera, interv
 5. Add mappings to theme-loader.js
 
 **Verify:**
-- [ ] Hosts overlay renders with all 4 theme color variables
-- [ ] Coaches overlay renders identically
-- [ ] Position overrides work
-- [ ] Font overrides work
-- [ ] Animation timing preserved
+- [x] Hosts overlay renders with all 4 theme color variables — **PASS** (default gray header #BFBFBF, black content #000, white text #fff)
+- [x] Coaches overlay renders identically — **PASS** (same defaults, positioned at top: 780px to align with team-stats card)
+- [x] Position overrides work — **CSS vars in place** (`--hosts-hosts-bottom`, `--hosts-hosts-left`, `--coaches-coaches-top`, `--coaches-coaches-left`)
+- [x] Font overrides work — **CSS vars in place** (title: size/weight/family/text-transform/letter-spacing; name: size/weight/family/line-height/text-transform/letter-spacing)
+- [x] Animation timing preserved — **PASS** (slideIn keyframes remain hardcoded: 0.6s cubic-bezier(0.16, 1, 0.3, 1))
+
+**Implementation Notes (2026-03-27):**
+- Added 20 new layout suffixes to `layoutOverrideMapping` in theme-loader.js:
+  - Hosts (14 keys): `hostsBottom`, `hostsLeft`, `hostsHeaderPaddingV/H`, `hostsMinWidth`, `hostsTitleFontSize/Weight/Family/TextTransform/LetterSpacing`, `hostsContentPaddingV/H`, `hostsNameFontSize/Weight/Family/LineHeight/TextTransform/LetterSpacing`
+  - Coaches (6 new keys, reuses existing coachesTitle*/coachesName* keys from team-coaches 7B.2): `coachesOverlayTop`, `coachesOverlayLeft`, `coachesOverlayMinWidth`, `coachesOverlayTitleTextTransform`, `coachesOverlayTitleLetterSpacing`, `coachesOverlayLogoSize`, `coachesOverlayNameTextTransform`, `coachesOverlayNameLetterSpacing`
+- CSS uses 3-layer cascade: `var(--hosts-header-bg, var(--meet-header-bg, #BFBFBF))`, etc.
+- Both overlays now properly use all 4 theme color variables: `header-bg`, `header-text`, `content-bg`, `overlay-text`
+- Coaches overlay already had `--meet-content-bg` and `--meet-overlay-text` — hosts was missing these (was hardcoded to #000 and #fff)
+- Animation keyframes remain hardcoded — these are choreographed transitions, not themeable values
+- Screenshots: `local-task-7e8-hosts-default.png`, `local-task-7e8-coaches-default-full.png`
 
 **Deploy:** Deploy `overlays/hosts.html` + `overlays/coaches.html` + `overlays/theme-loader.js` to production.
 
