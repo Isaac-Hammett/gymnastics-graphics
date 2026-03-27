@@ -1352,7 +1352,7 @@ Graphics: stream-starting, stream-thanks.
 
 ---
 
-### Task 7D.5 — Add Measurement Selectors for Stream Graphics — NOT STARTED
+### Task 7D.5 — Add Measurement Selectors for Stream Graphics — COMPLETE
 
 **Goal:** Add measurement mappings for stream graphics.
 

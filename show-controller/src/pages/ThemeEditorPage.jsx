@@ -984,6 +984,9 @@ export default function ThemeEditorPage() {
     // Sponsors
     'sponsors-cycle': { container: '#container' },
     'sponsors-bug': { container: '.bug-container' },
+    // Stream graphics
+    'stream-starting': { container: '.graphic-stream', title: '.stream-title', logos: '.stream-logos-container, .stream-logo', eventName: '.stream-event-name' },
+    'stream-thanks': { container: '.graphic-stream', title: '.stream-title', logos: '.stream-logos-container, .stream-logo', eventName: '.stream-event-name' },
   };
 
   // Listen for measurement responses from the preview iframe
