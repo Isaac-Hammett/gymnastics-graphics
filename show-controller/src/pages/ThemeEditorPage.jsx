@@ -1123,6 +1123,18 @@ export default function ThemeEditorPage() {
     // Stream graphics
     'stream-starting': { container: '.graphic-stream', title: '.stream-title', logos: '.stream-logos-container, .stream-logo', eventName: '.stream-event-name' },
     'stream-thanks': { container: '.graphic-stream', title: '.stream-title', logos: '.stream-logos-container, .stream-logo', eventName: '.stream-event-name' },
+    // Phase 7E: Overlay graphics
+    'rotation-slate': { logo: '.logo-section', content: '.content-section', meetName: '.meet-name', rotationNumber: '.rotation-number', badge: '.rotation-badge' },
+    'rotation-slate-auto': { logo: '.logo-section', content: '.content-section', meetName: '.meet-name', rotationNumber: '.rotation-number', badge: '.rotation-badge', status: '.status-label' },
+    'logos': { container: '.graphic-logos', logo: '.team-logo' },
+    'now-competing': { container: '.graphic-now-competing', status: '.now-competing-status', logo: '.now-competing-logo', event: '.now-competing-event' },
+    'live-camera': { badge: '.live-camera-badge', indicator: '.live-camera-indicator', apparatus: '.live-camera-apparatus' },
+    'interview-card': { panel: '.panel', title: '.title-label', name: '.coach-name', logo: '.school-logo', question: '.question' },
+    'athlete-spotlight': { card: '.spotlight-card', header: '.spotlight-header', content: '.spotlight-content', headshot: '.athlete-headshot' },
+    'event-calendar': { container: '.card-container', header: '.header-bar', events: '.events-container' },
+    'team-bug': { bug: '.score-bug', lineup: '.lineup-card', rotationTag: '.rotation-tag', teamRows: '.team-rows' },
+    'hosts': { card: '.hosts-card', header: '.hosts-header', content: '.hosts-content' },
+    'coaches': { card: '.coaches-card', header: '.coaches-header', content: '.coaches-content' },
   };
 
   // Listen for measurement responses from the preview iframe

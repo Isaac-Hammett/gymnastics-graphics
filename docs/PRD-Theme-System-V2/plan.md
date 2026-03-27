@@ -1780,7 +1780,7 @@ Graphics: rotation-slate (16 layouts), logos, now-competing, live-camera, interv
 
 ---
 
-### Task 7E.11 — Add Measurement Selectors for Overlay Graphics — NOT STARTED
+### Task 7E.11 — Add Measurement Selectors for Overlay Graphics — COMPLETE
 
 **Goal:** Add measurement mappings for all Phase 7E graphics.
 
