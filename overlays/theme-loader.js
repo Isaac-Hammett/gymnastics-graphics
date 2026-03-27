@@ -598,7 +598,7 @@ window.themeReady = new Promise(resolve => { _resolveThemeReady = resolve; });
 
         // Handle boolean show/hide — convert to display value
         if (propKey === 'showLogo') {
-          value = value === false || value === 'false' ? 'none' : 'flex';
+          value = value === false || value === 'false' || value === 'none' ? 'none' : 'flex';
         } else if (config.unit && typeof value === 'number') {
           value = `${value}${config.unit}`;
         } else if (config.unit && !String(value).endsWith(config.unit)) {

@@ -351,7 +351,9 @@ https://commentarygraphic.com/overlays/sponsors-thanks.html?meetTheme={themeId}
 
 15. **team-bug state colors are NOT overridable.** Green (#22c55e stick), amber (#f59e0b correction), cyan (#22d3ee pulse) are functional status indicators — leave them hardcoded.
 
-16. **sponsors-cycle timing is NOT a theme control.** Cycle timing (3000ms) is controlled via Firebase config + URL Generator, not per-graphic overrides.
+16. **showLogo accepts three falsy forms:** `false` (boolean), `"false"` (string), or `"none"` (string) — all map to CSS display: none. Fixed in Task 8.5.
+
+17. **sponsors-cycle timing is NOT a theme control.** Cycle timing (3000ms) is controlled via Firebase config + URL Generator, not per-graphic overrides.
 
 17. **event-summary uses color-mix().** `color-mix(in srgb, var(--meet-overlay-bg) 80%, white)` for alternating rows. Must preserve this when converting to CSS variables.
 
