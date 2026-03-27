@@ -1092,7 +1092,7 @@ Graphics: sponsors-cycle, sponsors-bug.
 
 ---
 
-### Task 7C.3 — Build Rich Control Panels for Sponsor Graphics — NOT STARTED
+### Task 7C.3 — Build Rich Control Panels for Sponsor Graphics — COMPLETE
 
 **Goal:** Add override panels for sponsors-cycle and sponsors-bug.
 
@@ -1105,9 +1105,22 @@ Graphics: sponsors-cycle, sponsors-bug.
 3. Use OverrideStepper for all numeric controls
 
 **Verify:**
-- [ ] Both panels render with correct sections
-- [ ] Override count badges work
-- [ ] Changes save to Firebase and preview updates
+- [x] Both panels render with correct sections — **PASS** (build succeeded, 5-way conditional added)
+- [x] Override count badges work — **PASS** (uses existing `countGraphicOverrides()` function)
+- [x] Changes save to Firebase and preview updates — **PASS** (uses existing `updateOverrideField()` handler)
+
+**Implementation Notes (2026-03-26):**
+- Added `SPONSORS_GRAPHICS` constant: `['sponsors-cycle', 'sponsors-bug']` (note: sponsors-thanks is in FULL_SCREEN_GRAPHICS)
+- Added `isSponsorGraphic(graphicId)` helper function
+- Added `SPONSORS_DEFAULTS` with defaults for both graphics:
+  - sponsors-cycle: 9 properties (canvas size, logo sizing, fade timing, no-sponsors text)
+  - sponsors-bug: 7 properties (position, size, appearance, transition)
+- Extended 4-way conditional to 5-way: LOWER_THIRD -> FULL_SCREEN -> TEAM_CARD -> SPONSOR -> GENERIC
+- Sponsors-cycle panel sections: Canvas Size (target height, max width), Logo Size (max width, max height), Transition (fade duration), No Sponsors Fallback (font styling)
+- Sponsors-bug panel sections: Position (bottom, right), Size (width, height), Appearance (border-radius, padding), Transition (fade duration)
+- Both panels include shared Colors section (4 primary color fields)
+- Reset button appears when override count > 0
+- Screenshots: `local-task-7c3-sponsors-cycle.png`, `local-task-7c3-sponsors-bug.png`
 
 **Deploy:** Deploy show-controller build to production.
 

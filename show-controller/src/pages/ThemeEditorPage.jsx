@@ -120,6 +120,39 @@ const TEAM_CARD_DEFAULTS = {
   },
 };
 
+// Sponsor graphics for rich control panels (Phase 7C.3)
+// Note: sponsors-thanks is in FULL_SCREEN_GRAPHICS (Phase 7A), not here
+const SPONSORS_GRAPHICS = ['sponsors-cycle', 'sponsors-bug'];
+
+// Helper to detect if a graphicId is a sponsor graphic (not sponsors-thanks which is full-screen)
+const isSponsorGraphic = (graphicId) => {
+  return SPONSORS_GRAPHICS.includes(graphicId);
+};
+
+// Default values for sponsor graphics (Phase 7C.3)
+const SPONSORS_DEFAULTS = {
+  'sponsors-cycle': {
+    // Canvas/Container
+    targetHeight: 900, maxWidthRender: 1400,
+    // Logo sizing
+    logoMaxWidth: 0, logoMaxHeight: 0, // 0 = auto
+    // Timing
+    fadeDuration: 0.5,
+    // No sponsors fallback text
+    noSponsorsFontSize: 48, noSponsorsFontWeight: '500', noSponsorsFontFamily: 'Inter',
+  },
+  'sponsors-bug': {
+    // Position
+    bugBottom: 40, bugRight: 40,
+    // Size
+    bugWidth: 200, bugHeight: 80,
+    // Appearance
+    bugBorderRadius: 12, bugPadding: 10,
+    // Transition
+    bugFadeTransition: 0.8,
+  },
+};
+
 // Compute the effective rendered height based on font sizes + padding
 // Shows producers the real pixel value instead of "0 (auto)"
 function getEffectiveVenueHeight(overrides, graphicId) {
@@ -4232,6 +4265,230 @@ export default function ThemeEditorPage() {
                                             </div>
                                           </div>
                                         )}
+                                      </div>
+                                    </div>
+
+                                    {/* Reset button */}
+                                    {overrideCount > 0 && (
+                                      <div className="pt-2 flex justify-end">
+                                        <button onClick={() => resetGraphicOverrides(graphicId)} className="text-[10px] text-zinc-400 hover:text-zinc-300 transition-colors">
+                                          Reset to theme defaults
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : isSponsorGraphic(graphicId) ? (
+                                  /* ========== RICH SPONSOR CONTROLS (sponsors-cycle, sponsors-bug) ========== */
+                                  <div className="pt-3 space-y-4">
+                                    {/* SPONSORS-CYCLE specific controls */}
+                                    {graphicId === 'sponsors-cycle' && (() => {
+                                      const defs = SPONSORS_DEFAULTS['sponsors-cycle'];
+                                      return (
+                                        <>
+                                          {/* CANVAS / RENDER SIZE */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Canvas Size</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Target height"
+                                                value={overrides.targetHeight ?? defs.targetHeight}
+                                                onChange={(v) => updateOverrideField(graphicId, 'targetHeight', v)}
+                                                min={400} max={1200} step={50} suffix="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Max width"
+                                                value={overrides.maxWidthRender ?? defs.maxWidthRender}
+                                                onChange={(v) => updateOverrideField(graphicId, 'maxWidthRender', v)}
+                                                min={800} max={1920} step={50} suffix="px"
+                                              />
+                                            </div>
+                                            <p className="mt-1 text-[10px] text-zinc-500">Controls the render dimensions for sponsor logos.</p>
+                                          </div>
+
+                                          {/* LOGO SIZING */}
+                                          <div className="pt-2 border-t border-zinc-700/30">
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Logo Size</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Max width"
+                                                value={overrides.logoMaxWidth ?? defs.logoMaxWidth}
+                                                onChange={(v) => updateOverrideField(graphicId, 'logoMaxWidth', v)}
+                                                min={0} max={1200} step={50} suffix="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Max height"
+                                                value={overrides.logoMaxHeight ?? defs.logoMaxHeight}
+                                                onChange={(v) => updateOverrideField(graphicId, 'logoMaxHeight', v)}
+                                                min={0} max={800} step={50} suffix="px"
+                                              />
+                                            </div>
+                                            <p className="mt-1 text-[10px] text-zinc-500">0 = auto sizing. Set both to constrain logo dimensions.</p>
+                                          </div>
+
+                                          {/* TRANSITION */}
+                                          <div className="pt-2 border-t border-zinc-700/30">
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Transition</div>
+                                            <div className="grid grid-cols-1 gap-2">
+                                              <OverrideStepper
+                                                label="Fade duration"
+                                                value={overrides.fadeDuration ?? defs.fadeDuration}
+                                                onChange={(v) => updateOverrideField(graphicId, 'fadeDuration', v)}
+                                                min={0.1} max={2.0} step={0.1} suffix="s"
+                                              />
+                                            </div>
+                                          </div>
+
+                                          {/* NO SPONSORS FALLBACK TEXT */}
+                                          <div className="pt-2 border-t border-zinc-700/30">
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">No Sponsors Fallback</div>
+                                            <div className="grid grid-cols-3 gap-2">
+                                              <OverrideStepper
+                                                label="Font size"
+                                                value={overrides.noSponsorsFontSize ?? defs.noSponsorsFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'noSponsorsFontSize', v)}
+                                                min={20} max={80} step={4} suffix="px"
+                                              />
+                                              <div className="flex flex-col gap-0.5">
+                                                <span className="text-[10px] text-zinc-500">Weight</span>
+                                                <select
+                                                  value={overrides.noSponsorsFontWeight ?? defs.noSponsorsFontWeight}
+                                                  onChange={(e) => updateOverrideField(graphicId, 'noSponsorsFontWeight', e.target.value)}
+                                                  className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500"
+                                                >
+                                                  {FONT_WEIGHTS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                                                </select>
+                                              </div>
+                                              <div className="flex flex-col gap-0.5">
+                                                <span className="text-[10px] text-zinc-500">Font</span>
+                                                <select
+                                                  value={overrides.noSponsorsFontFamily ?? defs.noSponsorsFontFamily}
+                                                  onChange={(e) => updateOverrideField(graphicId, 'noSponsorsFontFamily', e.target.value)}
+                                                  className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500"
+                                                >
+                                                  {FONT_FAMILIES.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                                                </select>
+                                              </div>
+                                            </div>
+                                            <p className="mt-1 text-[10px] text-zinc-500">Styling for "No sponsors configured" message.</p>
+                                          </div>
+                                        </>
+                                      );
+                                    })()}
+
+                                    {/* SPONSORS-BUG specific controls */}
+                                    {graphicId === 'sponsors-bug' && (() => {
+                                      const defs = SPONSORS_DEFAULTS['sponsors-bug'];
+                                      return (
+                                        <>
+                                          {/* POSITION */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Position</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Bottom"
+                                                value={overrides.bugBottom ?? defs.bugBottom}
+                                                onChange={(v) => updateOverrideField(graphicId, 'bugBottom', v)}
+                                                min={0} max={200} step={5} suffix="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Right"
+                                                value={overrides.bugRight ?? defs.bugRight}
+                                                onChange={(v) => updateOverrideField(graphicId, 'bugRight', v)}
+                                                min={0} max={200} step={5} suffix="px"
+                                              />
+                                            </div>
+                                          </div>
+
+                                          {/* SIZE */}
+                                          <div className="pt-2 border-t border-zinc-700/30">
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Size</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Width"
+                                                value={overrides.bugWidth ?? defs.bugWidth}
+                                                onChange={(v) => updateOverrideField(graphicId, 'bugWidth', v)}
+                                                min={100} max={400} step={10} suffix="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Height"
+                                                value={overrides.bugHeight ?? defs.bugHeight}
+                                                onChange={(v) => updateOverrideField(graphicId, 'bugHeight', v)}
+                                                min={40} max={200} step={10} suffix="px"
+                                              />
+                                            </div>
+                                          </div>
+
+                                          {/* APPEARANCE */}
+                                          <div className="pt-2 border-t border-zinc-700/30">
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Appearance</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Border radius"
+                                                value={overrides.bugBorderRadius ?? defs.bugBorderRadius}
+                                                onChange={(v) => updateOverrideField(graphicId, 'bugBorderRadius', v)}
+                                                min={0} max={40} step={2} suffix="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Padding"
+                                                value={overrides.bugPadding ?? defs.bugPadding}
+                                                onChange={(v) => updateOverrideField(graphicId, 'bugPadding', v)}
+                                                min={4} max={30} step={2} suffix="px"
+                                              />
+                                            </div>
+                                          </div>
+
+                                          {/* TRANSITION */}
+                                          <div className="pt-2 border-t border-zinc-700/30">
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Transition</div>
+                                            <div className="grid grid-cols-1 gap-2">
+                                              <OverrideStepper
+                                                label="Fade duration"
+                                                value={overrides.bugFadeTransition ?? defs.bugFadeTransition}
+                                                onChange={(v) => updateOverrideField(graphicId, 'bugFadeTransition', v)}
+                                                min={0.1} max={2.0} step={0.1} suffix="s"
+                                              />
+                                            </div>
+                                          </div>
+                                        </>
+                                      );
+                                    })()}
+
+                                    {/* SHARED COLORS (both sponsors-cycle and sponsors-bug) */}
+                                    <div className="pt-2 border-t border-zinc-700/30">
+                                      <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Colors</div>
+                                      <div className="grid grid-cols-2 gap-2">
+                                        {OVERRIDE_COLOR_FIELDS.slice(0, 4).map(({ key, label }) => {
+                                          const hasOverride = overrides[key] !== undefined;
+                                          const overrideValue = overrides[key] || editingTheme.colors[key] || '#888888';
+                                          return (
+                                            <div key={key} className="flex items-center gap-2">
+                                              <label className="flex items-center gap-1.5 cursor-pointer">
+                                                <input
+                                                  type="checkbox"
+                                                  checked={hasOverride}
+                                                  onChange={(e) => {
+                                                    if (e.target.checked) {
+                                                      updateOverrideField(graphicId, key, editingTheme.colors[key] || '#888888');
+                                                    } else {
+                                                      clearOverrideField(graphicId, key);
+                                                    }
+                                                  }}
+                                                  className="w-3.5 h-3.5 rounded border-zinc-600 bg-zinc-700 text-purple-500 focus:ring-purple-500 focus:ring-offset-0"
+                                                />
+                                              </label>
+                                              <input
+                                                type="color"
+                                                value={overrideValue}
+                                                disabled={!hasOverride}
+                                                onChange={(e) => updateOverrideField(graphicId, key, e.target.value)}
+                                                className={`w-6 h-6 rounded cursor-pointer bg-transparent border-0 ${!hasOverride ? 'opacity-40 cursor-not-allowed' : ''}`}
+                                              />
+                                              <span className={`text-[11px] ${hasOverride ? 'text-zinc-300' : 'text-zinc-500'}`}>
+                                                {label}
+                                              </span>
+                                            </div>
+                                          );
+                                        })}
                                       </div>
                                     </div>
 
