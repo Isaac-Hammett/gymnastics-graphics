@@ -627,6 +627,14 @@ window.themeReady = new Promise(resolve => { _resolveThemeReady = resolve; });
     noSponsorsFontWeight: { suffix: 'no-sponsors-font-weight', unit: null },
     noSponsorsFontFamily: { suffix: 'no-sponsors-font-family', unit: null },
     noSponsorsColor: { suffix: 'no-sponsors-color', unit: null },
+    // Sponsors-bug specific (Phase 7C.2)
+    bugBottom: { suffix: 'bug-bottom', unit: 'px' },
+    bugRight: { suffix: 'bug-right', unit: 'px' },
+    bugWidth: { suffix: 'bug-width', unit: 'px' },
+    bugHeight: { suffix: 'bug-height', unit: 'px' },
+    bugBorderRadius: { suffix: 'bug-border-radius', unit: 'px' },
+    bugPadding: { suffix: 'bug-padding', unit: 'px' },
+    bugFadeTransition: { suffix: 'bug-fade-transition', unit: 's' },
   };
 
   /**
