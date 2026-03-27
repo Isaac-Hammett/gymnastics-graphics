@@ -546,6 +546,25 @@ window.themeReady = new Promise(resolve => { _resolveThemeReady = resolve; });
     watermarkBottom: { suffix: 'watermark-bottom', unit: 'px' },
     watermarkRight: { suffix: 'watermark-right', unit: 'px' },
     showWatermark: { suffix: 'show-watermark', unit: null },
+    // Sponsors-thanks specific (Phase 7A.4)
+    containerMarginTop: { suffix: 'container-margin-top', unit: 'px' },
+    containerMarginSide: { suffix: 'container-margin-side', unit: 'px' },
+    containerMarginBottom: { suffix: 'container-margin-bottom', unit: 'px' },
+    containerBorderRadius: { suffix: 'container-border-radius', unit: 'px' },
+    headerPaddingV: { suffix: 'header-padding-v', unit: 'px' },
+    headerPaddingH: { suffix: 'header-padding-h', unit: 'px' },
+    headerTitleFontSize: { suffix: 'header-title-font-size', unit: 'px' },
+    headerTitleFontWeight: { suffix: 'header-title-font-weight', unit: null },
+    headerTitleFontFamily: { suffix: 'header-title-font-family', unit: null },
+    headerLogoWidth: { suffix: 'header-logo-width', unit: 'px' },
+    headerLogoHeight: { suffix: 'header-logo-height', unit: 'px' },
+    gridGap: { suffix: 'grid-gap', unit: 'px' },
+    gridPadding: { suffix: 'grid-padding', unit: 'px' },
+    sponsorItemPadding: { suffix: 'sponsor-item-padding', unit: 'px' },
+    fallbackFontSize: { suffix: 'fallback-font-size', unit: 'px' },
+    fallbackFontWeight: { suffix: 'fallback-font-weight', unit: null },
+    noSponsorsFontSize: { suffix: 'no-sponsors-font-size', unit: 'px' },
+    noSponsorsFontWeight: { suffix: 'no-sponsors-font-weight', unit: null },
   };
 
   /**

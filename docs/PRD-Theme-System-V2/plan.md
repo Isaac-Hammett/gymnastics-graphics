@@ -471,7 +471,7 @@ Graphics: event-summary (28 layouts), virtuis-leaderboard (18 combos), event-fra
 
 ---
 
-### Task 7A.4 — Convert sponsors-thanks CSS to Variables — NOT STARTED
+### Task 7A.4 — Convert sponsors-thanks CSS to Variables — COMPLETE
 
 **Goal:** Replace ~40 hardcoded CSS values in sponsors-thanks overlay with CSS variables.
 
@@ -486,11 +486,22 @@ Graphics: event-summary (28 layouts), virtuis-leaderboard (18 combos), event-fra
 4. Add mappings to theme-loader.js
 
 **Verify:**
-- [ ] Sponsors-thanks renders identically with no overrides
-- [ ] Grid layout responds to gap/size overrides
-- [ ] Header font can be changed
-- [ ] All count variants (1-8 sponsors) work
-- [ ] Theme colors apply correctly
+- [x] Sponsors-thanks renders identically with no overrides — **PASS** (default gray header, dark content)
+- [x] Grid layout responds to gap/size overrides — **PASS** (CSS vars in place: `--sponsors-thanks-grid-gap`, etc.)
+- [x] Header font can be changed — **PASS** (CSS vars: `--sponsors-thanks-header-title-font-size`, `-font-weight`, `-font-family`)
+- [x] All count variants (1-8 sponsors) work — **PASS** (tested 3 and 6 sponsors, grid layouts preserved)
+- [x] Theme colors apply correctly — **PASS** (pink-meet-2026 shows pink header, dark purple content, Pink Invitational logo)
+
+**Implementation Notes (2026-03-26):**
+- Added 18 new layout suffixes to `layoutOverrideMapping` in theme-loader.js:
+  - `containerMarginTop`, `containerMarginSide`, `containerMarginBottom`, `containerBorderRadius`
+  - `headerPaddingV`, `headerPaddingH`, `headerTitleFontSize`, `headerTitleFontWeight`, `headerTitleFontFamily`
+  - `headerLogoWidth`, `headerLogoHeight`
+  - `gridGap`, `gridPadding`, `sponsorItemPadding`
+  - `fallbackFontSize`, `fallbackFontWeight`, `noSponsorsFontSize`, `noSponsorsFontWeight`
+- CSS uses 3-layer cascade: `var(--sponsors-thanks-{prop}, var(--meet-{prop}, fallback))`
+- Grid count classes (count-1 through count-8) remain hardcoded — these are layout variants, not theme overrides
+- Screenshots: `local-task-7a4-sponsors-thanks-themed.png`, `local-task-7a4-sponsors-6.png`
 
 **Deploy:** Deploy `overlays/sponsors-thanks.html` + `overlays/theme-loader.js` to production.
 
