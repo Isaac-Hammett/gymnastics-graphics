@@ -960,6 +960,43 @@ window.themeReady = new Promise(resolve => { _resolveThemeReady = resolve; });
     tbMinWidth: { suffix: 'tb-min-width', unit: 'px' },  // 500px
     // Tier scale factor (used with calc() for proportional scaling)
     tbTierScale: { suffix: 'tb-tier-scale', unit: null },  // 1.0 for base, <1 for compact tiers
+    // Hosts overlay specific (Phase 7E.8)
+    // Position
+    hostsBottom: { suffix: 'hosts-bottom', unit: 'px' },
+    hostsLeft: { suffix: 'hosts-left', unit: 'px' },
+    // Header
+    hostsHeaderPaddingV: { suffix: 'hosts-header-padding-v', unit: 'px' },
+    hostsHeaderPaddingH: { suffix: 'hosts-header-padding-h', unit: 'px' },
+    hostsMinWidth: { suffix: 'hosts-min-width', unit: 'px' },
+    // Title typography
+    hostsTitleFontSize: { suffix: 'hosts-title-font-size', unit: 'px' },
+    hostsTitleFontWeight: { suffix: 'hosts-title-font-weight', unit: null },
+    hostsTitleFontFamily: { suffix: 'hosts-title-font-family', unit: null },
+    hostsTitleTextTransform: { suffix: 'hosts-title-text-transform', unit: null },
+    hostsTitleLetterSpacing: { suffix: 'hosts-title-letter-spacing', unit: 'px' },
+    // Content
+    hostsContentPaddingV: { suffix: 'hosts-content-padding-v', unit: 'px' },
+    hostsContentPaddingH: { suffix: 'hosts-content-padding-h', unit: 'px' },
+    // Name typography
+    hostsNameFontSize: { suffix: 'hosts-name-font-size', unit: 'px' },
+    hostsNameFontWeight: { suffix: 'hosts-name-font-weight', unit: null },
+    hostsNameFontFamily: { suffix: 'hosts-name-font-family', unit: null },
+    hostsNameLineHeight: { suffix: 'hosts-name-line-height', unit: null },
+    hostsNameTextTransform: { suffix: 'hosts-name-text-transform', unit: null },
+    hostsNameLetterSpacing: { suffix: 'hosts-name-letter-spacing', unit: 'px' },
+    // Coaches overlay specific (Phase 7E.8) - note: some coach keys already exist in Team-coaches (7B.2)
+    // Position for coaches overlay (different from team-coaches - uses top instead of bottom)
+    coachesOverlayTop: { suffix: 'coaches-top', unit: 'px' },  // 780px default (top-anchored)
+    coachesOverlayLeft: { suffix: 'coaches-left', unit: 'px' },
+    coachesOverlayMinWidth: { suffix: 'coaches-min-width', unit: 'px' },
+    // Title typography - uses same keys as team-coaches: coachesTitleFontSize, coachesTitleFontWeight, coachesTitleFontFamily
+    coachesOverlayTitleTextTransform: { suffix: 'coaches-title-text-transform', unit: null },
+    coachesOverlayTitleLetterSpacing: { suffix: 'coaches-title-letter-spacing', unit: 'px' },
+    // Logo (team logo in header)
+    coachesOverlayLogoSize: { suffix: 'coaches-logo-size', unit: 'px' },
+    // Name typography - uses same keys as team-coaches: coachesNameFontSize, coachesNameFontWeight, coachesNameFontFamily, coachesNameLineHeight
+    coachesOverlayNameTextTransform: { suffix: 'coaches-name-text-transform', unit: null },
+    coachesOverlayNameLetterSpacing: { suffix: 'coaches-name-letter-spacing', unit: 'px' },
   };
 
   /**
