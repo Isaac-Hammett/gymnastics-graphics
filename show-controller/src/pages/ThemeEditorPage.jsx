@@ -8,6 +8,9 @@ import { buildSponsorsCycleURL } from '../lib/urlBuilder';
 // Override-able graphic IDs grouped by category (for per-graphic override panels)
 const LOWER_THIRD_GRAPHICS = ['event-bar', 'warm-up', 'replay'];
 
+// Full-screen graphics for rich control panels (Phase 7A.8)
+const FULL_SCREEN_GRAPHICS = ['event-summary', 'virtuis-leaderboard', 'event-frame', 'sponsors-thanks', 'team-roster'];
+
 const LOWER_THIRD_DEFAULTS = {
   'event-bar': {
     barBottom: 120, barLeft: 100, logoImgSize: 70, logoContainerWidth: 100,
@@ -26,6 +29,45 @@ const LOWER_THIRD_DEFAULTS = {
     logoPadding: 15, logoRadius: 0, venueFontSize: 30, barMinWidth: 450,
     venuePaddingV: 10, venuePaddingH: 40, nameFontSize: 28, locationFontSize: 0,
     detailsPaddingV: 10, detailsPaddingH: 40, detailsLines: 1,
+  },
+};
+
+// Default values for full-screen graphics (Phase 7A.8)
+const FULL_SCREEN_DEFAULTS = {
+  'event-summary': {
+    titleFontSize: 36, titleFontFamily: 'Inter', titleFontWeight: '800', titleTextTransform: 'uppercase',
+    scoreFontFamily: 'Roboto Mono', scoreFontSize: 28,
+    headerPadding: 40, headerHeight: 80, headerLogoSize: 60,
+    contentPadding: 30, footerHeight: 60, footerFontSize: 28,
+    teamNameFontSize: 24, athleteNameFontSize: 18, rowHeight: 48, rowPadding: 12,
+  },
+  'virtuis-leaderboard': {
+    tableFontSize: 18, tableHeaderPadding: 16, tableRowPadding: 12, rankColWidth: 60,
+    medalSize: 24, teamLogoSize: 32,
+    goldFrom: '#fbbf24', goldTo: '#f59e0b', silverFrom: '#9ca3af', silverTo: '#6b7280',
+    bronzeFrom: '#d97706', bronzeTo: '#b45309', stickBonusBg: '#22c55e',
+    containerTop: 60, containerLeft: 60, containerRight: 60, containerBottom: 60,
+  },
+  'event-frame': {
+    frameBorderWidth: 4, frameBorderColor: '#ffffff', frameGap: 8,
+    logoHeaderHeight: 80, frameLogoSize: 60, frameLogoMaxWidth: 200,
+    watermarkFontSize: 14, watermarkFontWeight: '400', watermarkColor: '#ffffff', watermarkAccentColor: '#9ca3af',
+    watermarkBottom: 20, watermarkRight: 20, showWatermark: true,
+  },
+  'sponsors-thanks': {
+    containerMarginTop: 70, containerMarginSide: 70, containerMarginBottom: 70, containerBorderRadius: 16,
+    headerPaddingV: 24, headerPaddingH: 40, headerTitleFontSize: 32, headerTitleFontWeight: '800', headerTitleFontFamily: 'Inter',
+    headerLogoWidth: 80, headerLogoHeight: 80,
+    gridGap: 24, gridPadding: 40, sponsorItemPadding: 16,
+  },
+  'team-roster': {
+    containerMarginTop: 70, containerMarginSide: 70, containerMarginBottom: 70, containerBorderRadius: 16,
+    headerPaddingV: 24, headerPaddingH: 40, headerTitleFontSize: 32, headerTitleFontWeight: '800', headerTitleFontFamily: 'Inter',
+    headerLogoWidth: 80, headerLogoHeight: 80,
+    rosterContainerPadding: 40, rosterGridGap: 16, rosterHeadshotSize: 100, rosterHeadshotRadius: '50%',
+    rosterHeadshotBorder: 3, rosterHeadshotBorderColor: '#374151', rosterHeadshotBg: '#1f2937',
+    rosterNameFontSize: 14, rosterNameFontWeight: '600', rosterNameFontFamily: 'Inter', rosterNameTextTransform: 'none',
+    rosterInitialsFontSize: 36, rosterInitialsColor: '#6b7280', rosterInitialsBg: '#374151', rosterCardWidth: 120,
   },
 };
 
@@ -2534,6 +2576,817 @@ export default function ThemeEditorPage() {
                                           onClick={() => resetGraphicOverrides(graphicId)}
                                           className="text-[10px] text-zinc-400 hover:text-zinc-300 transition-colors"
                                         >
+                                          Reset to theme defaults
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : FULL_SCREEN_GRAPHICS.includes(graphicId) ? (
+                                  /* ========== RICH FULL-SCREEN CONTROLS ========== */
+                                  <div className="pt-3 space-y-4">
+                                    {/* EVENT-SUMMARY specific controls */}
+                                    {graphicId === 'event-summary' && (
+                                      <>
+                                        {/* HEADER */}
+                                        <div>
+                                          <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Header</div>
+                                          <div className="space-y-2">
+                                            <div className="grid grid-cols-3 gap-2">
+                                              <OverrideStepper
+                                                label="Title size"
+                                                value={overrides.titleFontSize ?? FULL_SCREEN_DEFAULTS['event-summary'].titleFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'titleFontSize', v)}
+                                                min={16} max={72} step={2} suffix="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Height"
+                                                value={overrides.headerHeight ?? FULL_SCREEN_DEFAULTS['event-summary'].headerHeight}
+                                                onChange={(v) => updateOverrideField(graphicId, 'headerHeight', v)}
+                                                min={40} max={200} step={4} suffix="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Padding"
+                                                value={overrides.headerPadding ?? FULL_SCREEN_DEFAULTS['event-summary'].headerPadding}
+                                                onChange={(v) => updateOverrideField(graphicId, 'headerPadding', v)}
+                                                min={0} max={100} step={4} suffix="px"
+                                              />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <div className="flex flex-col gap-0.5">
+                                                <span className="text-[10px] text-zinc-500">Title font</span>
+                                                <select
+                                                  value={overrides.titleFontFamily ?? FULL_SCREEN_DEFAULTS['event-summary'].titleFontFamily}
+                                                  onChange={(e) => updateOverrideField(graphicId, 'titleFontFamily', e.target.value)}
+                                                  className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500"
+                                                >
+                                                  {FONT_FAMILIES.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                                                </select>
+                                              </div>
+                                              <div className="flex flex-col gap-0.5">
+                                                <span className="text-[10px] text-zinc-500">Weight</span>
+                                                <select
+                                                  value={overrides.titleFontWeight ?? FULL_SCREEN_DEFAULTS['event-summary'].titleFontWeight}
+                                                  onChange={(e) => updateOverrideField(graphicId, 'titleFontWeight', e.target.value)}
+                                                  className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500"
+                                                >
+                                                  {FONT_WEIGHTS.map(w => <option key={w.value} value={w.value}>{w.label}</option>)}
+                                                </select>
+                                              </div>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <div className="flex flex-col gap-0.5">
+                                                <span className="text-[10px] text-zinc-500">Transform</span>
+                                                <select
+                                                  value={overrides.titleTextTransform ?? FULL_SCREEN_DEFAULTS['event-summary'].titleTextTransform}
+                                                  onChange={(e) => updateOverrideField(graphicId, 'titleTextTransform', e.target.value)}
+                                                  className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500"
+                                                >
+                                                  {TEXT_TRANSFORMS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                                                </select>
+                                              </div>
+                                              <OverrideStepper
+                                                label="Logo size"
+                                                value={overrides.headerLogoSize ?? FULL_SCREEN_DEFAULTS['event-summary'].headerLogoSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'headerLogoSize', v)}
+                                                min={24} max={120} step={4} suffix="px"
+                                              />
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        {/* CONTENT */}
+                                        <div className="pt-2 border-t border-zinc-700/30">
+                                          <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Content</div>
+                                          <div className="space-y-2">
+                                            <div className="grid grid-cols-3 gap-2">
+                                              <OverrideStepper
+                                                label="Row height"
+                                                value={overrides.rowHeight ?? FULL_SCREEN_DEFAULTS['event-summary'].rowHeight}
+                                                onChange={(v) => updateOverrideField(graphicId, 'rowHeight', v)}
+                                                min={24} max={80} step={2} suffix="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Row pad"
+                                                value={overrides.rowPadding ?? FULL_SCREEN_DEFAULTS['event-summary'].rowPadding}
+                                                onChange={(v) => updateOverrideField(graphicId, 'rowPadding', v)}
+                                                min={4} max={32} step={2} suffix="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Padding"
+                                                value={overrides.contentPadding ?? FULL_SCREEN_DEFAULTS['event-summary'].contentPadding}
+                                                onChange={(v) => updateOverrideField(graphicId, 'contentPadding', v)}
+                                                min={0} max={80} step={4} suffix="px"
+                                              />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Team name"
+                                                value={overrides.teamNameFontSize ?? FULL_SCREEN_DEFAULTS['event-summary'].teamNameFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'teamNameFontSize', v)}
+                                                min={12} max={48} step={2} suffix="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Athlete"
+                                                value={overrides.athleteNameFontSize ?? FULL_SCREEN_DEFAULTS['event-summary'].athleteNameFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'athleteNameFontSize', v)}
+                                                min={10} max={36} step={1} suffix="px"
+                                              />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <div className="flex flex-col gap-0.5">
+                                                <span className="text-[10px] text-zinc-500">Score font</span>
+                                                <select
+                                                  value={overrides.scoreFontFamily ?? FULL_SCREEN_DEFAULTS['event-summary'].scoreFontFamily}
+                                                  onChange={(e) => updateOverrideField(graphicId, 'scoreFontFamily', e.target.value)}
+                                                  className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500"
+                                                >
+                                                  {FONT_FAMILIES.filter(f => f.tabular).map(f => (
+                                                    <option key={f.value} value={f.value}>{f.label} (tabular)</option>
+                                                  ))}
+                                                  {FONT_FAMILIES.filter(f => !f.tabular).map(f => (
+                                                    <option key={f.value} value={f.value}>{f.label}</option>
+                                                  ))}
+                                                </select>
+                                              </div>
+                                              <OverrideStepper
+                                                label="Score size"
+                                                value={overrides.scoreFontSize ?? FULL_SCREEN_DEFAULTS['event-summary'].scoreFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'scoreFontSize', v)}
+                                                min={12} max={48} step={2} suffix="px"
+                                              />
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        {/* FOOTER */}
+                                        <div className="pt-2 border-t border-zinc-700/30">
+                                          <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Footer (Totals Row)</div>
+                                          <div className="grid grid-cols-2 gap-2">
+                                            <OverrideStepper
+                                              label="Height"
+                                              value={overrides.footerHeight ?? FULL_SCREEN_DEFAULTS['event-summary'].footerHeight}
+                                              onChange={(v) => updateOverrideField(graphicId, 'footerHeight', v)}
+                                              min={32} max={100} step={4} suffix="px"
+                                            />
+                                            <OverrideStepper
+                                              label="Font size"
+                                              value={overrides.footerFontSize ?? FULL_SCREEN_DEFAULTS['event-summary'].footerFontSize}
+                                              onChange={(v) => updateOverrideField(graphicId, 'footerFontSize', v)}
+                                              min={16} max={48} step={2} suffix="px"
+                                            />
+                                          </div>
+                                        </div>
+                                      </>
+                                    )}
+
+                                    {/* VIRTUIS-LEADERBOARD specific controls */}
+                                    {graphicId === 'virtuis-leaderboard' && (
+                                      <>
+                                        {/* CONTAINER */}
+                                        <div>
+                                          <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Container Position</div>
+                                          <div className="grid grid-cols-4 gap-2">
+                                            <OverrideStepper
+                                              label="Top"
+                                              value={overrides.containerTop ?? FULL_SCREEN_DEFAULTS['virtuis-leaderboard'].containerTop}
+                                              onChange={(v) => updateOverrideField(graphicId, 'containerTop', v)}
+                                              min={0} max={400} step={10} suffix="px"
+                                            />
+                                            <OverrideStepper
+                                              label="Left"
+                                              value={overrides.containerLeft ?? FULL_SCREEN_DEFAULTS['virtuis-leaderboard'].containerLeft}
+                                              onChange={(v) => updateOverrideField(graphicId, 'containerLeft', v)}
+                                              min={0} max={400} step={10} suffix="px"
+                                            />
+                                            <OverrideStepper
+                                              label="Right"
+                                              value={overrides.containerRight ?? FULL_SCREEN_DEFAULTS['virtuis-leaderboard'].containerRight}
+                                              onChange={(v) => updateOverrideField(graphicId, 'containerRight', v)}
+                                              min={0} max={400} step={10} suffix="px"
+                                            />
+                                            <OverrideStepper
+                                              label="Bottom"
+                                              value={overrides.containerBottom ?? FULL_SCREEN_DEFAULTS['virtuis-leaderboard'].containerBottom}
+                                              onChange={(v) => updateOverrideField(graphicId, 'containerBottom', v)}
+                                              min={0} max={400} step={10} suffix="px"
+                                            />
+                                          </div>
+                                        </div>
+
+                                        {/* TABLE */}
+                                        <div className="pt-2 border-t border-zinc-700/30">
+                                          <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Table</div>
+                                          <div className="space-y-2">
+                                            <div className="grid grid-cols-3 gap-2">
+                                              <OverrideStepper
+                                                label="Font size"
+                                                value={overrides.tableFontSize ?? FULL_SCREEN_DEFAULTS['virtuis-leaderboard'].tableFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'tableFontSize', v)}
+                                                min={10} max={36} step={1} suffix="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Header pad"
+                                                value={overrides.tableHeaderPadding ?? FULL_SCREEN_DEFAULTS['virtuis-leaderboard'].tableHeaderPadding}
+                                                onChange={(v) => updateOverrideField(graphicId, 'tableHeaderPadding', v)}
+                                                min={4} max={40} step={2} suffix="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Row pad"
+                                                value={overrides.tableRowPadding ?? FULL_SCREEN_DEFAULTS['virtuis-leaderboard'].tableRowPadding}
+                                                onChange={(v) => updateOverrideField(graphicId, 'tableRowPadding', v)}
+                                                min={4} max={32} step={2} suffix="px"
+                                              />
+                                            </div>
+                                            <div className="grid grid-cols-3 gap-2">
+                                              <OverrideStepper
+                                                label="Rank col"
+                                                value={overrides.rankColWidth ?? FULL_SCREEN_DEFAULTS['virtuis-leaderboard'].rankColWidth}
+                                                onChange={(v) => updateOverrideField(graphicId, 'rankColWidth', v)}
+                                                min={30} max={120} step={5} suffix="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Medal size"
+                                                value={overrides.medalSize ?? FULL_SCREEN_DEFAULTS['virtuis-leaderboard'].medalSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'medalSize', v)}
+                                                min={12} max={48} step={2} suffix="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Logo size"
+                                                value={overrides.teamLogoSize ?? FULL_SCREEN_DEFAULTS['virtuis-leaderboard'].teamLogoSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'teamLogoSize', v)}
+                                                min={16} max={64} step={4} suffix="px"
+                                              />
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        {/* MEDALS */}
+                                        <div className="pt-2 border-t border-zinc-700/30">
+                                          <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Medal Colors</div>
+                                          <div className="grid grid-cols-3 gap-3">
+                                            <div className="space-y-1">
+                                              <span className="text-[10px] text-yellow-400">Gold</span>
+                                              <div className="flex gap-1">
+                                                <input type="color" value={overrides.goldFrom || FULL_SCREEN_DEFAULTS['virtuis-leaderboard'].goldFrom}
+                                                  onChange={(e) => updateOverrideField(graphicId, 'goldFrom', e.target.value)}
+                                                  className="w-6 h-6 rounded cursor-pointer bg-transparent border-0" title="From" />
+                                                <input type="color" value={overrides.goldTo || FULL_SCREEN_DEFAULTS['virtuis-leaderboard'].goldTo}
+                                                  onChange={(e) => updateOverrideField(graphicId, 'goldTo', e.target.value)}
+                                                  className="w-6 h-6 rounded cursor-pointer bg-transparent border-0" title="To" />
+                                              </div>
+                                            </div>
+                                            <div className="space-y-1">
+                                              <span className="text-[10px] text-zinc-400">Silver</span>
+                                              <div className="flex gap-1">
+                                                <input type="color" value={overrides.silverFrom || FULL_SCREEN_DEFAULTS['virtuis-leaderboard'].silverFrom}
+                                                  onChange={(e) => updateOverrideField(graphicId, 'silverFrom', e.target.value)}
+                                                  className="w-6 h-6 rounded cursor-pointer bg-transparent border-0" title="From" />
+                                                <input type="color" value={overrides.silverTo || FULL_SCREEN_DEFAULTS['virtuis-leaderboard'].silverTo}
+                                                  onChange={(e) => updateOverrideField(graphicId, 'silverTo', e.target.value)}
+                                                  className="w-6 h-6 rounded cursor-pointer bg-transparent border-0" title="To" />
+                                              </div>
+                                            </div>
+                                            <div className="space-y-1">
+                                              <span className="text-[10px] text-amber-600">Bronze</span>
+                                              <div className="flex gap-1">
+                                                <input type="color" value={overrides.bronzeFrom || FULL_SCREEN_DEFAULTS['virtuis-leaderboard'].bronzeFrom}
+                                                  onChange={(e) => updateOverrideField(graphicId, 'bronzeFrom', e.target.value)}
+                                                  className="w-6 h-6 rounded cursor-pointer bg-transparent border-0" title="From" />
+                                                <input type="color" value={overrides.bronzeTo || FULL_SCREEN_DEFAULTS['virtuis-leaderboard'].bronzeTo}
+                                                  onChange={(e) => updateOverrideField(graphicId, 'bronzeTo', e.target.value)}
+                                                  className="w-6 h-6 rounded cursor-pointer bg-transparent border-0" title="To" />
+                                              </div>
+                                            </div>
+                                          </div>
+                                          <div className="mt-2 flex items-center gap-2">
+                                            <input type="color" value={overrides.stickBonusBg || FULL_SCREEN_DEFAULTS['virtuis-leaderboard'].stickBonusBg}
+                                              onChange={(e) => updateOverrideField(graphicId, 'stickBonusBg', e.target.value)}
+                                              className="w-6 h-6 rounded cursor-pointer bg-transparent border-0" />
+                                            <span className="text-[10px] text-zinc-400">Stick Bonus Badge</span>
+                                          </div>
+                                        </div>
+                                      </>
+                                    )}
+
+                                    {/* EVENT-FRAME specific controls */}
+                                    {graphicId === 'event-frame' && (
+                                      <>
+                                        {/* FRAME */}
+                                        <div>
+                                          <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Frame</div>
+                                          <div className="space-y-2">
+                                            <div className="grid grid-cols-3 gap-2">
+                                              <OverrideStepper
+                                                label="Border"
+                                                value={overrides.frameBorderWidth ?? FULL_SCREEN_DEFAULTS['event-frame'].frameBorderWidth}
+                                                onChange={(v) => updateOverrideField(graphicId, 'frameBorderWidth', v)}
+                                                min={0} max={20} step={1} suffix="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Gap"
+                                                value={overrides.frameGap ?? FULL_SCREEN_DEFAULTS['event-frame'].frameGap}
+                                                onChange={(v) => updateOverrideField(graphicId, 'frameGap', v)}
+                                                min={0} max={40} step={2} suffix="px"
+                                              />
+                                              <div className="flex items-center gap-1.5">
+                                                <input type="color" value={overrides.frameBorderColor || FULL_SCREEN_DEFAULTS['event-frame'].frameBorderColor}
+                                                  onChange={(e) => updateOverrideField(graphicId, 'frameBorderColor', e.target.value)}
+                                                  className="w-6 h-6 rounded cursor-pointer bg-transparent border-0" />
+                                                <span className="text-[10px] text-zinc-400">Color</span>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        {/* HEADER/LOGO */}
+                                        <div className="pt-2 border-t border-zinc-700/30">
+                                          <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Header / Logo Row</div>
+                                          <div className="grid grid-cols-3 gap-2">
+                                            <OverrideStepper
+                                              label="Height"
+                                              value={overrides.logoHeaderHeight ?? FULL_SCREEN_DEFAULTS['event-frame'].logoHeaderHeight}
+                                              onChange={(v) => updateOverrideField(graphicId, 'logoHeaderHeight', v)}
+                                              min={40} max={160} step={4} suffix="px"
+                                            />
+                                            <OverrideStepper
+                                              label="Logo size"
+                                              value={overrides.frameLogoSize ?? FULL_SCREEN_DEFAULTS['event-frame'].frameLogoSize}
+                                              onChange={(v) => updateOverrideField(graphicId, 'frameLogoSize', v)}
+                                              min={24} max={120} step={4} suffix="px"
+                                            />
+                                            <OverrideStepper
+                                              label="Max width"
+                                              value={overrides.frameLogoMaxWidth ?? FULL_SCREEN_DEFAULTS['event-frame'].frameLogoMaxWidth}
+                                              onChange={(v) => updateOverrideField(graphicId, 'frameLogoMaxWidth', v)}
+                                              min={60} max={400} step={10} suffix="px"
+                                            />
+                                          </div>
+                                        </div>
+
+                                        {/* WATERMARK */}
+                                        <div className="pt-2 border-t border-zinc-700/30">
+                                          <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Watermark</div>
+                                          <div className="space-y-2">
+                                            <label className="flex items-center gap-1.5 cursor-pointer">
+                                              <input type="checkbox"
+                                                checked={overrides.showWatermark !== false}
+                                                onChange={(e) => updateOverrideField(graphicId, 'showWatermark', e.target.checked)}
+                                                className="w-3.5 h-3.5 rounded border-zinc-600 bg-zinc-700 text-purple-500 focus:ring-purple-500 focus:ring-offset-0" />
+                                              <span className="text-[11px] text-zinc-300">Show Watermark</span>
+                                            </label>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Font size"
+                                                value={overrides.watermarkFontSize ?? FULL_SCREEN_DEFAULTS['event-frame'].watermarkFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'watermarkFontSize', v)}
+                                                min={8} max={32} step={1} suffix="px"
+                                              />
+                                              <div className="flex flex-col gap-0.5">
+                                                <span className="text-[10px] text-zinc-500">Weight</span>
+                                                <select
+                                                  value={overrides.watermarkFontWeight ?? FULL_SCREEN_DEFAULTS['event-frame'].watermarkFontWeight}
+                                                  onChange={(e) => updateOverrideField(graphicId, 'watermarkFontWeight', e.target.value)}
+                                                  className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500"
+                                                >
+                                                  {FONT_WEIGHTS.map(w => <option key={w.value} value={w.value}>{w.label}</option>)}
+                                                </select>
+                                              </div>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Bottom"
+                                                value={overrides.watermarkBottom ?? FULL_SCREEN_DEFAULTS['event-frame'].watermarkBottom}
+                                                onChange={(v) => updateOverrideField(graphicId, 'watermarkBottom', v)}
+                                                min={0} max={100} step={4} suffix="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Right"
+                                                value={overrides.watermarkRight ?? FULL_SCREEN_DEFAULTS['event-frame'].watermarkRight}
+                                                onChange={(v) => updateOverrideField(graphicId, 'watermarkRight', v)}
+                                                min={0} max={100} step={4} suffix="px"
+                                              />
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                              <div className="flex items-center gap-1.5">
+                                                <input type="color" value={overrides.watermarkColor || FULL_SCREEN_DEFAULTS['event-frame'].watermarkColor}
+                                                  onChange={(e) => updateOverrideField(graphicId, 'watermarkColor', e.target.value)}
+                                                  className="w-6 h-6 rounded cursor-pointer bg-transparent border-0" />
+                                                <span className="text-[10px] text-zinc-400">Text</span>
+                                              </div>
+                                              <div className="flex items-center gap-1.5">
+                                                <input type="color" value={overrides.watermarkAccentColor || FULL_SCREEN_DEFAULTS['event-frame'].watermarkAccentColor}
+                                                  onChange={(e) => updateOverrideField(graphicId, 'watermarkAccentColor', e.target.value)}
+                                                  className="w-6 h-6 rounded cursor-pointer bg-transparent border-0" />
+                                                <span className="text-[10px] text-zinc-400">Accent</span>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </>
+                                    )}
+
+                                    {/* SPONSORS-THANKS specific controls */}
+                                    {graphicId === 'sponsors-thanks' && (
+                                      <>
+                                        {/* CONTAINER */}
+                                        <div>
+                                          <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Container</div>
+                                          <div className="space-y-2">
+                                            <div className="grid grid-cols-3 gap-2">
+                                              <OverrideStepper
+                                                label="Top margin"
+                                                value={overrides.containerMarginTop ?? FULL_SCREEN_DEFAULTS['sponsors-thanks'].containerMarginTop}
+                                                onChange={(v) => updateOverrideField(graphicId, 'containerMarginTop', v)}
+                                                min={0} max={200} step={10} suffix="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Side margin"
+                                                value={overrides.containerMarginSide ?? FULL_SCREEN_DEFAULTS['sponsors-thanks'].containerMarginSide}
+                                                onChange={(v) => updateOverrideField(graphicId, 'containerMarginSide', v)}
+                                                min={0} max={200} step={10} suffix="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Bottom"
+                                                value={overrides.containerMarginBottom ?? FULL_SCREEN_DEFAULTS['sponsors-thanks'].containerMarginBottom}
+                                                onChange={(v) => updateOverrideField(graphicId, 'containerMarginBottom', v)}
+                                                min={0} max={200} step={10} suffix="px"
+                                              />
+                                            </div>
+                                            <OverrideStepper
+                                              label="Border radius"
+                                              value={overrides.containerBorderRadius ?? FULL_SCREEN_DEFAULTS['sponsors-thanks'].containerBorderRadius}
+                                              onChange={(v) => updateOverrideField(graphicId, 'containerBorderRadius', v)}
+                                              min={0} max={48} step={4} suffix="px"
+                                            />
+                                          </div>
+                                        </div>
+
+                                        {/* HEADER */}
+                                        <div className="pt-2 border-t border-zinc-700/30">
+                                          <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Header</div>
+                                          <div className="space-y-2">
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Pad V"
+                                                value={overrides.headerPaddingV ?? FULL_SCREEN_DEFAULTS['sponsors-thanks'].headerPaddingV}
+                                                onChange={(v) => updateOverrideField(graphicId, 'headerPaddingV', v)}
+                                                min={8} max={60} step={4} suffix="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Pad H"
+                                                value={overrides.headerPaddingH ?? FULL_SCREEN_DEFAULTS['sponsors-thanks'].headerPaddingH}
+                                                onChange={(v) => updateOverrideField(graphicId, 'headerPaddingH', v)}
+                                                min={8} max={100} step={4} suffix="px"
+                                              />
+                                            </div>
+                                            <div className="grid grid-cols-3 gap-2">
+                                              <OverrideStepper
+                                                label="Title size"
+                                                value={overrides.headerTitleFontSize ?? FULL_SCREEN_DEFAULTS['sponsors-thanks'].headerTitleFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'headerTitleFontSize', v)}
+                                                min={16} max={60} step={2} suffix="px"
+                                              />
+                                              <div className="flex flex-col gap-0.5">
+                                                <span className="text-[10px] text-zinc-500">Font</span>
+                                                <select
+                                                  value={overrides.headerTitleFontFamily ?? FULL_SCREEN_DEFAULTS['sponsors-thanks'].headerTitleFontFamily}
+                                                  onChange={(e) => updateOverrideField(graphicId, 'headerTitleFontFamily', e.target.value)}
+                                                  className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500"
+                                                >
+                                                  {FONT_FAMILIES.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                                                </select>
+                                              </div>
+                                              <div className="flex flex-col gap-0.5">
+                                                <span className="text-[10px] text-zinc-500">Weight</span>
+                                                <select
+                                                  value={overrides.headerTitleFontWeight ?? FULL_SCREEN_DEFAULTS['sponsors-thanks'].headerTitleFontWeight}
+                                                  onChange={(e) => updateOverrideField(graphicId, 'headerTitleFontWeight', e.target.value)}
+                                                  className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500"
+                                                >
+                                                  {FONT_WEIGHTS.map(w => <option key={w.value} value={w.value}>{w.label}</option>)}
+                                                </select>
+                                              </div>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Logo W"
+                                                value={overrides.headerLogoWidth ?? FULL_SCREEN_DEFAULTS['sponsors-thanks'].headerLogoWidth}
+                                                onChange={(v) => updateOverrideField(graphicId, 'headerLogoWidth', v)}
+                                                min={32} max={200} step={8} suffix="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Logo H"
+                                                value={overrides.headerLogoHeight ?? FULL_SCREEN_DEFAULTS['sponsors-thanks'].headerLogoHeight}
+                                                onChange={(v) => updateOverrideField(graphicId, 'headerLogoHeight', v)}
+                                                min={32} max={200} step={8} suffix="px"
+                                              />
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        {/* GRID */}
+                                        <div className="pt-2 border-t border-zinc-700/30">
+                                          <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Sponsor Grid</div>
+                                          <div className="grid grid-cols-3 gap-2">
+                                            <OverrideStepper
+                                              label="Gap"
+                                              value={overrides.gridGap ?? FULL_SCREEN_DEFAULTS['sponsors-thanks'].gridGap}
+                                              onChange={(v) => updateOverrideField(graphicId, 'gridGap', v)}
+                                              min={8} max={60} step={4} suffix="px"
+                                            />
+                                            <OverrideStepper
+                                              label="Padding"
+                                              value={overrides.gridPadding ?? FULL_SCREEN_DEFAULTS['sponsors-thanks'].gridPadding}
+                                              onChange={(v) => updateOverrideField(graphicId, 'gridPadding', v)}
+                                              min={8} max={80} step={4} suffix="px"
+                                            />
+                                            <OverrideStepper
+                                              label="Item pad"
+                                              value={overrides.sponsorItemPadding ?? FULL_SCREEN_DEFAULTS['sponsors-thanks'].sponsorItemPadding}
+                                              onChange={(v) => updateOverrideField(graphicId, 'sponsorItemPadding', v)}
+                                              min={4} max={40} step={2} suffix="px"
+                                            />
+                                          </div>
+                                        </div>
+                                      </>
+                                    )}
+
+                                    {/* TEAM-ROSTER specific controls */}
+                                    {graphicId === 'team-roster' && (
+                                      <>
+                                        {/* CONTAINER */}
+                                        <div>
+                                          <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Container</div>
+                                          <div className="space-y-2">
+                                            <div className="grid grid-cols-3 gap-2">
+                                              <OverrideStepper
+                                                label="Top margin"
+                                                value={overrides.containerMarginTop ?? FULL_SCREEN_DEFAULTS['team-roster'].containerMarginTop}
+                                                onChange={(v) => updateOverrideField(graphicId, 'containerMarginTop', v)}
+                                                min={0} max={200} step={10} suffix="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Side margin"
+                                                value={overrides.containerMarginSide ?? FULL_SCREEN_DEFAULTS['team-roster'].containerMarginSide}
+                                                onChange={(v) => updateOverrideField(graphicId, 'containerMarginSide', v)}
+                                                min={0} max={200} step={10} suffix="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Bottom"
+                                                value={overrides.containerMarginBottom ?? FULL_SCREEN_DEFAULTS['team-roster'].containerMarginBottom}
+                                                onChange={(v) => updateOverrideField(graphicId, 'containerMarginBottom', v)}
+                                                min={0} max={200} step={10} suffix="px"
+                                              />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Radius"
+                                                value={overrides.containerBorderRadius ?? FULL_SCREEN_DEFAULTS['team-roster'].containerBorderRadius}
+                                                onChange={(v) => updateOverrideField(graphicId, 'containerBorderRadius', v)}
+                                                min={0} max={48} step={4} suffix="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Padding"
+                                                value={overrides.rosterContainerPadding ?? FULL_SCREEN_DEFAULTS['team-roster'].rosterContainerPadding}
+                                                onChange={(v) => updateOverrideField(graphicId, 'rosterContainerPadding', v)}
+                                                min={16} max={100} step={8} suffix="px"
+                                              />
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        {/* HEADER */}
+                                        <div className="pt-2 border-t border-zinc-700/30">
+                                          <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Header</div>
+                                          <div className="space-y-2">
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Pad V"
+                                                value={overrides.headerPaddingV ?? FULL_SCREEN_DEFAULTS['team-roster'].headerPaddingV}
+                                                onChange={(v) => updateOverrideField(graphicId, 'headerPaddingV', v)}
+                                                min={8} max={60} step={4} suffix="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Pad H"
+                                                value={overrides.headerPaddingH ?? FULL_SCREEN_DEFAULTS['team-roster'].headerPaddingH}
+                                                onChange={(v) => updateOverrideField(graphicId, 'headerPaddingH', v)}
+                                                min={8} max={100} step={4} suffix="px"
+                                              />
+                                            </div>
+                                            <div className="grid grid-cols-3 gap-2">
+                                              <OverrideStepper
+                                                label="Title size"
+                                                value={overrides.headerTitleFontSize ?? FULL_SCREEN_DEFAULTS['team-roster'].headerTitleFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'headerTitleFontSize', v)}
+                                                min={16} max={60} step={2} suffix="px"
+                                              />
+                                              <div className="flex flex-col gap-0.5">
+                                                <span className="text-[10px] text-zinc-500">Font</span>
+                                                <select
+                                                  value={overrides.headerTitleFontFamily ?? FULL_SCREEN_DEFAULTS['team-roster'].headerTitleFontFamily}
+                                                  onChange={(e) => updateOverrideField(graphicId, 'headerTitleFontFamily', e.target.value)}
+                                                  className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500"
+                                                >
+                                                  {FONT_FAMILIES.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                                                </select>
+                                              </div>
+                                              <div className="flex flex-col gap-0.5">
+                                                <span className="text-[10px] text-zinc-500">Weight</span>
+                                                <select
+                                                  value={overrides.headerTitleFontWeight ?? FULL_SCREEN_DEFAULTS['team-roster'].headerTitleFontWeight}
+                                                  onChange={(e) => updateOverrideField(graphicId, 'headerTitleFontWeight', e.target.value)}
+                                                  className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500"
+                                                >
+                                                  {FONT_WEIGHTS.map(w => <option key={w.value} value={w.value}>{w.label}</option>)}
+                                                </select>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        {/* HEADSHOT GRID */}
+                                        <div className="pt-2 border-t border-zinc-700/30">
+                                          <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Roster Grid</div>
+                                          <div className="space-y-2">
+                                            <div className="grid grid-cols-3 gap-2">
+                                              <OverrideStepper
+                                                label="Gap"
+                                                value={overrides.rosterGridGap ?? FULL_SCREEN_DEFAULTS['team-roster'].rosterGridGap}
+                                                onChange={(v) => updateOverrideField(graphicId, 'rosterGridGap', v)}
+                                                min={4} max={40} step={2} suffix="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Card W"
+                                                value={overrides.rosterCardWidth ?? FULL_SCREEN_DEFAULTS['team-roster'].rosterCardWidth}
+                                                onChange={(v) => updateOverrideField(graphicId, 'rosterCardWidth', v)}
+                                                min={60} max={200} step={10} suffix="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Headshot"
+                                                value={overrides.rosterHeadshotSize ?? FULL_SCREEN_DEFAULTS['team-roster'].rosterHeadshotSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'rosterHeadshotSize', v)}
+                                                min={40} max={200} step={10} suffix="px"
+                                              />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Border"
+                                                value={overrides.rosterHeadshotBorder ?? FULL_SCREEN_DEFAULTS['team-roster'].rosterHeadshotBorder}
+                                                onChange={(v) => updateOverrideField(graphicId, 'rosterHeadshotBorder', v)}
+                                                min={0} max={8} step={1} suffix="px"
+                                              />
+                                              <div className="flex items-center gap-1.5">
+                                                <input type="color" value={overrides.rosterHeadshotBorderColor || FULL_SCREEN_DEFAULTS['team-roster'].rosterHeadshotBorderColor}
+                                                  onChange={(e) => updateOverrideField(graphicId, 'rosterHeadshotBorderColor', e.target.value)}
+                                                  className="w-6 h-6 rounded cursor-pointer bg-transparent border-0" />
+                                                <span className="text-[10px] text-zinc-400">Border</span>
+                                              </div>
+                                            </div>
+                                            <div className="flex items-center gap-1.5">
+                                              <input type="color" value={overrides.rosterHeadshotBg || FULL_SCREEN_DEFAULTS['team-roster'].rosterHeadshotBg}
+                                                onChange={(e) => updateOverrideField(graphicId, 'rosterHeadshotBg', e.target.value)}
+                                                className="w-6 h-6 rounded cursor-pointer bg-transparent border-0" />
+                                              <span className="text-[10px] text-zinc-400">Headshot placeholder bg</span>
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        {/* NAME */}
+                                        <div className="pt-2 border-t border-zinc-700/30">
+                                          <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Athlete Name</div>
+                                          <div className="space-y-2">
+                                            <div className="grid grid-cols-3 gap-2">
+                                              <OverrideStepper
+                                                label="Size"
+                                                value={overrides.rosterNameFontSize ?? FULL_SCREEN_DEFAULTS['team-roster'].rosterNameFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'rosterNameFontSize', v)}
+                                                min={8} max={24} step={1} suffix="px"
+                                              />
+                                              <div className="flex flex-col gap-0.5">
+                                                <span className="text-[10px] text-zinc-500">Font</span>
+                                                <select
+                                                  value={overrides.rosterNameFontFamily ?? FULL_SCREEN_DEFAULTS['team-roster'].rosterNameFontFamily}
+                                                  onChange={(e) => updateOverrideField(graphicId, 'rosterNameFontFamily', e.target.value)}
+                                                  className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500"
+                                                >
+                                                  {FONT_FAMILIES.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                                                </select>
+                                              </div>
+                                              <div className="flex flex-col gap-0.5">
+                                                <span className="text-[10px] text-zinc-500">Transform</span>
+                                                <select
+                                                  value={overrides.rosterNameTextTransform ?? FULL_SCREEN_DEFAULTS['team-roster'].rosterNameTextTransform}
+                                                  onChange={(e) => updateOverrideField(graphicId, 'rosterNameTextTransform', e.target.value)}
+                                                  className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500"
+                                                >
+                                                  {TEXT_TRANSFORMS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                                                </select>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </>
+                                    )}
+
+                                    {/* COLORS (shared across all full-screen graphics) */}
+                                    <div className="pt-2 border-t border-zinc-700/30">
+                                      <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Colors</div>
+                                      <div className="grid grid-cols-2 gap-2">
+                                        {OVERRIDE_COLOR_FIELDS.map(({ key, label }) => {
+                                          const hasOverride = overrides[key] !== undefined;
+                                          const overrideValue = overrides[key] || editingTheme.colors[key] || '#888888';
+                                          return (
+                                            <div key={key} className="flex items-center gap-2">
+                                              <label className="flex items-center gap-1.5 cursor-pointer">
+                                                <input type="checkbox" checked={hasOverride}
+                                                  onChange={(e) => { e.target.checked ? updateOverrideField(graphicId, key, editingTheme.colors[key] || '#888888') : clearOverrideField(graphicId, key); }}
+                                                  className="w-3.5 h-3.5 rounded border-zinc-600 bg-zinc-700 text-purple-500 focus:ring-purple-500 focus:ring-offset-0" />
+                                              </label>
+                                              <input type="color" value={overrideValue} disabled={!hasOverride}
+                                                onChange={(e) => updateOverrideField(graphicId, key, e.target.value)}
+                                                className={`w-6 h-6 rounded cursor-pointer bg-transparent border-0 ${!hasOverride ? 'opacity-40 cursor-not-allowed' : ''}`} />
+                                              <span className={`text-[11px] ${hasOverride ? 'text-zinc-300' : 'text-zinc-500'}`}>{label}</span>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+
+                                    {/* IMAGES / TEXTURES (shared across all full-screen graphics) */}
+                                    <div className="pt-2 border-t border-zinc-700/30">
+                                      <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Images / Textures</div>
+                                      <div className="space-y-2">
+                                        {/* Header Background Image */}
+                                        <div className="flex items-center gap-2 mb-1">
+                                          <label className="flex items-center gap-1.5 cursor-pointer">
+                                            <input type="checkbox" checked={overrides.headerBgImage !== undefined}
+                                              onChange={(e) => {
+                                                if (e.target.checked) { updateOverrideField(graphicId, 'headerBgImage', ''); }
+                                                else { clearOverrideField(graphicId, 'headerBgImage'); clearOverrideField(graphicId, 'headerBgImageFit'); clearOverrideField(graphicId, 'headerBgImagePosition'); clearOverrideField(graphicId, 'headerBgImageOpacity'); }
+                                              }}
+                                              className="w-3.5 h-3.5 rounded border-zinc-600 bg-zinc-700 text-purple-500 focus:ring-purple-500 focus:ring-offset-0" />
+                                            <span className={`text-[11px] ${overrides.headerBgImage !== undefined ? 'text-zinc-300' : 'text-zinc-500'}`}>Header Background Image</span>
+                                          </label>
+                                        </div>
+                                        {overrides.headerBgImage !== undefined && (
+                                          <div className="space-y-2 ml-5">
+                                            <input type="text" value={overrides.headerBgImage || ''} onChange={(e) => updateOverrideField(graphicId, 'headerBgImage', e.target.value)} placeholder="https://..."
+                                              className="w-full px-2 py-1.5 bg-zinc-700 border border-zinc-600 rounded text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-purple-500" />
+                                            <div className="grid grid-cols-3 gap-2">
+                                              <div className="flex flex-col gap-0.5">
+                                                <span className="text-[10px] text-zinc-500">Fit</span>
+                                                <select value={overrides.headerBgImageFit || 'cover'} onChange={(e) => updateOverrideField(graphicId, 'headerBgImageFit', e.target.value)}
+                                                  className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500">
+                                                  {IMAGE_FIT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                                                </select>
+                                              </div>
+                                              <div className="flex flex-col gap-0.5">
+                                                <span className="text-[10px] text-zinc-500">Position</span>
+                                                <select value={overrides.headerBgImagePosition || 'center'} onChange={(e) => updateOverrideField(graphicId, 'headerBgImagePosition', e.target.value)}
+                                                  className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500">
+                                                  {IMAGE_POSITION_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                                                </select>
+                                              </div>
+                                              <OverrideStepper label="Opacity" value={Math.round((overrides.headerBgImageOpacity ?? 1) * 100)} onChange={(v) => updateOverrideField(graphicId, 'headerBgImageOpacity', v / 100)} min={0} max={100} step={5} suffix="%" />
+                                            </div>
+                                          </div>
+                                        )}
+
+                                        {/* Body Texture */}
+                                        <div className="flex items-center gap-2 mb-1">
+                                          <label className="flex items-center gap-1.5 cursor-pointer">
+                                            <input type="checkbox" checked={overrides.bodyTexture !== undefined}
+                                              onChange={(e) => {
+                                                if (e.target.checked) { updateOverrideField(graphicId, 'bodyTexture', ''); }
+                                                else { clearOverrideField(graphicId, 'bodyTexture'); clearOverrideField(graphicId, 'bodyTextureOpacity'); clearOverrideField(graphicId, 'bodyTextureBlend'); }
+                                              }}
+                                              className="w-3.5 h-3.5 rounded border-zinc-600 bg-zinc-700 text-purple-500 focus:ring-purple-500 focus:ring-offset-0" />
+                                            <span className={`text-[11px] ${overrides.bodyTexture !== undefined ? 'text-zinc-300' : 'text-zinc-500'}`}>Body Texture Overlay</span>
+                                          </label>
+                                        </div>
+                                        {overrides.bodyTexture !== undefined && (
+                                          <div className="space-y-2 ml-5">
+                                            <input type="text" value={overrides.bodyTexture || ''} onChange={(e) => updateOverrideField(graphicId, 'bodyTexture', e.target.value)} placeholder="https://..."
+                                              className="w-full px-2 py-1.5 bg-zinc-700 border border-zinc-600 rounded text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-purple-500" />
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <div className="flex flex-col gap-0.5">
+                                                <span className="text-[10px] text-zinc-500">Blend Mode</span>
+                                                <select value={overrides.bodyTextureBlend || 'overlay'} onChange={(e) => updateOverrideField(graphicId, 'bodyTextureBlend', e.target.value)}
+                                                  className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500">
+                                                  {BLEND_MODE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                                                </select>
+                                              </div>
+                                              <OverrideStepper label="Opacity" value={Math.round((overrides.bodyTextureOpacity ?? 0.08) * 100)} onChange={(v) => updateOverrideField(graphicId, 'bodyTextureOpacity', v / 100)} min={0} max={100} step={2} suffix="%" />
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {/* Reset button */}
+                                    {overrideCount > 0 && (
+                                      <div className="pt-2 flex justify-end">
+                                        <button onClick={() => resetGraphicOverrides(graphicId)} className="text-[10px] text-zinc-400 hover:text-zinc-300 transition-colors">
                                           Reset to theme defaults
                                         </button>
                                       </div>

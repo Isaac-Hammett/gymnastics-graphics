@@ -609,7 +609,7 @@ Graphics: event-summary (28 layouts), virtuis-leaderboard (18 combos), event-fra
 
 ---
 
-### Task 7A.8 — Build Rich Control Panels for Full-Screen Graphics — NOT STARTED
+### Task 7A.8 — Build Rich Control Panels for Full-Screen Graphics — COMPLETE
 
 **Goal:** Add organized override control panels for all Full-Screen graphics in Theme Editor.
 
@@ -625,11 +625,26 @@ Graphics: event-summary (28 layouts), virtuis-leaderboard (18 combos), event-fra
 6. Use OverrideStepper for all numeric controls, color pickers for colors, dropdowns for font-family/weight/transform
 
 **Verify:**
-- [ ] Each Full-Screen graphic has an expandable override panel
-- [ ] Override count badge shows correct count
-- [ ] Changing a value updates Firebase overrides
-- [ ] Preview refreshes after save
-- [ ] Reset button clears all overrides for that graphic
+- [x] Each Full-Screen graphic has an expandable override panel — Panel conditional added with `FULL_SCREEN_GRAPHICS.includes(graphicId)`
+- [x] Override count badge shows correct count — Uses existing `countGraphicOverrides()` function
+- [x] Changing a value updates Firebase overrides — Uses existing `updateOverrideField()` handler
+- [x] Preview refreshes after save — Uses existing save/reload pattern
+- [x] Reset button clears all overrides for that graphic — Reset button added with existing `resetGraphicOverrides()` handler
+- [x] Build passes — `npm run build` succeeds
+
+**Implementation summary:**
+- Added `FULL_SCREEN_GRAPHICS` constant with 5 graphics: event-summary, virtuis-leaderboard, event-frame, sponsors-thanks, team-roster
+- Added `FULL_SCREEN_DEFAULTS` object with defaults for all 5 graphics
+- Added conditional branch in panel rendering: `FULL_SCREEN_GRAPHICS.includes(graphicId)` triggers rich controls
+- Each graphic type has its own dedicated controls:
+  - **event-summary:** Header (title font, height, padding, logo), Content (row, padding, team/athlete names), Footer (height, font), Score (font family with tabular-nums indicator)
+  - **virtuis-leaderboard:** Container position (top/left/right/bottom), Table (font, padding, rank col, medal/logo sizes), Medals (gold/silver/bronze gradient colors, stick bonus badge)
+  - **event-frame:** Frame (border width/color, gap), Header/Logo row (height, logo size/max width), Watermark (show/hide, font, position, colors)
+  - **sponsors-thanks:** Container (margins, radius), Header (padding, title font), Grid (gap, padding, item padding)
+  - **team-roster:** Container (margins, radius, padding), Header (padding, title font), Grid (gap, card width, headshot size/border), Name (font, transform)
+- Shared Colors section (8 color fields) added at bottom of each full-screen panel
+- Shared Images/Textures section (header bg image, body texture) added at bottom
+- Reset button appears when override count > 0
 
 **Deploy:** Deploy show-controller build to production.
 
@@ -1755,3 +1770,4 @@ Execution order: Phase 8A → 7.FONT → 7A → 7B → 7C → 7D → 7E → 7F �
 - LEARNING: Event-summary graphics require Virtius API data to render. Local preview shows "No Virtius Session ID configured" but theme colors still apply. Full visual verification requires a competition with Virtius session configured.
 - LEARNING: Virtuis-leaderboard also requires Virtius API data to render content. The debug panel confirms theme overrides are being applied (`--virtuis-leaderboard-header-bg`) even when content doesn't render. Visual verification of leaderboard styling requires live data or a mock.
 - LEARNING: Event-frame graphics are iframe-based overlays, so getPreviewUrl must route to `/overlays/frame-{type}.html` instead of `output.html`. The variant selector routes to the correct file (frame-quad, frame-single, etc.) with early return from the function.
+- LEARNING: Task 7A.8 added rich control panels for 5 full-screen graphics (event-summary, virtuis-leaderboard, event-frame, sponsors-thanks, team-roster). The panel uses a 3-way conditional: `LOWER_THIRD_GRAPHICS.includes(graphicId) ? ... : FULL_SCREEN_GRAPHICS.includes(graphicId) ? ... : /* generic */`. Each graphic type has its own specific controls section, plus shared Colors and Images/Textures sections at the bottom.
