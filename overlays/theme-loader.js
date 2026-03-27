@@ -1052,6 +1052,51 @@ window.themeReady = new Promise(resolve => { _resolveThemeReady = resolve; });
     wtwStatTextTransform: { suffix: 'wtw-stat-text-transform', unit: null },
     wtwStatLetterSpacing: { suffix: 'wtw-stat-letter-spacing', unit: 'px' },
     wtwStatMarginTop: { suffix: 'wtw-stat-margin-top', unit: 'px' },
+    // Clip-overlay specific (Phase 7F.4)
+    // Panel position and appearance
+    clipPanelTop: { suffix: 'panel-top', unit: 'px' },
+    clipPanelLeft: { suffix: 'panel-left', unit: 'px' },
+    clipPanelRadius: { suffix: 'panel-radius', unit: 'px' },
+    clipSlideDuration: { suffix: 'slide-duration', unit: 's' },
+    // Logo section
+    clipLogoWidth: { suffix: 'logo-width', unit: 'px' },
+    clipLogoMinHeight: { suffix: 'logo-min-height', unit: 'px' },
+    clipLogoBg: { suffix: 'logo-bg', unit: null },
+    clipLogoPadding: { suffix: 'logo-padding', unit: 'px' },
+    clipLogoImgSize: { suffix: 'logo-img-size', unit: 'px' },
+    // Info section
+    clipInfoPaddingV: { suffix: 'info-padding-v', unit: 'px' },
+    clipInfoPaddingH: { suffix: 'info-padding-h', unit: 'px' },
+    clipInfoMinWidth: { suffix: 'info-min-width', unit: 'px' },
+    // Athlete name
+    clipNameFontSize: { suffix: 'name-font-size', unit: 'px' },
+    clipNameFontWeight: { suffix: 'name-font-weight', unit: null },
+    clipNameFontFamily: { suffix: 'name-font-family', unit: null },
+    // Apparatus
+    clipApparatusFontSize: { suffix: 'apparatus-font-size', unit: 'px' },
+    clipApparatusFontWeight: { suffix: 'apparatus-font-weight', unit: null },
+    clipApparatusColor: { suffix: 'apparatus-color', unit: null },
+    // Team name
+    clipTeamFontSize: { suffix: 'team-font-size', unit: 'px' },
+    clipTeamFontWeight: { suffix: 'team-font-weight', unit: null },
+    clipTeamColor: { suffix: 'team-color', unit: null },
+    // Score badge
+    clipBadgeTop: { suffix: 'badge-top', unit: 'px' },
+    clipBadgeRight: { suffix: 'badge-right', unit: 'px' },
+    clipBadgePaddingV: { suffix: 'badge-padding-v', unit: 'px' },
+    clipBadgePaddingH: { suffix: 'badge-padding-h', unit: 'px' },
+    clipBadgeRadius: { suffix: 'badge-radius', unit: 'px' },
+    clipScoreFontSize: { suffix: 'score-font-size', unit: 'px' },
+    clipScoreFontWeight: { suffix: 'score-font-weight', unit: null },
+    clipScoreFontFamily: { suffix: 'score-font-family', unit: null },
+    // Replay badge
+    clipReplayBg: { suffix: 'replay-bg', unit: null },
+    clipReplayPaddingV: { suffix: 'replay-padding-v', unit: 'px' },
+    clipReplayPaddingH: { suffix: 'replay-padding-h', unit: 'px' },
+    clipReplayRadius: { suffix: 'replay-radius', unit: 'px' },
+    clipReplayFontSize: { suffix: 'replay-font-size', unit: 'px' },
+    clipReplayFontWeight: { suffix: 'replay-font-weight', unit: null },
+    clipReplayLetterSpacing: { suffix: 'replay-letter-spacing', unit: 'px' },
   };
 
   /**
