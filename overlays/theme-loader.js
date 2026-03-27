@@ -635,6 +635,66 @@ window.themeReady = new Promise(resolve => { _resolveThemeReady = resolve; });
     bugBorderRadius: { suffix: 'bug-border-radius', unit: 'px' },
     bugPadding: { suffix: 'bug-padding', unit: 'px' },
     bugFadeTransition: { suffix: 'bug-fade-transition', unit: 's' },
+    // Stream graphics specific (Phase 7D.1)
+    // Background
+    bg: { suffix: 'bg', unit: null },  // color value
+    // Title section
+    titleFontSize: { suffix: 'title-font-size', unit: 'px' },
+    titleFontWeight: { suffix: 'title-font-weight', unit: null },
+    titleFontFamily: { suffix: 'title-font-family', unit: null },
+    titleTextTransform: { suffix: 'title-text-transform', unit: null },
+    titleColor: { suffix: 'title-color', unit: null },
+    titleMargin: { suffix: 'title-margin', unit: 'px' },
+    // Logo sizing
+    logoSize: { suffix: 'logo-size', unit: 'px' },
+    logoMargin: { suffix: 'logo-margin', unit: 'px' },
+    logoGap: { suffix: 'logo-gap', unit: 'px' },
+    dualLogoSize: { suffix: 'dual-logo-size', unit: 'px' },
+    multiLogoSize: { suffix: 'multi-logo-size', unit: 'px' },
+    manyLogoSize: { suffix: 'many-logo-size', unit: 'px' },
+    // VS text
+    vsFontSize: { suffix: 'vs-font-size', unit: 'px' },
+    vsFontWeight: { suffix: 'vs-font-weight', unit: null },
+    vsColor: { suffix: 'vs-color', unit: null },
+    // Event name
+    eventFontSize: { suffix: 'event-font-size', unit: 'px' },
+    eventFontWeight: { suffix: 'event-font-weight', unit: null },
+    eventFontFamily: { suffix: 'event-font-family', unit: null },
+    eventColor: { suffix: 'event-color', unit: null },
+    // Date
+    dateFontSize: { suffix: 'date-font-size', unit: 'px' },
+    dateFontWeight: { suffix: 'date-font-weight', unit: null },
+    dateFontFamily: { suffix: 'date-font-family', unit: null },
+    dateColor: { suffix: 'date-color', unit: null },
+    dateMargin: { suffix: 'date-margin', unit: 'px' },
+    // Branding
+    brandingMargin: { suffix: 'branding-margin', unit: 'px' },
+    brandingFontSize: { suffix: 'branding-font-size', unit: 'px' },
+    brandingFontWeight: { suffix: 'branding-font-weight', unit: null },
+    brandingColor: { suffix: 'branding-color', unit: null },
+    brandingAccent: { suffix: 'branding-accent', unit: null },
+    showBranding: { suffix: 'show-branding', unit: null },  // 'block' or 'none'
+    // Rotation-slate specific (Phase 7E.1)
+    // Cross-layout font controls (apply to all 16 layout variants)
+    meetNameFontFamily: { suffix: 'meet-name-font-family', unit: null },
+    meetNameFontWeight: { suffix: 'meet-name-font-weight', unit: null },
+    meetNameTextTransform: { suffix: 'meet-name-text-transform', unit: null },
+    rotationLabelFontFamily: { suffix: 'rotation-label-font-family', unit: null },
+    rotationLabelFontWeight: { suffix: 'rotation-label-font-weight', unit: null },
+    rotationLabelTextTransform: { suffix: 'rotation-label-text-transform', unit: null },
+    rotationNumberFontFamily: { suffix: 'rotation-number-font-family', unit: null },
+    rotationNumberFontWeight: { suffix: 'rotation-number-font-weight', unit: null },
+    // Badge (banner layout)
+    badgeLabelFontFamily: { suffix: 'badge-label-font-family', unit: null },
+    badgeLabelFontWeight: { suffix: 'badge-label-font-weight', unit: null },
+    badgeNumFontFamily: { suffix: 'badge-num-font-family', unit: null },
+    badgeNumFontWeight: { suffix: 'badge-num-font-weight', unit: null },
+    // Status label (auto version)
+    statusLabelFontFamily: { suffix: 'status-label-font-family', unit: null },
+    statusLabelFontWeight: { suffix: 'status-label-font-weight', unit: null },
+    statusLabelFontSize: { suffix: 'status-label-font-size', unit: 'px' },
+    // Cinema letterbox bar color
+    cinemaBg: { suffix: 'cinema-bg', unit: null },
   };
 
   /**

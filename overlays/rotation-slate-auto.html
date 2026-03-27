@@ -4,7 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=1920, height=1080">
   <title>Rotation Slate (Auto)</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Inter+Tight:wght@400;500;600;700;800;900&family=Roboto+Mono:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
   <style>
@@ -14,7 +16,7 @@
       width: 1920px;
       height: 1080px;
       overflow: hidden;
-      background-color: var(--meet-overlay-bg, #E5E5E5);
+      background-color: var(--rotation-slate-auto-overlay-bg, var(--meet-overlay-bg, #E5E5E5));
       display: flex;
       flex-direction: row;
     }
@@ -47,10 +49,11 @@
 
     /* Auto-specific: status label */
     .status-label {
-      font-size: 36px;
-      font-weight: 600;
-      color: var(--meet-overlay-text, #999);
-      text-transform: uppercase;
+      font-size: var(--rotation-slate-auto-status-label-font-size, 36px);
+      font-weight: var(--rotation-slate-auto-status-label-font-weight, 600);
+      font-family: var(--rotation-slate-auto-status-label-font-family, 'Inter', sans-serif);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #999));
+      text-transform: var(--rotation-slate-auto-status-label-text-transform, uppercase);
       letter-spacing: 8px;
       margin-top: 30px;
       opacity: 0;
@@ -61,6 +64,26 @@
       opacity: 1;
     }
 
+    /* ========== CROSS-LAYOUT FONT OVERRIDES ========== */
+    /* These apply to all 16 layouts via element class selectors */
+    .meet-name {
+      font-family: var(--rotation-slate-auto-meet-name-font-family, 'Inter', sans-serif);
+    }
+    .rotation-label {
+      font-family: var(--rotation-slate-auto-rotation-label-font-family, 'Inter', sans-serif);
+    }
+    .rotation-number {
+      font-family: var(--rotation-slate-auto-rotation-number-font-family, 'Inter', sans-serif);
+      font-variant-numeric: tabular-nums;
+    }
+    .rotation-badge-label {
+      font-family: var(--rotation-slate-auto-badge-label-font-family, 'Inter', sans-serif);
+    }
+    .rotation-badge-num {
+      font-family: var(--rotation-slate-auto-badge-num-font-family, 'Inter', sans-serif);
+      font-variant-numeric: tabular-nums;
+    }
+
     /* ========== CLASSIC LAYOUT (default) ========== */
     .layout-classic {
       flex-direction: row;
@@ -69,7 +92,7 @@
     .layout-classic .logo-section {
       flex: 0 0 700px;
       height: 100%;
-      background: var(--meet-header-bg, #f0f0f0);
+      background: var(--rotation-slate-auto-header-bg, var(--meet-header-bg, #f0f0f0));
       display: flex;
       align-items: center;
       justify-content: center;
@@ -94,9 +117,9 @@
 
     .layout-classic .meet-name {
       font-size: 86px;
-      font-weight: 700;
-      color: var(--meet-overlay-text, #222);
-      text-transform: uppercase;
+      font-weight: var(--rotation-slate-auto-meet-name-font-weight, 700);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #222));
+      text-transform: var(--rotation-slate-auto-meet-name-text-transform, uppercase);
       letter-spacing: 3px;
       margin-bottom: 50px;
       line-height: 1.1;
@@ -105,27 +128,26 @@
     .layout-classic .divider {
       width: 200px;
       height: 10px;
-      background: var(--meet-border-color, #111);
+      background: var(--rotation-slate-auto-border-color, var(--meet-border-color, #111));
       border-radius: 5px;
       margin-bottom: 50px;
     }
 
     .layout-classic .rotation-label {
       font-size: 64px;
-      font-weight: 600;
-      color: var(--meet-overlay-text, #666);
-      text-transform: uppercase;
+      font-weight: var(--rotation-slate-auto-rotation-label-font-weight, 600);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #666));
+      text-transform: var(--rotation-slate-auto-rotation-label-text-transform, uppercase);
       letter-spacing: 16px;
       margin-bottom: 10px;
     }
 
     .layout-classic .rotation-number {
       font-size: 500px;
-      font-weight: 900;
-      color: var(--meet-overlay-text, #111);
+      font-weight: var(--rotation-slate-auto-rotation-number-font-weight, 900);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #111));
       line-height: 0.75;
       letter-spacing: -20px;
-      font-variant-numeric: tabular-nums;
     }
 
     /* ========== CENTERED LAYOUT ========== */
@@ -160,9 +182,9 @@
 
     .layout-centered .meet-name {
       font-size: 72px;
-      font-weight: 700;
-      color: var(--meet-overlay-text, #222);
-      text-transform: uppercase;
+      font-weight: var(--rotation-slate-auto-meet-name-font-weight, 700);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #222));
+      text-transform: var(--rotation-slate-auto-meet-name-text-transform, uppercase);
       letter-spacing: 3px;
       margin-bottom: 30px;
       line-height: 1.1;
@@ -171,24 +193,24 @@
     .layout-centered .divider {
       width: 160px;
       height: 8px;
-      background: var(--meet-border-color, #111);
+      background: var(--rotation-slate-auto-border-color, var(--meet-border-color, #111));
       border-radius: 4px;
       margin-bottom: 30px;
     }
 
     .layout-centered .rotation-label {
       font-size: 52px;
-      font-weight: 600;
-      color: var(--meet-overlay-text, #666);
-      text-transform: uppercase;
+      font-weight: var(--rotation-slate-auto-rotation-label-font-weight, 600);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #666));
+      text-transform: var(--rotation-slate-auto-rotation-label-text-transform, uppercase);
       letter-spacing: 16px;
       margin-bottom: 10px;
     }
 
     .layout-centered .rotation-number {
       font-size: 320px;
-      font-weight: 900;
-      color: var(--meet-overlay-text, #111);
+      font-weight: var(--rotation-slate-auto-rotation-number-font-weight, 900);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #111));
       line-height: 0.85;
       letter-spacing: -15px;
     }
@@ -215,9 +237,9 @@
 
     .layout-minimal .meet-name {
       font-size: 60px;
-      font-weight: 600;
-      color: var(--meet-overlay-text, #666);
-      text-transform: uppercase;
+      font-weight: var(--rotation-slate-auto-meet-name-font-weight, 600);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #666));
+      text-transform: var(--rotation-slate-auto-meet-name-text-transform, uppercase);
       letter-spacing: 6px;
       margin-bottom: 40px;
       line-height: 1.1;
@@ -229,17 +251,17 @@
 
     .layout-minimal .rotation-label {
       font-size: 72px;
-      font-weight: 600;
-      color: var(--meet-overlay-text, #444);
-      text-transform: uppercase;
+      font-weight: var(--rotation-slate-auto-rotation-label-font-weight, 600);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #444));
+      text-transform: var(--rotation-slate-auto-rotation-label-text-transform, uppercase);
       letter-spacing: 20px;
       margin-bottom: 0;
     }
 
     .layout-minimal .rotation-number {
       font-size: 600px;
-      font-weight: 900;
-      color: var(--meet-overlay-text, #111);
+      font-weight: var(--rotation-slate-auto-rotation-number-font-weight, 900);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #111));
       line-height: 0.8;
       letter-spacing: -25px;
     }
@@ -282,9 +304,9 @@
 
     .layout-banner .meet-name {
       font-size: 64px;
-      font-weight: 700;
-      color: var(--meet-overlay-text, #222);
-      text-transform: uppercase;
+      font-weight: var(--rotation-slate-auto-meet-name-font-weight, 700);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #222));
+      text-transform: var(--rotation-slate-auto-meet-name-text-transform, uppercase);
       letter-spacing: 3px;
       line-height: 1.1;
       margin-bottom: 0;
@@ -312,17 +334,17 @@
 
     .layout-banner .rotation-badge-label {
       font-size: 28px;
-      font-weight: 700;
-      color: var(--meet-overlay-text, #444);
-      text-transform: uppercase;
+      font-weight: var(--rotation-slate-auto-badge-label-font-weight, 700);
+      color: var(--rotation-slate-auto-badge-text, var(--meet-badge-text, var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #444))));
+      text-transform: var(--rotation-slate-auto-rotation-label-text-transform, uppercase);
       letter-spacing: 8px;
       margin-bottom: 10px;
     }
 
     .layout-banner .rotation-badge-num {
       font-size: 200px;
-      font-weight: 900;
-      color: var(--meet-overlay-text, #111);
+      font-weight: var(--rotation-slate-auto-badge-num-font-weight, 900);
+      color: var(--rotation-slate-auto-badge-text, var(--meet-badge-text, var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #111))));
       line-height: 0.85;
     }
 
@@ -333,7 +355,7 @@
     .layout-jumbo .logo-section {
       flex: 0 0 860px;
       height: 100%;
-      background: var(--meet-header-bg, #f0f0f0);
+      background: var(--rotation-slate-auto-header-bg, var(--meet-header-bg, #f0f0f0));
       display: flex;
       align-items: center;
       justify-content: center;
@@ -355,9 +377,9 @@
     }
     .layout-jumbo .meet-name {
       font-size: 110px;
-      font-weight: 900;
-      color: var(--meet-overlay-text, #222);
-      text-transform: uppercase;
+      font-weight: var(--rotation-slate-auto-meet-name-font-weight, 900);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #222));
+      text-transform: var(--rotation-slate-auto-meet-name-text-transform, uppercase);
       letter-spacing: 4px;
       margin-bottom: 30px;
       line-height: 1.05;
@@ -365,22 +387,22 @@
     .layout-jumbo .divider {
       width: 250px;
       height: 12px;
-      background: var(--meet-border-color, #111);
+      background: var(--rotation-slate-auto-border-color, var(--meet-border-color, #111));
       border-radius: 6px;
       margin-bottom: 30px;
     }
     .layout-jumbo .rotation-label {
       font-size: 80px;
-      font-weight: 700;
-      color: var(--meet-overlay-text, #555);
-      text-transform: uppercase;
+      font-weight: var(--rotation-slate-auto-rotation-label-font-weight, 700);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #555));
+      text-transform: var(--rotation-slate-auto-rotation-label-text-transform, uppercase);
       letter-spacing: 18px;
       margin-bottom: 0;
     }
     .layout-jumbo .rotation-number {
       font-size: 520px;
-      font-weight: 900;
-      color: var(--meet-overlay-text, #111);
+      font-weight: var(--rotation-slate-auto-rotation-number-font-weight, 900);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #111));
       line-height: 0.75;
       letter-spacing: -20px;
     }
@@ -413,9 +435,9 @@
     }
     .layout-hero .meet-name {
       font-size: 100px;
-      font-weight: 800;
-      color: var(--meet-overlay-text, #222);
-      text-transform: uppercase;
+      font-weight: var(--rotation-slate-auto-meet-name-font-weight, 800);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #222));
+      text-transform: var(--rotation-slate-auto-meet-name-text-transform, uppercase);
       letter-spacing: 5px;
       margin-bottom: 20px;
       line-height: 1.05;
@@ -423,22 +445,22 @@
     .layout-hero .divider {
       width: 200px;
       height: 10px;
-      background: var(--meet-border-color, #111);
+      background: var(--rotation-slate-auto-border-color, var(--meet-border-color, #111));
       border-radius: 5px;
       margin-bottom: 15px;
     }
     .layout-hero .rotation-label {
       font-size: 64px;
-      font-weight: 600;
-      color: var(--meet-overlay-text, #666);
-      text-transform: uppercase;
+      font-weight: var(--rotation-slate-auto-rotation-label-font-weight, 600);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #666));
+      text-transform: var(--rotation-slate-auto-rotation-label-text-transform, uppercase);
       letter-spacing: 16px;
       margin-bottom: 0;
     }
     .layout-hero .rotation-number {
       font-size: 280px;
-      font-weight: 900;
-      color: var(--meet-overlay-text, #111);
+      font-weight: var(--rotation-slate-auto-rotation-number-font-weight, 900);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #111));
       line-height: 0.85;
       letter-spacing: -12px;
     }
@@ -450,7 +472,7 @@
     .layout-split .logo-section {
       flex: 0 0 960px;
       height: 100%;
-      background: var(--meet-header-bg, #f0f0f0);
+      background: var(--rotation-slate-auto-header-bg, var(--meet-header-bg, #f0f0f0));
       display: flex;
       align-items: center;
       justify-content: center;
@@ -474,9 +496,9 @@
     }
     .layout-split .meet-name {
       font-size: 72px;
-      font-weight: 800;
-      color: var(--meet-overlay-text, #222);
-      text-transform: uppercase;
+      font-weight: var(--rotation-slate-auto-meet-name-font-weight, 800);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #222));
+      text-transform: var(--rotation-slate-auto-meet-name-text-transform, uppercase);
       letter-spacing: 3px;
       margin-bottom: 40px;
       line-height: 1.1;
@@ -484,22 +506,22 @@
     .layout-split .divider {
       width: 150px;
       height: 8px;
-      background: var(--meet-border-color, #111);
+      background: var(--rotation-slate-auto-border-color, var(--meet-border-color, #111));
       border-radius: 4px;
       margin-bottom: 40px;
     }
     .layout-split .rotation-label {
       font-size: 56px;
-      font-weight: 600;
-      color: var(--meet-overlay-text, #666);
-      text-transform: uppercase;
+      font-weight: var(--rotation-slate-auto-rotation-label-font-weight, 600);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #666));
+      text-transform: var(--rotation-slate-auto-rotation-label-text-transform, uppercase);
       letter-spacing: 14px;
       margin-bottom: 5px;
     }
     .layout-split .rotation-number {
       font-size: 480px;
-      font-weight: 900;
-      color: var(--meet-overlay-text, #111);
+      font-weight: var(--rotation-slate-auto-rotation-number-font-weight, 900);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #111));
       line-height: 0.75;
       letter-spacing: -18px;
     }
@@ -521,9 +543,9 @@
     }
     .layout-bold .meet-name {
       font-size: 120px;
-      font-weight: 900;
-      color: var(--meet-overlay-text, #222);
-      text-transform: uppercase;
+      font-weight: var(--rotation-slate-auto-meet-name-font-weight, 900);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #222));
+      text-transform: var(--rotation-slate-auto-meet-name-text-transform, uppercase);
       letter-spacing: 8px;
       margin-bottom: 20px;
       line-height: 1.05;
@@ -531,16 +553,16 @@
     .layout-bold .divider { display: none; }
     .layout-bold .rotation-label {
       font-size: 80px;
-      font-weight: 700;
-      color: var(--meet-overlay-text, #444);
-      text-transform: uppercase;
+      font-weight: var(--rotation-slate-auto-rotation-label-font-weight, 700);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #444));
+      text-transform: var(--rotation-slate-auto-rotation-label-text-transform, uppercase);
       letter-spacing: 24px;
       margin-bottom: 0;
     }
     .layout-bold .rotation-number {
       font-size: 700px;
-      font-weight: 900;
-      color: var(--meet-overlay-text, #111);
+      font-weight: var(--rotation-slate-auto-rotation-number-font-weight, 900);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #111));
       line-height: 0.75;
       letter-spacing: -30px;
     }
@@ -576,9 +598,9 @@
     }
     .layout-watermark .meet-name {
       font-size: 96px;
-      font-weight: 800;
-      color: var(--meet-overlay-text, #222);
-      text-transform: uppercase;
+      font-weight: var(--rotation-slate-auto-meet-name-font-weight, 800);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #222));
+      text-transform: var(--rotation-slate-auto-meet-name-text-transform, uppercase);
       letter-spacing: 5px;
       margin-bottom: 15px;
       line-height: 1.1;
@@ -586,9 +608,9 @@
     .layout-watermark .divider { display: none; }
     .layout-watermark .rotation-label {
       font-size: 60px;
-      font-weight: 600;
-      color: var(--meet-overlay-text, #666);
-      text-transform: uppercase;
+      font-weight: var(--rotation-slate-auto-rotation-label-font-weight, 600);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #666));
+      text-transform: var(--rotation-slate-auto-rotation-label-text-transform, uppercase);
       letter-spacing: 16px;
       margin-bottom: 0;
     }
@@ -598,8 +620,8 @@
       left: 50%;
       transform: translate(-50%, -50%);
       font-size: 900px;
-      font-weight: 900;
-      color: var(--meet-overlay-text, #111);
+      font-weight: var(--rotation-slate-auto-rotation-number-font-weight, 900);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #111));
       opacity: 0.06;
       line-height: 1;
       letter-spacing: -40px;
@@ -633,9 +655,9 @@
     .layout-frame .meet-name {
       order: 1;
       font-size: 100px;
-      font-weight: 900;
-      color: var(--meet-overlay-text, #222);
-      text-transform: uppercase;
+      font-weight: var(--rotation-slate-auto-meet-name-font-weight, 900);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #222));
+      text-transform: var(--rotation-slate-auto-meet-name-text-transform, uppercase);
       letter-spacing: 6px;
       margin-bottom: 30px;
       line-height: 1.05;
@@ -645,9 +667,9 @@
     .layout-frame .rotation-label {
       order: 3;
       font-size: 48px;
-      font-weight: 600;
-      color: var(--meet-overlay-text, #666);
-      text-transform: uppercase;
+      font-weight: var(--rotation-slate-auto-rotation-label-font-weight, 600);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #666));
+      text-transform: var(--rotation-slate-auto-rotation-label-text-transform, uppercase);
       letter-spacing: 14px;
       margin-top: 20px;
       margin-bottom: 0;
@@ -656,8 +678,8 @@
     .layout-frame .rotation-number {
       order: 4;
       font-size: 200px;
-      font-weight: 900;
-      color: var(--meet-overlay-text, #111);
+      font-weight: var(--rotation-slate-auto-rotation-number-font-weight, 900);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #111));
       line-height: 0.85;
       letter-spacing: -10px;
       animation: fadeIn 0.6s ease-out 0.4s both;
@@ -691,9 +713,9 @@
     }
     .layout-stacked .meet-name {
       font-size: 48px;
-      font-weight: 600;
-      color: var(--meet-overlay-text, #666);
-      text-transform: uppercase;
+      font-weight: var(--rotation-slate-auto-meet-name-font-weight, 600);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #666));
+      text-transform: var(--rotation-slate-auto-meet-name-text-transform, uppercase);
       letter-spacing: 10px;
       margin-bottom: 10px;
       line-height: 1.1;
@@ -702,8 +724,8 @@
     .layout-stacked .rotation-label { display: none; }
     .layout-stacked .rotation-number {
       font-size: 400px;
-      font-weight: 900;
-      color: var(--meet-overlay-text, #111);
+      font-weight: var(--rotation-slate-auto-rotation-number-font-weight, 900);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #111));
       line-height: 0.8;
       letter-spacing: -15px;
     }
@@ -720,7 +742,7 @@
       display: block;
       width: 100%;
       height: 200px;
-      background: #000;
+      background: var(--rotation-slate-auto-cinema-bg, #000);
       flex-shrink: 0;
     }
     .layout-cinema .logo-section {
@@ -752,9 +774,9 @@
     }
     .layout-cinema .meet-name {
       font-size: 90px;
-      font-weight: 800;
-      color: var(--meet-overlay-text, #222);
-      text-transform: uppercase;
+      font-weight: var(--rotation-slate-auto-meet-name-font-weight, 800);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #222));
+      text-transform: var(--rotation-slate-auto-meet-name-text-transform, uppercase);
       letter-spacing: 4px;
       margin-bottom: 20px;
       line-height: 1.1;
@@ -762,22 +784,22 @@
     .layout-cinema .divider {
       width: 200px;
       height: 10px;
-      background: var(--meet-border-color, #111);
+      background: var(--rotation-slate-auto-border-color, var(--meet-border-color, #111));
       border-radius: 5px;
       margin-bottom: 20px;
     }
     .layout-cinema .rotation-label {
       font-size: 56px;
-      font-weight: 600;
-      color: var(--meet-overlay-text, #666);
-      text-transform: uppercase;
+      font-weight: var(--rotation-slate-auto-rotation-label-font-weight, 600);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #666));
+      text-transform: var(--rotation-slate-auto-rotation-label-text-transform, uppercase);
       letter-spacing: 14px;
       margin-bottom: 0;
     }
     .layout-cinema .rotation-number {
       font-size: 350px;
-      font-weight: 900;
-      color: var(--meet-overlay-text, #111);
+      font-weight: var(--rotation-slate-auto-rotation-number-font-weight, 900);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #111));
       line-height: 0.8;
       letter-spacing: -15px;
     }
@@ -813,9 +835,9 @@
     }
     .layout-corner .meet-name {
       font-size: 96px;
-      font-weight: 800;
-      color: var(--meet-overlay-text, #222);
-      text-transform: uppercase;
+      font-weight: var(--rotation-slate-auto-meet-name-font-weight, 800);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #222));
+      text-transform: var(--rotation-slate-auto-meet-name-text-transform, uppercase);
       letter-spacing: 5px;
       margin-bottom: 0;
       line-height: 1.1;
@@ -827,8 +849,8 @@
       bottom: -80px;
       right: -30px;
       font-size: 800px;
-      font-weight: 900;
-      color: var(--meet-overlay-text, #111);
+      font-weight: var(--rotation-slate-auto-rotation-number-font-weight, 900);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #111));
       opacity: 0.08;
       line-height: 1;
       z-index: 1;
@@ -846,7 +868,7 @@
       align-items: center;
       justify-content: center;
       padding: 0 60px;
-      background: var(--meet-header-bg, #f0f0f0);
+      background: var(--rotation-slate-auto-header-bg, var(--meet-header-bg, #f0f0f0));
       animation: slideRight 0.5s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .layout-wide .team-logo {
@@ -865,9 +887,9 @@
     }
     .layout-wide .meet-name {
       font-size: 90px;
-      font-weight: 800;
-      color: var(--meet-overlay-text, #222);
-      text-transform: uppercase;
+      font-weight: var(--rotation-slate-auto-meet-name-font-weight, 800);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #222));
+      text-transform: var(--rotation-slate-auto-meet-name-text-transform, uppercase);
       letter-spacing: 4px;
       line-height: 1.1;
       margin-bottom: 0;
@@ -877,8 +899,8 @@
     .layout-wide .rotation-label { display: none; }
     .layout-wide .rotation-number {
       font-size: 600px;
-      font-weight: 900;
-      color: var(--meet-overlay-text, #111);
+      font-weight: var(--rotation-slate-auto-rotation-number-font-weight, 900);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #111));
       line-height: 0.75;
       letter-spacing: -25px;
       opacity: 0.2;
@@ -892,7 +914,7 @@
     .layout-side .logo-section {
       flex: 0 0 800px;
       height: 100%;
-      background: var(--meet-header-bg, #f0f0f0);
+      background: var(--rotation-slate-auto-header-bg, var(--meet-header-bg, #f0f0f0));
       display: flex;
       align-items: center;
       justify-content: center;
@@ -914,9 +936,9 @@
     }
     .layout-side .meet-name {
       font-size: 96px;
-      font-weight: 800;
-      color: var(--meet-overlay-text, #222);
-      text-transform: uppercase;
+      font-weight: var(--rotation-slate-auto-meet-name-font-weight, 800);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #222));
+      text-transform: var(--rotation-slate-auto-meet-name-text-transform, uppercase);
       letter-spacing: 4px;
       margin-bottom: 40px;
       line-height: 1.05;
@@ -924,22 +946,22 @@
     .layout-side .divider {
       width: 220px;
       height: 10px;
-      background: var(--meet-border-color, #111);
+      background: var(--rotation-slate-auto-border-color, var(--meet-border-color, #111));
       border-radius: 5px;
       margin-bottom: 40px;
     }
     .layout-side .rotation-label {
       font-size: 72px;
-      font-weight: 700;
-      color: var(--meet-overlay-text, #555);
-      text-transform: uppercase;
+      font-weight: var(--rotation-slate-auto-rotation-label-font-weight, 700);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #555));
+      text-transform: var(--rotation-slate-auto-rotation-label-text-transform, uppercase);
       letter-spacing: 18px;
       margin-bottom: 5px;
     }
     .layout-side .rotation-number {
       font-size: 500px;
-      font-weight: 900;
-      color: var(--meet-overlay-text, #111);
+      font-weight: var(--rotation-slate-auto-rotation-number-font-weight, 900);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #111));
       line-height: 0.75;
       letter-spacing: -20px;
     }
@@ -956,7 +978,7 @@
       top: 0;
       width: 40px;
       height: 100%;
-      background: var(--meet-border-color, #111);
+      background: var(--rotation-slate-auto-border-color, var(--meet-border-color, #111));
     }
     .layout-stripe .logo-section {
       flex: 0 0 auto;
@@ -984,9 +1006,9 @@
     }
     .layout-stripe .meet-name {
       font-size: 96px;
-      font-weight: 800;
-      color: var(--meet-overlay-text, #222);
-      text-transform: uppercase;
+      font-weight: var(--rotation-slate-auto-meet-name-font-weight, 800);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #222));
+      text-transform: var(--rotation-slate-auto-meet-name-text-transform, uppercase);
       letter-spacing: 4px;
       margin-bottom: 30px;
       line-height: 1.05;
@@ -994,22 +1016,22 @@
     .layout-stripe .divider {
       width: 200px;
       height: 10px;
-      background: var(--meet-border-color, #111);
+      background: var(--rotation-slate-auto-border-color, var(--meet-border-color, #111));
       border-radius: 5px;
       margin-bottom: 30px;
     }
     .layout-stripe .rotation-label {
       font-size: 68px;
-      font-weight: 700;
-      color: var(--meet-overlay-text, #555);
-      text-transform: uppercase;
+      font-weight: var(--rotation-slate-auto-rotation-label-font-weight, 700);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #555));
+      text-transform: var(--rotation-slate-auto-rotation-label-text-transform, uppercase);
       letter-spacing: 16px;
       margin-bottom: 5px;
     }
     .layout-stripe .rotation-number {
       font-size: 480px;
-      font-weight: 900;
-      color: var(--meet-overlay-text, #111);
+      font-weight: var(--rotation-slate-auto-rotation-number-font-weight, 900);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #111));
       line-height: 0.75;
       letter-spacing: -20px;
     }
@@ -1052,9 +1074,9 @@
     }
     .layout-overlap .meet-name {
       font-size: 100px;
-      font-weight: 900;
-      color: var(--meet-overlay-text, #222);
-      text-transform: uppercase;
+      font-weight: var(--rotation-slate-auto-meet-name-font-weight, 900);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #222));
+      text-transform: var(--rotation-slate-auto-meet-name-text-transform, uppercase);
       letter-spacing: 5px;
       margin-bottom: 20px;
       line-height: 1.05;
@@ -1062,22 +1084,22 @@
     .layout-overlap .divider {
       width: 200px;
       height: 10px;
-      background: var(--meet-border-color, #111);
+      background: var(--rotation-slate-auto-border-color, var(--meet-border-color, #111));
       border-radius: 5px;
       margin-bottom: 20px;
     }
     .layout-overlap .rotation-label {
       font-size: 68px;
-      font-weight: 700;
-      color: var(--meet-overlay-text, #555);
-      text-transform: uppercase;
+      font-weight: var(--rotation-slate-auto-rotation-label-font-weight, 700);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #555));
+      text-transform: var(--rotation-slate-auto-rotation-label-text-transform, uppercase);
       letter-spacing: 16px;
       margin-bottom: 0;
     }
     .layout-overlap .rotation-number {
       font-size: 360px;
-      font-weight: 900;
-      color: var(--meet-overlay-text, #111);
+      font-weight: var(--rotation-slate-auto-rotation-number-font-weight, 900);
+      color: var(--rotation-slate-auto-overlay-text, var(--meet-overlay-text, #111));
       line-height: 0.8;
       letter-spacing: -15px;
     }
