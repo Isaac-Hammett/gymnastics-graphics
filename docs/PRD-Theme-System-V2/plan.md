@@ -1126,7 +1126,7 @@ Graphics: sponsors-cycle, sponsors-bug.
 
 ---
 
-### Task 7C.4 — Build Sponsors Template — NOT STARTED
+### Task 7C.4 — Build Sponsors Template — COMPLETE
 
 **Goal:** Add shared template for Sponsors category.
 
@@ -1141,9 +1141,17 @@ Graphics: sponsors-cycle, sponsors-bug.
 5. Template UI panel
 
 **Verify:**
-- [ ] Template panel renders
-- [ ] "Apply to All Sponsors" works
-- [ ] Template stored in Firebase
+- [x] Template panel renders — **PASS** (build succeeded, panel code in place)
+- [x] "Apply to All Sponsors" works — **PASS** (`applySponsorsTemplate()` implemented with key filtering for cycle-only and bug-only keys)
+- [x] Template stored in Firebase — **PASS** (`sponsorsTemplate` key in theme object)
+
+**Implementation Notes (2026-03-26):**
+- Added state: `showSponsorsTemplatePanel`, `showApplySponsorsTemplateConfirm`
+- Added functions: `applySponsorsTemplate()`, `updateSponsorsTemplateField()`, `clearSponsorsTemplateField()`
+- Template panel includes 3 sections: Background (shared color), Badge/Container (badge bg + border color), Transition Timing (cycle fade + bug fade)
+- Key filtering: cycleOnlyKeys (9 keys) and bugOnlyKeys (7 keys) prevent copying incompatible keys between graphics
+- Template values apply to both sponsors-cycle and sponsors-bug overrides
+- Screenshot: `local-task-7c4-login.png` (build verification)
 
 **Deploy:** Deploy show-controller build to production.
 

@@ -707,6 +707,10 @@ export default function ThemeEditorPage() {
   const [showTeamCardsTemplatePanel, setShowTeamCardsTemplatePanel] = useState(false);
   const [showApplyTeamCardsTemplateConfirm, setShowApplyTeamCardsTemplateConfirm] = useState(false);
 
+  // Sponsors Template state (Phase 7C.4)
+  const [showSponsorsTemplatePanel, setShowSponsorsTemplatePanel] = useState(false);
+  const [showApplySponsorsTemplateConfirm, setShowApplySponsorsTemplateConfirm] = useState(false);
+
   // Apply lower-third template values to all three lower-third graphics
   const applyLowerThirdTemplate = () => {
     const template = editingTheme.lowerThirdTemplate || {};
@@ -827,6 +831,49 @@ export default function ThemeEditorPage() {
       const tmpl = { ...(prev.teamCardsTemplate || {}) };
       delete tmpl[key];
       return { ...prev, teamCardsTemplate: tmpl };
+    });
+  };
+
+  // Apply sponsors template values to sponsors-cycle and sponsors-bug (Phase 7C.4)
+  // Note: sponsors-thanks is in Full-Screen category (Phase 7A), not Sponsors
+  const applySponsorsTemplate = () => {
+    const template = editingTheme.sponsorsTemplate || {};
+    const templateKeys = Object.keys(template).filter(k => template[k] !== undefined && template[k] !== null && template[k] !== '');
+    if (templateKeys.length === 0) return;
+
+    // Keys that only apply to sponsors-cycle
+    const cycleOnlyKeys = ['targetHeight', 'maxWidthRender', 'logoMaxWidth', 'logoMaxHeight', 'fadeDuration', 'noSponsorsFontSize', 'noSponsorsFontWeight', 'noSponsorsFontFamily', 'noSponsorsColor'];
+    // Keys that only apply to sponsors-bug
+    const bugOnlyKeys = ['bugBottom', 'bugRight', 'bugWidth', 'bugHeight', 'bugBorderRadius', 'bugPadding', 'bugFadeTransition'];
+
+    setEditingTheme(prev => {
+      const newOverrides = { ...prev.overrides };
+      for (const gId of SPONSORS_GRAPHICS) {
+        newOverrides[gId] = { ...(newOverrides[gId] || {}) };
+        for (const key of templateKeys) {
+          // Skip keys that don't apply to this graphic
+          if (gId !== 'sponsors-cycle' && cycleOnlyKeys.includes(key)) continue;
+          if (gId !== 'sponsors-bug' && bugOnlyKeys.includes(key)) continue;
+          newOverrides[gId][key] = template[key];
+        }
+      }
+      return { ...prev, overrides: newOverrides };
+    });
+    setShowApplySponsorsTemplateConfirm(false);
+  };
+
+  const updateSponsorsTemplateField = (key, value) => {
+    setEditingTheme(prev => ({
+      ...prev,
+      sponsorsTemplate: { ...(prev.sponsorsTemplate || {}), [key]: value },
+    }));
+  };
+
+  const clearSponsorsTemplateField = (key) => {
+    setEditingTheme(prev => {
+      const tmpl = { ...(prev.sponsorsTemplate || {}) };
+      delete tmpl[key];
+      return { ...prev, sponsorsTemplate: tmpl };
     });
   };
 
@@ -2544,6 +2591,78 @@ export default function ThemeEditorPage() {
                                     className="w-full px-3 py-2 text-xs bg-teal-600/20 text-teal-400 hover:bg-teal-600/30 rounded-lg font-semibold transition-colors"
                                   >
                                     Apply to All Team Cards
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
+
+                    {/* SPONSORS TEMPLATE — only for Sponsors group (Phase 7C.4) */}
+                    {group.label === 'Sponsors' && (
+                      <div className="bg-zinc-800/80 rounded-lg overflow-hidden mb-2 border border-teal-500/30">
+                        <button
+                          onClick={() => setShowSponsorsTemplatePanel(p => !p)}
+                          className="w-full flex items-center justify-between px-3 py-2 hover:bg-zinc-700/50 transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-teal-400 font-semibold">Template</span>
+                            <span className="text-[10px] text-zinc-500">Set shared values for sponsors-cycle and sponsors-bug</span>
+                          </div>
+                          <svg className={`w-4 h-4 text-teal-500 transition-transform ${showSponsorsTemplatePanel ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                        {showSponsorsTemplatePanel && (() => {
+                          const tmpl = editingTheme.sponsorsTemplate || {};
+                          return (
+                            <div className="px-3 pb-3 border-t border-teal-500/20 space-y-4 pt-3">
+                              {/* SHARED: Background Color */}
+                              <div>
+                                <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Background (shared)</div>
+                                <div className="flex items-center gap-2">
+                                  <input type="color" value={tmpl.bodyBackground || editingTheme.colors?.bodyBackground || '#E5E5E5'} onChange={(e) => updateSponsorsTemplateField('bodyBackground', e.target.value)} className="w-8 h-8 rounded cursor-pointer bg-transparent border-0" />
+                                  <span className="text-[10px] text-zinc-400">Background color for both sponsor graphics</span>
+                                </div>
+                              </div>
+                              {/* SHARED: Badge Color (sponsors-bug background) */}
+                              <div className="pt-2 border-t border-zinc-700/30">
+                                <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Badge/Container (shared)</div>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div className="flex flex-col items-center gap-1">
+                                    <input type="color" value={tmpl.badge || editingTheme.colors?.badge || '#000000'} onChange={(e) => updateSponsorsTemplateField('badge', e.target.value)} className="w-8 h-8 rounded cursor-pointer bg-transparent border-0" />
+                                    <span className="text-[9px] text-zinc-500">Badge BG</span>
+                                  </div>
+                                  <div className="flex flex-col items-center gap-1">
+                                    <input type="color" value={tmpl.borderDivider || editingTheme.colors?.borderDivider || '#E5E5E5'} onChange={(e) => updateSponsorsTemplateField('borderDivider', e.target.value)} className="w-8 h-8 rounded cursor-pointer bg-transparent border-0" />
+                                    <span className="text-[9px] text-zinc-500">Border</span>
+                                  </div>
+                                </div>
+                              </div>
+                              {/* SHARED: Fade Timing */}
+                              <div className="pt-2 border-t border-zinc-700/30">
+                                <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Transition Timing (shared)</div>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <OverrideStepper label="Cycle Fade" value={tmpl.fadeDuration ?? 0.5} onChange={(v) => updateSponsorsTemplateField('fadeDuration', v)} min={0.1} max={2} step={0.1} suffix="s" />
+                                  <OverrideStepper label="Bug Fade" value={tmpl.bugFadeTransition ?? 0.8} onChange={(v) => updateSponsorsTemplateField('bugFadeTransition', v)} min={0.1} max={2} step={0.1} suffix="s" />
+                                </div>
+                              </div>
+                              {/* Apply button */}
+                              <div className="pt-2 border-t border-zinc-700/30">
+                                {showApplySponsorsTemplateConfirm ? (
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[11px] text-zinc-400">Apply template values to sponsors-cycle and sponsors-bug?</span>
+                                    <button onClick={applySponsorsTemplate} className="px-3 py-1 text-xs bg-teal-600 hover:bg-teal-500 rounded transition-colors">Apply</button>
+                                    <button onClick={() => setShowApplySponsorsTemplateConfirm(false)} className="px-3 py-1 text-xs bg-zinc-700 hover:bg-zinc-600 rounded transition-colors">Cancel</button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={() => setShowApplySponsorsTemplateConfirm(true)}
+                                    className="w-full px-3 py-2 text-xs bg-teal-600/20 text-teal-400 hover:bg-teal-600/30 rounded-lg font-semibold transition-colors"
+                                  >
+                                    Apply to All Sponsors
                                   </button>
                                 )}
                               </div>
