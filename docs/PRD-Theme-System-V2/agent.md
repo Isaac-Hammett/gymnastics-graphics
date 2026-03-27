@@ -391,3 +391,11 @@ https://commentarygraphic.com/overlays/sponsors-thanks.html?meetTheme={themeId}
 12. **Stat display override pattern (Task 7B.3):** To add behavioral overrides (not just CSS), create a helper function in output.html that reads from `window.__themeData.overrides[graphicId]`, then call it from renderers. The helper should check both the specific graphic ID (team1-stats) AND the generic graphic ID (team-stats) for fallback.
 13. **team{N}Nqs field:** NQS (National Qualifying Score) data is available at `data.team{N}Nqs`. This is populated by the RTN stats system from the RQS field. Only ranked teams have NQS values.
 14. **isTeamStatsGraphic helper:** Use regex `/^team[1-7]-stats$/` to match team1-stats through team7-stats, plus exact match for `team-stats`.
+
+15. **isTeamCardGraphic helper (Task 7B.4):** Matches both team-stats and team-coaches variants. Use `/^team[1-7]-stats$/` OR `/^team[1-7]-coaches$/` OR exact match for `team-stats` or `team-coaches`.
+
+16. **4-way conditional for override panels:** The panel rendering is now 4-way: LOWER_THIRD_GRAPHICS -> FULL_SCREEN_GRAPHICS -> isTeamCardGraphic -> GENERIC. Each branch has its own rich controls tailored to that graphic category.
+
+17. **TEAM_CARD_DEFAULTS constant:** Contains defaults for team-stats (17 props) and team-coaches (15 props). Properties use prefixes `stats*` and `coaches*` to match the theme-loader.js layoutOverrideMapping keys.
+
+18. **ThemeEditorPage now ~4,200 lines:** Task 7B.4 added ~450 lines for team card rich controls. Line numbers shift with each edit — always use exact search strings.

@@ -75,6 +75,51 @@ const FULL_SCREEN_DEFAULTS = {
   },
 };
 
+// Team Card graphics for rich control panels (Phase 7B.4)
+// Note: We list base graphic IDs (team-stats, team-coaches) which apply to all team{N} variants
+const TEAM_CARD_GRAPHICS = ['team-stats', 'team-coaches'];
+
+// Helper to detect if a graphicId is any team-stats or team-coaches variant
+const isTeamCardGraphic = (graphicId) => {
+  if (!graphicId) return false;
+  return graphicId === 'team-stats' || graphicId === 'team-coaches' ||
+    /^team[1-7]-stats$/.test(graphicId) || /^team[1-7]-coaches$/.test(graphicId);
+};
+
+// Helper to get base graphic ID for team cards (team1-stats -> team-stats, etc.)
+const getTeamCardBaseId = (graphicId) => {
+  if (/^team[1-7]-stats$/.test(graphicId)) return 'team-stats';
+  if (/^team[1-7]-coaches$/.test(graphicId)) return 'team-coaches';
+  return graphicId;
+};
+
+// Default values for team card graphics (Phase 7B.4)
+const TEAM_CARD_DEFAULTS = {
+  'team-stats': {
+    // Position
+    statsTop: 780, statsLeft: 100, statsMinWidth: 300,
+    // Header
+    statsHeaderPaddingV: 12, statsHeaderPaddingH: 20, statsHeaderGap: 16,
+    statsTeamNameFontSize: 20, statsTeamNameFontWeight: '700', statsTeamNameFontFamily: 'Inter',
+    statsLogoSize: 48,
+    // Content
+    statsContentPaddingV: 16, statsContentPaddingH: 20, statsContentGap: 12,
+    statsLabelFontSize: 14, statsLabelFontWeight: '600',
+    statsValueFontSize: 24, statsValueFontWeight: '700', statsValueFontFamily: 'Roboto Mono',
+  },
+  'team-coaches': {
+    // Position
+    coachesTop: 780, coachesLeft: 100, coachesMinWidth: 300,
+    // Header
+    coachesHeaderPaddingV: 12, coachesHeaderPaddingH: 20,
+    coachesTitleFontSize: 16, coachesTitleFontWeight: '700', coachesTitleFontFamily: 'Inter',
+    coachesLogoSize: 48,
+    // Content
+    coachesContentPaddingV: 16, coachesContentPaddingH: 20,
+    coachesNameFontSize: 18, coachesNameFontWeight: '600', coachesNameFontFamily: 'Inter', coachesNameLineHeight: 1.4,
+  },
+};
+
 // Compute the effective rendered height based on font sizes + padding
 // Shows producers the real pixel value instead of "0 (auto)"
 function getEffectiveVenueHeight(overrides, graphicId) {
@@ -3611,26 +3656,454 @@ export default function ThemeEditorPage() {
                                       </div>
                                     )}
                                   </div>
+                                ) : isTeamCardGraphic(graphicId) ? (
+                                  /* ========== RICH TEAM CARD CONTROLS ========== */
+                                  <div className="pt-3 space-y-4">
+                                    {/* TEAM-STATS specific controls */}
+                                    {(graphicId === 'team-stats' || /^team[1-7]-stats$/.test(graphicId)) && (() => {
+                                      const baseId = 'team-stats';
+                                      const defs = TEAM_CARD_DEFAULTS[baseId];
+                                      return (
+                                        <>
+                                          {/* STAT DISPLAY - at top since it's the most important control */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Stat Display</div>
+                                            <select
+                                              value={overrides.statDisplay || 'avg-high'}
+                                              onChange={(e) => updateOverrideField(graphicId, 'statDisplay', e.target.value)}
+                                              className="w-full h-7 px-2 bg-zinc-700 border border-zinc-600 rounded text-xs text-zinc-300 focus:outline-none focus:border-purple-500"
+                                            >
+                                              {STAT_DISPLAY_OPTIONS.map(o => (
+                                                <option key={o.value} value={o.value}>{o.label}</option>
+                                              ))}
+                                            </select>
+                                            <p className="mt-1 text-[10px] text-zinc-500">Controls which stat columns are displayed.</p>
+                                          </div>
+
+                                          {/* POSITION */}
+                                          <div className="pt-2 border-t border-zinc-700/30">
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Position</div>
+                                            <div className="grid grid-cols-3 gap-2">
+                                              <OverrideStepper
+                                                label="Top"
+                                                value={overrides.statsTop ?? defs.statsTop}
+                                                onChange={(v) => updateOverrideField(graphicId, 'statsTop', v)}
+                                                min={0} max={1000} step={10} suffix="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Left"
+                                                value={overrides.statsLeft ?? defs.statsLeft}
+                                                onChange={(v) => updateOverrideField(graphicId, 'statsLeft', v)}
+                                                min={0} max={1800} step={10} suffix="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Min width"
+                                                value={overrides.statsMinWidth ?? defs.statsMinWidth}
+                                                onChange={(v) => updateOverrideField(graphicId, 'statsMinWidth', v)}
+                                                min={200} max={800} step={10} suffix="px"
+                                              />
+                                            </div>
+                                          </div>
+
+                                          {/* HEADER */}
+                                          <div className="pt-2 border-t border-zinc-700/30">
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Header</div>
+                                            <div className="space-y-2">
+                                              <div className="grid grid-cols-3 gap-2">
+                                                <OverrideStepper
+                                                  label="Pad V"
+                                                  value={overrides.statsHeaderPaddingV ?? defs.statsHeaderPaddingV}
+                                                  onChange={(v) => updateOverrideField(graphicId, 'statsHeaderPaddingV', v)}
+                                                  min={4} max={40} step={2} suffix="px"
+                                                />
+                                                <OverrideStepper
+                                                  label="Pad H"
+                                                  value={overrides.statsHeaderPaddingH ?? defs.statsHeaderPaddingH}
+                                                  onChange={(v) => updateOverrideField(graphicId, 'statsHeaderPaddingH', v)}
+                                                  min={8} max={60} step={4} suffix="px"
+                                                />
+                                                <OverrideStepper
+                                                  label="Gap"
+                                                  value={overrides.statsHeaderGap ?? defs.statsHeaderGap}
+                                                  onChange={(v) => updateOverrideField(graphicId, 'statsHeaderGap', v)}
+                                                  min={4} max={40} step={2} suffix="px"
+                                                />
+                                              </div>
+                                              <div className="grid grid-cols-3 gap-2">
+                                                <OverrideStepper
+                                                  label="Name size"
+                                                  value={overrides.statsTeamNameFontSize ?? defs.statsTeamNameFontSize}
+                                                  onChange={(v) => updateOverrideField(graphicId, 'statsTeamNameFontSize', v)}
+                                                  min={12} max={48} step={2} suffix="px"
+                                                />
+                                                <div className="flex flex-col gap-0.5">
+                                                  <span className="text-[10px] text-zinc-500">Font</span>
+                                                  <select
+                                                    value={overrides.statsTeamNameFontFamily ?? defs.statsTeamNameFontFamily}
+                                                    onChange={(e) => updateOverrideField(graphicId, 'statsTeamNameFontFamily', e.target.value)}
+                                                    className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500"
+                                                  >
+                                                    {FONT_FAMILIES.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                                                  </select>
+                                                </div>
+                                                <div className="flex flex-col gap-0.5">
+                                                  <span className="text-[10px] text-zinc-500">Weight</span>
+                                                  <select
+                                                    value={overrides.statsTeamNameFontWeight ?? defs.statsTeamNameFontWeight}
+                                                    onChange={(e) => updateOverrideField(graphicId, 'statsTeamNameFontWeight', e.target.value)}
+                                                    className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500"
+                                                  >
+                                                    {FONT_WEIGHTS.map(w => <option key={w.value} value={w.value}>{w.label}</option>)}
+                                                  </select>
+                                                </div>
+                                              </div>
+                                              <div className="grid grid-cols-2 gap-2">
+                                                <OverrideStepper
+                                                  label="Logo size"
+                                                  value={overrides.statsLogoSize ?? defs.statsLogoSize}
+                                                  onChange={(v) => updateOverrideField(graphicId, 'statsLogoSize', v)}
+                                                  min={24} max={100} step={4} suffix="px"
+                                                />
+                                              </div>
+                                            </div>
+                                          </div>
+
+                                          {/* STATS CONTENT */}
+                                          <div className="pt-2 border-t border-zinc-700/30">
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Stats Content</div>
+                                            <div className="space-y-2">
+                                              <div className="grid grid-cols-3 gap-2">
+                                                <OverrideStepper
+                                                  label="Pad V"
+                                                  value={overrides.statsContentPaddingV ?? defs.statsContentPaddingV}
+                                                  onChange={(v) => updateOverrideField(graphicId, 'statsContentPaddingV', v)}
+                                                  min={4} max={40} step={2} suffix="px"
+                                                />
+                                                <OverrideStepper
+                                                  label="Pad H"
+                                                  value={overrides.statsContentPaddingH ?? defs.statsContentPaddingH}
+                                                  onChange={(v) => updateOverrideField(graphicId, 'statsContentPaddingH', v)}
+                                                  min={8} max={60} step={4} suffix="px"
+                                                />
+                                                <OverrideStepper
+                                                  label="Gap"
+                                                  value={overrides.statsContentGap ?? defs.statsContentGap}
+                                                  onChange={(v) => updateOverrideField(graphicId, 'statsContentGap', v)}
+                                                  min={4} max={40} step={2} suffix="px"
+                                                />
+                                              </div>
+                                              <div className="grid grid-cols-2 gap-2">
+                                                <OverrideStepper
+                                                  label="Label size"
+                                                  value={overrides.statsLabelFontSize ?? defs.statsLabelFontSize}
+                                                  onChange={(v) => updateOverrideField(graphicId, 'statsLabelFontSize', v)}
+                                                  min={10} max={24} step={1} suffix="px"
+                                                />
+                                                <div className="flex flex-col gap-0.5">
+                                                  <span className="text-[10px] text-zinc-500">Label wt</span>
+                                                  <select
+                                                    value={overrides.statsLabelFontWeight ?? defs.statsLabelFontWeight}
+                                                    onChange={(e) => updateOverrideField(graphicId, 'statsLabelFontWeight', e.target.value)}
+                                                    className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500"
+                                                  >
+                                                    {FONT_WEIGHTS.map(w => <option key={w.value} value={w.value}>{w.label}</option>)}
+                                                  </select>
+                                                </div>
+                                              </div>
+                                              <div className="grid grid-cols-3 gap-2">
+                                                <OverrideStepper
+                                                  label="Value size"
+                                                  value={overrides.statsValueFontSize ?? defs.statsValueFontSize}
+                                                  onChange={(v) => updateOverrideField(graphicId, 'statsValueFontSize', v)}
+                                                  min={14} max={48} step={2} suffix="px"
+                                                />
+                                                <div className="flex flex-col gap-0.5">
+                                                  <span className="text-[10px] text-zinc-500">Value font</span>
+                                                  <select
+                                                    value={overrides.statsValueFontFamily ?? defs.statsValueFontFamily}
+                                                    onChange={(e) => updateOverrideField(graphicId, 'statsValueFontFamily', e.target.value)}
+                                                    className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500"
+                                                  >
+                                                    {FONT_FAMILIES.filter(f => f.tabular).map(f => (
+                                                      <option key={f.value} value={f.value}>{f.label} (tabular)</option>
+                                                    ))}
+                                                    {FONT_FAMILIES.filter(f => !f.tabular).map(f => (
+                                                      <option key={f.value} value={f.value}>{f.label}</option>
+                                                    ))}
+                                                  </select>
+                                                </div>
+                                                <div className="flex flex-col gap-0.5">
+                                                  <span className="text-[10px] text-zinc-500">Value wt</span>
+                                                  <select
+                                                    value={overrides.statsValueFontWeight ?? defs.statsValueFontWeight}
+                                                    onChange={(e) => updateOverrideField(graphicId, 'statsValueFontWeight', e.target.value)}
+                                                    className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500"
+                                                  >
+                                                    {FONT_WEIGHTS.map(w => <option key={w.value} value={w.value}>{w.label}</option>)}
+                                                  </select>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </>
+                                      );
+                                    })()}
+
+                                    {/* TEAM-COACHES specific controls */}
+                                    {(graphicId === 'team-coaches' || /^team[1-7]-coaches$/.test(graphicId)) && (() => {
+                                      const baseId = 'team-coaches';
+                                      const defs = TEAM_CARD_DEFAULTS[baseId];
+                                      return (
+                                        <>
+                                          {/* POSITION */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Position</div>
+                                            <div className="grid grid-cols-3 gap-2">
+                                              <OverrideStepper
+                                                label="Top"
+                                                value={overrides.coachesTop ?? defs.coachesTop}
+                                                onChange={(v) => updateOverrideField(graphicId, 'coachesTop', v)}
+                                                min={0} max={1000} step={10} suffix="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Left"
+                                                value={overrides.coachesLeft ?? defs.coachesLeft}
+                                                onChange={(v) => updateOverrideField(graphicId, 'coachesLeft', v)}
+                                                min={0} max={1800} step={10} suffix="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Min width"
+                                                value={overrides.coachesMinWidth ?? defs.coachesMinWidth}
+                                                onChange={(v) => updateOverrideField(graphicId, 'coachesMinWidth', v)}
+                                                min={200} max={800} step={10} suffix="px"
+                                              />
+                                            </div>
+                                          </div>
+
+                                          {/* HEADER */}
+                                          <div className="pt-2 border-t border-zinc-700/30">
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Header</div>
+                                            <div className="space-y-2">
+                                              <div className="grid grid-cols-2 gap-2">
+                                                <OverrideStepper
+                                                  label="Pad V"
+                                                  value={overrides.coachesHeaderPaddingV ?? defs.coachesHeaderPaddingV}
+                                                  onChange={(v) => updateOverrideField(graphicId, 'coachesHeaderPaddingV', v)}
+                                                  min={4} max={40} step={2} suffix="px"
+                                                />
+                                                <OverrideStepper
+                                                  label="Pad H"
+                                                  value={overrides.coachesHeaderPaddingH ?? defs.coachesHeaderPaddingH}
+                                                  onChange={(v) => updateOverrideField(graphicId, 'coachesHeaderPaddingH', v)}
+                                                  min={8} max={60} step={4} suffix="px"
+                                                />
+                                              </div>
+                                              <div className="grid grid-cols-3 gap-2">
+                                                <OverrideStepper
+                                                  label="Title size"
+                                                  value={overrides.coachesTitleFontSize ?? defs.coachesTitleFontSize}
+                                                  onChange={(v) => updateOverrideField(graphicId, 'coachesTitleFontSize', v)}
+                                                  min={10} max={36} step={2} suffix="px"
+                                                />
+                                                <div className="flex flex-col gap-0.5">
+                                                  <span className="text-[10px] text-zinc-500">Font</span>
+                                                  <select
+                                                    value={overrides.coachesTitleFontFamily ?? defs.coachesTitleFontFamily}
+                                                    onChange={(e) => updateOverrideField(graphicId, 'coachesTitleFontFamily', e.target.value)}
+                                                    className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500"
+                                                  >
+                                                    {FONT_FAMILIES.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                                                  </select>
+                                                </div>
+                                                <div className="flex flex-col gap-0.5">
+                                                  <span className="text-[10px] text-zinc-500">Weight</span>
+                                                  <select
+                                                    value={overrides.coachesTitleFontWeight ?? defs.coachesTitleFontWeight}
+                                                    onChange={(e) => updateOverrideField(graphicId, 'coachesTitleFontWeight', e.target.value)}
+                                                    className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500"
+                                                  >
+                                                    {FONT_WEIGHTS.map(w => <option key={w.value} value={w.value}>{w.label}</option>)}
+                                                  </select>
+                                                </div>
+                                              </div>
+                                              <div className="grid grid-cols-2 gap-2">
+                                                <OverrideStepper
+                                                  label="Logo size"
+                                                  value={overrides.coachesLogoSize ?? defs.coachesLogoSize}
+                                                  onChange={(v) => updateOverrideField(graphicId, 'coachesLogoSize', v)}
+                                                  min={24} max={100} step={4} suffix="px"
+                                                />
+                                              </div>
+                                            </div>
+                                          </div>
+
+                                          {/* CONTENT */}
+                                          <div className="pt-2 border-t border-zinc-700/30">
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Coach Names</div>
+                                            <div className="space-y-2">
+                                              <div className="grid grid-cols-2 gap-2">
+                                                <OverrideStepper
+                                                  label="Pad V"
+                                                  value={overrides.coachesContentPaddingV ?? defs.coachesContentPaddingV}
+                                                  onChange={(v) => updateOverrideField(graphicId, 'coachesContentPaddingV', v)}
+                                                  min={4} max={40} step={2} suffix="px"
+                                                />
+                                                <OverrideStepper
+                                                  label="Pad H"
+                                                  value={overrides.coachesContentPaddingH ?? defs.coachesContentPaddingH}
+                                                  onChange={(v) => updateOverrideField(graphicId, 'coachesContentPaddingH', v)}
+                                                  min={8} max={60} step={4} suffix="px"
+                                                />
+                                              </div>
+                                              <div className="grid grid-cols-3 gap-2">
+                                                <OverrideStepper
+                                                  label="Name size"
+                                                  value={overrides.coachesNameFontSize ?? defs.coachesNameFontSize}
+                                                  onChange={(v) => updateOverrideField(graphicId, 'coachesNameFontSize', v)}
+                                                  min={10} max={36} step={2} suffix="px"
+                                                />
+                                                <div className="flex flex-col gap-0.5">
+                                                  <span className="text-[10px] text-zinc-500">Font</span>
+                                                  <select
+                                                    value={overrides.coachesNameFontFamily ?? defs.coachesNameFontFamily}
+                                                    onChange={(e) => updateOverrideField(graphicId, 'coachesNameFontFamily', e.target.value)}
+                                                    className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500"
+                                                  >
+                                                    {FONT_FAMILIES.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                                                  </select>
+                                                </div>
+                                                <div className="flex flex-col gap-0.5">
+                                                  <span className="text-[10px] text-zinc-500">Weight</span>
+                                                  <select
+                                                    value={overrides.coachesNameFontWeight ?? defs.coachesNameFontWeight}
+                                                    onChange={(e) => updateOverrideField(graphicId, 'coachesNameFontWeight', e.target.value)}
+                                                    className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500"
+                                                  >
+                                                    {FONT_WEIGHTS.map(w => <option key={w.value} value={w.value}>{w.label}</option>)}
+                                                  </select>
+                                                </div>
+                                              </div>
+                                              <div className="grid grid-cols-2 gap-2">
+                                                <OverrideStepper
+                                                  label="Line height"
+                                                  value={overrides.coachesNameLineHeight ?? defs.coachesNameLineHeight}
+                                                  onChange={(v) => updateOverrideField(graphicId, 'coachesNameLineHeight', v)}
+                                                  min={1} max={2} step={0.1} suffix=""
+                                                />
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </>
+                                      );
+                                    })()}
+
+                                    {/* COLORS (shared across all team cards) */}
+                                    <div className="pt-2 border-t border-zinc-700/30">
+                                      <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Colors</div>
+                                      <div className="grid grid-cols-2 gap-2">
+                                        {OVERRIDE_COLOR_FIELDS.map(({ key, label }) => {
+                                          const hasOverride = overrides[key] !== undefined;
+                                          const overrideValue = overrides[key] || editingTheme.colors[key] || '#888888';
+                                          return (
+                                            <div key={key} className="flex items-center gap-2">
+                                              <label className="flex items-center gap-1.5 cursor-pointer">
+                                                <input type="checkbox" checked={hasOverride}
+                                                  onChange={(e) => { e.target.checked ? updateOverrideField(graphicId, key, editingTheme.colors[key] || '#888888') : clearOverrideField(graphicId, key); }}
+                                                  className="w-3.5 h-3.5 rounded border-zinc-600 bg-zinc-700 text-purple-500 focus:ring-purple-500 focus:ring-offset-0" />
+                                              </label>
+                                              <input type="color" value={overrideValue} disabled={!hasOverride}
+                                                onChange={(e) => updateOverrideField(graphicId, key, e.target.value)}
+                                                className={`w-6 h-6 rounded cursor-pointer bg-transparent border-0 ${!hasOverride ? 'opacity-40 cursor-not-allowed' : ''}`} />
+                                              <span className={`text-[11px] ${hasOverride ? 'text-zinc-300' : 'text-zinc-500'}`}>{label}</span>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+
+                                    {/* IMAGES / TEXTURES */}
+                                    <div className="pt-2 border-t border-zinc-700/30">
+                                      <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Images / Textures</div>
+                                      <div className="space-y-2">
+                                        {/* Header Background Image */}
+                                        <div className="flex items-center gap-2 mb-1">
+                                          <label className="flex items-center gap-1.5 cursor-pointer">
+                                            <input type="checkbox" checked={overrides.headerBgImage !== undefined}
+                                              onChange={(e) => {
+                                                if (e.target.checked) { updateOverrideField(graphicId, 'headerBgImage', ''); }
+                                                else { clearOverrideField(graphicId, 'headerBgImage'); clearOverrideField(graphicId, 'headerBgImageFit'); clearOverrideField(graphicId, 'headerBgImagePosition'); clearOverrideField(graphicId, 'headerBgImageOpacity'); }
+                                              }}
+                                              className="w-3.5 h-3.5 rounded border-zinc-600 bg-zinc-700 text-purple-500 focus:ring-purple-500 focus:ring-offset-0" />
+                                            <span className={`text-[11px] ${overrides.headerBgImage !== undefined ? 'text-zinc-300' : 'text-zinc-500'}`}>Header Background Image</span>
+                                          </label>
+                                        </div>
+                                        {overrides.headerBgImage !== undefined && (
+                                          <div className="space-y-2 ml-5">
+                                            <input type="text" value={overrides.headerBgImage || ''} onChange={(e) => updateOverrideField(graphicId, 'headerBgImage', e.target.value)} placeholder="https://..."
+                                              className="w-full px-2 py-1.5 bg-zinc-700 border border-zinc-600 rounded text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-purple-500" />
+                                            <div className="grid grid-cols-3 gap-2">
+                                              <div className="flex flex-col gap-0.5">
+                                                <span className="text-[10px] text-zinc-500">Fit</span>
+                                                <select value={overrides.headerBgImageFit || 'cover'} onChange={(e) => updateOverrideField(graphicId, 'headerBgImageFit', e.target.value)}
+                                                  className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500">
+                                                  {IMAGE_FIT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                                                </select>
+                                              </div>
+                                              <div className="flex flex-col gap-0.5">
+                                                <span className="text-[10px] text-zinc-500">Position</span>
+                                                <select value={overrides.headerBgImagePosition || 'center'} onChange={(e) => updateOverrideField(graphicId, 'headerBgImagePosition', e.target.value)}
+                                                  className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500">
+                                                  {IMAGE_POSITION_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                                                </select>
+                                              </div>
+                                              <OverrideStepper label="Opacity" value={Math.round((overrides.headerBgImageOpacity ?? 1) * 100)} onChange={(v) => updateOverrideField(graphicId, 'headerBgImageOpacity', v / 100)} min={0} max={100} step={5} suffix="%" />
+                                            </div>
+                                          </div>
+                                        )}
+
+                                        {/* Body Texture */}
+                                        <div className="flex items-center gap-2 mb-1">
+                                          <label className="flex items-center gap-1.5 cursor-pointer">
+                                            <input type="checkbox" checked={overrides.bodyTexture !== undefined}
+                                              onChange={(e) => {
+                                                if (e.target.checked) { updateOverrideField(graphicId, 'bodyTexture', ''); }
+                                                else { clearOverrideField(graphicId, 'bodyTexture'); clearOverrideField(graphicId, 'bodyTextureOpacity'); clearOverrideField(graphicId, 'bodyTextureBlend'); }
+                                              }}
+                                              className="w-3.5 h-3.5 rounded border-zinc-600 bg-zinc-700 text-purple-500 focus:ring-purple-500 focus:ring-offset-0" />
+                                            <span className={`text-[11px] ${overrides.bodyTexture !== undefined ? 'text-zinc-300' : 'text-zinc-500'}`}>Body Texture Overlay</span>
+                                          </label>
+                                        </div>
+                                        {overrides.bodyTexture !== undefined && (
+                                          <div className="space-y-2 ml-5">
+                                            <input type="text" value={overrides.bodyTexture || ''} onChange={(e) => updateOverrideField(graphicId, 'bodyTexture', e.target.value)} placeholder="https://..."
+                                              className="w-full px-2 py-1.5 bg-zinc-700 border border-zinc-600 rounded text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-purple-500" />
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <div className="flex flex-col gap-0.5">
+                                                <span className="text-[10px] text-zinc-500">Blend Mode</span>
+                                                <select value={overrides.bodyTextureBlend || 'overlay'} onChange={(e) => updateOverrideField(graphicId, 'bodyTextureBlend', e.target.value)}
+                                                  className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500">
+                                                  {BLEND_MODE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                                                </select>
+                                              </div>
+                                              <OverrideStepper label="Opacity" value={Math.round((overrides.bodyTextureOpacity ?? 0.08) * 100)} onChange={(v) => updateOverrideField(graphicId, 'bodyTextureOpacity', v / 100)} min={0} max={100} step={2} suffix="%" />
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {/* Reset button */}
+                                    {overrideCount > 0 && (
+                                      <div className="pt-2 flex justify-end">
+                                        <button onClick={() => resetGraphicOverrides(graphicId)} className="text-[10px] text-zinc-400 hover:text-zinc-300 transition-colors">
+                                          Reset to theme defaults
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
                                 ) : (
                                   /* ========== GENERIC CONTROLS (all other graphics) ========== */
                                   <div className="pt-3 space-y-3">
-                                  {/* Stat Display override for team-stats graphics (Phase 7B.3) */}
-                                  {isTeamStatsGraphic(graphicId) && (
-                                    <div className="pb-2 border-b border-zinc-700/50">
-                                      <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Stat Display</div>
-                                      <select
-                                        value={overrides.statDisplay || 'avg-high'}
-                                        onChange={(e) => updateOverrideField(graphicId, 'statDisplay', e.target.value)}
-                                        className="w-full h-7 px-2 bg-zinc-700 border border-zinc-600 rounded text-xs text-zinc-300 focus:outline-none focus:border-purple-500"
-                                      >
-                                        {STAT_DISPLAY_OPTIONS.map(o => (
-                                          <option key={o.value} value={o.value}>{o.label}</option>
-                                        ))}
-                                      </select>
-                                      <p className="mt-1 text-[10px] text-zinc-500">Controls which stat columns are displayed on this team-stats graphic.</p>
-                                    </div>
-                                  )}
-
                                   {/* Color override fields */}
                                   <div className="grid grid-cols-2 gap-2">
                                     {OVERRIDE_COLOR_FIELDS.map(({ key, label }) => {
