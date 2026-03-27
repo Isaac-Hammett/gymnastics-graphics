@@ -798,6 +798,52 @@ window.themeReady = new Promise(resolve => { _resolveThemeReady = resolve; });
     icTitleLetterSpacing: { suffix: 'ic-title-letter-spacing', unit: 'px' },
     icTitleMargin: { suffix: 'ic-title-margin', unit: 'px' },
     icTitleOpacity: { suffix: 'ic-title-opacity', unit: null },
+    // Athlete-spotlight specific (Phase 7E.5)
+    // Position
+    asBottom: { suffix: 'as-bottom', unit: 'px' },
+    asLeft: { suffix: 'as-left', unit: 'px' },
+    // Header
+    asHeaderPaddingV: { suffix: 'as-header-padding-v', unit: 'px' },
+    asHeaderPaddingH: { suffix: 'as-header-padding-h', unit: 'px' },
+    asHeaderGap: { suffix: 'as-header-gap', unit: 'px' },
+    // Event label
+    asEventFontSize: { suffix: 'as-event-font-size', unit: 'px' },
+    asEventFontWeight: { suffix: 'as-event-font-weight', unit: null },
+    asEventFontFamily: { suffix: 'as-event-font-family', unit: null },
+    asEventLetterSpacing: { suffix: 'as-event-letter-spacing', unit: 'px' },
+    asEventTextTransform: { suffix: 'as-event-text-transform', unit: null },
+    // Logo
+    asLogoSize: { suffix: 'as-logo-size', unit: 'px' },
+    // Content
+    asContentPaddingV: { suffix: 'as-content-padding-v', unit: 'px' },
+    asContentPaddingH: { suffix: 'as-content-padding-h', unit: 'px' },
+    asContentGap: { suffix: 'as-content-gap', unit: 'px' },
+    // Headshot
+    asHeadshotSize: { suffix: 'as-headshot-size', unit: 'px' },
+    asHeadshotRadius: { suffix: 'as-headshot-radius', unit: null },  // percentage or px
+    asHeadshotBorder: { suffix: 'as-headshot-border', unit: 'px' },
+    asHeadshotBorderColor: { suffix: 'as-headshot-border-color', unit: null },
+    asHeadshotBg: { suffix: 'as-headshot-bg', unit: null },
+    // Athlete info container
+    asAthleteGap: { suffix: 'as-athlete-gap', unit: 'px' },
+    asInfoGap: { suffix: 'as-info-gap', unit: 'px' },
+    // Athlete name
+    asNameFontSize: { suffix: 'as-name-font-size', unit: 'px' },
+    asNameFontWeight: { suffix: 'as-name-font-weight', unit: null },
+    asNameFontFamily: { suffix: 'as-name-font-family', unit: null },
+    asNameLetterSpacing: { suffix: 'as-name-letter-spacing', unit: 'px' },
+    asNameTextTransform: { suffix: 'as-name-text-transform', unit: null },
+    asNameLineHeight: { suffix: 'as-name-line-height', unit: null },
+    // Athlete details
+    asDetailsFontSize: { suffix: 'as-details-font-size', unit: 'px' },
+    asDetailsFontWeight: { suffix: 'as-details-font-weight', unit: null },
+    asDetailsFontFamily: { suffix: 'as-details-font-family', unit: null },
+    asDetailsLetterSpacing: { suffix: 'as-details-letter-spacing', unit: 'px' },
+    asDetailsTextTransform: { suffix: 'as-details-text-transform', unit: null },
+    asDetailsColor: { suffix: 'as-details-color', unit: null },
+    // Divider
+    asDividerWidth: { suffix: 'as-divider-width', unit: 'px' },
+    asDividerColor: { suffix: 'as-divider-color', unit: null },
   };
 
   /**

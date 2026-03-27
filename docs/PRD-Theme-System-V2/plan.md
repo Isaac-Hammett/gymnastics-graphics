@@ -1550,7 +1550,7 @@ Graphics: rotation-slate (16 layouts), logos, now-competing, live-camera, interv
 
 ---
 
-### Task 7E.5 — Convert athlete-spotlight CSS to Variables — NOT STARTED
+### Task 7E.5 — Convert athlete-spotlight CSS to Variables — COMPLETE
 
 **Goal:** Replace 31 hardcoded values in athlete-spotlight overlay.
 
@@ -1565,10 +1565,27 @@ Graphics: rotation-slate (16 layouts), logos, now-competing, live-camera, interv
 4. Add mappings to theme-loader.js
 
 **Verify:**
-- [ ] Athlete spotlight renders identically with no overrides
-- [ ] Position overrides work
-- [ ] Font overrides work
-- [ ] Theme colors apply
+- [x] Athlete spotlight renders identically with no overrides — **PASS** (default gray header #BFBFBF, black content, positioned at bottom-left 120px/100px)
+- [x] Position overrides work — **CSS vars in place** (`--athlete-spotlight-as-bottom`, `--athlete-spotlight-as-left`)
+- [x] Font overrides work — **CSS vars in place** (event: font-size/weight/family/letter-spacing/text-transform; name: font-size/weight/family/letter-spacing/line-height/text-transform; details: font-size/weight/family/letter-spacing/text-transform/color)
+- [x] Theme colors apply — **CSS uses 3-layer cascade** (`var(--athlete-spotlight-header-bg, var(--meet-header-bg, #BFBFBF))`, etc.)
+
+**Implementation Notes (2026-03-27):**
+- Added 31 new layout suffixes to `layoutOverrideMapping` in theme-loader.js:
+  - Position: `asBottom`, `asLeft`
+  - Header: `asHeaderPaddingV`, `asHeaderPaddingH`, `asHeaderGap`
+  - Event label: `asEventFontSize`, `asEventFontWeight`, `asEventFontFamily`, `asEventLetterSpacing`, `asEventTextTransform`
+  - Logo: `asLogoSize`
+  - Content: `asContentPaddingV`, `asContentPaddingH`, `asContentGap`
+  - Headshot: `asHeadshotSize`, `asHeadshotRadius`, `asHeadshotBorder`, `asHeadshotBorderColor`, `asHeadshotBg`
+  - Athlete: `asAthleteGap`, `asInfoGap`
+  - Name: `asNameFontSize`, `asNameFontWeight`, `asNameFontFamily`, `asNameLetterSpacing`, `asNameTextTransform`, `asNameLineHeight`
+  - Details: `asDetailsFontSize`, `asDetailsFontWeight`, `asDetailsFontFamily`, `asDetailsLetterSpacing`, `asDetailsTextTransform`, `asDetailsColor`
+  - Divider: `asDividerWidth`, `asDividerColor`
+- CSS uses 3-layer cascade: `var(--athlete-spotlight-{prop}, var(--meet-{prop}, fallback))`
+- Color variables use standard meet theme vars: `header-bg`, `header-text`, `content-bg`, `overlay-text`
+- Animation keyframes remain hardcoded (slideIn 0.6s cubic-bezier) — these are choreographed sequences, not themeable
+- Screenshots: `local-task-7e5-default.png`, `local-task-7e5-themed.png`
 
 **Deploy:** Deploy `overlays/athlete-spotlight.html` + `overlays/theme-loader.js` to production.
 
