@@ -17,20 +17,20 @@
 
     .card-container {
       position: absolute;
-      top: 50px;
-      left: 70px;
-      right: 70px;
-      bottom: 50px;
+      top: var(--event-calendar-container-top, var(--meet-container-top, 50px));
+      left: var(--event-calendar-container-left, var(--meet-container-left, 70px));
+      right: var(--event-calendar-container-right, var(--meet-container-right, 70px));
+      bottom: var(--event-calendar-container-bottom, var(--meet-container-bottom, 50px));
       display: flex;
       flex-direction: column;
-      border-radius: 12px;
+      border-radius: var(--event-calendar-border-radius, var(--meet-border-radius, 12px));
       overflow: hidden;
       box-shadow: 0 8px 32px rgba(0,0,0,0.3);
     }
 
     .header-bar {
-      background: var(--meet-header-bg, #d4d4d8);
-      padding: 18px 40px;
+      background: var(--event-calendar-header-bg, var(--meet-header-bg, #d4d4d8));
+      padding: var(--event-calendar-header-padding-v, 18px) var(--event-calendar-header-padding-h, 40px);
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -38,34 +38,35 @@
     }
 
     .header-title {
-      font-size: 42px;
-      font-weight: 800;
-      color: var(--meet-header-text, #000);
-      text-transform: uppercase;
+      font-size: var(--event-calendar-title-font-size, 42px);
+      font-weight: var(--event-calendar-title-font-weight, 800);
+      font-family: var(--event-calendar-title-font-family, 'Inter', sans-serif);
+      color: var(--event-calendar-header-text, var(--meet-header-text, #000));
+      text-transform: var(--event-calendar-title-text-transform, uppercase);
     }
 
     .header-logo {
-      width: 80px;
-      height: 80px;
+      width: var(--event-calendar-logo-size, 80px);
+      height: var(--event-calendar-logo-size, 80px);
       object-fit: contain;
     }
 
     .events-container {
       flex: 1;
-      background: var(--meet-overlay-bg, #18181b);
+      background: var(--event-calendar-overlay-bg, var(--meet-overlay-bg, #18181b));
       display: flex;
       flex-direction: column;
       justify-content: space-evenly;
-      padding: 30px 80px;
+      padding: var(--event-calendar-content-padding-v, 30px) var(--event-calendar-content-padding-h, 80px);
       gap: 0;
     }
 
     .event-item {
       display: flex;
       flex-direction: column;
-      padding: 12px 0;
-      border-bottom: 1px solid rgba(255,255,255,0.08);
-      animation: fadeSlideIn 0.5s ease-out both;
+      padding: var(--event-calendar-item-padding, 12px) 0;
+      border-bottom: 1px solid var(--event-calendar-border-color, var(--meet-border-color, rgba(255,255,255,0.08)));
+      animation: fadeSlideIn var(--event-calendar-animation-duration, 0.5s) ease-out both;
     }
 
     .event-item:last-child {
@@ -73,66 +74,112 @@
     }
 
     @keyframes fadeSlideIn {
-      from { opacity: 0; transform: translateY(20px); }
+      from { opacity: 0; transform: translateY(var(--event-calendar-animation-offset, 20px)); }
       to { opacity: 1; transform: translateY(0); }
     }
 
     .event-date {
-      font-weight: 800;
-      color: var(--meet-accent, #a78bfa);
-      text-transform: uppercase;
+      font-size: var(--event-calendar-date-font-size, 22px);
+      font-weight: var(--event-calendar-date-font-weight, 800);
+      font-family: var(--event-calendar-date-font-family, 'Inter', sans-serif);
+      color: var(--event-calendar-accent-color, var(--meet-accent, #a78bfa));
+      text-transform: var(--event-calendar-date-text-transform, uppercase);
       letter-spacing: 0.5px;
     }
 
     .event-name {
-      font-weight: 700;
-      color: #fff;
-      margin-top: 4px;
+      font-size: var(--event-calendar-name-font-size, 32px);
+      font-weight: var(--event-calendar-name-font-weight, 700);
+      font-family: var(--event-calendar-name-font-family, 'Inter', sans-serif);
+      color: var(--event-calendar-overlay-text, var(--meet-overlay-text, #fff));
+      margin-top: var(--event-calendar-name-margin-top, 4px);
     }
 
     .event-location {
-      font-weight: 400;
-      color: #a1a1aa;
-      margin-top: 2px;
+      font-size: var(--event-calendar-location-font-size, 20px);
+      font-weight: var(--event-calendar-location-font-weight, 400);
+      font-family: var(--event-calendar-location-font-family, 'Inter', sans-serif);
+      color: var(--event-calendar-location-color, #a1a1aa);
+      margin-top: var(--event-calendar-location-margin-top, 2px);
     }
 
-    /* Size tiers based on event count */
-    .tier-large .event-item { padding: 30px 0; }
-    .tier-large .event-date { font-size: 36px; }
-    .tier-large .event-name { font-size: 56px; margin-top: 8px; }
-    .tier-large .event-location { font-size: 32px; margin-top: 6px; }
+    /* Size tiers based on event count - use CSS variable scaling */
+    .tier-large .event-item {
+      --event-calendar-item-padding: var(--event-calendar-tier-large-padding, 30px);
+    }
+    .tier-large .event-date {
+      --event-calendar-date-font-size: var(--event-calendar-tier-large-date-size, 36px);
+    }
+    .tier-large .event-name {
+      --event-calendar-name-font-size: var(--event-calendar-tier-large-name-size, 56px);
+      --event-calendar-name-margin-top: var(--event-calendar-tier-large-name-margin, 8px);
+    }
+    .tier-large .event-location {
+      --event-calendar-location-font-size: var(--event-calendar-tier-large-location-size, 32px);
+      --event-calendar-location-margin-top: var(--event-calendar-tier-large-location-margin, 6px);
+    }
 
-    .tier-medium .event-item { padding: 22px 0; }
-    .tier-medium .event-date { font-size: 30px; }
-    .tier-medium .event-name { font-size: 46px; margin-top: 6px; }
-    .tier-medium .event-location { font-size: 28px; margin-top: 4px; }
+    .tier-medium .event-item {
+      --event-calendar-item-padding: var(--event-calendar-tier-medium-padding, 22px);
+    }
+    .tier-medium .event-date {
+      --event-calendar-date-font-size: var(--event-calendar-tier-medium-date-size, 30px);
+    }
+    .tier-medium .event-name {
+      --event-calendar-name-font-size: var(--event-calendar-tier-medium-name-size, 46px);
+      --event-calendar-name-margin-top: var(--event-calendar-tier-medium-name-margin, 6px);
+    }
+    .tier-medium .event-location {
+      --event-calendar-location-font-size: var(--event-calendar-tier-medium-location-size, 28px);
+      --event-calendar-location-margin-top: var(--event-calendar-tier-medium-location-margin, 4px);
+    }
 
-    .tier-compact .event-item { padding: 16px 0; }
-    .tier-compact .event-date { font-size: 26px; }
-    .tier-compact .event-name { font-size: 38px; margin-top: 4px; }
-    .tier-compact .event-location { font-size: 24px; margin-top: 3px; }
+    .tier-compact .event-item {
+      --event-calendar-item-padding: var(--event-calendar-tier-compact-padding, 16px);
+    }
+    .tier-compact .event-date {
+      --event-calendar-date-font-size: var(--event-calendar-tier-compact-date-size, 26px);
+    }
+    .tier-compact .event-name {
+      --event-calendar-name-font-size: var(--event-calendar-tier-compact-name-size, 38px);
+      --event-calendar-name-margin-top: var(--event-calendar-tier-compact-name-margin, 4px);
+    }
+    .tier-compact .event-location {
+      --event-calendar-location-font-size: var(--event-calendar-tier-compact-location-size, 24px);
+      --event-calendar-location-margin-top: var(--event-calendar-tier-compact-location-margin, 3px);
+    }
 
-    .tier-dense .event-item { padding: 12px 0; }
-    .tier-dense .event-date { font-size: 22px; }
-    .tier-dense .event-name { font-size: 32px; margin-top: 3px; }
-    .tier-dense .event-location { font-size: 20px; margin-top: 2px; }
+    .tier-dense .event-item {
+      --event-calendar-item-padding: var(--event-calendar-tier-dense-padding, 12px);
+    }
+    .tier-dense .event-date {
+      --event-calendar-date-font-size: var(--event-calendar-tier-dense-date-size, 22px);
+    }
+    .tier-dense .event-name {
+      --event-calendar-name-font-size: var(--event-calendar-tier-dense-name-size, 32px);
+      --event-calendar-name-margin-top: var(--event-calendar-tier-dense-name-margin, 3px);
+    }
+    .tier-dense .event-location {
+      --event-calendar-location-font-size: var(--event-calendar-tier-dense-location-size, 20px);
+      --event-calendar-location-margin-top: var(--event-calendar-tier-dense-location-margin, 2px);
+    }
 
     /* Two-column layout for 7+ events */
     .two-column {
       flex-direction: row;
       flex-wrap: wrap;
       align-content: space-evenly;
-      gap: 0 60px;
+      gap: 0 var(--event-calendar-column-gap, 60px);
     }
 
     .two-column .event-item {
-      width: calc(50% - 30px);
+      width: calc(50% - var(--event-calendar-column-gap, 60px) / 2);
     }
 
     .no-events-message {
-      font-size: 36px;
-      font-weight: 700;
-      color: #71717a;
+      font-size: var(--event-calendar-no-events-font-size, 36px);
+      font-weight: var(--event-calendar-no-events-font-weight, 700);
+      color: var(--event-calendar-no-events-color, #71717a);
       text-align: center;
       align-self: center;
     }
@@ -224,7 +271,8 @@
       events.forEach((event, i) => {
         const item = document.createElement('div');
         item.className = 'event-item';
-        item.style.animationDelay = `${i * 0.08}s`;
+        const staggerDelay = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--event-calendar-animation-stagger') || '0.08');
+        item.style.animationDelay = `${i * staggerDelay}s`;
 
         const dateEl = document.createElement('div');
         dateEl.className = 'event-date';

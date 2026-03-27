@@ -844,6 +844,83 @@ window.themeReady = new Promise(resolve => { _resolveThemeReady = resolve; });
     // Divider
     asDividerWidth: { suffix: 'as-divider-width', unit: 'px' },
     asDividerColor: { suffix: 'as-divider-color', unit: null },
+    // Event-calendar specific (Phase 7E.6)
+    // Container
+    ecContainerTop: { suffix: 'container-top', unit: 'px' },
+    ecContainerLeft: { suffix: 'container-left', unit: 'px' },
+    ecContainerRight: { suffix: 'container-right', unit: 'px' },
+    ecContainerBottom: { suffix: 'container-bottom', unit: 'px' },
+    ecBorderRadius: { suffix: 'border-radius', unit: 'px' },
+    // Header
+    ecHeaderPaddingV: { suffix: 'header-padding-v', unit: 'px' },
+    ecHeaderPaddingH: { suffix: 'header-padding-h', unit: 'px' },
+    ecLogoSize: { suffix: 'logo-size', unit: 'px' },
+    // Title
+    ecTitleFontSize: { suffix: 'title-font-size', unit: 'px' },
+    ecTitleFontWeight: { suffix: 'title-font-weight', unit: null },
+    ecTitleFontFamily: { suffix: 'title-font-family', unit: null },
+    ecTitleTextTransform: { suffix: 'title-text-transform', unit: null },
+    // Content area
+    ecContentPaddingV: { suffix: 'content-padding-v', unit: 'px' },
+    ecContentPaddingH: { suffix: 'content-padding-h', unit: 'px' },
+    // Event item
+    ecItemPadding: { suffix: 'item-padding', unit: 'px' },
+    // Date
+    ecDateFontSize: { suffix: 'date-font-size', unit: 'px' },
+    ecDateFontWeight: { suffix: 'date-font-weight', unit: null },
+    ecDateFontFamily: { suffix: 'date-font-family', unit: null },
+    ecDateTextTransform: { suffix: 'date-text-transform', unit: null },
+    // Event name
+    ecNameFontSize: { suffix: 'name-font-size', unit: 'px' },
+    ecNameFontWeight: { suffix: 'name-font-weight', unit: null },
+    ecNameFontFamily: { suffix: 'name-font-family', unit: null },
+    ecNameMarginTop: { suffix: 'name-margin-top', unit: 'px' },
+    // Location
+    ecLocationFontSize: { suffix: 'location-font-size', unit: 'px' },
+    ecLocationFontWeight: { suffix: 'location-font-weight', unit: null },
+    ecLocationFontFamily: { suffix: 'location-font-family', unit: null },
+    ecLocationMarginTop: { suffix: 'location-margin-top', unit: 'px' },
+    ecLocationColor: { suffix: 'location-color', unit: null },
+    // Colors
+    ecAccentColor: { suffix: 'accent-color', unit: null },
+    // Animation
+    ecAnimationDuration: { suffix: 'animation-duration', unit: 's' },
+    ecAnimationOffset: { suffix: 'animation-offset', unit: 'px' },
+    ecAnimationStagger: { suffix: 'animation-stagger', unit: null },  // seconds, no unit suffix
+    // Two-column layout
+    ecColumnGap: { suffix: 'column-gap', unit: 'px' },
+    // No events message
+    ecNoEventsFontSize: { suffix: 'no-events-font-size', unit: 'px' },
+    ecNoEventsFontWeight: { suffix: 'no-events-font-weight', unit: null },
+    ecNoEventsColor: { suffix: 'no-events-color', unit: null },
+    // Tier-large (1-3 events)
+    ecTierLargePadding: { suffix: 'tier-large-padding', unit: 'px' },
+    ecTierLargeDateSize: { suffix: 'tier-large-date-size', unit: 'px' },
+    ecTierLargeNameSize: { suffix: 'tier-large-name-size', unit: 'px' },
+    ecTierLargeNameMargin: { suffix: 'tier-large-name-margin', unit: 'px' },
+    ecTierLargeLocationSize: { suffix: 'tier-large-location-size', unit: 'px' },
+    ecTierLargeLocationMargin: { suffix: 'tier-large-location-margin', unit: 'px' },
+    // Tier-medium (4-5 events)
+    ecTierMediumPadding: { suffix: 'tier-medium-padding', unit: 'px' },
+    ecTierMediumDateSize: { suffix: 'tier-medium-date-size', unit: 'px' },
+    ecTierMediumNameSize: { suffix: 'tier-medium-name-size', unit: 'px' },
+    ecTierMediumNameMargin: { suffix: 'tier-medium-name-margin', unit: 'px' },
+    ecTierMediumLocationSize: { suffix: 'tier-medium-location-size', unit: 'px' },
+    ecTierMediumLocationMargin: { suffix: 'tier-medium-location-margin', unit: 'px' },
+    // Tier-compact (6-7 events)
+    ecTierCompactPadding: { suffix: 'tier-compact-padding', unit: 'px' },
+    ecTierCompactDateSize: { suffix: 'tier-compact-date-size', unit: 'px' },
+    ecTierCompactNameSize: { suffix: 'tier-compact-name-size', unit: 'px' },
+    ecTierCompactNameMargin: { suffix: 'tier-compact-name-margin', unit: 'px' },
+    ecTierCompactLocationSize: { suffix: 'tier-compact-location-size', unit: 'px' },
+    ecTierCompactLocationMargin: { suffix: 'tier-compact-location-margin', unit: 'px' },
+    // Tier-dense (8+ events)
+    ecTierDensePadding: { suffix: 'tier-dense-padding', unit: 'px' },
+    ecTierDenseDateSize: { suffix: 'tier-dense-date-size', unit: 'px' },
+    ecTierDenseNameSize: { suffix: 'tier-dense-name-size', unit: 'px' },
+    ecTierDenseNameMargin: { suffix: 'tier-dense-name-margin', unit: 'px' },
+    ecTierDenseLocationSize: { suffix: 'tier-dense-location-size', unit: 'px' },
+    ecTierDenseLocationMargin: { suffix: 'tier-dense-location-margin', unit: 'px' },
   };
 
   /**
