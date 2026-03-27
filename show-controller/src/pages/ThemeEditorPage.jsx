@@ -340,11 +340,79 @@ const PLAYOUT_DEFAULTS = {
   },
   // who-to-watch-lower-third (athlete lower-third)
   'who-to-watch-lower-third': {
-    // To be defined in Task 7F.3
+    // Card position
+    wtwCardBottom: 120,
+    wtwCardLeft: 100,
+    wtwCardMinWidth: 600,
+    wtwCardMaxWidth: 900,
+    // Header
+    wtwHeaderPaddingV: 12,
+    wtwHeaderPaddingH: 30,
+    wtwHeaderGap: 20,
+    // Label (badge)
+    wtwLabelFontSize: 36,
+    wtwLabelFontWeight: 900,
+    // Logo
+    wtwLogoSize: 48,
+    // Content
+    wtwContentPaddingV: 20,
+    wtwContentPaddingH: 30,
+    wtwContentGap: 20,
+    // Headshot
+    wtwHeadshotSize: 80,
+    // Info
+    wtwInfoGap: 4,
+    // Name
+    wtwNameFontSize: 32,
+    wtwNameFontWeight: 900,
+    // Subtitle
+    wtwSubtitleFontSize: 18,
+    wtwSubtitleFontWeight: 400,
+    // Stat line
+    wtwStatFontSize: 18,
+    wtwStatFontWeight: 700,
+    wtwStatMarginTop: 0,
   },
   // clip-overlay (inline in output.html)
   'clip-overlay': {
-    // To be defined in Task 7F.4
+    // Panel position
+    clipPanelTop: 60,
+    clipPanelLeft: 60,
+    clipPanelRadius: 12,
+    clipSlideDuration: 0.4,
+    // Logo section
+    clipLogoWidth: 100,
+    clipLogoMinHeight: 100,
+    clipLogoPadding: 15,
+    clipLogoImgSize: 70,
+    // Info section
+    clipInfoPaddingV: 18,
+    clipInfoPaddingH: 28,
+    clipInfoMinWidth: 260,
+    // Athlete name
+    clipNameFontSize: 28,
+    clipNameFontWeight: 700,
+    // Apparatus
+    clipApparatusFontSize: 18,
+    clipApparatusFontWeight: 500,
+    // Team name
+    clipTeamFontSize: 16,
+    clipTeamFontWeight: 400,
+    // Score badge
+    clipBadgeTop: 60,
+    clipBadgeRight: 60,
+    clipBadgePaddingV: 20,
+    clipBadgePaddingH: 32,
+    clipBadgeRadius: 12,
+    clipScoreFontSize: 48,
+    clipScoreFontWeight: 800,
+    // Replay badge
+    clipReplayPaddingV: 14,
+    clipReplayPaddingH: 28,
+    clipReplayRadius: 8,
+    clipReplayFontSize: 24,
+    clipReplayFontWeight: 700,
+    clipReplayLetterSpacing: 2,
   },
 };
 
@@ -565,6 +633,14 @@ const ROTATION_SLATE_LAYOUTS = [
 const ROTATION_SLATE_TYPES = [
   { value: 'manual', label: 'Manual (Static)' },
   { value: 'auto', label: 'Auto-Update' },
+];
+
+// WTW Title Card image mode options (Phase 7F.5)
+const WTW_IMAGE_MODES = [
+  { value: 'portrait', label: 'Full-body Cutout' },
+  { value: 'headshot', label: 'Headshot (Circle)' },
+  { value: 'full', label: 'Full Image (Rectangular)' },
+  { value: 'none', label: 'No Image' },
 ];
 
 /**
@@ -911,6 +987,7 @@ export default function ThemeEditorPage() {
     'virtuis-leaderboard': { event: 'FX', gender: 'mens' },
     'event-frame': { type: 'frame-quad' },
     'rotation-slate': { layout: 'classic', type: 'manual', rotation: '1' },
+    'who-to-watch-title': { imageMode: 'portrait' },
   });
 
   // Per-graphic override state
@@ -1588,11 +1665,28 @@ export default function ThemeEditorPage() {
       params.set('headline', '2x All-American');
       params.set('body', 'Record holder on floor exercise');
       params.set('badgeText', 'WHO TO WATCH');
-      // If competition selected, we could pull real athlete data here
+
+      // Apply variant selections (image mode)
+      const variants = selectedVariants['who-to-watch-title'] || {};
+      const imageMode = variants.imageMode || 'portrait';
+
+      // Handle image mode: 'none' hides image, others set imageMode param
+      if (imageMode !== 'none') {
+        params.set('imageMode', imageMode);
+        // Provide a sample image URL for preview
+        params.set('imageUrl', 'https://media.virti.us/upload/images/athlete/sample-portrait.jpg');
+      }
+      // Note: when imageMode is 'none', we omit imageUrl so the card renders without an image
+
+      // If competition selected, pull real athlete data here
       if (selectedCompetition && competitions[selectedCompetition]?.teamData?.team1?.roster?.[0]) {
         const athlete = competitions[selectedCompetition].teamData.team1.roster[0];
         params.set('athleteName', athlete.fullName || 'Sample Athlete');
         params.set('teamName', competitions[selectedCompetition].config?.team1Name || 'Sample Team');
+        // Use athlete headshot if available and mode is headshot
+        if (athlete.headshot) {
+          params.set('imageUrl', athlete.headshot);
+        }
       }
       return `${baseUrl}/overlays/who-to-watch-title.html?${params.toString()}`;
     }
@@ -6529,19 +6623,458 @@ export default function ThemeEditorPage() {
                                       );
                                     })()}
 
-                                    {/* Placeholder for who-to-watch-lower-third (Task 7F.3) */}
-                                    {graphicId === 'who-to-watch-lower-third' && (
-                                      <div className="text-[10px] text-zinc-500 italic">
-                                        Lower-third controls coming in Task 7F.3
-                                      </div>
-                                    )}
+                                    {/* WHO-TO-WATCH-LOWER-THIRD controls */}
+                                    {graphicId === 'who-to-watch-lower-third' && (() => {
+                                      const defs = PLAYOUT_DEFAULTS['who-to-watch-lower-third'];
+                                      return (
+                                        <>
+                                          {/* POSITION */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Position</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Bottom"
+                                                value={overrides.wtwCardBottom ?? defs.wtwCardBottom}
+                                                onChange={(v) => updateOverrideField(graphicId, 'wtwCardBottom', v)}
+                                                step={10}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Left"
+                                                value={overrides.wtwCardLeft ?? defs.wtwCardLeft}
+                                                onChange={(v) => updateOverrideField(graphicId, 'wtwCardLeft', v)}
+                                                step={10}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Min Width"
+                                                value={overrides.wtwCardMinWidth ?? defs.wtwCardMinWidth}
+                                                onChange={(v) => updateOverrideField(graphicId, 'wtwCardMinWidth', v)}
+                                                step={50}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Max Width"
+                                                value={overrides.wtwCardMaxWidth ?? defs.wtwCardMaxWidth}
+                                                onChange={(v) => updateOverrideField(graphicId, 'wtwCardMaxWidth', v)}
+                                                step={50}
+                                                unit="px"
+                                              />
+                                            </div>
+                                          </div>
+                                          {/* HEADER */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Header</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Padding V"
+                                                value={overrides.wtwHeaderPaddingV ?? defs.wtwHeaderPaddingV}
+                                                onChange={(v) => updateOverrideField(graphicId, 'wtwHeaderPaddingV', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Padding H"
+                                                value={overrides.wtwHeaderPaddingH ?? defs.wtwHeaderPaddingH}
+                                                onChange={(v) => updateOverrideField(graphicId, 'wtwHeaderPaddingH', v)}
+                                                step={5}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Gap"
+                                                value={overrides.wtwHeaderGap ?? defs.wtwHeaderGap}
+                                                onChange={(v) => updateOverrideField(graphicId, 'wtwHeaderGap', v)}
+                                                step={4}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Label Font"
+                                                value={overrides.wtwLabelFontSize ?? defs.wtwLabelFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'wtwLabelFontSize', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                            </div>
+                                          </div>
+                                          {/* CONTENT */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Content</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Padding V"
+                                                value={overrides.wtwContentPaddingV ?? defs.wtwContentPaddingV}
+                                                onChange={(v) => updateOverrideField(graphicId, 'wtwContentPaddingV', v)}
+                                                step={4}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Padding H"
+                                                value={overrides.wtwContentPaddingH ?? defs.wtwContentPaddingH}
+                                                onChange={(v) => updateOverrideField(graphicId, 'wtwContentPaddingH', v)}
+                                                step={5}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Content Gap"
+                                                value={overrides.wtwContentGap ?? defs.wtwContentGap}
+                                                onChange={(v) => updateOverrideField(graphicId, 'wtwContentGap', v)}
+                                                step={4}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Logo Size"
+                                                value={overrides.wtwLogoSize ?? defs.wtwLogoSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'wtwLogoSize', v)}
+                                                step={4}
+                                                unit="px"
+                                              />
+                                            </div>
+                                          </div>
+                                          {/* HEADSHOT */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Headshot</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Size"
+                                                value={overrides.wtwHeadshotSize ?? defs.wtwHeadshotSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'wtwHeadshotSize', v)}
+                                                step={8}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Info Gap"
+                                                value={overrides.wtwInfoGap ?? defs.wtwInfoGap}
+                                                onChange={(v) => updateOverrideField(graphicId, 'wtwInfoGap', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                            </div>
+                                          </div>
+                                          {/* NAME */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Name</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Font Size"
+                                                value={overrides.wtwNameFontSize ?? defs.wtwNameFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'wtwNameFontSize', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Font Weight"
+                                                value={overrides.wtwNameFontWeight ?? defs.wtwNameFontWeight}
+                                                onChange={(v) => updateOverrideField(graphicId, 'wtwNameFontWeight', v)}
+                                                step={100}
+                                                unit=""
+                                              />
+                                            </div>
+                                          </div>
+                                          {/* SUBTITLE */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Subtitle</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Font Size"
+                                                value={overrides.wtwSubtitleFontSize ?? defs.wtwSubtitleFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'wtwSubtitleFontSize', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Font Weight"
+                                                value={overrides.wtwSubtitleFontWeight ?? defs.wtwSubtitleFontWeight}
+                                                onChange={(v) => updateOverrideField(graphicId, 'wtwSubtitleFontWeight', v)}
+                                                step={100}
+                                                unit=""
+                                              />
+                                            </div>
+                                          </div>
+                                          {/* STAT LINE */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Stat Line</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Font Size"
+                                                value={overrides.wtwStatFontSize ?? defs.wtwStatFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'wtwStatFontSize', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Font Weight"
+                                                value={overrides.wtwStatFontWeight ?? defs.wtwStatFontWeight}
+                                                onChange={(v) => updateOverrideField(graphicId, 'wtwStatFontWeight', v)}
+                                                step={100}
+                                                unit=""
+                                              />
+                                              <OverrideStepper
+                                                label="Margin Top"
+                                                value={overrides.wtwStatMarginTop ?? defs.wtwStatMarginTop}
+                                                onChange={(v) => updateOverrideField(graphicId, 'wtwStatMarginTop', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                            </div>
+                                          </div>
+                                        </>
+                                      );
+                                    })()}
 
-                                    {/* Placeholder for clip-overlay (Task 7F.4) */}
-                                    {graphicId === 'clip-overlay' && (
-                                      <div className="text-[10px] text-zinc-500 italic">
-                                        Clip overlay controls coming in Task 7F.4
-                                      </div>
-                                    )}
+                                    {/* CLIP-OVERLAY controls */}
+                                    {graphicId === 'clip-overlay' && (() => {
+                                      const defs = PLAYOUT_DEFAULTS['clip-overlay'];
+                                      return (
+                                        <>
+                                          {/* PANEL POSITION */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Panel Position</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Top"
+                                                value={overrides.clipPanelTop ?? defs.clipPanelTop}
+                                                onChange={(v) => updateOverrideField(graphicId, 'clipPanelTop', v)}
+                                                step={10}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Left"
+                                                value={overrides.clipPanelLeft ?? defs.clipPanelLeft}
+                                                onChange={(v) => updateOverrideField(graphicId, 'clipPanelLeft', v)}
+                                                step={10}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Border Radius"
+                                                value={overrides.clipPanelRadius ?? defs.clipPanelRadius}
+                                                onChange={(v) => updateOverrideField(graphicId, 'clipPanelRadius', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Slide Duration"
+                                                value={overrides.clipSlideDuration ?? defs.clipSlideDuration}
+                                                onChange={(v) => updateOverrideField(graphicId, 'clipSlideDuration', v)}
+                                                step={0.1}
+                                                unit="s"
+                                              />
+                                            </div>
+                                          </div>
+                                          {/* LOGO SECTION */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Logo Section</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Width"
+                                                value={overrides.clipLogoWidth ?? defs.clipLogoWidth}
+                                                onChange={(v) => updateOverrideField(graphicId, 'clipLogoWidth', v)}
+                                                step={10}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Min Height"
+                                                value={overrides.clipLogoMinHeight ?? defs.clipLogoMinHeight}
+                                                onChange={(v) => updateOverrideField(graphicId, 'clipLogoMinHeight', v)}
+                                                step={10}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Padding"
+                                                value={overrides.clipLogoPadding ?? defs.clipLogoPadding}
+                                                onChange={(v) => updateOverrideField(graphicId, 'clipLogoPadding', v)}
+                                                step={5}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Logo Size"
+                                                value={overrides.clipLogoImgSize ?? defs.clipLogoImgSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'clipLogoImgSize', v)}
+                                                step={5}
+                                                unit="px"
+                                              />
+                                            </div>
+                                          </div>
+                                          {/* INFO SECTION */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Info Section</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Padding V"
+                                                value={overrides.clipInfoPaddingV ?? defs.clipInfoPaddingV}
+                                                onChange={(v) => updateOverrideField(graphicId, 'clipInfoPaddingV', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Padding H"
+                                                value={overrides.clipInfoPaddingH ?? defs.clipInfoPaddingH}
+                                                onChange={(v) => updateOverrideField(graphicId, 'clipInfoPaddingH', v)}
+                                                step={4}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Min Width"
+                                                value={overrides.clipInfoMinWidth ?? defs.clipInfoMinWidth}
+                                                onChange={(v) => updateOverrideField(graphicId, 'clipInfoMinWidth', v)}
+                                                step={20}
+                                                unit="px"
+                                              />
+                                            </div>
+                                          </div>
+                                          {/* TYPOGRAPHY */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Typography</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Name Font"
+                                                value={overrides.clipNameFontSize ?? defs.clipNameFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'clipNameFontSize', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Name Weight"
+                                                value={overrides.clipNameFontWeight ?? defs.clipNameFontWeight}
+                                                onChange={(v) => updateOverrideField(graphicId, 'clipNameFontWeight', v)}
+                                                step={100}
+                                                unit=""
+                                              />
+                                              <OverrideStepper
+                                                label="Apparatus Font"
+                                                value={overrides.clipApparatusFontSize ?? defs.clipApparatusFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'clipApparatusFontSize', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Apparatus Weight"
+                                                value={overrides.clipApparatusFontWeight ?? defs.clipApparatusFontWeight}
+                                                onChange={(v) => updateOverrideField(graphicId, 'clipApparatusFontWeight', v)}
+                                                step={100}
+                                                unit=""
+                                              />
+                                              <OverrideStepper
+                                                label="Team Font"
+                                                value={overrides.clipTeamFontSize ?? defs.clipTeamFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'clipTeamFontSize', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Team Weight"
+                                                value={overrides.clipTeamFontWeight ?? defs.clipTeamFontWeight}
+                                                onChange={(v) => updateOverrideField(graphicId, 'clipTeamFontWeight', v)}
+                                                step={100}
+                                                unit=""
+                                              />
+                                            </div>
+                                          </div>
+                                          {/* SCORE BADGE */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Score Badge</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Top"
+                                                value={overrides.clipBadgeTop ?? defs.clipBadgeTop}
+                                                onChange={(v) => updateOverrideField(graphicId, 'clipBadgeTop', v)}
+                                                step={10}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Right"
+                                                value={overrides.clipBadgeRight ?? defs.clipBadgeRight}
+                                                onChange={(v) => updateOverrideField(graphicId, 'clipBadgeRight', v)}
+                                                step={10}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Padding V"
+                                                value={overrides.clipBadgePaddingV ?? defs.clipBadgePaddingV}
+                                                onChange={(v) => updateOverrideField(graphicId, 'clipBadgePaddingV', v)}
+                                                step={4}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Padding H"
+                                                value={overrides.clipBadgePaddingH ?? defs.clipBadgePaddingH}
+                                                onChange={(v) => updateOverrideField(graphicId, 'clipBadgePaddingH', v)}
+                                                step={4}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Border Radius"
+                                                value={overrides.clipBadgeRadius ?? defs.clipBadgeRadius}
+                                                onChange={(v) => updateOverrideField(graphicId, 'clipBadgeRadius', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Score Font"
+                                                value={overrides.clipScoreFontSize ?? defs.clipScoreFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'clipScoreFontSize', v)}
+                                                step={4}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Score Weight"
+                                                value={overrides.clipScoreFontWeight ?? defs.clipScoreFontWeight}
+                                                onChange={(v) => updateOverrideField(graphicId, 'clipScoreFontWeight', v)}
+                                                step={100}
+                                                unit=""
+                                              />
+                                            </div>
+                                          </div>
+                                          {/* REPLAY BADGE */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Replay Badge</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Padding V"
+                                                value={overrides.clipReplayPaddingV ?? defs.clipReplayPaddingV}
+                                                onChange={(v) => updateOverrideField(graphicId, 'clipReplayPaddingV', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Padding H"
+                                                value={overrides.clipReplayPaddingH ?? defs.clipReplayPaddingH}
+                                                onChange={(v) => updateOverrideField(graphicId, 'clipReplayPaddingH', v)}
+                                                step={4}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Border Radius"
+                                                value={overrides.clipReplayRadius ?? defs.clipReplayRadius}
+                                                onChange={(v) => updateOverrideField(graphicId, 'clipReplayRadius', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Font Size"
+                                                value={overrides.clipReplayFontSize ?? defs.clipReplayFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'clipReplayFontSize', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Font Weight"
+                                                value={overrides.clipReplayFontWeight ?? defs.clipReplayFontWeight}
+                                                onChange={(v) => updateOverrideField(graphicId, 'clipReplayFontWeight', v)}
+                                                step={100}
+                                                unit=""
+                                              />
+                                              <OverrideStepper
+                                                label="Letter Spacing"
+                                                value={overrides.clipReplayLetterSpacing ?? defs.clipReplayLetterSpacing}
+                                                onChange={(v) => updateOverrideField(graphicId, 'clipReplayLetterSpacing', v)}
+                                                step={1}
+                                                unit="px"
+                                              />
+                                            </div>
+                                          </div>
+                                        </>
+                                      );
+                                    })()}
 
                                     {/* Shared COLORS section for playout graphics */}
                                     <div className="pt-2 border-t border-zinc-700/50">
@@ -7152,6 +7685,22 @@ export default function ThemeEditorPage() {
                         </select>
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* Who to Watch Title Card variant selector */}
+                {selectedGraphicType === 'who-to-watch-title' && (
+                  <div>
+                    <label className="block text-[10px] text-zinc-500 mb-1">Image Mode</label>
+                    <select
+                      value={selectedVariants['who-to-watch-title']?.imageMode || 'portrait'}
+                      onChange={(e) => updateVariant('who-to-watch-title', 'imageMode', e.target.value)}
+                      className="w-full px-2 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-white text-xs focus:outline-none focus:border-blue-500"
+                    >
+                      {WTW_IMAGE_MODES.map((opt) => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
                   </div>
                 )}
               </div>
