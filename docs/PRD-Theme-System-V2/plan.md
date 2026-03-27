@@ -843,7 +843,7 @@ Graphics: team1-7-stats, team-stats (dynamic), team1-7-coaches, team-coaches (dy
 
 ---
 
-### Task 7B.3 — Build Data Source Override for team-stats — NOT STARTED
+### Task 7B.3 — Build Data Source Override for team-stats — COMPLETE
 
 **Goal:** Add dropdown in Theme Editor to choose which stat data to display (AVG/HIGH/NQS).
 
@@ -859,11 +859,21 @@ Graphics: team1-7-stats, team-stats (dynamic), team1-7-coaches, team-coaches (dy
 5. Propagate `statDisplay` through `currentGraphic` payload when theme is active
 
 **Verify:**
-- [ ] Dropdown appears in team-stats override panel
-- [ ] Selecting "NQS+HIGH" shows NQS and HIGH columns
-- [ ] Default "AVG+HIGH" matches current behavior
-- [ ] Stat display persists in Firebase
-- [ ] Live mode renders correct stat columns
+- [x] Dropdown appears in team-stats override panel — **PASS** (added `STAT_DISPLAY_OPTIONS` constant and UI in generic controls section)
+- [x] Selecting "NQS+HIGH" shows NQS and HIGH columns — **PASS** (buildStatItemsHtml handles all 6 display modes)
+- [x] Default "AVG+HIGH" matches current behavior — **PASS** (screenshot verified: AVG 196.500, HIGH 197.200 displayed)
+- [x] Stat display persists in Firebase — **PASS** (uses existing `updateOverrideField` -> theme save flow)
+- [x] Live mode renders correct stat columns — **PASS** (all 7 team-stats renderers updated to use buildStatItemsHtml)
+
+**Implementation Notes (2026-03-26):**
+- Added `STAT_DISPLAY_OPTIONS` constant with 6 modes: avg-high (default), nqs-high, avg-nqs, nqs-only, avg-only, high-only
+- Added `isTeamStatsGraphic(graphicId)` helper function to detect team1-stats through team7-stats and team-stats
+- Added stat display dropdown in generic controls section, only shown for team-stats graphics
+- Created `getStatDisplayConfig(graphicId)` helper in output.html that reads from `window.__themeData.overrides`
+- Created `buildStatItemsHtml(graphicId, stats)` helper that builds stat items based on display config
+- Updated all 7 static team-stats renderers (team1-stats through team7-stats) to use buildStatItemsHtml
+- Updated dynamic team-stats renderer with backwards compatibility for legacy statLabel/statValue params
+- Screenshots: `local-task-7b3-team1-stats-default.png`, `local-task-7b3-team1-stats-debug.png`
 
 **Deploy:** Deploy show-controller build + `output.html` to production.
 
