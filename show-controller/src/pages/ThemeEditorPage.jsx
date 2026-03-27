@@ -1257,6 +1257,10 @@ export default function ThemeEditorPage() {
     'team-bug': { bug: '.score-bug', lineup: '.lineup-card', rotationTag: '.rotation-tag', teamRows: '.team-rows' },
     'hosts': { card: '.hosts-card', header: '.hosts-header', content: '.hosts-content' },
     'coaches': { card: '.coaches-card', header: '.coaches-header', content: '.coaches-content' },
+    // Phase 7F: Playout graphics
+    'who-to-watch-title': { card: '.card', textSide: '.text-side', imageSide: '.image-side', badge: '.badge', athleteName: '.athlete-name' },
+    'who-to-watch-lower-third': { card: '.wtw-card', header: '.wtw-header', content: '.wtw-content', headshot: '.wtw-headshot-container' },
+    'clip-overlay': { panel: '.clip-info-panel', logo: '.clip-logo-section', scoreBadge: '.clip-score-badge' },
   };
 
   // Listen for measurement responses from the preview iframe

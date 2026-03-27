@@ -2038,7 +2038,7 @@ Graphics: who-to-watch-title, who-to-watch-lower-third, clip-overlay.
 
 ---
 
-### Task 7F.7 — Add Measurement Selectors for Playout Graphics — NOT STARTED
+### Task 7F.7 — Add Measurement Selectors for Playout Graphics — COMPLETE
 
 **Goal:** Add measurement mappings for Playout/WTW graphics.
 
@@ -2050,7 +2050,18 @@ Graphics: who-to-watch-title, who-to-watch-lower-third, clip-overlay.
 2. Add measurement display in panels
 
 **Verify:**
-- [ ] Measurements display for WTW and clip-overlay
+- [x] Build passes — **PASS** (`npm run build` succeeds)
+- [x] No console errors on app load — **PASS** (login page renders correctly)
+- [x] MEASUREMENT_SELECTORS extended with 3 Playout graphics — **DONE**
+
+**Implementation Notes (2026-03-27):**
+- Extended `MEASUREMENT_SELECTORS` at line 1262 with entries for all 3 Playout graphics:
+  - `'who-to-watch-title': { card: '.card', textSide: '.text-side', imageSide: '.image-side', badge: '.badge', athleteName: '.athlete-name' }`
+  - `'who-to-watch-lower-third': { card: '.wtw-card', header: '.wtw-header', content: '.wtw-content', headshot: '.wtw-headshot-container' }`
+  - `'clip-overlay': { panel: '.clip-info-panel', logo: '.clip-logo-section', scoreBadge: '.clip-score-badge' }`
+- Selectors match actual CSS class names from overlay files (who-to-watch-title.html, who-to-watch.html) and output.html (clip-overlay)
+- The existing measurement system (postMessage listener + requestMeasurements) already handles any graphic in MEASUREMENT_SELECTORS
+- Screenshots: `local-task-7f7-login.png` (build verification)
 
 **Deploy:** Deploy show-controller build to production.
 
