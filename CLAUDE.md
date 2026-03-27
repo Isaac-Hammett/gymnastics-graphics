@@ -317,6 +317,34 @@ var(--event-bar-header-bg,    /* Layer 3: per-graphic override */
 | `logo` | `--{graphicId}-logo-url` | Logo URL override |
 | `logoSize` | `--{graphicId}-logo-size` | Logo size in px |
 
+**Layout overrides (lower-third bars: event-bar, warm-up, replay):**
+
+| Firebase Key | CSS Variable | Default | Description |
+|---|---|---|---|
+| `barBottom` | `--{graphicId}-bar-bottom` | 120px | Distance from bottom |
+| `barLeft` | `--{graphicId}-bar-left` | 100px | Distance from left |
+| `logoImgSize` | `--{graphicId}-logo-img-size` | 70px | Logo image size |
+| `logoContainerWidth` | `--{graphicId}-logo-container-width` | 100px | Logo box width |
+| `logoContainerHeight` | `--{graphicId}-logo-container-height` | auto | Logo box height |
+| `logoBg` | `--{graphicId}-logo-bg` | #BFBFBF | Logo box background |
+| `logoPadding` | `--{graphicId}-logo-padding` | 15px | Logo box padding |
+| `logoRadius` | `--{graphicId}-logo-radius` | 0px | Logo box border radius |
+| `showLogo` | `--{graphicId}-show-logo` | flex | Logo visibility (flex/none) |
+| `venueFontSize` | `--{graphicId}-venue-font-size` | 36px | Header bar font size |
+| `venueHeight` | `--{graphicId}-venue-height` | auto | Header bar height |
+| `venuePaddingV` | `--{graphicId}-venue-padding-v` | 10px | Header bar top/bottom padding |
+| `venuePaddingH` | `--{graphicId}-venue-padding-h` | 40px | Header bar left/right padding |
+| `barMinWidth` | `--{graphicId}-bar-min-width` | 600px | Header bar min width |
+| `nameFontSize` | `--{graphicId}-name-font-size` | 28px | Details text font size |
+| `locationFontSize` | `--{graphicId}-location-font-size` | 24px | Location text font size |
+| `detailsHeight` | `--{graphicId}-details-height` | auto | Details section height |
+| `detailsPaddingV` | `--{graphicId}-details-padding-v` | 10px | Details top/bottom padding |
+| `detailsPaddingH` | `--{graphicId}-details-padding-h` | 40px | Details left/right padding |
+
+**Height display convention:** When no explicit height override is set, the Theme Editor computes and displays the approximate rendered height based on `fontSize * 1.2 + paddingV * 2`. This shows the producer the real pixel value instead of "0" or "auto". The CSS still uses `auto` as the fallback until the producer explicitly sets a value.
+
+**Lower-Third Template:** The Theme Editor has a "Template" panel at the top of the Lower-Third Bars group. Set values once, then "Apply to All Lower-Thirds" pushes them to event-bar, warm-up, and replay simultaneously. Individual overrides can then be fine-tuned per graphic. Template values are stored at `themes/{themeId}/lowerThirdTemplate/`.
+
 **Graphic ID detection:**
 
 | Context | Detection Method |
@@ -332,6 +360,33 @@ var(--event-bar-header-bg,    /* Layer 3: per-graphic override */
 - **Layer 1 (fallback)**: Gray — using hardcoded default value
 - **Layer 2 (theme)**: Blue — using theme default color
 - **Layer 3 (override)**: Purple — using per-graphic override
+
+### Live-Mode Override System (Phase 8A)
+
+In live mode, output.html renders different graphics (event-bar, warm-up, team-stats, etc.) by switching `currentGraphic` in Firebase. Per-graphic overrides must be applied/cleared dynamically as the graphic changes.
+
+**Exported functions from theme-loader.js:**
+
+| Function | Signature | Purpose |
+|----------|-----------|---------|
+| `window.themeApplyOverrides` | `(theme, graphicId)` | Sets per-graphic CSS variables on `document.documentElement` |
+| `window.themeClearOverrides` | `(graphicId)` | Removes all per-graphic CSS variables for the given graphic ID |
+
+**Live-mode flow in output.html's `currentGraphic` listener:**
+1. `clearOverrides(lastLiveGraphicId)` — removes previous graphic's CSS variables
+2. `applyOverrides(window.__themeData, newGraphicId)` — applies new graphic's overrides
+3. `lastLiveGraphicId = newGraphicId` — tracks current graphic for next switch
+
+**`lastLiveGraphicId`** is a module-level variable in output.html that tracks which graphic's overrides are currently applied. This ensures clean switching — no CSS variable bleeding between graphics.
+
+**Suffix coverage (40 total):** 8 color + 13 image + 19 layout suffixes. `clearOverrides()` iterates all 40 and calls `removeProperty()` for each.
+
+**Key files:**
+
+| Component | File |
+|-----------|------|
+| Override exports | `overlays/theme-loader.js` (`window.themeApplyOverrides`, `window.themeClearOverrides`) |
+| Live-mode integration | `output.html` (`currentGraphic` listener) |
 
 ### Theme Sponsors - IMPORTANT
 
