@@ -17,10 +17,10 @@
     }
     .frame-container {
       position: absolute;
-      top: 10px;
-      left: 40px;
-      right: 40px;
-      bottom: 50px;
+      top: var(--frame-tri-center-container-top, 10px);
+      left: var(--frame-tri-center-container-left, 40px);
+      right: var(--frame-tri-center-container-right, 40px);
+      bottom: var(--frame-tri-center-container-bottom, 50px);
     }
     .top-row {
       display: grid;
@@ -33,28 +33,29 @@
       height: 50%;
     }
     .frame-panel {
-      border: 2px solid var(--meet-border-color, white);
+      border: var(--frame-tri-center-frame-border-width, 2px) solid var(--frame-tri-center-frame-border-color, var(--meet-border-color, white));
     }
     .frame-panel.top-left {
-      border-right: 1px solid var(--meet-border-color, white);
+      border-right: 1px solid var(--frame-tri-center-frame-border-color, var(--meet-border-color, white));
     }
     .frame-panel.top-right {
-      border-left: 1px solid var(--meet-border-color, white);
+      border-left: 1px solid var(--frame-tri-center-frame-border-color, var(--meet-border-color, white));
     }
     .frame-panel.bottom-center {
       width: 50%;
     }
     .virtius-watermark {
       position: absolute;
-      bottom: 15px;
-      right: 50px;
+      display: var(--frame-tri-center-show-watermark, block);
+      bottom: var(--frame-tri-center-watermark-bottom, 15px);
+      right: var(--frame-tri-center-watermark-right, 50px);
       font-family: 'Inter', sans-serif;
-      font-size: 24px;
-      font-weight: bold;
-      color: #6b7280;
+      font-size: var(--frame-tri-center-watermark-font-size, 24px);
+      font-weight: var(--frame-tri-center-watermark-font-weight, bold);
+      color: var(--frame-tri-center-watermark-color, #6b7280);
     }
     .virtius-watermark .v {
-      color: #60a5fa;
+      color: var(--frame-tri-center-watermark-accent-color, #60a5fa);
     }
   </style>
 </head>

@@ -22,43 +22,44 @@
       position: absolute;
       width: 920px;
       height: 510px;
-      border: 2px solid var(--meet-border-color, white);
+      border: var(--frame-dual-frame-border-width, 2px) solid var(--frame-dual-frame-border-color, var(--meet-border-color, white));
       top: 320px;
     }
     .frame-panel.left {
-      left: 40px;
+      left: var(--frame-dual-container-left, 40px);
     }
     .frame-panel.right {
-      right: 40px;
+      right: var(--frame-dual-container-right, 40px);
     }
     /* Logo header row - all team logos across the top */
     .logo-header {
       position: absolute;
       top: 0;
-      left: 40px;
-      right: 40px;
-      height: 320px;
+      left: var(--frame-dual-container-left, 40px);
+      right: var(--frame-dual-container-right, 40px);
+      height: var(--frame-dual-logo-header-height, 320px);
       display: flex;
       align-items: center;
       justify-content: space-around;
     }
     .team-logo {
-      height: 140px;
+      height: var(--frame-dual-frame-logo-size, 140px);
       width: auto;
-      max-width: 250px;
+      max-width: var(--frame-dual-frame-logo-max-width, 250px);
       object-fit: contain;
     }
     .virtius-watermark {
       position: absolute;
-      bottom: 15px;
-      right: 50px;
+      display: var(--frame-dual-show-watermark, block);
+      bottom: var(--frame-dual-watermark-bottom, 15px);
+      right: var(--frame-dual-watermark-right, 50px);
       font-family: 'Inter', sans-serif;
-      font-size: 24px;
-      font-weight: bold;
-      color: #6b7280;
+      font-size: var(--frame-dual-watermark-font-size, 24px);
+      font-weight: var(--frame-dual-watermark-font-weight, bold);
+      color: var(--frame-dual-watermark-color, #6b7280);
     }
     .virtius-watermark .v {
-      color: #60a5fa;
+      color: var(--frame-dual-watermark-accent-color, #60a5fa);
     }
   </style>
 </head>

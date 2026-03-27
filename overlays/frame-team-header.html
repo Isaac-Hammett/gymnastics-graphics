@@ -17,50 +17,51 @@
     }
     .header-row {
       position: absolute;
-      top: 30px;
-      left: 40px;
-      right: 40px;
-      height: 140px;
+      top: var(--frame-team-header-container-top, 30px);
+      left: var(--frame-team-header-container-left, 40px);
+      right: var(--frame-team-header-container-right, 40px);
+      height: var(--frame-team-header-logo-header-height, 140px);
       display: flex;
       justify-content: space-around;
       align-items: center;
     }
     .team-logo {
-      height: 120px;
+      height: var(--frame-team-header-frame-logo-size, 120px);
       width: auto;
-      max-width: 200px;
+      max-width: var(--frame-team-header-frame-logo-max-width, 200px);
       object-fit: contain;
     }
     .frame-container {
       position: absolute;
       top: 200px;
-      left: 40px;
-      right: 40px;
-      bottom: 50px;
+      left: var(--frame-team-header-container-left, 40px);
+      right: var(--frame-team-header-container-right, 40px);
+      bottom: var(--frame-team-header-container-bottom, 50px);
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 0;
+      gap: var(--frame-team-header-frame-gap, 0);
     }
     .frame-panel {
-      border: 2px solid var(--meet-border-color, white);
+      border: var(--frame-team-header-frame-border-width, 2px) solid var(--frame-team-header-frame-border-color, var(--meet-border-color, white));
     }
     .frame-panel:first-child {
-      border-right: 1px solid var(--meet-border-color, white);
+      border-right: 1px solid var(--frame-team-header-frame-border-color, var(--meet-border-color, white));
     }
     .frame-panel:last-child {
-      border-left: 1px solid var(--meet-border-color, white);
+      border-left: 1px solid var(--frame-team-header-frame-border-color, var(--meet-border-color, white));
     }
     .virtius-watermark {
       position: absolute;
-      bottom: 15px;
-      right: 50px;
+      display: var(--frame-team-header-show-watermark, block);
+      bottom: var(--frame-team-header-watermark-bottom, 15px);
+      right: var(--frame-team-header-watermark-right, 50px);
       font-family: 'Inter', sans-serif;
-      font-size: 24px;
-      font-weight: bold;
-      color: #6b7280;
+      font-size: var(--frame-team-header-watermark-font-size, 24px);
+      font-weight: var(--frame-team-header-watermark-font-weight, bold);
+      color: var(--frame-team-header-watermark-color, #6b7280);
     }
     .virtius-watermark .v {
-      color: #60a5fa;
+      color: var(--frame-team-header-watermark-accent-color, #60a5fa);
     }
   </style>
 </head>

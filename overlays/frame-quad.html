@@ -17,29 +17,30 @@
     }
     .frame-container {
       position: absolute;
-      top: 10px;
-      left: 40px;
-      right: 40px;
-      bottom: 50px;
+      top: var(--frame-quad-container-top, 10px);
+      left: var(--frame-quad-container-left, 40px);
+      right: var(--frame-quad-container-right, 40px);
+      bottom: var(--frame-quad-container-bottom, 50px);
       display: grid;
       grid-template-columns: 1fr 1fr;
       grid-template-rows: 1fr 1fr;
-      gap: 0;
+      gap: var(--frame-quad-frame-gap, 0);
     }
     .frame-panel {
-      border: 2px solid var(--meet-border-color, white);
+      border: var(--frame-quad-frame-border-width, 2px) solid var(--frame-quad-frame-border-color, var(--meet-border-color, white));
     }
     .virtius-watermark {
       position: absolute;
-      bottom: 15px;
-      right: 50px;
+      display: var(--frame-quad-show-watermark, block);
+      bottom: var(--frame-quad-watermark-bottom, 15px);
+      right: var(--frame-quad-watermark-right, 50px);
       font-family: 'Inter', sans-serif;
-      font-size: 24px;
-      font-weight: bold;
-      color: #6b7280;
+      font-size: var(--frame-quad-watermark-font-size, 24px);
+      font-weight: var(--frame-quad-watermark-font-weight, bold);
+      color: var(--frame-quad-watermark-color, #6b7280);
     }
     .virtius-watermark .v {
-      color: #60a5fa;
+      color: var(--frame-quad-watermark-accent-color, #60a5fa);
     }
   </style>
 </head>
