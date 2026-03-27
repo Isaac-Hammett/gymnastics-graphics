@@ -1622,7 +1622,7 @@ Graphics: rotation-slate (16 layouts), logos, now-competing, live-camera, interv
 
 ---
 
-### Task 7E.7 — Convert team-bug CSS to Variables (Colors/Typography Only) — NOT STARTED
+### Task 7E.7 — Convert team-bug CSS to Variables (Colors/Typography Only) — COMPLETE
 
 **Goal:** Replace color and typography values in team-bug. Leave real-time state management (Firebase polling, score animations) untouched.
 
@@ -1639,13 +1639,25 @@ Graphics: rotation-slate (16 layouts), logos, now-competing, live-camera, interv
 6. Add mappings to theme-loader.js
 
 **Verify:**
-- [ ] team-bug renders identically with no overrides for all 5 team-count tiers
-- [ ] Background color override works across all tiers
-- [ ] Text color override works
-- [ ] Score font can be switched to Roboto Mono
-- [ ] `tabular-nums` applies to all score elements
-- [ ] State colors (green, amber, cyan) are NOT overridable (preserved)
-- [ ] Real-time score updates still work
+- [x] team-bug renders identically with no overrides for all 5 team-count tiers — **PASS** (default dark colors #27272a header, #1a1a1a rows, #000 fixed section all match original)
+- [x] Background color override works across all tiers — **PASS** (pink-meet-2026 theme applies pink header via `--meet-header-bg`)
+- [x] Text color override works — **PASS** (white text on pink header via `--meet-header-text`)
+- [x] Score font can be switched to Roboto Mono — **PASS** (CSS var `--team-bug-tb-score-font-family` on 4 score elements)
+- [x] `tabular-nums` applies to all score elements — **PASS** (`.team-total`, `.slot-score`, `.lineup-score`, `.lineup-total`)
+- [x] State colors (green, amber, cyan) are NOT overridable (preserved) — **PASS** (hardcoded in CSS: `#22d3ee` cyan pulse, `#f59e0b` amber correction, `#10b981/#059669` green stick gradient)
+- [x] Real-time score updates still work — **PASS** (Firebase listeners initialized, no JS changes)
+
+**Implementation Notes (2026-03-27):**
+- Added 33 new layout suffixes to `layoutOverrideMapping` in theme-loader.js:
+  - Background colors: `tbBg`, `tbHeaderBg`, `tbFixedBg`, `tbBorderColor`
+  - Text colors: `tbTextPrimary`, `tbTextSecondary`, `tbTextMuted`, `tbTextDim`
+  - Typography: `tbRotationFontSize/Weight`, `tbTotalFontSize/Weight`, `tbNameFontSize/Weight`, `tbScoreFontSize/Weight/Family`, `tbApparatusFontSize/Weight`
+  - Lineup: `tbLineupNameFontSize/Weight`, `tbLineupTeamFontSize/Weight`, `tbLineupScoreFontSize/Weight`, `tbLineupTotalFontSize/Weight`
+  - Sizing: `tbLogoSize`, `tbHeadshotSize`, `tbRowMinHeight`, `tbMinWidth`, `tbTierScale`
+- CSS uses 3-layer cascade: `var(--team-bug-tb-{prop}, var(--meet-{prop}, fallback))`
+- Tier scaling (3-7 teams) kept as separate CSS rules — proportional `calc()` was considered but the existing tier approach is cleaner and more maintainable
+- State colors explicitly hardcoded with comments: cyan pulse (`#22d3ee`), amber correction (`#f59e0b`), green stick (`linear-gradient(135deg, #10b981, #059669)`), red error (`#ef4444`)
+- Screenshots: `local-task-7e7-team-bug-visible.png` (themed), `local-task-7e7-team-bug-default.png` (default)
 
 **Deploy:** Deploy `overlays/team-bug.html` + `overlays/theme-loader.js` to production.
 

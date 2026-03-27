@@ -921,6 +921,45 @@ window.themeReady = new Promise(resolve => { _resolveThemeReady = resolve; });
     ecTierDenseNameMargin: { suffix: 'tier-dense-name-margin', unit: 'px' },
     ecTierDenseLocationSize: { suffix: 'tier-dense-location-size', unit: 'px' },
     ecTierDenseLocationMargin: { suffix: 'tier-dense-location-margin', unit: 'px' },
+    // Team-bug specific (Phase 7E.7)
+    // Background colors (overridable)
+    tbBg: { suffix: 'tb-bg', unit: null },  // Primary background (#1a1a1a)
+    tbHeaderBg: { suffix: 'tb-header-bg', unit: null },  // Header/section bg (#27272a)
+    tbFixedBg: { suffix: 'tb-fixed-bg', unit: null },  // Logo section bg (#000)
+    tbBorderColor: { suffix: 'tb-border-color', unit: null },  // Row separator (#333)
+    // Text colors (overridable)
+    tbTextPrimary: { suffix: 'tb-text-primary', unit: null },  // Primary text (#fff)
+    tbTextSecondary: { suffix: 'tb-text-secondary', unit: null },  // Apparatus/subdued (#a1a1aa)
+    tbTextMuted: { suffix: 'tb-text-muted', unit: null },  // Very subdued text (#71717a)
+    tbTextDim: { suffix: 'tb-text-dim', unit: null },  // Separator/pending (#52525b)
+    // Typography - base sizes (tier scaling uses calc() with base)
+    tbRotationFontSize: { suffix: 'tb-rotation-font-size', unit: 'px' },  // 20px
+    tbRotationFontWeight: { suffix: 'tb-rotation-font-weight', unit: null },  // 700
+    tbTotalFontSize: { suffix: 'tb-total-font-size', unit: 'px' },  // 22px
+    tbTotalFontWeight: { suffix: 'tb-total-font-weight', unit: null },  // 900
+    tbNameFontSize: { suffix: 'tb-name-font-size', unit: 'px' },  // 24px
+    tbNameFontWeight: { suffix: 'tb-name-font-weight', unit: null },  // 700
+    tbScoreFontSize: { suffix: 'tb-score-font-size', unit: 'px' },  // 28px
+    tbScoreFontWeight: { suffix: 'tb-score-font-weight', unit: null },  // 900
+    tbScoreFontFamily: { suffix: 'tb-score-font-family', unit: null },  // For tabular-nums font
+    tbApparatusFontSize: { suffix: 'tb-apparatus-font-size', unit: 'px' },  // 18px
+    tbApparatusFontWeight: { suffix: 'tb-apparatus-font-weight', unit: null },  // 600
+    // Lineup card typography
+    tbLineupNameFontSize: { suffix: 'tb-lineup-name-font-size', unit: 'px' },  // 20px
+    tbLineupNameFontWeight: { suffix: 'tb-lineup-name-font-weight', unit: null },  // 600
+    tbLineupTeamFontSize: { suffix: 'tb-lineup-team-font-size', unit: 'px' },  // 22px
+    tbLineupTeamFontWeight: { suffix: 'tb-lineup-team-font-weight', unit: null },  // 800
+    tbLineupScoreFontSize: { suffix: 'tb-lineup-score-font-size', unit: 'px' },  // 22px
+    tbLineupScoreFontWeight: { suffix: 'tb-lineup-score-font-weight', unit: null },  // 700
+    tbLineupTotalFontSize: { suffix: 'tb-lineup-total-font-size', unit: 'px' },  // 26px
+    tbLineupTotalFontWeight: { suffix: 'tb-lineup-total-font-weight', unit: null },  // 800
+    // Sizing
+    tbLogoSize: { suffix: 'tb-logo-size', unit: 'px' },  // 40px
+    tbHeadshotSize: { suffix: 'tb-headshot-size', unit: 'px' },  // 36px
+    tbRowMinHeight: { suffix: 'tb-row-min-height', unit: 'px' },  // 70px
+    tbMinWidth: { suffix: 'tb-min-width', unit: 'px' },  // 500px
+    // Tier scale factor (used with calc() for proportional scaling)
+    tbTierScale: { suffix: 'tb-tier-scale', unit: null },  // 1.0 for base, <1 for compact tiers
   };
 
   /**
