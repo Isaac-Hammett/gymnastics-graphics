@@ -1474,19 +1474,98 @@
       color: var(--meet-overlay-text, #fff);
     }
 
-    /* Coaches overrides */
+    /* Team Coaches overrides - 3-layer cascade for all 7 variants + dynamic */
+    /* Header background with per-graphic override support */
     [data-meet-theme] .coaches-header {
-      background: var(--meet-header-bg, #d4d4d8);
+      background: var(--team-coaches-header-bg,
+        var(--team1-coaches-header-bg,
+          var(--team2-coaches-header-bg,
+            var(--team3-coaches-header-bg,
+              var(--team4-coaches-header-bg,
+                var(--team5-coaches-header-bg,
+                  var(--team6-coaches-header-bg,
+                    var(--team7-coaches-header-bg,
+                      var(--meet-header-bg, #d4d4d8)))))))));
+      padding: var(--team-coaches-coaches-header-padding-v,
+        var(--team1-coaches-coaches-header-padding-v,
+          var(--team2-coaches-coaches-header-padding-v, 14px)))
+        var(--team-coaches-coaches-header-padding-h,
+          var(--team1-coaches-coaches-header-padding-h,
+            var(--team2-coaches-coaches-header-padding-h, 30px)));
+      min-width: var(--team-coaches-coaches-min-width,
+        var(--team1-coaches-coaches-min-width,
+          var(--team2-coaches-coaches-min-width, 480px)));
     }
     [data-meet-theme] .coaches-title {
-      color: var(--meet-header-text, #000);
+      color: var(--team-coaches-header-text,
+        var(--team1-coaches-header-text,
+          var(--team2-coaches-header-text,
+            var(--team3-coaches-header-text,
+              var(--team4-coaches-header-text,
+                var(--team5-coaches-header-text,
+                  var(--team6-coaches-header-text,
+                    var(--team7-coaches-header-text,
+                      var(--meet-header-text, #000)))))))));
+      font-size: var(--team-coaches-coaches-title-font-size,
+        var(--team1-coaches-coaches-title-font-size,
+          var(--team2-coaches-coaches-title-font-size, 36px)));
+      font-weight: var(--team-coaches-coaches-title-font-weight,
+        var(--team1-coaches-coaches-title-font-weight,
+          var(--team2-coaches-coaches-title-font-weight, 800)));
+      font-family: var(--team-coaches-coaches-title-font-family,
+        var(--team1-coaches-coaches-title-font-family,
+          var(--team2-coaches-coaches-title-font-family, inherit)));
+    }
+    [data-meet-theme] .coaches-logo {
+      width: var(--team-coaches-coaches-logo-size,
+        var(--team1-coaches-coaches-logo-size,
+          var(--team2-coaches-coaches-logo-size, 70px)));
+      height: var(--team-coaches-coaches-logo-size,
+        var(--team1-coaches-coaches-logo-size,
+          var(--team2-coaches-coaches-logo-size, 70px)));
     }
     [data-meet-theme] .coaches-content {
-      background: var(--meet-content-bg, #000);
+      background: var(--team-coaches-content-bg,
+        var(--team1-coaches-content-bg,
+          var(--team2-coaches-content-bg,
+            var(--team3-coaches-content-bg,
+              var(--team4-coaches-content-bg,
+                var(--team5-coaches-content-bg,
+                  var(--team6-coaches-content-bg,
+                    var(--team7-coaches-content-bg,
+                      var(--meet-content-bg, #000)))))))));
+      padding: var(--team-coaches-coaches-content-padding-v,
+        var(--team1-coaches-coaches-content-padding-v,
+          var(--team2-coaches-coaches-content-padding-v, 16px)))
+        var(--team-coaches-coaches-content-padding-h,
+          var(--team1-coaches-coaches-content-padding-h,
+            var(--team2-coaches-coaches-content-padding-h, 30px)));
     }
     [data-meet-theme] .coach-name {
-      color: var(--meet-overlay-text, #fff);
+      color: var(--team-coaches-overlay-text,
+        var(--team1-coaches-overlay-text,
+          var(--team2-coaches-overlay-text,
+            var(--team3-coaches-overlay-text,
+              var(--team4-coaches-overlay-text,
+                var(--team5-coaches-overlay-text,
+                  var(--team6-coaches-overlay-text,
+                    var(--team7-coaches-overlay-text,
+                      var(--meet-overlay-text, #fff)))))))));
+      font-size: var(--team-coaches-coaches-name-font-size,
+        var(--team1-coaches-coaches-name-font-size,
+          var(--team2-coaches-coaches-name-font-size, 24px)));
+      font-weight: var(--team-coaches-coaches-name-font-weight,
+        var(--team1-coaches-coaches-name-font-weight,
+          var(--team2-coaches-coaches-name-font-weight, 500)));
+      font-family: var(--team-coaches-coaches-name-font-family,
+        var(--team1-coaches-coaches-name-font-family,
+          var(--team2-coaches-coaches-name-font-family, inherit)));
+      line-height: var(--team-coaches-coaches-name-line-height,
+        var(--team1-coaches-coaches-name-line-height,
+          var(--team2-coaches-coaches-name-line-height, 1.6)));
     }
+    /* Position overrides for team-coaches require data-graphic-id attribute on output element.
+       This will be addressed in Task 7B.4 when rich control panels are added. */
 
     /* Replay overrides */
     [data-meet-theme] .replay-logo-section {
