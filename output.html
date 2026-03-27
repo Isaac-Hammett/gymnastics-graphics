@@ -8092,6 +8092,73 @@
     // Initialize team logos loading
     loadFirebaseTeamLogos();
 
+    /**
+     * Get the stat display configuration for a team-stats graphic (Phase 7B.3)
+     * Reads from theme overrides: themes/{themeId}/overrides/{graphicId}/statDisplay
+     * @param {string} graphicId - The graphic ID (team1-stats, team2-stats, etc.)
+     * @returns {string} The stat display mode: 'avg-high' (default), 'nqs-high', 'avg-nqs', 'nqs-only', 'avg-only', 'high-only'
+     */
+    function getStatDisplayConfig(graphicId) {
+      if (!window.__themeData?.overrides) return 'avg-high';
+
+      // Check for override on specific graphic (team1-stats, team2-stats, etc.)
+      const graphicOverrides = window.__themeData.overrides[graphicId];
+      if (graphicOverrides?.statDisplay) {
+        return graphicOverrides.statDisplay;
+      }
+
+      // Check for override on generic team-stats (applies to all team*-stats)
+      const genericOverrides = window.__themeData.overrides['team-stats'];
+      if (genericOverrides?.statDisplay) {
+        return genericOverrides.statDisplay;
+      }
+
+      return 'avg-high'; // default
+    }
+
+    /**
+     * Build stat items HTML based on stat display configuration (Phase 7B.3)
+     * @param {string} graphicId - The graphic ID (team1-stats, team2-stats, etc.)
+     * @param {object} stats - Object with avg, high, nqs values
+     * @returns {string} HTML for stat items
+     */
+    function buildStatItemsHtml(graphicId, stats) {
+      const display = getStatDisplayConfig(graphicId);
+      const items = [];
+
+      switch (display) {
+        case 'nqs-high':
+          items.push({ label: 'NQS', value: stats.nqs || '-' });
+          items.push({ label: 'HIGH', value: stats.high || '-' });
+          break;
+        case 'avg-nqs':
+          items.push({ label: 'AVG', value: stats.avg || '-' });
+          items.push({ label: 'NQS', value: stats.nqs || '-' });
+          break;
+        case 'nqs-only':
+          items.push({ label: 'NQS', value: stats.nqs || '-' });
+          break;
+        case 'avg-only':
+          items.push({ label: 'AVG', value: stats.avg || '-' });
+          break;
+        case 'high-only':
+          items.push({ label: 'HIGH', value: stats.high || '-' });
+          break;
+        case 'avg-high':
+        default:
+          items.push({ label: 'AVG', value: stats.avg || '-' });
+          items.push({ label: 'HIGH', value: stats.high || '-' });
+          break;
+      }
+
+      return items.map(item => `
+        <div class="stat-item">
+          <div class="stat-label">${item.label}</div>
+          <div class="stat-value">${item.value}</div>
+        </div>
+      `).join('');
+    }
+
     const output = document.getElementById('output');
 
     // Fetch leaderboard data from Virtius API and render custom table
@@ -12774,14 +12841,7 @@
             <img class="stats-logo" src="${getTeamLogoUrl(data.team1Name, data.team1Logo)}" alt="Team">
           </div>
           <div class="stats-content">
-            <div class="stat-item">
-              <div class="stat-label">AVG</div>
-              <div class="stat-value">${data.team1Ave}</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-label">HIGH</div>
-              <div class="stat-value">${data.team1High}</div>
-            </div>
+            ${buildStatItemsHtml('team1-stats', { avg: data.team1Ave, high: data.team1High, nqs: data.team1Nqs })}
           </div>
         </div>
       `,
@@ -12805,14 +12865,7 @@
             <img class="stats-logo" src="${getTeamLogoUrl(data.team2Name, data.team2Logo)}" alt="Team">
           </div>
           <div class="stats-content">
-            <div class="stat-item">
-              <div class="stat-label">AVG</div>
-              <div class="stat-value">${data.team2Ave}</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-label">HIGH</div>
-              <div class="stat-value">${data.team2High}</div>
-            </div>
+            ${buildStatItemsHtml('team2-stats', { avg: data.team2Ave, high: data.team2High, nqs: data.team2Nqs })}
           </div>
         </div>
       `,
@@ -12836,14 +12889,7 @@
             <img class="stats-logo" src="${getTeamLogoUrl(data.team3Name, data.team3Logo)}" alt="Team">
           </div>
           <div class="stats-content">
-            <div class="stat-item">
-              <div class="stat-label">AVG</div>
-              <div class="stat-value">${data.team3Ave}</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-label">HIGH</div>
-              <div class="stat-value">${data.team3High}</div>
-            </div>
+            ${buildStatItemsHtml('team3-stats', { avg: data.team3Ave, high: data.team3High, nqs: data.team3Nqs })}
           </div>
         </div>
       `,
@@ -12867,14 +12913,7 @@
             <img class="stats-logo" src="${getTeamLogoUrl(data.team4Name, data.team4Logo)}" alt="Team">
           </div>
           <div class="stats-content">
-            <div class="stat-item">
-              <div class="stat-label">AVG</div>
-              <div class="stat-value">${data.team4Ave}</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-label">HIGH</div>
-              <div class="stat-value">${data.team4High}</div>
-            </div>
+            ${buildStatItemsHtml('team4-stats', { avg: data.team4Ave, high: data.team4High, nqs: data.team4Nqs })}
           </div>
         </div>
       `,
@@ -12898,14 +12937,7 @@
             <img class="stats-logo" src="${getTeamLogoUrl(data.team5Name, data.team5Logo)}" alt="Team">
           </div>
           <div class="stats-content">
-            <div class="stat-item">
-              <div class="stat-label">AVG</div>
-              <div class="stat-value">${data.team5Ave}</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-label">HIGH</div>
-              <div class="stat-value">${data.team5High}</div>
-            </div>
+            ${buildStatItemsHtml('team5-stats', { avg: data.team5Ave, high: data.team5High, nqs: data.team5Nqs })}
           </div>
         </div>
       `,
@@ -12929,14 +12961,7 @@
             <img class="stats-logo" src="${getTeamLogoUrl(data.team6Name, data.team6Logo)}" alt="Team">
           </div>
           <div class="stats-content">
-            <div class="stat-item">
-              <div class="stat-label">AVG</div>
-              <div class="stat-value">${data.team6Ave}</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-label">HIGH</div>
-              <div class="stat-value">${data.team6High}</div>
-            </div>
+            ${buildStatItemsHtml('team6-stats', { avg: data.team6Ave, high: data.team6High, nqs: data.team6Nqs })}
           </div>
         </div>
       `,
@@ -12960,14 +12985,7 @@
             <img class="stats-logo" src="${getTeamLogoUrl(data.team7Name, data.team7Logo)}" alt="Team">
           </div>
           <div class="stats-content">
-            <div class="stat-item">
-              <div class="stat-label">AVG</div>
-              <div class="stat-value">${data.team7Ave}</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-label">HIGH</div>
-              <div class="stat-value">${data.team7High}</div>
-            </div>
+            ${buildStatItemsHtml('team7-stats', { avg: data.team7Ave, high: data.team7High, nqs: data.team7Nqs })}
           </div>
         </div>
       `,
@@ -13005,6 +13023,7 @@
 
       // Dynamic team-stats renderer - uses teamSlot parameter to select team data
       // Supports statType param: 'avg' (default), 'nqs', 'high' with corresponding statLabel
+      // Phase 7B.3: Also supports theme-based statDisplay override
       'team-stats': (data) => {
         const slot = data.teamSlot || 1;
         const name = data[`team${slot}Name`] || '';
@@ -13012,17 +13031,15 @@
         const ave = data[`team${slot}Ave`] || '';
         const high = data[`team${slot}High`] || '';
         const nqs = data[`team${slot}Nqs`] || '';
-        // Support dynamic stat type: statLabel (display label) and statValue (the value)
-        // Defaults: label=AVG, value=ave for backwards compatibility
-        const statLabel = data.statLabel || 'AVG';
-        const statValue = data.statValue || ave;
-        return `
-        <div class="graphic-container graphic-team-stats">
-          <div class="stats-header">
-            <div class="stats-team-name">${name}</div>
-            <img class="stats-logo" src="${getTeamLogoUrl(name, logo)}" alt="Team">
-          </div>
-          <div class="stats-content">
+
+        // Use theme-based stat display configuration (Phase 7B.3)
+        // Fallback to legacy statLabel/statValue if explicitly provided
+        let statsHtml;
+        if (data.statLabel !== undefined || data.statValue !== undefined) {
+          // Legacy mode: explicit statLabel/statValue in data
+          const statLabel = data.statLabel || 'AVG';
+          const statValue = data.statValue || ave;
+          statsHtml = `
             <div class="stat-item">
               <div class="stat-label">${statLabel}</div>
               <div class="stat-value">${statValue}</div>
@@ -13031,6 +13048,20 @@
               <div class="stat-label">HIGH</div>
               <div class="stat-value">${high}</div>
             </div>
+          `;
+        } else {
+          // Theme-based mode: use buildStatItemsHtml
+          statsHtml = buildStatItemsHtml('team-stats', { avg: ave, high: high, nqs: nqs });
+        }
+
+        return `
+        <div class="graphic-container graphic-team-stats">
+          <div class="stats-header">
+            <div class="stats-team-name">${name}</div>
+            <img class="stats-logo" src="${getTeamLogoUrl(name, logo)}" alt="Team">
+          </div>
+          <div class="stats-content">
+            ${statsHtml}
           </div>
         </div>
       `;

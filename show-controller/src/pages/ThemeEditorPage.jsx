@@ -11,6 +11,10 @@ const LOWER_THIRD_GRAPHICS = ['event-bar', 'warm-up', 'replay'];
 // Full-screen graphics for rich control panels (Phase 7A.8)
 const FULL_SCREEN_GRAPHICS = ['event-summary', 'virtuis-leaderboard', 'event-frame', 'sponsors-thanks', 'team-roster'];
 
+// Team-stats graphic IDs for stat display override (Phase 7B.3)
+// Matches both static (team1-stats, team2-stats, etc.) and dynamic (team-stats) renderers
+const isTeamStatsGraphic = (graphicId) => graphicId && (graphicId === 'team-stats' || /^team[1-7]-stats$/.test(graphicId));
+
 const LOWER_THIRD_DEFAULTS = {
   'event-bar': {
     barBottom: 120, barLeft: 100, logoImgSize: 70, logoContainerWidth: 100,
@@ -187,6 +191,17 @@ const TEXT_TRANSFORMS = [
   { value: 'none', label: 'None' },
   { value: 'uppercase', label: 'UPPERCASE' },
   { value: 'capitalize', label: 'Capitalize' },
+];
+
+// Stat display options for team-stats graphics (Phase 7B.3)
+// Controls which stat columns are shown on team-stats graphics
+const STAT_DISPLAY_OPTIONS = [
+  { value: 'avg-high', label: 'AVG + HIGH (default)' },
+  { value: 'nqs-high', label: 'NQS + HIGH' },
+  { value: 'avg-nqs', label: 'AVG + NQS' },
+  { value: 'nqs-only', label: 'NQS only' },
+  { value: 'avg-only', label: 'AVG only' },
+  { value: 'high-only', label: 'HIGH only' },
 ];
 
 // Variant options for full-screen graphics in preview selector
@@ -3599,6 +3614,23 @@ export default function ThemeEditorPage() {
                                 ) : (
                                   /* ========== GENERIC CONTROLS (all other graphics) ========== */
                                   <div className="pt-3 space-y-3">
+                                  {/* Stat Display override for team-stats graphics (Phase 7B.3) */}
+                                  {isTeamStatsGraphic(graphicId) && (
+                                    <div className="pb-2 border-b border-zinc-700/50">
+                                      <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Stat Display</div>
+                                      <select
+                                        value={overrides.statDisplay || 'avg-high'}
+                                        onChange={(e) => updateOverrideField(graphicId, 'statDisplay', e.target.value)}
+                                        className="w-full h-7 px-2 bg-zinc-700 border border-zinc-600 rounded text-xs text-zinc-300 focus:outline-none focus:border-purple-500"
+                                      >
+                                        {STAT_DISPLAY_OPTIONS.map(o => (
+                                          <option key={o.value} value={o.value}>{o.label}</option>
+                                        ))}
+                                      </select>
+                                      <p className="mt-1 text-[10px] text-zinc-500">Controls which stat columns are displayed on this team-stats graphic.</p>
+                                    </div>
+                                  )}
+
                                   {/* Color override fields */}
                                   <div className="grid grid-cols-2 gap-2">
                                     {OVERRIDE_COLOR_FIELDS.map(({ key, label }) => {
