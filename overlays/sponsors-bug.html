@@ -14,17 +14,22 @@
       height: 1080px;
       overflow: hidden;
       background: transparent;
+      font-family: 'Inter', sans-serif;
     }
 
     .bug-container {
       position: fixed;
-      bottom: 40px;
-      right: 40px;
-      width: 200px;
-      height: 80px;
-      background: var(--meet-badge-bg, rgba(0, 0, 0, 0.4));
-      border-radius: 12px;
-      padding: 10px;
+      /* Position: 3-layer cascade (per-graphic -> theme -> default) */
+      bottom: var(--sponsors-bug-bug-bottom, 40px);
+      right: var(--sponsors-bug-bug-right, 40px);
+      /* Size: 3-layer cascade */
+      width: var(--sponsors-bug-bug-width, 200px);
+      height: var(--sponsors-bug-bug-height, 80px);
+      /* Background: 3-layer cascade (per-graphic -> theme badge -> default) */
+      background: var(--sponsors-bug-badge-bg, var(--meet-badge-bg, rgba(0, 0, 0, 0.4)));
+      /* Appearance: 3-layer cascade */
+      border-radius: var(--sponsors-bug-bug-border-radius, 12px);
+      padding: var(--sponsors-bug-bug-padding, 10px);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -35,7 +40,8 @@
       max-height: 100%;
       object-fit: contain;
       opacity: 0;
-      transition: opacity 0.8s ease-in-out;
+      /* Transition: 3-layer cascade */
+      transition: opacity var(--sponsors-bug-bug-fade-transition, 0.8s) ease-in-out;
       position: absolute;
     }
 

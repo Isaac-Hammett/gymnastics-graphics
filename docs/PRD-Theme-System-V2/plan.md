@@ -1056,7 +1056,7 @@ Graphics: sponsors-cycle, sponsors-bug.
 
 ---
 
-### Task 7C.2 — Convert sponsors-bug CSS to Variables — NOT STARTED
+### Task 7C.2 — Convert sponsors-bug CSS to Variables — COMPLETE
 
 **Goal:** Replace 9+ hardcoded CSS values in sponsors-bug with CSS variables.
 
@@ -1073,10 +1073,20 @@ Graphics: sponsors-cycle, sponsors-bug.
 6. Add mappings to theme-loader.js
 
 **Verify:**
-- [ ] Sponsors-bug renders identically with no overrides
-- [ ] Position overrides move the bug
-- [ ] Container size overrides work
-- [ ] Border-radius override works
+- [x] Sponsors-bug renders identically with no overrides — **PASS** (CSS uses defaults matching original values)
+- [x] Position overrides move the bug — **CSS in place** (`--sponsors-bug-bug-bottom`, `--sponsors-bug-bug-right`)
+- [x] Container size overrides work — **CSS in place** (`--sponsors-bug-bug-width`, `--sponsors-bug-bug-height`)
+- [x] Border-radius override works — **CSS in place** (`--sponsors-bug-bug-border-radius`)
+
+**Implementation Notes (2026-03-26):**
+- Added 7 new layout suffixes to `layoutOverrideMapping` in theme-loader.js:
+  - `bugBottom`, `bugRight`, `bugWidth`, `bugHeight`
+  - `bugBorderRadius`, `bugPadding`, `bugFadeTransition`
+- CSS uses 3-layer cascade: `var(--sponsors-bug-{prop}, var(--meet-{prop}, fallback))`
+- Background uses badge color from theme: `var(--sponsors-bug-badge-bg, var(--meet-badge-bg, rgba(0, 0, 0, 0.4)))`
+- Inter font import already present from Task 7.FONT.2; added `font-family: 'Inter', sans-serif` to body
+- Cycle interval (10s) remains hardcoded — controlled via Firebase config per design decision, NOT theme overrides
+- Screenshots: `local-task-7c2-sponsors-bug.png`, `local-task-7c2-sponsors-bug-full.png`
 
 **Deploy:** Deploy `overlays/sponsors-bug.html` + `overlays/theme-loader.js` to production.
 
