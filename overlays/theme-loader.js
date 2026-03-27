@@ -565,6 +565,23 @@ window.themeReady = new Promise(resolve => { _resolveThemeReady = resolve; });
     fallbackFontWeight: { suffix: 'fallback-font-weight', unit: null },
     noSponsorsFontSize: { suffix: 'no-sponsors-font-size', unit: 'px' },
     noSponsorsFontWeight: { suffix: 'no-sponsors-font-weight', unit: null },
+    // Team-roster specific (Phase 7A.5)
+    rosterContainerPadding: { suffix: 'roster-container-padding', unit: 'px' },
+    rosterGridGap: { suffix: 'roster-grid-gap', unit: 'px' },
+    rosterHeadshotSize: { suffix: 'roster-headshot-size', unit: 'px' },
+    rosterHeadshotRadius: { suffix: 'roster-headshot-radius', unit: null },  // percentage or px
+    rosterHeadshotBorder: { suffix: 'roster-headshot-border', unit: 'px' },
+    rosterHeadshotBorderColor: { suffix: 'roster-headshot-border-color', unit: null },
+    rosterHeadshotBg: { suffix: 'roster-headshot-bg', unit: null },
+    rosterNameFontSize: { suffix: 'roster-name-font-size', unit: 'px' },
+    rosterNameFontWeight: { suffix: 'roster-name-font-weight', unit: null },
+    rosterNameFontFamily: { suffix: 'roster-name-font-family', unit: null },
+    rosterNameTextTransform: { suffix: 'roster-name-text-transform', unit: null },
+    rosterNameColor: { suffix: 'roster-name-color', unit: null },
+    rosterInitialsFontSize: { suffix: 'roster-initials-font-size', unit: 'px' },
+    rosterInitialsColor: { suffix: 'roster-initials-color', unit: null },
+    rosterInitialsBg: { suffix: 'roster-initials-bg', unit: null },
+    rosterCardWidth: { suffix: 'roster-card-width', unit: 'px' },
   };
 
   /**

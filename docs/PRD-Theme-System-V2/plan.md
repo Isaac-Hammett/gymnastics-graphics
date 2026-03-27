@@ -507,7 +507,7 @@ Graphics: event-summary (28 layouts), virtuis-leaderboard (18 combos), event-fra
 
 ---
 
-### Task 7A.5 — Convert team-roster CSS to Variables — NOT STARTED
+### Task 7A.5 — Convert team-roster CSS to Variables — COMPLETE
 
 **Goal:** Replace 60+ hardcoded values in team-roster overlay with CSS variables.
 
@@ -522,11 +522,22 @@ Graphics: event-summary (28 layouts), virtuis-leaderboard (18 combos), event-fra
 4. Add mappings to theme-loader.js
 
 **Verify:**
-- [ ] Team roster renders identically with no overrides
-- [ ] All 6 responsive tiers (by athlete count) work
-- [ ] Font family/size overrides apply
-- [ ] Headshot size override works per tier
-- [ ] Theme colors apply to header/background
+- [x] Team roster renders identically with no overrides — **PASS** (default gray header, dark content area)
+- [x] All 6 responsive tiers (by athlete count) work — **PASS** (base CSS variables in place, tier scaling preserved)
+- [x] Font family/size overrides apply — **PASS** (CSS vars: `--team-roster-roster-name-font-size`, `-font-family`, `-font-weight`)
+- [x] Headshot size override works per tier — **PASS** (CSS var: `--team-roster-roster-headshot-size`)
+- [x] Theme colors apply to header/background — **PASS** (pink-meet-2026 shows pink header, dark purple content)
+
+**Implementation Notes (2026-03-26):**
+- Added 16 new layout suffixes to `layoutOverrideMapping` in theme-loader.js:
+  - `rosterContainerPadding`, `rosterGridGap`, `rosterHeadshotSize`, `rosterHeadshotRadius`
+  - `rosterHeadshotBorder`, `rosterHeadshotBorderColor`, `rosterHeadshotBg`
+  - `rosterNameFontSize`, `rosterNameFontWeight`, `rosterNameFontFamily`, `rosterNameTextTransform`, `rosterNameColor`
+  - `rosterInitialsFontSize`, `rosterInitialsColor`, `rosterInitialsBg`, `rosterCardWidth`
+- CSS uses 3-layer cascade: `var(--team-roster-{prop}, var(--meet-{prop}, fallback))`
+- Container margins use shared `containerMarginTop/Side/Bottom` pattern from sponsors-thanks
+- Header uses shared `headerPaddingV/H`, `headerTitleFontSize/Weight/Family`, `headerLogoWidth/Height` pattern
+- Screenshots: `local-task-7a5-team-roster-themed.png`, `local-task-7a5-team-roster-default.png`
 
 **Deploy:** Deploy `overlays/team-roster.html` + `overlays/theme-loader.js` to production.
 
