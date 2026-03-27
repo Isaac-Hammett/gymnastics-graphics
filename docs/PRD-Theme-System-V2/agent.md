@@ -365,6 +365,14 @@ https://commentarygraphic.com/overlays/sponsors-thanks.html?meetTheme={themeId}
 
 21. **team-stats CSS cascade chains 7 variants.** Because team1-stats through team7-stats share the same `.stats-header` selector, the CSS uses a deeply nested var() chain: `var(--team1-stats-header-bg, var(--team2-stats-header-bg, ... var(--meet-header-bg, fallback)))`.
 
+22. **FULL_SCREEN_GRAPHICS constant.** Task 7A.8 added this at line ~12 with 5 graphics: event-summary, virtuis-leaderboard, event-frame, sponsors-thanks, team-roster. The constant is used in the 3-way conditional in the panel rendering.
+
+23. **FULL_SCREEN_DEFAULTS constant.** Task 7A.8 added this at line ~34 with defaults for all 5 full-screen graphics. Each graphic has its own section with property defaults matching theme-loader.js layoutOverrideMapping.
+
+24. **3-way conditional for override panels.** Task 7A.8 changed the panel rendering from 2-way (`LOWER_THIRD ? rich : generic`) to 3-way (`LOWER_THIRD ? rich : FULL_SCREEN ? rich : generic`). The structure is at line ~2150 in ThemeEditorPage.jsx.
+
+25. **ThemeEditorPage now ~3,450 lines.** Task 7A.8 added ~500 lines for full-screen controls. Exact line numbers shift with each edit — use exact search strings.
+
 ---
 
 ## Learnings from Phases 0-6
