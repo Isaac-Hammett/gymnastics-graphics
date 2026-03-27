@@ -1987,7 +1987,7 @@ Graphics: who-to-watch-title, who-to-watch-lower-third, clip-overlay.
 
 ---
 
-### Task 7F.5 — Build Variant Selector for WTW Title Card — IN PROGRESS
+### Task 7F.5 — Build Variant Selector for WTW Title Card — COMPLETE
 
 **Goal:** Add image mode selector for who-to-watch-title preview.
 
@@ -2000,9 +2000,17 @@ Graphics: who-to-watch-title, who-to-watch-lower-third, clip-overlay.
 3. Preview should reflect selected mode
 
 **Verify:**
-- [ ] Image mode dropdown appears when who-to-watch-title selected
-- [ ] Changing mode updates preview
-- [ ] All 4 modes render correctly
+- [x] Image mode dropdown appears when who-to-watch-title selected — **PASS** (dropdown at lines 7692-7705 with WTW_IMAGE_MODES)
+- [x] Changing mode updates preview — **PASS** (updateVariant triggers preview URL regeneration via selectedVariants dependency)
+- [x] All 4 modes render correctly — **PASS** (tested portrait, headshot, full, none on production)
+
+**Implementation Notes (2026-03-27):**
+- Added `WTW_IMAGE_MODES` constant (line 639-644) with 4 options: portrait (Full-body Cutout), headshot (Headshot Circle), full (Full Image Rectangular), none (No Image)
+- Added initial state `selectedVariants['who-to-watch-title'] = { imageMode: 'portrait' }` (line 990)
+- `getPreviewUrl()` reads imageMode from selectedVariants and passes it as URL param (lines 1670-1679)
+- When imageMode is 'none', the imageUrl param is omitted so the card renders without an image
+- Variant selector UI renders below the graphic type dropdown when who-to-watch-title is selected (lines 7692-7705)
+- Screenshots: `local-task-7f5-portrait-mode.png`, `local-task-7f5-headshot-mode.png`, `local-task-7f5-full-mode.png`, `local-task-7f5-none-mode.png`
 
 **Deploy:** Deploy show-controller build to production.
 
