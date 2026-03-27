@@ -754,6 +754,10 @@ export default function ThemeEditorPage() {
   const [showSponsorsTemplatePanel, setShowSponsorsTemplatePanel] = useState(false);
   const [showApplySponsorsTemplateConfirm, setShowApplySponsorsTemplateConfirm] = useState(false);
 
+  // Stream Template state (Phase 7D.4)
+  const [showStreamTemplatePanel, setShowStreamTemplatePanel] = useState(false);
+  const [showApplyStreamTemplateConfirm, setShowApplyStreamTemplateConfirm] = useState(false);
+
   // Apply lower-third template values to all three lower-third graphics
   const applyLowerThirdTemplate = () => {
     const template = editingTheme.lowerThirdTemplate || {};
@@ -917,6 +921,41 @@ export default function ThemeEditorPage() {
       const tmpl = { ...(prev.sponsorsTemplate || {}) };
       delete tmpl[key];
       return { ...prev, sponsorsTemplate: tmpl };
+    });
+  };
+
+  // Apply stream template values to stream-starting and stream-thanks (Phase 7D.4)
+  const applyStreamTemplate = () => {
+    const template = editingTheme.streamTemplate || {};
+    const templateKeys = Object.keys(template).filter(k => template[k] !== undefined && template[k] !== null && template[k] !== '');
+    if (templateKeys.length === 0) return;
+
+    // Both stream-starting and stream-thanks share the same CSS properties, so no filtering needed
+    setEditingTheme(prev => {
+      const newOverrides = { ...prev.overrides };
+      for (const gId of STREAM_GRAPHICS) {
+        newOverrides[gId] = { ...(newOverrides[gId] || {}) };
+        for (const key of templateKeys) {
+          newOverrides[gId][key] = template[key];
+        }
+      }
+      return { ...prev, overrides: newOverrides };
+    });
+    setShowApplyStreamTemplateConfirm(false);
+  };
+
+  const updateStreamTemplateField = (key, value) => {
+    setEditingTheme(prev => ({
+      ...prev,
+      streamTemplate: { ...(prev.streamTemplate || {}), [key]: value },
+    }));
+  };
+
+  const clearStreamTemplateField = (key) => {
+    setEditingTheme(prev => {
+      const tmpl = { ...(prev.streamTemplate || {}) };
+      delete tmpl[key];
+      return { ...prev, streamTemplate: tmpl };
     });
   };
 
@@ -2713,6 +2752,139 @@ export default function ThemeEditorPage() {
                                     className="w-full px-3 py-2 text-xs bg-teal-600/20 text-teal-400 hover:bg-teal-600/30 rounded-lg font-semibold transition-colors"
                                   >
                                     Apply to All Sponsors
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
+
+                    {/* STREAM TEMPLATE — only for Stream group (Phase 7D.4) */}
+                    {group.label === 'Stream' && (
+                      <div className="bg-zinc-800/80 rounded-lg overflow-hidden mb-2 border border-teal-500/30">
+                        <button
+                          onClick={() => setShowStreamTemplatePanel(p => !p)}
+                          className="w-full flex items-center justify-between px-3 py-2 hover:bg-zinc-700/50 transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-teal-400 font-semibold">Template</span>
+                            <span className="text-[10px] text-zinc-500">Set shared values for stream-starting and stream-thanks</span>
+                          </div>
+                          <svg className={`w-4 h-4 text-teal-500 transition-transform ${showStreamTemplatePanel ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                        {showStreamTemplatePanel && (() => {
+                          const tmpl = editingTheme.streamTemplate || {};
+                          return (
+                            <div className="px-3 pb-3 border-t border-teal-500/20 space-y-4 pt-3">
+                              {/* SHARED: Background Color */}
+                              <div>
+                                <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Background (shared)</div>
+                                <div className="flex items-center gap-2">
+                                  <input type="color" value={tmpl.bg || editingTheme.colors?.bodyBackground || '#E5E5E5'} onChange={(e) => updateStreamTemplateField('bg', e.target.value)} className="w-8 h-8 rounded cursor-pointer bg-transparent border-0" />
+                                  <span className="text-[10px] text-zinc-400">Background color for both stream graphics</span>
+                                </div>
+                              </div>
+                              {/* SHARED: Title Typography */}
+                              <div className="pt-2 border-t border-zinc-700/30">
+                                <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Title Typography (shared)</div>
+                                <div className="grid grid-cols-3 gap-2">
+                                  <OverrideStepper label="Font size" value={tmpl.titleFontSize ?? STREAM_DEFAULTS.titleFontSize} onChange={(v) => updateStreamTemplateField('titleFontSize', v)} min={24} max={120} step={4} suffix="px" />
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="text-[10px] text-zinc-500">Weight</span>
+                                    <select value={tmpl.titleFontWeight ?? STREAM_DEFAULTS.titleFontWeight} onChange={(e) => updateStreamTemplateField('titleFontWeight', e.target.value)} className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500">
+                                      {FONT_WEIGHTS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                                    </select>
+                                  </div>
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="text-[10px] text-zinc-500">Font</span>
+                                    <select value={tmpl.titleFontFamily ?? STREAM_DEFAULTS.titleFontFamily} onChange={(e) => updateStreamTemplateField('titleFontFamily', e.target.value)} className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500">
+                                      {FONT_FAMILIES.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                                    </select>
+                                  </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 mt-2">
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="text-[10px] text-zinc-500">Transform</span>
+                                    <select value={tmpl.titleTextTransform ?? STREAM_DEFAULTS.titleTextTransform} onChange={(e) => updateStreamTemplateField('titleTextTransform', e.target.value)} className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500">
+                                      {TEXT_TRANSFORMS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                                    </select>
+                                  </div>
+                                  <OverrideStepper label="Title margin" value={tmpl.titleMargin ?? STREAM_DEFAULTS.titleMargin} onChange={(v) => updateStreamTemplateField('titleMargin', v)} min={0} max={150} step={10} suffix="px" />
+                                </div>
+                              </div>
+                              {/* SHARED: Logo Sizing */}
+                              <div className="pt-2 border-t border-zinc-700/30">
+                                <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Logo Sizing (shared)</div>
+                                <div className="grid grid-cols-3 gap-2">
+                                  <OverrideStepper label="Single logo" value={tmpl.logoSize ?? STREAM_DEFAULTS.logoSize} onChange={(v) => updateStreamTemplateField('logoSize', v)} min={100} max={600} step={20} suffix="px" />
+                                  <OverrideStepper label="Dual logos" value={tmpl.dualLogoSize ?? STREAM_DEFAULTS.dualLogoSize} onChange={(v) => updateStreamTemplateField('dualLogoSize', v)} min={100} max={500} step={20} suffix="px" />
+                                  <OverrideStepper label="Multi (3-4)" value={tmpl.multiLogoSize ?? STREAM_DEFAULTS.multiLogoSize} onChange={(v) => updateStreamTemplateField('multiLogoSize', v)} min={80} max={400} step={20} suffix="px" />
+                                </div>
+                                <div className="grid grid-cols-3 gap-2 mt-2">
+                                  <OverrideStepper label="Many (5+)" value={tmpl.manyLogoSize ?? STREAM_DEFAULTS.manyLogoSize} onChange={(v) => updateStreamTemplateField('manyLogoSize', v)} min={60} max={300} step={10} suffix="px" />
+                                  <OverrideStepper label="Logo gap" value={tmpl.logoGap ?? STREAM_DEFAULTS.logoGap} onChange={(v) => updateStreamTemplateField('logoGap', v)} min={10} max={100} step={5} suffix="px" />
+                                  <OverrideStepper label="Logo margin" value={tmpl.logoMargin ?? STREAM_DEFAULTS.logoMargin} onChange={(v) => updateStreamTemplateField('logoMargin', v)} min={10} max={150} step={10} suffix="px" />
+                                </div>
+                              </div>
+                              {/* SHARED: Event Typography */}
+                              <div className="pt-2 border-t border-zinc-700/30">
+                                <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Event Typography (shared)</div>
+                                <div className="grid grid-cols-3 gap-2">
+                                  <OverrideStepper label="Font size" value={tmpl.eventFontSize ?? STREAM_DEFAULTS.eventFontSize} onChange={(v) => updateStreamTemplateField('eventFontSize', v)} min={24} max={120} step={4} suffix="px" />
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="text-[10px] text-zinc-500">Weight</span>
+                                    <select value={tmpl.eventFontWeight ?? STREAM_DEFAULTS.eventFontWeight} onChange={(e) => updateStreamTemplateField('eventFontWeight', e.target.value)} className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500">
+                                      {FONT_WEIGHTS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                                    </select>
+                                  </div>
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="text-[10px] text-zinc-500">Font</span>
+                                    <select value={tmpl.eventFontFamily ?? STREAM_DEFAULTS.eventFontFamily} onChange={(e) => updateStreamTemplateField('eventFontFamily', e.target.value)} className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500">
+                                      {FONT_FAMILIES.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                                    </select>
+                                  </div>
+                                </div>
+                              </div>
+                              {/* SHARED: Date Typography */}
+                              <div className="pt-2 border-t border-zinc-700/30">
+                                <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Date Typography (shared)</div>
+                                <div className="grid grid-cols-3 gap-2">
+                                  <OverrideStepper label="Font size" value={tmpl.dateFontSize ?? STREAM_DEFAULTS.dateFontSize} onChange={(v) => updateStreamTemplateField('dateFontSize', v)} min={20} max={80} step={4} suffix="px" />
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="text-[10px] text-zinc-500">Weight</span>
+                                    <select value={tmpl.dateFontWeight ?? STREAM_DEFAULTS.dateFontWeight} onChange={(e) => updateStreamTemplateField('dateFontWeight', e.target.value)} className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500">
+                                      {FONT_WEIGHTS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                                    </select>
+                                  </div>
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="text-[10px] text-zinc-500">Font</span>
+                                    <select value={tmpl.dateFontFamily ?? STREAM_DEFAULTS.dateFontFamily} onChange={(e) => updateStreamTemplateField('dateFontFamily', e.target.value)} className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500">
+                                      {FONT_FAMILIES.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                                    </select>
+                                  </div>
+                                </div>
+                                <div className="mt-2">
+                                  <OverrideStepper label="Date margin" value={tmpl.dateMargin ?? STREAM_DEFAULTS.dateMargin} onChange={(v) => updateStreamTemplateField('dateMargin', v)} min={0} max={100} step={5} suffix="px" />
+                                </div>
+                              </div>
+                              {/* Apply button */}
+                              <div className="pt-2 border-t border-zinc-700/30">
+                                {showApplyStreamTemplateConfirm ? (
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[11px] text-zinc-400">Apply template values to stream-starting and stream-thanks?</span>
+                                    <button onClick={applyStreamTemplate} className="px-3 py-1 text-xs bg-teal-600 hover:bg-teal-500 rounded transition-colors">Apply</button>
+                                    <button onClick={() => setShowApplyStreamTemplateConfirm(false)} className="px-3 py-1 text-xs bg-zinc-700 hover:bg-zinc-600 rounded transition-colors">Cancel</button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={() => setShowApplyStreamTemplateConfirm(true)}
+                                    className="w-full px-3 py-2 text-xs bg-teal-600/20 text-teal-400 hover:bg-teal-600/30 rounded-lg font-semibold transition-colors"
+                                  >
+                                    Apply to All Stream Graphics
                                   </button>
                                 )}
                               </div>
