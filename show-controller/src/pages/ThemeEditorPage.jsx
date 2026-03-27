@@ -987,6 +987,30 @@ export default function ThemeEditorPage() {
       return `${baseUrl}/output.html?${params.toString()}`;
     }
 
+    if (selectedGraphicType === 'sponsors-thanks') {
+      // Sponsors Thanks — use the overlay file directly with theme sponsors
+      params.set('meetTheme', selectedThemeId || 'preview');
+      // Get the meet logo from theme
+      const logo = editingTheme?.logos?.primary || '';
+      if (logo) {
+        params.set('logo', logo);
+      }
+      // Pass sponsors from theme (if any)
+      const sponsors = editingTheme?.sponsors || [];
+      if (sponsors.length > 0) {
+        // Only include name and url for each sponsor
+        const sponsorData = sponsors.slice(0, 8).map(s => ({
+          name: s.name || '',
+          url: s.url || '',
+          scale: s.scale,
+          offsetX: s.offsetX,
+          offsetY: s.offsetY,
+        }));
+        params.set('sponsors', JSON.stringify(sponsorData));
+      }
+      return `${baseUrl}/overlays/sponsors-thanks.html?${params.toString()}`;
+    }
+
     // Standard graphics — use output.html
     params.set('graphic', selectedGraphicType);
 
@@ -1065,7 +1089,7 @@ export default function ThemeEditorPage() {
     }
 
     return `${baseUrl}/output.html?${params.toString()}`;
-  }, [selectedThemeId, selectedGraphicType, selectedCompetition, competitions]);
+  }, [selectedThemeId, selectedGraphicType, selectedCompetition, competitions, editingTheme]);
 
   // Calculate contrast ratio for accessibility
   const getContrastRatio = (color1, color2) => {

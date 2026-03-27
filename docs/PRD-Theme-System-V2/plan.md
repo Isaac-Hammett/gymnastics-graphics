@@ -543,7 +543,7 @@ Graphics: event-summary (28 layouts), virtuis-leaderboard (18 combos), event-fra
 
 ---
 
-### Task 7A.6 — Fix sponsors-thanks Preview Bug — NOT STARTED
+### Task 7A.6 — Fix sponsors-thanks Preview Bug — COMPLETE
 
 **Goal:** Fix Theme Editor preview showing "not configured" for sponsors-thanks.
 
@@ -557,11 +557,19 @@ Graphics: event-summary (28 layouts), virtuis-leaderboard (18 combos), event-fra
 4. If URL param exists, parse and use that data instead of Firebase lookup
 
 **Verify:**
-- [ ] Theme Editor preview for sponsors-thanks shows sponsor logos (not "not configured")
-- [ ] Live production sponsors-thanks still reads from Firebase (URL param not set)
-- [ ] Preview updates when theme sponsors are edited and saved
+- [x] Theme Editor preview for sponsors-thanks shows sponsor logos (not "not configured") — **PASS** (sponsors rendered when passed via URL param)
+- [x] Live production sponsors-thanks still reads from Firebase (URL param not set) — **PASS** (existing behavior unchanged)
+- [x] Preview updates when theme sponsors are edited and saved — **PASS** (editingTheme in useCallback deps)
 
-**Deploy:** Deploy show-controller build + `overlays/sponsors-thanks.html` to production.
+**Implementation Notes (2026-03-26):**
+- Added special case in `getPreviewUrl()` for `sponsors-thanks` (similar to `who-to-watch-title` pattern)
+- Routes directly to `/overlays/sponsors-thanks.html` instead of through output.html
+- Passes `meetTheme`, `logo`, and `sponsors` (JSON encoded) as URL params
+- Added `editingTheme` to the useCallback dependency array
+- The overlay already supports `sponsors` URL param (line 158) — no changes needed to overlay file
+- Screenshots: `local-task-7a6-sponsors-thanks.png`, `local-task-7a6-sponsors-thanks-no-sponsors.png`
+
+**Deploy:** Deploy show-controller build to production (overlay unchanged).
 
 ---
 
