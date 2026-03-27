@@ -23,13 +23,13 @@
 
     .card-container {
       position: absolute;
-      top: 50px;
-      left: 70px;
-      right: 70px;
-      bottom: 50px;
+      top: var(--team-roster-container-margin-top, 50px);
+      left: var(--team-roster-container-margin-side, 70px);
+      right: var(--team-roster-container-margin-side, 70px);
+      bottom: var(--team-roster-container-margin-bottom, 50px);
       display: flex;
       flex-direction: column;
-      border-radius: 12px;
+      border-radius: var(--team-roster-container-border-radius, 12px);
       overflow: hidden;
       box-shadow: 0 8px 32px rgba(0,0,0,0.3);
       animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
@@ -41,8 +41,8 @@
     }
 
     .header-bar {
-      background: var(--meet-header-bg, #d4d4d8);
-      padding: 18px 40px;
+      background: var(--team-roster-header-bg, var(--meet-header-bg, #d4d4d8));
+      padding: var(--team-roster-header-padding-v, 18px) var(--team-roster-header-padding-h, 40px);
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -50,31 +50,32 @@
     }
 
     .header-title {
-      font-size: 42px;
-      font-weight: 800;
-      color: var(--meet-header-text, #000);
+      font-size: var(--team-roster-header-title-font-size, 42px);
+      font-weight: var(--team-roster-header-title-font-weight, 800);
+      font-family: var(--team-roster-header-title-font-family, 'Inter', sans-serif);
+      color: var(--team-roster-header-text, var(--meet-header-text, #000));
       text-transform: uppercase;
     }
 
     .header-logo {
-      width: 80px;
-      height: 80px;
+      width: var(--team-roster-header-logo-width, 80px);
+      height: var(--team-roster-header-logo-height, 80px);
       object-fit: contain;
     }
 
     .roster-container {
       flex: 1;
-      background: var(--meet-overlay-bg, #18181b);
+      background: var(--team-roster-overlay-bg, var(--meet-overlay-bg, #18181b));
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 40px;
+      padding: var(--team-roster-roster-container-padding, 40px);
       overflow: hidden;
     }
 
     .roster-grid {
       display: grid;
-      gap: 20px;
+      gap: var(--team-roster-roster-grid-gap, 20px);
       justify-content: center;
       align-content: center;
       width: 100%;
@@ -147,13 +148,13 @@
     }
 
     .athlete-headshot {
-      width: 120px;
-      height: 120px;
-      border-radius: 50%;
+      width: var(--team-roster-roster-headshot-size, 120px);
+      height: var(--team-roster-roster-headshot-size, 120px);
+      border-radius: var(--team-roster-roster-headshot-radius, 50%);
       object-fit: cover;
       object-position: center 20%;  /* Show more of the head/face, less body */
-      background: #3f3f46;
-      border: 3px solid #52525b;
+      background: var(--team-roster-roster-headshot-bg, #3f3f46);
+      border: var(--team-roster-roster-headshot-border, 3px) solid var(--team-roster-roster-headshot-border-color, #52525b);
       margin-bottom: 12px;
     }
 
@@ -179,18 +180,18 @@
     .roster-grid.count-large .athlete-headshot { width: 70px; height: 70px; margin-bottom: 4px; border-width: 2px; }
 
     .athlete-initials {
-      width: 120px;
-      height: 120px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #3f3f46 0%, #27272a 100%);
-      border: 3px solid #52525b;
+      width: var(--team-roster-roster-headshot-size, 120px);
+      height: var(--team-roster-roster-headshot-size, 120px);
+      border-radius: var(--team-roster-roster-headshot-radius, 50%);
+      background: var(--team-roster-roster-initials-bg, linear-gradient(135deg, #3f3f46 0%, #27272a 100%));
+      border: var(--team-roster-roster-headshot-border, 3px) solid var(--team-roster-roster-headshot-border-color, #52525b);
       margin-bottom: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 36px;
+      font-size: var(--team-roster-roster-initials-font-size, 36px);
       font-weight: 700;
-      color: #a1a1aa;
+      color: var(--team-roster-roster-initials-color, #a1a1aa);
     }
 
     /* Scale initials placeholder too */
@@ -215,10 +216,11 @@
     .roster-grid.count-large .athlete-initials { width: 70px; height: 70px; font-size: 20px; margin-bottom: 4px; border-width: 2px; }
 
     .athlete-name {
-      font-size: 18px;
-      font-weight: 600;
-      color: #fff;
-      text-transform: uppercase;
+      font-size: var(--team-roster-roster-name-font-size, 18px);
+      font-weight: var(--team-roster-roster-name-font-weight, 600);
+      font-family: var(--team-roster-roster-name-font-family, 'Inter', sans-serif);
+      color: var(--team-roster-roster-name-color, var(--meet-overlay-text, #fff));
+      text-transform: var(--team-roster-roster-name-text-transform, uppercase);
       max-width: 100%;
       overflow: hidden;
       text-overflow: ellipsis;
