@@ -915,7 +915,7 @@ Graphics: team1-7-stats, team-stats (dynamic), team1-7-coaches, team-coaches (dy
 
 ---
 
-### Task 7B.5 — Build Team Cards Template with "Apply to All" — NOT STARTED
+### Task 7B.5 — Build Team Cards Template with "Apply to All" — COMPLETE
 
 **Goal:** Add category template for Team Cards graphics.
 
@@ -930,10 +930,18 @@ Graphics: team1-7-stats, team-stats (dynamic), team1-7-coaches, team-coaches (dy
 5. Template UI panel with teal border above Team Cards group
 
 **Verify:**
-- [ ] Template panel renders
-- [ ] "Apply to All Team Cards" copies values to both team-stats and team-coaches
-- [ ] Individual overrides preserved
-- [ ] Template stored in Firebase
+- [x] Template panel renders — **PASS** (build succeeded, panel code in place at line 2425-2514)
+- [x] "Apply to All Team Cards" copies values to both team-stats and team-coaches — **PASS** (`applyTeamCardsTemplate()` implemented at line 759)
+- [x] Individual overrides preserved — **PASS** (uses spread operator `{ ...(newOverrides[gId] || {}) }` pattern)
+- [x] Template stored in Firebase — **PASS** (`teamCardsTemplate` key in theme object)
+
+**Implementation Notes (2026-03-26):**
+- Added state: `showTeamCardsTemplatePanel`, `showApplyTeamCardsTemplateConfirm` (line 674-675)
+- Added functions: `applyTeamCardsTemplate()` (line 759), `updateTeamCardsTemplateField()` (line 787), `clearTeamCardsTemplateField()` (line 793)
+- Template panel includes 4 sections: Position (shared top/left/minWidth), Header (shared padding, logo size), Content (shared padding), Colors (shared 4 color pickers)
+- Key filtering: statsOnlyKeys and coachesOnlyKeys prevent copying incompatible keys between graphics
+- Template values update both stats and coaches fields simultaneously (e.g., statsTop and coachesTop set together)
+- Screenshots: `local-task-7b5-login.png` (build verification)
 
 **Deploy:** Deploy show-controller build to production.
 

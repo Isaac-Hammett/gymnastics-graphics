@@ -670,6 +670,10 @@ export default function ThemeEditorPage() {
   const [showFullScreenTemplatePanel, setShowFullScreenTemplatePanel] = useState(false);
   const [showApplyFullScreenTemplateConfirm, setShowApplyFullScreenTemplateConfirm] = useState(false);
 
+  // Team Cards Template state
+  const [showTeamCardsTemplatePanel, setShowTeamCardsTemplatePanel] = useState(false);
+  const [showApplyTeamCardsTemplateConfirm, setShowApplyTeamCardsTemplateConfirm] = useState(false);
+
   // Apply lower-third template values to all three lower-third graphics
   const applyLowerThirdTemplate = () => {
     const template = editingTheme.lowerThirdTemplate || {};
@@ -748,6 +752,48 @@ export default function ThemeEditorPage() {
       const tmpl = { ...(prev.fullScreenTemplate || {}) };
       delete tmpl[key];
       return { ...prev, fullScreenTemplate: tmpl };
+    });
+  };
+
+  // Apply team cards template values to team-stats and team-coaches
+  const applyTeamCardsTemplate = () => {
+    const template = editingTheme.teamCardsTemplate || {};
+    const templateKeys = Object.keys(template).filter(k => template[k] !== undefined && template[k] !== null && template[k] !== '');
+    if (templateKeys.length === 0) return;
+
+    // Keys that only apply to team-stats (stats-specific)
+    const statsOnlyKeys = ['statsTop', 'statsLeft', 'statsMinWidth', 'statsHeaderPaddingV', 'statsHeaderPaddingH', 'statsHeaderGap', 'statsTeamNameFontSize', 'statsTeamNameFontWeight', 'statsTeamNameFontFamily', 'statsLogoSize', 'statsContentPaddingV', 'statsContentPaddingH', 'statsContentGap', 'statsLabelFontSize', 'statsLabelFontWeight', 'statsValueFontSize', 'statsValueFontWeight', 'statsValueFontFamily', 'statDisplay'];
+    // Keys that only apply to team-coaches (coaches-specific)
+    const coachesOnlyKeys = ['coachesTop', 'coachesLeft', 'coachesMinWidth', 'coachesHeaderPaddingV', 'coachesHeaderPaddingH', 'coachesTitleFontSize', 'coachesTitleFontWeight', 'coachesTitleFontFamily', 'coachesLogoSize', 'coachesContentPaddingV', 'coachesContentPaddingH', 'coachesNameFontSize', 'coachesNameFontWeight', 'coachesNameFontFamily', 'coachesNameLineHeight'];
+
+    setEditingTheme(prev => {
+      const newOverrides = { ...prev.overrides };
+      for (const gId of TEAM_CARD_GRAPHICS) {
+        newOverrides[gId] = { ...(newOverrides[gId] || {}) };
+        for (const key of templateKeys) {
+          // Skip keys that don't apply to this graphic
+          if (gId !== 'team-stats' && statsOnlyKeys.includes(key)) continue;
+          if (gId !== 'team-coaches' && coachesOnlyKeys.includes(key)) continue;
+          newOverrides[gId][key] = template[key];
+        }
+      }
+      return { ...prev, overrides: newOverrides };
+    });
+    setShowApplyTeamCardsTemplateConfirm(false);
+  };
+
+  const updateTeamCardsTemplateField = (key, value) => {
+    setEditingTheme(prev => ({
+      ...prev,
+      teamCardsTemplate: { ...(prev.teamCardsTemplate || {}), [key]: value },
+    }));
+  };
+
+  const clearTeamCardsTemplateField = (key) => {
+    setEditingTheme(prev => {
+      const tmpl = { ...(prev.teamCardsTemplate || {}) };
+      delete tmpl[key];
+      return { ...prev, teamCardsTemplate: tmpl };
     });
   };
 
@@ -2368,6 +2414,100 @@ export default function ThemeEditorPage() {
                                     className="w-full px-3 py-2 text-xs bg-teal-600/20 text-teal-400 hover:bg-teal-600/30 rounded-lg font-semibold transition-colors"
                                   >
                                     Apply to All Full-Screen Graphics
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
+
+                    {/* TEAM CARDS TEMPLATE — only for Team Cards group */}
+                    {group.label === 'Team Cards' && (
+                      <div className="bg-zinc-800/80 rounded-lg overflow-hidden mb-2 border border-teal-500/30">
+                        <button
+                          onClick={() => setShowTeamCardsTemplatePanel(p => !p)}
+                          className="w-full flex items-center justify-between px-3 py-2 hover:bg-zinc-700/50 transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-teal-400 font-semibold">Template</span>
+                            <span className="text-[10px] text-zinc-500">Set shared values for team-stats and team-coaches</span>
+                          </div>
+                          <svg className={`w-4 h-4 text-teal-500 transition-transform ${showTeamCardsTemplatePanel ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                        {showTeamCardsTemplatePanel && (() => {
+                          const tmpl = editingTheme.teamCardsTemplate || {};
+                          return (
+                            <div className="px-3 pb-3 border-t border-teal-500/20 space-y-4 pt-3">
+                              {/* SHARED: Position */}
+                              <div>
+                                <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Position (shared)</div>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <OverrideStepper label="Top" value={tmpl.statsTop ?? 780} onChange={(v) => { updateTeamCardsTemplateField('statsTop', v); updateTeamCardsTemplateField('coachesTop', v); }} min={0} max={1080} step={10} suffix="px" />
+                                  <OverrideStepper label="Left" value={tmpl.statsLeft ?? 100} onChange={(v) => { updateTeamCardsTemplateField('statsLeft', v); updateTeamCardsTemplateField('coachesLeft', v); }} min={0} max={1920} step={10} suffix="px" />
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 mt-2">
+                                  <OverrideStepper label="Min width" value={tmpl.statsMinWidth ?? 300} onChange={(v) => { updateTeamCardsTemplateField('statsMinWidth', v); updateTeamCardsTemplateField('coachesMinWidth', v); }} min={100} max={800} step={10} suffix="px" />
+                                </div>
+                              </div>
+                              {/* SHARED: Header Styling */}
+                              <div className="pt-2 border-t border-zinc-700/30">
+                                <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Header (shared)</div>
+                                <div className="space-y-2">
+                                  <div className="grid grid-cols-3 gap-2">
+                                    <OverrideStepper label="Pad V" value={tmpl.statsHeaderPaddingV ?? 12} onChange={(v) => { updateTeamCardsTemplateField('statsHeaderPaddingV', v); updateTeamCardsTemplateField('coachesHeaderPaddingV', v); }} min={0} max={40} step={2} suffix="px" />
+                                    <OverrideStepper label="Pad H" value={tmpl.statsHeaderPaddingH ?? 20} onChange={(v) => { updateTeamCardsTemplateField('statsHeaderPaddingH', v); updateTeamCardsTemplateField('coachesHeaderPaddingH', v); }} min={0} max={60} step={2} suffix="px" />
+                                    <OverrideStepper label="Logo" value={tmpl.statsLogoSize ?? 48} onChange={(v) => { updateTeamCardsTemplateField('statsLogoSize', v); updateTeamCardsTemplateField('coachesLogoSize', v); }} min={20} max={100} step={4} suffix="px" />
+                                  </div>
+                                </div>
+                              </div>
+                              {/* SHARED: Content Styling */}
+                              <div className="pt-2 border-t border-zinc-700/30">
+                                <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Content (shared)</div>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <OverrideStepper label="Pad V" value={tmpl.statsContentPaddingV ?? 16} onChange={(v) => { updateTeamCardsTemplateField('statsContentPaddingV', v); updateTeamCardsTemplateField('coachesContentPaddingV', v); }} min={0} max={60} step={2} suffix="px" />
+                                  <OverrideStepper label="Pad H" value={tmpl.statsContentPaddingH ?? 20} onChange={(v) => { updateTeamCardsTemplateField('statsContentPaddingH', v); updateTeamCardsTemplateField('coachesContentPaddingH', v); }} min={0} max={60} step={2} suffix="px" />
+                                </div>
+                              </div>
+                              {/* SHARED: Colors */}
+                              <div className="pt-2 border-t border-zinc-700/30">
+                                <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Colors (shared)</div>
+                                <div className="grid grid-cols-4 gap-2">
+                                  <div className="flex flex-col items-center gap-1">
+                                    <input type="color" value={tmpl.headerBar || editingTheme.colors?.headerBar || '#BFBFBF'} onChange={(e) => updateTeamCardsTemplateField('headerBar', e.target.value)} className="w-8 h-8 rounded cursor-pointer bg-transparent border-0" />
+                                    <span className="text-[9px] text-zinc-500">Header</span>
+                                  </div>
+                                  <div className="flex flex-col items-center gap-1">
+                                    <input type="color" value={tmpl.contentArea || editingTheme.colors?.contentArea || '#000000'} onChange={(e) => updateTeamCardsTemplateField('contentArea', e.target.value)} className="w-8 h-8 rounded cursor-pointer bg-transparent border-0" />
+                                    <span className="text-[9px] text-zinc-500">Content</span>
+                                  </div>
+                                  <div className="flex flex-col items-center gap-1">
+                                    <input type="color" value={tmpl.textOnHeader || editingTheme.colors?.textOnHeader || '#000000'} onChange={(e) => updateTeamCardsTemplateField('textOnHeader', e.target.value)} className="w-8 h-8 rounded cursor-pointer bg-transparent border-0" />
+                                    <span className="text-[9px] text-zinc-500">Hdr Text</span>
+                                  </div>
+                                  <div className="flex flex-col items-center gap-1">
+                                    <input type="color" value={tmpl.textOnContent || editingTheme.colors?.textOnContent || '#FFFFFF'} onChange={(e) => updateTeamCardsTemplateField('textOnContent', e.target.value)} className="w-8 h-8 rounded cursor-pointer bg-transparent border-0" />
+                                    <span className="text-[9px] text-zinc-500">Body Text</span>
+                                  </div>
+                                </div>
+                              </div>
+                              {/* Apply button */}
+                              <div className="pt-2 border-t border-zinc-700/30">
+                                {showApplyTeamCardsTemplateConfirm ? (
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[11px] text-zinc-400">Apply template values to team-stats and team-coaches?</span>
+                                    <button onClick={applyTeamCardsTemplate} className="px-3 py-1 text-xs bg-teal-600 hover:bg-teal-500 rounded transition-colors">Apply</button>
+                                    <button onClick={() => setShowApplyTeamCardsTemplateConfirm(false)} className="px-3 py-1 text-xs bg-zinc-700 hover:bg-zinc-600 rounded transition-colors">Cancel</button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={() => setShowApplyTeamCardsTemplateConfirm(true)}
+                                    className="w-full px-3 py-2 text-xs bg-teal-600/20 text-teal-400 hover:bg-teal-600/30 rounded-lg font-semibold transition-colors"
+                                  >
+                                    Apply to All Team Cards
                                   </button>
                                 )}
                               </div>
