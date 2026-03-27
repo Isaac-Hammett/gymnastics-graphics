@@ -816,6 +816,9 @@ export default function ThemeEditorPage() {
     'event-frame': { container: '.frame-container', watermark: '.virtius-watermark' },
     'sponsors-thanks': { container: '.sponsors-container', grid: '.sponsors-grid' },
     'team-roster': { header: '.roster-header', container: '.roster-container', grid: '.roster-grid' },
+    // Team cards
+    'team-stats': { header: '.stats-header', content: '.stats-content' },
+    'team-coaches': { header: '.coaches-header', content: '.coaches-content' },
   };
 
   // Listen for measurement responses from the preview iframe
