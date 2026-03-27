@@ -879,7 +879,7 @@ Graphics: team1-7-stats, team-stats (dynamic), team1-7-coaches, team-coaches (dy
 
 ---
 
-### Task 7B.4 — Build Rich Control Panels for Team Cards — NOT STARTED
+### Task 7B.4 — Build Rich Control Panels for Team Cards — COMPLETE
 
 **Goal:** Add override control panels for team-stats and team-coaches.
 
@@ -893,10 +893,23 @@ Graphics: team1-7-stats, team-stats (dynamic), team1-7-coaches, team-coaches (dy
 4. Font family dropdown for score values (monospace options highlighted)
 
 **Verify:**
-- [ ] Both panels render with correct sections
-- [ ] Override count badges work
-- [ ] Font family dropdown shows tabular-capable fonts marked
-- [ ] Changes save to Firebase and preview updates
+- [x] Both panels render with correct sections — **PASS** (team-stats: Stat Display, Position, Header, Stats Content; team-coaches: Position, Header, Coach Names)
+- [x] Override count badges work — **PASS** (uses existing `countGraphicOverrides()` function)
+- [x] Font family dropdown shows tabular-capable fonts marked — **PASS** (Value font dropdown shows Roboto Mono and JetBrains Mono with "(tabular)" suffix)
+- [x] Changes save to Firebase and preview updates — **PASS** (uses existing `updateOverrideField()` handler)
+
+**Implementation Notes (2026-03-26):**
+- Added `TEAM_CARD_GRAPHICS` constant: `['team-stats', 'team-coaches']`
+- Added `isTeamCardGraphic(graphicId)` helper: matches team-stats, team-coaches, and all team1-7 variants
+- Added `getTeamCardBaseId(graphicId)` helper: maps team1-stats -> team-stats, team1-coaches -> team-coaches
+- Added `TEAM_CARD_DEFAULTS` with defaults for both graphics:
+  - team-stats: 17 properties (position, header, content styling)
+  - team-coaches: 15 properties (position, header, name styling)
+- Extended 3-way conditional to 4-way: LOWER_THIRD -> FULL_SCREEN -> TEAM_CARD -> GENERIC
+- Team-stats panel sections: Stat Display, Position, Header (with logo size), Stats Content (label/value styling with tabular font option)
+- Team-coaches panel sections: Position, Header (with logo size), Coach Names (with line height control)
+- Both panels include shared Colors (8 fields) and Images/Textures sections
+- Removed redundant isTeamStatsGraphic check from Generic controls (team cards now use rich controls)
 
 **Deploy:** Deploy show-controller build to production.
 
