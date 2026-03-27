@@ -695,6 +695,15 @@ window.themeReady = new Promise(resolve => { _resolveThemeReady = resolve; });
     statusLabelFontSize: { suffix: 'status-label-font-size', unit: 'px' },
     // Cinema letterbox bar color
     cinemaBg: { suffix: 'cinema-bg', unit: null },
+    // Logos graphic specific (Phase 7E.2)
+    logosGap: { suffix: 'logos-gap', unit: 'px' },
+    logosSize: { suffix: 'logos-size', unit: 'px' },  // Default row layout size (2-4 teams)
+    logosBg: { suffix: 'logos-bg', unit: null },  // Logo card background color
+    logosBorderRadius: { suffix: 'logos-border-radius', unit: 'px' },
+    logosPadding: { suffix: 'logos-padding', unit: 'px' },
+    logosGridGap: { suffix: 'logos-grid-gap', unit: 'px' },  // Grid layout gap (5+ teams)
+    logosGridSize: { suffix: 'logos-grid-size', unit: 'px' },  // Grid layout logo size
+    logosGridPadding: { suffix: 'logos-grid-padding', unit: 'px' },  // Grid layout outer padding
   };
 
   /**
