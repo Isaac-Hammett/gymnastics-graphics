@@ -209,6 +209,7 @@
     .stat-value {
       font-size: 28px;
       font-weight: 700;
+      font-variant-numeric: tabular-nums;
     }
 
     /* Coaches Card - top-anchored so header aligns with stats card */
@@ -1319,13 +1320,112 @@
       height: var(--virtuis-leaderboard-medal-size, 32px);
     }
 
-    /* Stats header override */
+    /* Team Stats overrides - 3-layer cascade for all 7 variants + dynamic */
+    /* Header background with per-graphic override support */
     [data-meet-theme] .stats-header {
-      background: var(--meet-header-bg, #d4d4d8);
+      background: var(--team-stats-header-bg,
+        var(--team1-stats-header-bg,
+          var(--team2-stats-header-bg,
+            var(--team3-stats-header-bg,
+              var(--team4-stats-header-bg,
+                var(--team5-stats-header-bg,
+                  var(--team6-stats-header-bg,
+                    var(--team7-stats-header-bg,
+                      var(--meet-header-bg, #d4d4d8)))))))));
+      padding: var(--team-stats-stats-header-padding-v,
+        var(--team1-stats-stats-header-padding-v,
+          var(--team2-stats-stats-header-padding-v, 14px)))
+        var(--team-stats-stats-header-padding-h,
+          var(--team1-stats-stats-header-padding-h,
+            var(--team2-stats-stats-header-padding-h, 30px)));
+      gap: var(--team-stats-stats-header-gap,
+        var(--team1-stats-stats-header-gap,
+          var(--team2-stats-stats-header-gap, 20px)));
+      min-width: var(--team-stats-stats-min-width,
+        var(--team1-stats-stats-min-width,
+          var(--team2-stats-stats-min-width, 480px)));
     }
     [data-meet-theme] .stats-team-name {
-      color: var(--meet-header-text, #000);
+      color: var(--team-stats-header-text,
+        var(--team1-stats-header-text,
+          var(--team2-stats-header-text,
+            var(--team3-stats-header-text,
+              var(--team4-stats-header-text,
+                var(--team5-stats-header-text,
+                  var(--team6-stats-header-text,
+                    var(--team7-stats-header-text,
+                      var(--meet-header-text, #000)))))))));
+      font-size: var(--team-stats-stats-team-name-font-size,
+        var(--team1-stats-stats-team-name-font-size,
+          var(--team2-stats-stats-team-name-font-size, 36px)));
+      font-weight: var(--team-stats-stats-team-name-font-weight,
+        var(--team1-stats-stats-team-name-font-weight,
+          var(--team2-stats-stats-team-name-font-weight, 800)));
+      font-family: var(--team-stats-stats-team-name-font-family,
+        var(--team1-stats-stats-team-name-font-family,
+          var(--team2-stats-stats-team-name-font-family, inherit)));
     }
+    [data-meet-theme] .stats-logo {
+      width: var(--team-stats-stats-logo-size,
+        var(--team1-stats-stats-logo-size,
+          var(--team2-stats-stats-logo-size, 70px)));
+      height: var(--team-stats-stats-logo-size,
+        var(--team1-stats-stats-logo-size,
+          var(--team2-stats-stats-logo-size, 70px)));
+    }
+    [data-meet-theme] .stats-content {
+      background: var(--team-stats-content-bg,
+        var(--team1-stats-content-bg,
+          var(--team2-stats-content-bg,
+            var(--team3-stats-content-bg,
+              var(--team4-stats-content-bg,
+                var(--team5-stats-content-bg,
+                  var(--team6-stats-content-bg,
+                    var(--team7-stats-content-bg,
+                      var(--meet-content-bg, #000)))))))));
+      padding: var(--team-stats-stats-content-padding-v,
+        var(--team1-stats-stats-content-padding-v,
+          var(--team2-stats-stats-content-padding-v, 16px)))
+        var(--team-stats-stats-content-padding-h,
+          var(--team1-stats-stats-content-padding-h,
+            var(--team2-stats-stats-content-padding-h, 30px)));
+      gap: var(--team-stats-stats-content-gap,
+        var(--team1-stats-stats-content-gap,
+          var(--team2-stats-stats-content-gap, 60px)));
+    }
+    [data-meet-theme] .stat-item {
+      color: var(--team-stats-overlay-text,
+        var(--team1-stats-overlay-text,
+          var(--team2-stats-overlay-text,
+            var(--team3-stats-overlay-text,
+              var(--team4-stats-overlay-text,
+                var(--team5-stats-overlay-text,
+                  var(--team6-stats-overlay-text,
+                    var(--team7-stats-overlay-text,
+                      var(--meet-overlay-text, #fff)))))))));
+    }
+    [data-meet-theme] .stat-label {
+      font-size: var(--team-stats-stats-label-font-size,
+        var(--team1-stats-stats-label-font-size,
+          var(--team2-stats-stats-label-font-size, 20px)));
+      font-weight: var(--team-stats-stats-label-font-weight,
+        var(--team1-stats-stats-label-font-weight,
+          var(--team2-stats-stats-label-font-weight, 500)));
+    }
+    [data-meet-theme] .stat-value {
+      font-size: var(--team-stats-stats-value-font-size,
+        var(--team1-stats-stats-value-font-size,
+          var(--team2-stats-stats-value-font-size, 28px)));
+      font-weight: var(--team-stats-stats-value-font-weight,
+        var(--team1-stats-stats-value-font-weight,
+          var(--team2-stats-stats-value-font-weight, 700)));
+      font-family: var(--team-stats-stats-value-font-family,
+        var(--team1-stats-stats-value-font-family,
+          var(--team2-stats-stats-value-font-family, inherit)));
+      font-variant-numeric: tabular-nums;
+    }
+    /* Position overrides for team-stats require data-graphic-id attribute on output element.
+       This will be addressed in Task 7B.4 when rich control panels are added. */
 
     /* Hosts header override */
     [data-meet-theme] .hosts-header {

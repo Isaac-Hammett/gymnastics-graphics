@@ -582,6 +582,25 @@ window.themeReady = new Promise(resolve => { _resolveThemeReady = resolve; });
     rosterInitialsColor: { suffix: 'roster-initials-color', unit: null },
     rosterInitialsBg: { suffix: 'roster-initials-bg', unit: null },
     rosterCardWidth: { suffix: 'roster-card-width', unit: 'px' },
+    // Team-stats specific (Phase 7B.1)
+    statsTop: { suffix: 'stats-top', unit: 'px' },
+    statsLeft: { suffix: 'stats-left', unit: 'px' },
+    statsMinWidth: { suffix: 'stats-min-width', unit: 'px' },
+    statsHeaderPaddingV: { suffix: 'stats-header-padding-v', unit: 'px' },
+    statsHeaderPaddingH: { suffix: 'stats-header-padding-h', unit: 'px' },
+    statsHeaderGap: { suffix: 'stats-header-gap', unit: 'px' },
+    statsTeamNameFontSize: { suffix: 'stats-team-name-font-size', unit: 'px' },
+    statsTeamNameFontWeight: { suffix: 'stats-team-name-font-weight', unit: null },
+    statsTeamNameFontFamily: { suffix: 'stats-team-name-font-family', unit: null },
+    statsLogoSize: { suffix: 'stats-logo-size', unit: 'px' },
+    statsContentPaddingV: { suffix: 'stats-content-padding-v', unit: 'px' },
+    statsContentPaddingH: { suffix: 'stats-content-padding-h', unit: 'px' },
+    statsContentGap: { suffix: 'stats-content-gap', unit: 'px' },
+    statsLabelFontSize: { suffix: 'stats-label-font-size', unit: 'px' },
+    statsLabelFontWeight: { suffix: 'stats-label-font-weight', unit: null },
+    statsValueFontSize: { suffix: 'stats-value-font-size', unit: 'px' },
+    statsValueFontWeight: { suffix: 'stats-value-font-weight', unit: null },
+    statsValueFontFamily: { suffix: 'stats-value-font-family', unit: null },
   };
 
   /**
