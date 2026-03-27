@@ -196,6 +196,113 @@ const STREAM_DEFAULTS = {
   showBranding: 'block',
 };
 
+// Overlay graphics for rich control panels (Phase 7E.10)
+// Note: rotation-slate, logos, now-competing, live-camera, interview-card, athlete-spotlight,
+// event-calendar, team-bug, hosts, coaches - all need rich panels
+const OVERLAY_GRAPHICS = [
+  'rotation-slate', 'rotation-slate-auto', 'logos', 'now-competing', 'live-camera',
+  'interview-card', 'athlete-spotlight', 'event-calendar', 'team-bug', 'hosts', 'coaches'
+];
+
+// Helper to detect if a graphicId is an overlay graphic
+const isOverlayGraphic = (graphicId) => {
+  return OVERLAY_GRAPHICS.includes(graphicId);
+};
+
+// Default values for overlay graphics (Phase 7E.10)
+// These match the CSS defaults in the overlay files and output.html
+const OVERLAY_DEFAULTS = {
+  // rotation-slate (Phase 7E.1) - shares defaults with rotation-slate-auto
+  'rotation-slate': {
+    meetNameFontFamily: 'Inter', meetNameFontWeight: '800', meetNameTextTransform: 'uppercase',
+    rotationLabelFontFamily: 'Inter', rotationLabelFontWeight: '600', rotationLabelTextTransform: 'uppercase',
+    rotationNumberFontFamily: 'Inter', rotationNumberFontWeight: '900',
+    badgeLabelFontFamily: 'Inter', badgeLabelFontWeight: '600',
+    badgeNumFontFamily: 'Inter', badgeNumFontWeight: '700',
+  },
+  'rotation-slate-auto': {
+    meetNameFontFamily: 'Inter', meetNameFontWeight: '800', meetNameTextTransform: 'uppercase',
+    rotationLabelFontFamily: 'Inter', rotationLabelFontWeight: '600', rotationLabelTextTransform: 'uppercase',
+    rotationNumberFontFamily: 'Inter', rotationNumberFontWeight: '900',
+    badgeLabelFontFamily: 'Inter', badgeLabelFontWeight: '600',
+    badgeNumFontFamily: 'Inter', badgeNumFontWeight: '700',
+    statusLabelFontFamily: 'Inter', statusLabelFontWeight: '600', statusLabelFontSize: 16,
+  },
+  // logos (Phase 7E.2)
+  'logos': {
+    logosGap: 100, logosSize: 250, logosBorderRadius: 24, logosPadding: 25,
+    logosGridGap: 60, logosGridSize: 200, logosGridPadding: 100,
+  },
+  // now-competing (Phase 7E.3)
+  'now-competing': {
+    ncBottom: 120, ncLeft: 100,
+    ncStatusPaddingV: 8, ncStatusPaddingH: 16, ncStatusGap: 8, ncDotSize: 12, ncStatusFontSize: 18,
+    ncLogoContainerWidth: 100, ncLogoContainerPadding: 15, ncLogoSize: 70,
+    ncEventPaddingV: 8, ncEventPaddingH: 16, ncEventMinWidth: 400, ncEventFontSize: 24,
+    ncDetailsPaddingV: 10, ncDetailsPaddingH: 16, ncNameFontSize: 28, ncTeamFontSize: 16,
+  },
+  // live-camera (Phase 7E.3)
+  'live-camera': {
+    lcTop: 60, lcLeft: 60, lcGap: 16,
+    lcIndicatorPaddingV: 8, lcIndicatorPaddingH: 16, lcIndicatorRadius: 6, lcIndicatorFontSize: 28, lcIndicatorGap: 10,
+    lcDotSize: 14,
+    lcApparatusPaddingV: 12, lcApparatusPaddingH: 24, lcApparatusRadius: 6, lcApparatusFontSize: 32,
+  },
+  // interview-card (Phase 7E.4)
+  'interview-card': {
+    icPanelLeft: 30, icPanelTop: 30, icPanelWidth: 600, icPanelHeight: 1020, icPanelRadius: 24,
+    icPanelPaddingTop: 60, icPanelPaddingH: 50, icPanelPaddingBottom: 50,
+    icCoachNameFontSize: 56, icCoachNameMargin: 24,
+    icSchoolLogoSize: 80, icSchoolLogoMargin: 24,
+    icSchoolNameFontSize: 24, icSchoolNameMargin: 32,
+    icQuestionFontSize: 28, icQuestionMaxWidth: 480,
+    icEventLogoHeight: 100,
+    icTitleFontSize: 14, icTitleMargin: 20,
+  },
+  // athlete-spotlight (Phase 7E.5)
+  'athlete-spotlight': {
+    asBottom: 120, asLeft: 100,
+    asHeaderPaddingV: 12, asHeaderPaddingH: 20, asHeaderGap: 16,
+    asEventFontSize: 36, asLogoSize: 60,
+    asContentPaddingV: 16, asContentPaddingH: 20, asContentGap: 16,
+    asHeadshotSize: 100, asHeadshotBorder: 3, asAthleteGap: 16, asInfoGap: 4,
+    asNameFontSize: 24, asDetailsFontSize: 16,
+    asDividerWidth: 2,
+  },
+  // event-calendar (Phase 7E.6)
+  'event-calendar': {
+    ecContainerTop: 0, ecContainerLeft: 0, ecContainerRight: 0, ecContainerBottom: 0,
+    ecBorderRadius: 0,
+    ecHeaderPaddingV: 30, ecHeaderPaddingH: 40, ecLogoSize: 80,
+    ecTitleFontSize: 42,
+    ecContentPaddingV: 30, ecContentPaddingH: 40,
+    ecItemPadding: 25,
+    ecDateFontSize: 14, ecNameFontSize: 26, ecNameMarginTop: 4,
+    ecLocationFontSize: 14, ecLocationMarginTop: 2,
+    ecColumnGap: 20,
+  },
+  // team-bug (Phase 7E.7) - colors/typography only, state colors NOT overridable
+  'team-bug': {
+    tbRotationFontSize: 20, tbTotalFontSize: 22, tbNameFontSize: 24, tbScoreFontSize: 28, tbApparatusFontSize: 18,
+    tbLineupNameFontSize: 20, tbLineupTeamFontSize: 22, tbLineupScoreFontSize: 22, tbLineupTotalFontSize: 26,
+    tbLogoSize: 40, tbHeadshotSize: 36, tbRowMinHeight: 70, tbMinWidth: 500,
+  },
+  // hosts (Phase 7E.8)
+  'hosts': {
+    hostsBottom: 120, hostsLeft: 100, hostsMinWidth: 400,
+    hostsHeaderPaddingV: 12, hostsHeaderPaddingH: 24,
+    hostsTitleFontSize: 20,
+    hostsContentPaddingV: 12, hostsContentPaddingH: 24,
+    hostsNameFontSize: 24,
+  },
+  // coaches (Phase 7E.8)
+  'coaches': {
+    coachesOverlayTop: 780, coachesOverlayLeft: 100, coachesOverlayMinWidth: 400,
+    coachesTitleFontSize: 20, coachesOverlayLogoSize: 60,
+    coachesNameFontSize: 24,
+  },
+};
+
 // Compute the effective rendered height based on font sizes + padding
 // Shows producers the real pixel value instead of "0 (auto)"
 function getEffectiveVenueHeight(overrides, graphicId) {
@@ -5302,6 +5409,896 @@ export default function ThemeEditorPage() {
                                         </div>
                                       </div>
                                       <p className="mt-1 text-[10px] text-zinc-500">The "Powered by Virtius" branding line with cyan accent.</p>
+                                    </div>
+
+                                    {/* Reset button */}
+                                    {overrideCount > 0 && (
+                                      <div className="pt-2 flex justify-end">
+                                        <button onClick={() => resetGraphicOverrides(graphicId)} className="text-[10px] text-zinc-400 hover:text-zinc-300 transition-colors">
+                                          Reset to theme defaults
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : isOverlayGraphic(graphicId) ? (
+                                  /* ========== RICH OVERLAY CONTROLS (rotation-slate, logos, now-competing, etc.) ========== */
+                                  <div className="pt-3 space-y-4">
+                                    {/* ROTATION-SLATE controls */}
+                                    {(graphicId === 'rotation-slate' || graphicId === 'rotation-slate-auto') && (() => {
+                                      const defs = OVERLAY_DEFAULTS[graphicId] || OVERLAY_DEFAULTS['rotation-slate'];
+                                      return (
+                                        <>
+                                          {/* TYPOGRAPHY */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Typography</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <div className="flex flex-col gap-0.5">
+                                                <span className="text-[10px] text-zinc-500">Meet Name Font</span>
+                                                <select
+                                                  value={overrides.meetNameFontFamily || defs.meetNameFontFamily}
+                                                  onChange={(e) => updateOverrideField(graphicId, 'meetNameFontFamily', e.target.value)}
+                                                  className="px-2 py-1.5 bg-zinc-700 border border-zinc-600 rounded text-white text-xs"
+                                                >
+                                                  {FONT_FAMILIES.map(f => (
+                                                    <option key={f.value} value={f.value}>{f.label}</option>
+                                                  ))}
+                                                </select>
+                                              </div>
+                                              <div className="flex flex-col gap-0.5">
+                                                <span className="text-[10px] text-zinc-500">Meet Name Weight</span>
+                                                <select
+                                                  value={overrides.meetNameFontWeight || defs.meetNameFontWeight}
+                                                  onChange={(e) => updateOverrideField(graphicId, 'meetNameFontWeight', e.target.value)}
+                                                  className="px-2 py-1.5 bg-zinc-700 border border-zinc-600 rounded text-white text-xs"
+                                                >
+                                                  {FONT_WEIGHTS.map(w => (
+                                                    <option key={w.value} value={w.value}>{w.label}</option>
+                                                  ))}
+                                                </select>
+                                              </div>
+                                              <div className="flex flex-col gap-0.5">
+                                                <span className="text-[10px] text-zinc-500">Meet Name Transform</span>
+                                                <select
+                                                  value={overrides.meetNameTextTransform || defs.meetNameTextTransform}
+                                                  onChange={(e) => updateOverrideField(graphicId, 'meetNameTextTransform', e.target.value)}
+                                                  className="px-2 py-1.5 bg-zinc-700 border border-zinc-600 rounded text-white text-xs"
+                                                >
+                                                  {TEXT_TRANSFORMS.map(t => (
+                                                    <option key={t.value} value={t.value}>{t.label}</option>
+                                                  ))}
+                                                </select>
+                                              </div>
+                                              <div className="flex flex-col gap-0.5">
+                                                <span className="text-[10px] text-zinc-500">Rotation Label Font</span>
+                                                <select
+                                                  value={overrides.rotationLabelFontFamily || defs.rotationLabelFontFamily}
+                                                  onChange={(e) => updateOverrideField(graphicId, 'rotationLabelFontFamily', e.target.value)}
+                                                  className="px-2 py-1.5 bg-zinc-700 border border-zinc-600 rounded text-white text-xs"
+                                                >
+                                                  {FONT_FAMILIES.map(f => (
+                                                    <option key={f.value} value={f.value}>{f.label}</option>
+                                                  ))}
+                                                </select>
+                                              </div>
+                                              <div className="flex flex-col gap-0.5">
+                                                <span className="text-[10px] text-zinc-500">Rotation Number Font</span>
+                                                <select
+                                                  value={overrides.rotationNumberFontFamily || defs.rotationNumberFontFamily}
+                                                  onChange={(e) => updateOverrideField(graphicId, 'rotationNumberFontFamily', e.target.value)}
+                                                  className="px-2 py-1.5 bg-zinc-700 border border-zinc-600 rounded text-white text-xs"
+                                                >
+                                                  {FONT_FAMILIES.map(f => (
+                                                    <option key={f.value} value={f.value}>{f.label}</option>
+                                                  ))}
+                                                </select>
+                                              </div>
+                                              <div className="flex flex-col gap-0.5">
+                                                <span className="text-[10px] text-zinc-500">Badge Font</span>
+                                                <select
+                                                  value={overrides.badgeLabelFontFamily || defs.badgeLabelFontFamily}
+                                                  onChange={(e) => updateOverrideField(graphicId, 'badgeLabelFontFamily', e.target.value)}
+                                                  className="px-2 py-1.5 bg-zinc-700 border border-zinc-600 rounded text-white text-xs"
+                                                >
+                                                  {FONT_FAMILIES.map(f => (
+                                                    <option key={f.value} value={f.value}>{f.label}</option>
+                                                  ))}
+                                                </select>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </>
+                                      );
+                                    })()}
+
+                                    {/* LOGOS controls */}
+                                    {graphicId === 'logos' && (() => {
+                                      const defs = OVERLAY_DEFAULTS['logos'];
+                                      return (
+                                        <>
+                                          {/* ROW LAYOUT (2-4 teams) */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Row Layout (2-4 Teams)</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Logo Size"
+                                                value={overrides.logosSize ?? defs.logosSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'logosSize', v)}
+                                                step={10}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Gap"
+                                                value={overrides.logosGap ?? defs.logosGap}
+                                                onChange={(v) => updateOverrideField(graphicId, 'logosGap', v)}
+                                                step={10}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Border Radius"
+                                                value={overrides.logosBorderRadius ?? defs.logosBorderRadius}
+                                                onChange={(v) => updateOverrideField(graphicId, 'logosBorderRadius', v)}
+                                                step={4}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Padding"
+                                                value={overrides.logosPadding ?? defs.logosPadding}
+                                                onChange={(v) => updateOverrideField(graphicId, 'logosPadding', v)}
+                                                step={5}
+                                                unit="px"
+                                              />
+                                            </div>
+                                          </div>
+                                          {/* GRID LAYOUT (5+ teams) */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Grid Layout (5+ Teams)</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Logo Size"
+                                                value={overrides.logosGridSize ?? defs.logosGridSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'logosGridSize', v)}
+                                                step={10}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Gap"
+                                                value={overrides.logosGridGap ?? defs.logosGridGap}
+                                                onChange={(v) => updateOverrideField(graphicId, 'logosGridGap', v)}
+                                                step={10}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Outer Padding"
+                                                value={overrides.logosGridPadding ?? defs.logosGridPadding}
+                                                onChange={(v) => updateOverrideField(graphicId, 'logosGridPadding', v)}
+                                                step={10}
+                                                unit="px"
+                                              />
+                                            </div>
+                                          </div>
+                                        </>
+                                      );
+                                    })()}
+
+                                    {/* NOW-COMPETING controls */}
+                                    {graphicId === 'now-competing' && (() => {
+                                      const defs = OVERLAY_DEFAULTS['now-competing'];
+                                      return (
+                                        <>
+                                          {/* POSITION */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Position</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Bottom"
+                                                value={overrides.ncBottom ?? defs.ncBottom}
+                                                onChange={(v) => updateOverrideField(graphicId, 'ncBottom', v)}
+                                                step={10}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Left"
+                                                value={overrides.ncLeft ?? defs.ncLeft}
+                                                onChange={(v) => updateOverrideField(graphicId, 'ncLeft', v)}
+                                                step={10}
+                                                unit="px"
+                                              />
+                                            </div>
+                                          </div>
+                                          {/* STATUS BADGE */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Status Badge</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Font Size"
+                                                value={overrides.ncStatusFontSize ?? defs.ncStatusFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'ncStatusFontSize', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Dot Size"
+                                                value={overrides.ncDotSize ?? defs.ncDotSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'ncDotSize', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                            </div>
+                                          </div>
+                                          {/* EVENT HEADER */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Event Header</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Font Size"
+                                                value={overrides.ncEventFontSize ?? defs.ncEventFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'ncEventFontSize', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Min Width"
+                                                value={overrides.ncEventMinWidth ?? defs.ncEventMinWidth}
+                                                onChange={(v) => updateOverrideField(graphicId, 'ncEventMinWidth', v)}
+                                                step={20}
+                                                unit="px"
+                                              />
+                                            </div>
+                                          </div>
+                                          {/* DETAILS */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Details</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Name Font Size"
+                                                value={overrides.ncNameFontSize ?? defs.ncNameFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'ncNameFontSize', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Team Font Size"
+                                                value={overrides.ncTeamFontSize ?? defs.ncTeamFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'ncTeamFontSize', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                            </div>
+                                          </div>
+                                          {/* LOGO */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Logo</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Container Width"
+                                                value={overrides.ncLogoContainerWidth ?? defs.ncLogoContainerWidth}
+                                                onChange={(v) => updateOverrideField(graphicId, 'ncLogoContainerWidth', v)}
+                                                step={10}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Logo Size"
+                                                value={overrides.ncLogoSize ?? defs.ncLogoSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'ncLogoSize', v)}
+                                                step={10}
+                                                unit="px"
+                                              />
+                                            </div>
+                                          </div>
+                                        </>
+                                      );
+                                    })()}
+
+                                    {/* LIVE-CAMERA controls */}
+                                    {graphicId === 'live-camera' && (() => {
+                                      const defs = OVERLAY_DEFAULTS['live-camera'];
+                                      return (
+                                        <>
+                                          {/* POSITION */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Position</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Top"
+                                                value={overrides.lcTop ?? defs.lcTop}
+                                                onChange={(v) => updateOverrideField(graphicId, 'lcTop', v)}
+                                                step={10}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Left"
+                                                value={overrides.lcLeft ?? defs.lcLeft}
+                                                onChange={(v) => updateOverrideField(graphicId, 'lcLeft', v)}
+                                                step={10}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Gap"
+                                                value={overrides.lcGap ?? defs.lcGap}
+                                                onChange={(v) => updateOverrideField(graphicId, 'lcGap', v)}
+                                                step={4}
+                                                unit="px"
+                                              />
+                                            </div>
+                                          </div>
+                                          {/* INDICATOR */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Live Indicator</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Font Size"
+                                                value={overrides.lcIndicatorFontSize ?? defs.lcIndicatorFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'lcIndicatorFontSize', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Dot Size"
+                                                value={overrides.lcDotSize ?? defs.lcDotSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'lcDotSize', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Border Radius"
+                                                value={overrides.lcIndicatorRadius ?? defs.lcIndicatorRadius}
+                                                onChange={(v) => updateOverrideField(graphicId, 'lcIndicatorRadius', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                            </div>
+                                          </div>
+                                          {/* APPARATUS LABEL */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Apparatus Label</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Font Size"
+                                                value={overrides.lcApparatusFontSize ?? defs.lcApparatusFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'lcApparatusFontSize', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Border Radius"
+                                                value={overrides.lcApparatusRadius ?? defs.lcApparatusRadius}
+                                                onChange={(v) => updateOverrideField(graphicId, 'lcApparatusRadius', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                            </div>
+                                          </div>
+                                        </>
+                                      );
+                                    })()}
+
+                                    {/* INTERVIEW-CARD controls */}
+                                    {graphicId === 'interview-card' && (() => {
+                                      const defs = OVERLAY_DEFAULTS['interview-card'];
+                                      return (
+                                        <>
+                                          {/* PANEL */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Panel</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Left"
+                                                value={overrides.icPanelLeft ?? defs.icPanelLeft}
+                                                onChange={(v) => updateOverrideField(graphicId, 'icPanelLeft', v)}
+                                                step={10}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Top"
+                                                value={overrides.icPanelTop ?? defs.icPanelTop}
+                                                onChange={(v) => updateOverrideField(graphicId, 'icPanelTop', v)}
+                                                step={10}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Width"
+                                                value={overrides.icPanelWidth ?? defs.icPanelWidth}
+                                                onChange={(v) => updateOverrideField(graphicId, 'icPanelWidth', v)}
+                                                step={20}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Height"
+                                                value={overrides.icPanelHeight ?? defs.icPanelHeight}
+                                                onChange={(v) => updateOverrideField(graphicId, 'icPanelHeight', v)}
+                                                step={20}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Border Radius"
+                                                value={overrides.icPanelRadius ?? defs.icPanelRadius}
+                                                onChange={(v) => updateOverrideField(graphicId, 'icPanelRadius', v)}
+                                                step={4}
+                                                unit="px"
+                                              />
+                                            </div>
+                                          </div>
+                                          {/* COACH NAME */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Coach Name</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Font Size"
+                                                value={overrides.icCoachNameFontSize ?? defs.icCoachNameFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'icCoachNameFontSize', v)}
+                                                step={4}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Margin"
+                                                value={overrides.icCoachNameMargin ?? defs.icCoachNameMargin}
+                                                onChange={(v) => updateOverrideField(graphicId, 'icCoachNameMargin', v)}
+                                                step={4}
+                                                unit="px"
+                                              />
+                                            </div>
+                                          </div>
+                                          {/* SCHOOL */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">School</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Logo Size"
+                                                value={overrides.icSchoolLogoSize ?? defs.icSchoolLogoSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'icSchoolLogoSize', v)}
+                                                step={10}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Name Font Size"
+                                                value={overrides.icSchoolNameFontSize ?? defs.icSchoolNameFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'icSchoolNameFontSize', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                            </div>
+                                          </div>
+                                          {/* QUESTION */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Question</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Font Size"
+                                                value={overrides.icQuestionFontSize ?? defs.icQuestionFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'icQuestionFontSize', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Max Width"
+                                                value={overrides.icQuestionMaxWidth ?? defs.icQuestionMaxWidth}
+                                                onChange={(v) => updateOverrideField(graphicId, 'icQuestionMaxWidth', v)}
+                                                step={20}
+                                                unit="px"
+                                              />
+                                            </div>
+                                          </div>
+                                          {/* EVENT LOGO */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Event Logo</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Height"
+                                                value={overrides.icEventLogoHeight ?? defs.icEventLogoHeight}
+                                                onChange={(v) => updateOverrideField(graphicId, 'icEventLogoHeight', v)}
+                                                step={10}
+                                                unit="px"
+                                              />
+                                            </div>
+                                          </div>
+                                        </>
+                                      );
+                                    })()}
+
+                                    {/* ATHLETE-SPOTLIGHT controls */}
+                                    {graphicId === 'athlete-spotlight' && (() => {
+                                      const defs = OVERLAY_DEFAULTS['athlete-spotlight'];
+                                      return (
+                                        <>
+                                          {/* POSITION */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Position</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Bottom"
+                                                value={overrides.asBottom ?? defs.asBottom}
+                                                onChange={(v) => updateOverrideField(graphicId, 'asBottom', v)}
+                                                step={10}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Left"
+                                                value={overrides.asLeft ?? defs.asLeft}
+                                                onChange={(v) => updateOverrideField(graphicId, 'asLeft', v)}
+                                                step={10}
+                                                unit="px"
+                                              />
+                                            </div>
+                                          </div>
+                                          {/* EVENT HEADER */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Event Header</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Font Size"
+                                                value={overrides.asEventFontSize ?? defs.asEventFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'asEventFontSize', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Logo Size"
+                                                value={overrides.asLogoSize ?? defs.asLogoSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'asLogoSize', v)}
+                                                step={10}
+                                                unit="px"
+                                              />
+                                            </div>
+                                          </div>
+                                          {/* HEADSHOT */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Headshot</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Size"
+                                                value={overrides.asHeadshotSize ?? defs.asHeadshotSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'asHeadshotSize', v)}
+                                                step={10}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Border"
+                                                value={overrides.asHeadshotBorder ?? defs.asHeadshotBorder}
+                                                onChange={(v) => updateOverrideField(graphicId, 'asHeadshotBorder', v)}
+                                                step={1}
+                                                unit="px"
+                                              />
+                                            </div>
+                                          </div>
+                                          {/* NAME */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Athlete Name</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Font Size"
+                                                value={overrides.asNameFontSize ?? defs.asNameFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'asNameFontSize', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Details Font Size"
+                                                value={overrides.asDetailsFontSize ?? defs.asDetailsFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'asDetailsFontSize', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                            </div>
+                                          </div>
+                                        </>
+                                      );
+                                    })()}
+
+                                    {/* EVENT-CALENDAR controls */}
+                                    {graphicId === 'event-calendar' && (() => {
+                                      const defs = OVERLAY_DEFAULTS['event-calendar'];
+                                      return (
+                                        <>
+                                          {/* HEADER */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Header</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Title Font Size"
+                                                value={overrides.ecTitleFontSize ?? defs.ecTitleFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'ecTitleFontSize', v)}
+                                                step={4}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Logo Size"
+                                                value={overrides.ecLogoSize ?? defs.ecLogoSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'ecLogoSize', v)}
+                                                step={10}
+                                                unit="px"
+                                              />
+                                            </div>
+                                          </div>
+                                          {/* EVENT ITEMS */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Event Items</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Date Font Size"
+                                                value={overrides.ecDateFontSize ?? defs.ecDateFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'ecDateFontSize', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Name Font Size"
+                                                value={overrides.ecNameFontSize ?? defs.ecNameFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'ecNameFontSize', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Location Font Size"
+                                                value={overrides.ecLocationFontSize ?? defs.ecLocationFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'ecLocationFontSize', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Item Padding"
+                                                value={overrides.ecItemPadding ?? defs.ecItemPadding}
+                                                onChange={(v) => updateOverrideField(graphicId, 'ecItemPadding', v)}
+                                                step={5}
+                                                unit="px"
+                                              />
+                                            </div>
+                                          </div>
+                                          {/* LAYOUT */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Layout</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Column Gap (8+)"
+                                                value={overrides.ecColumnGap ?? defs.ecColumnGap}
+                                                onChange={(v) => updateOverrideField(graphicId, 'ecColumnGap', v)}
+                                                step={5}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Border Radius"
+                                                value={overrides.ecBorderRadius ?? defs.ecBorderRadius}
+                                                onChange={(v) => updateOverrideField(graphicId, 'ecBorderRadius', v)}
+                                                step={4}
+                                                unit="px"
+                                              />
+                                            </div>
+                                          </div>
+                                        </>
+                                      );
+                                    })()}
+
+                                    {/* TEAM-BUG controls */}
+                                    {graphicId === 'team-bug' && (() => {
+                                      const defs = OVERLAY_DEFAULTS['team-bug'];
+                                      return (
+                                        <>
+                                          {/* TYPOGRAPHY */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Typography</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Name Font Size"
+                                                value={overrides.tbNameFontSize ?? defs.tbNameFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'tbNameFontSize', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Score Font Size"
+                                                value={overrides.tbScoreFontSize ?? defs.tbScoreFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'tbScoreFontSize', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Total Font Size"
+                                                value={overrides.tbTotalFontSize ?? defs.tbTotalFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'tbTotalFontSize', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Apparatus Font"
+                                                value={overrides.tbApparatusFontSize ?? defs.tbApparatusFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'tbApparatusFontSize', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                            </div>
+                                            <p className="mt-1 text-[10px] text-zinc-500 italic">State colors (green stick, amber, cyan) are not overridable.</p>
+                                          </div>
+                                          {/* SIZING */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Sizing</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Logo Size"
+                                                value={overrides.tbLogoSize ?? defs.tbLogoSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'tbLogoSize', v)}
+                                                step={5}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Headshot Size"
+                                                value={overrides.tbHeadshotSize ?? defs.tbHeadshotSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'tbHeadshotSize', v)}
+                                                step={5}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Row Min Height"
+                                                value={overrides.tbRowMinHeight ?? defs.tbRowMinHeight}
+                                                onChange={(v) => updateOverrideField(graphicId, 'tbRowMinHeight', v)}
+                                                step={5}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Min Width"
+                                                value={overrides.tbMinWidth ?? defs.tbMinWidth}
+                                                onChange={(v) => updateOverrideField(graphicId, 'tbMinWidth', v)}
+                                                step={20}
+                                                unit="px"
+                                              />
+                                            </div>
+                                          </div>
+                                        </>
+                                      );
+                                    })()}
+
+                                    {/* HOSTS controls */}
+                                    {graphicId === 'hosts' && (() => {
+                                      const defs = OVERLAY_DEFAULTS['hosts'];
+                                      return (
+                                        <>
+                                          {/* POSITION */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Position</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Bottom"
+                                                value={overrides.hostsBottom ?? defs.hostsBottom}
+                                                onChange={(v) => updateOverrideField(graphicId, 'hostsBottom', v)}
+                                                step={10}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Left"
+                                                value={overrides.hostsLeft ?? defs.hostsLeft}
+                                                onChange={(v) => updateOverrideField(graphicId, 'hostsLeft', v)}
+                                                step={10}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Min Width"
+                                                value={overrides.hostsMinWidth ?? defs.hostsMinWidth}
+                                                onChange={(v) => updateOverrideField(graphicId, 'hostsMinWidth', v)}
+                                                step={20}
+                                                unit="px"
+                                              />
+                                            </div>
+                                          </div>
+                                          {/* TYPOGRAPHY */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Typography</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Title Font Size"
+                                                value={overrides.hostsTitleFontSize ?? defs.hostsTitleFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'hostsTitleFontSize', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Name Font Size"
+                                                value={overrides.hostsNameFontSize ?? defs.hostsNameFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'hostsNameFontSize', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                            </div>
+                                          </div>
+                                        </>
+                                      );
+                                    })()}
+
+                                    {/* COACHES overlay controls */}
+                                    {graphicId === 'coaches' && (() => {
+                                      const defs = OVERLAY_DEFAULTS['coaches'];
+                                      return (
+                                        <>
+                                          {/* POSITION */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Position</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Top"
+                                                value={overrides.coachesOverlayTop ?? defs.coachesOverlayTop}
+                                                onChange={(v) => updateOverrideField(graphicId, 'coachesOverlayTop', v)}
+                                                step={10}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Left"
+                                                value={overrides.coachesOverlayLeft ?? defs.coachesOverlayLeft}
+                                                onChange={(v) => updateOverrideField(graphicId, 'coachesOverlayLeft', v)}
+                                                step={10}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Min Width"
+                                                value={overrides.coachesOverlayMinWidth ?? defs.coachesOverlayMinWidth}
+                                                onChange={(v) => updateOverrideField(graphicId, 'coachesOverlayMinWidth', v)}
+                                                step={20}
+                                                unit="px"
+                                              />
+                                            </div>
+                                          </div>
+                                          {/* TYPOGRAPHY */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Typography</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Title Font Size"
+                                                value={overrides.coachesTitleFontSize ?? defs.coachesTitleFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'coachesTitleFontSize', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Name Font Size"
+                                                value={overrides.coachesNameFontSize ?? defs.coachesNameFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'coachesNameFontSize', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Logo Size"
+                                                value={overrides.coachesOverlayLogoSize ?? defs.coachesOverlayLogoSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'coachesOverlayLogoSize', v)}
+                                                step={10}
+                                                unit="px"
+                                              />
+                                            </div>
+                                          </div>
+                                        </>
+                                      );
+                                    })()}
+
+                                    {/* Shared Colors section for all overlays */}
+                                    <div className="pt-2 border-t border-zinc-700/50">
+                                      <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Colors</div>
+                                      <div className="grid grid-cols-2 gap-2">
+                                        {OVERRIDE_COLOR_FIELDS.slice(0, 4).map(({ key, label }) => {
+                                          const hasOverride = overrides[key] !== undefined;
+                                          const overrideValue = overrides[key] || editingTheme.colors[key] || '#888888';
+                                          return (
+                                            <div key={key} className="flex items-center gap-2">
+                                              <label className="flex items-center gap-1.5 cursor-pointer">
+                                                <input
+                                                  type="checkbox"
+                                                  checked={hasOverride}
+                                                  onChange={(e) => {
+                                                    if (e.target.checked) {
+                                                      updateOverrideField(graphicId, key, editingTheme.colors[key] || '#888888');
+                                                    } else {
+                                                      clearOverrideField(graphicId, key);
+                                                    }
+                                                  }}
+                                                  className="w-3.5 h-3.5 rounded border-zinc-600 bg-zinc-700 text-purple-500"
+                                                />
+                                              </label>
+                                              <input
+                                                type="color"
+                                                value={overrideValue}
+                                                disabled={!hasOverride}
+                                                onChange={(e) => updateOverrideField(graphicId, key, e.target.value)}
+                                                className={`w-6 h-6 rounded cursor-pointer bg-transparent border-0 ${!hasOverride ? 'opacity-40' : ''}`}
+                                              />
+                                              <span className={`text-[10px] ${hasOverride ? 'text-zinc-300' : 'text-zinc-500'}`}>{label}</span>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
                                     </div>
 
                                     {/* Reset button */}
