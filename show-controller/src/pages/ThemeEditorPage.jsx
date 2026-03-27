@@ -606,6 +606,10 @@ export default function ThemeEditorPage() {
   const [showTemplatePanel, setShowTemplatePanel] = useState(false);
   const [showApplyTemplateConfirm, setShowApplyTemplateConfirm] = useState(false);
 
+  // Full-Screen Template state
+  const [showFullScreenTemplatePanel, setShowFullScreenTemplatePanel] = useState(false);
+  const [showApplyFullScreenTemplateConfirm, setShowApplyFullScreenTemplateConfirm] = useState(false);
+
   // Apply lower-third template values to all three lower-third graphics
   const applyLowerThirdTemplate = () => {
     const template = editingTheme.lowerThirdTemplate || {};
@@ -637,6 +641,53 @@ export default function ThemeEditorPage() {
       const tmpl = { ...(prev.lowerThirdTemplate || {}) };
       delete tmpl[key];
       return { ...prev, lowerThirdTemplate: tmpl };
+    });
+  };
+
+  // Apply full-screen template values to all five full-screen graphics
+  const applyFullScreenTemplate = () => {
+    const template = editingTheme.fullScreenTemplate || {};
+    const templateKeys = Object.keys(template).filter(k => template[k] !== undefined && template[k] !== null && template[k] !== '');
+    if (templateKeys.length === 0) return;
+
+    // Keys that only apply to certain graphics (don't copy these to incompatible graphics)
+    const leaderboardOnlyKeys = ['goldFrom', 'goldTo', 'silverFrom', 'silverTo', 'bronzeFrom', 'bronzeTo', 'stickBonusBg', 'medalSize', 'rankColWidth', 'containerTop', 'containerLeft', 'containerRight', 'containerBottom'];
+    const frameOnlyKeys = ['frameBorderWidth', 'frameBorderColor', 'frameGap', 'logoHeaderHeight', 'frameLogoSize', 'frameLogoMaxWidth', 'watermarkFontSize', 'watermarkFontWeight', 'watermarkColor', 'watermarkAccentColor', 'watermarkBottom', 'watermarkRight', 'showWatermark'];
+    const rosterOnlyKeys = ['rosterContainerPadding', 'rosterGridGap', 'rosterHeadshotSize', 'rosterHeadshotRadius', 'rosterHeadshotBorder', 'rosterHeadshotBorderColor', 'rosterHeadshotBg', 'rosterNameFontSize', 'rosterNameFontWeight', 'rosterNameFontFamily', 'rosterNameTextTransform', 'rosterInitialsFontSize', 'rosterInitialsColor', 'rosterInitialsBg', 'rosterCardWidth'];
+    const sponsorOnlyKeys = ['gridGap', 'gridPadding', 'sponsorItemPadding'];
+    const summaryOnlyKeys = ['scoreFontFamily', 'scoreFontSize', 'footerHeight', 'footerFontSize', 'teamNameFontSize', 'athleteNameFontSize', 'rowHeight', 'rowPadding'];
+
+    setEditingTheme(prev => {
+      const newOverrides = { ...prev.overrides };
+      for (const gId of FULL_SCREEN_GRAPHICS) {
+        newOverrides[gId] = { ...(newOverrides[gId] || {}) };
+        for (const key of templateKeys) {
+          // Skip keys that don't apply to this graphic
+          if (gId !== 'virtuis-leaderboard' && leaderboardOnlyKeys.includes(key)) continue;
+          if (gId !== 'event-frame' && frameOnlyKeys.includes(key)) continue;
+          if (gId !== 'team-roster' && rosterOnlyKeys.includes(key)) continue;
+          if (gId !== 'sponsors-thanks' && sponsorOnlyKeys.includes(key)) continue;
+          if (gId !== 'event-summary' && summaryOnlyKeys.includes(key)) continue;
+          newOverrides[gId][key] = template[key];
+        }
+      }
+      return { ...prev, overrides: newOverrides };
+    });
+    setShowApplyFullScreenTemplateConfirm(false);
+  };
+
+  const updateFullScreenTemplateField = (key, value) => {
+    setEditingTheme(prev => ({
+      ...prev,
+      fullScreenTemplate: { ...(prev.fullScreenTemplate || {}), [key]: value },
+    }));
+  };
+
+  const clearFullScreenTemplateField = (key) => {
+    setEditingTheme(prev => {
+      const tmpl = { ...(prev.fullScreenTemplate || {}) };
+      delete tmpl[key];
+      return { ...prev, fullScreenTemplate: tmpl };
     });
   };
 
@@ -2104,6 +2155,152 @@ export default function ThemeEditorPage() {
                                     className="w-full px-3 py-2 text-xs bg-teal-600/20 text-teal-400 hover:bg-teal-600/30 rounded-lg font-semibold transition-colors"
                                   >
                                     Apply to All Lower-Thirds
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
+
+                    {/* FULL-SCREEN TEMPLATE — only for Full-Screen group */}
+                    {group.label === 'Full-Screen' && (
+                      <div className="bg-zinc-800/80 rounded-lg overflow-hidden mb-2 border border-teal-500/30">
+                        <button
+                          onClick={() => setShowFullScreenTemplatePanel(p => !p)}
+                          className="w-full flex items-center justify-between px-3 py-2 hover:bg-zinc-700/50 transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-teal-400 font-semibold">Template</span>
+                            <span className="text-[10px] text-zinc-500">Set shared values for all full-screen graphics</span>
+                          </div>
+                          <svg className={`w-4 h-4 text-teal-500 transition-transform ${showFullScreenTemplatePanel ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                        {showFullScreenTemplatePanel && (() => {
+                          const tmpl = editingTheme.fullScreenTemplate || {};
+                          return (
+                            <div className="px-3 pb-3 border-t border-teal-500/20 space-y-4 pt-3">
+                              {/* SHARED: Container Margins */}
+                              <div>
+                                <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Container Margins (shared)</div>
+                                <div className="grid grid-cols-3 gap-2">
+                                  <OverrideStepper label="Top" value={tmpl.containerMarginTop ?? 70} onChange={(v) => updateFullScreenTemplateField('containerMarginTop', v)} min={0} max={200} step={5} suffix="px" />
+                                  <OverrideStepper label="Side" value={tmpl.containerMarginSide ?? 70} onChange={(v) => updateFullScreenTemplateField('containerMarginSide', v)} min={0} max={200} step={5} suffix="px" />
+                                  <OverrideStepper label="Bottom" value={tmpl.containerMarginBottom ?? 70} onChange={(v) => updateFullScreenTemplateField('containerMarginBottom', v)} min={0} max={200} step={5} suffix="px" />
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 mt-2">
+                                  <OverrideStepper label="Border radius" value={tmpl.containerBorderRadius ?? 16} onChange={(v) => updateFullScreenTemplateField('containerBorderRadius', v)} min={0} max={60} step={2} suffix="px" />
+                                </div>
+                              </div>
+                              {/* SHARED: Header Styling */}
+                              <div className="pt-2 border-t border-zinc-700/30">
+                                <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Header (shared)</div>
+                                <div className="space-y-2">
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <OverrideStepper label="Height" value={tmpl.headerHeight ?? 80} onChange={(v) => updateFullScreenTemplateField('headerHeight', v)} min={40} max={200} step={5} suffix="px" />
+                                    <OverrideStepper label="Padding" value={tmpl.headerPadding ?? 40} onChange={(v) => updateFullScreenTemplateField('headerPadding', v)} min={0} max={100} step={5} suffix="px" />
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <OverrideStepper label="Logo size" value={tmpl.headerLogoSize ?? 60} onChange={(v) => updateFullScreenTemplateField('headerLogoSize', v)} min={20} max={150} step={5} suffix="px" />
+                                  </div>
+                                </div>
+                              </div>
+                              {/* SHARED: Title Typography */}
+                              <div className="pt-2 border-t border-zinc-700/30">
+                                <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Title Typography (shared)</div>
+                                <div className="space-y-2">
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <OverrideStepper label="Font size" value={tmpl.titleFontSize ?? 36} onChange={(v) => updateFullScreenTemplateField('titleFontSize', v)} min={16} max={72} step={2} suffix="px" />
+                                    <div>
+                                      <div className="text-[9px] text-zinc-500 mb-1">Weight</div>
+                                      <select
+                                        value={tmpl.titleFontWeight ?? '800'}
+                                        onChange={(e) => updateFullScreenTemplateField('titleFontWeight', e.target.value)}
+                                        className="w-full px-2 py-1.5 text-xs bg-zinc-700 border border-zinc-600 rounded text-zinc-200"
+                                      >
+                                        <option value="400">Regular</option>
+                                        <option value="500">Medium</option>
+                                        <option value="600">Semi-Bold</option>
+                                        <option value="700">Bold</option>
+                                        <option value="800">Extra-Bold</option>
+                                        <option value="900">Black</option>
+                                      </select>
+                                    </div>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                      <div className="text-[9px] text-zinc-500 mb-1">Font family</div>
+                                      <select
+                                        value={tmpl.titleFontFamily ?? 'Inter'}
+                                        onChange={(e) => updateFullScreenTemplateField('titleFontFamily', e.target.value)}
+                                        className="w-full px-2 py-1.5 text-xs bg-zinc-700 border border-zinc-600 rounded text-zinc-200"
+                                      >
+                                        <option value="Inter">Inter</option>
+                                        <option value="Inter Tight">Inter Tight</option>
+                                        <option value="Poppins">Poppins</option>
+                                      </select>
+                                    </div>
+                                    <div>
+                                      <div className="text-[9px] text-zinc-500 mb-1">Transform</div>
+                                      <select
+                                        value={tmpl.titleTextTransform ?? 'uppercase'}
+                                        onChange={(e) => updateFullScreenTemplateField('titleTextTransform', e.target.value)}
+                                        className="w-full px-2 py-1.5 text-xs bg-zinc-700 border border-zinc-600 rounded text-zinc-200"
+                                      >
+                                        <option value="none">None</option>
+                                        <option value="uppercase">UPPERCASE</option>
+                                        <option value="capitalize">Capitalize</option>
+                                      </select>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              {/* SHARED: Content Styling */}
+                              <div className="pt-2 border-t border-zinc-700/30">
+                                <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Content (shared)</div>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <OverrideStepper label="Padding" value={tmpl.contentPadding ?? 30} onChange={(v) => updateFullScreenTemplateField('contentPadding', v)} min={0} max={100} step={5} suffix="px" />
+                                </div>
+                              </div>
+                              {/* SHARED: Colors */}
+                              <div className="pt-2 border-t border-zinc-700/30">
+                                <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Colors (shared)</div>
+                                <div className="grid grid-cols-4 gap-2">
+                                  <div className="flex flex-col items-center gap-1">
+                                    <input type="color" value={tmpl.headerBar || editingTheme.colors?.headerBar || '#BFBFBF'} onChange={(e) => updateFullScreenTemplateField('headerBar', e.target.value)} className="w-8 h-8 rounded cursor-pointer bg-transparent border-0" />
+                                    <span className="text-[9px] text-zinc-500">Header</span>
+                                  </div>
+                                  <div className="flex flex-col items-center gap-1">
+                                    <input type="color" value={tmpl.contentArea || editingTheme.colors?.contentArea || '#000000'} onChange={(e) => updateFullScreenTemplateField('contentArea', e.target.value)} className="w-8 h-8 rounded cursor-pointer bg-transparent border-0" />
+                                    <span className="text-[9px] text-zinc-500">Content</span>
+                                  </div>
+                                  <div className="flex flex-col items-center gap-1">
+                                    <input type="color" value={tmpl.textOnHeader || editingTheme.colors?.textOnHeader || '#000000'} onChange={(e) => updateFullScreenTemplateField('textOnHeader', e.target.value)} className="w-8 h-8 rounded cursor-pointer bg-transparent border-0" />
+                                    <span className="text-[9px] text-zinc-500">Hdr Text</span>
+                                  </div>
+                                  <div className="flex flex-col items-center gap-1">
+                                    <input type="color" value={tmpl.textOnContent || editingTheme.colors?.textOnContent || '#FFFFFF'} onChange={(e) => updateFullScreenTemplateField('textOnContent', e.target.value)} className="w-8 h-8 rounded cursor-pointer bg-transparent border-0" />
+                                    <span className="text-[9px] text-zinc-500">Body Text</span>
+                                  </div>
+                                </div>
+                              </div>
+                              {/* Apply button */}
+                              <div className="pt-2 border-t border-zinc-700/30">
+                                {showApplyFullScreenTemplateConfirm ? (
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[11px] text-zinc-400">Apply template values to all 5 full-screen graphics?</span>
+                                    <button onClick={applyFullScreenTemplate} className="px-3 py-1 text-xs bg-teal-600 hover:bg-teal-500 rounded transition-colors">Apply</button>
+                                    <button onClick={() => setShowApplyFullScreenTemplateConfirm(false)} className="px-3 py-1 text-xs bg-zinc-700 hover:bg-zinc-600 rounded transition-colors">Cancel</button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={() => setShowApplyFullScreenTemplateConfirm(true)}
+                                    className="w-full px-3 py-2 text-xs bg-teal-600/20 text-teal-400 hover:bg-teal-600/30 rounded-lg font-semibold transition-colors"
+                                  >
+                                    Apply to All Full-Screen Graphics
                                   </button>
                                 )}
                               </div>
