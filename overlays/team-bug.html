@@ -21,6 +21,10 @@
       background: transparent;
     }
 
+    /* ==================== THEME CSS VARIABLES (Phase 7E.7) ==================== */
+    /* Base colors - theme-overridable via CSS variables */
+    /* 3-layer cascade: var(--team-bug-X, var(--meet-X, fallback)) */
+
     /* Score bug container - positioned on right side of screen */
     .score-bug {
       position: absolute;
@@ -29,7 +33,7 @@
       transform: translateY(-50%) translateX(100%);
       display: flex;
       flex-direction: column;
-      min-width: 500px;
+      min-width: var(--team-bug-tb-min-width, 500px);
       opacity: 0;
       transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     }
@@ -41,10 +45,10 @@
 
     /* Rotation tag at top */
     .rotation-tag {
-      background: #27272a;
-      color: #fff;
-      font-size: 20px;
-      font-weight: 700;
+      background: var(--team-bug-tb-header-bg, var(--meet-header-bg, #27272a));
+      color: var(--team-bug-tb-text-primary, var(--meet-header-text, #fff));
+      font-size: var(--team-bug-tb-rotation-font-size, 20px);
+      font-weight: var(--team-bug-tb-rotation-font-weight, 700);
       padding: 10px 20px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
@@ -60,9 +64,9 @@
     .team-row {
       display: flex;
       flex-direction: row;
-      background: #1a1a1a;
-      border-bottom: 1px solid #333;
-      min-height: 70px;
+      background: var(--team-bug-tb-bg, var(--meet-content-bg, #1a1a1a));
+      border-bottom: 1px solid var(--team-bug-tb-border-color, var(--meet-border-color, #333));
+      min-height: var(--team-bug-tb-row-min-height, 70px);
     }
 
     .team-row:last-child {
@@ -216,17 +220,17 @@
     }
 
     .team-row.on-bye .team-total {
-      color: #71717a;
+      color: var(--team-bug-tb-text-muted, #71717a);
     }
 
     .team-row.on-bye .slot-content {
-      color: #71717a;
+      color: var(--team-bug-tb-text-muted, #71717a);
     }
 
     .bye-indicator {
       font-size: 16px;
       font-weight: 600;
-      color: #71717a;
+      color: var(--team-bug-tb-text-muted, #71717a);
       text-transform: uppercase;
       letter-spacing: 1px;
     }
@@ -239,19 +243,20 @@
       justify-content: center;
       padding: 10px 15px;
       min-width: 100px;
-      background: #000;
+      background: var(--team-bug-tb-fixed-bg, #000);
     }
 
     .team-logo {
-      width: 40px;
-      height: 40px;
+      width: var(--team-bug-tb-logo-size, 40px);
+      height: var(--team-bug-tb-logo-size, 40px);
       object-fit: contain;
     }
 
     .team-total {
-      font-size: 22px;
-      font-weight: 900;
-      color: #fff;
+      font-size: var(--team-bug-tb-total-font-size, 22px);
+      font-weight: var(--team-bug-tb-total-font-weight, 900);
+      font-family: var(--team-bug-tb-score-font-family, 'Inter', sans-serif);
+      color: var(--team-bug-tb-text-primary, var(--meet-header-text, #fff));
       margin-top: 4px;
       font-variant-numeric: tabular-nums;
     }
@@ -260,8 +265,9 @@
       animation: totalPulse 0.5s ease;
     }
 
+    /* STATE COLOR: Cyan pulse - NOT overridable per task spec */
     @keyframes totalPulse {
-      0%, 100% { transform: scale(1); color: #fff; }
+      0%, 100% { transform: scale(1); color: var(--team-bug-tb-text-primary, var(--meet-header-text, #fff)); }
       50% { transform: scale(1.1); color: #22d3ee; }
     }
 
@@ -339,8 +345,8 @@
 
     /* Headshot in slot */
     .slot-headshot {
-      width: 36px;
-      height: 36px;
+      width: var(--team-bug-tb-headshot-size, 36px);
+      height: var(--team-bug-tb-headshot-size, 36px);
       border-radius: 50%;
       object-fit: cover;
       flex-shrink: 0;
@@ -348,24 +354,26 @@
 
     /* Athlete name in slot */
     .slot-name {
-      font-size: 24px;
-      font-weight: 700;
-      color: #fff;
+      font-size: var(--team-bug-tb-name-font-size, 24px);
+      font-weight: var(--team-bug-tb-name-font-weight, 700);
+      color: var(--team-bug-tb-text-primary, var(--meet-overlay-text, #fff));
       white-space: nowrap;
     }
 
     /* Score in slot */
     .slot-score {
-      font-size: 28px;
-      font-weight: 900;
-      color: #fff;
+      font-size: var(--team-bug-tb-score-font-size, 28px);
+      font-weight: var(--team-bug-tb-score-font-weight, 900);
+      font-family: var(--team-bug-tb-score-font-family, 'Inter', sans-serif);
+      color: var(--team-bug-tb-text-primary, var(--meet-overlay-text, #fff));
+      font-variant-numeric: tabular-nums;
     }
 
     /* Apparatus code */
     .slot-apparatus {
-      font-size: 18px;
-      font-weight: 600;
-      color: #a1a1aa;
+      font-size: var(--team-bug-tb-apparatus-font-size, 18px);
+      font-weight: var(--team-bug-tb-apparatus-font-weight, 600);
+      color: var(--team-bug-tb-text-secondary, #a1a1aa);
       text-transform: uppercase;
     }
 
@@ -373,30 +381,16 @@
     .slot-sv {
       font-size: 16px;
       font-weight: 400;
-      color: #71717a;
-    }
-
-    /* Stick indicator */
-    .slot-stick {
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      background: #22c55e;
-      color: #fff;
-      font-size: 14px;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      color: var(--team-bug-tb-text-muted, #71717a);
     }
 
     /* Separator dot */
     .slot-separator {
-      color: #52525b;
+      color: var(--team-bug-tb-text-dim, #52525b);
       font-size: 20px;
     }
 
-    /* Correction indicator (score was changed) */
+    /* STATE COLOR: Correction indicator (amber) - NOT overridable per task spec */
     .slot-correction {
       font-size: 14px;
       font-weight: 500;
@@ -404,7 +398,7 @@
       font-style: italic;
     }
 
-    /* Stick indicator (bonus landing - men's only) */
+    /* STATE COLOR: Stick indicator (green gradient) - NOT overridable per task spec */
     .slot-stick {
       display: inline-flex;
       align-items: center;
@@ -427,7 +421,7 @@
       bottom: 100%;
       right: 0;
       width: 100%;
-      background: #1a1a1a;
+      background: var(--team-bug-tb-bg, var(--meet-content-bg, #1a1a1a));
       transform: translateY(100%);
       opacity: 0;
       transition: transform 0.4s ease, opacity 0.4s ease;
@@ -444,13 +438,13 @@
       justify-content: space-between;
       align-items: center;
       padding: 12px 20px;
-      background: #27272a;
+      background: var(--team-bug-tb-header-bg, var(--meet-header-bg, #27272a));
     }
 
     .lineup-team-name {
-      font-size: 22px;
-      font-weight: 800;
-      color: #fff;
+      font-size: var(--team-bug-tb-lineup-team-font-size, 22px);
+      font-weight: var(--team-bug-tb-lineup-team-font-weight, 800);
+      color: var(--team-bug-tb-text-primary, var(--meet-header-text, #fff));
       text-transform: uppercase;
     }
 
@@ -474,35 +468,37 @@
     .lineup-order {
       font-size: 16px;
       font-weight: 600;
-      color: #71717a;
+      color: var(--team-bug-tb-text-muted, #71717a);
       min-width: 24px;
     }
 
     .lineup-name {
       flex: 1;
-      font-size: 20px;
-      font-weight: 600;
-      color: #fff;
+      font-size: var(--team-bug-tb-lineup-name-font-size, 20px);
+      font-weight: var(--team-bug-tb-lineup-name-font-weight, 600);
+      color: var(--team-bug-tb-text-primary, var(--meet-overlay-text, #fff));
     }
 
     .lineup-sv {
       font-size: 16px;
       font-weight: 400;
-      color: #71717a;
+      color: var(--team-bug-tb-text-muted, #71717a);
       min-width: 40px;
       text-align: right;
     }
 
     .lineup-score {
-      font-size: 22px;
-      font-weight: 700;
-      color: #fff;
+      font-size: var(--team-bug-tb-lineup-score-font-size, 22px);
+      font-weight: var(--team-bug-tb-lineup-score-font-weight, 700);
+      font-family: var(--team-bug-tb-score-font-family, 'Inter', sans-serif);
+      color: var(--team-bug-tb-text-primary, var(--meet-overlay-text, #fff));
       min-width: 70px;
       text-align: right;
+      font-variant-numeric: tabular-nums;
     }
 
     .lineup-score.pending {
-      color: #52525b;
+      color: var(--team-bug-tb-text-dim, #52525b);
     }
 
     .lineup-footer {
@@ -510,30 +506,33 @@
       justify-content: space-between;
       align-items: center;
       padding: 12px 20px;
-      background: #27272a;
+      background: var(--team-bug-tb-header-bg, var(--meet-header-bg, #27272a));
     }
 
     .lineup-event {
       font-size: 18px;
       font-weight: 600;
-      color: #a1a1aa;
+      color: var(--team-bug-tb-text-secondary, #a1a1aa);
       text-transform: uppercase;
     }
 
     .lineup-total {
-      font-size: 26px;
-      font-weight: 800;
-      color: #fff;
+      font-size: var(--team-bug-tb-lineup-total-font-size, 26px);
+      font-weight: var(--team-bug-tb-lineup-total-font-weight, 800);
+      font-family: var(--team-bug-tb-score-font-family, 'Inter', sans-serif);
+      color: var(--team-bug-tb-text-primary, var(--meet-header-text, #fff));
+      font-variant-numeric: tabular-nums;
     }
 
     /* Loading / error states */
     .loading-state {
-      color: #71717a;
+      color: var(--team-bug-tb-text-muted, #71717a);
       font-size: 18px;
       padding: 20px;
       text-align: center;
     }
 
+    /* STATE COLOR: Error state (red) - NOT overridable per task spec */
     .error-state {
       color: #ef4444;
       font-size: 18px;
