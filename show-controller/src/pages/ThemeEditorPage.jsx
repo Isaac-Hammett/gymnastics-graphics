@@ -209,6 +209,14 @@ const isOverlayGraphic = (graphicId) => {
   return OVERLAY_GRAPHICS.includes(graphicId);
 };
 
+// Playout / Who to Watch graphics for rich control panels (Phase 7F.1)
+const PLAYOUT_GRAPHICS = ['who-to-watch-title', 'who-to-watch-lower-third', 'clip-overlay'];
+
+// Helper to detect if a graphicId is a playout/WTW graphic
+const isPlayoutGraphic = (graphicId) => {
+  return PLAYOUT_GRAPHICS.includes(graphicId);
+};
+
 // Default values for overlay graphics (Phase 7E.10)
 // These match the CSS defaults in the overlay files and output.html
 const OVERLAY_DEFAULTS = {
@@ -300,6 +308,43 @@ const OVERLAY_DEFAULTS = {
     coachesOverlayTop: 780, coachesOverlayLeft: 100, coachesOverlayMinWidth: 400,
     coachesTitleFontSize: 20, coachesOverlayLogoSize: 60,
     coachesNameFontSize: 24,
+  },
+};
+
+// Default values for playout / WTW graphics (Phase 7F.1)
+// These match the hardcoded defaults in who-to-watch-title.html and who-to-watch.html
+const PLAYOUT_DEFAULTS = {
+  // who-to-watch-title (full-screen title card)
+  'who-to-watch-title': {
+    // Badge ("WHO TO WATCH" label)
+    wtwBadgeFontSize: 13,
+    // Team row
+    wtwTeamNameFontSize: 20,
+    wtwLogoSize: 48,
+    wtwShowTeamRow: true,
+    // Text
+    wtwNameFontSize: 110,
+    wtwBodyFontSize: 32,
+    wtwHeadlineFontSize: 34,
+    wtwTextOffsetY: 0,
+    // Image
+    wtwImageScale: 100,
+    wtwImageOffsetX: 0,
+    wtwImageOffsetY: 0,
+    // Watermark
+    wtwWatermarkOpacity: 8,
+    wtwWatermarkScale: 100,
+    wtwWatermarkOffsetX: 0,
+    wtwWatermarkOffsetY: 0,
+    wtwShowWatermark: true,
+  },
+  // who-to-watch-lower-third (athlete lower-third)
+  'who-to-watch-lower-third': {
+    // To be defined in Task 7F.3
+  },
+  // clip-overlay (inline in output.html)
+  'clip-overlay': {
+    // To be defined in Task 7F.4
   },
 };
 
@@ -6277,6 +6322,228 @@ export default function ThemeEditorPage() {
                                     })()}
 
                                     {/* Shared Colors section for all overlays */}
+                                    <div className="pt-2 border-t border-zinc-700/50">
+                                      <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Colors</div>
+                                      <div className="grid grid-cols-2 gap-2">
+                                        {OVERRIDE_COLOR_FIELDS.slice(0, 4).map(({ key, label }) => {
+                                          const hasOverride = overrides[key] !== undefined;
+                                          const overrideValue = overrides[key] || editingTheme.colors[key] || '#888888';
+                                          return (
+                                            <div key={key} className="flex items-center gap-2">
+                                              <label className="flex items-center gap-1.5 cursor-pointer">
+                                                <input
+                                                  type="checkbox"
+                                                  checked={hasOverride}
+                                                  onChange={(e) => {
+                                                    if (e.target.checked) {
+                                                      updateOverrideField(graphicId, key, editingTheme.colors[key] || '#888888');
+                                                    } else {
+                                                      clearOverrideField(graphicId, key);
+                                                    }
+                                                  }}
+                                                  className="w-3.5 h-3.5 rounded border-zinc-600 bg-zinc-700 text-purple-500"
+                                                />
+                                              </label>
+                                              <input
+                                                type="color"
+                                                value={overrideValue}
+                                                disabled={!hasOverride}
+                                                onChange={(e) => updateOverrideField(graphicId, key, e.target.value)}
+                                                className={`w-6 h-6 rounded cursor-pointer bg-transparent border-0 ${!hasOverride ? 'opacity-40' : ''}`}
+                                              />
+                                              <span className={`text-[10px] ${hasOverride ? 'text-zinc-300' : 'text-zinc-500'}`}>{label}</span>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+
+                                    {/* Reset button */}
+                                    {overrideCount > 0 && (
+                                      <div className="pt-2 flex justify-end">
+                                        <button onClick={() => resetGraphicOverrides(graphicId)} className="text-[10px] text-zinc-400 hover:text-zinc-300 transition-colors">
+                                          Reset to theme defaults
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : isPlayoutGraphic(graphicId) ? (
+                                  /* ========== RICH PLAYOUT CONTROLS (who-to-watch-title, who-to-watch-lower-third, clip-overlay) ========== */
+                                  <div className="pt-3 space-y-4">
+                                    {/* WHO-TO-WATCH-TITLE controls */}
+                                    {graphicId === 'who-to-watch-title' && (() => {
+                                      const defs = PLAYOUT_DEFAULTS['who-to-watch-title'];
+                                      return (
+                                        <>
+                                          {/* BADGE */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Badge</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Badge Font Size"
+                                                value={overrides.wtwBadgeFontSize ?? defs.wtwBadgeFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'wtwBadgeFontSize', v)}
+                                                step={1}
+                                                unit="px"
+                                              />
+                                            </div>
+                                          </div>
+                                          {/* TEAM ROW */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Team Row</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Team Name Font"
+                                                value={overrides.wtwTeamNameFontSize ?? defs.wtwTeamNameFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'wtwTeamNameFontSize', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Logo Size"
+                                                value={overrides.wtwLogoSize ?? defs.wtwLogoSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'wtwLogoSize', v)}
+                                                step={4}
+                                                unit="px"
+                                              />
+                                            </div>
+                                            <div className="flex items-center gap-2 mt-2">
+                                              <label className="flex items-center gap-1.5 cursor-pointer">
+                                                <input
+                                                  type="checkbox"
+                                                  checked={overrides.wtwShowTeamRow !== false}
+                                                  onChange={(e) => updateOverrideField(graphicId, 'wtwShowTeamRow', e.target.checked)}
+                                                  className="w-3.5 h-3.5 rounded border-zinc-600 bg-zinc-700 text-purple-500"
+                                                />
+                                                <span className="text-[10px] text-zinc-400">Show Team Row</span>
+                                              </label>
+                                            </div>
+                                          </div>
+                                          {/* TEXT */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Text</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Name Font Size"
+                                                value={overrides.wtwNameFontSize ?? defs.wtwNameFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'wtwNameFontSize', v)}
+                                                step={5}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Body Font Size"
+                                                value={overrides.wtwBodyFontSize ?? defs.wtwBodyFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'wtwBodyFontSize', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Headline Font"
+                                                value={overrides.wtwHeadlineFontSize ?? defs.wtwHeadlineFontSize}
+                                                onChange={(v) => updateOverrideField(graphicId, 'wtwHeadlineFontSize', v)}
+                                                step={2}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Text Offset Y"
+                                                value={overrides.wtwTextOffsetY ?? defs.wtwTextOffsetY}
+                                                onChange={(v) => updateOverrideField(graphicId, 'wtwTextOffsetY', v)}
+                                                step={10}
+                                                unit="px"
+                                              />
+                                            </div>
+                                          </div>
+                                          {/* IMAGE */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Athlete Image</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Scale"
+                                                value={overrides.wtwImageScale ?? defs.wtwImageScale}
+                                                onChange={(v) => updateOverrideField(graphicId, 'wtwImageScale', v)}
+                                                step={5}
+                                                unit="%"
+                                              />
+                                              <OverrideStepper
+                                                label="Offset X"
+                                                value={overrides.wtwImageOffsetX ?? defs.wtwImageOffsetX}
+                                                onChange={(v) => updateOverrideField(graphicId, 'wtwImageOffsetX', v)}
+                                                step={10}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Offset Y"
+                                                value={overrides.wtwImageOffsetY ?? defs.wtwImageOffsetY}
+                                                onChange={(v) => updateOverrideField(graphicId, 'wtwImageOffsetY', v)}
+                                                step={10}
+                                                unit="px"
+                                              />
+                                            </div>
+                                          </div>
+                                          {/* WATERMARK */}
+                                          <div>
+                                            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Watermark</div>
+                                            <div className="flex items-center gap-2 mb-2">
+                                              <label className="flex items-center gap-1.5 cursor-pointer">
+                                                <input
+                                                  type="checkbox"
+                                                  checked={overrides.wtwShowWatermark !== false}
+                                                  onChange={(e) => updateOverrideField(graphicId, 'wtwShowWatermark', e.target.checked)}
+                                                  className="w-3.5 h-3.5 rounded border-zinc-600 bg-zinc-700 text-purple-500"
+                                                />
+                                                <span className="text-[10px] text-zinc-400">Show Watermark</span>
+                                              </label>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <OverrideStepper
+                                                label="Opacity"
+                                                value={overrides.wtwWatermarkOpacity ?? defs.wtwWatermarkOpacity}
+                                                onChange={(v) => updateOverrideField(graphicId, 'wtwWatermarkOpacity', v)}
+                                                step={2}
+                                                unit="%"
+                                              />
+                                              <OverrideStepper
+                                                label="Scale"
+                                                value={overrides.wtwWatermarkScale ?? defs.wtwWatermarkScale}
+                                                onChange={(v) => updateOverrideField(graphicId, 'wtwWatermarkScale', v)}
+                                                step={10}
+                                                unit="%"
+                                              />
+                                              <OverrideStepper
+                                                label="Offset X"
+                                                value={overrides.wtwWatermarkOffsetX ?? defs.wtwWatermarkOffsetX}
+                                                onChange={(v) => updateOverrideField(graphicId, 'wtwWatermarkOffsetX', v)}
+                                                step={10}
+                                                unit="px"
+                                              />
+                                              <OverrideStepper
+                                                label="Offset Y"
+                                                value={overrides.wtwWatermarkOffsetY ?? defs.wtwWatermarkOffsetY}
+                                                onChange={(v) => updateOverrideField(graphicId, 'wtwWatermarkOffsetY', v)}
+                                                step={10}
+                                                unit="px"
+                                              />
+                                            </div>
+                                          </div>
+                                        </>
+                                      );
+                                    })()}
+
+                                    {/* Placeholder for who-to-watch-lower-third (Task 7F.3) */}
+                                    {graphicId === 'who-to-watch-lower-third' && (
+                                      <div className="text-[10px] text-zinc-500 italic">
+                                        Lower-third controls coming in Task 7F.3
+                                      </div>
+                                    )}
+
+                                    {/* Placeholder for clip-overlay (Task 7F.4) */}
+                                    {graphicId === 'clip-overlay' && (
+                                      <div className="text-[10px] text-zinc-500 italic">
+                                        Clip overlay controls coming in Task 7F.4
+                                      </div>
+                                    )}
+
+                                    {/* Shared COLORS section for playout graphics */}
                                     <div className="pt-2 border-t border-zinc-700/50">
                                       <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Colors</div>
                                       <div className="grid grid-cols-2 gap-2">
