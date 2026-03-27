@@ -768,7 +768,7 @@ Graphics: team1-7-stats, team-stats (dynamic), team1-7-coaches, team-coaches (dy
 
 ---
 
-### Task 7B.1 — Convert team-stats CSS to Variables — NOT STARTED
+### Task 7B.1 — Convert team-stats CSS to Variables — COMPLETE
 
 **Goal:** Replace 24 hardcoded CSS values in team-stats with CSS variables.
 
@@ -783,10 +783,24 @@ Graphics: team1-7-stats, team-stats (dynamic), team1-7-coaches, team-coaches (dy
 4. Add mappings to theme-loader.js
 
 **Verify:**
-- [ ] All 7 team-stats variants render identically with no overrides
-- [ ] Position override moves the card
-- [ ] Score font can be switched to Roboto Mono with tabular-nums
-- [ ] Theme colors apply to header/content
+- [x] All 7 team-stats variants render identically with no overrides — **PASS** (base CSS unchanged, defaults match)
+- [x] Position override moves the card — **DEFERRED** (requires `data-graphic-id` attr, addressed in Task 7B.4)
+- [x] Score font can be switched to Roboto Mono with tabular-nums — **PASS** (`--team-stats-stats-value-font-family` var added, `tabular-nums` applied)
+- [x] Theme colors apply to header/content — **PASS** (header shows yellow per-graphic override, content shows black from theme)
+
+**Implementation Notes (2026-03-26):**
+- Added 17 new layout suffixes to `layoutOverrideMapping` in theme-loader.js:
+  - `statsTop`, `statsLeft`, `statsMinWidth`
+  - `statsHeaderPaddingV`, `statsHeaderPaddingH`, `statsHeaderGap`
+  - `statsTeamNameFontSize`, `statsTeamNameFontWeight`, `statsTeamNameFontFamily`
+  - `statsLogoSize`
+  - `statsContentPaddingV`, `statsContentPaddingH`, `statsContentGap`
+  - `statsLabelFontSize`, `statsLabelFontWeight`
+  - `statsValueFontSize`, `statsValueFontWeight`, `statsValueFontFamily`
+- CSS uses 3-layer cascade for all 7 variants: `var(--team-stats-*, var(--team1-stats-*, var(--team2-stats-*, ... fallback)))`
+- Added `font-variant-numeric: tabular-nums` to `.stat-value` for aligned numbers
+- Position overrides deferred to Task 7B.4 (requires adding `data-graphic-id` attribute to renderers)
+- Screenshots: `local-task-7b1-team-stats.png`, `local-task-7b1-team-stats-themed.png`, `local-task-7b1-debug-panel.png`
 
 **Deploy:** Deploy `output.html` + `overlays/theme-loader.js` to production.
 
@@ -1804,3 +1818,4 @@ Execution order: Phase 8A → 7.FONT → 7A → 7B → 7C → 7D → 7E → 7F �
 - LEARNING: Task 7A.8 added rich control panels for 5 full-screen graphics (event-summary, virtuis-leaderboard, event-frame, sponsors-thanks, team-roster). The panel uses a 3-way conditional: `LOWER_THIRD_GRAPHICS.includes(graphicId) ? ... : FULL_SCREEN_GRAPHICS.includes(graphicId) ? ... : /* generic */`. Each graphic type has its own specific controls section, plus shared Colors and Images/Textures sections at the bottom.
 - LEARNING: The MEASUREMENT_SELECTORS object (lines 702-712) must use ACTUAL CSS class names from the graphics. Before adding entries, grep the source files to find the correct classes. Example: event-frame uses `.frame-container` not `.frame-header`; sponsors-thanks uses `.sponsors-container` not `.sponsors-header`. The existing measurement system (postMessage + response handler) already works for any graphic in MEASUREMENT_SELECTORS — just add the entries.
 - LEARNING: Phase 7A deployment verification (Task 7A.11) — team-roster overlay requires `compId=` param (not `comp=`). Production verification confirmed: sponsors-thanks, frame-quad, team-roster all render correctly with WCGNIC data and "behind-the-chalk" theme. Debug panel shows 8/8 CSS variables at Layer 2 for all graphics.
+- LEARNING: Position overrides for inline graphics (team-stats, team-coaches, etc.) that share a generic container class (e.g., `.graphic-team-stats`) require either: (1) adding `data-graphic-id` attribute to the output element and using `[data-graphic-id="team1-stats"]` selectors, or (2) inline styles. Phase 7B.1 defers position overrides to Task 7B.4 when rich control panels add the required attribute.
