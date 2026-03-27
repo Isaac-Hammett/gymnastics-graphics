@@ -617,6 +617,16 @@ window.themeReady = new Promise(resolve => { _resolveThemeReady = resolve; });
     coachesNameFontWeight: { suffix: 'coaches-name-font-weight', unit: null },
     coachesNameFontFamily: { suffix: 'coaches-name-font-family', unit: null },
     coachesNameLineHeight: { suffix: 'coaches-name-line-height', unit: null },
+    // Sponsors-cycle specific (Phase 7C.1)
+    fadeDuration: { suffix: 'fade-duration', unit: 's' },
+    logoMaxWidth: { suffix: 'logo-max-width', unit: 'px' },
+    logoMaxHeight: { suffix: 'logo-max-height', unit: 'px' },
+    targetHeight: { suffix: 'target-height', unit: 'px' },
+    maxWidthRender: { suffix: 'max-width-render', unit: 'px' },
+    noSponsorsFontSize: { suffix: 'no-sponsors-font-size', unit: 'px' },
+    noSponsorsFontWeight: { suffix: 'no-sponsors-font-weight', unit: null },
+    noSponsorsFontFamily: { suffix: 'no-sponsors-font-family', unit: null },
+    noSponsorsColor: { suffix: 'no-sponsors-color', unit: null },
   };
 
   /**

@@ -1021,7 +1021,7 @@ Graphics: sponsors-cycle, sponsors-bug.
 
 ---
 
-### Task 7C.1 — Convert sponsors-cycle CSS to Variables — NOT STARTED
+### Task 7C.1 — Convert sponsors-cycle CSS to Variables — COMPLETE
 
 **Goal:** Replace hardcoded CSS values in sponsors-cycle with CSS variables.
 
@@ -1037,10 +1037,20 @@ Graphics: sponsors-cycle, sponsors-bug.
 5. Note: timing values controlled via Firebase config + URL Generator per design decision, NOT theme overrides
 
 **Verify:**
-- [ ] Sponsors-cycle renders identically with no overrides
-- [ ] Logo size overrides work
-- [ ] Background color overrides work
-- [ ] Cycle timing NOT exposed as theme override (confirmed)
+- [x] Sponsors-cycle renders identically with no overrides — **PASS** (default #E5E5E5 background, "No sponsors configured" message renders correctly)
+- [x] Logo size overrides work — **CSS in place** (`--sponsors-cycle-logo-max-width`, `--sponsors-cycle-logo-max-height`, `--sponsors-cycle-target-height`, `--sponsors-cycle-max-width-render`)
+- [x] Background color overrides work — **CSS in place** (`var(--sponsors-cycle-overlay-bg, var(--meet-overlay-bg, #E5E5E5))`)
+- [x] Cycle timing NOT exposed as theme override (confirmed) — **PASS** (`setInterval(advanceToNext, 3000)` remains hardcoded per design decision)
+
+**Implementation Notes (2026-03-26):**
+- Added 9 new layout suffixes to `layoutOverrideMapping` in theme-loader.js:
+  - `fadeDuration`, `logoMaxWidth`, `logoMaxHeight`, `targetHeight`, `maxWidthRender`
+  - `noSponsorsFontSize`, `noSponsorsFontWeight`, `noSponsorsFontFamily`, `noSponsorsColor`
+- CSS uses 3-layer cascade: `var(--sponsors-cycle-{prop}, var(--meet-{prop}, fallback))`
+- JS-based render dimensions (TARGET_HEIGHT=900, MAX_WIDTH=1400) now read from CSS variables dynamically via `getCSSVarPx()` helper functions
+- Cycle timing (3000ms) and interval logic remain hardcoded — controlled via Firebase config per design decision, NOT theme overrides
+- Guide overlay colors (yellow, red, blue for safe zones) remain hardcoded — these are debugging tools, not themeable
+- Screenshots: `local-task-7c1-sponsors-cycle.png`, `local-task-7c1-sponsors-cycle-no-sponsors.png`
 
 **Deploy:** Deploy `overlays/sponsors-cycle.html` + `overlays/theme-loader.js` to production.
 
