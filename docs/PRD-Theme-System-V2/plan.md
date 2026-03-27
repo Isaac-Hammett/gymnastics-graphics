@@ -281,7 +281,7 @@ All Phase 7 graphics need consistent font loading. This phase consolidates Googl
 
 ---
 
-### Task 7.FONT.3 — Add Font Family Dropdown Metadata to Theme Editor — NOT STARTED
+### Task 7.FONT.3 — Add Font Family Dropdown Metadata to Theme Editor — COMPLETE
 
 **Goal:** Add font family options and tabular number flags to ThemeEditorPage for use in Phase 7 control panels.
 
@@ -320,9 +320,9 @@ All Phase 7 graphics need consistent font loading. This phase consolidates Googl
    ```
 
 **Verify:**
-- [ ] Constants defined without syntax errors
-- [ ] `npm run build` succeeds in show-controller
-- [ ] No visual changes to existing Theme Editor (metadata only, no UI yet)
+- [x] Constants defined without syntax errors — **PASS** (build succeeded)
+- [x] `npm run build` succeeds in show-controller — **PASS**
+- [x] No visual changes to existing Theme Editor (metadata only, no UI yet) — **N/A** (constants only, not consumed yet)
 
 ---
 
@@ -1678,3 +1678,4 @@ Execution order: Phase 8A → 7.FONT → 7A → 7B → 7C → 7D → 7E → 7F �
 - LEARNING: Task 8.DOC — documentation-only task. CLAUDE.md already had the lower-third template and layout override tables from earlier phases. Phase 8A added the live-mode override system section (exported functions, flow, lastLiveGraphicId). PRD status table and blocked items updated.
 - LEARNING: Google Fonts consolidated URL format uses `&family=` separator for multiple families. Single request loads all families, woff2 files only load when font is actually used on page. Preconnect links (`rel="preconnect"` with `crossorigin` for gstatic.com) enable parallel DNS/connection setup.
 - LEARNING: Overlay files need preconnect + Google Fonts import in `<head>` before `<style>`. Pattern: `<link rel="preconnect" href="https://fonts.googleapis.com">`, `<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>`, then `<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">`. Frame overlays used Arial for the Virtius watermark — now use Inter.
+- LEARNING: Font metadata constants (`FONT_FAMILIES`, `FONT_WEIGHTS`, `TEXT_TRANSFORMS`) are defined but not consumed until Phase 7A+ builds the rich control panels. The `tabular: true` flag marks fonts that support `font-variant-numeric: tabular-nums` for aligned score columns.
