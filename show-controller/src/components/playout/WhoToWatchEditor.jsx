@@ -86,6 +86,42 @@ function getDefaultImageMode(imageType) {
 
 const MAX_TITLE_CARDS = 3;
 
+// Map theme override keys (wtw*) to card field names
+// Theme overrides use wtw-prefixed keys to avoid collision, but card fields use short names
+const THEME_TO_CARD_FIELD_MAP = {
+  wtwBadgeFontSize: 'badgeFontSize',
+  wtwTeamNameFontSize: 'teamNameFontSize',
+  wtwLogoSize: 'logoSize',
+  wtwShowTeamRow: 'showTeamRow',
+  wtwNameFontSize: 'nameFontSize',
+  wtwBodyFontSize: 'bodyFontSize',
+  wtwHeadlineFontSize: 'headlineFontSize',
+  wtwTextOffsetY: 'textOffsetY',
+  wtwImageScale: 'imageScale',
+  wtwImageOffsetX: 'imageOffsetX',
+  wtwImageOffsetY: 'imageOffsetY',
+  wtwWatermarkOpacity: 'watermarkOpacity',
+  wtwWatermarkScale: 'watermarkScale',
+  wtwWatermarkOffsetX: 'watermarkOffsetX',
+  wtwWatermarkOffsetY: 'watermarkOffsetY',
+  wtwShowWatermark: 'showWatermark',
+  // Color overrides - these are stored directly in theme.overrides with standard names
+  headerBar: 'bgColor',      // headerBar -> bgColor
+  contentArea: 'accentColor', // contentArea -> accentColor
+};
+
+// Extract card adjustment values from theme overrides
+function extractCardAdjustmentsFromTheme(themeOverrides) {
+  if (!themeOverrides) return {};
+  const adjustments = {};
+  for (const [themeKey, cardKey] of Object.entries(THEME_TO_CARD_FIELD_MAP)) {
+    if (themeOverrides[themeKey] !== undefined && themeOverrides[themeKey] !== null) {
+      adjustments[cardKey] = themeOverrides[themeKey];
+    }
+  }
+  return adjustments;
+}
+
 // Stepper input with +/- buttons, no upper limit, supports backspace/typing freely
 function ValueStepper({ label, value, defaultValue, min, step = 1, unit = 'px', onChange, onReset }) {
   const display = value !== undefined && value !== null ? value : defaultValue;
@@ -388,6 +424,8 @@ function LowerThirdIframePreview({ athleteName, logoUrl, subtitle, teamName, sta
     if (adjustments.subtitleFontSize) params.set('subtitleFontSize', adjustments.subtitleFontSize);
     if (adjustments.statFontSize) params.set('statFontSize', adjustments.statFontSize);
     if (adjustments.headshotSize) params.set('headshotSize', adjustments.headshotSize);
+    if (adjustments.headshotOffsetY) params.set('headshotOffsetY', adjustments.headshotOffsetY);
+    if (adjustments.headshotScale && adjustments.headshotScale !== 100) params.set('headshotScale', adjustments.headshotScale);
     if (adjustments.showHeadshot === false) params.set('showHeadshot', 'false');
     if (adjustments.logoSize) params.set('logoSize', adjustments.logoSize);
     if (adjustments.cardBottom) params.set('cardBottom', adjustments.cardBottom);
@@ -675,11 +713,37 @@ export default function WhoToWatchEditor({
     }
   };
 
+  // Get the effective theme ID (user override takes precedence)
+  const effectiveThemeId = themeOverride || meetTheme;
+
+  // Get WTW title card overrides from the active theme
+  const getThemeWtwOverrides = () => {
+    if (!effectiveThemeId || !availableThemes[effectiveThemeId]) return null;
+    const theme = availableThemes[effectiveThemeId];
+    return theme.overrides?.['who-to-watch-title'] || null;
+  };
+
   // Title card handlers
   const addTitleCard = () => {
     const cards = config.titleCards || [];
     if (cards.length >= MAX_TITLE_CARDS) return;
-    updateField('titleCards', [...cards, { headline: '', body: '' }]);
+
+    // Auto-import theme defaults when creating a new card
+    const themeOverrides = getThemeWtwOverrides();
+    const themeDefaults = themeOverrides ? extractCardAdjustmentsFromTheme(themeOverrides) : {};
+
+    updateField('titleCards', [...cards, { headline: '', body: '', ...themeDefaults }]);
+  };
+
+  // Import theme defaults into a specific card
+  const importThemeToCard = (cardIndex) => {
+    const themeOverrides = getThemeWtwOverrides();
+    if (!themeOverrides) return;
+
+    const themeDefaults = extractCardAdjustmentsFromTheme(themeOverrides);
+    const cards = [...(config.titleCards || [])];
+    cards[cardIndex] = { ...cards[cardIndex], ...themeDefaults };
+    updateField('titleCards', cards);
   };
 
   const removeTitleCard = (index) => {
@@ -930,7 +994,21 @@ export default function WhoToWatchEditor({
                   <summary className="text-zinc-600 cursor-pointer hover:text-zinc-400">Card Adjustments</summary>
                   <div className="mt-2 space-y-2 bg-zinc-800/50 rounded p-2">
                     {/* Theme Controls (Issue 29) */}
-                    <div className="text-[10px] text-zinc-500 uppercase tracking-wide font-medium">Theme</div>
+                    <div className="flex items-center justify-between">
+                      <div className="text-[10px] text-zinc-500 uppercase tracking-wide font-medium">Theme</div>
+                      {/* Import from Theme button */}
+                      {effectiveThemeId && availableThemes[effectiveThemeId]?.overrides?.['who-to-watch-title'] && (
+                        <button
+                          type="button"
+                          onClick={() => importThemeToCard(index)}
+                          disabled={disabled}
+                          className="px-2 py-0.5 text-[9px] bg-teal-500/20 text-teal-300 rounded hover:bg-teal-500/30 transition-colors disabled:opacity-50"
+                          title="Import layout settings from the selected theme's WTW title card overrides"
+                        >
+                          Import from Theme
+                        </button>
+                      )}
+                    </div>
                     <div className="flex items-center gap-2">
                       <label className="text-[10px] text-zinc-500 w-20 shrink-0">Theme</label>
                       <select
@@ -1158,6 +1236,8 @@ export default function WhoToWatchEditor({
             {/* Headshot Controls */}
             <div className="text-[10px] text-zinc-500 uppercase tracking-wide font-medium mt-2">Headshot</div>
             <ValueStepper label="Size" value={(config.lowerThirdAdjustments || {}).headshotSize} defaultValue={110} min={20} step={5} onChange={(v) => updateField('lowerThirdAdjustments', { ...(config.lowerThirdAdjustments || {}), headshotSize: v })} onReset={() => { const adj = { ...(config.lowerThirdAdjustments || {}) }; delete adj.headshotSize; updateField('lowerThirdAdjustments', adj); }} />
+            <ValueStepper label="Offset Y" value={(config.lowerThirdAdjustments || {}).headshotOffsetY} defaultValue={0} step={2} unit="px" onChange={(v) => updateField('lowerThirdAdjustments', { ...(config.lowerThirdAdjustments || {}), headshotOffsetY: v })} onReset={() => { const adj = { ...(config.lowerThirdAdjustments || {}) }; delete adj.headshotOffsetY; updateField('lowerThirdAdjustments', adj); }} />
+            <ValueStepper label="Scale" value={(config.lowerThirdAdjustments || {}).headshotScale} defaultValue={100} min={50} step={5} unit="%" onChange={(v) => updateField('lowerThirdAdjustments', { ...(config.lowerThirdAdjustments || {}), headshotScale: v })} onReset={() => { const adj = { ...(config.lowerThirdAdjustments || {}) }; delete adj.headshotScale; updateField('lowerThirdAdjustments', adj); }} />
             <div className="flex items-center gap-2">
               <label className="text-[10px] text-zinc-500 w-20 shrink-0">Show</label>
               <input type="checkbox" checked={(config.lowerThirdAdjustments || {}).showHeadshot !== false} onChange={(e) => updateField('lowerThirdAdjustments', { ...(config.lowerThirdAdjustments || {}), showHeadshot: e.target.checked })} className="accent-rose-500 cursor-pointer" />
