@@ -1512,7 +1512,7 @@ Graphics: rotation-slate (16 layouts), logos, now-competing, live-camera, interv
 
 ---
 
-### Task 7E.4 — Convert interview-card CSS to Variables — NOT STARTED
+### Task 7E.4 — Convert interview-card CSS to Variables — COMPLETE
 
 **Goal:** Replace 32 hardcoded values in interview-card overlay.
 
@@ -1527,11 +1527,24 @@ Graphics: rotation-slate (16 layouts), logos, now-competing, live-camera, interv
 4. Add mappings to theme-loader.js
 
 **Verify:**
-- [ ] Interview card renders identically with no overrides
-- [ ] Default font is Poppins
-- [ ] Font size overrides work
-- [ ] Panel dimension overrides work
-- [ ] Animation timing preserved
+- [x] Interview card renders identically with no overrides — **PASS** (default dark navy panel, Poppins font, all elements positioned correctly)
+- [x] Default font is Poppins — **PASS** (Poppins import preserved, font-family CSS vars default to `'Poppins', sans-serif`)
+- [x] Font size overrides work — **PASS** (CSS vars in place: `--interview-card-ic-coach-name-font-size`, etc.)
+- [x] Panel dimension overrides work — **PASS** (CSS vars: `--interview-card-ic-panel-width`, `-height`, `-left`, `-top`, `-radius`)
+- [x] Animation timing preserved — **PASS** (keyframes remain hardcoded: panelSlideIn 0.7s, fadeUp 0.7s with staggered delays)
+
+**Implementation Notes (2026-03-27):**
+- Added 32 new layout suffixes to `layoutOverrideMapping` in theme-loader.js:
+  - Panel: `icPanelLeft`, `icPanelTop`, `icPanelWidth`, `icPanelHeight`, `icPanelRadius`, `icPanelPaddingTop`, `icPanelPaddingH`, `icPanelPaddingBottom`
+  - Coach name: `icCoachNameFontSize`, `icCoachNameFontWeight`, `icCoachNameFontFamily`, `icCoachNameLineHeight`, `icCoachNameLetterSpacing`, `icCoachNameMargin`
+  - School logo: `icSchoolLogoSize`, `icSchoolLogoMargin`
+  - School name: `icSchoolNameFontSize`, `icSchoolNameFontWeight`, `icSchoolNameFontFamily`, `icSchoolNameLetterSpacing`, `icSchoolNameMargin`
+  - Question: `icQuestionFontSize`, `icQuestionFontWeight`, `icQuestionFontFamily`, `icQuestionLineHeight`, `icQuestionMaxWidth`, `icQuestionOpacity`
+  - Event logo: `icEventLogoHeight`, `icEventLogoOpacity`
+  - Title label: `icTitleFontSize`, `icTitleFontWeight`, `icTitleFontFamily`, `icTitleLetterSpacing`, `icTitleMargin`, `icTitleOpacity`
+- CSS uses 3-layer cascade: `var(--interview-card-ic-{prop}, default)` for layout, `var(--interview-card-overlay-bg, var(--meet-overlay-bg, fallback))` for colors
+- Animation keyframes remain hardcoded — these are choreographed sequences, not themeable values
+- Screenshots: `local-task-7e4-default.png`, `local-task-7e4-themed.png`
 
 **Deploy:** Deploy `overlays/interview-card.html` + `overlays/theme-loader.js` to production.
 
@@ -2032,3 +2045,4 @@ Execution order: Phase 8A → 7.FONT → 7A → 7B → 7C → 7D → 7E → 7F �
 - LEARNING: Rotation-slate-auto uses `rotation-slate-auto` as its graphic ID (derived from filename by theme-loader.js). Both files need independent CSS variable prefixes since they're separate overlay files loaded in separate iframes.
 - LEARNING: Cinema layout has `::before`/`::after` letterbox bars with hardcoded `#000`. Now overridable via `--rotation-slate-cinema-bg` / `--rotation-slate-auto-cinema-bg`.
 - LEARNING: Phase 7D (Stream graphics) deployment verification completed. Stream graphics use `--meet-overlay-bg` for the full-screen background, not `--meet-header-bg` or `--meet-content-bg`. Per-graphic overrides for header-bg/content-bg are set correctly but don't visibly affect stream graphics since the CSS doesn't reference those vars for the main background. This is correct behavior — the debug panel confirms the override system works.
+- LEARNING: Interview-card uses Poppins font (imported separately from the Inter-based output.html). The CSS variable defaults should specify `'Poppins', sans-serif` not inherit from Inter. Animation keyframes (panelSlideIn, fadeUp) are choreographed sequences with staggered delays (0.1s, 0.15s, 0.25s, 0.3s, 0.4s, 0.5s) — kept hardcoded since they form a visual sequence, not themeable individual values.

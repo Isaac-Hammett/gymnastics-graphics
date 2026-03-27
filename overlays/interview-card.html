@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1920, height=1080">
+  <title>Interview Card</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: transparent;
+    }
+
+    /* ── Side Panel (left ~32%) ── */
+    .panel {
+      position: absolute;
+      left: var(--interview-card-ic-panel-left, 30px);
+      top: var(--interview-card-ic-panel-top, 30px);
+      width: var(--interview-card-ic-panel-width, 600px);
+      height: var(--interview-card-ic-panel-height, 1020px);
+      background: var(--interview-card-overlay-bg, var(--meet-overlay-bg, rgba(20, 20, 40, 0.92)));
+      border-radius: var(--interview-card-ic-panel-radius, 16px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: var(--interview-card-ic-panel-padding-top, 60px) var(--interview-card-ic-panel-padding-h, 45px) var(--interview-card-ic-panel-padding-bottom, 100px);
+      gap: 0;
+      animation: panelSlideIn 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes panelSlideIn {
+      from { opacity: 0; transform: translateX(-60px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    /* ── Coach Name (top, largest element) ── */
+    .coach-name {
+      font-size: var(--interview-card-ic-coach-name-font-size, 56px);
+      font-weight: var(--interview-card-ic-coach-name-font-weight, 900);
+      font-family: var(--interview-card-ic-coach-name-font-family, 'Poppins', sans-serif);
+      color: var(--interview-card-overlay-text, var(--meet-overlay-text, #F5F5F5));
+      text-transform: uppercase;
+      text-align: center;
+      line-height: var(--interview-card-ic-coach-name-line-height, 1.0);
+      letter-spacing: var(--interview-card-ic-coach-name-letter-spacing, -1px);
+      margin-bottom: var(--interview-card-ic-coach-name-margin, 44px);
+      animation: fadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── School Logo ── */
+    .school-logo {
+      width: var(--interview-card-ic-school-logo-size, 150px);
+      height: var(--interview-card-ic-school-logo-size, 150px);
+      object-fit: contain;
+      margin-bottom: var(--interview-card-ic-school-logo-margin, 18px);
+      animation: fadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.25s both;
+    }
+
+    /* ── School Name ── */
+    .school-name {
+      font-size: var(--interview-card-ic-school-name-font-size, 24px);
+      font-weight: var(--interview-card-ic-school-name-font-weight, 700);
+      font-family: var(--interview-card-ic-school-name-font-family, 'Poppins', sans-serif);
+      color: var(--interview-card-overlay-text, var(--meet-overlay-text, #F5F5F5));
+      text-transform: uppercase;
+      text-align: center;
+      letter-spacing: var(--interview-card-ic-school-name-letter-spacing, 2px);
+      margin-bottom: var(--interview-card-ic-school-name-margin, 50px);
+      animation: fadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
+    }
+
+    /* ── Question Text ── */
+    .question {
+      font-size: var(--interview-card-ic-question-font-size, 28px);
+      font-weight: var(--interview-card-ic-question-font-weight, 500);
+      font-family: var(--interview-card-ic-question-font-family, 'Poppins', sans-serif);
+      color: var(--interview-card-overlay-text, var(--meet-overlay-text, #F5F5F5));
+      text-align: center;
+      line-height: var(--interview-card-ic-question-line-height, 1.45);
+      max-width: var(--interview-card-ic-question-max-width, 500px);
+      opacity: var(--interview-card-ic-question-opacity, 0.85);
+      animation: fadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both;
+    }
+
+    /* ── Event Logo (pinned to bottom of panel) ── */
+    .event-logo-wrap {
+      margin-top: auto;
+      animation: fadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.5s both;
+    }
+
+    .event-logo {
+      height: var(--interview-card-ic-event-logo-height, 65px);
+      object-fit: contain;
+      opacity: var(--interview-card-ic-event-logo-opacity, 0.7);
+    }
+
+    /* ── Title label (e.g., "HEAD COACH") ── */
+    .title-label {
+      font-size: var(--interview-card-ic-title-font-size, 16px);
+      font-weight: var(--interview-card-ic-title-font-weight, 600);
+      font-family: var(--interview-card-ic-title-font-family, 'Poppins', sans-serif);
+      color: var(--interview-card-badge-text, var(--meet-badge-text, #B2BEC3));
+      text-transform: uppercase;
+      letter-spacing: var(--interview-card-ic-title-letter-spacing, 3px);
+      margin-bottom: var(--interview-card-ic-title-margin, 10px);
+      opacity: var(--interview-card-ic-title-opacity, 0.7);
+      animation: fadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+    }
+  </style>
+</head>
+<body>
+  <div class="panel">
+    <div class="title-label" id="titleLabel">HEAD COACH</div>
+    <div class="coach-name" id="coachName">COACH NAME</div>
+    <img class="school-logo" id="schoolLogo" src="" alt="School">
+    <div class="school-name" id="schoolName">SCHOOL</div>
+    <div class="question" id="question">Interview question goes here?</div>
+    <div class="event-logo-wrap">
+      <img class="event-logo" id="eventLogo" src="" alt="Event">
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+
+    // Title label (e.g., "HEAD COACH", "ASSISTANT COACH", "ATHLETE")
+    const title = params.get('title') || 'HEAD COACH';
+    document.getElementById('titleLabel').textContent = title.toUpperCase();
+
+    // Coach name
+    const name = params.get('name') || params.get('coachName') || '';
+    document.getElementById('coachName').textContent = name.toUpperCase();
+
+    // School
+    const school = params.get('school') || '';
+    document.getElementById('schoolName').textContent = school.toUpperCase();
+
+    // School logo
+    const logoEl = document.getElementById('schoolLogo');
+    const logoUrl = params.get('logo') || params.get('schoolLogo') || '';
+    if (logoUrl) {
+      logoEl.src = logoUrl;
+      logoEl.onerror = () => { logoEl.style.display = 'none'; };
+    } else {
+      logoEl.style.display = 'none';
+    }
+
+    // Question text
+    const question = params.get('question') || params.get('q') || '';
+    const questionEl = document.getElementById('question');
+    if (question) {
+      questionEl.textContent = question;
+    } else {
+      questionEl.style.display = 'none';
+    }
+
+    // Event logo (bottom branding — e.g., WCGNIC logo, GEC logo)
+    const eventLogoEl = document.getElementById('eventLogo');
+    const eventLogoUrl = params.get('eventLogo') || '';
+    if (eventLogoUrl) {
+      eventLogoEl.src = eventLogoUrl;
+      eventLogoEl.onerror = () => { eventLogoEl.parentElement.style.display = 'none'; };
+    } else {
+      eventLogoEl.parentElement.style.display = 'none';
+    }
+  </script>
+  <script src="theme-loader.js?v=2"></script>
+</body>
+</html>

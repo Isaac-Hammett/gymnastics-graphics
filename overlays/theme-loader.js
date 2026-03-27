@@ -755,6 +755,49 @@ window.themeReady = new Promise(resolve => { _resolveThemeReady = resolve; });
     lcApparatusRadius: { suffix: 'lc-apparatus-radius', unit: 'px' },
     lcApparatusFontSize: { suffix: 'lc-apparatus-font-size', unit: 'px' },
     lcApparatusFontWeight: { suffix: 'lc-apparatus-font-weight', unit: null },
+    // Interview-card specific (Phase 7E.4)
+    // Panel container
+    icPanelLeft: { suffix: 'ic-panel-left', unit: 'px' },
+    icPanelTop: { suffix: 'ic-panel-top', unit: 'px' },
+    icPanelWidth: { suffix: 'ic-panel-width', unit: 'px' },
+    icPanelHeight: { suffix: 'ic-panel-height', unit: 'px' },
+    icPanelRadius: { suffix: 'ic-panel-radius', unit: 'px' },
+    icPanelPaddingTop: { suffix: 'ic-panel-padding-top', unit: 'px' },
+    icPanelPaddingH: { suffix: 'ic-panel-padding-h', unit: 'px' },
+    icPanelPaddingBottom: { suffix: 'ic-panel-padding-bottom', unit: 'px' },
+    // Coach name (largest text element)
+    icCoachNameFontSize: { suffix: 'ic-coach-name-font-size', unit: 'px' },
+    icCoachNameFontWeight: { suffix: 'ic-coach-name-font-weight', unit: null },
+    icCoachNameFontFamily: { suffix: 'ic-coach-name-font-family', unit: null },
+    icCoachNameLineHeight: { suffix: 'ic-coach-name-line-height', unit: null },
+    icCoachNameLetterSpacing: { suffix: 'ic-coach-name-letter-spacing', unit: 'px' },
+    icCoachNameMargin: { suffix: 'ic-coach-name-margin', unit: 'px' },
+    // School logo
+    icSchoolLogoSize: { suffix: 'ic-school-logo-size', unit: 'px' },
+    icSchoolLogoMargin: { suffix: 'ic-school-logo-margin', unit: 'px' },
+    // School name
+    icSchoolNameFontSize: { suffix: 'ic-school-name-font-size', unit: 'px' },
+    icSchoolNameFontWeight: { suffix: 'ic-school-name-font-weight', unit: null },
+    icSchoolNameFontFamily: { suffix: 'ic-school-name-font-family', unit: null },
+    icSchoolNameLetterSpacing: { suffix: 'ic-school-name-letter-spacing', unit: 'px' },
+    icSchoolNameMargin: { suffix: 'ic-school-name-margin', unit: 'px' },
+    // Question text
+    icQuestionFontSize: { suffix: 'ic-question-font-size', unit: 'px' },
+    icQuestionFontWeight: { suffix: 'ic-question-font-weight', unit: null },
+    icQuestionFontFamily: { suffix: 'ic-question-font-family', unit: null },
+    icQuestionLineHeight: { suffix: 'ic-question-line-height', unit: null },
+    icQuestionMaxWidth: { suffix: 'ic-question-max-width', unit: 'px' },
+    icQuestionOpacity: { suffix: 'ic-question-opacity', unit: null },
+    // Event logo (bottom branding)
+    icEventLogoHeight: { suffix: 'ic-event-logo-height', unit: 'px' },
+    icEventLogoOpacity: { suffix: 'ic-event-logo-opacity', unit: null },
+    // Title label (e.g., "HEAD COACH")
+    icTitleFontSize: { suffix: 'ic-title-font-size', unit: 'px' },
+    icTitleFontWeight: { suffix: 'ic-title-font-weight', unit: null },
+    icTitleFontFamily: { suffix: 'ic-title-font-family', unit: null },
+    icTitleLetterSpacing: { suffix: 'ic-title-letter-spacing', unit: 'px' },
+    icTitleMargin: { suffix: 'ic-title-margin', unit: 'px' },
+    icTitleOpacity: { suffix: 'ic-title-opacity', unit: null },
   };
 
   /**
