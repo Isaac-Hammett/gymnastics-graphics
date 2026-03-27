@@ -512,6 +512,24 @@ window.themeReady = new Promise(resolve => { _resolveThemeReady = resolve; });
     athleteNameFontSize: { suffix: 'athlete-name-font-size', unit: 'px' },
     rowHeight: { suffix: 'row-height', unit: 'px' },
     rowPadding: { suffix: 'row-padding', unit: 'px' },
+    // Virtuis-leaderboard specific (Phase 7A.2)
+    tableFontSize: { suffix: 'table-font-size', unit: 'px' },
+    tableHeaderPadding: { suffix: 'table-header-padding', unit: 'px' },
+    tableRowPadding: { suffix: 'table-row-padding', unit: 'px' },
+    rankColWidth: { suffix: 'rank-col-width', unit: 'px' },
+    medalSize: { suffix: 'medal-size', unit: 'px' },
+    teamLogoSize: { suffix: 'team-logo-size', unit: 'px' },
+    goldFrom: { suffix: 'gold-from', unit: null },
+    goldTo: { suffix: 'gold-to', unit: null },
+    silverFrom: { suffix: 'silver-from', unit: null },
+    silverTo: { suffix: 'silver-to', unit: null },
+    bronzeFrom: { suffix: 'bronze-from', unit: null },
+    bronzeTo: { suffix: 'bronze-to', unit: null },
+    stickBonusBg: { suffix: 'stick-bonus-bg', unit: null },
+    containerTop: { suffix: 'container-top', unit: 'px' },
+    containerLeft: { suffix: 'container-left', unit: 'px' },
+    containerRight: { suffix: 'container-right', unit: 'px' },
+    containerBottom: { suffix: 'container-bottom', unit: 'px' },
   };
 
   /**

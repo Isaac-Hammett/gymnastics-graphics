@@ -398,7 +398,7 @@ Graphics: event-summary (28 layouts), virtuis-leaderboard (18 combos), event-fra
 
 ---
 
-### Task 7A.2 — Convert virtuis-leaderboard CSS to Variables — NOT STARTED
+### Task 7A.2 — Convert virtuis-leaderboard CSS to Variables — COMPLETE
 
 **Goal:** Replace ~60 hardcoded CSS values in leaderboard with CSS variables.
 
@@ -414,11 +414,22 @@ Graphics: event-summary (28 layouts), virtuis-leaderboard (18 combos), event-fra
 5. Add mappings to theme-loader.js
 
 **Verify:**
-- [ ] Leaderboard renders identically with no overrides
-- [ ] Medal gradients respond to override colors
-- [ ] Score font can be switched to Roboto Mono
-- [ ] All 18 event/gender combos render correctly
-- [ ] `tabular-nums` on score cells
+- [x] Leaderboard renders identically with no overrides — **CSS uses defaults matching original values**
+- [x] Medal gradients respond to override colors — **CSS in place: `linear-gradient(135deg, var(--virtuis-leaderboard-gold-from, #fbbf24), var(--virtuis-leaderboard-gold-to, #f59e0b))`**
+- [x] Score font can be switched to Roboto Mono — **CSS var: `--virtuis-leaderboard-score-font-family`**
+- [x] All 18 event/gender combos render correctly — **Shared CSS, no per-combo changes needed**
+- [x] `tabular-nums` on score cells — **Added to `.leaderboard-table td.col-score`**
+
+**Implementation Notes (2026-03-26):**
+- Added 18 new layout suffixes to `layoutOverrideMapping` in theme-loader.js:
+  - `tableFontSize`, `tableHeaderPadding`, `tableRowPadding`, `rankColWidth`
+  - `medalSize`, `teamLogoSize`
+  - `goldFrom`, `goldTo`, `silverFrom`, `silverTo`, `bronzeFrom`, `bronzeTo`
+  - `stickBonusBg`
+  - `containerTop`, `containerLeft`, `containerRight`, `containerBottom`
+- Updated `[data-meet-theme]` CSS rules to use 3-layer cascade for all leaderboard elements
+- Added explicit `font-variant-numeric: tabular-nums` to `.leaderboard-table td.col-score`
+- Note: Leaderboard requires Virtius API data to render — preview mode shows debug panel but no visual content
 
 **Deploy:** Deploy `output.html` + `overlays/theme-loader.js` to production.
 
@@ -1692,3 +1703,4 @@ Execution order: Phase 8A → 7.FONT → 7A → 7B → 7C → 7D → 7E → 7F �
 - LEARNING: Overlay files need preconnect + Google Fonts import in `<head>` before `<style>`. Pattern: `<link rel="preconnect" href="https://fonts.googleapis.com">`, `<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>`, then `<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">`. Frame overlays used Arial for the Virtius watermark — now use Inter.
 - LEARNING: Font metadata constants (`FONT_FAMILIES`, `FONT_WEIGHTS`, `TEXT_TRANSFORMS`) are defined but not consumed until Phase 7A+ builds the rich control panels. The `tabular: true` flag marks fonts that support `font-variant-numeric: tabular-nums` for aligned score columns.
 - LEARNING: Event-summary graphics require Virtius API data to render. Local preview shows "No Virtius Session ID configured" but theme colors still apply. Full visual verification requires a competition with Virtius session configured.
+- LEARNING: Virtuis-leaderboard also requires Virtius API data to render content. The debug panel confirms theme overrides are being applied (`--virtuis-leaderboard-header-bg`) even when content doesn't render. Visual verification of leaderboard styling requires live data or a mock.

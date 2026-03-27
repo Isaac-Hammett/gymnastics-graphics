@@ -1204,60 +1204,119 @@
 
     /* Leaderboard header/footer overrides */
     [data-meet-theme] .leaderboard-header {
-      background: var(--meet-header-bg, #18181b);
+      background: var(--virtuis-leaderboard-header-bg, var(--meet-header-bg, #18181b));
     }
     [data-meet-theme] .leaderboard-title {
-      color: var(--meet-header-text, #fff);
+      color: var(--virtuis-leaderboard-header-text, var(--meet-header-text, #fff));
     }
     [data-meet-theme] .leaderboard-footer {
-      background: var(--meet-header-bg, #18181b);
+      background: var(--virtuis-leaderboard-header-bg, var(--meet-header-bg, #18181b));
     }
 
     /* Leaderboard frame header override (needs higher specificity than .graphic-virtius-leaderboard .frame-header) */
     [data-meet-theme] .graphic-virtius-leaderboard .frame-header {
-      background: var(--meet-header-bg, #d4d4d8);
-      color: var(--meet-header-text, #000);
+      background: var(--virtuis-leaderboard-header-bg, var(--meet-header-bg, #d4d4d8));
+      color: var(--virtuis-leaderboard-header-text, var(--meet-header-text, #000));
+      padding: var(--virtuis-leaderboard-header-padding, 18px 40px);
     }
     [data-meet-theme] .graphic-virtius-leaderboard .frame-title {
-      color: var(--meet-header-text, #000);
+      color: var(--virtuis-leaderboard-header-text, var(--meet-header-text, #000));
+      font-size: var(--virtuis-leaderboard-title-font-size, 42px);
+      font-family: var(--virtuis-leaderboard-title-font-family, inherit);
+      font-weight: var(--virtuis-leaderboard-title-font-weight, 800);
+    }
+    [data-meet-theme] .graphic-virtius-leaderboard .frame-logo {
+      width: var(--virtuis-leaderboard-header-logo-size, 80px);
+      height: var(--virtuis-leaderboard-header-logo-size, 80px);
+    }
+    [data-meet-theme] .graphic-virtuis-leaderboard {
+      top: var(--virtuis-leaderboard-container-top, 50px);
+      left: var(--virtuis-leaderboard-container-left, 70px);
+      right: var(--virtuis-leaderboard-container-right, 70px);
+      bottom: var(--virtuis-leaderboard-container-bottom, 50px);
+    }
+    [data-meet-theme] .graphic-virtuis-leaderboard .frame-content {
+      background: var(--virtuis-leaderboard-overlay-bg, var(--meet-overlay-bg, #000));
     }
 
     /* Leaderboard table overrides */
+    [data-meet-theme] .leaderboard-table {
+      font-size: var(--virtuis-leaderboard-table-font-size, 28px);
+      font-family: var(--virtuis-leaderboard-score-font-family, inherit);
+    }
     [data-meet-theme] .leaderboard-table thead {
-      background: var(--meet-header-bg, #27272a);
+      background: var(--virtuis-leaderboard-header-bg, var(--meet-header-bg, #27272a));
     }
     [data-meet-theme] .leaderboard-table th {
-      color: var(--meet-header-text, #a1a1aa);
-      border-bottom-color: var(--meet-border-color, #3f3f46);
+      color: var(--virtuis-leaderboard-header-text, var(--meet-header-text, #a1a1aa));
+      border-bottom-color: var(--virtuis-leaderboard-border-color, var(--meet-border-color, #3f3f46));
+      padding: var(--virtuis-leaderboard-table-header-padding, 16px 20px);
+    }
+    [data-meet-theme] .leaderboard-table th.col-rank {
+      width: var(--virtuis-leaderboard-rank-col-width, 70px);
     }
     [data-meet-theme] .leaderboard-table tbody tr {
-      border-bottom-color: var(--meet-border-color, #3f3f46);
+      border-bottom-color: var(--virtuis-leaderboard-border-color, var(--meet-border-color, #3f3f46));
     }
     [data-meet-theme] .leaderboard-table tbody tr:nth-child(odd) {
-      background: var(--meet-overlay-bg, #18181b);
+      background: var(--virtuis-leaderboard-overlay-bg, var(--meet-overlay-bg, #18181b));
     }
     [data-meet-theme] .leaderboard-table tbody tr:nth-child(even) {
-      background: color-mix(in srgb, var(--meet-overlay-bg, #0f0f10) 85%, black);
+      background: color-mix(in srgb, var(--virtuis-leaderboard-overlay-bg, var(--meet-overlay-bg, #0f0f10)) 85%, black);
     }
     [data-meet-theme] .leaderboard-table td {
-      color: var(--meet-overlay-text, #fff);
+      color: var(--virtuis-leaderboard-overlay-text, var(--meet-overlay-text, #fff));
+      padding: var(--virtuis-leaderboard-table-row-padding, 14px 20px);
     }
     [data-meet-theme] .leaderboard-table td.col-rank {
-      color: var(--meet-header-bg, #a1a1aa);
+      color: var(--virtuis-leaderboard-header-text, var(--meet-header-text, #a1a1aa));
+      width: var(--virtuis-leaderboard-rank-col-width, 70px);
     }
     [data-meet-theme] .leaderboard-table td.col-diff,
     [data-meet-theme] .leaderboard-table td.col-exec {
-      color: var(--meet-header-bg, #a1a1aa);
+      color: var(--virtuis-leaderboard-header-text, var(--meet-header-text, #a1a1aa));
     }
     [data-meet-theme] .leaderboard-table td.col-team {
-      color: var(--meet-header-bg, #d4d4d8);
+      color: var(--virtuis-leaderboard-content-bg, var(--meet-content-bg, #d4d4d8));
+    }
+    [data-meet-theme] .leaderboard-table td.col-score {
+      font-family: var(--virtuis-leaderboard-score-font-family, inherit);
+      font-variant-numeric: tabular-nums;
     }
     [data-meet-theme] .leaderboard-team-logo {
-      background: var(--meet-header-bg, #27272a);
+      background: var(--virtuis-leaderboard-header-bg, var(--meet-header-bg, #27272a));
+      width: var(--virtuis-leaderboard-team-logo-size, 36px);
+      height: var(--virtuis-leaderboard-team-logo-size, 36px);
     }
     [data-meet-theme] .apparatus-badge {
-      border-color: var(--meet-border-color, #52525b);
-      color: var(--meet-header-bg, #a1a1aa);
+      border-color: var(--virtuis-leaderboard-border-color, var(--meet-border-color, #52525b));
+      color: var(--virtuis-leaderboard-header-text, var(--meet-header-text, #a1a1aa));
+    }
+    /* Medal gradient overrides */
+    [data-meet-theme] .medal-gold {
+      background: linear-gradient(135deg, var(--virtuis-leaderboard-gold-from, #fbbf24), var(--virtuis-leaderboard-gold-to, #f59e0b));
+    }
+    [data-meet-theme] .medal-silver {
+      background: linear-gradient(135deg, var(--virtuis-leaderboard-silver-from, #d1d5db), var(--virtuis-leaderboard-silver-to, #9ca3af));
+    }
+    [data-meet-theme] .medal-bronze {
+      background: linear-gradient(135deg, var(--virtuis-leaderboard-bronze-from, #d97706), var(--virtuis-leaderboard-bronze-to, #b45309));
+    }
+    [data-meet-theme] .place-indicator.gold {
+      background: var(--virtuis-leaderboard-gold-from, #facc15);
+    }
+    [data-meet-theme] .place-indicator.silver {
+      background: var(--virtuis-leaderboard-silver-from, #d4d4d8);
+    }
+    [data-meet-theme] .place-indicator.bronze {
+      background: var(--virtuis-leaderboard-bronze-from, #d97706);
+    }
+    [data-meet-theme] .stick-bonus {
+      background: var(--virtuis-leaderboard-stick-bonus-bg, #22c55e);
+    }
+    [data-meet-theme] .leaderboard-medal {
+      width: var(--virtuis-leaderboard-medal-size, 32px);
+      height: var(--virtuis-leaderboard-medal-size, 32px);
     }
 
     /* Stats header override */
