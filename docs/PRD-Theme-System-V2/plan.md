@@ -254,7 +254,7 @@ All Phase 7 graphics need consistent font loading. This phase consolidates Googl
 
 ---
 
-### Task 7.FONT.2 — Update Overlay Files for Consistent Font Weights — NOT STARTED
+### Task 7.FONT.2 — Update Overlay Files for Consistent Font Weights — COMPLETE
 
 **Goal:** Ensure overlay files request the same weight range as output.html for their respective fonts.
 
@@ -271,11 +271,11 @@ All Phase 7 graphics need consistent font loading. This phase consolidates Googl
 4. For sponsors-cycle.html: replace system font stack with Inter import
 
 **Verify:**
-- [ ] All overlay files load fonts without errors
-- [ ] Frame overlays render with Inter instead of Arial
-- [ ] interview-card.html still uses Poppins
-- [ ] sponsors-cycle/bug render correctly with Inter
-- [ ] No visual regressions in any overlay
+- [x] All overlay files load fonts without errors — **PASS** (no console errors)
+- [x] Frame overlays render with Inter instead of Arial — **PASS** (Virtius watermark uses Inter)
+- [x] interview-card.html still uses Poppins — **PASS** (already had full weight range wght@400;500;600;700;800;900)
+- [x] sponsors-cycle/bug render correctly with Inter — **PASS** (system font stack replaced)
+- [x] No visual regressions in any overlay — **PASS** (screenshots verified)
 
 **Deploy:** Deploy `overlays/` directory to production.
 
@@ -1677,3 +1677,4 @@ Execution order: Phase 8A → 7.FONT → 7A → 7B → 7C → 7D → 7E → 7F �
 - LEARNING: Phase 8A production deployment (Task 8.7) verified on 2026-03-26. All per-graphic override exports, debug panel, and overlay files work correctly on commentarygraphic.com. The only console error is a missing favicon.ico (harmless).
 - LEARNING: Task 8.DOC — documentation-only task. CLAUDE.md already had the lower-third template and layout override tables from earlier phases. Phase 8A added the live-mode override system section (exported functions, flow, lastLiveGraphicId). PRD status table and blocked items updated.
 - LEARNING: Google Fonts consolidated URL format uses `&family=` separator for multiple families. Single request loads all families, woff2 files only load when font is actually used on page. Preconnect links (`rel="preconnect"` with `crossorigin` for gstatic.com) enable parallel DNS/connection setup.
+- LEARNING: Overlay files need preconnect + Google Fonts import in `<head>` before `<style>`. Pattern: `<link rel="preconnect" href="https://fonts.googleapis.com">`, `<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>`, then `<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">`. Frame overlays used Arial for the Virtius watermark — now use Inter.
