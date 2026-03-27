@@ -121,11 +121,11 @@ Per-graphic overrides work in Theme Editor preview but are **completely broken i
 
 ---
 
-### Task 8.5 — Layout Override Verification — NOT STARTED
+### Task 8.5 — Layout Override Verification — COMPLETE
 
 **Goal:** Verify layout overrides (position, sizes, padding, fonts, visibility) work in live mode for lower-thirds.
 
-**Files:** None (verification only — screenshots)
+**Files:** `overlays/theme-loader.js` (bug fix for showLogo: "none")
 
 **Work:**
 1. Configure test theme with layout overrides for event-bar:
@@ -139,11 +139,13 @@ Per-graphic overrides work in Theme Editor preview but are **completely broken i
 3. Switch to warm-up (no layout overrides) — verify defaults restored
 4. Configure warm-up with different overrides, verify they apply independently
 
+**BUG FOUND + FIXED:** `showLogo: "none"` was not handled — the code only checked for `false`/`"false"`, not the string `"none"`. Fixed in theme-loader.js line 601 to also accept `"none"`.
+
 **Verify:**
-- [ ] Event-bar layout overrides render correctly
-- [ ] Warm-up reverts to defaults when event-bar overrides cleared
-- [ ] Each graphic's layout overrides are independent
-- [ ] Height/padding overrides work (venueHeight, detailsPaddingV)
+- [x] Event-bar layout overrides render correctly — **PASS** (logo hidden, bar at 200/200, venue 48px, min-width 800px)
+- [x] Warm-up reverts to defaults when event-bar overrides cleared — **PASS** (all event-bar vars empty)
+- [x] Each graphic's layout overrides are independent — **PASS** (switching preserves correct per-graphic vars)
+- [x] Height/padding overrides work (venueHeight, detailsPaddingV) — **PASS** (60px height, 20px padding applied)
 
 ---
 
@@ -1669,3 +1671,5 @@ Execution order: Phase 8A → 7.FONT → 7A → 7B → 7C → 7D → 7E → 7F �
 - LEARNING: Iframe graphics (sponsors-thanks, rotation-slate) use their own theme-loader.js inside the iframe, so per-graphic overrides work via the existing overlay path — no changes needed for iframes.
 - LEARNING: Theme ID in local verification URLs must match exactly what's in Firebase (e.g., `pink-meet-2026` not `pink-meet`). Use `firebase_list_paths` to check available themes.
 - LEARNING: For team-stats, the graphic IDs are `team1-stats` through `team7-stats`, so the CSS cascade needs to chain all 7 variants (verbose but necessary for shared CSS selectors).
+- LEARNING: `showLogo` values in Firebase can be `"none"` (string), `false` (boolean), or `"false"` (string) — all must map to CSS `none`. Fixed in Task 8.5.
+- LEARNING: Theme data is cached in `window.__themeData` at page load. Adding new overrides to Firebase mid-session requires a page reload to pick them up. The `themeApplyOverrides()` call reads from this cached copy.
