@@ -39,30 +39,30 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      gap: 100px;
+      gap: var(--logos-logos-gap, 100px);
       background: transparent;
     }
     .graphic-logos .team-logo {
-      width: 250px;
-      height: 250px;
+      width: var(--logos-logos-size, 250px);
+      height: var(--logos-logos-size, 250px);
       object-fit: contain;
-      background: #f4f4f5;
-      border-radius: 24px;
-      padding: 25px;
+      background: var(--logos-logos-bg, #f4f4f5);
+      border-radius: var(--logos-logos-border-radius, 24px);
+      padding: var(--logos-logos-padding, 25px);
     }
     /* Team Logos - Grid Layout (5-6 teams) */
     .graphic-logos-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       grid-template-rows: repeat(2, 1fr);
-      gap: 60px;
-      padding: 100px;
+      gap: var(--logos-logos-grid-gap, 60px);
+      padding: var(--logos-logos-grid-padding, 100px);
       place-items: center;
     }
     .graphic-logos-grid .team-logo {
-      width: 200px;
-      height: 200px;
-      padding: 20px;
+      width: var(--logos-logos-grid-size, 200px);
+      height: var(--logos-logos-grid-size, 200px);
+      padding: var(--logos-logos-padding, 20px);
     }
 
     /* Event Info Bar */
@@ -1632,6 +1632,27 @@
       pointer-events: none;
       border-radius: inherit;
       z-index: 1;
+    }
+
+    /* Logos graphic overrides (3-layer cascade: per-graphic → theme → fallback) (Phase 7E.2) */
+    [data-meet-theme] .graphic-logos {
+      gap: var(--logos-logos-gap, 100px);
+    }
+    [data-meet-theme] .graphic-logos .team-logo {
+      width: var(--logos-logos-size, 250px);
+      height: var(--logos-logos-size, 250px);
+      background: var(--logos-logos-bg, var(--meet-badge-bg, #f4f4f5));
+      border-radius: var(--logos-logos-border-radius, 24px);
+      padding: var(--logos-logos-padding, 25px);
+    }
+    [data-meet-theme] .graphic-logos-grid {
+      gap: var(--logos-logos-grid-gap, 60px);
+      padding: var(--logos-logos-grid-padding, 100px);
+    }
+    [data-meet-theme] .graphic-logos-grid .team-logo {
+      width: var(--logos-logos-grid-size, 200px);
+      height: var(--logos-logos-grid-size, 200px);
+      padding: var(--logos-logos-padding, 20px);
     }
 
     /* ==========================================
@@ -13103,10 +13124,12 @@
       `,
 
       // Sponsor Graphics - load overlay files in iframe
+      // Falls back to page's active theme (from URL param or competition config) when data.meetTheme is not set
       'sponsors-thanks': (data) => {
         const logo = encodeURIComponent(getTeamLogoUrl(data.team1Name, data.team1Logo) || '');
         const sponsors = encodeURIComponent(data.sponsors || '[]');
-        const meetTheme = data.meetTheme ? `&meetTheme=${encodeURIComponent(data.meetTheme)}` : '';
+        const themeId = data.meetTheme || document.body.getAttribute('data-meet-theme') || '';
+        const meetTheme = themeId ? `&meetTheme=${encodeURIComponent(themeId)}` : '';
         const overlayUrl = `/overlays/sponsors-thanks.html?logo=${logo}&sponsors=${sponsors}${meetTheme}`;
         return `<iframe src="${overlayUrl}" style="width: 1920px; height: 1080px; border: none; overflow: hidden;"></iframe>`;
       },
@@ -13114,14 +13137,16 @@
       'sponsors-cycle': (data) => {
         const logo = encodeURIComponent(getTeamLogoUrl(data.team1Name, data.team1Logo) || '');
         const sponsors = encodeURIComponent(data.sponsors || '[]');
-        const meetTheme = data.meetTheme ? `&meetTheme=${encodeURIComponent(data.meetTheme)}` : '';
+        const themeId = data.meetTheme || document.body.getAttribute('data-meet-theme') || '';
+        const meetTheme = themeId ? `&meetTheme=${encodeURIComponent(themeId)}` : '';
         const overlayUrl = `/overlays/sponsors-cycle.html?logo=${logo}&sponsors=${sponsors}${meetTheme}`;
         return `<iframe src="${overlayUrl}" style="width: 1920px; height: 1080px; border: none; overflow: hidden;"></iframe>`;
       },
 
       'sponsors-bug': (data) => {
         const sponsors = encodeURIComponent(data.sponsors || '[]');
-        const meetTheme = data.meetTheme ? `&meetTheme=${encodeURIComponent(data.meetTheme)}` : '';
+        const themeId = data.meetTheme || document.body.getAttribute('data-meet-theme') || '';
+        const meetTheme = themeId ? `&meetTheme=${encodeURIComponent(themeId)}` : '';
         const overlayUrl = `/overlays/sponsors-bug.html?sponsors=${sponsors}${meetTheme}`;
         return `<iframe src="${overlayUrl}" style="width: 1920px; height: 1080px; border: none; overflow: hidden;"></iframe>`;
       },

@@ -1435,12 +1435,12 @@ Graphics: rotation-slate (16 layouts), logos, now-competing, live-camera, interv
 
 ---
 
-### Task 7E.2 — Convert logos CSS to Variables — NOT STARTED
+### Task 7E.2 — Convert logos CSS to Variables — COMPLETE
 
 **Goal:** Replace 22 hardcoded values in logos graphic with CSS variables.
 
 **Files:**
-- `output.html` (lines ~12424-12444 renderer + associated CSS)
+- `output.html` (lines ~36-66 CSS + lines ~12794-12814 renderer)
 - `overlays/theme-loader.js` (add mappings)
 
 **Work:**
@@ -1450,10 +1450,20 @@ Graphics: rotation-slate (16 layouts), logos, now-competing, live-camera, interv
 4. Add mappings to theme-loader.js
 
 **Verify:**
-- [ ] Logos render identically with no overrides
-- [ ] Logo size per team count responds to overrides
-- [ ] Grid gap override works
-- [ ] Background color override works
+- [x] Logos render identically with no overrides — **PASS** (default gray #f4f4f5 background, 100px gap, 250px logos)
+- [x] Logo size per team count responds to overrides — **CSS vars in place** (`--logos-logos-size`, `--logos-logos-grid-size`)
+- [x] Grid gap override works — **CSS vars in place** (`--logos-logos-gap`, `--logos-logos-grid-gap`)
+- [x] Background color override works — **PASS** (pink-meet-2026 theme applies pink via `--meet-badge-bg`)
+
+**Implementation Notes (2026-03-27):**
+- Added 8 new layout suffixes to `layoutOverrideMapping` in theme-loader.js:
+  - `logosGap`, `logosSize`, `logosBg`, `logosBorderRadius`, `logosPadding`
+  - `logosGridGap`, `logosGridSize`, `logosGridPadding`
+- CSS uses 3-layer cascade: `var(--logos-logos-{prop}, var(--meet-{prop}, fallback))`
+- Row layout (2-4 teams): 250px logos, 100px gap, 25px padding, 24px border-radius
+- Grid layout (5+ teams): 200px logos, 60px gap, 100px outer padding, 20px card padding
+- Logo card background uses `--meet-badge-bg` as theme layer for consistency with other badge elements
+- Screenshots: `local-task-7e2-logos.png`, `local-task-7e2-logos-themed.png`, `local-task-7e2-logos-grid.png`
 
 **Deploy:** Deploy `output.html` + `overlays/theme-loader.js` to production.
 
