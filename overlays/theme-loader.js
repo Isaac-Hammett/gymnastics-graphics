@@ -601,6 +601,22 @@ window.themeReady = new Promise(resolve => { _resolveThemeReady = resolve; });
     statsValueFontSize: { suffix: 'stats-value-font-size', unit: 'px' },
     statsValueFontWeight: { suffix: 'stats-value-font-weight', unit: null },
     statsValueFontFamily: { suffix: 'stats-value-font-family', unit: null },
+    // Team-coaches specific (Phase 7B.2)
+    coachesTop: { suffix: 'coaches-top', unit: 'px' },
+    coachesLeft: { suffix: 'coaches-left', unit: 'px' },
+    coachesMinWidth: { suffix: 'coaches-min-width', unit: 'px' },
+    coachesHeaderPaddingV: { suffix: 'coaches-header-padding-v', unit: 'px' },
+    coachesHeaderPaddingH: { suffix: 'coaches-header-padding-h', unit: 'px' },
+    coachesTitleFontSize: { suffix: 'coaches-title-font-size', unit: 'px' },
+    coachesTitleFontWeight: { suffix: 'coaches-title-font-weight', unit: null },
+    coachesTitleFontFamily: { suffix: 'coaches-title-font-family', unit: null },
+    coachesLogoSize: { suffix: 'coaches-logo-size', unit: 'px' },
+    coachesContentPaddingV: { suffix: 'coaches-content-padding-v', unit: 'px' },
+    coachesContentPaddingH: { suffix: 'coaches-content-padding-h', unit: 'px' },
+    coachesNameFontSize: { suffix: 'coaches-name-font-size', unit: 'px' },
+    coachesNameFontWeight: { suffix: 'coaches-name-font-weight', unit: null },
+    coachesNameFontFamily: { suffix: 'coaches-name-font-family', unit: null },
+    coachesNameLineHeight: { suffix: 'coaches-name-line-height', unit: null },
   };
 
   /**
