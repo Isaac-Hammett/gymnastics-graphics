@@ -1227,7 +1227,7 @@ Graphics: stream-starting, stream-thanks.
 
 ---
 
-### Task 7D.1 — Convert Stream CSS to Variables — NOT STARTED
+### Task 7D.1 — Convert Stream CSS to Variables — IN PROGRESS
 
 **Goal:** Replace 44 hardcoded CSS values in stream graphics with CSS variables.
 
@@ -1253,7 +1253,7 @@ Graphics: stream-starting, stream-thanks.
 
 ---
 
-### Task 7D.2 — Fix Stream Preview Bug (undefined values) — NOT STARTED
+### Task 7D.2 — Fix Stream Preview Bug (undefined values) — COMPLETE
 
 **Goal:** Fix "undefined" rendering in Theme Editor preview for stream graphics.
 
@@ -1953,3 +1953,4 @@ Execution order: Phase 8A → 7.FONT → 7A → 7B → 7C → 7D → 7E → 7F �
 - LEARNING: Phase 7A deployment verification (Task 7A.11) — team-roster overlay requires `compId=` param (not `comp=`). Production verification confirmed: sponsors-thanks, frame-quad, team-roster all render correctly with WCGNIC data and "behind-the-chalk" theme. Debug panel shows 8/8 CSS variables at Layer 2 for all graphics.
 - LEARNING: Position overrides for inline graphics (team-stats, team-coaches, etc.) that share a generic container class (e.g., `.graphic-team-stats`) require either: (1) adding `data-graphic-id` attribute to the output element and using `[data-graphic-id="team1-stats"]` selectors, or (2) inline styles. Phase 7B.1 defers position overrides to Task 7B.4 when rich control panels add the required attribute.
 - LEARNING: Team-coaches URL-based preview fails because the renderers call `.split('\n')` on `data.team{N}Coaches` which is undefined in preview mode (data isn't passed from URL params). The debug panel confirms the theme system works correctly — graphic ID detected as `team1-coaches`, 8/8 CSS variables at Layer 2. CSS changes verified via team-stats which uses the same pattern and renders correctly with theme colors.
+- LEARNING: Stream renderers need `|| ''` fallbacks for `data.eventName` and `data.meetDate` to prevent "undefined" text. The Theme Editor preview URL also needs `meetDate`, `compType`, `team2Name`, and `team2Logo` params for stream graphics so the dual-logo VS layout renders in placeholder mode.

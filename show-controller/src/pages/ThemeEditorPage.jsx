@@ -1420,8 +1420,12 @@ export default function ThemeEditorPage() {
       if (selectedGraphicType === 'stream-starting' || selectedGraphicType === 'stream-thanks') {
         params.set('venue', 'Sample Arena');
         params.set('eventName', 'Home Team vs Away Team');
+        params.set('meetDate', 'March 26, 2026');
+        params.set('compType', 'mens-dual');
         params.set('team1Name', 'Home Team');
         params.set('team1Logo', 'https://media.virti.us/upload/images/team/CbWKimoC_0RpBy-M-lcSy');
+        params.set('team2Name', 'Away Team');
+        params.set('team2Logo', 'https://media.virti.us/upload/images/team/CbWKimoC_0RpBy-M-lcSy');
       }
       // Stats / coaches cards
       if (selectedGraphicType.match(/^team\d-stats$/) || selectedGraphicType.match(/^team\d-coaches$/)) {

@@ -6122,7 +6122,7 @@
     .graphic-stream {
       width: 100%;
       height: 100%;
-      background: #fff;
+      background: var(--stream-starting-bg, var(--stream-thanks-bg, var(--meet-overlay-bg, #fff)));
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -6130,64 +6130,69 @@
       text-align: center;
     }
     .stream-title {
-      font-size: 48px;
-      font-weight: 800;
-      color: #000;
-      margin-bottom: 50px;
+      font-size: var(--stream-starting-title-font-size, var(--stream-thanks-title-font-size, 48px));
+      font-weight: var(--stream-starting-title-font-weight, var(--stream-thanks-title-font-weight, 800));
+      font-family: var(--stream-starting-title-font-family, var(--stream-thanks-title-font-family, inherit));
+      text-transform: var(--stream-starting-title-text-transform, var(--stream-thanks-title-text-transform, none));
+      color: var(--stream-starting-title-color, var(--stream-thanks-title-color, var(--meet-overlay-text, #000)));
+      margin-bottom: var(--stream-starting-title-margin, var(--stream-thanks-title-margin, 50px));
     }
     .stream-logo {
-      width: 320px;
-      height: 320px;
+      width: var(--stream-starting-logo-size, var(--stream-thanks-logo-size, 320px));
+      height: var(--stream-starting-logo-size, var(--stream-thanks-logo-size, 320px));
       object-fit: contain;
-      margin-bottom: 50px;
+      margin-bottom: var(--stream-starting-logo-margin, var(--stream-thanks-logo-margin, 50px));
     }
     /* Multi-logo container for stream graphics */
     .stream-logos-container {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 40px;
-      margin-bottom: 50px;
+      gap: var(--stream-starting-logo-gap, var(--stream-thanks-logo-gap, 40px));
+      margin-bottom: var(--stream-starting-logo-margin, var(--stream-thanks-logo-margin, 50px));
     }
     .stream-logos-container.dual .stream-team-logo {
-      width: 250px;
-      height: 250px;
+      width: var(--stream-starting-dual-logo-size, var(--stream-thanks-dual-logo-size, 250px));
+      height: var(--stream-starting-dual-logo-size, var(--stream-thanks-dual-logo-size, 250px));
       object-fit: contain;
     }
     .stream-logos-container.dual .stream-vs-text {
-      font-size: 48px;
-      font-weight: 900;
-      color: #000;
+      font-size: var(--stream-starting-vs-font-size, var(--stream-thanks-vs-font-size, 48px));
+      font-weight: var(--stream-starting-vs-font-weight, var(--stream-thanks-vs-font-weight, 900));
+      color: var(--stream-starting-vs-color, var(--stream-thanks-vs-color, var(--meet-overlay-text, #000)));
     }
     .stream-logos-container.multi .stream-team-logo {
-      width: 180px;
-      height: 180px;
+      width: var(--stream-starting-multi-logo-size, var(--stream-thanks-multi-logo-size, 180px));
+      height: var(--stream-starting-multi-logo-size, var(--stream-thanks-multi-logo-size, 180px));
       object-fit: contain;
     }
     .stream-logos-container.many .stream-team-logo {
-      width: 130px;
-      height: 130px;
+      width: var(--stream-starting-many-logo-size, var(--stream-thanks-many-logo-size, 130px));
+      height: var(--stream-starting-many-logo-size, var(--stream-thanks-many-logo-size, 130px));
       object-fit: contain;
     }
     .stream-event-name {
-      font-size: 54px;
-      font-weight: 800;
-      color: #000;
+      font-size: var(--stream-starting-event-font-size, var(--stream-thanks-event-font-size, 54px));
+      font-weight: var(--stream-starting-event-font-weight, var(--stream-thanks-event-font-weight, 800));
+      font-family: var(--stream-starting-event-font-family, var(--stream-thanks-event-font-family, inherit));
+      color: var(--stream-starting-event-color, var(--stream-thanks-event-color, var(--meet-overlay-text, #000)));
     }
     .stream-date {
-      font-size: 42px;
-      font-weight: 700;
-      color: #000;
-      margin-top: 10px;
+      font-size: var(--stream-starting-date-font-size, var(--stream-thanks-date-font-size, 42px));
+      font-weight: var(--stream-starting-date-font-weight, var(--stream-thanks-date-font-weight, 700));
+      font-family: var(--stream-starting-date-font-family, var(--stream-thanks-date-font-family, inherit));
+      color: var(--stream-starting-date-color, var(--stream-thanks-date-color, var(--meet-overlay-text, #000)));
+      margin-top: var(--stream-starting-date-margin, var(--stream-thanks-date-margin, 10px));
     }
     .stream-branding {
-      margin-top: 30px;
-      font-size: 36px;
-      font-weight: 600;
-      color: #000;
+      margin-top: var(--stream-starting-branding-margin, var(--stream-thanks-branding-margin, 30px));
+      font-size: var(--stream-starting-branding-font-size, var(--stream-thanks-branding-font-size, 36px));
+      font-weight: var(--stream-starting-branding-font-weight, var(--stream-thanks-branding-font-weight, 600));
+      color: var(--stream-starting-branding-color, var(--stream-thanks-branding-color, var(--meet-overlay-text, #000)));
+      display: var(--stream-starting-show-branding, var(--stream-thanks-show-branding, block));
     }
     .stream-branding span {
-      color: #22d3ee;
+      color: var(--stream-starting-branding-accent, var(--stream-thanks-branding-accent, #22d3ee));
     }
 
     /* Warm Up Graphic */
@@ -13081,8 +13086,8 @@
         <div class="graphic-container graphic-stream">
           <div class="stream-title">STREAM STARTING SOON</div>
           ${buildStreamLogosHtml(data)}
-          <div class="stream-event-name">${data.eventName}</div>
-          <div class="stream-date">${data.meetDate}</div>
+          <div class="stream-event-name">${data.eventName || ''}</div>
+          <div class="stream-date">${data.meetDate || ''}</div>
           <div class="stream-branding"><span>V</span>irtius</div>
         </div>
       `,
@@ -13091,8 +13096,8 @@
         <div class="graphic-container graphic-stream">
           <div class="stream-title">THANKS FOR WATCHING</div>
           ${buildStreamLogosHtml(data)}
-          <div class="stream-event-name">${data.eventName}</div>
-          <div class="stream-date">${data.meetDate}</div>
+          <div class="stream-event-name">${data.eventName || ''}</div>
+          <div class="stream-date">${data.meetDate || ''}</div>
           <div class="stream-branding"><span>V</span>irtius</div>
         </div>
       `,
