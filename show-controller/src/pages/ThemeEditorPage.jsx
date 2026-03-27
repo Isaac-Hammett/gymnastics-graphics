@@ -698,11 +698,18 @@ export default function ThemeEditorPage() {
   const previewIframeRef = useRef(null);
   const [measuredHeights, setMeasuredHeights] = useState({});
 
-  // Selector mapping for each lower-third graphic
+  // Selector mapping for lower-third and full-screen graphics
   const MEASUREMENT_SELECTORS = {
+    // Lower-thirds
     'event-bar': { logo: '.event-bar-logo', venue: '.event-bar-venue', details: '.event-bar-details' },
     'warm-up': { logo: '.warm-up-logo-section', venue: '.warm-up-teams-row', details: '.warm-up-status-row' },
     'replay': { logo: '.replay-logo-section', venue: '.replay-title-row', details: '.replay-status-row' },
+    // Full-screen graphics
+    'event-summary': { header: '.event-summary-header', content: '.event-summary-content', footer: '.event-summary-footer' },
+    'virtuis-leaderboard': { header: '.leaderboard-header', table: '.leaderboard-table' },
+    'event-frame': { container: '.frame-container', watermark: '.virtius-watermark' },
+    'sponsors-thanks': { container: '.sponsors-container', grid: '.sponsors-grid' },
+    'team-roster': { header: '.roster-header', container: '.roster-container', grid: '.roster-grid' },
   };
 
   // Listen for measurement responses from the preview iframe
