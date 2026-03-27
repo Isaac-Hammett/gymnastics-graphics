@@ -149,7 +149,7 @@ Per-graphic overrides work in Theme Editor preview but are **completely broken i
 
 ---
 
-### Task 8.6 — Image/Texture Override Verification — NOT STARTED
+### Task 8.6 — Image/Texture Override Verification — COMPLETE
 
 **Goal:** Verify image and texture per-graphic overrides work in live mode.
 
@@ -165,11 +165,11 @@ Per-graphic overrides work in Theme Editor preview but are **completely broken i
 4. Switch back to event-bar — verify images reappear
 
 **Verify:**
-- [ ] Header background image renders with correct fit and opacity
-- [ ] Body texture renders with correct blend mode
-- [ ] Custom logo renders at specified size
-- [ ] All image CSS variables cleared on graphic switch
-- [ ] No visual artifacts from previous graphic's images
+- [x] Header background image renders with correct fit and opacity — **PASS** (SEMO logo visible behind header text, cover fit, ~50% opacity)
+- [x] Body texture renders with correct blend mode — **PASS** (Bridgeport logo as overlay-blended texture on dark red content area)
+- [x] Custom logo renders at specified size — **PASS** (Alaska-Anchorage logo at 40px, visibly smaller than default 70px)
+- [x] All image CSS variables cleared on graphic switch — **PASS** (console: "Cleared 40 override variables", warm-up shows no images)
+- [x] No visual artifacts from previous graphic's images — **PASS** (clean warm-up, clean event-bar re-render)
 
 ---
 
@@ -1673,3 +1673,4 @@ Execution order: Phase 8A → 7.FONT → 7A → 7B → 7C → 7D → 7E → 7F �
 - LEARNING: For team-stats, the graphic IDs are `team1-stats` through `team7-stats`, so the CSS cascade needs to chain all 7 variants (verbose but necessary for shared CSS selectors).
 - LEARNING: `showLogo` values in Firebase can be `"none"` (string), `false` (boolean), or `"false"` (string) — all must map to CSS `none`. Fixed in Task 8.5.
 - LEARNING: Theme data is cached in `window.__themeData` at page load. Adding new overrides to Firebase mid-session requires a page reload to pick them up. The `themeApplyOverrides()` call reads from this cached copy.
+- LEARNING: Image/texture overrides (headerBgImage, bodyTexture, logo, logoSize + fit/opacity/blend params) all work correctly in live mode. clearOverrides removes all 40 CSS variables cleanly on graphic switch — no image bleeding between graphics. Tested with production URL on wcgnic-2026-prelim1.
