@@ -17,10 +17,10 @@
 
     .wtw-card {
       position: absolute;
-      bottom: 120px;
-      left: 100px;
-      min-width: 600px;
-      max-width: 900px;
+      bottom: var(--who-to-watch-lower-third-wtw-card-bottom, var(--meet-bar-bottom, 120px));
+      left: var(--who-to-watch-lower-third-wtw-card-left, var(--meet-bar-left, 100px));
+      min-width: var(--who-to-watch-lower-third-wtw-card-min-width, 600px);
+      max-width: var(--who-to-watch-lower-third-wtw-card-max-width, 900px);
       animation: slideIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
@@ -30,85 +30,96 @@
     }
 
     .wtw-header {
-      background: var(--meet-header-bg, #BFBFBF);
-      padding: 12px 30px;
+      background: var(--who-to-watch-lower-third-header-bg, var(--meet-header-bg, #BFBFBF));
+      padding: var(--who-to-watch-lower-third-wtw-header-padding-v, 12px) var(--who-to-watch-lower-third-wtw-header-padding-h, 30px);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 20px;
+      gap: var(--who-to-watch-lower-third-wtw-header-gap, 20px);
     }
 
     .wtw-label {
-      font-size: 36px;
-      font-weight: 900;
-      color: var(--meet-header-text, #000);
-      text-transform: uppercase;
-      letter-spacing: -0.5px;
+      font-size: var(--who-to-watch-lower-third-wtw-label-font-size, 36px);
+      font-weight: var(--who-to-watch-lower-third-wtw-label-font-weight, 900);
+      font-family: var(--who-to-watch-lower-third-wtw-label-font-family, 'Inter', sans-serif);
+      color: var(--who-to-watch-lower-third-header-text, var(--meet-header-text, #000));
+      text-transform: var(--who-to-watch-lower-third-wtw-label-text-transform, uppercase);
+      letter-spacing: var(--who-to-watch-lower-third-wtw-label-letter-spacing, -0.5px);
     }
 
     .wtw-logo {
-      width: 50px;
-      height: 50px;
+      width: var(--who-to-watch-lower-third-wtw-logo-size, 50px);
+      height: var(--who-to-watch-lower-third-wtw-logo-size, 50px);
       object-fit: contain;
     }
 
     .wtw-content {
-      background: #000;
-      padding: 20px 30px;
+      background: var(--who-to-watch-lower-third-content-bg, var(--meet-content-bg, #000));
+      padding: var(--who-to-watch-lower-third-wtw-content-padding-v, 20px) var(--who-to-watch-lower-third-wtw-content-padding-h, 30px);
       display: flex;
       align-items: center;
-      gap: 20px;
+      gap: var(--who-to-watch-lower-third-wtw-content-gap, 20px);
     }
 
-    .wtw-headshot {
-      width: 110px;
-      height: 110px;
-      border-radius: 50%;
-      object-fit: cover;
-      background: #333;
-      border: 3px solid #fff;
+    .wtw-headshot-container {
+      width: var(--who-to-watch-lower-third-wtw-headshot-size, 110px);
+      height: var(--who-to-watch-lower-third-wtw-headshot-size, 110px);
+      border-radius: var(--who-to-watch-lower-third-wtw-headshot-radius, 50%);
+      overflow: hidden;
+      background: var(--who-to-watch-lower-third-wtw-headshot-bg, #333);
+      border: var(--who-to-watch-lower-third-wtw-headshot-border, 3px) solid var(--who-to-watch-lower-third-wtw-headshot-border-color, #fff);
       flex-shrink: 0;
     }
 
-    .wtw-headshot.no-image {
+    .wtw-headshot {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 20%;
+    }
+
+    .wtw-headshot-container.no-image {
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 40px;
-      font-weight: 900;
-      color: #666;
+      font-size: var(--who-to-watch-lower-third-wtw-initials-font-size, 40px);
+      font-weight: var(--who-to-watch-lower-third-wtw-initials-font-weight, 900);
+      color: var(--who-to-watch-lower-third-wtw-initials-color, #666);
     }
 
     .wtw-info {
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: var(--who-to-watch-lower-third-wtw-info-gap, 4px);
     }
 
     .wtw-name {
-      font-size: 32px;
-      font-weight: 900;
-      color: #fff;
-      text-transform: uppercase;
-      letter-spacing: -0.5px;
-      line-height: 1.1;
+      font-size: var(--who-to-watch-lower-third-wtw-name-font-size, 32px);
+      font-weight: var(--who-to-watch-lower-third-wtw-name-font-weight, 900);
+      font-family: var(--who-to-watch-lower-third-wtw-name-font-family, 'Inter', sans-serif);
+      color: var(--who-to-watch-lower-third-overlay-text, var(--meet-overlay-text, #fff));
+      text-transform: var(--who-to-watch-lower-third-wtw-name-text-transform, uppercase);
+      letter-spacing: var(--who-to-watch-lower-third-wtw-name-letter-spacing, -0.5px);
+      line-height: var(--who-to-watch-lower-third-wtw-name-line-height, 1.1);
     }
 
     .wtw-subtitle {
-      font-size: 18px;
-      font-weight: 400;
-      color: #aaa;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+      font-size: var(--who-to-watch-lower-third-wtw-subtitle-font-size, 18px);
+      font-weight: var(--who-to-watch-lower-third-wtw-subtitle-font-weight, 400);
+      font-family: var(--who-to-watch-lower-third-wtw-subtitle-font-family, 'Inter', sans-serif);
+      color: var(--who-to-watch-lower-third-wtw-subtitle-color, #aaa);
+      text-transform: var(--who-to-watch-lower-third-wtw-subtitle-text-transform, uppercase);
+      letter-spacing: var(--who-to-watch-lower-third-wtw-subtitle-letter-spacing, 0.5px);
     }
 
     .wtw-stat {
-      font-size: 18px;
-      font-weight: 700;
-      color: var(--meet-content-bg, var(--meet-header-bg, #3b82f6));
-      text-transform: uppercase;
-      letter-spacing: 0.3px;
-      margin-top: 4px;
+      font-size: var(--who-to-watch-lower-third-wtw-stat-font-size, 18px);
+      font-weight: var(--who-to-watch-lower-third-wtw-stat-font-weight, 700);
+      font-family: var(--who-to-watch-lower-third-wtw-stat-font-family, 'Inter', sans-serif);
+      color: var(--who-to-watch-lower-third-badge-bg, var(--meet-badge-bg, var(--meet-header-bg, #3b82f6)));
+      text-transform: var(--who-to-watch-lower-third-wtw-stat-text-transform, uppercase);
+      letter-spacing: var(--who-to-watch-lower-third-wtw-stat-letter-spacing, 0.3px);
+      margin-top: var(--who-to-watch-lower-third-wtw-stat-margin-top, 4px);
     }
   </style>
 </head>
@@ -119,7 +130,9 @@
       <img id="logo" class="wtw-logo" src="" alt="Team">
     </div>
     <div class="wtw-content">
-      <img id="headshot" class="wtw-headshot" src="" alt="">
+      <div id="headshotContainer" class="wtw-headshot-container">
+        <img id="headshot" class="wtw-headshot" src="" alt="">
+      </div>
       <div class="wtw-info">
         <div class="wtw-name" id="athleteName">ATHLETE NAME</div>
         <div class="wtw-subtitle" id="subtitle">Team • Year • Apparatus</div>
@@ -173,22 +186,19 @@
     }
 
     const headshotEl = document.getElementById('headshot');
+    const headshotContainerEl = document.getElementById('headshotContainer');
     const headshotUrl = params.get('headshot') || '';
     if (headshotUrl) {
       headshotEl.src = headshotUrl;
       headshotEl.onerror = () => {
-        headshotEl.style.display = 'none';
-        const placeholder = document.createElement('div');
-        placeholder.className = 'wtw-headshot no-image';
-        placeholder.textContent = getInitials(name);
-        headshotEl.parentNode.insertBefore(placeholder, headshotEl);
+        headshotContainerEl.innerHTML = '';
+        headshotContainerEl.classList.add('no-image');
+        headshotContainerEl.textContent = getInitials(name);
       };
     } else {
-      headshotEl.style.display = 'none';
-      const placeholder = document.createElement('div');
-      placeholder.className = 'wtw-headshot no-image';
-      placeholder.textContent = getInitials(name);
-      headshotEl.parentNode.insertBefore(placeholder, headshotEl);
+      headshotContainerEl.innerHTML = '';
+      headshotContainerEl.classList.add('no-image');
+      headshotContainerEl.textContent = getInitials(name);
     }
 
     // ── Adjustment query params ──
@@ -215,23 +225,24 @@
     const statFontSize = parseInt(params.get('statFontSize'));
     if (statFontSize) statEl.style.fontSize = statFontSize + 'px';
 
-    // Headshot size
+    // Headshot size (applied to container)
     const headshotSize = parseInt(params.get('headshotSize'));
     if (headshotSize) {
-      headshotEl.style.width = headshotSize + 'px';
-      headshotEl.style.height = headshotSize + 'px';
-      // Also apply to placeholder if created
-      const placeholder = document.querySelector('.wtw-headshot.no-image');
-      if (placeholder) {
-        placeholder.style.width = headshotSize + 'px';
-        placeholder.style.height = headshotSize + 'px';
-      }
+      headshotContainerEl.style.width = headshotSize + 'px';
+      headshotContainerEl.style.height = headshotSize + 'px';
     }
     const showHeadshot = params.get('showHeadshot');
     if (showHeadshot === 'false') {
-      headshotEl.style.display = 'none';
-      const placeholder = document.querySelector('.wtw-headshot.no-image');
-      if (placeholder) placeholder.style.display = 'none';
+      headshotContainerEl.style.display = 'none';
+    }
+
+    // Headshot position/scale within the circle
+    const headshotOffsetY = parseInt(params.get('headshotOffsetY'));
+    const headshotScale = parseInt(params.get('headshotScale'));
+    if (headshotOffsetY || headshotScale) {
+      const s = (headshotScale || 100) / 100;
+      const oy = headshotOffsetY || 0;
+      headshotEl.style.transform = 'scale(' + s + ') translateY(' + oy + 'px)';
     }
 
     // Logo size

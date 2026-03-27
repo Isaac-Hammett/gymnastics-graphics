@@ -1917,7 +1917,7 @@ Graphics: who-to-watch-title, who-to-watch-lower-third, clip-overlay.
 
 ---
 
-### Task 7F.3 — Convert who-to-watch-lower-third CSS to Variables — NOT STARTED
+### Task 7F.3 — Convert who-to-watch-lower-third CSS to Variables — COMPLETE
 
 **Goal:** Replace hardcoded CSS in who-to-watch lower-third overlay.
 
@@ -1931,10 +1931,30 @@ Graphics: who-to-watch-title, who-to-watch-lower-third, clip-overlay.
 3. Add mappings to theme-loader.js
 
 **Verify:**
-- [ ] WTW lower-third renders identically with no overrides
-- [ ] Font overrides work
-- [ ] Position overrides work
-- [ ] Card dimension overrides work
+- [x] WTW lower-third renders identically with no overrides — **PASS** (default gray header #BFBFBF, black content #000, all text visible)
+- [x] Font overrides work — **CSS vars in place** (`--who-to-watch-lower-third-wtw-name-font-size`, `-font-weight`, `-font-family`, etc.)
+- [x] Position overrides work — **PASS** (tested cardBottom=200, cardLeft=200 — card moves correctly)
+- [x] Card dimension overrides work — **CSS vars in place** (`--who-to-watch-lower-third-wtw-card-min-width`, `-max-width`)
+- [x] Theme colors apply correctly — **PASS** (pink-meet-2026: pink header, white header text, pink stat color from badge-bg)
+- [x] No console errors — **PASS** (0 errors)
+
+**Implementation Notes (2026-03-27):**
+- Added 48 new layout suffixes to `layoutOverrideMapping` in theme-loader.js:
+  - Card position: `wtwCardBottom`, `wtwCardLeft`, `wtwCardMinWidth`, `wtwCardMaxWidth`
+  - Header: `wtwHeaderPaddingV/H`, `wtwHeaderGap`
+  - Label: `wtwLabelFontSize/Weight/Family/TextTransform/LetterSpacing`
+  - Logo: `wtwLogoSize`
+  - Content: `wtwContentPaddingV/H`, `wtwContentGap`
+  - Headshot: `wtwHeadshotSize`, `wtwHeadshotRadius`, `wtwHeadshotBg`, `wtwHeadshotBorder`, `wtwHeadshotBorderColor`
+  - Initials: `wtwInitialsFontSize/Weight/Color`
+  - Info: `wtwInfoGap`
+  - Name: `wtwNameFontSize/Weight/Family/TextTransform/LetterSpacing/LineHeight`
+  - Subtitle: `wtwSubtitleFontSize/Weight/Family/Color/TextTransform/LetterSpacing`
+  - Stat: `wtwStatFontSize/Weight/Family/TextTransform/LetterSpacing/MarginTop`
+- CSS uses 3-layer cascade: `var(--who-to-watch-lower-third-{prop}, var(--meet-{prop}, fallback))`
+- Color variables use standard meet theme vars: `header-bg`, `header-text`, `content-bg`, `overlay-text`, `badge-bg`
+- Stat line color uses `--meet-badge-bg` as accent color (falls back to header-bg if not set)
+- Screenshots: `local-task-7f3-default-full.png`, `local-task-7f3-themed.png`, `local-task-7f3-position.png`
 
 **Deploy:** Deploy `overlays/who-to-watch.html` + `overlays/theme-loader.js` to production.
 

@@ -997,6 +997,61 @@ window.themeReady = new Promise(resolve => { _resolveThemeReady = resolve; });
     // Name typography - uses same keys as team-coaches: coachesNameFontSize, coachesNameFontWeight, coachesNameFontFamily, coachesNameLineHeight
     coachesOverlayNameTextTransform: { suffix: 'coaches-name-text-transform', unit: null },
     coachesOverlayNameLetterSpacing: { suffix: 'coaches-name-letter-spacing', unit: 'px' },
+    // Who-to-watch lower-third specific (Phase 7F.3)
+    // Card position
+    wtwCardBottom: { suffix: 'wtw-card-bottom', unit: 'px' },
+    wtwCardLeft: { suffix: 'wtw-card-left', unit: 'px' },
+    wtwCardMinWidth: { suffix: 'wtw-card-min-width', unit: 'px' },
+    wtwCardMaxWidth: { suffix: 'wtw-card-max-width', unit: 'px' },
+    // Header
+    wtwHeaderPaddingV: { suffix: 'wtw-header-padding-v', unit: 'px' },
+    wtwHeaderPaddingH: { suffix: 'wtw-header-padding-h', unit: 'px' },
+    wtwHeaderGap: { suffix: 'wtw-header-gap', unit: 'px' },
+    // Label (badge)
+    wtwLabelFontSize: { suffix: 'wtw-label-font-size', unit: 'px' },
+    wtwLabelFontWeight: { suffix: 'wtw-label-font-weight', unit: null },
+    wtwLabelFontFamily: { suffix: 'wtw-label-font-family', unit: null },
+    wtwLabelTextTransform: { suffix: 'wtw-label-text-transform', unit: null },
+    wtwLabelLetterSpacing: { suffix: 'wtw-label-letter-spacing', unit: 'px' },
+    // Logo
+    wtwLogoSize: { suffix: 'wtw-logo-size', unit: 'px' },
+    // Content
+    wtwContentPaddingV: { suffix: 'wtw-content-padding-v', unit: 'px' },
+    wtwContentPaddingH: { suffix: 'wtw-content-padding-h', unit: 'px' },
+    wtwContentGap: { suffix: 'wtw-content-gap', unit: 'px' },
+    // Headshot
+    wtwHeadshotSize: { suffix: 'wtw-headshot-size', unit: 'px' },
+    wtwHeadshotRadius: { suffix: 'wtw-headshot-radius', unit: null },  // percentage or px
+    wtwHeadshotBg: { suffix: 'wtw-headshot-bg', unit: null },
+    wtwHeadshotBorder: { suffix: 'wtw-headshot-border', unit: 'px' },
+    wtwHeadshotBorderColor: { suffix: 'wtw-headshot-border-color', unit: null },
+    // Initials (fallback when no headshot)
+    wtwInitialsFontSize: { suffix: 'wtw-initials-font-size', unit: 'px' },
+    wtwInitialsFontWeight: { suffix: 'wtw-initials-font-weight', unit: null },
+    wtwInitialsColor: { suffix: 'wtw-initials-color', unit: null },
+    // Info container
+    wtwInfoGap: { suffix: 'wtw-info-gap', unit: 'px' },
+    // Athlete name
+    wtwNameFontSize: { suffix: 'wtw-name-font-size', unit: 'px' },
+    wtwNameFontWeight: { suffix: 'wtw-name-font-weight', unit: null },
+    wtwNameFontFamily: { suffix: 'wtw-name-font-family', unit: null },
+    wtwNameTextTransform: { suffix: 'wtw-name-text-transform', unit: null },
+    wtwNameLetterSpacing: { suffix: 'wtw-name-letter-spacing', unit: 'px' },
+    wtwNameLineHeight: { suffix: 'wtw-name-line-height', unit: null },
+    // Subtitle
+    wtwSubtitleFontSize: { suffix: 'wtw-subtitle-font-size', unit: 'px' },
+    wtwSubtitleFontWeight: { suffix: 'wtw-subtitle-font-weight', unit: null },
+    wtwSubtitleFontFamily: { suffix: 'wtw-subtitle-font-family', unit: null },
+    wtwSubtitleColor: { suffix: 'wtw-subtitle-color', unit: null },
+    wtwSubtitleTextTransform: { suffix: 'wtw-subtitle-text-transform', unit: null },
+    wtwSubtitleLetterSpacing: { suffix: 'wtw-subtitle-letter-spacing', unit: 'px' },
+    // Stat line
+    wtwStatFontSize: { suffix: 'wtw-stat-font-size', unit: 'px' },
+    wtwStatFontWeight: { suffix: 'wtw-stat-font-weight', unit: null },
+    wtwStatFontFamily: { suffix: 'wtw-stat-font-family', unit: null },
+    wtwStatTextTransform: { suffix: 'wtw-stat-text-transform', unit: null },
+    wtwStatLetterSpacing: { suffix: 'wtw-stat-letter-spacing', unit: 'px' },
+    wtwStatMarginTop: { suffix: 'wtw-stat-margin-top', unit: 'px' },
   };
 
   /**
