@@ -394,8 +394,14 @@ https://commentarygraphic.com/overlays/sponsors-thanks.html?meetTheme={themeId}
 
 15. **isTeamCardGraphic helper (Task 7B.4):** Matches both team-stats and team-coaches variants. Use `/^team[1-7]-stats$/` OR `/^team[1-7]-coaches$/` OR exact match for `team-stats` or `team-coaches`.
 
-16. **4-way conditional for override panels:** The panel rendering is now 4-way: LOWER_THIRD_GRAPHICS -> FULL_SCREEN_GRAPHICS -> isTeamCardGraphic -> GENERIC. Each branch has its own rich controls tailored to that graphic category.
+16. **5-way conditional for override panels (Task 7C.3):** The panel rendering is now 5-way: LOWER_THIRD_GRAPHICS -> FULL_SCREEN_GRAPHICS -> isTeamCardGraphic -> isSponsorGraphic -> GENERIC. Each branch has its own rich controls tailored to that graphic category.
 
 17. **TEAM_CARD_DEFAULTS constant:** Contains defaults for team-stats (17 props) and team-coaches (15 props). Properties use prefixes `stats*` and `coaches*` to match the theme-loader.js layoutOverrideMapping keys.
 
-18. **ThemeEditorPage now ~4,200 lines:** Task 7B.4 added ~450 lines for team card rich controls. Line numbers shift with each edit — always use exact search strings.
+18. **ThemeEditorPage now ~4,400 lines:** Task 7C.3 added ~200 lines for sponsor rich controls. Line numbers shift with each edit — always use exact search strings.
+
+19. **SPONSORS_GRAPHICS constant (Task 7C.3):** `['sponsors-cycle', 'sponsors-bug']` — note that sponsors-thanks is in FULL_SCREEN_GRAPHICS (Phase 7A), not here.
+
+20. **isSponsorGraphic helper (Task 7C.3):** Simple array inclusion check: `SPONSORS_GRAPHICS.includes(graphicId)`.
+
+21. **SPONSORS_DEFAULTS constant (Task 7C.3):** Contains defaults for sponsors-cycle (9 props: canvas size, logo sizing, fade timing, no-sponsors text) and sponsors-bug (7 props: position, size, appearance, transition).
