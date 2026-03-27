@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { db, ref, onValue } from '../lib/firebase';
 import { SERVER_URL } from '../lib/serverUrl';
@@ -6,6 +6,54 @@ import SponsorAdjustControls from '../components/SponsorAdjustControls';
 import { buildSponsorsCycleURL } from '../lib/urlBuilder';
 
 // Override-able graphic IDs grouped by category (for per-graphic override panels)
+const LOWER_THIRD_GRAPHICS = ['event-bar', 'warm-up', 'replay'];
+
+const LOWER_THIRD_DEFAULTS = {
+  'event-bar': {
+    barBottom: 120, barLeft: 100, logoImgSize: 70, logoContainerWidth: 100,
+    logoPadding: 15, logoRadius: 0, venueFontSize: 36, barMinWidth: 600,
+    venuePaddingV: 10, venuePaddingH: 40, nameFontSize: 28, locationFontSize: 24,
+    detailsPaddingV: 10, detailsPaddingH: 40, detailsLines: 2,
+  },
+  'warm-up': {
+    barBottom: 120, barLeft: 100, logoImgSize: 70, logoContainerWidth: 100,
+    logoPadding: 15, logoRadius: 0, venueFontSize: 30, barMinWidth: 450,
+    venuePaddingV: 10, venuePaddingH: 40, nameFontSize: 28, locationFontSize: 0,
+    detailsPaddingV: 10, detailsPaddingH: 40, detailsLines: 1,
+  },
+  'replay': {
+    barBottom: 120, barLeft: 100, logoImgSize: 70, logoContainerWidth: 100,
+    logoPadding: 15, logoRadius: 0, venueFontSize: 30, barMinWidth: 450,
+    venuePaddingV: 10, venuePaddingH: 40, nameFontSize: 28, locationFontSize: 0,
+    detailsPaddingV: 10, detailsPaddingH: 40, detailsLines: 1,
+  },
+};
+
+// Compute the effective rendered height based on font sizes + padding
+// Shows producers the real pixel value instead of "0 (auto)"
+function getEffectiveVenueHeight(overrides, graphicId) {
+  const defs = LOWER_THIRD_DEFAULTS[graphicId] || LOWER_THIRD_DEFAULTS['event-bar'];
+  const fontSize = overrides?.venueFontSize ?? defs.venueFontSize;
+  const padV = overrides?.venuePaddingV ?? defs.venuePaddingV;
+  return Math.round(fontSize * 1.2 + padV * 2);
+}
+
+function getEffectiveDetailsHeight(overrides, graphicId) {
+  const defs = LOWER_THIRD_DEFAULTS[graphicId] || LOWER_THIRD_DEFAULTS['event-bar'];
+  const nameFontSize = overrides?.nameFontSize ?? defs.nameFontSize;
+  const padV = overrides?.detailsPaddingV ?? defs.detailsPaddingV;
+  const lines = defs.detailsLines || 1;
+  if (lines === 2) {
+    const locFontSize = overrides?.locationFontSize ?? defs.locationFontSize;
+    return Math.round(nameFontSize * 1.2 + locFontSize * 1.2 + padV * 2);
+  }
+  return Math.round(nameFontSize * 1.2 + padV * 2);
+}
+
+function getEffectiveLogoHeight(overrides, graphicId) {
+  return getEffectiveVenueHeight(overrides, graphicId) + getEffectiveDetailsHeight(overrides, graphicId);
+}
+
 const OVERRIDE_GRAPHIC_GROUPS = [
   {
     label: 'Lower-Third Bars',
@@ -72,33 +120,78 @@ const BLEND_MODE_OPTIONS = [
   { value: 'normal', label: 'Normal' },
 ];
 
+// Font family options for Phase 7 typography controls
+// tabular: true marks fonts that support tabular-nums for aligned score columns
+const FONT_FAMILIES = [
+  { value: 'Inter', label: 'Inter', tabular: false },
+  { value: 'Inter Tight', label: 'Inter Tight', tabular: false },
+  { value: 'Roboto Mono', label: 'Roboto Mono', tabular: true },
+  { value: 'JetBrains Mono', label: 'JetBrains Mono', tabular: true },
+  { value: 'Poppins', label: 'Poppins', tabular: false },
+];
+
+// Font weight options for typography controls
+const FONT_WEIGHTS = [
+  { value: '400', label: 'Regular' },
+  { value: '500', label: 'Medium' },
+  { value: '600', label: 'Semi-Bold' },
+  { value: '700', label: 'Bold' },
+  { value: '800', label: 'Extra-Bold' },
+  { value: '900', label: 'Black' },
+];
+
+// Text transform options for typography controls
+const TEXT_TRANSFORMS = [
+  { value: 'none', label: 'None' },
+  { value: 'uppercase', label: 'UPPERCASE' },
+  { value: 'capitalize', label: 'Capitalize' },
+];
+
 /**
  * Editable number input with increment/decrement stepper buttons.
  * Simplified version for per-graphic override controls.
  */
-function OverrideStepper({ label, value, onChange, min = 0, max = 100, step = 1, suffix = '' }) {
+function OverrideStepper({ label, value, onChange, min = 0, max = 9999, step = 1, suffix = '' }) {
   const clamp = (v) => Math.max(min, Math.min(max, v));
+  const [localText, setLocalText] = useState(String(value));
+  const [isFocused, setIsFocused] = useState(false);
+
+  // Sync local text when value changes externally (not while typing)
+  useEffect(() => {
+    if (!isFocused) setLocalText(String(value));
+  }, [value, isFocused]);
+
+  const commitValue = (text) => {
+    const parsed = Number(text);
+    if (!isNaN(parsed) && text !== '') {
+      onChange(clamp(parsed));
+    } else {
+      // Revert to current value if invalid
+      setLocalText(String(value));
+    }
+  };
 
   return (
     <div className="flex items-center gap-1">
       <span className="text-[10px] text-zinc-500 w-16">{label}</span>
       <button
-        onClick={() => onChange(clamp(value - step))}
+        onClick={() => { const v = clamp(value - step); onChange(v); setLocalText(String(v)); }}
         className="w-5 h-5 flex items-center justify-center bg-zinc-700 hover:bg-zinc-600 rounded-l text-zinc-300 text-xs font-bold transition-colors select-none"
       >
         −
       </button>
       <input
-        type="number"
-        value={value}
-        onChange={(e) => {
-          const parsed = Number(e.target.value);
-          if (!isNaN(parsed)) onChange(clamp(parsed));
-        }}
+        type="text"
+        inputMode="numeric"
+        value={isFocused ? localText : String(value)}
+        onFocus={() => { setIsFocused(true); setLocalText(String(value)); }}
+        onBlur={() => { setIsFocused(false); commitValue(localText); }}
+        onChange={(e) => setLocalText(e.target.value)}
+        onKeyDown={(e) => { if (e.key === 'Enter') { e.target.blur(); } }}
         className="w-12 h-5 text-center text-[10px] font-mono bg-zinc-800 text-zinc-300 border-y border-zinc-600 focus:outline-none focus:border-purple-500"
       />
       <button
-        onClick={() => onChange(clamp(value + step))}
+        onClick={() => { const v = clamp(value + step); onChange(v); setLocalText(String(v)); }}
         className="w-5 h-5 flex items-center justify-center bg-zinc-700 hover:bg-zinc-600 rounded-r text-zinc-300 text-xs font-bold transition-colors select-none"
       >
         +
@@ -397,8 +490,94 @@ export default function ThemeEditorPage() {
   const [showImportOverridesModal, setShowImportOverridesModal] = useState(false);
   const [importSourceThemeId, setImportSourceThemeId] = useState('');
 
+  // Lower-Third Template state
+  const [showTemplatePanel, setShowTemplatePanel] = useState(false);
+  const [showApplyTemplateConfirm, setShowApplyTemplateConfirm] = useState(false);
+
+  // Apply lower-third template values to all three lower-third graphics
+  const applyLowerThirdTemplate = () => {
+    const template = editingTheme.lowerThirdTemplate || {};
+    const templateKeys = Object.keys(template).filter(k => template[k] !== undefined && template[k] !== null && template[k] !== '');
+    if (templateKeys.length === 0) return;
+
+    setEditingTheme(prev => {
+      const newOverrides = { ...prev.overrides };
+      for (const gId of LOWER_THIRD_GRAPHICS) {
+        newOverrides[gId] = { ...(newOverrides[gId] || {}) };
+        for (const key of templateKeys) {
+          newOverrides[gId][key] = template[key];
+        }
+      }
+      return { ...prev, overrides: newOverrides };
+    });
+    setShowApplyTemplateConfirm(false);
+  };
+
+  const updateTemplateField = (key, value) => {
+    setEditingTheme(prev => ({
+      ...prev,
+      lowerThirdTemplate: { ...(prev.lowerThirdTemplate || {}), [key]: value },
+    }));
+  };
+
+  const clearTemplateField = (key) => {
+    setEditingTheme(prev => {
+      const tmpl = { ...(prev.lowerThirdTemplate || {}) };
+      delete tmpl[key];
+      return { ...prev, lowerThirdTemplate: tmpl };
+    });
+  };
+
   // Preview reload state - increment to force iframe refresh after save
   const [previewVersion, setPreviewVersion] = useState(0);
+
+  // Pixel-perfect height measurements from the preview iframe
+  const previewIframeRef = useRef(null);
+  const [measuredHeights, setMeasuredHeights] = useState({});
+
+  // Selector mapping for each lower-third graphic
+  const MEASUREMENT_SELECTORS = {
+    'event-bar': { logo: '.event-bar-logo', venue: '.event-bar-venue', details: '.event-bar-details' },
+    'warm-up': { logo: '.warm-up-logo-section', venue: '.warm-up-teams-row', details: '.warm-up-status-row' },
+    'replay': { logo: '.replay-logo-section', venue: '.replay-title-row', details: '.replay-status-row' },
+  };
+
+  // Listen for measurement responses from the preview iframe
+  useEffect(() => {
+    const handler = (event) => {
+      if (event.data?.type === 'heightMeasurements') {
+        setMeasuredHeights(prev => ({
+          ...prev,
+          [event.data.graphic]: event.data.measurements,
+        }));
+      }
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, []);
+
+  // Request measurements from preview iframe after it loads
+  const requestMeasurements = useCallback(() => {
+    const iframe = previewIframeRef.current;
+    if (!iframe?.contentWindow) return;
+    const graphicType = selectedGraphicType;
+    const selectors = MEASUREMENT_SELECTORS[graphicType];
+    if (selectors) {
+      // Small delay to ensure the graphic has rendered
+      setTimeout(() => {
+        iframe.contentWindow.postMessage({
+          type: 'measureHeights',
+          graphic: graphicType,
+          selectors,
+        }, '*');
+      }, 1500);
+    }
+  }, [selectedGraphicType]);
+
+  // Get the measured height for a graphic element, falling back to computed estimate
+  const getMeasuredHeight = (graphicId, element) => {
+    return measuredHeights[graphicId]?.[element] || null;
+  };
 
   // Preview URL for sponsor cycle when adjusting sponsors
   const sponsorPreviewUrl = useMemo(() => {
@@ -469,6 +648,7 @@ export default function ThemeEditorPage() {
         branding: { ...DEFAULT_THEME.branding, ...themes[themeId].branding },
         sponsors: themes[themeId].sponsors || [], // Ensure sponsors array exists
         overrides: themes[themeId].overrides || {}, // Per-graphic overrides
+        lowerThirdTemplate: themes[themeId].lowerThirdTemplate || {}, // Lower-third template
       });
       setIsDirty(false);
       setExpandedOverrideGraphics({}); // Collapse all override panels when loading new theme
@@ -478,7 +658,7 @@ export default function ThemeEditorPage() {
   // Start a new theme
   const newTheme = () => {
     setSelectedThemeId(null);
-    setEditingTheme({ ...DEFAULT_THEME, overrides: {} });
+    setEditingTheme({ ...DEFAULT_THEME, overrides: {}, lowerThirdTemplate: {} });
     setIsDirty(false);
     setExpandedOverrideGraphics({});
   };
@@ -1640,6 +1820,135 @@ export default function ThemeEditorPage() {
                     <div className="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-2">
                       {group.label}
                     </div>
+
+                    {/* LOWER-THIRD TEMPLATE — only for Lower-Third Bars group */}
+                    {group.label === 'Lower-Third Bars' && (
+                      <div className="bg-zinc-800/80 rounded-lg overflow-hidden mb-2 border border-teal-500/30">
+                        <button
+                          onClick={() => setShowTemplatePanel(p => !p)}
+                          className="w-full flex items-center justify-between px-3 py-2 hover:bg-zinc-700/50 transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-teal-400 font-semibold">Template</span>
+                            <span className="text-[10px] text-zinc-500">Set values for all lower-thirds at once</span>
+                          </div>
+                          <svg className={`w-4 h-4 text-teal-500 transition-transform ${showTemplatePanel ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                        {showTemplatePanel && (() => {
+                          const tmpl = editingTheme.lowerThirdTemplate || {};
+                          return (
+                            <div className="px-3 pb-3 border-t border-teal-500/20 space-y-4 pt-3">
+                              {/* POSITION */}
+                              <div>
+                                <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Position</div>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <OverrideStepper label="Bottom" value={tmpl.barBottom ?? 120} onChange={(v) => updateTemplateField('barBottom', v)} min={0} max={1080} step={10} suffix="px" />
+                                  <OverrideStepper label="Left" value={tmpl.barLeft ?? 100} onChange={(v) => updateTemplateField('barLeft', v)} min={0} max={1920} step={10} suffix="px" />
+                                </div>
+                              </div>
+                              {/* LOGO */}
+                              <div className="pt-2 border-t border-zinc-700/30">
+                                <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Logo</div>
+                                <div className="space-y-2">
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <OverrideStepper label="Logo size" value={tmpl.logoImgSize ?? 70} onChange={(v) => updateTemplateField('logoImgSize', v)} min={16} max={200} step={1} suffix="px" />
+                                    <OverrideStepper label="Box width" value={tmpl.logoContainerWidth ?? 100} onChange={(v) => updateTemplateField('logoContainerWidth', v)} min={40} max={300} step={1} suffix="px" />
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <OverrideStepper label="Box height" value={tmpl.logoContainerHeight ?? getEffectiveLogoHeight(tmpl, 'event-bar')} onChange={(v) => updateTemplateField('logoContainerHeight', v)} min={20} max={300} step={1} suffix="px" />
+                                    <OverrideStepper label="Padding" value={tmpl.logoPadding ?? 15} onChange={(v) => updateTemplateField('logoPadding', v)} min={0} max={60} step={2} suffix="px" />
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <OverrideStepper label="Radius" value={tmpl.logoRadius ?? 0} onChange={(v) => updateTemplateField('logoRadius', v)} min={0} max={100} step={2} suffix="px" />
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-1.5">
+                                      <input type="color" value={tmpl.logoBg || '#ffffff'} onChange={(e) => updateTemplateField('logoBg', e.target.value)} className="w-6 h-6 rounded cursor-pointer bg-transparent border-0" />
+                                      <span className="text-[10px] text-zinc-400">Box background</span>
+                                    </div>
+                                    {tmpl.logoBg && <button onClick={() => clearTemplateField('logoBg')} className="text-[10px] text-zinc-500 hover:text-zinc-300">reset</button>}
+                                  </div>
+                                  <label className="flex items-center gap-1.5 cursor-pointer">
+                                    <input type="checkbox" checked={tmpl.showLogo !== false} onChange={(e) => updateTemplateField('showLogo', e.target.checked)} className="w-3.5 h-3.5 rounded border-zinc-600 bg-zinc-700 text-teal-500 focus:ring-teal-500 focus:ring-offset-0" />
+                                    <span className="text-[11px] text-zinc-300">Show logo</span>
+                                  </label>
+                                </div>
+                              </div>
+                              {/* VENUE (Header Bar) */}
+                              <div className="pt-2 border-t border-zinc-700/30">
+                                <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Venue (Header Bar)</div>
+                                <div className="space-y-2">
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <OverrideStepper label="Font size" value={tmpl.venueFontSize ?? 36} onChange={(v) => updateTemplateField('venueFontSize', v)} min={12} max={72} step={2} suffix="px" />
+                                    <OverrideStepper label="Min width" value={tmpl.barMinWidth ?? 600} onChange={(v) => updateTemplateField('barMinWidth', v)} min={200} max={1600} step={20} suffix="px" />
+                                  </div>
+                                  <div className="grid grid-cols-3 gap-2">
+                                    <OverrideStepper label="Height" value={tmpl.venueHeight ?? getEffectiveVenueHeight(tmpl, 'event-bar')} onChange={(v) => updateTemplateField('venueHeight', v)} min={20} max={200} step={1} suffix="px" />
+                                    <OverrideStepper label="Top/btm" value={tmpl.venuePaddingV ?? 10} onChange={(v) => updateTemplateField('venuePaddingV', v)} min={0} max={60} step={2} suffix="px" />
+                                    <OverrideStepper label="Left/right" value={tmpl.venuePaddingH ?? 40} onChange={(v) => updateTemplateField('venuePaddingH', v)} min={0} max={100} step={1} suffix="px" />
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-1.5">
+                                      <input type="color" value={tmpl.headerBar || editingTheme.colors.headerBar || '#BFBFBF'} onChange={(e) => updateTemplateField('headerBar', e.target.value)} className="w-6 h-6 rounded cursor-pointer bg-transparent border-0" />
+                                      <span className="text-[10px] text-zinc-400">Background</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                      <input type="color" value={tmpl.textOnHeader || editingTheme.colors.textOnHeader || '#000000'} onChange={(e) => updateTemplateField('textOnHeader', e.target.value)} className="w-6 h-6 rounded cursor-pointer bg-transparent border-0" />
+                                      <span className="text-[10px] text-zinc-400">Text</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              {/* TEXT (Details Section) */}
+                              <div className="pt-2 border-t border-zinc-700/30">
+                                <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Text (Details Section)</div>
+                                <div className="space-y-2">
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <OverrideStepper label="Name size" value={tmpl.nameFontSize ?? 28} onChange={(v) => updateTemplateField('nameFontSize', v)} min={12} max={60} step={2} suffix="px" />
+                                    <OverrideStepper label="Location" value={tmpl.locationFontSize ?? 24} onChange={(v) => updateTemplateField('locationFontSize', v)} min={12} max={48} step={2} suffix="px" />
+                                  </div>
+                                  <div className="grid grid-cols-3 gap-2">
+                                    <OverrideStepper label="Height" value={tmpl.detailsHeight ?? getEffectiveDetailsHeight(tmpl, 'event-bar')} onChange={(v) => updateTemplateField('detailsHeight', v)} min={20} max={200} step={1} suffix="px" />
+                                    <OverrideStepper label="Top/btm" value={tmpl.detailsPaddingV ?? 10} onChange={(v) => updateTemplateField('detailsPaddingV', v)} min={0} max={60} step={2} suffix="px" />
+                                    <OverrideStepper label="Left/right" value={tmpl.detailsPaddingH ?? 40} onChange={(v) => updateTemplateField('detailsPaddingH', v)} min={0} max={100} step={1} suffix="px" />
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-1.5">
+                                      <input type="color" value={tmpl.contentArea || editingTheme.colors.contentArea || '#000000'} onChange={(e) => updateTemplateField('contentArea', e.target.value)} className="w-6 h-6 rounded cursor-pointer bg-transparent border-0" />
+                                      <span className="text-[10px] text-zinc-400">Background</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                      <input type="color" value={tmpl.textOnContent || editingTheme.colors.textOnContent || '#FFFFFF'} onChange={(e) => updateTemplateField('textOnContent', e.target.value)} className="w-6 h-6 rounded cursor-pointer bg-transparent border-0" />
+                                      <span className="text-[10px] text-zinc-400">Text</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              {/* Apply button */}
+                              <div className="pt-2 border-t border-zinc-700/30">
+                                {showApplyTemplateConfirm ? (
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[11px] text-zinc-400">Apply template values to all 3 lower-thirds?</span>
+                                    <button onClick={applyLowerThirdTemplate} className="px-3 py-1 text-xs bg-teal-600 hover:bg-teal-500 rounded transition-colors">Apply</button>
+                                    <button onClick={() => setShowApplyTemplateConfirm(false)} className="px-3 py-1 text-xs bg-zinc-700 hover:bg-zinc-600 rounded transition-colors">Cancel</button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={() => setShowApplyTemplateConfirm(true)}
+                                    className="w-full px-3 py-2 text-xs bg-teal-600/20 text-teal-400 hover:bg-teal-600/30 rounded-lg font-semibold transition-colors"
+                                  >
+                                    Apply to All Lower-Thirds
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
+
                     <div className="space-y-1">
                       {group.graphics.map((graphicId) => {
                         const overrideCount = countGraphicOverrides(graphicId);
@@ -1674,8 +1983,8 @@ export default function ThemeEditorPage() {
                             {/* Expanded panel */}
                             {isExpanded && (
                               <div className="px-3 pb-3 border-t border-zinc-700/50">
-                                {graphicId === 'event-bar' ? (
-                                  /* ========== RICH EVENT BAR CONTROLS ========== */
+                                {LOWER_THIRD_GRAPHICS.includes(graphicId) ? (
+                                  /* ========== RICH LOWER-THIRD CONTROLS ========== */
                                   <div className="pt-3 space-y-4">
                                     {/* POSITION */}
                                     <div>
@@ -1683,7 +1992,7 @@ export default function ThemeEditorPage() {
                                       <div className="grid grid-cols-2 gap-2">
                                         <OverrideStepper
                                           label="Bottom"
-                                          value={overrides.barBottom ?? 120}
+                                          value={overrides.barBottom ?? (LOWER_THIRD_DEFAULTS[graphicId]?.barBottom ?? 120)}
                                           onChange={(v) => updateOverrideField(graphicId, 'barBottom', v)}
                                           min={0}
                                           max={1080}
@@ -1692,7 +2001,7 @@ export default function ThemeEditorPage() {
                                         />
                                         <OverrideStepper
                                           label="Left"
-                                          value={overrides.barLeft ?? 100}
+                                          value={overrides.barLeft ?? (LOWER_THIRD_DEFAULTS[graphicId]?.barLeft ?? 100)}
                                           onChange={(v) => updateOverrideField(graphicId, 'barLeft', v)}
                                           min={0}
                                           max={1920}
@@ -1709,36 +2018,36 @@ export default function ThemeEditorPage() {
                                         <div className="grid grid-cols-2 gap-2">
                                           <OverrideStepper
                                             label="Logo size"
-                                            value={overrides.logoImgSize ?? 70}
+                                            value={overrides.logoImgSize ?? (LOWER_THIRD_DEFAULTS[graphicId]?.logoImgSize ?? 70)}
                                             onChange={(v) => updateOverrideField(graphicId, 'logoImgSize', v)}
                                             min={16}
                                             max={200}
-                                            step={4}
+                                            step={1}
                                             suffix="px"
                                           />
                                           <OverrideStepper
                                             label="Box width"
-                                            value={overrides.logoContainerWidth ?? 100}
+                                            value={overrides.logoContainerWidth ?? (LOWER_THIRD_DEFAULTS[graphicId]?.logoContainerWidth ?? 100)}
                                             onChange={(v) => updateOverrideField(graphicId, 'logoContainerWidth', v)}
                                             min={40}
                                             max={300}
-                                            step={4}
+                                            step={1}
                                             suffix="px"
                                           />
                                         </div>
                                         <div className="grid grid-cols-2 gap-2">
                                           <OverrideStepper
                                             label="Box height"
-                                            value={overrides.logoContainerHeight ?? 0}
-                                            onChange={(v) => updateOverrideField(graphicId, 'logoContainerHeight', v === 0 ? undefined : v)}
-                                            min={0}
+                                            value={overrides.logoContainerHeight ?? getMeasuredHeight(graphicId, 'logo') ?? getEffectiveLogoHeight(overrides, graphicId)}
+                                            onChange={(v) => updateOverrideField(graphicId, 'logoContainerHeight', v)}
+                                            min={20}
                                             max={300}
-                                            step={4}
+                                            step={1}
                                             suffix="px"
                                           />
                                           <OverrideStepper
                                             label="Padding"
-                                            value={overrides.logoPadding ?? 15}
+                                            value={overrides.logoPadding ?? (LOWER_THIRD_DEFAULTS[graphicId]?.logoPadding ?? 15)}
                                             onChange={(v) => updateOverrideField(graphicId, 'logoPadding', v)}
                                             min={0}
                                             max={60}
@@ -1749,7 +2058,7 @@ export default function ThemeEditorPage() {
                                         <div className="grid grid-cols-2 gap-2">
                                           <OverrideStepper
                                             label="Radius"
-                                            value={overrides.logoRadius ?? 0}
+                                            value={overrides.logoRadius ?? (LOWER_THIRD_DEFAULTS[graphicId]?.logoRadius ?? 0)}
                                             onChange={(v) => updateOverrideField(graphicId, 'logoRadius', v)}
                                             min={0}
                                             max={100}
@@ -1816,7 +2125,7 @@ export default function ThemeEditorPage() {
                                         <div className="grid grid-cols-2 gap-2">
                                           <OverrideStepper
                                             label="Font size"
-                                            value={overrides.venueFontSize ?? 36}
+                                            value={overrides.venueFontSize ?? (LOWER_THIRD_DEFAULTS[graphicId]?.venueFontSize ?? 36)}
                                             onChange={(v) => updateOverrideField(graphicId, 'venueFontSize', v)}
                                             min={12}
                                             max={72}
@@ -1825,11 +2134,40 @@ export default function ThemeEditorPage() {
                                           />
                                           <OverrideStepper
                                             label="Min width"
-                                            value={overrides.barMinWidth ?? 600}
+                                            value={overrides.barMinWidth ?? (LOWER_THIRD_DEFAULTS[graphicId]?.barMinWidth ?? 600)}
                                             onChange={(v) => updateOverrideField(graphicId, 'barMinWidth', v)}
                                             min={200}
                                             max={1600}
                                             step={20}
+                                            suffix="px"
+                                          />
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-2">
+                                          <OverrideStepper
+                                            label="Height"
+                                            value={overrides.venueHeight ?? getMeasuredHeight(graphicId, 'venue') ?? getEffectiveVenueHeight(overrides, graphicId)}
+                                            onChange={(v) => updateOverrideField(graphicId, 'venueHeight', v)}
+                                            min={20}
+                                            max={200}
+                                            step={1}
+                                            suffix="px"
+                                          />
+                                          <OverrideStepper
+                                            label="Top/btm"
+                                            value={overrides.venuePaddingV ?? 10}
+                                            onChange={(v) => updateOverrideField(graphicId, 'venuePaddingV', v)}
+                                            min={0}
+                                            max={60}
+                                            step={2}
+                                            suffix="px"
+                                          />
+                                          <OverrideStepper
+                                            label="Left/right"
+                                            value={overrides.venuePaddingH ?? 40}
+                                            onChange={(v) => updateOverrideField(graphicId, 'venuePaddingH', v)}
+                                            min={0}
+                                            max={100}
+                                            step={1}
                                             suffix="px"
                                           />
                                         </div>
@@ -1864,7 +2202,7 @@ export default function ThemeEditorPage() {
                                         <div className="grid grid-cols-2 gap-2">
                                           <OverrideStepper
                                             label="Name size"
-                                            value={overrides.nameFontSize ?? 28}
+                                            value={overrides.nameFontSize ?? (LOWER_THIRD_DEFAULTS[graphicId]?.nameFontSize ?? 28)}
                                             onChange={(v) => updateOverrideField(graphicId, 'nameFontSize', v)}
                                             min={12}
                                             max={60}
@@ -1873,11 +2211,40 @@ export default function ThemeEditorPage() {
                                           />
                                           <OverrideStepper
                                             label="Location"
-                                            value={overrides.locationFontSize ?? 24}
+                                            value={overrides.locationFontSize ?? (LOWER_THIRD_DEFAULTS[graphicId]?.locationFontSize ?? 24)}
                                             onChange={(v) => updateOverrideField(graphicId, 'locationFontSize', v)}
                                             min={12}
                                             max={48}
                                             step={2}
+                                            suffix="px"
+                                          />
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-2">
+                                          <OverrideStepper
+                                            label="Height"
+                                            value={overrides.detailsHeight ?? getMeasuredHeight(graphicId, 'details') ?? getEffectiveDetailsHeight(overrides, graphicId)}
+                                            onChange={(v) => updateOverrideField(graphicId, 'detailsHeight', v)}
+                                            min={20}
+                                            max={200}
+                                            step={1}
+                                            suffix="px"
+                                          />
+                                          <OverrideStepper
+                                            label="Top/btm"
+                                            value={overrides.detailsPaddingV ?? 10}
+                                            onChange={(v) => updateOverrideField(graphicId, 'detailsPaddingV', v)}
+                                            min={0}
+                                            max={60}
+                                            step={2}
+                                            suffix="px"
+                                          />
+                                          <OverrideStepper
+                                            label="Left/right"
+                                            value={overrides.detailsPaddingH ?? 40}
+                                            onChange={(v) => updateOverrideField(graphicId, 'detailsPaddingH', v)}
+                                            min={0}
+                                            max={100}
+                                            step={1}
                                             suffix="px"
                                           />
                                         </div>
@@ -2137,7 +2504,7 @@ export default function ThemeEditorPage() {
                                           onChange={(v) => updateOverrideField(graphicId, 'logoSize', v)}
                                           min={16}
                                           max={200}
-                                          step={4}
+                                          step={1}
                                           suffix="px"
                                         />
                                       </div>
@@ -2548,11 +2915,13 @@ export default function ThemeEditorPage() {
                     style={{ height: Math.round(1080 * 0.22) + 'px' }}
                   >
                     <iframe
+                      ref={previewIframeRef}
                       key={`${selectedThemeId}-${selectedGraphicType}-${selectedCompetition}-${previewVersion}`}
                       src={getPreviewUrl()}
                       className="w-[1920px] h-[1080px] origin-top-left"
                       style={{ border: 'none', transform: 'scale(0.22)' }}
                       title="Theme Preview"
+                      onLoad={requestMeasurements}
                     />
                   </div>
                   <p className="text-[10px] text-zinc-600 mt-1">
