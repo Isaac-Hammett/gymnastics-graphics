@@ -899,6 +899,9 @@ export default function ThemeEditorPage() {
     // Team cards
     'team-stats': { header: '.stats-header', content: '.stats-content' },
     'team-coaches': { header: '.coaches-header', content: '.coaches-content' },
+    // Sponsors
+    'sponsors-cycle': { container: '#container' },
+    'sponsors-bug': { container: '.bug-container' },
   };
 
   // Listen for measurement responses from the preview iframe
