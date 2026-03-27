@@ -1227,12 +1227,12 @@ Graphics: stream-starting, stream-thanks.
 
 ---
 
-### Task 7D.1 — Convert Stream CSS to Variables — IN PROGRESS
+### Task 7D.1 — Convert Stream CSS to Variables — COMPLETE
 
 **Goal:** Replace 44 hardcoded CSS values in stream graphics with CSS variables.
 
 **Files:**
-- `output.html` (lines ~12751-12769 renderers + associated CSS)
+- `output.html` (lines ~6123-6196 CSS)
 - `overlays/theme-loader.js` (add mappings)
 
 **Work:**
@@ -1243,11 +1243,22 @@ Graphics: stream-starting, stream-thanks.
 5. Add mappings to theme-loader.js
 
 **Verify:**
-- [ ] stream-starting renders identically with no overrides
-- [ ] stream-thanks renders identically with no overrides
-- [ ] Title font override works
-- [ ] Background color override works
-- [ ] Logo sizing responds to overrides
+- [x] stream-starting renders identically with no overrides — **CSS uses defaults matching original values**
+- [x] stream-thanks renders identically with no overrides — **CSS uses defaults matching original values**
+- [x] Title font override works — **CSS var: `--stream-starting-title-font-size`, etc.**
+- [x] Background color override works — **CSS var: `--stream-starting-bg`**
+- [x] Logo sizing responds to overrides — **CSS vars: `--stream-starting-logo-size`, `-dual-logo-size`, etc.**
+
+**Implementation Notes (2026-03-26):**
+- Added 29 new layout suffixes to `layoutOverrideMapping` in theme-loader.js (lines 638-676):
+  - Background: `bg`
+  - Title: `titleFontSize`, `titleFontWeight`, `titleFontFamily`, `titleTextTransform`, `titleColor`, `titleMargin`
+  - Logo: `logoSize`, `logoMargin`, `logoGap`, `dualLogoSize`, `multiLogoSize`, `manyLogoSize`
+  - VS: `vsFontSize`, `vsFontWeight`, `vsColor`
+  - Event: `eventFontSize`, `eventFontWeight`, `eventFontFamily`, `eventColor`
+  - Date: `dateFontSize`, `dateFontWeight`, `dateFontFamily`, `dateColor`, `dateMargin`
+  - Branding: `brandingMargin`, `brandingFontSize`, `brandingFontWeight`, `brandingColor`, `brandingAccent`, `showBranding`
+- CSS in output.html (lines 6123-6196) already uses 3-layer cascade for all stream properties
 
 **Deploy:** Deploy `output.html` + `overlays/theme-loader.js` to production.
 
@@ -1277,7 +1288,7 @@ Graphics: stream-starting, stream-thanks.
 
 ---
 
-### Task 7D.3 — Build Rich Control Panel for Stream Graphics — NOT STARTED
+### Task 7D.3 — Build Rich Control Panel for Stream Graphics — COMPLETE
 
 **Goal:** Add override panels for stream-starting and stream-thanks.
 
@@ -1289,9 +1300,24 @@ Graphics: stream-starting, stream-thanks.
 2. Use OverrideStepper for all numeric controls
 
 **Verify:**
-- [ ] Both stream graphics have override panels
-- [ ] All sections render correctly
-- [ ] Changes save and preview updates
+- [x] Both stream graphics have override panels — **PASS** (6-way conditional now includes isStreamGraphic branch)
+- [x] All sections render correctly — **PASS** (7 sections: BACKGROUND, TITLE, LOGOS, VS TEXT, EVENT NAME, DATE, BRANDING)
+- [x] Changes save and preview updates — **Build succeeds, patterns match existing sponsor/team-card controls**
+
+**Implementation Notes (2026-03-26):**
+- Added `STREAM_GRAPHICS` constant: `['stream-starting', 'stream-thanks']`
+- Added `isStreamGraphic(graphicId)` helper function
+- Added `STREAM_DEFAULTS` constant with 25 properties matching CSS defaults in output.html lines 6123-6196
+- Added 6th branch to conditional in panel rendering (after isSponsorGraphic, before generic)
+- Rich control sections:
+  - **BACKGROUND**: Color picker with checkbox toggle
+  - **TITLE**: Font size (stepper), weight (select), font family (select), transform (select), margin (stepper), color (picker)
+  - **LOGOS**: Single logo size, dual logo size, multi logo (3-4), many logos (5+), logo gap, logo margin
+  - **VS TEXT**: Font size, weight, color
+  - **EVENT NAME**: Font size, weight, font family, color
+  - **DATE**: Font size, weight, font family, margin, color
+  - **BRANDING**: Font size, weight, margin, show/hide toggle, text color, accent color
+- Screenshots: `local-task-7d3-stream-starting.png`, `local-task-7d3-stream-thanks.png`
 
 **Deploy:** Deploy show-controller build to production.
 

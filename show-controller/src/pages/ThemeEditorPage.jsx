@@ -153,6 +153,49 @@ const SPONSORS_DEFAULTS = {
   },
 };
 
+// Stream graphics for rich control panels (Phase 7D.3)
+const STREAM_GRAPHICS = ['stream-starting', 'stream-thanks'];
+
+// Helper to detect if a graphicId is a stream graphic
+const isStreamGraphic = (graphicId) => {
+  return STREAM_GRAPHICS.includes(graphicId);
+};
+
+// Default values for stream graphics (Phase 7D.3)
+// These match the CSS defaults in output.html lines 6123-6196
+const STREAM_DEFAULTS = {
+  // Title section
+  titleFontSize: 48,
+  titleFontWeight: '800',
+  titleFontFamily: 'Inter',
+  titleTextTransform: 'none',
+  titleMargin: 50,
+  // Logo sizing
+  logoSize: 320,
+  logoMargin: 50,
+  logoGap: 40,
+  dualLogoSize: 250,
+  multiLogoSize: 180,
+  manyLogoSize: 130,
+  // VS text
+  vsFontSize: 48,
+  vsFontWeight: '900',
+  // Event name
+  eventFontSize: 54,
+  eventFontWeight: '800',
+  eventFontFamily: 'Inter',
+  // Date
+  dateFontSize: 42,
+  dateFontWeight: '700',
+  dateFontFamily: 'Inter',
+  dateMargin: 10,
+  // Branding
+  brandingMargin: 30,
+  brandingFontSize: 36,
+  brandingFontWeight: '600',
+  showBranding: 'block',
+};
+
 // Compute the effective rendered height based on font sizes + padding
 // Shows producers the real pixel value instead of "0 (auto)"
 function getEffectiveVenueHeight(overrides, graphicId) {
@@ -4616,6 +4659,426 @@ export default function ThemeEditorPage() {
                                           );
                                         })}
                                       </div>
+                                    </div>
+
+                                    {/* Reset button */}
+                                    {overrideCount > 0 && (
+                                      <div className="pt-2 flex justify-end">
+                                        <button onClick={() => resetGraphicOverrides(graphicId)} className="text-[10px] text-zinc-400 hover:text-zinc-300 transition-colors">
+                                          Reset to theme defaults
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : isStreamGraphic(graphicId) ? (
+                                  /* ========== RICH STREAM CONTROLS (stream-starting, stream-thanks) ========== */
+                                  <div className="pt-3 space-y-4">
+                                    {/* BACKGROUND SECTION */}
+                                    <div>
+                                      <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Background</div>
+                                      <div className="grid grid-cols-2 gap-2">
+                                        <div className="flex flex-col gap-0.5">
+                                          <span className="text-[10px] text-zinc-500">Background Color</span>
+                                          <div className="flex items-center gap-1">
+                                            <input
+                                              type="checkbox"
+                                              checked={overrides.bg !== undefined}
+                                              onChange={(e) => {
+                                                if (e.target.checked) {
+                                                  updateOverrideField(graphicId, 'bg', editingTheme.colors?.bodyBackground || '#FFFFFF');
+                                                } else {
+                                                  clearOverrideField(graphicId, 'bg');
+                                                }
+                                              }}
+                                              className="w-3 h-3 rounded border-zinc-600"
+                                            />
+                                            <input
+                                              type="color"
+                                              value={overrides.bg || editingTheme.colors?.bodyBackground || '#FFFFFF'}
+                                              onChange={(e) => updateOverrideField(graphicId, 'bg', e.target.value)}
+                                              disabled={overrides.bg === undefined}
+                                              className="w-6 h-5 bg-transparent border border-zinc-600 rounded cursor-pointer"
+                                            />
+                                            <span className="text-[10px] text-zinc-400 ml-1">{overrides.bg || editingTheme.colors?.bodyBackground || '#FFFFFF'}</span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {/* TITLE SECTION */}
+                                    <div className="pt-2 border-t border-zinc-700/30">
+                                      <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Title</div>
+                                      <div className="grid grid-cols-3 gap-2">
+                                        <OverrideStepper
+                                          label="Font size"
+                                          value={overrides.titleFontSize ?? STREAM_DEFAULTS.titleFontSize}
+                                          onChange={(v) => updateOverrideField(graphicId, 'titleFontSize', v)}
+                                          min={24} max={120} step={4} suffix="px"
+                                        />
+                                        <div className="flex flex-col gap-0.5">
+                                          <span className="text-[10px] text-zinc-500">Weight</span>
+                                          <select
+                                            value={overrides.titleFontWeight ?? STREAM_DEFAULTS.titleFontWeight}
+                                            onChange={(e) => updateOverrideField(graphicId, 'titleFontWeight', e.target.value)}
+                                            className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500"
+                                          >
+                                            {FONT_WEIGHTS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                                          </select>
+                                        </div>
+                                        <div className="flex flex-col gap-0.5">
+                                          <span className="text-[10px] text-zinc-500">Font</span>
+                                          <select
+                                            value={overrides.titleFontFamily ?? STREAM_DEFAULTS.titleFontFamily}
+                                            onChange={(e) => updateOverrideField(graphicId, 'titleFontFamily', e.target.value)}
+                                            className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500"
+                                          >
+                                            {FONT_FAMILIES.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                                          </select>
+                                        </div>
+                                      </div>
+                                      <div className="grid grid-cols-2 gap-2 mt-2">
+                                        <div className="flex flex-col gap-0.5">
+                                          <span className="text-[10px] text-zinc-500">Transform</span>
+                                          <select
+                                            value={overrides.titleTextTransform ?? STREAM_DEFAULTS.titleTextTransform}
+                                            onChange={(e) => updateOverrideField(graphicId, 'titleTextTransform', e.target.value)}
+                                            className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500"
+                                          >
+                                            {TEXT_TRANSFORMS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                                          </select>
+                                        </div>
+                                        <OverrideStepper
+                                          label="Bottom margin"
+                                          value={overrides.titleMargin ?? STREAM_DEFAULTS.titleMargin}
+                                          onChange={(v) => updateOverrideField(graphicId, 'titleMargin', v)}
+                                          min={0} max={150} step={10} suffix="px"
+                                        />
+                                      </div>
+                                      <div className="flex items-center gap-2 mt-2">
+                                        <span className="text-[10px] text-zinc-500">Title Color</span>
+                                        <input
+                                          type="checkbox"
+                                          checked={overrides.titleColor !== undefined}
+                                          onChange={(e) => {
+                                            if (e.target.checked) {
+                                              updateOverrideField(graphicId, 'titleColor', '#000000');
+                                            } else {
+                                              clearOverrideField(graphicId, 'titleColor');
+                                            }
+                                          }}
+                                          className="w-3 h-3 rounded border-zinc-600"
+                                        />
+                                        <input
+                                          type="color"
+                                          value={overrides.titleColor || '#000000'}
+                                          onChange={(e) => updateOverrideField(graphicId, 'titleColor', e.target.value)}
+                                          disabled={overrides.titleColor === undefined}
+                                          className="w-6 h-5 bg-transparent border border-zinc-600 rounded cursor-pointer"
+                                        />
+                                      </div>
+                                    </div>
+
+                                    {/* LOGOS SECTION */}
+                                    <div className="pt-2 border-t border-zinc-700/30">
+                                      <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Logos</div>
+                                      <div className="grid grid-cols-3 gap-2">
+                                        <OverrideStepper
+                                          label="Single logo"
+                                          value={overrides.logoSize ?? STREAM_DEFAULTS.logoSize}
+                                          onChange={(v) => updateOverrideField(graphicId, 'logoSize', v)}
+                                          min={100} max={600} step={20} suffix="px"
+                                        />
+                                        <OverrideStepper
+                                          label="Dual logo"
+                                          value={overrides.dualLogoSize ?? STREAM_DEFAULTS.dualLogoSize}
+                                          onChange={(v) => updateOverrideField(graphicId, 'dualLogoSize', v)}
+                                          min={100} max={500} step={20} suffix="px"
+                                        />
+                                        <OverrideStepper
+                                          label="Multi logo (3-4)"
+                                          value={overrides.multiLogoSize ?? STREAM_DEFAULTS.multiLogoSize}
+                                          onChange={(v) => updateOverrideField(graphicId, 'multiLogoSize', v)}
+                                          min={80} max={400} step={20} suffix="px"
+                                        />
+                                      </div>
+                                      <div className="grid grid-cols-3 gap-2 mt-2">
+                                        <OverrideStepper
+                                          label="Many logos (5+)"
+                                          value={overrides.manyLogoSize ?? STREAM_DEFAULTS.manyLogoSize}
+                                          onChange={(v) => updateOverrideField(graphicId, 'manyLogoSize', v)}
+                                          min={60} max={300} step={10} suffix="px"
+                                        />
+                                        <OverrideStepper
+                                          label="Logo gap"
+                                          value={overrides.logoGap ?? STREAM_DEFAULTS.logoGap}
+                                          onChange={(v) => updateOverrideField(graphicId, 'logoGap', v)}
+                                          min={10} max={100} step={5} suffix="px"
+                                        />
+                                        <OverrideStepper
+                                          label="Logo margin"
+                                          value={overrides.logoMargin ?? STREAM_DEFAULTS.logoMargin}
+                                          onChange={(v) => updateOverrideField(graphicId, 'logoMargin', v)}
+                                          min={10} max={150} step={10} suffix="px"
+                                        />
+                                      </div>
+                                    </div>
+
+                                    {/* VS TEXT SECTION */}
+                                    <div className="pt-2 border-t border-zinc-700/30">
+                                      <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">VS Text (Dual Meets)</div>
+                                      <div className="grid grid-cols-3 gap-2">
+                                        <OverrideStepper
+                                          label="Font size"
+                                          value={overrides.vsFontSize ?? STREAM_DEFAULTS.vsFontSize}
+                                          onChange={(v) => updateOverrideField(graphicId, 'vsFontSize', v)}
+                                          min={24} max={96} step={4} suffix="px"
+                                        />
+                                        <div className="flex flex-col gap-0.5">
+                                          <span className="text-[10px] text-zinc-500">Weight</span>
+                                          <select
+                                            value={overrides.vsFontWeight ?? STREAM_DEFAULTS.vsFontWeight}
+                                            onChange={(e) => updateOverrideField(graphicId, 'vsFontWeight', e.target.value)}
+                                            className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500"
+                                          >
+                                            {FONT_WEIGHTS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                                          </select>
+                                        </div>
+                                        <div className="flex flex-col gap-0.5">
+                                          <span className="text-[10px] text-zinc-500">Color</span>
+                                          <div className="flex items-center gap-1">
+                                            <input
+                                              type="checkbox"
+                                              checked={overrides.vsColor !== undefined}
+                                              onChange={(e) => {
+                                                if (e.target.checked) {
+                                                  updateOverrideField(graphicId, 'vsColor', '#000000');
+                                                } else {
+                                                  clearOverrideField(graphicId, 'vsColor');
+                                                }
+                                              }}
+                                              className="w-3 h-3 rounded border-zinc-600"
+                                            />
+                                            <input
+                                              type="color"
+                                              value={overrides.vsColor || '#000000'}
+                                              onChange={(e) => updateOverrideField(graphicId, 'vsColor', e.target.value)}
+                                              disabled={overrides.vsColor === undefined}
+                                              className="w-6 h-5 bg-transparent border border-zinc-600 rounded cursor-pointer"
+                                            />
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {/* EVENT NAME SECTION */}
+                                    <div className="pt-2 border-t border-zinc-700/30">
+                                      <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Event Name</div>
+                                      <div className="grid grid-cols-3 gap-2">
+                                        <OverrideStepper
+                                          label="Font size"
+                                          value={overrides.eventFontSize ?? STREAM_DEFAULTS.eventFontSize}
+                                          onChange={(v) => updateOverrideField(graphicId, 'eventFontSize', v)}
+                                          min={24} max={120} step={4} suffix="px"
+                                        />
+                                        <div className="flex flex-col gap-0.5">
+                                          <span className="text-[10px] text-zinc-500">Weight</span>
+                                          <select
+                                            value={overrides.eventFontWeight ?? STREAM_DEFAULTS.eventFontWeight}
+                                            onChange={(e) => updateOverrideField(graphicId, 'eventFontWeight', e.target.value)}
+                                            className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500"
+                                          >
+                                            {FONT_WEIGHTS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                                          </select>
+                                        </div>
+                                        <div className="flex flex-col gap-0.5">
+                                          <span className="text-[10px] text-zinc-500">Font</span>
+                                          <select
+                                            value={overrides.eventFontFamily ?? STREAM_DEFAULTS.eventFontFamily}
+                                            onChange={(e) => updateOverrideField(graphicId, 'eventFontFamily', e.target.value)}
+                                            className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500"
+                                          >
+                                            {FONT_FAMILIES.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                                          </select>
+                                        </div>
+                                      </div>
+                                      <div className="flex items-center gap-2 mt-2">
+                                        <span className="text-[10px] text-zinc-500">Event Color</span>
+                                        <input
+                                          type="checkbox"
+                                          checked={overrides.eventColor !== undefined}
+                                          onChange={(e) => {
+                                            if (e.target.checked) {
+                                              updateOverrideField(graphicId, 'eventColor', '#000000');
+                                            } else {
+                                              clearOverrideField(graphicId, 'eventColor');
+                                            }
+                                          }}
+                                          className="w-3 h-3 rounded border-zinc-600"
+                                        />
+                                        <input
+                                          type="color"
+                                          value={overrides.eventColor || '#000000'}
+                                          onChange={(e) => updateOverrideField(graphicId, 'eventColor', e.target.value)}
+                                          disabled={overrides.eventColor === undefined}
+                                          className="w-6 h-5 bg-transparent border border-zinc-600 rounded cursor-pointer"
+                                        />
+                                      </div>
+                                    </div>
+
+                                    {/* DATE SECTION */}
+                                    <div className="pt-2 border-t border-zinc-700/30">
+                                      <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Date</div>
+                                      <div className="grid grid-cols-3 gap-2">
+                                        <OverrideStepper
+                                          label="Font size"
+                                          value={overrides.dateFontSize ?? STREAM_DEFAULTS.dateFontSize}
+                                          onChange={(v) => updateOverrideField(graphicId, 'dateFontSize', v)}
+                                          min={20} max={80} step={4} suffix="px"
+                                        />
+                                        <div className="flex flex-col gap-0.5">
+                                          <span className="text-[10px] text-zinc-500">Weight</span>
+                                          <select
+                                            value={overrides.dateFontWeight ?? STREAM_DEFAULTS.dateFontWeight}
+                                            onChange={(e) => updateOverrideField(graphicId, 'dateFontWeight', e.target.value)}
+                                            className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500"
+                                          >
+                                            {FONT_WEIGHTS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                                          </select>
+                                        </div>
+                                        <div className="flex flex-col gap-0.5">
+                                          <span className="text-[10px] text-zinc-500">Font</span>
+                                          <select
+                                            value={overrides.dateFontFamily ?? STREAM_DEFAULTS.dateFontFamily}
+                                            onChange={(e) => updateOverrideField(graphicId, 'dateFontFamily', e.target.value)}
+                                            className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500"
+                                          >
+                                            {FONT_FAMILIES.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                                          </select>
+                                        </div>
+                                      </div>
+                                      <div className="grid grid-cols-2 gap-2 mt-2">
+                                        <OverrideStepper
+                                          label="Top margin"
+                                          value={overrides.dateMargin ?? STREAM_DEFAULTS.dateMargin}
+                                          onChange={(v) => updateOverrideField(graphicId, 'dateMargin', v)}
+                                          min={0} max={100} step={5} suffix="px"
+                                        />
+                                        <div className="flex flex-col gap-0.5">
+                                          <span className="text-[10px] text-zinc-500">Date Color</span>
+                                          <div className="flex items-center gap-1">
+                                            <input
+                                              type="checkbox"
+                                              checked={overrides.dateColor !== undefined}
+                                              onChange={(e) => {
+                                                if (e.target.checked) {
+                                                  updateOverrideField(graphicId, 'dateColor', '#000000');
+                                                } else {
+                                                  clearOverrideField(graphicId, 'dateColor');
+                                                }
+                                              }}
+                                              className="w-3 h-3 rounded border-zinc-600"
+                                            />
+                                            <input
+                                              type="color"
+                                              value={overrides.dateColor || '#000000'}
+                                              onChange={(e) => updateOverrideField(graphicId, 'dateColor', e.target.value)}
+                                              disabled={overrides.dateColor === undefined}
+                                              className="w-6 h-5 bg-transparent border border-zinc-600 rounded cursor-pointer"
+                                            />
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {/* BRANDING SECTION */}
+                                    <div className="pt-2 border-t border-zinc-700/30">
+                                      <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Branding Footer</div>
+                                      <div className="grid grid-cols-3 gap-2">
+                                        <OverrideStepper
+                                          label="Font size"
+                                          value={overrides.brandingFontSize ?? STREAM_DEFAULTS.brandingFontSize}
+                                          onChange={(v) => updateOverrideField(graphicId, 'brandingFontSize', v)}
+                                          min={16} max={72} step={4} suffix="px"
+                                        />
+                                        <div className="flex flex-col gap-0.5">
+                                          <span className="text-[10px] text-zinc-500">Weight</span>
+                                          <select
+                                            value={overrides.brandingFontWeight ?? STREAM_DEFAULTS.brandingFontWeight}
+                                            onChange={(e) => updateOverrideField(graphicId, 'brandingFontWeight', e.target.value)}
+                                            className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500"
+                                          >
+                                            {FONT_WEIGHTS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                                          </select>
+                                        </div>
+                                        <OverrideStepper
+                                          label="Top margin"
+                                          value={overrides.brandingMargin ?? STREAM_DEFAULTS.brandingMargin}
+                                          onChange={(v) => updateOverrideField(graphicId, 'brandingMargin', v)}
+                                          min={0} max={100} step={5} suffix="px"
+                                        />
+                                      </div>
+                                      <div className="grid grid-cols-3 gap-2 mt-2">
+                                        <div className="flex flex-col gap-0.5">
+                                          <span className="text-[10px] text-zinc-500">Show branding</span>
+                                          <select
+                                            value={overrides.showBranding ?? STREAM_DEFAULTS.showBranding}
+                                            onChange={(e) => updateOverrideField(graphicId, 'showBranding', e.target.value)}
+                                            className="h-5 px-1 bg-zinc-700 border border-zinc-600 rounded text-[10px] text-zinc-300 focus:outline-none focus:border-purple-500"
+                                          >
+                                            <option value="block">Visible</option>
+                                            <option value="none">Hidden</option>
+                                          </select>
+                                        </div>
+                                        <div className="flex flex-col gap-0.5">
+                                          <span className="text-[10px] text-zinc-500">Text Color</span>
+                                          <div className="flex items-center gap-1">
+                                            <input
+                                              type="checkbox"
+                                              checked={overrides.brandingColor !== undefined}
+                                              onChange={(e) => {
+                                                if (e.target.checked) {
+                                                  updateOverrideField(graphicId, 'brandingColor', '#000000');
+                                                } else {
+                                                  clearOverrideField(graphicId, 'brandingColor');
+                                                }
+                                              }}
+                                              className="w-3 h-3 rounded border-zinc-600"
+                                            />
+                                            <input
+                                              type="color"
+                                              value={overrides.brandingColor || '#000000'}
+                                              onChange={(e) => updateOverrideField(graphicId, 'brandingColor', e.target.value)}
+                                              disabled={overrides.brandingColor === undefined}
+                                              className="w-6 h-5 bg-transparent border border-zinc-600 rounded cursor-pointer"
+                                            />
+                                          </div>
+                                        </div>
+                                        <div className="flex flex-col gap-0.5">
+                                          <span className="text-[10px] text-zinc-500">Accent Color</span>
+                                          <div className="flex items-center gap-1">
+                                            <input
+                                              type="checkbox"
+                                              checked={overrides.brandingAccent !== undefined}
+                                              onChange={(e) => {
+                                                if (e.target.checked) {
+                                                  updateOverrideField(graphicId, 'brandingAccent', '#22d3ee');
+                                                } else {
+                                                  clearOverrideField(graphicId, 'brandingAccent');
+                                                }
+                                              }}
+                                              className="w-3 h-3 rounded border-zinc-600"
+                                            />
+                                            <input
+                                              type="color"
+                                              value={overrides.brandingAccent || '#22d3ee'}
+                                              onChange={(e) => updateOverrideField(graphicId, 'brandingAccent', e.target.value)}
+                                              disabled={overrides.brandingAccent === undefined}
+                                              className="w-6 h-5 bg-transparent border border-zinc-600 rounded cursor-pointer"
+                                            />
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <p className="mt-1 text-[10px] text-zinc-500">The "Powered by Virtius" branding line with cyan accent.</p>
                                     </div>
 
                                     {/* Reset button */}
