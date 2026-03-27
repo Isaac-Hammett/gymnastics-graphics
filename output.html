@@ -6712,19 +6712,21 @@
       display: block;
     }
 
-    /* Athlete info panel - top left */
+    /* Athlete info panel - top left
+       Per-graphic overrides: --clip-overlay-panel-top, --clip-overlay-panel-left,
+       --clip-overlay-panel-radius, --clip-overlay-header-bg */
     .clip-athlete-panel {
       position: absolute;
-      top: 60px;
-      left: 60px;
+      top: var(--clip-overlay-panel-top, 60px);
+      left: var(--clip-overlay-panel-left, 60px);
       display: flex;
       flex-direction: row;
       align-items: stretch;
-      background: var(--meet-header-bg, #1a1a2e);
-      border-radius: 12px;
+      background: var(--clip-overlay-header-bg, var(--meet-header-bg, #1a1a2e));
+      border-radius: var(--clip-overlay-panel-radius, 12px);
       overflow: hidden;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-      animation: clipOverlaySlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      animation: clipOverlaySlideIn var(--clip-overlay-slide-duration, 0.4s) cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     @keyframes clipOverlaySlideIn {
@@ -6738,67 +6740,87 @@
       }
     }
 
-    /* Team logo section */
+    /* Team logo section
+       Per-graphic overrides: --clip-overlay-logo-width, --clip-overlay-logo-min-height,
+       --clip-overlay-logo-bg, --clip-overlay-logo-padding, --clip-overlay-logo-img-size */
     .clip-logo-section {
-      width: 100px;
-      min-height: 100px;
-      background: rgba(255, 255, 255, 0.92);
+      width: var(--clip-overlay-logo-width, 100px);
+      min-height: var(--clip-overlay-logo-min-height, 100px);
+      background: var(--clip-overlay-logo-bg, rgba(255, 255, 255, 0.92));
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 15px;
+      padding: var(--clip-overlay-logo-padding, 15px);
     }
 
     .clip-logo-section img {
-      width: 70px;
-      height: 70px;
+      width: var(--clip-overlay-logo-img-size, 70px);
+      height: var(--clip-overlay-logo-img-size, 70px);
       object-fit: contain;
       background: transparent;
     }
 
-    /* Athlete info text */
+    /* Athlete info text
+       Per-graphic overrides: --clip-overlay-info-padding-v, --clip-overlay-info-padding-h,
+       --clip-overlay-info-min-width */
     .clip-athlete-info {
       display: flex;
       flex-direction: column;
       justify-content: center;
-      padding: 18px 28px;
-      min-width: 260px;
+      padding: var(--clip-overlay-info-padding-v, 18px) var(--clip-overlay-info-padding-h, 28px);
+      min-width: var(--clip-overlay-info-min-width, 260px);
     }
 
+    /* Athlete name
+       Per-graphic overrides: --clip-overlay-name-font-size, --clip-overlay-name-font-weight,
+       --clip-overlay-name-font-family, --clip-overlay-header-text */
     .clip-athlete-name {
-      font-size: 28px;
-      font-weight: 700;
-      color: var(--meet-header-text, #ffffff);
+      font-size: var(--clip-overlay-name-font-size, 28px);
+      font-weight: var(--clip-overlay-name-font-weight, 700);
+      font-family: var(--clip-overlay-name-font-family, inherit);
+      color: var(--clip-overlay-header-text, var(--meet-header-text, #ffffff));
       line-height: 1.2;
       margin-bottom: 4px;
     }
 
+    /* Apparatus label
+       Per-graphic overrides: --clip-overlay-apparatus-font-size, --clip-overlay-apparatus-font-weight,
+       --clip-overlay-apparatus-color */
     .clip-apparatus {
-      font-size: 18px;
-      font-weight: 500;
-      color: var(--meet-header-text, rgba(255, 255, 255, 0.8));
+      font-size: var(--clip-overlay-apparatus-font-size, 18px);
+      font-weight: var(--clip-overlay-apparatus-font-weight, 500);
+      color: var(--clip-overlay-apparatus-color, var(--clip-overlay-header-text, var(--meet-header-text, rgba(255, 255, 255, 0.8))));
       line-height: 1.3;
     }
 
+    /* Team name
+       Per-graphic overrides: --clip-overlay-team-font-size, --clip-overlay-team-font-weight,
+       --clip-overlay-team-color */
     .clip-team-name {
-      font-size: 16px;
-      font-weight: 400;
-      color: var(--meet-header-text, rgba(255, 255, 255, 0.6));
+      font-size: var(--clip-overlay-team-font-size, 16px);
+      font-weight: var(--clip-overlay-team-font-weight, 400);
+      color: var(--clip-overlay-team-color, var(--clip-overlay-header-text, var(--meet-header-text, rgba(255, 255, 255, 0.6))));
       line-height: 1.3;
       margin-top: 2px;
     }
 
-    /* Score badge - appears during score reveal */
+    /* Score badge - appears during score reveal
+       Per-graphic overrides: --clip-overlay-badge-top, --clip-overlay-badge-right,
+       --clip-overlay-badge-bg, --clip-overlay-badge-text, --clip-overlay-badge-padding-v,
+       --clip-overlay-badge-padding-h, --clip-overlay-badge-radius, --clip-overlay-score-font-size,
+       --clip-overlay-score-font-weight, --clip-overlay-score-font-family */
     .clip-score-badge {
       position: absolute;
-      top: 60px;
-      right: 60px;
-      background: var(--meet-badge-bg, #16a34a);
-      color: var(--meet-badge-text, #ffffff);
-      padding: 20px 32px;
-      border-radius: 12px;
-      font-size: 48px;
-      font-weight: 800;
+      top: var(--clip-overlay-badge-top, 60px);
+      right: var(--clip-overlay-badge-right, 60px);
+      background: var(--clip-overlay-badge-bg, var(--meet-badge-bg, #16a34a));
+      color: var(--clip-overlay-badge-text, var(--meet-badge-text, #ffffff));
+      padding: var(--clip-overlay-badge-padding-v, 20px) var(--clip-overlay-badge-padding-h, 32px);
+      border-radius: var(--clip-overlay-badge-radius, 12px);
+      font-size: var(--clip-overlay-score-font-size, 48px);
+      font-weight: var(--clip-overlay-score-font-weight, 800);
+      font-family: var(--clip-overlay-score-font-family, inherit);
+      font-variant-numeric: tabular-nums;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
       opacity: 0;
       transform: scale(0.8);
@@ -6810,20 +6832,23 @@
       transform: scale(1);
     }
 
-    /* REPLAY badge - for moment replays only */
+    /* REPLAY badge - for moment replays only
+       Per-graphic overrides: --clip-overlay-replay-bg, --clip-overlay-replay-padding-v,
+       --clip-overlay-replay-padding-h, --clip-overlay-replay-radius, --clip-overlay-replay-font-size,
+       --clip-overlay-replay-font-weight, --clip-overlay-replay-letter-spacing */
     .clip-replay-badge {
       position: absolute;
-      top: 60px;
-      right: 60px;
-      background: var(--meet-badge-bg, #dc2626);
-      color: var(--meet-badge-text, #ffffff);
-      padding: 14px 28px;
-      border-radius: 8px;
-      font-size: 24px;
-      font-weight: 700;
-      letter-spacing: 2px;
+      top: var(--clip-overlay-badge-top, 60px);
+      right: var(--clip-overlay-badge-right, 60px);
+      background: var(--clip-overlay-replay-bg, var(--meet-badge-bg, #dc2626));
+      color: var(--clip-overlay-badge-text, var(--meet-badge-text, #ffffff));
+      padding: var(--clip-overlay-replay-padding-v, 14px) var(--clip-overlay-replay-padding-h, 28px);
+      border-radius: var(--clip-overlay-replay-radius, 8px);
+      font-size: var(--clip-overlay-replay-font-size, 24px);
+      font-weight: var(--clip-overlay-replay-font-weight, 700);
+      letter-spacing: var(--clip-overlay-replay-letter-spacing, 2px);
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-      animation: clipOverlaySlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      animation: clipOverlaySlideIn var(--clip-overlay-slide-duration, 0.4s) cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     /* ============================================================

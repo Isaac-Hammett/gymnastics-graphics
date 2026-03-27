@@ -1960,7 +1960,7 @@ Graphics: who-to-watch-title, who-to-watch-lower-third, clip-overlay.
 
 ---
 
-### Task 7F.4 — Convert clip-overlay CSS to Variables — NOT STARTED
+### Task 7F.4 — Convert clip-overlay CSS to Variables — COMPLETE
 
 **Goal:** Replace 62 hardcoded CSS values in clip-overlay (inline in output.html).
 
@@ -2164,3 +2164,4 @@ Execution order: Phase 8A → 7.FONT → 7A → 7B → 7C → 7D → 7E → 7F �
 - LEARNING: Cinema layout has `::before`/`::after` letterbox bars with hardcoded `#000`. Now overridable via `--rotation-slate-cinema-bg` / `--rotation-slate-auto-cinema-bg`.
 - LEARNING: Phase 7D (Stream graphics) deployment verification completed. Stream graphics use `--meet-overlay-bg` for the full-screen background, not `--meet-header-bg` or `--meet-content-bg`. Per-graphic overrides for header-bg/content-bg are set correctly but don't visibly affect stream graphics since the CSS doesn't reference those vars for the main background. This is correct behavior — the debug panel confirms the override system works.
 - LEARNING: Interview-card uses Poppins font (imported separately from the Inter-based output.html). The CSS variable defaults should specify `'Poppins', sans-serif` not inherit from Inter. Animation keyframes (panelSlideIn, fadeUp) are choreographed sequences with staggered delays (0.1s, 0.15s, 0.25s, 0.3s, 0.4s, 0.5s) — kept hardcoded since they form a visual sequence, not themeable individual values.
+- LEARNING: Clip-overlay (Task 7F.4) uses 3-layer cascade for colors (`--clip-overlay-header-bg` → `--meet-header-bg` → fallback) and 2-layer for layout values (`--clip-overlay-panel-top` → fallback). The graphic ID is `clip-overlay` (detected via `?mode=clip` or `?mode=clip-preview`). Added `font-variant-numeric: tabular-nums` to `.clip-score-badge` for consistent score digit widths. The replay badge shares `--clip-overlay-badge-top/right` with score badge for consistent positioning, but has its own bg/padding/radius/font overrides for different styling.
