@@ -530,6 +530,22 @@ window.themeReady = new Promise(resolve => { _resolveThemeReady = resolve; });
     containerLeft: { suffix: 'container-left', unit: 'px' },
     containerRight: { suffix: 'container-right', unit: 'px' },
     containerBottom: { suffix: 'container-bottom', unit: 'px' },
+    // Event-frame specific (Phase 7A.3)
+    frameBorderWidth: { suffix: 'frame-border-width', unit: 'px' },
+    frameBorderColor: { suffix: 'frame-border-color', unit: null },
+    frameGap: { suffix: 'frame-gap', unit: 'px' },
+    // Frame header/logo row
+    logoHeaderHeight: { suffix: 'logo-header-height', unit: 'px' },
+    frameLogoSize: { suffix: 'frame-logo-size', unit: 'px' },
+    frameLogoMaxWidth: { suffix: 'frame-logo-max-width', unit: 'px' },
+    // Watermark
+    watermarkFontSize: { suffix: 'watermark-font-size', unit: 'px' },
+    watermarkFontWeight: { suffix: 'watermark-font-weight', unit: null },
+    watermarkColor: { suffix: 'watermark-color', unit: null },
+    watermarkAccentColor: { suffix: 'watermark-accent-color', unit: null },
+    watermarkBottom: { suffix: 'watermark-bottom', unit: 'px' },
+    watermarkRight: { suffix: 'watermark-right', unit: 'px' },
+    showWatermark: { suffix: 'show-watermark', unit: null },
   };
 
   /**
