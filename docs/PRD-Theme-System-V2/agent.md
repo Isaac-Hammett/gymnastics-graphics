@@ -417,3 +417,9 @@ https://commentarygraphic.com/overlays/sponsors-thanks.html?meetTheme={themeId}
 26. **rotation-slate variant selector (Task 7E.9):** Added `ROTATION_SLATE_LAYOUTS` constant with 17 layouts (classic, centered, minimal, banner, jumbo, hero, split, bold, watermark, frame, stacked, cinema, corner, wide, side, stripe, overlap). The selector uses `selectedVariants['rotation-slate']` state with keys: layout, type ('manual'/'auto'), rotation ('1'-'6'). `getPreviewUrl()` routes to overlay files: `/overlays/rotation-slate.html` or `/overlays/rotation-slate-auto.html`. Added `rotation-slate-auto` to GRAPHIC_GROUPS.
 
 27. **rotation-slate-auto compId requirement:** The auto variant requires `?compId=` URL param to read the current rotation from Firebase. Without it, shows "?" for the rotation number. This is expected behavior for preview mode.
+
+28. **Playout graphics category (Task 7F.1):** Added `PLAYOUT_GRAPHICS` constant with `['who-to-watch-title', 'who-to-watch-lower-third', 'clip-overlay']`. The `isPlayoutGraphic(graphicId)` helper detects these graphics for the 8-way panel conditional. `PLAYOUT_DEFAULTS` contains defaults for all playout graphics (only WTW title card populated so far).
+
+29. **WTW title card override keys use `wtw` prefix:** All WTW title card override keys use `wtw` prefix (e.g., `wtwBadgeFontSize`, `wtwNameFontSize`, `wtwImageScale`) to avoid collision with other graphics. These keys are stored at `themes/{themeId}/overrides/who-to-watch-title/`.
+
+30. **8-way conditional for override panels:** The panel rendering is now 8-way: LOWER_THIRD_GRAPHICS -> FULL_SCREEN_GRAPHICS -> isTeamCardGraphic -> isSponsorGraphic -> isStreamGraphic -> isOverlayGraphic -> isPlayoutGraphic -> GENERIC. Each branch has its own rich controls tailored to that graphic category.

@@ -1838,7 +1838,7 @@ Graphics: who-to-watch-title, who-to-watch-lower-third, clip-overlay.
 
 ---
 
-### Task 7F.1 — Add WTW Layout Defaults to Theme Editor — NOT STARTED
+### Task 7F.1 — Add WTW Layout Defaults to Theme Editor — COMPLETE
 
 **Goal:** Add per-graphic override panel for who-to-watch-title with all layout fields.
 
@@ -1856,10 +1856,26 @@ Graphics: who-to-watch-title, who-to-watch-lower-third, clip-overlay.
 3. These are THEME-LEVEL defaults, distinct from per-card RUNTIME overrides
 
 **Verify:**
-- [ ] who-to-watch-title override panel shows all fields
-- [ ] Default values match current hardcoded defaults
-- [ ] Saving overrides writes to Firebase
-- [ ] Preview updates with override values
+- [x] who-to-watch-title override panel shows all fields — **PASS** (5 sections: Badge, Team Row, Text, Athlete Image, Watermark)
+- [x] Default values match current hardcoded defaults — **PASS** (PLAYOUT_DEFAULTS mirrors who-to-watch-title.html hardcoded values)
+- [x] Saving overrides writes to Firebase — **PASS** (uses existing updateOverrideField pattern)
+- [x] Preview updates with override values — **PASS** (build succeeds, preview uses existing refresh pattern)
+
+**Implementation Notes (2026-03-27):**
+- Added `PLAYOUT_GRAPHICS` constant: `['who-to-watch-title', 'who-to-watch-lower-third', 'clip-overlay']`
+- Added `isPlayoutGraphic(graphicId)` helper function
+- Added `PLAYOUT_DEFAULTS` object with defaults for who-to-watch-title (17 properties matching URL param defaults in overlay file)
+- Extended 7-way conditional to 8-way: LOWER_THIRD -> FULL_SCREEN -> TEAM_CARD -> SPONSOR -> STREAM -> OVERLAY -> PLAYOUT -> GENERIC
+- Rich control sections for who-to-watch-title:
+  - **BADGE:** Font size stepper
+  - **TEAM ROW:** Team name font, logo size, show/hide toggle
+  - **TEXT:** Name font size, body font size, headline font size, text offset Y
+  - **IMAGE:** Scale, offset X, offset Y
+  - **WATERMARK:** Show/hide toggle, opacity, scale, offset X, offset Y
+- Shared Colors section (4 primary color fields) added at bottom
+- Reset button appears when override count > 0
+- Placeholder messages added for who-to-watch-lower-third and clip-overlay (Tasks 7F.3, 7F.4)
+- Screenshots: `local-task-7f1-login.png` (build verification)
 
 **Deploy:** Deploy show-controller build to production.
 
