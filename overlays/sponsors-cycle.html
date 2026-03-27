@@ -13,7 +13,7 @@
       width: 1920px;
       height: 1080px;
       overflow: hidden;
-      background: var(--meet-overlay-bg, #E5E5E5);
+      background: var(--sponsors-cycle-overlay-bg, var(--meet-overlay-bg, #E5E5E5));
     }
 
     #container {
@@ -37,7 +37,7 @@
       align-items: center;
       justify-content: center;
       opacity: 0;
-      transition: opacity 0.5s ease-in-out;
+      transition: opacity var(--sponsors-cycle-fade-duration, 0.5s) ease-in-out;
     }
 
     .sponsor-slide.active {
@@ -46,15 +46,15 @@
 
     .sponsor-slide canvas {
       display: block;
-      max-width: 1600px;
-      max-height: 950px;
+      max-width: var(--sponsors-cycle-logo-max-width, 1600px);
+      max-height: var(--sponsors-cycle-logo-max-height, 950px);
     }
 
     .no-sponsors-message {
-      font-family: 'Inter', sans-serif;
-      font-size: 48px;
-      font-weight: 600;
-      color: #999;
+      font-family: var(--sponsors-cycle-no-sponsors-font-family, 'Inter'), sans-serif;
+      font-size: var(--sponsors-cycle-no-sponsors-font-size, 48px);
+      font-weight: var(--sponsors-cycle-no-sponsors-font-weight, 600);
+      color: var(--sponsors-cycle-no-sponsors-color, #999);
       text-align: center;
     }
 
@@ -173,7 +173,22 @@
   </div>
 
   <script>
-    const TARGET_HEIGHT = 900; // All logos render at this height
+    // Read CSS variables dynamically (called after theme-loader sets them)
+    function getCSSVarPx(name, defaultValue) {
+      const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+      if (!value) return defaultValue;
+      const parsed = parseFloat(value);
+      return isNaN(parsed) ? defaultValue : parsed;
+    }
+
+    // Get target height and max width from CSS vars (with defaults)
+    function getTargetHeight() {
+      return getCSSVarPx('--sponsors-cycle-target-height', 900);
+    }
+    function getMaxWidthRender() {
+      return getCSSVarPx('--sponsors-cycle-max-width-render', 1400);
+    }
+
     const params = new URLSearchParams(window.location.search);
     const sponsorsParam = params.get('sponsors') || '';
     const lockedIndex = params.has('lockedIndex') ? parseInt(params.get('lockedIndex'), 10) : -1;
@@ -313,10 +328,12 @@
 
       const usedBounds = getEffectiveBounds(img, sponsor || {}, autoBounds);
 
-      // Scale content to fit within TARGET_HEIGHT and MAX_WIDTH, maintaining aspect ratio
-      const MAX_WIDTH = 1400; // Leave comfortable margins within 1920px viewport
-      const scaleH = TARGET_HEIGHT / usedBounds.h;
-      const scaleW = MAX_WIDTH / usedBounds.w;
+      // Scale content to fit within target height and max width, maintaining aspect ratio
+      // Values read dynamically from CSS variables (with defaults) after theme-loader runs
+      const targetH = getTargetHeight();
+      const maxW = getMaxWidthRender();
+      const scaleH = targetH / usedBounds.h;
+      const scaleW = maxW / usedBounds.w;
       const scale = Math.min(scaleH, scaleW); // Use whichever is smaller to fit both constraints
       const outW = Math.round(usedBounds.w * scale);
       const outH = Math.round(usedBounds.h * scale);
