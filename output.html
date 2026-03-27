@@ -572,6 +572,7 @@
       font-weight: 800;
       color: #fff;
       margin-left: auto;
+      font-variant-numeric: tabular-nums;
     }
     .event-summary-dual .team-header.right .team-total {
       margin-left: 0;
@@ -636,6 +637,7 @@
       color: #fff;
       min-width: 88px;
       text-align: right;
+      font-variant-numeric: tabular-nums;
     }
     .event-summary-dual .athlete-start {
       font-size: 14px;
@@ -796,6 +798,7 @@
       font-weight: 800;
       color: #fff;
       margin-left: auto;
+      font-variant-numeric: tabular-nums;
     }
     .event-summary-footer .footer-team.right .event-total {
       margin-left: 0;
@@ -1091,57 +1094,112 @@
       color: var(--meet-header-text, #000);
     }
 
-    /* Header bar overrides - applies to all layouts */
+    /* Header bar overrides - applies to all layouts (3-layer cascade: per-graphic → theme → fallback) */
     [data-meet-theme] .event-summary-header {
-      background: var(--meet-header-bg, #d4d4d8);
+      background: var(--event-summary-header-bg, var(--meet-header-bg, #d4d4d8));
+      padding: var(--event-summary-header-padding, 18px 40px);
+      min-height: var(--event-summary-header-height, auto);
     }
     [data-meet-theme] .event-summary-title {
-      color: var(--meet-header-text, #000);
+      color: var(--event-summary-header-text, var(--meet-header-text, #000));
+      font-size: var(--event-summary-title-font-size, 42px);
+      font-family: var(--event-summary-title-font-family, inherit);
+      font-weight: var(--event-summary-title-font-weight, 800);
+      text-transform: var(--event-summary-title-text-transform, none);
+    }
+    [data-meet-theme] .event-summary-header-logo {
+      width: var(--event-summary-header-logo-size, 80px);
+      height: var(--event-summary-header-logo-size, 80px);
     }
 
-    /* Footer bar overrides */
+    /* Footer bar overrides (3-layer cascade) */
     [data-meet-theme] .event-summary-footer {
-      background: var(--meet-header-bg, #27272a);
-      border-top-color: var(--meet-border-color, transparent);
+      background: var(--event-summary-header-bg, var(--meet-header-bg, #27272a));
+      border-top-color: var(--event-summary-border-color, var(--meet-border-color, transparent));
+      min-height: var(--event-summary-footer-height, 80px);
+    }
+    [data-meet-theme] .event-summary-footer .event-total {
+      font-size: var(--event-summary-footer-font-size, 48px);
+      font-family: var(--event-summary-score-font-family, inherit);
+    }
+    [data-meet-theme] .event-summary-footer .event-label {
+      font-size: var(--event-summary-footer-font-size, 32px);
     }
 
-    /* Content area overrides */
+    /* Content area overrides (3-layer cascade) */
     [data-meet-theme] .event-summary-content {
-      background: var(--meet-overlay-bg, #27272a);
+      background: var(--event-summary-overlay-bg, var(--meet-overlay-bg, #27272a));
+      padding: var(--event-summary-content-padding, 0);
     }
 
-    /* Center divider / rotation badge overrides */
+    /* Team name styling (3-layer cascade) */
+    [data-meet-theme] .event-summary-dual .team-name,
+    [data-meet-theme] .event-summary-quad .team-name,
+    [data-meet-theme] .event-summary-quad-v3 .team-name {
+      font-size: var(--event-summary-team-name-font-size, 28px);
+      color: var(--event-summary-overlay-text, var(--meet-overlay-text, #fff));
+    }
+    [data-meet-theme] .event-summary-dual .team-total,
+    [data-meet-theme] .event-summary-quad .team-total,
+    [data-meet-theme] .event-summary-quad-v3 .team-total {
+      font-family: var(--event-summary-score-font-family, inherit);
+      font-size: var(--event-summary-score-font-size, 32px);
+      color: var(--event-summary-overlay-text, var(--meet-overlay-text, #fff));
+    }
+
+    /* Athlete row styling (3-layer cascade) */
+    [data-meet-theme] .event-summary-dual .athlete-row,
+    [data-meet-theme] .event-summary-quad .athlete-row,
+    [data-meet-theme] .event-summary-quad-v3 .athlete-row {
+      min-height: var(--event-summary-row-height, auto);
+      padding: var(--event-summary-row-padding, 8px 20px);
+    }
+    [data-meet-theme] .event-summary-dual .athlete-name,
+    [data-meet-theme] .event-summary-quad .athlete-name,
+    [data-meet-theme] .event-summary-quad-v3 .athlete-name {
+      font-size: var(--event-summary-athlete-name-font-size, 22px);
+      color: var(--event-summary-overlay-text, var(--meet-overlay-text, #fff));
+    }
+    [data-meet-theme] .event-summary-dual .athlete-score,
+    [data-meet-theme] .event-summary-quad .athlete-score,
+    [data-meet-theme] .event-summary-quad-v3 .athlete-score {
+      font-family: var(--event-summary-score-font-family, inherit);
+      font-size: var(--event-summary-score-font-size, 26px);
+      color: var(--event-summary-overlay-text, var(--meet-overlay-text, #fff));
+    }
+
+    /* Center divider / rotation badge overrides (3-layer cascade) */
     [data-meet-theme] .center-divider {
-      background: var(--meet-overlay-bg, #27272a);
+      background: var(--event-summary-overlay-bg, var(--meet-overlay-bg, #27272a));
     }
     [data-meet-theme] .rotation-badge {
-      background: var(--meet-badge-bg);
-      color: var(--meet-badge-text, #fff);
+      background: var(--event-summary-badge-bg, var(--meet-badge-bg, transparent));
+      color: var(--event-summary-badge-text, var(--meet-badge-text, #fff));
     }
     [data-meet-theme] .event-summary-dual .diff-row:nth-child(odd) {
-      background: var(--meet-overlay-bg, #18181b);
+      background: var(--event-summary-overlay-bg, var(--meet-overlay-bg, #18181b));
     }
     [data-meet-theme] .event-summary-dual .diff-row:nth-child(even) {
-      background: color-mix(in srgb, var(--meet-overlay-bg, #27272a) 80%, white);
+      background: color-mix(in srgb, var(--event-summary-overlay-bg, var(--meet-overlay-bg, #27272a)) 80%, white);
     }
 
-    /* Multi-team layout (quad/v3) chrome overrides */
+    /* Multi-team layout (quad/v3) chrome overrides (3-layer cascade) */
     [data-meet-theme] .event-summary-quad,
     [data-meet-theme] .event-summary-quad-v3 {
-      background: var(--meet-border-color, #3f3f46);
+      background: var(--event-summary-border-color, var(--meet-border-color, #3f3f46));
     }
     [data-meet-theme] .event-summary-quad .team-header,
     [data-meet-theme] .event-summary-quad-v3 .team-header {
-      border-bottom-color: var(--meet-border-color, #3f3f46);
+      border-bottom-color: var(--event-summary-border-color, var(--meet-border-color, #3f3f46));
     }
     [data-meet-theme] .event-summary-quad .team-footer,
     [data-meet-theme] .event-summary-quad-v3 .team-footer {
-      background: color-mix(in srgb, var(--meet-overlay-bg, #27272a) 80%, white);
-      border-top-color: var(--meet-border-color, #3f3f46);
+      background: color-mix(in srgb, var(--event-summary-overlay-bg, var(--meet-overlay-bg, #27272a)) 80%, white);
+      border-top-color: var(--event-summary-border-color, var(--meet-border-color, #3f3f46));
     }
     [data-meet-theme] .event-summary-quad .athlete-row,
     [data-meet-theme] .event-summary-quad-v3 .athlete-row {
-      border-bottom-color: var(--meet-border-color, #3f3f46);
+      border-bottom-color: var(--event-summary-border-color, var(--meet-border-color, #3f3f46));
     }
 
     /* Leaderboard header/footer overrides */
