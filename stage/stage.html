@@ -24,6 +24,10 @@
       height: 1080px;
       position: relative;
     }
+    /* Layout system */
+    .layout-row { display: flex; flex-direction: column; }
+    .layout-columns { display: flex; flex-direction: row; flex: 1; min-height: 0; }
+    .layout-column { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
   </style>
 </head>
 <body>
@@ -53,6 +57,7 @@
     const paramBlock = urlParams.get('block');
     const paramTheme = urlParams.get('theme');
     const paramGraphic = urlParams.get('graphic');
+    const paramLayout = urlParams.get('layout');
 
     // --- Skeleton Loader ---
     let currentSkeletonName = null;
@@ -266,6 +271,71 @@
       }
     }
 
+    // --- Layout Engine ---
+    function buildLayout(layoutSpec, blocksById) {
+      // Build nested flex DOM structure from layout spec
+      // Returns the root element to append to .skeleton-content
+      if (!layoutSpec || !layoutSpec.type) return null;
+
+      if (layoutSpec.type === 'rows') {
+        const container = document.createDocumentFragment();
+        for (const row of (layoutSpec.rows || [])) {
+          const rowEl = buildLayoutRow(row, blocksById);
+          if (rowEl) container.appendChild(rowEl);
+        }
+        return container;
+      } else if (layoutSpec.type === 'columns') {
+        return buildColumnsLayout(layoutSpec, blocksById);
+      }
+      return null;
+    }
+
+    function buildLayoutRow(row, blocksById) {
+      if (row.type === 'columns') {
+        return buildColumnsLayout(row, blocksById);
+      }
+      // Single row with blocks
+      const rowEl = document.createElement('div');
+      rowEl.className = 'layout-row';
+      if (row.blocks) {
+        for (const blockId of row.blocks) {
+          const entry = blocksById[blockId];
+          if (entry) rowEl.appendChild(entry.wrapper);
+        }
+      }
+      return rowEl;
+    }
+
+    function buildColumnsLayout(spec, blocksById) {
+      const rowEl = document.createElement('div');
+      rowEl.className = 'layout-row layout-columns';
+
+      const columns = spec.columns || [];
+      const defaultWidth = (100 / columns.length) + '%';
+
+      for (const col of columns) {
+        const colEl = document.createElement('div');
+        colEl.className = 'layout-column';
+        colEl.style.width = col.width || defaultWidth;
+
+        if (col.blocks) {
+          // Column contains blocks directly
+          for (const blockId of col.blocks) {
+            const entry = blocksById[blockId];
+            if (entry) colEl.appendChild(entry.wrapper);
+          }
+        } else if (col.rows) {
+          // Column contains nested rows
+          for (const row of col.rows) {
+            const rowEl = buildLayoutRow(row, blocksById);
+            if (rowEl) colEl.appendChild(rowEl);
+          }
+        }
+        rowEl.appendChild(colEl);
+      }
+      return rowEl;
+    }
+
     // --- Temporary Preview Hook (Task 2) ---
     (async function() {
       if (paramPreview === 'skeleton' && paramSkeleton) {
@@ -309,14 +379,44 @@
         }
 
         const blockTypes = paramBlock.split(',').map(b => b.trim()).filter(Boolean);
-        const blockSpecs = blockTypes.map(type => ({ type, id: type }));
+        // Assign unique ids for layout (type-0, type-1, etc.)
+        const typeCount = {};
+        const blockSpecs = blockTypes.map(type => {
+          typeCount[type] = (typeCount[type] || 0);
+          const id = type + '-' + typeCount[type]++;
+          return { type, id };
+        });
         const blocks = await loadBlocks(blockSpecs, {});
         if (blocks.length > 0) {
           const dataMap = {};
           for (const entry of blocks) {
-            dataMap[entry.type] = entry.block.sampleData || {};
+            dataMap[entry.id] = entry.block.sampleData || {};
           }
-          renderBlocks(blocks, content, dataMap);
+
+          // Check for layout param
+          if (paramLayout === 'columns' && blocks.length > 1) {
+            // Build columns layout with equal widths
+            const blocksById = {};
+            for (const entry of blocks) blocksById[entry.id] = entry;
+            const layoutSpec = {
+              type: 'columns',
+              columns: blocks.map(entry => ({ blocks: [entry.id] }))
+            };
+            const layoutEl = buildLayout(layoutSpec, blocksById);
+            if (layoutEl) {
+              content.appendChild(layoutEl);
+              // Render each block's content
+              for (const entry of blocks) {
+                const data = dataMap[entry.id] || entry.block.sampleData || {};
+                entry.block.render(entry.wrapper, data, { comp: paramComp, theme: null, db: db, compConfig: null });
+                entry.wrapper.style.opacity = '1';
+                entry.wrapper.style.pointerEvents = 'auto';
+              }
+            }
+          } else {
+            // Default: render blocks directly to content
+            renderBlocks(blocks, content, dataMap);
+          }
         }
       }
     })();
