@@ -1138,7 +1138,7 @@ Load the URL, take a screenshot, compare against the equivalent output.html/over
 | # | Block | Phase | Used By | Status | Verify URL |
 |---|-------|-------|---------|--------|------------|
 | 1 | `header-bar` | 2 | leaderboards (10), team-roster, sponsors-thanks, coaches, team-stats | ~~`not started`~~ — **FIXED 2026-03-31.** Created header-bar block with CSS variable cascade, background image support, optional logo. | `?preview=block&block=header-bar` |
-| 2 | `leaderboard-table` | 2 | leaderboard-vt/fx/ph/sr/pb/hb/ub/bb/aa, combined-aa | `not started` | `?preview=block&block=leaderboard-table` |
+| 2 | `leaderboard-table` | 2 | leaderboard-vt/fx/ph/sr/pb/hb/ub/bb/aa, combined-aa | ~~`not started`~~ — **FIXED 2026-03-31.** Created leaderboard-table block with tie indicators, medal circles, column variants for gender/apparatus. | `?preview=block&block=leaderboard-table` |
 | 3 | `athlete-grid` | 2 | team-roster | `not started` | `?preview=block&block=athlete-grid` |
 | 4 | `sponsor-grid` | future | sponsors-thanks | `not started` | `?preview=block&block=sponsor-grid` |
 | 5 | `stat-card` | future | team-stats (per-team) | `not started` | `?preview=block&block=stat-card` |

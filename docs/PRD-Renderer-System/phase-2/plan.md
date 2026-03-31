@@ -34,7 +34,7 @@ The block renders a title (left) and optional logo (right) with `flex` / `space-
 
 ---
 
-### Task 2: leaderboard-table Block — NOT STARTED
+### Task 2: leaderboard-table Block — COMPLETE
 **Files:**
 - `stage/blocks/leaderboard-table.js` (create)
 - `stage/blocks/leaderboard-table.css` (create)
@@ -210,3 +210,4 @@ Tasks 2 and 3 are independent of each other but both depend on Task 1 (header-ba
 (breadcrumbs for future iterations — the next iteration has ZERO memory)
 
 - LEARNING: `ready()` is called by `waitForReady()` with NO arguments and BEFORE `render()`. Don't try to query DOM elements in `ready()` — if the block has no async setup (e.g., no Firebase listener), just `return Promise.resolve()`. Logo loading can't be checked in `ready()` because the img element doesn't exist yet.
+- LEARNING: Block CSS uses `.block-{type}` prefix (e.g., `.block-leaderboard-table`) to scope all styles. Internal element classes use a short prefix (e.g., `lb-` for leaderboard-table, `hb-` for header-bar).
