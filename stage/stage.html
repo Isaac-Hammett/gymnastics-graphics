@@ -336,17 +336,161 @@
       return rowEl;
     }
 
-    // --- Temporary Preview Hook (Task 2) ---
+    // --- Animation Engine ---
+    let animationCounter = 0;
+
+    function generateKeyframes(type) {
+      // Returns { from, to } CSS transform+opacity for each animation type
+      const animations = {
+        // Enter animations
+        'slide-up': { from: { opacity: 0, transform: 'translateY(60px)' }, to: { opacity: 1, transform: 'translateY(0)' } },
+        'slide-down': { from: { opacity: 0, transform: 'translateY(-60px)' }, to: { opacity: 1, transform: 'translateY(0)' } },
+        'slide-left': { from: { opacity: 0, transform: 'translateX(60px)' }, to: { opacity: 1, transform: 'translateX(0)' } },
+        'slide-right': { from: { opacity: 0, transform: 'translateX(-60px)' }, to: { opacity: 1, transform: 'translateX(0)' } },
+        'fade-in': { from: { opacity: 0, transform: 'none' }, to: { opacity: 1, transform: 'none' } },
+        'scale-in': { from: { opacity: 0, transform: 'scale(0.9)' }, to: { opacity: 1, transform: 'scale(1)' } },
+        // Exit animations
+        'fade-out': { from: { opacity: 1, transform: 'none' }, to: { opacity: 0, transform: 'none' } },
+        'scale-out': { from: { opacity: 1, transform: 'scale(1)' }, to: { opacity: 0, transform: 'scale(0.9)' } },
+        'slide-out-up': { from: { opacity: 1, transform: 'translateY(0)' }, to: { opacity: 0, transform: 'translateY(-60px)' } },
+        'slide-out-down': { from: { opacity: 1, transform: 'translateY(0)' }, to: { opacity: 0, transform: 'translateY(60px)' } },
+        'slide-out-left': { from: { opacity: 1, transform: 'translateX(0)' }, to: { opacity: 0, transform: 'translateX(-60px)' } },
+        'slide-out-right': { from: { opacity: 1, transform: 'translateX(0)' }, to: { opacity: 0, transform: 'translateX(60px)' } }
+      };
+      return animations[type] || animations['fade-in'];
+    }
+
+    function playEnterAnimation(blockEl, config) {
+      const opts = Object.assign({ type: 'fade-in', duration: 300, delay: 0, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' }, config);
+      const keyframes = generateKeyframes(opts.type);
+      const animName = 'stage-anim-' + (++animationCounter);
+
+      // Inject keyframes
+      const styleEl = document.createElement('style');
+      styleEl.setAttribute('data-animation', animName);
+      styleEl.textContent = '@keyframes ' + animName + ' { from { opacity: ' + keyframes.from.opacity + '; transform: ' + keyframes.from.transform + '; } to { opacity: ' + keyframes.to.opacity + '; transform: ' + keyframes.to.transform + '; } }';
+      document.head.appendChild(styleEl);
+
+      // Apply animation
+      blockEl.style.animation = animName + ' ' + opts.duration + 'ms ' + opts.easing + ' ' + opts.delay + 'ms forwards';
+      blockEl.style.opacity = '';
+      blockEl.style.pointerEvents = 'auto';
+
+      // Cleanup keyframes after animation completes
+      setTimeout(function() {
+        styleEl.remove();
+      }, opts.duration + opts.delay + 100);
+    }
+
+    function playExitAnimation(blockEl, config) {
+      return new Promise(function(resolve) {
+        const opts = Object.assign({ type: 'fade-out', duration: 200, delay: 0, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' }, config);
+        const keyframes = generateKeyframes(opts.type);
+        const animName = 'stage-anim-' + (++animationCounter);
+
+        // Inject keyframes
+        const styleEl = document.createElement('style');
+        styleEl.setAttribute('data-animation', animName);
+        styleEl.textContent = '@keyframes ' + animName + ' { from { opacity: ' + keyframes.from.opacity + '; transform: ' + keyframes.from.transform + '; } to { opacity: ' + keyframes.to.opacity + '; transform: ' + keyframes.to.transform + '; } }';
+        document.head.appendChild(styleEl);
+
+        // Apply animation
+        blockEl.style.animation = animName + ' ' + opts.duration + 'ms ' + opts.easing + ' ' + opts.delay + 'ms forwards';
+
+        // Resolve on animationend
+        function onEnd() {
+          blockEl.removeEventListener('animationend', onEnd);
+          blockEl.style.opacity = '0';
+          blockEl.style.pointerEvents = 'none';
+          styleEl.remove();
+          resolve();
+        }
+        blockEl.addEventListener('animationend', onEnd);
+
+        // Fallback timeout in case animationend doesn't fire
+        setTimeout(function() {
+          blockEl.removeEventListener('animationend', onEnd);
+          blockEl.style.opacity = '0';
+          blockEl.style.pointerEvents = 'none';
+          styleEl.remove();
+          resolve();
+        }, opts.duration + opts.delay + 100);
+      });
+    }
+
+    function playEnterAnimations(blocks, config) {
+      for (let i = 0; i < blocks.length; i++) {
+        const entry = blocks[i];
+        const opts = Object.assign({}, config, { delay: (config && config.delay) || (i * 50) });
+        playEnterAnimation(entry.wrapper, opts);
+      }
+    }
+
+    function playExitAnimations(blocks, config) {
+      const promises = blocks.map(function(entry) {
+        return playExitAnimation(entry.wrapper, config);
+      });
+      return Promise.all(promises);
+    }
+
+    // --- Preview Mode ---
+    let previewBlocks = [];
+    let previewSkeletonEl = null;
+    let previewToolbar = null;
+
+    function createPreviewToolbar() {
+      const toolbar = document.createElement('div');
+      toolbar.id = 'preview-toolbar';
+      toolbar.style.cssText = 'position: fixed; bottom: 20px; right: 20px; display: flex; gap: 8px; z-index: 9999;';
+
+      const playBtn = document.createElement('button');
+      playBtn.textContent = 'Play';
+      playBtn.style.cssText = 'padding: 8px 16px; font-size: 14px; font-weight: 600; background: rgba(59, 130, 246, 0.9); color: white; border: none; border-radius: 6px; cursor: pointer;';
+      playBtn.onclick = function() { replayEnterAnimations(); };
+
+      const dismissBtn = document.createElement('button');
+      dismissBtn.textContent = 'Dismiss';
+      dismissBtn.style.cssText = 'padding: 8px 16px; font-size: 14px; font-weight: 600; background: rgba(239, 68, 68, 0.9); color: white; border: none; border-radius: 6px; cursor: pointer;';
+      dismissBtn.onclick = function() { dismissPreview(); };
+
+      toolbar.appendChild(playBtn);
+      toolbar.appendChild(dismissBtn);
+      document.body.appendChild(toolbar);
+      return toolbar;
+    }
+
+    function replayEnterAnimations() {
+      // Hide all blocks first
+      for (const entry of previewBlocks) {
+        entry.wrapper.style.opacity = '0';
+        entry.wrapper.style.pointerEvents = 'none';
+        entry.wrapper.style.animation = '';
+      }
+      // Re-trigger enter animations after a brief delay
+      setTimeout(function() {
+        playEnterAnimations(previewBlocks, { type: 'fade-in', duration: 300 });
+      }, 50);
+    }
+
+    function dismissPreview() {
+      playExitAnimations(previewBlocks, { type: 'fade-out', duration: 200 });
+    }
+
+    // --- Preview Mode Runner ---
     (async function() {
+      if (!paramPreview) return;
+
       if (paramPreview === 'skeleton' && paramSkeleton) {
-        // Skeleton-only preview
+        // Skeleton-only preview with placeholder content
         const el = await loadSkeleton(paramSkeleton);
         if (el) {
           const content = el.querySelector('.skeleton-content');
           if (content) {
-            content.innerHTML = '<div style="background: #3f3f46; flex: 1; display: flex; align-items: center; justify-content: center;"><span style="color: #71717a; font-size: 24px;">skeleton-content placeholder</span></div>';
+            content.innerHTML = '<div style="background: #d4d4d8; padding: 18px 40px; display: flex; align-items: center;"><span style="font-size: 42px; font-weight: 800;">HEADER PLACEHOLDER</span></div><div style="flex: 1; background: #18181b; display: flex; align-items: center; justify-content: center;"><span style="color: #71717a; font-size: 24px;">Content area — blocks render here</span></div>';
           }
+          previewSkeletonEl = el;
         }
+
       } else if (paramPreview === 'block' && paramBlock) {
         // Block-only preview (no skeleton)
         const blockTypes = paramBlock.split(',').map(b => b.trim()).filter(Boolean);
@@ -358,14 +502,26 @@
           for (const entry of blocks) {
             dataMap[entry.type] = entry.block.sampleData || {};
           }
-          renderBlocks(blocks, mount, dataMap);
+          // Render to mount
+          for (const entry of blocks) {
+            const data = dataMap[entry.type] || entry.block.sampleData || {};
+            mount.appendChild(entry.wrapper);
+            entry.block.render(entry.wrapper, data, { comp: paramComp, theme: null, db: db, compConfig: null });
+          }
+          previewBlocks = blocks;
+          // Play enter animations
+          playEnterAnimations(blocks, { type: 'fade-in', duration: 300 });
+          // Create toolbar
+          previewToolbar = createPreviewToolbar();
         }
+
       } else if (paramPreview === 'full' && paramSkeleton && paramBlock) {
         // Full preview: skeleton + blocks
         const el = await loadSkeleton(paramSkeleton);
         if (!el) return;
         const content = el.querySelector('.skeleton-content');
         if (!content) return;
+        previewSkeletonEl = el;
 
         // Fetch theme if specified
         if (paramTheme) {
@@ -387,37 +543,45 @@
           return { type, id };
         });
         const blocks = await loadBlocks(blockSpecs, {});
-        if (blocks.length > 0) {
-          const dataMap = {};
-          for (const entry of blocks) {
-            dataMap[entry.id] = entry.block.sampleData || {};
-          }
+        if (blocks.length === 0) return;
 
-          // Check for layout param
-          if (paramLayout === 'columns' && blocks.length > 1) {
-            // Build columns layout with equal widths
-            const blocksById = {};
-            for (const entry of blocks) blocksById[entry.id] = entry;
-            const layoutSpec = {
-              type: 'columns',
-              columns: blocks.map(entry => ({ blocks: [entry.id] }))
-            };
-            const layoutEl = buildLayout(layoutSpec, blocksById);
-            if (layoutEl) {
-              content.appendChild(layoutEl);
-              // Render each block's content
-              for (const entry of blocks) {
-                const data = dataMap[entry.id] || entry.block.sampleData || {};
-                entry.block.render(entry.wrapper, data, { comp: paramComp, theme: null, db: db, compConfig: null });
-                entry.wrapper.style.opacity = '1';
-                entry.wrapper.style.pointerEvents = 'auto';
-              }
+        const dataMap = {};
+        for (const entry of blocks) {
+          dataMap[entry.id] = entry.block.sampleData || {};
+        }
+
+        // Check for layout param
+        if (paramLayout === 'columns' && blocks.length > 1) {
+          // Build columns layout with equal widths
+          const blocksById = {};
+          for (const entry of blocks) blocksById[entry.id] = entry;
+          const layoutSpec = {
+            type: 'columns',
+            columns: blocks.map(entry => ({ blocks: [entry.id] }))
+          };
+          const layoutEl = buildLayout(layoutSpec, blocksById);
+          if (layoutEl) {
+            content.appendChild(layoutEl);
+            // Render each block's content
+            for (const entry of blocks) {
+              const data = dataMap[entry.id] || entry.block.sampleData || {};
+              entry.block.render(entry.wrapper, data, { comp: paramComp, theme: null, db: db, compConfig: null });
             }
-          } else {
-            // Default: render blocks directly to content
-            renderBlocks(blocks, content, dataMap);
+          }
+        } else {
+          // Default: render blocks directly to content
+          for (const entry of blocks) {
+            const data = dataMap[entry.id] || entry.block.sampleData || {};
+            content.appendChild(entry.wrapper);
+            entry.block.render(entry.wrapper, data, { comp: paramComp, theme: null, db: db, compConfig: null });
           }
         }
+
+        previewBlocks = blocks;
+        // Play enter animations
+        playEnterAnimations(blocks, { type: 'fade-in', duration: 300 });
+        // Create toolbar
+        previewToolbar = createPreviewToolbar();
       }
     })();
   </script>
