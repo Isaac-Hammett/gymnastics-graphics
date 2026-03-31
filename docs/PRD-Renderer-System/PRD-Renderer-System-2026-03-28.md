@@ -352,6 +352,181 @@ competitions/{compId}/production/stageErrors/{timestamp}
 
 The Producer View shows these errors the same way it shows theme errors — a red badge with count, expandable panel with details per error, and a dismiss button. The existing `ThemeErrorLog` component pattern is reused for stage engine errors.
 
+### 12. Graphic Manifests & Auto-Discovery (Single Source of Truth)
+
+**Problem this solves:** Today, adding a new graphic requires updating up to 3 separate files that each maintain their own list of graphics: `graphicsRegistry.js` (definitions), `urlBuilder.js` (URL building switch statement), and `UrlGeneratorPage.jsx` (sidebar titles). Forgetting any one of these means the graphic exists but is invisible in parts of the UI.
+
+**Solution:** Each graphic is defined by a **manifest file** that lives next to its code. The registry is **generated** from these manifests at build time — no hand-maintained graphic lists anywhere.
+
+**Manifest files for stage engine graphics** live in `stage/graphics/`:
+
+```
+stage/graphics/
+  leaderboard-vt.json
+  leaderboard-fx.json
+  team-roster.json
+  ...
+```
+
+Each manifest is a JSON file:
+
+```json
+{
+  "id": "leaderboard-vt",
+  "label": "Vault",
+  "category": "full-screen-cards",
+  "subcategory": "leaderboards",
+  "skeleton": "full-screen-card",
+  "blocks": ["header-bar", "leaderboard-table"],
+  "gender": "womens",
+  "transparent": false,
+  "keywords": ["vault", "vt", "leaderboard", "scores"],
+  "params": {
+    "apparatus": { "type": "string", "default": "VT" }
+  },
+  "defaultData": {
+    "blocks": [
+      { "type": "header-bar", "data": { "title": "VAULT" } },
+      { "type": "leaderboard-table", "data": { "source": "scoring/leaderboard/VT" } }
+    ]
+  }
+}
+```
+
+**Manifest files for legacy graphics** (output.html and overlays) live in `stage/graphics/legacy/`:
+
+```
+stage/graphics/legacy/
+  event-bar.json
+  warm-up.json
+  sponsors-cycle.json
+  ...
+```
+
+Legacy manifests use `renderer: "overlay"` or `renderer: "output"` and include the `file` field pointing to their HTML:
+
+```json
+{
+  "id": "event-bar",
+  "label": "Event Info",
+  "category": "lower-thirds",
+  "renderer": "overlay",
+  "file": "event-bar.html",
+  "transparent": true,
+  "params": {
+    "team1Logo": { "type": "string", "source": "competition", "required": true },
+    "venue": { "type": "string", "source": "competition" },
+    "eventName": { "type": "string", "source": "competition" },
+    "location": { "type": "string", "source": "competition" }
+  }
+}
+```
+
+**Build-time registry generation:**
+
+A build script (`scripts/buildGraphicsRegistry.js`) scans `stage/graphics/**/*.json`, validates each manifest, and generates `show-controller/src/lib/graphicsRegistry.generated.js`. The existing `graphicsRegistry.js` imports from the generated file instead of hand-maintaining the `GRAPHICS` object.
+
+```javascript
+// graphicsRegistry.js (after migration)
+import { GRAPHICS } from './graphicsRegistry.generated';
+// All helper functions (getGraphicById, getGraphicsByCategory, etc.) remain — they just read from the generated data
+```
+
+The build script runs as part of `npm run build` in show-controller. It also runs in watch mode during development.
+
+**URL building from manifests:**
+
+For overlay/output graphics, the manifest's `params` schema is sufficient to build URLs generically — the existing `buildGraphicUrlFromRegistry()` fallback pattern already does this. The per-graphic `buildXxxURL()` functions and the giant switch statement in `generateGraphicURL()` are eliminated over time as each graphic gets a complete manifest with params.
+
+For stage engine graphics, the URL is always `stage/stage.html?comp={compId}&graphic={id}` — no per-graphic URL logic needed.
+
+**Category definitions (`stage/graphics/categories.json`):**
+
+Valid categories and subcategories are defined in a single file. The build script validates every manifest's `category` and `subcategory` against this file — typos fail the build.
+
+```json
+{
+  "full-screen-cards": {
+    "label": "Full-Screen Cards",
+    "order": 1,
+    "subcategories": {
+      "leaderboards": "Leaderboards",
+      "team-info": "Team Info",
+      "sponsors": "Sponsors"
+    }
+  },
+  "lower-thirds": {
+    "label": "Lower-Thirds",
+    "order": 2,
+    "subcategories": {
+      "event-info": "Event Info",
+      "team-stats": "Team Stats",
+      "spotlight": "Spotlight"
+    }
+  },
+  "full-bleed": {
+    "label": "Full-Bleed",
+    "order": 3,
+    "subcategories": {
+      "slates": "Slates",
+      "stream": "Stream",
+      "sponsors": "Sponsors"
+    }
+  },
+  "video-frames": {
+    "label": "Video Frames",
+    "order": 4,
+    "subcategories": {
+      "camera-layouts": "Camera Layouts",
+      "apparatus": "Apparatus"
+    }
+  },
+  "standalone": {
+    "label": "Standalone",
+    "order": 5,
+    "subcategories": {}
+  }
+}
+```
+
+This file controls three things:
+1. **Validation** — build fails if a manifest uses `"category": "full-scren-cards"` (typo). Error message: `Unknown category 'full-scren-cards' in leaderboard-vt.json. Valid: full-screen-cards, lower-thirds, full-bleed, video-frames, standalone`
+2. **Display labels** — the sidebar shows "Full-Screen Cards" not "full-screen-cards"
+3. **Sidebar ordering** — categories appear in `order` sequence, not alphabetically. Within a category, subcategories appear in their declared order.
+
+To add a new category or subcategory, edit this one file. All manifests that reference it will immediately group correctly.
+
+**Sidebar auto-population:**
+
+The URL Generator and Web Graphics Panel sidebars are generated from `categories.json` ordering + the registry's `category` and `subcategory` fields. No separate `baseGraphicTitles` object. If a graphic has a manifest, it appears in the sidebar under the correct category — guaranteed.
+
+**What this means for the workflow:**
+
+| Step | Before (today) | After (manifests) |
+|------|----------------|-------------------|
+| Create graphic code | Write HTML/CSS/JS | Write HTML/CSS/JS (or skeleton + blocks) |
+| Register in system | Update `graphicsRegistry.js` | Create `stage/graphics/{id}.json` |
+| URL generator sidebar | Update `UrlGeneratorPage.jsx` baseGraphicTitles | Automatic (reads from registry) |
+| URL builder | Add case to `urlBuilder.js` switch statement | Automatic (params in manifest) |
+| Web graphics panel | Already reads registry | Already reads registry |
+| **Total files to update** | **4 files** | **1 file** (the manifest) |
+
+**Validation:** The build script validates manifests and **fails the build** if:
+- Required fields are missing (`id`, `label`, `category`)
+- `category` or `subcategory` not found in `categories.json`
+- `skeleton` references a skeleton that doesn't exist in `stage/skeletons/`
+- `blocks` references a block that doesn't exist in `stage/blocks/`
+- Duplicate `id` values across manifests
+- Stage engine graphic missing `skeleton` or `blocks`
+
+The build script also emits **warnings** (does not fail) for:
+- A block declares a `themeVars` entry that its CSS doesn't reference
+- A block's CSS uses a `--meet-*` variable that isn't declared in its `themeVars`
+
+This catches structural mistakes at build time and surfaces theme wiring issues before they reach production.
+
+**Migration path:** Existing `graphicsRegistry.js` entries are converted to manifest files one category at a time. During migration, the build script merges hand-written entries (for graphics not yet converted) with generated entries (from manifests). Once all graphics have manifests, the hand-written `GRAPHICS` object is deleted.
+
 ---
 
 ## Render Spec Format
@@ -595,6 +770,18 @@ stage/
     leaderboard-table.js     ← Block render logic (Firebase listeners)
     athlete-grid.css
     athlete-grid.js
+  graphics/                  ← Graphic manifests (single source of truth)
+    categories.json          ← Valid categories, display labels, sidebar order
+    leaderboard-vt.json      ← Stage engine graphic manifest
+    leaderboard-fx.json
+    team-roster.json
+    legacy/                  ← Manifests for output.html + overlay graphics
+      event-bar.json
+      warm-up.json
+      sponsors-cycle.json
+
+scripts/
+  buildGraphicsRegistry.js   ← Scans stage/graphics/**/*.json → generates registry
 ```
 
 **Naming convention:** Skeleton and block names match exactly what appears in the UI. Grep for `full-screen-card` and find the skeleton files, the CSS, and every graphic that uses it.
@@ -632,11 +819,43 @@ Each block is a self-contained module that:
 - Renders its own DOM into the skeleton's content slot
 - Manages its own internal layout (table, grid, flex, etc.)
 - Has CSS scoped via `.block-{blockName}` wrapper class
+- Declares which theme CSS variables it uses via `themeVars` (see below)
+
+**Block `themeVars` declaration:**
+
+Each block's JS file declares a `themeVars` array listing which `--meet-*` CSS variables it uses:
+
+```javascript
+window.BlockHeaderBar = {
+  themeVars: ['--meet-header-bg', '--meet-header-text', '--meet-logo-url', '--meet-logo-size'],
+  render(container, data, theme) { ... },
+  destroy(container) { ... },
+  ready() { ... },
+};
+```
+
+The build script reads each block's `.css` file and checks that every variable listed in `themeVars` actually appears in the CSS (e.g., `var(--meet-header-bg`). If a block declares `--meet-header-bg` but its CSS never references it, the build emits a **warning** (not a failure):
+
+```
+WARNING: Block 'header-bar' declares themeVar '--meet-header-bg' but its CSS does not reference it
+```
+
+Conversely, if a block's CSS uses a `--meet-*` variable that isn't in `themeVars`, the build also warns:
+
+```
+WARNING: Block 'header-bar' CSS uses '--meet-badge-bg' but it is not declared in themeVars
+```
+
+These are warnings, not errors — they don't break the build. But they surface theme wiring issues at build time instead of discovering them live during a show when a graphic doesn't pick up the theme colors.
+
+**Why this matters:** The most common bug with the current system is creating a new graphic that doesn't respond to theme colors because the CSS hardcodes values instead of using `var(--meet-*)`. `themeVars` makes this visible immediately.
 
 **Blocks for this PRD:**
 
 #### header-bar
 Reusable header with title on the left and optional logo on the right. Themed via CSS variables.
+
+`themeVars`: `--meet-header-bg`, `--meet-header-text`, `--meet-logo-url`, `--meet-logo-size`
 
 | Element | Content |
 |---------|---------|
@@ -645,6 +864,8 @@ Reusable header with title on the left and optional logo on the right. Themed vi
 
 #### leaderboard-table
 Ranked score table. Listens to `competitions/{compId}/scoring/leaderboard/{apparatus}` in Firebase for live updates. Sorted by score descending with tie handling.
+
+`themeVars`: `--meet-content-bg`, `--meet-overlay-text`, `--meet-border-color`, `--meet-badge-bg`, `--meet-badge-text`
 
 | Column | Content |
 |--------|---------|
@@ -657,6 +878,8 @@ Ranked score table. Listens to `competitions/{compId}/scoring/leaderboard/{appar
 
 #### athlete-grid
 Responsive grid of athlete cards. Reads roster from `teamsDatabase/teams/{teamKey}/roster` and headshots from `teamsDatabase/headshots`. Adapts layout based on athlete count.
+
+`themeVars`: `--meet-content-bg`, `--meet-overlay-text`, `--meet-border-color`
 
 | Element | Content |
 |---------|---------|
@@ -752,13 +975,44 @@ Non-migrated graphics keep `renderer: 'output'` or `renderer: 'overlay'` and con
 
 ## Integration with Existing Tools
 
+### Graphics Registry (Auto-Generated)
+
+- `graphicsRegistry.js` is no longer hand-maintained — it imports from `graphicsRegistry.generated.js`
+- `graphicsRegistry.generated.js` is produced by `scripts/buildGraphicsRegistry.js` at build time
+- The build script scans `stage/graphics/**/*.json` manifest files
+- All existing helper functions (`getGraphicById`, `getGraphicsByCategory`, etc.) work unchanged — only the data source changes
+- Adding a new graphic = creating one manifest JSON file. The registry, URL generator sidebar, and graphics panel all pick it up automatically.
+
 ### URL Generator
 
-- Reads `renderer` field from graphicsRegistry
-- For `renderer: 'stage'` → builds `stage.html?comp=...&graphic=...` URLs
-- For `renderer: 'output'` or `'overlay'` → builds existing URLs (no change)
-- Sidebar reorganized to new categories with sub-groups
+- Reads `renderer` field from graphicsRegistry (now auto-generated from manifests)
+- For `renderer: 'stage'` → builds `stage.html?comp=...&graphic=...` URLs (generic, no per-graphic function needed)
+- For `renderer: 'output'` or `'overlay'` → builds URLs from the manifest's `params` schema (replaces the per-graphic `buildXxxURL()` functions and switch statement in `generateGraphicURL()`)
+- Sidebar populated automatically from `categories.json` ordering + manifest `category`/`subcategory` fields — no separate `baseGraphicTitles` list
 - New "Skeletons & Blocks" section for preview mode
+
+**Renderer badge in sidebar:** Each graphic in the sidebar shows a small colored badge indicating its renderer:
+
+```
+Full-Screen Cards
+  ├── Vault Leaderboard        [stage]
+  ├── Team Roster              [stage]
+Lower-Thirds
+  ├── Event Info               [overlay]
+  ├── Warm Up                  [overlay]
+Standalone
+  ├── Event Summary            [output]
+```
+
+Badge colors: `[stage]` = teal, `[overlay]` = gray, `[output]` = gray. This tells the producer at a glance which rendering system each graphic uses. As graphics migrate from overlay/output → stage, their badges update automatically (because the manifest's `renderer` field changes).
+
+**Preview iframe renderer indicator:** When a graphic is selected, the preview panel shows a small label above the iframe indicating the rendering path:
+
+- Stage engine graphics: `Rendering via stage.html` with the full preview URL visible
+- Overlay graphics: `Rendering via overlays/{file}.html` with the full preview URL visible
+- Output.html graphics: `Rendering via output.html` with the full preview URL visible
+
+This makes it immediately obvious which system is rendering the preview, and the visible URL lets you verify the correct file is being loaded.
 
 ### Web Graphics Panel (GraphicsControl)
 
@@ -767,7 +1021,8 @@ Non-migrated graphics keep `renderer: 'output'` or `renderer: 'overlay'` and con
 - Writes `{ graphic: "...", renderer: "stage"|"output", data: { ... } }` to `currentGraphic`
 - Both output.html and stage.html listen; each handles its own graphics, clears for the other's
 - Copyable URLs for stage.html
-- Sidebar reorganized to match new categories
+- Sidebar populated from the same auto-generated registry categories (matches URL Generator automatically)
+- Same renderer badge (`[stage]` / `[overlay]` / `[output]`) next to each graphic name, matching the URL Generator
 
 ### Rundown System
 
@@ -868,14 +1123,14 @@ Polling stops automatically when:
 
 Implementation is split into phases, each with its own detailed document.
 
-| Phase | Name | Scope | Doc |
-|-------|------|-------|-----|
-| 1 | Foundation | stage.html, full-screen-card skeleton, layout system, preview mode, animation engine | `Phase-1-Foundation.md` |
-| 2 | Content Blocks | header-bar, leaderboard-table, athlete-grid blocks | `Phase-2-Content-Blocks.md` |
-| 3 | Scoring Ingestion | Coordinator polling service, Firebase scoring paths, producer controls | `Phase-3-Scoring-Ingestion.md` |
-| 4 | Tool Integration | Registry updates, URL Generator, Web Graphics Panel, Rundown routing | `Phase-4-Tool-Integration.md` |
-| 5 | Reorganization | New category structure in registry, URL Generator sidebar, Graphics Panel sidebar | `Phase-5-Reorganization.md` |
-| 6 | Verification & Cutover | Side-by-side comparisons, production test, old code removal | `Phase-6-Verification-Cutover.md` |
+| Phase | Name | Scope | Doc | Status |
+|-------|------|-------|-----|--------|
+| 1 | Foundation | stage.html, full-screen-card skeleton, layout system, preview mode, animation engine | `Phase-1-Foundation.md` | **COMPLETE** — deployed 2026-03-31 |
+| 2 | Content Blocks | header-bar, leaderboard-table, athlete-grid blocks | `Phase-2-Content-Blocks.md` | NOT STARTED |
+| 3 | Scoring Ingestion | Coordinator polling service, Firebase scoring paths, producer controls | `Phase-3-Scoring-Ingestion.md` | NOT STARTED |
+| 4 | Tool Integration | Registry updates, URL Generator, Web Graphics Panel, Rundown routing | `Phase-4-Tool-Integration.md` | NOT STARTED |
+| 5 | Reorganization | New category structure in registry, URL Generator sidebar, Graphics Panel sidebar | `Phase-5-Reorganization.md` | NOT STARTED |
+| 6 | Verification & Cutover | Side-by-side comparisons, production test, old code removal | `Phase-6-Verification-Cutover.md` | NOT STARTED |
 
 ---
 

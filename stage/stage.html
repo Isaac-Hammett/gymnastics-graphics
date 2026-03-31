@@ -433,6 +433,188 @@
       return Promise.all(promises);
     }
 
+    // --- Live Mode State ---
+    let currentGraphicData = null;
+    let isRendering = false;
+
+    // --- renderGraphic orchestration ---
+    async function renderGraphic(graphic, data) {
+      if (isRendering) return;
+      isRendering = true;
+
+      try {
+        // 1. Load skeleton
+        const skeletonName = data && data.skeleton ? data.skeleton : 'full-screen-card';
+        const skeletonEl = await loadSkeleton(skeletonName);
+        if (!skeletonEl) {
+          isRendering = false;
+          return;
+        }
+        const contentEl = skeletonEl.querySelector('.skeleton-content');
+        if (!contentEl) {
+          console.error('[stage] Skeleton missing .skeleton-content');
+          isRendering = false;
+          return;
+        }
+
+        // 2. Apply theme
+        if (data && data.theme) {
+          applyTheme(skeletonEl, data.theme);
+        }
+
+        // 3. Load blocks
+        const blockSpecs = data && data.blocks ? data.blocks : [];
+        if (blockSpecs.length === 0) {
+          console.error('[stage] No blocks specified for graphic:', graphic);
+          isRendering = false;
+          return;
+        }
+
+        // Normalize block specs (strings become objects with type)
+        const normalizedSpecs = blockSpecs.map((spec, idx) => {
+          if (typeof spec === 'string') {
+            return { type: spec, id: spec + '-' + idx };
+          }
+          return { type: spec.type, id: spec.id || (spec.type + '-' + idx), data: spec.data };
+        });
+
+        const blocks = await loadBlocks(normalizedSpecs, {
+          comp: paramComp,
+          theme: data && data.theme,
+          db: db,
+          compConfig: null
+        });
+
+        if (blocks.length === 0) {
+          console.error('[stage] Failed to load any blocks for graphic:', graphic);
+          isRendering = false;
+          return;
+        }
+
+        // 4. Build layout or default append
+        const blocksById = {};
+        for (const entry of blocks) {
+          blocksById[entry.id] = entry;
+        }
+
+        // Prepare block data map
+        const dataMap = {};
+        for (const spec of normalizedSpecs) {
+          if (spec.data) {
+            dataMap[spec.id] = spec.data;
+          }
+        }
+
+        if (data && data.layout) {
+          const layoutEl = buildLayout(data.layout, blocksById);
+          if (layoutEl) {
+            contentEl.appendChild(layoutEl);
+          }
+        } else {
+          // Default: append blocks directly to content
+          for (const entry of blocks) {
+            contentEl.appendChild(entry.wrapper);
+          }
+        }
+
+        // 5. Render each block
+        for (const entry of blocks) {
+          const blockData = dataMap[entry.id] || entry.block.sampleData || {};
+          entry.block.render(entry.wrapper, blockData, {
+            comp: paramComp,
+            theme: data && data.theme,
+            db: db,
+            compConfig: null
+          });
+        }
+
+        // 6. Wait for ready
+        await waitForReady(blocks, 1000);
+
+        // 7. Play enter animations
+        playEnterAnimations(blocks, { type: 'fade-in', duration: 300 });
+
+        // Store current state
+        currentGraphicData = { graphic, data, blocks, skeletonEl };
+      } finally {
+        isRendering = false;
+      }
+    }
+
+    // --- dismissCurrentGraphic ---
+    async function dismissCurrentGraphic() {
+      if (!currentGraphicData) return;
+
+      const { blocks } = currentGraphicData;
+
+      // 1. Play exit animations
+      if (blocks && blocks.length > 0) {
+        await playExitAnimations(blocks, { type: 'fade-out', duration: 200 });
+      }
+
+      // 2. Destroy blocks
+      destroyBlocks();
+
+      // 3. Clear skeleton
+      clearSkeleton();
+
+      currentGraphicData = null;
+    }
+
+    // --- Firebase Listener (live mode) ---
+    function startFirebaseListener() {
+      if (!paramComp || paramPreview) return;
+
+      console.log('[stage] Starting Firebase listener for comp:', paramComp);
+
+      db.ref('competitions/' + paramComp + '/currentGraphic').on('value', async function(snapshot) {
+        const val = snapshot.val();
+
+        // Clear if null or not targeting stage renderer
+        if (!val || val.renderer !== 'stage') {
+          await dismissCurrentGraphic();
+          return;
+        }
+
+        // Dismiss current graphic before rendering new one
+        await dismissCurrentGraphic();
+
+        // Render the new graphic
+        await renderGraphic(val.graphic, val.data);
+      });
+    }
+
+    // --- Standalone Mode (one-shot render from URL params) ---
+    async function runStandaloneMode() {
+      if (paramPreview || !paramGraphic) return;
+
+      console.log('[stage] Running standalone mode for graphic:', paramGraphic);
+
+      // Fetch theme from competition config if comp is specified
+      let theme = null;
+      if (paramComp) {
+        try {
+          const configSnap = await db.ref('competitions/' + paramComp + '/config').once('value');
+          const config = configSnap.val();
+          if (config && config.meetTheme) {
+            const themeSnap = await db.ref('themes/' + config.meetTheme).once('value');
+            theme = themeSnap.val();
+          }
+        } catch (err) {
+          console.error('[stage] Failed to fetch competition theme:', err);
+        }
+      }
+
+      // Build a minimal graphic spec
+      // In standalone mode, the graphic param is expected to match a predefined spec
+      // For now, we'll treat it as a single block
+      await renderGraphic(paramGraphic, {
+        skeleton: paramSkeleton || 'full-screen-card',
+        theme: theme,
+        blocks: [{ type: paramGraphic, id: paramGraphic + '-0' }]
+      });
+    }
+
     // --- Preview Mode ---
     let previewBlocks = [];
     let previewSkeletonEl = null;
@@ -582,6 +764,24 @@
         playEnterAnimations(blocks, { type: 'fade-in', duration: 300 });
         // Create toolbar
         previewToolbar = createPreviewToolbar();
+      }
+    })();
+
+    // --- Initialize Live Mode or Standalone Mode ---
+    // (runs after preview mode check - preview mode returns early if active)
+    (async function() {
+      // Skip if preview mode is active
+      if (paramPreview) return;
+
+      // Standalone mode: render a specific graphic from URL param
+      if (paramGraphic) {
+        await runStandaloneMode();
+        return;
+      }
+
+      // Live mode: start Firebase listener
+      if (paramComp) {
+        startFirebaseListener();
       }
     })();
   </script>

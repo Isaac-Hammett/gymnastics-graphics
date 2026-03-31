@@ -333,7 +333,7 @@ if (renderer === 'stage') {
 
 ---
 
-### Task 7: Deploy to Production + Nginx Configuration — NOT STARTED
+### Task 7: Deploy to Production + Nginx Configuration — COMPLETE
 **Files:**
 - Production server: `/var/www/commentarygraphic/stage/` (deploy)
 - Production server: nginx config (modify — add `/stage/` location block)
@@ -409,3 +409,4 @@ Task 6 (integration) is independent of Tasks 1-5 and could be done earlier, but 
 - LEARNING: Animation engine is fully implemented in stage.html. `playEnterAnimation()` injects `@keyframes` dynamically and uses `animation` CSS property with `forwards` fill. `playExitAnimation()` returns a Promise that resolves on `animationend` (with fallback timeout). Cleanup of `<style data-animation>` tags happens automatically after animation completes.
 - LEARNING: Preview mode uses `previewBlocks` array to track blocks for Play/Dismiss toolbar. `replayEnterAnimations()` resets opacity to 0 then re-triggers after 50ms delay. `dismissPreview()` calls `playExitAnimations()` which fades blocks out but leaves skeleton visible.
 - LEARNING: Task 6 adds `renderer` field to all Firebase `set()` calls in GraphicsControl.jsx. The `clearGraphic` call intentionally has NO renderer field — both output.html and stage.html clear on `graphic: 'clear'`. The registry lookup uses `getGraphicById()` which must be imported from graphicsRegistry.js.
+- LEARNING: Task 7 deploy uses `sudo tee` instead of `sudo cat >` for nginx config edits because shell redirections don't inherit sudo privileges. Also, `/tmp` on Ubuntu has sticky bit issues preventing sed in-place edits.
