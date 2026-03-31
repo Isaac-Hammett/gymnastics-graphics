@@ -121,6 +121,7 @@ logo → --meet-logo-url                                logoSize → --meet-logo
 `_sample-block.js`:
 ```javascript
 window.BlockSampleBlock = {
+  themeVars: ['--meet-overlay-bg', '--meet-overlay-text', '--meet-border-color'],
   sampleData: {
     title: "Sample Block",
     items: ["Item 1", "Item 2", "Item 3", "Item 4", "Item 5"]
@@ -155,7 +156,7 @@ window.BlockSampleBlock = {
 
 ---
 
-### Task 3: Layout Engine — NOT STARTED
+### Task 3: Layout Engine — COMPLETE
 **Files:**
 - `stage/stage.html` (modify — add layout engine)
 
@@ -403,3 +404,5 @@ Task 6 (integration) is independent of Tasks 1-5 and could be done earlier, but 
 - LEARNING: Block CSS is loaded via `<link>` tags with `data-block` attribute, not `<style>` tags. Block JS via `<script>` tag injection. Both use relative paths from stage.html (e.g., `blocks/_sample-block.js`).
 - LEARNING: The preview hook is now an async IIFE at the bottom of stage.html. It handles skeleton-only, block-only, and full (skeleton+block) preview modes. Theme fetch only happens in full preview mode with `&theme=` param.
 - LEARNING: `renderBlocks()` immediately sets opacity:1 on block wrappers (no animation yet). Task 4 will replace this with proper enter animations.
+- LEARNING: Layout system uses `buildLayout(layoutSpec, blocksById)` which returns a DOM element (or DocumentFragment for rows). The preview hook uses `&layout=columns` to test column layouts. Block IDs are auto-generated as `{type}-{index}` (e.g., `_sample-block-0`, `_sample-block-1`) to support multiple blocks of the same type.
+- LEARNING: Always resize Playwright browser to 1920x1080 before taking verification screenshots — smaller viewport crops the 1920px-wide canvas.

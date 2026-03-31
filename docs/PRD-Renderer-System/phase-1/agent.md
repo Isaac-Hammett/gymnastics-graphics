@@ -41,7 +41,8 @@ Copy exactly from output.html line 9:
 
 - output.html does NOT use an IIFE — code runs directly in global scope inside a `<script>` block
 - stage.html should follow the same pattern: inline `<script>` in the HTML body, global scope variables
-- Blocks use window globals: `window.BlockHeaderBar = { render, destroy, ready, sampleData }`
+- Blocks use window globals: `window.BlockHeaderBar = { themeVars, render, destroy, ready, sampleData }`
+- **`themeVars` is required on every block** — an array of `--meet-*` CSS variable names the block's CSS uses. Establishes which theme variables a block depends on. Phase 4 build script validates `themeVars` against actual CSS usage.
 - Block lookup: `window['Block' + pascalCase(blockType)]`
 - **pascalCase conversion must handle both hyphens and underscores:** `_sample-block` → strip leading underscore → `sample-block` → `SampleBlock`
 
