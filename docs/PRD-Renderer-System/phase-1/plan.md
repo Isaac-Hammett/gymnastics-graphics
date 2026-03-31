@@ -248,7 +248,7 @@ Placeholder content for skeleton preview:
 
 ---
 
-### Task 5: Firebase Listener + Stage Routing — NOT STARTED
+### Task 5: Firebase Listener + Stage Routing — COMPLETE
 **Files:**
 - `stage/stage.html` (modify — add Firebase listener and renderGraphic/dismissCurrentGraphic orchestration)
 
@@ -292,7 +292,7 @@ db.ref(`competitions/${compId}/currentGraphic`).on('value', async (snapshot) => 
 
 ---
 
-### Task 6: Integration — output.html Renderer Check + GraphicsControl Renderer Field — NOT STARTED
+### Task 6: Integration — output.html Renderer Check + GraphicsControl Renderer Field — COMPLETE
 **Files:**
 - `output.html` (modify — add `renderer === 'stage'` check in currentGraphic listener)
 - `show-controller/src/components/GraphicsControl.jsx` (modify — add `renderer` field to all `set()` calls)
@@ -408,3 +408,4 @@ Task 6 (integration) is independent of Tasks 1-5 and could be done earlier, but 
 - LEARNING: Always resize Playwright browser to 1920x1080 before taking verification screenshots — smaller viewport crops the 1920px-wide canvas.
 - LEARNING: Animation engine is fully implemented in stage.html. `playEnterAnimation()` injects `@keyframes` dynamically and uses `animation` CSS property with `forwards` fill. `playExitAnimation()` returns a Promise that resolves on `animationend` (with fallback timeout). Cleanup of `<style data-animation>` tags happens automatically after animation completes.
 - LEARNING: Preview mode uses `previewBlocks` array to track blocks for Play/Dismiss toolbar. `replayEnterAnimations()` resets opacity to 0 then re-triggers after 50ms delay. `dismissPreview()` calls `playExitAnimations()` which fades blocks out but leaves skeleton visible.
+- LEARNING: Task 6 adds `renderer` field to all Firebase `set()` calls in GraphicsControl.jsx. The `clearGraphic` call intentionally has NO renderer field — both output.html and stage.html clear on `graphic: 'clear'`. The registry lookup uses `getGraphicById()` which must be imported from graphicsRegistry.js.
