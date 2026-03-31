@@ -118,3 +118,110 @@ after extracting the tarball on the server.
 ### Deploy — Nginx Config Location
 
 Must inspect the production server to find the nginx config file. Likely at `/etc/nginx/sites-available/commentarygraphic` or `/etc/nginx/conf.d/`. The location block for `/stage/` must be added alongside existing rules for output.html and overlays/.
+
+## Phase 2 Findings
+
+### Block Registration Pattern
+
+Blocks register on `window` using PascalCase: `window.BlockHeaderBar`, `window.BlockLeaderboardTable`, `window.BlockAthleteGrid`.
+
+The `pascalCase()` function in stage.html strips leading `_`, splits on `-`, capitalizes each part:
+- `header-bar` → `HeaderBar` → `window.BlockHeaderBar`
+- `leaderboard-table` → `LeaderboardTable` → `window.BlockLeaderboardTable`
+- `athlete-grid` → `AthleteGrid` → `window.BlockAthleteGrid`
+
+### Block CSS Wrapper Convention
+
+Each block's CSS is scoped under `.block-{type}`:
+- `.block-header-bar`
+- `.block-leaderboard-table`
+- `.block-athlete-grid`
+
+The wrapper div is created by `loadSingleBlock()` with `wrapper.className = 'block-' + type`.
+
+### Block Data Flow
+
+`render(container, data, context)` receives:
+- `container`: the wrapper div (`.block-{type}`)
+- `data`: block-specific data resolved by precedence: `dataMap[entry.id]` → `dataMap[entry.type]` → `entry.block.sampleData` → `{}`
+- `context`: `{ comp, theme, db, compConfig }` where `db` is `firebase.database()` instance
+
+### Firebase Paths for Phase 2 Blocks
+
+- **header-bar**: No Firebase reads. Data comes from spec.
+- **leaderboard-table**: Listens to `competitions/{comp}/{data.source}` if `data.source` is set. The intended path `scoring/leaderboard/{apparatus}` does NOT exist yet — Phase 3 creates it. The listener is harmless when path is empty.
+- **athlete-grid**: One-shot reads from `teamsDatabase/teams/{teamKey}/roster` and `teamsDatabase/headshots` via `context.db.ref().once('value')`.
+
+### Headshot Lookup — Use Full 5-Step Chain
+
+The roster-headshot-lookup spec documents a 5-step fallback chain that must be replicated exactly. The simplified 2-key lookup in the Phase 2 doc (`headshots[normalized] || headshots[name]`) will cause visible regressions because Firebase headshot keys are inconsistently normalized.
+
+Full chain:
+1. Direct lowercase: `name.toLowerCase().replace(/\s+/g, ' ').trim()`
+2. Fully normalized: accent stripping (ö→oe, é→e), suffix removal (Jr., Sr., I-V)
+3. Stripped special chars: `[^a-z\s]` removed
+4. First + Last name only (3+ parts)
+5. First + Middle initial + Last (3+ parts)
+
+### Leaderboard Column Variants
+
+Column visibility is controlled by `data.apparatus` and `data.gender`:
+- `isWomens = gender === 'womens'`
+- `isAA = apparatus === 'AA' || apparatus === 'COMBINED_AA'`
+- `showDiffExec = !isWomens && !isAA`
+- `showApparatus = !isAA`
+
+Men's events: 8 columns (#, Name, Team, Apparatus, Score, Diff, Exec, SB)
+Women's events: 5 columns (#, Name, Team, Apparatus, Score)
+All-Around: 4 columns (#, Name, Team, Score)
+
+### Leaderboard Score Formatting
+
+- `score.toFixed(3)` — always 3 decimal places
+- `diff.toFixed(2)` — 2 decimal places
+- `exec.toFixed(3)` — 3 decimal places
+- `font-variant-numeric: tabular-nums` on container for aligned columns
+
+### Athlete Grid Count Classes
+
+`_getCountClass(count)` mapping:
+- 1-6: `ag-count-{N}` (individual)
+- 7-8: `ag-count-8`
+- 9-10: `ag-count-10`
+- 11-12: `ag-count-12`
+- 13-15: `ag-count-15`
+- 16-20: `ag-count-20`
+- 21-25: `ag-count-25`
+- 26+: `ag-count-large`
+
+### Preview URL for Phase 2 Blocks
+
+Local: `http://localhost:8765/stage/stage.html?preview=full&skeleton=full-screen-card&block=header-bar,leaderboard-table`
+Production: `https://commentarygraphic.com/stage/stage.html?preview=full&skeleton=full-screen-card&block=header-bar,leaderboard-table`
+
+For roster: replace `leaderboard-table` with `athlete-grid`.
+
+### Deploy — No Nginx Changes Needed
+
+Phase 1 already configured the `/stage/` nginx location block. Phase 2 only adds files inside `stage/blocks/` — same deploy pattern (tarball + extract + chmod 644).
+
+### Key CSS Values to Match
+
+**Leaderboard (from output.html):**
+- Frame header: #d4d4d8 bg, 18px 40px padding, 42px/800wt title
+- Table header: #27272a bg, 16px 20px padding, #a1a1aa text, 600 weight
+- Rows: odd #18181b, even #0f0f10, 14px 20px padding
+- Score: 32px, 700 weight, right-aligned
+- Medals: 20px circles — gold #facc15, silver #d4d4d8, bronze #d97706
+- Stick bonus: 28px circle, #22c55e bg
+- Team logo: 36px, border-radius 4px, #27272a bg
+
+**Roster (from team-roster.html):**
+- Container: #18181b bg, 40px padding
+- Headshot: 120px default, circular, 3px border #52525b, object-position center 20%
+- Initials: gradient bg (#3f3f46 → #27272a), 36px font, 700 weight, #a1a1aa color
+- Name: 18px, 600 weight, uppercase, Inter font, ellipsis overflow
+
+### Block `ready()` Lifecycle
+
+`ready()` is called by `waitForReady()` inside `loadBlocks()` — this happens BEFORE `render()` is called. It also receives NO arguments (not even `container`). So `ready()` cannot inspect DOM elements created by `render()`. For blocks with no async setup (no Firebase listeners), just `return Promise.resolve()`. If a block needs to signal when async rendering is done (e.g., images loaded), it must manage that internally after `render()` is called — `ready()` is not the right place.

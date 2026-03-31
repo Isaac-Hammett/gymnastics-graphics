@@ -1,0 +1,41 @@
+.block-header-bar {
+  background: var(--header-bar-bg, var(--meet-header-bg, #d4d4d8));
+  padding: var(--header-bar-padding-v, 18px) var(--header-bar-padding-h, 40px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Background image support via ::before pseudo-element */
+.block-header-bar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: var(--header-bar-bg-image, none);
+  background-size: var(--header-bar-bg-image-fit, cover);
+  background-position: var(--header-bar-bg-image-position, center);
+  opacity: var(--header-bar-bg-image-opacity, 1);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.block-header-bar .hb-title {
+  font-size: var(--header-bar-title-font-size, 42px);
+  font-weight: var(--header-bar-title-font-weight, 800);
+  font-family: var(--header-bar-title-font-family, inherit);
+  color: var(--header-bar-text, var(--meet-header-text, #000));
+  text-transform: uppercase;
+  position: relative;
+  z-index: 1;
+}
+
+.block-header-bar .hb-logo {
+  width: var(--header-bar-logo-size, 80px);
+  height: var(--header-bar-logo-size, 80px);
+  object-fit: contain;
+  position: relative;
+  z-index: 1;
+}

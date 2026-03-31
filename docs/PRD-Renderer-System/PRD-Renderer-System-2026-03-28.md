@@ -1119,6 +1119,167 @@ Polling stops automatically when:
 
 ---
 
+## Block Catalog
+
+Every unique block needed to migrate all graphics from output.html/overlays to stage.html. This is the master checklist — when every block shows `done`, the renderer migration is code-complete.
+
+### How to verify a block
+
+Each block exports `sampleData` so it renders standalone without Firebase:
+
+```
+stage.html?preview=block&block={block-name}
+```
+
+Load the URL, take a screenshot, compare against the equivalent output.html/overlay graphic. The block is correct when they match visually.
+
+### Full-Screen Card Blocks
+
+| # | Block | Phase | Used By | Status | Verify URL |
+|---|-------|-------|---------|--------|------------|
+| 1 | `header-bar` | 2 | leaderboards (10), team-roster, sponsors-thanks, coaches, team-stats | ~~`not started`~~ — **FIXED 2026-03-31.** Created header-bar block with CSS variable cascade, background image support, optional logo. | `?preview=block&block=header-bar` |
+| 2 | `leaderboard-table` | 2 | leaderboard-vt/fx/ph/sr/pb/hb/ub/bb/aa, combined-aa | `not started` | `?preview=block&block=leaderboard-table` |
+| 3 | `athlete-grid` | 2 | team-roster | `not started` | `?preview=block&block=athlete-grid` |
+| 4 | `sponsor-grid` | future | sponsors-thanks | `not started` | `?preview=block&block=sponsor-grid` |
+| 5 | `stat-card` | future | team-stats (per-team) | `not started` | `?preview=block&block=stat-card` |
+| 6 | `coach-list` | future | team-coaches (per-team) | `not started` | `?preview=block&block=coach-list` |
+
+### Lower-Third Blocks
+
+| # | Block | Phase | Used By | Status | Verify URL |
+|---|-------|-------|---------|--------|------------|
+| 7 | `lower-third-bar` | future | event-bar, warm-up, replay | `not started` | `?preview=block&block=lower-third-bar` |
+| 8 | `athlete-spotlight-card` | future | athlete-spotlight, who-to-watch | `not started` | `?preview=block&block=athlete-spotlight-card` |
+
+### Full-Bleed Blocks
+
+| # | Block | Phase | Used By | Status | Verify URL |
+|---|-------|-------|---------|--------|------------|
+| 9 | `rotation-slate-layout` | future | rotation-slate, rotation-slate-auto | `not started` | `?preview=block&block=rotation-slate-layout` |
+| 10 | `stream-card` | future | stream-starting, stream-thanks | `not started` | `?preview=block&block=stream-card` |
+| 11 | `title-card` | future | who-to-watch-title, interview-card | `not started` | `?preview=block&block=title-card` |
+| 12 | `sponsor-cycle` | future | sponsors-cycle | `not started` | `?preview=block&block=sponsor-cycle` |
+
+### Video Frame Blocks
+
+| # | Block | Phase | Used By | Status | Verify URL |
+|---|-------|-------|---------|--------|------------|
+| 13 | `frame-layout` | future | frame-quad, frame-tri-*, frame-dual, frame-single, frame-team-header | `not started` | `?preview=block&block=frame-layout` |
+| 14 | `event-frame-title` | future | floor, pommel, rings, vault, pbars, hbar, ubars, beam, allaround, final, order, lineups, summary | `not started` | `?preview=block&block=event-frame-title` |
+
+### Standalone / Special Blocks
+
+| # | Block | Phase | Used By | Status | Verify URL |
+|---|-------|-------|---------|--------|------------|
+| 15 | `dual-logo` | future | logos | `not started` | `?preview=block&block=dual-logo` |
+| 16 | `event-summary-table` | future | summary-r1 through r6, summary-fx/ph/sr/vt/pb/hb/ub/bb | `not started` | `?preview=block&block=event-summary-table` |
+| 17 | `event-calendar-grid` | future | event-calendar | `not started` | `?preview=block&block=event-calendar-grid` |
+| 18 | `sponsor-bug` | future | sponsors-bug | `not started` | `?preview=block&block=sponsor-bug` |
+| 19 | `hosts-card` | future | hosts | `not started` | `?preview=block&block=hosts-card` |
+
+**Total: 19 blocks to cover all ~90 graphics.**
+
+> **How to read this table:** `Phase` = when the block is planned to be built. `Status` = `not started` → `in progress` → `done`. `Used By` = which graphics depend on this block. A block is "done" when its preview URL renders correctly and matches the legacy graphic visually.
+
+> **Maintenance:** These tables are manually updated during Phases 2-3. Starting in Phase 4, the build script (`buildGraphicsRegistry.js`) auto-generates migration status by scanning `stage/blocks/` and `stage/graphics/` — see Phase 4, Task 5.
+
+---
+
+## Migration Tracker
+
+Maps every graphic in the system to its target skeleton, required blocks, and migration status. This is how you check overall progress at a glance.
+
+**Status key:** `legacy` = still on output.html/overlays | `in progress` = block(s) being built | `stage` = fully on stage.html | `standalone` = excluded from skeleton system
+
+### Summary
+
+| Category | Total Graphics | Migrated | Remaining |
+|----------|---------------|----------|-----------|
+| Full-Screen Cards | 14 | 0 | 14 |
+| Lower-Thirds | 7 + per-team | 0 | 7+ |
+| Full-Bleed | 6 | 0 | 6 |
+| Video Frames | 7 + 13 event frames | 0 | 20 |
+| Standalone | 5 + 14 event summaries | 0 | 19 |
+| Playout / Clip | 4 | 0 | 4 |
+| **Total** | **~70 unique + per-team** | **0** | **all** |
+
+### Full-Screen Cards → `full-screen-card` skeleton
+
+| Graphic | Blocks Needed | Blocks Ready | Status |
+|---------|--------------|--------------|--------|
+| `leaderboard-vt` | header-bar, leaderboard-table | 0/2 | legacy |
+| `leaderboard-fx` | header-bar, leaderboard-table | 0/2 | legacy |
+| `leaderboard-ph` | header-bar, leaderboard-table | 0/2 | legacy |
+| `leaderboard-sr` | header-bar, leaderboard-table | 0/2 | legacy |
+| `leaderboard-pb` | header-bar, leaderboard-table | 0/2 | legacy |
+| `leaderboard-hb` | header-bar, leaderboard-table | 0/2 | legacy |
+| `leaderboard-ub` | header-bar, leaderboard-table | 0/2 | legacy |
+| `leaderboard-bb` | header-bar, leaderboard-table | 0/2 | legacy |
+| `leaderboard-aa` | header-bar, leaderboard-table | 0/2 | legacy |
+| `combined-aa-leaderboard` | header-bar, leaderboard-table | 0/2 | legacy |
+| `team-roster` (per-team) | header-bar, athlete-grid | 0/2 | legacy |
+| `sponsors-thanks` | header-bar, sponsor-grid | 0/2 | legacy |
+| `team-stats` (per-team) | header-bar, stat-card | 0/2 | legacy |
+| `team-coaches` (per-team) | header-bar, coach-list | 0/2 | legacy |
+
+### Lower-Thirds → `lower-third` skeleton (future)
+
+| Graphic | Blocks Needed | Blocks Ready | Status |
+|---------|--------------|--------------|--------|
+| `event-bar` | lower-third-bar | 0/1 | legacy |
+| `warm-up` | lower-third-bar | 0/1 | legacy |
+| `replay` | lower-third-bar | 0/1 | legacy |
+| `athlete-spotlight` (per-team) | athlete-spotlight-card | 0/1 | legacy |
+| `who-to-watch` (per-team) | athlete-spotlight-card | 0/1 | legacy |
+| `hosts` | hosts-card | 0/1 | legacy |
+
+### Full-Bleed → `full-bleed` skeleton (future)
+
+| Graphic | Blocks Needed | Blocks Ready | Status |
+|---------|--------------|--------------|--------|
+| `rotation-slate` | rotation-slate-layout | 0/1 | legacy |
+| `rotation-slate-auto` | rotation-slate-layout | 0/1 | legacy |
+| `stream-starting` | stream-card | 0/1 | legacy |
+| `stream-thanks` | stream-card | 0/1 | legacy |
+| `who-to-watch-title` (per-team) | title-card | 0/1 | legacy |
+| `sponsors-cycle` | sponsor-cycle | 0/1 | legacy |
+
+### Video Frames → `video-frame` skeleton (future)
+
+| Graphic | Blocks Needed | Blocks Ready | Status |
+|---------|--------------|--------------|--------|
+| `frame-quad` | frame-layout | 0/1 | legacy |
+| `frame-tri-center` | frame-layout | 0/1 | legacy |
+| `frame-tri-wide` | frame-layout | 0/1 | legacy |
+| `frame-tri-wide-top` | frame-layout | 0/1 | legacy |
+| `frame-team-header` | frame-layout | 0/1 | legacy |
+| `frame-single` | frame-layout | 0/1 | legacy |
+| `frame-dual` | frame-layout | 0/1 | legacy |
+| `floor` through `summary` (13) | event-frame-title | 0/1 each | legacy |
+
+### Standalone (no skeleton)
+
+| Graphic | Blocks Needed | Blocks Ready | Status |
+|---------|--------------|--------------|--------|
+| `logos` | dual-logo | 0/1 | legacy |
+| `event-calendar` | event-calendar-grid | 0/1 | legacy |
+| `sponsors-bug` | sponsor-bug | 0/1 | legacy |
+| `summary-r1` through `summary-r6` | event-summary-table | 0/1 each | legacy |
+| `summary-fx` through `summary-bb` (8) | event-summary-table | 0/1 each | legacy |
+
+### Playout / Clip (excluded from migration)
+
+These graphics are controlled by the playout engine and rendered inline in output.html. They will be migrated separately if/when the playout engine is refactored.
+
+| Graphic | Status |
+|---------|--------|
+| `clip-playback` | excluded |
+| `moment-replay` | excluded |
+| `live-camera` | excluded |
+| `now-competing` | excluded |
+
+---
+
 ## Phase Overview
 
 Implementation is split into phases, each with its own detailed document.
