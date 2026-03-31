@@ -105,17 +105,221 @@
       currentSkeletonName = null;
     }
 
-    // --- Temporary Preview Hook (Task 1) ---
-    if (paramPreview === 'skeleton' && paramSkeleton) {
-      loadSkeleton(paramSkeleton).then(el => {
+    // --- Block Loader ---
+    let activeBlocks = [];
+
+    function pascalCase(type) {
+      // Strip leading underscore, split on hyphens, capitalize each part
+      const stripped = type.replace(/^_/, '');
+      return stripped.split('-').map(part => part.charAt(0).toUpperCase() + part.slice(1)).join('');
+    }
+
+    async function loadBlocks(blockSpecs, context) {
+      const results = [];
+
+      // Fetch CSS and JS for each block in parallel
+      const loadPromises = blockSpecs.map(spec => {
+        const type = typeof spec === 'string' ? spec : spec.type;
+        const id = typeof spec === 'string' ? spec : (spec.id || spec.type);
+        return loadSingleBlock(type, id, context);
+      });
+
+      const loaded = await Promise.all(loadPromises);
+      for (const entry of loaded) {
+        if (entry) results.push(entry);
+      }
+
+      // Wait for ready (max 1 second)
+      if (results.length > 0) {
+        await waitForReady(results, 1000);
+      }
+
+      activeBlocks = results;
+      return results;
+    }
+
+    async function loadSingleBlock(type, id, context) {
+      try {
+        // Load CSS via <link> tag
+        const linkEl = document.createElement('link');
+        linkEl.rel = 'stylesheet';
+        linkEl.href = 'blocks/' + type + '.css';
+        linkEl.setAttribute('data-block', type);
+        document.head.appendChild(linkEl);
+
+        // Load JS via <script> tag
+        await new Promise((resolve, reject) => {
+          const scriptEl = document.createElement('script');
+          scriptEl.src = 'blocks/' + type + '.js';
+          scriptEl.onload = resolve;
+          scriptEl.onerror = () => reject(new Error('Failed to load block JS: ' + type));
+          document.body.appendChild(scriptEl);
+        });
+
+        // Look up block constructor
+        const globalName = 'Block' + pascalCase(type);
+        const block = window[globalName];
+        if (!block) {
+          throw new Error('Block global not found: window.' + globalName);
+        }
+
+        // Create wrapper element
+        const wrapper = document.createElement('div');
+        wrapper.className = 'block-' + type;
+        wrapper.style.opacity = '0';
+        wrapper.style.pointerEvents = 'none';
+
+        return { type, id, block, wrapper };
+      } catch (err) {
+        console.error('[stage] Block load error:', type, err);
+        // Report error to Firebase if comp exists
+        if (paramComp) {
+          try {
+            const errorRef = db.ref('competitions/' + paramComp + '/production/stageErrors/' + Date.now());
+            errorRef.set({
+              type: 'block_load_error',
+              graphic: paramGraphic || 'preview',
+              block: type,
+              message: err.message,
+              url: window.location.href,
+              timestamp: new Date().toISOString()
+            });
+          } catch (fbErr) {
+            console.error('[stage] Failed to report error to Firebase:', fbErr);
+          }
+        }
+        return null;
+      }
+    }
+
+    function renderBlocks(blocks, container, dataMap) {
+      for (const entry of blocks) {
+        const data = dataMap[entry.id] || dataMap[entry.type] || entry.block.sampleData || {};
+        container.appendChild(entry.wrapper);
+        entry.block.render(entry.wrapper, data, {
+          comp: paramComp,
+          theme: null,
+          db: db,
+          compConfig: null
+        });
+        // Make visible immediately in preview (animations come in Task 4)
+        entry.wrapper.style.opacity = '1';
+        entry.wrapper.style.pointerEvents = 'auto';
+      }
+    }
+
+    async function waitForReady(blocks, timeout) {
+      const readyPromises = blocks.map(entry => {
+        if (entry.block.ready) return entry.block.ready();
+        return Promise.resolve();
+      });
+      await Promise.race([
+        Promise.all(readyPromises),
+        new Promise(resolve => setTimeout(resolve, timeout))
+      ]);
+    }
+
+    function destroyBlocks() {
+      for (const entry of activeBlocks) {
+        if (entry.block.destroy) entry.block.destroy();
+        if (entry.wrapper.parentNode) entry.wrapper.parentNode.removeChild(entry.wrapper);
+        // Remove CSS
+        const linkEl = document.querySelector('link[data-block="' + entry.type + '"]');
+        if (linkEl) linkEl.remove();
+      }
+      activeBlocks = [];
+    }
+
+    // --- Theme Application ---
+    function applyTheme(skeletonElement, theme) {
+      if (!theme || !skeletonElement) return;
+
+      const colorMap = {
+        headerBg: '--meet-header-bg',
+        contentBg: '--meet-content-bg',
+        headerText: '--meet-header-text',
+        overlayBg: '--meet-overlay-bg',
+        overlayText: '--meet-overlay-text',
+        borderColor: '--meet-border-color',
+        badgeBg: '--meet-badge-bg',
+        badgeText: '--meet-badge-text'
+      };
+
+      const imageMap = {
+        headerBgImage: '--meet-header-bg-image',
+        headerBgImageFit: '--meet-header-bg-image-fit',
+        headerBgImagePosition: '--meet-header-bg-image-position',
+        headerBgImageOpacity: '--meet-header-bg-image-opacity',
+        bodyBgImage: '--meet-body-bg-image',
+        bodyTexture: '--meet-body-texture',
+        bodyTextureOpacity: '--meet-body-texture-opacity',
+        bodyTextureBlend: '--meet-body-texture-blend',
+        logo: '--meet-logo-url',
+        logoSize: '--meet-logo-size'
+      };
+
+      for (const [key, cssVar] of Object.entries(colorMap)) {
+        if (theme[key]) skeletonElement.style.setProperty(cssVar, theme[key]);
+      }
+      for (const [key, cssVar] of Object.entries(imageMap)) {
+        if (theme[key]) skeletonElement.style.setProperty(cssVar, theme[key]);
+      }
+    }
+
+    // --- Temporary Preview Hook (Task 2) ---
+    (async function() {
+      if (paramPreview === 'skeleton' && paramSkeleton) {
+        // Skeleton-only preview
+        const el = await loadSkeleton(paramSkeleton);
         if (el) {
           const content = el.querySelector('.skeleton-content');
           if (content) {
             content.innerHTML = '<div style="background: #3f3f46; flex: 1; display: flex; align-items: center; justify-content: center;"><span style="color: #71717a; font-size: 24px;">skeleton-content placeholder</span></div>';
           }
         }
-      });
-    }
+      } else if (paramPreview === 'block' && paramBlock) {
+        // Block-only preview (no skeleton)
+        const blockTypes = paramBlock.split(',').map(b => b.trim()).filter(Boolean);
+        const blockSpecs = blockTypes.map(type => ({ type, id: type }));
+        const blocks = await loadBlocks(blockSpecs, {});
+        if (blocks.length > 0) {
+          const mount = document.getElementById('skeleton-mount');
+          const dataMap = {};
+          for (const entry of blocks) {
+            dataMap[entry.type] = entry.block.sampleData || {};
+          }
+          renderBlocks(blocks, mount, dataMap);
+        }
+      } else if (paramPreview === 'full' && paramSkeleton && paramBlock) {
+        // Full preview: skeleton + blocks
+        const el = await loadSkeleton(paramSkeleton);
+        if (!el) return;
+        const content = el.querySelector('.skeleton-content');
+        if (!content) return;
+
+        // Fetch theme if specified
+        if (paramTheme) {
+          try {
+            const snap = await db.ref('themes/' + paramTheme).once('value');
+            const themeData = snap.val();
+            if (themeData) applyTheme(el, themeData);
+          } catch (err) {
+            console.error('[stage] Theme fetch error:', err);
+          }
+        }
+
+        const blockTypes = paramBlock.split(',').map(b => b.trim()).filter(Boolean);
+        const blockSpecs = blockTypes.map(type => ({ type, id: type }));
+        const blocks = await loadBlocks(blockSpecs, {});
+        if (blocks.length > 0) {
+          const dataMap = {};
+          for (const entry of blocks) {
+            dataMap[entry.type] = entry.block.sampleData || {};
+          }
+          renderBlocks(blocks, content, dataMap);
+        }
+      }
+    })();
   </script>
 </body>
 </html>

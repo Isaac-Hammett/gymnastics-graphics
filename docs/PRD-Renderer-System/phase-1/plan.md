@@ -73,7 +73,7 @@
 
 ---
 
-### Task 2: Block Loader + Sample Block + Theme Application — IN PROGRESS
+### Task 2: Block Loader + Sample Block + Theme Application — COMPLETE
 **Files:**
 - `stage/stage.html` (modify — add block loader, theme application)
 - `stage/blocks/_sample-block.js` (create)
@@ -400,3 +400,6 @@ Task 6 (integration) is independent of Tasks 1-5 and could be done earlier, but 
 - LEARNING: Local HTTP server needed for Playwright — `npx http-server -p 8765 --cors -c-1 &` from project root, then use `http://localhost:8765/stage/stage.html?...` URLs. File protocol is blocked.
 - LEARNING: favicon.ico 404 always shows in console errors — ignore it, it's not a real error.
 - LEARNING: The skeleton placeholder content in Task 1's temp hook uses a dark gray (#3f3f46) background. This will be replaced by proper preview mode in Task 4.
+- LEARNING: Block CSS is loaded via `<link>` tags with `data-block` attribute, not `<style>` tags. Block JS via `<script>` tag injection. Both use relative paths from stage.html (e.g., `blocks/_sample-block.js`).
+- LEARNING: The preview hook is now an async IIFE at the bottom of stage.html. It handles skeleton-only, block-only, and full (skeleton+block) preview modes. Theme fetch only happens in full preview mode with `&theme=` param.
+- LEARNING: `renderBlocks()` immediately sets opacity:1 on block wrappers (no animation yet). Task 4 will replace this with proper enter animations.
