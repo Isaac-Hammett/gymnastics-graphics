@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1920, height=1080">
+  <title>Stage Renderer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Inter+Tight:wght@400;500;600;700;800;900&family=Roboto+Mono:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: transparent;
+      font-family: 'Inter', sans-serif;
+      transform-origin: top left;
+    }
+    #canvas {
+      width: 1920px;
+      height: 1080px;
+      position: relative;
+    }
+  </style>
+</head>
+<body>
+  <div id="canvas">
+    <div id="skeleton-mount"></div>
+  </div>
+
+  <script>
+    // --- Firebase Init ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyCh0aZUvKl6Qvqsva3hvOgJJlleP1OwcTY",
+      authDomain: "gymnastics-graphics.firebaseapp.com",
+      databaseURL: "https://gymnastics-graphics-default-rtdb.firebaseio.com",
+      projectId: "gymnastics-graphics",
+      storageBucket: "gymnastics-graphics.firebasestorage.app",
+      messagingSenderId: "702072609550",
+      appId: "1:702072609550:web:ac74a811186d3ff45b955f"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // --- URL Param Parsing ---
+    const urlParams = new URLSearchParams(window.location.search);
+    const paramComp = urlParams.get('comp');
+    const paramPreview = urlParams.get('preview');
+    const paramSkeleton = urlParams.get('skeleton');
+    const paramBlock = urlParams.get('block');
+    const paramTheme = urlParams.get('theme');
+    const paramGraphic = urlParams.get('graphic');
+
+    // --- Skeleton Loader ---
+    let currentSkeletonName = null;
+
+    async function loadSkeleton(name) {
+      clearSkeleton();
+      try {
+        const [htmlRes, cssRes] = await Promise.all([
+          fetch('skeletons/' + name + '.html'),
+          fetch('skeletons/' + name + '.css')
+        ]);
+        if (!htmlRes.ok || !cssRes.ok) {
+          console.error('[stage] Skeleton not found:', name);
+          return null;
+        }
+        const [html, css] = await Promise.all([htmlRes.text(), cssRes.text()]);
+
+        // Inject CSS
+        const styleEl = document.createElement('style');
+        styleEl.setAttribute('data-skeleton', name);
+        styleEl.textContent = css;
+        document.head.appendChild(styleEl);
+
+        // Inject HTML
+        const mount = document.getElementById('skeleton-mount');
+        mount.innerHTML = html;
+
+        // Validate
+        const content = mount.querySelector('.skeleton-content');
+        if (!content) {
+          console.error('[stage] Skeleton missing .skeleton-content:', name);
+          clearSkeleton();
+          return null;
+        }
+
+        currentSkeletonName = name;
+        return mount.firstElementChild;
+      } catch (err) {
+        console.error('[stage] Skeleton load error:', name, err);
+        return null;
+      }
+    }
+
+    function clearSkeleton() {
+      if (currentSkeletonName) {
+        const styleEl = document.querySelector('style[data-skeleton="' + currentSkeletonName + '"]');
+        if (styleEl) styleEl.remove();
+      }
+      document.getElementById('skeleton-mount').innerHTML = '';
+      currentSkeletonName = null;
+    }
+
+    // --- Temporary Preview Hook (Task 1) ---
+    if (paramPreview === 'skeleton' && paramSkeleton) {
+      loadSkeleton(paramSkeleton).then(el => {
+        if (el) {
+          const content = el.querySelector('.skeleton-content');
+          if (content) {
+            content.innerHTML = '<div style="background: #3f3f46; flex: 1; display: flex; align-items: center; justify-content: center;"><span style="color: #71717a; font-size: 24px;">skeleton-content placeholder</span></div>';
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>

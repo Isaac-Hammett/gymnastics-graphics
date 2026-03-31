@@ -1,0 +1,20 @@
+.skeleton-full-screen-card {
+  position: absolute;
+  top: var(--full-screen-card-top, 50px);
+  left: var(--full-screen-card-left, 70px);
+  right: var(--full-screen-card-right, 70px);
+  bottom: var(--full-screen-card-bottom, 50px);
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--full-screen-card-radius, 12px);
+  overflow: hidden;
+  box-shadow: var(--full-screen-card-shadow, 0 8px 32px rgba(0,0,0,0.3));
+  background: var(--full-screen-card-bg, transparent);
+}
+
+.skeleton-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
