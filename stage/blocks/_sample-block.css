@@ -1,0 +1,4 @@
+.block-_sample-block { padding: 40px; background: var(--meet-overlay-bg, #18181b); flex: 1; }
+.block-_sample-block .sample-title { font-size: 32px; font-weight: 700; color: var(--meet-overlay-text, #fff); margin-bottom: 20px; }
+.block-_sample-block .sample-list { list-style: none; color: var(--meet-overlay-text, #d4d4d8); font-size: 24px; }
+.block-_sample-block .sample-list li { padding: 12px 0; border-bottom: 1px solid var(--meet-border-color, #3f3f46); }
