@@ -4,7 +4,7 @@ import { db, ref, set, get, onValue, push, remove } from '../lib/firebase';
 import { PhotoIcon, XMarkIcon, ClipboardDocumentIcon, CheckIcon, Cog6ToothIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/solid';
 import useEventConfig from '../hooks/useEventConfig';
 import useTeamsDatabase from '../hooks/useTeamsDatabase';
-import { getGraphicsForCompetition, getGraphicsByCategory } from '../lib/graphicsRegistry';
+import { getGraphicsForCompetition, getGraphicsByCategory, getGraphicById } from '../lib/graphicsRegistry';
 
 // Category to section mapping for display
 const CATEGORY_TO_SECTION = {
@@ -63,7 +63,10 @@ const teamCounts = {
   'mens-quad': 4, 'womens-quad': 4,
   'mens-5': 5, 'womens-5': 5,
   'mens-6': 6, 'womens-6': 6,
-  'womens-7': 7
+  'womens-7': 7,
+  'womens-8': 8,
+  'womens-9': 9,
+  'womens-10': 10
 };
 
 // Available themes for Event Summary
@@ -129,6 +132,7 @@ export default function GraphicsControl({ competitionId }) {
   const [config, setConfig] = useState(null);
   const [copied, setCopied] = useState(false);
   const [copiedTheme, setCopiedTheme] = useState(false);
+  const [copiedClip, setCopiedClip] = useState(false);
   const [summaryTheme, setSummaryTheme] = useState('default');
   const [liveAthletes, setLiveAthletes] = useState([]); // Athletes currently competing - now read from Firebase
   const [scoreBugPolling, setScoreBugPolling] = useState(false); // Whether scoreBug overlay is polling
@@ -307,6 +311,7 @@ export default function GraphicsControl({ competitionId }) {
     set(ref(db, `competitions/${compId}/currentGraphic`), {
       graphic: 'custom',
       graphicId: `custom-${customId}`,
+      renderer: 'output',
       data: {
         customUrl: customGraphic.url,
         customLabel: customGraphic.label,
@@ -319,12 +324,14 @@ export default function GraphicsControl({ competitionId }) {
     if (!compId || !config) return;
 
     const data = {
+      compType: config.compType || '',
       eventName: config.eventName || '',
       meetDate: config.meetDate || '',
       venue: config.venue || '',
       location: config.location || '',
       hosts: config.hosts || '',
       virtiusSessionId: config.virtiusSessionId || '',
+      meetTheme: config.meetTheme || '',
       // Team 1
       team1Name: config.team1Name || '',
       team1Logo: config.team1Logo || '',
@@ -374,6 +381,27 @@ export default function GraphicsControl({ competitionId }) {
       team7High: config.team7High || '',
       team7Con: config.team7Con || '',
       team7Coaches: config.team7Coaches || '',
+      // Team 8
+      team8Name: config.team8Name || '',
+      team8Logo: config.team8Logo || '',
+      team8Ave: config.team8Ave || '',
+      team8High: config.team8High || '',
+      team8Con: config.team8Con || '',
+      team8Coaches: config.team8Coaches || '',
+      // Team 9
+      team9Name: config.team9Name || '',
+      team9Logo: config.team9Logo || '',
+      team9Ave: config.team9Ave || '',
+      team9High: config.team9High || '',
+      team9Con: config.team9Con || '',
+      team9Coaches: config.team9Coaches || '',
+      // Team 10
+      team10Name: config.team10Name || '',
+      team10Logo: config.team10Logo || '',
+      team10Ave: config.team10Ave || '',
+      team10High: config.team10High || '',
+      team10Con: config.team10Con || '',
+      team10Coaches: config.team10Coaches || '',
     };
 
     if (frameTitle) {
@@ -461,9 +489,14 @@ export default function GraphicsControl({ competitionId }) {
     // Include graphicId in data for renderers that need it
     data.graphicId = graphicId;
 
+    // Look up renderer from registry (defaults to 'output' if not found or not 'stage')
+    const registryEntry = getGraphicById(graphicId);
+    const firebaseRenderer = registryEntry && registryEntry.renderer === 'stage' ? 'stage' : 'output';
+
     set(ref(db, `competitions/${compId}/currentGraphic`), {
       graphic: graphicType,
       graphicId: graphicId, // Store the specific button ID for highlighting
+      renderer: firebaseRenderer,
       data: data,
       timestamp: Date.now()
     });
@@ -484,6 +517,7 @@ export default function GraphicsControl({ competitionId }) {
     set(ref(db, `competitions/${compId}/currentGraphic`), {
       graphic: 'rotation-slate',
       graphicId: `rotation-slate-r${rotation}`,
+      renderer: 'output',
       data: data,
       timestamp: Date.now()
     });
@@ -496,6 +530,7 @@ export default function GraphicsControl({ competitionId }) {
     set(ref(db, `competitions/${compId}/currentGraphic`), {
       graphic: 'rotation-slate-auto',
       graphicId: 'rotation-slate-auto',
+      renderer: 'output',
       data: {
         compId: compId,
         layout: slateLayout || 'classic',
@@ -555,6 +590,7 @@ export default function GraphicsControl({ competitionId }) {
     set(ref(db, `competitions/${compId}/currentGraphic`), {
       graphic: 'event-summary',
       graphicId: graphicId,
+      renderer: 'output',
       data: data,
       timestamp: Date.now()
     });
@@ -563,6 +599,7 @@ export default function GraphicsControl({ competitionId }) {
   const clearGraphic = () => {
     if (!compId) return;
 
+    // Note: clearGraphic does NOT include renderer field — both engines clear on graphic: 'clear'
     set(ref(db, `competitions/${compId}/currentGraphic`), {
       graphic: 'clear',
       data: {},
@@ -588,6 +625,7 @@ export default function GraphicsControl({ competitionId }) {
     set(ref(db, `competitions/${compId}/currentGraphic`), {
       graphic: 'now-competing',
       graphicId: `now-competing-${athlete.id}`,
+      renderer: 'output',
       data: {
         athleteName: athlete.name,
         athleteTeam: athlete.team,
@@ -612,12 +650,20 @@ export default function GraphicsControl({ competitionId }) {
   };
 
   const themeOutputUrl = compId && config?.meetTheme ? `${OUTPUT_BASE_URL}?comp=${compId}&meetTheme=${config.meetTheme}` : '';
+  const clipOutputUrl = compId ? `${OUTPUT_BASE_URL}?comp=${compId}&mode=clip${config?.meetTheme ? `&meetTheme=${config.meetTheme}` : ''}` : '';
 
   const copyThemeUrl = () => {
     if (!themeOutputUrl) return;
     navigator.clipboard.writeText(themeOutputUrl);
     setCopiedTheme(true);
     setTimeout(() => setCopiedTheme(false), 2000);
+  };
+
+  const copyClipUrl = () => {
+    if (!clipOutputUrl) return;
+    navigator.clipboard.writeText(clipOutputUrl);
+    setCopiedClip(true);
+    setTimeout(() => setCopiedClip(false), 2000);
   };
 
   return (
@@ -679,6 +725,26 @@ export default function GraphicsControl({ competitionId }) {
               )}
             </button>
           )}
+          <button
+            onClick={copyClipUrl}
+            className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              copiedClip
+                ? 'bg-green-600 text-white'
+                : 'bg-cyan-700 hover:bg-cyan-600 text-zinc-100'
+            }`}
+          >
+            {copiedClip ? (
+              <>
+                <CheckIcon className="w-4 h-4" />
+                Copied!
+              </>
+            ) : (
+              <>
+                <ClipboardDocumentIcon className="w-4 h-4" />
+                Copy Clip URL
+              </>
+            )}
+          </button>
           <a
             href={localOutputUrl}
             target="_blank"
