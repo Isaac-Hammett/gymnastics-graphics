@@ -188,7 +188,7 @@ Layout CSS (in stage.html inline styles):
 
 ---
 
-### Task 4: Animation Engine + Preview Mode — NOT STARTED
+### Task 4: Animation Engine + Preview Mode — COMPLETE
 **Files:**
 - `stage/stage.html` (modify — add animation engine + replace temp verification hooks with proper preview mode)
 
@@ -406,3 +406,5 @@ Task 6 (integration) is independent of Tasks 1-5 and could be done earlier, but 
 - LEARNING: `renderBlocks()` immediately sets opacity:1 on block wrappers (no animation yet). Task 4 will replace this with proper enter animations.
 - LEARNING: Layout system uses `buildLayout(layoutSpec, blocksById)` which returns a DOM element (or DocumentFragment for rows). The preview hook uses `&layout=columns` to test column layouts. Block IDs are auto-generated as `{type}-{index}` (e.g., `_sample-block-0`, `_sample-block-1`) to support multiple blocks of the same type.
 - LEARNING: Always resize Playwright browser to 1920x1080 before taking verification screenshots — smaller viewport crops the 1920px-wide canvas.
+- LEARNING: Animation engine is fully implemented in stage.html. `playEnterAnimation()` injects `@keyframes` dynamically and uses `animation` CSS property with `forwards` fill. `playExitAnimation()` returns a Promise that resolves on `animationend` (with fallback timeout). Cleanup of `<style data-animation>` tags happens automatically after animation completes.
+- LEARNING: Preview mode uses `previewBlocks` array to track blocks for Play/Dismiss toolbar. `replayEnterAnimations()` resets opacity to 0 then re-triggers after 50ms delay. `dismissPreview()` calls `playExitAnimations()` which fades blocks out but leaves skeleton visible.
