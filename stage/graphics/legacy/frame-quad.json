@@ -2,7 +2,7 @@
   "id": "frame-quad",
   "label": "Quad View",
   "category": "video-frames",
-  "subcategory": "camera-layouts",
+  "subcategory": "layouts",
   "renderer": "overlay",
   "file": "frame-quad.html",
   "transparent": true,

@@ -2,7 +2,7 @@
   "id": "frame-tri-wide",
   "label": "Tri Wide",
   "category": "video-frames",
-  "subcategory": "camera-layouts",
+  "subcategory": "layouts",
   "renderer": "overlay",
   "file": "frame-tri-wide.html",
   "transparent": true,

@@ -2,7 +2,7 @@
   "id": "frame-team-header",
   "label": "Team Header Dual",
   "category": "video-frames",
-  "subcategory": "camera-layouts",
+  "subcategory": "layouts",
   "renderer": "overlay",
   "file": "frame-team-header.html",
   "transparent": true,

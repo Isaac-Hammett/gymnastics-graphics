@@ -14,6 +14,7 @@
     "subcategories": {
       "event-info": "Event Info",
       "team-stats": "Team Stats",
+      "coaches": "Coaches",
       "spotlight": "Spotlight"
     }
   },
@@ -30,7 +31,7 @@
     "label": "Video Frames",
     "order": 4,
     "subcategories": {
-      "camera-layouts": "Camera Layouts",
+      "layouts": "Layouts",
       "apparatus": "Apparatus"
     }
   },

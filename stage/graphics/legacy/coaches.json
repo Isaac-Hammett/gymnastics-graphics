@@ -3,7 +3,7 @@
   "label": "Team Coaches",
   "labelTemplate": "{teamName} Coaches",
   "category": "lower-thirds",
-  "subcategory": "team-stats",
+  "subcategory": "coaches",
   "renderer": "overlay",
   "file": "coaches.html",
   "transparent": true,
