@@ -5,6 +5,7 @@ import { PhotoIcon, XMarkIcon, ClipboardDocumentIcon, CheckIcon, Cog6ToothIcon, 
 import useEventConfig from '../hooks/useEventConfig';
 import useTeamsDatabase from '../hooks/useTeamsDatabase';
 import { getGraphicsForCompetition, getGraphicsByCategory, getGraphicById } from '../lib/graphicsRegistry';
+import { resolveTheme } from '../lib/themeResolver';
 
 // Category to section mapping for display
 const CATEGORY_TO_SECTION = {
@@ -493,13 +494,31 @@ export default function GraphicsControl({ competitionId }) {
     const registryEntry = getGraphicById(graphicId);
     const firebaseRenderer = registryEntry && registryEntry.renderer === 'stage' ? 'stage' : 'output';
 
-    set(ref(db, `competitions/${compId}/currentGraphic`), {
+    // Build the currentGraphic payload
+    const graphicPayload = {
       graphic: graphicType,
       graphicId: graphicId, // Store the specific button ID for highlighting
       renderer: firebaseRenderer,
       data: data,
       timestamp: Date.now()
-    });
+    };
+
+    // For stage renderer graphics, resolve theme and include render spec
+    if (firebaseRenderer === 'stage' && registryEntry) {
+      // Resolve theme with per-graphic overrides
+      const resolvedTheme = await resolveTheme(null, config.meetTheme, graphicId);
+
+      // Include stage engine render spec
+      graphicPayload.skeleton = registryEntry.skeleton;
+      graphicPayload.blocks = registryEntry.blocks;
+
+      // Include resolved theme if available
+      if (resolvedTheme) {
+        graphicPayload.theme = resolvedTheme;
+      }
+    }
+
+    set(ref(db, `competitions/${compId}/currentGraphic`), graphicPayload);
   };
 
   // Send rotation slate graphic with specific rotation number

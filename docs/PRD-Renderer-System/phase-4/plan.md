@@ -245,7 +245,7 @@ Phase 4 connects the stage engine (built in Phases 1-3) to all producer tools. T
 
 ---
 
-### Task 14: Update GraphicsControl.jsx for stage renderer routing — NOT STARTED
+### Task 14: Update GraphicsControl.jsx for stage renderer routing — COMPLETE
 **Files:** `show-controller/src/components/GraphicsControl.jsx`
 **Resolves:** PRD Architecture Decision 1 (lines 58-90), Phase 4 doc Task 2
 **Verify:**
@@ -611,3 +611,11 @@ This avoids bundler complexity while keeping single source of truth.
 - **Additional guard:** Server version checks for `!db` and returns null with error log (client version has default fallback)
 - **Constants exported for testing:** `FALLBACK_COLORS`, `OVERRIDE_COLOR_MAPPING`, `IMAGE_FIELDS`, `LAYOUT_FIELDS` exported for unit testing
 - **No build integration yet:** The file is standalone; Task 15 will import it into timesheetEngine.js
+
+### Task 14 Learnings
+
+- **sendGraphic() was already computing firebaseRenderer** — lines 493-494 already had the registry lookup and renderer computation from a previous iteration
+- **Stage renderer payload structure:** When `firebaseRenderer === 'stage'`, the payload includes three additional fields: `skeleton`, `blocks`, and `theme` (resolved via `resolveTheme()`)
+- **resolveTheme() takes null for db** — client-side version accepts `null` as first arg to use the default Firebase db instance
+- **graphicPayload pattern:** Built the payload object first, then conditionally added stage-specific fields. This keeps the code clean and avoids duplicate set() calls.
+- **clearGraphic() unchanged** — both stage.html and output.html clear on `graphic: 'clear'`, so no renderer field needed in clearGraphic()
