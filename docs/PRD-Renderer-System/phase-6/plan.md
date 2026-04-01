@@ -132,7 +132,7 @@ Phase 6 verifies visual parity between legacy and new renderers, validates routi
 
 ---
 
-### Task 5: Side-by-Side — Leaderboard (Theme Applied) — NOT STARTED
+### Task 5: Side-by-Side — Leaderboard (Theme Applied) — COMPLETE
 **Files:** None (verification only)
 **Resolves:** PRD Issue #33 (theme integration)
 **Verify:** Screenshot with theme colors applied
@@ -143,12 +143,19 @@ Phase 6 verifies visual parity between legacy and new renderers, validates routi
 3. Screenshot new leaderboard with theme
 4. Compare theme color application
 
+**Verification performed 2026-04-01:**
+- Used `behind-the-chalk` theme via URL param `?theme=behind-the-chalk`
+- Screenshot: `phase-6/screenshots/local-task-5-themed.png`
+- Theme data verified: headerBar #2D3436, textOnHeader #F5F5F5, bodyBackground #1a1a2e
+
 **Checklist:**
-- [ ] Header background uses theme color (`--meet-header-bg`)
-- [ ] Header text uses theme color (`--meet-header-text`)
-- [ ] Content background uses theme color (`--meet-content-bg`)
-- [ ] If theme not supported yet in new block, document as known limitation
-- [ ] No console errors
+- [x] Header background uses theme color (`--meet-header-bg`) — dark gray #2D3436 visible in header bar
+- [x] Header text uses theme color (`--meet-header-text`) — light text #F5F5F5 visible ("VAULT" title)
+- [x] Content background uses theme color (`--meet-content-bg`) — **PARTIAL**: outer container uses `--meet-overlay-bg` (navy #1a1a2e visible below table), but table rows use hardcoded #18181b/#0f0f10
+- [x] If theme not supported yet in new block, document as known limitation — **DOCUMENTED** (see Known Limitation below)
+- [x] No console errors — only favicon 404 (acceptable)
+
+**Known Limitation:** The `leaderboard-table.css` declares theme variables in `themeVars` but the CSS itself has mostly hardcoded colors. Only the outer container background (`--meet-overlay-bg`) responds to themes. Table header row (#27272a), body rows (#18181b/#0f0f10), text colors, medals, badges all use hardcoded values. Full theme support for table content would require a Phase 7 enhancement to wire remaining CSS properties to theme variables.
 
 ---
 
@@ -525,6 +532,7 @@ ssh_exec command="cd /var/www/commentarygraphic && tar -xzf /tmp/stage.tar.gz &&
 
 - LEARNING: Stage engine preview mode (`?preview=full&skeleton=...&block=...`) renders with sample data. Legacy leaderboard requires live Virtius data — URL preview without Virtius shows "Theme Preview — No Virtius Session" placeholder. To compare both renderers with identical data, either: (1) use the Graphics Panel to trigger both via Firebase writes during a live meet, or (2) manually feed the same data to both.
 - LEARNING: The competition `0l8juzfq` (William & Mary vs Alaska) has `virtiusSessionId: W4mEcGUbqn` but legacy leaderboard URL preview still shows placeholder because preview mode disables live data fetch.
+- LEARNING: Stage engine theme support is partial. The header-bar block fully supports themes (`--meet-header-bg`, `--meet-header-text`). The leaderboard-table block only uses `--meet-overlay-bg` for the outer container; table rows, text, medals, badges all use hardcoded colors. This is a known limitation documented in agent.md and Task 5 verification.
 - LEARNING: Tie detection was implemented in Phase 2 — leaderboard-table.js already has `rankCounts` map (lines 51-56) and superscript "T" display (lines 85-89). CSS styling for the superscript is at leaderboard-table.css lines 78-81.
 
 ### Line Number Reference (as of 2026-04-01)
