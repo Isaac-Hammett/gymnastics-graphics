@@ -341,7 +341,7 @@ Phase 6 verifies visual parity between legacy and new renderers, validates routi
 
 ---
 
-### Task 13: Routing — Null Clears Both — NOT STARTED
+### Task 13: Routing — Null Clears Both — COMPLETE
 **Files:** None (verification only)
 **Resolves:** PRD Issue #35
 **Verify:** Both renderers clear on null
@@ -351,10 +351,17 @@ Phase 6 verifies visual parity between legacy and new renderers, validates routi
 2. Clear via Graphics Panel (writes null to currentGraphic)
 3. Verify both renderers clear
 
+**Verification performed 2026-04-01:**
+- Triggered `leaderboard-vt` with `renderer: "stage"` and blocks `["header-bar", "leaderboard-table"]` → stage.html rendered VAULT header + leaderboard table
+- Wrote null to `currentGraphic` → stage.html cleared completely (blank white)
+- Triggered `logos` with `renderer: "output"` and team data → output.html rendered 4 team logos (SEMO, Bridgeport, Alaska, WCGNIC)
+- Wrote null to `currentGraphic` → output.html cleared completely (blank white)
+- Screenshots: `task-13-stage-with-blocks.png`, `task-13-stage-null-cleared.png`, `task-13-output-logos-rendered.png`, `local-task-13.png`
+
 **Checklist:**
-- [ ] output.html clears immediately
-- [ ] stage.html clears with animation
-- [ ] No console errors
+- [x] output.html clears immediately — logos graphic cleared to blank white after null write
+- [x] stage.html clears with animation — leaderboard cleared via `dismissCurrentGraphic()` (200ms fade-out at line 578)
+- [x] No console errors — no errors from null clear itself; only pre-existing errors from earlier render attempts with incomplete data
 
 ---
 
@@ -575,6 +582,8 @@ ssh_exec command="cd /var/www/commentarygraphic && tar -xzf /tmp/stage.tar.gz &&
 - LEARNING: The competition `0l8juzfq` (William & Mary vs Alaska) has `virtiusSessionId: W4mEcGUbqn` but legacy leaderboard URL preview still shows placeholder because preview mode disables live data fetch.
 - LEARNING: Stage engine theme support is partial. The header-bar block fully supports themes (`--meet-header-bg`, `--meet-header-text`). The leaderboard-table block only uses `--meet-overlay-bg` for the outer container; table rows, text, medals, badges all use hardcoded colors. This is a known limitation documented in agent.md and Task 5 verification.
 - LEARNING: Tie detection was implemented in Phase 2 — leaderboard-table.js already has `rankCounts` map (lines 51-56) and superscript "T" display (lines 85-89). CSS styling for the superscript is at leaderboard-table.css lines 78-81.
+- LEARNING: When triggering stage graphics via Firebase manually (not via GraphicsControl), you MUST include `data.blocks` array (e.g., `["header-bar", "leaderboard-table"]`). Without blocks, `renderGraphic()` returns early at line 493 without setting `currentGraphicData`, leaving a skeleton visible that `dismissCurrentGraphic()` can't clear (because it checks `if (!currentGraphicData) return`).
+- LEARNING: When triggering output.html graphics via Firebase manually, the `data` object must include the competition config fields the renderer needs (e.g., `compType`, `team1Logo`, etc.). In production, GraphicsControl reads config and includes it in the write.
 - LEARNING: The athlete-grid (roster) block has FULL theme support — all three declared themeVars (`--meet-overlay-bg`, `--meet-overlay-text`, `--meet-border-color`) are properly wired in athlete-grid.css. Unlike leaderboard-table which has partial support, athlete-grid uses CSS variables throughout.
 
 ### Line Number Reference (as of 2026-04-01)
