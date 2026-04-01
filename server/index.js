@@ -40,6 +40,7 @@ import { createCompetitionEvent, createPreProdMeeting } from './lib/googleCalend
 import { discoverAlumni } from './lib/talentDiscoveryService.js';
 import { fetchClips } from './lib/clipService.js';
 import { PlayoutEngine, getPlayoutEngine as getPlayoutEngineFromModule, removePlayoutEngine as removePlayoutEngineFromModule, PLAYOUT_MODE, CLIP_STATUS } from './lib/playoutEngine.js';
+import { getScoringService, removeScoringService, getAllScoringServices } from './lib/scoringIngestionService.js';
 
 dotenv.config();
 
@@ -4622,6 +4623,13 @@ io.on('connection', async (socket) => {
     if (autoShutdown.isInitialized()) {
       autoShutdown.resetActivity();
     }
+    // Reset scoring service producer activity to prevent auto-stop timeout
+    if (clientCompId) {
+      const scoringService = getAllScoringServices().get(clientCompId);
+      if (scoringService) {
+        scoringService.resetProducerActivity();
+      }
+    }
     next();
   });
 
@@ -4743,6 +4751,26 @@ io.on('connection', async (socket) => {
         eventLog: [],
         lastApiError: null,
         coordinatorHeartbeat: { lastSeen: Date.now(), connected: true }
+      });
+    }
+  }
+
+  // Send initial scoring feed state if available (PRD Renderer System Phase 3)
+  if (clientCompId) {
+    const scoringService = getAllScoringServices().get(clientCompId);
+    if (scoringService) {
+      socket.emit('scoring:stateChanged', scoringService.getState());
+    } else {
+      // No service yet - send inactive state
+      socket.emit('scoring:stateChanged', {
+        compId: clientCompId,
+        state: 'stopped',
+        pollInterval: 15,
+        lastPollAt: null,
+        lastPollResult: null,
+        lastApiError: null,
+        virtiusSessionId: null,
+        gender: null
       });
     }
   }
@@ -8328,6 +8356,116 @@ io.on('connection', async (socket) => {
     console.log(`[Playout] Content item skipped for competition: ${clientCompId}`);
   });
 
+  // ============================================
+  // Scoring Ingestion Socket Handlers
+  // ============================================
+
+  // Start scoring ingestion for a competition
+  socket.on('scoring:start', async () => {
+    if (!clientCompId) {
+      socket.emit('scoring:error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    try {
+      const db = productionConfigService.getDb();
+      if (!db) {
+        socket.emit('scoring:error', { message: 'Firebase not available' });
+        return;
+      }
+
+      const service = getScoringService(clientCompId, {
+        firebase: db,
+        io
+      });
+
+      // Wire up events if not already done
+      if (!service.listenerCount('started')) {
+        wireScoringServiceEvents(service, clientCompId);
+      }
+
+      await service.start();
+      socket.emit('scoring:startResult', { success: true, compId: clientCompId });
+      console.log(`[ScoringIngestion] Started via socket for competition: ${clientCompId}`);
+    } catch (error) {
+      socket.emit('scoring:error', { message: error.message });
+      console.error(`[ScoringIngestion] Start failed for ${clientCompId}:`, error.message);
+    }
+  });
+
+  // Stop scoring ingestion for a competition
+  socket.on('scoring:stop', async () => {
+    if (!clientCompId) {
+      socket.emit('scoring:error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const service = getAllScoringServices().get(clientCompId);
+    if (!service) {
+      socket.emit('scoring:error', { message: `No scoring service for competition: ${clientCompId}` });
+      return;
+    }
+
+    await service.stop();
+    removeScoringService(clientCompId);
+    socket.emit('scoring:stopResult', { success: true, compId: clientCompId });
+    console.log(`[ScoringIngestion] Stopped via socket for competition: ${clientCompId}`);
+  });
+
+  // Force immediate poll refresh
+  socket.on('scoring:forceRefresh', async () => {
+    if (!clientCompId) {
+      socket.emit('scoring:error', { message: 'No competition ID for client' });
+      return;
+    }
+
+    const service = getAllScoringServices().get(clientCompId);
+    if (!service) {
+      socket.emit('scoring:error', { message: `No scoring service for competition: ${clientCompId}` });
+      return;
+    }
+
+    await service.forcePoll();
+    socket.emit('scoring:refreshResult', { success: true, compId: clientCompId });
+    console.log(`[ScoringIngestion] Force refresh via socket for competition: ${clientCompId}`);
+  });
+
+  // Get current scoring service state
+  socket.on('scoring:getState', () => {
+    if (!clientCompId) {
+      socket.emit('scoring:stateChanged', { error: 'No competition ID' });
+      return;
+    }
+
+    const service = getAllScoringServices().get(clientCompId);
+    if (!service) {
+      // No service - send inactive state
+      socket.emit('scoring:stateChanged', {
+        compId: clientCompId,
+        state: 'stopped',
+        pollInterval: 15,
+        lastPollAt: null,
+        lastPollResult: null,
+        lastApiError: null,
+        virtiusSessionId: null,
+        gender: null
+      });
+      return;
+    }
+
+    socket.emit('scoring:stateChanged', service.getState());
+  });
+
+  // Reset producer activity (called automatically via socket middleware, but can be explicit)
+  socket.on('scoring:resetActivity', () => {
+    if (!clientCompId) return;
+
+    const service = getAllScoringServices().get(clientCompId);
+    if (service) {
+      service.resetProducerActivity();
+    }
+  });
+
   // Disconnect handling
   socket.on('disconnect', () => {
     console.log(`Client disconnected: ${socket.id}`);
@@ -8443,6 +8581,120 @@ function initializeOBSConnectionManager() {
   console.log('[Server] OBS Connection Manager initialized');
 }
 
+// ============================================
+// Scoring Ingestion Service Initialization
+// ============================================
+
+/**
+ * Initialize scoring ingestion services for competitions with enabled feeds
+ * Also sets up a Firebase listener to detect new competitions enabling scoring feed
+ */
+async function initializeScoringIngestion() {
+  const db = productionConfigService.getDb();
+  if (!db) {
+    console.log('[ScoringIngestion] Firebase not available - skipping initialization');
+    return;
+  }
+
+  console.log('[ScoringIngestion] Scanning for competitions with enabled scoring feeds...');
+
+  try {
+    // Scan all competitions for scoringFeed.enabled: true and virtiusSessionId
+    const competitionsSnap = await db.ref('competitions').once('value');
+    const competitions = competitionsSnap.val() || {};
+
+    let startedCount = 0;
+    for (const [compId, comp] of Object.entries(competitions)) {
+      const config = comp?.config || {};
+      const feedConfig = config?.scoringFeed || {};
+      const virtiusSessionId = config?.virtiusSessionId;
+
+      // Only start if both enabled AND has a session ID
+      if (feedConfig.enabled === true && virtiusSessionId) {
+        console.log(`[ScoringIngestion] Starting service for ${compId} (session: ${virtiusSessionId})`);
+        const service = getScoringService(compId, {
+          firebase: db,
+          io
+        });
+
+        // Wire up events before starting
+        wireScoringServiceEvents(service, compId);
+
+        await service.start().catch(err => {
+          console.error(`[ScoringIngestion] Failed to start ${compId}:`, err.message);
+        });
+        startedCount++;
+      }
+    }
+
+    console.log(`[ScoringIngestion] Started ${startedCount} scoring services on startup`);
+
+    // Listen for config changes to start/stop services dynamically
+    // This handles the case where a producer enables scoring feed after coordinator starts
+    db.ref('competitions').on('child_changed', async (snapshot) => {
+      const compId = snapshot.key;
+      const comp = snapshot.val();
+      const config = comp?.config || {};
+      const feedConfig = config?.scoringFeed || {};
+      const virtiusSessionId = config?.virtiusSessionId;
+
+      const existingService = getAllScoringServices().get(compId);
+
+      // Check if we need to start a new service
+      if (feedConfig.enabled === true && virtiusSessionId && !existingService) {
+        console.log(`[ScoringIngestion] Detected enabled feed for ${compId} - starting service`);
+        const service = getScoringService(compId, {
+          firebase: db,
+          io
+        });
+        wireScoringServiceEvents(service, compId);
+        await service.start().catch(err => {
+          console.error(`[ScoringIngestion] Failed to start ${compId}:`, err.message);
+        });
+      }
+      // Note: Stopping is handled internally by the service via config listener
+    });
+
+    console.log('[ScoringIngestion] Config change listener active');
+
+  } catch (error) {
+    console.error('[ScoringIngestion] Initialization error:', error.message);
+  }
+}
+
+/**
+ * Wire scoring service events to Socket.io for a competition
+ * @param {ScoringIngestionService} service - The service instance
+ * @param {string} compId - Competition ID
+ */
+function wireScoringServiceEvents(service, compId) {
+  const room = `competition:${compId}`;
+
+  service.on('pollCompleted', (data) => {
+    io.to(room).emit('scoring:pollCompleted', data);
+  });
+
+  service.on('pollError', (data) => {
+    io.to(room).emit('scoring:pollError', data);
+  });
+
+  service.on('started', (data) => {
+    io.to(room).emit('scoring:started', data);
+  });
+
+  service.on('stopped', (data) => {
+    io.to(room).emit('scoring:stopped', data);
+  });
+
+  service.on('autoStopped', (data) => {
+    io.to(room).emit('scoring:autoStopped', data);
+    // Cleanup service from map
+    removeScoringService(compId);
+  });
+
+  console.log(`[ScoringIngestion] Events wired for ${compId}`);
+}
+
 // Start server
 httpServer.listen(PORT, () => {
   console.log(`Show Controller Server running on port ${PORT}`);
@@ -8469,6 +8721,9 @@ httpServer.listen(PORT, () => {
 
   // Initialize OBS Connection Manager for per-competition OBS connections
   initializeOBSConnectionManager();
+
+  // Initialize scoring ingestion services for competitions with enabled feeds
+  initializeScoringIngestion();
 
   // Connect to OBS (for local/default OBS)
   connectToOBS();

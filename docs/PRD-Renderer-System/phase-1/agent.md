@@ -438,3 +438,21 @@ Use blue for scoring feed (distinct from green scoreBug):
 - `_stopPolling()` — clears poll interval
 - `_cleanupConfigListener()` — removes config listener
 - `_cleanupAutoStop()` — removes competition status listener + producer timeout timer
+
+### Server Integration Pattern (Task 6)
+
+**Import location:** Line 43 in server/index.js, after playoutEngine import
+
+**Initialization function:** `initializeScoringIngestion()` — scans competitions on startup, listens for config changes
+
+**Socket handlers location:** After playout socket handlers (around line 8330), before disconnect handler
+
+**Socket event naming:** `scoring:start`, `scoring:stop`, `scoring:forceRefresh`, `scoring:getState`, `scoring:resetActivity`
+
+**Event wiring:** `wireScoringServiceEvents(service, compId)` — forwards service events to socket room
+
+**Producer activity reset:** Added to existing `socket.use()` middleware at line 4619
+
+**Initial state emission:** Added after playout state emission (around line 4757)
+
+**Key check for duplicate wiring:** `service.listenerCount('started')` to avoid wiring events twice

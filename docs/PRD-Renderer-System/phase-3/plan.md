@@ -163,7 +163,7 @@ Add automatic stopping when competitions end or producers disconnect.
 
 ---
 
-### Task 6: Integrate service into server/index.js — NOT STARTED
+### Task 6: Integrate service into server/index.js — COMPLETE
 
 **Files:** `server/index.js`
 
@@ -392,3 +392,9 @@ Test the complete data flow from Virtius API to Firebase to renderer blocks.
 - `_autoStop(reason)` calls `stop()` first, then writes `enabled: false`, `status: 'stopped'`, `errorMessage: 'Auto-stopped: {reason}'` to Firebase, then emits `'autoStopped'` event
 - `_cleanupAutoStop()` removes the competition status listener and clears the producer timeout timer — called from `stop()` to prevent leaks
 - Constants: `PRODUCER_TIMEOUT_MS = 30 * 60 * 1000`, `PRODUCER_TIMEOUT_CHECK_INTERVAL_MS = 60 * 1000`
+- Task 6 adds server/index.js integration with: import, `initializeScoringIngestion()`, `wireScoringServiceEvents()`, socket handlers for `scoring:start/stop/forceRefresh/getState/resetActivity`, initial state emission on connect, and producer activity reset in socket middleware
+- `initializeScoringIngestion()` scans all competitions for `scoringFeed.enabled: true` AND `virtiusSessionId` on startup, starts services for matches
+- `initializeScoringIngestion()` also listens for `child_changed` on `competitions/` to start services dynamically when producers enable feeds after startup
+- Socket handlers check `service.listenerCount('started')` to avoid duplicate event wiring
+- Initial scoring state sent on client connect (similar to playout state pattern)
+- Producer activity reset added to existing `socket.use()` middleware for automatic reset on any socket event
