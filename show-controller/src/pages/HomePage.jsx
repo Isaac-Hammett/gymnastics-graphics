@@ -12,6 +12,7 @@ import { ExclamationTriangleIcon, CheckCircleIcon, UserIcon } from '@heroicons/r
 import StatsStatusBadge from '../components/StatsStatusBadge';
 import StatsDetailPanel from '../components/StatsDetailPanel';
 import RankingsPanel from '../components/RankingsPanel';
+import ScoringFeedBadge from '../components/ScoringFeedBadge';
 import { db, ref, onValue } from '../lib/firebase';
 import { useProductionAlerts } from '../hooks/useProductionAlerts';
 
@@ -1043,6 +1044,7 @@ function CompetitionCard({
         <StatsDetailPanel compId={compId} config={config} />
         <RankingsPanel compId={compId} config={config} />
         <CommentaryStatusBadge compId={compId} />
+        <ScoringFeedBadge compId={compId} />
       </div>
 
       {vmBadge?.vm?.publicIp && (
