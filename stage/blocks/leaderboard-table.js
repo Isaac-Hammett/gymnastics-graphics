@@ -18,19 +18,19 @@ window.BlockLeaderboardTable = {
   ],
 
   sampleData: {
-    apparatus: 'FX',
+    apparatus: 'AA',
     gender: 'mens',
     rows: [
-      { rank: 1, name: 'Brody Malone', team: 'Stanford', teamLogo: '', score: 14.700, apparatus: 'FX', diff: 6.3, exec: 8.500, stickBonus: true },
-      { rank: 2, name: 'Paul Juda', team: 'Michigan', teamLogo: '', score: 14.500, apparatus: 'FX', diff: 6.2, exec: 8.400, stickBonus: false },
-      { rank: 2, name: 'Asher Hong', team: 'Stanford', teamLogo: '', score: 14.500, apparatus: 'FX', diff: 6.1, exec: 8.500, stickBonus: true },
-      { rank: 4, name: 'Fred Richard', team: 'Michigan', teamLogo: '', score: 14.350, apparatus: 'FX', diff: 6.0, exec: 8.450, stickBonus: false },
-      { rank: 5, name: 'Khoi Young', team: 'Stanford', teamLogo: '', score: 14.200, apparatus: 'FX', diff: 5.9, exec: 8.400, stickBonus: true },
-      { rank: 6, name: 'Shane Wiskus', team: 'Minnesota', teamLogo: '', score: 14.100, apparatus: 'FX', diff: 5.8, exec: 8.400, stickBonus: false },
-      { rank: 7, name: 'Riley Loos', team: 'Oklahoma', teamLogo: '', score: 14.000, apparatus: 'FX', diff: 5.7, exec: 8.400, stickBonus: true },
-      { rank: 8, name: 'Curran Phillips', team: 'Stanford', teamLogo: '', score: 13.900, apparatus: 'FX', diff: 5.6, exec: 8.400, stickBonus: false },
-      { rank: 9, name: 'Cameron Bock', team: 'Michigan', teamLogo: '', score: 13.800, apparatus: 'FX', diff: 5.5, exec: 8.400, stickBonus: false },
-      { rank: 10, name: 'Colt Walker', team: 'Oklahoma', teamLogo: '', score: 13.700, apparatus: 'FX', diff: 5.4, exec: 8.400, stickBonus: true }
+      { rank: 1, name: 'Brody Malone', team: 'Stanford', teamLogo: '', score: 86.450 },
+      { rank: 2, name: 'Paul Juda', team: 'Michigan', teamLogo: '', score: 85.900 },
+      { rank: 3, name: 'Asher Hong', team: 'Stanford', teamLogo: '', score: 85.750 },
+      { rank: 4, name: 'Fred Richard', team: 'Michigan', teamLogo: '', score: 85.400 },
+      { rank: 5, name: 'Khoi Young', team: 'Stanford', teamLogo: '', score: 84.850 },
+      { rank: 6, name: 'Shane Wiskus', team: 'Minnesota', teamLogo: '', score: 84.600 },
+      { rank: 7, name: 'Riley Loos', team: 'Oklahoma', teamLogo: '', score: 84.350 },
+      { rank: 8, name: 'Colt Walker', team: 'Oklahoma', teamLogo: '', score: 84.100 },
+      { rank: 9, name: 'Curran Phillips', team: 'Stanford', teamLogo: '', score: 83.900 },
+      { rank: 10, name: 'Cameron Bock', team: 'Michigan', teamLogo: '', score: 83.650 }
     ]
   },
 

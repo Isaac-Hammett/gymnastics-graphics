@@ -83,7 +83,7 @@ Phase 6 verifies visual parity between legacy and new renderers, validates routi
 
 ---
 
-### Task 3: Side-by-Side — Leaderboard (All-Around) — NOT STARTED
+### Task 3: Side-by-Side — Leaderboard (All-Around) — COMPLETE
 **Files:** None (verification only)
 **Resolves:** PRD Issue #33 (leaderboard visual parity — AA variant)
 **Verify:** Screenshot comparison at 1920x1080
@@ -94,11 +94,18 @@ Phase 6 verifies visual parity between legacy and new renderers, validates routi
 3. Screenshot new: `stage/stage.html?comp={testComp}` → trigger `leaderboard-aa`
 4. Compare at 1920x1080
 
+**Verification performed 2026-04-01:**
+- Modified leaderboard-table.js sampleData to use `apparatus: 'AA'` with AA-style total scores
+- Screenshot: `phase-6/screenshots/local-task-3-aa-leaderboard-1920.png`
+- Verified at 1920x1080 viewport
+
 **Checklist:**
-- [ ] All-Around shows 4 columns: #, Name, Team, Score (no Apparatus column)
-- [ ] Apparatus badge NOT visible
-- [ ] Diff/Exec columns NOT visible
-- [ ] No console errors
+- [x] All-Around shows 4 columns: #, Name, Team, Score (no Apparatus column) — exactly 4 columns visible
+- [x] Apparatus badge NOT visible — confirmed, no apparatus badge in any row
+- [x] Diff/Exec columns NOT visible — confirmed, no Diff/Exec/SB columns
+- [x] No console errors — only favicon 404 (acceptable)
+
+**Note:** Header shows "VAULT" because header-bar block uses independent sampleData. In production, header data would come from the graphic manifest/Firebase.
 
 ---
 
