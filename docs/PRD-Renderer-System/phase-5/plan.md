@@ -183,7 +183,7 @@
 
 ---
 
-### Task 8: Update renderer badge style in GraphicsControl.jsx — NOT STARTED
+### Task 8: Update renderer badge style in GraphicsControl.jsx — COMPLETE
 
 **Issue:** GraphicsControl uses abbreviated badge text (`stg`, `ovl`, `out`) while UrlGeneratorPage uses full text (`stage`, `overlay`, `output`). They should match.
 
@@ -198,10 +198,10 @@
 2. Ensure badge colors match UrlGeneratorPage (teal for stage, gray for overlay/output)
 
 **Verify:**
-- [ ] Badges show full text: `stage`, `overlay`, `output`
-- [ ] Stage badges are teal (`bg-teal-500/20 text-teal-400`)
-- [ ] Overlay/output badges are gray (`bg-zinc-700 text-zinc-400`)
-- [ ] Badge styling matches UrlGeneratorPage
+- [x] Badges show full text: `stage`, `overlay`, `output` — *Line 868 now uses `{btn.renderer}` directly*
+- [x] Stage badges are teal (`bg-teal-500/20 text-teal-400`) — *Line 853 unchanged*
+- [x] Overlay/output badges are gray (`bg-zinc-700 text-zinc-400`) — *Line 854 changed from `bg-zinc-600` to `bg-zinc-700`*
+- [x] Badge styling matches UrlGeneratorPage — *Both files now use identical color classes*
 
 ---
 
@@ -300,6 +300,7 @@
 - LEARNING: GraphicsControl `graphicButtons` now includes `category`, `subcategory`, and `renderer` fields from the registry. The filter changed from checking old hardcoded categories to checking `CATEGORIES[g.category]` validity.
 - LEARNING: GraphicsControl subcategory grouping uses `section.subcategories[btn.subcategory]` to get the subcategory label, matching the `CATEGORIES` structure where `subcategories` is an object with `{subId: label}` pairs.
 - LEARNING: Producer View and URL Generator both require authentication on production. Visual verification of GraphicsControl changes requires login credentials. Build pass + code review is sufficient for implementation verification; Task 12 handles full visual verification.
+- LEARNING: GraphicsControl badge text was abbreviated (`stg`/`ovl`/`out`) via ternary, while UrlGeneratorPage used full text (`{renderer}`). Also badge colors differed: GraphicsControl used `bg-zinc-600` vs UrlGeneratorPage's `bg-zinc-700`. Both are now aligned.
 
 ---
 
@@ -314,7 +315,7 @@
 | 5 | Update UrlGeneratorPage.jsx with collapsible subcategories | COMPLETE |
 | 6 | Update GraphicsControl.jsx to use CATEGORIES from registry | COMPLETE |
 | 7 | Add collapsible subcategories to GraphicsControl.jsx | COMPLETE |
-| 8 | Update renderer badge style in GraphicsControl.jsx | NOT STARTED |
+| 8 | Update renderer badge style in GraphicsControl.jsx | COMPLETE |
 | 9 | Verify gender filtering works with new structure | NOT STARTED |
 | 10 | Verify all graphics appear in new sidebar | NOT STARTED |
 | 11 | Verify Skeletons & Blocks section appears correctly | NOT STARTED |
