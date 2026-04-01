@@ -6,6 +6,7 @@ import useEventConfig from '../hooks/useEventConfig';
 import useTeamsDatabase from '../hooks/useTeamsDatabase';
 import { getGraphicsForCompetition, getGraphicsByCategory, getGraphicById, CATEGORIES } from '../lib/graphicsRegistry';
 import { resolveTheme } from '../lib/themeResolver';
+import CollapsibleSubcategory from './CollapsibleSubcategory';
 
 // Event button mapping for different genders (uses eventConfig IDs)
 // These map internal event IDs to display-friendly button configs
@@ -825,35 +826,72 @@ export default function GraphicsControl({ competitionId }) {
             // Skip rendering if no buttons in this section (unless it's full-bleed which has rotation slate)
             if (sectionButtons.length === 0 && section.key !== 'full-bleed') return null;
 
+            // Group buttons by subcategory
+            const subcategoryGroups = {};
+            const ungroupedButtons = [];
+
+            sectionButtons.forEach((btn) => {
+              if (btn.subcategory && section.subcategories[btn.subcategory]) {
+                if (!subcategoryGroups[btn.subcategory]) {
+                  subcategoryGroups[btn.subcategory] = {
+                    label: section.subcategories[btn.subcategory],
+                    buttons: [],
+                  };
+                }
+                subcategoryGroups[btn.subcategory].buttons.push(btn);
+              } else {
+                ungroupedButtons.push(btn);
+              }
+            });
+
+            const hasSubcategories = Object.keys(subcategoryGroups).length > 0;
+
+            // Helper to render a graphic button
+            const renderButton = (btn) => {
+              const isActive = currentGraphicId === btn.id;
+              const badgeClasses = btn.renderer === 'stage'
+                ? 'bg-teal-500/20 text-teal-400'
+                : 'bg-zinc-600 text-zinc-400';
+              return (
+                <button
+                  key={btn.id}
+                  onClick={() => sendGraphic(btn.id, btn.title, btn.leaderboardEvent)}
+                  className={`px-2 py-2 rounded text-xs font-medium transition-colors flex items-center gap-1 ${
+                    isActive
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-zinc-700 hover:bg-zinc-600 text-zinc-300'
+                  }`}
+                >
+                  <span className="flex-1 truncate text-left">{btn.label}</span>
+                  {btn.renderer && (
+                    <span className={`text-[8px] px-1 py-0.5 rounded shrink-0 ${badgeClasses} ${isActive ? 'opacity-80' : ''}`}>
+                      {btn.renderer === 'stage' ? 'stg' : btn.renderer === 'overlay' ? 'ovl' : 'out'}
+                    </span>
+                  )}
+                </button>
+              );
+            };
+
             return (
               <div key={section.key} className="mb-4">
                 <div className="text-xs text-zinc-500 uppercase mb-2">{section.label}</div>
-                <div className="grid grid-cols-3 gap-1.5">
-                  {sectionButtons.map((btn) => {
-                    const isActive = currentGraphicId === btn.id;
-                    const badgeClasses = btn.renderer === 'stage'
-                      ? 'bg-teal-500/20 text-teal-400'
-                      : 'bg-zinc-600 text-zinc-400';
-                    return (
-                      <button
-                        key={btn.id}
-                        onClick={() => sendGraphic(btn.id, btn.title, btn.leaderboardEvent)}
-                        className={`px-2 py-2 rounded text-xs font-medium transition-colors flex items-center gap-1 ${
-                          isActive
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-zinc-700 hover:bg-zinc-600 text-zinc-300'
-                        }`}
-                      >
-                        <span className="flex-1 truncate text-left">{btn.label}</span>
-                        {btn.renderer && (
-                          <span className={`text-[8px] px-1 py-0.5 rounded shrink-0 ${badgeClasses} ${isActive ? 'opacity-80' : ''}`}>
-                            {btn.renderer === 'stage' ? 'stg' : btn.renderer === 'overlay' ? 'ovl' : 'out'}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
+                {/* Render subcategories */}
+                {hasSubcategories && Object.entries(subcategoryGroups).map(([subId, sub]) => (
+                  <CollapsibleSubcategory key={subId} title={sub.label} defaultOpen={true}>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {sub.buttons.map(renderButton)}
+                    </div>
+                  </CollapsibleSubcategory>
+                ))}
+                {/* Render ungrouped buttons */}
+                {ungroupedButtons.length > 0 && (
+                  <>
+                    {hasSubcategories && <div className="text-xs text-zinc-600 mt-2 mb-1">Other</div>}
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {ungroupedButtons.map(renderButton)}
+                    </div>
+                  </>
+                )}
                 {/* Rotation Slate buttons - shown after full-bleed section */}
                 {section.key === 'full-bleed' && (
                   <>
