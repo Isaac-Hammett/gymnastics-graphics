@@ -302,7 +302,7 @@ Phase 4 connects the stage engine (built in Phases 1-3) to all producer tools. T
 
 ---
 
-### Task 17: Update URL Generator sidebar to use registry categories — NOT STARTED
+### Task 17: Update URL Generator sidebar to use registry categories — COMPLETE
 **Files:** `show-controller/src/pages/UrlGeneratorPage.jsx`
 **Resolves:** PRD lines 499-501, Phase 4 doc Task 4
 **Verify:**
@@ -637,3 +637,18 @@ This avoids bundler complexity while keeping single source of truth.
 - **Renderer check at lines 14246-14255:** Checks `if (renderer === 'stage')`, then clears `output.innerHTML`, hides animated background, clears theme overrides, and returns early
 - **Backwards compatibility confirmed:** When `renderer` is undefined (old graphics without the field), destructuring produces `undefined`, which fails the strict equality check `renderer === 'stage'` and falls through to normal rendering
 - **Additional cleanup in check:** Also clears theme overrides via `window.themeClearOverrides(lastLiveGraphicId)` to prevent theme bleed when switching from an output.html graphic to a stage.html graphic
+
+### Task 17 Learnings
+
+- **Sidebar refactored to use registry CATEGORIES** — removed hardcoded `baseGraphicTitles` object and `getGraphicTitles()` function, replaced with dynamic generation from GRAPHICS registry
+- **Two new functions added:**
+  - `getGraphicTitles(teamCount, teamNames)` — generates titles from registry labels, expands perTeam graphics dynamically
+  - `getGroupedGraphics(compType, teamCount, teamNames)` — groups graphics by category/subcategory for sidebar rendering, handles perTeam expansion and gender/teamCount filtering
+- **CATEGORIES ordering respected:** Sidebar renders categories sorted by `order` field (full-screen-cards → lower-thirds → full-bleed → video-frames → standalone → event-summary)
+- **Special cases preserved:**
+  - **Event Summary:** Theme dropdown + grid of rotation buttons (R1-R6) + grid of apparatus buttons
+  - **Full-Bleed:** Rotation Slate has layout picker dropdown + rotation buttons + Auto (Live) button
+  - **Full-Screen Cards:** Combined AA Leaderboard has session ID inputs that appear when selected
+- **Cleaned up unused imports:** Removed `graphicButtons`, `getApparatusButtons`, `getPreMeetButtons`, `getLeaderboardButtons`, `getEventSummaryRotationButtons`, `getEventSummaryApparatusButtons`, `transparentGraphics` imports — now using `groupedGraphics` instead
+- **Labels now come from manifest `label` field** — GraphicSidebarButton receives `g.label` directly from registry entry
+- **Build passes** — no TypeScript/compilation errors, app loads correctly (verified via login page screenshot)

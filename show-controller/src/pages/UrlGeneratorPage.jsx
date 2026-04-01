@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useCompetition, useCompetitions } from '../hooks/useCompetitions';
 import { useTeamsDatabase } from '../hooks/useTeamsDatabase';
-import { graphicButtons, getApparatusButtons, getPreMeetButtons, getLeaderboardButtons, getEventSummaryRotationButtons, getEventSummaryApparatusButtons, transparentGraphics, isTransparentGraphic } from '../lib/graphicButtons';
-import { getTeamCount, getGenderFromCompType } from '../lib/competitionUtils';
+import { isTransparentGraphic } from '../lib/graphicButtons';
+import { GRAPHICS, CATEGORIES } from '../lib/graphicsRegistry';
+import { getTeamCount } from '../lib/competitionUtils';
 import { generateGraphicURL, copyToClipboard } from '../lib/urlBuilder';
 import { db, ref, get, update } from '../lib/firebase';
 import SponsorAdjustControls from '../components/SponsorAdjustControls';
@@ -50,81 +51,113 @@ const summaryThemes = [
   { id: 'gradient', label: 'Gradient' },
 ];
 
-// Base graphic titles (team-specific ones are generated dynamically)
-const baseGraphicTitles = {
-  logos: 'Team Logos',
-  'event-bar': 'Event Info Bar',
-  'warm-up': 'Warm Up',
-  hosts: 'Hosts',
-  floor: 'Floor Exercise',
-  pommel: 'Pommel Horse',
-  rings: 'Still Rings',
-  vault: 'Vault',
-  pbars: 'Parallel Bars',
-  hbar: 'Horizontal Bar',
-  ubars: 'Uneven Bars',
-  beam: 'Balance Beam',
-  allaround: 'All Around',
-  final: 'Final Scores',
-  order: 'Competition Order',
-  lineups: 'Next Event Lineups',
-  summary: 'Event Summary',
-  starting: 'Stream Starting Soon',
-  thanks: 'Thanks for Watching',
-  // In-Meet
-  replay: 'Instant Replay',
-  'rotation-slate': 'Rotation Slate',
-  'rotation-slate-auto': 'Rotation Slate (Auto)',
-  // Frame Overlays
-  'frame-quad': 'Quad View',
-  'frame-tri-center': 'Tri Center',
-  'frame-tri-wide': 'Tri Wide',
-  'frame-tri-wide-top': 'Tri Wide Top',
-  'frame-team-header': 'Team Header',
-  'frame-single': 'Single',
-  // Leaderboards
-  'leaderboard-fx': 'Floor Leaderboard',
-  'leaderboard-ph': 'Pommel Horse Leaderboard',
-  'leaderboard-sr': 'Still Rings Leaderboard',
-  'leaderboard-vt': 'Vault Leaderboard',
-  'leaderboard-pb': 'Parallel Bars Leaderboard',
-  'leaderboard-hb': 'High Bar Leaderboard',
-  'leaderboard-ub': 'Uneven Bars Leaderboard',
-  'leaderboard-bb': 'Balance Beam Leaderboard',
-  'leaderboard-aa': 'All-Around Leaderboard',
-  'combined-aa-leaderboard': 'Combined All-Around Leaderboard',
-  // Event Summary Rotations
-  'summary-r1': 'Event Summary - Rotation 1',
-  'summary-r2': 'Event Summary - Rotation 2',
-  'summary-r3': 'Event Summary - Rotation 3',
-  'summary-r4': 'Event Summary - Rotation 4',
-  'summary-r5': 'Event Summary - Rotation 5',
-  'summary-r6': 'Event Summary - Rotation 6',
-  // Event Summary Apparatus
-  'summary-fx': 'Event Summary - Floor',
-  'summary-ph': 'Event Summary - Pommel Horse',
-  'summary-sr': 'Event Summary - Still Rings',
-  'summary-vt': 'Event Summary - Vault',
-  'summary-pb': 'Event Summary - Parallel Bars',
-  'summary-hb': 'Event Summary - High Bar',
-  'summary-ub': 'Event Summary - Uneven Bars',
-  'summary-bb': 'Event Summary - Balance Beam',
-  // Sponsors
-  'sponsors-thanks': 'Thank You Sponsors',
-  'sponsors-cycle': 'Cycling Sponsors',
-  'sponsors-bug': 'Sponsor Bug',
-  // Event Calendar
-  'event-calendar': 'Event Calendar',
-};
+/**
+ * Generate graphic titles dynamically from registry
+ * Includes both static registry labels and expanded per-team graphics
+ */
+function getGraphicTitles(teamCount, teamNames = {}) {
+  const titles = { clear: 'None' };
 
-// Generate team-specific graphic titles dynamically
-function getGraphicTitles(teamCount) {
-  const titles = { ...baseGraphicTitles };
-  for (let i = 1; i <= teamCount; i++) {
-    titles[`team${i}-stats`] = `Team ${i} Stats`;
-    titles[`team${i}-coaches`] = `Team ${i} Coaches`;
-  }
+  // Add all graphics from registry
+  Object.values(GRAPHICS).forEach(g => {
+    titles[g.id] = g.label;
+  });
+
+  // Expand perTeam graphics with team-specific names
+  Object.values(GRAPHICS)
+    .filter(g => g.perTeam)
+    .forEach(g => {
+      for (let i = 1; i <= teamCount; i++) {
+        const teamName = teamNames[i] || `Team ${i}`;
+        const baseId = g.id.replace('team-', '');
+        const expandedId = `team${i}-${baseId}`;
+        const label = g.labelTemplate
+          ? g.labelTemplate.replace('{teamName}', teamName)
+          : `${teamName} ${g.label.replace('Team ', '')}`;
+        titles[expandedId] = label;
+      }
+    });
+
   return titles;
+}
+
+/**
+ * Get graphics grouped by category and subcategory for sidebar rendering
+ * Returns categories in sidebar order with their graphics
+ */
+function getGroupedGraphics(compType, teamCount, teamNames = {}) {
+  const isMens = compType?.startsWith('mens');
+
+  // Sort categories by order
+  const sortedCategories = Object.entries(CATEGORIES)
+    .sort((a, b) => a[1].order - b[1].order)
+    .map(([id, cat]) => ({ id, ...cat }));
+
+  const grouped = {};
+
+  for (const category of sortedCategories) {
+    grouped[category.id] = {
+      label: category.label,
+      order: category.order,
+      subcategories: {},
+      graphics: [], // Graphics without subcategory
+    };
+
+    // Initialize subcategories
+    for (const [subId, subLabel] of Object.entries(category.subcategories || {})) {
+      grouped[category.id].subcategories[subId] = {
+        label: subLabel,
+        graphics: [],
+      };
+    }
+  }
+
+  // Add graphics to their categories
+  for (const graphic of Object.values(GRAPHICS)) {
+    // Filter by gender
+    if (graphic.gender === 'mens' && !isMens) continue;
+    if (graphic.gender === 'womens' && isMens) continue;
+
+    // Filter by team count
+    if (graphic.minTeams && teamCount < graphic.minTeams) continue;
+    if (graphic.maxTeams && teamCount > graphic.maxTeams) continue;
+
+    const cat = grouped[graphic.category];
+    if (!cat) continue;
+
+    // Handle perTeam expansion
+    if (graphic.perTeam) {
+      for (let i = 1; i <= teamCount; i++) {
+        const teamName = teamNames[i] || `Team ${i}`;
+        const baseId = graphic.id.replace('team-', '');
+        const expandedId = `team${i}-${baseId}`;
+        const label = graphic.labelTemplate
+          ? graphic.labelTemplate.replace('{teamName}', teamName)
+          : `${teamName} ${graphic.label.replace('Team ', '')}`;
+
+        const expandedGraphic = {
+          ...graphic,
+          id: expandedId,
+          label,
+          team: i,
+        };
+
+        if (graphic.subcategory && cat.subcategories[graphic.subcategory]) {
+          cat.subcategories[graphic.subcategory].graphics.push(expandedGraphic);
+        } else {
+          cat.graphics.push(expandedGraphic);
+        }
+      }
+    } else {
+      if (graphic.subcategory && cat.subcategories[graphic.subcategory]) {
+        cat.subcategories[graphic.subcategory].graphics.push(graphic);
+      } else {
+        cat.graphics.push(graphic);
+      }
+    }
+  }
+
+  return grouped;
 }
 
 export default function UrlGeneratorPage() {
@@ -379,9 +412,6 @@ export default function UrlGeneratorPage() {
     setRefreshing(false);
   };
 
-  // Get dynamic graphic titles based on team count
-  const graphicTitles = useMemo(() => getGraphicTitles(teamCount), [teamCount]);
-
   const showToast = (message) => {
     setToast(message);
     setTimeout(() => setToast(''), 2000);
@@ -402,9 +432,7 @@ export default function UrlGeneratorPage() {
 
   const isTransparent = isTransparentGraphic(currentGraphic);
 
-  const apparatusButtons = getApparatusButtons(config?.compType || 'mens-dual');
-
-  // Generate dynamic pre-meet buttons based on team count and names
+  // Generate dynamic team names from form data
   const teamNames = useMemo(() => {
     const names = {};
     for (let i = 1; i <= teamCount; i++) {
@@ -415,17 +443,14 @@ export default function UrlGeneratorPage() {
     return names;
   }, [formData, teamCount]);
 
-  const preMeetButtons = useMemo(() => getPreMeetButtons(teamCount, teamNames), [teamCount, teamNames]);
+  // Get dynamic graphic titles based on team count
+  const graphicTitles = useMemo(() => getGraphicTitles(teamCount, teamNames), [teamCount, teamNames]);
 
-  // Generate frame overlay buttons
-  const frameOverlayButtons = graphicButtons.frameOverlays;
-
-  // Generate leaderboard buttons (gender-aware)
-  const leaderboardButtons = useMemo(() => getLeaderboardButtons(config?.compType), [config?.compType]);
-
-  // Generate event summary buttons (gender-aware)
-  const summaryRotationButtons = useMemo(() => getEventSummaryRotationButtons(config?.compType), [config?.compType]);
-  const summaryApparatusButtons = useMemo(() => getEventSummaryApparatusButtons(config?.compType), [config?.compType]);
+  // Get graphics grouped by category for sidebar
+  const groupedGraphics = useMemo(
+    () => getGroupedGraphics(config?.compType, teamCount, teamNames),
+    [config?.compType, teamCount, teamNames]
+  );
 
   // Resolve home team key for sponsor lookups
   const resolveHomeTeamKey = (formData, config) => {
@@ -570,236 +595,369 @@ export default function UrlGeneratorPage() {
           )}
         </p>
 
-        <GraphicSection title="Pre-Meet">
-          {preMeetButtons.map((btn) => (
-            <GraphicSidebarButton
-              key={btn.id}
-              {...btn}
-              active={currentGraphic === btn.id}
-              onClick={() => setCurrentGraphic(btn.id)}
-            />
-          ))}
-        </GraphicSection>
+        {/* Dynamic sidebar sections from registry CATEGORIES */}
+        {Object.entries(groupedGraphics)
+          .sort((a, b) => a[1].order - b[1].order)
+          .map(([categoryId, category]) => {
+            // Special handling for event-summary category (theme dropdown + subcategory grids)
+            if (categoryId === 'event-summary') {
+              return (
+                <GraphicSection key={categoryId} title={category.label}>
+                  <div className="mb-3">
+                    <select
+                      value={summaryTheme}
+                      onChange={(e) => setSummaryTheme(e.target.value)}
+                      className="w-full text-xs bg-zinc-800 text-zinc-300 border border-zinc-700 rounded px-2 py-1.5 focus:outline-none focus:border-blue-500"
+                    >
+                      {summaryThemes.map((theme) => (
+                        <option key={theme.id} value={theme.id}>{theme.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  {/* Rotations subcategory */}
+                  {category.subcategories.rotations && category.subcategories.rotations.graphics.length > 0 && (
+                    <>
+                      <div className="text-xs text-zinc-600 mb-1">{category.subcategories.rotations.label}</div>
+                      <div className="grid grid-cols-4 gap-1 mb-2">
+                        {category.subcategories.rotations.graphics.map((g) => (
+                          <button
+                            key={g.id}
+                            onClick={() => setCurrentGraphic(g.id)}
+                            className={`px-2 py-1.5 rounded text-xs font-medium transition-colors ${
+                              currentGraphic === g.id
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700'
+                            }`}
+                          >
+                            {g.label}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                  {/* Apparatus subcategory */}
+                  {category.subcategories.apparatus && category.subcategories.apparatus.graphics.length > 0 && (
+                    <>
+                      <div className="text-xs text-zinc-600 mb-1">{category.subcategories.apparatus.label}</div>
+                      <div className="grid grid-cols-4 gap-1">
+                        {category.subcategories.apparatus.graphics.map((g) => (
+                          <button
+                            key={g.id}
+                            onClick={() => setCurrentGraphic(g.id)}
+                            className={`px-2 py-1.5 rounded text-xs font-medium transition-colors ${
+                              currentGraphic === g.id
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700'
+                            }`}
+                          >
+                            {g.label}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </GraphicSection>
+              );
+            }
 
-        <GraphicSection title="In-Meet">
-          {graphicButtons.inMeet.filter(btn => btn.id !== 'rotation-slate' && btn.id !== 'rotation-slate-auto').map((btn) => (
-            <GraphicSidebarButton
-              key={btn.id}
-              id={btn.id}
-              label={btn.label}
-              number={btn.number}
-              active={currentGraphic === btn.id}
-              onClick={() => setCurrentGraphic(btn.id)}
-            />
-          ))}
-          {/* Rotation Slate with rotation picker */}
-          <div className="mt-2">
-            <div className="flex items-center justify-between mb-1">
-              <div className="text-xs text-zinc-500">Rotation Slate</div>
-              <select
-                value={slateLayout}
-                onChange={(e) => {
-                  setSlateLayout(e.target.value);
-                  setCurrentGraphic('rotation-slate');
-                }}
-                className="text-xs bg-zinc-700 text-zinc-300 border border-zinc-600 rounded px-1.5 py-0.5 focus:outline-none focus:border-blue-500"
-              >
-                <option value="classic">Classic</option>
-                <option value="centered">Centered</option>
-                <option value="minimal">Minimal</option>
-                <option value="banner">Banner</option>
-                <option value="jumbo">Jumbo</option>
-                <option value="hero">Hero</option>
-                <option value="split">Split</option>
-                <option value="bold">Bold</option>
-                <option value="watermark">Watermark</option>
-                <option value="frame">Frame</option>
-                <option value="stacked">Stacked</option>
-                <option value="cinema">Cinema</option>
-                <option value="corner">Corner</option>
-                <option value="wide">Wide</option>
-                <option value="side">Side</option>
-                <option value="stripe">Stripe</option>
-                <option value="overlap">Overlap</option>
-              </select>
-            </div>
-            <div className={`grid gap-1 ${rotationCount <= 4 ? 'grid-cols-4' : rotationCount <= 6 ? 'grid-cols-6' : 'grid-cols-7'}`}>
-              {Array.from({ length: rotationCount }, (_, i) => String(i + 1)).map((num) => (
-                <button
-                  key={`rotation-slate-${num}`}
-                  onClick={() => {
-                    setRotationSlateNum(num);
-                    setCurrentGraphic('rotation-slate');
-                  }}
-                  className={`px-2 py-1.5 rounded text-xs font-medium transition-colors ${
-                    currentGraphic === 'rotation-slate' && rotationSlateNum === num
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700'
-                  }`}
-                >
-                  R{num}
-                </button>
-              ))}
-            </div>
-            {/* Auto-updating rotation slate */}
-            <button
-              onClick={() => setCurrentGraphic('rotation-slate-auto')}
-              className={`mt-1 w-full px-2 py-1.5 rounded text-xs font-medium transition-colors ${
-                currentGraphic === 'rotation-slate-auto'
-                  ? 'bg-green-600 text-white'
-                  : 'bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700'
-              }`}
-            >
-              Auto (Live)
-            </button>
-          </div>
-        </GraphicSection>
+            // Special handling for full-bleed category (rotation slate has custom picker)
+            if (categoryId === 'full-bleed') {
+              const slatesSubcat = category.subcategories.slates;
+              const streamSubcat = category.subcategories.stream;
+              const sponsorsSubcat = category.subcategories.sponsors;
 
-        <GraphicSection title="Event Frames">
-          {apparatusButtons.map((btn) => (
-            <GraphicSidebarButton
-              key={btn.id}
-              id={btn.id}
-              label={btn.label}
-              number={btn.number}
-              active={currentGraphic === btn.id}
-              onClick={() => setCurrentGraphic(btn.id)}
-            />
-          ))}
-        </GraphicSection>
+              // Filter out rotation-slate and rotation-slate-auto from slates (handled specially)
+              const otherSlates = slatesSubcat?.graphics.filter(g =>
+                g.id !== 'rotation-slate' && g.id !== 'rotation-slate-auto'
+              ) || [];
 
-        <GraphicSection title="Frame Overlays">
-          {frameOverlayButtons.map((btn) => (
-            <GraphicSidebarButton
-              key={btn.id}
-              id={btn.id}
-              label={btn.label}
-              number={btn.number}
-              active={currentGraphic === btn.id}
-              onClick={() => setCurrentGraphic(btn.id)}
-            />
-          ))}
-        </GraphicSection>
+              return (
+                <GraphicSection key={categoryId} title={category.label}>
+                  {/* Slates subcategory */}
+                  {slatesSubcat && (
+                    <>
+                      <div className="text-xs text-zinc-500 mb-1">{slatesSubcat.label}</div>
+                      {/* Regular slates */}
+                      {otherSlates.map((g) => (
+                        <GraphicSidebarButton
+                          key={g.id}
+                          id={g.id}
+                          label={g.label}
+                          renderer={g.renderer}
+                          active={currentGraphic === g.id}
+                          onClick={() => setCurrentGraphic(g.id)}
+                        />
+                      ))}
+                      {/* Rotation Slate with layout picker */}
+                      <div className="mt-2">
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="text-xs text-zinc-500">Rotation Slate</div>
+                          <select
+                            value={slateLayout}
+                            onChange={(e) => {
+                              setSlateLayout(e.target.value);
+                              setCurrentGraphic('rotation-slate');
+                            }}
+                            className="text-xs bg-zinc-700 text-zinc-300 border border-zinc-600 rounded px-1.5 py-0.5 focus:outline-none focus:border-blue-500"
+                          >
+                            <option value="classic">Classic</option>
+                            <option value="centered">Centered</option>
+                            <option value="minimal">Minimal</option>
+                            <option value="banner">Banner</option>
+                            <option value="jumbo">Jumbo</option>
+                            <option value="hero">Hero</option>
+                            <option value="split">Split</option>
+                            <option value="bold">Bold</option>
+                            <option value="watermark">Watermark</option>
+                            <option value="frame">Frame</option>
+                            <option value="stacked">Stacked</option>
+                            <option value="cinema">Cinema</option>
+                            <option value="corner">Corner</option>
+                            <option value="wide">Wide</option>
+                            <option value="side">Side</option>
+                            <option value="stripe">Stripe</option>
+                            <option value="overlap">Overlap</option>
+                          </select>
+                        </div>
+                        <div className={`grid gap-1 ${rotationCount <= 4 ? 'grid-cols-4' : rotationCount <= 6 ? 'grid-cols-6' : 'grid-cols-7'}`}>
+                          {Array.from({ length: rotationCount }, (_, i) => String(i + 1)).map((num) => (
+                            <button
+                              key={`rotation-slate-${num}`}
+                              onClick={() => {
+                                setRotationSlateNum(num);
+                                setCurrentGraphic('rotation-slate');
+                              }}
+                              className={`px-2 py-1.5 rounded text-xs font-medium transition-colors ${
+                                currentGraphic === 'rotation-slate' && rotationSlateNum === num
+                                  ? 'bg-blue-600 text-white'
+                                  : 'bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700'
+                              }`}
+                            >
+                              R{num}
+                            </button>
+                          ))}
+                        </div>
+                        <button
+                          onClick={() => setCurrentGraphic('rotation-slate-auto')}
+                          className={`mt-1 w-full px-2 py-1.5 rounded text-xs font-medium transition-colors ${
+                            currentGraphic === 'rotation-slate-auto'
+                              ? 'bg-green-600 text-white'
+                              : 'bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700'
+                          }`}
+                        >
+                          Auto (Live)
+                        </button>
+                      </div>
+                    </>
+                  )}
+                  {/* Stream subcategory */}
+                  {streamSubcat && streamSubcat.graphics.length > 0 && (
+                    <>
+                      <div className="text-xs text-zinc-500 mt-3 mb-1">{streamSubcat.label}</div>
+                      {streamSubcat.graphics.map((g) => (
+                        <GraphicSidebarButton
+                          key={g.id}
+                          id={g.id}
+                          label={g.label}
+                          renderer={g.renderer}
+                          active={currentGraphic === g.id}
+                          onClick={() => setCurrentGraphic(g.id)}
+                        />
+                      ))}
+                    </>
+                  )}
+                  {/* Sponsors subcategory */}
+                  {sponsorsSubcat && sponsorsSubcat.graphics.length > 0 && (
+                    <>
+                      <div className="text-xs text-zinc-500 mt-3 mb-1">{sponsorsSubcat.label}</div>
+                      {sponsorsSubcat.graphics.map((g) => (
+                        <GraphicSidebarButton
+                          key={g.id}
+                          id={g.id}
+                          label={g.label}
+                          renderer={g.renderer}
+                          active={currentGraphic === g.id}
+                          onClick={() => setCurrentGraphic(g.id)}
+                        />
+                      ))}
+                    </>
+                  )}
+                  {/* Ungrouped graphics */}
+                  {category.graphics.length > 0 && (
+                    category.graphics.map((g) => (
+                      <GraphicSidebarButton
+                        key={g.id}
+                        id={g.id}
+                        label={g.label}
+                        renderer={g.renderer}
+                        active={currentGraphic === g.id}
+                        onClick={() => setCurrentGraphic(g.id)}
+                      />
+                    ))
+                  )}
+                </GraphicSection>
+              );
+            }
 
-        <GraphicSection title="Leaderboards">
-          {leaderboardButtons.filter(btn => btn.id !== 'combined-aa-leaderboard').map((btn) => (
-            <GraphicSidebarButton
-              key={btn.id}
-              id={btn.id}
-              label={btn.label}
-              active={currentGraphic === btn.id}
-              onClick={() => setCurrentGraphic(btn.id)}
-            />
-          ))}
-          <div className="mt-2 pt-2 border-t border-zinc-800">
-            <GraphicSidebarButton
-              id="combined-aa-leaderboard"
-              label="Combined AA"
-              active={currentGraphic === 'combined-aa-leaderboard'}
-              onClick={() => setCurrentGraphic('combined-aa-leaderboard')}
-            />
-            {currentGraphic === 'combined-aa-leaderboard' && (
-              <div className="mt-2 space-y-2 px-1">
-                <div>
-                  <label className="text-xs text-zinc-500 block mb-1">Session ID 1</label>
-                  <input
-                    type="text"
-                    value={combinedSessionId1}
-                    onChange={(e) => setCombinedSessionId1(e.target.value.trim())}
-                    placeholder="e.g., EeUcxrjyBD"
-                    className="w-full text-xs bg-zinc-800 text-zinc-200 border border-zinc-700 rounded px-2 py-1.5 focus:outline-none focus:border-blue-500 placeholder-zinc-600"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-zinc-500 block mb-1">Session ID 2</label>
-                  <input
-                    type="text"
-                    value={combinedSessionId2}
-                    onChange={(e) => setCombinedSessionId2(e.target.value.trim())}
-                    placeholder="e.g., XyZ123abCD"
-                    className="w-full text-xs bg-zinc-800 text-zinc-200 border border-zinc-700 rounded px-2 py-1.5 focus:outline-none focus:border-blue-500 placeholder-zinc-600"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-        </GraphicSection>
+            // Special handling for full-screen-cards (leaderboards have combined-aa with session inputs)
+            if (categoryId === 'full-screen-cards') {
+              const leaderboardsSubcat = category.subcategories.leaderboards;
+              const teamInfoSubcat = category.subcategories['team-info'];
+              const sponsorsSubcat = category.subcategories.sponsors;
 
-        <GraphicSection title="Event Summary">
-          <div className="mb-3">
-            <select
-              value={summaryTheme}
-              onChange={(e) => setSummaryTheme(e.target.value)}
-              className="w-full text-xs bg-zinc-800 text-zinc-300 border border-zinc-700 rounded px-2 py-1.5 focus:outline-none focus:border-blue-500"
-            >
-              {summaryThemes.map((theme) => (
-                <option key={theme.id} value={theme.id}>{theme.label}</option>
-              ))}
-            </select>
-          </div>
-          <div className="text-xs text-zinc-600 mb-1">By Rotation (Alternating)</div>
-          <div className="grid grid-cols-4 gap-1 mb-2">
-            {summaryRotationButtons.map((btn) => (
-              <button
-                key={btn.id}
-                onClick={() => setCurrentGraphic(btn.id)}
-                className={`px-2 py-1.5 rounded text-xs font-medium transition-colors ${
-                  currentGraphic === btn.id
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700'
-                }`}
-              >
-                {btn.label}
-              </button>
-            ))}
-          </div>
-          <div className="text-xs text-zinc-600 mb-1">By Apparatus</div>
-          <div className="grid grid-cols-4 gap-1">
-            {summaryApparatusButtons.map((btn) => (
-              <button
-                key={btn.id}
-                onClick={() => setCurrentGraphic(btn.id)}
-                className={`px-2 py-1.5 rounded text-xs font-medium transition-colors ${
-                  currentGraphic === btn.id
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700'
-                }`}
-              >
-                {btn.label}
-              </button>
-            ))}
-          </div>
-        </GraphicSection>
+              return (
+                <GraphicSection key={categoryId} title={category.label}>
+                  {/* Leaderboards subcategory with special combined-aa handling */}
+                  {leaderboardsSubcat && leaderboardsSubcat.graphics.length > 0 && (
+                    <>
+                      <div className="text-xs text-zinc-500 mb-1">{leaderboardsSubcat.label}</div>
+                      {leaderboardsSubcat.graphics.filter(g => g.id !== 'combined-aa-leaderboard').map((g) => (
+                        <GraphicSidebarButton
+                          key={g.id}
+                          id={g.id}
+                          label={g.label}
+                          renderer={g.renderer}
+                          active={currentGraphic === g.id}
+                          onClick={() => setCurrentGraphic(g.id)}
+                        />
+                      ))}
+                      {/* Combined AA Leaderboard with session ID inputs */}
+                      {leaderboardsSubcat.graphics.find(g => g.id === 'combined-aa-leaderboard') && (
+                        <div className="mt-2 pt-2 border-t border-zinc-800">
+                          <GraphicSidebarButton
+                            id="combined-aa-leaderboard"
+                            label="Combined AA"
+                            renderer="stage"
+                            active={currentGraphic === 'combined-aa-leaderboard'}
+                            onClick={() => setCurrentGraphic('combined-aa-leaderboard')}
+                          />
+                          {currentGraphic === 'combined-aa-leaderboard' && (
+                            <div className="mt-2 space-y-2 px-1">
+                              <div>
+                                <label className="text-xs text-zinc-500 block mb-1">Session ID 1</label>
+                                <input
+                                  type="text"
+                                  value={combinedSessionId1}
+                                  onChange={(e) => setCombinedSessionId1(e.target.value.trim())}
+                                  placeholder="e.g., EeUcxrjyBD"
+                                  className="w-full text-xs bg-zinc-800 text-zinc-200 border border-zinc-700 rounded px-2 py-1.5 focus:outline-none focus:border-blue-500 placeholder-zinc-600"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-xs text-zinc-500 block mb-1">Session ID 2</label>
+                                <input
+                                  type="text"
+                                  value={combinedSessionId2}
+                                  onChange={(e) => setCombinedSessionId2(e.target.value.trim())}
+                                  placeholder="e.g., XyZ123abCD"
+                                  className="w-full text-xs bg-zinc-800 text-zinc-200 border border-zinc-700 rounded px-2 py-1.5 focus:outline-none focus:border-blue-500 placeholder-zinc-600"
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {/* Team Info subcategory */}
+                  {teamInfoSubcat && teamInfoSubcat.graphics.length > 0 && (
+                    <>
+                      <div className="text-xs text-zinc-500 mt-3 mb-1">{teamInfoSubcat.label}</div>
+                      {teamInfoSubcat.graphics.map((g) => (
+                        <GraphicSidebarButton
+                          key={g.id}
+                          id={g.id}
+                          label={g.label}
+                          renderer={g.renderer}
+                          active={currentGraphic === g.id}
+                          onClick={() => setCurrentGraphic(g.id)}
+                        />
+                      ))}
+                    </>
+                  )}
+                  {/* Sponsors subcategory */}
+                  {sponsorsSubcat && sponsorsSubcat.graphics.length > 0 && (
+                    <>
+                      <div className="text-xs text-zinc-500 mt-3 mb-1">{sponsorsSubcat.label}</div>
+                      {sponsorsSubcat.graphics.map((g) => (
+                        <GraphicSidebarButton
+                          key={g.id}
+                          id={g.id}
+                          label={g.label}
+                          renderer={g.renderer}
+                          active={currentGraphic === g.id}
+                          onClick={() => setCurrentGraphic(g.id)}
+                        />
+                      ))}
+                    </>
+                  )}
+                  {/* Ungrouped graphics */}
+                  {category.graphics.length > 0 && (
+                    category.graphics.map((g) => (
+                      <GraphicSidebarButton
+                        key={g.id}
+                        id={g.id}
+                        label={g.label}
+                        renderer={g.renderer}
+                        active={currentGraphic === g.id}
+                        onClick={() => setCurrentGraphic(g.id)}
+                      />
+                    ))
+                  )}
+                </GraphicSection>
+              );
+            }
 
-        <GraphicSection title="Stream">
-          <GraphicSidebarButton
-            id="starting"
-            label="Stream Starting"
-            number={19}
-            active={currentGraphic === 'starting'}
-            onClick={() => setCurrentGraphic('starting')}
-          />
-          <GraphicSidebarButton
-            id="thanks"
-            label="Thanks for Watching"
-            number={20}
-            active={currentGraphic === 'thanks'}
-            onClick={() => setCurrentGraphic('thanks')}
-          />
-        </GraphicSection>
+            // Default rendering for other categories (lower-thirds, video-frames, standalone)
+            const hasSubcategories = Object.keys(category.subcategories).length > 0;
+            const hasGraphicsInSubcategories = hasSubcategories &&
+              Object.values(category.subcategories).some(sub => sub.graphics.length > 0);
 
-        <GraphicSection title="Sponsors">
-          {graphicButtons.sponsors.map((btn) => (
-            <GraphicSidebarButton
-              key={btn.id}
-              id={btn.id}
-              label={btn.label}
-              number={btn.number}
-              active={currentGraphic === btn.id}
-              onClick={() => setCurrentGraphic(btn.id)}
-            />
-          ))}
-        </GraphicSection>
+            // Skip empty categories
+            if (!hasGraphicsInSubcategories && category.graphics.length === 0) {
+              return null;
+            }
+
+            return (
+              <GraphicSection key={categoryId} title={category.label}>
+                {/* Render subcategories */}
+                {hasSubcategories && Object.entries(category.subcategories).map(([subId, sub]) => {
+                  if (sub.graphics.length === 0) return null;
+                  return (
+                    <div key={subId}>
+                      <div className="text-xs text-zinc-500 mb-1 first:mt-0 mt-3">{sub.label}</div>
+                      {sub.graphics.map((g) => (
+                        <GraphicSidebarButton
+                          key={g.id}
+                          id={g.id}
+                          label={g.label}
+                          renderer={g.renderer}
+                          active={currentGraphic === g.id}
+                          onClick={() => setCurrentGraphic(g.id)}
+                        />
+                      ))}
+                    </div>
+                  );
+                })}
+                {/* Render ungrouped graphics */}
+                {category.graphics.length > 0 && (
+                  <>
+                    {hasGraphicsInSubcategories && <div className="text-xs text-zinc-500 mt-3 mb-1">Other</div>}
+                    {category.graphics.map((g) => (
+                      <GraphicSidebarButton
+                        key={g.id}
+                        id={g.id}
+                        label={g.label}
+                        renderer={g.renderer}
+                        active={currentGraphic === g.id}
+                        onClick={() => setCurrentGraphic(g.id)}
+                      />
+                    ))}
+                  </>
+                )}
+              </GraphicSection>
+            );
+          })}
       </div>
 
       {/* Main Preview */}
