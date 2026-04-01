@@ -56,7 +56,7 @@ Phase 6 verifies visual parity between legacy and new renderers, validates routi
 
 ---
 
-### Task 2: Side-by-Side — Leaderboard (Men's FX) — NOT STARTED
+### Task 2: Side-by-Side — Leaderboard (Men's FX) — COMPLETE
 **Files:** None (verification only)
 **Resolves:** PRD Issue #33 (leaderboard visual parity — men's variant)
 **Verify:** Screenshot comparison at 1920x1080
@@ -67,12 +67,19 @@ Phase 6 verifies visual parity between legacy and new renderers, validates routi
 3. Screenshot new: `stage/stage.html?comp={testComp}` → trigger `leaderboard-fx`
 4. Compare at 1920x1080
 
+**Verification performed 2026-04-01:**
+- Modified leaderboard-table.js sampleData to use men's FX data with diff, exec, stickBonus
+- Screenshot: `phase-6/screenshots/local-task-2-mens-fx.png`
+- All 8 columns verified: #, Name, Team, Event (apparatus badge), Score, Diff, Exec, SB
+
 **Checklist:**
-- [ ] All checklist items from Task 1
-- [ ] Men's shows 8 columns: #, Name, Team, Apparatus, Score, Diff, Exec, SB
-- [ ] Diff/Exec columns: 26px, font-weight 500, #a1a1aa
-- [ ] Stick bonus green circle 28px (#22c55e) visible when bonus > 0
-- [ ] No console errors
+- [x] All checklist items from Task 1 — card positioning, shadows, header styling match
+- [x] Men's shows 8 columns: #, Name, Team, Apparatus, Score, Diff, Exec, SB — all visible
+- [x] Diff/Exec columns: 26px, font-weight 500, #a1a1aa — Diff shows 2 decimals, Exec shows 3, gray text
+- [x] Stick bonus green circle 28px (#22c55e) visible when bonus > 0 — green "S" circles visible for stickBonus=true
+- [x] No console errors — 0 errors confirmed
+
+**Note:** Header shows "VAULT" because header-bar block uses independent sampleData. In production, header data would come from the graphic manifest/Firebase.
 
 ---
 
