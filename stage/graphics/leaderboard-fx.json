@@ -1,0 +1,21 @@
+{
+  "id": "leaderboard-fx",
+  "label": "Floor Exercise",
+  "category": "full-screen-cards",
+  "subcategory": "leaderboards",
+  "renderer": "stage",
+  "skeleton": "full-screen-card",
+  "blocks": ["header-bar", "leaderboard-table"],
+  "gender": "both",
+  "transparent": false,
+  "keywords": ["floor", "fx", "leaderboard", "scores", "ranking"],
+  "params": {
+    "apparatus": { "type": "string", "default": "FX" }
+  },
+  "defaultData": {
+    "blocks": [
+      { "type": "header-bar", "data": { "title": "FLOOR EXERCISE" } },
+      { "type": "leaderboard-table", "data": { "source": "scoring/leaderboard/FX", "gender": null } }
+    ]
+  }
+}

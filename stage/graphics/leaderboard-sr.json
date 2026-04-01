@@ -1,0 +1,21 @@
+{
+  "id": "leaderboard-sr",
+  "label": "Still Rings",
+  "category": "full-screen-cards",
+  "subcategory": "leaderboards",
+  "renderer": "stage",
+  "skeleton": "full-screen-card",
+  "blocks": ["header-bar", "leaderboard-table"],
+  "gender": "mens",
+  "transparent": false,
+  "keywords": ["rings", "sr", "leaderboard", "scores", "ranking"],
+  "params": {
+    "apparatus": { "type": "string", "default": "SR" }
+  },
+  "defaultData": {
+    "blocks": [
+      { "type": "header-bar", "data": { "title": "STILL RINGS" } },
+      { "type": "leaderboard-table", "data": { "source": "scoring/leaderboard/SR", "gender": "mens" } }
+    ]
+  }
+}

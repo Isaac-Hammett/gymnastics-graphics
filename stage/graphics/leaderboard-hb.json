@@ -1,0 +1,21 @@
+{
+  "id": "leaderboard-hb",
+  "label": "High Bar",
+  "category": "full-screen-cards",
+  "subcategory": "leaderboards",
+  "renderer": "stage",
+  "skeleton": "full-screen-card",
+  "blocks": ["header-bar", "leaderboard-table"],
+  "gender": "mens",
+  "transparent": false,
+  "keywords": ["high", "bar", "hb", "leaderboard", "scores", "ranking"],
+  "params": {
+    "apparatus": { "type": "string", "default": "HB" }
+  },
+  "defaultData": {
+    "blocks": [
+      { "type": "header-bar", "data": { "title": "HIGH BAR" } },
+      { "type": "leaderboard-table", "data": { "source": "scoring/leaderboard/HB", "gender": "mens" } }
+    ]
+  }
+}
