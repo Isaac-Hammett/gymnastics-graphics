@@ -543,37 +543,22 @@ OBS browser sources use the same Chromium engine as automated tests. Full OBS in
 
 ---
 
-### Task 20: Update CLAUDE.md Deploy Instructions — NOT STARTED
+### Task 20: Update CLAUDE.md Deploy Instructions — COMPLETE
 **Files:** `CLAUDE.md`
 **Resolves:** PRD Issue #39 (deploy documentation)
 **Verify:** Deploy instructions are complete and accurate
 
-**Add to deploy section:**
-
-1. New Step 2.5: Deploy Stage Engine
-```bash
-# Upload stage directory
-tar -czf /tmp/claude/stage.tar.gz stage/
-
-# Upload and extract
-ssh_upload_file localPath=/tmp/claude/stage.tar.gz remotePath=/tmp/stage.tar.gz target=3.87.107.201
-ssh_exec command="cd /var/www/commentarygraphic && tar -xzf /tmp/stage.tar.gz && find /var/www/commentarygraphic/stage -name '._*' -delete && find /var/www/commentarygraphic/stage -type f -exec chmod 644 {} +"
-```
-
-2. Update verification step to include stage.html check
-
-3. Update checklist:
-- [ ] `stage/` directory deployed
-- [ ] Stage file permissions set to 644
-- [ ] `stage.html` accessible at production URL
-- [ ] Leaderboard renders via stage.html
-- [ ] Roster renders via stage.html
+**Verification performed 2026-04-01:**
+- Added Step 2.5 for deploying stage directory (lines 124-141)
+- Updated Step 3 verification to include stage.html accessibility check (lines 154-156)
+- Updated Deployment Checklist with 5 new stage-related items (lines 164-169)
+- Build passes successfully
 
 **Checklist:**
-- [ ] Step 2.5 added with stage directory deploy
-- [ ] Verification step includes stage.html check
-- [ ] Checklist updated with stage items
-- [ ] No typos or incorrect paths
+- [x] Step 2.5 added with stage directory deploy — lines 124-141
+- [x] Verification step includes stage.html check — lines 154-156
+- [x] Checklist updated with stage items — lines 164-169 (5 items: directory, permissions, accessibility, leaderboard render, roster render)
+- [x] No typos or incorrect paths — verified
 
 ---
 
@@ -625,6 +610,7 @@ ssh_exec command="cd /var/www/commentarygraphic && tar -xzf /tmp/stage.tar.gz &&
 - LEARNING: (Task 17) Leaderboard CSS in output.html was in THREE locations: (1) main CSS, (2) theme override CSS with `--virtuis-leaderboard-*` variables, (3) one selector in the texture overlay rule. A previous iteration removed #1 but not #2 and #3. Always grep for multiple patterns when verifying removal.
 - LEARNING: (Task 18) When removing functions, verify helper dependencies first. `APPARATUS_FLIGHT_REGEX` and `getSchoolInfoFromName()` were listed in plan.md as "shared helpers to keep" but grep showed they were ONLY used by the leaderboard functions being removed. Both could be safely deleted. Always grep actual usage before deciding what to keep.
 - LEARNING: (Task 19) When removing an overlay file, three things need updating: (1) delete the file itself, (2) update urlBuilder.js to return the new stage.html URL, (3) update graphic-ids.json to reflect new renderer and remove from overlayFiles list. The stage.html URL uses different param names: `comp` instead of `compId`, `graphic` instead of `teamSlot`, `theme` instead of `meetTheme`.
+- LEARNING: (Task 20) Deploy documentation updates are quick tasks but require verifying all paths and commands are correct. The stage directory deploy uses `find ... -type f -exec chmod 644 {} +` (note the `+` not `;`) for efficiency. The verification checklist should include both accessibility checks (not React SPA intercept) AND rendering checks (preview URLs with specific blocks).
 
 ### Line Number Reference (as of Task 19 completion)
 

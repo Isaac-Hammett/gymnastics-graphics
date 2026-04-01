@@ -121,6 +121,25 @@ tar -czf /tmp/claude/overlays.tar.gz overlays/
 
 **IMPORTANT:** The `chmod 644` is required because macOS creates files with 600 permissions when uploaded via SCP, which nginx cannot read (403 Forbidden).
 
+### Step 2.5: Deploy Stage Engine (New Renderer)
+
+**The stage engine renders leaderboards and rosters via `stage/stage.html`.** This is a separate renderer from output.html.
+
+```bash
+# Create tarball of stage directory (from project root)
+tar -czf /tmp/claude/stage.tar.gz stage/
+
+# Upload (use ssh_upload_file MCP tool)
+# localPath: /tmp/claude/stage.tar.gz
+# remotePath: /tmp/stage.tar.gz
+# target: 3.87.107.201
+
+# Extract and fix permissions (ssh_exec)
+# command: cd /var/www/commentarygraphic && tar -xzf /tmp/stage.tar.gz && find /var/www/commentarygraphic/stage -name '._*' -delete && find /var/www/commentarygraphic/stage -type f -exec chmod 644 {} +
+```
+
+**Why this matters:** The stage engine handles `renderer: "stage"` graphics (leaderboards, rosters). Without this directory, those graphics will 404 in OBS browser sources.
+
 ### Step 3: Verify Deployment
 ```bash
 # Verify with Playwright
@@ -128,9 +147,13 @@ tar -czf /tmp/claude/overlays.tar.gz overlays/
 # browser_take_screenshot
 # browser_console_messages (check for errors)
 
-# Also verify graphics files are accessible:
+# Verify output.html is accessible (NOT intercepted by React SPA):
 # browser_navigate to https://commentarygraphic.com/output.html?graphic=logos
-# Should show graphics output page, NOT the React SPA
+# Should show graphics output page with team logos
+
+# Verify stage.html is accessible (NOT intercepted by React SPA):
+# browser_navigate to https://commentarygraphic.com/stage/stage.html?preview=skeleton&skeleton=full-screen-card
+# Should show stage engine skeleton preview, NOT the React SPA
 ```
 
 ### Deployment Checklist
@@ -138,6 +161,11 @@ tar -czf /tmp/claude/overlays.tar.gz overlays/
 - [ ] `output.html` deployed (from project root)
 - [ ] `overlays/` directory deployed (from project root)
 - [ ] Overlay file permissions set to 644 (`chmod 644 overlays/*`)
+- [ ] `stage/` directory deployed (from project root)
+- [ ] Stage file permissions set to 644 (`find stage -type f -exec chmod 644 {} +`)
+- [ ] `stage/stage.html` accessible at production URL (not React SPA intercept)
+- [ ] Leaderboard renders via stage.html (`?preview=full&skeleton=full-screen-card&block=header-bar,leaderboard-table`)
+- [ ] Roster renders via stage.html (`?preview=full&skeleton=full-screen-card&block=header-bar,athlete-grid`)
 - [ ] No console errors on main site
 - [ ] URL Generator preview works (including sponsor graphics)
 
