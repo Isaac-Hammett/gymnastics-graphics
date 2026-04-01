@@ -229,14 +229,14 @@ Phase 4 connects the stage engine (built in Phases 1-3) to all producer tools. T
 
 ---
 
-### Task 13: Create resolveTheme() helper (server-side) — NOT STARTED
+### Task 13: Create resolveTheme() helper (server-side) — COMPLETE
 **Files:** `server/lib/themeResolver.js` (new)
 **Resolves:** PRD Architecture Decision 10, Phase 4 spec gap A
 **Verify:**
-- [ ] File exports same function signature as client version
-- [ ] Uses Firebase Admin SDK (`.once('value')` not `get()`)
-- [ ] Same resolution logic as client
-- [ ] Handles missing theme gracefully (returns null)
+- [x] File exports same function signature as client version
+- [x] Uses Firebase Admin SDK (`.once('value')` not `get()`)
+- [x] Same resolution logic as client
+- [x] Handles missing theme gracefully (returns null)
 
 **Notes:**
 - Server uses `db.ref().once('value')` not `get(ref(db, path))`
@@ -602,3 +602,12 @@ This avoids bundler complexity while keeping single source of truth.
 - **Layout fields in separate object** — `resolved.layout` contains layout overrides (barBottom, venueFontSize, etc.) to keep color/image fields at top level
 - **Image field handling** — copies 13 image fields from both theme.images and overrides, with overrides taking precedence
 - **No local screenshot needed** — this is a pure library file with no UI; build passing confirms it compiles correctly
+
+### Task 13 Learnings
+
+- **Server-side themeResolver is a direct port of the client-side version** — same function signature `resolveTheme(db, themeId, graphicId)`, same constants, same resolution logic
+- **Key API difference:** Server uses Firebase Admin SDK pattern `db.ref(path).once('value')` instead of Web SDK's `get(ref(db, path))`
+- **Module exports:** CommonJS pattern `module.exports = { resolveTheme, themeToCssVars, ... }` (Node.js compatible)
+- **Additional guard:** Server version checks for `!db` and returns null with error log (client version has default fallback)
+- **Constants exported for testing:** `FALLBACK_COLORS`, `OVERRIDE_COLOR_MAPPING`, `IMAGE_FIELDS`, `LAYOUT_FIELDS` exported for unit testing
+- **No build integration yet:** The file is standalone; Task 15 will import it into timesheetEngine.js
