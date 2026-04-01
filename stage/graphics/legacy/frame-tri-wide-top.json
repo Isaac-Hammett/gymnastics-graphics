@@ -2,7 +2,7 @@
   "id": "frame-tri-wide-top",
   "label": "Tri Wide Top",
   "category": "video-frames",
-  "subcategory": "camera-layouts",
+  "subcategory": "layouts",
   "renderer": "overlay",
   "file": "frame-tri-wide-top.html",
   "transparent": true,

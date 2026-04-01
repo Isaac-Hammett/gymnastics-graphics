@@ -2,7 +2,7 @@
   "id": "frame-dual",
   "label": "Dual View",
   "category": "video-frames",
-  "subcategory": "camera-layouts",
+  "subcategory": "layouts",
   "renderer": "overlay",
   "file": "frame-dual.html",
   "transparent": true,
