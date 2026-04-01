@@ -35,6 +35,12 @@ const MAX_EVENT_LOG_ENTRIES = 50;
 // Default poll interval (seconds)
 const DEFAULT_POLL_INTERVAL = 15;
 
+// Producer timeout (30 minutes in milliseconds)
+const PRODUCER_TIMEOUT_MS = 30 * 60 * 1000;
+
+// Producer timeout check interval (60 seconds)
+const PRODUCER_TIMEOUT_CHECK_INTERVAL_MS = 60 * 1000;
+
 // API timeout (ms)
 const API_TIMEOUT_MS = 15000;
 
@@ -128,7 +134,8 @@ export class ScoringIngestionService extends EventEmitter {
     // Firebase listeners (for cleanup)
     this._configListenerRef = null;
     this._configListenerCallback = null;
-    this._competitionStatusListener = null;
+    this._competitionStatusListenerRef = null;
+    this._competitionStatusListenerCallback = null;
     this._producerTimeoutTimer = null;
 
     // Team logo cache (avoid repeated Firebase reads)
@@ -746,6 +753,9 @@ export class ScoringIngestionService extends EventEmitter {
       // Setup config listener for dynamic changes
       this._setupConfigListener();
 
+      // Setup auto-stop triggers (competition status, producer timeout)
+      this._setupAutoStop();
+
       // Write initial status to Firebase
       await this._updateFeedStatus(FEED_STATUS.OK, null);
 
@@ -775,6 +785,7 @@ export class ScoringIngestionService extends EventEmitter {
 
     this._stopPolling();
     this._cleanupConfigListener();
+    this._cleanupAutoStop();
     this._state = 'stopped';
 
     // Write stopped status to Firebase
@@ -842,6 +853,12 @@ export class ScoringIngestionService extends EventEmitter {
     try {
       // Fetch data from Virtius API
       const rawData = await this._fetchVirtiusData(this._virtiusSessionId);
+
+      // Trigger 2: Check meet status for auto-stop
+      if (this._checkMeetStatus(rawData)) {
+        this._autoStop(`Virtius session ${rawData?.meet?.status || 'completed'}`);
+        return; // Don't process further, service is stopping
+      }
 
       // Process into graphic-ready structures
       const processed = await this.processVirtiusData(rawData, this._gender);
@@ -962,6 +979,135 @@ export class ScoringIngestionService extends EventEmitter {
       this._configListenerCallback = null;
       this._log('config', 'Config listener cleaned up');
     }
+  }
+
+  // ============================================================================
+  // Auto-Stop Triggers
+  // ============================================================================
+
+  /**
+   * Setup automatic stop triggers:
+   * 1. Competition status listener (completed/archived)
+   * 2. Producer timeout (30 minutes of no activity)
+   * Meet status is checked in _poll() on each cycle
+   * @private
+   */
+  _setupAutoStop() {
+    // Trigger 1: Competition status listener
+    this._setupCompetitionStatusListener();
+
+    // Trigger 3: Producer timeout timer
+    this._setupProducerTimeoutTimer();
+
+    this._log('autoStop', 'Auto-stop triggers setup complete');
+  }
+
+  /**
+   * Listen to competition status for completed/archived state
+   * @private
+   */
+  _setupCompetitionStatusListener() {
+    if (!this._firebase) {
+      this._log('warning', 'No Firebase reference - skipping competition status listener');
+      return;
+    }
+
+    const statusRef = this._firebase.ref(`competitions/${this.compId}/status`);
+
+    this._competitionStatusListenerCallback = (snapshot) => {
+      const status = snapshot.val();
+      if (status === 'completed' || status === 'archived') {
+        this._log('autoStop', `Competition status changed to "${status}"`);
+        this._autoStop(`Competition ${status}`);
+      }
+    };
+
+    statusRef.on('value', this._competitionStatusListenerCallback);
+    this._competitionStatusListenerRef = statusRef;
+  }
+
+  /**
+   * Setup producer timeout check (every 60 seconds)
+   * @private
+   */
+  _setupProducerTimeoutTimer() {
+    this._producerTimeoutTimer = setInterval(() => {
+      const elapsed = Date.now() - this._lastProducerActivity;
+      if (elapsed > PRODUCER_TIMEOUT_MS) {
+        const minutes = Math.floor(elapsed / 60000);
+        this._log('autoStop', `No producer activity for ${minutes} minutes`);
+        this._autoStop(`Producer timeout (${minutes} minutes inactive)`);
+      }
+    }, PRODUCER_TIMEOUT_CHECK_INTERVAL_MS);
+  }
+
+  /**
+   * Check meet status from Virtius API response
+   * Called from _poll() after successful fetch
+   * @param {Object} rawData - Raw Virtius API response
+   * @returns {boolean} true if should auto-stop
+   * @private
+   */
+  _checkMeetStatus(rawData) {
+    const meetStatus = rawData?.meet?.status;
+    if (meetStatus === 'completed' || meetStatus === 'finished') {
+      this._log('autoStop', `Virtius meet status is "${meetStatus}"`);
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Auto-stop the service with a reason
+   * Writes status to Firebase and emits 'autoStopped' event
+   * @param {string} reason - Human-readable reason for the auto-stop
+   * @private
+   */
+  async _autoStop(reason) {
+    if (this._state === 'stopped') {
+      return;
+    }
+
+    this._log('autoStop', `Auto-stopping: ${reason}`);
+
+    // Stop the service
+    await this.stop();
+
+    // Write auto-stop status to Firebase
+    if (this._firebase) {
+      try {
+        await this._firebase.ref(`competitions/${this.compId}/config/scoringFeed`).update({
+          enabled: false,
+          status: FEED_STATUS.STOPPED,
+          errorMessage: `Auto-stopped: ${reason}`
+        });
+      } catch (err) {
+        this._log('error', `Failed to write auto-stop status: ${err.message}`);
+      }
+    }
+
+    this.emit('autoStopped', { compId: this.compId, reason });
+  }
+
+  /**
+   * Cleanup all auto-stop listeners and timers
+   * @private
+   */
+  _cleanupAutoStop() {
+    // Cleanup competition status listener
+    if (this._competitionStatusListenerRef && this._competitionStatusListenerCallback) {
+      this._competitionStatusListenerRef.off('value', this._competitionStatusListenerCallback);
+      this._competitionStatusListenerRef = null;
+      this._competitionStatusListenerCallback = null;
+    }
+
+    // Cleanup producer timeout timer
+    if (this._producerTimeoutTimer) {
+      clearInterval(this._producerTimeoutTimer);
+      this._producerTimeoutTimer = null;
+    }
+
+    this._log('autoStop', 'Auto-stop listeners cleaned up');
   }
 
   // ============================================================================

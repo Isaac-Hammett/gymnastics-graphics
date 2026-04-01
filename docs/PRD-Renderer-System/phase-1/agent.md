@@ -419,3 +419,22 @@ Use blue for scoring feed (distinct from green scoreBug):
 1. Competition status listener (highest priority — admin action)
 2. Virtius session completion (in poll response)
 3. Producer timeout (30 minutes of no activity)
+
+### Auto-Stop Implementation Details
+
+**Three triggers:**
+1. **Competition status listener** (`_setupCompetitionStatusListener`): Listens to `competitions/{compId}/status`, calls `_autoStop()` on "completed" or "archived"
+2. **Meet status check** (`_checkMeetStatus`): Called in `_poll()` after fetch, returns `true` for "completed" or "finished"
+3. **Producer timeout** (`_setupProducerTimeoutTimer`): `setInterval` every 60s, checks if `elapsed > PRODUCER_TIMEOUT_MS` (30 min)
+
+**`_autoStop(reason)` flow:**
+1. Guard: return if already stopped
+2. Log the reason
+3. Call `stop()` (which calls `_cleanupAutoStop()`)
+4. Write to Firebase: `enabled: false`, `status: 'stopped'`, `errorMessage: 'Auto-stopped: {reason}'`
+5. Emit `'autoStopped'` event with `{ compId, reason }`
+
+**Cleanup in `stop()`:**
+- `_stopPolling()` — clears poll interval
+- `_cleanupConfigListener()` — removes config listener
+- `_cleanupAutoStop()` — removes competition status listener + producer timeout timer
