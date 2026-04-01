@@ -156,16 +156,16 @@ Phase 4 connects the stage engine (built in Phases 1-3) to all producer tools. T
 
 ---
 
-### Task 9: Generate graphicsRegistry.generated.js — NOT STARTED
+### Task 9: Generate graphicsRegistry.generated.js — COMPLETE
 **Files:** `scripts/buildGraphicsRegistry.js`, `show-controller/src/lib/graphicsRegistry.generated.js` (new)
 **Resolves:** PRD lines 427-428, 980-984
 **Verify:**
-- [ ] Running build script creates `graphicsRegistry.generated.js`
-- [ ] File exports `GRAPHICS` object keyed by `id`
-- [ ] File exports `CATEGORIES` object from categories.json
-- [ ] Each GRAPHICS entry has all manifest fields
-- [ ] perTeam graphics have `perTeam: true`
-- [ ] File has header comment indicating it's auto-generated
+- [x] Running build script creates `graphicsRegistry.generated.js`
+- [x] File exports `GRAPHICS` object keyed by `id`
+- [x] File exports `CATEGORIES` object from categories.json
+- [x] Each GRAPHICS entry has all manifest fields
+- [x] perTeam graphics have `perTeam: true`
+- [x] File has header comment indicating it's auto-generated
 
 **Notes:**
 - Output format: ES module with named exports
@@ -563,3 +563,12 @@ This avoids bundler complexity while keeping single source of truth.
 - **Block deduplication:** Uses `validatedBlocks` Set to avoid warning about the same block multiple times when it's used in multiple manifests
 - **Skips sample blocks:** Blocks starting with `_` (like `_sample-block`) are skipped
 - **Current warnings (8 total):** header-bar declares `--meet-logo-url` and `--meet-logo-size` not in CSS; leaderboard-table declares 5 vars not in CSS; athlete-grid declares `--meet-border-color` not in CSS. These are either future CSS expansion or documentation-only declarations.
+
+### Task 9 Learnings
+
+- **Two output files generated:** `show-controller/src/lib/graphicsRegistry.generated.js` (ES module for React) and `stage/graphics-registry.json` (JSON for server)
+- **ES module format:** Uses `export const GRAPHICS = {...}` and `export const CATEGORIES = {...}` — importable by React without bundler changes
+- **JSON format for server:** Contains `{ generatedAt, graphics, graphicsArray, categories }` — the `graphics` object is keyed by ID for quick lookup, `graphicsArray` is for iteration
+- **Internal fields cleaned:** The `_sourceFile` field used during validation is stripped before writing to output files
+- **Total graphics count: 55** — 11 stage + 29 overlay + 15 output (matches Task 5 count)
+- **React build passes** — the generated file imports successfully into the show-controller build
